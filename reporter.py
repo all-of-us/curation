@@ -7,13 +7,14 @@ from csvkit import DictReader
 from csv_info import CsvInfo
 
 RESULT_SUCCESS = 'success'
-SPRINT_RE = re.compile('.*?(\w+)_(\w+)_datasprint_(\d+)\.csv')
+SPRINT_RE = re.compile('(\w+)_(person|visit_occurrence|condition_occurrence|procedure_occurrence)_datasprint_(\d+)\.csv')
 PERSON_COLUMNS = []
 
 MSG_INVALID_SPRINT_NUM = 'Invalid sprint num: {sprint_num}. Expected {settings.sprint_num}.'
 MSG_INVALID_TABLE_NAME = 'Invalid table name: {table_name}.'
 MSG_INVALID_HPO_ID = 'Invalid HPO ID: {hpo_id}.'
 MSG_INVALID_TYPE = 'Column {submission_column_name} was type {submission_column_type}. Expected {meta_column_type}.'
+MSG_CANNOT_PARSE_FILENAME = 'Cannot parse filename {filename}'
 
 
 def get_cdm_table_columns():
@@ -28,10 +29,9 @@ def get_hpo_info():
 
 def parse_filename(filename):
     m = SPRINT_RE.match(filename.lower())
-    sprint_num = int(m.group(3))
-    hpo_id = m.group(1)
-    table_name = m.group(2)
-    return sprint_num, hpo_id, table_name
+    if m and len(m.groups()) == 3:
+        return dict(sprint_num=int(m.group(3)), hpo_id=m.group(1), table_name=m.group(2))
+    return None
 
 
 def type_eq(cdm_column_type, submission_column_type):
@@ -53,14 +53,23 @@ def type_eq(cdm_column_type, submission_column_type):
     raise Exception('Unsupported CDM column type ' + cdm_column_type)
 
 
-def evaluate_submission(filename):
+def evaluate_submission(file_path):
     """
     Evaluates submission structure and content
-    :param filename: path to csv file
+    :param file_path: path to csv file
     :return:
     """
     result = {'passed': False, 'messages': []}
-    in_sprint_num, in_hpo_id, in_table_name = parse_filename(filename)
+
+    file_path_parts = file_path.split(os.sep)
+    filename = file_path_parts[-1]
+    parts = parse_filename(filename)
+
+    if parts is None:
+        result['messages'].append(MSG_CANNOT_PARSE_FILENAME.format(filename=filename))
+        return result
+
+    in_sprint_num, in_hpo_id, in_table_name = parts['sprint_num'], parts['hpo_id'], parts['table_name']
 
     cdm_table_columns = get_cdm_table_columns()
     table_name_column = cdm_table_columns[0]
@@ -83,7 +92,7 @@ def evaluate_submission(filename):
         return result
 
     # CSV parser is flexible/lenient, but we can only support proper comma-delimited files
-    with open(filename) as input_file:
+    with open(file_path) as input_file:
         sprint_info = CsvInfo(input_file, in_sprint_num, in_hpo_id, in_table_name)
 
         # get table metadata
