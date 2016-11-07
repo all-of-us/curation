@@ -1,7 +1,8 @@
 name	hpo_id
-Columbia University Medical Center, New York City	CUMC
+Columbia University Medical Center, New York City	NYP_CUMC
 Illinois Precision Medicine Consortium	IPMC
 University of Arizona, Tucson	UAMC
+University of Arizona, Tucson	UAMC_UA
 Banner Health, Phoenix	UAMC_BANNER
 University of Pittsburgh at Pittsburgh	PITT
 Cherokee Health Systems, Knoxville, Tennessee	CHS
@@ -10,3 +11,4 @@ Eau Claire Cooperative Health Center, Columbia, South Carolina	ECCHC
 HRHCare, Peekskill, New York	HRHC
 Jackson-Hinds Comprehensive Health Center, Jackson, Mississippi	JHCHC
 San Ysidro Health Center, San Ysidro, California	SYHC
+Illinois Precision Medicine Consortium, Northwestern University, Evanston	IPMC_NU
