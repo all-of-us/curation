@@ -42,6 +42,8 @@ def type_eq(cdm_column_type, submission_column_type):
     :return:
     """
     lhs = cdm_column_type.lower()
+    if submission_column_type == 'time':
+        return lhs == 'character varying'
     if lhs == 'integer':
         return submission_column_type == 'int'
     if lhs in ('character varying', 'text'):
@@ -101,7 +103,7 @@ def evaluate_submission(file_path):
         # Check each column exists with correct type and required
         for meta_item in meta_items:
             meta_column_name = meta_item[1].lower()
-            meta_column_required = meta_item[2]
+            meta_column_required = not meta_item[2]
             meta_column_type = meta_item[3].lower()
             submission_has_column = False
 
