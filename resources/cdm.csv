@@ -11,8 +11,7 @@ PERSON	PERSON_ID	NO	INTEGER	A unique identifier for each person.
 PERSON	GENDER_CONCEPT_ID	NO	INTEGER	A foreign key that refers to an identifier in the CONCEPT table for the unique gender of the person.	
 PERSON	YEAR_OF_BIRTH	NO	INTEGER	The year of birth of the person. For data sources with date of birth, the year is extracted. For data sources where the year of birth is not available, the approximate year of birth is derived based on any age group categorization available.	
 PERSON	MONTH_OF_BIRTH	YES	INTEGER	The month of birth of the person. For data sources that provide the precise date of birth, the month is extracted and stored in this field.	
-PERSON	DAY_OF_BIRTH	YES	INTEGER	The day of the month of birth of the person. For data sources that provide the precise date of birth, the day is extracted and stored in this field.	
-PERSON	TIME_OF_BIRTH	YES	CHARACTER VARYING	The time of birth at the birth day	
+PERSON	DAY_OF_BIRTH	YES	INTEGER	The day of the month of birth of the person. For data sources that provide the precise date of birth, the day is extracted and stored in this field.
 PERSON	RACE_CONCEPT_ID	NO	INTEGER	A foreign key that refers to an identifier in the CONCEPT table for the unique race of the person.	
 PERSON	ETHNICITY_CONCEPT_ID	NO	INTEGER	A foreign key that refers to the standard concept identifier in the Standardized Vocabularies for the ethnicity of the person.	
 PERSON	LOCATION_ID	YES	INTEGER	A foreign key to the place of residency for the person in the location table, where the detailed address information is stored.	
