@@ -7,7 +7,7 @@ from csvkit import DictReader
 from csv_info import CsvInfo
 
 RESULT_SUCCESS = 'success'
-SPRINT_RE = re.compile('(\w+)_(person|visit_occurrence|condition_occurrence|procedure_occurrence)_datasprint_(\d+)\.csv')
+SPRINT_RE = re.compile('(\w+)_(person|visit_occurrence|condition_occurrence|procedure_occurrence|drug_exposure|measurement)_datasprint_(\d+)\.csv')
 PERSON_COLUMNS = []
 
 MSG_INVALID_SPRINT_NUM = 'Invalid sprint num: {sprint_num}. Expected {settings.sprint_num}.'
@@ -125,7 +125,7 @@ def evaluate_submission(file_path):
                     if meta_column_required and submission_column['stats']['nulls']:
                         result['messages'].append('Column ' + submission_column_name + ' does not allow NULL values')
 
-            if not submission_has_column:
+            if not submission_has_column and meta_column_required:
                 result['messages'].append('Missing column ' + meta_column_name)
 
     # If it gets this far, success
