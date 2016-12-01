@@ -1,20 +1,26 @@
-name	hpo_id
-Columbia University Medical Center, New York City	NYP_CUMC
-Illinois Precision Medicine Consortium	IPMC
-University of Arizona, Tucson	UAMC
-University of Arizona, Tucson	UAMC_UA
-Banner Health, Phoenix	UAMC_BANNER
-University of Pittsburgh at Pittsburgh	PITT
-Cherokee Health Systems, Knoxville, Tennessee	CHS
-Community Health Center, Inc., Middletown, Connecticut	CHCI
-Eau Claire Cooperative Health Center, Columbia, South Carolina	ECCHC
-HRHCare, Peekskill, New York	HRHC
-Jackson-Hinds Comprehensive Health Center, Jackson, Mississippi	JHCHC
-San Ysidro Health Center, San Ysidro, California	SYHC
-Illinois Precision Medicine Consortium, Northwestern University, Evanston	IPMC_NU
-Veteran Affairs	VA
-Trans-American Consortium for the Health Care Systems Research Network	TACH
-Trans-American Consortium for the Health Care Systems Research Network	TACH_HFHS
-New England Precision Medicine Consortium	NEC
-California Precision Medicine Consortium	CPMC
-Geisinger Health System	GHS
+"name","hpo_id"
+"Columbia University Medical Center, New York City","NYP_CUMC"
+"Illinois Precision Medicine Consortium","IPMC"
+"University of Arizona, Tucson","UAMC"
+"University of Arizona, Tucson","UAMC_UA"
+"Banner Health, Phoenix","UAMC_BANNER"
+"University of Arizona","UAMC_UOFA"
+"University of Pittsburgh at Pittsburgh","PITT"
+"Cherokee Health Systems, Knoxville, Tennessee","CHS"
+"Community Health Center, Inc., Middletown, Connecticut","CHCI"
+"Eau Claire Cooperative Health Center, Columbia, South Carolina","ECCHC"
+"HRHCare, Peekskill, New York","HRHC"
+"Jackson-Hinds Comprehensive Health Center, Jackson, Mississippi","JHCHC"
+"San Ysidro Health Center, San Ysidro, California","SYHC"
+"Illinois Precision Medicine Consortium, Northwestern University, Evanston","IPMC_NU"
+"Veteran Affairs","VA"
+"Trans-American Consortium for the Health Care Systems Research Network","TACH"
+"Trans-American Consortium for the Health Care Systems Research Network","TACH_HFHS"
+"New England Precision Medicine Consortium","NEC"
+"California Precision Medicine Consortium","CPMC"
+"Geisinger Health System","GHS"
+"University of California San Diego","CAPMC_UCSD"
+"University of Southern California","CAPMC_UCS"
+"NYC Health + Hospitals/Harlem","CUWMHH_HH"
+"University of California, Irvine","UCI"
+"Henry Ford Health System, Detroit","TACHI_HFHS"

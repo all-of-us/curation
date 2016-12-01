@@ -27,7 +27,7 @@ def get_cdm_table_columns():
 
 def get_hpo_info():
     with open(settings.hpo_csv_path) as f:
-        return list(DictReader(f, delimiter='\t'))
+        return list(DictReader(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL))
 
 
 def parse_filename(filename):
