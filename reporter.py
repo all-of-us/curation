@@ -2,19 +2,22 @@ import settings
 import glob
 import os
 import re
+import csv
 from csvkit import table
 from csvkit import DictReader
 from csv_info import CsvInfo
 
 RESULT_SUCCESS = 'success'
 SPRINT_RE = re.compile('(\w+)_(person|visit_occurrence|condition_occurrence|procedure_occurrence|drug_exposure|measurement)_datasprint_(\d+)\.csv')
-PERSON_COLUMNS = []
+FILENAME_FORMAT = '<hpo_id>_<table>_DataSprint_<sprint_number>.csv'
+MSG_CANNOT_PARSE_FILENAME = 'Cannot parse filename'
+MSG_INVALID_SPRINT_NUM = 'Invalid sprint num'
+MSG_INVALID_TABLE_NAME = 'Invalid table name'
+MSG_INVALID_HPO_ID = 'Invalid HPO ID'
+MSG_INVALID_TYPE = 'Type mismatch'
 
-MSG_INVALID_SPRINT_NUM = 'Invalid sprint num: {sprint_num}. Expected {settings.sprint_num}.'
-MSG_INVALID_TABLE_NAME = 'Invalid table name: {table_name}.'
-MSG_INVALID_HPO_ID = 'Invalid HPO ID: {hpo_id}.'
-MSG_INVALID_TYPE = 'Column {submission_column_name} was type {submission_column_type}. Expected {meta_column_type}.'
-MSG_CANNOT_PARSE_FILENAME = 'Cannot parse filename {filename}'
+HEADER_KEYS = ['filename', 'hpo_id', 'sprint_num', 'table_name']
+ERROR_KEYS = ['message', 'column_name', 'actual', 'expected']
 
 
 def get_cdm_table_columns():
@@ -61,36 +64,35 @@ def evaluate_submission(file_path):
     :param file_path: path to csv file
     :return:
     """
-    result = {'passed': False, 'messages': []}
+    result = {'passed': False, 'errors': []}
 
     file_path_parts = file_path.split(os.sep)
     filename = file_path_parts[-1]
+    result['filename'] = filename
     parts = parse_filename(filename)
 
     if parts is None:
-        result['messages'].append(MSG_CANNOT_PARSE_FILENAME.format(filename=filename))
+        result['errors'].append(dict(message=MSG_CANNOT_PARSE_FILENAME, actual=filename, expected=FILENAME_FORMAT))
         return result
 
     in_sprint_num, in_hpo_id, in_table_name = parts['sprint_num'], parts['hpo_id'], parts['table_name']
 
-    cdm_table_columns = get_cdm_table_columns()
-    table_name_column = cdm_table_columns[0]
-    table_names = set(map(lambda s: s.lower(), table_name_column))
-    all_meta_items = cdm_table_columns.to_rows()
-
-    if in_table_name not in table_names:
-        result['messages'].append(MSG_INVALID_TABLE_NAME.format(table_name=in_table_name))
-        return result
+    result['sprint_num'] = parts['sprint_num']
+    result['hpo_id'] = parts['hpo_id']
+    result['table_name'] = parts['table_name']
 
     hpos = get_hpo_info()
     hpo_ids = set(map(lambda h: h['hpo_id'].lower(), hpos))
 
     if in_hpo_id not in hpo_ids:
-        result['messages'].append(MSG_INVALID_HPO_ID.format(hpo_id=in_hpo_id))
+        result['errors'].append(dict(message=MSG_INVALID_HPO_ID, actual=in_hpo_id, expected=';'.join(hpo_ids)))
         return result
 
+    cdm_table_columns = get_cdm_table_columns()
+    all_meta_items = cdm_table_columns.to_rows()
+
     if in_sprint_num != settings.sprint_num:
-        result['messages'].append(MSG_INVALID_SPRINT_NUM.format(sprint_num=in_sprint_num, settings=settings))
+        result['errors'].append(dict(message=MSG_INVALID_SPRINT_NUM, actual=in_sprint_num, expected=settings.sprint_num))
         return result
 
     # CSV parser is flexible/lenient, but we can only support proper comma-delimited files
@@ -116,36 +118,47 @@ def evaluate_submission(file_path):
                     # If all empty don't do type check
                     if submission_column_type != 'nonetype':
                         if not type_eq(meta_column_type, submission_column_type):
-                            msg = MSG_INVALID_TYPE.format(submission_column_name=submission_column_name,
-                                                          submission_column_type=submission_column_type,
-                                                          meta_column_type=meta_column_type)
-                            result['messages'].append(msg)
+                            e = dict(message=MSG_INVALID_TYPE,
+                                     column_name=submission_column_name,
+                                     actual=submission_column_type,
+                                     expected=meta_column_type)
+                            result['errors'].append(e)
 
                     # Invalid if any nulls present in a required field
                     if meta_column_required and submission_column['stats']['nulls']:
-                        result['messages'].append('Column ' + submission_column_name + ' does not allow NULL values')
+                        result['errors'].append(dict(message='NULL values are not allowed for column',
+                                                     column_name=submission_column_name))
 
             if not submission_has_column and meta_column_required:
-                result['messages'].append('Missing column ' + meta_column_name)
-
-    # If it gets this far, success
-    passed = len(result['messages']) == 0
-    if passed:
-        result['passed'] = True
-        result['messages'].append('Passed sprint ' + str(in_sprint_num) + ' validation')
+                result['errors'].append(dict(message='Missing required column', column_name=meta_column_name))
     return result
 
 
 def process_dir(d):
+    out_dir = os.path.join(d, 'errors')
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
     for f in glob.glob(os.path.join(d, '*.csv')):
+        file_path_parts = f.split(os.sep)
+        filename = file_path_parts[-1]
+        output_filename = os.path.join(out_dir, filename)
+
         result = evaluate_submission(f)
-        if result['passed']:
-            output_filename = f + '.pass'
-        else:
-            output_filename = f + '.fail'
+        rows = []
+        for error in result['errors']:
+            row = dict()
+            for header_key in HEADER_KEYS:
+                row[header_key] = result.get(header_key)
+            for error_key in ERROR_KEYS:
+                row[error_key] = error.get(error_key)
+            rows.append(row)
+
         with open(output_filename, 'w') as out:
-            for message in result['messages']:
-                out.write(message + '\n')
+            field_names = HEADER_KEYS + ERROR_KEYS
+            writer = csv.DictWriter(out, fieldnames=field_names, lineterminator='\n', quoting=csv.QUOTE_ALL)
+            writer.writeheader()
+            writer.writerows(rows)
 
 
 if __name__ == '__main__':
