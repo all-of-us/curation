@@ -44,16 +44,15 @@ def type_eq(cdm_column_type, submission_column_type):
     :param submission_column_type:
     :return:
     """
-    lhs = cdm_column_type.lower()
     if submission_column_type == 'time':
-        return lhs == 'character varying'
-    if lhs == 'integer':
+        return cdm_column_type == 'character varying'
+    if cdm_column_type == 'integer':
         return submission_column_type == 'int'
-    if lhs in ('character varying', 'text'):
+    if cdm_column_type in ('character varying', 'text'):
         return submission_column_type in ('str', 'unicode')
-    if lhs == 'date':
+    if cdm_column_type == 'date':
         return submission_column_type in ('str', 'unicode', 'date')
-    if lhs == 'numeric':
+    if cdm_column_type == 'numeric':
         return submission_column_type == 'float'
     raise Exception('Unsupported CDM column type ' + cdm_column_type)
 
@@ -100,13 +99,13 @@ def evaluate_submission(file_path):
         sprint_info = CsvInfo(input_file, in_sprint_num, in_hpo_id, in_table_name)
 
         # get table metadata
-        meta_items = filter(lambda r: r[0].lower() == in_table_name, all_meta_items)
+        meta_items = filter(lambda r: r[0] == in_table_name, all_meta_items)
 
         # Check each column exists with correct type and required
         for meta_item in meta_items:
-            meta_column_name = meta_item[1].lower()
+            meta_column_name = meta_item[1]
             meta_column_required = not meta_item[2]
-            meta_column_type = meta_item[3].lower()
+            meta_column_type = meta_item[3]
             submission_has_column = False
 
             for submission_column in sprint_info.columns:
