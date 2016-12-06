@@ -22,7 +22,7 @@ class TestReporter(unittest.TestCase):
         self.assertTrue(cdm_metadata.count_rows() > 0)
 
     def test_invalid_table_name(self):
-        filename = 'CUMC_perzon_DataSprint_0.csv'
+        filename = 'cuwmhh_perzon_DataSprint_0.csv'
         submission_filename = self.example_path(filename)
         r = reporter.evaluate_submission(submission_filename)
         self.check_error(r,
@@ -38,7 +38,7 @@ class TestReporter(unittest.TestCase):
                          actual='zzzzz')
 
     def test_invalid_sprint_num(self):
-        submission_filename = self.example_path('NYP_CUMC_person_DataSprint_1000.csv')
+        submission_filename = self.example_path('cuwmhh_person_DataSprint_1000.csv')
         r = reporter.evaluate_submission(submission_filename)
         self.check_error(r,
                          message=reporter.MSG_INVALID_SPRINT_NUM,
