@@ -1,2 +1,2 @@
-cchardet
-csvkit
+sqlalchemy
+pandas
