@@ -1,3 +1,4 @@
+import resources
 import settings
 import unittest
 import csv_info
@@ -7,7 +8,7 @@ import os
 class TestCsvInfo(unittest.TestCase):
 
     def example_path(self, filename):
-        return os.path.join(settings.example_path, filename)
+        return os.path.join(resources.example_path, filename)
 
     def test_bom(self):
         submission_filename = self.example_path('byte_order_mark.csv')

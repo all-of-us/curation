@@ -1,3 +1,4 @@
+import resources
 import settings
 import unittest
 import reporter
@@ -6,7 +7,7 @@ import os
 
 class TestReporter(unittest.TestCase):
     def example_path(self, filename):
-        return os.path.join(settings.example_path, filename)
+        return os.path.join(resources.example_path, filename)
 
     def check_error(self, r, message, actual, expected=None):
         self.assertFalse(r['passed'])
