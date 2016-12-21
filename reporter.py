@@ -1,164 +1,128 @@
-import settings
-import glob
 import os
-import re
-import csv
-from csvkit import table
-from csvkit import DictReader
-from csv_info import CsvInfo
+import pandas
+import glob
 
-RESULT_SUCCESS = 'success'
-SPRINT_RE = re.compile('(\w+)_(person|visit_occurrence|condition_occurrence|procedure_occurrence|drug_exposure|measurement)_datasprint_(\d+)\.csv')
-FILENAME_FORMAT = '<hpo_id>_<table>_DataSprint_<sprint_number>.csv'
-MSG_CANNOT_PARSE_FILENAME = 'Cannot parse filename'
-MSG_INVALID_SPRINT_NUM = 'Invalid sprint num'
-MSG_INVALID_TABLE_NAME = 'Invalid table name'
-MSG_INVALID_HPO_ID = 'Invalid HPO ID'
-MSG_INVALID_TYPE = 'Type mismatch'
+from sqlalchemy import Date, Float, BigInteger, String
+from sqlalchemy import Table, Column
+from sqlalchemy import create_engine, MetaData
 
-HEADER_KEYS = ['filename', 'hpo_id', 'sprint_num', 'table_name']
-ERROR_KEYS = ['message', 'column_name', 'actual', 'expected']
+import settings
+import resources
+
+INSERT_FMT = "INSERT INTO pmi_sprint_reporter_log (filename, message) VALUES (%s, %s)"
+engine = create_engine(settings.conn_str)
+con = engine.connect()
 
 
-def get_cdm_table_columns():
-    with open(settings.cdm_metadata_path) as f:
-        return table.Table.from_csv(f)
+def drop_tables(schema):
+    metadata = MetaData(bind=engine, reflect=True, schema=schema)
+    metadata.drop_all()
 
 
-def get_hpo_info():
-    with open(settings.hpo_csv_path) as f:
-        return list(DictReader(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL))
+def create_tables(schema):
+    metadata = MetaData()
+    cdm_df = pandas.read_csv(resources.cdm_csv_path)
+    tables = cdm_df.groupby(['table_name'])
+
+    for table_name, table_df in tables:
+        columns = []
+        for index, (_, column_name, is_nullable, data_type, _) in table_df.iterrows():
+            if data_type in ('character varying', 'text'):
+                tpe = String(100)
+            elif data_type == 'integer':
+                tpe = BigInteger()
+            elif data_type == 'numeric':
+                tpe = Float()
+            elif data_type == 'date':
+                tpe = Date()
+            else:
+                raise NotImplementedError('Unexpected data_type `%s` in cdm.csv' % data_type)
+            nullable = is_nullable == 'yes'
+            columns.append(Column(column_name, tpe, nullable=nullable))
+        Table(table_name, metadata, *columns, schema=schema)
+
+    Table('pmi_sprint_reporter_log',
+          metadata,
+          Column('log_id', BigInteger, primary_key=True, nullable=False, autoincrement=True),
+          Column('message', String(500), nullable=False),
+          Column('filename', String(100)),
+          schema=schema)
+
+    metadata.create_all(engine)
 
 
-def parse_filename(filename):
-    m = SPRINT_RE.match(filename.lower())
-    if m and len(m.groups()) == 3:
-        return dict(sprint_num=int(m.group(3)), hpo_id=m.group(1), table_name=m.group(2))
-    return None
+def process(hpo_id, schema):
+    sprint_num = settings.sprint_num
+    cdm_df = pandas.read_csv(resources.cdm_csv_path)
+    included_tables = pandas.read_csv(resources.included_tables_csv_path).table_name.unique()
+    tables = cdm_df[cdm_df['table_name'].isin(included_tables)].groupby(['table_name'])
 
-
-def type_eq(cdm_column_type, submission_column_type):
-    """
-    Compare column type in spec with column type in submission
-    :param cdm_column_type:
-    :param submission_column_type:
-    :return:
-    """
-    if submission_column_type == 'time':
-        return cdm_column_type == 'character varying'
-    if cdm_column_type == 'integer':
-        return submission_column_type == 'int'
-    if cdm_column_type in ('character varying', 'text'):
-        return submission_column_type in ('str', 'unicode')
-    if cdm_column_type == 'date':
-        return submission_column_type in ('str', 'unicode', 'date')
-    if cdm_column_type == 'numeric':
-        return submission_column_type == 'float'
-    raise Exception('Unsupported CDM column type ' + cdm_column_type)
-
-
-def evaluate_submission(file_path):
-    """
-    Evaluates submission structure and content
-    :param file_path: path to csv file
-    :return:
-    """
-    result = {'passed': False, 'errors': []}
-
-    file_path_parts = file_path.split(os.sep)
-    filename = file_path_parts[-1]
-    result['filename'] = filename
-    parts = parse_filename(filename)
-
-    if parts is None:
-        result['errors'].append(dict(message=MSG_CANNOT_PARSE_FILENAME, actual=filename, expected=FILENAME_FORMAT))
-        return result
-
-    in_sprint_num, in_hpo_id, in_table_name = parts['sprint_num'], parts['hpo_id'], parts['table_name']
-
-    result['sprint_num'] = parts['sprint_num']
-    result['hpo_id'] = parts['hpo_id']
-    result['table_name'] = parts['table_name']
-
-    hpos = get_hpo_info()
-    hpo_ids = set(map(lambda h: h['hpo_id'].lower(), hpos))
-
-    if in_hpo_id not in hpo_ids:
-        result['errors'].append(dict(message=MSG_INVALID_HPO_ID, actual=in_hpo_id, expected=';'.join(hpo_ids)))
-        return result
-
-    cdm_table_columns = get_cdm_table_columns()
-    all_meta_items = cdm_table_columns.to_rows()
-
-    if in_sprint_num != settings.sprint_num:
-        result['errors'].append(dict(message=MSG_INVALID_SPRINT_NUM, actual=in_sprint_num, expected=settings.sprint_num))
-        return result
-
-    # CSV parser is flexible/lenient, but we can only support proper comma-delimited files
-    with open(file_path) as input_file:
-        sprint_info = CsvInfo(input_file, in_sprint_num, in_hpo_id, in_table_name)
-
-        # get table metadata
-        meta_items = filter(lambda r: r[0] == in_table_name, all_meta_items)
-
-        # Check each column exists with correct type and required
-        for meta_item in meta_items:
-            meta_column_name = meta_item[1]
-            meta_column_required = not meta_item[2]
-            meta_column_type = meta_item[3]
-            submission_has_column = False
-
-            for submission_column in sprint_info.columns:
-                submission_column_name = submission_column['name'].lower()
-                if submission_column_name == meta_column_name:
-                    submission_has_column = True
-                    submission_column_type = submission_column['type'].lower()
-
-                    # If all empty don't do type check
-                    if submission_column_type != 'nonetype':
-                        if not type_eq(meta_column_type, submission_column_type):
-                            e = dict(message=MSG_INVALID_TYPE,
-                                     column_name=submission_column_name,
-                                     actual=submission_column_type,
-                                     expected=meta_column_type)
-                            result['errors'].append(e)
-
-                    # Invalid if any nulls present in a required field
-                    if meta_column_required and submission_column['stats']['nulls']:
-                        result['errors'].append(dict(message='NULL values are not allowed for column',
-                                                     column_name=submission_column_name))
-
-            if not submission_has_column and meta_column_required:
-                result['errors'].append(dict(message='Missing required column', column_name=meta_column_name))
-    return result
-
-
-def process_dir(d):
-    out_dir = os.path.join(d, 'errors')
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-
-    for f in glob.glob(os.path.join(d, '*.csv')):
-        file_path_parts = f.split(os.sep)
+    # allow files to be found regardless of CaSe
+    def path_to_file_map_item(p):
+        file_path_parts = p.split(os.sep)
         filename = file_path_parts[-1]
-        output_filename = os.path.join(out_dir, filename)
+        return filename.lower(), p
 
-        result = evaluate_submission(f)
-        rows = []
-        for error in result['errors']:
-            row = dict()
-            for header_key in HEADER_KEYS:
-                row[header_key] = result.get(header_key)
-            for error_key in ERROR_KEYS:
-                row[error_key] = error.get(error_key)
-            rows.append(row)
+    file_map_items = map(path_to_file_map_item, glob.glob(os.path.join(settings.csv_dir, '*.csv')))
+    file_map = dict(file_map_items)
 
-        with open(output_filename, 'w') as out:
-            field_names = HEADER_KEYS + ERROR_KEYS
-            writer = csv.DictWriter(out, fieldnames=field_names, lineterminator='\n', quoting=csv.QUOTE_ALL)
-            writer.writeheader()
-            writer.writerows(rows)
+    for table_name, table_df in tables:
+        csv_filename = '%(hpo_id)s_%(table_name)s_datasprint_%(sprint_num)s.csv' % locals()
+        csv_path = os.path.join(settings.csv_dir, csv_filename)
+
+        try:
+            if csv_filename not in file_map:
+                raise Exception('File `%s` not found' % csv_filename)
+
+            csv_path = file_map[csv_filename]
+
+            # get column names for this table
+            column_names = table_df.column_name.unique()
+
+            with open(csv_path) as f:
+                # lowercase field names
+                df = pandas.read_csv(f).rename(columns=str.lower)
+
+                # add missing columns (with NaN values)
+                df = df.reindex(columns=column_names)
+
+                # fill in blank concept_id columns with 0
+                concept_columns = filter(lambda x: x.endswith('concept_id') and 'source' not in x, column_names)
+                df[concept_columns] = df[concept_columns].fillna(value=0)
+
+                # insert
+                df.to_sql(name=table_name, con=con, if_exists='append', index=False, schema=schema)
+
+        except Exception, e:
+            print e.message
+            insert_fmt = INSERT_FMT
+            if schema is not None:
+                insert_fmt = INSERT_FMT.replace('pmi_sprint_reporter_log', hpo_id + '.' + 'pmi_sprint_reporter_log')
+            con.execute(insert_fmt, [csv_filename, e.message])
+
+
+def start():
+    all_hpo_ids = pandas.read_csv(resources.hpo_csv_path).hpo_id.unique()
+    multi_schema_supported = engine.dialect.name in ['mssql', 'postgresql', 'oracle']
+
+    if settings.hpo_id == 'all':
+        if not multi_schema_supported:
+            raise Exception('Cannot run all. Multiple schemas not supported configured engine.')
+        hpo_ids = all_hpo_ids
+    else:
+        if settings.hpo_id.lower() not in all_hpo_ids:
+            raise RuntimeError('%s not a valid hpo_id' % settings.hpo_id)
+        hpo_ids = [settings.hpo_id]
+
+    if len(hpo_ids) > 1 and not multi_schema_supported:
+        raise Exception('Cannot process. Multiple schemas not supported by configured engine.')
+
+    for hpo_id in hpo_ids:
+        schema = hpo_id if multi_schema_supported else None
+        drop_tables(schema=schema)
+        create_tables(schema=schema)
+        process(hpo_id, schema=schema)
 
 
 if __name__ == '__main__':
-    process_dir(settings.csv_dir)
+    start()
