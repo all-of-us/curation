@@ -90,3 +90,5 @@ ENV/
 .ropeproject
 
 settings.py
+*.db
+.idea/
