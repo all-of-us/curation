@@ -1,4 +1,4 @@
-# OMOP Common Data Model
+# OMOP CDM
 
 The OMOP Common Data Model (CDM) will be used to transfer EHR data to the Data Resource Core (DRC). The data model is an open-source, community standard for observational healthcare data. This document will cover the core tables that will be used to transport data to the DRC. The tables of interest for this export are: person, visit\_occurrence, condition\_occurrence, procedure\_occurrence, drug\_exposure, and measurement. All detailed information on the OMOP common data model can be found here: <http://www.ohdsi.org/web/wiki/doku.php?id=documentation:cdm#common_data_model>.
 
