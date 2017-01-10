@@ -70,4 +70,10 @@ For example:
 
     "aaa","b""bb","ccc"
 
+## Datetime
+
+Fields of type `datetime` will be represented as a string for export files. The format will be in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations) where time is represented in UTC with time offset in the extended format `[hh]:[mm]:[ss]`. 
+
+*NOTE: for datetimes where the time is not known, assume midnight (00:00 time). For example in Eastern time, UTC would be represented as `00:00:00-05:00`. Please refer to [this article](https://en.wikipedia.org/wiki/List_of_UTC_time_offsets) for a list of UTC offsets.*
+
 [Proceed to Data Model >>](data_model.md)
