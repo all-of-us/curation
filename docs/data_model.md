@@ -15,7 +15,7 @@ For this data sprint, the OMOP vocabulary will be required required. A version o
 | year\_of\_birth                | Yes                     | integer  | The year of birth of the person. For data sources with date of birth, the year is extracted. For data sources where the year of birth is not available, the approximate year of birth is derived based on any age group categorization available. |
 | month\_of\_birth               | Yes                     | integer  | The month of birth of the person. For data sources that provide the precise date of birth, the month is extracted and stored in this field. |
 | day\_of\_birth                 | Yes                     | integer  | The day of the month of birth of the person. For data sources that provide the precise date of birth, the day is extracted and stored in this field. |
-| datetime\_of\_birth            | Yes                     | datetime | The date and time of birth. See [datetime](#datetime). |
+| datetime\_of\_birth            | Yes                     | datetime | The date and time of birth. See [datetime](index.html#datetime). |
 | race\_concept\_id              | Yes                     | integer  | Using [this table](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/person/race_concept_id.csv) of allowable concept IDs, fill in the appropriate value for this field |
 | ethnicity\_concept\_id         | Yes                     | integer  | Using [this table](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/person/ethnicity_concept_id.csv) of allowable concept IDs, fill in the appropriate value for this field |
 | location\_id                   | No                      | integer  | Leave blank |
