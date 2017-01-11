@@ -8,14 +8,27 @@ from sqlalchemy import Date, DateTime, Float, BigInteger, String
 from sqlalchemy import Table, Column
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.exc import StatementError
+from sqlalchemy.sql.ddl import CreateSchema
 
 import settings
 import resources
 
 LOG_TABLE_NAME = 'pmi_sprint_reporter_log'
+SCHEMA_EXISTS_QUERY = "SELECT 1 FROM information_schema.schemata WHERE schema_name = '%s'"
 
 engine = create_engine(settings.conn_str)
 con = engine.connect()
+
+
+def create_schema(schema):
+    """
+    Create schema if it doesn't exist
+    :param schema: name of schema
+    :return:
+    """
+    result = engine.execute(SCHEMA_EXISTS_QUERY % schema)
+    if result.rowcount == 0:
+        engine.execute(CreateSchema(schema))
 
 
 def drop_tables(schema):
@@ -161,7 +174,10 @@ def main():
         raise Exception('Cannot process. Multiple schemas not supported by configured engine.')
 
     for hpo_id in hpo_ids:
+        print 'Processing %s...' % hpo_id
         schema = hpo_id if multi_schema_supported else None
+        if multi_schema_supported:
+            create_schema(schema)
         drop_tables(schema=schema)
         create_tables(schema=schema)
         process(hpo_id, schema=schema)
