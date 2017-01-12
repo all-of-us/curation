@@ -100,8 +100,9 @@ Amb surg visit
 
 The following were the diagnosis codes for each of the above visits:
 
-| ED                 | Primary: Calculus of kidney (ICD9:592.0) <br> Secondary: Abdominal pain, right low quandrant (ICD9:789.03). Renal Colic (ICD9:788.0) |
+| | |
 |--------------------|----------------------------------------------------------------------------------------|
+| ED                 | Primary: Calculus of kidney (ICD9:592.0) <br> Secondary: Abdominal pain, right low quandrant (ICD9:789.03). Renal Colic (ICD9:788.0) |
 | Both clinic visits | Calculus of ureter (ICD9:592.1)                                                        |
 | Amb Surg           | Calculus of ureter (ICD9:592.1)                                                        |
 
