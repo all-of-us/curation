@@ -1,0 +1,8 @@
+"Concept ID","Description" 
+"5001","Test ordered through EHR" 
+"44818701","From physical examination" 
+"44818702","Lab result" 
+"44818703","Pathology finding" 
+"44818704","Patient reported value" 
+"45754907","Derived value" 
+"0","Unknown" 
