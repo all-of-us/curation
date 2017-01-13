@@ -42,7 +42,7 @@ For example, an African American, non-Hispanic, male patient named John Doe born
 | -------------------------- | ----------------------- | -------- | ----------- |
 | visit\_occurrence\_id      | Yes                     | integer  | A unique identifier for each Person's visit or encounter at a healthcare provider. |
 | person\_id                 | Yes                     | integer  | A foreign key identifier to the Person for whom the visit is recorded. The demographic details of that Person are stored in the PERSON table. |
-| visit\_concept\_id         | Yes                     | integer  | Refer to [ethnicity_concept_id.csv](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/visit_occurrence/visit_concept_id.csv) for the allowed concept_ids. |
+| visit\_concept\_id         | Yes                     | integer  | Refer to [visit_concept_id.csv](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/visit_occurrence/visit_concept_id.csv) for the allowed concept_ids. |
 | visit\_start\_date         | Yes                     | date     | The start date of the visit in this format YYYY-MM-DD |
 | visit\_start\_datetime     | Yes                     | datetime | The end date and time of the visit. *See [datetime](index.html#datetime).* |
 | visit\_end\_date           | Yes                     | date     | The end date of the visit. If this is a one-day visit the end date should match the start date - YYYY-MM-DD |
