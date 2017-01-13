@@ -1,17 +1,19 @@
 # Sprint Reporter
 
-Validate submissions for the All of Us data sprints
+Validate submissions for the All of Us data sprints. Visit the [website](https://cumc-dbmi.github.io/pmi_sprint_reporter/) for the sprint specifications.
+
+This tool checks files for conformance to All of Us Data Sprint specifications. It attempts to read files in a configured directory, load them into a configured database and evaluate the content. Errors and issues encountered along the way are logged to a table `pmi_spring_reporter_log`.
+
+## Requirements
+ * Python 2.7.* (download from [here](https://www.python.org/downloads/) and install)
+ * pip (download [get-pip.py](https://bootstrap.pypa.io/get-pip.py) and run `python get-pip.py`)
 
 ## Running
+ * Install requirements by running
+ 
+        pip install -r requirements.txt
+ 
  * Update `_settings.py` and rename it to `settings.py`
- * Execute the following at the command line:
+ * Run the reporter
  
         python reporter.py
-
-## Validation logic
- * File names must follow naming convention `{hpo_id}_{table}_datasprint_{sprint_num}.csv` 
-     * `hpo_id` an hpo_id listed in [resources/hpo.csv](resources/hpo.csv)
-     * `table` an OMOP CDM table listed in [resources/cdm.csv](resources/cdm.csv)
-     * `sprint_num` sprint number of the submission
- * Files must be in CSV format (comma-delimited) as specified by [rfc4180](https://tools.ietf.org/html/rfc4180)
- * Column names and types must follow the conventions in [resources/cdm.csv](resources/cdm.csv)
