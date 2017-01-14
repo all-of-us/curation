@@ -173,10 +173,12 @@ def main():
     if len(hpo_ids) > 1 and not multi_schema_supported:
         raise Exception('Cannot process. Multiple schemas not supported by configured engine.')
 
+    use_multi_schemas = multi_schema_supported and len(hpo_ids) > 1
+
     for hpo_id in hpo_ids:
         print 'Processing %s...' % hpo_id
-        schema = hpo_id if multi_schema_supported else None
-        if multi_schema_supported:
+        schema = hpo_id if use_multi_schemas else None
+        if use_multi_schemas:
             create_schema(schema)
         drop_tables(schema=schema)
         create_tables(schema=schema)
