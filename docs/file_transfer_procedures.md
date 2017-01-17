@@ -6,29 +6,28 @@ This section will cover the file naming convention as well as the method of tran
 
 The following abbreviations will be used for the HPO Names:
 
-| Healthcare Provider Organization                                       | Abbreviation |
-|------------------------------------------------------------------------|--------------|
-| Columbia University MC/ Weill Cornell MC/Harlem Hospital HPO, NYC      | NYC          |
-| Illinois Precision Medicine Consortium                                 | IPMC         |
-| University of Arizona, Tucson                                          | UAMC         |
-| University of Pittsburgh at Pittsburgh                                 | PITT         |
-| Cherokee Health Systems, Knoxville, Tennessee                          | CHS          |
-| Community Health Center, Inc., Middletown, Connecticut                 | CHCI         |
-| Eau Claire Cooperative Health Center, Columbia, South Carolina         | ECCHC        |
-| HRHCare, Peekskill, New York                                           | HRHC         |
-| Jackson-Hinds Comprehensive Health Center, Jackson, Mississippi        | JHCHC        |
-| San Ysidro Health Center, San Ysidro, California                       | SYHC         |
-| Veteran Affairs                                                        | VA           |
-| Trans-American Consortium for the Health Care Systems Research Network | TACH         |
-| New England Precision Medicine Consortium                              | NEC          |
-| California Precision Medicine Consortium                               | CPMC         |
-| Geisinger Health System                                                | GHS          |
+<table>
+<thead>
+<tr>
+  <th>Healthcare Provider Organization</th>
+  <th>Abbreviation</th>
+</tr>
+</thead>
+<tbody>
+{% for hpo in site.data.hpo %}
+<tr>
+  <td>{{ hpo.hpo_name }}</td>
+  <td>{{ hpo.hpo_id }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
 
 So a file name for the person table export from Columbia would like this: 
 
     NYC_Columbia_person_DataSprint_2.csv.
     
-    If the file is from a site within an HPO, like Cornell within the Columbia HPO, the file name would look like this: 
+If the file is from a site within an HPO, like Cornell within the NYC HPO, the file name would look like this: 
     
     NYC_Cornell_person_DataSprint_2.csv.
 
