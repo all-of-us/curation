@@ -30,7 +30,7 @@ So a file name for the person table export from Columbia would like this:
     
     If the file is from a site within an HPO, like Cornell within the Columbia HPO, the file name would look like this: 
     
-    CUWMHH_Cornell_person_DataSprint_0.csv.
+    CUWMHH_Cornell_person_DataSprint_2.csv.
 
 ## File transmission
 
@@ -44,7 +44,7 @@ All files will be sent to Columbia University Medical Center (CUMC) via a secure
 
     <img src="images/file_transfer_02.png" width="482" height="264" />
 
-1. For sending files, you will log into the portal and click on the ‘Send File’ tab. Please send the files to <kan7003@nyp.org> and address the subject line as “Data Sprint \[Data Sprint Number\] for \[HPO Name\]”. For example, a submission from CUWMHH for data sprint 0 would be: “Data Sprint 0 for CUWMHH”.
+1. For sending files, you will log into the portal and click on the ‘Send File’ tab. Please send the files to <kan7003@nyp.org> and address the subject line as “Data Sprint \[Data Sprint Number\] for \[HPO Name\]”. For example, a submission from CUWMHH for data sprint 2 would be: “Data Sprint 2 for CUWMHH”.
 
     <img src="images/file_transfer_03.png" width="522" height="360" />
 
