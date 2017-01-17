@@ -16,7 +16,7 @@ The following abbreviations will be used for the HPO Names:
 <tbody>
 {% for hpo in site.data.hpo %}
 <tr>
-  <td>{{ hpo.hpo_name }}</td>
+  <td>{{ hpo.name }}</td>
   <td>{{ hpo.hpo_id }}</td>
 </tr>
 {% endfor %}
