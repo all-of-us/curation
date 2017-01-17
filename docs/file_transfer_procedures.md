@@ -8,7 +8,7 @@ The following abbreviations will be used for the HPO Names:
 
 | Healthcare Provider Organization                                       | Abbreviation |
 |------------------------------------------------------------------------|--------------|
-| Columbia University MC/ Weill Cornell MC/Harlem Hospital HPO, NYC      | CUWMHH       |
+| Columbia University MC/ Weill Cornell MC/Harlem Hospital HPO, NYC      | NYC          |
 | Illinois Precision Medicine Consortium                                 | IPMC         |
 | University of Arizona, Tucson                                          | UAMC         |
 | University of Pittsburgh at Pittsburgh                                 | PITT         |
@@ -26,11 +26,11 @@ The following abbreviations will be used for the HPO Names:
 
 So a file name for the person table export from Columbia would like this: 
 
-    CUWMHH_Columbia_person_DataSprint_2.csv.
+    NYC_Columbia_person_DataSprint_2.csv.
     
     If the file is from a site within an HPO, like Cornell within the Columbia HPO, the file name would look like this: 
     
-    CUWMHH_Cornell_person_DataSprint_2.csv.
+    NYC_Cornell_person_DataSprint_2.csv.
 
 ## File transmission
 
