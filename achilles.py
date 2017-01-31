@@ -19,7 +19,7 @@ def sql_render(hpo_id, schema, sql_text):
     :param sql_text: SQL command text to render
     :return: command text with template parameters replaced
     """
-    result = ''
+    result = sql_text
     if schema is None:
         qualifiers_to_replace = ['@results_database_schema.', '@cdm_database_schema.']
         replace_with = ''
@@ -28,7 +28,7 @@ def sql_render(hpo_id, schema, sql_text):
         replace_with = schema
 
     for qualifier in qualifiers_to_replace:
-        result = sql_text.replace(qualifier, replace_with)
+        result = result.replace(qualifier, replace_with)
 
     return result.replace('@source_name', hpo_id)
 
@@ -53,6 +53,7 @@ def run_achilles(hpo_id):
 
 def main():
     for hpo_id in hpo_ids:
+        print 'Processing %s...' % hpo_id
         run_achilles(hpo_id)
 
 
