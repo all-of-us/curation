@@ -35,14 +35,6 @@ SQL for ACHILLES results (for either OMOP CDM v4 or OMOP CDM v5)
 
 *******************************************************************/
 
-{DEFAULT @cdm_database_schema = 'CDM.dbo'}
-{DEFAULT @source_name = 'CDM NAME'}
-{DEFAULT @smallcellcount = 5}
-{DEFAULT @createTable = TRUE}
-{DEFAULT @derivedDataSmPtCount = 11} 
-{DEFAULT @ThresholdAgeWarning = 125} 
-
- 
 --@results_database_schema.ACHILLES_Heel part:
 
 --prepare the tables first
@@ -251,7 +243,7 @@ select decade as stratum_1,temp_cnt as statistic_value,
 from
    (select left(stratum_1,3) as decade,sum(count_value) as temp_cnt from  @results_database_schema.achilles_results where analysis_id = 504  group by left(stratum_1,3)
    )a
-where temp_cnt >= @derivedDataSmPtCount;
+where temp_cnt >= 11;
 
 
 
@@ -261,7 +253,7 @@ select stratum_1,temp_cnt as statistic_value,
 from
    (select stratum_1,sum(count_value) as temp_cnt from  @results_database_schema.achilles_results where analysis_id = 504  group by stratum_1
    )a
-where temp_cnt >= @derivedDataSmPtCount;
+where temp_cnt >= 11;
 
 
 
@@ -278,7 +270,7 @@ from
 inner join 
 (select   stratum_4, sum(count_value) as population_size  from @results_database_schema.achilles_results where analysis_id = 204 group by   stratum_4) b
 on  a.stratum_4=b.stratum_4
-where a.person_cnt >= @derivedDataSmPtCount;
+where a.person_cnt >= 11;
 
 
 --size of Achilles Metadata
@@ -1087,6 +1079,8 @@ drop table #tempResults;
 
 --end of rule 28
 
+--}
+
 --rule29 DQ rule
 --unusual diagnosis present, this rule is terminology dependend
 
@@ -1116,6 +1110,7 @@ truncate table #tempResults;
 drop table #tempResults;
 --end of rule29
 
+--}
 
 --rule30 CDM-conformance rule: is CDM metadata table created at all?
   --create a derived measure for rule30
@@ -1232,14 +1227,14 @@ INSERT INTO @results_database_schema.ACHILLES_HEEL_results (
 	record_count
 	)
 SELECT or1.analysis_id,
-	'WARNING: ' + cast(or1.analysis_id as VARCHAR) + '-' + oa1.analysis_name + '; should not have age > @ThresholdAgeWarning, (n=' + cast(sum(or1.count_value) as VARCHAR) + ')' AS ACHILLES_HEEL_warning,
+	'WARNING: ' + cast(or1.analysis_id as VARCHAR) + '-' + oa1.analysis_name + '; should not have age > 125, (n=' + cast(sum(or1.count_value) as VARCHAR) + ')' AS ACHILLES_HEEL_warning,
   36 as rule_id,
   sum(or1.count_value) as record_count
 FROM @results_database_schema.ACHILLES_results or1
 INNER JOIN @results_database_schema.ACHILLES_analysis oa1
 	ON or1.analysis_id = oa1.analysis_id
 WHERE or1.analysis_id IN (101)
-	AND CAST(or1.stratum_1 AS INT) > @ThresholdAgeWarning
+	AND CAST(or1.stratum_1 AS INT) > 125
 	AND or1.count_value > 0
 GROUP BY or1.analysis_id,
   oa1.analysis_name;
