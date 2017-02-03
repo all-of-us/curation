@@ -1,4 +1,4 @@
-﻿"table_name","column_name","is_nullable","data_type","description"
+"table_name","column_name","is_nullable","data_type","description"
 "location","location_id","no","integer","A unique identifier for each geographic location."
 "location","address_1","yes","character varying","The address field 1, typically used for the street address, as it appears in the source data."
 "location","address_2","yes","character varying","The address field 2, typically used for additional detail such as buildings, suites, floors, as it appears in the source data."
