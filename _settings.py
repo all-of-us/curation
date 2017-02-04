@@ -10,5 +10,6 @@ csv_dir = 'path/to/csv_files'
 sprint_num = 0
 
 # Submissions and logs stored here
+# Note: Connecting to MSSQL from *nix may require FreeTDS configuration (see https://goo.gl/qKhusY)
 # For more examples and requirements see http://docs.sqlalchemy.org/en/latest/core/engines.html
 conn_str = 'mssql+pymssql://localhost/pmi_sprint_1'
