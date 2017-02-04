@@ -3,7 +3,6 @@ Module to run abbreviated version of OHDSI Achilles
 """
 
 import os
-from sqlalchemy import text
 
 from run_config import hpo_ids, multi_schema_supported, engine
 import resources
