@@ -3,10 +3,12 @@ Module contains runtime configuration variables
 """
 
 import pandas
+from sqlalchemy import DateTime
 from sqlalchemy import create_engine
 
 import resources
 import settings
+from sqlalchemy.dialects.mssql import DATETIME2
 
 engine = create_engine(settings.conn_str)
 
@@ -24,3 +26,4 @@ if len(hpo_ids) > 1 and not multi_schema_supported:
     raise Exception('Cannot process. Multiple schemas not supported by configured engine.')
 
 use_multi_schemas = multi_schema_supported and len(hpo_ids) > 1
+datetime_tpe = DATETIME2 if 'mssql' in settings.conn_str else DateTime(True)
