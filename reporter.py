@@ -1,9 +1,11 @@
+import json
 import os
 
 import datetime
 import pandas
 import glob
 
+from sqlalchemy import Boolean
 from sqlalchemy import Date, DateTime, Float, BigInteger, String
 from sqlalchemy import Table, Column
 from sqlalchemy import MetaData
@@ -73,9 +75,11 @@ def create_tables(schema):
     Table(LOG_TABLE_NAME,
           metadata,
           Column('log_id', DateTime, nullable=False),
-          Column('message', String(500), nullable=False),
+          Column('table_name', String(100), nullable=False),
+          Column('phase', String(200), nullable=False),
+          Column('success', Boolean(), nullable=False),
+          Column('message', String(500), nullable=True),
           Column('params', String(800), nullable=True),
-          Column('filename', String(100)),
           schema=schema)
 
     metadata.create_all(engine)
@@ -123,10 +127,29 @@ def process(hpo_id, schema):
 
         csv_filename = '%(hpo_id)s_%(table_name)s_datasprint_%(sprint_num)s.csv' % locals()
         csv_path = os.path.join(settings.csv_dir, csv_filename)
+        phase = 'Received CSV file "%s"' % csv_filename
+
+        # not sure if phase eval dynamic
+        def success():
+            engine.execute(log_table.insert(),
+                           log_id=datetime.datetime.utcnow(),
+                           table_name=table_name,
+                           phase=phase,
+                           success=True)
+
+        def fail(message, params=None):
+            engine.execute(log_table.insert(),
+                           log_id=datetime.datetime.utcnow(),
+                           table_name=table_name,
+                           phase=phase,
+                           success=False,
+                           message=message,
+                           params=params or None)
 
         try:
             if csv_filename not in file_map:
                 raise Exception('File not found')
+            success()
 
             csv_path = file_map[csv_filename]
 
@@ -134,8 +157,12 @@ def process(hpo_id, schema):
             column_names = table_df.column_name.unique()
 
             with open(csv_path) as f:
+                phase = 'Parsing CSV file'
+                df = pandas.read_csv(f, na_values=['', ' ', '.'])
+                success()
+
                 # lowercase field names
-                df = pandas.read_csv(f, na_values=['', ' ', '.']).rename(columns=str.lower)
+                df = df.rename(columns=str.lower)
 
                 # add missing columns (with NaN values)
                 df = df.reindex(columns=column_names)
@@ -145,21 +172,37 @@ def process(hpo_id, schema):
                 df[concept_columns] = df[concept_columns].fillna(value=0)
 
                 # insert one at a time for more informative logs e.g. bulk insert via df.to_sql may obscure error
+                phase = 'Loading file into table'
                 df.to_sql(name=table_name, con=conn, if_exists='append', index=False, schema=schema, chunksize=1)
-
+                success()
         except StatementError, e:
-            print e.message
-            engine.execute(log_table.insert(),
-                           log_id=datetime.datetime.utcnow(),
-                           filename=csv_filename,
-                           message=e.message,
-                           params=str(e.params))
+            fail(e.message, str(e.params))
         except Exception, e:
-            print e.message
-            engine.execute(log_table.insert(),
-                           log_id=datetime.datetime.utcnow(),
-                           filename=csv_filename,
-                           message=e.message)
+            fail(e.message)
+
+
+def export_log():
+    """
+    Dumps all logs for all HPOs to `_data/log.json`
+
+    Note: params column is excluded for the unlikely case it may contain sensitive data
+    """
+    all_log_items = []
+
+    for hpo_id in hpo_ids:
+        schema = hpo_id if use_multi_schemas else None
+        metadata = MetaData(bind=engine, reflect=True, schema=schema)
+        log_table = Table(LOG_TABLE_NAME, metadata, autoload=True)
+        for row in engine.execute(log_table.select()):
+            row_dict = dict(zip(row.keys(), row))
+            del row_dict['params']
+            row_dict['hpo_id'] = hpo_id
+            row_dict['log_id'] = str(row_dict['log_id'])  # for json serialize
+            all_log_items.append(row_dict)
+
+    log_path = os.path.join(resources.data_path, 'log.json')
+    with open(log_path, 'w') as log_file:
+        log_file.write(json.dumps(all_log_items))
 
 
 def main():
@@ -170,7 +213,7 @@ def main():
             create_schema(schema)
         drop_tables(schema=schema)
         create_tables(schema=schema)
-        process(hpo_id, schema=schema)
+        process(hpo_id, schema)
 
 
 if __name__ == '__main__':
