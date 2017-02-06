@@ -242,8 +242,7 @@ select decade as stratum_1,temp_cnt as statistic_value,
 'Death:byDecade:SafePatientCnt' as measure_id
 from
    (select left(stratum_1,3) as decade,sum(count_value) as temp_cnt from  @results_database_schema.achilles_results where analysis_id = 504  group by left(stratum_1,3)
-   )a
-where temp_cnt >= 11;
+   )a;
 
 
 
@@ -252,8 +251,7 @@ select stratum_1,temp_cnt as statistic_value,
 'Death:byYear:SafePatientCnt' as measure_id
 from
    (select stratum_1,sum(count_value) as temp_cnt from  @results_database_schema.achilles_results where analysis_id = 504  group by stratum_1
-   )a
-where temp_cnt >= 11;
+   )a;
 
 
 
@@ -269,8 +267,7 @@ from
 (select stratum_1,  stratum_4, sum(count_value) as person_cnt  from @results_database_schema.achilles_results where analysis_id = 204 group by stratum_1,  stratum_4) a
 inner join 
 (select   stratum_4, sum(count_value) as population_size  from @results_database_schema.achilles_results where analysis_id = 204 group by   stratum_4) b
-on  a.stratum_4=b.stratum_4
-where a.person_cnt >= 11;
+on  a.stratum_4=b.stratum_4;
 
 
 --size of Achilles Metadata

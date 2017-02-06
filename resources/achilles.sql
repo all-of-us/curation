@@ -5897,6 +5897,6 @@ group by m.note_type_CONCEPT_ID
 
 
 --final processing of results
-delete from @results_database_schema.ACHILLES_results where count_value <= 5;
-delete from @results_database_schema.ACHILLES_results_dist where count_value <= 5;
+delete from @results_database_schema.ACHILLES_results where count_value < 1;
+delete from @results_database_schema.ACHILLES_results_dist where count_value < 1;
 
