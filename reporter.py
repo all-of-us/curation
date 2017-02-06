@@ -115,9 +115,6 @@ def process(hpo_id, schema):
     file_map_items = map(path_to_file_map_item, glob.glob(os.path.join(settings.csv_dir, '*.csv')))
     file_map = dict(file_map_items)
 
-    # used to insert records from data frame
-    conn = engine.connect()
-
     for table_name, table_df in tables:
         cdm_table = table_map[table_name]
 
@@ -145,7 +142,7 @@ def process(hpo_id, schema):
                 df[concept_columns] = df[concept_columns].fillna(value=0)
 
                 # insert one at a time for more informative logs e.g. bulk insert via df.to_sql may obscure error
-                df.to_sql(name=table_name, con=conn, if_exists='append', index=False, schema=schema, chunksize=1)
+                df.to_sql(name=table_name, con=engine, if_exists='append', index=False, schema=schema, chunksize=1)
 
         except StatementError, e:
             print e.message
