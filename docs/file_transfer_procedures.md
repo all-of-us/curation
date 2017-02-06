@@ -1,3 +1,7 @@
+---
+layout: default
+---
+
 # File Transfer Procedures
 
 This section will cover the file naming convention as well as the method of transmission for this data sprint. Each of the above tables will be exported to separate CSV file. The proposed naming convention will be:
