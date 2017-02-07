@@ -2,7 +2,7 @@ import json
 import os
 
 import datetime
-import pandas
+import pandas as pd
 import glob
 
 from sqlalchemy import Boolean
@@ -38,7 +38,7 @@ def drop_tables(schema):
     :return:
     """
     metadata = MetaData(bind=engine, reflect=True, schema=schema)
-    pmi_tables = pandas.read_csv(resources.pmi_tables_csv_path).table_name.unique()
+    pmi_tables = pd.read_csv(resources.pmi_tables_csv_path).table_name.unique()
     tables_to_drop = filter(lambda t: t.name in pmi_tables or t.name == LOG_TABLE_NAME, metadata.sorted_tables)
     metadata.drop_all(tables=tables_to_drop)
 
@@ -50,7 +50,7 @@ def create_tables(schema):
     :return:
     """
     metadata = MetaData()
-    cdm_df = pandas.read_csv(resources.cdm_csv_path)
+    cdm_df = pd.read_csv(resources.cdm_csv_path)
     tables = cdm_df.groupby(['table_name'])
 
     for table_name, table_df in tables:
@@ -74,6 +74,7 @@ def create_tables(schema):
 
     Table(LOG_TABLE_NAME,
           metadata,
+          Column('hpo_id', String(100), nullable=False),
           Column('log_id', DateTime, nullable=False),
           Column('table_name', String(100), nullable=False),
           Column('phase', String(200), nullable=False),
@@ -106,8 +107,8 @@ def process(hpo_id, schema):
     log_table = table_map[LOG_TABLE_NAME]
 
     sprint_num = settings.sprint_num
-    cdm_df = pandas.read_csv(resources.cdm_csv_path)
-    included_tables = pandas.read_csv(resources.pmi_tables_csv_path).table_name.unique()
+    cdm_df = pd.read_csv(resources.cdm_csv_path)
+    included_tables = pd.read_csv(resources.pmi_tables_csv_path).table_name.unique()
     tables = cdm_df[cdm_df['table_name'].isin(included_tables)].groupby(['table_name'])
 
     # allow files to be found regardless of CaSe
@@ -129,6 +130,7 @@ def process(hpo_id, schema):
         # not sure if phase eval dynamic
         def success():
             engine.execute(log_table.insert(),
+                           hpo_id=schema,
                            log_id=datetime.datetime.utcnow(),
                            table_name=table_name,
                            phase=phase,
@@ -136,6 +138,7 @@ def process(hpo_id, schema):
 
         def fail(message, params=None):
             engine.execute(log_table.insert(),
+                           hpo_id=schema,
                            log_id=datetime.datetime.utcnow(),
                            table_name=table_name,
                            phase=phase,
@@ -155,7 +158,7 @@ def process(hpo_id, schema):
 
             with open(csv_path) as f:
                 phase = 'Parsing CSV file'
-                df = pandas.read_csv(f, na_values=['', ' ', '.'])
+                df = pd.read_csv(f, na_values=['', ' ', '.'])
                 success()
 
                 # lowercase field names
@@ -185,17 +188,37 @@ def export_log():
     Note: params column is excluded for the unlikely case it may contain sensitive data
     """
     all_log_items = []
+    results = {}
 
     for hpo_id in hpo_ids:
         schema = hpo_id if use_multi_schemas else None
         metadata = MetaData(bind=engine, reflect=True, schema=schema)
         log_table = Table(LOG_TABLE_NAME, metadata, autoload=True)
+        results[hpo_id] = {}
         for row in engine.execute(log_table.select()):
             row_dict = dict(zip(row.keys(), row))
             del row_dict['params']
-            row_dict['hpo_id'] = hpo_id
-            row_dict['log_id'] = str(row_dict['log_id'])  # for json serialize
-            all_log_items.append(row_dict)
+            if results[hpo_id].get(row_dict['table_name'], None) is None:
+                results[hpo_id][row_dict['table_name']]={}
+            if "Received" in row_dict['phase']:
+                results[hpo_id][row_dict['table_name']]['filename'] = row_dict['phase'][row_dict['phase'].find('"'):].replace('"','')
+                results[hpo_id][row_dict['table_name']]['received'] = row_dict['success']
+            elif "Parsing" in row_dict['phase']:
+                results[hpo_id][row_dict['table_name']]['parsing'] = row_dict['success']
+            elif "Loading" in row_dict['phase']:
+                results[hpo_id][row_dict['table_name']]['loading'] = row_dict['success']
+
+            results[hpo_id][row_dict['table_name']]['log_id'] = str(row_dict['log_id'])  # for json serialize
+
+        for hpo_id in results.keys():
+            for table_name in results[hpo_id].keys():
+                all_log_items.append({'log_id':results[hpo_id][table_name]['log_id'], \
+                                      'hpo_id':hpo_id, 'table_name':table_name, \
+                                      'file_name':results[hpo_id][table_name]['filename'], \
+                                      'received':results[hpo_id][table_name]['received'], \
+                                      'parsing':results[hpo_id][table_name]['parsing'], \
+                                      'loading':results[hpo_id][table_name]['loading'], \
+                                      })
 
     log_path = os.path.join(resources.data_path, 'log.json')
     with open(log_path, 'w') as log_file:
@@ -211,6 +234,8 @@ def main():
         drop_tables(schema=schema)
         create_tables(schema=schema)
         process(hpo_id, schema)
+
+    export_log()
 
 
 if __name__ == '__main__':
