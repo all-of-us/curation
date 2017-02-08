@@ -77,6 +77,7 @@ def create_tables(schema):
           Column('hpo_id', String(100), nullable=False),
           Column('log_id', DateTime, nullable=False),
           Column('table_name', String(100), nullable=False),
+          Column('file_name', String(200), nullable=False),
           Column('phase', String(200), nullable=False),
           Column('success', Boolean(), nullable=False),
           Column('message', String(500), nullable=True),
@@ -133,6 +134,7 @@ def process(hpo_id, schema):
                            hpo_id=schema,
                            log_id=datetime.datetime.utcnow(),
                            table_name=table_name,
+                           file_name=csv_filename,
                            phase=phase,
                            success=True)
 
@@ -141,6 +143,7 @@ def process(hpo_id, schema):
                            hpo_id=schema,
                            log_id=datetime.datetime.utcnow(),
                            table_name=table_name,
+                           file_name=csv_filename,
                            phase=phase,
                            success=False,
                            message=message,
@@ -200,8 +203,10 @@ def export_log():
             del row_dict['params']
             if results[hpo_id].get(row_dict['table_name'], None) is None:
                 results[hpo_id][row_dict['table_name']]={}
+
+            results[hpo_id][row_dict['table_name']]['filename'] = row_dict['file_name']
+
             if "Received" in row_dict['phase']:
-                results[hpo_id][row_dict['table_name']]['filename'] = row_dict['phase'][row_dict['phase'].find('"'):].replace('"','')
                 results[hpo_id][row_dict['table_name']]['received'] = row_dict['success']
             elif "Parsing" in row_dict['phase']:
                 results[hpo_id][row_dict['table_name']]['parsing'] = row_dict['success']
@@ -215,9 +220,9 @@ def export_log():
                 all_log_items.append({'log_id':results[hpo_id][table_name]['log_id'], \
                                       'hpo_id':hpo_id, 'table_name':table_name, \
                                       'file_name':results[hpo_id][table_name]['filename'], \
-                                      'received':results[hpo_id][table_name]['received'], \
-                                      'parsing':results[hpo_id][table_name]['parsing'], \
-                                      'loading':results[hpo_id][table_name]['loading'], \
+                                      'received':results[hpo_id][table_name].get('received', 0), \
+                                      'parsing':results[hpo_id][table_name].get('parsing', 0), \
+                                      'loading':results[hpo_id][table_name].get('loading'), \
                                       })
 
     log_path = os.path.join(resources.data_path, 'log.json')
