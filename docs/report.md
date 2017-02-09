@@ -4,10 +4,9 @@
   <th>hpo_id</th>
   <th>table</th>
   <th>filename</th>
-  <th>File Recieved</th>
-  <th>Parsed File</th>
-  <th>Loaded Data</th>
-  <th></th>
+  <th title="A file with the given name was received via file transfer">received</th>
+  <th title="The file was parsed successfully as a CSV file">parsed</th>
+  <th title="All rows in the file had the minimum required fields and fields were of the correct type">loaded</th>
 </tr>
 </thead>
 <tbody>
@@ -20,7 +19,6 @@
   <td>{% if log.received %} &#10004; {% endif %}</td>
   <td>{% if log.parsing %} &#10004; {% endif %}</td>
   <td>{% if log.loading %} &#10004; {% endif %}</td>
-  <td>{% if log.success %} &#10004; {% endif %}</td>
 </tr>
 {% endfor %}
 </tbody>
