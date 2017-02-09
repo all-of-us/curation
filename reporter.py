@@ -220,9 +220,9 @@ def export_log():
                 all_log_items.append({'log_id':results[hpo_id][table_name]['log_id'], \
                                       'hpo_id':hpo_id, 'table_name':table_name, \
                                       'file_name':results[hpo_id][table_name]['filename'], \
-                                      'received':results[hpo_id][table_name].get('received', 0), \
-                                      'parsing':results[hpo_id][table_name].get('parsing', 0), \
-                                      'loading':results[hpo_id][table_name].get('loading'), \
+                                      'received':results[hpo_id][table_name].get('received', False), \
+                                      'parsing':results[hpo_id][table_name].get('parsing', False), \
+                                      'loading':results[hpo_id][table_name].get('loading', False), \
                                       })
 
     log_path = os.path.join(resources.data_path, 'log.json')
