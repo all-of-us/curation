@@ -217,13 +217,13 @@ def export_log():
 
     for hpo_id in results.keys():
         for table_name in results[hpo_id].keys():
-            all_log_items.append({'log_id':results[hpo_id][table_name]['log_id'], \
-                                  'hpo_id':hpo_id, 'table_name':table_name, \
-                                  'file_name':results[hpo_id][table_name]['filename'], \
-                                  'received':results[hpo_id][table_name].get('received', False), \
-                                  'parsing':results[hpo_id][table_name].get('parsing', False), \
-                                  'loading':results[hpo_id][table_name].get('loading', False), \
-                                  })
+            all_log_items.append({'log_id': results[hpo_id][table_name]['log_id'],
+                                  'hpo_id': hpo_id,
+                                  'table_name': table_name,
+                                  'file_name': results[hpo_id][table_name]['filename'],
+                                  'received': results[hpo_id][table_name].get('received', False),
+                                  'parsing': results[hpo_id][table_name].get('parsing', False),
+                                  'loading': results[hpo_id][table_name].get('loading', False)})
 
     log_path = os.path.join(resources.data_path, 'log.json')
     with open(log_path, 'w') as log_file:
