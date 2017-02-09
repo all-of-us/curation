@@ -131,7 +131,7 @@ def process(hpo_id, schema):
         # not sure if phase eval dynamic
         def success():
             engine.execute(log_table.insert(),
-                           hpo_id=schema,
+                           hpo_id=hpo_id,
                            log_id=datetime.datetime.utcnow(),
                            table_name=table_name,
                            file_name=csv_filename,
@@ -140,7 +140,7 @@ def process(hpo_id, schema):
 
         def fail(message, params=None):
             engine.execute(log_table.insert(),
-                           hpo_id=schema,
+                           hpo_id=hpo_id,
                            log_id=datetime.datetime.utcnow(),
                            table_name=table_name,
                            file_name=csv_filename,
@@ -215,15 +215,15 @@ def export_log():
 
             results[hpo_id][row_dict['table_name']]['log_id'] = str(row_dict['log_id'])  # for json serialize
 
-        for hpo_id in results.keys():
-            for table_name in results[hpo_id].keys():
-                all_log_items.append({'log_id':results[hpo_id][table_name]['log_id'], \
-                                      'hpo_id':hpo_id, 'table_name':table_name, \
-                                      'file_name':results[hpo_id][table_name]['filename'], \
-                                      'received':results[hpo_id][table_name].get('received', False), \
-                                      'parsing':results[hpo_id][table_name].get('parsing', False), \
-                                      'loading':results[hpo_id][table_name].get('loading', False), \
-                                      })
+    for hpo_id in results.keys():
+        for table_name in results[hpo_id].keys():
+            all_log_items.append({'log_id':results[hpo_id][table_name]['log_id'], \
+                                  'hpo_id':hpo_id, 'table_name':table_name, \
+                                  'file_name':results[hpo_id][table_name]['filename'], \
+                                  'received':results[hpo_id][table_name].get('received', False), \
+                                  'parsing':results[hpo_id][table_name].get('parsing', False), \
+                                  'loading':results[hpo_id][table_name].get('loading', False), \
+                                  })
 
     log_path = os.path.join(resources.data_path, 'log.json')
     with open(log_path, 'w') as log_file:
