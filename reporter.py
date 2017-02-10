@@ -197,33 +197,43 @@ def export_log():
         schema = hpo_id if use_multi_schemas else None
         metadata = MetaData(bind=engine, reflect=True, schema=schema)
         log_table = Table(LOG_TABLE_NAME, metadata, autoload=True)
-        results[hpo_id] = {}
+        hpo_results = {}
         for row in engine.execute(log_table.select()):
             row_dict = dict(zip(row.keys(), row))
-            del row_dict['params']
-            if results[hpo_id].get(row_dict['table_name'], None) is None:
-                results[hpo_id][row_dict['table_name']]={}
+            table_name = row_dict['table_name']
+            if table_name not in hpo_results:
+                hpo_results[table_name] = {'received': False, 'parsing': False, 'loading': False, 'message': None}
 
-            results[hpo_id][row_dict['table_name']]['filename'] = row_dict['file_name']
+            table_results = hpo_results[table_name]
+            table_results['file_name'] = row_dict['file_name']
 
-            if "Received" in row_dict['phase']:
-                results[hpo_id][row_dict['table_name']]['received'] = row_dict['success']
-            elif "Parsing" in row_dict['phase']:
-                results[hpo_id][row_dict['table_name']]['parsing'] = row_dict['success']
-            elif "Loading" in row_dict['phase']:
-                results[hpo_id][row_dict['table_name']]['loading'] = row_dict['success']
+            phase = row_dict['phase'].lower()
+            if 'received' in phase:
+                table_results['received'] = row_dict['success']
+            elif 'parsing' in phase:
+                table_results['parsing'] = row_dict['success']
+            elif 'loading' in phase:
+                table_results['loading'] = row_dict['success']
 
-            results[hpo_id][row_dict['table_name']]['log_id'] = str(row_dict['log_id'])  # for json serialize
+            table_results['log_id'] = str(row_dict['log_id'])  # for json serialize
 
-    for hpo_id in results.keys():
-        for table_name in results[hpo_id].keys():
-            all_log_items.append({'log_id': results[hpo_id][table_name]['log_id'],
+            # save error details
+            message = row_dict['message']
+            if message is not None:
+                table_results['message'] = message
+
+        results[hpo_id] = hpo_results
+
+    for hpo_id, hpo_results in results.items():
+        for table_name, table_results in hpo_results.items():
+            all_log_items.append({'log_id': table_results['log_id'],
                                   'hpo_id': hpo_id,
                                   'table_name': table_name,
-                                  'file_name': results[hpo_id][table_name]['filename'],
-                                  'received': results[hpo_id][table_name].get('received', False),
-                                  'parsing': results[hpo_id][table_name].get('parsing', False),
-                                  'loading': results[hpo_id][table_name].get('loading', False)})
+                                  'file_name': table_results['file_name'],
+                                  'received': table_results['received'],
+                                  'parsing': table_results['parsing'],
+                                  'loading': table_results['loading'],
+                                  'message': table_results['message']})
 
     log_path = os.path.join(resources.data_path, 'log.json')
     with open(log_path, 'w') as log_file:
@@ -244,4 +254,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    export_log()

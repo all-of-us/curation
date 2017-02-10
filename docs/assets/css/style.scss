@@ -6,3 +6,18 @@
 section {
   min-width: 860px;
 }
+
+.tooltip {
+  display:none;
+  position:absolute;
+  border:1px solid #333;
+  background-color:#161616;
+  border-radius:5px;
+  padding:10px;
+  color:#fff;
+  max-width: 300px;
+}
+
+table.log-table tr:hover {
+  background: #efefef;
+}
