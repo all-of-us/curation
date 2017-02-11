@@ -159,9 +159,11 @@ def process(hpo_id, schema):
             # get column names for this table
             column_names = table_df.column_name.unique()
 
+            datetime_columns = filter(lambda x: 'date' in x, column_names)
+
             with open(csv_path) as f:
                 phase = 'Parsing CSV file'
-                df = pd.read_csv(f, na_values=['', ' ', '.'])
+                df = pd.read_csv(f, na_values=['', ' ', '.'], parse_dates=datetime_columns, infer_datetime_format=True)
                 success()
 
                 # lowercase field names
