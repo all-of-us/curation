@@ -1,3 +1,5 @@
 sqlalchemy
 pandas
 pymssql
+# or another database-specific module
+# cx_Oracle
