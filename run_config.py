@@ -26,7 +26,7 @@ else:
 if len(hpo_ids) > 1 and not multi_schema_supported:
     raise Exception('Cannot process. Multiple schemas not supported by configured engine.')
 
-use_multi_schemas = multi_schema_supported and len(hpo_ids) > 1
+use_multi_schemas = multi_schema_supported and (len(hpo_ids) > 1 or settings.force_multi_schema)
 datetime_tpe = DATETIME2 if 'mssql' in settings.conn_str else DateTime(True)
 cdm_dialect = None
 if 'mssql' in settings.conn_str:

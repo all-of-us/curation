@@ -23,3 +23,5 @@ webapi_conn_str = 'mssql+pymssql://localhost/webapi'
 # JDBC URL for database where submissions should be stored
 # This is usually the same database as conn_str
 cdm_jdbc_conn_str = 'jdbc:sqlserver://localhost;databaseName=pmi_sprint_2;integratedSecurity=true'
+
+force_multi_schema = False
