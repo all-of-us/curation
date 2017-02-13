@@ -25,3 +25,6 @@ webapi_conn_str = 'mssql+pymssql://localhost/webapi'
 cdm_jdbc_conn_str = 'jdbc:sqlserver://localhost;databaseName=pmi_sprint_2;integratedSecurity=true'
 
 force_multi_schema = False
+
+# secure file transfer account
+accellion = dict(username='email', password='pass')
