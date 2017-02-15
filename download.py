@@ -1,94 +1,74 @@
-import requests
-import xmltodict
 from sqlalchemy import BigInteger, String, Column, MetaData, Table
-from run_config import engine
+from sqlalchemy import func
+from sqlalchemy import select
+import os
 
+from run_config import engine, permitted_file_names
+import file_transfer
 import settings
 
-TRANSFER_API_URL_FMT = 'https://transfer.nyp.org/seos/1000/%s.api'
-TRANSFER_LOGIN_URL = TRANSFER_API_URL_FMT % 'login'
-TRANSFER_FIND_URL = TRANSFER_API_URL_FMT % 'find'
+metadata = MetaData()
+table = Table('pmi_sprint_download',
+              metadata,
+              Column('sender_name', String(200), nullable=False),
+              Column('sent_time', BigInteger, nullable=False),
+              Column('file_handle', String(500), nullable=False),
+              Column('file_name', String(200), nullable=False),
+              Column('file_size', BigInteger, nullable=False),
+              Column('url', String(500), nullable=False),
+              Column('message', String(500), nullable=True))
 
 
-def get_tokens():
+def update_table():
     """
-    Logs into Accellion and retrieves API tokens
+    Log newly submitted files
     :return:
     """
-    data = {'auth_type': 'pwd',
-            'uid': settings.accellion['username'],
-            'pwd': settings.accellion['password'],
-            'api_token': 1,
-            'output': 'json'}
-    response = requests.post(TRANSFER_LOGIN_URL, data=data)
-    return response.json()
-
-
-def parse_struct(d):
-    if type(d) is list:
-        result = []
-        for item in d:
-            result.append(parse_struct(item))
-        return result
-    else:
-        result = dict()
-        for item in d['var']:
-            key = item['@name']
-            result[key] = parse_value(item)
-        return result
-
-
-def parse_value(d):
-    if 'string' in d:
-        return d['string']
-    if 'null' in d:
-        return None
-    if 'array' in d:
-        array = d['array']
-        if array['@length'] in ['0', '1']:
-            return [parse_value(array)]
-        else:
-            return parse_value(array)
-    if 'struct' in d:
-        return parse_struct(d['struct'])
-
-
-def list_files():
-    metadata = MetaData()
-    table = Table('pmi_sprint_download',
-                  metadata,
-                  Column('sender_name', String(200), nullable=False),
-                  Column('sent_time', BigInteger, nullable=False),
-                  Column('file_handle', String(500), nullable=False),
-                  Column('file_name', String(200), nullable=False),
-                  Column('file_size', BigInteger, nullable=False),
-                  Column('url', String(500), nullable=False))
     metadata.create_all(engine)
-    tokens = get_tokens()
-    data = dict(token=tokens['inbox_token'])
-    inbox_response = requests.post(TRANSFER_FIND_URL, data=data)
-    inbox_dict = xmltodict.parse(inbox_response.content)
-    payload = parse_struct(inbox_dict['wddxPacket']['data']['struct'])
+    payload = file_transfer.inbox()
     for uid, package in payload['packages'].items():
         sender_name = package['sender_name']
         sent_time = int(package['sent_time'])
         for package_file in package['package_files']:
             file_handle = package_file['file_handle']
-            file_name = file_handle.split('/')[-1]
-            file_size = int(package_file['file_size'])
-            url = package_file['url']
             query = table.select().where(table.c.file_handle == file_handle)
             results = engine.execute(query).fetchall()
             if len(results) == 0:
-                # TODO download the file, store on queue
+                file_name = file_handle.split('/')[-1]
+                file_size = int(package_file['file_size'])
+                url = package_file['url']
+                message = package['mail_body'].strip() if 'mail_body' in package else None
                 engine.execute(table.insert(),
                                sender_name=sender_name,
-                               sent_time=int(sent_time),
+                               sent_time=sent_time,
                                file_handle=file_handle,
                                file_name=file_name,
-                               file_size=int(file_size),
-                               url=url)
+                               file_size=file_size,
+                               url=url,
+                               message=message)
+
+
+def download_latest():
+    """
+    Download and save the latest submission files possibly overwriting existing, presumably older files
+    :return:
+    """
+    q1 = select([table.c.file_name, func.max(table.c.sent_time)]).group_by('file_name')
+    latest_files = engine.execute(q1).fetchall()
+    permitted = list(permitted_file_names())
+    for f in latest_files:
+        selection = [table.c.sender_name, table.c.file_name, table.c.url]
+        q2 = select(selection).where(table.c.file_name == f['file_name'] and table.c.sent_time == f['sent_time'])
+        r = engine.execute(q2).fetchone()
+        file_name = r['file_name'].lower()
+        sender_name = r['sender_name']
+        if file_name not in permitted:
+            print 'Notify %(sender_name)s that "%(file_name)s" is not a valid file name' % locals()
+        # download either way just in case
+        dest = os.path.join(settings.csv_dir, file_name)
+        file_transfer.download(r['url'], dest)
 
 
 if __name__ == '__main__':
-    list_files()
+    update_table()
+    download_latest()
