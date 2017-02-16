@@ -12,11 +12,11 @@ table = Table('pmi_sprint_download',
               metadata,
               Column('sender_name', String(200), nullable=False),
               Column('sent_time', BigInteger, nullable=False),
-              Column('file_handle', String(500), nullable=False),
-              Column('file_name', String(200), nullable=False),
+              Column('file_handle', String(1000), nullable=False),
+              Column('file_name', String(500), nullable=False),
               Column('file_size', BigInteger, nullable=False),
-              Column('url', String(500), nullable=False),
-              Column('message', String(500), nullable=True))
+              Column('url', String(1000), nullable=False),
+              Column('message', String(1000), nullable=True))
 
 
 def update_table():
