@@ -158,8 +158,8 @@ def process(hpo_id, schema):
 
             # get column names for this table
             column_names = table_df.column_name.unique()
-
-            datetime_columns = filter(lambda x: 'date' in x, column_names)
+            csv_columns = list(pd.read_csv(csv_path, nrows=1).columns.values)
+            datetime_columns = filter(lambda x: 'date' in x.lower(), csv_columns)
 
             with open(csv_path) as f:
                 phase = 'Parsing CSV file'
