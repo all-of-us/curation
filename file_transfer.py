@@ -90,7 +90,7 @@ def download(url, dest):
     :return:
     """
     tokens = get_tokens()
-    cookie_value = 'user&%s&cs&$%s' % (settings.accellion['username'], tokens['inbox_cs'])
+    cookie_value = 'user&%s&cs&%s' % (settings.accellion['username'], tokens['inbox_cs'])
     r = requests.get(url, cookies=dict(a1000c1s1=cookie_value))
     bs = BytesIO(r.content)
     with open(dest, 'wb') as out:
