@@ -35,3 +35,13 @@ elif 'oracle' in settings.conn_str:
     cdm_dialect = 'oracle'
 elif 'postgres' in settings.conn_str:
     cdm_dialect = 'postgres'
+
+
+def permitted_file_names():
+    cdm_df = pandas.read_csv(resources.cdm_csv_path)
+    included_tables = pandas.read_csv(resources.pmi_tables_csv_path).table_name.unique()
+    tables = cdm_df[cdm_df['table_name'].isin(included_tables)].groupby(['table_name'])
+    sprint_num = settings.sprint_num
+    for hpo_id in all_hpo_ids:
+        for table_name, _ in tables:
+            yield '%(hpo_id)s_%(table_name)s_datasprint_%(sprint_num)s.csv' % locals()
