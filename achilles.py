@@ -6,6 +6,7 @@ import os
 
 from run_config import hpo_ids, multi_schema_supported, engine
 import resources
+import numpy
 
 achilles_sql_path = os.path.join(resources.resource_path, 'achilles.sql')
 achilles_heel_sql_path = os.path.join(resources.resource_path, 'achilles_heel.sql')
@@ -58,7 +59,11 @@ def run_achilles(hpo_id):
 
 
 def main():
-    for hpo_id in hpo_ids:
+    if len(hpo_ids) > 1:
+        all = numpy.append(hpo_ids,'aou') #add All of Us schema
+    else:
+        all = hpo_ids
+    for hpo_id in all:
         print 'Processing %s...' % hpo_id
         run_achilles(hpo_id)
 
