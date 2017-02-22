@@ -1,17 +1,18 @@
-from sqlalchemy import BigInteger, String, Column, MetaData, Table
-from sqlalchemy import func
-from sqlalchemy import select
+from sqlalchemy import BigInteger, String, Column, MetaData, Table, DateTime
+from sqlalchemy import select, func, and_
 import os
 
 from run_config import engine, permitted_file_names
 import file_transfer
 import settings
+from datetime import datetime, timedelta
 
 metadata = MetaData()
 table = Table('pmi_sprint_download',
               metadata,
               Column('sender_name', String(200), nullable=False),
-              Column('sent_time', BigInteger, nullable=False),
+              Column('sent_time_epoch', BigInteger, nullable=False),
+              Column('sent_datetime', DateTime, nullable=False),
               Column('file_handle', String(1000), nullable=False),
               Column('file_name', String(500), nullable=False),
               Column('file_size', BigInteger, nullable=False),
@@ -29,6 +30,8 @@ def update_table():
     for uid, package in payload['packages'].items():
         sender_name = package['sender_name']
         sent_time = int(package['sent_time'])
+        #subtract 5 hours to get eastern time
+        sent_datetime = datetime.utcfromtimestamp(int(package['sent_time'])) - timedelta(hours=5)
         for package_file in package['package_files']:
             file_handle = package_file['file_handle']
             query = table.select().where(table.c.file_handle == file_handle)
@@ -40,7 +43,8 @@ def update_table():
                 message = package['mail_body'].strip() if 'mail_body' in package else None
                 engine.execute(table.insert(),
                                sender_name=sender_name,
-                               sent_time=sent_time,
+                               sent_time_epoch=sent_time,
+                               sent_datetime=sent_datetime,
                                file_handle=file_handle,
                                file_name=file_name,
                                file_size=file_size,
@@ -53,12 +57,12 @@ def download_latest():
     Download and save the latest submission files possibly overwriting existing, presumably older files
     :return:
     """
-    q1 = select([table.c.file_name, func.max(table.c.sent_time)]).group_by('file_name')
+    q1 = select([table.c.file_name, func.max(table.c.sent_time_epoch).label('sent_time_max_epoch')]).group_by('file_name')
     latest_files = engine.execute(q1).fetchall()
     permitted = list(permitted_file_names())
     for f in latest_files:
         selection = [table.c.sender_name, table.c.file_name, table.c.url]
-        q2 = select(selection).where(table.c.file_name == f['file_name'] and table.c.sent_time == f['sent_time'])
+        q2 = select(selection).where(and_(table.c.file_name == f['file_name'] , table.c.sent_time_epoch == f['sent_time_max_epoch']))
         r = engine.execute(q2).fetchone()
         file_name = r['file_name'].lower()
         sender_name = r['sender_name']
