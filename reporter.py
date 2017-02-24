@@ -1,5 +1,6 @@
 import json
 import os
+import codecs
 
 import datetime
 import pandas as pd
@@ -86,6 +87,28 @@ def create_tables(schema):
 
     metadata.create_all(engine)
 
+#code from: http://stackoverflow.com/questions/2456380/utf-8-html-and-css-files-with-bom-and-how-to-remove-the-bom-with-python
+def remove_bom(filename):
+    if os.path.isfile(filename):
+        f = open(filename,'rb')
+
+        # read first 4 bytes
+        header = f.read(4)
+
+        # check for BOM
+        bom_len = 0
+        encodings = [ ( codecs.BOM_UTF32, 4 ),
+            ( codecs.BOM_UTF16, 2 ),
+            ( codecs.BOM_UTF8, 3 ) ]
+
+        # remove appropriate number of bytes
+        for h, l in encodings:
+            if header.startswith(h):
+                bom_len = l
+                break
+        f.seek(0)
+        f.read(bom_len)
+        return f
 
 def process(hpo_id, schema):
     """
@@ -158,28 +181,27 @@ def process(hpo_id, schema):
 
             # get column names for this table
             column_names = table_df.column_name.unique()
-            csv_columns = list(pd.read_csv(csv_path, nrows=1).columns.values)
+            csv_columns = list(pd.read_csv(remove_bom(csv_path), nrows=1).columns.values)
             datetime_columns = filter(lambda x: 'date' in x.lower(), csv_columns)
 
-            with open(csv_path) as f:
-                phase = 'Parsing CSV file'
-                df = pd.read_csv(f, na_values=['', ' ', '.'], parse_dates=datetime_columns, infer_datetime_format=True)
-                success()
+            phase = 'Parsing CSV file'
+            df = pd.read_csv(remove_bom(csv_path), na_values=['', ' ', '.'], parse_dates=datetime_columns, infer_datetime_format=True)
+            success()
 
-                # lowercase field names
-                df = df.rename(columns=str.lower)
+            # lowercase field names
+            df = df.rename(columns=str.lower)
 
-                # add missing columns (with NaN values)
-                df = df.reindex(columns=column_names)
+            # add missing columns (with NaN values)
+            df = df.reindex(columns=column_names)
 
-                # fill in blank concept_id columns with 0
-                concept_columns = filter(lambda x: x.endswith('concept_id') and 'source' not in x, column_names)
-                df[concept_columns] = df[concept_columns].fillna(value=0)
+            # fill in blank concept_id columns with 0
+            concept_columns = filter(lambda x: x.endswith('concept_id') and 'source' not in x, column_names)
+            df[concept_columns] = df[concept_columns].fillna(value=0)
 
-                # insert one at a time for more informative logs e.g. bulk insert via df.to_sql may obscure error
-                phase = 'Loading file into table'
-                df.to_sql(name=table_name, con=engine, if_exists='append', index=False, schema=schema, chunksize=1)
-                success()
+            # insert one at a time for more informative logs e.g. bulk insert via df.to_sql may obscure error
+            phase = 'Loading file into table'
+            df.to_sql(name=table_name, con=engine, if_exists='append', index=False, schema=schema, chunksize=1)
+            success()
         except StatementError, e:
             fail(e.message, str(e.params))
         except Exception, e:
