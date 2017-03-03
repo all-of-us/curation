@@ -82,7 +82,7 @@ def create_tables(schema):
           Column('phase', String(200), nullable=False),
           Column('success', Boolean(), nullable=False),
           Column('message', String(500), nullable=True),
-          Column('params', String(800), nullable=True),
+          Column('params', String(5000), nullable=True),
           schema=schema)
 
     metadata.create_all(engine)
