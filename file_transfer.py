@@ -82,19 +82,17 @@ def upload(filename, file_contents, recipients, mime_type='text/plain', subject=
     return response_details
 
 
-def download(url, dest):
+def download(url):
     """
     Download file from secure file transfer and save it to specified location
     :param url: url of file in secure file transfer
-    :param dest: path to save file to
-    :return:
+    :return: file contents as str
     """
     tokens = get_tokens()
     cookie_value = 'user&%s&cs&%s' % (settings.accellion['username'], tokens['inbox_cs'])
     r = requests.get(url, cookies=dict(a1000c1s1=cookie_value))
     bs = BytesIO(r.content)
-    with open(dest, 'wb') as out:
-        out.write(bs.read())
+    return bs.read()
 
 
 def inbox():
