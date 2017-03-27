@@ -70,7 +70,10 @@ def download_latest():
             print 'Notify %(sender_name)s that "%(file_name)s" is not a valid file name' % locals()
         # download either way just in case
         dest = os.path.join(settings.csv_dir, file_name)
-        file_transfer.download(r['url'], dest)
+        content = file_transfer.download(r['url'])
+        if 'MD5 token has expired' not in content:
+            with open(dest, 'wb') as out:
+                out.write(content)
 
 
 if __name__ == '__main__':
