@@ -3,6 +3,7 @@ import os
 import codecs
 
 import datetime
+import time
 import pandas as pd
 import glob
 
@@ -265,6 +266,15 @@ def export_log():
     log_path = os.path.join(resources.data_path, 'log.json')
     with open(log_path, 'w') as log_file:
         log_file.write(json.dumps(all_log_items))
+
+    write_report_info()
+
+
+def write_report_info():
+    report_info = {'last_run_seconds': int(time.time())}
+    report_info_path = os.path.join(resources.data_path, 'report_info.json')
+    with open(report_info_path, 'w') as report_info_file:
+        report_info_file.write(json.dumps(report_info))
 
 
 def main():
