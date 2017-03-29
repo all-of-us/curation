@@ -1,5 +1,5 @@
 {% assign last_updated = site.data.report_info.last_run_seconds | date: '%B %d, %Y %I:%M %p' %}
-<p><i>Last updated: {{ last_updated }}</i></p>
+<p><i>Last updated: {{ last_updated }}</i> (EDT)</p>
 <table class="log-table">
 <thead>
 <tr>
