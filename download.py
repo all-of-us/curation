@@ -30,7 +30,7 @@ def update_table():
     for uid, package in payload['packages'].items():
         sender_name = package['sender_name']
         sent_time = int(package['sent_time'])
-        #subtract 5 hours to get eastern time
+        # subtract 5 hours to get eastern time
         sent_datetime = datetime.utcfromtimestamp(int(package['sent_time'])) - timedelta(hours=5)
         for package_file in package['package_files']:
             file_handle = package_file['file_handle']
@@ -62,7 +62,8 @@ def download_latest():
     permitted = list(permitted_file_names())
     for f in latest_files:
         selection = [table.c.sender_name, table.c.file_name, table.c.url]
-        q2 = select(selection).where(and_(table.c.file_name == f['file_name'] , table.c.sent_time_epoch == f['sent_time_max_epoch']))
+        q2 = select(selection).where(
+            and_(table.c.file_name == f['file_name'], table.c.sent_time_epoch == f['sent_time_max_epoch']))
         r = engine.execute(q2).fetchone()
         file_name = r['file_name'].lower()
         sender_name = r['sender_name']

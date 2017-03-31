@@ -60,7 +60,7 @@ def run_achilles(hpo_id):
 
 def main():
     if len(hpo_ids) > 1:
-        all = numpy.append(hpo_ids,'aou') #add All of Us schema
+        all = numpy.append(hpo_ids, 'aou')  # add All of Us schema
     else:
         all = hpo_ids
     for hpo_id in all:

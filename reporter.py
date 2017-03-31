@@ -3,6 +3,7 @@ import os
 import codecs
 
 import datetime
+import time
 import pandas as pd
 import glob
 
@@ -87,19 +88,20 @@ def create_tables(schema):
 
     metadata.create_all(engine)
 
-#code from: http://stackoverflow.com/questions/2456380/utf-8-html-and-css-files-with-bom-and-how-to-remove-the-bom-with-python
+
+# code from: http://stackoverflow.com/questions/2456380/utf-8-html-and-css-files-with-bom-and-how-to-remove-the-bom-with-python
 def remove_bom(filename):
     if os.path.isfile(filename):
-        f = open(filename,'rb')
+        f = open(filename, 'rb')
 
         # read first 4 bytes
         header = f.read(4)
 
         # check for BOM
         bom_len = 0
-        encodings = [ ( codecs.BOM_UTF32, 4 ),
-            ( codecs.BOM_UTF16, 2 ),
-            ( codecs.BOM_UTF8, 3 ) ]
+        encodings = [(codecs.BOM_UTF32, 4),
+                     (codecs.BOM_UTF16, 2),
+                     (codecs.BOM_UTF8, 3)]
 
         # remove appropriate number of bytes
         for h, l in encodings:
@@ -109,6 +111,7 @@ def remove_bom(filename):
         f.seek(0)
         f.read(bom_len)
         return f
+
 
 def process(hpo_id, schema):
     """
@@ -185,7 +188,8 @@ def process(hpo_id, schema):
             datetime_columns = filter(lambda x: 'date' in x.lower(), csv_columns)
 
             phase = 'Parsing CSV file'
-            df = pd.read_csv(remove_bom(csv_path), na_values=['', ' ', '.'], parse_dates=datetime_columns, infer_datetime_format=True)
+            df = pd.read_csv(remove_bom(csv_path), na_values=['', ' ', '.'], parse_dates=datetime_columns,
+                             infer_datetime_format=True)
             success()
 
             # lowercase field names
@@ -262,6 +266,15 @@ def export_log():
     log_path = os.path.join(resources.data_path, 'log.json')
     with open(log_path, 'w') as log_file:
         log_file.write(json.dumps(all_log_items))
+
+    write_report_info()
+
+
+def write_report_info():
+    report_info = {'last_run_seconds': int(time.time())}
+    report_info_path = os.path.join(resources.data_path, 'report_info.json')
+    with open(report_info_path, 'w') as report_info_file:
+        report_info_file.write(json.dumps(report_info))
 
 
 def main():
