@@ -15,7 +15,7 @@ For this data sprint, the OMOP vocabulary will be required. A version of the voc
 
 | Field                          | Required For Export     | Type     | Description |
 | ------------------------------ | ----------------------- | -------- | ----------- |
-| person\_id                     | Yes                     | integer  | A unique identifier for each person. |
+| person\_id                     | Yes                     | integer  | A unique identifier for each person. Note: When the project is live the person id will be the PMID provided from the DRC. |
 | gender\_concept\_id            | Yes                     | integer  | Refer to [gender_concept_id.csv](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/person/gender_concept_id.csv) for the list of allowed concept_ids. |
 | year\_of\_birth                | Yes                     | integer  | The year of birth of the person. For data sources with date of birth, the year is extracted. For data sources where the year of birth is not available, the approximate year of birth is derived based on any age group categorization available. |
 | month\_of\_birth               | Yes                     | integer  | The month of birth of the person. For data sources that provide the precise date of birth, the month is extracted and stored in this field. |
