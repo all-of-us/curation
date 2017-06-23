@@ -1,0 +1,17 @@
+[
+    {
+        "type": "integer", 
+        "name": "concept_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "concept_synonym_name", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "language_concept_id", 
+        "mode": "required"
+    }
+]

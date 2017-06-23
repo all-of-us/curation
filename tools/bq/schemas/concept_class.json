@@ -1,0 +1,17 @@
+[
+    {
+        "type": "string", 
+        "name": "concept_class_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "concept_class_name", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "concept_class_concept_id", 
+        "mode": "required"
+    }
+]

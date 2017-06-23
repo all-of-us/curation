@@ -1,0 +1,32 @@
+[
+    {
+        "type": "integer", 
+        "name": "condition_era_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "person_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "condition_concept_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "condition_era_start_date", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "condition_era_end_date", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "condition_occurrence_count", 
+        "mode": "nullable"
+    }
+]

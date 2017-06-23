@@ -1,0 +1,47 @@
+[
+    {
+        "type": "integer", 
+        "name": "note_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "person_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "note_date", 
+        "mode": "required"
+    }, 
+    {
+        "type": "timestamp", 
+        "name": "note_datetime", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "note_type_concept_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "note_text", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "provider_id", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "visit_occurrence_id", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "note_source_value", 
+        "mode": "nullable"
+    }
+]
