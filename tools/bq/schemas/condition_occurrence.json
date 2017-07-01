@@ -22,7 +22,7 @@
     {
         "type": "timestamp", 
         "name": "condition_start_datetime", 
-        "mode": "required"
+        "mode": "nullable"
     }, 
     {
         "type": "date", 

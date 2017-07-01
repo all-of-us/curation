@@ -22,7 +22,7 @@
     {
         "type": "timestamp", 
         "name": "procedure_datetime", 
-        "mode": "required"
+        "mode": "nullable"
     }, 
     {
         "type": "integer", 
