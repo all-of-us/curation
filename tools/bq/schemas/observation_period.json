@@ -17,7 +17,7 @@
     {
         "type": "timestamp", 
         "name": "observation_period_start_datetime", 
-        "mode": "required"
+        "mode": "nullable"
     }, 
     {
         "type": "date", 
@@ -27,7 +27,7 @@
     {
         "type": "timestamp", 
         "name": "observation_period_end_datetime", 
-        "mode": "required"
+        "mode": "nullable"
     }, 
     {
         "type": "integer", 
