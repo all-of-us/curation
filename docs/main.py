@@ -23,53 +23,26 @@ from __future__ import absolute_import
 import os
 import uuid
 import sys
+from auther import auth
 
 
 import cloudstorage
 from google.appengine.api import app_identity
-
-# what is this hack? why can't google have simple examples doing all these
-# things. it's pretty standard
-#import google
-#google.__path__ = ['/home/apm470/src/bamboo-creek-172917/pmi-clone/docs/lib2/'] + google.__path__
-# print google.__path__
-
 from google.cloud import bigquery
+# from oauth2client.client import flow_from_client
+from google_auth_oauthlib import flow
+appflow = flow.InstalledAppFlow.from_client_secrets_file( 'client_secrets.json', scopes=['https://www.googleapis.com/auth/bigquery'])
 
 import webapp2
 
 # setting the environment variable and extra imports
 
-dev_flag = True
-source_filename = None
+dev_flag = True 
+source_filename = "tester.csv"
+real_bucket_name = "bamboo-creek-synpuf-100"
+gcs_path_prepend = os.path.dirname(os.path.realpath(__file__))
 
-if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
-    import subprocess
-    from optparse import OptionParser
-    parser.add_option("-f", "--file", dest="filename", 
-            help="to copy data for dev server", metavar="FILE")
-    #parser.add_option("-q", "--quiet",action="store_false", dest="verbose",
-    #        default=True, help="don't print status messages to stdout")
-    dev_flag = False
-
-    (options,args) = parser.parse_args()
-    source_filename = options.filename
-    print "GETS HERE",source_filename
-
-
-# copy a file to the local space for dev server
-
-if source_filename is not None:
-    bashCommand = "gsutil cp gs://bamboo-creek-synpuf-100/" + source_filename  + " ."
-    
-    process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-    output, error = process.communicate()
-
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    if not os.path.exists(dir_path + '/' + source_filename):
-        raise RuntimeError("source_file doesn't exist")
-
-    
+   
 # [END imports]
 
 
@@ -92,14 +65,16 @@ class bqFunctions:
     # for dev_appserver I guess.
     def load_data_from_file(self,source, dataset_name='dataset_name',
             table_name='table_name'):
-        bigquery_client = bigquery.Client()
+        # bigquery_client = bigquery.Client()
+        bigquery_client = bigquery.Client(project="bamboo-creek-172917",
+                credentials=appflow.credentialsa)
         dataset = bigquery_client.dataset(dataset_name)
         table = dataset.table(table_name)
 
         # Reload the table to get the schema.
-        table.reload()
+        # table.reload()
                         
-        with open(source_file_name, 'rb') as source_file:
+        with open(source, 'rb') as source_file:
             # This example uses CSV, but you can use other formats.
             job = table.upload_from_file( source_file, source_format='text/csv')
 
@@ -113,7 +88,9 @@ class bqFunctions:
     # [BEGIN load_data_from_gcs]
     def load_data_from_gcs(self,
             source,dataset_name='dataset_name',table_name='table_name'):
-        bigquery_client = bigquery.Client(project="bamboo-creek-172917")
+        #bigquery_client = bigquery.Client(project="bamboo-creek-172917")
+        bigquery_client = bigquery.Client(project="bamboo-creek-172917",
+                credentials=appflow.credentialsa)
         dataset = bigquery_client.dataset(dataset_name)
         table = dataset.table(table_name)
         job_name = str(uuid.uuid4())
@@ -127,6 +104,16 @@ class bqFunctions:
         return table
 
 
+bqf = bqFunctions()
+if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
+    # print "setting environment"
+    dev_flag = False
+    gcs_path_prepend = "gs://"
+    bqload = bqf.load_data_from_gcs
+else:
+    bqload = bqf.load_data_from_file
+ 
+
 
 class MainPage(webapp2.RequestHandler):
     """Main page for GCS demo application."""
@@ -135,6 +122,9 @@ class MainPage(webapp2.RequestHandler):
     def get(self):
         bucket_name = os.environ.get(
             'BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
+        
+        if real_bucket_name is not None:
+            bucket_name = real_bucket_name
 
         self.response.headers['Content-Type'] = 'text/plain'
         self.response.write(
@@ -149,7 +139,8 @@ class MainPage(webapp2.RequestHandler):
 
         self.create_file(filename)
         self.response.write('\n\n')
-        # self.load_data_from_gcs('gs:/' + filename)
+        table = bqload(gcs_path_prepend + filename)
+
 
 # [START write]
     def create_file(self, filename):
