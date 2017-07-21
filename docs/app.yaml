@@ -3,11 +3,11 @@ api_version: 1
 threadsafe: yes
 
 handlers:
+- url: /.*
+  script: main.app
+
 - url: /blobstore.*
   script: blobstore.app
-
-- url: /ch/
-  script: main.app
 
 - url: /index.html
   static_files: www/index.html

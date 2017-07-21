@@ -15,36 +15,42 @@
 # limitations under the License.
 
 # [START sample]
-"""A sample app that uses GCS client to operate on bucket and file."""
-
+"""
+    Running appengine with storage and bigquery libraries.
+"""
 # [START imports]
 from __future__ import absolute_import
 
 import os
 import uuid
 import sys
-from auther import auth
+import json
 
 
 import cloudstorage
 from google.appengine.api import app_identity
-from google.cloud import bigquery
-# from oauth2client.client import flow_from_client
-from google_auth_oauthlib import flow
-appflow = flow.InstalledAppFlow.from_client_secrets_file( 'client_secrets.json', scopes=['https://www.googleapis.com/auth/bigquery'])
 
+# auth purposes
+import googleapiclient.discovery
+from oauth2client.contrib.appengine import OAuth2DecoratorFromClientSecrets
 import webapp2
 
+# [END imports]
 # setting the environment variable and extra imports
 
 dev_flag = True 
 source_filename = "tester.csv"
+PROJECTID = 'bamboo-creek-172917'
 real_bucket_name = "bamboo-creek-synpuf-100"
 gcs_path_prepend = os.path.dirname(os.path.realpath(__file__))
 
-   
-# [END imports]
+decorator = OAuth2DecoratorFromClientSecrets(
+            os.path.join(os.path.dirname(__file__), 'client_secrets.json'),
+                scope='https://www.googleapis.com/auth/bigquery')
 
+# Create the bigquery api client
+print decorator.callback_path
+service = googleapiclient.discovery.build('bigquery', 'v2')
 
 class bqFunctions:
 
@@ -67,7 +73,7 @@ class bqFunctions:
             table_name='table_name'):
         # bigquery_client = bigquery.Client()
         bigquery_client = bigquery.Client(project="bamboo-creek-172917",
-                credentials=appflow.credentialsa)
+                credentials=appflow.credentials)
         dataset = bigquery_client.dataset(dataset_name)
         table = dataset.table(table_name)
 
@@ -90,7 +96,7 @@ class bqFunctions:
             source,dataset_name='dataset_name',table_name='table_name'):
         #bigquery_client = bigquery.Client(project="bamboo-creek-172917")
         bigquery_client = bigquery.Client(project="bamboo-creek-172917",
-                credentials=appflow.credentialsa)
+                credentials=appflow.credentials)
         dataset = bigquery_client.dataset(dataset_name)
         table = dataset.table(table_name)
         job_name = str(uuid.uuid4())
@@ -104,14 +110,10 @@ class bqFunctions:
         return table
 
 
-bqf = bqFunctions()
 if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
     # print "setting environment"
     dev_flag = False
     gcs_path_prepend = "gs://"
-    bqload = bqf.load_data_from_gcs
-else:
-    bqload = bqf.load_data_from_file
  
 
 
@@ -119,6 +121,7 @@ class MainPage(webapp2.RequestHandler):
     """Main page for GCS demo application."""
 
 # [START get_default_bucket]
+    @decorator.oauth_required
     def get(self):
         bucket_name = os.environ.get(
             'BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
@@ -139,8 +142,11 @@ class MainPage(webapp2.RequestHandler):
 
         self.create_file(filename)
         self.response.write('\n\n')
-        table = bqload(gcs_path_prepend + filename)
 
+        http = decorator.http()
+        response = service.datasets().list(projectId=PROJECTID).execute(http)
+        self.response.out.write('<h3>Datasets.list raw response:</h3>') 
+        self.response.out.write('<pre>%s</pre>' % json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
 
 # [START write]
     def create_file(self, filename):
@@ -228,6 +234,8 @@ class MainPage(webapp2.RequestHandler):
                 pass
 # [END delete_files]
 
-app = webapp2.WSGIApplication(
-    [('/ch/', MainPage)], debug=True)
+app = webapp2.WSGIApplication([
+    ('/', MainPage),
+    (decorator.callback_path, decorator.callback_handler())
+    ],debug=True)
 # [END sample]
