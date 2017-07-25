@@ -3,18 +3,18 @@ api_version: 1
 threadsafe: yes
 
 handlers:
-- url: /.*
+- url: /
   script: main.app
 
 - url: /blobstore.*
   script: blobstore.app
 
-- url: /index.html
+- url: /h/index.html
   static_files: www/index.html
   upload: www/index.html
   application_readable: true
 
-- url: /(.*)
+- url: /h/(.*)
   static_files: www/\1
   upload: www/(.*)
   application_readable: true

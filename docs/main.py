@@ -41,11 +41,12 @@ import webapp2
 dev_flag = True 
 source_filename = "tester.csv"
 PROJECTID = 'bamboo-creek-172917'
-real_bucket_name = "bamboo-creek-synpuf-100"
+real_bucket_name = None
 gcs_path_prepend = os.path.dirname(os.path.realpath(__file__))
 
 decorator = OAuth2DecoratorFromClientSecrets(
-            os.path.join(os.path.dirname(__file__), 'client_secrets.json'),
+            os.path.join(os.path.dirname(__file__),
+                'client_secrets_webapp.json'),
                 scope='https://www.googleapis.com/auth/bigquery')
 
 # Create the bigquery api client
