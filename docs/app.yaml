@@ -9,12 +9,12 @@ handlers:
 - url: /blobstore.*
   script: blobstore.app
 
-- url: /h/index.html
+- url: /index.html
   static_files: www/index.html
   upload: www/index.html
   application_readable: true
 
-- url: /h/(.*)
+- url: /(.*)
   static_files: www/\1
   upload: www/(.*)
   application_readable: true

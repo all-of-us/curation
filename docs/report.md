@@ -14,7 +14,7 @@
 <tbody>
 {% assign log_items = site.data.log | sort: 'log_id' %}
 {% for log in log_items %}
-<tr {% if log.message != null %} class="issue" data-message="{{ log.message | xml_escape }}" {% endif %}>
+<tr {% if log.message != null %} class="issue" id="{{ log.hpo_id }}" data-message="{{ log.message | xml_escape }}" {% endif %}>
   <td>{{ log.hpo_id }}</td>
   <td>{{ log.table_name }}</td>
   <td>{{ log.file_name }}</td>

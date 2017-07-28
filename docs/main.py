@@ -1,23 +1,14 @@
 #!/usr/bin/env python
 
-# Copyright 2017 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# author: Aahlad
+# date: 10 July 2017
 
-# [START sample]
 """
     Running appengine with storage and bigquery libraries.
+    storage doesn't require a credential set.
+    bigQuery goes through the google-api-client.
 """
+
 # [START imports]
 from __future__ import absolute_import
 
@@ -53,89 +44,30 @@ decorator = OAuth2DecoratorFromClientSecrets(
 print decorator.callback_path
 service = googleapiclient.discovery.build('bigquery', 'v2')
 
-class bqFunctions:
-
-    # BigQuery Utility functions
-    def wait_for_job(self,job):
-        while True:
-            job.reload()
-
-            if job.state == 'DONE':
-                if job.error_result: 
-                    raise RuntimeError(job.errors) 
-                return 
-            time.sleep(1)
-
-    # BigQuery functions
-
-    # [BEGIN load_data_from_file]
-    # for dev_appserver I guess.
-    def load_data_from_file(self,source, dataset_name='dataset_name',
-            table_name='table_name'):
-        # bigquery_client = bigquery.Client()
-        bigquery_client = bigquery.Client(project="bamboo-creek-172917",
-                credentials=appflow.credentials)
-        dataset = bigquery_client.dataset(dataset_name)
-        table = dataset.table(table_name)
-
-        # Reload the table to get the schema.
-        # table.reload()
-                        
-        with open(source, 'rb') as source_file:
-            # This example uses CSV, but you can use other formats.
-            job = table.upload_from_file( source_file, source_format='text/csv')
-
-        self.wait_for_job(job)
-
-        print('Loaded {} rows into {}:{}.'.format( job.output_rows, dataset_name, table_name))
-        return table
-
-    # [END load_data_from_file]
-
-    # [BEGIN load_data_from_gcs]
-    def load_data_from_gcs(self,
-            source,dataset_name='dataset_name',table_name='table_name'):
-        #bigquery_client = bigquery.Client(project="bamboo-creek-172917")
-        bigquery_client = bigquery.Client(project="bamboo-creek-172917",
-                credentials=appflow.credentials)
-        dataset = bigquery_client.dataset(dataset_name)
-        table = dataset.table(table_name)
-        job_name = str(uuid.uuid4())
-        job = bigquery_client.load_table_from_storage( job_name, table, source)
-
-        job.begin()
-
-        wait_for_job(job)
-
-        self.response.write('Loaded {} rows into {}:{}.'.format( job.output_rows, dataset_name, table_name))
-        return table
-
-
 if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
     # print "setting environment"
     dev_flag = False
     gcs_path_prepend = "gs://"
- 
-
 
 class MainPage(webapp2.RequestHandler):
     """Main page for GCS demo application."""
 
-# [START get_default_bucket]
     @decorator.oauth_required
     def get(self):
+        # do something
+        # and then redirect
+        # self.redirect("/report.html")
         bucket_name = os.environ.get(
             'BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
         
         if real_bucket_name is not None:
             bucket_name = real_bucket_name
 
-        self.response.headers['Content-Type'] = 'text/plain'
+        self.response.headers['Content-Type'] = 'text/html'
         self.response.write(
             'Demo GCS Application running from Version: {}\n'.format(
                 os.environ['CURRENT_VERSION_ID']))
         self.response.write('Using bucket name: \n\n'.format(bucket_name))
-# [END get_default_bucket]
 
         bucket = '/' + bucket_name
         filename = bucket + '/tester.csv'
@@ -146,8 +78,40 @@ class MainPage(webapp2.RequestHandler):
 
         http = decorator.http()
         response = service.datasets().list(projectId=PROJECTID).execute(http)
-        self.response.out.write('<h3>Datasets.list raw response:</h3>') 
+        
+        # creating a dataset 
+        '''  dataset_resource_body = { "kind": "bigquery#dataset", "etag": etag, "id": string, "selfLink": string, 
+                "datasetReference": { "datasetId": string, "projectId": string },
+                            "friendlyName": string, "description": string, "defaultTableExpirationMs": long, 
+                            "labels": { (key): string }, 
+                            "access": [ { 
+                                "role": string, "userByEmail": string, "groupByEmail": string, "domain": string, "specialGroup": string, 
+                                    "view": { "projectId": string, "datasetId": string, "tableId": string } 
+                                    } ],
+                            "creationTime": long, "lastModifiedTime": long, "location": string }
+        '''
+
+        resource_body = { "kind": "bigquery#dataset", 
+                "datasetReference": { "datasetId": "test_create"} 
+                }
+
+        response = \
+                service.datasets().insert(projectId=PROJECTID,body=resource_body).execute(http)
+
+        response = service.datasets().list(projectId=PROJECTID).execute(http)
+        self.response.out.write('<h3>Datasets.list raw response after creating\
+                test_create:</h3>') 
         self.response.out.write('<pre>%s</pre>' % json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
+
+        # deleting the dataset
+        response = \
+                service.datasets().delete(projectId=PROJECTID,datasetId=resource_body['datasetReference']['datasetId']).execute(http)
+
+        response = service.datasets().list(projectId=PROJECTID).execute(http)
+        self.response.out.write('<h3>Datasets.list raw response after deleting\
+                test_create:</h3>') 
+        self.response.out.write('<pre>%s</pre>' % json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
+
 
 # [START write]
     def create_file(self, filename):
