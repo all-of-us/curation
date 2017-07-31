@@ -16,14 +16,18 @@ import os
 import uuid
 import sys
 import json
+import logging
 
 
 import cloudstorage
 from google.appengine.api import app_identity
+# from google.cloud import bigquery
+
+from oauth2client.client import GoogleCredentials
+credentials=GoogleCredentials.get_application_default()
+from googleapiclient.discovery import build
 
 # auth purposes
-import googleapiclient.discovery
-from oauth2client.contrib.appengine import OAuth2DecoratorFromClientSecrets
 import webapp2
 
 # [END imports]
@@ -32,17 +36,9 @@ import webapp2
 dev_flag = True 
 source_filename = "tester.csv"
 PROJECTID = 'bamboo-creek-172917'
-real_bucket_name = None
+real_bucket_name = "tester-for-cloudstorage"
+real_bucket_name = "share-test-1729"
 gcs_path_prepend = os.path.dirname(os.path.realpath(__file__))
-
-decorator = OAuth2DecoratorFromClientSecrets(
-            os.path.join(os.path.dirname(__file__),
-                'client_secrets_webapp.json'),
-                scope='https://www.googleapis.com/auth/bigquery')
-
-# Create the bigquery api client
-print decorator.callback_path
-service = googleapiclient.discovery.build('bigquery', 'v2')
 
 if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
     # print "setting environment"
@@ -52,7 +48,6 @@ if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
 class MainPage(webapp2.RequestHandler):
     """Main page for GCS demo application."""
 
-    @decorator.oauth_required
     def get(self):
         # do something
         # and then redirect
@@ -60,6 +55,7 @@ class MainPage(webapp2.RequestHandler):
         bucket_name = os.environ.get(
             'BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
         
+
         if real_bucket_name is not None:
             bucket_name = real_bucket_name
 
@@ -73,11 +69,13 @@ class MainPage(webapp2.RequestHandler):
         filename = bucket + '/tester.csv'
         self.tmp_filenames_to_clean_up = []
 
-        self.create_file(filename)
+        logging.info('CREATED GETS IN SERVICE')
+
+        # self.create_file(filename)
         self.response.write('\n\n')
 
-        http = decorator.http()
-        response = service.datasets().list(projectId=PROJECTID).execute(http)
+        self.list_bucket(bucket)
+        self.response.write('\n\n')
         
         # creating a dataset 
         '''  dataset_resource_body = { "kind": "bigquery#dataset", "etag": etag, "id": string, "selfLink": string, 
@@ -95,19 +93,26 @@ class MainPage(webapp2.RequestHandler):
                 "datasetReference": { "datasetId": "test_create"} 
                 }
 
-        response = \
-                service.datasets().insert(projectId=PROJECTID,body=resource_body).execute(http)
+        # response = list(bigquery_client.list_datasets())
 
-        response = service.datasets().list(projectId=PROJECTID).execute(http)
+        
+        bigquery=build('bigquery', 'v2', credentials=credentials)
+
+
+        logging.info('CREATED BIGQUERY SERVICE')
+        response = \
+                bigquery.datasets().insert(projectId=PROJECTID,body=resource_body).execute()
+
+        response=bigquery.datasets().list(projectId=PROJECTID).execute()
+
         self.response.out.write('<h3>Datasets.list raw response after creating\
                 test_create:</h3>') 
         self.response.out.write('<pre>%s</pre>' % json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
 
         # deleting the dataset
-        response = \
-                service.datasets().delete(projectId=PROJECTID,datasetId=resource_body['datasetReference']['datasetId']).execute(http)
+        bigquery.datasets().delete(projectId=PROJECTID,datasetId=resource_body['datasetReference']['datasetId']).execute()
 
-        response = service.datasets().list(projectId=PROJECTID).execute(http)
+        response = bigquery.datasets().list(projectId=PROJECTID).execute()
         self.response.out.write('<h3>Datasets.list raw response after deleting\
                 test_create:</h3>') 
         self.response.out.write('<pre>%s</pre>' % json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
@@ -162,8 +167,8 @@ class MainPage(webapp2.RequestHandler):
         self.response.write('Listbucket result:\n')
 
         # Production apps should set page_size to a practical value.
-        page_size = 1
-        stats = cloudstorage.listbucket(bucket + '/foo', max_keys=page_size)
+        page_size = 3
+        stats = cloudstorage.listbucket(bucket + '/t', max_keys=page_size)
         while True:
             count = 0
             for stat in stats:
@@ -201,6 +206,5 @@ class MainPage(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    (decorator.callback_path, decorator.callback_handler())
     ],debug=True)
 # [END sample]
