@@ -23,9 +23,9 @@ import cloudstorage
 from google.appengine.api import app_identity
 # from google.cloud import bigquery
 
-from oauth2client.client import GoogleCredentials
-credentials=GoogleCredentials.get_application_default()
-from googleapiclient.discovery import build
+# from oauth2client.client import GoogleCredentials
+# credentials=GoogleCredentials.get_application_default()
+# from googleapiclient.discovery import build
 
 # auth purposes
 import webapp2
@@ -96,26 +96,26 @@ class MainPage(webapp2.RequestHandler):
         # response = list(bigquery_client.list_datasets())
 
         
-        bigquery=build('bigquery', 'v2', credentials=credentials)
+        #bigquery=build('bigquery', 'v2', credentials=credentials)
 
 
-        logging.info('CREATED BIGQUERY SERVICE')
-        response = \
-                bigquery.datasets().insert(projectId=PROJECTID,body=resource_body).execute()
+        #logging.info('CREATED BIGQUERY SERVICE')
+        #response = \
+        #        bigquery.datasets().insert(projectId=PROJECTID,body=resource_body).execute()
 
-        response=bigquery.datasets().list(projectId=PROJECTID).execute()
+        #response=bigquery.datasets().list(projectId=PROJECTID).execute()
 
-        self.response.out.write('<h3>Datasets.list raw response after creating\
-                test_create:</h3>') 
-        self.response.out.write('<pre>%s</pre>' % json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
+        #self.response.out.write('<h3>Datasets.list raw response after creating\
+        #        test_create:</h3>') 
+        #self.response.out.write('<pre>%s</pre>' % json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
 
-        # deleting the dataset
-        bigquery.datasets().delete(projectId=PROJECTID,datasetId=resource_body['datasetReference']['datasetId']).execute()
+        ## deleting the dataset
+        #bigquery.datasets().delete(projectId=PROJECTID,datasetId=resource_body['datasetReference']['datasetId']).execute()
 
-        response = bigquery.datasets().list(projectId=PROJECTID).execute()
-        self.response.out.write('<h3>Datasets.list raw response after deleting\
-                test_create:</h3>') 
-        self.response.out.write('<pre>%s</pre>' % json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
+        #response = bigquery.datasets().list(projectId=PROJECTID).execute()
+        #self.response.out.write('<h3>Datasets.list raw response after deleting\
+        #        test_create:</h3>') 
+        #self.response.out.write('<pre>%s</pre>' % json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
 
 
 # [START write]
