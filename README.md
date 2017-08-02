@@ -14,6 +14,13 @@ Validate submissions for the All of Us data sprints. Visit the [website](https:/
         pip install -r requirements.txt
  
  * Update `_settings.py` and rename it to `settings.py`
+
+## Development Server requirements
+
+1. Install gcloud tools from  https://cloud.google.com/sdk/downloads#interactive (requires python 2.7.x)
+2. (For running bigquery and cloudstorage) Required Google Cloud account.
+3. **INCOMPLETE**
+
  
 ## reporter
 
