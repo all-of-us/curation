@@ -3,6 +3,9 @@ api_version: 1
 threadsafe: yes
 
 handlers:
+- url: /h/.*
+  script: change_notification_client.app
+
 - url: /
   script: main.app
 

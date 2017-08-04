@@ -59,7 +59,7 @@ class MainPage(webapp2.RequestHandler):
         if real_bucket_name is not None:
             bucket_name = real_bucket_name
 
-        self.response.headers['Content-Type'] = 'text/html'
+        self.response.headers['Content-Type'] = 'text/plain'
         self.response.write(
             'Demo GCS Application running from Version: {}\n'.format(
                 os.environ['CURRENT_VERSION_ID']))
@@ -72,11 +72,16 @@ class MainPage(webapp2.RequestHandler):
         logging.info('CREATED GETS IN SERVICE')
 
         # self.create_file(filename)
-        self.response.write('\n\n')
+        self.response.write("\n\n")
 
         self.list_bucket(bucket)
+        self.response.write("\n\n")
         self.response.write('\n\n')
-        
+ 
+        #self.stat_file(filename)
+        #self.response.write("\n\n")
+        #self.response.write('\n\n')
+
         # creating a dataset 
         '''  dataset_resource_body = { "kind": "bigquery#dataset", "etag": etag, "id": string, "selfLink": string, 
                 "datasetReference": { "datasetId": string, "projectId": string },
@@ -179,7 +184,7 @@ class MainPage(webapp2.RequestHandler):
             if count != page_size or count == 0:
                 break
             stats = cloudstorage.listbucket(
-                bucket + '/foo', max_keys=page_size, marker=stat.filename)
+                bucket + '/t', max_keys=page_size, marker=stat.filename)
 # [END list_bucket]
 
     def list_bucket_directory_mode(self, bucket):
