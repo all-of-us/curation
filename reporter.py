@@ -7,16 +7,9 @@ import time
 import pandas as pd
 import glob
 
-from sqlalchemy import Boolean
-from sqlalchemy import Date, DateTime, Float, BigInteger, String
-from sqlalchemy import Table, Column
-from sqlalchemy import MetaData
-from sqlalchemy.exc import StatementError
-from sqlalchemy.sql.ddl import CreateSchema
-
 import settings
 import resources
-from run_config import hpo_ids, use_multi_schemas, engine, datetime_tpe
+from run_config import hpo_ids, use_multi_schemas, datetime_tpe
 
 LOG_TABLE_NAME = 'pmi_sprint_reporter_log'
 SCHEMA_EXISTS_QUERY = "SELECT 1 FROM information_schema.schemata WHERE schema_name = '%s'"
