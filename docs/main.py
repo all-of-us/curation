@@ -18,6 +18,9 @@ import sys
 import json
 import logging
 
+import utils
+
+print utils.empty_load_body
 
 import cloudstorage
 from google.appengine.api import app_identity
@@ -64,6 +67,8 @@ class MainPage(webapp2.RequestHandler):
             'Demo GCS Application running from Version: {}\n'.format(
                 os.environ['CURRENT_VERSION_ID']))
         self.response.write('Using bucket name: \n\n'.format(bucket_name))
+        
+        logging.critical(os.system('bq mk os-test'))
 
         bucket = '/' + bucket_name
         filename = bucket + '/tester.csv'

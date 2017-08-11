@@ -4,12 +4,17 @@ import codecs
 
 import datetime
 import time
-import pandas as pd
+
+# YEP CAN'T HAPPEN
+# import pandas as pd
+
 import glob
 
 import settings
 import resources
 from run_config import hpo_ids, use_multi_schemas, datetime_tpe
+
+# engine.execute should be replaced by bigquery.jobs.insert, I think.
 
 LOG_TABLE_NAME = 'pmi_sprint_reporter_log'
 SCHEMA_EXISTS_QUERY = "SELECT 1 FROM information_schema.schemata WHERE schema_name = '%s'"

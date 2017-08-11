@@ -9,9 +9,6 @@ handlers:
 - url: /
   script: main.app
 
-- url: /blobstore.*
-  script: blobstore.app
-
 - url: /index.html
   static_files: www/index.html
   upload: www/index.html
