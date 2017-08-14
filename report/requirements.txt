@@ -1,2 +1,5 @@
 google-api-python-client
 GoogleAppEngineCloudStorageClient==1.9.22.1
+flask==0.10
+flask-restful==0.3.5
+mock>=1.0.1
