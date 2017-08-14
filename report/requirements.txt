@@ -1,5 +1,2 @@
-sqlalchemy
-pandas
-pymssql
-# or another database-specific module
-# cx_Oracle
+google-api-python-client
+GoogleAppEngineCloudStorageClient==1.9.22.1
