@@ -18,9 +18,10 @@ import sys
 import json
 import logging
 
-from flask import Flask
+from flask import Flask, render_template
+from flask_flatpages import FlatPages
 
-from report import api_util
+import api_util
 
 import cloudstorage
 from cloudstorage import cloudstorage_api
@@ -205,8 +206,36 @@ def delete_files(self):
 # [END delete_files]
 
 PREFIX = '/report/v1/'
+SITE_ROOT = 'docs/'
+SITE_ROOT = ''
 
-app = Flask(__name__)
+DEBUG = True
+
+FLATPAGES_AUTO_RELOAD = DEBUG
+FLATPAGES_EXTENSION = '.md'
+FLATPAGES_ROOT = SITE_ROOT + 'pages/'
+
+app = Flask(__name__, template_folder= SITE_ROOT + 'templates')
+app.config.from_object(__name__)
+pages = FlatPages(app)
+
+LOG_FILE = SITE_ROOT + '/log.json'
+
+#@app.route(PREFIX + 'index.html')
+#def index():
+#    return "it's something"
+
+@app.route(PREFIX + '<string:path>.html')
+def page(path): 
+    logging.critical('FINDS REPORT' + path)
+    data = None
+    if path == 'report':
+        SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
+        json_url = os.path.join(SITE_ROOT + LOG_FILE)
+        data = json.load(open(json_url))
+        return render_template('report.html',  logs = data, pages = pages)
+    page = pages.get_or_404(path) 
+    return render_template('page.html', page=page,pages = pages)
 
 app.add_url_rule(
     PREFIX + 'Report',

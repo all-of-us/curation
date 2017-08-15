@@ -5,16 +5,5 @@ threadsafe: yes
 handlers:
 - url: /h/.*
   script: change_notification_client.app
-
-- url: /
+- url: /.*
   script: main.app
-
-- url: /index.html
-  static_files: www/index.html
-  upload: www/index.html
-  application_readable: true
-
-- url: /(.*)
-  static_files: www/\1
-  upload: www/(.*)
-  application_readable: true
