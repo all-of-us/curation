@@ -23,6 +23,7 @@ from flask import Flask
 from report import api_util
 
 import cloudstorage
+from cloudstorage import cloudstorage_api
 from google.appengine.api import app_identity
 # from google.cloud import bigquery
 
@@ -36,7 +37,7 @@ import webapp2
 # [END imports]
 # setting the environment variable and extra imports
 
-dev_flag = True 
+dev_flag = True
 source_filename = "tester.csv"
 PROJECTID = 'bamboo-creek-172917'
 real_bucket_name = "tester-for-cloudstorage"
@@ -49,42 +50,31 @@ if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
     gcs_path_prepend = "gs://"
 
 
+class DataError(RuntimeError):
+  """Bad sample data during import.
+
+  Args:
+    msg: Passed through to superclass.
+    external: If True, this error should be reported to external partners (HPO). Externally
+        reported DataErrors are only reported if HPO recipients are in the config.
+  """
+  def __init__(self, msg, external=False):
+    super(DataError, self).__init__(msg)
+    self.external = external
+
+
 @api_util.auth_required_cron
 def run_report():
-    # do something
-    # and then redirect
-    # self.redirect("/report.html")
     bucket_name = os.environ.get(
         'BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
-
 
     if real_bucket_name is not None:
         bucket_name = real_bucket_name
 
-    self.response.headers['Content-Type'] = 'text/plain'
-    self.response.write(
-        'Demo GCS Application running from Version: {}\n'.format(
-            os.environ['CURRENT_VERSION_ID']))
-    self.response.write('Using bucket name: \n\n'.format(bucket_name))
-
-    logging.critical(os.system('bq mk os-test'))
+    logging.info('Using bucket name: \n\n'.format(bucket_name))
 
     bucket = '/' + bucket_name
     filename = bucket + '/tester.csv'
-    self.tmp_filenames_to_clean_up = []
-
-    logging.info('CREATED GETS IN SERVICE')
-
-    # self.create_file(filename)
-    self.response.write("\n\n")
-
-    self.list_bucket(bucket)
-    self.response.write("\n\n")
-    self.response.write('\n\n')
-
-    #self.stat_file(filename)
-    #self.response.write("\n\n")
-    #self.response.write('\n\n')
 
     # creating a dataset
     '''  dataset_resource_body = { "kind": "bigquery#dataset", "etag": etag, "id": string, "selfLink": string,
@@ -126,6 +116,28 @@ def run_report():
     #        test_create:</h3>')
     #self.response.out.write('<pre>%s</pre>' % json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
     return '{"report-generator-status": "started"}'
+
+CDM_TABLES = ['person', 'visit_occurrence', 'condition_occurrence']
+
+
+def _find_cdm_files(cloud_bucket_name):
+    """
+    Returns full paths (including bucket name) of CDM files found in the bucket
+    :param cloud_bucket_name:
+    :return:
+    """
+    bucket_stat_list = list(cloudstorage_api.listbucket('/' + cloud_bucket_name))
+    if not bucket_stat_list:
+        raise DataError('No files in cloud bucket %r.' % cloud_bucket_name)
+    # GCS does not really have the concept of directories (it's just a filename convention), so all
+    # directory listings are recursive and we must filter out subdirectory contents.
+    bucket_stat_list = [
+        s for s in bucket_stat_list
+        if s.filename.lower() in map(lambda t: '/' + cloud_bucket_name + '/%s.csv' % t, CDM_TABLES)]
+    if not bucket_stat_list:
+        raise DataError(
+            'No CDM files in cloud bucket %r (all files: %s).' % (cloud_bucket_name, bucket_stat_list))
+    return bucket_stat_list
 
 
 # [START write]
@@ -169,28 +181,6 @@ def create_files_for_list_bucket(self, bucket):
         '/foo1', '/foo2', '/bar', '/bar/1', '/bar/2', '/boo/']]
     for f in filenames:
         self.create_file(f)
-
-# [START list_bucket]
-def list_bucket(self, bucket):
-    """Create several files and paginate through them."""
-
-    self.response.write('Listbucket result:\n')
-
-    # Production apps should set page_size to a practical value.
-    page_size = 3
-    stats = cloudstorage.listbucket(bucket + '/t', max_keys=page_size)
-    while True:
-        count = 0
-        for stat in stats:
-            count += 1
-            self.response.write(repr(stat))
-            self.response.write('\n')
-
-        if count != page_size or count == 0:
-            break
-        stats = cloudstorage.listbucket(
-            bucket + '/t', max_keys=page_size, marker=stat.filename)
-# [END list_bucket]
 
 def list_bucket_directory_mode(self, bucket):
     self.response.write('Listbucket directory mode result:\n')

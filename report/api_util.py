@@ -12,8 +12,6 @@ from flask import request
 from dateutil.parser import parse
 from werkzeug.exceptions import BadRequest, Forbidden, Unauthorized
 
-import config
-
 SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 
