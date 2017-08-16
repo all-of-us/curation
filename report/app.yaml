@@ -6,5 +6,10 @@ handlers:
 - url: /h/.*
   script: change_notification_client.app
 
+- url: /tasks/.*
+  script: tasks.app
+  login: admin
+
 - url: /.*
   script: main.app
+

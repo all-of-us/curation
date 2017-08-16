@@ -225,20 +225,23 @@ LOG_FILE = SITE_ROOT + '/log.json'
 #def index():
 #    return "it's something"
 
+
 @app.route(PREFIX + '<string:path>.html')
 def page(path): 
-    logging.critical('FINDS REPORT' + path)
     data = None
-    if path == 'report':
+    page = pages.get_or_404(path) 
+    if page.meta.get('usehtml',None ) is not None:
         SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
         json_url = os.path.join(SITE_ROOT + LOG_FILE)
         data = json.load(open(json_url))
+        logging.critical(json.dumps(page.meta))
         return render_template('report.html',  logs = data, pages = pages)
-    page = pages.get_or_404(path) 
-    return render_template('page.html', page=page,pages = pages)
+    # this is pure html content. can be exported.
+    html = render_template('page.html', page=page,pages = pages)
+    return html
 
 app.add_url_rule(
     PREFIX + 'Report',
     endpoint='report_gen',
     view_func=run_report,
-    methods=['GET'])
+    methods=[])
