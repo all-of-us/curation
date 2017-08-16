@@ -20,7 +20,7 @@ import logging
 
 from flask import Flask
 
-from report import api_util
+import api_util
 
 import cloudstorage
 from cloudstorage import cloudstorage_api
