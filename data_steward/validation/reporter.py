@@ -1,18 +1,16 @@
+import codecs
+import datetime
+import glob
 import json
 import os
-import codecs
-
-import datetime
 import time
+
+import resources
+import settings
+from run_config import hpo_ids, use_multi_schemas, datetime_tpe
 
 # YEP CAN'T HAPPEN
 # import pandas as pd
-
-import glob
-
-import settings
-import resources
-from run_config import hpo_ids, use_multi_schemas, datetime_tpe
 
 # engine.execute should be replaced by bigquery.jobs.insert, I think.
 

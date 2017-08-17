@@ -1,16 +1,17 @@
 import unittest
-from google.appengine.ext import testbed
-import mock
 
 import cloudstorage  # stubbed by testbed
-import tasks
+import mock
+from google.appengine.ext import testbed
+
+from spec import main
 
 _FAKE_DRC_SHARE_BUCKET = 'fake-drc'
 
 
-class TasksTest(unittest.TestCase):
+class SpecTest(unittest.TestCase):
     def setUp(self):
-        super(TasksTest, self).setUp()
+        super(SpecTest, self).setUp()
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_app_identity_stub()
@@ -20,15 +21,15 @@ class TasksTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
 
     @mock.patch('api_util.check_cron')
-    def test_report_check_cron(self, mock_check_cron):
-        with tasks.app.test_request_context():
-            tasks._generate_site()
+    def test_spec_check_cron(self, mock_check_cron):
+        with main.app.test_request_context():
+            main._generate_site()
             self.assertEquals(mock_check_cron.call_count, 1)
 
     @mock.patch('api_util.check_cron')
     def test_site_generation(self, mock_check_cron):
-        with tasks.app.test_request_context():
-            result = tasks._generate_site(_FAKE_DRC_SHARE_BUCKET)
+        with main.app.test_request_context():
+            result = main._generate_site(_FAKE_DRC_SHARE_BUCKET)
             self.assertEquals(result, 'okay')
 
             # verify that page worked

@@ -1,12 +1,12 @@
+import time
 from base64 import b64encode
 from io import BytesIO
 from uuid import uuid4
+
 import requests
-import time
 import wddx
 
 import settings
-
 
 TRANSFER_API_URL_FMT = 'https://transfer.nyp.org/seos/1000/%s.api'
 TRANSFER_LOGIN_URL = TRANSFER_API_URL_FMT % 'login'

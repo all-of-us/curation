@@ -1,17 +1,17 @@
 import unittest
-from google.appengine.ext import testbed
+
 import mock
-
 from cloudstorage import cloudstorage_api  # stubbed by testbed
+from google.appengine.ext import testbed
 
-import main
+from validation import main
 
 _FAKE_BUCKET = 'report_fake_bucket'
 
 
-class ReportTest(unittest.TestCase):
+class ValidationTest(unittest.TestCase):
     def setUp(self):
-        super(ReportTest, self).setUp()
+        super(ValidationTest, self).setUp()
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_app_identity_stub()
@@ -25,7 +25,7 @@ class ReportTest(unittest.TestCase):
             cloud_file.write(contents_str.encode('utf-8'))
 
     @mock.patch('api_util.check_cron')
-    def test_report_check_cron(self, mock_check_cron):
+    def test_validation_check_cron(self, mock_check_cron):
         main.run_report()
         self.assertEquals(mock_check_cron.call_count, 1)
 

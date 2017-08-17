@@ -1,11 +1,12 @@
+import os
+from datetime import datetime, timedelta
+
 from sqlalchemy import BigInteger, String, Column, MetaData, Table, DateTime
 from sqlalchemy import select, func, and_
-import os
 
-from run_config import engine, permitted_file_names
 import file_transfer
 import settings
-from datetime import datetime, timedelta
+from run_config import engine, permitted_file_names
 
 metadata = MetaData()
 table = Table('pmi_sprint_download',

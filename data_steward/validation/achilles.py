@@ -4,9 +4,10 @@ Module to run abbreviated version of OHDSI Achilles
 
 import os
 
-from run_config import hpo_ids, multi_schema_supported, engine
-import resources
 import numpy
+
+import resources
+from run_config import hpo_ids, multi_schema_supported, engine
 
 achilles_sql_path = os.path.join(resources.resource_path, 'achilles.sql')
 achilles_heel_sql_path = os.path.join(resources.resource_path, 'achilles_heel.sql')

@@ -7,7 +7,6 @@ import pandas
 import resources
 import settings
 
-
 all_hpos = pandas.read_csv(resources.hpo_csv_path)
 all_hpo_ids = all_hpos.hpo_id.unique()
 multi_schema_supported = False

@@ -7,9 +7,8 @@ handlers:
   script: change_notification_client.app
 
 - url: /tasks/.*
-  script: tasks.app
+  script: spec.main.app
   login: admin
 
 - url: /.*
-  script: main.app
-
+  script: validation.main.app
