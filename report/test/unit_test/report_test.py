@@ -4,7 +4,7 @@ import mock
 
 from cloudstorage import cloudstorage_api  # stubbed by testbed
 
-from report import main
+import main
 
 _FAKE_BUCKET = 'report_fake_bucket'
 
@@ -24,7 +24,7 @@ class ReportTest(unittest.TestCase):
         with cloudstorage_api.open('/%s/%s' % (_FAKE_BUCKET, file_name), mode='w') as cloud_file:
             cloud_file.write(contents_str.encode('utf-8'))
 
-    @mock.patch('report.api_util.check_cron')
+    @mock.patch('api_util.check_cron')
     def test_report_check_cron(self, mock_check_cron):
         main.run_report()
         self.assertEquals(mock_check_cron.call_count, 1)
