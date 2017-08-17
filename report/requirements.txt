@@ -4,4 +4,3 @@ flask==0.10
 flask-restful==0.3.5
 Flask-FlatPages
 mock>=1.0.1
-Frozen-Flask

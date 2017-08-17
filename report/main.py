@@ -33,7 +33,7 @@ from google.appengine.api import app_identity
 # from googleapiclient.discovery import build
 
 # auth purposes
-import webapp2
+# import webapp2
 
 # [END imports]
 # setting the environment variable and extra imports
@@ -220,25 +220,6 @@ app.config.from_object(__name__)
 pages = FlatPages(app)
 
 LOG_FILE = SITE_ROOT + '/log.json'
-
-#@app.route(PREFIX + 'index.html')
-#def index():
-#    return "it's something"
-
-
-@app.route(PREFIX + '<string:path>.html')
-def page(path): 
-    data = None
-    page = pages.get_or_404(path) 
-    if page.meta.get('usehtml',None ) is not None:
-        SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
-        json_url = os.path.join(SITE_ROOT + LOG_FILE)
-        data = json.load(open(json_url))
-        logging.critical(json.dumps(page.meta))
-        return render_template('report.html',  logs = data, pages = pages)
-    # this is pure html content. can be exported.
-    html = render_template('page.html', page=page,pages = pages)
-    return html
 
 app.add_url_rule(
     PREFIX + 'Report',

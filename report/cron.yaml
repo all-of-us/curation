@@ -1,5 +1,5 @@
 cron:
 - description: website generation
-  url: /tasks/sitegen/
+  url: /tasks/sitegen
   target: beta
   schedule: every 5 minutes

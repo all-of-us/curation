@@ -18,9 +18,8 @@ import json
 import logging
 
 # app requirements
-from flask import Flask, url_for
+from flask import Flask, url_for, render_template
 from flask_flatpages import FlatPages
-from flask_frozen import Freezer
 from main import app as app_to_freeze
 
 # gcloud imports
@@ -28,7 +27,7 @@ import cloudstorage
 from cloudstorage import cloudstorage_api
 from google.appengine.api import app_identity
 
-# import api_util
+import api_util
 
 # [END imports]
 # setting the environment variable and extra imports
@@ -120,26 +119,95 @@ def delete_files(self):
             pass
 # [END delete_files]
 
-PREFIX = '/tasks/'
-SITE_ROOT = ''
 
+
+
+"""
+START HERE
+
+"""
+
+
+PREFIX = '/tasks/'
+SITE_ROOT =  os.path.dirname(os.path.abspath(__file__))
 DEBUG = True
 
-app = Flask(__name__)
+FLATPAGES_AUTO_RELOAD = DEBUG
+FLATPAGES_EXTENSION = '.md'
+FLATPAGES_ROOT = SITE_ROOT + 'pages/'
+
+LOG_FILE = SITE_ROOT + '/log.json'
+
+app = Flask(__name__, template_folder= SITE_ROOT + 'templates')
 app.config.from_object(__name__)
+pages = FlatPages(app)
 
-@app.route(PREFIX + '<string:path>/')
+
+import jinja2
+
+j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(SITE_ROOT
++ '/templates/'),
+        trim_blocks=True)
+
+
+print pages.get('index')
+pages.
+print j2_env.get_template('page.html').render(page = page)
+
+# @app.route(PREFIX + '<string:path>.html')
 def page(path): 
-    if path == 'sitegen':
-        # freezer = Freezer(app_to_freeze)
-        # freezer.freeze()
-        for rule in app_to_freeze.url_map.iter_rules():
-            logging.info('{}'.format(rule.endpoint)) # url_for(rule.endpoint)))
-            if "GET" in rule.methods:
-                logging.info(url_for(rule.endpoint))
-            else:
-                logging.info('No Url.')
-        logging.info('----fin----')
-        return 'Done!'
-    return 'Does not exist!'
+    data = None
+    page = pages.get_or_404(path) 
+    html_to_use = 'page.html'
 
+    if page.meta.get('usehtml',None ) is not None:
+        json_url = os.path.join(SITE_ROOT + LOG_FILE)
+        data = json.load(open(json_url))
+        html_to_use = 'report.html'
+        
+    # this is pure html content. can be exported.
+    with app.app_context():
+        context = {'page':page,'pages':pages}
+        html = render_template(html_to_use, **context)
+        return html
+
+def _create_file(filename, content):
+    """
+    Create a file in gcs bucket.
+    
+    :param filename: file name = <bucket name>/<file name>
+    :param contet: content to write into file.
+    """
+
+    # The retry_params specified in the open call will override the default
+    # retry params for this particular file handle.
+    write_retry_params = cloudstorage.RetryParams(backoff_factor=1.1)
+    with cloudstorage.open( filename, 'w', 
+            content_type='text/html', 
+            options={ 'x-goog-meta-foo': 'foo', 'x-goog-meta-bar': 'bar'},
+            retry_params=write_retry_params) as cloudstorage_file:
+        cloudstorage_file.write('<!doctype html>')
+        cloudstorage_file.write(content)
+
+
+# @api_util.auth_required_cron
+def _generate_site():
+    """
+    Construct html pages for each report, data_model, file_transfer and index.
+
+    :param : 
+    :return: returns 'okay' if succesful. logs critical error otherwise.
+    """
+    for endpoint in ['report','data_model','file_transfer','index']:
+        # generate the page
+        html = page(endpoint) 
+        # write it to the drc shared bucket
+        _create_file('{}/{}.html'.format(_DRC_SHARED_BUCKET, endpoint), html) 
+
+    return 'okay'
+
+app.add_url_rule(
+    PREFIX + 'sitegen',
+    endpoint='sitegen',
+    view_func=_generate_site,
+    methods=[])
