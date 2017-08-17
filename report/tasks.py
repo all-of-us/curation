@@ -16,11 +16,12 @@ import uuid
 import sys
 import json
 import logging
+import unicodedata
 
 # app requirements
 from flask import Flask, url_for, render_template
 from flask_flatpages import FlatPages
-from main import app as app_to_freeze
+import jinja2
 
 # gcloud imports
 import cloudstorage
@@ -33,6 +34,7 @@ import api_util
 # setting the environment variable and extra imports
 
 PROJECTID = 'bamboo-creek-172917'
+_DRC_SHARED_BUCKET = 'aou-drc-shared'
 gcs_path_prepend = os.path.dirname(os.path.realpath(__file__))
 
 if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
@@ -134,42 +136,34 @@ DEBUG = True
 
 FLATPAGES_AUTO_RELOAD = DEBUG
 FLATPAGES_EXTENSION = '.md'
-FLATPAGES_ROOT = SITE_ROOT + 'pages/'
+FLATPAGES_ROOT = SITE_ROOT + '/pages/'
 
 LOG_FILE = SITE_ROOT + '/log.json'
 
-app = Flask(__name__, template_folder= SITE_ROOT + 'templates')
+app = Flask(__name__, template_folder= SITE_ROOT + '/templates')
 app.config.from_object(__name__)
 pages = FlatPages(app)
+j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(SITE_ROOT + '/templates/'),  trim_blocks=True)
 
 
-import jinja2
-
-j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(SITE_ROOT
-+ '/templates/'),
-        trim_blocks=True)
-
-
-print pages.get('index')
-pages.
-print j2_env.get_template('page.html').render(page = page)
 
 # @app.route(PREFIX + '<string:path>.html')
-def page(path): 
+def _page(path): 
     data = None
     page = pages.get_or_404(path) 
     html_to_use = 'page.html'
 
     if page.meta.get('usehtml',None ) is not None:
-        json_url = os.path.join(SITE_ROOT + LOG_FILE)
-        data = json.load(open(json_url))
+        data = json.load(open(LOG_FILE))
         html_to_use = 'report.html'
         
     # this is pure html content. can be exported.
-    with app.app_context():
-        context = {'page':page,'pages':pages}
-        html = render_template(html_to_use, **context)
-        return html
+    
+    html= j2_env.get_template(html_to_use).render(page = page, pages=pages)
+    # with app.app_context():
+    #    context = {'page':page,'pages':pages}
+    #    html = render_template(html_to_use, **context)
+    return html
 
 def _create_file(filename, content):
     """
@@ -186,23 +180,26 @@ def _create_file(filename, content):
             content_type='text/html', 
             options={ 'x-goog-meta-foo': 'foo', 'x-goog-meta-bar': 'bar'},
             retry_params=write_retry_params) as cloudstorage_file:
-        cloudstorage_file.write('<!doctype html>')
+        # cloudstorage_file.write('<!doctype html>')
         cloudstorage_file.write(content)
 
 
-# @api_util.auth_required_cron
-def _generate_site():
+@api_util.auth_required_cron
+def _generate_site(bucket = _DRC_SHARED_BUCKET):
     """
     Construct html pages for each report, data_model, file_transfer and index.
 
     :param : 
     :return: returns 'okay' if succesful. logs critical error otherwise.
     """
-    for endpoint in ['report','data_model','file_transfer','index']:
+
+    for endpoint in ['report','data_model','index', 'file_transfer_procedures']:
         # generate the page
-        html = page(endpoint) 
+        html = _page(endpoint) 
+        html = unicodedata.normalize('NFKD', html).encode('ascii','ignore')
+
         # write it to the drc shared bucket
-        _create_file('{}/{}.html'.format(_DRC_SHARED_BUCKET, endpoint), html) 
+        _create_file('/{}/{}.html'.format(bucket, endpoint), html) 
 
     return 'okay'
 
@@ -210,4 +207,4 @@ app.add_url_rule(
     PREFIX + 'sitegen',
     endpoint='sitegen',
     view_func=_generate_site,
-    methods=[])
+    methods=['GET'])

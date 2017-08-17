@@ -9,7 +9,7 @@
     <ul>
     {% for page in pages %}
       <li>
-        <a href="{{ url_for("page", path=page.path) }}">{{ page.title }}</a> 
+        <a href="{{page.path}}.html">{{ page.title }}</a> 
       </li>
     {% else %}
       <li>No stuff.</li>

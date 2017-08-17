@@ -25,7 +25,7 @@ class TasksTest(unittest.TestCase):
 
     def test_site_generation(self):
         # generating site
-        self.assertEquals(_generate_site(),'okay')
+        self.assertEquals(_generate_site(_FAKE_DRC_SHARE_BUCKET),'okay')
 
         # verify that page worked
         bucket = _FAKE_DRC_SHARE_BUCKET
