@@ -67,9 +67,3 @@ then
   fi
   (cd ${BASE_DIR}; python $cmd)
 fi
-
-if [[ "$subset" == "all" || "$subset" == "client" ]];
-then
-  # Run client tests against local dev_server.
-  ${BASE_DIR}/test/test_server.sh ${substring:+-r $substring}
-fi
