@@ -1,4 +1,5 @@
 title: Data Model
+template: page
 
 # OMOP CDM
 

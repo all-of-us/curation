@@ -3,7 +3,6 @@ import unittest
 import cloudstorage  # stubbed by testbed
 import mock
 from google.appengine.ext import testbed
-
 from spec import main
 
 _FAKE_DRC_SHARE_BUCKET = 'fake-drc'
@@ -42,6 +41,16 @@ class SpecTest(unittest.TestCase):
                         [name + '.html' for name in ['report', 'data_model', 'file_transfer_procedures', 'index']])
                 file_count += 1
             self.assertEquals(file_count, 4)
+
+    @mock.patch('spec.main.pages.get_or_404')
+    def test_variable_population(self, mock_get_or_404):
+        def dummy():
+            return
+        dummy.meta = {'title': 'foo', 'template': 'test_empty'}
+        dummy.title = 'foo'
+        mock_get_or_404.return_value = dummy
+        result = main._page('dummy')
+        self.assertEquals(u'<span>foo</span>', result)
 
     def tearDown(self):
         self.testbed.deactivate()

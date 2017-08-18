@@ -37,17 +37,19 @@ j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(SITE_ROOT + '/templat
 
 
 # @app.route(PREFIX + '<string:path>.html')
-def _page(path):
-    data = None
-    page = pages.get_or_404(path)
-    html_to_use = 'page.html'
-
-    if page.meta.get('usehtml', None) is not None:
-        data = json.load(open(LOG_FILE))
-        html_to_use = 'report.html'
+def _page(name):
+    """
+    Read a file from pages directory and render as HTML
+    :param name: name of the file in the pages directory to render (without extension)
+    :return:
+    """
+    page = pages.get_or_404(name)
+    template_to_use = page.meta.get('template', None) or 'page'
+    template_to_use += '.html'
+    data = json.load(open(LOG_FILE))
 
     # this is pure html content. can be exported
-    html = j2_env.get_template(html_to_use).render(page=page, pages=pages, logs=data)
+    html = j2_env.get_template(template_to_use).render(page=page, pages=pages, logs=data)
     return html
 
 
