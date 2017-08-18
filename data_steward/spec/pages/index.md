@@ -1,4 +1,6 @@
 title: Home
+foo: foo
+bar: lolstillfoo
 
 # Introduction
 
