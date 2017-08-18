@@ -1,5 +1,5 @@
 title: Report
-usehtml: 1
+template: report
 
 | hpoid   |    table      | filename | received | parsing | loaded|
 |----------|:-------------:|---------:|----------|:-------:|------:|

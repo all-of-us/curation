@@ -1,4 +1,5 @@
 title: File Transfer
+template: page
 
 # File Transfer Procedures
 

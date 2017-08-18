@@ -1,6 +1,5 @@
 title: Home
-foo: foo
-bar: lolstillfoo
+template: page
 
 # Introduction
 
