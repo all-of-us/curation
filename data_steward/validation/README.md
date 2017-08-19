@@ -2,7 +2,7 @@
  
 Validate data sets that are submitted to the RDR. All endpoints are accessible only to specially provisioned service accounts.
 
-## `GET /data_steward/v1/validation/<hpo_id>`
+## `GET /data_steward/v1/ValidateHpoFiles/<hpo_id>`
 Loads the files from an HPOs bucket, validates them according to the spec, and generates a report. The report payload is 
 a json file which is uploaded to the DRC bucket used to publish the spec. The json file is rendered in the report page 
 on the specification document.
