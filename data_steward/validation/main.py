@@ -37,12 +37,12 @@ class DataError(RuntimeError):
 @api_util.auth_required_cron
 def validate_hpo_files(hpo_id):
     logging.info('Validating hpo_id %s' % hpo_id)
-    bucket_name = hpo_gcs_path(hpo_id)
-    found_cdm_files = _find_cdm_files(bucket_name)
+    gcs_path = hpo_gcs_path(hpo_id)
+    found_cdm_files = _find_cdm_files(gcs_path)
     result = [
         (cdm_file, 1 if cdm_file in map(lambda f: f.filename, found_cdm_files) else 0) for cdm_file in common.CDM_FILES
     ]
-    _save_result_in_gcs('/%s/result.csv' % bucket_name, result)
+    _save_result_in_gcs('%s/result.csv' % gcs_path, result)
 
 
     # creating a dataset
@@ -88,22 +88,28 @@ def validate_hpo_files(hpo_id):
 
 
 def hpo_gcs_path(hpo_id):
+    """
+    Get the fully qualified GCS path where HPO files will be located
+    :param hpo_id: the id for an HPO
+    :return: fully qualified GCS path
+    """
     # TODO determine how to map bucket
-    return os.environ.get('BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
+    bucket_name = os.environ.get('BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
+    return '/%s/' % bucket_name
 
 
-def _find_cdm_files(cloud_bucket_name):
+def _find_cdm_files(gcs_path):
     """
     Returns list of GCSFileStat of CDM files found in the bucket
-    :param cloud_bucket_name:
+    :param gcs_path: full path of directory to look for CDM files
     :return:
     """
-    bucket_stat_list = list(cloudstorage_api.listbucket('/' + cloud_bucket_name))
+    bucket_stat_list = list(cloudstorage_api.listbucket(gcs_path))
     # GCS does not really have the concept of directories (it's just a filename convention), so all
     # directory listings are recursive and we must filter out subdirectory contents.
     bucket_stat_list = [
         s for s in bucket_stat_list
-        if s.filename.lower() in map(lambda t: '/' + cloud_bucket_name + '/%s' % t, common.CDM_FILES)]
+        if s.filename.lower() in map(lambda t: gcs_path + '%s' % t, common.CDM_FILES)]
     return bucket_stat_list
 
 
@@ -119,54 +125,6 @@ def _save_result_in_gcs(gcs_path, cdm_file_results):
         for (cdm_file_name, found) in cdm_file_results:
             line = '"%(cdm_file_name)s","%(found)s"\n' % locals()
             f.write(line)
-
-
-def read_file(self, filename):
-    self.response.write(
-        'Abbreviated file content (first line and last 1K):\n')
-
-    with cloudstorage.open(filename) as cloudstorage_file:
-        self.response.write(cloudstorage_file.readline())
-        cloudstorage_file.seek(-1024, os.SEEK_END)
-        self.response.write(cloudstorage_file.read())
-
-
-def stat_file(self, filename):
-    self.response.write('File stat:\n')
-
-    stat = cloudstorage.stat(filename)
-    self.response.write(repr(stat))
-
-
-def create_files_for_list_bucket(self, bucket):
-    self.response.write('Creating more files for listbucket...\n')
-    filenames = [bucket + n for n in [
-        '/foo1', '/foo2', '/bar', '/bar/1', '/bar/2', '/boo/']]
-    for f in filenames:
-        self.create_file(f)
-
-
-def list_bucket_directory_mode(self, bucket):
-    self.response.write('Listbucket directory mode result:\n')
-    for stat in cloudstorage.listbucket(bucket + '/b', delimiter='/'):
-        self.response.write(stat)
-        self.response.write('\n')
-        if stat.is_dir:
-            for subdir_file in cloudstorage.listbucket(
-                    stat.filename, delimiter='/'):
-                self.response.write('  {}'.format(subdir_file))
-                self.response.write('\n')
-
-
-def delete_files(self):
-    self.response.write('Deleting files...\n')
-    for filename in self.tmp_filenames_to_clean_up:
-        self.response.write('Deleting file {}\n'.format(filename))
-        try:
-            cloudstorage.delete(filename)
-        except cloudstorage.NotFoundError:
-            pass
-
 
 app.add_url_rule(
     PREFIX + 'ValidateHpoFiles/<string:hpo_id>',
