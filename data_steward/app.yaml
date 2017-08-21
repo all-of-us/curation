@@ -8,7 +8,6 @@ handlers:
 
 - url: /tasks/.*
   script: spec.main.app
-  login: admin
 
 - url: /.*
   script: validation.main.app

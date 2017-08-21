@@ -13,6 +13,8 @@ import unicodedata
 
 # gcloud imports
 import cloudstorage
+import logging
+
 # app requirements
 from flask import Flask
 from flask_flatpages import FlatPages
@@ -86,6 +88,8 @@ def _generate_site(bucket=_DRC_SHARED_BUCKET):
 
         # write it to the drc shared bucket
         _create_file('/{}/{}.html'.format(bucket, endpoint), html)
+
+        logging.info('{} done'.format(endpoint))
 
     return 'okay'
 

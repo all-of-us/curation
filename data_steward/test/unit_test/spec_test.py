@@ -3,6 +3,8 @@ import unittest
 import cloudstorage  # stubbed by testbed
 import mock
 from google.appengine.ext import testbed
+from google.appengine.api import urlfetch
+
 from spec import main
 
 _FAKE_DRC_SHARE_BUCKET = 'fake-drc'
@@ -51,6 +53,13 @@ class SpecTest(unittest.TestCase):
         mock_get_or_404.return_value = dummy
         result = main._page('dummy')
         self.assertEquals(u'<span>foo</span>', result)
+
+    def test_cron_run(self):
+        headers = { 'X-Appengine-Cron': 'true' }
+        result = urlfetch.fetch( url='http://localhost:8080/tasks/sitegen', 
+                method=urlfetch.GET, 
+                headers=headers)
+        self.assertEquals('okay',result.content)
 
     def tearDown(self):
         self.testbed.deactivate()
