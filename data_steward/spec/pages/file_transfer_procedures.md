@@ -17,7 +17,7 @@ The following abbreviations will be used for the HPO Names:
 </tr>
 </thead>
 <tbody>
-{% for hpo in site.data.hpo %}
+{% for hpo in hpos %}
 <tr>
   <td>{{ hpo.name }}</td>
   <td>{{ hpo.hpo_id }}</td>

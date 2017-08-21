@@ -11,9 +11,8 @@ For the purposes of goal \#1 of this data sprint, the table definitions in this 
 For this data sprint, the OMOP vocabulary will be required. A version of the vocabulary for the All of Us Research Program can be downloaded [here](https://drive.google.com/file/d/0B1ctb6oEtLWLWFRqYXdWclZkbWM/view?usp=sharing). Once the file is unzipped, the CSV files that contain the vocabulary can be loaded into a database. The load script and table creation files can be found in the [CommonDataModel](https://github.com/OHDSI/CommonDataModel) repo on GitHub. Additionally, for this data sprint, the concept id columns are required to be populated. Examples of how to identify the “concept\_id” fields are in the below tables. It is also recommended to view the tutorials available online for both the CDM ETL (<http://www.ohdsi.org/common-data-model-and-extract-transform-and-load-tutorial/>) and the Vocabulary (<http://www.ohdsi.org/ohdsi-standardized-vocabulary-tutorial-recordings/)>. It is important to note that not all ICD codes map to a condition. It is important to look at the domain of the concept in the OMOP Vocabulary. For example, ICD-9 CM code “V72.19” (Other examination of ears and hearing) is considered a procedure and thus should be placed in the procedure\_occurrence table. Likewise, there are other ICD codes that should be placed in other tables.
 
 # person
-
 | Field                          | Required For Export     | Type     | Description |
-| ------------------------------ | ----------------------- | -------- | ----------- |
+|:------------------------------ |: ----------------------- |: -------- |: ----------- |
 | person\_id                     | Yes                     | integer  | A unique identifier for each person. Note: When the project is live the person id will be the PMID provided from the DRC. |
 | gender\_concept\_id            | Yes                     | integer  | Refer to [gender_concept_id.csv](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/person/gender_concept_id.csv) for the list of allowed concept_ids. |
 | year\_of\_birth                | Yes                     | integer  | The year of birth of the person. For data sources with date of birth, the year is extracted. For data sources where the year of birth is not available, the approximate year of birth is derived based on any age group categorization available. |
@@ -43,7 +42,7 @@ For example, an African American, non-Hispanic, male patient named John Doe born
 # visit\_occurrence
 
 | Field                      | Required For Export     | Type     | Description |
-| -------------------------- | ----------------------- | -------- | ----------- |
+|:------------------------------ |: ----------------------- |: -------- |: ----------- |
 | visit\_occurrence\_id      | Yes                     | integer  | A unique identifier for each Person's visit or encounter at a healthcare provider. |
 | person\_id                 | Yes                     | integer  | A foreign key identifier to the Person for whom the visit is recorded. The demographic details of that Person are stored in the PERSON table. |
 | visit\_concept\_id         | Yes                     | integer  | Refer to [visit_concept_id.csv](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/visit_occurrence/visit_concept_id.csv) for the allowed concept_ids. |
@@ -81,7 +80,7 @@ Amb surg visit
 # condition\_occurrence
 
 | Field                      | Required For Export     | Type     | Description |
-| -------------------------- | ----------------------- | -------- | ----------- |
+|:------------------------------ |: ----------------------- |: -------- |: ----------- |
 | condition\_occurrence\_id      | Yes                     | integer     | A unique identifier for each Condition Occurrence event. |
 | person\_id                     | Yes                     | integer     | A foreign key identifier to the Person who is experiencing the condition. The demographic details of that Person are stored in the PERSON table. |
 | condition\_concept\_id         | Yes                     | integer     | A standard, valid, OMOP concept ID for the associated domain. The SNOMED terminology is considered standard for the condition domain. It is often derived from the `condition_source_concept_id`. If your source data does not use SNOMED (i.e. in `condition_source_concept_id`) then they need to be translated. The query in [condition_concept_id.sql](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/condition_occurrence/condition_concept_id.sql) demonstrates how you may go about this. |
@@ -105,7 +104,7 @@ Amb surg visit
 The following were the diagnosis codes for each of the above visits:
 
 | | |
-|--------------------|----------------------------------------------------------------------------------------|
+|:--------------------|:----------------------------------------------------------------------------------------|
 | ED                 | Primary: Calculus of kidney (ICD9:592.0) <br> Secondary: Abdominal pain, right low quandrant (ICD9:789.03). Renal Colic (ICD9:788.0) |
 | Both clinic visits | Calculus of ureter (ICD9:592.1)                                                        |
 | Amb Surg           | Calculus of ureter (ICD9:592.1)                                                        |
@@ -135,7 +134,7 @@ Amb surg visit
 # procedure\_occurrence
 
 | Field                      | Required For Export     | Type     | Description |
-| -------------------------- | ----------------------- | -------- | ----------- |
+|:------------------------------ |: ----------------------- |: -------- |: ----------- |
 | procedure\_occurrence\_id      | Yes                     | integer  | A system-generated unique identifier for each Procedure Occurrence.                                                                                                                                                                                                                                                                       |
 | person\_id                     | Yes                     | integer  | A foreign key identifier to the Person who is subjected to the Procedure. The demographic details of that Person are stored in the PERSON table.                                                                                                                                                                                          |
 | procedure\_concept\_id         | Yes                     | integer  | A standard, valid, OMOP concept ID for the associated domain. The CPT-4 terminology is considered the standard for the procedure domain. It is often derived from the `procedure_source_concept_id`. If your source data is non-standard, then they need to be translated. The query in [procedure_concept_id.sql](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/procedure_occurrence/procedure_concept_id.sql) demonstrates how you may go about this. |
@@ -166,7 +165,7 @@ Amb surg visit
 
 
 | Field                      | Required For Export     | Type     | Description |
-| -------------------------- | ----------------------- | -------- | ----------- |
+|:------------------------------ |: ----------------------- |: -------- |: ----------- |
 | drug\_exposure\_id              | Yes                     | integer     | A system-generated unique identifier for each Drug utilization event. |
 | person\_id                      | Yes                     | integer     | A foreign key identifier to the person who is subjected to the Drug. The demographic details of that person are stored in the person table. |
 | drug\_concept\_id       | No                      | integer     | A standard, valid OMOP concept ID for the associated domain. It is typically derived from `drug_source_concept_id`.  The RxNorm terminology is considered standard for the drug domain. If your source data does not use RxNorm (i.e. in `drug_source_concept_id`) then they need to be translated. The query in [drug_concept_id.sql](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/drug_exposure/drug_concept_id.sql) demonstrates how you may go about this. |
@@ -214,7 +213,7 @@ Clinic visit
 
 
 | Field                      | Required For Export     | Type     | Description |
-| -------------------------- | ----------------------- | -------- | ----------- |
+|:------------------------------ |: ----------------------- |: -------- |: ----------- |
 | measurement\_id                  | Yes                     | integer  | A unique identifier for each Measurement. |
 | person\_id                       | Yes                     | integer  | A foreign key identifier to the Person about whom the measurement was recorded. The demographic details of that Person are stored in the PERSON table. |
 | measurement\_concept\_id         | Yes                     | integer  | A standard, valid OMOP concept ID. It is typically derived from `measurement_source_concept_id`. The LOINC terminology is the standard for the measurement domain. If your source data does not use LOINC (i.e. in `measurement_source_concept_id`) then they need to be translated. The query in [measurement_concept_id.sql](https://github.com/cumc-dbmi/pmi_sprint_reporter/blob/master/resources/valid_concepts/measurement/measurement_concept_id.sql) demonstrates how you may go about this. |
