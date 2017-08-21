@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-
-from __future__ import absolute_import
-
 import logging
 import os
 
@@ -11,6 +8,7 @@ from flask import Flask
 from google.appengine.api import app_identity
 
 import api_util
+import common
 
 # from google.cloud import bigquery
 
@@ -18,17 +16,8 @@ import api_util
 # credentials=GoogleCredentials.get_application_default()
 # from googleapiclient.discovery import build
 
-dev_flag = True
-source_filename = "tester.csv"
-PROJECTID = 'bamboo-creek-172917'
-real_bucket_name = "tester-for-cloudstorage"
-real_bucket_name = "share-test-1729"
-gcs_path_prepend = os.path.dirname(os.path.realpath(__file__))
-
-if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
-    # print "setting environment"
-    dev_flag = False
-    gcs_path_prepend = "gs://"
+PREFIX = '/data_steward/v1/'
+app = Flask(__name__)
 
 
 class DataError(RuntimeError):
@@ -46,17 +35,15 @@ class DataError(RuntimeError):
 
 
 @api_util.auth_required_cron
-def run_report():
-    bucket_name = os.environ.get(
-        'BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
+def validate_hpo_files(hpo_id):
+    logging.info('Validating hpo_id %s' % hpo_id)
+    bucket_name = hpo_gcs_path(hpo_id)
+    found_cdm_files = _find_cdm_files(bucket_name)
+    result = [
+        (cdm_file, 1 if cdm_file in map(lambda f: f.filename, found_cdm_files) else 0) for cdm_file in common.CDM_FILES
+    ]
+    _save_result_in_gcs('/%s/result.csv' % bucket_name, result)
 
-    if real_bucket_name is not None:
-        bucket_name = real_bucket_name
-
-    logging.info('Using bucket name: \n\n'.format(bucket_name))
-
-    bucket = '/' + bucket_name
-    filename = bucket + '/tester.csv'
 
     # creating a dataset
     '''  dataset_resource_body = { "kind": "bigquery#dataset", "etag": etag, "id": string, "selfLink": string,
@@ -100,44 +87,38 @@ def run_report():
     return '{"report-generator-status": "started"}'
 
 
-CDM_TABLES = ['person', 'visit_occurrence', 'condition_occurrence']
+def hpo_gcs_path(hpo_id):
+    # TODO determine how to map bucket
+    return os.environ.get('BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
 
 
 def _find_cdm_files(cloud_bucket_name):
     """
-    Returns full paths (including bucket name) of CDM files found in the bucket
+    Returns list of GCSFileStat of CDM files found in the bucket
     :param cloud_bucket_name:
     :return:
     """
     bucket_stat_list = list(cloudstorage_api.listbucket('/' + cloud_bucket_name))
-    if not bucket_stat_list:
-        raise DataError('No files in cloud bucket %r.' % cloud_bucket_name)
     # GCS does not really have the concept of directories (it's just a filename convention), so all
     # directory listings are recursive and we must filter out subdirectory contents.
     bucket_stat_list = [
         s for s in bucket_stat_list
-        if s.filename.lower() in map(lambda t: '/' + cloud_bucket_name + '/%s.csv' % t, CDM_TABLES)]
-    if not bucket_stat_list:
-        raise DataError(
-            'No CDM files in cloud bucket %r (all files: %s).' % (cloud_bucket_name, bucket_stat_list))
+        if s.filename.lower() in map(lambda t: '/' + cloud_bucket_name + '/%s' % t, common.CDM_FILES)]
     return bucket_stat_list
 
 
-def create_file(self, filename):
-    """Create a file."""
-
-    self.response.write('Creating file {}\n'.format(filename))
-
-    # The retry_params specified in the open call will override the default
-    # retry params for this particular file handle.
-    write_retry_params = cloudstorage.RetryParams(backoff_factor=1.1)
-    with cloudstorage.open(
-            filename, 'w', content_type='text/plain', options={
-                'x-goog-meta-foo': 'foo', 'x-goog-meta-bar': 'bar'},
-            retry_params=write_retry_params) as cloudstorage_file:
-        cloudstorage_file.write('abcde\n')
-        cloudstorage_file.write(('f' * 1024 + ',') * 4 + '\n')
-    self.tmp_filenames_to_clean_up.append(filename)
+def _save_result_in_gcs(gcs_path, cdm_file_results):
+    """
+    Save the validation results in specified path
+    :param gcs_path: full GCS path
+    :param cdm_file_results: list of tuples (<cdm_file_name>, <found>)
+    :return:
+    """
+    with cloudstorage.open(gcs_path, 'w', content_type='text/plain') as f:
+        f.write('"cdm_file_name","found"\n')
+        for (cdm_file_name, found) in cdm_file_results:
+            line = '"%(cdm_file_name)s","%(found)s"\n' % locals()
+            f.write(line)
 
 
 def read_file(self, filename):
@@ -186,12 +167,9 @@ def delete_files(self):
         except cloudstorage.NotFoundError:
             pass
 
-PREFIX = '/report/v1/'
-
-app = Flask(__name__)
 
 app.add_url_rule(
-    PREFIX + 'Report',
-    endpoint='report_gen',
-    view_func=run_report,
+    PREFIX + 'ValidateHpoFiles/<string:hpo_id>',
+    endpoint='validate_hpo_files',
+    view_func=validate_hpo_files,
     methods=['GET'])

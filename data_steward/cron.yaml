@@ -2,3 +2,6 @@ cron:
 - description: website generation
   url: /tasks/sitegen
   schedule: every 5 minutes
+- description: validate hpo
+  url: /data_steward/v1/ValidateHpoFiles/dummy
+  schedule: every 30 minutes
