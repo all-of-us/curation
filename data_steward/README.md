@@ -10,6 +10,20 @@ Specification document and data curation processes for data submitted to the DRC
     * `google-cloud-sdk-app-engine-python` (follow instructions in Cloud SDK)
  * _Recommended: [virtualenv](https://pypi.python.org/pypi/virtualenv)_
 
+### Local Environment
+
+In general we want to keep unit tests local (see 
+[Local Unit Testing for Python](https://cloud.google.com/appengine/docs/standard/python/tools/localunittesting)), 
+but some services such as bigquery do not readily support local emulation and thus require access to cloud services on 
+the internet. The following environment variables are needed to configure access to these services. 
+
+| name | description |
+| ---- | ----------- |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Location of service account credentials in JSON format (see [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials#howtheywork)) |
+| `APPLICATION_ID` | Google cloud project ID. For development, we use `all-of-us-ehr-dev`. |
+| `BIGQUERY_DATASET_ID` | ID of the biquery dataset where CDM data are to be loaded. Must be in the project associated with `APPLICATION_ID`. |
+| `BUCKET_NAME` | Name of the bucket where CDM files will be located. *Note: Validation currently assumes there is a single bucket, but this will change.*  |
+
 ## Installation / Configuration
 
  * Install requirements by running
