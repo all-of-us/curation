@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 
-{% block content %}
-  <table class="log-table">
+{% block filler%}
+    <h1 class="mt-5"> Validation report </h1>
+     <table class="table table-striped">
   <thead>
   <tr>
     <th>hpo_id</th>
@@ -13,7 +14,7 @@
   </tr>
   </thead>
   <tbody>
-  {% for log in logs | sort(attribute='hpo_id')%}
+  <!--{% for log in logs | sort(attribute='hpo_id')%}
   <tr {% if log.message != null %} class="issue" id="{{ log.hpo_id }}" data-message="{{ log.message | e }}" {% endif %}>
     <td>{{ log.hpo_id }}</td>
     <td>{{ log.table_name }}</td>
@@ -22,8 +23,22 @@
     <td>{% if log.parsing %} &#10004; {% endif %}</td>
     <td>{% if log.loading %} &#10004; {% endif %}</td>
   </tr>
-  {% endfor %}
+  {% endfor %}-->
   </tbody>
   </table>
-
-{% endblock content %}
+     <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+        <script>
+            $(function() {
+                $.getJSON('https://storage.googleapis.com/bamboo-creek-172917.appspot.com/log.json',
+                    function(json) {
+                    var tr;
+                    for (var i = 0; i< json.length; i++){
+                        tr = $('<tr/>');
+                        tr.append("<td>" + data[i][0] + "</td>");
+                        tr.append("<td>" + data[i][1] + "</td>");
+                        $('table').append(tr)
+                    };
+                });
+            });
+        </script>
+{% endblock filler%}

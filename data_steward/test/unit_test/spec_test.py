@@ -50,6 +50,7 @@ class SpecTest(unittest.TestCase):
             return
         dummy.meta = {'title': 'foo', 'template': 'test_empty'}
         dummy.title = 'foo'
+        dummy.body = 'bar'
         mock_get_or_404.return_value = dummy
         result = main._page('dummy')
         self.assertEquals(u'<span>foo</span>', result)
