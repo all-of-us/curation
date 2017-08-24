@@ -46,7 +46,6 @@ j2_env.globals['get_title'] = lambda: md.Meta['title'][0]
 j2_env.trim_blocks = True
 j2_env.lstrip_blocks = True
 
-
 md_convert = lambda text: jinja2.Markup(md.convert(text))
 
 # @app.route(PREFIX + '<string:path>.html')
