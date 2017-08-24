@@ -11,9 +11,15 @@ the DRC bucket.
 
 These are already in requirements.txt
 1. flask==0.10
-+ flask-restful==0.3.5
-+ Flask-FlatPages
+2. flask-restful==0.3.5
+3. Flask-FlatPages
 
 ## Running
 
-Runs as a cron job.
+Runs as a cron job for generating the specification site, which contains.
+
+1. Overview
+2. OMOP Common Data Model specification
+3. How the upload works.
+4. Validation report with minimal feedback.
+
