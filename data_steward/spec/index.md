@@ -4,7 +4,7 @@ layout: default
 
 # Introduction
 
-This Data Sprint is an opportunity for the Data Resource Core (DRC) to assess the technical capabilities and understand the source data of the Healthcare Provider Organization (HPO) sites required to transmit EHR data. Your participation as a HPO will provide key insight towards the integration of this information into the All of Us Research Program. We provide here an overview of the components of the Data Sprint Request:
+This Data Release is an opportunity for the Data Resource Core (DRC) to assess the technical capabilities and understand the source data of the Healthcare Provider Organization (HPO) sites required to transmit EHR data. Your participation as a HPO will provide key insight towards the integration of this information into the All of Us Research Program. We provide here an overview of the components of the Data Sprint Request:
 
  1. Overview
  1. [Data Model](data_model.md)
