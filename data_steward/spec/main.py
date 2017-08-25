@@ -10,11 +10,15 @@ from __future__ import absolute_import
 import json
 import os
 import unicodedata
+import csv
 
 # gcloud imports
 import cloudstorage
+import logging
+
 # app requirements
 from flask import Flask
+import markdown
 from flask_flatpages import FlatPages
 import jinja2
 import api_util
@@ -29,12 +33,20 @@ FLATPAGES_EXTENSION = '.md'
 FLATPAGES_ROOT = SITE_ROOT + '/pages/'
 
 LOG_FILE = SITE_ROOT + '/log.json'
+HPO_FILE = SITE_ROOT + '/hpo.csv'
 
 app = Flask(__name__, template_folder=SITE_ROOT + '/templates')
 app.config.from_object(__name__)
 pages = FlatPages(app)
 j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(SITE_ROOT + '/templates/'), trim_blocks=True)
 
+md = markdown.Markdown(extensions=['meta','markdown.extensions.tables'])
+j2_env.filters['markdown'] = lambda text: jinja2.Markup(md.convert(text))
+j2_env.globals['get_title'] = lambda: md.Meta['title'][0]
+j2_env.trim_blocks = True
+j2_env.lstrip_blocks = True
+
+md_convert = lambda text: jinja2.Markup(md.convert(text))
 
 # @app.route(PREFIX + '<string:path>.html')
 def _page(name):
@@ -48,10 +60,24 @@ def _page(name):
     template_to_use += '.html'
     data = json.load(open(LOG_FILE))
 
+    with open(HPO_FILE,'r') as infile:
+        reader = csv.reader(infile)
+        reader.next()
+        hpos = [{'hpo_id':rows[0],'name':rows[1]} for rows in reader]
+    
     # this is pure html content. can be exported
-    html = j2_env.get_template(template_to_use).render(page=page, pages=pages, logs=data)
-    return html
+    
+    markdown_string_template  = j2_env.from_string(page.body)
+    processed_md = markdown_string_template.render(hpos = hpos,
+                                                   page = page)
+    content = md_convert(processed_md)
 
+    html = j2_env.get_template(template_to_use).render(content=content,
+                                                       page=page,
+                                                       hpos=hpos, 
+                                                       pages=pages,
+                                                       logs=data)
+    return html
 
 def _create_file(filename, content):
     """
@@ -87,8 +113,12 @@ def _generate_site(bucket=_DRC_SHARED_BUCKET):
         # write it to the drc shared bucket
         _create_file('/{}/{}.html'.format(bucket, endpoint), html)
 
-    return 'okay'
+        #with open(SITE_ROOT + '/www/{}.html'.format(endpoint), 'w+') as  file_writer:
+        #    file_writer.write(html)
 
+        logging.info('{} done'.format(endpoint))
+
+    return 'okay'
 
 app.add_url_rule(
     PREFIX + 'sitegen',
