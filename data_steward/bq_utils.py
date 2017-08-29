@@ -36,12 +36,8 @@ def load_table_from_bucket(hpo_id, cdm_table_name):
     :param cdm_table_name: name of the CDM table
     :return: an object describing the associated bigquery job
     """
-    try:
-        if cdm_table_name not in common.CDM_TABLES:
-            raise ValueError
-    except ValueError as err:
-        err.message = err.message + '{} is not a valid table to load'.format(cdm_table_name)
-        raise
+    if cdm_table_name not in common.CDM_TABLES:
+        raise ValueError('{} is not a valid table to load'.format(cdm_table_name))
 
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
