@@ -1,0 +1,27 @@
+[
+    {
+        "type": "string", 
+        "name": "vocabulary_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "vocabulary_name", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "vocabulary_reference", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "vocabulary_version", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "vocabulary_concept_id", 
+        "mode": "required"
+    }
+]

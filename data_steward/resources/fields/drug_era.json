@@ -1,0 +1,37 @@
+[
+    {
+        "type": "integer", 
+        "name": "drug_era_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "person_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "drug_concept_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "drug_era_start_date", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "drug_era_end_date", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "drug_exposure_count", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "gap_days", 
+        "mode": "nullable"
+    }
+]

@@ -1,0 +1,37 @@
+[
+    {
+        "type": "integer", 
+        "name": "cohort_definition_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "cohort_start_date", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "cohort_end_date", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "subject_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "attribute_definition_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "float", 
+        "name": "value_as_number", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "value_as_concept_id", 
+        "mode": "nullable"
+    }
+]
