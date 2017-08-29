@@ -1,0 +1,102 @@
+[
+    {
+        "type": "integer", 
+        "name": "cost_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "cost_event_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "cost_domain_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "cost_type_concept_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "currency_concept_id", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "total_charge", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "total_cost", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "total_paid", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "paid_by_payer", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "paid_by_patient", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "paid_patient_copay", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "paid_patient_coinsurance", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "paid_patient_deductible", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "paid_by_primary", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "paid_ingredient_cost", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "paid_dispensing_fee", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "payer_plan_period_id", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "amount_allowed", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "revenue_code_concept_id", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "reveue_code_source_value", 
+        "mode": "nullable"
+    }
+]

@@ -1,0 +1,37 @@
+[
+    {
+        "type": "integer", 
+        "name": "observation_period_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "person_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "observation_period_start_date", 
+        "mode": "required"
+    }, 
+    {
+        "type": "timestamp", 
+        "name": "observation_period_start_datetime", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "observation_period_end_date", 
+        "mode": "required"
+    }, 
+    {
+        "type": "timestamp", 
+        "name": "observation_period_end_datetime", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "period_type_concept_id", 
+        "mode": "required"
+    }
+]

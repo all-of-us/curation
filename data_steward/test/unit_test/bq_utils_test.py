@@ -44,6 +44,10 @@ class BqUtilsTest(unittest.TestCase):
         result = bq_utils.load_table_from_bucket(_FAKE_HPO_ID, PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
 
+    def test_load_table_from_bucket_error_on_bad_table_name(self):
+        with self.assertRaises(ValueError) as cm:
+            bq_utils.load_table_from_bucket(_FAKE_HPO_ID, 'not_a_cdm_table')
+
     def tearDown(self):
         self._drop_tables()
         self._empty_bucket()

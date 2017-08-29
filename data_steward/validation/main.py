@@ -33,7 +33,7 @@ def validate_hpo_files(hpo_id):
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     found_cdm_files = _find_cdm_files(bucket)
     result = [
-        (cdm_file, 1 if cdm_file in map(lambda f: f.filename, found_cdm_files) else 0) for cdm_file in common.CDM_FILES
+        (cdm_file, 1 if cdm_file in map(lambda f: f['name'], found_cdm_files) else 0) for cdm_file in common.CDM_FILES
     ]
     _save_result_in_gcs(bucket, RESULT_CSV, result)
     return '{"report-generator-status": "started"}'

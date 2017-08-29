@@ -1,0 +1,37 @@
+[
+    {
+        "type": "integer", 
+        "name": "dose_era_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "person_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "drug_concept_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "unit_concept_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "float", 
+        "name": "dose_value", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "dose_era_start_date", 
+        "mode": "required"
+    }, 
+    {
+        "type": "date", 
+        "name": "dose_era_end_date", 
+        "mode": "required"
+    }
+]

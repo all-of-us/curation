@@ -1,0 +1,52 @@
+[
+    {
+        "type": "string", 
+        "name": "cdm_source_name", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "cdm_source_abbreviation", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "cdm_holder", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "source_description", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "source_documentation_reference", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "cdm_etl_reference", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "date", 
+        "name": "source_release_date", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "date", 
+        "name": "cdm_release_date", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "cdm_version", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "vocabulary_version", 
+        "mode": "nullable"
+    }
+]

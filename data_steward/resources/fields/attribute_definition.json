@@ -1,0 +1,27 @@
+[
+    {
+        "type": "integer", 
+        "name": "attribute_definition_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "attribute_name", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "attribute_description", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "attribute_type_concept_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "attribute_syntax", 
+        "mode": "nullable"
+    }
+]
