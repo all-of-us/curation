@@ -9,6 +9,7 @@ import gcs_utils
 from validation import main
 import resources
 import common
+import copy
 
 _FAKE_HPO = 'foo'
 
@@ -16,6 +17,7 @@ VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + _FAKE_HPO
 TEST_DATA_PATH = os.path.join(resources.base_path, 'test', 'test_data')
 EMPTY_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'empty_validation_result.csv')
 ALL_FILES_UNPARSEABLE_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'all_files_unparseable_validation_result.csv')
+WARNING_UNKNOWN_FILES = os.path.join(TEST_DATA_PATH, 'warning_unknown_files.csv')
 
 
 class ValidationTest(unittest.TestCase):
@@ -90,6 +92,27 @@ class ValidationTest(unittest.TestCase):
             # check content of the file is correct
             actual_result = self._read_cloud_file(self.hpo_bucket, main.RESULT_CSV)
             with open(ALL_FILES_UNPARSEABLE_VALIDATION_RESULT, 'r') as f:
+                expected = f.read()
+                self.assertEqual(expected, actual_result)
+
+    @mock.patch('api_util.check_cron')
+    def test_bad_file_names(self, mock_check_cron):
+        exclude_file_dic_list = resources._csv_to_list(WARNING_UNKNOWN_FILES)
+        exclude_file_list = [dic['file_name'] for dic in exclude_file_dic_list]
+        
+        for filename in exclude_file_list:
+            self._write_cloud_csv(self.hpo_bucket, filename, ".")
+            
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(VALIDATE_HPO_FILES_URL) 
+
+            # check content of the file is correct 
+            actual_result = self._read_cloud_file(self.hpo_bucket,
+                                                  main.WARNING_RESULT_CSV) 
+            # main.WARNING_RESULT_CSV doesn't exist locally or in bucket.
+            # could be warning_unknown_files.csv
+            with open(WARNING_UNKNOWN_FILES, 'r') as f:
                 expected = f.read()
                 self.assertEqual(expected, actual_result)
 
