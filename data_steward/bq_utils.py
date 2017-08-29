@@ -5,6 +5,7 @@ import json
 
 from googleapiclient.errors import HttpError
 
+import resources
 import common
 import gcs_utils
 
@@ -41,7 +42,7 @@ def load_table_from_bucket(hpo_id, cdm_table_name):
     bq_service = build('bigquery', 'v2')
 
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    fields_filename = '%s.json' % cdm_table_name
+    fields_filename = os.path.join(resources.fields_path, cdm_table_name + '.json')
     gcs_object_path = 'gs://%s/%s.csv' % (bucket, cdm_table_name)
     table_id = get_table_id(hpo_id, cdm_table_name)
 

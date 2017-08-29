@@ -4,11 +4,15 @@ import csv
 import cachetools
 
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
+# spec/_data/*
 data_path = os.path.join(base_path, 'spec', '_data')
-resource_path = os.path.join(base_path, 'resources')
-example_path = os.path.join(base_path, 'examples')
-cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
 hpo_csv_path = os.path.join(data_path, 'hpo.csv')
+
+# resources/*
+resource_path = os.path.join(base_path, 'resources')
+fields_path = os.path.join(resource_path, 'fields')
+cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
 
 
 @cachetools.cached(cache={})
