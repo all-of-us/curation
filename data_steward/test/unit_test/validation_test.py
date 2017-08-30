@@ -9,7 +9,6 @@ import gcs_utils
 from validation import main
 import resources
 import common
-import copy
 
 _FAKE_HPO = 'foo'
 
@@ -97,9 +96,14 @@ class ValidationTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_bad_file_names(self, mock_check_cron):
-        exclude_file_dic_list = resources._csv_to_list(WARNING_UNKNOWN_FILES)
-        exclude_file_list = [dic['file_name'] for dic in exclude_file_dic_list]
+        # exclude_file_dic_list = resources._csv_to_list(WARNING_UNKNOWN_FILES)
+        # exclude_file_list = [dic['file_name'] for dic in exclude_file_dic_list]
         
+        exclude_file_list = ["person_xyz.csv",
+                             "condition_occurrence_NO.csv" ,
+                             "visit_occurrence_aaaaaah.csv",
+                             "procedure_occurrence_best.csv"]
+
         for filename in exclude_file_list:
             self._write_cloud_csv(self.hpo_bucket, filename, ".")
             
@@ -110,6 +114,7 @@ class ValidationTest(unittest.TestCase):
             # check content of the file is correct 
             actual_result = self._read_cloud_file(self.hpo_bucket,
                                                   main.WARNING_RESULT_CSV) 
+            
             # main.WARNING_RESULT_CSV doesn't exist locally or in bucket.
             # could be warning_unknown_files.csv
             with open(WARNING_UNKNOWN_FILES, 'r') as f:
