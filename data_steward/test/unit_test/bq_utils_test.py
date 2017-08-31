@@ -11,7 +11,8 @@ _FAKE_HPO_ID = 'foo'
 PERSON = 'person'
 
 TEST_DATA_PATH = os.path.join(resources.base_path, 'test', 'test_data')
-PERSON_5_CSV_PATH = os.path.join(TEST_DATA_PATH, 'person_5.csv')
+FIVE_PERSONS_PATH = os.path.join(TEST_DATA_PATH, 'five_persons')
+PERSON_5_CSV_PATH = os.path.join(FIVE_PERSONS_PATH, 'person.csv')
 
 
 class BqUtilsTest(unittest.TestCase):
