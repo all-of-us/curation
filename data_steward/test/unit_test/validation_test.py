@@ -93,6 +93,38 @@ class ValidationTest(unittest.TestCase):
                 expected = f.read()
                 self.assertEqual(expected, actual_result)
 
+    @mock.patch('api_util.check_cron')
+    def test_bad_file_names(self, mock_check_cron):
+        exclude_file_list = ["person_final.csv",
+                             "condition_occurence.csv",   # misspelled
+                             "avisit_occurrence.csv",
+                             "observation.csv",           # not (currently) supported
+                             "procedure_occurrence.tsv"]  # unsupported file extension
+
+        expected_result_items = []
+        for file_name in exclude_file_list:
+            self._write_cloud_csv(self.hpo_bucket, file_name, ".")
+            expected_item = dict(file_name=file_name, message=main.UNKNOWN_FILE)
+            expected_result_items.append(expected_item)
+            
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(VALIDATE_HPO_FILES_URL)
+
+            # check content of the bucket is correct
+            expected_bucket_items = exclude_file_list + [main.RESULT_CSV, main.WARNINGS_CSV]
+            list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
+            actual_bucket_items = [item['name'] for item in list_bucket_result]
+            self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
+
+            # check content of the warnings file is correct
+            actual_result = self._read_cloud_file(self.hpo_bucket,
+                                                  main.WARNINGS_CSV)
+            actual_result_file = StringIO.StringIO(actual_result)
+            actual_result_items = resources._csv_file_to_list(actual_result_file)
+
+            self.assertSetEqual(set(expected_result_items), set(actual_result_items))
+
     def tearDown(self):
         self._empty_bucket()
         self.testbed.deactivate()

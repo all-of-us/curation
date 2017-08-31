@@ -8,6 +8,8 @@ import gcs_utils
 import StringIO
 
 RESULT_CSV = 'result.csv'
+WARNINGS_CSV = 'warnings.csv'
+UNKNOWN_FILE = 'Unknown file'
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
