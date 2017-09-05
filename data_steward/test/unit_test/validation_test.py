@@ -48,12 +48,6 @@ class ValidationTest(unittest.TestCase):
         main.validate_hpo_files(_FAKE_HPO)
         self.assertEquals(mock_check_cron.call_count, 1)
 
-    def test_find_cdm_files(self):
-        self._write_cloud_csv(self.hpo_bucket, 'person.csv', 'a,b,c,d')
-        self._write_cloud_csv(self.hpo_bucket, 'visit_occurrence.csv', '1,2,3,4')
-        cdm_files = main._find_cdm_files(self.hpo_bucket)
-        self.assertEquals(len(cdm_files), 2)
-
     @mock.patch('api_util.check_cron')
     def test_validate_missing_files_output(self, mock_check_cron):
         # enable exception propagation as described at https://goo.gl/LqDgnj
@@ -123,7 +117,10 @@ class ValidationTest(unittest.TestCase):
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = resources._csv_file_to_list(actual_result_file)
 
-            self.assertSetEqual(set(expected_result_items), set(actual_result_items))
+            # sort in order to compare
+            expected_result_items.sort()
+            actual_result_items.sort()
+            self.assertListEqual(expected_result_items, actual_result_items)
 
     def tearDown(self):
         self._empty_bucket()
