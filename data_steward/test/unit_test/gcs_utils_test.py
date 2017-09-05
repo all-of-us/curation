@@ -1,15 +1,9 @@
 import unittest
 
-import os
-
-import gcs_utils
-import resources
 from google.appengine.ext import testbed
 
-TEST_DATA_PATH = os.path.join(resources.base_path, 'test', 'test_data')
-FIVE_PERSONS_PATH = os.path.join(TEST_DATA_PATH, 'five_persons')
-PERSON_5_CSV_PATH = os.path.join(FIVE_PERSONS_PATH, 'person.csv')
-FAKE_HPO = 'foo'
+import gcs_utils
+from test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 
 
 class GcsUtilsTest(unittest.TestCase):
@@ -22,7 +16,7 @@ class GcsUtilsTest(unittest.TestCase):
         self.testbed.init_urlfetch_stub()
         self.testbed.init_blobstore_stub()
         self.testbed.init_datastore_v3_stub()
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO)
+        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.gcs_path = '/'.join([self.hpo_bucket, 'dummy'])
         self._empty_bucket()
 
@@ -34,7 +28,7 @@ class GcsUtilsTest(unittest.TestCase):
     def test_upload_object(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         self.assertEqual(len(bucket_items), 0)
-        with open(PERSON_5_CSV_PATH, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         self.assertEqual(len(bucket_items), 1)
@@ -42,9 +36,9 @@ class GcsUtilsTest(unittest.TestCase):
         self.assertEqual(bucket_item['name'], 'person.csv')
 
     def test_get_object(self):
-        with open(PERSON_5_CSV_PATH, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             expected = fp.read()
-        with open(PERSON_5_CSV_PATH, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         result = gcs_utils.get_object(self.hpo_bucket, 'person.csv')
         self.assertEqual(expected, result)

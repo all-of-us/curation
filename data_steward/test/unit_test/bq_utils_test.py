@@ -1,18 +1,11 @@
 import unittest
 
-import os
-import resources
 import bq_utils
 import gcs_utils
 from google.appengine.ext import testbed
+from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
 
-
-_FAKE_HPO_ID = 'foo'
 PERSON = 'person'
-
-TEST_DATA_PATH = os.path.join(resources.base_path, 'test', 'test_data')
-FIVE_PERSONS_PATH = os.path.join(TEST_DATA_PATH, 'five_persons')
-PERSON_5_CSV_PATH = os.path.join(FIVE_PERSONS_PATH, 'person.csv')
 
 
 class BqUtilsTest(unittest.TestCase):
@@ -25,8 +18,8 @@ class BqUtilsTest(unittest.TestCase):
         self.testbed.init_urlfetch_stub()
         self.testbed.init_blobstore_stub()
         self.testbed.init_datastore_v3_stub()
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(_FAKE_HPO_ID)
-        self.person_table_id = bq_utils.get_table_id(_FAKE_HPO_ID, PERSON)
+        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
+        self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)
         self._drop_tables()
         self._empty_bucket()
 
@@ -40,14 +33,14 @@ class BqUtilsTest(unittest.TestCase):
             bq_utils.delete_table(self.person_table_id)
 
     def test_load_table_from_bucket(self):
-        with open(PERSON_5_CSV_PATH, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
-        result = bq_utils.load_table_from_bucket(_FAKE_HPO_ID, PERSON)
+        result = bq_utils.load_table_from_bucket(FAKE_HPO_ID, PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
 
     def test_load_table_from_bucket_error_on_bad_table_name(self):
         with self.assertRaises(ValueError) as cm:
-            bq_utils.load_table_from_bucket(_FAKE_HPO_ID, 'not_a_cdm_table')
+            bq_utils.load_table_from_bucket(FAKE_HPO_ID, 'not_a_cdm_table')
 
     def tearDown(self):
         self._drop_tables()
