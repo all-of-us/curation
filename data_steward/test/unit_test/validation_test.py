@@ -126,10 +126,7 @@ class ValidationTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_validate_five_persons_success(self, mock_check_cron):
-        expected_result_items = []
-        for cdm_file in common.CDM_FILES:
-            expected_item = dict(cdm_file_name=cdm_file, found="1", parsed="1", loaded="1")
-            expected_result_items.append(expected_item)
+        expected_result_items = resources._csv_to_list(test_util.FIVE_PERSONS_SUCCESS_RESULT_CSV)
 
         # upload all five_persons files
         for cdm_file in test_util.FIVE_PERSONS_FILES:
