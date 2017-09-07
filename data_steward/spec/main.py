@@ -32,8 +32,8 @@ FLATPAGES_AUTO_RELOAD = DEBUG
 FLATPAGES_EXTENSION = '.md'
 FLATPAGES_ROOT = SITE_ROOT + '/pages/'
 
-LOG_FILE = SITE_ROOT + '/log.json'
-HPO_FILE = SITE_ROOT + '/hpo.csv'
+LOG_FILE = SITE_ROOT + '/_data/log.json'
+HPO_FILE = SITE_ROOT + '/_data/hpo.csv'
 
 app = Flask(__name__, template_folder=SITE_ROOT + '/templates')
 app.config.from_object(__name__)
