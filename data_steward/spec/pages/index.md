@@ -1,6 +1,5 @@
----
-layout: default
----
+title: Home
+template: page
 
 # Introduction
 

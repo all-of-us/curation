@@ -1,6 +1,5 @@
----
-layout: default
----
+title: Uploading data
+template: page
 
 # File Transfer Procedures
 
