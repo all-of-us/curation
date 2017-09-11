@@ -147,10 +147,6 @@ class ValidationTest(unittest.TestCase):
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = resources._csv_file_to_list(actual_result_file)
 
-            with open(test_util.ALL_FILES_UNPARSEABLE_VALIDATION_RESULT, 'r') as f:
-                expected = f.read()
-                self.assertEqual(expected, actual_result)
-
             expected_result_items.sort()
             actual_result_items.sort()
             self.assertListEqual(expected_result_items, actual_result_items)

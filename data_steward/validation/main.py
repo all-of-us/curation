@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 import logging
 from flask import Flask
+import os
 
 import api_util
 import common
 import gcs_utils
+import bq_utils
 import StringIO
+
+import time
 
 RESULT_CSV = 'result.csv'
 WARNINGS_CSV = 'warnings.csv'
@@ -49,10 +53,58 @@ def validate_hpo_files(hpo_id):
         (cdm_file, 1 if cdm_file in map(lambda f: f['name'], found_cdm_files) else 0) for cdm_file in common.CDM_FILES
     ]
 
+    # (filename, found, parsed, loaded) for each expected cdm file
+    cdm_file_status_map = {}
+    for cdm_file in common.CDM_FILES:
+        if cdm_file in map(lambda f: f['name'], found_cdm_files) :
+            # This is where the parse_check would go.
+            # don't run the rest of this is csv not parseable
+            
+            # run a bq_load jb
+            result = bq_utils.load_table_from_bucket('chci',
+                                                     cdm_file.split('.')[0])
+
+            load_job_id = result['jobReference']['jobId']
+            job_running = True
+
+            wait_count = 100
+            while job_running :
+
+                load_job_resource=bq_utils.get_job_details(job_id=load_job_id)
+                
+                if load_job_resource['status']['state'] == 'DONE':
+                    job_running = False
+                    if load_job_resource['status'].get('errorResult',None) is None : 
+                        cdm_file_status_map[cdm_file] = {'found':1,'parsed':1,'loaded':1} 
+                    else:
+                        print '----------------'
+                        print cdm_file
+                        print load_job_resource['status']['errorResult']
+                        print load_job_resource['status']['errors']
+                        print ''
+                        # If not parseable, should'nt get here.
+                        cdm_file_status_map[cdm_file] = {'found':1,'parsed':1,'loaded':0} 
+
+                wait_count = wait_count - 1
+                if wait_count == 0: 
+                    cdm_file_status_map[cdm_file] = {'found':1,'parsed':0,'loaded':0} 
+                    break
+
+                time.sleep(1)
+        else:
+            cdm_file_status_map[cdm_file] = {'found':0,'parsed':0,'loaded':0} 
+            
     # (filename, message) for each unknown file
     warnings = [
         (unknown_file['name'], UNKNOWN_FILE) for unknown_file in unknown_files
     ]
+
+    # the following loop is used instead of python list-comprehension but the
+    # problem is tha cdm_file order gets garbled because of python dict
+    result = []
+    for cdm_file in common.CDM_FILES:
+        status = cdm_file_status_map[cdm_file]
+        result = result + [(cdm_file,status['found'],status['parsed'],status['loaded'])]
 
     # output to GCS
     _save_result_in_gcs(bucket, RESULT_CSV, result)
@@ -94,9 +146,9 @@ def _save_result_in_gcs(bucket, name, cdm_file_results):
     :return:
     """
     f = StringIO.StringIO()
-    f.write('"cdm_file_name","found"\n')
-    for (cdm_file_name, found) in cdm_file_results:
-        line = '"%(cdm_file_name)s","%(found)s"\n' % locals()
+    f.write('"cdm_file_name","found","parsed","loaded"\n')
+    for (cdm_file_name, found, parsed, loaded) in cdm_file_results:
+        line = '"%(cdm_file_name)s","%(found)s","%(parsed)s","%(loaded)s"\n' % locals()
         f.write(line)
     f.seek(0)
     result = gcs_utils.upload_object(bucket, name, f)

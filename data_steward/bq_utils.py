@@ -102,3 +102,10 @@ def table_exists(table_id):
         if err.resp.status != 404:
             raise
         return False
+
+def get_job_details(job_id):
+    bq_service = create_service()
+    app_id = app_identity.get_application_id()
+    dataset_id = get_dataset_id()
+
+    return bq_service.jobs().get(projectId=app_id,jobId = job_id).execute()
