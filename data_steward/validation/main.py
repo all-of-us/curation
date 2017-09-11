@@ -5,11 +5,15 @@ from flask import Flask
 import api_util
 import common
 import gcs_utils
+import bq_utils
 import StringIO
+
+import time
 
 RESULT_CSV = 'result.csv'
 WARNINGS_CSV = 'warnings.csv'
 UNKNOWN_FILE = 'Unknown file'
+BQ_LOAD_DELAY_SECONDS = 5
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
@@ -44,18 +48,43 @@ def validate_hpo_files(hpo_id):
         else:
             unknown_files.append(bucket_item)
 
-    # (filename, found) for each expected cdm file
-    result = [
-        (cdm_file, 1 if cdm_file in map(lambda f: f['name'], found_cdm_files) else 0) for cdm_file in common.CDM_FILES
-    ]
+    # (filename, found, parsed, loaded) for each expected cdm file
+    cdm_file_result_map = {}
+    for cdm_file in map(lambda f: f['name'], found_cdm_files):
+        # create a job to load table
+        cdm_file_name = cdm_file.split('.')[0]
+        load_results = bq_utils.load_table_from_bucket(hpo_id, cdm_file_name)
+        load_job_id = load_results['jobReference']['jobId']
+
+        time.sleep(BQ_LOAD_DELAY_SECONDS)
+        job_resource = bq_utils.get_job_details(job_id=load_job_id)
+        job_status = job_resource['status']
+        if job_status['state'] == 'DONE':
+            if 'errorResult' in job_status:
+                logging.info("file {} has errors {}".format(cdm_file, job_status['errors']))
+                cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 0, 'loaded': 0}
+            else:
+                cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 1, 'loaded': 1}
+        else:
+            cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 0, 'loaded': 0}
+            logging.info("Wait timeout exceeded before load job with id '%s' was done" % load_job_id)
 
     # (filename, message) for each unknown file
     warnings = [
         (unknown_file['name'], UNKNOWN_FILE) for unknown_file in unknown_files
     ]
 
+    # TODO consider the order files are validated
+    load_results = []
+    for cdm_file in common.CDM_FILES:
+        if cdm_file in cdm_file_result_map:
+            load_result = cdm_file_result_map[cdm_file]
+            load_results.append((cdm_file, load_result['found'], load_result['parsed'], load_result['loaded']))
+        else:
+            load_results.append((cdm_file, 0, 0, 0))
+
     # output to GCS
-    _save_result_in_gcs(bucket, RESULT_CSV, result)
+    _save_result_in_gcs(bucket, RESULT_CSV, load_results)
 
     if len(warnings) > 0:
         _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
@@ -94,9 +123,9 @@ def _save_result_in_gcs(bucket, name, cdm_file_results):
     :return:
     """
     f = StringIO.StringIO()
-    f.write('"cdm_file_name","found"\n')
-    for (cdm_file_name, found) in cdm_file_results:
-        line = '"%(cdm_file_name)s","%(found)s"\n' % locals()
+    f.write('"cdm_file_name","found","parsed","loaded"\n')
+    for (cdm_file_name, found, parsed, loaded) in cdm_file_results:
+        line = '"%(cdm_file_name)s","%(found)s","%(parsed)s","%(loaded)s"\n' % locals()
         f.write(line)
     f.seek(0)
     result = gcs_utils.upload_object(bucket, name, f)
