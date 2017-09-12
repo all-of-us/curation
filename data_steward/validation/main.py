@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import logging
 from flask import Flask
-import os
 
 import api_util
 import common
@@ -48,50 +47,34 @@ def validate_hpo_files(hpo_id):
         else:
             unknown_files.append(bucket_item)
 
-    # (filename, found) for each expected cdm file
-    result = [
-        (cdm_file, 1 if cdm_file in map(lambda f: f['name'], found_cdm_files) else 0) for cdm_file in common.CDM_FILES
-    ]
-
     # (filename, found, parsed, loaded) for each expected cdm file
     cdm_file_status_map = {}
-    for cdm_file in common.CDM_FILES:
-        if cdm_file in map(lambda f: f['name'], found_cdm_files) :
-            # This is where the parse_check would go.
-            # don't run the rest of this is csv not parseable
+    for cdm_file in map(lambda f: f['name'], found_cdm_files) :
+        # run a bq_load jb
+        result = bq_utils.load_table_from_bucket(hpo_id, cdm_file.split('.')[0])
+
+        load_job_id = result['jobReference']['jobId']
+        job_running = True
+
+        wait_count = 5
+        while job_running or wait_count == 0:
+            time.sleep(10)
+            load_job_resource=bq_utils.get_job_details(job_id=load_job_id)
             
-            # run a bq_load jb
-            result = bq_utils.load_table_from_bucket('chci',
-                                                     cdm_file.split('.')[0])
-
-            load_job_id = result['jobReference']['jobId']
-            job_running = True
-
-            wait_count = 100
-            while job_running :
-
-                load_job_resource=bq_utils.get_job_details(job_id=load_job_id)
-                
-                if load_job_resource['status']['state'] == 'DONE':
-                    job_running = False
-                    if load_job_resource['status'].get('errorResult',None) is None : 
-                        cdm_file_status_map[cdm_file] = {'found':1,'parsed':1,'loaded':1} 
-                    else:
-                        logging.info("file {} has errors {}".format(cdm_file, 
-                                                                    load_job_resource['status']['errors'])
-                                    )
-                        # If not parseable, shouldn't get here.
-                        cdm_file_status_map[cdm_file] = {'found':1,'parsed':0,'loaded':0} 
-
-                wait_count = wait_count - 1
-                if wait_count == 0: 
+            if load_job_resource['status']['state'] == 'DONE':
+                job_running = False
+                if load_job_resource['status'].get('errorResult',None) is None : 
+                    cdm_file_status_map[cdm_file] = {'found':1,'parsed':1,'loaded':1} 
+                else:
+                    logging.info("file {} has errors {}".format(cdm_file, load_job_resource['status']['errors']))
+                    # print "file {} has errors {}".format(cdm_file, load_job_resource['status']['errors'])
                     cdm_file_status_map[cdm_file] = {'found':1,'parsed':0,'loaded':0} 
-                    break
 
-                time.sleep(1)
-        else:
-            cdm_file_status_map[cdm_file] = {'found':0,'parsed':0,'loaded':0} 
-            
+            wait_count = wait_count - 1
+
+        if wait_count == 0: 
+            cdm_file_status_map[cdm_file] = {'found':1,'parsed':0,'loaded':0} 
+
     # (filename, message) for each unknown file
     warnings = [
         (unknown_file['name'], UNKNOWN_FILE) for unknown_file in unknown_files
@@ -101,8 +84,11 @@ def validate_hpo_files(hpo_id):
     # problem is tha cdm_file order gets garbled because of python dict
     result = []
     for cdm_file in common.CDM_FILES:
-        status = cdm_file_status_map[cdm_file]
-        result = result + [(cdm_file,status['found'],status['parsed'],status['loaded'])]
+        status = cdm_file_status_map.get(cdm_file, None)
+        if status is not None:
+            result.append((cdm_file,status['found'],status['parsed'],status['loaded']))
+        else:
+            result.append((cdm_file,0,0,0))
 
     # output to GCS
     _save_result_in_gcs(bucket, RESULT_CSV, result)
