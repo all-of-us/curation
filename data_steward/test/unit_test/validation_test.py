@@ -71,7 +71,7 @@ class ValidationTest(unittest.TestCase):
     @mock.patch('api_util.check_cron')
     def test_all_files_unparseable_output(self, mock_check_cron):
         for cdm_table in common.CDM_FILES:
-            self._write_cloud_str(self.hpo_bucket, cdm_table, ".")
+            self._write_cloud_str(self.hpo_bucket, cdm_table, ".\n .")
 
         main.app.testing = True
         with main.app.test_client() as c:
@@ -146,10 +146,6 @@ class ValidationTest(unittest.TestCase):
             actual_result = self._read_cloud_file(self.hpo_bucket, main.RESULT_CSV)
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = resources._csv_file_to_list(actual_result_file)
-
-            with open(test_util.ALL_FILES_UNPARSEABLE_VALIDATION_RESULT, 'r') as f:
-                expected = f.read()
-                self.assertEqual(expected, actual_result)
 
             expected_result_items.sort()
             actual_result_items.sort()
