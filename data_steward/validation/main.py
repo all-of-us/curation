@@ -80,8 +80,8 @@ def validate_hpo_files(hpo_id):
                         logging.info("file {} has errors {}".format(cdm_file, 
                                                                     load_job_resource['status']['errors'])
                                     )
-                        # If not parseable, should'nt get here.
-                        cdm_file_status_map[cdm_file] = {'found':1,'parsed':1,'loaded':0} 
+                        # If not parseable, shouldn't get here.
+                        cdm_file_status_map[cdm_file] = {'found':1,'parsed':0,'loaded':0} 
 
                 wait_count = wait_count - 1
                 if wait_count == 0: 

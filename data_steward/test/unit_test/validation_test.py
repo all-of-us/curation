@@ -71,7 +71,7 @@ class ValidationTest(unittest.TestCase):
     @mock.patch('api_util.check_cron')
     def test_all_files_unparseable_output(self, mock_check_cron):
         for cdm_table in common.CDM_FILES:
-            self._write_cloud_str(self.hpo_bucket, cdm_table, ".")
+            self._write_cloud_str(self.hpo_bucket, cdm_table, ".\n .")
 
         main.app.testing = True
         with main.app.test_client() as c:
