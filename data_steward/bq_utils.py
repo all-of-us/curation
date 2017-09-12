@@ -104,8 +104,15 @@ def table_exists(table_id):
         return False
 
 def get_job_details(job_id):
+    """return job resource corresponding to job_id
+
+    :job_id: id of the job to get. stored in result['jobReference']['jobId']
+    :returns: job resource. Look at https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs#resource-representations for more detail.
+
+    """
     bq_service = create_service()
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
 
     return bq_service.jobs().get(projectId=app_id,jobId = job_id).execute()
+
