@@ -77,11 +77,9 @@ def validate_hpo_files(hpo_id):
                     if load_job_resource['status'].get('errorResult',None) is None : 
                         cdm_file_status_map[cdm_file] = {'found':1,'parsed':1,'loaded':1} 
                     else:
-                        print '----------------'
-                        print cdm_file
-                        print load_job_resource['status']['errorResult']
-                        print load_job_resource['status']['errors']
-                        print ''
+                        logging.info("file {} has errors {}".format(cdm_file, 
+                                                                    load_job_resource['status']['errors'])
+                                    )
                         # If not parseable, should'nt get here.
                         cdm_file_status_map[cdm_file] = {'found':1,'parsed':1,'loaded':0} 
 
