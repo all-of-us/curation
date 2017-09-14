@@ -60,10 +60,10 @@ class ValidationTest(unittest.TestCase):
             # check the result file was put in bucket
             bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
             self.assertEquals(1, len(bucket_items))
-            self.assertEquals(main.RESULT_CSV, bucket_items[0]['name'])
+            self.assertEquals(common.RESULT_CSV, bucket_items[0]['name'])
 
             # check content of the file is correct
-            actual = self._read_cloud_file(self.hpo_bucket, main.RESULT_CSV)
+            actual = self._read_cloud_file(self.hpo_bucket, common.RESULT_CSV)
             with open(test_util.EMPTY_VALIDATION_RESULT, 'r') as f:
                 expected = f.read()
                 self.assertEqual(expected, actual)
@@ -80,11 +80,11 @@ class ValidationTest(unittest.TestCase):
             # check the result file was put in bucket
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             bucket_item_names = [item['name'] for item in list_bucket_result]
-            expected_items = common.CDM_FILES + [main.RESULT_CSV]
+            expected_items = common.CDM_FILES + [common.RESULT_CSV]
             self.assertSetEqual(set(bucket_item_names), set(expected_items))
 
             # check content of the file is correct
-            actual_result = self._read_cloud_file(self.hpo_bucket, main.RESULT_CSV)
+            actual_result = self._read_cloud_file(self.hpo_bucket, common.RESULT_CSV)
             with open(test_util.ALL_FILES_UNPARSEABLE_VALIDATION_RESULT, 'r') as f:
                 expected = f.read()
                 self.assertEqual(expected, actual_result)
@@ -108,14 +108,14 @@ class ValidationTest(unittest.TestCase):
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
             # check content of the bucket is correct
-            expected_bucket_items = exclude_file_list + [main.RESULT_CSV, main.WARNINGS_CSV]
+            expected_bucket_items = exclude_file_list + [common.RESULT_CSV, common.WARNINGS_CSV]
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             actual_bucket_items = [item['name'] for item in list_bucket_result]
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
 
             # check content of the warnings file is correct
             actual_result = self._read_cloud_file(self.hpo_bucket,
-                                                  main.WARNINGS_CSV)
+                                                  common.WARNINGS_CSV)
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = resources._csv_file_to_list(actual_result_file)
 
@@ -137,13 +137,13 @@ class ValidationTest(unittest.TestCase):
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
             # check the result file was put in bucket
-            expected_bucket_items = common.CDM_FILES + [main.RESULT_CSV]
+            expected_bucket_items = common.CDM_FILES + [common.RESULT_CSV]
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             actual_bucket_items = [item['name'] for item in list_bucket_result]
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
 
             # result says file found, parsed, loaded
-            actual_result = self._read_cloud_file(self.hpo_bucket, main.RESULT_CSV)
+            actual_result = self._read_cloud_file(self.hpo_bucket, common.RESULT_CSV)
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = resources._csv_file_to_list(actual_result_file)
 
