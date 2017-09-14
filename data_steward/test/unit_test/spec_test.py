@@ -1,13 +1,15 @@
 import unittest
 
-import cloudstorage  # stubbed by testbed
 import mock
 from google.appengine.ext import testbed
-from google.appengine.api import urlfetch
 
+import gcs_utils
+import resources
+import common
+import json
 from spec import main
-
-_FAKE_DRC_SHARE_BUCKET = 'fake-drc'
+from test_util import FIVE_PERSONS_SUCCESS_RESULT_CSV, FIVE_PERSONS_SUCCESS_RESULT_NO_HPO_JSON
+from test_util import ALL_FILES_UNPARSEABLE_VALIDATION_RESULT, ALL_FILES_UNPARSEABLE_VALIDATION_RESULT_NO_HPO_JSON
 
 
 class SpecTest(unittest.TestCase):
@@ -30,15 +32,14 @@ class SpecTest(unittest.TestCase):
     @mock.patch('api_util.check_cron')
     def test_site_generation(self, mock_check_cron):
         with main.app.test_request_context():
-            result = main._generate_site(_FAKE_DRC_SHARE_BUCKET)
+            result = main._generate_site()
             self.assertEquals(result, 'okay')
 
             # verify that page worked
-            bucket = '/' + _FAKE_DRC_SHARE_BUCKET
+            bucket = gcs_utils.get_drc_bucket()
             file_count = 0
-            for stat in cloudstorage.listbucket(bucket, delimiter='/'):
-                assert (not stat.is_dir)
-                filename = stat.filename.split('/')[-1]
+            for stat in gcs_utils.list_bucket(bucket):
+                filename = stat['name']
                 assert (filename in
                         [name + '.html' for name in ['report', 'data_model', 'file_transfer_procedures', 'index']])
                 file_count += 1
@@ -55,5 +56,80 @@ class SpecTest(unittest.TestCase):
         result = main._page('dummy')
         self.assertEquals(u'<span>foo</span>', result)
 
+    def _empty_bucket(self, bucket):
+        bucket_items = gcs_utils.list_bucket(bucket)
+        for bucket_item in bucket_items:
+            gcs_utils.delete_object(bucket, bucket_item['name'])
+
+    def _empty_hpo_buckets(self):
+        hpos = resources.hpo_csv()
+        for hpo in hpos:
+            hpo_id = hpo['hpo_id']
+            bucket = gcs_utils.get_hpo_bucket(hpo_id)
+            self._empty_bucket(bucket)
+
+    def test_hpo_log_item_to_obj(self):
+        hpo_id = 'foo'
+        log_item = dict(cdm_file_name='person.csv', found='0', parsed='0', loaded='0')
+        expected = dict(hpo_id=hpo_id, file_name='person.csv', table_name='person', found=False, parsed=False, loaded=False)
+        actual = main.hpo_log_item_to_obj(hpo_id, log_item)
+        self.assertDictEqual(expected, actual)
+
+        log_item = dict(cdm_file_name='person.csv', found='1', parsed='1', loaded='1')
+        expected = dict(hpo_id=hpo_id, file_name='person.csv', table_name='person', found=True, parsed=True, loaded=True)
+        actual = main.hpo_log_item_to_obj(hpo_id, log_item)
+        self.assertDictEqual(expected, actual)
+
+    def assertResultLogItemsEqual(self, l, r):
+        def sort_key(item):
+            return item['hpo_id'], item['file_name']
+        l.sort(key=sort_key)
+        r.sort(key=sort_key)
+        pairs = zip(l, r)
+        for e, a in pairs:
+            self.assertDictEqual(e, a)
+
+    def test_get_full_result_log_when_all_exist(self):
+        self._empty_hpo_buckets()
+        hpos = resources.hpo_csv()
+        hpo_0 = hpos[0]
+        hpo_0_bucket = gcs_utils.get_hpo_bucket(hpo_0['hpo_id'])
+        with open(FIVE_PERSONS_SUCCESS_RESULT_CSV, 'r') as fp:
+            gcs_utils.upload_object(hpo_0_bucket, common.RESULT_CSV, fp)
+
+        with open(FIVE_PERSONS_SUCCESS_RESULT_NO_HPO_JSON, 'r') as fp:
+            hpo_0_expected_items = json.load(fp)
+            for item in hpo_0_expected_items:
+                item['hpo_id'] = hpo_0['hpo_id']
+
+        hpo_1 = hpos[1]
+        hpo_1_bucket = gcs_utils.get_hpo_bucket(hpo_1['hpo_id'])
+        with open(ALL_FILES_UNPARSEABLE_VALIDATION_RESULT, 'r') as fp:
+            gcs_utils.upload_object(hpo_1_bucket, common.RESULT_CSV, fp)
+
+        with open(ALL_FILES_UNPARSEABLE_VALIDATION_RESULT_NO_HPO_JSON, 'r') as fp:
+            hpo_1_expected_items = json.load(fp)
+            for item in hpo_1_expected_items:
+                item['hpo_id'] = hpo_1['hpo_id']
+
+        expected = hpo_0_expected_items + hpo_1_expected_items
+        actual = main.get_full_result_log()
+        self.assertResultLogItemsEqual(expected, actual)
+
+    def test_get_full_result_log_when_one_does_not_exist(self):
+        self._empty_hpo_buckets()
+        hpos = resources.hpo_csv()
+        hpo_0 = hpos[0]
+        hpo_0_bucket = gcs_utils.get_hpo_bucket(hpo_0['hpo_id'])
+        with open(FIVE_PERSONS_SUCCESS_RESULT_CSV, 'r') as fp:
+            gcs_utils.upload_object(hpo_0_bucket, common.RESULT_CSV, fp)
+        with open(FIVE_PERSONS_SUCCESS_RESULT_NO_HPO_JSON, 'r') as fp:
+            expected = json.load(fp)
+            for item in expected:
+                item['hpo_id'] = hpo_0['hpo_id']
+        actual = main.get_full_result_log()
+        self.assertResultLogItemsEqual(expected, actual)
+
     def tearDown(self):
+        self._empty_hpo_buckets()
         self.testbed.deactivate()

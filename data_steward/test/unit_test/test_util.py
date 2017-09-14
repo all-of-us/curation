@@ -9,6 +9,7 @@ VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
 TEST_DATA_PATH = os.path.join(resources.base_path, 'test', 'test_data')
 EMPTY_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'empty_validation_result.csv')
 ALL_FILES_UNPARSEABLE_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'all_files_unparseable_validation_result.csv')
+ALL_FILES_UNPARSEABLE_VALIDATION_RESULT_NO_HPO_JSON = os.path.join(TEST_DATA_PATH, 'all_files_unparseable_validation_result_no_hpo.json')
 
 # Test files for five person sample
 FIVE_PERSONS_PATH = os.path.join(TEST_DATA_PATH, 'five_persons')
@@ -26,6 +27,7 @@ FIVE_PERSONS_FILES = [FIVE_PERSONS_PERSON_CSV,
                       FIVE_PERSONS_MEASUREMENT_CSV]
 
 FIVE_PERSONS_SUCCESS_RESULT_CSV = os.path.join(TEST_DATA_PATH, 'five_persons_success_result.csv')
+FIVE_PERSONS_SUCCESS_RESULT_NO_HPO_JSON = os.path.join(TEST_DATA_PATH, 'five_persons_success_result_no_hpo.json')
 
 
 def _create_five_persons_success_result():
