@@ -61,7 +61,8 @@ def load_table_from_bucket(hpo_id, cdm_table_name):
                             'datasetId': dataset_id,
                             'tableId': table_id
                         },
-                        'skipLeadingRows': 1
+                        'skipLeadingRows': 1,
+                        'writeDisposition': 'WRITE_TRUNCATE'
                     }
             }
     }
