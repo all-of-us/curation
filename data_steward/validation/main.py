@@ -1,17 +1,16 @@
 #!/usr/bin/env python
+import StringIO
 import logging
+import time
+
 from flask import Flask
 
 import api_util
+import bq_utils
 import common
 import gcs_utils
-import bq_utils
-import StringIO
+from common import RESULT_CSV, WARNINGS_CSV
 
-import time
-
-RESULT_CSV = 'result.csv'
-WARNINGS_CSV = 'warnings.csv'
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_DELAY_SECONDS = 5
 
