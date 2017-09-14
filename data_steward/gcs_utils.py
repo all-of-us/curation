@@ -10,9 +10,22 @@ import os
 from io import BytesIO
 
 
+def get_drc_bucket():
+    return os.environ.get('DRC_BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
+
+
 def get_hpo_bucket(hpo_id):
-    # TODO determine how to map bucket
-    return os.environ.get('BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
+    """
+    Get the name of an HPO site's private bucket
+    :param hpo_id: id of the HPO site
+    :return: name of the bucket
+    """
+    # TODO reconsider how to map bucket name
+    bucket_env = 'BUCKET_NAME_' + hpo_id.upper()
+    hpo_bucket_name = os.getenv(bucket_env)
+    if hpo_bucket_name is None:
+        raise EnvironmentError()
+    return hpo_bucket_name
 
 
 def hpo_gcs_path(hpo_id):
@@ -50,6 +63,21 @@ def list_bucket_dir(gcs_path):
         all_objects.extend(items or [])
         req = service.objects().list_next(req, resp)
     return all_objects
+
+
+def get_metadata(bucket, name, default=None):
+    """
+    Get the metadata for an object with the given name if it exists, return None otherwise
+    :param bucket: the bucket to find the object
+    :param name: the name of the object (i.e. file name)
+    :param default: alternate value to return if object with the given name is not found
+    :return: the object metadata if it exists, None otherwise
+    """
+    all_objects = list_bucket(bucket)
+    for obj in all_objects:
+        if obj['name'] == name:
+            return obj
+    return default
 
 
 def list_bucket(bucket):

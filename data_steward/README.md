@@ -22,7 +22,8 @@ the internet. The following environment variables are needed to configure access
 | `GOOGLE_APPLICATION_CREDENTIALS` | Location of service account credentials in JSON format (see [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials#howtheywork)) |
 | `APPLICATION_ID` | Google cloud project ID. For development, we use `all-of-us-ehr-dev`. |
 | `BIGQUERY_DATASET_ID` | ID of the biquery dataset where CDM data are to be loaded. Must be in the project associated with `APPLICATION_ID`. |
-| `BUCKET_NAME` | Name of the bucket where CDM files will be located. *Note: Validation currently assumes there is a single bucket, but this will change.*  |
+| `DRC_BUCKET_NAME` | Name of the bucket where specification document and report is located. |
+| `BUCKET_NAME_<HPO_ID>` | Name of the bucket where CDM files are to be uploaded by HPO site with id `<HPO_ID>`. |
 
 ## Installation / Configuration
 

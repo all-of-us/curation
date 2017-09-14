@@ -43,6 +43,19 @@ class GcsUtilsTest(unittest.TestCase):
         result = gcs_utils.get_object(self.hpo_bucket, 'person.csv')
         self.assertEqual(expected, result)
 
+    def test_get_metadata_on_existing_file(self):
+        expected_file_name = 'person.csv'
+        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+            gcs_utils.upload_object(self.hpo_bucket, expected_file_name, fp)
+        metadata = gcs_utils.get_metadata(self.hpo_bucket, expected_file_name)
+        self.assertIsNotNone(metadata)
+        self.assertEqual(metadata['name'], expected_file_name)
+
+    def test_get_metadata_on_not_existing_file(self):
+        expected = 100
+        actual = gcs_utils.get_metadata(self.hpo_bucket, 'this_file_does_not_exist', expected)
+        self.assertEqual(expected, actual)
+
     def tearDown(self):
         self._empty_bucket()
         self.testbed.deactivate()
