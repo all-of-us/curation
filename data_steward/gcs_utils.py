@@ -125,7 +125,11 @@ def upload_object(bucket, name, fp):
     """
     service = create_service()
     body = {'name': name}
-    (mimetype, encoding) = mimetypes.guess_type(name)
+    ext = name.split('.')[-1]
+    if ext == 'json':
+        mimetype = 'application/json'
+    else:
+        (mimetype, encoding) = mimetypes.guess_type(name)
     media_body = googleapiclient.http.MediaIoBaseUpload(fp, mimetype)
     req = service.objects().insert(bucket=bucket, body=body, media_body=media_body)
     return req.execute()
