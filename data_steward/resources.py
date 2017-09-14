@@ -43,3 +43,9 @@ def _csv_file_to_list(csv_file):
 
 def cdm_csv():
     return _csv_to_list(cdm_csv_path)
+
+
+def hpo_csv():
+    # TODO get this from file; currently limited for pre- alpha release
+    return [dict(hpo_id='nyc', name='New York City Consortium'),
+            dict(hpo_id='pitt', name='University of Pittsburgh at Pittsburgh')]

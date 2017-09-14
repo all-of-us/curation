@@ -1,0 +1,44 @@
+[
+  {
+    "table_name": "condition_occurrence",
+    "file_name": "condition_occurrence.csv",
+    "found": true,
+    "loaded": true,
+    "parsed": true
+  },
+  {
+    "table_name": "drug_exposure",
+    "file_name": "drug_exposure.csv",
+    "found": true,
+    "loaded": true,
+    "parsed": true
+  },
+  {
+    "table_name": "measurement",
+    "file_name": "measurement.csv",
+    "found": true,
+    "loaded": true,
+    "parsed": true
+  },
+  {
+    "table_name": "person",
+    "file_name": "person.csv",
+    "found": true,
+    "loaded": true,
+    "parsed": true
+  },
+  {
+    "table_name": "procedure_occurrence",
+    "file_name": "procedure_occurrence.csv",
+    "found": true,
+    "loaded": true,
+    "parsed": true
+  },
+  {
+    "table_name": "visit_occurrence",
+    "file_name": "visit_occurrence.csv",
+    "found": true,
+    "loaded": true,
+    "parsed": true
+  }
+]
