@@ -43,7 +43,7 @@ app.config.from_object(__name__)
 pages = FlatPages(app)
 j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(SITE_ROOT + '/templates/'), trim_blocks=True)
 
-md = markdown.Markdown(extensions=['meta','markdown.extensions.tables'])
+md = markdown.Markdown(extensions=['meta', 'markdown.extensions.tables'])
 j2_env.filters['markdown'] = lambda text: jinja2.Markup(md.convert(text))
 j2_env.globals['get_title'] = lambda: md.Meta['title'][0]
 j2_env.trim_blocks = True
@@ -64,21 +64,21 @@ def _page(name):
     template_to_use += '.html'
     data = json.load(open(LOG_FILE))
 
-    with open(HPO_FILE,'r') as infile:
+    with open(HPO_FILE, 'r') as infile:
         reader = csv.reader(infile)
         reader.next()
-        hpos = [{'hpo_id':rows[0],'name':rows[1]} for rows in reader]
-    
+        hpos = [{'hpo_id': rows[0], 'name': rows[1]} for rows in reader]
+
     # this is pure html content. can be exported
-    
-    markdown_string_template  = j2_env.from_string(page.body)
-    processed_md = markdown_string_template.render(hpos = hpos,
-                                                   page = page)
+
+    markdown_string_template = j2_env.from_string(page.body)
+    processed_md = markdown_string_template.render(hpos=hpos,
+                                                   page=page)
     content = md_convert(processed_md)
 
     html = j2_env.get_template(template_to_use).render(content=content,
                                                        page=page,
-                                                       hpos=hpos, 
+                                                       hpos=hpos,
                                                        pages=pages,
                                                        logs=data)
     return html
@@ -140,6 +140,7 @@ def _generate_site():
     fp = StringIO.StringIO(content)
     gcs_utils.upload_object(bucket, LOG_JSON, fp)
     return 'okay'
+
 
 app.add_url_rule(
     PREFIX + 'sitegen',
