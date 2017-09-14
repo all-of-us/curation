@@ -26,10 +26,10 @@ import gcs_utils
 import resources
 from common import RESULT_CSV, LOG_JSON
 
-_DRC_SHARED_BUCKET = 'aou-drc-shared'
 PREFIX = '/tasks/'
 SITE_ROOT = os.path.dirname(os.path.abspath(__file__))
 DEBUG = True
+PAGE_NAMES = ['report', 'data_model', 'index', 'file_transfer_procedures']
 
 FLATPAGES_AUTO_RELOAD = DEBUG
 FLATPAGES_EXTENSION = '.md'
@@ -124,14 +124,14 @@ def _generate_site():
     """
     bucket = gcs_utils.get_drc_bucket()
 
-    for endpoint in ['report', 'data_model', 'index', 'file_transfer_procedures']:
+    for page_name in PAGE_NAMES:
         # generate the page
-        html = _page(endpoint)
+        html = _page(page_name)
         html = unicodedata.normalize('NFKD', html).encode('ascii', 'ignore')
         fp = StringIO.StringIO(html)
 
         # write it to the drc shared bucket
-        file_name = endpoint + '.html'
+        file_name = page_name + '.html'
         gcs_utils.upload_object(bucket, file_name, fp)
 
     # aggregate result logs and write to bucket
