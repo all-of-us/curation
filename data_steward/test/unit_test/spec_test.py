@@ -31,19 +31,21 @@ class SpecTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_site_generation(self, mock_check_cron):
+        self._empty_drc_bucket()
+        self._empty_hpo_buckets()
         with main.app.test_request_context():
             result = main._generate_site()
             self.assertEquals(result, 'okay')
 
             # verify that page worked
             bucket = gcs_utils.get_drc_bucket()
+            expected_files = map(lambda n: n + '.html', main.PAGE_NAMES) + [common.LOG_JSON]
             file_count = 0
             for stat in gcs_utils.list_bucket(bucket):
                 filename = stat['name']
-                assert (filename in
-                        [name + '.html' for name in ['report', 'data_model', 'file_transfer_procedures', 'index']])
+                self.assertIn(filename, expected_files)
                 file_count += 1
-            self.assertEquals(file_count, 4)
+            self.assertEquals(file_count, len(expected_files))
 
     @mock.patch('spec.main.pages.get_or_404')
     def test_variable_population(self, mock_get_or_404):
@@ -67,6 +69,10 @@ class SpecTest(unittest.TestCase):
             hpo_id = hpo['hpo_id']
             bucket = gcs_utils.get_hpo_bucket(hpo_id)
             self._empty_bucket(bucket)
+
+    def _empty_drc_bucket(self):
+        bucket = gcs_utils.get_drc_bucket()
+        self._empty_bucket(bucket)
 
     def test_hpo_log_item_to_obj(self):
         hpo_id = 'foo'
