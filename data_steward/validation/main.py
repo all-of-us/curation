@@ -91,11 +91,8 @@ def validate_hpo_files(hpo_id):
 
     # output to GCS
     _save_result_in_gcs(bucket, RESULT_CSV, load_results)
-
-    if len(warnings) > 0:
-        _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
-    if len(errors) > 0 :
-        _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
+    _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
+    _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
 
     return '{"report-generator-status": "started"}'
 
