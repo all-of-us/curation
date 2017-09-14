@@ -9,7 +9,7 @@ import api_util
 import bq_utils
 import common
 import gcs_utils
-from common import RESULT_CSV, WARNINGS_CSV
+from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_DELAY_SECONDS = 5
@@ -45,8 +45,11 @@ def validate_hpo_files(hpo_id):
         if _is_cdm_file(bucket_item):
             found_cdm_files.append(bucket_item)
         else:
+            if bucket_item['name'].lower() in common.IGNORE_LIST:
+                continue
             unknown_files.append(bucket_item)
 
+    errors = []
     # (filename, found, parsed, loaded) for each expected cdm file
     cdm_file_result_map = {}
     for cdm_file in map(lambda f: f['name'], found_cdm_files):
@@ -58,9 +61,13 @@ def validate_hpo_files(hpo_id):
         time.sleep(BQ_LOAD_DELAY_SECONDS)
         job_resource = bq_utils.get_job_details(job_id=load_job_id)
         job_status = job_resource['status']
+
         if job_status['state'] == 'DONE':
             if 'errorResult' in job_status:
-                logging.info("file {} has errors {}".format(cdm_file, job_status['errors']))
+                # logging.info("file {} has errors  {}".format'.format(item['message'](cdm_file, job_status['errors']))
+                error_messages = ['{}'.format(item['message'],item['location'])
+                                 for item in job_status['errors']]
+                errors.append((cdm_file, ' || '.join(error_messages)))
                 cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 0, 'loaded': 0}
             else:
                 cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 1, 'loaded': 1}
@@ -87,12 +94,36 @@ def validate_hpo_files(hpo_id):
 
     if len(warnings) > 0:
         _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
+    if len(errors) > 0 :
+        _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
+
     return '{"report-generator-status": "started"}'
 
 
 def _is_cdm_file(gcs_file_stat):
     return gcs_file_stat['name'].lower() in common.CDM_FILES
 
+def _save_errors_in_gcs(bucket, name, errors):
+    """Save errors.csv into hpo bucket
+
+    :bucket:  bucket to save in 
+    :name: file_name to save to
+    :errors: list of errors of form (file_name, errors)
+    :returns: result of upload operation. not being used for now.
+
+    """
+    f = StringIO.StringIO()
+    f.write('"file_name","errors"\n')
+    for (file_name, message) in errors:
+        line = '"%(file_name)s","%(message)s"\n' % locals()
+        f.write(line)
+    f.seek(0)
+    result = gcs_utils.upload_object(bucket, name, f)
+    f.close()
+    return result
+
+
+    
 
 def _save_warnings_in_gcs(bucket, name, warnings):
     """

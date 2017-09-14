@@ -69,6 +69,29 @@ class ValidationTest(unittest.TestCase):
                 self.assertEqual(expected, actual)
 
     @mock.patch('api_util.check_cron')
+    def test_errors_csv(self, mock_check_cron):
+        self._write_cloud_str(self.hpo_bucket, 'person.csv', ".\n .,.,.")
+
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(test_util.VALIDATE_HPO_FILES_URL)
+
+            # check the result file was put in bucket
+            list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
+            bucket_item_names = [item['name'] for item in list_bucket_result]
+            expected_items = ['person.csv', common.RESULT_CSV, common.ERRORS_CSV]
+            self.assertSetEqual(set(bucket_item_names), set(expected_items))
+
+            # check content of the file is correct
+            actual_result = self._read_cloud_file(self.hpo_bucket,
+                                                  common.ERRORS_CSV)
+            with open(test_util.BAD_PERSON_FILE_BQ_LOAD_ERRORS_CSV, 'r') as f:
+                expected = f.read()
+                self.assertEqual(expected, actual_result)
+
+
+
+    @mock.patch('api_util.check_cron')
     def test_all_files_unparseable_output(self, mock_check_cron):
         for cdm_table in common.CDM_FILES:
             self._write_cloud_str(self.hpo_bucket, cdm_table, ".\n .")
@@ -80,7 +103,8 @@ class ValidationTest(unittest.TestCase):
             # check the result file was put in bucket
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             bucket_item_names = [item['name'] for item in list_bucket_result]
-            expected_items = common.CDM_FILES + [common.RESULT_CSV]
+            expected_items = common.CDM_FILES + [common.RESULT_CSV,
+                                                 common.ERRORS_CSV]
             self.assertSetEqual(set(bucket_item_names), set(expected_items))
 
             # check content of the file is correct
@@ -150,7 +174,7 @@ class ValidationTest(unittest.TestCase):
             expected_result_items.sort()
             actual_result_items.sort()
             self.assertListEqual(expected_result_items, actual_result_items)
-
+    
     def tearDown(self):
         self._empty_bucket()
         self.testbed.deactivate()
