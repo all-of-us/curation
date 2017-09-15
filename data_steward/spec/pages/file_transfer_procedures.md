@@ -99,4 +99,4 @@ Report any issues with Bucket access or the upload process to sysadmin@pmi-ops.o
 
 ---
 
-If you experience any issues in this prcoess, please report an issue on our [JIRA site](https://precisionmedicineinitiative.atlassian.net).
+If you experience any issues in this process, please report an issue on our [JIRA site](https://precisionmedicineinitiative.atlassian.net).
