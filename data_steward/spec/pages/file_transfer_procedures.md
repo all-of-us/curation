@@ -32,7 +32,10 @@ __Step 1:__ Request creation of pmi-ops.org account for Data Steward(s) by sendi
 
 If the bucket will have a Primary as well as a Secondary Data Steward, this should be noted in the new user request email. Requests should be sent separately; bundled new user access requests cannot be processed
 
-__Step 2:__ Request creation of a Google Cloud Storage Bucket by sending an email to sysadmin@pmi-ops.org with the subject line “Bucket Creation Request”. The email should include the following:
+1. Open a web browser and navigate to the Google Cloud Storage Browser at `https://console.cloud.google.com/storage/browser/<BUCKET_NAME>` but replace `<BUCKET_NAME>` with the bucket name assigned to your site. For example, if your site was assigned `test-site-bucket-aou-data-steward-nyc`, then it would be [https://console.cloud.google.com/storage/browser/test-site-bucket-aou-data-steward-nyc](https://console.cloud.google.com/storage/browser/test-site-bucket-aou-data-steward-nyc).
+1. Enter your `pmi-ops.org` credentials if prompted.
+1. In your desktop environment, navigate to the local folder where you've downloaded the test data set.
+1. Drag and drop the test data set files from your local folder into the browser window where the Google Cloud Storage Browser is open.
 
    * Name of Organization that will perform the upload
    * Composition of data upload: Will data be uploaded for only one Organization or for multiple Organizations? If for more than one Organization, also include the names of all Organizations whose data will be uploaded.
@@ -41,6 +44,7 @@ __Step 2:__ Request creation of a Google Cloud Storage Bucket by sending an emai
 Within five business days you will receive a response from the sysadmin containing:
 
 
+<<<<<<< 4f55f86f0836f914afa18dafc89ab6eaf3cd4d13
    * The name of your Organization’s assigned Google Cloud Storage Bucket
    * Direct link to aforementioned Bucket
 
@@ -95,6 +99,4 @@ Report any issues with Bucket access or the upload process to sysadmin@pmi-ops.o
 
 ---
 
-## REFERENCES
- - [SOP for Bucket Registration](https://docs.google.com/document/d/1W7IZwB19ezXFL8rSODqfCaI3T8YpKfL9XTkkBhJq4H4/edit?usp=sharing)
- - [SOP Uploading EHR Data Files to the DRC](https://docs.google.com/document/d/1wWMtPYag3nQALMRR9CYq_9Etcgk3_FaAkFvecaU5iVg/edit?usp=sharing)
+If you experience any issues in this prcoess, please report an issue on our [JIRA site](https://precisionmedicineinitiative.atlassian.net).
