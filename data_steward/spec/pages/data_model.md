@@ -1,8 +1,6 @@
 title: Data Model
 template: page
 
-# OMOP CDM
-
 The OMOP Common Data Model (CDM) will be used to transfer EHR data to the Data Resource Core (DRC). The data model is an open-source, community standard for observational healthcare data. This document will cover the core tables that will be used to transport data to the DRC. The tables of interest for this export are: person, visit\_occurrence, condition\_occurrence, procedure\_occurrence, drug\_exposure, and measurement. All detailed information on the OMOP common data model can be found here: <http://www.ohdsi.org/web/wiki/doku.php?id=documentation:cdm#common_data_model>.
 
 For the purposes of goal \#1 of this data sprint, the table definitions in this document are now the same as the OMOP specification in all fields for this submission. This document is based on the latest version of the OMOP CDM – version 5.1. The main change to the CDM with the latest version is the addition of the “datetime” columns to all the tables to capture time events. The columns with the name “source” refers to values from source systems. Every “source” field has two columns – source\_value and source\_concept\_id. For example, the LOINC code, 1963-8, for a bicarbonate lab would have “1963-8” for the source\_value column and “3016293” for source\_concept\_id. In cases where the HPO’s source system does not contain a standard terminology and only local codes are used, the source\_concept\_id would be “0” and the source\_value field would contain the local code and the description of the local code separated by a “:”
@@ -274,5 +272,3 @@ ED visit (Gluc)
 ED visit (Ca) 
 
     "8","1","3006906","2016-01-01","2016-01-01T04:25:00-05:00","44818702","0","9.4","0","8840","","","0","1","17861-6","3006906","mg/dl","9.4"
-
-[Proceed to File Transfer Procedures >>](file_transfer_procedures.md)

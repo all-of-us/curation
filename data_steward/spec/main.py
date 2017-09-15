@@ -29,7 +29,7 @@ from common import RESULT_CSV, LOG_JSON
 PREFIX = '/tasks/'
 SITE_ROOT = os.path.dirname(os.path.abspath(__file__))
 DEBUG = True
-PAGE_NAMES = ['report', 'data_model', 'index', 'file_transfer_procedures']
+PAGE_NAMES = ['index', 'data_model', 'file_transfer_procedures', 'report']
 
 FLATPAGES_AUTO_RELOAD = DEBUG
 FLATPAGES_EXTENSION = '.md'
@@ -75,11 +75,12 @@ def _page(name):
     processed_md = markdown_string_template.render(hpos=hpos,
                                                    page=page)
     content = md_convert(processed_md)
-
+    nav_pages = list(pages)
+    nav_pages.sort(key=lambda p: PAGE_NAMES.index(p.path))
     html = j2_env.get_template(template_to_use).render(content=content,
                                                        page=page,
                                                        hpos=hpos,
-                                                       pages=pages,
+                                                       pages=nav_pages,
                                                        logs=data)
     return html
 
@@ -114,6 +115,11 @@ def get_full_result_log():
     return full_log
 
 
+def to_html(page_name):
+    html = _page(page_name)
+    return unicodedata.normalize('NFKD', html).encode('ascii', 'ignore')
+
+
 @api_util.auth_required_cron
 def _generate_site():
     """
@@ -126,12 +132,11 @@ def _generate_site():
 
     for page_name in PAGE_NAMES:
         # generate the page
-        html = _page(page_name)
-        html = unicodedata.normalize('NFKD', html).encode('ascii', 'ignore')
-        fp = StringIO.StringIO(html)
+        html = to_html(page_name)
 
         # write it to the drc shared bucket
         file_name = page_name + '.html'
+        fp = StringIO.StringIO(html)
         gcs_utils.upload_object(bucket, file_name, fp)
 
     # aggregate result logs and write to bucket
@@ -142,8 +147,20 @@ def _generate_site():
     return 'okay'
 
 
+def output_local():
+    for page_name in PAGE_NAMES:
+        html = to_html(page_name)
+        file_name = page_name + '.html'
+        with open(os.path.join('output', file_name), 'w') as fp:
+            fp.write(html)
+
+
 app.add_url_rule(
     PREFIX + 'sitegen',
     endpoint='sitegen',
     view_func=_generate_site,
     methods=['GET'])
+
+
+if __name__ == '__main__':
+    output_local()
