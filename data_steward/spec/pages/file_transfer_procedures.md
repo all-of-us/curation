@@ -38,4 +38,4 @@ Within 6 hours of uploading the data set, the report page should be updated with
 
 ## Report Issues
 
-If you experience any issues in this prcoess, please report an issue on our [JIRA site](https://precisionmedicineinitiative.atlassian.net).
+If you experience any issues in this process, please report an issue on our [JIRA site](https://precisionmedicineinitiative.atlassian.net).
