@@ -1,0 +1,6 @@
+person_id,gender_concept_id,year_of_birth,month_of_birth,day_of_birth,birth_datetime,race_concept_id,ethnicity_concept_id,location_id,provider_id,care_site_id,person_source_value,gender_source_value,gender_source_concept_id,race_source_value,race_source_concept_id,ethnicity_source_value,ethnicity_source_concept_id
+8,8507,1935,9,1,1935-09-01 05:00:00.000000 UTC,8527,38003564,8,,,000308435E3E5B76,1,,1,,1,
+6,8507,1943,10,1,1943-10-01 05:00:00.000000 UTC,8516,38003564,6,,,0002DAE1C81CC70D,1,,2,,2,
+7,8507,1922,7,1,1922-07-01 05:00:00.000000 UTC,8527,38003564,7,,,0002F28CE057345B,1,,1,,1,
+9,8532,1976,9,1,1976-09-01 05:00:00.000000 UTC,8527,38003564,9,,,000345A39D4157C9,2,,1,,1,
+10,8532,1938,10,1,1938-10-01 05:00:00.000000 UTC,8516,38003564,10,,,00036A21B65B0206,2,,2,,2,
