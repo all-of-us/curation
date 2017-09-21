@@ -5,6 +5,7 @@ import bq_utils
 import gcs_utils
 from google.appengine.ext import testbed
 from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, NYC_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_PERSON_CSV
+import resources
 
 
 PERSON = 'person'
@@ -51,20 +52,37 @@ class BqUtilsTest(unittest.TestCase):
 
     def test_merge_with_good_data(self):
         with open(NYC_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'person.csv', fp)
         nyc_result = bq_utils.load_table_from_bucket('nyc', 'person')
-        time.sleep(10)
-
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
         pitt_result = bq_utils.load_table_from_bucket('pitt', 'person')
+
+        nyc_person_ids =  [int(row['person_id']) for row in resources._csv_to_list(NYC_FIVE_PERSONS_PERSON_CSV)]
+        pitt_person_ids = [int(row['person_id']) for row in resources._csv_to_list(PITT_FIVE_PERSONS_PERSON_CSV)]
+        expected_result = nyc_person_ids + pitt_person_ids 
+        expected_result.sort()
+
         time.sleep(5)
 
         table_names = ['nyc_person','pitt_person']
         success_flag, error = bq_utils.merge_tables(table_names,bq_utils.get_dataset_id(),'merged_nyc_pitt',bq_utils.get_dataset_id()) 
 
-        assert(success_flag)
-        self.assertEqual (error, "")
+        self.assertTrue(success_flag)
+        self.assertEqual(error, "")
+        
+        query_string = "SELECT person_id FROM {}.{} LIMIT 1000".format(bq_utils.get_dataset_id(), 'merged_nyc_pitt')
+        merged_query_job_result = bq_utils.query_table(query_string, bq_utils.get_dataset_id(), 'merged_nyc_pitt')
+
+        self.assertIsNone( merged_query_job_result.get('errors',None) )
+        actual_result = [int(row['f'][0]['v']) for row in merged_query_job_result['rows']]
+        actual_result.sort()
+
+        self.assertListEqual(expected_result,actual_result)
+
+        for table_name in table_names + ['merged_nyc_pitt']:
+            if table_name not in self.tables_to_drop:
+                self.tables_to_drop.append(table_name)
 
     def test_merge_bad_table_names(self):
 
@@ -76,5 +94,6 @@ class BqUtilsTest(unittest.TestCase):
 
     def tearDown(self):
         self._drop_tables()
+        self._drop_created_test_tables()
         self._empty_bucket()
         self.testbed.deactivate()

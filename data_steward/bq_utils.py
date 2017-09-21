@@ -13,7 +13,7 @@ import time
 import logging
 
 BQ_LOAD_DELAY_SECONDS = 5
-
+BQ_QUERY_DELAY_SECONDS = 5
 
 def get_dataset_id():
     return os.environ.get('BIGQUERY_DATASET_ID')
@@ -154,14 +154,13 @@ def merge_tables(source_table_name_list, source_dataset_name, destination_table_
     job_id = insert_result['jobReference']['jobId']
 
     time.sleep(BQ_LOAD_DELAY_SECONDS)
-    uni = lambda string: string.decode('utf-8')
 
     job_status = get_job_details(job_id)['status']
 
-    if job_status[uni('state')] == uni('DONE'): 
-        if uni('errorResult') in job_status:
-            error_messages = ['{}'.format(item[uni('message')])
-                             for item in job_status[uni('errors')]]
+    if job_status['state'] == 'DONE': 
+        if 'errorResult' in job_status:
+            error_messages = ['{}'.format(item['message'])
+                             for item in job_status['errors']]
             logging.info(' || '.join(error_messages))
             return False,' || '.join(error_messages)
     else:
@@ -170,4 +169,23 @@ def merge_tables(source_table_name_list, source_dataset_name, destination_table_
     return True,""
 
 
+def query_table(query_string, datasetId, tableId):
 
+    app_id = app_identity.get_application_id()
+
+    job_body = { 
+        'configuration': { 
+            "query": { 
+                "query": query_string, 
+            }
+        }
+    }
+
+    bq_service = create_service()
+    insert_result = bq_service.jobs().insert(projectId=app_id, body=job_body).execute()
+    job_id = insert_result['jobReference']['jobId']
+    
+    time.sleep(BQ_QUERY_DELAY_SECONDS)
+
+    query_result = bq_service.jobs().getQueryResults(projectId=app_id, jobId=job_id).execute()
+    return query_result
