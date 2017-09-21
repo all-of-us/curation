@@ -20,6 +20,7 @@ class BqUtilsTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)
+        self.tables_to_drop = []
         self._drop_tables()
         self._empty_bucket()
 
@@ -31,6 +32,10 @@ class BqUtilsTest(unittest.TestCase):
     def _drop_tables(self):
         if bq_utils.table_exists(self.person_table_id):
             bq_utils.delete_table(self.person_table_id)
+
+    def _drop_created_test_tables(self):
+        for table_id in self.tables_to_drop:
+            bq_utils.delete_table(table_id)
 
     def test_load_table_from_bucket(self):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
