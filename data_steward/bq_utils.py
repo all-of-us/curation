@@ -9,6 +9,11 @@ import resources
 import common
 import gcs_utils
 
+import time
+import logging
+
+BQ_LOAD_DELAY_SECONDS = 5
+
 
 def get_dataset_id():
     return os.environ.get('BIGQUERY_DATASET_ID')
@@ -113,3 +118,56 @@ def get_job_details(job_id):
     bq_service = create_service()
     app_id = app_identity.get_application_id()
     return bq_service.jobs().get(projectId=app_id, jobId=job_id).execute()
+
+
+def merge_tables(source_table_name_list, source_dataset_name, destination_table_name, destination_dataset_name):
+    """Takes a list of table names and runs a copy job
+
+    :source_table_name_list: list of tables to merge
+    :source_dataset_name: dataset where all the source tables reside
+    :destination_table_name: data goes into this table
+    :destination_dataset_name: dataset where the destination table resides
+    :returns: True if successfull. Or False if error or taking too long.
+
+    """
+    app_id = app_identity.get_application_id()
+    job_body = { 
+        'configuration': {
+            "copy": { # "sourceTable": { "projectId": string, "datasetId": string, "tableId": string },
+                "sourceTables": [{
+                                        "projectId": app_id,
+                                        "datasetId": source_dataset_name,
+                                        "tableId": table_name
+                        } for table_name in source_table_name_list], 
+                "destinationTable": {
+                          "projectId": app_id,
+                          "datasetId": destination_dataset_name,
+                          "tableId": destination_table_name
+                        },
+                "writeDisposition": "WRITE_TRUNCATE",
+            }
+        }
+    }
+
+    bq_service = create_service()
+    insert_result = bq_service.jobs().insert(projectId=app_id, body=job_body).execute()
+    job_id = insert_result['jobReference']['jobId']
+
+    time.sleep(BQ_LOAD_DELAY_SECONDS)
+    uni = lambda string: string.decode('utf-8')
+
+    job_status = get_job_details(job_id)['status']
+
+    if job_status[uni('state')] == uni('DONE'): 
+        if uni('errorResult') in job_status:
+            error_messages = ['{}'.format(item[uni('message')])
+                             for item in job_status[uni('errors')]]
+            logging.info(' || '.join(error_messages))
+            return False,' || '.join(error_messages)
+    else:
+        logging.info("Wait timeout exceeded before load job with id '%s' was done" % job_id)
+        return False,"Job timeout"
+    return True,""
+
+
+
