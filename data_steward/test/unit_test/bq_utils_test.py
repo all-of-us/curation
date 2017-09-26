@@ -4,7 +4,11 @@ import time
 import bq_utils
 import gcs_utils
 from google.appengine.ext import testbed
-from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, NYC_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_PERSON_CSV
+from test_util import FAKE_HPO_ID, \
+        FIVE_PERSONS_PERSON_CSV, \
+        NYC_FIVE_PERSONS_PERSON_CSV, \
+        PITT_FIVE_PERSONS_PERSON_CSV, \
+        NYC_FIVE_PERSONS_MEASUREMENT_CSV
 import resources
 
 
@@ -47,50 +51,91 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(result['status']['state'], 'RUNNING')
 
     def test_load_table_from_bucket_error_on_bad_table_name(self):
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(ValueError):
             bq_utils.load_table_from_bucket(FAKE_HPO_ID, 'not_a_cdm_table')
 
     def test_merge_with_good_data(self):
         with open(NYC_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'person.csv', fp)
-        nyc_result = bq_utils.load_table_from_bucket('nyc', 'person')
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'),
+                                    'person.csv',
+                                    fp)
+        bq_utils.load_table_from_bucket('nyc', 'person')
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
-        pitt_result = bq_utils.load_table_from_bucket('pitt', 'person')
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'),
+                                    'person.csv',
+                                    fp)
+        bq_utils.load_table_from_bucket('pitt', 'person')
 
-        nyc_person_ids =  [int(row['person_id']) for row in resources._csv_to_list(NYC_FIVE_PERSONS_PERSON_CSV)]
-        pitt_person_ids = [int(row['person_id']) for row in resources._csv_to_list(PITT_FIVE_PERSONS_PERSON_CSV)]
-        expected_result = nyc_person_ids + pitt_person_ids 
+        nyc_person_ids = [int(row['person_id'])
+                          for row in
+                          resources._csv_to_list(NYC_FIVE_PERSONS_PERSON_CSV)]
+        pitt_person_ids = [int(row['person_id'])
+                           for row in resources._csv_to_list(
+                               PITT_FIVE_PERSONS_PERSON_CSV
+                           )]
+        expected_result = nyc_person_ids + pitt_person_ids
         expected_result.sort()
 
         time.sleep(5)
 
-        table_names = ['nyc_person','pitt_person']
-        success_flag, error = bq_utils.merge_tables(table_names,bq_utils.get_dataset_id(),'merged_nyc_pitt',bq_utils.get_dataset_id()) 
+        table_ids = ['nyc_person', 'pitt_person']
+        success_flag, error = bq_utils.merge_tables(bq_utils.get_dataset_id(),
+                                                    table_ids,
+                                                    bq_utils.get_dataset_id(),
+                                                    'merged_nyc_pitt')
 
         self.assertTrue(success_flag)
         self.assertEqual(error, "")
-        
-        query_string = "SELECT person_id FROM {}.{} LIMIT 1000".format(bq_utils.get_dataset_id(), 'merged_nyc_pitt')
-        merged_query_job_result = bq_utils.query_table(query_string, bq_utils.get_dataset_id(), 'merged_nyc_pitt')
 
-        self.assertIsNone( merged_query_job_result.get('errors',None) )
-        actual_result = [int(row['f'][0]['v']) for row in merged_query_job_result['rows']]
+        query_string = "SELECT person_id FROM {}.{} LIMIT 1000".format(
+            bq_utils.get_dataset_id(), 'merged_nyc_pitt')
+
+        merged_query_job_result = bq_utils.query_table(query_string)
+
+        self.assertIsNone(merged_query_job_result.get('errors', None))
+        actual_result = [int(row['f'][0]['v'])
+                         for row in merged_query_job_result['rows']]
         actual_result.sort()
 
-        self.assertListEqual(expected_result,actual_result)
+        self.assertListEqual(expected_result, actual_result)
 
-        for table_name in table_names + ['merged_nyc_pitt']:
+        for table_name in table_ids + ['merged_nyc_pitt']:
             if table_name not in self.tables_to_drop:
                 self.tables_to_drop.append(table_name)
 
     def test_merge_bad_table_names(self):
 
-        table_names = ['nyc_person_foo','pitt_person_foo']
-        success_flag, error_msg = bq_utils.merge_tables(table_names,bq_utils.get_dataset_id(),'merged_nyc_pitt',bq_utils.get_dataset_id()) 
+        table_ids = ['nyc_person_foo', 'pitt_person_foo']
+        success_flag, error_msg = bq_utils.merge_tables(
+            bq_utils.get_dataset_id(),
+            table_ids,
+            bq_utils.get_dataset_id(),
+            'merged_nyc_pitt'
+        )
 
         # print error_msg
         assert(not success_flag)
+
+    def test_merge_with_unmatched_schema(self):
+        with open(NYC_FIVE_PERSONS_MEASUREMENT_CSV, 'rb') as fp:
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'),
+                                    'measurement.csv', fp)
+        bq_utils.load_table_from_bucket('nyc', 'measurement')
+        with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'),
+                                    'person.csv', fp)
+        bq_utils.load_table_from_bucket('pitt', 'person')
+
+        time.sleep(5)
+
+        table_names = ['nyc_measurement', 'pitt_person']
+        success_flag, error = bq_utils.merge_tables(
+          bq_utils.get_dataset_id(),
+          table_names,
+          bq_utils.get_dataset_id(),
+          'merged_nyc_pitt'
+        )
+        self.assertFalse(success_flag)
 
     def tearDown(self):
         self._drop_tables()
