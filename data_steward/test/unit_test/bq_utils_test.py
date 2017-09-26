@@ -4,6 +4,7 @@ import bq_utils
 import gcs_utils
 from google.appengine.ext import testbed
 from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
+import time
 
 PERSON = 'person'
 
@@ -41,6 +42,17 @@ class BqUtilsTest(unittest.TestCase):
     def test_load_table_from_bucket_error_on_bad_table_name(self):
         with self.assertRaises(ValueError) as cm:
             bq_utils.load_table_from_bucket(FAKE_HPO_ID, 'not_a_cdm_table')
+
+    def test_query_result(self):
+        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+            gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
+        bq_utils.load_table_from_bucket(FAKE_HPO_ID, PERSON)
+        time.sleep(2)
+
+        table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)
+        q = 'SELECT person_id FROM %s' % table_id
+        result = bq_utils.query(q)
+        self.assertEqual(5, int(result['totalRows']))
 
     def tearDown(self):
         self._drop_tables()

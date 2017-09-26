@@ -113,3 +113,17 @@ def get_job_details(job_id):
     bq_service = create_service()
     app_id = app_identity.get_application_id()
     return bq_service.jobs().get(projectId=app_id, jobId=job_id).execute()
+
+
+def query(q, use_legacy_sql=False):
+    bq_service = create_service()
+    app_id = app_identity.get_application_id()
+    job_body = {
+        'defaultDataset':{
+            'projectId': app_id,
+            'datasetId': get_dataset_id()
+        },
+        'query': q,
+        'useLegacySql': use_legacy_sql
+    }
+    return bq_service.jobs().query(projectId=app_id, body=job_body).execute()
