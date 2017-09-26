@@ -4,11 +4,8 @@ import time
 import bq_utils
 import gcs_utils
 from google.appengine.ext import testbed
-from test_util import FAKE_HPO_ID, \
-        FIVE_PERSONS_PERSON_CSV, \
-        NYC_FIVE_PERSONS_PERSON_CSV, \
-        PITT_FIVE_PERSONS_PERSON_CSV, \
-        NYC_FIVE_PERSONS_MEASUREMENT_CSV
+from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, NYC_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_PERSON_CSV
+from test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV
 import resources
 
 
@@ -56,14 +53,10 @@ class BqUtilsTest(unittest.TestCase):
 
     def test_merge_with_good_data(self):
         with open(NYC_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'),
-                                    'person.csv',
-                                    fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'person.csv', fp)
         bq_utils.load_table_from_bucket('nyc', 'person')
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'),
-                                    'person.csv',
-                                    fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
         bq_utils.load_table_from_bucket('pitt', 'person')
 
         nyc_person_ids = [int(row['person_id'])
@@ -87,14 +80,12 @@ class BqUtilsTest(unittest.TestCase):
         self.assertTrue(success_flag)
         self.assertEqual(error, "")
 
-        query_string = "SELECT person_id FROM {}.{} LIMIT 1000".format(
-            bq_utils.get_dataset_id(), 'merged_nyc_pitt')
+        query_string = "SELECT person_id FROM {}.{} LIMIT 1000".format(bq_utils.get_dataset_id(), 'merged_nyc_pitt')
 
         merged_query_job_result = bq_utils.query_table(query_string)
 
         self.assertIsNone(merged_query_job_result.get('errors', None))
-        actual_result = [int(row['f'][0]['v'])
-                         for row in merged_query_job_result['rows']]
+        actual_result = [int(row['f'][0]['v']) for row in merged_query_job_result['rows']]
         actual_result.sort()
 
         self.assertListEqual(expected_result, actual_result)
@@ -104,7 +95,6 @@ class BqUtilsTest(unittest.TestCase):
                 self.tables_to_drop.append(table_name)
 
     def test_merge_bad_table_names(self):
-
         table_ids = ['nyc_person_foo', 'pitt_person_foo']
         success_flag, error_msg = bq_utils.merge_tables(
             bq_utils.get_dataset_id(),
@@ -118,12 +108,10 @@ class BqUtilsTest(unittest.TestCase):
 
     def test_merge_with_unmatched_schema(self):
         with open(NYC_FIVE_PERSONS_MEASUREMENT_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'),
-                                    'measurement.csv', fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'measurement.csv', fp)
         bq_utils.load_table_from_bucket('nyc', 'measurement')
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'),
-                                    'person.csv', fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
         bq_utils.load_table_from_bucket('pitt', 'person')
 
         time.sleep(5)
