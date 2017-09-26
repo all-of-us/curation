@@ -43,16 +43,14 @@ def load_table_from_bucket(hpo_id, cdm_table_name):
     :return: an object describing the associated bigquery job
     """
     if cdm_table_name not in common.CDM_TABLES:
-        raise ValueError('{} is not a valid table to load'.format(
-            cdm_table_name))
+        raise ValueError('{} is not a valid table to load'.format(cdm_table_name))
 
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
     bq_service = build('bigquery', 'v2')
 
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    fields_filename = os.path.join(resources.fields_path,
-                                   cdm_table_name + '.json')
+    fields_filename = os.path.join(resources.fields_path, cdm_table_name + '.json')
     gcs_object_path = 'gs://%s/%s.csv' % (bucket, cdm_table_name)
     table_id = get_table_id(hpo_id, cdm_table_name)
 
@@ -74,8 +72,7 @@ def load_table_from_bucket(hpo_id, cdm_table_name):
                     }
             }
     }
-    insert_result = bq_service.jobs().insert(projectId=app_id,
-                                             body=job_body).execute()
+    insert_result = bq_service.jobs().insert(projectId=app_id, body=job_body).execute()
     return insert_result
 
 
@@ -83,17 +80,14 @@ def delete_table(table_id):
     """
     Delete bigquery table by id
 
-    Note: This will throw `HttpError` if the table doesn't exist.
-    Use `table_exists` prior if necessary.
+    Note: This will throw `HttpError` if the table doesn't exist. Use `table_exists` prior if necessary.
     :param table_id: id of the table
     :return:
     """
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
     bq_service = create_service()
-    return bq_service.tables().delete(projectId=app_id,
-                                      datasetId=dataset_id,
-                                      tableId=table_id).execute()
+    return bq_service.tables().delete(projectId=app_id, datasetId=dataset_id, tableId=table_id).execute()
 
 
 def table_exists(table_id):
@@ -119,7 +113,7 @@ def table_exists(table_id):
 
 def get_job_details(job_id):
     """Get job resource corresponding to job_id
-    :param job_id: id of the job to get (i.e. `jobReference.jobId`)
+    :param job_id: id of the job to get (i.e. `jobReference.jobId` in response body of insert request)
     :returns: the job resource (for details see https://goo.gl/bUE49Z)
     """
     bq_service = create_service()
@@ -210,3 +204,17 @@ def query_table(query_string):
     query_result = bq_service.jobs().getQueryResults(projectId=app_id,
                                                      jobId=job_id).execute()
     return query_result
+
+
+def query(q, use_legacy_sql=False):
+    bq_service = create_service()
+    app_id = app_identity.get_application_id()
+    job_body = {
+        'defaultDataset':{
+            'projectId': app_id,
+            'datasetId': get_dataset_id()
+        },
+        'query': q,
+        'useLegacySql': use_legacy_sql
+    }
+    return bq_service.jobs().query(projectId=app_id, body=job_body).execute()
