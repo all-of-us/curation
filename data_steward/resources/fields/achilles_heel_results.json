@@ -1,0 +1,22 @@
+[
+    {
+        "type": "integer", 
+        "name": "analysis_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "achilles_heel_warning", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "rule_id", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "record_count", 
+        "mode": "nullable"
+    }
+]
