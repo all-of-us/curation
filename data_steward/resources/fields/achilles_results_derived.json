@@ -1,0 +1,27 @@
+[
+    {
+        "type": "integer", 
+        "name": "analysis_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_1", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_2", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "statistic_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "measure_id", 
+        "mode": "nullable"
+    }
+]
