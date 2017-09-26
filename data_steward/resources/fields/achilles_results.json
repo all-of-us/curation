@@ -1,0 +1,37 @@
+[
+    {
+        "type": "integer", 
+        "name": "analysis_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_1", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_2", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_3", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_4", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_5", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "count_value", 
+        "mode": "nullable"
+    }
+]

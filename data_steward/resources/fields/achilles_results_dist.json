@@ -1,0 +1,82 @@
+[
+    {
+        "type": "integer", 
+        "name": "analysis_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_1", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_2", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_3", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_4", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "stratum_5", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "count_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "min_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "max_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "avg_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "stdev_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "median_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "p10_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "p25_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "p75_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "float", 
+        "name": "p90_value", 
+        "mode": "nullable"
+    }
+]
