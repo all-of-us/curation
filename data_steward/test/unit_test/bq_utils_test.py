@@ -2,6 +2,8 @@ import unittest
 
 import bq_utils
 import gcs_utils
+import common
+from validation.achilles import ACHILLES_TABLES
 from google.appengine.ext import testbed
 from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
 import time
@@ -30,8 +32,11 @@ class BqUtilsTest(unittest.TestCase):
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
 
     def _drop_tables(self):
-        if bq_utils.table_exists(self.person_table_id):
-            bq_utils.delete_table(self.person_table_id)
+        result = bq_utils.list_tables()
+        if result['totalItems'] > 0:
+            for table in result['tables']:
+                table_id = table['tableReference']['tableId']
+                bq_utils.delete_table(table_id)
 
     def test_load_table_from_bucket(self):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
@@ -53,6 +58,47 @@ class BqUtilsTest(unittest.TestCase):
         q = 'SELECT person_id FROM %s' % table_id
         result = bq_utils.query(q)
         self.assertEqual(5, int(result['totalRows']))
+
+    def test_create_table(self):
+        table_id = 'some_random_table_id'
+        fields = [dict(name='id', type='integer', mode='required'),
+                  dict(name='name', type='string', mode='nullable')]
+        result = bq_utils.create_table(table_id, fields)
+        self.assertTrue('kind' in result)
+        self.assertEqual(result['kind'], 'bigquery#table')
+        # sanity check
+        self.assertTrue(bq_utils.table_exists(table_id))
+
+    def test_create_existing_table_without_drop_raises_error(self):
+        table_id = 'some_random_table_id'
+        fields = [dict(name='id', type='integer', mode='required'),
+                  dict(name='name', type='string', mode='nullable')]
+        bq_utils.create_table(table_id, fields)
+        with self.assertRaises(bq_utils.InvalidOperationError) as cm:
+            bq_utils.create_table(table_id, fields, drop_existing=False)
+
+    def test_create_table_drop_existing_success(self):
+        table_id = 'some_random_table_id'
+        fields = [dict(name='id', type='integer', mode='required'),
+                  dict(name='name', type='string', mode='nullable')]
+        result_1 = bq_utils.create_table(table_id, fields)
+        # sanity check
+        table_id = result_1['tableReference']['tableId']
+        self.assertTrue(bq_utils.table_exists(table_id))
+        result_2 = bq_utils.create_table(table_id, fields, drop_existing=True)
+        # same id and second one created after first one
+        self.assertEqual(result_1['id'], result_2['id'])
+        self.assertTrue(result_2['creationTime'] > result_1['creationTime'])
+
+    def test_create_standard_table(self):
+        standard_tables = list(common.CDM_TABLES) + ACHILLES_TABLES
+        for standard_table in standard_tables:
+            table_id = 'prefix_for_test_' + standard_table
+            result = bq_utils.create_standard_table(standard_table, table_id)
+            self.assertTrue('kind' in result)
+            self.assertEqual(result['kind'], 'bigquery#table')
+            # sanity check
+            self.assertTrue(bq_utils.table_exists(table_id))
 
     def tearDown(self):
         self._drop_tables()

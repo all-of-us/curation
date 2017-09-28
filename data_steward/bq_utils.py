@@ -10,6 +10,13 @@ import common
 import gcs_utils
 
 
+class InvalidOperationError(RuntimeError):
+    """Raised when an invalid Big Query operation attempted during the validation process"""
+
+    def __init__(self, msg):
+        super(InvalidOperationError, self).__init__(msg)
+
+
 def get_dataset_id():
     return os.environ.get('BIGQUERY_DATASET_ID')
 
@@ -127,3 +134,59 @@ def query(q, use_legacy_sql=False):
         'useLegacySql': use_legacy_sql
     }
     return bq_service.jobs().query(projectId=app_id, body=job_body).execute()
+
+
+def create_table(table_id, fields, drop_existing=False):
+    """
+    Create a table with the given table id and schema
+    :param table_id: id of the resulting table
+    :param fields: a list of `dict` with the following keys: type, name, mode
+    :param drop_existing: if True delete an existing table with the given table_id
+    :return: table reference object
+    """
+    if table_exists(table_id):
+        if drop_existing:
+            delete_table(table_id)
+        else:
+            raise InvalidOperationError('Attempt to create an existing table with id `%s`.' % table_id)
+    bq_service = create_service()
+    app_id = app_identity.get_application_id()
+    dataset_id = get_dataset_id()
+    insert_body = {
+        "tableReference": {
+            "projectId": app_id,
+            "datasetId": dataset_id,
+            "tableId": table_id
+        },
+        'schema': {'fields': fields}
+    }
+    return bq_service.tables().insert(projectId=app_id, datasetId=dataset_id, body=insert_body).execute()
+
+
+def create_standard_table(table_name, table_id, drop_existing=False):
+    """
+    Create a supported OHDSI table
+    :param table_name: the name of a table whose schema is specified
+    :param table_id: name fo the table to create in the bigquery dataset
+    :param drop_existing: if True delete an existing table with the given table_id
+    :return: table reference object
+    """
+    fields_filename = os.path.join(resources.fields_path, table_name + '.json')
+    fields = json.load(open(fields_filename, 'r'))
+    return create_table(table_id, fields, drop_existing)
+
+
+def list_tables():
+    """
+    List all the tables in the dataset
+    :return: an object with the structure described at https://goo.gl/Z17MWs
+
+    Example:
+      result = list_tables()
+      for table in result['tables']:
+          print table['id']
+    """
+    bq_service = create_service()
+    app_id = app_identity.get_application_id()
+    dataset_id = get_dataset_id()
+    return bq_service.tables().list(projectId=app_id, datasetId=dataset_id).execute()
