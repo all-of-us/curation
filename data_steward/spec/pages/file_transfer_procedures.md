@@ -29,8 +29,10 @@ The instructions below assume the bucket assigned to you was `test-site-bucket-a
 
 1. Open a web browser and navigate to the Google Cloud Storage Browser at `https://console.cloud.google.com/storage/browser/<BUCKET_NAME>` but replace `<BUCKET_NAME>` with the bucket name assigned to your site. For example, if your site was assigned `test-site-bucket-aou-data-steward-nyc`, then it would be [https://console.cloud.google.com/storage/browser/test-site-bucket-aou-data-steward-nyc](https://console.cloud.google.com/storage/browser/test-site-bucket-aou-data-steward-nyc).
 1. Enter your `pmi-ops.org` credentials if prompted.
+1. Create a folder inside the bucket to load the data into.
+Suggested folder naming scheme would be the date of the upload.
 1. In your desktop environment, navigate to the local folder where you've downloaded the test data set.
-1. Drag and drop the test data set files from your local folder into the browser window where the Google Cloud Storage Browser is open.
+1. Drag and drop the test data set files from your local folder into the browser window where the Google Cloud Storage Browser is open to the folder created in step 3.
 
 ## Review the Results
 
