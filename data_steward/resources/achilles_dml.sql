@@ -1109,9 +1109,6 @@ insert into synpuf_100.achilles_results (analysis_id, stratum_1, count_value)
 --
 -- 109	Number of persons with continuous observation in each year
 -- Note: using temp table instead of nested query because this gives vastly improved performance in Oracle
-
-DROP TABLE IF EXISTS temp.temp_dates;
-
 INTO temp.temp_dates
   SELECT distinct  EXTRACT(YEAR from observation_period_start_date) as obs_year, parse_date('%Y%m%d', concat(concat(CAST(EXTRACT(YEAR from observation_period_start_date)  AS STRING), '01'), '01')) as obs_year_start, parse_date('%Y%m%d', concat(concat(CAST(EXTRACT(YEAR from observation_period_start_date)  AS STRING), '12'), '31')) as obs_year_end
   FROM  synpuf_100.observation_period
@@ -1135,8 +1132,6 @@ drop table temp.temp_dates;
 --
 -- 110	Number of persons with continuous observation in each month
 -- Note: using temp table instead of nested query because this gives vastly improved performance in Oracle
-
-DROP TABLE IF EXISTS temp.temp_dates;
 
 INTO temp.temp_dates
   SELECT distinct  EXTRACT(YEAR from observation_period_start_date)*100 + EXTRACT(MONTH from observation_period_start_date) as obs_month, parse_date('%Y%m%d', concat(concat(CAST(EXTRACT(YEAR from observation_period_start_date)  AS STRING), SUBSTR(concat('0', CAST(EXTRACT(MONTH from observation_period_start_date)  AS STRING)),-2)), '01'))
@@ -1216,9 +1211,6 @@ where op1.observation_period_end_date < op1.observation_period_start_date
 --
 -- 116	Number of persons with at least one day of observation in each year by gender and age decile
 -- Note: using temp table instead of nested query because this gives vastly improved performance in Oracle
-
-DROP TABLE IF EXISTS temp.temp_dates;
-
 INTO temp.temp_dates
   SELECT distinct  EXTRACT(YEAR from observation_period_start_date) as obs_year 
   FROM  
@@ -1245,9 +1237,6 @@ drop table temp.temp_dates;
 --
 -- 117	Number of persons with at least one day of observation in each year by gender and age decile
 -- Note: using temp table instead of nested query because this gives vastly improved performance in Oracle
-
-DROP TABLE IF EXISTS temp.temp_dates;
-
 INTO temp.temp_dates
   SELECT distinct  EXTRACT(YEAR from observation_period_start_date)*100 + EXTRACT(MONTH from observation_period_start_date)  as obs_month
   FROM  
@@ -2231,11 +2220,11 @@ insert into synpuf_100.achilles_results (analysis_id, stratum_1, count_value)
 --
 -- 691	Number of total persons that have at least x procedures
 insert into synpuf_100.achilles_results (analysis_id, stratum_1, stratum_2, count_value)
- select  691 as analysis_id, procedure_concept_id as stratum_1, prc_cnt as stratum_2, sum(count(person_id))	over (partition by procedure_concept_id order by prc_cnt desc) as count_value
+ select  691 as analysis_id, stratum_1, prc_cnt as stratum_2, sum(count(person_id))	over (partition by stratum_1 order by prc_cnt desc) as count_value
   from  (
-	 select  p.procedure_concept_id, count(p.procedure_occurrence_id) as prc_cnt, p.person_id
-	  from  synpuf_100.procedure_occurrence p 
-	 group by  p.person_id, p.procedure_concept_id
+	 select  CAST(p.procedure_concept_id AS STRING) AS stratum_1, CAST(count(p.procedure_occurrence_id) AS STRING) as prc_cnt, p.person_id
+	  from  synpuf_100.procedure_occurrence p
+	 group by  p.person_id, stratum_1
  ) cnt_q
  group by  2, 3 ;
 --
@@ -2539,11 +2528,11 @@ insert into synpuf_100.achilles_results (analysis_id, stratum_1, count_value)
 --
 -- 791	Number of total persons that have at least x drug exposures
 insert into synpuf_100.achilles_results (analysis_id, stratum_1, stratum_2, count_value)
- select  791 as analysis_id, drug_concept_id as stratum_1, drg_cnt as stratum_2, sum(count(person_id))	over (partition by drug_concept_id order by drg_cnt desc) as count_value
+select  791 as analysis_id, stratum_1, drg_cnt as stratum_2, sum(count(person_id))	over (partition by stratum_1 order by drg_cnt desc) as count_value
   from  (
-	 select  d.drug_concept_id, count(d.drug_exposure_id) as drg_cnt, d.person_id
-	  from  synpuf_100.drug_exposure d 
-	 group by  d.person_id, d.drug_concept_id
+	 select  CAST(d.drug_concept_id AS STRING) stratum_1, CAST(count(d.drug_exposure_id) AS STRING) as drg_cnt, d.person_id
+	  from  synpuf_100.drug_exposure d
+	 group by  d.person_id, stratum_1
  ) cnt_q
  group by  2, 3 ;
 --
@@ -2825,11 +2814,11 @@ insert into synpuf_100.achilles_results (analysis_id, stratum_1, count_value)
 --
 -- 891	Number of total persons that have at least x observations
 insert into synpuf_100.achilles_results (analysis_id, stratum_1, stratum_2, count_value)
- select  891 as analysis_id, observation_concept_id as stratum_1, obs_cnt as stratum_2, sum(count(person_id))	over (partition by observation_concept_id order by obs_cnt desc) as count_value
+ select  891 as analysis_id, stratum_1, obs_cnt as stratum_2, sum(count(person_id))	over (partition by stratum_1 order by obs_cnt desc) as count_value
   from  (
-	 select  o.observation_concept_id, count(o.observation_id) as obs_cnt, o.person_id
+	 select  CAST(o.observation_concept_id AS STRING) as stratum_1, CAST(count(o.observation_id) AS STRING) as obs_cnt, o.person_id
 	  from  synpuf_100.observation o 
-	 group by  o.person_id, o.observation_concept_id
+	 group by  o.person_id, stratum_1
  ) cnt_q
  group by  2, 3 ;
 --
@@ -3446,9 +3435,6 @@ insert into synpuf_100.achilles_results (analysis_id, stratum_1, count_value)
 --
 -- 1409	Number of persons with continuous payer plan in each year
 -- Note: using temp table instead of nested query because this gives vastly improved
-
-DROP TABLE IF EXISTS temp.temp_dates;
-
 INTO temp.temp_dates
   SELECT distinct  EXTRACT(YEAR from payer_plan_period_start_date) as obs_year 
   FROM  
@@ -3476,9 +3462,6 @@ drop table temp.temp_dates;
 --
 -- 1410	Number of persons with continuous payer plan in each month
 -- Note: using temp table instead of nested query because this gives vastly improved performance in Oracle
-
-DROP TABLE IF EXISTS temp.temp_dates;
-
 INTO temp.temp_dates
   SELECT distinct  EXTRACT(YEAR from payer_plan_period_start_date)*100 + EXTRACT(MONTH from payer_plan_period_start_date) as obs_month, parse_date('%Y%m%d', concat(concat(CAST(EXTRACT(YEAR from payer_plan_period_start_date)  AS STRING), SUBSTR(concat('0', CAST(EXTRACT(MONTH from payer_plan_period_start_date)  AS STRING)),-2)), '01')) as obs_month_start, DATE_ADD(cast(DATE_ADD(cast(parse_date('%Y%m%d', concat(concat(CAST(EXTRACT(YEAR from payer_plan_period_start_date)  AS STRING), SUBSTR(concat('0', CAST(EXTRACT(MONTH from payer_plan_period_start_date)  AS STRING)),-2)), '01')) as date), interval 1 MONTH) as date), interval -1 DAY) as obs_month_end
   FROM  
@@ -3944,11 +3927,11 @@ where m.value_as_number is null
 --
 -- 1891	Number of total persons that have at least x measurements
 insert into synpuf_100.achilles_results (analysis_id, stratum_1, stratum_2, count_value)
- select  1891 as analysis_id, measurement_concept_id as stratum_1, meas_cnt as stratum_2, sum(count(person_id))	over (partition by measurement_concept_id order by meas_cnt desc) as count_value
+ select  1891 as analysis_id, stratum_1, meas_cnt as stratum_2, sum(count(person_id))	over (partition by stratum_1 order by meas_cnt desc) as count_value
   from  (
-	 select  m.measurement_concept_id, count(m.measurement_id) as meas_cnt, m.person_id
+	 select  CAST(m.measurement_concept_id AS STRING) as stratum_1, CAST(count(m.measurement_id) AS STRING) as meas_cnt, m.person_id
 	  from  synpuf_100.measurement m 
-	 group by  m.person_id, m.measurement_concept_id
+	 group by  m.person_id, stratum_1
  ) cnt_q
  group by  2, 3 ;
 --
