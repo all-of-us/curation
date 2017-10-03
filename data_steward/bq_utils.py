@@ -122,18 +122,40 @@ def get_job_details(job_id):
     return bq_service.jobs().get(projectId=app_id, jobId=job_id).execute()
 
 
-def query(q, use_legacy_sql=False):
+def query(q, use_legacy_sql=False, destination_table_id=None):
     bq_service = create_service()
     app_id = app_identity.get_application_id()
-    job_body = {
-        'defaultDataset':{
-            'projectId': app_id,
-            'datasetId': get_dataset_id()
-        },
-        'query': q,
-        'useLegacySql': use_legacy_sql
-    }
-    return bq_service.jobs().query(projectId=app_id, body=job_body).execute()
+
+    if destination_table_id:
+        job_body = {
+            'configuration':
+                {
+                    'query': {
+                        'query': q,
+                        'useLegacySql': use_legacy_sql,
+                        'defaultDataset': {
+                            'projectId': app_id,
+                            'datasetId': get_dataset_id()
+                        },
+                        'destinationTable': {
+                            'projectId': app_id,
+                            'datasetId': get_dataset_id(),
+                            'tableId': destination_table_id
+                        }
+                    }
+                }
+        }
+        return bq_service.jobs().insert(projectId=app_id, body=job_body).execute()
+    else:
+        job_body = {
+            'defaultDataset': {
+                'projectId': app_id,
+                'datasetId': get_dataset_id()
+            },
+            'query': q,
+            'useLegacySql': use_legacy_sql
+        }
+        return bq_service.jobs().query(projectId=app_id, body=job_body).execute()
 
 
 def create_table(table_id, fields, drop_existing=False):
