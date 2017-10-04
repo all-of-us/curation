@@ -1,6 +1,7 @@
 import os
 
 import common
+import gcs_utils
 import resources
 from validation import main
 
@@ -79,3 +80,9 @@ def _create_five_persons_success_result():
         writer = csv.DictWriter(f, field_names, quoting=csv.QUOTE_ALL)
         writer.writeheader()
         writer.writerows(expected_result_items)
+
+
+def empty_bucket(bucket):
+    bucket_items = gcs_utils.list_bucket(bucket)
+    for bucket_item in bucket_items:
+        gcs_utils.delete_object(bucket, bucket_item['name'])
