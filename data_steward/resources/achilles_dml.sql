@@ -1,753 +1,498 @@
-
 --populate the tables with names of analyses
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (0, 'Source name');
-
+insert into synpuf_100.achilles_analysis (
+    analysis_id,
+    analysis_name,
+    stratum_1_name,
+    stratum_2_name,
+    stratum_3_name,
+    stratum_4_name
+)
+VALUES
+(0, 'Source name', NULL, NULL, NULL, NULL),
 --000. PERSON statistics
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1, 'Number of persons');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (2, 'Number of persons by gender', 'gender_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (3, 'Number of persons by year of birth', 'year_of_birth');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (4, 'Number of persons by race', 'race_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (5, 'Number of persons by ethnicity', 'ethnicity_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (7, 'Number of persons with invalid provider_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (8, 'Number of persons with invalid location_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (9, 'Number of persons with invalid care_site_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (10, 'Number of all persons by year of birth by gender', 'year_of_birth', 'gender_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (11, 'Number of non-deceased persons by year of birth by gender', 'year_of_birth', 'gender_concept_id');
-	
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-  values (12, 'Number of persons by race and ethnicity','race_concept_id','ethnicity_concept_id');
-
-
+(1, 'Number of persons', NULL, NULL, NULL, NULL),
+(2, 'Number of persons by gender', 'gender_concept_id', NULL, NULL, NULL),
+(3, 'Number of persons by year of birth', 'year_of_birth', NULL, NULL, NULL),
+(4, 'Number of persons by race', 'race_concept_id', NULL, NULL, NULL),
+(5, 'Number of persons by ethnicity', 'ethnicity_concept_id', NULL, NULL, NULL),
+(7, 'Number of persons with invalid provider_id', NULL, NULL, NULL, NULL),
+(8, 'Number of persons with invalid location_id', NULL, NULL, NULL, NULL),
+(9, 'Number of persons with invalid care_site_id', NULL, NULL, NULL, NULL),
+(10, 'Number of all persons by year of birth by gender', 'year_of_birth', 'gender_concept_id', NULL, NULL),
+(11, 'Number of non-deceased persons by year of birth by gender', 'year_of_birth', 'gender_concept_id', NULL, NULL),
+(12, 'Number of persons by race and ethnicity', 'race_concept_id', 'ethnicity_concept_id', NULL, NULL),
 --100. OBSERVATION_PERIOD (joined to PERSON)
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (101, 'Number of persons by age, with age at first observation period', 'age');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (102, 'Number of persons by gender by age, with age at first observation period', 'gender_concept_id', 'age');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (103, 'Distribution of age at first observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (104, 'Distribution of age at first observation period by gender', 'gender_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (105, 'Length of observation (days) of first observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (106, 'Length of observation (days) of first observation period by gender', 'gender_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (107, 'Length of observation (days) of first observation period by age decile', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (108, 'Number of persons by length of observation period, in 30d increments', 'Observation period length 30d increments');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (109, 'Number of persons with continuous observation in each year', 'calendar year');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (110, 'Number of persons with continuous observation in each month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (111, 'Number of persons by observation period start month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (112, 'Number of persons by observation period end month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (113, 'Number of persons by number of observation periods', 'number of observation periods');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (114, 'Number of persons with observation period before year-of-birth');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (115, 'Number of persons with observation period end < observation period start');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name)
-	values (116, 'Number of persons with at least one day of observation in each year by gender and age decile', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (117, 'Number of persons with at least one day of observation in each month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-  values (118, 'Number of observation periods with invalid person_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-  values (119, 'Number of observation period records by period_type_concept_id','period_type_concept_id');
-
-
-
-
+(101, 'Number of persons by age, with age at first observation period', 'age', NULL, NULL, NULL),
+(102,
+    'Number of persons by gender by age, with age at first observation period',
+    'gender_concept_id',
+    'age',
+    NULL,
+    NULL
+),
+(103, 'Distribution of age at first observation period', NULL, NULL, NULL, NULL),
+(104, 'Distribution of age at first observation period by gender', 'gender_concept_id', NULL, NULL, NULL),
+(105, 'Length of observation (days) of first observation period', NULL, NULL, NULL, NULL),
+(106, 'Length of observation (days) of first observation period by gender', 'gender_concept_id', NULL, NULL, NULL),
+(107, 'Length of observation (days) of first observation period by age decile', 'age decile', NULL, NULL, NULL),
+(108,
+    'Number of persons by length of observation period, in 30d increments',
+    'Observation period length 30d increments',
+    NULL,
+    NULL,
+    NULL
+),
+(109, 'Number of persons with continuous observation in each year', 'calendar year', NULL, NULL, NULL),
+(110, 'Number of persons with continuous observation in each month', 'calendar month', NULL, NULL, NULL),
+(111, 'Number of persons by observation period start month', 'calendar month', NULL, NULL, NULL),
+(112, 'Number of persons by observation period end month', 'calendar month', NULL, NULL, NULL),
+(113, 'Number of persons by number of observation periods', 'number of observation periods', NULL, NULL, NULL),
+(114, 'Number of persons with observation period before year-of-birth', NULL, NULL, NULL, NULL),
+(115, 'Number of persons with observation period end < observation period start', NULL, NULL, NULL, NULL),
+(116,
+    'Number of persons with at least one day of observation in each year by gender and age decile',
+    'calendar year',
+    'gender_concept_id',
+    'age decile',
+    NULL
+),
+(117, 'Number of persons with at least one day of observation in each month', 'calendar month', NULL, NULL, NULL),
+(118, 'Number of observation periods with invalid person_id', NULL, NULL, NULL, NULL),
+(119, 'Number of observation period records by period_type_concept_id', 'period_type_concept_id', NULL, NULL, NULL),
 --200- VISIT_OCCURRENCE
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (200, 'Number of persons with at least one visit occurrence, by visit_concept_id', 'visit_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (201, 'Number of visit occurrence records, by visit_concept_id', 'visit_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (202, 'Number of persons by visit occurrence start month, by visit_concept_id', 'visit_concept_id', 'calendar month');	
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (203, 'Number of distinct visit occurrence concepts per person');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name, stratum_4_name)
-	values (204, 'Number of persons with at least one visit occurrence, by visit_concept_id by calendar year by gender by age decile', 'visit_concept_id', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (206, 'Distribution of age by visit_concept_id', 'visit_concept_id', 'gender_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (207, 'Number of visit records with invalid person_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (208, 'Number of visit records outside valid observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (209, 'Number of visit records with end date < start date');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (210, 'Number of visit records with invalid care_site_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (211, 'Distribution of length of stay by visit_concept_id', 'visit_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name )
-	values (212, 'Number of persons with at least one visit occurrence, by calendar year by gender by age decile', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (220, 'Number of visit occurrence records by visit occurrence start month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (221, 'Number of persons by visit start year', 'calendar year');
-
-
-
+(200, 'Number of persons with at least one visit occurrence, by visit_concept_id', 'visit_concept_id', NULL, NULL, NULL),
+(201, 'Number of visit occurrence records, by visit_concept_id', 'visit_concept_id', NULL, NULL, NULL),
+(202,
+    'Number of persons by visit occurrence start month, by visit_concept_id',
+    'visit_concept_id',
+    'calendar month',
+    NULL,
+    NULL
+),
+(203, 'Number of distinct visit occurrence concepts per person', NULL, NULL, NULL, NULL),
+(204,
+    'Number of persons with at least one visit occurrence, by visit_concept_id by calendar year by gender by age decile',
+    'visit_concept_id',
+    'calendar year',
+    'gender_concept_id',
+    'age decile'
+),
+(206, 'Distribution of age by visit_concept_id', 'visit_concept_id', 'gender_concept_id', NULL, NULL),
+(207, 'Number of visit records with invalid person_id', NULL, NULL, NULL, NULL),
+(208, 'Number of visit records outside valid observation period', NULL, NULL, NULL, NULL),
+(209, 'Number of visit records with end date < start date', NULL, NULL, NULL, NULL),
+(210, 'Number of visit records with invalid care_site_id', NULL, NULL, NULL, NULL),
+(211, 'Distribution of length of stay by visit_concept_id', 'visit_concept_id', NULL, NULL, NULL),
+(212,
+    'Number of persons with at least one visit occurrence, by calendar year by gender by age decile',
+    'calendar year',
+    'gender_concept_id',
+    'age decile',
+    NULL
+),
+(220, 'Number of visit occurrence records by visit occurrence start month', 'calendar month', NULL, NULL, NULL),
+(221, 'Number of persons by visit start year', 'calendar year', NULL, NULL, NULL),
 --300- PROVIDER
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (300, 'Number of providers');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (301, 'Number of providers by specialty concept_id', 'specialty_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (302, 'Number of providers with invalid care site id');
-
-
-
+(300, 'Number of providers', NULL, NULL, NULL, NULL),
+(301, 'Number of providers by specialty concept_id', 'specialty_concept_id', NULL, NULL, NULL),
+(302, 'Number of providers with invalid care site id', NULL, NULL, NULL, NULL),
 --400- CONDITION_OCCURRENCE
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (400, 'Number of persons with at least one condition occurrence, by condition_concept_id', 'condition_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (401, 'Number of condition occurrence records, by condition_concept_id', 'condition_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (402, 'Number of persons by condition occurrence start month, by condition_concept_id', 'condition_concept_id', 'calendar month');	
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (403, 'Number of distinct condition occurrence concepts per person');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name, stratum_4_name)
-	values (404, 'Number of persons with at least one condition occurrence, by condition_concept_id by calendar year by gender by age decile', 'condition_concept_id', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (405, 'Number of condition occurrence records, by condition_concept_id by condition_type_concept_id', 'condition_concept_id', 'condition_type_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (406, 'Distribution of age by condition_concept_id', 'condition_concept_id', 'gender_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (409, 'Number of condition occurrence records with invalid person_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (410, 'Number of condition occurrence records outside valid observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (411, 'Number of condition occurrence records with end date < start date');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (412, 'Number of condition occurrence records with invalid provider_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (413, 'Number of condition occurrence records with invalid visit_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (420, 'Number of condition occurrence records by condition occurrence start month', 'calendar month');	
-
+(400,
+    'Number of persons with at least one condition occurrence, by condition_concept_id',
+    'condition_concept_id',
+    NULL,
+    NULL,
+    NULL
+),
+(401, 'Number of condition occurrence records, by condition_concept_id', 'condition_concept_id', NULL, NULL, NULL),
+(402,
+    'Number of persons by condition occurrence start month, by condition_concept_id',
+    'condition_concept_id',
+    'calendar month',
+    NULL,
+    NULL
+),
+(403, 'Number of distinct condition occurrence concepts per person', NULL, NULL, NULL, NULL),
+(404,
+    'Number of persons with at least one condition occurrence, by condition_concept_id by calendar year by gender by age decile',
+    'condition_concept_id',
+    'calendar year',
+    'gender_concept_id',
+    'age decile'
+),
+(405,
+    'Number of condition occurrence records, by condition_concept_id by condition_type_concept_id',
+    'condition_concept_id',
+    'condition_type_concept_id',
+    NULL,
+    NULL
+),
+(406, 'Distribution of age by condition_concept_id', 'condition_concept_id', 'gender_concept_id', NULL, NULL),
+(409, 'Number of condition occurrence records with invalid person_id', NULL, NULL, NULL, NULL),
+(410, 'Number of condition occurrence records outside valid observation period', NULL, NULL, NULL, NULL),
+(411, 'Number of condition occurrence records with end date < start date', NULL, NULL, NULL, NULL),
+(412, 'Number of condition occurrence records with invalid provider_id', NULL, NULL, NULL, NULL),
+(413, 'Number of condition occurrence records with invalid visit_id', NULL, NULL, NULL, NULL),
+(420, 'Number of condition occurrence records by condition occurrence start month', 'calendar month', NULL, NULL, NULL),
 --500- DEATH
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (500, 'Number of persons with death, by cause_concept_id', 'cause_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (501, 'Number of records of death, by cause_concept_id', 'cause_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (502, 'Number of persons by death month', 'calendar month');	
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name)
-	values (504, 'Number of persons with a death, by calendar year by gender by age decile', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (505, 'Number of death records, by death_type_concept_id', 'death_type_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (506, 'Distribution of age at death by gender', 'gender_concept_id');
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (509, 'Number of death records with invalid person_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (510, 'Number of death records outside valid observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (511, 'Distribution of time from death to last condition');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (512, 'Distribution of time from death to last drug');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (513, 'Distribution of time from death to last visit');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (514, 'Distribution of time from death to last procedure');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (515, 'Distribution of time from death to last observation');
-
-
+(500, 'Number of persons with death, by cause_concept_id', 'cause_concept_id', NULL, NULL, NULL),
+(501, 'Number of records of death, by cause_concept_id', 'cause_concept_id', NULL, NULL, NULL),
+(502, 'Number of persons by death month', 'calendar month', NULL, NULL, NULL),
+(504,
+    'Number of persons with a death, by calendar year by gender by age decile',
+    'calendar year',
+    'gender_concept_id',
+    'age decile',
+    NULL
+),
+(505, 'Number of death records, by death_type_concept_id', 'death_type_concept_id', NULL, NULL, NULL),
+(506, 'Distribution of age at death by gender', 'gender_concept_id', NULL, NULL, NULL),
+(509, 'Number of death records with invalid person_id', NULL, NULL, NULL, NULL),
+(510, 'Number of death records outside valid observation period', NULL, NULL, NULL, NULL),
+(511, 'Distribution of time from death to last condition', NULL, NULL, NULL, NULL),
+(512, 'Distribution of time from death to last drug', NULL, NULL, NULL, NULL),
+(513, 'Distribution of time from death to last visit', NULL, NULL, NULL, NULL),
+(514, 'Distribution of time from death to last procedure', NULL, NULL, NULL, NULL),
+(515, 'Distribution of time from death to last observation', NULL, NULL, NULL, NULL),
 --600- PROCEDURE_OCCURRENCE
-
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (600, 'Number of persons with at least one procedure occurrence, by procedure_concept_id', 'procedure_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (601, 'Number of procedure occurrence records, by procedure_concept_id', 'procedure_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (602, 'Number of persons by procedure occurrence start month, by procedure_concept_id', 'procedure_concept_id', 'calendar month');	
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (603, 'Number of distinct procedure occurrence concepts per person');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name, stratum_4_name)
-	values (604, 'Number of persons with at least one procedure occurrence, by procedure_concept_id by calendar year by gender by age decile', 'procedure_concept_id', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (605, 'Number of procedure occurrence records, by procedure_concept_id by procedure_type_concept_id', 'procedure_concept_id', 'procedure_type_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (606, 'Distribution of age by procedure_concept_id', 'procedure_concept_id', 'gender_concept_id');
-
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (609, 'Number of procedure occurrence records with invalid person_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (610, 'Number of procedure occurrence records outside valid observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (612, 'Number of procedure occurrence records with invalid provider_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (613, 'Number of procedure occurrence records with invalid visit_id');
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (620, 'Number of procedure occurrence records  by procedure occurrence start month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (691, 'Number of persons that have at least x procedures', 'procedure_id', 'procedure_count');
-
+(600,
+    'Number of persons with at least one procedure occurrence, by procedure_concept_id',
+    'procedure_concept_id',
+    NULL,
+    NULL,
+    NULL
+),
+(601, 'Number of procedure occurrence records, by procedure_concept_id', 'procedure_concept_id', NULL, NULL, NULL),
+(602,
+    'Number of persons by procedure occurrence start month, by procedure_concept_id',
+    'procedure_concept_id',
+    'calendar month',
+    NULL,
+    NULL
+),
+(603, 'Number of distinct procedure occurrence concepts per person', NULL, NULL, NULL, NULL),
+(604,
+    'Number of persons with at least one procedure occurrence, by procedure_concept_id by calendar year by gender by age decile',
+    'procedure_concept_id',
+    'calendar year',
+    'gender_concept_id',
+    'age decile'
+),
+(605,
+    'Number of procedure occurrence records, by procedure_concept_id by procedure_type_concept_id',
+    'procedure_concept_id',
+    'procedure_type_concept_id',
+    NULL,
+    NULL
+),
+(606, 'Distribution of age by procedure_concept_id', 'procedure_concept_id', 'gender_concept_id', NULL, NULL),
+(609, 'Number of procedure occurrence records with invalid person_id', NULL, NULL, NULL, NULL),
+(610, 'Number of procedure occurrence records outside valid observation period', NULL, NULL, NULL, NULL),
+(612, 'Number of procedure occurrence records with invalid provider_id', NULL, NULL, NULL, NULL),
+(613, 'Number of procedure occurrence records with invalid visit_id', NULL, NULL, NULL, NULL),
+(620, 'Number of procedure occurrence records  by procedure occurrence start month', 'calendar month', NULL, NULL, NULL),
+(691, 'Number of persons that have at least x procedures', 'procedure_id', 'procedure_count', NULL, NULL),
 --700- DRUG_EXPOSURE
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (700, 'Number of persons with at least one drug exposure, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (701, 'Number of drug exposure records, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (702, 'Number of persons by drug exposure start month, by drug_concept_id', 'drug_concept_id', 'calendar month');	
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (703, 'Number of distinct drug exposure concepts per person');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name, stratum_4_name)
-	values (704, 'Number of persons with at least one drug exposure, by drug_concept_id by calendar year by gender by age decile', 'drug_concept_id', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (705, 'Number of drug exposure records, by drug_concept_id by drug_type_concept_id', 'drug_concept_id', 'drug_type_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (706, 'Distribution of age by drug_concept_id', 'drug_concept_id', 'gender_concept_id');
-
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (709, 'Number of drug exposure records with invalid person_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (710, 'Number of drug exposure records outside valid observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (711, 'Number of drug exposure records with end date < start date');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (712, 'Number of drug exposure records with invalid provider_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (713, 'Number of drug exposure records with invalid visit_id');
-
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (715, 'Distribution of days_supply by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (716, 'Distribution of refills by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (717, 'Distribution of quantity by drug_concept_id', 'drug_concept_id');
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (720, 'Number of drug exposure records  by drug exposure start month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (791, 'Number of persons that have at least x drug exposures', 'drug_concept_id', 'drug_count');
-
+(700, 'Number of persons with at least one drug exposure, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(701, 'Number of drug exposure records, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(702,
+    'Number of persons by drug exposure start month, by drug_concept_id',
+    'drug_concept_id',
+    'calendar month',
+    NULL,
+    NULL
+),
+(703, 'Number of distinct drug exposure concepts per person', NULL, NULL, NULL, NULL),
+(704,
+    'Number of persons with at least one drug exposure, by drug_concept_id by calendar year by gender by age decile',
+    'drug_concept_id',
+    'calendar year',
+    'gender_concept_id',
+    'age decile'
+),
+(705,
+    'Number of drug exposure records, by drug_concept_id by drug_type_concept_id',
+    'drug_concept_id',
+    'drug_type_concept_id',
+    NULL,
+    NULL
+),
+(706, 'Distribution of age by drug_concept_id', 'drug_concept_id', 'gender_concept_id', NULL, NULL),
+(709, 'Number of drug exposure records with invalid person_id', NULL, NULL, NULL, NULL),
+(710, 'Number of drug exposure records outside valid observation period', NULL, NULL, NULL, NULL),
+(711, 'Number of drug exposure records with end date < start date', NULL, NULL, NULL, NULL),
+(712, 'Number of drug exposure records with invalid provider_id', NULL, NULL, NULL, NULL),
+(713, 'Number of drug exposure records with invalid visit_id', NULL, NULL, NULL, NULL),
+(715, 'Distribution of days_supply by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(716, 'Distribution of refills by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(717, 'Distribution of quantity by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(720, 'Number of drug exposure records  by drug exposure start month', 'calendar month', NULL, NULL, NULL),
+(791, 'Number of persons that have at least x drug exposures', 'drug_concept_id', 'drug_count', NULL, NULL),
 --800- OBSERVATION
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (800, 'Number of persons with at least one observation occurrence, by observation_concept_id', 'observation_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (801, 'Number of observation occurrence records, by observation_concept_id', 'observation_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (802, 'Number of persons by observation occurrence start month, by observation_concept_id', 'observation_concept_id', 'calendar month');	
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (803, 'Number of distinct observation occurrence concepts per person');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name, stratum_4_name)
-	values (804, 'Number of persons with at least one observation occurrence, by observation_concept_id by calendar year by gender by age decile', 'observation_concept_id', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (805, 'Number of observation occurrence records, by observation_concept_id by observation_type_concept_id', 'observation_concept_id', 'observation_type_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (806, 'Distribution of age by observation_concept_id', 'observation_concept_id', 'gender_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (807, 'Number of observation occurrence records, by observation_concept_id and unit_concept_id', 'observation_concept_id', 'unit_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (809, 'Number of observation records with invalid person_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (810, 'Number of observation records outside valid observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (812, 'Number of observation records with invalid provider_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (813, 'Number of observation records with invalid visit_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (814, 'Number of observation records with no value (numeric, string, or concept)');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (815, 'Distribution of numeric values, by observation_concept_id and unit_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (820, 'Number of observation records  by observation start month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (891, 'Number of persons that have at least x observations', 'observation_concept_id', 'observation_count');
-
+(800,
+    'Number of persons with at least one observation occurrence, by observation_concept_id',
+    'observation_concept_id',
+    NULL,
+    NULL,
+    NULL
+),
+(801, 'Number of observation occurrence records, by observation_concept_id', 'observation_concept_id', NULL, NULL, NULL),
+(802,
+    'Number of persons by observation occurrence start month, by observation_concept_id',
+    'observation_concept_id',
+    'calendar month',
+    NULL,
+    NULL
+),
+(803, 'Number of distinct observation occurrence concepts per person', NULL, NULL, NULL, NULL),
+(804,
+    'Number of persons with at least one observation occurrence, by observation_concept_id by calendar year by gender by age decile',
+    'observation_concept_id',
+    'calendar year',
+    'gender_concept_id',
+    'age decile'
+),
+(805,
+    'Number of observation occurrence records, by observation_concept_id by observation_type_concept_id',
+    'observation_concept_id',
+    'observation_type_concept_id',
+    NULL,
+    NULL
+),
+(806, 'Distribution of age by observation_concept_id', 'observation_concept_id', 'gender_concept_id', NULL, NULL),
+(807,
+    'Number of observation occurrence records, by observation_concept_id and unit_concept_id',
+    'observation_concept_id',
+    'unit_concept_id',
+    NULL,
+    NULL
+),
+(809, 'Number of observation records with invalid person_id', NULL, NULL, NULL, NULL),
+(810, 'Number of observation records outside valid observation period', NULL, NULL, NULL, NULL),
+(812, 'Number of observation records with invalid provider_id', NULL, NULL, NULL, NULL),
+(813, 'Number of observation records with invalid visit_id', NULL, NULL, NULL, NULL),
+(814, 'Number of observation records with no value (numeric, string, or concept)', NULL, NULL, NULL, NULL),
+(815, 'Distribution of numeric values, by observation_concept_id and unit_concept_id', NULL, NULL, NULL, NULL),
+(820, 'Number of observation records  by observation start month', 'calendar month', NULL, NULL, NULL),
+(891, 'Number of persons that have at least x observations', 'observation_concept_id', 'observation_count', NULL, NULL),
 --900- DRUG_ERA
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (900, 'Number of persons with at least one drug era, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (901, 'Number of drug era records, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (902, 'Number of persons by drug era start month, by drug_concept_id', 'drug_concept_id', 'calendar month');	
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (903, 'Number of distinct drug era concepts per person');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name, stratum_4_name)
-	values (904, 'Number of persons with at least one drug era, by drug_concept_id by calendar year by gender by age decile', 'drug_concept_id', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (906, 'Distribution of age by drug_concept_id', 'drug_concept_id', 'gender_concept_id');
-	
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (907, 'Distribution of drug era length, by drug_concept_id', 'drug_concept_id');	
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (908, 'Number of drug eras without valid person');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (909, 'Number of drug eras outside valid observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (910, 'Number of drug eras with end date < start date');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (920, 'Number of drug era records  by drug era start month', 'calendar month');
-
+(900, 'Number of persons with at least one drug era, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(901, 'Number of drug era records, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(902, 'Number of persons by drug era start month, by drug_concept_id', 'drug_concept_id', 'calendar month', NULL, NULL),
+(903, 'Number of distinct drug era concepts per person', NULL, NULL, NULL, NULL),
+(904,
+    'Number of persons with at least one drug era, by drug_concept_id by calendar year by gender by age decile',
+    'drug_concept_id',
+    'calendar year',
+    'gender_concept_id',
+    'age decile'
+),
+(906, 'Distribution of age by drug_concept_id', 'drug_concept_id', 'gender_concept_id', NULL, NULL),
+(907, 'Distribution of drug era length, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(908, 'Number of drug eras without valid person', NULL, NULL, NULL, NULL),
+(909, 'Number of drug eras outside valid observation period', NULL, NULL, NULL, NULL),
+(910, 'Number of drug eras with end date < start date', NULL, NULL, NULL, NULL),
+(920, 'Number of drug era records  by drug era start month', 'calendar month', NULL, NULL, NULL),
 --1000- CONDITION_ERA
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1000, 'Number of persons with at least one condition era, by condition_concept_id', 'condition_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1001, 'Number of condition era records, by condition_concept_id', 'condition_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (1002, 'Number of persons by condition era start month, by condition_concept_id', 'condition_concept_id', 'calendar month');	
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1003, 'Number of distinct condition era concepts per person');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name, stratum_4_name)
-	values (1004, 'Number of persons with at least one condition era, by condition_concept_id by calendar year by gender by age decile', 'condition_concept_id', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (1006, 'Distribution of age by condition_concept_id', 'condition_concept_id', 'gender_concept_id');
-	
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1007, 'Distribution of condition era length, by condition_concept_id', 'condition_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1008, 'Number of condition eras without valid person');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1009, 'Number of condition eras outside valid observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1010, 'Number of condition eras with end date < start date');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1020, 'Number of condition era records by condition era start month', 'calendar month');
-
-
-
+(1000,
+    'Number of persons with at least one condition era, by condition_concept_id',
+    'condition_concept_id',
+    NULL,
+    NULL,
+    NULL
+),
+(1001, 'Number of condition era records, by condition_concept_id', 'condition_concept_id', NULL, NULL, NULL),
+(1002,
+    'Number of persons by condition era start month, by condition_concept_id',
+    'condition_concept_id',
+    'calendar month',
+    NULL,
+    NULL
+),
+(1003, 'Number of distinct condition era concepts per person', NULL, NULL, NULL, NULL),
+(1004,
+    'Number of persons with at least one condition era, by condition_concept_id by calendar year by gender by age decile',
+    'condition_concept_id',
+    'calendar year',
+    'gender_concept_id',
+    'age decile'
+),
+(1006, 'Distribution of age by condition_concept_id', 'condition_concept_id', 'gender_concept_id', NULL, NULL),
+(1007, 'Distribution of condition era length, by condition_concept_id', 'condition_concept_id', NULL, NULL, NULL),
+(1008, 'Number of condition eras without valid person', NULL, NULL, NULL, NULL),
+(1009, 'Number of condition eras outside valid observation period', NULL, NULL, NULL, NULL),
+(1010, 'Number of condition eras with end date < start date', NULL, NULL, NULL, NULL),
+(1020, 'Number of condition era records by condition era start month', 'calendar month', NULL, NULL, NULL),
 --1100- LOCATION
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1100, 'Number of persons by location 3-digit zip', '3-digit zip');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1101, 'Number of persons by location state', 'state');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1102, 'Number of care sites by location 3-digit zip', '3-digit zip');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1103, 'Number of care sites by location state', 'state');
-
-
+(1100, 'Number of persons by location 3-digit zip', '3-digit zip', NULL, NULL, NULL),
+(1101, 'Number of persons by location state', 'state', NULL, NULL, NULL),
+(1102, 'Number of care sites by location 3-digit zip', '3-digit zip', NULL, NULL, NULL),
+(1103, 'Number of care sites by location state', 'state', NULL, NULL, NULL),
 --1200- CARE_SITE
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1200, 'Number of persons by place of service', 'place_of_service_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1201, 'Number of visits by place of service', 'place_of_service_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1202, 'Number of care sites by place of service', 'place_of_service_concept_id');
-
-
+(1200, 'Number of persons by place of service', 'place_of_service_concept_id', NULL, NULL, NULL),
+(1201, 'Number of visits by place of service', 'place_of_service_concept_id', NULL, NULL, NULL),
+(1202, 'Number of care sites by place of service', 'place_of_service_concept_id', NULL, NULL, NULL),
 --1300- ORGANIZATION
-
 --NOT APPLICABLE IN CDMV5
---insert into synpuf_100.ACHILLES_analysis (analysis_id, analysis_name, stratum_1_name)
---	values (1300, 'Number of organizations by place of service', 'place_of_service_concept_id');
-
-
+--insert into results.ACHILLES_analysis (analysis_id, analysis_name, stratum_1_name)
+--	values (1300, 'Number of organizations by place of service', 'place_of_service_concept_id', NULL, NULL,NULL),
 --1400- PAYOR_PLAN_PERIOD
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1406, 'Length of payer plan (days) of first payer plan period by gender', 'gender_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1407, 'Length of payer plan (days) of first payer plan period by age decile', 'age_decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1408, 'Number of persons by length of payer plan period, in 30d increments', 'payer plan period length 30d increments');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1409, 'Number of persons with continuous payer plan in each year', 'calendar year');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1410, 'Number of persons with continuous payer plan in each month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1411, 'Number of persons by payer plan period start month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1412, 'Number of persons by payer plan period end month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1413, 'Number of persons by number of payer plan periods', 'number of payer plan periods');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1414, 'Number of persons with payer plan period before year-of-birth');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1415, 'Number of persons with payer plan period end < payer plan period start');
-
+(1406, 'Length of payer plan (days) of first payer plan period by gender', 'gender_concept_id', NULL, NULL, NULL),
+(1407, 'Length of payer plan (days) of first payer plan period by age decile', 'age_decile', NULL, NULL, NULL),
+(1408,
+    'Number of persons by length of payer plan period, in 30d increments',
+    'payer plan period length 30d increments',
+    NULL,
+    NULL,
+    NULL
+),
+(1409, 'Number of persons with continuous payer plan in each year', 'calendar year', NULL, NULL, NULL),
+(1410, 'Number of persons with continuous payer plan in each month', 'calendar month', NULL, NULL, NULL),
+(1411, 'Number of persons by payer plan period start month', 'calendar month', NULL, NULL, NULL),
+(1412, 'Number of persons by payer plan period end month', 'calendar month', NULL, NULL, NULL),
+(1413, 'Number of persons by number of payer plan periods', 'number of payer plan periods', NULL, NULL, NULL),
+(1414, 'Number of persons with payer plan period before year-of-birth', NULL, NULL, NULL, NULL),
+(1415, 'Number of persons with payer plan period end < payer plan period start', NULL, NULL, NULL, NULL),
 --1500- DRUG_COST
-
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1500, 'Number of drug cost records with invalid drug exposure id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1501, 'Number of drug cost records with invalid payer plan period id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1502, 'Distribution of paid copay, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1503, 'Distribution of paid coinsurance, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1504, 'Distribution of paid toward deductible, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1505, 'Distribution of paid by payer, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1506, 'Distribution of paid by coordination of benefit, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1507, 'Distribution of total out-of-pocket, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1508, 'Distribution of total paid, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1509, 'Distribution of ingredient_cost, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1510, 'Distribution of dispensing fee, by drug_concept_id', 'drug_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1511, 'Distribution of average wholesale price, by drug_concept_id', 'drug_concept_id');
-
-
+(1500, 'Number of drug cost records with invalid drug exposure id', NULL, NULL, NULL, NULL),
+(1501, 'Number of drug cost records with invalid payer plan period id', NULL, NULL, NULL, NULL),
+(1502, 'Distribution of paid copay, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(1503, 'Distribution of paid coinsurance, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(1504, 'Distribution of paid toward deductible, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(1505, 'Distribution of paid by payer, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(1506, 'Distribution of paid by coordination of benefit, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(1507, 'Distribution of total out-of-pocket, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(1508, 'Distribution of total paid, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(1509, 'Distribution of ingredient_cost, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(1510, 'Distribution of dispensing fee, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
+(1511, 'Distribution of average wholesale price, by drug_concept_id', 'drug_concept_id', NULL, NULL, NULL),
 --1600- PROCEDURE_COST
-
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1600, 'Number of procedure cost records with invalid procedure occurrence id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1601, 'Number of procedure cost records with invalid payer plan period id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1602, 'Distribution of paid copay, by procedure_concept_id', 'procedure_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1603, 'Distribution of paid coinsurance, by procedure_concept_id', 'procedure_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1604, 'Distribution of paid toward deductible, by procedure_concept_id', 'procedure_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1605, 'Distribution of paid by payer, by procedure_concept_id', 'procedure_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1606, 'Distribution of paid by coordination of benefit, by procedure_concept_id', 'procedure_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1607, 'Distribution of total out-of-pocket, by procedure_concept_id', 'procedure_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1608, 'Distribution of total paid, by procedure_concept_id', 'procedure_concept_id');
-
+(1600, 'Number of procedure cost records with invalid procedure occurrence id', NULL, NULL, NULL, NULL),
+(1601, 'Number of procedure cost records with invalid payer plan period id', NULL, NULL, NULL, NULL),
+(1602, 'Distribution of paid copay, by procedure_concept_id', 'procedure_concept_id', NULL, NULL, NULL),
+(1603, 'Distribution of paid coinsurance, by procedure_concept_id', 'procedure_concept_id', NULL, NULL, NULL),
+(1604, 'Distribution of paid toward deductible, by procedure_concept_id', 'procedure_concept_id', NULL, NULL, NULL),
+(1605, 'Distribution of paid by payer, by procedure_concept_id', 'procedure_concept_id', NULL, NULL, NULL),
+(1606,
+    'Distribution of paid by coordination of benefit, by procedure_concept_id',
+    'procedure_concept_id',
+    NULL,
+    NULL,
+    NULL
+),
+(1607, 'Distribution of total out-of-pocket, by procedure_concept_id', 'procedure_concept_id', NULL, NULL, NULL),
+(1608, 'Distribution of total paid, by procedure_concept_id', 'procedure_concept_id', NULL, NULL, NULL),
 --NOT APPLICABLE FOR OMOP CDM v5
---insert into synpuf_100.ACHILLES_analysis (analysis_id, analysis_name, stratum_1_name)
---	values (1609, 'Number of records by disease_class_concept_id', 'disease_class_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1610, 'Number of records by revenue_code_concept_id', 'revenue_code_concept_id');
-
-
+--insert into results.ACHILLES_analysis (analysis_id, analysis_name, stratum_1_name)
+--	values (1609, 'Number of records by disease_class_concept_id', 'disease_class_concept_id', NULL, NULL,NULL),
+(1610, 'Number of records by revenue_code_concept_id', 'revenue_code_concept_id', NULL, NULL, NULL),
 --1700- COHORT
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1700, 'Number of records by cohort_concept_id', 'cohort_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1701, 'Number of records with cohort end date < cohort start date');
-
+(1700, 'Number of records by cohort_concept_id', 'cohort_concept_id', NULL, NULL, NULL),
+(1701, 'Number of records with cohort end date < cohort start date', NULL, NULL, NULL, NULL),
 --1800- MEASUREMENT
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1800, 'Number of persons with at least one measurement occurrence, by measurement_concept_id', 'measurement_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1801, 'Number of measurement occurrence records, by measurement_concept_id', 'measurement_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (1802, 'Number of persons by measurement occurrence start month, by measurement_concept_id', 'measurement_concept_id', 'calendar month');	
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1803, 'Number of distinct mesurement occurrence concepts per person');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name, stratum_4_name)
-	values (1804, 'Number of persons with at least one mesurement  occurrence, by measurement_concept_id by calendar year by gender by age decile', 'measurement_concept_id', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (1805, 'Number of measurement occurrence records, by measurement_concept_id by measurement_type_concept_id', 'measurement_concept_id', 'measurement_type_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (1806, 'Distribution of age by measurement_concept_id', 'measurement_concept_id', 'gender_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (1807, 'Number of measurement occurrence records, by measurement_concept_id and unit_concept_id', 'measurement_concept_id', 'unit_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1809, 'Number of measurement records with invalid person_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1810, 'Number of measurement records outside valid observation period');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1812, 'Number of measurement records with invalid provider_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1813, 'Number of measurement records with invalid visit_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1814, 'Number of measurement records with no value (numeric, string, or concept)');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1815, 'Distribution of numeric values, by measurement_concept_id and unit_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1816, 'Distribution of low range, by measurement_concept_id and unit_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1817, 'Distribution of high range, by observation_concept_id and unit_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1818, 'Number of measurement records below/within/above normal range, by measurement_concept_id and unit_concept_id');
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (1820, 'Number of measurement records  by measurement start month', 'calendar month');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (1821, 'Number of measurement records with no numeric value');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (1891, 'Number of persons that have at least x measurements', 'measurement_concept_id', 'measurement_count');
-
+(1800,
+    'Number of persons with at least one measurement occurrence, by measurement_concept_id',
+    'measurement_concept_id',
+    NULL,
+    NULL,
+    NULL
+),
+(1801,
+    'Number of measurement occurrence records, by measurement_concept_id',
+    'measurement_concept_id',
+    NULL,
+    NULL,
+    NULL
+),
+(1802,
+    'Number of persons by measurement occurrence start month, by measurement_concept_id',
+    'measurement_concept_id',
+    'calendar month',
+    NULL,
+    NULL
+),
+(1803, 'Number of distinct mesurement occurrence concepts per person', NULL, NULL, NULL, NULL),
+(1804,
+    'Number of persons with at least one mesurement  occurrence, by measurement_concept_id by calendar year by gender by age decile',
+    'measurement_concept_id',
+    'calendar year',
+    'gender_concept_id',
+    'age decile'
+),
+(1805,
+    'Number of measurement occurrence records, by measurement_concept_id by measurement_type_concept_id',
+    'measurement_concept_id',
+    'measurement_type_concept_id',
+    NULL,
+    NULL
+),
+(1806, 'Distribution of age by measurement_concept_id', 'measurement_concept_id', 'gender_concept_id', NULL, NULL),
+(1807,
+    'Number of measurement occurrence records, by measurement_concept_id and unit_concept_id',
+    'measurement_concept_id',
+    'unit_concept_id',
+    NULL,
+    NULL
+),
+(1809, 'Number of measurement records with invalid person_id', NULL, NULL, NULL, NULL),
+(1810, 'Number of measurement records outside valid observation period', NULL, NULL, NULL, NULL),
+(1812, 'Number of measurement records with invalid provider_id', NULL, NULL, NULL, NULL),
+(1813, 'Number of measurement records with invalid visit_id', NULL, NULL, NULL, NULL),
+(1814, 'Number of measurement records with no value (numeric, string, or concept)', NULL, NULL, NULL, NULL),
+(1815, 'Distribution of numeric values, by measurement_concept_id and unit_concept_id', NULL, NULL, NULL, NULL),
+(1816, 'Distribution of low range, by measurement_concept_id and unit_concept_id', NULL, NULL, NULL, NULL),
+(1817, 'Distribution of high range, by observation_concept_id and unit_concept_id', NULL, NULL, NULL, NULL),
+(1818,
+    'Number of measurement records below/within/above normal range, by measurement_concept_id and unit_concept_id',
+    NULL,
+    NULL,
+    NULL,
+    NULL
+),
+(1820, 'Number of measurement records  by measurement start month', 'calendar month', NULL, NULL, NULL),
+(1821, 'Number of measurement records with no numeric value', NULL, NULL, NULL, NULL),
+(1891, 'Number of persons that have at least x measurements', 'measurement_concept_id', 'measurement_count', NULL, NULL),
 --1900 REPORTS
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (1900, 'Source values mapped to concept_id 0 by table, by source_value', 'table_name', 'source_value');
-
-
+(1900, 'Source values mapped to concept_id 0 by table, by source_value', 'table_name', 'source_value', NULL, NULL),
 --2000 Iris (and possibly other new measures) integrated into Achilles
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (2000, 'Number of patients with at least 1 Dx and 1 Rx');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (2001, 'Number of patients with at least 1 Dx and 1 Proc');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (2002, 'Number of patients with at least 1 Meas, 1 Dx and 1 Rx');
-	
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name)
-	values (2003, 'Number of patients with at least 1 Visit');
-
-
+(2000, 'Number of patients with at least 1 Dx and 1 Rx', NULL, NULL, NULL, NULL),
+(2001, 'Number of patients with at least 1 Dx and 1 Proc', NULL, NULL, NULL, NULL),
+(2002, 'Number of patients with at least 1 Meas, 1 Dx and 1 Rx', NULL, NULL, NULL, NULL),
+(2003, 'Number of patients with at least 1 Visit', NULL, NULL, NULL, NULL),
 --2100- DEVICE_EXPOSURE
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (2100, 'Number of persons with at least one device exposure, by device_concept_id', 'device_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (2101, 'Number of device exposure records, by device_concept_id', 'device_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (2102, 'Number of persons by device records  start month, by device_concept_id', 'device_concept_id', 'calendar month');	
-
+(2100,
+    'Number of persons with at least one device exposure, by device_concept_id',
+    'device_concept_id',
+    NULL,
+    NULL,
+    NULL
+),
+(2101, 'Number of device exposure records, by device_concept_id', 'device_concept_id', NULL, NULL, NULL),
+(2102,
+    'Number of persons by device records  start month, by device_concept_id',
+    'device_concept_id',
+    'calendar month',
+    NULL,
+    NULL
+),
 --2103 was not implemented at this point
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name, stratum_3_name, stratum_4_name)
-	values (2104, 'Number of persons with at least one device exposure, by device_concept_id by calendar year by gender by age decile', 'device_concept_id', 'calendar year', 'gender_concept_id', 'age decile');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name, stratum_2_name)
-	values (2105, 'Number of device exposure records, by device_concept_id by device_type_concept_id', 'device_concept_id', 'device_type_concept_id');
-
-
-
+(2104,
+    'Number of persons with at least one device exposure, by device_concept_id by calendar year by gender by age decile',
+    'device_concept_id',
+    'calendar year',
+    'gender_concept_id',
+    'age decile'
+),
+(2105,
+    'Number of device exposure records, by device_concept_id by device_type_concept_id',
+    'device_concept_id',
+    'device_type_concept_id',
+    NULL,
+    NULL
+),
 --2200- NOTE
-
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (2200, 'Number of persons with at least one note by  note_type_concept_id', 'note_type_concept_id');
-
-insert into synpuf_100.achilles_analysis (analysis_id, analysis_name, stratum_1_name)
-	values (2201, 'Number of note records, by note_type_concept_id', 'note_type_concept_id');
-
-
-
+(2200, 'Number of persons with at least one note by  note_type_concept_id', 'note_type_concept_id', NULL, NULL, NULL),
+(2201, 'Number of note records, by note_type_concept_id', 'note_type_concept_id', NULL, NULL, NULL);
 
 --end of importing values into analysis lookup table
 
@@ -4111,13 +3856,8 @@ insert into synpuf_100.achilles_results (analysis_id, stratum_1, count_value)
  ;
 --
 
-
-
-
-
 --final processing of results
-delete from synpuf_100.achilles_results 
-where count_value <= 5;
-delete from synpuf_100.achilles_results_dist 
-where count_value <= 5;
-
+-- delete from synpuf_100.achilles_results
+-- where count_value <= 5;
+-- delete from synpuf_100.achilles_results_dist
+-- where count_value <= 5;

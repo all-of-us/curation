@@ -10,7 +10,7 @@ class ResourcesTest(unittest.TestCase):
         cdm_data_rows = resources.cdm_csv()
         expected_keys = {'table_name', 'column_name', 'is_nullable', 'data_type', 'description'}
         expected_table_names = {'person', 'visit_occurrence', 'condition_occurrence', 'procedure_occurrence',
-                                'drug_exposure', 'measurement', 'death'}
+                                'drug_exposure', 'measurement', 'death', 'location'}
         for row in cdm_data_rows:
             keys = set(row.keys())
             self.assertSetEqual(expected_keys, keys)
