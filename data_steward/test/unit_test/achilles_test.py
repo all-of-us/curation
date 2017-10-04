@@ -13,7 +13,8 @@ import test_util
 
 # This may change if we strip out unused analyses
 ACHILLES_LOOKUP_COUNT = 215
-ACHILLES_ANALYSIS_COUNT = 367
+ACHILLES_ANALYSIS_COUNT = 359
+ACHILLES_RESULTS_COUNT = 3114
 SOURCE_NAME_QUERY = """insert into synpuf_100.achilles_analysis (analysis_id, analysis_name) 
   values (0, 'Source name')"""
 TEMP_QUERY_1 = """INTO temp.tempresults
@@ -82,15 +83,13 @@ class AchillesTest(unittest.TestCase):
 --	values (1300, 'Number of organizations by place of service', 'place_of_service_concept_id')"""
         self.assertFalse(achilles.is_active_command(commented_command))
 
-    def test_get_load_analysis_commands(self):
-        cmd_iter = achilles._get_load_analysis_commands(FAKE_HPO_ID)
-        commands = list(cmd_iter)
-        self.assertEqual(len(commands), ACHILLES_LOOKUP_COUNT)
-
-    def _test_load_analyses(self):
-        # Long-running test
+    def test_load_analyses(self):
         achilles.create_tables(FAKE_HPO_ID, True)
         achilles.load_analyses(FAKE_HPO_ID)
+        cmd = achilles.qualify_tables(
+            'SELECT DISTINCT(analysis_id) FROM %sachilles_analysis' % achilles.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
+        result = bq_utils.query(cmd)
+        self.assertEqual(ACHILLES_LOOKUP_COUNT, int(result['totalRows']))
 
     def test_get_run_analysis_commands(self):
         cmd_iter = achilles._get_run_analysis_commands(FAKE_HPO_ID)
@@ -106,14 +105,16 @@ class AchillesTest(unittest.TestCase):
         self.assertTrue(achilles.get_temp_table_query(TEMP_QUERY_1).startswith('WITH rawdata'))
         self.assertTrue(achilles.get_temp_table_query(TEMP_QUERY_2).startswith('SELECT ce.condition_concept_id'))
 
-    def test_run_analyses(self):
+    def _test_run_analyses(self):
         # Long-running test
         self._load_dataset()
-        # achilles.create_tables(FAKE_HPO_ID, True)
-        # achilles.load_analyses(FAKE_HPO_ID)
+        achilles.create_tables(FAKE_HPO_ID, True)
+        achilles.load_analyses(FAKE_HPO_ID)
         achilles.run_analyses(hpo_id=FAKE_HPO_ID)
-        result = bq_utils.query('SELECT * FROM %sachilles_results WHERE analysis_id = 0' % achilles.PREFIX_PLACEHOLDER)
-        result = bq_utils.query('SELECT * FROM %sachilles_results WHERE analysis_id = 2003' % achilles.PREFIX_PLACEHOLDER)
+        cmd = achilles.qualify_tables(
+            'SELECT COUNT(1) FROM %sachilles_results' % achilles.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
+        result = bq_utils.query(cmd)
+        self.assertEqual(int(result['rows'][0]['f'][0]['v']), ACHILLES_RESULTS_COUNT)
 
     def tearDown(self):
         self.testbed.deactivate()
