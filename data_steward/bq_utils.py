@@ -123,6 +123,13 @@ def get_job_details(job_id):
 
 
 def query(q, use_legacy_sql=False, destination_table_id=None):
+    """
+    Execute a SQL query on BigQuery dataset
+    :param q: SQL statement
+    :param use_legacy_sql: True if using legacy syntax, False by default
+    :param destination_table_id: if set, output is saved in a table with the specified id
+    :return: if destination_table_id is supplied then job info, otherwise job query response (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
+    """
     bq_service = create_service()
     app_id = app_identity.get_application_id()
 

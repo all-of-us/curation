@@ -52,6 +52,7 @@ class AchillesTest(unittest.TestCase):
         self.testbed.init_blobstore_stub()
         self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
+        test_util.empty_bucket(self.hpo_bucket)
 
     def _write_cloud_str(self, bucket, name, contents_str):
         fp = StringIO.StringIO(contents_str)
@@ -117,4 +118,5 @@ class AchillesTest(unittest.TestCase):
         self.assertEqual(int(result['rows'][0]['f'][0]['v']), ACHILLES_RESULTS_COUNT)
 
     def tearDown(self):
+        test_util.empty_bucket(self.hpo_bucket)
         self.testbed.deactivate()
