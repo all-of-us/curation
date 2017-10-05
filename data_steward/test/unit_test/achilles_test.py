@@ -74,7 +74,7 @@ class AchillesTest(unittest.TestCase):
                 self._write_cloud_file(self.hpo_bucket, cdm_file_name)
             else:
                 self._write_cloud_str(self.hpo_bucket, cdm_table + '.csv', 'dummy\n')
-            bq_utils.load_table_from_bucket(FAKE_HPO_ID, cdm_table)
+            bq_utils.load_cdm_csv(FAKE_HPO_ID, cdm_table)
 
     def test_load_analyses(self):
         achilles.create_tables(FAKE_HPO_ID, True)
