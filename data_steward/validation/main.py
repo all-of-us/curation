@@ -55,7 +55,7 @@ def validate_hpo_files(hpo_id):
     for cdm_file in map(lambda f: f['name'], found_cdm_files):
         # create a job to load table
         cdm_file_name = cdm_file.split('.')[0]
-        load_results = bq_utils.load_table_from_bucket(hpo_id, cdm_file_name)
+        load_results = bq_utils.load_cdm_csv(hpo_id, cdm_file_name)
         load_job_id = load_results['jobReference']['jobId']
 
         time.sleep(BQ_LOAD_DELAY_SECONDS)
