@@ -1,0 +1,21 @@
+{
+    "schema": {
+        "fields": [
+            {
+                "mode": "NULLABLE",
+                "name": "SERIES_NAME",
+                "type": "STRING"
+            },
+            {
+                "mode": "NULLABLE",
+                "name": "X_CALENDAR_MONTH",
+                "type": "INTEGER"
+            },
+            {
+                "mode": "NULLABLE",
+                "name": "Y_RECORD_COUNT",
+                "type": "FLOAT"
+            }
+        ]
+    }
+}
