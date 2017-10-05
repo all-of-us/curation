@@ -76,15 +76,6 @@ class AchillesTest(unittest.TestCase):
                 self._write_cloud_str(self.hpo_bucket, cdm_table + '.csv', 'dummy\n')
             bq_utils.load_cdm_csv(FAKE_HPO_ID, cdm_table)
 
-    def test_detect_commented_block(self):
-        commented_command = """
---1300- ORGANIZATION
-
---NOT APPLICABLE IN CDMV5
---insert into fake_ACHILLES_analysis (analysis_id, analysis_name, stratum_1_name)
---	values (1300, 'Number of organizations by place of service', 'place_of_service_concept_id')"""
-        self.assertFalse(validation.sql_wrangle.is_active_command(commented_command))
-
     def test_load_analyses(self):
         achilles.create_tables(FAKE_HPO_ID, True)
         achilles.load_analyses(FAKE_HPO_ID)
