@@ -39,20 +39,20 @@ class BqUtilsTest(unittest.TestCase):
                 table_id = table['tableReference']['tableId']
                 bq_utils.delete_table(table_id)
 
-    def test_load_table_from_bucket(self):
+    def test_load_cdm_csv(self):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
-        result = bq_utils.load_table_from_bucket(FAKE_HPO_ID, PERSON)
+        result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
 
-    def test_load_table_from_bucket_error_on_bad_table_name(self):
+    def test_load_cdm_csv_error_on_bad_table_name(self):
         with self.assertRaises(ValueError) as cm:
-            bq_utils.load_table_from_bucket(FAKE_HPO_ID, 'not_a_cdm_table')
+            bq_utils.load_cdm_csv(FAKE_HPO_ID, 'not_a_cdm_table')
 
     def test_query_result(self):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
-        bq_utils.load_table_from_bucket(FAKE_HPO_ID, PERSON)
+        bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
         time.sleep(2)
 
         table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)

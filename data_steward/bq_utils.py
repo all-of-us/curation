@@ -42,7 +42,7 @@ def get_table_id(hpo_id, table_name):
     return hpo_id + '_' + table_name
 
 
-def load_table_from_bucket(hpo_id, cdm_table_name):
+def load_cdm_csv(hpo_id, cdm_table_name):
     """
     Load csv file from a bucket into a table in bigquery
     :param hpo_id: ID for the HPO site
