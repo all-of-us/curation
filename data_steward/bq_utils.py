@@ -42,9 +42,43 @@ def get_table_id(hpo_id, table_name):
     return hpo_id + '_' + table_name
 
 
-def load_cdm_csv(hpo_id, cdm_table_name):
+def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, write_disposition='WRITE_TRUNCATE'):
     """
     Load csv file from a bucket into a table in bigquery
+    :param schema_path: Path to the schema json file
+    :param gcs_object_path: Path to the object (csv file) in GCS
+    :param project_id:
+    :param dataset_id:
+    :param table_id:
+    :return:
+    """
+    bq_service = create_service()
+
+    fields = json.load(open(schema_path, 'r'))
+    job_body = {
+        'configuration':
+            {
+                'load':
+                    {
+                        'sourceUris': [gcs_object_path],
+                        'schema': {'fields': fields},
+                        'destinationTable': {
+                            'projectId': project_id,
+                            'datasetId': dataset_id,
+                            'tableId': table_id
+                        },
+                        'skipLeadingRows': 1,
+                        'writeDisposition': 'WRITE_TRUNCATE'
+                    }
+            }
+    }
+    insert_result = bq_service.jobs().insert(projectId=project_id, body=job_body).execute()
+    return insert_result
+
+
+def load_cdm_csv(hpo_id, cdm_table_name):
+    """
+    Load CDM file from a bucket into a table in bigquery
     :param hpo_id: ID for the HPO site
     :param cdm_table_name: name of the CDM table
     :return: an object describing the associated bigquery job
@@ -54,33 +88,11 @@ def load_cdm_csv(hpo_id, cdm_table_name):
 
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
-    bq_service = build('bigquery', 'v2')
-
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     fields_filename = os.path.join(resources.fields_path, cdm_table_name + '.json')
     gcs_object_path = 'gs://%s/%s.csv' % (bucket, cdm_table_name)
     table_id = get_table_id(hpo_id, cdm_table_name)
-
-    fields = json.load(open(fields_filename, 'r'))
-    job_body = {
-        'configuration':
-            {
-                'load':
-                    {
-                        'sourceUris': [gcs_object_path],
-                        'schema': {'fields': fields},
-                        'destinationTable': {
-                            'projectId': app_id,
-                            'datasetId': dataset_id,
-                            'tableId': table_id
-                        },
-                        'skipLeadingRows': 1,
-                        'writeDisposition': 'WRITE_TRUNCATE'
-                    }
-            }
-    }
-    insert_result = bq_service.jobs().insert(projectId=app_id, body=job_body).execute()
-    return insert_result
+    return load_csv(fields_filename, gcs_object_path, app_id, dataset_id, table_id)
 
 
 def delete_table(table_id):
