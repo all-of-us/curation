@@ -1,11 +1,13 @@
 import unittest
-
+import os
 import bq_utils
 import gcs_utils
+import resources
 import common
 from validation.achilles import ACHILLES_TABLES
 from google.appengine.ext import testbed
 from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
+import test_util
 import time
 
 PERSON = 'person'
@@ -38,11 +40,34 @@ class BqUtilsTest(unittest.TestCase):
                 table_id = table['tableReference']['tableId']
                 bq_utils.delete_table(table_id)
 
+    def test_load_csv(self):
+        from google.appengine.api import app_identity
+
+        app_id = app_identity.get_application_id()
+        table_name = 'achilles_analysis'
+        schema_file_name = table_name + '.json'
+        csv_file_name = table_name + '.csv'
+        schema_path = os.path.join(resources.fields_path, schema_file_name)
+        local_csv_path = os.path.join(test_util.TEST_DATA_PATH, csv_file_name)
+        with open(local_csv_path, 'r') as fp:
+            response = gcs_utils.upload_object(self.hpo_bucket, csv_file_name, fp)
+        hpo_bucket = self.hpo_bucket
+        gcs_object_path = 'gs://%(hpo_bucket)s/%(csv_file_name)s' % locals()
+        dataset_id = bq_utils.get_dataset_id()
+        result = bq_utils.load_csv(schema_path, gcs_object_path, app_id, dataset_id, table_name)
+        time.sleep(2)
+        query_response = bq_utils.query('SELECT COUNT(1) FROM %(table_name)s' % locals())
+        self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
+
     def test_load_cdm_csv(self):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
+        time.sleep(2)
+        table_id = result['configuration']['load']['destinationTable']['tableId']
+        query_response = bq_utils.query('SELECT 1 FROM %(table_id)s' % locals())
+        self.assertEqual(query_response['totalRows'], '5')
 
     def test_load_cdm_csv_error_on_bad_table_name(self):
         with self.assertRaises(ValueError) as cm:
