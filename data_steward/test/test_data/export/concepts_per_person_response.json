@@ -1,0 +1,132 @@
+{
+    "rows": [
+        {
+            "f": [
+                {
+                    "v": "Procedure occurrence"
+                },
+                {
+                    "v": "24.0"
+                },
+                {
+                    "v": "24.0"
+                },
+                {
+                    "v": "24.0"
+                },
+                {
+                    "v": "39.0"
+                },
+                {
+                    "v": "71.0"
+                },
+                {
+                    "v": "71.0"
+                },
+                {
+                    "v": "71.0"
+                }
+            ]
+        },
+        {
+            "f": [
+                {
+                    "v": "Drug exposure"
+                },
+                {
+                    "v": "1.0"
+                },
+                {
+                    "v": "1.0"
+                },
+                {
+                    "v": "1.0"
+                },
+                {
+                    "v": "7.0"
+                },
+                {
+                    "v": "43.0"
+                },
+                {
+                    "v": "118.0"
+                },
+                {
+                    "v": "118.0"
+                }
+            ]
+        },
+        {
+            "f": [
+                {
+                    "v": "Condition occurrence"
+                },
+                {
+                    "v": "31.0"
+                },
+                {
+                    "v": "31.0"
+                },
+                {
+                    "v": "31.0"
+                },
+                {
+                    "v": "46.0"
+                },
+                {
+                    "v": "73.0"
+                },
+                {
+                    "v": "73.0"
+                },
+                {
+                    "v": "73.0"
+                }
+            ]
+        }
+    ],
+    "schema": {
+        "fields": [
+            {
+                "mode": "NULLABLE",
+                "name": "Category",
+                "type": "STRING"
+            },
+            {
+                "mode": "NULLABLE",
+                "name": "min_value",
+                "type": "FLOAT"
+            },
+            {
+                "mode": "NULLABLE",
+                "name": "p10_value",
+                "type": "FLOAT"
+            },
+            {
+                "mode": "NULLABLE",
+                "name": "p25_value",
+                "type": "FLOAT"
+            },
+            {
+                "mode": "NULLABLE",
+                "name": "median_value",
+                "type": "FLOAT"
+            },
+            {
+                "mode": "NULLABLE",
+                "name": "p75_value",
+                "type": "FLOAT"
+            },
+            {
+                "mode": "NULLABLE",
+                "name": "p90_value",
+                "type": "FLOAT"
+            },
+            {
+                "mode": "NULLABLE",
+                "name": "max_value",
+                "type": "FLOAT"
+            }
+        ]
+    }
+}
