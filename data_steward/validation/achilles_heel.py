@@ -1,0 +1,95 @@
+import resources
+import os
+import bq_utils
+import re
+import time
+import sql_wrangle
+
+ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
+ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
+ACHILLES_HEEL_TABLES = [ACHILLES_HEEL_RESULTS, ACHILLES_RESULTS_DERIVED]
+PREFIX_PLACEHOLDER = 'synpuf_100.'
+TEMP_PREFIX = 'temp.'
+TEMP_TABLE_PATTERN = re.compile('\s*INTO\s+([^\s]+)')
+TRUNCATE_TABLE_PATTERN = re.compile('\s*truncate\s+table\s+([^\s]+)')
+DROP_TABLE_PATTERN = re.compile('\s*drop\s+table\s+([^\s]+)')
+
+ACHILLES_HEEL_DML = os.path.join(resources.resource_path, 'achilles_heel_dml.sql')
+
+
+def remove_sql_comment_from_string(string):
+    """ takes a string of the form : part of query -- comment and returns only the former.
+
+    :string: part of sql query -- comment type strings
+    :returns: the part of the sql query
+
+    """
+    query_part = string.strip().split('--')[0].strip()
+    return query_part
+
+
+def _extract_sql_queries(heel_dml_path):
+    all_query_parts_list = []  # pair (type, query/table_name)
+    with open(heel_dml_path, 'r') as heel_script:
+        for line in heel_script:
+            part = remove_sql_comment_from_string(line)
+            if part == '':
+                continue
+            all_query_parts_list.append(part)
+
+    queries = []
+    for query in ' '.join(all_query_parts_list).split(';'):
+        query = query.strip()
+        if query != '':
+            queries.append(query)
+
+    return queries
+
+
+def _get_heel_commands(hpo_id):
+    raw_commands = _extract_sql_queries(ACHILLES_HEEL_DML)
+    commands = map(lambda cmd: sql_wrangle.qualify_tables(cmd, hpo_id), raw_commands)
+    for command in commands:
+        yield command
+
+
+def load_heel(hpo_id):
+    commands = _get_heel_commands(hpo_id)
+    for type, command in commands:
+        bq_utils.query(command)
+
+
+def run_heel(hpo_id):
+    commands = _get_heel_commands(hpo_id)
+    count = 0
+    for command in commands:
+        count = count + 1
+        print 'running query # {}'.format(count)
+        print 'Running `%s`...\n' % command
+        if sql_wrangle.is_to_temp_table(command):
+            table_id = sql_wrangle.get_temp_table_name(command)
+            query = sql_wrangle.get_temp_table_query(command)
+            bq_utils.query(query, False, table_id)
+            time.sleep(6)
+        elif sql_wrangle.is_truncate(command):
+            table_id = sql_wrangle.get_truncate_table_name(command)
+            query = 'DELETE FROM %s WHERE TRUE' % table_id
+            bq_utils.query(query)
+        elif sql_wrangle.is_drop(command):
+            table_id = sql_wrangle.get_drop_table_name(command)
+            bq_utils.delete_table(table_id)
+        else:
+            bq_utils.query(command)
+
+
+def create_tables(hpo_id, drop_existing=False):
+    """
+    Create the achilles related tables
+    :param hpo_id: associated hpo id
+    :param drop_existing: if True, drop existing tables
+    :return:
+    """
+
+    for table_name in ACHILLES_HEEL_TABLES:
+        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        bq_utils.create_standard_table(table_name, table_id, drop_existing)
