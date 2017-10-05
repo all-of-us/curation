@@ -119,6 +119,14 @@ class AchillesTest(unittest.TestCase):
         result = bq_utils.query(cmd)
         self.assertEqual(int(result['rows'][0]['f'][0]['v']), ACHILLES_RESULTS_COUNT)
 
+    def test_parse_temp(self):
+        commands = achilles._get_run_analysis_commands(FAKE_HPO_ID)
+        ptn = '103	Distribution of age at first observation period'
+        for command in commands:
+            if ptn in command:
+                is_temp = validation.sql_wrangle.is_to_temp_table(command)
+                self.assertTrue(is_temp)
+
     def tearDown(self):
         test_util.empty_bucket(self.hpo_bucket)
         self.testbed.deactivate()

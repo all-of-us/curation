@@ -70,7 +70,7 @@ def is_to_temp_table(q):
     :param q:
     :return:
     """
-    return q.strip().startswith('INTO')
+    return 'INTO' in q
 
 
 def get_temp_table_name(q):
