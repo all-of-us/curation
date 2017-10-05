@@ -11,6 +11,7 @@ import test_util
 import time
 
 PERSON = 'person'
+BQ_TIMEOUT_SECONDS = 5
 
 
 class BqUtilsTest(unittest.TestCase):
@@ -55,7 +56,7 @@ class BqUtilsTest(unittest.TestCase):
         gcs_object_path = 'gs://%(hpo_bucket)s/%(csv_file_name)s' % locals()
         dataset_id = bq_utils.get_dataset_id()
         result = bq_utils.load_csv(schema_path, gcs_object_path, app_id, dataset_id, table_name)
-        time.sleep(2)
+        time.sleep(BQ_TIMEOUT_SECONDS)
         query_response = bq_utils.query('SELECT COUNT(1) FROM %(table_name)s' % locals())
         self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
 
@@ -64,7 +65,7 @@ class BqUtilsTest(unittest.TestCase):
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
-        time.sleep(2)
+        time.sleep(BQ_TIMEOUT_SECONDS)
         table_id = result['configuration']['load']['destinationTable']['tableId']
         query_response = bq_utils.query('SELECT 1 FROM %(table_id)s' % locals())
         self.assertEqual(query_response['totalRows'], '5')
@@ -77,7 +78,7 @@ class BqUtilsTest(unittest.TestCase):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
-        time.sleep(2)
+        time.sleep(BQ_TIMEOUT_SECONDS)
 
         table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)
         q = 'SELECT person_id FROM %s' % table_id
