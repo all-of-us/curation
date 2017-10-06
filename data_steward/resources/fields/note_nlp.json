@@ -21,7 +21,7 @@
     }, 
     {
         "type": "string", 
-        "name": "\"offset\"", 
+        "name": "offset", 
         "mode": "nullable"
     }, 
     {
