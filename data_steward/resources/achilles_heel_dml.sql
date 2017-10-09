@@ -176,7 +176,7 @@ where a.person_cnt >= 11;
 
 --size of Achilles Metadata
 insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
- select  analysis_id as stratum_1, COUNT(*) as statistic_value, 'Achilles:byAnalysis:RowCnt' as measure_id
+ select  cast(analysis_id as string) as stratum_1, COUNT(*) as statistic_value, 'Achilles:byAnalysis:RowCnt' as measure_id
   from  synpuf_100.achilles_results  group by  1 ;
 
 
