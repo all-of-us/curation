@@ -11,6 +11,7 @@ ACHILLES_HEEL_TABLES = [ACHILLES_HEEL_RESULTS, ACHILLES_RESULTS_DERIVED]
 PREFIX_PLACEHOLDER = 'synpuf_100.'
 TEMP_PREFIX = 'temp.'
 TEMP_TABLE_PATTERN = re.compile('\s*INTO\s+([^\s]+)')
+SPLIT_PATTERN = ';zzzzzz'
 TRUNCATE_TABLE_PATTERN = re.compile('\s*truncate\s+table\s+([^\s]+)')
 DROP_TABLE_PATTERN = re.compile('\s*drop\s+table\s+([^\s]+)')
 
@@ -38,8 +39,10 @@ def _extract_sql_queries(heel_dml_path):
             all_query_parts_list.append(part)
 
     queries = []
-    for query in ' '.join(all_query_parts_list).split(';'):
+    all_query_string = 'zzzzzz'.join(all_query_parts_list)
+    for query in re.split(SPLIT_PATTERN, all_query_string):
         query = query.strip()
+        query = query.replace('zzzzzz', ' ')
         if query != '':
             queries.append(query)
 
@@ -60,6 +63,7 @@ def load_heel(hpo_id):
 
 
 def run_heel(hpo_id):
+    # very long test
     commands = _get_heel_commands(hpo_id)
     count = 0
     for command in commands:
