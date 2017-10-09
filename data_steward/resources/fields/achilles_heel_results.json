@@ -2,7 +2,7 @@
     {
         "type": "integer", 
         "name": "analysis_id", 
-        "mode": "required"
+        "mode": "nullable"
     }, 
     {
         "type": "string", 
