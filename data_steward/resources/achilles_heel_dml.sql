@@ -736,8 +736,8 @@ inner join synpuf_100.achilles_results ar2
 			1002
 			)
 where (
-		round(cast(ar1.stratum_2 as decimal(18,4)),0) + 1 = round(cast(ar2.stratum_2 as decimal(18,4)),0)
-		or round(cast(ar1.stratum_2 as decimal(18,4)),0) + 89 = round(cast(ar2.stratum_2 as decimal(18,4)),0)
+		round(cast(ar1.stratum_2 as float64),0) + 1 = round(cast(ar2.stratum_2 as float64),0)
+		or round(cast(ar1.stratum_2 as float64),0) + 89 = round(cast(ar2.stratum_2 as float64),0)
 		)
 	and 1.0 * abs(ar2.count_value - ar1.count_value) / ar1.count_value > 1
 	and ar1.count_value > 10
@@ -917,7 +917,7 @@ drop table temp.tempresults;
 --compute a derived reatio
 --TODO if provider count is zero it will generate division by zero (not sure how dirrerent db engins will react)
 insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
-    select  1.0*(select  count_value as total_pts  from  synpuf_100.achilles_results r where analysis_id =1)/count_value as statistic_value, 'Provider:PatientProviderRatio' as measure_id
+    select  1.0*(select  count_value as total_pts  from  synpuf_100.achilles_results r where analysis_id =1)/(count_value+1) as statistic_value, 'Provider:PatientProviderRatio' as measure_id
      from  synpuf_100.achilles_results where analysis_id = 300
 ;
 
