@@ -42,6 +42,12 @@ def list_dirs_only(root):
 
 
 def export_from_path(p, hpo_id):
+    """
+    Export results
+    :param p: path to SQL file
+    :param hpo_id: HPO to run export for
+    :return:
+    """
     result = dict()
     for f in list_files_only(p):
         name = f[0:-4].upper()
@@ -51,7 +57,7 @@ def export_from_path(p, hpo_id):
             sql = render(sql, hpo_id, results_schema=bq_utils.get_dataset_id(), vocab_schema='synpuf_100')
             query_result = bq_utils.query(sql)
             # TODO reshape results
-            result[name] = ['bq_utils.query(sql)']
+            result[name] = query_result_to_payload(query_result)
 
     for d in list_dirs_only(p):
         abs_path = os.path.join(p, d)
@@ -60,3 +66,19 @@ def export_from_path(p, hpo_id):
     return result
 
 
+def query_result_to_payload(qr):
+    """
+    Convert query result to the report format
+    :param qr: query result
+    :return:
+    """
+    result = dict()
+    rows = qr['rows']
+    fields = qr['schema']['fields']
+    field_count = len(fields)
+    for i in range(0, field_count):
+        field = fields[i]
+        key = field['name'].upper()
+        values = map(lambda r: r['f'][i]['v'], rows)
+        result[key] = values
+    return result

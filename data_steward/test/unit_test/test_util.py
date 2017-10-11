@@ -42,11 +42,11 @@ NYC_FIVE_PERSONS_PROCEDURE_OCCURRENCE_CSV = os.path.join(NYC_FIVE_PERSONS_PATH, 
 NYC_FIVE_PERSONS_DRUG_EXPOSURE_CSV = os.path.join(NYC_FIVE_PERSONS_PATH, 'drug_exposure.csv')
 NYC_FIVE_PERSONS_MEASUREMENT_CSV = os.path.join(NYC_FIVE_PERSONS_PATH, 'measurement.csv')
 NYC_FIVE_PERSONS_FILES = [
-    NYC_FIVE_PERSONS_PERSON_CSV, 
-    NYC_FIVE_PERSONS_VISIT_OCCURRENCE_CSV, 
-    NYC_FIVE_PERSONS_CONDITION_OCCURRENCE_CSV, 
-    NYC_FIVE_PERSONS_PROCEDURE_OCCURRENCE_CSV, 
-    NYC_FIVE_PERSONS_DRUG_EXPOSURE_CSV, 
+    NYC_FIVE_PERSONS_PERSON_CSV,
+    NYC_FIVE_PERSONS_VISIT_OCCURRENCE_CSV,
+    NYC_FIVE_PERSONS_CONDITION_OCCURRENCE_CSV,
+    NYC_FIVE_PERSONS_PROCEDURE_OCCURRENCE_CSV,
+    NYC_FIVE_PERSONS_DRUG_EXPOSURE_CSV,
     NYC_FIVE_PERSONS_MEASUREMENT_CSV]
 
 PITT_FIVE_PERSONS_PERSON_CSV = os.path.join(PITT_FIVE_PERSONS_PATH, 'person.csv')
@@ -55,13 +55,16 @@ PITT_FIVE_PERSONS_CONDITION_OCCURRENCE_CSV = os.path.join(PITT_FIVE_PERSONS_PATH
 PITT_FIVE_PERSONS_PROCEDURE_OCCURRENCE_CSV = os.path.join(PITT_FIVE_PERSONS_PATH, 'procedure_occurrence.csv')
 PITT_FIVE_PERSONS_DRUG_EXPOSURE_CSV = os.path.join(PITT_FIVE_PERSONS_PATH, 'drug_exposure.csv')
 PITT_FIVE_PERSONS_MEASUREMENT_CSV = os.path.join(PITT_FIVE_PERSONS_PATH, 'measurement.csv')
-PITT_FIVE_PERSONS_FILES = [                 
-    PITT_FIVE_PERSONS_PERSON_CSV, 
-    PITT_FIVE_PERSONS_VISIT_OCCURRENCE_CSV, 
-    PITT_FIVE_PERSONS_CONDITION_OCCURRENCE_CSV, 
-    PITT_FIVE_PERSONS_PROCEDURE_OCCURRENCE_CSV, 
-    PITT_FIVE_PERSONS_DRUG_EXPOSURE_CSV, 
+PITT_FIVE_PERSONS_FILES = [
+    PITT_FIVE_PERSONS_PERSON_CSV,
+    PITT_FIVE_PERSONS_VISIT_OCCURRENCE_CSV,
+    PITT_FIVE_PERSONS_CONDITION_OCCURRENCE_CSV,
+    PITT_FIVE_PERSONS_PROCEDURE_OCCURRENCE_CSV,
+    PITT_FIVE_PERSONS_DRUG_EXPOSURE_CSV,
     PITT_FIVE_PERSONS_MEASUREMENT_CSV]
+
+TEST_DATA_EXPORT_PATH = os.path.join(TEST_DATA_PATH, 'export')
+TEST_DATA_EXPORT_SYNPUF_PATH = os.path.join(TEST_DATA_EXPORT_PATH, 'synpuf')
 
 
 def _create_five_persons_success_result():
@@ -82,7 +85,82 @@ def _create_five_persons_success_result():
         writer.writerows(expected_result_items)
 
 
+def _export_query_response_by_path(p, hpo_id):
+    """Utility to create response test payloads"""
+
+    from validation import export
+    import bq_utils
+
+    for f in export.list_files_only(p):
+        abs_path = os.path.join(p, f)
+        with open(abs_path, 'r') as fp:
+            sql = fp.read()
+            sql = export.render(sql, hpo_id, results_schema=bq_utils.get_dataset_id(), vocab_schema='synpuf_100')
+            query_result = bq_utils.query(sql)
+            out_file = os.path.join(TEST_DATA_EXPORT_PATH, f.replace('.sql', '_response.json'))
+            with open(out_file, 'w') as fp:
+                data = dict()
+                if 'rows' in query_result:
+                    data['rows'] = query_result['rows']
+                if 'schema' in query_result:
+                    data['schema'] = query_result['schema']
+                import json
+                json.dump(data, fp, sort_keys=True, indent=4, separators=(',', ': '))
+
+
+def _export_query_responses():
+    from validation import export
+
+    for d in ['datadensity', 'achillesheel', 'person']:
+        p = os.path.join(export.EXPORT_PATH, d)
+        _export_query_response_by_path(p, FAKE_HPO_ID)
+
+
 def empty_bucket(bucket):
     bucket_items = gcs_utils.list_bucket(bucket)
     for bucket_item in bucket_items:
         gcs_utils.delete_object(bucket, bucket_item['name'])
+
+import requests
+
+
+def download_file_from_google_drive(id, destination):
+    URL = "https://docs.google.com/uc?export=download"
+
+    session = requests.Session()
+
+    response = session.get(URL, params={'id': id}, stream=True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = {'id': id, 'confirm': token}
+        response = session.get(URL, params=params, stream=True)
+
+    save_response_content(response, destination)
+
+
+def get_confirm_token(response):
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            return value
+
+    return None
+
+
+def save_response_content(response, destination):
+    CHUNK_SIZE = 32768
+
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk:  # filter out keep-alive new chunks
+                f.write(chunk)
+
+
+def get_synpuf_results_files():
+    files = [('0B8QSHCLE8g4JV1Q4UHFRLXNhM2c', 'achilles_results.csv'),
+             ('0B8QSHCLE8g4JeUUxZEh0SS1YNlk', 'achilles_results_dist.csv'),
+             ('0B8QSHCLE8g4JQUE1dGJLd1RpWEk', 'achilles_heel_results.csv')]
+    for file_id, file_name in files:
+        dest_path = os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH, file_name)
+        if not os.path.exists(dest_path):
+            download_file_from_google_drive(file_id, os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH, file_name))
