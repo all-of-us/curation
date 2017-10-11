@@ -44,11 +44,21 @@ class ExportTest(unittest.TestCase):
         from google.appengine.api import app_identity
 
         app_id = app_identity.get_application_id()
-        for table_name in achilles.ACHILLES_TABLES:
+
+        test_file_name = achilles.ACHILLES_ANALYSIS + '.csv'
+        achilles_analysis_file_path = os.path.join(test_util.TEST_DATA_EXPORT_PATH, test_file_name)
+        schema_path = os.path.join(resources.fields_path, achilles.ACHILLES_ANALYSIS + '.json')
+        self._write_cloud_file(self.hpo_bucket, achilles_analysis_file_path)
+        gcs_path = 'gs://' + self.hpo_bucket + '/' + test_file_name
+        dataset_id = bq_utils.get_dataset_id()
+        table_id = bq_utils.get_table_id(FAKE_HPO_ID, achilles.ACHILLES_ANALYSIS)
+        bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
+
+        for table_name in [achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST]:
             schema_file_name = table_name + '.json'
             schema_path = os.path.join(resources.fields_path, schema_file_name)
             test_file_name = table_name + '.csv'
-            test_file_path = os.path.join(test_util.TEST_DATA_PATH, table_name + '.csv')
+            test_file_path = os.path.join(test_util.TEST_DATA_EXPORT_SYNPUF_PATH, table_name + '.csv')
             self._write_cloud_file(self.hpo_bucket, test_file_path)
             gcs_path = 'gs://' + self.hpo_bucket + '/' + test_file_name
             dataset_id = bq_utils.get_dataset_id()
@@ -56,27 +66,11 @@ class ExportTest(unittest.TestCase):
             bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
         time.sleep(BQ_TIMEOUT_SECONDS)
 
-    def _export_from_path(p, hpo_id):
-        """Utility to create response test payloads"""
-        for f in export.list_files_only(p):
-            abs_path = os.path.join(p, f)
-            with open(abs_path, 'r') as fp:
-                sql = fp.read()
-                sql = export.render(sql, hpo_id, results_schema=bq_utils.get_dataset_id(), vocab_schema='synpuf_100')
-                query_result = bq_utils.query(sql)
-                with open(f + '.json', 'w') as fp:
-                    data = dict()
-                    if 'rows' in query_result:
-                        data['rows'] = query_result['rows']
-                    if 'schema' in query_result:
-                        data['schema'] = query_result['schema']
-                    import json
-                    json.dump(data, fp, sort_keys=True, indent=4, separators=(',', ': '))
-
-    def test_export_from_path(self):
+    def test_export_data_density(self):
+        test_util.get_synpuf_results_files()
         self._populate_achilles()
-        p = os.path.join(export.EXPORT_PATH, 'datadensity')
-        r = export.export_from_path(p, FAKE_HPO_ID)
+        data_density_path = os.path.join(export.EXPORT_PATH, 'datadensity')
+        r = export.export_from_path(data_density_path, FAKE_HPO_ID)
         print r
 
     def tearDown(self):
