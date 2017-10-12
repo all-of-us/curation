@@ -103,6 +103,7 @@ def delete_table(table_id):
     :param table_id: id of the table
     :return:
     """
+    assert(table_id not in common.VOCABULARY_TABLES)
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
     bq_service = create_service()

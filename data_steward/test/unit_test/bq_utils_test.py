@@ -39,7 +39,8 @@ class BqUtilsTest(unittest.TestCase):
         if result['totalItems'] > 0:
             for table in result['tables']:
                 table_id = table['tableReference']['tableId']
-                bq_utils.delete_table(table_id)
+                if table_id not in common.VOCABULARY_TABLES:
+                    bq_utils.delete_table(table_id)
 
     def test_load_csv(self):
         from google.appengine.api import app_identity
