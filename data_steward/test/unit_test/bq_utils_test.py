@@ -7,6 +7,8 @@ import common
 from validation.achilles import ACHILLES_TABLES
 from google.appengine.ext import testbed
 from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
+from test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_CSV
+from test_util import PITT_FIVE_PERSONS_PERSON_CSV
 import test_util
 import time
 
@@ -89,10 +91,10 @@ class BqUtilsTest(unittest.TestCase):
     def test_merge_with_good_data(self):
         with open(NYC_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'person.csv', fp)
-        bq_utils.load_table_from_bucket('nyc', 'person')
+        bq_utils.load_cdm_csv('nyc', 'person')
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
-        bq_utils.load_table_from_bucket('pitt', 'person')
+        bq_utils.load_cdm_csv('pitt', 'person')
 
         nyc_person_ids = [int(row['person_id'])
                           for row in
@@ -122,12 +124,7 @@ class BqUtilsTest(unittest.TestCase):
         self.assertIsNone(merged_query_job_result.get('errors', None))
         actual_result = [int(row['f'][0]['v']) for row in merged_query_job_result['rows']]
         actual_result.sort()
-
         self.assertListEqual(expected_result, actual_result)
-
-        for table_name in table_ids + ['merged_nyc_pitt']:
-            if table_name not in self.tables_to_drop:
-                self.tables_to_drop.append(table_name)
 
     def test_merge_bad_table_names(self):
         table_ids = ['nyc_person_foo', 'pitt_person_foo']
@@ -144,10 +141,10 @@ class BqUtilsTest(unittest.TestCase):
     def test_merge_with_unmatched_schema(self):
         with open(NYC_FIVE_PERSONS_MEASUREMENT_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'measurement.csv', fp)
-        bq_utils.load_table_from_bucket('nyc', 'measurement')
+        bq_utils.load_cdm_csv('nyc', 'measurement')
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
-        bq_utils.load_table_from_bucket('pitt', 'person')
+        bq_utils.load_cdm_csv('pitt', 'person')
 
         time.sleep(5)
 
