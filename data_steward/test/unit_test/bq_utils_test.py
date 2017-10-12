@@ -50,7 +50,7 @@ class BqUtilsTest(unittest.TestCase):
         schema_file_name = table_name + '.json'
         csv_file_name = table_name + '.csv'
         schema_path = os.path.join(resources.fields_path, schema_file_name)
-        local_csv_path = os.path.join(test_util.TEST_DATA_PATH, csv_file_name)
+        local_csv_path = os.path.join(test_util.TEST_DATA_EXPORT_PATH, csv_file_name)
         with open(local_csv_path, 'r') as fp:
             response = gcs_utils.upload_object(self.hpo_bucket, csv_file_name, fp)
         hpo_bucket = self.hpo_bucket
