@@ -350,7 +350,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-left join synpuf_100.concept c1
+left join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (
 		2,
@@ -387,7 +387,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-left join synpuf_100.concept c1
+left join concept c1
 	on or1.stratum_2 = cast(c1.concept_id  as string)
 where or1.analysis_id in (
 		405,
@@ -443,7 +443,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-inner join synpuf_100.concept c1
+inner join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (2)
 	and or1.stratum_1 is not null
@@ -462,7 +462,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-inner join synpuf_100.concept c1
+inner join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (4)
 	and or1.stratum_1 is not null
@@ -481,7 +481,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-inner join synpuf_100.concept c1
+inner join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (5)
 	and or1.stratum_1 is not null
@@ -500,7 +500,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-inner join synpuf_100.concept c1
+inner join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (202)
 	and or1.stratum_1 is not null
@@ -519,7 +519,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-inner join synpuf_100.concept c1
+inner join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (301)
 	and or1.stratum_1 is not null
@@ -538,7 +538,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-inner join synpuf_100.concept c1
+inner join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (
 		400,
@@ -560,7 +560,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-inner join synpuf_100.concept c1
+inner join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (
 		700,
@@ -582,7 +582,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-inner join synpuf_100.concept c1
+inner join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (600)
 	and or1.stratum_1 is not null
@@ -610,7 +610,7 @@ insert into synpuf_100.achilles_heel_results (
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
-inner join synpuf_100.concept c1
+inner join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (1610)
 	and or1.stratum_1 is not null
