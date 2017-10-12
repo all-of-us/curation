@@ -7,3 +7,5 @@ ERRORS_CSV = 'errors.csv'
 WARNINGS_CSV = 'warnings.csv'
 LOG_JSON = 'log.json'
 IGNORE_LIST = [RESULT_CSV, ERRORS_CSV, WARNINGS_CSV]
+VOCABULARY_TABLES = ['concept', 'concept_ancestor', 'concept_class', 'concept_relationship', 'concept_synonym',
+                     'domain', 'drug_strength', 'relationship', 'vocabulary']
