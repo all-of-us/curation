@@ -54,7 +54,6 @@ class AchillesHeelTest(unittest.TestCase):
             else:
                 self._write_cloud_str(self.hpo_bucket, cdm_table + '.csv', 'dummy\n')
             bq_utils.load_cdm_csv(FAKE_HPO_ID, cdm_table)
-            # bq_utils.load_table_from_bucket(FAKE_HPO_ID, cdm_table)
 
     def _populate_achilles(self):
         from google.appengine.api import app_identity
