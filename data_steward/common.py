@@ -9,3 +9,7 @@ LOG_JSON = 'log.json'
 IGNORE_LIST = [RESULT_CSV, ERRORS_CSV, WARNINGS_CSV]
 VOCABULARY_TABLES = ['concept', 'concept_ancestor', 'concept_class', 'concept_relationship', 'concept_synonym',
                      'domain', 'drug_strength', 'relationship', 'vocabulary']
+
+INCLUDE_LIST = ['person','condition_occurrence','visit_occurrence','procedure_occurrence','measurement','drug_exposure']
+INCLUDE_FILES = [table + '.csv' for table in INCLUDE_LIST]
+

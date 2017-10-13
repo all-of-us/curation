@@ -95,7 +95,7 @@ class ValidationTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_all_files_unparseable_output(self, mock_check_cron):
-        for cdm_table in common.CDM_FILES:
+        for cdm_table in common.INCLUDE_FILES:
             self._write_cloud_str(self.hpo_bucket, cdm_table, ".\n .")
 
         main.app.testing = True
@@ -105,7 +105,7 @@ class ValidationTest(unittest.TestCase):
             # check the result file was put in bucket
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             bucket_item_names = [item['name'] for item in list_bucket_result]
-            expected_items = common.CDM_FILES +  common.IGNORE_LIST 
+            expected_items = common.INCLUDE_FILES +  common.IGNORE_LIST 
             
             self.assertSetEqual(set(bucket_item_names), set(expected_items))
 
@@ -120,7 +120,6 @@ class ValidationTest(unittest.TestCase):
         exclude_file_list = ["person_final.csv",
                              "condition_occurence.csv",  # misspelled
                              "avisit_occurrence.csv",
-                             "observation.csv",  # not (currently) supported
                              "procedure_occurrence.tsv"]  # unsupported file extension
 
         expected_result_items = []
@@ -163,8 +162,8 @@ class ValidationTest(unittest.TestCase):
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
-            # check the result file was put in bucket
-            expected_bucket_items = common.CDM_FILES +  common.IGNORE_LIST #[common.RESULT_CSV]
+            # check the result file was putin bucket
+            expected_bucket_items = common.INCLUDE_FILES + common.IGNORE_LIST #[common.RESULT_CSV]
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             actual_bucket_items = [item['name'] for item in list_bucket_result]
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))

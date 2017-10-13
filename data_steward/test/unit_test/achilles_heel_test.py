@@ -21,6 +21,7 @@ ACHILLES_RESULTS_DERIVED_COUNT = 282
 BQ_TIMEOUT_SECONDS = 5
 
 
+@unittest.skip("skipping heel")
 class AchillesHeelTest(unittest.TestCase):
     def setUp(self):
         super(AchillesHeelTest, self).setUp()

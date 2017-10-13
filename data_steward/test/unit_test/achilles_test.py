@@ -42,6 +42,7 @@ inner join
    group by  1, 2 ) ce on p1.person_id = ce.person_id"""
 
 
+@unittest.skip("skipping achilles")
 class AchillesTest(unittest.TestCase):
     def setUp(self):
         super(AchillesTest, self).setUp()
