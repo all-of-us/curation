@@ -9,7 +9,7 @@ where aa1.analysis_id = 0
 union all
 
 select aa1.analysis_name as attribute_name, 
-cast(ar1.count_value as varchar) as attribute_value
+cast(ar1.count_value as STRING) as attribute_value
 from @results_database_schema.achilles_analysis aa1
 inner join
 @results_database_schema.achilles_results ar1
