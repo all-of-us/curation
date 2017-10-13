@@ -12,10 +12,11 @@ def list_files(base_path):
     return [y for x in os.walk(base_path) for y in glob(os.path.join(x[0], '*.sql'))]
 
 
-def render(sql, hpo_id, results_schema, vocab_schema):
+def render(sql, hpo_id, results_schema, vocab_schema=''):
     table_id = bq_utils.get_table_id(hpo_id, '')
+    vocab_replacement = vocab_schema + '.' if vocab_schema else ''
     sql = sql.replace(RESULTS_SCHEMA_PLACEHOLDER, results_schema + '.' + table_id)
-    sql = sql.replace(VOCAB_SCHEMA_PLACEHOLDER, vocab_schema + '.')
+    sql = sql.replace(VOCAB_SCHEMA_PLACEHOLDER, vocab_replacement)
     return sql
 
 
@@ -46,7 +47,7 @@ def export_from_path(p, hpo_id):
     Export results
     :param p: path to SQL file
     :param hpo_id: HPO to run export for
-    :return:
+    :return: `dict` structured for report render
     """
     result = dict()
     for f in list_files_only(p):
@@ -54,7 +55,7 @@ def export_from_path(p, hpo_id):
         abs_path = os.path.join(p, f)
         with open(abs_path, 'r') as fp:
             sql = fp.read()
-            sql = render(sql, hpo_id, results_schema=bq_utils.get_dataset_id(), vocab_schema='synpuf_100')
+            sql = render(sql, hpo_id, results_schema=bq_utils.get_dataset_id(), vocab_schema='')
             query_result = bq_utils.query(sql)
             # TODO reshape results
             result[name] = query_result_to_payload(query_result)
@@ -62,7 +63,14 @@ def export_from_path(p, hpo_id):
     for d in list_dirs_only(p):
         abs_path = os.path.join(p, d)
         name = d.upper()
-        result[name] = export_from_path(abs_path)
+        # recursive call
+        dir_result = export_from_path(abs_path, hpo_id)
+        if name in result:
+            # a sql file generated the item already
+            result[name].update(dir_result)
+        else:
+            # add the item
+            result[name] = dir_result
     return result
 
 
