@@ -30,7 +30,12 @@ do
   table_name="${filename%.*}"
   echo "Importing ${DATA_SET}.${table_name}..."
   bq rm -f ${DATA_SET}.${table_name}
-  bq load --allow_quoted_newlines --skip_leading_rows=1 ${DATA_SET}.${table_name} $file resources/fields/${table_name}.json
+  schema_name="${table_name}"
+  if [ "observation" = "${table_name}" ]
+  then
+    schema_name="${table_name}_rdr"
+  fi
+  bq load --allow_quoted_newlines --skip_leading_rows=1 ${DATA_SET}.${table_name} $file resources/fields/${schema_name}.json
 done
 
 echo "Done."
