@@ -6,8 +6,11 @@ import mimetypes
 from google.appengine.api import app_identity
 import googleapiclient.discovery
 
+import StringIO
+from resources import _csv_file_to_list
 import os
 from io import BytesIO
+import common
 
 
 def get_drc_bucket():
@@ -147,3 +150,22 @@ def delete_object(bucket, name):
     resp = req.execute()
     # TODO return something useful
     return resp
+
+
+def check_results_for_include_list(hpo_id):
+
+    hpo_bucket = get_hpo_bucket(hpo_id)
+    result_file = get_object(hpo_bucket, 'result.csv')
+
+    result_file = StringIO.StringIO(result_file)
+    result_items = _csv_file_to_list(result_file)
+
+    count = 0
+    for item in result_items:
+        if item['cdm_file_name'] in common.INCLUDE_FILES:
+            if item['loaded'] != '1':
+                return False
+            count = count + 1
+    if count < 6:
+        return False
+    return True
