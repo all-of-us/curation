@@ -12,7 +12,7 @@ import gcs_utils
 from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV
 
 UNKNOWN_FILE = 'Unknown file'
-BQ_LOAD_DELAY_SECONDS = 5
+BQ_LOAD_DELAY_SECONDS = 10
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
@@ -45,7 +45,7 @@ def validate_hpo_files(hpo_id):
         if _is_cdm_file(bucket_item):
             found_cdm_files.append(bucket_item)
         else:
-            if bucket_item['name'].lower() in common.IGNORE_LIST:
+            if bucket_item['name'].lower() in common.IGNORE_LIST + common.CDM_FILES:
                 continue
             unknown_files.append(bucket_item)
 
@@ -65,7 +65,7 @@ def validate_hpo_files(hpo_id):
         if job_status['state'] == 'DONE':
             if 'errorResult' in job_status:
                 # logging.info("file {} has errors  {}".format'.format(item['message'](cdm_file, job_status['errors']))
-                error_messages = ['{}'.format(item['message'],item['location'])
+                error_messages = ['{}'.format(item['message'], item['location'])
                                  for item in job_status['errors']]
                 errors.append((cdm_file, ' || '.join(error_messages)))
                 cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 0, 'loaded': 0}
@@ -74,6 +74,7 @@ def validate_hpo_files(hpo_id):
         else:
             cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 0, 'loaded': 0}
             logging.info("Wait timeout exceeded before load job with id '%s' was done" % load_job_id)
+            # print "Wait timeout exceeded before load job with id '%s' was done" % load_job_id
 
     # (filename, message) for each unknown file
     warnings = [
@@ -82,12 +83,19 @@ def validate_hpo_files(hpo_id):
 
     # TODO consider the order files are validated
     load_results = []
+    cdm_files_ordered = [cdm_file for cdm_file in common.INCLUDE_FILES]
     for cdm_file in common.CDM_FILES:
+        if cdm_file in common.INCLUDE_FILES:
+            continue
+        cdm_files_ordered.append(cdm_file)
+
+    for cdm_file in cdm_files_ordered:
         if cdm_file in cdm_file_result_map:
             load_result = cdm_file_result_map[cdm_file]
             load_results.append((cdm_file, load_result['found'], load_result['parsed'], load_result['loaded']))
         else:
-            load_results.append((cdm_file, 0, 0, 0))
+            if cdm_file in common.INCLUDE_FILES:
+                load_results.append((cdm_file, 0, 0, 0))
 
     # output to GCS
     _save_result_in_gcs(bucket, RESULT_CSV, load_results)
@@ -99,6 +107,7 @@ def validate_hpo_files(hpo_id):
 
 def _is_cdm_file(gcs_file_stat):
     return gcs_file_stat['name'].lower() in common.CDM_FILES
+
 
 def _save_errors_in_gcs(bucket, name, errors):
     """Save errors.csv into hpo bucket
@@ -118,9 +127,7 @@ def _save_errors_in_gcs(bucket, name, errors):
     result = gcs_utils.upload_object(bucket, name, f)
     f.close()
     return result
-
-
-    
+  
 
 def _save_warnings_in_gcs(bucket, name, warnings):
     """
