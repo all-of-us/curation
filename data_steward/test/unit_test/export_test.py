@@ -12,6 +12,7 @@ from test_util import FAKE_HPO_ID
 import test_util
 import time
 import bq_utils
+import json
 
 BQ_TIMEOUT_SECONDS = 5
 
@@ -66,12 +67,27 @@ class ExportTest(unittest.TestCase):
             bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
         time.sleep(BQ_TIMEOUT_SECONDS)
 
-    def test_export_data_density(self):
+    def _test_report_export(self, report):
         test_util.get_synpuf_results_files()
         self._populate_achilles()
-        data_density_path = os.path.join(export.EXPORT_PATH, 'datadensity')
-        r = export.export_from_path(data_density_path, FAKE_HPO_ID)
-        print r
+        data_density_path = os.path.join(export.EXPORT_PATH, report)
+        result = export.export_from_path(data_density_path, FAKE_HPO_ID)
+        actual_payload = json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
+        expected_path = os.path.join(test_util.TEST_DATA_EXPORT_SYNPUF_PATH, report + '.json')
+        with open(expected_path, 'r') as f:
+            expected_payload = f.read()
+            self.assertEqual(actual_payload, expected_payload, msg='Payload for ' + report)
+        return result
+
+    def test_export_data_density(self):
+        self._test_report_export('datadensity')
+
+    def test_export_person(self):
+        self._test_report_export('person')
+
+    def test_export_achillesheel(self):
+        self._test_report_export('person')
+        test_util.get_synpuf_results_files('achillesheel')
 
     def tearDown(self):
         self.testbed.deactivate()
