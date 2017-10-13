@@ -10,6 +10,7 @@ import bq_utils
 import common
 import gcs_utils
 from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV
+import resources
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_DELAY_SECONDS = 10
@@ -65,8 +66,7 @@ def validate_hpo_files(hpo_id):
         if job_status['state'] == 'DONE':
             if 'errorResult' in job_status:
                 # logging.info("file {} has errors  {}".format'.format(item['message'](cdm_file, job_status['errors']))
-                error_messages = ['{}'.format(item['message'], item['location'])
-                                 for item in job_status['errors']]
+                error_messages = ['{}'.format(item['message'], item['location']) for item in job_status['errors']]
                 errors.append((cdm_file, ' || '.join(error_messages)))
                 cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 0, 'loaded': 0}
             else:
@@ -112,7 +112,7 @@ def _is_cdm_file(gcs_file_stat):
 def _save_errors_in_gcs(bucket, name, errors):
     """Save errors.csv into hpo bucket
 
-    :bucket:  bucket to save in 
+    :bucket:  bucket to save in
     :name: file_name to save to
     :errors: list of errors of form (file_name, errors)
     :returns: result of upload operation. not being used for now.
@@ -127,7 +127,7 @@ def _save_errors_in_gcs(bucket, name, errors):
     result = gcs_utils.upload_object(bucket, name, f)
     f.close()
     return result
-  
+
 
 def _save_warnings_in_gcs(bucket, name, warnings):
     """
