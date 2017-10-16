@@ -7,7 +7,7 @@ from google.appengine.ext import testbed
 import gcs_utils
 import resources
 from validation import export
-from validation import achilles
+from validation import achilles, achilles_heel
 from test_util import FAKE_HPO_ID
 import test_util
 import time
@@ -55,7 +55,7 @@ class ExportTest(unittest.TestCase):
         table_id = bq_utils.get_table_id(FAKE_HPO_ID, achilles.ACHILLES_ANALYSIS)
         bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
 
-        for table_name in [achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST]:
+        for table_name in [achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST, achilles_heel.ACHILLES_HEEL_RESULTS]:
             schema_file_name = table_name + '.json'
             schema_path = os.path.join(resources.fields_path, schema_file_name)
             test_file_name = table_name + '.csv'
@@ -76,7 +76,7 @@ class ExportTest(unittest.TestCase):
         expected_path = os.path.join(test_util.TEST_DATA_EXPORT_SYNPUF_PATH, report + '.json')
         with open(expected_path, 'r') as f:
             expected_payload = f.read()
-            self.assertEqual(actual_payload, expected_payload, msg='Payload for ' + report)
+            self.assertEqual(actual_payload, expected_payload)
         return result
 
     def test_export_data_density(self):
@@ -86,8 +86,7 @@ class ExportTest(unittest.TestCase):
         self._test_report_export('person')
 
     def test_export_achillesheel(self):
-        self._test_report_export('person')
-        test_util.get_synpuf_results_files('achillesheel')
+        self._test_report_export('achillesheel')
 
     def tearDown(self):
         self.testbed.deactivate()
