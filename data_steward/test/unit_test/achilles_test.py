@@ -55,25 +55,13 @@ class AchillesTest(unittest.TestCase):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         test_util.empty_bucket(self.hpo_bucket)
 
-    def _write_cloud_str(self, bucket, name, contents_str):
-        fp = StringIO.StringIO(contents_str)
-        return self._write_cloud_fp(bucket, name, fp)
-
-    def _write_cloud_file(self, bucket, f):
-        name = os.path.basename(f)
-        with open(f, 'r') as fp:
-            return self._write_cloud_fp(bucket, name, fp)
-
-    def _write_cloud_fp(self, bucket, name, fp):
-        return gcs_utils.upload_object(bucket, name, fp)
-
     def _load_dataset(self):
         for cdm_table in common.CDM_TABLES:
             cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
             if os.path.exists(cdm_file_name):
-                self._write_cloud_file(self.hpo_bucket, cdm_file_name)
+                test_util.write_cloud_file(self.hpo_bucket, cdm_file_name)
             else:
-                self._write_cloud_str(self.hpo_bucket, cdm_table + '.csv', 'dummy\n')
+                test_util.write_cloud_str(self.hpo_bucket, cdm_table + '.csv', 'dummy\n')
             bq_utils.load_cdm_csv(FAKE_HPO_ID, cdm_table)
 
     def test_detect_commented_block(self):

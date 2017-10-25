@@ -10,10 +10,11 @@ from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
 from test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_CSV
 from test_util import PITT_FIVE_PERSONS_PERSON_CSV
 import test_util
-import time
+import mock
+# import time
 
 PERSON = 'person'
-BQ_TIMEOUT_SECONDS = 5
+BQ_TIMEOUT_RETRIES = 3
 
 
 class BqUtilsTest(unittest.TestCase):
@@ -58,8 +59,11 @@ class BqUtilsTest(unittest.TestCase):
         hpo_bucket = self.hpo_bucket
         gcs_object_path = 'gs://%(hpo_bucket)s/%(csv_file_name)s' % locals()
         dataset_id = bq_utils.get_dataset_id()
-        result = bq_utils.load_csv(schema_path, gcs_object_path, app_id, dataset_id, table_name)
-        time.sleep(BQ_TIMEOUT_SECONDS)
+        load_results = bq_utils.load_csv(schema_path, gcs_object_path, app_id, dataset_id, table_name)
+
+        load_job_id = load_results['jobReference']['jobId']
+        incomplete_jobs = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(table_name))
         query_response = bq_utils.query('SELECT COUNT(1) FROM %(table_name)s' % locals())
         self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
 
@@ -68,8 +72,11 @@ class BqUtilsTest(unittest.TestCase):
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
-        time.sleep(BQ_TIMEOUT_SECONDS)
+
+        load_job_id = result['jobReference']['jobId']
         table_id = result['configuration']['load']['destinationTable']['tableId']
+        incomplete_jobs = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(table_id))
         query_response = bq_utils.query('SELECT 1 FROM %(table_id)s' % locals())
         self.assertEqual(query_response['totalRows'], '5')
 
@@ -80,8 +87,11 @@ class BqUtilsTest(unittest.TestCase):
     def test_query_result(self):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
-        bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
-        time.sleep(BQ_TIMEOUT_SECONDS)
+        result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
+
+        load_job_id = result['jobReference']['jobId']
+        incomplete_jobs = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(PERSON))
 
         table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)
         q = 'SELECT person_id FROM %s' % table_id
@@ -89,12 +99,16 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(5, int(result['totalRows']))
 
     def test_merge_with_good_data(self):
+        running_jobs = []
         with open(NYC_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'person.csv', fp)
-        bq_utils.load_cdm_csv('nyc', 'person')
+        result = bq_utils.load_cdm_csv('nyc', 'person')
+        running_jobs.append(result['jobReference']['jobId'])
+
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
-        bq_utils.load_cdm_csv('pitt', 'person')
+        result = bq_utils.load_cdm_csv('pitt', 'person')
+        running_jobs.append(result['jobReference']['jobId'])
 
         nyc_person_ids = [int(row['person_id'])
                           for row in
@@ -106,15 +120,16 @@ class BqUtilsTest(unittest.TestCase):
         expected_result = nyc_person_ids + pitt_person_ids
         expected_result.sort()
 
-        time.sleep(5)
+        incomplete_jobs = bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
+        self.assertEqual(len(incomplete_jobs), 0, 'loading tables {},{} timed out'.format('nyc_person', 'pitt_person'))
 
         table_ids = ['nyc_person', 'pitt_person']
-        success_flag, error = bq_utils.merge_tables(bq_utils.get_dataset_id(),
+        incomplete_jobs, error = bq_utils.merge_tables(bq_utils.get_dataset_id(),
                                                     table_ids,
                                                     bq_utils.get_dataset_id(),
                                                     'merged_nyc_pitt')
 
-        self.assertTrue(success_flag)
+        self.assertEqual(len(incomplete_jobs), 0)
         self.assertEqual(error, "")
 
         query_string = "SELECT person_id FROM {}.{} LIMIT 1000".format(bq_utils.get_dataset_id(), 'merged_nyc_pitt')
@@ -139,23 +154,28 @@ class BqUtilsTest(unittest.TestCase):
         assert(not success_flag)
 
     def test_merge_with_unmatched_schema(self):
+        running_jobs = []
         with open(NYC_FIVE_PERSONS_MEASUREMENT_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'measurement.csv', fp)
-        bq_utils.load_cdm_csv('nyc', 'measurement')
+        result = bq_utils.load_cdm_csv('nyc', 'measurement')
+        running_jobs.append(result['jobReference']['jobId'])
+
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
-        bq_utils.load_cdm_csv('pitt', 'person')
+        result = bq_utils.load_cdm_csv('pitt', 'person')
+        running_jobs.append(result['jobReference']['jobId'])
 
-        time.sleep(5)
+        incomplete_jobs = bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
+        self.assertEqual(len(incomplete_jobs), 0, 'loading tables {},{} timed out'.format('nyc_measurement', 'pitt_person'))
 
         table_names = ['nyc_measurement', 'pitt_person']
-        success_flag, error = bq_utils.merge_tables(
+        success, error = bq_utils.merge_tables(
           bq_utils.get_dataset_id(),
           table_names,
           bq_utils.get_dataset_id(),
           'merged_nyc_pitt'
         )
-        self.assertFalse(success_flag)
+        self.assertFalse(success)
 
     def test_create_table(self):
         table_id = 'some_random_table_id'
@@ -197,6 +217,44 @@ class BqUtilsTest(unittest.TestCase):
             self.assertEqual(result['kind'], 'bigquery#table')
             # sanity check
             self.assertTrue(bq_utils.table_exists(table_id))
+
+    @mock.patch('bq_utils.job_status_done', lambda x: True)
+    def test_wait_on_jobs_already_done(self):
+        job_ids = range(3)
+        actual = bq_utils.wait_on_jobs(job_ids)
+        expected = []
+        self.assertEqual(actual, expected)
+
+    @mock.patch('time.sleep', return_value=None)
+    @mock.patch('bq_utils.job_status_done', return_value=False)
+    def test_wait_on_jobs_all_fail(self, mock_job_status_done, mock_time_sleep):
+        job_ids = list(range(3))
+        actual = bq_utils.wait_on_jobs(job_ids)
+        expected = job_ids
+        self.assertEqual(actual, expected)
+        # TODO figure out how to count this
+        # self.assertEquals(mock_time_sleep.call_count, bq_utils.BQ_DEFAULT_RETRY_COUNT)
+
+    @mock.patch('time.sleep', return_value=None)
+    @mock.patch('bq_utils.job_status_done', side_effect=[False, False, False, True, False, False, True, True, True])
+    def test_wait_on_jobs_get_done(self, mock_job_status_done, mock_time_sleep):
+        job_ids = list(range(3))
+        actual = bq_utils.wait_on_jobs(job_ids)
+        expected = []
+        self.assertEqual(actual, expected)
+
+    @mock.patch('time.sleep', return_value=None)
+    @mock.patch('bq_utils.job_status_done', side_effect=[False, False, True, False, True, False, True, False, True, False, True, False])
+    def test_wait_on_jobs_some_fail(self, mock_job_status_done, mock_time_sleep):
+        job_ids = list(range(2))
+        actual = bq_utils.wait_on_jobs(job_ids)
+        expected = [1]
+        self.assertEqual(actual, expected)
+
+    def test_wait_on_jobs_retry_count(self):
+        # TODO figure out how to count this
+        # self.assertEquals(mock_time_sleep.call_count, bq_utils.BQ_DEFAULT_RETRY_COUNT)
+        pass
 
     def tearDown(self):
         self._drop_tables()
