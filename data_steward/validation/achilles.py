@@ -67,6 +67,7 @@ def run_analyses(hpo_id):
             bq_utils.delete_table(table_id)
         else:
             bq_utils.query(command)
+        time.sleep(0.5)
 
 
 def create_tables(hpo_id, drop_existing=False):

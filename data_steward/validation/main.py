@@ -10,7 +10,10 @@ import bq_utils
 import common
 import gcs_utils
 from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV
-import resources
+# import resources
+
+import achilles
+import achilles_heel
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_DELAY_SECONDS = 10
@@ -31,6 +34,37 @@ class DataError(RuntimeError):
     def __init__(self, msg, external=False):
         super(DataError, self).__init__(msg)
         self.external = external
+
+
+# @api_util.auth_required_cron
+def run_achilles(hpo_id):
+    """checks for full results and run achilles/heel
+
+    :hpo_id: hpo on which to run achilles
+    :returns: success or not
+
+    """
+
+    # for cdm_table in common.CDM_TABLES:
+    #     # cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
+    #     if cdm_table not in common.INCLUDE_LIST:
+    #         fp = StringIO.StringIO('dummy\n')
+    #         gcs_utils.upload_object(gcs_utils.get_hpo_bucket(hpo_id), cdm_table + '.csv', fp)
+    #         bq_utils.load_cdm_csv(hpo_id, cdm_table)
+
+    run_achilles_flag = gcs_utils.check_results_for_include_list(hpo_id)
+
+    if run_achilles_flag:
+        achilles.create_tables(hpo_id, True)
+        achilles.load_analyses(hpo_id)
+        achilles.run_analyses(hpo_id=hpo_id)
+
+        time.sleep(1)
+
+        achilles_heel.create_tables(hpo_id, True)
+        achilles_heel.run_heel(hpo_id=hpo_id)
+
+    return '{"report-generator-status": "started"}'
 
 
 @api_util.auth_required_cron
@@ -171,4 +205,11 @@ app.add_url_rule(
     PREFIX + 'ValidateHpoFiles/<string:hpo_id>',
     endpoint='validate_hpo_files',
     view_func=validate_hpo_files,
+    methods=['GET'])
+
+
+app.add_url_rule(
+    PREFIX + 'RunAchilles/<string:hpo_id>',
+    endpoint='run_achilles',
+    view_func=run_achilles,
     methods=['GET'])
