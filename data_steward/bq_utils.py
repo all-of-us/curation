@@ -14,6 +14,7 @@ import logging
 
 BQ_LOAD_DELAY_SECONDS = 5
 BQ_QUERY_DELAY_SECONDS = 5
+BQ_DEFAULT_RETRY_COUNT = 5
 
 
 class InvalidOperationError(RuntimeError):
@@ -131,6 +132,32 @@ def table_exists(table_id):
         return False
 
 
+def job_status_done(job_id):
+    job_details = get_job_details(job_id)
+    job_running_status = job_details['status']['state']
+    return job_running_status == 'DONE'
+
+
+def wait_on_jobs(job_ids, retry_count=BQ_DEFAULT_RETRY_COUNT, max_poll_interval=16):
+    """
+    Exponential backoff wait for jobs to complete
+    :param job_ids:
+    :param retry_count:
+    :param max_poll_interval:
+    :return: list of jobs that failed to complete or empty list if all completed
+    """
+    _job_ids = list(job_ids)
+    poll_interval = 1
+    for i in range(retry_count):
+        time.sleep(poll_interval)
+        _job_ids = filter(lambda s: not job_status_done(s), _job_ids)
+        if len(_job_ids) == 0:
+            return []
+        if poll_interval < max_poll_interval:
+            poll_interval = 2 ** i
+    return _job_ids
+
+
 def get_job_details(job_id):
     """Get job resource corresponding to job_id
     :param job_id: id of the job to get (i.e. `jobReference.jobId` in response body of insert request)
@@ -178,12 +205,10 @@ def merge_tables(source_dataset_id,
     insert_result = bq_service.jobs().insert(projectId=app_id,
                                              body=job_body).execute()
     job_id = insert_result['jobReference']['jobId']
+    incomplete_jobs = wait_on_jobs([job_id], retry_count=BQ_QUERY_DELAY_SECONDS)
 
-    time.sleep(BQ_LOAD_DELAY_SECONDS)
-
-    job_status = get_job_details(job_id)['status']
-
-    if job_status['state'] == 'DONE':
+    if len(incomplete_jobs) == 0:
+        job_status = get_job_details(job_id)['status']
         if 'errorResult' in job_status:
             error_messages = ['{}'.format(item['message'])
                               for item in job_status['errors']]
@@ -219,8 +244,10 @@ def query_table(query_string):
     insert_result = bq_service.jobs().insert(projectId=app_id,
                                              body=job_body).execute()
     job_id = insert_result['jobReference']['jobId']
-    time.sleep(BQ_QUERY_DELAY_SECONDS)
-
+    incomplete_jobs = wait_on_jobs([job_id], retry_count=BQ_QUERY_DELAY_SECONDS)
+    if len(incomplete_jobs) > 0:
+        return None
+    # TODO if error we may not want to query
     query_result = bq_service.jobs().getQueryResults(projectId=app_id,
                                                      jobId=job_id).execute()
     return query_result
@@ -232,7 +259,8 @@ def query(q, use_legacy_sql=False, destination_table_id=None):
     :param q: SQL statement
     :param use_legacy_sql: True if using legacy syntax, False by default
     :param destination_table_id: if set, output is saved in a table with the specified id
-    :return: if destination_table_id is supplied then job info, otherwise job query response (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
+    :return: if destination_table_id is supplied then job info, otherwise job query response
+             (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
     """
     bq_service = create_service()
     app_id = app_identity.get_application_id()

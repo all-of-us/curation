@@ -1,7 +1,8 @@
-from glob import glob
-import resources
 import os
+from glob import glob
+
 import bq_utils
+import resources
 
 EXPORT_PATH = os.path.join(resources.resource_path, 'export')
 RESULTS_SCHEMA_PLACEHOLDER = '@results_database_schema.'
@@ -81,7 +82,7 @@ def query_result_to_payload(qr):
     :return:
     """
     result = dict()
-    rows = qr['rows']
+    rows = qr['rows'] if int(qr['totalRows']) > 0 else []
     fields = qr['schema']['fields']
     field_count = len(fields)
     for i in range(0, field_count):

@@ -164,3 +164,58 @@ def get_synpuf_results_files():
         dest_path = os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH, file_name)
         if not os.path.exists(dest_path):
             download_file_from_google_drive(file_id, os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH, file_name))
+
+
+def read_cloud_file(bucket, name):
+    return gcs_utils.get_object(bucket, name)
+
+
+def write_cloud_str(bucket, name, contents_str):
+    import StringIO
+    fp = StringIO.StringIO(contents_str)
+    return write_cloud_fp(bucket, name, fp)
+
+
+def write_cloud_file(bucket, f):
+    name = os.path.basename(f)
+    with open(f, 'r') as fp:
+        return write_cloud_fp(bucket, name, fp)
+
+
+def write_cloud_fp(bucket, name, fp):
+    return gcs_utils.upload_object(bucket, name, fp)
+
+
+def populate_achilles(hpo_bucket, include_heel=True):
+    from validation import achilles, achilles_heel
+    from google.appengine.api import app_identity
+    import bq_utils
+
+    app_id = app_identity.get_application_id()
+
+    test_file_name = achilles.ACHILLES_ANALYSIS + '.csv'
+    achilles_analysis_file_path = os.path.join(TEST_DATA_EXPORT_PATH, test_file_name)
+    schema_path = os.path.join(resources.fields_path, achilles.ACHILLES_ANALYSIS + '.json')
+    write_cloud_file(hpo_bucket, achilles_analysis_file_path)
+    gcs_path = 'gs://' + hpo_bucket + '/' + test_file_name
+    dataset_id = bq_utils.get_dataset_id()
+    table_id = bq_utils.get_table_id(FAKE_HPO_ID, achilles.ACHILLES_ANALYSIS)
+    bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
+
+    table_names = [achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST]
+    if include_heel:
+        table_names.append(achilles_heel.ACHILLES_HEEL_RESULTS)
+
+    running_jobs = []
+    for table_name in table_names:
+        schema_file_name = table_name + '.json'
+        schema_path = os.path.join(resources.fields_path, schema_file_name)
+        test_file_name = table_name + '.csv'
+        test_file_path = os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH, table_name + '.csv')
+        write_cloud_file(hpo_bucket, test_file_path)
+        gcs_path = 'gs://' + hpo_bucket + '/' + test_file_name
+        dataset_id = bq_utils.get_dataset_id()
+        table_id = bq_utils.get_table_id(FAKE_HPO_ID, table_name)
+        load_results = bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
+        running_jobs.append(load_results['jobReference']['jobId'])
+    bq_utils.wait_on_jobs(running_jobs)
