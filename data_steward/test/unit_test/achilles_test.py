@@ -42,7 +42,6 @@ inner join
    group by  1, 2 ) ce on p1.person_id = ce.person_id"""
 
 
-@unittest.skip("skipping achilles")
 class AchillesTest(unittest.TestCase):
     def setUp(self):
         super(AchillesTest, self).setUp()
@@ -109,7 +108,7 @@ class AchillesTest(unittest.TestCase):
         self.assertTrue(
             validation.sql_wrangle.get_temp_table_query(TEMP_QUERY_2).startswith('SELECT ce.condition_concept_id'))
 
-    def _test_run_analyses(self):
+    def test_run_analyses(self):
         # Long-running test
         self._load_dataset()
         achilles.create_tables(FAKE_HPO_ID, True)
