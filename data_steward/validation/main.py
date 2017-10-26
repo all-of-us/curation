@@ -2,6 +2,8 @@
 import StringIO
 import logging
 import time
+import os
+import json
 
 from flask import Flask
 
@@ -14,6 +16,7 @@ import resources
 
 import achilles
 import achilles_heel
+import export
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_DELAY_SECONDS = 10
@@ -53,7 +56,21 @@ class DataError(RuntimeError):
         self.external = external
 
 
-# @api_util.auth_required_cron
+def run_export(hpo_id):
+
+    # TODO : add check for required tables
+    hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+    for export_name in ['achillesheel', 'person', 'datadensity']:
+        sql_path = os.path.join(export.EXPORT_PATH, 'achillesheel')
+        result = export.export_from_path(sql_path, hpo_id)
+        content = json.dumps(result)
+        fp = StringIO.StringIO(content)
+        gcs_utils.upload_object(hpo_bucket, export_name + '.json', fp)
+
+    return '{"export-status": "Done"}'
+
+
+@api_util.auth_required_cron
 def run_achilles(hpo_id):
     """checks for full results and run achilles/heel
 
@@ -81,7 +98,7 @@ def run_achilles(hpo_id):
         achilles_heel.create_tables(hpo_id, True)
         achilles_heel.run_heel(hpo_id=hpo_id)
 
-    return '{"report-generator-status": "started"}'
+    return '{"achilles-run-status": "started"}'
 
 
 @api_util.auth_required_cron
@@ -229,4 +246,11 @@ app.add_url_rule(
     PREFIX + 'RunAchilles/<string:hpo_id>',
     endpoint='run_achilles',
     view_func=run_achilles,
+    methods=['GET'])
+
+
+app.add_url_rule(
+    PREFIX + 'RunExport/<string:hpo_id>',
+    endpoint='export_json_for_achilles',
+    view_func=run_export,
     methods=['GET'])
