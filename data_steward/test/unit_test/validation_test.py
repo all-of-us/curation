@@ -25,21 +25,6 @@ class ValidationTest(unittest.TestCase):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         self._empty_bucket()
 
-    def check_results_for_include_list(self):
-        result_file = gcs_utils.get_object(self.hpo_bucket, common.RESULT_CSV)
-
-        result_file = StringIO.StringIO(result_file)
-        result_items = resources._csv_file_to_list(result_file)
-
-        count = 0
-        for item in result_items:
-            if item['cdm_file_name'] in common.INCLUDE_FILES:
-                if item['loaded'] != '1':
-                    return False
-                count = count + 1
-        if count < 6:
-            return False
-        return True
 
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
@@ -85,7 +70,7 @@ class ValidationTest(unittest.TestCase):
             with open(test_util.EMPTY_VALIDATION_RESULT, 'r') as f:
                 expected = f.read()
                 self.assertEqual(expected, actual)
-            self.assertFalse(self.check_results_for_include_list())
+            self.assertFalse(main.check_results_for_include_list(test_util.FAKE_HPO_ID))
 
     @mock.patch('api_util.check_cron')
     def test_errors_csv(self, mock_check_cron):
@@ -189,7 +174,7 @@ class ValidationTest(unittest.TestCase):
             expected_result_items.sort()
             actual_result_items.sort()
             self.assertListEqual(expected_result_items, actual_result_items)
-            self.assertTrue(self.check_results_for_include_list())
+            self.assertTrue(main.check_results_for_include_list(test_util.FAKE_HPO_ID))
 
     def tearDown(self):
         self._empty_bucket()

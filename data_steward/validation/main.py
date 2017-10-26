@@ -10,7 +10,7 @@ import bq_utils
 import common
 import gcs_utils
 from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV
-# import resources
+import resources
 
 import achilles
 import achilles_heel
@@ -20,6 +20,23 @@ BQ_LOAD_DELAY_SECONDS = 10
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
+
+
+def check_results_for_include_list(hpo_id):
+    result_file = gcs_utils.get_object(gcs_utils.get_hpo_bucket(hpo_id), common.RESULT_CSV)
+
+    result_file = StringIO.StringIO(result_file)
+    result_items = resources._csv_file_to_list(result_file)
+
+    count = 0
+    for item in result_items:
+        if item['cdm_file_name'] in common.INCLUDE_FILES:
+            if item['loaded'] != '1':
+                return False
+            count = count + 1
+    if count < 6:
+        return False
+    return True
 
 
 class DataError(RuntimeError):
@@ -52,7 +69,7 @@ def run_achilles(hpo_id):
     #         gcs_utils.upload_object(gcs_utils.get_hpo_bucket(hpo_id), cdm_table + '.csv', fp)
     #         bq_utils.load_cdm_csv(hpo_id, cdm_table)
 
-    run_achilles_flag = gcs_utils.check_results_for_include_list(hpo_id)
+    run_achilles_flag = check_results_for_include_list(hpo_id)
 
     if run_achilles_flag:
         achilles.create_tables(hpo_id, True)
