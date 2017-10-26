@@ -60,11 +60,14 @@ def run_analyses(hpo_id):
             time.sleep(6)
         elif sql_wrangle.is_truncate(command):
             table_id = sql_wrangle.get_truncate_table_name(command)
-            query = 'DELETE FROM %s WHERE TRUE' % table_id
-            bq_utils.query(query)
+            if bq_utils.table_exists(table_id):
+                bq_utils.delete_table(table_id)
+            # query = 'DELETE FROM %s WHERE TRUE' % table_id
+            # bq_utils.query(query)
         elif sql_wrangle.is_drop(command):
             table_id = sql_wrangle.get_drop_table_name(command)
-            bq_utils.delete_table(table_id)
+            if bq_utils.table_exists(table_id):
+                bq_utils.delete_table(table_id)
         else:
             bq_utils.query(command)
         time.sleep(0.5)
