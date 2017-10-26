@@ -57,7 +57,14 @@ def run_analyses(hpo_id):
             table_id = sql_wrangle.get_temp_table_name(command)
             query = sql_wrangle.get_temp_table_query(command)
             bq_utils.query(query, False, table_id)
-            time.sleep(6)
+            temp_exists_flag = False
+            count = 0
+            while not temp_exists_flag:
+                count = count + 1
+                time.sleep(5)
+                temp_exists_flag = bq_utils.table_exists(table_id)
+                if count > 7:
+                    raise RuntimeError('Tempresults taking too long to create')
         elif sql_wrangle.is_truncate(command):
             table_id = sql_wrangle.get_truncate_table_name(command)
             if bq_utils.table_exists(table_id):
