@@ -61,7 +61,7 @@ def run_export(hpo_id):
     # TODO : add check for required tables
     hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
     for export_name in ['achillesheel', 'person', 'datadensity']:
-        sql_path = os.path.join(export.EXPORT_PATH, 'achillesheel')
+        sql_path = os.path.join(export.EXPORT_PATH, export_name)
         result = export.export_from_path(sql_path, hpo_id)
         content = json.dumps(result)
         fp = StringIO.StringIO(content)
