@@ -4,6 +4,7 @@ import time
 import bq_utils
 import resources
 import sql_wrangle
+import logging
 
 ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
@@ -63,7 +64,8 @@ def run_analyses(hpo_id):
                 count = count + 1
                 time.sleep(5)
                 temp_exists_flag = bq_utils.table_exists(table_id)
-                if count > 7:
+                if count > 10:
+                    logging.critical('tempresults doesnt get created in 50 secs')
                     raise RuntimeError('Tempresults taking too long to create')
         elif sql_wrangle.is_truncate(command):
             table_id = sql_wrangle.get_truncate_table_name(command)
