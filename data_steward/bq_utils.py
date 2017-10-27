@@ -253,14 +253,14 @@ def query_table(query_string):
     return query_result
 
 
-def query(q, use_legacy_sql=False, destination_table_id=None):
+def query(q, use_legacy_sql=False, destination_table_id=None, write_disposition='WRITE_EMPTY'):
     """
     Execute a SQL query on BigQuery dataset
     :param q: SQL statement
     :param use_legacy_sql: True if using legacy syntax, False by default
     :param destination_table_id: if set, output is saved in a table with the specified id
-    :return: if destination_table_id is supplied then job info, otherwise job query response
-             (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
+    :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY (default)
+    :return: if destination_table_id is supplied then job info, otherwise job query response (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
     """
     bq_service = create_service()
     app_id = app_identity.get_application_id()
@@ -280,7 +280,8 @@ def query(q, use_legacy_sql=False, destination_table_id=None):
                             'projectId': app_id,
                             'datasetId': get_dataset_id(),
                             'tableId': destination_table_id
-                        }
+                        },
+                        'writeDisposition': write_disposition
                     }
                 }
         }
