@@ -58,6 +58,7 @@ class DataError(RuntimeError):
 
 def run_export(hpo_id):
 
+    logging.info('running export for hpo_id %s' % hpo_id)
     # TODO : add check for required tables
     hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
     for export_name in ['achillesheel', 'person', 'datadensity']:
@@ -89,21 +90,25 @@ def run_achilles(hpo_id):
     run_achilles_flag = check_results_for_include_list(hpo_id)
 
     if run_achilles_flag:
+        logging.info('running achilles for hpo_id %s' % hpo_id)
         achilles.create_tables(hpo_id, True)
         achilles.load_analyses(hpo_id)
         achilles.run_analyses(hpo_id=hpo_id)
 
         time.sleep(1)
 
+        logging.info('running achilles_heel for hpo_id %s' % hpo_id)
         achilles_heel.create_tables(hpo_id, True)
         achilles_heel.run_heel(hpo_id=hpo_id)
 
-    return '{"achilles-run-status": "started"}'
+        logging.info(run_export(hpo_id))
+
+    return '{"achilles-run-status": "done"}'
 
 
 @api_util.auth_required_cron
 def validate_hpo_files(hpo_id):
-    logging.info('Validating hpo_id %s' % hpo_id)
+    logging.info(' Validating hpo_id %s' % hpo_id)
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     bucket_items = gcs_utils.list_bucket(bucket)
 
@@ -124,6 +129,7 @@ def validate_hpo_files(hpo_id):
     for cdm_file in map(lambda f: f['name'], found_cdm_files):
         # create a job to load table
         cdm_file_name = cdm_file.split('.')[0]
+        logging.debug(' ---- validating cdm file {} ...'.format(cdm_file_name))
         load_results = bq_utils.load_cdm_csv(hpo_id, cdm_file_name)
         load_job_id = load_results['jobReference']['jobId']
 
@@ -169,6 +175,8 @@ def validate_hpo_files(hpo_id):
     _save_result_in_gcs(bucket, RESULT_CSV, load_results)
     _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
     _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
+
+    logging.info(run_achilles(hpo_id))
 
     return '{"report-generator-status": "started"}'
 
@@ -242,6 +250,7 @@ app.add_url_rule(
     methods=['GET'])
 
 
+'''
 app.add_url_rule(
     PREFIX + 'RunAchilles/<string:hpo_id>',
     endpoint='run_achilles',
@@ -254,3 +263,4 @@ app.add_url_rule(
     endpoint='export_json_for_achilles',
     view_func=run_export,
     methods=['GET'])
+'''

@@ -53,7 +53,7 @@ def run_analyses(hpo_id):
     """
     commands = _get_run_analysis_commands(hpo_id)
     for command in commands:
-        print 'Running `%s`...\n' % command
+        logging.debug(' ---- Running `%s`...\n' % command)
         if sql_wrangle.is_to_temp_table(command):
             table_id = sql_wrangle.get_temp_table_name(command)
             query = sql_wrangle.get_temp_table_query(command)

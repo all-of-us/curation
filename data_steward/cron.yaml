@@ -11,9 +11,9 @@ cron:
 - description: validate hpo pitt
   url: /data_steward/v1/ValidateHpoFiles/pitt
   schedule: every 30 minutes
-- description: run achilles
-  url: /data_steward/v1/RunAchilles/nyc
-  schedule: every 1000 minutes
-- description: run export 
-  url: /data_steward/v1/RunExport/nyc
-  schedule: every 1000 minutes
+# - description: run achilles
+#   url: /data_steward/v1/RunAchilles/nyc
+#   schedule: every 1000 minutes
+# - description: run export 
+#   url: /data_steward/v1/RunExport/nyc
+#   schedule: every 1000 minutes

@@ -4,6 +4,7 @@ import bq_utils
 import re
 import time
 import sql_wrangle
+import logging
 
 ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
 ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
@@ -68,8 +69,8 @@ def run_heel(hpo_id):
     count = 0
     for command in commands:
         count = count + 1
-        print 'running query # {}'.format(count)
-        print 'Running `%s`...\n' % command
+        logging.debug(' ---- running query # {}'.format(count))
+        logging.debug(' ---- Running `%s`...\n' % command)
         if sql_wrangle.is_to_temp_table(command):
             table_id = sql_wrangle.get_temp_table_name(command)
             query = sql_wrangle.get_temp_table_query(command)
