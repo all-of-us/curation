@@ -125,12 +125,8 @@ def validate_hpo_files(hpo_id):
     _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
     _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
 
-    run_achilles_flag = all_required_files_loaded(hpo_id)
-    if run_achilles_flag:
-        run_achilles(hpo_id)
-        run_export(hpo_id)
-    else:
-        logging.info('Submission incomplete. Bypassing achilles reports.')
+    run_achilles(hpo_id)
+    run_export(hpo_id)
 
     return '{"report-generator-status": "started"}'
 
