@@ -70,7 +70,7 @@ def run_achilles(hpo_id):
     """checks for full results and run achilles/heel
 
     :hpo_id: hpo on which to run achilles
-    :returns: success or not
+    :returns:
     """
     logging.info('running achilles for hpo_id %s' % hpo_id)
     achilles.create_tables(hpo_id, True)
@@ -103,55 +103,39 @@ def validate_hpo_files(hpo_id):
             unknown_files.append(bucket_item)
 
     errors = []
-    # (filename, found, parsed, loaded) for each expected cdm file
-    cdm_file_result_map = {}
-    for cdm_file in map(lambda f: f['name'], found_cdm_files):
-        # create a job to load table
-        cdm_file_name = cdm_file.split('.')[0]
-        logging.debug(' ---- validating cdm file {} ...'.format(cdm_file_name))
-        load_results = bq_utils.load_cdm_csv(hpo_id, cdm_file_name)
-        load_job_id = load_results['jobReference']['jobId']
-
-        time.sleep(BQ_LOAD_DELAY_SECONDS)
-        job_resource = bq_utils.get_job_details(job_id=load_job_id)
-        job_status = job_resource['status']
-
-        if job_status['state'] == 'DONE':
-            if 'errorResult' in job_status:
-                # logging.info("file {} has errors  {}".format'.format(item['message'](cdm_file, job_status['errors']))
-                error_messages = ['{}'.format(item['message'], item['location']) for item in job_status['errors']]
-                errors.append((cdm_file, ' || '.join(error_messages)))
-                cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 0, 'loaded': 0}
+    results = []
+    found_cdm_file_names = map(lambda f: f['name'], found_cdm_files)
+    for cdm_file_name in common.CDM_FILES:
+        found = parsed = loaded = 0
+        cdm_table_name = cdm_file_name.split('.')[0]
+        if cdm_file_name in found_cdm_file_names:
+            found = 1
+            load_results = bq_utils.load_cdm_csv(hpo_id, cdm_table_name)
+            load_job_id = load_results['jobReference']['jobId']
+            time.sleep(BQ_LOAD_DELAY_SECONDS)
+            job_resource = bq_utils.get_job_details(job_id=load_job_id)
+            job_status = job_resource['status']
+            if job_status['state'] == 'DONE':
+                if 'errorResult' in job_status:
+                    error_messages = ['{}'.format(item['message'], item['location']) for item in job_status['errors']]
+                    errors.append((cdm_file_name, ' || '.join(error_messages)))
+                else:
+                    parsed = loaded = 1
             else:
-                cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 1, 'loaded': 1}
+                logging.info("Wait timeout exceeded before load job with id '%s' was done" % load_job_id)
         else:
-            cdm_file_result_map[cdm_file] = {'found': 1, 'parsed': 0, 'loaded': 0}
-            logging.info("Wait timeout exceeded before load job with id '%s' was done" % load_job_id)
-            # print "Wait timeout exceeded before load job with id '%s' was done" % load_job_id
+            # load empty table
+            table_id = bq_utils.get_table_id(hpo_id, cdm_table_name)
+            bq_utils.create_standard_table(cdm_table_name, table_id, drop_existing=True)
+        results.append((cdm_file_name, found, parsed, loaded))
 
     # (filename, message) for each unknown file
     warnings = [
         (unknown_file['name'], UNKNOWN_FILE) for unknown_file in unknown_files
     ]
 
-    # TODO consider the order files are validated
-    load_results = []
-    cdm_files_ordered = [cdm_file for cdm_file in common.REQUIRED_FILES]
-    for cdm_file in common.CDM_FILES:
-        if cdm_file in common.REQUIRED_FILES:
-            continue
-        cdm_files_ordered.append(cdm_file)
-
-    for cdm_file in cdm_files_ordered:
-        if cdm_file in cdm_file_result_map:
-            load_result = cdm_file_result_map[cdm_file]
-            load_results.append((cdm_file, load_result['found'], load_result['parsed'], load_result['loaded']))
-        else:
-            if cdm_file in common.REQUIRED_FILES:
-                load_results.append((cdm_file, 0, 0, 0))
-
     # output to GCS
-    _save_result_in_gcs(bucket, RESULT_CSV, load_results)
+    _save_result_in_gcs(bucket, RESULT_CSV, results)
     _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
     _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
 
