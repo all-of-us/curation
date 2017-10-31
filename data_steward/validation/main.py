@@ -27,18 +27,12 @@ app = Flask(__name__)
 
 def check_results_for_include_list(hpo_id):
     result_file = gcs_utils.get_object(gcs_utils.get_hpo_bucket(hpo_id), common.RESULT_CSV)
-
     result_file = StringIO.StringIO(result_file)
     result_items = resources._csv_file_to_list(result_file)
-
-    count = 0
     for item in result_items:
         if item['cdm_file_name'] in common.INCLUDE_FILES:
             if item['loaded'] != '1':
                 return False
-            count = count + 1
-    if count < 6:
-        return False
     return True
 
 
@@ -57,7 +51,7 @@ class DataError(RuntimeError):
 
 
 def run_export(hpo_id):
-
+    results = []
     logging.info('running export for hpo_id %s' % hpo_id)
     # TODO : add check for required tables
     hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
@@ -66,9 +60,9 @@ def run_export(hpo_id):
         result = export.export_from_path(sql_path, hpo_id)
         content = json.dumps(result)
         fp = StringIO.StringIO(content)
-        gcs_utils.upload_object(hpo_bucket, export_name + '.json', fp)
-
-    return '{"export-status": "Done"}'
+        result = gcs_utils.upload_object(hpo_bucket, export_name + '.json', fp)
+        results.append(result)
+    return results
 
 
 @api_util.auth_required_cron
@@ -77,33 +71,18 @@ def run_achilles(hpo_id):
 
     :hpo_id: hpo on which to run achilles
     :returns: success or not
-
     """
+    logging.info('running achilles for hpo_id %s' % hpo_id)
+    achilles.create_tables(hpo_id, True)
+    achilles.load_analyses(hpo_id)
+    achilles.run_analyses(hpo_id=hpo_id)
 
-    # for cdm_table in common.CDM_TABLES:
-    #     # cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
-    #     if cdm_table not in common.INCLUDE_LIST:
-    #         fp = StringIO.StringIO('dummy\n')
-    #         gcs_utils.upload_object(gcs_utils.get_hpo_bucket(hpo_id), cdm_table + '.csv', fp)
-    #         bq_utils.load_cdm_csv(hpo_id, cdm_table)
+    time.sleep(1)
 
-    run_achilles_flag = check_results_for_include_list(hpo_id)
-
-    if run_achilles_flag:
-        logging.info('running achilles for hpo_id %s' % hpo_id)
-        achilles.create_tables(hpo_id, True)
-        achilles.load_analyses(hpo_id)
-        achilles.run_analyses(hpo_id=hpo_id)
-
-        time.sleep(1)
-
-        logging.info('running achilles_heel for hpo_id %s' % hpo_id)
-        achilles_heel.create_tables(hpo_id, True)
-        achilles_heel.run_heel(hpo_id=hpo_id)
-
-        logging.info(run_export(hpo_id))
-
-    return '{"achilles-run-status": "done"}'
+    logging.info('running achilles_heel for hpo_id %s' % hpo_id)
+    achilles_heel.create_tables(hpo_id, True)
+    achilles_heel.run_heel(hpo_id=hpo_id)
+    run_export(hpo_id)
 
 
 @api_util.auth_required_cron
@@ -176,7 +155,11 @@ def validate_hpo_files(hpo_id):
     _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
     _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
 
-    logging.info(run_achilles(hpo_id))
+    run_achilles_flag = check_results_for_include_list(hpo_id)
+    if run_achilles_flag:
+        run_achilles(hpo_id)
+    else:
+        logging.info('Submission incomplete. Bypassing achilles reports.')
 
     return '{"report-generator-status": "started"}'
 
@@ -248,19 +231,3 @@ app.add_url_rule(
     endpoint='validate_hpo_files',
     view_func=validate_hpo_files,
     methods=['GET'])
-
-
-'''
-app.add_url_rule(
-    PREFIX + 'RunAchilles/<string:hpo_id>',
-    endpoint='run_achilles',
-    view_func=run_achilles,
-    methods=['GET'])
-
-
-app.add_url_rule(
-    PREFIX + 'RunExport/<string:hpo_id>',
-    endpoint='export_json_for_achilles',
-    view_func=run_export,
-    methods=['GET'])
-'''
