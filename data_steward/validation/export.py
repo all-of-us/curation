@@ -81,11 +81,7 @@ def query_result_to_payload(qr):
     :return:
     """
     result = dict()
-    rows = None
-    if int(qr['totalRows']) > 0:
-        rows = qr['rows']
-    else:
-        return dict()
+    rows = qr['rows'] if int(qr['totalRows']) > 0 else []
     fields = qr['schema']['fields']
     field_count = len(fields)
     for i in range(0, field_count):
@@ -93,5 +89,4 @@ def query_result_to_payload(qr):
         key = field['name'].upper()
         values = map(lambda r: r['f'][i]['v'], rows)
         result[key] = values
-    print result
     return result
