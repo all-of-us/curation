@@ -36,20 +36,6 @@ def all_required_files_loaded(hpo_id):
     return True
 
 
-class DataError(RuntimeError):
-    """Bad sample data during import.
-
-  Args:
-    msg: Passed through to superclass.
-    external: If True, this error should be reported to external partners (HPO). Externally
-        reported DataErrors are only reported if HPO recipients are in the config.
-  """
-
-    def __init__(self, msg, external=False):
-        super(DataError, self).__init__(msg)
-        self.external = external
-
-
 def run_export(hpo_id):
     results = []
     logging.info('running export for hpo_id %s' % hpo_id)
@@ -82,7 +68,6 @@ def run_achilles(hpo_id):
     logging.info('running achilles_heel for hpo_id %s' % hpo_id)
     achilles_heel.create_tables(hpo_id, True)
     achilles_heel.run_heel(hpo_id=hpo_id)
-    run_export(hpo_id)
 
 
 @api_util.auth_required_cron
@@ -127,7 +112,8 @@ def validate_hpo_files(hpo_id):
             # load empty table
             table_id = bq_utils.get_table_id(hpo_id, cdm_table_name)
             bq_utils.create_standard_table(cdm_table_name, table_id, drop_existing=True)
-        results.append((cdm_file_name, found, parsed, loaded))
+        if cdm_file_name in common.REQUIRED_FILES or found:
+            results.append((cdm_file_name, found, parsed, loaded))
 
     # (filename, message) for each unknown file
     warnings = [
@@ -142,6 +128,7 @@ def validate_hpo_files(hpo_id):
     run_achilles_flag = all_required_files_loaded(hpo_id)
     if run_achilles_flag:
         run_achilles(hpo_id)
+        run_export(hpo_id)
     else:
         logging.info('Submission incomplete. Bypassing achilles reports.')
 
