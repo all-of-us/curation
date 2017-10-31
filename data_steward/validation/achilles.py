@@ -71,8 +71,6 @@ def run_analyses(hpo_id):
             table_id = sql_wrangle.get_truncate_table_name(command)
             if bq_utils.table_exists(table_id):
                 bq_utils.delete_table(table_id)
-            # query = 'DELETE FROM %s WHERE TRUE' % table_id
-            # bq_utils.query(query)
         elif sql_wrangle.is_drop(command):
             table_id = sql_wrangle.get_drop_table_name(command)
             if bq_utils.table_exists(table_id):
