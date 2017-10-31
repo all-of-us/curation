@@ -25,12 +25,12 @@ PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
 
-def check_results_for_include_list(hpo_id):
+def all_required_files_loaded(hpo_id):
     result_file = gcs_utils.get_object(gcs_utils.get_hpo_bucket(hpo_id), common.RESULT_CSV)
     result_file = StringIO.StringIO(result_file)
     result_items = resources._csv_file_to_list(result_file)
     for item in result_items:
-        if item['cdm_file_name'] in common.INCLUDE_FILES:
+        if item['cdm_file_name'] in common.REQUIRED_FILES:
             if item['loaded'] != '1':
                 return False
     return True
@@ -136,9 +136,9 @@ def validate_hpo_files(hpo_id):
 
     # TODO consider the order files are validated
     load_results = []
-    cdm_files_ordered = [cdm_file for cdm_file in common.INCLUDE_FILES]
+    cdm_files_ordered = [cdm_file for cdm_file in common.REQUIRED_FILES]
     for cdm_file in common.CDM_FILES:
-        if cdm_file in common.INCLUDE_FILES:
+        if cdm_file in common.REQUIRED_FILES:
             continue
         cdm_files_ordered.append(cdm_file)
 
@@ -147,7 +147,7 @@ def validate_hpo_files(hpo_id):
             load_result = cdm_file_result_map[cdm_file]
             load_results.append((cdm_file, load_result['found'], load_result['parsed'], load_result['loaded']))
         else:
-            if cdm_file in common.INCLUDE_FILES:
+            if cdm_file in common.REQUIRED_FILES:
                 load_results.append((cdm_file, 0, 0, 0))
 
     # output to GCS
@@ -155,7 +155,7 @@ def validate_hpo_files(hpo_id):
     _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
     _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
 
-    run_achilles_flag = check_results_for_include_list(hpo_id)
+    run_achilles_flag = all_required_files_loaded(hpo_id)
     if run_achilles_flag:
         run_achilles(hpo_id)
     else:
