@@ -2,7 +2,6 @@ import resources
 import os
 import bq_utils
 import re
-import time
 import sql_wrangle
 import logging
 
@@ -74,8 +73,13 @@ def run_heel(hpo_id):
         if sql_wrangle.is_to_temp_table(command):
             table_id = sql_wrangle.get_temp_table_name(command)
             query = sql_wrangle.get_temp_table_query(command)
-            bq_utils.query(query, False, table_id)
-            time.sleep(6)
+            insert_query_job_result = bq_utils.query(query, False, table_id)
+            query_job_id = insert_query_job_result['jobReference']['jobId']
+
+            success_flag = bq_utils.wait_on_jobs([query_job_id], retry_count=20)
+            if not success_flag:
+                logging.critical('tempresults doesnt get created in 20 secs')
+                raise RuntimeError('Tempresults taking too long to create')
         elif sql_wrangle.is_truncate(command):
             table_id = sql_wrangle.get_truncate_table_name(command)
             query = 'DELETE FROM %s WHERE TRUE' % table_id
@@ -85,7 +89,6 @@ def run_heel(hpo_id):
             bq_utils.delete_table(table_id)
         else:
             bq_utils.query(command)
-        time.sleep(0.1)
 
 
 def create_tables(hpo_id, drop_existing=False):

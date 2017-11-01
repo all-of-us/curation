@@ -97,10 +97,12 @@ def validate_hpo_files(hpo_id):
             found = 1
             load_results = bq_utils.load_cdm_csv(hpo_id, cdm_table_name)
             load_job_id = load_results['jobReference']['jobId']
-            time.sleep(BQ_LOAD_DELAY_SECONDS)
-            job_resource = bq_utils.get_job_details(job_id=load_job_id)
-            job_status = job_resource['status']
-            if job_status['state'] == 'DONE':
+
+            success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_LOAD_DELAY_SECONDS)
+
+            if success_flag:
+                job_resource = bq_utils.get_job_details(job_id=load_job_id)
+                job_status = job_resource['status']
                 if 'errorResult' in job_status:
                     error_messages = ['{}'.format(item['message'], item['location']) for item in job_status['errors']]
                     errors.append((cdm_file_name, ' || '.join(error_messages)))

@@ -131,6 +131,28 @@ def table_exists(table_id):
         return False
 
 
+def wait_on_jobs(job_ids, retry_count=30, poll_interval=1):
+    job_count = len(job_ids)
+    print 'Waiting on {} jobs ... '.format(job_count)
+
+    done_flag = False
+    retries = 0
+    while not done_flag and retries < retry_count:
+        time.sleep(poll_interval)
+        retries = 1
+        done_flag = True
+
+        job_details_list = [get_job_details(job_id) for job_id in job_ids]
+        for job_details in job_details_list:
+            job_status = job_details['status']
+            if job_status['state'] != 'DONE':
+                done_flag = False
+
+    if not done_flag:
+        return False
+    return True
+
+
 def get_job_details(job_id):
     """Get job resource corresponding to job_id
     :param job_id: id of the job to get (i.e. `jobReference.jobId` in response body of insert request)
@@ -178,12 +200,10 @@ def merge_tables(source_dataset_id,
     insert_result = bq_service.jobs().insert(projectId=app_id,
                                              body=job_body).execute()
     job_id = insert_result['jobReference']['jobId']
+    success_flag = wait_on_jobs([job_id], retry_count=BQ_QUERY_DELAY_SECONDS)
 
-    time.sleep(BQ_LOAD_DELAY_SECONDS)
-
-    job_status = get_job_details(job_id)['status']
-
-    if job_status['state'] == 'DONE':
+    if success_flag:
+        job_status = get_job_details(job_id)['status']
         if 'errorResult' in job_status:
             error_messages = ['{}'.format(item['message'])
                               for item in job_status['errors']]
@@ -219,8 +239,9 @@ def query_table(query_string):
     insert_result = bq_service.jobs().insert(projectId=app_id,
                                              body=job_body).execute()
     job_id = insert_result['jobReference']['jobId']
-    time.sleep(BQ_QUERY_DELAY_SECONDS)
-
+    success_flag = wait_on_jobs([job_id], retry_count=BQ_QUERY_DELAY_SECONDS)
+    if not success_flag:
+        return None
     query_result = bq_service.jobs().getQueryResults(projectId=app_id,
                                                      jobId=job_id).execute()
     return query_result
@@ -232,7 +253,8 @@ def query(q, use_legacy_sql=False, destination_table_id=None):
     :param q: SQL statement
     :param use_legacy_sql: True if using legacy syntax, False by default
     :param destination_table_id: if set, output is saved in a table with the specified id
-    :return: if destination_table_id is supplied then job info, otherwise job query response (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
+    :return: if destination_table_id is supplied then job info, otherwise job query response
+             (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
     """
     bq_service = create_service()
     app_id = app_identity.get_application_id()
