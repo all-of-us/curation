@@ -10,10 +10,10 @@ from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
 from test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_CSV
 from test_util import PITT_FIVE_PERSONS_PERSON_CSV
 import test_util
-import time
+# import time
 
 PERSON = 'person'
-BQ_TIMEOUT_SECONDS = 5
+BQ_TIMEOUT_RETRIES = 3
 
 
 class BqUtilsTest(unittest.TestCase):
@@ -58,8 +58,14 @@ class BqUtilsTest(unittest.TestCase):
         hpo_bucket = self.hpo_bucket
         gcs_object_path = 'gs://%(hpo_bucket)s/%(csv_file_name)s' % locals()
         dataset_id = bq_utils.get_dataset_id()
-        result = bq_utils.load_csv(schema_path, gcs_object_path, app_id, dataset_id, table_name)
-        time.sleep(BQ_TIMEOUT_SECONDS)
+        load_results = bq_utils.load_csv(schema_path, gcs_object_path, app_id, dataset_id, table_name)
+
+        load_job_id = load_results['jobReference']['jobId']
+        success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        if not success_flag:
+            print 'loading table {} timed out'.format(table_name)
+            self.assertTrue(False)
+
         query_response = bq_utils.query('SELECT COUNT(1) FROM %(table_name)s' % locals())
         self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
 
@@ -68,8 +74,14 @@ class BqUtilsTest(unittest.TestCase):
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
-        time.sleep(BQ_TIMEOUT_SECONDS)
+
+        load_job_id = result['jobReference']['jobId']
         table_id = result['configuration']['load']['destinationTable']['tableId']
+        success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        if not success_flag:
+            print 'loading table {} timed out'.format(table_id)
+            self.assertTrue(False)
+
         query_response = bq_utils.query('SELECT 1 FROM %(table_id)s' % locals())
         self.assertEqual(query_response['totalRows'], '5')
 
@@ -80,8 +92,12 @@ class BqUtilsTest(unittest.TestCase):
     def test_query_result(self):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
-        bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
-        time.sleep(BQ_TIMEOUT_SECONDS)
+        result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
+
+        load_job_id = result['jobReference']['jobId']
+        success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        if not success_flag:
+            print 'loading table {} timed out'.format(PERSON)
 
         table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)
         q = 'SELECT person_id FROM %s' % table_id
@@ -89,12 +105,16 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(5, int(result['totalRows']))
 
     def test_merge_with_good_data(self):
+        running_jobs = []
         with open(NYC_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'person.csv', fp)
-        bq_utils.load_cdm_csv('nyc', 'person')
+        result = bq_utils.load_cdm_csv('nyc', 'person')
+        running_jobs.append(result['jobReference']['jobId'])
+
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
-        bq_utils.load_cdm_csv('pitt', 'person')
+        result = bq_utils.load_cdm_csv('pitt', 'person')
+        running_jobs.append(result['jobReference']['jobId'])
 
         nyc_person_ids = [int(row['person_id'])
                           for row in
@@ -106,7 +126,9 @@ class BqUtilsTest(unittest.TestCase):
         expected_result = nyc_person_ids + pitt_person_ids
         expected_result.sort()
 
-        time.sleep(5)
+        success_flag = bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
+        if not success_flag:
+            print 'loading tables {},{} timed out'.format('nyc_person', 'pitt_person')
 
         table_ids = ['nyc_person', 'pitt_person']
         success_flag, error = bq_utils.merge_tables(bq_utils.get_dataset_id(),
@@ -139,14 +161,20 @@ class BqUtilsTest(unittest.TestCase):
         assert(not success_flag)
 
     def test_merge_with_unmatched_schema(self):
+        running_jobs = []
         with open(NYC_FIVE_PERSONS_MEASUREMENT_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'measurement.csv', fp)
-        bq_utils.load_cdm_csv('nyc', 'measurement')
+        result = bq_utils.load_cdm_csv('nyc', 'measurement')
+        running_jobs.append(result['jobReference']['jobId'])
+
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
-        bq_utils.load_cdm_csv('pitt', 'person')
+        result = bq_utils.load_cdm_csv('pitt', 'person')
+        running_jobs.append(result['jobReference']['jobId'])
 
-        time.sleep(5)
+        success_flag = bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
+        if not success_flag:
+            print 'loading tables {},{} timed out'.format('nyc_measurement', 'pitt_person')
 
         table_names = ['nyc_measurement', 'pitt_person']
         success_flag, error = bq_utils.merge_tables(

@@ -3,7 +3,6 @@ import unittest
 import os
 import StringIO
 
-import time
 from google.appengine.ext import testbed
 
 import bq_utils
@@ -18,7 +17,7 @@ import test_util
 
 ACHILLES_HEEL_RESULTS_COUNT = 24
 ACHILLES_RESULTS_DERIVED_COUNT = 282
-BQ_TIMEOUT_SECONDS = 5
+BQ_TIMEOUT_RETRIES = 3
 
 
 class AchillesHeelTest(unittest.TestCase):
@@ -69,6 +68,7 @@ class AchillesHeelTest(unittest.TestCase):
         table_id = bq_utils.get_table_id(FAKE_HPO_ID, achilles.ACHILLES_ANALYSIS)
         bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
 
+        running_jobs = []
         for table_name in [achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST]:
             schema_file_name = table_name + '.json'
             schema_path = os.path.join(resources.fields_path, schema_file_name)
@@ -78,8 +78,10 @@ class AchillesHeelTest(unittest.TestCase):
             gcs_path = 'gs://' + self.hpo_bucket + '/' + test_file_name
             dataset_id = bq_utils.get_dataset_id()
             table_id = bq_utils.get_table_id(FAKE_HPO_ID, table_name)
-            bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
-        time.sleep(BQ_TIMEOUT_SECONDS)
+            load_results = bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
+            running_jobs.append(load_results['jobReference']['jobId'])
+
+        bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
 
     def test_heel_analyses(self):
         # Long-running test

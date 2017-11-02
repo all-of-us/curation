@@ -81,7 +81,7 @@ def query_result_to_payload(qr):
     :return:
     """
     result = dict()
-    rows = qr['rows']
+    rows = qr['rows'] if int(qr['totalRows']) > 0 else []
     fields = qr['schema']['fields']
     field_count = len(fields)
     for i in range(0, field_count):

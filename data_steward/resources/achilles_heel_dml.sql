@@ -24,33 +24,32 @@ where analysis_id in(1805,705,605,805,405)  group by  4, 2 ;
     insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
      select  sum(count_value) as statistic_value, concat(concat('ach_', cast(analysis_id  as string) ), ':GlobalRowCnt' )as measure_id
       from  synpuf_100.achilles_results
-    where analysis_id in (401,601,701,801,1801)  group by  2 ;
+    where analysis_id in (401,601,701,801,1801)  group by  2 
 
+UNION ALL
 --concept_0 global row  Counts per domain
 --this is numerator for percentage value of unmapped rows (per domain)
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+-- insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
     select  count_value as statistic_value, concat(concat('UnmappedData:ach_', cast(analysis_id  as string) ), ':GlobalRowCnt' )as measure_id
      from  synpuf_100.achilles_results
     --TODO:stratum_1 is varchar and this comparison may fail on some db engines
     --indeed, mysql got error, changed to a string comparison
     where analysis_id in (401,601,701,801,1801) and stratum_1 = '0'
-    ;
+--    ;
 
 
 
 --iris measures by percentage
 --for this part, derived table is trying to adopt DQI terminolgy
 --and generalize analysis naming scheme (and generalize the DQ rules)
-
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
+-- insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
 select  100.0*count_value/(select  count_value as total_pts  from  synpuf_100.achilles_results r where analysis_id =1) as statistic_value, concat(concat('ach_', cast(analysis_id  as string) ), ':Percentage' )as measure_id
    from  synpuf_100.achilles_results
 
-  where analysis_id in (2000,2001,2002,2003);
-
-
-
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+  where analysis_id in (2000,2001,2002,2003)
+UNION ALL
+-- insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
     select  sum(count_value) as statistic_value, 'Visit:InstanceCnt' as measure_id
   from  synpuf_100.achilles_results where analysis_id = 201;
 
@@ -68,61 +67,61 @@ insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
 select  count(*) as statistic_value, 'AgeAtFirstObsByDecile:DecileCnt' as measure_id
  from  synpuf_100.achilles_results_derived
 where measure_id = 'AgeAtFirstObsByDecile:PersonCnt'
-and cast(stratum_1  as int64) <=8;
+and cast(stratum_1  as int64) <=8
 
 
 --data density measures
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'DrugExposure:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 701;
+ from  synpuf_100.achilles_results where analysis_id = 701
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'DrugEra:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 901;
+ from  synpuf_100.achilles_results where analysis_id = 901
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Condition:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 401;
+ from  synpuf_100.achilles_results where analysis_id = 401
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Procedure:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 601;
+ from  synpuf_100.achilles_results where analysis_id = 601
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Observation:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 801;
+ from  synpuf_100.achilles_results where analysis_id = 801
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Measurement:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 1801;
+ from  synpuf_100.achilles_results where analysis_id = 1801
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Visit:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 201;
+ from  synpuf_100.achilles_results where analysis_id = 201
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Death:DeathType:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 505;
+ from  synpuf_100.achilles_results where analysis_id = 505
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Death:DeathCause:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 501;
+ from  synpuf_100.achilles_results where analysis_id = 501
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Person:Race:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 4;
+ from  synpuf_100.achilles_results where analysis_id = 4
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Person:Ethnicity:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 5;
+ from  synpuf_100.achilles_results where analysis_id = 5
 
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Device:ConceptCnt' as measure_id
- from  synpuf_100.achilles_results where analysis_id = 2101;
+ from  synpuf_100.achilles_results where analysis_id = 2101
 
-insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
+UNION ALL
 select  count(*) as statistic_value, 'Note:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 2201;
 
@@ -149,11 +148,11 @@ insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measu
 select  decade as stratum_1, temp_cnt as statistic_value, 'Death:byDecade:SafePatientCnt' as measure_id
  from
    ( select  SUBSTR(stratum_1,0,3) as decade, sum(count_value) as temp_cnt   from  synpuf_100.achilles_results where analysis_id = 504   group by  1 )a
-where temp_cnt >= 11;
+where temp_cnt >= 11
 
 
-
-insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
+UNION ALL
+-- insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
 select  stratum_1, temp_cnt as statistic_value, 'Death:byYear:SafePatientCnt' as measure_id
  from
    ( select  stratum_1, sum(count_value) as temp_cnt   from  synpuf_100.achilles_results where analysis_id = 504   group by  1 )a
@@ -177,11 +176,12 @@ where a.person_cnt >= 11;
 --size of Achilles Metadata
 insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
  select  cast(analysis_id as string) as stratum_1, COUNT(*) as statistic_value, 'Achilles:byAnalysis:RowCnt' as measure_id
-  from  synpuf_100.achilles_results  group by  1 ;
+  from  synpuf_100.achilles_results  group by  1 
+--;
 
-
+UNION ALL
 --General Population Only: ratio of born to deceased (indicates missing birth or death events) stratified by year
-insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
+-- insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
 select  a.stratum_1, 1.0*a.born_cnt/b.died_cnt as statistic_value, 'Death:BornDeceasedRatio' as measure_id
  from  (select  stratum_1, count_value as born_cnt  from  synpuf_100.achilles_results where analysis_id = 3) a
 inner join
@@ -268,15 +268,15 @@ where or1.analysis_id in (
 		1601,
 		1701
 		) --all explicit counts of data anamolies
-	and or1.count_value > 0;
-
+	and or1.count_value > 0
+UNION ALL
 --ruleid 2 distributions where min should not be negative
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select distinct  ord1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(ord1.analysis_id  as string) ), ' - ' ), oa1.analysis_name ), ' (count = ' ), cast(COUNT(ord1.min_value)  as string) ), '); min value should not be negative' )as achilles_heel_warning, 2 as rule_id, COUNT(ord1.min_value) as record_count
   from  synpuf_100.achilles_results_dist ord1
 inner join synpuf_100.achilles_analysis oa1
@@ -316,15 +316,15 @@ where ord1.analysis_id in (
 		1608
 		)
 	and ord1.min_value < 0
-	 group by  ord1.analysis_id, oa1.analysis_name ;
-
+	 group by  ord1.analysis_id, oa1.analysis_name
+UNION ALL
 --ruleid 3 death distributions where max should not be positive
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--)
  select distinct  ord1.analysis_id, concat(concat(concat(concat(concat(concat('WARNING: ' , cast(ord1.analysis_id  as string) ), '-' ), oa1.analysis_name ), ' (count = ' ), cast(COUNT(ord1.max_value)  as string) ), '); max value should not be positive, otherwise its a zombie with data >1mo after death ' )as achilles_heel_warning, 3 as rule_id, COUNT(ord1.max_value) as record_count
   from  synpuf_100.achilles_results_dist ord1
 inner join synpuf_100.achilles_analysis oa1
@@ -337,15 +337,16 @@ where ord1.analysis_id in (
 		515
 		)
 	and ord1.max_value > 30
- group by  ord1.analysis_id, oa1.analysis_name ;
-
---ruleid 4 CDM-conformance rule: invalid concept_id
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-)
+ group by  ord1.analysis_id, oa1.analysis_name 
+    UNION ALL
+-- 
+-- --ruleid 4 CDM-conformance rule: invalid concept_id
+-- insert into synpuf_100.achilles_heel_results (
+-- 	analysis_id,
+-- 	achilles_heel_warning,
+-- 	rule_id,
+-- 	record_count
+-- )
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in vocabulary' )as achilles_heel_warning, 4 as rule_id, COUNT(distinct stratum_1) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -371,18 +372,18 @@ where or1.analysis_id in (
 		)
 	and or1.stratum_1 is not null
 	and c1.concept_id is null
- group by  or1.analysis_id, oa1.analysis_name ;
-
---ruleid 5 CDM-conformance rule:invalid type concept_id
---this rule is only checking that the concept is valid (joins to concept table at all)
---it does not check the vocabulary_id to further restrict the scope of the valid concepts
---to only include,for example, death types
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
+----ruleid 5 CDM-conformance rule:invalid type concept_id
+----this rule is only checking that the concept is valid (joins to concept table at all)
+----it does not check the vocabulary_id to further restrict the scope of the valid concepts
+----to only include,for example, death types
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_2)  as string) ), ' concepts in data are not in vocabulary' )as achilles_heel_warning, 5 as rule_id, COUNT(distinct stratum_2) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -398,15 +399,15 @@ where or1.analysis_id in (
 		)
 	and or1.stratum_2 is not null
 	and c1.concept_id is null
- group by  or1.analysis_id, oa1.analysis_name ;
-
---ruleid 6 CDM-conformance rule:invalid concept_id
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
+----ruleid 6 CDM-conformance rule:invalid concept_id
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat('WARNING: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; data with unmapped concepts' )as achilles_heel_warning, 6 as rule_id, null as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -429,16 +430,16 @@ where or1.analysis_id in (
 		1610
 		)
 	and or1.stratum_1 = '0'
- group by  or1.analysis_id, oa1.analysis_name ;
-
---concept from the wrong vocabulary
---ruleid 7 CDM-conformance rule:gender  - 12 HL7
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
+----concept from the wrong vocabulary
+----ruleid 7 CDM-conformance rule:gender  - 12 HL7
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in correct vocabulary' )as achilles_heel_warning, 7 as rule_id, COUNT(distinct stratum_1) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -449,15 +450,15 @@ where or1.analysis_id in (2)
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
   and lower(c1.domain_id) not in ('gender')
- group by  or1.analysis_id, oa1.analysis_name ;
-
---ruleid 8 race  - 13 CDC Race
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
+----ruleid 8 race  - 13 CDC Race
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in correct vocabulary' )as achilles_heel_warning, 8 as rule_id, COUNT(distinct stratum_1) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -468,15 +469,15 @@ where or1.analysis_id in (4)
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
   and lower(c1.domain_id) not in ('race')
- group by  or1.analysis_id, oa1.analysis_name ;
-
---ruleid 9 ethnicity - 44 ethnicity
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
+----ruleid 9 ethnicity - 44 ethnicity
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in correct vocabulary (CMS Ethnicity)' )as achilles_heel_warning, 9 as rule_id, COUNT(distinct stratum_1) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -487,15 +488,15 @@ where or1.analysis_id in (5)
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
   and lower(c1.domain_id) not in ('ethnicity')
- group by  or1.analysis_id, oa1.analysis_name ;
-
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
 --ruleid 10 place of service - 14 CMS place of service, 24 OMOP visit
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in correct vocabulary' )as achilles_heel_warning, 10 as rule_id, COUNT(distinct stratum_1) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -506,15 +507,15 @@ where or1.analysis_id in (202)
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
   and lower(c1.domain_id) not in ('visit')
- group by  or1.analysis_id, oa1.analysis_name ;
-
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
 --ruleid 11 CDM-conformance rule:specialty - 48 specialty
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in correct vocabulary (Specialty)' )as achilles_heel_warning, 11 as rule_id, COUNT(distinct stratum_1) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -525,15 +526,15 @@ where or1.analysis_id in (301)
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
   and lower(c1.domain_id) not in ('provider specialty')
- group by  or1.analysis_id, oa1.analysis_name ;
-
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
 --ruleid 12 condition occurrence, era - 1 SNOMED
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in correct vocabulary' )as achilles_heel_warning, 12 as rule_id, COUNT(distinct stratum_1) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -547,15 +548,15 @@ where or1.analysis_id in (
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
   and lower(c1.domain_id) not in ('condition','condition/drug', 'condition/meas', 'condition/obs', 'condition/procedure')
- group by  or1.analysis_id, oa1.analysis_name ;
-
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
 --ruleid 13 drug exposure - 8 RxNorm
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in correct vocabulary' )as achilles_heel_warning, 13 as rule_id, COUNT(distinct stratum_1) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -569,15 +570,15 @@ where or1.analysis_id in (
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
   and lower(c1.domain_id) not in ('drug','condition/drug', 'device/drug', 'drug/measurement', 'drug/obs', 'drug/procedure')
- group by  or1.analysis_id, oa1.analysis_name ;
-
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
 --ruleid 14 procedure - 4 CPT4/5 HCPCS/3 ICD9P
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in correct vocabulary' )as achilles_heel_warning, 14 as rule_id, COUNT(distinct stratum_1) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -588,8 +589,8 @@ where or1.analysis_id in (600)
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
   and lower(c1.domain_id) not in ('procedure','condition/procedure', 'device/procedure', 'drug/procedure', 'obs/procedure')
- group by  or1.analysis_id, oa1.analysis_name ;
-
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
 --15 observation  - 6 LOINC
 
 --NOT APPLICABLE IN CDMv5
@@ -600,12 +601,12 @@ where or1.analysis_id in (600)
 --NOT APPLICABLE IN CDMV5
 
 --ruleid 17 revenue code - 43 revenue code
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in correct vocabulary (revenue code)' )as achilles_heel_warning, 17 as rule_id, COUNT(distinct stratum_1) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -616,16 +617,15 @@ where or1.analysis_id in (1610)
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
   and lower(c1.domain_id) not in ('revenue code')
- group by  or1.analysis_id, oa1.analysis_name ;
-
-
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
 --ruleid 18 ERROR:  year of birth in the future
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; should not have year of birth in the future, (n=' ), cast(sum(or1.count_value)  as string) ), ')' )as achilles_heel_warning, 18 as rule_id, sum(or1.count_value) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -633,16 +633,15 @@ inner join synpuf_100.achilles_analysis oa1
 where or1.analysis_id in (3)
 	and cast(or1.stratum_1  as int64) > EXTRACT(YEAR from CURRENT_DATE())
 	and or1.count_value > 0
- group by  or1.analysis_id, oa1.analysis_name ;
-
-
+ group by  or1.analysis_id, oa1.analysis_name 
+UNION ALL
 --ruleid 19 WARNING:  year of birth < 1800
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; should not have year of birth < 1800, (n=' ), cast(sum(or1.count_value)  as string) ), ')' )as achilles_heel_warning, 19 as rule_id, sum(or1.count_value) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -650,15 +649,16 @@ inner join synpuf_100.achilles_analysis oa1
 where or1.analysis_id in (3)
 	and cast(or1.stratum_1  as int64) < 1800
 	and or1.count_value > 0
- group by  or1.analysis_id, oa1.analysis_name ;
+ group by  or1.analysis_id, oa1.analysis_name
+UNION ALL
 
 --ruleid 20 ERROR:  age < 0
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; should not have age < 0, (n=' ), cast(sum(or1.count_value)  as string) ), ')' )as achilles_heel_warning, 20 as rule_id, sum(or1.count_value) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -666,15 +666,16 @@ inner join synpuf_100.achilles_analysis oa1
 where or1.analysis_id in (101)
 	and cast(or1.stratum_1  as int64) < 0
 	and or1.count_value > 0
- group by  or1.analysis_id, oa1.analysis_name ;
+ group by  or1.analysis_id, oa1.analysis_name
+UNION ALL
 
 --ruleid 21 ERROR: age > 150  (TODO lower number seems more appropriate)
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+-- insert into synpuf_100.achilles_heel_results (
+-- 	analysis_id,
+-- 	achilles_heel_warning,
+-- 	rule_id,
+-- 	record_count
+-- 	)
  select  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; should not have age > 150, (n=' ), cast(sum(or1.count_value)  as string) ), ')' )as achilles_heel_warning, 21 as rule_id, sum(or1.count_value) as record_count
   from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -682,7 +683,7 @@ inner join synpuf_100.achilles_analysis oa1
 where or1.analysis_id in (101)
 	and cast(or1.stratum_1  as int64) > 150
 	and or1.count_value > 0
- group by  or1.analysis_id, oa1.analysis_name ;
+ group by  or1.analysis_id, oa1.analysis_name;
 
 --ruleid 22 WARNING:  monthly change > 100%
 insert into synpuf_100.achilles_heel_results (
@@ -741,45 +742,45 @@ where (
 		)
 	and 1.0 * abs(ar2.count_value - ar1.count_value) / ar1.count_value > 1
 	and ar1.count_value > 10
- group by  ar1.analysis_id, aa1.analysis_name ;
-
+ group by  ar1.analysis_id, aa1.analysis_name 
+UNION ALL
 --ruleid 24 WARNING: days_supply > 180
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+-- insert into synpuf_100.achilles_heel_results (
+-- 	analysis_id,
+-- 	achilles_heel_warning,
+-- 	rule_id,
+-- 	record_count
+-- 	)
  select distinct  ord1.analysis_id, concat(concat(concat(concat(concat(concat('WARNING: ' , cast(ord1.analysis_id  as string) ), '-' ), oa1.analysis_name ), ' (count = ' ), cast(COUNT(ord1.max_value)  as string) ), '); max value should not be > 180' )as achilles_heel_warning, 24 as rule_id, COUNT(ord1.max_value) as record_count
   from  synpuf_100.achilles_results_dist ord1
 inner join synpuf_100.achilles_analysis oa1
 	on ord1.analysis_id = oa1.analysis_id
 where ord1.analysis_id in (715)
 	and ord1.max_value > 180
- group by  ord1.analysis_id, oa1.analysis_name ;
-
+ group by  ord1.analysis_id, oa1.analysis_name 
+UNION ALL
 --ruleid 25 WARNING:  refills > 10
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+-- insert into synpuf_100.achilles_heel_results (
+-- 	analysis_id,
+-- 	achilles_heel_warning,
+-- 	rule_id,
+-- 	record_count
+-- 	)
  select distinct  ord1.analysis_id, concat(concat(concat(concat(concat(concat('WARNING: ' , cast(ord1.analysis_id  as string) ), '-' ), oa1.analysis_name ), ' (count = ' ), cast(COUNT(ord1.max_value)  as string) ), '); max value should not be > 10' )as achilles_heel_warning, 25 as rule_id, COUNT(ord1.max_value) as record_count
   from  synpuf_100.achilles_results_dist ord1
 inner join synpuf_100.achilles_analysis oa1
 	on ord1.analysis_id = oa1.analysis_id
 where ord1.analysis_id in (716)
 	and ord1.max_value > 10
- group by  ord1.analysis_id, oa1.analysis_name ;
-
+ group by  ord1.analysis_id, oa1.analysis_name 
+UNION ALL
 --ruleid 26 DQ rule: WARNING: quantity > 600
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
+-- insert into synpuf_100.achilles_heel_results (
+-- 	analysis_id,
+-- 	achilles_heel_warning,
+-- 	rule_id,
+-- 	record_count
+-- 	)
  select distinct  ord1.analysis_id, concat(concat(concat(concat(concat(concat('WARNING: ' , cast(ord1.analysis_id  as string) ), '-' ), oa1.analysis_name ), ' (count = ' ), cast(count(ord1.max_value)  as string) ), '); max value should not be > 600' )as achilles_heel_warning, 26 as rule_id, count(ord1.max_value) as record_count
   from  synpuf_100.achilles_results_dist ord1
 inner join synpuf_100.achilles_analysis oa1
@@ -802,21 +803,22 @@ where ord1.analysis_id in (717)
 --compute derived measure first
 insert into synpuf_100.achilles_results_derived (statistic_value,stratum_1,measure_id)
 select  100.0*(select  statistic_value  from  synpuf_100.achilles_results_derived where measure_id like 'UnmappedData:ach_401:GlobalRowCnt')/statistic_value as statistic_value, 'Condition' as stratum_1, 'UnmappedData:byDomain:Percentage' as measure_id
- from  synpuf_100.achilles_results_derived where measure_id ='ach_401:GlobalRowCnt';
+ from  synpuf_100.achilles_results_derived where measure_id ='ach_401:GlobalRowCnt'
+UNION ALL
 
-insert into synpuf_100.achilles_results_derived (statistic_value,stratum_1,measure_id)
+--insert into synpuf_100.achilles_results_derived (statistic_value,stratum_1,measure_id)
 select  100.0*(select  statistic_value  from  synpuf_100.achilles_results_derived where measure_id = 'UnmappedData:ach_601:GlobalRowCnt')/statistic_value as statistic_value, 'Procedure' as stratum_1, 'UnmappedData:byDomain:Percentage' as measure_id
- from  synpuf_100.achilles_results_derived where measure_id ='ach_601:GlobalRowCnt';
-
-insert into synpuf_100.achilles_results_derived (statistic_value,stratum_1,measure_id)
+ from  synpuf_100.achilles_results_derived where measure_id ='ach_601:GlobalRowCnt'
+UNION ALL
+-- insert into synpuf_100.achilles_results_derived (statistic_value,stratum_1,measure_id)
 select  100.0*(select  statistic_value  from  synpuf_100.achilles_results_derived where measure_id = 'UnmappedData:ach_701:GlobalRowCnt')/statistic_value as statistic_value, 'DrugExposure' as stratum_1, 'UnmappedData:byDomain:Percentage' as measure_id
- from  synpuf_100.achilles_results_derived where measure_id ='ach_701:GlobalRowCnt';
-
-insert into synpuf_100.achilles_results_derived (statistic_value,stratum_1,measure_id)
+ from  synpuf_100.achilles_results_derived where measure_id ='ach_701:GlobalRowCnt'
+UNION ALL
+-- insert into synpuf_100.achilles_results_derived (statistic_value,stratum_1,measure_id)
 select  100.0*(select  statistic_value  from  synpuf_100.achilles_results_derived where measure_id = 'UnmappedData:ach_801:GlobalRowCnt')/statistic_value as statistic_value, 'Observation' as stratum_1, 'UnmappedData:byDomain:Percentage' as measure_id
- from  synpuf_100.achilles_results_derived where measure_id ='ach_801:GlobalRowCnt';
-
-insert into synpuf_100.achilles_results_derived (statistic_value,stratum_1,measure_id)
+ from  synpuf_100.achilles_results_derived where measure_id ='ach_801:GlobalRowCnt'
+UNION ALL
+-- insert into synpuf_100.achilles_results_derived (statistic_value,stratum_1,measure_id)
 select  100.0*(select  statistic_value  from  synpuf_100.achilles_results_derived where measure_id = 'UnmappedData:ach_1801:GlobalRowCnt')/statistic_value as statistic_value, 'Measurement' as stratum_1, 'UnmappedData:byDomain:Percentage' as measure_id
  from  synpuf_100.achilles_results_derived where measure_id ='ach_1801:GlobalRowCnt';
 
@@ -941,24 +943,25 @@ select  'NOTIFICATION:[PLAUSIBILITY] database has too few providers defined (giv
  from  synpuf_100.achilles_results_derived d
 where d.measure_id = 'Provider:PatientProviderRatio'
 and d.statistic_value > 10000  --thresholds will be decided in the ongoing DQ-Study2
-;
+-- ;
+UNION ALL
 
 --rule32 DQ rule
 --uses iris: patients with at least one visit visit
 --does 100-THE IRIS MEASURE to check for percentage of patients with no visits
 
-insert into synpuf_100.achilles_heel_results (achilles_heel_warning,rule_id)
+-- insert into synpuf_100.achilles_heel_results (achilles_heel_warning,rule_id)
 select  'NOTIFICATION: Percentage of patients with no visits exceeds threshold' as achilles_heel_warning, 32 as rule_id
  from  synpuf_100.achilles_results_derived d
 where d.measure_id = 'ach_2003:Percentage'
 and 100-d.statistic_value > 27  --threshold identified in the DataQuality study
-;
-
+-- ;
+UNION ALL
 --rule33 DQ rule (for general population only)
 --NOTIFICATION: database does not have all age 0-80 represented
 
 
-insert into synpuf_100.achilles_heel_results (achilles_heel_warning,rule_id)
+-- insert into synpuf_100.achilles_heel_results (achilles_heel_warning,rule_id)
 select  'NOTIFICATION: [GeneralPopulationOnly] Not all deciles represented at first observation' as achilles_heel_warning, 33 as rule_id
  from  synpuf_100.achilles_results_derived d
 where d.measure_id = 'AgeAtFirstObsByDecile:DecileCnt'
@@ -1094,8 +1097,7 @@ select  'NOTIFICATION:No body weight data in MEASUREMENT table (under concept_id
   from  synpuf_100.achilles_results
  where analysis_id = 1800 and stratum_1 = '3025315'
 ) a
-where a.row_present = 0;
-
+where a.row_present = 0
 
 
 --ruleid 42 DQ rule
@@ -1103,9 +1105,9 @@ where a.row_present = 0;
 --This may indicate a dataset with mostly inpatient data (that may be biased and missing some EHR events)
 --Threshold was decided as 10th percentile in empiric comparison of 12 real world datasets in the DQ-Study2
 
+UNION ALL
 
-
-insert into synpuf_100.achilles_heel_results (achilles_heel_warning,rule_id)
+-- insert into synpuf_100.achilles_heel_results (achilles_heel_warning,rule_id)
 select  'NOTIFICATION: [GeneralPopulationOnly] Percentage of outpatient visits is below threshold'
  as achilles_heel_warning, 42 as rule_id
  from
@@ -1113,7 +1115,8 @@ select  'NOTIFICATION: [GeneralPopulationOnly] Percentage of outpatient visits i
   select  1.0*count_value/(select  sum(count_value)  from  synpuf_100.achilles_results where analysis_id = 201)  as outp_perc
    from  synpuf_100.achilles_results where analysis_id = 201 and stratum_1='9202'
   ) d
-where d.outp_perc < 0.43;
+where d.outp_perc < 0.43
+UNION ALL
 
 --ruleid 43 DQ rule
 --looks at observation period data, if all patients have exactly one the rule alerts the user
@@ -1121,22 +1124,22 @@ where d.outp_perc < 0.43;
 --For some datasets (e.g., UK national data with single payor, one observation period is perfectly valid)
 
 
-insert into synpuf_100.achilles_heel_results (achilles_heel_warning,rule_id)
+-- insert into synpuf_100.achilles_heel_results (achilles_heel_warning,rule_id)
 select  'NOTIFICATION: 99+ percent of persons have exactly one observation period'
  as achilles_heel_warning, 43 as rule_id
  from
  (select  100.0*count_value/(select  count_value as total_pts  from  synpuf_100.achilles_results r where analysis_id =1) as one_obs_per_perc
    from  synpuf_100.achilles_results where analysis_id = 113 and stratum_1 = '1'
   ) d
-where d.one_obs_per_perc >= 99.0;
+where d.one_obs_per_perc >= 99.0
 
 
 
 --ruleid 44 DQ rule
 --uses iris measure: patients with at least 1 Meas, 1 Dx and 1 Rx
 
-
-insert into synpuf_100.achilles_heel_results (achilles_heel_warning,rule_id)
+UNION ALL
+-- insert into synpuf_100.achilles_heel_results (achilles_heel_warning,rule_id)
 select  'NOTIFICATION: Percentage of patients with at least 1 Measurement, 1 Dx and 1 Rx is below threshold' as achilles_heel_warning, 44 as rule_id
  from  synpuf_100.achilles_results_derived d
 where d.measure_id = 'ach_2002:Percentage'

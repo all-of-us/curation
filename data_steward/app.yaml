@@ -1,6 +1,18 @@
 runtime: python27
 api_version: 1
 threadsafe: yes
+instance_class: B8
+basic_scaling:
+    max_instances: 2
+    idle_timeout: 60m
+
+env_variables:
+      BIGQUERY_DATASET_ID : "babynames"
+      APPLICATION_ID : "bamboo-creek-172917"
+      DRC_BUCKET_NAME : "aahlad-test-aou-curation-spec-site-bucket"
+      BUCKET_NAME_NYC : "aahlad-test-site-bucket-aou-data-steward-nyc"
+      BUCKET_NAME_PITT : "aahlad-test-site-bucket-aou-data-steward-pitt"
+      BUCKET_NAME_FAKE : "bamboo-creek-172917.appspot.com"
 
 handlers:
 - url: /h/.*

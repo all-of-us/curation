@@ -3,5 +3,17 @@ cron:
   url: /tasks/sitegen
   schedule: every 5 minutes
 - description: validate hpo
-  url: /data_steward/v1/ValidateHpoFiles/dummy
+  url: /data_steward/v1/ValidateHpoFiles/fake
   schedule: every 30 minutes
+- description: validate hpo nyc
+  url: /data_steward/v1/ValidateHpoFiles/nyc
+  schedule: every 30 minutes
+- description: validate hpo pitt
+  url: /data_steward/v1/ValidateHpoFiles/pitt
+  schedule: every 30 minutes
+# - description: run achilles
+#   url: /data_steward/v1/RunAchilles/nyc
+#   schedule: every 1000 minutes
+# - description: run export 
+#   url: /data_steward/v1/RunExport/nyc
+#   schedule: every 1000 minutes

@@ -1,9 +1,9 @@
 import os
-import time
 
 import bq_utils
 import resources
 import sql_wrangle
+import logging
 
 ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
@@ -52,19 +52,25 @@ def run_analyses(hpo_id):
     """
     commands = _get_run_analysis_commands(hpo_id)
     for command in commands:
-        print 'Running `%s`...\n' % command
+        logging.debug(' ---- Running `%s`...\n' % command)
         if sql_wrangle.is_to_temp_table(command):
             table_id = sql_wrangle.get_temp_table_name(command)
             query = sql_wrangle.get_temp_table_query(command)
-            bq_utils.query(query, False, table_id)
-            time.sleep(6)
+            insert_query_job_result = bq_utils.query(query, False, table_id)
+            query_job_id = insert_query_job_result['jobReference']['jobId']
+
+            success_flag = bq_utils.wait_on_jobs([query_job_id], retry_count=4)
+            if not success_flag:
+                logging.critical('tempresults doesnt get created in 15 secs')
+                raise RuntimeError('Tempresults taking too long to create')
         elif sql_wrangle.is_truncate(command):
             table_id = sql_wrangle.get_truncate_table_name(command)
-            query = 'DELETE FROM %s WHERE TRUE' % table_id
-            bq_utils.query(query)
+            if bq_utils.table_exists(table_id):
+                bq_utils.delete_table(table_id)
         elif sql_wrangle.is_drop(command):
             table_id = sql_wrangle.get_drop_table_name(command)
-            bq_utils.delete_table(table_id)
+            if bq_utils.table_exists(table_id):
+                bq_utils.delete_table(table_id)
         else:
             bq_utils.query(command)
 
