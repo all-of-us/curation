@@ -59,9 +59,9 @@ def run_analyses(hpo_id):
             insert_query_job_result = bq_utils.query(query, False, table_id)
             query_job_id = insert_query_job_result['jobReference']['jobId']
 
-            success_flag = bq_utils.wait_on_jobs([query_job_id], retry_count=20)
+            success_flag = bq_utils.wait_on_jobs([query_job_id], retry_count=4)
             if not success_flag:
-                logging.critical('tempresults doesnt get created in 20 secs')
+                logging.critical('tempresults doesnt get created in 15 secs')
                 raise RuntimeError('Tempresults taking too long to create')
         elif sql_wrangle.is_truncate(command):
             table_id = sql_wrangle.get_truncate_table_name(command)

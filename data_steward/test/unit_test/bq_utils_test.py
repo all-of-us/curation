@@ -13,7 +13,7 @@ import test_util
 # import time
 
 PERSON = 'person'
-BQ_TIMEOUT_SECONDS = 5
+BQ_TIMEOUT_RETRIES = 3
 
 
 class BqUtilsTest(unittest.TestCase):
@@ -61,7 +61,7 @@ class BqUtilsTest(unittest.TestCase):
         load_results = bq_utils.load_csv(schema_path, gcs_object_path, app_id, dataset_id, table_name)
 
         load_job_id = load_results['jobReference']['jobId']
-        success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_SECONDS)
+        success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
         if not success_flag:
             print 'loading table {} timed out'.format(table_name)
             self.assertTrue(False)
@@ -77,7 +77,7 @@ class BqUtilsTest(unittest.TestCase):
 
         load_job_id = result['jobReference']['jobId']
         table_id = result['configuration']['load']['destinationTable']['tableId']
-        success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_SECONDS)
+        success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
         if not success_flag:
             print 'loading table {} timed out'.format(table_id)
             self.assertTrue(False)
@@ -95,7 +95,7 @@ class BqUtilsTest(unittest.TestCase):
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
 
         load_job_id = result['jobReference']['jobId']
-        success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_SECONDS)
+        success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
         if not success_flag:
             print 'loading table {} timed out'.format(PERSON)
 
@@ -126,7 +126,7 @@ class BqUtilsTest(unittest.TestCase):
         expected_result = nyc_person_ids + pitt_person_ids
         expected_result.sort()
 
-        success_flag = bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_SECONDS)
+        success_flag = bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
         if not success_flag:
             print 'loading tables {},{} timed out'.format('nyc_person', 'pitt_person')
 
@@ -172,7 +172,7 @@ class BqUtilsTest(unittest.TestCase):
         result = bq_utils.load_cdm_csv('pitt', 'person')
         running_jobs.append(result['jobReference']['jobId'])
 
-        success_flag = bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_SECONDS)
+        success_flag = bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
         if not success_flag:
             print 'loading tables {},{} timed out'.format('nyc_measurement', 'pitt_person')
 

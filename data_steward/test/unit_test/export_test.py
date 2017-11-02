@@ -13,7 +13,7 @@ import test_util
 import bq_utils
 import json
 
-BQ_TIMEOUT_SECONDS = 5
+BQ_TIMEOUT_RETRIES = 3
 
 
 class ExportTest(unittest.TestCase):
@@ -67,7 +67,7 @@ class ExportTest(unittest.TestCase):
             load_results = bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
             running_jobs.append(load_results['jobReference']['jobId'])
 
-        bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_SECONDS)
+        bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
 
     def _test_report_export(self, report):
         test_util.get_synpuf_results_files()

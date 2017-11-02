@@ -17,7 +17,7 @@ import test_util
 
 ACHILLES_HEEL_RESULTS_COUNT = 24
 ACHILLES_RESULTS_DERIVED_COUNT = 282
-BQ_TIMEOUT_SECONDS = 5
+BQ_TIMEOUT_RETRIES = 3
 
 
 class AchillesHeelTest(unittest.TestCase):
@@ -81,7 +81,7 @@ class AchillesHeelTest(unittest.TestCase):
             load_results = bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
             running_jobs.append(load_results['jobReference']['jobId'])
 
-        bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_SECONDS)
+        bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
 
     def test_heel_analyses(self):
         # Long-running test

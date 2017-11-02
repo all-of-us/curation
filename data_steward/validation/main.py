@@ -19,7 +19,7 @@ import achilles_heel
 import export
 
 UNKNOWN_FILE = 'Unknown file'
-BQ_LOAD_DELAY_SECONDS = 10
+BQ_LOAD_RETRY_COUNT = 4
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
@@ -98,7 +98,7 @@ def validate_hpo_files(hpo_id):
             load_results = bq_utils.load_cdm_csv(hpo_id, cdm_table_name)
             load_job_id = load_results['jobReference']['jobId']
 
-            success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_LOAD_DELAY_SECONDS)
+            success_flag = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_LOAD_RETRY_COUNT)
 
             if success_flag:
                 job_resource = bq_utils.get_job_details(job_id=load_job_id)

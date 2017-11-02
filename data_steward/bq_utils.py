@@ -131,12 +131,13 @@ def table_exists(table_id):
         return False
 
 
-def wait_on_jobs(job_ids, retry_count=30, poll_interval=1):
+def wait_on_jobs(job_ids, retry_count=5, init_poll_interval=1, max_poll_interval = 16):
     job_count = len(job_ids)
-    print 'Waiting on {} jobs ... '.format(job_count)
+    # print 'Waiting on {} jobs ... '.format(job_count)
 
     done_flag = False
     retries = 0
+    poll_interval = init_poll_interval
     while not done_flag and retries < retry_count:
         time.sleep(poll_interval)
         retries = 1
@@ -147,6 +148,9 @@ def wait_on_jobs(job_ids, retry_count=30, poll_interval=1):
             job_status = job_details['status']
             if job_status['state'] != 'DONE':
                 done_flag = False
+
+        if poll_interval <= max_poll_interval:
+            poll_interval = 2*poll_interval
 
     if not done_flag:
         return False
