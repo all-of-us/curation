@@ -13,6 +13,7 @@ hpo_csv_path = os.path.join(data_path, 'hpo.csv')
 resource_path = os.path.join(base_path, 'resources')
 fields_path = os.path.join(resource_path, 'fields')
 cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
+achilles_index_path = os.path.join(resource_path, 'achilles_index_files')
 
 
 @cachetools.cached(cache={})
@@ -49,3 +50,11 @@ def hpo_csv():
     # TODO get this from file; currently limited for pre- alpha release
     return [dict(hpo_id='nyc', name='New York City Consortium'),
             dict(hpo_id='pitt', name='University of Pittsburgh at Pittsburgh')]
+
+
+def achilles_index_files():
+    achilles_index_files = []
+    for path, subdirs, files in os.walk(achilles_index_path):
+        for name in files:
+            achilles_index_files.append(os.path.join(path, name))
+    return achilles_index_files

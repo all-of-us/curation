@@ -162,6 +162,14 @@ class ValidationTest(unittest.TestCase):
             self.assertListEqual(expected_result_items, actual_result_items)
             self.assertTrue(main.all_required_files_loaded(test_util.FAKE_HPO_ID))
 
+    def test_achilles_upload(self):
+        main.upload_achilles_files(test_util.FAKE_HPO_ID)
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        actual = [item['name'] for item in bucket_items]
+        expected = [filename.split(resources.resource_path + '/')[1].strip() for filename in
+                    common.ACHILLES_INDEX_FILES]
+        self.assertSetEqual(set(actual), set(expected))
+
     def tearDown(self):
         self._empty_bucket()
         self.testbed.deactivate()
