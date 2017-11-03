@@ -2,6 +2,7 @@ import resources
 
 CDM_TABLES = set([r['table_name'] for r in resources.cdm_csv()])
 CDM_FILES = map(lambda t: t + '.csv', CDM_TABLES)
+ACHILLES_INDEX_FILES = resources.achilles_index_files()
 RESULT_CSV = 'result.csv'
 ERRORS_CSV = 'errors.csv'
 WARNINGS_CSV = 'warnings.csv'
@@ -17,4 +18,3 @@ VOCABULARY_TABLES = ['concept', 'concept_ancestor', 'concept_class', 'concept_re
 REQUIRED_TABLES = ['person', 'condition_occurrence', 'visit_occurrence', 'procedure_occurrence', 'measurement',
                    'drug_exposure']
 REQUIRED_FILES = [table + '.csv' for table in REQUIRED_TABLES]
-

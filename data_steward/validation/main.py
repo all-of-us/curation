@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import StringIO
 import logging
-import time
 import os
 import json
 
@@ -67,6 +66,22 @@ def run_achilles(hpo_id):
     achilles_heel.run_heel(hpo_id=hpo_id)
 
 
+def upload_achilles_files(hpo_id):
+    """uploads achilles web files to the corresponding hpo bucket
+
+    :hpo_id: which hpo bucket do these files go into
+    :returns:
+
+    """
+    bucket = gcs_utils.get_hpo_bucket(hpo_id)
+    for filename in common.ACHILLES_INDEX_FILES:
+        print "running for file : {}".format(filename)
+        bucket_file_name = filename.split(resources.resource_path + '/')[1].strip()
+        print "saving as filename: {}".format(bucket_file_name)
+        with open(filename, 'r') as fp:
+            gcs_utils.upload_object(bucket, bucket_file_name, fp)
+
+
 @api_util.auth_required_cron
 def validate_hpo_files(hpo_id):
     logging.info(' Validating hpo_id %s' % hpo_id)
@@ -124,8 +139,9 @@ def validate_hpo_files(hpo_id):
     _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
     _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
 
-    run_achilles(hpo_id)
-    run_export(hpo_id)
+    if all_required_files_loaded():
+        run_achilles(hpo_id)
+        run_export(hpo_id)
 
     return '{"report-generator-status": "started"}'
 
