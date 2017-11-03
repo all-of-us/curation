@@ -75,9 +75,7 @@ def upload_achilles_files(hpo_id):
     """
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     for filename in common.ACHILLES_INDEX_FILES:
-        print "running for file : {}".format(filename)
         bucket_file_name = filename.split(resources.resource_path + '/')[1].strip()
-        print "saving as filename: {}".format(bucket_file_name)
         with open(filename, 'r') as fp:
             gcs_utils.upload_object(bucket, bucket_file_name, fp)
 
@@ -139,7 +137,7 @@ def validate_hpo_files(hpo_id):
     _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
     _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
 
-    if all_required_files_loaded():
+    if all_required_files_loaded(hpo_id):
         run_achilles(hpo_id)
         run_export(hpo_id)
 

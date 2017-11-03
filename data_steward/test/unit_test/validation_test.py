@@ -30,7 +30,7 @@ class ValidationTest(unittest.TestCase):
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
 
     @mock.patch('api_util.check_cron')
-    def _test_validation_check_cron(self, mock_check_cron):
+    def test_validation_check_cron(self, mock_check_cron):
         main.validate_hpo_files(test_util.FAKE_HPO_ID)
         self.assertEquals(mock_check_cron.call_count, 1)
 
@@ -81,7 +81,7 @@ class ValidationTest(unittest.TestCase):
     @mock.patch('api_util.check_cron')
     def test_all_files_unparseable_output(self, mock_check_cron):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
-        for cdm_table in common.REQUIRED_FILES:
+        for cdm_table in common.CDM_FILES:
             test_util.write_cloud_str(self.hpo_bucket, cdm_table, ".\n .")
 
         main.app.testing = True
@@ -91,14 +91,15 @@ class ValidationTest(unittest.TestCase):
             # check the result file was put in bucket
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             bucket_item_names = [item['name'] for item in list_bucket_result]
-            expected_items = common.REQUIRED_FILES + common.IGNORE_LIST
+            expected_items = common.CDM_FILES + common.IGNORE_LIST
             self.assertSetEqual(set(bucket_item_names), set(expected_items))
 
             # check content of the file is correct
             actual_result = test_util.read_cloud_file(self.hpo_bucket, common.RESULT_CSV)
-            with open(test_util.ALL_FILES_UNPARSEABLE_VALIDATION_RESULT, 'r') as f:
-                expected = f.read()
-                self.assertEqual(expected, actual_result)
+            actual_result = resources._csv_file_to_list(StringIO.StringIO(actual_result))
+            expected = [{'cdm_file_name': cdm_file_name, 'found': '1', 'parsed': '0', 'loaded': '0'} for cdm_file_name
+                        in common.CDM_FILES]
+            self.assertEqual(expected, actual_result)
 
     @mock.patch('api_util.check_cron')
     def test_bad_file_names(self, mock_check_cron):
