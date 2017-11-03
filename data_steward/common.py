@@ -12,9 +12,8 @@ PERSON_REPORT = 'person'
 DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
 ALL_REPORT_FILES = map(lambda s: s + '.json', ALL_REPORTS)
-IGNORE_LIST = [RESULT_CSV, ERRORS_CSV, WARNINGS_CSV] + ALL_REPORT_FILES
+IGNORE_LIST = [RESULT_CSV, ERRORS_CSV, WARNINGS_CSV] # + ALL_REPORT_FILES
 VOCABULARY_TABLES = ['concept', 'concept_ancestor', 'concept_class', 'concept_relationship', 'concept_synonym',
                      'domain', 'drug_strength', 'relationship', 'vocabulary']
-REQUIRED_TABLES = ['person', 'condition_occurrence', 'visit_occurrence', 'procedure_occurrence', 'measurement',
-                   'drug_exposure']
+REQUIRED_TABLES = ['person']
 REQUIRED_FILES = [table + '.csv' for table in REQUIRED_TABLES]
