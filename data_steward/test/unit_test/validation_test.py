@@ -30,11 +30,6 @@ class ValidationTest(unittest.TestCase):
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
 
     @mock.patch('api_util.check_cron')
-    def test_validation_check_cron(self, mock_check_cron):
-        main.validate_hpo_files(test_util.FAKE_HPO_ID)
-        self.assertEquals(mock_check_cron.call_count, 1)
-
-    @mock.patch('api_util.check_cron')
     def test_validate_missing_files_output(self, mock_check_cron):
         # enable exception propagation as described at https://goo.gl/LqDgnj
         main.app.testing = True
@@ -51,10 +46,11 @@ class ValidationTest(unittest.TestCase):
 
             # check content of result.csv is correct
             # TODO fix this for all cdm files and use object comparison
-            actual = test_util.read_cloud_file(self.hpo_bucket, common.RESULT_CSV)
-            with open(test_util.EMPTY_VALIDATION_RESULT, 'r') as f:
-                expected = f.read()
-                self.assertEqual(expected, actual)
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, common.RESULT_CSV)
+            actual = resources._csv_file_to_list(StringIO.StringIO(actual_result))
+            expected = [{'cdm_file_name': cdm_file_name, 'found': '0', 'parsed': '0', 'loaded': '0'} for cdm_file_name
+                        in common.REQUIRED_FILES]
+            self.assertEqual(expected, actual)
             self.assertFalse(main.all_required_files_loaded(test_util.FAKE_HPO_ID))
 
     @mock.patch('api_util.check_cron')
@@ -148,7 +144,13 @@ class ValidationTest(unittest.TestCase):
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
             # check the result file was putin bucket
-            expected_bucket_items = common.REQUIRED_FILES + common.IGNORE_LIST
+            expected_bucket_items = common.REQUIRED_FILES + common.IGNORE_LIST + common.ALL_REPORT_FILES
+            # want to keep this test the same. So adding all the old required files.
+            expected_bucket_items = expected_bucket_items + ['measurement.csv',
+                                                             'procedure_occurrence.csv',
+                                                             'drug_exposure.csv',
+                                                             'condition_occurrence.csv',
+                                                             'visit_occurrence.csv']
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             actual_bucket_items = [item['name'] for item in list_bucket_result]
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
@@ -162,14 +164,6 @@ class ValidationTest(unittest.TestCase):
             actual_result_items.sort()
             self.assertListEqual(expected_result_items, actual_result_items)
             self.assertTrue(main.all_required_files_loaded(test_util.FAKE_HPO_ID))
-
-    def test_achilles_upload(self):
-        main.upload_achilles_files(test_util.FAKE_HPO_ID)
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        actual = [item['name'] for item in bucket_items]
-        expected = [filename.split(resources.resource_path + '/')[1].strip() for filename in
-                    common.ACHILLES_INDEX_FILES]
-        self.assertSetEqual(set(actual), set(expected))
 
     def tearDown(self):
         self._empty_bucket()
