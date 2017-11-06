@@ -50,7 +50,6 @@ def run_export(hpo_id):
     return results
 
 
-@api_util.auth_required_cron
 def run_achilles(hpo_id):
     """checks for full results and run achilles/heel
 
@@ -140,6 +139,9 @@ def validate_hpo_files(hpo_id):
     if all_required_files_loaded(hpo_id):
         run_achilles(hpo_id)
         run_export(hpo_id)
+
+    logging.info('uploading achilles index files')
+    upload_achilles_files(hpo_id)
 
     return '{"report-generator-status": "started"}'
 
