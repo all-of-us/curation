@@ -14,7 +14,7 @@ import test_util
 
 # This may change if we strip out unused analyses
 ACHILLES_LOOKUP_COUNT = 215
-ACHILLES_ANALYSIS_COUNT = 359
+ACHILLES_ANALYSIS_COUNT = 134
 ACHILLES_RESULTS_COUNT = 3114
 SOURCE_NAME_QUERY = """insert into synpuf_100.achilles_analysis (analysis_id, analysis_name) 
   values (0, 'Source name')"""
@@ -109,11 +109,9 @@ class AchillesTest(unittest.TestCase):
 
     def test_parse_temp(self):
         commands = achilles._get_run_analysis_commands(FAKE_HPO_ID)
-        ptn = '103	Distribution of age at first observation period'
         for command in commands:
-            if ptn in command:
-                is_temp = validation.sql_wrangle.is_to_temp_table(command)
-                self.assertTrue(is_temp)
+            is_temp = validation.sql_wrangle.is_to_temp_table(command)
+            self.assertFalse(is_temp)
 
     def tearDown(self):
         test_util.empty_bucket(self.hpo_bucket)
