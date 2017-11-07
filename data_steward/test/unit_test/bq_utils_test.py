@@ -124,12 +124,12 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(len(incomplete_jobs), 0, 'loading tables {},{} timed out'.format('nyc_person', 'pitt_person'))
 
         table_ids = ['nyc_person', 'pitt_person']
-        incomplete_jobs, error = bq_utils.merge_tables(bq_utils.get_dataset_id(),
+        success_flag, error = bq_utils.merge_tables(bq_utils.get_dataset_id(),
                                                     table_ids,
                                                     bq_utils.get_dataset_id(),
                                                     'merged_nyc_pitt')
 
-        self.assertEqual(len(incomplete_jobs), 0)
+        self.assertTrue(success_flag)
         self.assertEqual(error, "")
 
         query_string = "SELECT person_id FROM {}.{} LIMIT 1000".format(bq_utils.get_dataset_id(), 'merged_nyc_pitt')
@@ -244,7 +244,7 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     @mock.patch('time.sleep', return_value=None)
-    @mock.patch('bq_utils.job_status_done', side_effect=[False, False, True, False, True, False, True, False, True, False, True, False])
+    @mock.patch('bq_utils.job_status_done', side_effect=[False, False, True, False, False, False, False])
     def test_wait_on_jobs_some_fail(self, mock_job_status_done, mock_time_sleep):
         job_ids = list(range(2))
         actual = bq_utils.wait_on_jobs(job_ids)
