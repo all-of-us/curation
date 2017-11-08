@@ -57,7 +57,15 @@ def _run_achilles(hpo_id):
 
 
 def main(args):
-    hpo_id = 'fake'
+    hpo_id = args.hpo_id
+    for table_name in common.CDM_TABLES:
+        table_id = hpo_id+'_'+table_name
+        if bq_utils.table_exists(table_id):
+            print table_id,' exists'
+        else:
+            print table_id,' being created'
+            # bq_utils.create_standard_table(table_name, table_id, False)
+
     _run_achilles(hpo_id)
     _run_export(hpo_id)
 
