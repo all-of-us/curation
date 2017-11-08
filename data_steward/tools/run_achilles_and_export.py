@@ -1,9 +1,8 @@
 """
-Combine synthetic EHR and RDR data sets to form another data set
+run achilles, achilles_heel, and export on a particular dataset as defined by the environment variables.
 
- * Create a mapping table which arbitrarily maps EHR person_id to RDR person_id and assigns a cdr_id
- * For each CDM table, load the EHR data and append RDR data (ignore RDR person table)
- * RDR entity IDs (e.g. visit_occurrence_id, measurement_id) start at 1B
+    -- hpo_id is an arugment wherein '{hpo_id}_' will be prepended when writing/reading tables.
+    -- cdm tables that dont exist will be created as empty tables.
 """
 import sys
 sys.path.append('./lib/')
@@ -64,7 +63,7 @@ def main(args):
             print table_id,' exists'
         else:
             print table_id,' being created'
-            # bq_utils.create_standard_table(table_name, table_id, False)
+            bq_utils.create_standard_table(table_name, table_id, False)
 
     _run_achilles(hpo_id)
     _run_export(hpo_id)
