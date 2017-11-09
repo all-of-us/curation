@@ -65,18 +65,28 @@ def run_achilles(hpo_id):
     achilles_heel.run_heel(hpo_id=hpo_id)
 
 
+@api_util.auth_required_cron
 def upload_achilles_files(hpo_id):
+    result = _upload_achilles_files(hpo_id)
+    return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
+
+
+def _upload_achilles_files(hpo_id):
     """uploads achilles web files to the corresponding hpo bucket
 
     :hpo_id: which hpo bucket do these files go into
     :returns:
 
     """
+    results = []
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     for filename in common.ACHILLES_INDEX_FILES:
+        logging.info('uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
         bucket_file_name = filename.split(resources.resource_path + '/')[1].strip()
         with open(filename, 'r') as fp:
-            gcs_utils.upload_object(bucket, bucket_file_name, fp)
+            upload_result = gcs_utils.upload_object(bucket, bucket_file_name, fp)
+            results.append(upload_result)
+    return results
 
 
 @api_util.auth_required_cron
@@ -141,7 +151,7 @@ def validate_hpo_files(hpo_id):
         run_export(hpo_id)
 
     logging.info('uploading achilles index files')
-    upload_achilles_files(hpo_id)
+    _upload_achilles_files(hpo_id)
 
     return '{"report-generator-status": "started"}'
 
@@ -212,4 +222,10 @@ app.add_url_rule(
     PREFIX + 'ValidateHpoFiles/<string:hpo_id>',
     endpoint='validate_hpo_files',
     view_func=validate_hpo_files,
+    methods=['GET'])
+
+app.add_url_rule(
+    PREFIX + 'UploadAchillesFiles/<string:hpo_id>',
+    endpoint='upload_achilles_files',
+    view_func=upload_achilles_files,
     methods=['GET'])
