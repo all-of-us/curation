@@ -22,6 +22,7 @@ BQ_LOAD_RETRY_COUNT = 4
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
+ACHILLES_EXPORT_PREFIX = "achilles_index_files/data/achilles-export/"
 
 
 def all_required_files_loaded(hpo_id):
@@ -45,7 +46,7 @@ def run_export(hpo_id):
         result = export.export_from_path(sql_path, hpo_id)
         content = json.dumps(result)
         fp = StringIO.StringIO(content)
-        result = gcs_utils.upload_object(hpo_bucket, export_name + '.json', fp)
+        result = gcs_utils.upload_object(hpo_bucket, ACHILLES_EXPORT_PREFIX + export_name + '.json', fp)
         results.append(result)
     return results
 
