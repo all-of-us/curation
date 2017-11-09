@@ -1,16 +1,18 @@
 """
 Wraps Google Cloud Storage JSON API (adapted from https://goo.gl/dRKiYz)
 """
-import mimetypes
 
+import os
+from io import BytesIO
+import mimetypes
 from google.appengine.api import app_identity
 import googleapiclient.discovery
 
-import StringIO
-from resources import _csv_file_to_list
-import os
-from io import BytesIO
-import common
+
+MIMETYPES = {'json': 'application/json',
+             'woff': 'application/font-woff',
+             'ttf': 'application/font-sfnt',
+             'eot': 'application/vnd.ms-fontobject'}
 
 
 def get_drc_bucket():
@@ -129,8 +131,8 @@ def upload_object(bucket, name, fp):
     service = create_service()
     body = {'name': name}
     ext = name.split('.')[-1]
-    if ext == 'json':
-        mimetype = 'application/json'
+    if ext in MIMETYPES:
+        mimetype = MIMETYPES[ext]
     else:
         (mimetype, encoding) = mimetypes.guess_type(name)
     media_body = googleapiclient.http.MediaIoBaseUpload(fp, mimetype)
