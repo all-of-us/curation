@@ -24,7 +24,7 @@ class ExportTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
 
-    def test_report_export(self, report):
+    def _test_report_export(self, report):
         test_util.get_synpuf_results_files()
         test_util.populate_achilles(self.hpo_bucket)
         data_density_path = os.path.join(export.EXPORT_PATH, report)
@@ -58,7 +58,7 @@ class ExportTest(unittest.TestCase):
         self.assertEqual(len(export_result['MESSAGES']['ATTRIBUTENAME']), 14)
 
     def test_run_export(self):
-        main.upload_achilles_files(test_util.FAKE_HPO_ID)
+        main._upload_achilles_files(test_util.FAKE_HPO_ID)
         main.run_export(test_util.FAKE_HPO_ID)
         for report in common.ALL_REPORT_FILES:
             _exist_check = gcs_utils.get_metadata(self.hpo_bucket, main.ACHILLES_EXPORT_PREFIX + report)
