@@ -13,7 +13,7 @@ hpo_csv_path = os.path.join(data_path, 'hpo.csv')
 resource_path = os.path.join(base_path, 'resources')
 fields_path = os.path.join(resource_path, 'fields')
 cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
-achilles_index_path = os.path.join(resource_path, 'achilles_index_files')
+achilles_index_path = os.path.join(resource_path, 'curation_report')
 
 
 @cachetools.cached(cache={})

@@ -22,6 +22,7 @@ BQ_LOAD_RETRY_COUNT = 4
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
+ACHILLES_EXPORT_PREFIX_STRING = "curation_report/data/"
 
 
 def all_required_files_loaded(hpo_id):
@@ -36,17 +37,29 @@ def all_required_files_loaded(hpo_id):
 
 
 def run_export(hpo_id):
+    """
+    this function also changes the datasources.json file
+    """
     results = []
     logging.info('running export for hpo_id %s' % hpo_id)
     # TODO : add check for required tables
     hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+    _reports_prefix = ACHILLES_EXPORT_PREFIX_STRING + "{}_reports/".format(hpo_id)
     for export_name in common.ALL_REPORTS:
         sql_path = os.path.join(export.EXPORT_PATH, export_name)
         result = export.export_from_path(sql_path, hpo_id)
         content = json.dumps(result)
         fp = StringIO.StringIO(content)
-        result = gcs_utils.upload_object(hpo_bucket, export_name + '.json', fp)
+        result = gcs_utils.upload_object(hpo_bucket, _reports_prefix + export_name + '.json', fp)
         results.append(result)
+
+    with open(common.DATASOURCES_JSON) as fp:
+        datasources_json = json.load(fp)
+        datasources_json['datasources'][0]['folder'] = u"{}_reports".format(hpo_id)
+        datasources_fp = StringIO.StringIO(json.dumps(datasources_json))
+        result = gcs_utils.upload_object(hpo_bucket, ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json', datasources_fp)
+        results.append(result)
+
     return results
 
 
