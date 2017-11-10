@@ -1,8 +1,12 @@
 """
-run achilles, achilles_heel, and export on a particular dataset as defined by the environment variables.
+Run achilles, achilles_heel, and export on an existing OMOP CDM BigQuery dataset
 
-    -- hpo_id is an arugment wherein '{hpo_id}_' will be prepended when writing/reading tables.
-    -- cdm tables that dont exist will be created as empty tables.
+The following environment variables must be set:
+  * BIGQUERY_DATASET_ID: BQ dataset where the OMOP CDM is stored
+  * APPLICATION_ID: GCP project ID (e.g. all-of-us-ehr-dev)
+  * GOOGLE_APPLICATION_CREDENTIALS: location of service account key json file (e.g. /path/to/all-of-us-ehr-dev-abc123.json)
+
+Note: Any missing CDM tables will be created and will remain empty
 """
 import argparse
 import common
@@ -29,6 +33,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--hpo_id',
                         default='fake',
-                        help='which HPO to run this as')
+                        help='Identifier for the HPO. Output tables will be prepended with {hpo_id}_.')
     args = parser.parse_args()
     main(args)
