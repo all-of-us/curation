@@ -24,7 +24,7 @@ class ExportTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
 
-    def _test_report_export(self, report):
+    def test_report_export(self, report):
         test_util.get_synpuf_results_files()
         test_util.populate_achilles(self.hpo_bucket)
         data_density_path = os.path.join(export.EXPORT_PATH, report)
@@ -38,21 +38,21 @@ class ExportTest(unittest.TestCase):
         #     self.assertEqual(actual_payload, expected_payload)
         # return result
 
-    def _test_export_data_density(self):
+    def test_export_data_density(self):
         export_result = self._test_report_export('datadensity')
         expected_keys = ['CONCEPTS_PER_PERSON', 'RECORDS_PER_PERSON', 'TOTAL_RECORDS']
         for expected_key in expected_keys:
             self.assertTrue(expected_key in export_result)
         self.assertEqual(len(export_result['TOTAL_RECORDS']['X_CALENDAR_MONTH']), 283)
 
-    def _test_export_person(self):
+    def test_export_person(self):
         export_result = self._test_report_export('person')
         expected_keys = ['BIRTH_YEAR_HISTOGRAM', 'ETHNICITY_DATA', 'GENDER_DATA', 'RACE_DATA', 'SUMMARY']
         for expected_key in expected_keys:
             self.assertTrue(expected_key in export_result)
         self.assertEqual(len(export_result['BIRTH_YEAR_HISTOGRAM']['DATA']['COUNT_VALUE']), 72)
 
-    def _test_export_achillesheel(self):
+    def test_export_achillesheel(self):
         export_result = self._test_report_export('achillesheel')
         self.assertTrue('MESSAGES' in export_result)
         self.assertEqual(len(export_result['MESSAGES']['ATTRIBUTENAME']), 14)
