@@ -24,6 +24,11 @@ class ExportTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
 
+    def _empty_bucket(self):
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        for bucket_item in bucket_items:
+            gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+
     def _test_report_export(self, report):
         test_util.get_synpuf_results_files()
         test_util.populate_achilles(self.hpo_bucket)
@@ -61,8 +66,10 @@ class ExportTest(unittest.TestCase):
         main._upload_achilles_files(test_util.FAKE_HPO_ID)
         main.run_export(test_util.FAKE_HPO_ID)
         for report in common.ALL_REPORT_FILES:
-            _exist_check = gcs_utils.get_metadata(self.hpo_bucket, main.ACHILLES_EXPORT_PREFIX + report)
+            _reports_prefix = main.ACHILLES_EXPORT_PREFIX_STRING + '{}_reports/'.format(test_util.FAKE_HPO_ID)
+            _exist_check = gcs_utils.get_metadata(self.hpo_bucket, _reports_prefix + report)
             self.assertIsNotNone(_exist_check)
 
     def tearDown(self):
+        # self._empty_bucket()
         self.testbed.deactivate()
