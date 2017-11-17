@@ -66,7 +66,7 @@ class ExportTest(unittest.TestCase):
         main._upload_achilles_files(test_util.FAKE_HPO_ID)
         main.run_export(test_util.FAKE_HPO_ID)
         for report in common.ALL_REPORT_FILES:
-            _reports_prefix = main.ACHILLES_EXPORT_PREFIX_STRING + test_util.FAKE_HPO_ID + '/'
+            _reports_prefix = common.ACHILLES_EXPORT_PREFIX_STRING + test_util.FAKE_HPO_ID + '/'
             _exist_check = gcs_utils.get_metadata(self.hpo_bucket, _reports_prefix + report)
             self.assertIsNotNone(_exist_check)
 

@@ -131,9 +131,17 @@ class ValidationTest(unittest.TestCase):
             actual_result_items.sort()
             self.assertListEqual(expected_result_items, actual_result_items)
 
+    def get_json_export_files(self, hpo_id):
+        json_export_files = [common.ACHILLES_EXPORT_DATASOURCES_JSON]
+        for report_file in common.ALL_REPORT_FILES:
+            hpo_report_file = common.ACHILLES_EXPORT_PREFIX_STRING + hpo_id + '/' + report_file
+            json_export_files.append(hpo_report_file)
+        return json_export_files
+
     @mock.patch('api_util.check_cron')
     def test_validate_five_persons_success(self, mock_check_cron):
         expected_result_items = resources._csv_to_list(test_util.FIVE_PERSONS_SUCCESS_RESULT_CSV)
+        json_export_files = self.get_json_export_files(test_util.FAKE_HPO_ID)
 
         # upload all five_persons files
         for cdm_file in test_util.FIVE_PERSONS_FILES:
@@ -144,7 +152,7 @@ class ValidationTest(unittest.TestCase):
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
             # check the result file was putin bucket
-            expected_bucket_items = common.REQUIRED_FILES + common.IGNORE_LIST + common.ALL_REPORT_FILES
+            expected_bucket_items = common.REQUIRED_FILES + common.IGNORE_LIST + json_export_files
             # want to keep this test the same. So adding all the old required files.
             expected_bucket_items = expected_bucket_items + ['measurement.csv',
                                                              'procedure_occurrence.csv',

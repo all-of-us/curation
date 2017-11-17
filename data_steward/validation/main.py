@@ -1,28 +1,26 @@
 #!/usr/bin/env python
 import StringIO
+import json
 import logging
 import os
-import json
 
 from flask import Flask
 
+import achilles
+import achilles_heel
 import api_util
 import bq_utils
 import common
-import gcs_utils
-from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV
-import resources
-
-import achilles
-import achilles_heel
 import export
+import gcs_utils
+import resources
+from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV, ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 4
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
-ACHILLES_EXPORT_PREFIX_STRING = "curation_report/data/"
 
 
 def all_required_files_loaded(hpo_id):
@@ -41,7 +39,7 @@ def save_datasources_json(hpo_id):
     datasource = dict(name=hpo_id, folder=hpo_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO.StringIO(json.dumps(datasources))
-    result = gcs_utils.upload_object(hpo_bucket, ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json', datasources_fp)
+    result = gcs_utils.upload_object(hpo_bucket, ACHILLES_EXPORT_DATASOURCES_JSON, datasources_fp)
     return result
 
 

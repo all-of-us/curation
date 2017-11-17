@@ -20,3 +20,6 @@ VOCABULARY_TABLES = ['concept', 'concept_ancestor', 'concept_class', 'concept_re
                      'domain', 'drug_strength', 'relationship', 'vocabulary']
 REQUIRED_TABLES = ['person']
 REQUIRED_FILES = [table + '.csv' for table in REQUIRED_TABLES]
+ACHILLES_EXPORT_PREFIX_STRING = "curation_report/data/"
+ACHILLES_EXPORT_DATASOURCES_JSON = ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json'
+
