@@ -101,12 +101,12 @@ def main(args):
     for table_name in TABLE_NAMES:
         q = construct_query(table_name, 'ehr', args.ehr_project, args.ehr_dataset)
         print 'Loading EHR table: ' + table_name
-        query(q, destination_table_id=MAPPING_TABLE_ID, write_disposition='WRITE_TRUNCATE')
+        query(q, destination_table_id=table_name, write_disposition='WRITE_TRUNCATE')
 
     for table_name in [table_name for table_name in TABLE_NAMES if table_name != 'person']:
         q = construct_query(table_name, 'rdr', args.rdr_project, args.rdr_dataset, ONE_BILLION)
         print 'Loading RDR table: ' + table_name
-        query(q, destination_table_id=MAPPING_TABLE_ID, write_disposition='WRITE_APPEND')
+        query(q, destination_table_id=table_name, write_disposition='WRITE_APPEND')
 
 
 if __name__ == '__main__':
