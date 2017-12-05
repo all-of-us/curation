@@ -338,6 +338,32 @@ def create_standard_table(table_name, table_id, drop_existing=False):
     return create_table(table_id, fields, drop_existing)
 
 
+def update_table_schema(table_id, schema_path):
+    """updates the schema for a particular table
+
+    :table_id: table to update
+    :dataset_id: dataset that contains table
+    :schema_path: new schema the table is supposed to follow
+    :returns: job_result of the update job
+
+    """
+    bq_service = create_service()
+    app_id = app_identity.get_application_id()
+    dataset_id = get_dataset_id()
+
+    request_body = {}
+    with open(schema_path, 'rb') as fp:
+        new_schema = json.load(fp)
+        request_body['schema'] = {}
+        for field in new_schema:
+            field['mode'] = 'nullable'
+        request_body['schema']['fields'] = new_schema
+    return bq_service.tables().update(projectId = app_id,
+                                      datasetId = dataset_id,
+                                      tableId = table_id,
+                                      body =request_body).execute()
+
+
 def list_tables():
     """
     List all the tables in the dataset

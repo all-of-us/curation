@@ -103,10 +103,37 @@ def main(args):
         print 'Loading EHR table: ' + table_name
         query(q, destination_table_id=table_name, write_disposition='WRITE_TRUNCATE')
 
-    for table_name in [table_name for table_name in TABLE_NAMES if table_name != 'person']:
+    incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10) 
+    if len(incomplete_jobs) == 0:
+        print " ---- EHR loading done succesful! ---- "
+    else:
+        print " ---- EHR LOAD TAKES TOO LONG! ---- "
+        raise TimeoutError
+    
+    jobs_to_wait_on = []
+    for table_name in [table_name for table_name in TABLE_NAMES if table_name not in ['person','observation']]:
         q = construct_query(table_name, 'rdr', args.rdr_project, args.rdr_dataset, ONE_BILLION)
         print 'Loading RDR table: ' + table_name
         query(q, destination_table_id=table_name, write_disposition='WRITE_APPEND')
+
+
+    observation_rdr_table_name = 'observation_rdr'
+    table_name = 'observation'
+    observation_rdr_json_path = os.path.join(fields_path, observation_rdr_table_name + '.json')
+    bq_utils.update_table_schema(table_name, observation_rdr_json_path)
+
+    print " ---- UPDATED {} ---- ".format(table_name)
+    q = construct_query(observation_rdr_table_name, 'rdr', args.rdr_project, args.rdr_dataset, ONE_BILLION)
+    q = q.replace(observation_rdr_table_name, table_name)
+    print 'Loading RDR table: ' + observation_rdr_table_name
+    query_result = query(q, destination_table_id=table_name, write_disposition='WRITE_APPEND')
+    query_job_id = query_result['jobReference']['jobId']
+    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id], retry_count=10) 
+    if len(incomplete_jobs) == 0:
+        print 'Loading RDR table: ' + observation_rdr_table_name, ' done!'
+    else:
+        print 'Loading RDR table: ' + observation_rdr_table_name, ' TAKING TOO LONG!'
+
 
 
 if __name__ == '__main__':
