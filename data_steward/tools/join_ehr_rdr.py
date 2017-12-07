@@ -132,13 +132,13 @@ def main(args):
     bq_utils.update_table_schema(table_name, observation_rdr_json_path)
 
     print " ---- UPDATED {} ---- ".format(table_name)
-    q = construct_query(observation_rdr_table_name, 'rdr', args.rdr_project, args.rdr_dataset, ONE_BILLION)
-    q = q.replace(observation_rdr_table_name, table_name)
-    print 'Loading RDR table: ' + observation_rdr_table_name
     # then we do the following
     # 1. construct a query to append data from observation from RDR
     # 2. replace the observation_rdr string with observation because the source table uses that name
     # 3. run modified query on the RDR dataset
+    q = construct_query(observation_rdr_table_name, 'rdr', args.rdr_project, args.rdr_dataset, ONE_BILLION)
+    q = q.replace(observation_rdr_table_name, table_name)
+    print 'Loading RDR table: ' + observation_rdr_table_name
     query_result = query(q, destination_table_id=table_name, write_disposition='WRITE_APPEND')
     query_job_id = query_result['jobReference']['jobId']
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id], retry_count=10)
