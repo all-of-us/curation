@@ -9,7 +9,8 @@ Combine synthetic EHR and RDR data sets to form another data set
 Currently the following environment variables must be set:
  * BIGQUERY_DATASET_ID: BQ dataset where combined result is stored (e.g. test_join_ehr_rdr)
  * APPLICATION_ID: GCP project ID (e.g. all-of-us-ehr-dev)
- * GOOGLE_APPLICATION_CREDENTIALS: location of service account key json file (e.g. /path/to/all-of-us-ehr-dev-abc123.json)
+ * GOOGLE_APPLICATION_CREDENTIALS: location of service account key json file
+ (e.g. /path/to/all-of-us-ehr-dev-abc123.json)
 """
 import argparse
 import json
@@ -23,17 +24,17 @@ BQ_WAIT_TIME = 2
 ONE_BILLION = 1000000000
 MAPPING_TABLE_ID = 'ehr_rdr_id_mapping'
 ID_MAPPING_QUERY = '''
-SELECT 
+SELECT
   rdr.row_id AS cdr_id
  ,rdr.person_id AS rdr_person_id
  ,ehr.person_id AS ehr_person_id
-FROM 
-(SELECT 
+FROM
+(SELECT
    ROW_NUMBER() OVER (ORDER BY person_id) AS row_id
   ,person_id
 FROM `%(rdr_project)s.%(rdr_dataset)s.person`) AS rdr
 JOIN
-(SELECT 
+(SELECT
    ROW_NUMBER() OVER (ORDER BY person_id) AS row_id
   ,person_id
 FROM `%(ehr_project)s.%(ehr_dataset)s.person`) AS ehr
@@ -103,28 +104,27 @@ def main(args):
         print 'Loading EHR table: ' + table_name
         query(q, destination_table_id=table_name, write_disposition='WRITE_TRUNCATE')
 
-    incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10) 
+    incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10)
     if len(incomplete_jobs) == 0:
         print " ---- EHR loading done succesful! ---- "
     else:
         print " ---- EHR load takes too long! ---- "
-        raise TimeoutError
-    
+        raise RuntimeError
+
     jobs_to_wait_on = []
-    for table_name in [table_name for table_name in TABLE_NAMES if table_name not in ['person','observation']]:
+    for table_name in [table_name for table_name in TABLE_NAMES if table_name not in ['person', 'observation']]:
         q = construct_query(table_name, 'rdr', args.rdr_project, args.rdr_dataset, ONE_BILLION)
         print 'Loading RDR table: ' + table_name
         query_result = query(q, destination_table_id=table_name, write_disposition='WRITE_APPEND')
         query_job_id = query_result['jobReference']['jobId']
         jobs_to_wait_on.append(query_job_id)
-        
-    incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10) 
+
+    incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10)
     if len(incomplete_jobs) == 0:
         print " ---- RDR loading done succesful! ---- "
     else:
         print " ---- RDR load takes too long! ---- "
-        raise TimeoutError
-
+        raise RuntimeError
 
     observation_rdr_table_name = 'observation_rdr'
     table_name = 'observation'
@@ -141,12 +141,11 @@ def main(args):
     # 3. run modified query on the RDR dataset
     query_result = query(q, destination_table_id=table_name, write_disposition='WRITE_APPEND')
     query_job_id = query_result['jobReference']['jobId']
-    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id], retry_count=10) 
+    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id], retry_count=10)
     if len(incomplete_jobs) == 0:
         print 'Loading RDR table: ' + observation_rdr_table_name, ' done!'
     else:
         print 'Loading RDR table: ' + observation_rdr_table_name, ' taking too long!'
-
 
 
 if __name__ == '__main__':
