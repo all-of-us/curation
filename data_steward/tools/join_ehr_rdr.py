@@ -96,13 +96,22 @@ def query(q, destination_table_id, write_disposition):
 def main(args):
     mapping_query = ID_MAPPING_QUERY % args.__dict__
     print 'Loading ' + MAPPING_TABLE_ID
-    query(mapping_query, destination_table_id=MAPPING_TABLE_ID, write_disposition='WRITE_TRUNCATE')
-    time.sleep(BQ_WAIT_TIME)
+    query_result = query(mapping_query, destination_table_id=MAPPING_TABLE_ID, write_disposition='WRITE_TRUNCATE')
+    query_job_id = query_result['jobReference']['jobId']
+    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id], retry_count=10)
+    if len(incomplete_jobs) == 0:
+        print " ---- {} loading done succesful! ---- ".format(MAPPING_TABLE_ID)
+    else:
+        print " ---- {} load takes too long! ---- ".format(MAPPING_TABLE_ID)
+        raise RuntimeError
 
+    jobs_to_wait_on = []
     for table_name in TABLE_NAMES:
         q = construct_query(table_name, 'ehr', args.ehr_project, args.ehr_dataset)
         print 'Loading EHR table: ' + table_name
-        query(q, destination_table_id=table_name, write_disposition='WRITE_TRUNCATE')
+        query_result = query(q, destination_table_id=table_name, write_disposition='WRITE_TRUNCATE')
+        query_job_id = query_result['jobReference']['jobId']
+        jobs_to_wait_on.append(query_job_id)
 
     incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10)
     if len(incomplete_jobs) == 0:
@@ -131,7 +140,7 @@ def main(args):
     observation_rdr_json_path = os.path.join(fields_path, observation_rdr_table_name + '.json')
     bq_utils.update_table_schema(table_name, observation_rdr_json_path)
 
-    print " ---- UPDATED {} ---- ".format(table_name)
+    print " ---- Updated {} ---- ".format(table_name)
     # then we do the following
     # 1. construct a query to append data from observation from RDR
     # 2. replace the observation_rdr string with observation because the source table uses that name
