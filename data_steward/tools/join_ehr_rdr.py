@@ -15,7 +15,6 @@ Currently the following environment variables must be set:
 import argparse
 import json
 import os
-import time
 
 import bq_utils
 from resources import fields_path
@@ -65,7 +64,8 @@ def construct_query(table_name, source, project_id, dataset_id, id_offset=None):
             field_type = field['type']
             if field_name == 'person_id':
                 col_expr = 'cdr_id as person_id'
-            elif id_offset and field_name.endswith('_id') and not field_name.endswith('concept_id') and field_type == 'integer':
+            elif (id_offset and field_name.endswith('_id') and
+                  not field_name.endswith('concept_id') and field_type == 'integer'):
                 col_expr = '%(field_name)s + %(id_offset)s as %(field_name)s' % locals()
             else:
                 col_expr = field_name
@@ -93,17 +93,21 @@ def query(q, destination_table_id, write_disposition):
     return qr
 
 
+def wait_result(done_flag, job_string):
+    if done_flag:
+        print " ---- {} succesful! ---- ".format(job_string)
+    else:
+        print " ---- {} takes too long! ---- ".format(job_string)
+        raise RuntimeError
+
+
 def main(args):
     mapping_query = ID_MAPPING_QUERY % args.__dict__
     print 'Loading ' + MAPPING_TABLE_ID
     query_result = query(mapping_query, destination_table_id=MAPPING_TABLE_ID, write_disposition='WRITE_TRUNCATE')
     query_job_id = query_result['jobReference']['jobId']
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id], retry_count=10)
-    if len(incomplete_jobs) == 0:
-        print " ---- {} loading done succesful! ---- ".format(MAPPING_TABLE_ID)
-    else:
-        print " ---- {} load takes too long! ---- ".format(MAPPING_TABLE_ID)
-        raise RuntimeError
+    wait_result(len(incomplete_jobs) == 0, MAPPING_TABLE_ID + " loading")
 
     jobs_to_wait_on = []
     for table_name in TABLE_NAMES:
@@ -114,11 +118,7 @@ def main(args):
         jobs_to_wait_on.append(query_job_id)
 
     incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10)
-    if len(incomplete_jobs) == 0:
-        print " ---- EHR loading done succesful! ---- "
-    else:
-        print " ---- EHR load takes too long! ---- "
-        raise RuntimeError
+    wait_result(len(incomplete_jobs) == 0, "Loading EHR tables")
 
     jobs_to_wait_on = []
     for table_name in [table_name for table_name in TABLE_NAMES if table_name not in ['person', 'observation']]:
@@ -129,14 +129,10 @@ def main(args):
         jobs_to_wait_on.append(query_job_id)
 
     incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10)
-    if len(incomplete_jobs) == 0:
-        print " ---- RDR loading done succesful! ---- "
-    else:
-        print " ---- RDR load takes too long! ---- "
-        raise RuntimeError
+    wait_result(len(incomplete_jobs) == 0, "Loading RDR tables")
 
-    observation_rdr_table_name = 'observation_rdr'
     table_name = 'observation'
+    observation_rdr_table_name = 'observation_rdr'
     observation_rdr_json_path = os.path.join(fields_path, observation_rdr_table_name + '.json')
     bq_utils.update_table_schema(table_name, observation_rdr_json_path)
 
@@ -150,11 +146,9 @@ def main(args):
     print 'Loading RDR table: ' + observation_rdr_table_name
     query_result = query(q, destination_table_id=table_name, write_disposition='WRITE_APPEND')
     query_job_id = query_result['jobReference']['jobId']
+
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id], retry_count=10)
-    if len(incomplete_jobs) == 0:
-        print 'Loading RDR table: ' + observation_rdr_table_name, ' done!'
-    else:
-        print 'Loading RDR table: ' + observation_rdr_table_name, ' taking too long!'
+    wait_result(len(incomplete_jobs) == 0, 'Loading RDR table: ' + observation_rdr_table_name)
 
 
 if __name__ == '__main__':
