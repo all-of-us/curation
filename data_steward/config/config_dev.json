@@ -1,0 +1,15 @@
+{
+  "allow_nonprod_requests": true,
+  "user_info": {
+    "user":""
+  },
+  "envs":{
+    "GOOGLE_APPLICATION_CREDENTIALS": "",
+    "APPLICATION_ID":"all-of-us-ehr-dev",
+    "BIGQUERY_DATASET_ID":"",
+    "DRC_BUCKET_NAME":"{}-dev-bucket-drc",
+    "BUCKET_NAME_NYC":"{}-dev-bucket-steward-nyc",
+    "BUCKET_NAME_PITT":"{}-dev-bucket-steward-pitt",
+    "BUCKET_NAME_FAKE":"{}-dev-bucket-steward-fake"
+  }
+}
