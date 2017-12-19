@@ -4,6 +4,7 @@ import bq_utils
 import re
 import sql_wrangle
 import logging
+import time
 
 ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
 ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
@@ -89,6 +90,7 @@ def run_heel(hpo_id):
             bq_utils.delete_table(table_id)
         else:
             bq_utils.query(command)
+            time.sleep(1)
 
 
 def create_tables(hpo_id, drop_existing=False):
