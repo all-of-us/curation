@@ -1,2 +1,2 @@
 "file_name","errors"
-"person.csv","CSV table encountered too many errors, giving up. Rows: 1; errors: 1. || CSV table references column position 3, but line starting at position:2 contains only 3 columns."
+"person.csv","Error while reading data, error message: CSV table encountered too many errors, giving up. Rows: 1; errors: 1. || Error while reading data, error message: CSV table references column position 3, but line starting at position:2 contains only 3 columns."
