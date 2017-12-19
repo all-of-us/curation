@@ -4,6 +4,7 @@ import bq_utils
 import resources
 import sql_wrangle
 import logging
+import time
 
 ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
@@ -73,6 +74,7 @@ def run_analyses(hpo_id):
                 bq_utils.delete_table(table_id)
         else:
             bq_utils.query(command)
+            time.sleep(0.5)
 
 
 def create_tables(hpo_id, drop_existing=False):
