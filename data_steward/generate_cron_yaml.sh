@@ -1,7 +1,15 @@
 #!/bin/bash
 hpos=( $(cut -d ',' -f1 ./spec/_data/hpo.csv) )
 hpos=("${hpos[@]:1}")
+
+if [ -z "$1"] || [-z "$2"]
+then
+    echo "supply both args <env_name>  <file_name>"
+    exit 1
+fi
+
 env=$1
+filename=$2
 
 echo "cron:"
 
