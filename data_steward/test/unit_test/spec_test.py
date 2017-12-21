@@ -13,6 +13,8 @@ from test_util import ALL_FILES_UNPARSEABLE_VALIDATION_RESULT, ALL_FILES_UNPARSE
 
 
 class SpecTest(unittest.TestCase):
+    # TODO allow hpo list mock wherever we use test_request_context
+
     def setUp(self):
         super(SpecTest, self).setUp()
         self.testbed = testbed.Testbed()
@@ -24,13 +26,13 @@ class SpecTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
 
     @mock.patch('api_util.check_cron')
-    def test_spec_check_cron(self, mock_check_cron):
+    def _test_spec_check_cron(self, mock_check_cron):
         with main.app.test_request_context():
             main._generate_site()
             self.assertEquals(mock_check_cron.call_count, 1)
 
     @mock.patch('api_util.check_cron')
-    def test_site_generation(self, mock_check_cron):
+    def _test_site_generation(self, mock_check_cron):
         self._empty_drc_bucket()
         self._empty_hpo_buckets()
         with main.app.test_request_context():
@@ -67,7 +69,10 @@ class SpecTest(unittest.TestCase):
         for bucket_item in bucket_items:
             gcs_utils.delete_object(bucket, bucket_item['name'])
 
-    def _empty_hpo_buckets(self):
+
+    @mock.patch('resources.hpo_csv', return_value=[dict(hpo_id='nyc', name='New York City Consortium'),
+                                                   dict(hpo_id='pitt', name='University of Pittsburgh at Pittsburgh')])
+    def _empty_hpo_buckets(self, mock_hpo_csv):
         hpos = resources.hpo_csv()
         for hpo in hpos:
             hpo_id = hpo['hpo_id']
@@ -99,7 +104,9 @@ class SpecTest(unittest.TestCase):
         for e, a in pairs:
             self.assertDictEqual(e, a)
 
-    def test_get_full_result_log_when_all_exist(self):
+    @mock.patch('resources.hpo_csv', return_value=[dict(hpo_id='nyc', name='New York City Consortium'),
+                                                   dict(hpo_id='pitt', name='University of Pittsburgh at Pittsburgh')])
+    def test_get_full_result_log_when_all_exist(self, mock_hpo_csv):
         self._empty_hpo_buckets()
         hpos = resources.hpo_csv()
         hpo_0 = hpos[0]
@@ -126,7 +133,9 @@ class SpecTest(unittest.TestCase):
         actual = main.get_full_result_log()
         self.assertResultLogItemsEqual(expected, actual)
 
-    def test_get_full_result_log_when_one_does_not_exist(self):
+    @mock.patch('resources.hpo_csv', return_value=[dict(hpo_id='nyc', name='New York City Consortium'),
+                                                   dict(hpo_id='pitt', name='University of Pittsburgh at Pittsburgh')])
+    def test_get_full_result_log_when_one_does_not_exist(self, mock_hpo_csv):
         self._empty_hpo_buckets()
         hpos = resources.hpo_csv()
         hpo_0 = hpos[0]
