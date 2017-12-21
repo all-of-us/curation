@@ -98,7 +98,7 @@ def _upload_achilles_files(hpo_id):
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     for filename in common.ACHILLES_INDEX_FILES:
         logging.info('uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
-        bucket_file_name = filename.split(resources.resource_path + '/')[1].strip()
+        bucket_file_name = filename.split(resources.resource_path + os.sep)[1].strip()
         with open(filename, 'r') as fp:
             upload_result = gcs_utils.upload_object(bucket, bucket_file_name, fp)
             results.append(upload_result)
