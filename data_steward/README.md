@@ -20,7 +20,7 @@ the internet. The following environment variables are needed to configure access
 | name | description |
 | ---- | ----------- |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Location of service account credentials in JSON format (see [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials#howtheywork)) |
-| `APPLICATION_ID` | Google cloud project ID. For development, we use `all-of-us-ehr-dev`. |
+| `APPLICATION_ID` | Google cloud project ID. For development, we use `aou-res-curation-test`. |
 | `BIGQUERY_DATASET_ID` | ID of the biquery dataset where CDM data are to be loaded. Must be in the project associated with `APPLICATION_ID`. |
 | `DRC_BUCKET_NAME` | Name of the bucket where specification document and report is located. |
 | `BUCKET_NAME_<HPO_ID>` | Name of the bucket where CDM files are to be uploaded by HPO site with id `<HPO_ID>`. Note that in order to run unit tests, you must have defined `BUCKET_NAME_NYC`, `BUCKET_NAME_PITT`, `BUCKET_NAME_FAKE`|
