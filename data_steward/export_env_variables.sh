@@ -14,6 +14,7 @@ appid="aou-res-curation-$env"
 export APPLICATION_ID="aou-res-curation-$env"
 export BIGQUERY_DATASET_ID="${env}_temp"
 export BUCKET_NAME_FAKE="$APPLICATION_ID-fake"
+export DRC_BUCKET_NAME="$APPLICATION_ID-drc-spec"
 export BUCKET_NAME_NYC="$APPLICATION_ID-nyc"
 for i in "${hpos[@]}"
 do

@@ -59,7 +59,11 @@ class SpecTest(unittest.TestCase):
         self.assertEquals(u'<span>foo</span>', result)
 
     def _empty_bucket(self, bucket):
-        bucket_items = gcs_utils.list_bucket(bucket)
+        try:
+            # TODO : catch specific errors
+            bucket_items = gcs_utils.list_bucket(bucket)
+        except:
+            return
         for bucket_item in bucket_items:
             gcs_utils.delete_object(bucket, bucket_item['name'])
 

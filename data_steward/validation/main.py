@@ -107,9 +107,38 @@ def _upload_achilles_files(hpo_id):
 
 @api_util.auth_required_cron
 def validate_hpo_files(hpo_id):
+    """
+    validation end point for individual hpo_ids
+    """
+    return run_validation(hpo_id)
+
+
+@api_util.auth_required_cron
+def validate_all_hpos():
+    """
+    validation end point for individual hpo_ids
+    """
+    for item in resources.hpo_csv():
+        hpo_id = item['hpo_id']
+        run_validation(hpo_id, True)
+    return 'validation done!'
+
+
+def run_validation(hpo_id, error_ignore_flag=False):
+    """
+    runs validation for a single hpo_id
+    param hpo_id : which hpo_id to run for
+    param error_ignore_flag : ignore errors when running for all
+    """
     logging.info(' Validating hpo_id %s' % hpo_id)
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    bucket_items = gcs_utils.list_bucket(bucket)
+    try:
+        bucket_items = gcs_utils.list_bucket(bucket)
+    except:
+        if error_ignore_flag:
+            logging.warning('skipping {}. bucket does not exist.'.format(hpo_id))
+            return 'skipping'
+        raise RuntimeError('{} does not exist. create bucket before validation for hpo {}'.format(bucket, hpo_id))
 
     # separate cdm from the unknown (unexpected) files
     found_cdm_files = []
@@ -233,6 +262,12 @@ def _save_result_in_gcs(bucket, name, cdm_file_results):
     f.close()
     return result
 
+
+app.add_url_rule(
+    PREFIX + 'ValidateAllHpoFiles',
+    endpoint='validate_all_hpos',
+    view_func=validate_all_hpos,
+    methods=['GET'])
 
 app.add_url_rule(
     PREFIX + 'ValidateHpoFiles/<string:hpo_id>',
