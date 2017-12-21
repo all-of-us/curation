@@ -103,6 +103,7 @@ def get_full_result_log():
         hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
 
         try:
+            # TODO : figure out possible errors and catch specific bucket inexistence error
             obj_metadata = gcs_utils.get_metadata(hpo_bucket, RESULT_CSV)
         except:
             logging.warning('skipping hpo {}. bucket does not exist.'.format(hpo))
