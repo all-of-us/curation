@@ -26,4 +26,4 @@ or tag you need. The specification document should always be consistent with the
 ### Authentication Details
 
 All actors calling APIs in production will use [service accounts](https://cloud.google.com/compute/docs/access/service-accounts).
-We will use a Google Cloud Project owned by Vanderbilt for testing: `all-of-us-ehr-dev`.
+We will use a Google Cloud Project owned by Vanderbilt for testing: `aou-res-curation-test`.
