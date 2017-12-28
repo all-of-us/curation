@@ -75,9 +75,24 @@ def export_from_path(p, hpo_id):
     return result
 
 
+def convert_value(value, tpe):
+    """
+    Cast to specified type
+    :param value: value to cast
+    :param tpe: name of the type as returned by bq
+    :return: casted value or the input value if it is falsey
+    """
+    if value:
+        if tpe == 'INTEGER':
+            return int(value)
+        if tpe == 'FLOAT':
+            return float(value)
+    return value
+
+
 def query_result_to_payload(qr):
     """
-    Convert query result to the report format
+    Convert query result to the report format (which was based on rjson)
     :param qr: query result
     :return:
     """
@@ -88,6 +103,9 @@ def query_result_to_payload(qr):
     for i in range(0, field_count):
         field = fields[i]
         key = field['name'].upper()
-        values = map(lambda r: r['f'][i]['v'], rows)
-        result[key] = values
+        tpe = field['type'].upper()
+        values = map(lambda r: convert_value(r['f'][i]['v'], tpe), rows)
+        # according to AchillesWeb rjson serializes dataframes with 1 row as single element properties
+        # see https://github.com/OHDSI/AchillesWeb/blob/master/js/app/common.js#L134
+        result[key] = values[0] if len(values) == 1 else values
     return result
