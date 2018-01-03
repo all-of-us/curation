@@ -18,14 +18,14 @@ machine:
     - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
     - sudo apt-get update && sudo apt-get install google-cloud-sdk
     - sudo apt-get install google-cloud-sdk-app-engine-python
-
-test:
-  pre:
     - ./ci/activate_creds.sh ~/gcloud-credentials-key.json
     - export GOOGLE_APPLICATION_CREDENTIALS="~/gcloud-credentials-key.json"
     - export APPLICATION_ID="all-of-us-ehr-dev"
     - export BIGQUERY_DATASET_ID="circle-test_merge_rerun"
     - export BUCKET_NAME_FAKE="circle-test-val-run-fake"
+
+
+test:
   override:
     - ./test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/ -r spec_test.py
 
