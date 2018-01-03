@@ -3,33 +3,70 @@ dependencies:
     # chmod to address a Circle "bug", since gcloud lives at /opt
     # and wants to make a .staging directory (as a sibling!)
     # when upgrading or installing new components.
-    - sudo chmod o+w /opt
-    - cd data_steward/
+    # - sudo chmod o+w /opt
     # CircleCI's version of pip can be out of date; make sure it's up-to-date first.
     - pip install --upgrade pip
     # Then install requirements needed to run our tools.
-    - pip install -t lib/ -r requirements.txt 
+    - cd ~/curation/data_steward/ && pip install -t lib/ -r requirements.txt 
    
 machine:
   environment:
     GOOGLE_APPLICATION_CREDENTIALS: "~/gcloud-credentials-key.json"
     APPLICATION_ID: "all-of-us-ehr-dev"
     BIGQUERY_DATASET_ID: "circle_test_merge_rerun"
-    BUCKET_NAME_FAKE: "circle-test-val-run-fake"
-    DATA_STEWARD: "~/curation/data_steward/"
-    PYTHONPATH: "/usr/lib/google-cloud-sdk/platform/google_appengine/:~/curation/data_steward:~/curation/lib"
+    BUCKET_NAME_FAKE: "circle-dummy-fake"
+    DRC_BUCKET_NAME: "circle-dummy-drc-spec"
+    BUCKET_NAME_NYC: "circle-dummy-nyc"
+    BUCKET_NAME_CHCI: "circle-dummy-chci"
+    BUCKET_NAME_CHS: "circle-dummy-chs"
+    BUCKET_NAME_CPMC_CEDERS: "circle-dummy-cpmc_ceders"
+    BUCKET_NAME_CPMC_UC: "circle-dummy-cpmc_uc"
+    BUCKET_NAME_CPMC_USC: "circle-dummy-cpmc_usc"
+    BUCKET_NAME_NYC_CU: "circle-dummy-nyc_cu"
+    BUCKET_NAME_NYC_CORNELL: "circle-dummy-nyc_cornell"
+    BUCKET_NAME_NYC_HH: "circle-dummy-nyc_hh"
+    BUCKET_NAME_ECCHC: "circle-dummy-ecchc"
+    BUCKET_NAME_GHS: "circle-dummy-ghs"
+    BUCKET_NAME_HRHC: "circle-dummy-hrhc"
+    BUCKET_NAME_IPMC_NU: "circle-dummy-ipmc_nu"
+    BUCKET_NAME_IPMC_UCHICAGO: "circle-dummy-ipmc_uchicago"
+    BUCKET_NAME_IPMC_NORTHSHORE: "circle-dummy-ipmc_northshore"
+    BUCKET_NAME_IPMC_RUSH: "circle-dummy-ipmc_rush"
+    BUCKET_NAME_IPMC_UIC: "circle-dummy-ipmc_uic"
+    BUCKET_NAME_JHCHC: "circle-dummy-jhchc"
+    BUCKET_NAME_NEC_BMC: "circle-dummy-nec_bmc"
+    BUCKET_NAME_NEC_PHS: "circle-dummy-nec_phs"
+    BUCKET_NAME_PITT: "circle-dummy-pitt"
+    BUCKET_NAME_SYHC: "circle-dummy-syhc"
+    BUCKET_NAME_TACH_HFHS: "circle-dummy-tach_hfhs"
+    BUCKET_NAME_UAMC_BANNER: "circle-dummy-uamc_banner"
+    BUCKET_NAME_UAMC_UOFA: "circle-dummy-uamc_uofa"
+    BUCKET_NAME_VA: "circle-dummy-va"
+    BUCKET_NAME_AOUW_MCRI: "circle-dummy-aouw_mcri"
+    BUCKET_NAME_AOUW_UWH: "circle-dummy-aouw_uwh"
+    BUCKET_NAME_AOUW_MCW: "circle-dummy-aouw_mcw"
+    BUCKET_NAME_SEEC_UFL: "circle-dummy-seec_ufl"
+    BUCKET_NAME_SAOU_UAB: "circle-dummy-saou_uab"
+    BUCKET_NAME_SAOU_UAB_HUNT: "circle-dummy-saou_uab_hunt"
+    BUCKET_NAME_SAOU_CGMHS: "circle-dummy-saou_cgmhs"
+    BUCKET_NAME_SAOU_USAHS: "circle-dummy-saou_usahs"
+    BUCKET_NAME_SAOU_UMC: "circle-dummy-saou_umc"
+    BUCKET_NAME_SAOU_TUL: "circle-dummy-saou_tul"
+    BUCKET_NAME_SAOU_LSU: "circle-dummy-saou_lsu"
+    BUCKET_NAME_SAOU_UMMC: "circle-dummy-saou_ummc"
+    PYTHONPATH: "/usr/lib/google-cloud-sdk/platform/google_appengine/:~/curation/data_steward:~/curation/data_steward/lib"
 
   post:
     - echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
     - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
     - sudo apt-get update && sudo apt-get install google-cloud-sdk
     - sudo apt-get install google-cloud-sdk-app-engine-python
-    - ./ci/activate_creds.sh ~/gcloud-credentials-key.json
-
+    - chmod 700 ./curation/data_steward/ci/activate_creds.sh
+    - ./curation/data_steward/ci/activate_creds.sh ~/gcloud-credentials-key.json
 
 test:
   override:
-    - ./test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/ -r spec_test.py
+    - cd ~/curation/data_steward && ./test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/ -r spec_test.py
 
 #deployment:
 #  # Deploy master to the pmi-drc-api-test project whenever the tests pass
