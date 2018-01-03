@@ -11,7 +11,6 @@ dependencies:
    
 machine:
   environment:
-    GOOGLE_APPLICATION_CREDENTIALS: "~/gcloud-credentials-key.json"
     APPLICATION_ID: "all-of-us-ehr-dev"
     BIGQUERY_DATASET_ID: "circle_test_merge_rerun"
     BUCKET_NAME_FAKE: "circle-dummy-fake"
@@ -54,7 +53,7 @@ machine:
     BUCKET_NAME_SAOU_TUL: "circle-dummy-saou_tul"
     BUCKET_NAME_SAOU_LSU: "circle-dummy-saou_lsu"
     BUCKET_NAME_SAOU_UMMC: "circle-dummy-saou_ummc"
-    PYTHONPATH: "/usr/lib/google-cloud-sdk/platform/google_appengine/:~/curation/data_steward:~/curation/data_steward/lib"
+    PYTHONPATH: /usr/lib/google-cloud-sdk/platform/google_appengine/:~/curation/data_steward:~/curation/data_steward/lib
 
   post:
     - echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
@@ -66,7 +65,9 @@ machine:
 
 test:
   override:
-    - cd ~/curation/data_steward && ./test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/ -r spec_test.py
+    - cd ~/curation/data_steward && \ 
+        export GOOGLE_APPLICATION_CREDENTIALS=~/gcloud-credentials-key.json && \
+        ./test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/ -r spec_test.py
 
 #deployment:
 #  # Deploy master to the pmi-drc-api-test project whenever the tests pass
