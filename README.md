@@ -1,5 +1,7 @@
 # All of Us Curation
 
+![alt text](https://circleci.com/gh/aahladmanas/curation/tree/alpha.png?circle-token=f5d4106b20124888e7b626e07ccf31161b6c6ce2 "tests passed")
+
 ## Purpose of this document
 
 Describes the All of Us deliverables associated with data ingestion and quality control, intended to support 
