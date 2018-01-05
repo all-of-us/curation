@@ -98,5 +98,15 @@
         "type": "string", 
         "name": "reveue_code_source_value", 
         "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "drg_concept_id", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "drg_source_value", 
+        "mode": "nullable"
     }
 ]

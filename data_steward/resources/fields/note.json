@@ -25,8 +25,28 @@
         "mode": "required"
     }, 
     {
+        "type": "integer", 
+        "name": "note_class_concept_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "string", 
+        "name": "note_title", 
+        "mode": "nullable"
+    }, 
+    {
         "type": "string", 
         "name": "note_text", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "encoding_concept_id", 
+        "mode": "required"
+    }, 
+    {
+        "type": "integer", 
+        "name": "language_concept_id", 
         "mode": "required"
     }, 
     {
@@ -35,13 +55,13 @@
         "mode": "nullable"
     }, 
     {
-        "type": "integer", 
-        "name": "visit_occurrence_id", 
-        "mode": "nullable"
-    }, 
-    {
         "type": "string", 
         "name": "note_source_value", 
         "mode": "nullable"
-    }
+    },
+    {
+        "type": "integer", 
+        "name": "visit_occurrence_id", 
+        "mode": "nullable"
+    } 
 ]
