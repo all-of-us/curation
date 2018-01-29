@@ -14,7 +14,7 @@ fi
 
 cp app_base.yaml app.yaml
 appid="aou-res-curation-$env"
-APPLICATION_ID="circle-dummy"
+APPLICATION_ID="circle-dummy-test"
 echo "" >> app.yaml
 echo "env_variables:">>app.yaml
 echo  "  BIGQUERY_DATASET_ID: \"${env}_fake\"" >> app.yaml
