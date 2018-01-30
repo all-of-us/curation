@@ -3,8 +3,21 @@
 # Run this script to upload service-account keys for gcloud on Circle CI.
 # Arg: [path to gcloud service account key JSON file]
 # Requires CI_TOKEN environment variable containing a valid Circle CI token.
+# Requires CI_USERNAME environment variable containing a valid circle username
 
 set -e
+
+if [ -z "${CI_USERNAME}" ]
+then 
+    echo "set CI_USERNAME env variable before attempting to upload";
+    exit 1;
+fi
+
+if [ -z "${CI_TOKEN}" ]
+then 
+    echo "set CI_TOKEN ENV env variable before attempting to upload";
+    exit 1; 
+fi
 
 function make_circle_envvar {
     curl -s -X DELETE \
@@ -19,7 +32,6 @@ GCLOUD_CREDENTIALS_KEY=$(openssl rand -base64 32)
 GCLOUD_CREDENTIALS=$(openssl enc  -aes-256-cbc -in $1 -base64 -A  -k $GCLOUD_CREDENTIALS_KEY)
 
 VCS_TYPE=github
-CI_USERNAME=aahladmanas
 CI_PROJECT=curation
 
 echo "----- Environment vars to set in Circle CI Admin UI:"
