@@ -15,18 +15,18 @@ fi
 cp app_base.yaml app.yaml
 appid="aou-res-curation-$env"
 APPLICATION_ID="circle-dummy-test"
-echo "" >> app.yaml
-echo "env_variables:">>app.yaml
-echo  "  BIGQUERY_DATASET_ID: \"${env}_fake\"" >> app.yaml
-echo  "  BUCKET_NAME_FAKE: \"$APPLICATION_ID-fake\"">> app.yaml
-echo  "  BUCKET_NAME_NYC: \"$APPLICATION_ID-nyc\"">> app.yaml
-echo  "  DRC_BUCKET_NAME: \"$APPLICATION_ID-drc-spec\"">> app.yaml
-for i in "${hpos[@]}"
-do
-  temp="${i%\"}"
-  temp="${temp#\"}"
-  echo "  BUCKET_NAME_${temp^^}: \"$APPLICATION_ID-$temp\"" >> app.yaml
-done
+# echo "" >> app.yaml
+# echo "env_variables:">>app.yaml
+# echo  "  BIGQUERY_DATASET_ID: \"${env}_fake\"" >> app.yaml
+# echo  "  BUCKET_NAME_FAKE: \"$APPLICATION_ID-fake\"">> app.yaml
+# echo  "  BUCKET_NAME_NYC: \"$APPLICATION_ID-nyc\"">> app.yaml
+# echo  "  DRC_BUCKET_NAME: \"$APPLICATION_ID-drc-spec\"">> app.yaml
+# for i in "${hpos[@]}"
+# do
+#   temp="${i%\"}"
+#   temp="${temp#\"}"
+#   echo "  BUCKET_NAME_${temp^^}: \"$APPLICATION_ID-$temp\"" >> app.yaml
+# done
 
 
 #for i in "${hpos[@]}"
