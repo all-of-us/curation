@@ -25,7 +25,9 @@ class InvalidOperationError(RuntimeError):
 
 
 def get_dataset_id():
-    return os.environ.get('BIGQUERY_DATASET_ID')
+    if 'BIGQUERY_DATASET_ID' not in gcs_utils._cloud_resources_json:
+        raise EnvironmentError('cloud_resources.json does not point to a bigquery dataset')
+    return gcs_utils._cloud_resources_json['BIGQUERY_DATASET_ID']
 
 
 def create_service():

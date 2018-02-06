@@ -7,6 +7,7 @@ from io import BytesIO
 import mimetypes
 from google.appengine.api import app_identity
 import googleapiclient.discovery
+import json
 
 
 MIMETYPES = {'json': 'application/json',
@@ -14,34 +15,11 @@ MIMETYPES = {'json': 'application/json',
              'ttf': 'application/font-sfnt',
              'eot': 'application/vnd.ms-fontobject'}
 
-
-def get_drc_bucket():
-    return os.environ.get('DRC_BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
-
-
-def get_hpo_bucket(hpo_id):
-    """
-    Get the name of an HPO site's private bucket
-    :param hpo_id: id of the HPO site
-    :return: name of the bucket
-    """
-    # TODO reconsider how to map bucket name
-    bucket_env = 'BUCKET_NAME_' + hpo_id.upper()
-    hpo_bucket_name = os.getenv(bucket_env)
-    if hpo_bucket_name is None:
-        raise EnvironmentError()
-    return hpo_bucket_name
-
-
-def hpo_gcs_path(hpo_id):
-    """
-    Get the fully qualified GCS path where HPO files will be located
-    :param hpo_id: the id for an HPO
-    :return: fully qualified GCS path
-    """
-    bucket_name = get_hpo_bucket(hpo_id)
-    return '/%s/' % bucket_name
-
+# setting up  cloud resource names
+try:
+    app_default_bucket = app_identity.get_default_gcs_bucket_name()
+except:
+    app_default_bucket = 'dummy_cloud_resource_bucket'
 
 def create_service():
     return googleapiclient.discovery.build('storage', 'v1')
@@ -152,3 +130,37 @@ def delete_object(bucket, name):
     resp = req.execute()
     # TODO return something useful
     return resp
+
+# this is here because it uses get_object
+_cloud_resources_json = json.loads(get_object(app_default_bucket, 'cloud_resources.json'))
+
+
+def get_drc_bucket():
+    if 'drc_spec' not in _cloud_resources_json:
+        raise EnvironmentError('cant find drc spec bucket')
+    return _cloud_resources_json['drc_spec']
+
+
+def get_hpo_bucket(hpo_id):
+    """
+    Get the name of an HPO site's private bucket
+    :param hpo_id: id of the HPO site
+    :return: name of the bucket
+    """
+    # TODO reconsider how to map bucket name
+    bucket_key = 'BUCKET_NAME_' + hpo_id.upper()
+    if bucket_key not in _cloud_resources_json:
+        raise EnvironmentError('{} not found'.format(bucket_key))
+    return _cloud_resources_json[bucket_key]
+
+
+def hpo_gcs_path(hpo_id):
+    """
+    Get the fully qualified GCS path where HPO files will be located
+    :param hpo_id: the id for an HPO
+    :return: fully qualified GCS path
+    """
+    bucket_name = get_hpo_bucket(hpo_id)
+    return '/%s/' % bucket_name
+
+
