@@ -1,0 +1,22 @@
+runtime: python27
+api_version: 1
+threadsafe: yes
+service: curation
+instance_class: B8
+basic_scaling:
+    max_instances: 10
+    idle_timeout: 60m
+
+skip_files:
+- ci/
+- test/
+- tools/
+
+handlers:
+- url: /tasks/.*
+  script: spec.main.app
+  login: admin
+
+- url: /.*
+  script: validation.main.app
+  login: admin

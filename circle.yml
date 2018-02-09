@@ -1,0 +1,102 @@
+dependencies:
+  override:
+    # chmod to address a Circle "bug", since gcloud lives at /opt
+    # and wants to make a .staging directory (as a sibling!)
+    # when upgrading or installing new components.
+    # - sudo chmod o+w /opt
+    # CircleCI's version of pip can be out of date; make sure it's up-to-date first.
+    - pip install --upgrade pip
+    # Then install requirements needed to run our tools.
+    - cd ~/curation/data_steward/ && pip install -t lib/ -r requirements.txt 
+   
+machine:
+  environment:
+    GOOGLE_APPLICATION_CREDENTIALS: "/home/ubuntu/gcloud-credentials-key.json"
+    APPLICATION_ID: "aou-res-curation-test"
+    BIGQUERY_DATASET_ID: "circle_test_merge_rerun"
+    BUCKET_NAME_FAKE: "circle-dummy-test-fake"
+    DRC_BUCKET_NAME: "circle-dummy-test-drc-spec"
+    BUCKET_NAME_NYC: "circle-dummy-test-nyc"
+    BUCKET_NAME_CHCI: "circle-dummy-test-chci"
+    BUCKET_NAME_CHS: "circle-dummy-test-chs"
+    BUCKET_NAME_CPMC_CEDERS: "circle-dummy-test-cpmc_ceders"
+    BUCKET_NAME_CPMC_UC: "circle-dummy-test-cpmc_uc"
+    BUCKET_NAME_CPMC_USC: "circle-dummy-test-cpmc_usc"
+    BUCKET_NAME_NYC_CU: "circle-dummy-test-nyc_cu"
+    BUCKET_NAME_NYC_CORNELL: "circle-dummy-test-nyc_cornell"
+    BUCKET_NAME_NYC_HH: "circle-dummy-test-nyc_hh"
+    BUCKET_NAME_ECCHC: "circle-dummy-test-ecchc"
+    BUCKET_NAME_GHS: "circle-dummy-test-ghs"
+    BUCKET_NAME_HRHC: "circle-dummy-test-hrhc"
+    BUCKET_NAME_IPMC_NU: "circle-dummy-test-ipmc_nu"
+    BUCKET_NAME_IPMC_UCHICAGO: "circle-dummy-test-ipmc_uchicago"
+    BUCKET_NAME_IPMC_NORTHSHORE: "circle-dummy-test-ipmc_northshore"
+    BUCKET_NAME_IPMC_RUSH: "circle-dummy-test-ipmc_rush"
+    BUCKET_NAME_IPMC_UIC: "circle-dummy-test-ipmc_uic"
+    BUCKET_NAME_JHCHC: "circle-dummy-test-jhchc"
+    BUCKET_NAME_NEC_BMC: "circle-dummy-test-nec_bmc"
+    BUCKET_NAME_NEC_PHS: "circle-dummy-test-nec_phs"
+    BUCKET_NAME_PITT: "circle-dummy-test-pitt"
+    BUCKET_NAME_SYHC: "circle-dummy-test-syhc"
+    BUCKET_NAME_TACH_HFHS: "circle-dummy-test-tach_hfhs"
+    BUCKET_NAME_UAMC_BANNER: "circle-dummy-test-uamc_banner"
+    BUCKET_NAME_UAMC_UOFA: "circle-dummy-test-uamc_uofa"
+    BUCKET_NAME_VA: "circle-dummy-test-va"
+    BUCKET_NAME_AOUW_MCRI: "circle-dummy-test-aouw_mcri"
+    BUCKET_NAME_AOUW_UWH: "circle-dummy-test-aouw_uwh"
+    BUCKET_NAME_AOUW_MCW: "circle-dummy-test-aouw_mcw"
+    BUCKET_NAME_SEEC_UFL: "circle-dummy-test-seec_ufl"
+    BUCKET_NAME_SAOU_UAB: "circle-dummy-test-saou_uab"
+    BUCKET_NAME_SAOU_UAB_HUNT: "circle-dummy-test-saou_uab_hunt"
+    BUCKET_NAME_SAOU_CGMHS: "circle-dummy-test-saou_cgmhs"
+    BUCKET_NAME_SAOU_USAHS: "circle-dummy-test-saou_usahs"
+    BUCKET_NAME_SAOU_UMC: "circle-dummy-test-saou_umc"
+    BUCKET_NAME_SAOU_TUL: "circle-dummy-test-saou_tul"
+    BUCKET_NAME_SAOU_LSU: "circle-dummy-test-saou_lsu"
+    BUCKET_NAME_SAOU_UMMC: "circle-dummy-test-saou_ummc"
+    PYTHONPATH: "/usr/lib/google-cloud-sdk/platform/google_appengine/:~/curation/data_steward:~/curation/data_steward/lib"
+
+  post:
+    - echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+    - sudo apt-get update && sudo apt-get install google-cloud-sdk
+    - sudo apt-get install google-cloud-sdk-app-engine-python
+    - chmod 700 ./curation/data_steward/ci/activate_creds.sh
+    - ./curation/data_steward/ci/activate_creds.sh ~/gcloud-credentials-key.json
+
+test:
+  override:
+    - bash ~/curation/data_steward/test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/: 
+        timeout: 3000
+      # If need be, comment out the above line and uncomment any of the following to run particular tests
+      # - cd ~/curation/data_steward && ./test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/ -r spec_test.py
+      # - cd ~/curation/data_steward && ./test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/ -r bq_utils_test.py
+      # - cd ~/curation/data_steward && ./test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/ -r validation_test.py:
+      #     timeout: 1000
+deployment:
+  # Deploy master to the pmi-drc-api-test project whenever the tests pass
+  test:
+    branch: alpha # can be pointed to other things, but the tests work on alpha for now
+    commands:
+        # TODO privilege tests
+      - cd ~/curation/data_steward && chmod 700 generate_app_yaml.sh && chmod 700 ci/deploy.sh && ./ci/deploy.sh aou-res-curation-test
+
+#  # To deploy to staging, cut a GitHub release on a green build, with tag of
+#  # the form v0-1-1-rc0. We use tags as AppEngine version names, so they must
+#  # follow AE rules (no dots).
+#  staging:
+#    # This should match _RELEASE_TAG_RE in release_notes.py.
+#    tag: /v[0-9]+(-[0-9]+)*-rc[0-9]+[a-z]*/
+#    commands:
+#      - ./ci/activate_creds.sh ~/gcloud-credentials.key
+#      - ./ci/release_notes.py all-of-us-rdr-staging
+#      - ./tools/upgrade_database.sh -i https://all-of-us-rdr-staging.appspot.com --creds_file ~/gcloud-credentials.key:
+#          pwd:
+#            rest-api
+#      - ./ci/deploy.sh all-of-us-rdr-staging config/config_staging.json ~/gcloud-credentials.key
+#      - ./rest-api/test/test_server.sh -i https://all-of-us-rdr-staging.appspot.com -c ~/gcloud-credentials.key
+#
+## Stable and production deployments are not done automatically but can be
+## manually executed with the test.sh and deploy.sh pair, e.g.:
+## ./ci/deploy.sh all-of-us-rdr-stable config/config_stable.json <configurator key file>
+## ./ci/deploy.sh all-of-us-rdr config/config_prod.json <configurator key file>

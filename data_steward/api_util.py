@@ -9,7 +9,6 @@ from google.appengine.api import oauth
 from google.appengine.ext import ndb
 
 from flask import request
-from dateutil.parser import parse
 from werkzeug.exceptions import BadRequest, Forbidden, Unauthorized
 
 SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
@@ -172,35 +171,6 @@ def update_model(old_model, new_model):
         if type(getattr(type(new_model), k)) != ndb.ComputedProperty and v is not None:
             setattr(old_model, k, v)
 
-
-def parse_date(date_str, date_format=None, date_only=False):
-    """Parses JSON dates.
-
-    Args:
-      date_format: If specified, use this date format, otherwise uses the proto
-        converter's date handling logic.
-     date_only: If specified, and true, will raise an exception if the parsed
-       timestamp isn't midnight.
-    """
-    if date_format:
-        return datetime.datetime.strptime(date_str, date_format)
-    else:
-        date_obj = parse(date_str)
-        if date_obj.utcoffset():
-            date_obj = date_obj.replace(tzinfo=None) - date_obj.utcoffset()
-        else:
-            date_obj = date_obj.replace(tzinfo=None)
-        if date_only:
-            if (date_obj != datetime.datetime.combine(date_obj.date(),
-                                                      datetime.datetime.min.time())):
-                raise BadRequest('Date contains non zero time fields')
-        return date_obj
-
-
-def parse_json_date(obj, field_name, date_format=None):
-    """Converts a field of a dictionary from a string to a datetime."""
-    if field_name in obj:
-        obj[field_name] = parse_date(obj[field_name], date_format)
 
 def format_json_date(obj, field_name, date_format=None):
     """Converts a field of a dictionary from a datetime to a string."""
