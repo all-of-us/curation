@@ -1,6 +1,6 @@
 # All of Us Curation
 
-![alt text](https://circleci.com/gh/all-of-us/curation/tree/develop.svg?style=shield "tests passed")
+[![Circle CI](https://circleci.com/gh/all-of-us/curation/tree/develop.svg?style=shield)](https://circleci.com/gh/all-of-us/curation)
 
 ## Purpose of this document
 
