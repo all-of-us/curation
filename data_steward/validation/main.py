@@ -17,7 +17,7 @@ import resources
 from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV, ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
 UNKNOWN_FILE = 'Unknown file'
-BQ_LOAD_RETRY_COUNT = 4
+BQ_LOAD_RETRY_COUNT = 7
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
