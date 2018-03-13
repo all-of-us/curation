@@ -63,5 +63,15 @@
         "type": "integer", 
         "name": "condition_source_concept_id", 
         "mode": "nullable"
+    },
+    {
+        "type": "string", 
+        "name": "condition_status_source_value", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "integer", 
+        "name": "condition_status_concept_id", 
+        "mode": "nullable"
     }
 ]

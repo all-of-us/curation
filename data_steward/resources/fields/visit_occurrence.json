@@ -58,5 +58,30 @@
         "type": "integer", 
         "name": "visit_source_concept_id", 
         "mode": "nullable"
+    },
+    {
+        "type": "integer", 
+        "name": "admitting_source_concept_id", 
+        "mode": "nullable"
+    }, 
+    {
+        "type": "string", 
+        "name": "admitting_source_value", 
+        "mode": "nullable"
+    },
+    {
+        "type": "integer", 
+        "name": "discharge_to_concept_id", 
+        "mode": "nullable"
+    },
+    {
+        "type": "string", 
+        "name": "discharge_to_source_value", 
+        "mode": "nullable"
+    },
+    {
+        "type": "integer", 
+        "name": "preceding_visit_occurrence_id", 
+        "mode": "nullable"
     }
 ]
