@@ -35,6 +35,11 @@
         "mode": "nullable"
     }, 
     {
+        "type": "date", 
+        "name": "verbatim_end_date",
+        "mode": "nullable"
+    }, 
+    {
         "type": "integer", 
         "name": "drug_type_concept_id", 
         "mode": "required"
@@ -68,17 +73,7 @@
         "type": "integer", 
         "name": "route_concept_id", 
         "mode": "nullable"
-    }, 
-    {
-        "type": "float", 
-        "name": "effective_drug_dose", 
-        "mode": "nullable"
-    }, 
-    {
-        "type": "integer", 
-        "name": "dose_unit_concept_id", 
-        "mode": "nullable"
-    }, 
+    },
     {
         "type": "string", 
         "name": "lot_number", 
