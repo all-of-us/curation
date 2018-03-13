@@ -69,6 +69,7 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
                             'tableId': table_id
                         },
                         'skipLeadingRows': 1,
+                        "allowQuotedNewlines": True,
                         'writeDisposition': 'WRITE_TRUNCATE'
                     }
             }
