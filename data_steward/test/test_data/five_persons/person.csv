@@ -1,6 +1,6 @@
 person_id,gender_concept_id,year_of_birth,month_of_birth,day_of_birth,birth_datetime,race_concept_id,ethnicity_concept_id,location_id,provider_id,care_site_id,person_source_value,gender_source_value,gender_source_concept_id,race_source_value,race_source_concept_id,ethnicity_source_value,ethnicity_source_concept_id
-53639,8507,1962,9,1,1962-09-01 05:00:00-05:00,8527,38003564,977,,,7554915866207BB6,1,,1,,1,
-85908,8507,1943,11,1,1943-11-01 05:00:00-05:00,8527,38003564,78,,,BD248CFD7FB756FD,1,,1,,1,
-2285,8532,1956,10,1,1956-10-01 05:00:00-05:00,8516,38003564,60,,,04C307F9CE34D633,2,,2,,2,
-3783,8532,1934,12,1,1934-12-01 05:00:00-05:00,8527,38003564,485,,,0816918B092DCD82,2,,1,,1,
-21450,8532,1943,4,1,1943-04-01 05:00:00-05:00,8527,38003564,2093,,,2EA6BB4A86E0634F,2,,1,,1,
+10,1,1999,10,5,1981-09-15 12:40:13.343317 UTC,10,10,10,10,10,Google Adds,Sales,10,Google Adds,10,St. Paul,10
+8,2,1996,11,11,1999-09-29 05:15:08.467313 UTC,8,8,8,8,8,Word of mouth,Direct,8,Direct,8,Virginia Beach,8
+6,2,2011,8,17,1975-10-04 19:11:36.435910 UTC,6,6,6,6,6,Previous Customer,Add. Words,6,Internet,6,Chicago,6
+9,2,2017,2,7,1971-09-08 07:41:09.037623 UTC,9,9,9,9,9,Sales,Internet,9,Add. Words,9,Anchorage,9
+7,2,1986,6,30,1974-04-05 12:09:51.092328 UTC,7,7,7,7,7,Sales,Add. Words,7,Direct,7,Kansas,7
