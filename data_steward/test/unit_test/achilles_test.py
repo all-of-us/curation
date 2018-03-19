@@ -15,7 +15,7 @@ import test_util
 # This may change if we strip out unused analyses
 ACHILLES_LOOKUP_COUNT = 215
 ACHILLES_ANALYSIS_COUNT = 134
-ACHILLES_RESULTS_COUNT = 3114
+ACHILLES_RESULTS_COUNT = 2457
 SOURCE_NAME_QUERY = """insert into synpuf_100.achilles_analysis (analysis_id, analysis_name) 
   values (0, 'Source name')"""
 TEMP_QUERY_1 = """INTO temp.tempresults
