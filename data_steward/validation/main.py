@@ -271,6 +271,31 @@ def _is_cdm_file(gcs_file_name):
     return gcs_file_name.lower() in common.CDM_FILES
 
 
+@api_util.auth_required_cron
+def copy_files(hpo_id):
+    """copies over files from hpo bucket to drc bucket
+
+    :hpo_id: hpo from which to copy
+
+    """
+    hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+    drc_private_bucket = gcs_utils.get_private_drc_bucket()
+
+    bucket_items = gcs_utils.list_bucket(hpo_bucket)
+
+    today = datetime.date.today()
+    prefix = hpo_id + '-' + today.strftime("%Y%m%d") + '/'
+
+    for item in bucket_items:
+        item_name = item['name']
+        gcs_utils.copy_object(source_bucket=hpo_bucket,
+                              source_object_id=item_name,
+                              destination_bucket=drc_private_bucket,
+                              destination_object_id=prefix + item_name)
+
+    return '{"copy-status": "done"}'
+
+
 def _save_errors_in_gcs(bucket, name, errors):
     """Save errors.csv into hpo bucket
 
@@ -361,4 +386,11 @@ app.add_url_rule(
     PREFIX + 'UploadAchillesFiles/<string:hpo_id>',
     endpoint='upload_achilles_files',
     view_func=upload_achilles_files,
+    methods=['GET'])
+
+
+app.add_url_rule(
+    PREFIX + 'CopyFiles/<string:hpo_id>',
+    endpoint='copy_files',
+    view_func=copy_files,
     methods=['GET'])
