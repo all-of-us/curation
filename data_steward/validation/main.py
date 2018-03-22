@@ -254,7 +254,7 @@ def _get_to_process_list(bucket, bucket_items):
         # this is not in a try/except block because this follows a bucket read which is in a try/except
         folder_bucket_items = [item for item in bucket_items if item['name'].startswith(folder_name)]
         submitted_bucket_items = [item for item in folder_bucket_items if basename(item) not in common.IGNORE_LIST]
-        if len(submitted_bucket_items)>0:
+        if len(submitted_bucket_items) > 0:
             folders_with_submitted_files.append(folder_name)
             latest_datetime = max([updated_datetime_object(item) for item in submitted_bucket_items])
             folder_datetime_list.append(latest_datetime)
@@ -269,6 +269,30 @@ def _get_to_process_list(bucket, bucket_items):
 
 def _is_cdm_file(gcs_file_name):
     return gcs_file_name.lower() in common.CDM_FILES
+
+
+@api_util.auth_required_cron
+def copy_files(hpo_id):
+    """copies over files from hpo bucket to drc bucket
+
+    :hpo_id: hpo from which to copy
+
+    """
+    hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+    drc_private_bucket = gcs_utils.get_drc_bucket()
+
+    bucket_items = gcs_utils.list_bucket(hpo_bucket)
+
+    prefix = hpo_id + '/' + hpo_bucket + '/'
+
+    for item in bucket_items:
+        item_name = item['name']
+        gcs_utils.copy_object(source_bucket=hpo_bucket,
+                              source_object_id=item_name,
+                              destination_bucket=drc_private_bucket,
+                              destination_object_id=prefix + item_name)
+
+    return '{"copy-status": "done"}'
 
 
 def _save_errors_in_gcs(bucket, name, errors):
@@ -361,4 +385,11 @@ app.add_url_rule(
     PREFIX + 'UploadAchillesFiles/<string:hpo_id>',
     endpoint='upload_achilles_files',
     view_func=upload_achilles_files,
+    methods=['GET'])
+
+
+app.add_url_rule(
+    PREFIX + 'CopyFiles/<string:hpo_id>',
+    endpoint='copy_files',
+    view_func=copy_files,
     methods=['GET'])

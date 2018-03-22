@@ -5,6 +5,7 @@ import mock
 from google.appengine.ext import testbed
 
 import common
+import os
 import gcs_utils
 import resources
 import test_util
@@ -233,6 +234,29 @@ class ValidationTest(unittest.TestCase):
         folder_list = main._get_to_process_list(self.hpo_bucket, bucket_items)
         self.assertListEqual(folder_list, [folder_prefix_3])
 
+    @mock.patch('api_util.check_cron')
+    def test_copy_five_persons(self, mock_check_cron):
+        folder_prefix = 'dummy-prefix-2018-03-22-v1/'
+        # upload all five_persons files
+        for cdm_file in test_util.FIVE_PERSONS_FILES:
+            test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix)
+            test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix + folder_prefix)
+
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(test_util.COPY_HPO_FILES_URL)
+            prefix = test_util.FAKE_HPO_ID + '/' + self.hpo_bucket + '/' + folder_prefix
+            expected_bucket_items = [prefix + item.split(os.sep)[-1] for item in test_util.FIVE_PERSONS_FILES]
+            expected_bucket_items.extend([prefix + folder_prefix + item.split(os.sep)[-1] for item in
+                                          test_util.FIVE_PERSONS_FILES])
+
+            list_bucket_result = gcs_utils.list_bucket(gcs_utils.get_drc_bucket())
+            actual_bucket_items = [item['name'] for item in list_bucket_result]
+            self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
+
     def tearDown(self):
         self._empty_bucket()
+        to_delete_list = gcs_utils.list_bucket(gcs_utils.get_drc_bucket())
+        for bucket_item in to_delete_list:
+            gcs_utils.delete_object(gcs_utils.get_drc_bucket(), bucket_item['name'])
         self.testbed.deactivate()

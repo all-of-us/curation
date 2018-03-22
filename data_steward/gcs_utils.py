@@ -18,7 +18,6 @@ MIMETYPES = {'json': 'application/json',
 def get_drc_bucket():
     return os.environ.get('DRC_BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
 
-
 def get_hpo_bucket(hpo_id):
     """
     Get the name of an HPO site's private bucket
@@ -152,3 +151,18 @@ def delete_object(bucket, name):
     resp = req.execute()
     # TODO return something useful
     return resp
+
+
+def copy_object(source_bucket, source_object_id, destination_bucket, destination_object_id):
+    """copies files from one place to another
+    :returns: response of request
+
+    """
+    service = create_service()
+    req = service.objects().copy(sourceBucket=source_bucket,
+                                 sourceObject=source_object_id,
+                                 destinationBucket=destination_bucket,
+                                 destinationObject=destination_object_id,
+                                 body = dict())
+    return req.execute()
+
