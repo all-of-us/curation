@@ -34,16 +34,16 @@ def all_required_files_loaded(hpo_id, folder_prefix):
     return True
 
 
-def save_datasources_json(hpo_id):
+def save_datasources_json(hpo_id, folder_prefix=""):
     hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
     datasource = dict(name=hpo_id, folder=hpo_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO.StringIO(json.dumps(datasources))
-    result = gcs_utils.upload_object(hpo_bucket, ACHILLES_EXPORT_DATASOURCES_JSON, datasources_fp)
+    result = gcs_utils.upload_object(hpo_bucket, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON, datasources_fp)
     return result
 
 
-def run_export(hpo_id):
+def run_export(hpo_id, folder_prefix):
     """
     this function also changes the datasources.json file
     """
@@ -57,10 +57,10 @@ def run_export(hpo_id):
         result = export.export_from_path(sql_path, hpo_id)
         content = json.dumps(result)
         fp = StringIO.StringIO(content)
-        result = gcs_utils.upload_object(hpo_bucket, _reports_prefix + export_name + '.json', fp)
+        result = gcs_utils.upload_object(hpo_bucket, folder_prefix + _reports_prefix + export_name + '.json', fp)
         results.append(result)
 
-    datasources_json_result = save_datasources_json(hpo_id)
+    datasources_json_result = save_datasources_json(hpo_id, folder_prefix)
     results.append(datasources_json_result)
 
     return results
@@ -83,11 +83,11 @@ def run_achilles(hpo_id):
 
 @api_util.auth_required_cron
 def upload_achilles_files(hpo_id):
-    result = _upload_achilles_files(hpo_id)
+    result = _upload_achilles_files(hpo_id, "")
     return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
 
 
-def _upload_achilles_files(hpo_id):
+def _upload_achilles_files(hpo_id, folder_prefix):
     """uploads achilles web files to the corresponding hpo bucket
 
     :hpo_id: which hpo bucket do these files go into
@@ -100,7 +100,7 @@ def _upload_achilles_files(hpo_id):
         logging.info('uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
         bucket_file_name = filename.split(resources.resource_path + os.sep)[1].strip()
         with open(filename, 'r') as fp:
-            upload_result = gcs_utils.upload_object(bucket, bucket_file_name, fp)
+            upload_result = gcs_utils.upload_object(bucket, folder_prefix + bucket_file_name, fp)
             results.append(upload_result)
     return results
 
