@@ -23,8 +23,8 @@ PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
 
-def all_required_files_loaded(hpo_id):
-    result_file = gcs_utils.get_object(gcs_utils.get_hpo_bucket(hpo_id), common.RESULT_CSV)
+def all_required_files_loaded(hpo_id, folder_prefix):
+    result_file = gcs_utils.get_object(gcs_utils.get_hpo_bucket(hpo_id), folder_prefix + common.RESULT_CSV)
     result_file = StringIO.StringIO(result_file)
     result_items = resources._csv_file_to_list(result_file)
     for item in result_items:
