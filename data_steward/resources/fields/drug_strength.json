@@ -2,61 +2,73 @@
     {
         "type": "integer", 
         "name": "drug_concept_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to the Concept in the CONCEPT table representing the identifier for Branded Drug or Clinical Drug Concept."
     }, 
     {
         "type": "integer", 
         "name": "ingredient_concept_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to the Concept in the CONCEPT table, representing the identifier for drug Ingredient Concept contained within the drug product."
     }, 
     {
         "type": "float", 
         "name": "amount_value", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "The numeric value associated with the amount of active ingredient contained within the product."
     }, 
     {
         "type": "integer", 
         "name": "amount_unit_concept_id", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "A foreign key to the Concept in the CONCEPT table representing the identifier for the Unit for the absolute amount of active ingredient."
     }, 
     {
         "type": "float", 
         "name": "numerator_value", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "The numeric value associated with the concentration of the active ingredient contained in the product"
     }, 
     {
         "type": "integer", 
         "name": "numerator_unit_concept_id", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "A foreign key to the Concept in the CONCEPT table representing the identifier for the numerator Unit for the concentration of active ingredient."
     }, 
     {
         "type": "float", 
         "name": "denominator_value", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "The amount of total liquid (or other divisible product, such as ointment, gel, spray, etc.)."
     }, 
     {
         "type": "integer", 
         "name": "denominator_unit_concept_id", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "A foreign key to the Concept in the CONCEPT table representing the identifier for the denominator Unit for the concentration of active ingredient."
     }, 
     {
         "type": "integer", 
         "name": "box_size", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "The number of units of Clinical of Branded Drug, or Quantified Clinical or Branded Drug contained in a box as dispensed to the patient"
     }, 
     {
         "type": "date", 
         "name": "valid_start_date", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The date when the Concept was first recorded. The default value is 1-Jan-1970."
     }, 
     {
         "type": "date", 
         "name": "valid_end_date", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The date when the concept became invalid because it was deleted or superseded (updated) by a new Concept. The default value is 31-Dec-2099."
     }, 
     {
         "type": "string", 
         "name": "invalid_reason", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "Reason the concept was invalidated. Possible values are 'D' (deleted), 'U' (replaced with an update) or NULL when valid_end_date has the default value."
     }
 ]

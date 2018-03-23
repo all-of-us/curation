@@ -2,36 +2,43 @@
     {
         "type": "integer", 
         "name": "cohort_definition_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to a record in the [COHORT_DEFINITION](https://github.com/OHDSI/CommonDataModel/wiki/COHORT_DEFINITION) table containing relevant Cohort Definition information."
     }, 
     {
         "type": "date", 
         "name": "cohort_start_date", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The date when the Cohort Definition criteria for the Person, Provider or Visit first match."
     }, 
     {
         "type": "date", 
         "name": "cohort_end_date", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The date when the Cohort Definition criteria for the Person, Provider or Visit no longer match or the Cohort membership was terminated."
     }, 
     {
         "type": "integer", 
         "name": "subject_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to the subject in the Cohort. These could be referring to records in the PERSON, PROVIDER, VISIT_OCCURRENCE table."
     }, 
     {
         "type": "integer", 
         "name": "attribute_definition_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to a record in the [ATTRIBUTE_DEFINITION](https://github.com/OHDSI/CommonDataModel/wiki/ATTRIBUTE_DEFINITION) table containing relevant Attribute Definition information."
     }, 
     {
         "type": "float", 
         "name": "value_as_number", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "The attribute result stored as a number. This is applicable to attributes where the result is expressed as a numeric value."
     }, 
     {
         "type": "integer", 
         "name": "value_as_concept_id", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "The attribute result stored as a Concept ID. This is applicable to attributes where the result is expressed as a categorical value."
     }
 ]

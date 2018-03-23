@@ -2,31 +2,37 @@
     {
         "type": "integer", 
         "name": "concept_id_1", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to a Concept in the [CONCEPT](https://github.com/OHDSI/CommonDataModel/wiki/CONCEPT) table associated with the relationship. Relationships are directional, and this field represents the source concept designation."
     }, 
     {
         "type": "integer", 
         "name": "concept_id_2", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to a Concept in the [CONCEPT](https://github.com/OHDSI/CommonDataModel/wiki/CONCEPT) table associated with the relationship. Relationships are directional, and this field represents the destination concept designation."
     }, 
     {
         "type": "string", 
         "name": "relationship_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A unique identifier to the type or nature of the Relationship as defined in the [RELATIONSHIP](https://github.com/OHDSI/CommonDataModel/wiki/RELATIONSHIP) table."
     }, 
     {
         "type": "date", 
         "name": "valid_start_date", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The date when the instance of the Concept Relationship is first recorded."
     }, 
     {
         "type": "date", 
         "name": "valid_end_date", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The date when the Concept Relationship became invalid because it was deleted or superseded (updated) by a new relationship. Default value is 31-Dec-2099."
     }, 
     {
         "type": "string", 
         "name": "invalid_reason", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "Reason the relationship was invalidated. Possible values are 'D' (deleted), 'U' (replaced with an update) or NULL when valid_end_date has the default value."
     }
 ]
