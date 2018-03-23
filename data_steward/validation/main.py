@@ -134,75 +134,93 @@ def run_validation(hpo_id, error_ignore_flag=False):
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     try:
         bucket_items = gcs_utils.list_bucket(bucket)
+        all_folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items])
+        to_process_folder_list = _get_to_process_list(bucket, all_folder_list)
     except:
         if error_ignore_flag:
             logging.warning('skipping {}. bucket does not exist.'.format(hpo_id))
             return 'skipping'
         raise RuntimeError('{} does not exist. create bucket before validation for hpo {}'.format(bucket, hpo_id))
+    return_string_list = []
 
-    # separate cdm from the unknown (unexpected) files
-    found_cdm_files = []
-    unknown_files = []
-    for bucket_item in bucket_items:
-        if _is_cdm_file(bucket_item):
-            found_cdm_files.append(bucket_item)
-        else:
-            if bucket_item['name'].lower() in common.IGNORE_LIST + common.CDM_FILES:
-                continue
-            unknown_files.append(bucket_item)
-
-    errors = []
-    results = []
-    found_cdm_file_names = map(lambda f: f['name'], found_cdm_files)
-    for cdm_file_name in common.CDM_FILES:
-        found = parsed = loaded = 0
-        cdm_table_name = cdm_file_name.split('.')[0]
-        if cdm_file_name in found_cdm_file_names:
-            found = 1
-            load_results = bq_utils.load_cdm_csv(hpo_id, cdm_table_name)
-            load_job_id = load_results['jobReference']['jobId']
-
-            incomplete_jobs = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_LOAD_RETRY_COUNT)
-
-            if len(incomplete_jobs) == 0:
-                job_resource = bq_utils.get_job_details(job_id=load_job_id)
-                job_status = job_resource['status']
-                if 'errorResult' in job_status:
-                    error_messages = ['{}'.format(item['message'], item['location']) for item in job_status['errors']]
-                    errors.append((cdm_file_name, ' || '.join(error_messages)))
-                else:
-                    parsed = loaded = 1
+    for folder_prefix in to_process_folder_list:
+        # separate cdm from the unknown (unexpected) files
+        found_cdm_files = []
+        unknown_files = []
+        folder_items = [item['name'].split('/')[1] for item in bucket_items if item['name'].startswith(folder_prefix)]
+        for item in folder_items:
+            if _is_cdm_file(item):
+                found_cdm_files.append(item)
             else:
-                logging.info("Wait timeout exceeded before load job with id '%s' was done" % load_job_id)
-        else:
-            # load empty table
-            table_id = bq_utils.get_table_id(hpo_id, cdm_table_name)
-            bq_utils.create_standard_table(cdm_table_name, table_id, drop_existing=True)
-        if cdm_file_name in common.REQUIRED_FILES or found:
-            results.append((cdm_file_name, found, parsed, loaded))
+                if item in common.IGNORE_LIST + common.CDM_FILES:
+                    continue
+                unknown_files.append(item)
 
-    # (filename, message) for each unknown file
-    warnings = [
-        (unknown_file['name'], UNKNOWN_FILE) for unknown_file in unknown_files
-    ]
+        return_string_list.append('"{}": "started"'.format(folder_prefix))
 
-    # output to GCS
-    _save_result_in_gcs(bucket, RESULT_CSV, results)
-    _save_warnings_in_gcs(bucket, WARNINGS_CSV, warnings)
-    _save_errors_in_gcs(bucket, ERRORS_CSV, errors)
+        errors = []
+        results = []
+        found_cdm_file_names = found_cdm_files
+        for cdm_file_name in common.CDM_FILES:
+            found = parsed = loaded = 0
+            cdm_table_name = cdm_file_name.split('.')[0]
+            if cdm_file_name in found_cdm_file_names:
+                found = 1
+                load_results = bq_utils.load_cdm_csv(hpo_id, cdm_table_name, folder_prefix)
+                load_job_id = load_results['jobReference']['jobId']
 
-    if all_required_files_loaded(hpo_id):
-        run_achilles(hpo_id)
-        run_export(hpo_id)
+                incomplete_jobs = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_LOAD_RETRY_COUNT)
 
-    logging.info('uploading achilles index files')
-    _upload_achilles_files(hpo_id)
+                if len(incomplete_jobs) == 0:
+                    job_resource = bq_utils.get_job_details(job_id=load_job_id)
+                    job_status = job_resource['status']
+                    if 'errorResult' in job_status:
+                        error_messages = ['{}'.format(item['message'], item['location']) for item in job_status['errors']]
+                        errors.append((cdm_file_name, ' || '.join(error_messages)))
+                    else:
+                        parsed = loaded = 1
+                else:
+                    logging.info("Wait timeout exceeded before load job with id '%s' was done" % load_job_id)
+            else:
+                # load empty table
+                table_id = bq_utils.get_table_id(hpo_id, cdm_table_name)
+                bq_utils.create_standard_table(cdm_table_name, table_id, drop_existing=True)
+            if cdm_file_name in common.REQUIRED_FILES or found:
+                results.append((cdm_file_name, found, parsed, loaded))
 
-    return '{"report-generator-status": "started"}'
+        # (filename, message) for each unknown file
+        warnings = [
+            (unknown_file, UNKNOWN_FILE) for unknown_file in unknown_files
+        ]
+
+        # output to GCS
+        _save_result_in_gcs(bucket, folder_prefix + RESULT_CSV, results)
+        _save_warnings_in_gcs(bucket, folder_prefix + WARNINGS_CSV, warnings)
+        _save_errors_in_gcs(bucket, folder_prefix + ERRORS_CSV, errors)
+
+        if all_required_files_loaded(hpo_id, folder_prefix=folder_prefix):
+            run_achilles(hpo_id)
+            run_export(hpo_id, folder_prefix=folder_prefix)
+
+        logging.info('uploading achilles index files')
+        _upload_achilles_files(hpo_id, folder_prefix)
+        _write_string_to_file(bucket, folder_prefix + 'validation_done.txt', 'success')
+
+    return ','.join(return_string_list)
 
 
-def _is_cdm_file(gcs_file_stat):
-    return gcs_file_stat['name'].lower() in common.CDM_FILES
+def _validation_done(bucket, folder):
+    if gcs_utils.get_metadata(bucket=bucket, name=folder + 'validation_done.txt') is not None:
+        return True
+    return False
+
+
+def _get_to_process_list(bucket, all_folder_list):
+    return [folder_name for folder_name in all_folder_list if not _validation_done(bucket, folder_name)]
+
+
+def _is_cdm_file(gcs_file_name):
+    return gcs_file_name.lower() in common.CDM_FILES
 
 
 def _save_errors_in_gcs(bucket, name, errors):
@@ -257,6 +275,22 @@ def _save_result_in_gcs(bucket, name, cdm_file_results):
     for (cdm_file_name, found, parsed, loaded) in cdm_file_results:
         line = '"%(cdm_file_name)s","%(found)s","%(parsed)s","%(loaded)s"\n' % locals()
         f.write(line)
+    f.seek(0)
+    result = gcs_utils.upload_object(bucket, name, f)
+    f.close()
+    return result
+
+
+def _write_string_to_file(bucket, name, string):
+    """
+    Save the validation results in GCS
+    :param bucket: bucket to save to
+    :param name: name of the file (object) to save to in GCS
+    :param cdm_file_results: list of tuples (<cdm_file_name>, <found>)
+    :return:
+    """
+    f = StringIO.StringIO()
+    f.write(string)
     f.seek(0)
     result = gcs_utils.upload_object(bucket, name, f)
     f.close()
