@@ -26,13 +26,13 @@ for f in listdir('../resources/fields'):
     print "No descriptions found for %s; skipping." % table_name
     continue
   print "Updating descriptions for %s..." % table_name
-  with open('../resources/fields/%s' % f) as file:
-    schema_json = json.load(file, object_pairs_hook=OrderedDict)
+  with open('../resources/fields/%s' % f) as json_file:
+    schema_json = json.load(json_file, object_pairs_hook=OrderedDict)
     for column in schema_json:
       description = description_map.get(column['name'])
       if not description:
         print "No description found for column %s, skipping." % column['name']
       else:
         column['description'] = description
-  with open('../resources/fields/%s' % f, 'w') as file:
-    json.dump(schema_json, file, indent = 4, ensure_ascii = False)
+  with open('../resources/fields/%s' % f, 'w') as json_file:
+    json.dump(schema_json, json_file, indent = 4, ensure_ascii = False)
