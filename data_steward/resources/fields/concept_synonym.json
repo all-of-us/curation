@@ -2,16 +2,19 @@
     {
         "type": "integer", 
         "name": "concept_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to the Concept in the CONCEPT table."
     }, 
     {
         "type": "string", 
         "name": "concept_synonym_name", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The alternative name for the Concept."
     }, 
     {
         "type": "integer", 
         "name": "language_concept_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to a Concept representing the language."
     }
 ]

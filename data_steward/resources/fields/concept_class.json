@@ -2,16 +2,19 @@
     {
         "type": "string", 
         "name": "concept_class_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A unique key for each class."
     }, 
     {
         "type": "string", 
         "name": "concept_class_name", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The name describing the Concept Class, e.g. \"Clinical Finding\", \"Ingredient\", etc."
     }, 
     {
         "type": "integer", 
         "name": "concept_class_concept_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key that refers to an identifier in the [CONCEPT](https://github.com/OHDSI/CommonDataModel/wiki/CONCEPT) table for the unique Concept Class the record belongs to."
     }
 ]
