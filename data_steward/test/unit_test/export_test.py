@@ -63,10 +63,11 @@ class ExportTest(unittest.TestCase):
         self.assertEqual(len(export_result['MESSAGES']['ATTRIBUTENAME']), 14)
 
     def test_run_export(self):
-        main._upload_achilles_files(test_util.FAKE_HPO_ID)
-        main.run_export(test_util.FAKE_HPO_ID)
+        folder_prefix = 'dummy-prefix-2018-03-24/'
+        main._upload_achilles_files(test_util.FAKE_HPO_ID, folder_prefix)
+        main.run_export(test_util.FAKE_HPO_ID, folder_prefix)
         for report in common.ALL_REPORT_FILES:
-            _reports_prefix = common.ACHILLES_EXPORT_PREFIX_STRING + test_util.FAKE_HPO_ID + '/'
+            _reports_prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + test_util.FAKE_HPO_ID + '/'
             _exist_check = gcs_utils.get_metadata(self.hpo_bucket, _reports_prefix + report)
             self.assertIsNotNone(_exist_check)
 
