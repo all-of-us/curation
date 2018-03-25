@@ -3,6 +3,7 @@ import StringIO
 import json
 import logging
 import os
+import datetime
 
 from flask import Flask
 
@@ -134,13 +135,12 @@ def run_validation(hpo_id, error_ignore_flag=False):
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     try:
         bucket_items = gcs_utils.list_bucket(bucket)
-        all_folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items])
-        to_process_folder_list = _get_to_process_list(bucket, all_folder_list)
     except:
         if error_ignore_flag:
             logging.warning('skipping {}. bucket does not exist.'.format(hpo_id))
             return 'skipping'
         raise RuntimeError('{} does not exist. create bucket before validation for hpo {}'.format(bucket, hpo_id))
+    to_process_folder_list = _get_to_process_list(bucket, bucket_items)
     return_string_list = []
 
     for folder_prefix in to_process_folder_list:
@@ -215,8 +215,39 @@ def _validation_done(bucket, folder):
     return False
 
 
-def _get_to_process_list(bucket, all_folder_list):
-    return [folder_name for folder_name in all_folder_list if not _validation_done(bucket, folder_name)]
+def _get_to_process_list(bucket, bucket_items):
+    """returns a set of folders to process as part of validation
+
+    :bucket: bucket to look into
+    :returns: list of folder prefix strings of form "<folder_name>/"
+
+    """
+    all_folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items])
+    unvalidated_folders = [folder_name for folder_name in all_folder_list if not _validation_done(bucket, folder_name)]
+
+    def basename(gcs_object_metadata):
+        return '/'.join(gcs_object_metadata['name'].split('/')[1:])
+
+    def updated_datetime_object(gcs_object_metadata):
+        return datetime.datetime.strptime(gcs_object_metadata['updated'], '%Y-%m-%dT%H:%M:%S.%fZ')
+
+    to_process_folder_dict = {}
+    for folder_name in unvalidated_folders:
+        # this is not in a try/except block because this follows a bucket read which is in a try/except
+
+        folder_bucket_items = [item for item in bucket_items if folder_name in item['name']]
+        submitted_bucket_items = [item for item in folder_bucket_items if basename(item) not in common.IGNORE_LIST]
+        datetime_list = [updated_datetime_object(item) for item in submitted_bucket_items]
+        latest_datetime = max(datetime_list)
+        latest_day = latest_datetime.date()
+        if to_process_folder_dict.get(latest_day, None) is None:
+            to_process_folder_dict[latest_day] = {'name': folder_name, 'datetime': latest_datetime}
+        else:
+            if to_process_folder_dict[latest_day]['datetime'] < latest_datetime:
+                to_process_folder_dict[latest_day] = {'name': folder_name, 'datetime': latest_datetime}
+
+    to_process_folder_list = [item['name'] for item in to_process_folder_dict.values()]
+    return to_process_folder_list
 
 
 def _is_cdm_file(gcs_file_name):
