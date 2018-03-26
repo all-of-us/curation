@@ -188,7 +188,7 @@ class ValidationTest(unittest.TestCase):
         folder_prefix = 'dummy-prefix-2018-03-22/'
 
         # upload all five_persons files
-        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'validation_done.txt', contents_str='success')
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + common.PROCESSED_TXT, contents_str='.')
 
         main.app.testing = True
         with main.app.test_client() as c:
