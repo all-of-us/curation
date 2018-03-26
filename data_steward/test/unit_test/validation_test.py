@@ -213,6 +213,22 @@ class ValidationTest(unittest.TestCase):
             self.assertFalse(folder_prefix_2 in return_string)
             self.assertTrue(folder_prefix_3 in return_string)
 
+    def test_folder_list(self):
+        folder_prefix_1 = 'dummy-prefix-2018-03-22-v1/'
+        folder_prefix_2 = 'dummy-prefix-2018-03-22-v2/'
+        folder_prefix_3 = 'dummy-prefix-2018-03-22-v3/'
+        file_list = [folder_prefix_1 + 'person.csv',
+                     folder_prefix_2 + 'blah.csv',
+                     folder_prefix_3 + 'visit_occurrence.csv',
+                     'person.csv']
+
+        for filename in file_list:
+            test_util.write_cloud_str(self.hpo_bucket, filename, ".\n .")
+
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        folder_list = main._get_to_process_list(self.hpo_bucket, bucket_items)
+        self.assertListEqual(folder_list, [folder_prefix_3])
+
     def tearDown(self):
-        # self._empty_bucket()
+        self._empty_bucket()
         self.testbed.deactivate()
