@@ -204,13 +204,15 @@ def run_validation(hpo_id, error_ignore_flag=False):
 
         logging.info('uploading achilles index files')
         _upload_achilles_files(hpo_id, folder_prefix)
-        _write_string_to_file(bucket, folder_prefix + 'validation_done.txt', 'success')
+
+        now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+        _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
 
     return ','.join(return_string_list)
 
 
 def _validation_done(bucket, folder):
-    if gcs_utils.get_metadata(bucket=bucket, name=folder + 'validation_done.txt') is not None:
+    if gcs_utils.get_metadata(bucket=bucket, name=folder + common.PROCESSED_TXT) is not None:
         return True
     return False
 
@@ -225,7 +227,6 @@ def _get_to_process_list(bucket, bucket_items):
     # files in root are ignored here
     all_folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items
                            if len(item['name'].split('/')) > 1])
-    unvalidated_folders = [folder_name for folder_name in all_folder_list if not _validation_done(bucket, folder_name)]
 
     def basename(gcs_object_metadata):
         """returns name of file inside folder
@@ -249,7 +250,7 @@ def _get_to_process_list(bucket, bucket_items):
 
     folder_datetime_list = []
     folders_with_submitted_files = []
-    for folder_name in unvalidated_folders:
+    for folder_name in all_folder_list:
         # this is not in a try/except block because this follows a bucket read which is in a try/except
         folder_bucket_items = [item for item in bucket_items if item['name'].startswith(folder_name)]
         submitted_bucket_items = [item for item in folder_bucket_items if basename(item) not in common.IGNORE_LIST]
@@ -260,8 +261,9 @@ def _get_to_process_list(bucket, bucket_items):
 
     if len(folder_datetime_list) > 0:
         latest_datetime_index = folder_datetime_list.index(max(folder_datetime_list))
-        to_process_folder_list = [folders_with_submitted_files[latest_datetime_index]]
-        return to_process_folder_list
+        to_process_folder = folders_with_submitted_files[latest_datetime_index]
+        if not _validation_done(bucket, to_process_folder):
+            return [to_process_folder]
     return []
 
 
