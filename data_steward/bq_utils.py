@@ -254,7 +254,7 @@ def query_table(query_string):
     return query_result
 
 
-def query(q, use_legacy_sql=False, destination_table_id=None):
+def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=3):
     """
     Execute a SQL query on BigQuery dataset
     :param q: SQL statement
@@ -285,7 +285,7 @@ def query(q, use_legacy_sql=False, destination_table_id=None):
                     }
                 }
         }
-        return bq_service.jobs().insert(projectId=app_id, body=job_body).execute()
+        return bq_service.jobs().insert(projectId=app_id, body=job_body).execute(num_retries=retry_count)
     else:
         job_body = {
             'defaultDataset': {
