@@ -222,32 +222,47 @@ def _get_to_process_list(bucket, bucket_items):
     :returns: list of folder prefix strings of form "<folder_name>/"
 
     """
-    all_folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items])
+    # files in root are ignored here
+    all_folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items
+                           if len(item['name'].split('/')) > 1])
     unvalidated_folders = [folder_name for folder_name in all_folder_list if not _validation_done(bucket, folder_name)]
 
     def basename(gcs_object_metadata):
-        return '/'.join(gcs_object_metadata['name'].split('/')[1:])
+        """returns name of file inside folder
+
+        :gcs_object_metadata: metadata as returned by list bucket
+        :returns: name without folder name
+
+        """
+        name = gcs_object_metadata['name']
+        if len(name.split('/')) > 1:
+            return '/'.join(name.split('/')[1:])
 
     def updated_datetime_object(gcs_object_metadata):
+        """returns update datetime
+
+        :gcs_object_metadata: metadata as returned by list bucket
+        :returns: datetime object
+
+        """
         return datetime.datetime.strptime(gcs_object_metadata['updated'], '%Y-%m-%dT%H:%M:%S.%fZ')
 
-    to_process_folder_dict = {}
+    folder_datetime_list = []
+    folders_with_submitted_files = []
     for folder_name in unvalidated_folders:
         # this is not in a try/except block because this follows a bucket read which is in a try/except
-
-        folder_bucket_items = [item for item in bucket_items if folder_name in item['name']]
+        folder_bucket_items = [item for item in bucket_items if item['name'].startswith(folder_name)]
         submitted_bucket_items = [item for item in folder_bucket_items if basename(item) not in common.IGNORE_LIST]
-        datetime_list = [updated_datetime_object(item) for item in submitted_bucket_items]
-        latest_datetime = max(datetime_list)
-        latest_day = latest_datetime.date()
-        if to_process_folder_dict.get(latest_day, None) is None:
-            to_process_folder_dict[latest_day] = {'name': folder_name, 'datetime': latest_datetime}
-        else:
-            if to_process_folder_dict[latest_day]['datetime'] < latest_datetime:
-                to_process_folder_dict[latest_day] = {'name': folder_name, 'datetime': latest_datetime}
+        if len(submitted_bucket_items)>0:
+            folders_with_submitted_files.append(folder_name)
+            latest_datetime = max([updated_datetime_object(item) for item in submitted_bucket_items])
+            folder_datetime_list.append(latest_datetime)
 
-    to_process_folder_list = [item['name'] for item in to_process_folder_dict.values()]
-    return to_process_folder_list
+    if len(folder_datetime_list) > 0:
+        latest_datetime_index = folder_datetime_list.index(max(folder_datetime_list))
+        to_process_folder_list = [folders_with_submitted_files[latest_datetime_index]]
+        return to_process_folder_list
+    return []
 
 
 def _is_cdm_file(gcs_file_name):
