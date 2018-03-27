@@ -78,7 +78,7 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
     return insert_result
 
 
-def load_cdm_csv(hpo_id, cdm_table_name):
+def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix=""):
     """
     Load CDM file from a bucket into a table in bigquery
     :param hpo_id: ID for the HPO site
@@ -92,7 +92,7 @@ def load_cdm_csv(hpo_id, cdm_table_name):
     dataset_id = get_dataset_id()
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     fields_filename = os.path.join(resources.fields_path, cdm_table_name + '.json')
-    gcs_object_path = 'gs://%s/%s.csv' % (bucket, cdm_table_name)
+    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix, cdm_table_name)
     table_id = get_table_id(hpo_id, cdm_table_name)
     return load_csv(fields_filename, gcs_object_path, app_id, dataset_id, table_id)
 
@@ -254,7 +254,7 @@ def query_table(query_string):
     return query_result
 
 
-def query(q, use_legacy_sql=False, destination_table_id=None):
+def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=3):
     """
     Execute a SQL query on BigQuery dataset
     :param q: SQL statement
@@ -285,7 +285,7 @@ def query(q, use_legacy_sql=False, destination_table_id=None):
                     }
                 }
         }
-        return bq_service.jobs().insert(projectId=app_id, body=job_body).execute()
+        return bq_service.jobs().insert(projectId=app_id, body=job_body).execute(num_retries=retry_count)
     else:
         job_body = {
             'defaultDataset': {
