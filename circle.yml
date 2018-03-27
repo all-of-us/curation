@@ -13,7 +13,7 @@ machine:
   environment:
     GOOGLE_APPLICATION_CREDENTIALS: "/home/ubuntu/gcloud-credentials-key.json"
     APPLICATION_ID: "aou-res-curation-test"
-    BIGQUERY_DATASET_ID: "circle_test_merge_rerun"
+    BIGQUERY_DATASET_ID: "circle_test_dataset"
     BUCKET_NAME_FAKE: "circle-dummy-test-fake"
     DRC_BUCKET_NAME: "circle-dummy-test-drc-spec"
     BUCKET_NAME_NYC: "circle-dummy-test-nyc"
