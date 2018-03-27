@@ -176,10 +176,10 @@ def write_cloud_str(bucket, name, contents_str):
     return write_cloud_fp(bucket, name, fp)
 
 
-def write_cloud_file(bucket, f):
+def write_cloud_file(bucket, f, prefix = ""):
     name = os.path.basename(f)
     with open(f, 'r') as fp:
-        return write_cloud_fp(bucket, name, fp)
+        return write_cloud_fp(bucket, prefix + name, fp)
 
 
 def write_cloud_fp(bucket, name, fp):

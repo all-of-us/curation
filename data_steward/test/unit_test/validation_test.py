@@ -30,8 +30,9 @@ class ValidationTest(unittest.TestCase):
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
 
     @mock.patch('api_util.check_cron')
-    def test_validate_missing_files_output(self, mock_check_cron):
+    def _test_validate_missing_files_output(self, mock_check_cron):
         # enable exception propagation as described at https://goo.gl/LqDgnj
+        folder_prefix = 'dummy-prefix-2018-03-22/'
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
@@ -42,20 +43,21 @@ class ValidationTest(unittest.TestCase):
             for item in bucket_items:
                 item_names.append(item['name'])
             for ignore_file in common.IGNORE_LIST:
-                self.assertIn(ignore_file, item_names)
+                self.assertIn(folder_prefix + ignore_file, item_names)
 
             # check content of result.csv is correct
             # TODO fix this for all cdm files and use object comparison
-            actual_result = test_util.read_cloud_file(self.hpo_bucket, common.RESULT_CSV)
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULT_CSV)
             actual = resources._csv_file_to_list(StringIO.StringIO(actual_result))
             expected = [{'cdm_file_name': cdm_file_name, 'found': '0', 'parsed': '0', 'loaded': '0'} for cdm_file_name
                         in common.REQUIRED_FILES]
             self.assertEqual(expected, actual)
-            self.assertFalse(main.all_required_files_loaded(test_util.FAKE_HPO_ID))
+            self.assertFalse(main.all_required_files_loaded(test_util.FAKE_HPO_ID, folder_prefix))
 
     @mock.patch('api_util.check_cron')
     def test_errors_csv(self, mock_check_cron):
-        test_util.write_cloud_str(self.hpo_bucket, 'person.csv', ".\n .,.,.")
+        folder_prefix = 'dummy-prefix-2018-03-22/'
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'person.csv', ".\n .,.,.")
 
         main.app.testing = True
         with main.app.test_client() as c:
@@ -63,13 +65,13 @@ class ValidationTest(unittest.TestCase):
 
             # check the result file was put in bucket
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
-            bucket_item_names = [item['name'] for item in list_bucket_result]
+            bucket_item_names = [item['name'] for item in list_bucket_result if item['name'].startswith(folder_prefix)]
             expected_items = ['person.csv'] + common.IGNORE_LIST
+            expected_items = [folder_prefix + item for item in expected_items]
             self.assertSetEqual(set(bucket_item_names), set(expected_items))
 
             # check content of the file is correct
-            actual_result = test_util.read_cloud_file(self.hpo_bucket,
-                                                  common.ERRORS_CSV)
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.ERRORS_CSV)
             with open(test_util.BAD_PERSON_FILE_BQ_LOAD_ERRORS_CSV, 'r') as f:
                 expected = f.read()
                 self.assertEqual(expected, actual_result)
@@ -77,8 +79,9 @@ class ValidationTest(unittest.TestCase):
     @mock.patch('api_util.check_cron')
     def test_all_files_unparseable_output(self, mock_check_cron):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
+        folder_prefix = 'dummy-prefix-2018-03-22/'
         for cdm_table in common.CDM_FILES:
-            test_util.write_cloud_str(self.hpo_bucket, cdm_table, ".\n .")
+            test_util.write_cloud_str(self.hpo_bucket, folder_prefix + cdm_table, ".\n .")
 
         main.app.testing = True
         with main.app.test_client() as c:
@@ -86,12 +89,13 @@ class ValidationTest(unittest.TestCase):
 
             # check the result file was put in bucket
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
-            bucket_item_names = [item['name'] for item in list_bucket_result]
+            bucket_item_names = [item['name'] for item in list_bucket_result if item['name'].startswith(folder_prefix)]
             expected_items = common.CDM_FILES + common.IGNORE_LIST
+            expected_items = [folder_prefix + item_name for item_name in expected_items]
             self.assertSetEqual(set(bucket_item_names), set(expected_items))
 
             # check content of the file is correct
-            actual_result = test_util.read_cloud_file(self.hpo_bucket, common.RESULT_CSV)
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULT_CSV)
             actual_result = resources._csv_file_to_list(StringIO.StringIO(actual_result))
             expected = [{'cdm_file_name': cdm_file_name, 'found': '1', 'parsed': '0', 'loaded': '0'} for cdm_file_name
                         in common.CDM_FILES]
@@ -99,15 +103,17 @@ class ValidationTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_bad_file_names(self, mock_check_cron):
+        folder_prefix = 'dummy-prefix-2018-03-22/'
         exclude_file_list = ["person_final.csv",
                              "condition_occurence.csv",  # misspelled
                              "avisit_occurrence.csv",
                              "procedure_occurrence.tsv"]  # unsupported file extension
 
+        exclude_file_list = [folder_prefix + item for item in exclude_file_list]
         expected_result_items = []
         for file_name in exclude_file_list:
             test_util.write_cloud_str(self.hpo_bucket, file_name, ".")
-            expected_item = dict(file_name=file_name, message=main.UNKNOWN_FILE)
+            expected_item = dict(file_name=file_name.split('/')[1], message=main.UNKNOWN_FILE)
             expected_result_items.append(expected_item)
 
         main.app.testing = True
@@ -115,7 +121,7 @@ class ValidationTest(unittest.TestCase):
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
             # check content of the bucket is correct
-            expected_bucket_items = exclude_file_list + common.IGNORE_LIST
+            expected_bucket_items = exclude_file_list + [folder_prefix + item for item in common.IGNORE_LIST]
             # [common.RESULT_CSV, common.WARNINGS_CSV]
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             actual_bucket_items = [item['name'] for item in list_bucket_result]
@@ -123,7 +129,7 @@ class ValidationTest(unittest.TestCase):
 
             # check content of the warnings file is correct
             actual_result = test_util.read_cloud_file(self.hpo_bucket,
-                                                  common.WARNINGS_CSV)
+                                                      folder_prefix + common.WARNINGS_CSV)
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = resources._csv_file_to_list(actual_result_file)
             # sort in order to compare
@@ -140,16 +146,18 @@ class ValidationTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_validate_five_persons_success(self, mock_check_cron):
+        prefix = 'dummy-prefix-2018-03-22/'
         expected_result_items = resources._csv_to_list(test_util.FIVE_PERSONS_SUCCESS_RESULT_CSV)
         json_export_files = self.get_json_export_files(test_util.FAKE_HPO_ID)
 
         # upload all five_persons files
         for cdm_file in test_util.FIVE_PERSONS_FILES:
-            test_util.write_cloud_file(self.hpo_bucket, cdm_file)
+            test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=prefix)
 
         main.app.testing = True
         with main.app.test_client() as c:
-            c.get(test_util.VALIDATE_HPO_FILES_URL)
+            return_string = c.get(test_util.VALIDATE_HPO_FILES_URL).data
+            self.assertTrue(prefix in return_string)
 
             # check the result file was putin bucket
             expected_bucket_items = common.REQUIRED_FILES + common.IGNORE_LIST + json_export_files
@@ -159,19 +167,71 @@ class ValidationTest(unittest.TestCase):
                                                              'drug_exposure.csv',
                                                              'condition_occurrence.csv',
                                                              'visit_occurrence.csv']
+            expected_bucket_items = [prefix + item for item in expected_bucket_items]
+
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             actual_bucket_items = [item['name'] for item in list_bucket_result]
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
 
             # result says file found, parsed, loaded
-            actual_result = test_util.read_cloud_file(self.hpo_bucket, common.RESULT_CSV)
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, prefix + common.RESULT_CSV)
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = resources._csv_file_to_list(actual_result_file)
 
             expected_result_items.sort()
             actual_result_items.sort()
             self.assertListEqual(expected_result_items, actual_result_items)
-            self.assertTrue(main.all_required_files_loaded(test_util.FAKE_HPO_ID))
+            self.assertTrue(main.all_required_files_loaded(test_util.FAKE_HPO_ID, folder_prefix=prefix))
+
+    @mock.patch('api_util.check_cron')
+    def test_validation_done_folder(self, mock_check_cron):
+        folder_prefix_v1 = 'dummy-prefix-2018-03-22-v1/'
+        folder_prefix = 'dummy-prefix-2018-03-22/'
+
+        # upload all five_persons files
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix_v1 + 'person.csv', contents_str='.')
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'person.csv', contents_str='.')
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + common.PROCESSED_TXT, contents_str='.')
+
+        main.app.testing = True
+        with main.app.test_client() as c:
+            return_string = c.get(test_util.VALIDATE_HPO_FILES_URL).data
+            self.assertFalse(folder_prefix in return_string)
+            self.assertFalse(folder_prefix_v1 in return_string)
+
+    @mock.patch('api_util.check_cron')
+    def test_latest_folder_validation(self, mock_check_cron):
+        folder_prefix_1 = 'dummy-prefix-2018-03-22-v1/'
+        folder_prefix_2 = 'dummy-prefix-2018-03-22-v2/'
+        folder_prefix_3 = 'dummy-prefix-2018-03-22-v3/'
+        exclude_file_list = [folder_prefix_1 + 'person.csv',
+                             folder_prefix_2 + 'blah.csv',
+                             folder_prefix_3 + 'visit_occurrence.csv']
+        for filename in exclude_file_list:
+            test_util.write_cloud_str(self.hpo_bucket, filename, ".\n .")
+
+        main.app.testing = True
+        with main.app.test_client() as c:
+            return_string = c.get(test_util.VALIDATE_HPO_FILES_URL).data
+            self.assertFalse(folder_prefix_1 in return_string)
+            self.assertFalse(folder_prefix_2 in return_string)
+            self.assertTrue(folder_prefix_3 in return_string)
+
+    def test_folder_list(self):
+        folder_prefix_1 = 'dummy-prefix-2018-03-22-v1/'
+        folder_prefix_2 = 'dummy-prefix-2018-03-22-v2/'
+        folder_prefix_3 = 'dummy-prefix-2018-03-22-v3/'
+        file_list = [folder_prefix_1 + 'person.csv',
+                     folder_prefix_2 + 'blah.csv',
+                     folder_prefix_3 + 'visit_occurrence.csv',
+                     'person.csv']
+
+        for filename in file_list:
+            test_util.write_cloud_str(self.hpo_bucket, filename, ".\n .")
+
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        folder_list = main._get_to_process_list(self.hpo_bucket, bucket_items)
+        self.assertListEqual(folder_list, [folder_prefix_3])
 
     def tearDown(self):
         self._empty_bucket()
