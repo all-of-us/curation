@@ -185,15 +185,19 @@ class ValidationTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_validation_done_folder(self, mock_check_cron):
+        folder_prefix_v1 = 'dummy-prefix-2018-03-22-v1/'
         folder_prefix = 'dummy-prefix-2018-03-22/'
 
         # upload all five_persons files
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix_v1 + 'person.csv', contents_str='.')
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'person.csv', contents_str='.')
         test_util.write_cloud_str(self.hpo_bucket, folder_prefix + common.PROCESSED_TXT, contents_str='.')
 
         main.app.testing = True
         with main.app.test_client() as c:
             return_string = c.get(test_util.VALIDATE_HPO_FILES_URL).data
             self.assertFalse(folder_prefix in return_string)
+            self.assertFalse(folder_prefix_v1 in return_string)
 
     @mock.patch('api_util.check_cron')
     def test_latest_folder_validation(self, mock_check_cron):
