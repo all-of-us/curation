@@ -259,7 +259,7 @@ def query_table(query_string):
     return query_result
 
 
-def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEFAULT_RETRY_COUNT):
+def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEFAULT_RETRY_COUNT, write_disposition = 'WRITE_EMPTY'):
     """
     Execute a SQL query on BigQuery dataset
     :param q: SQL statement
@@ -286,7 +286,8 @@ def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEF
                             'projectId': app_id,
                             'datasetId': get_dataset_id(),
                             'tableId': destination_table_id
-                        }
+                        },
+                        'writeDisposition': write_disposition
                     }
                 }
         }
