@@ -23,8 +23,8 @@ from resources import fields_path
 
 BQ_WAIT_TIME = 10
 ONE_BILLION = 1000000000
-PERSON_ID_MAPPING_TABLE = 'person_id_mapping'
-VISIT_ID_MAPPING_TABLE = 'visit_id_mapping'
+PERSON_ID_MAPPING_TABLE = 'person_id_mapping_table'
+VISIT_ID_MAPPING_TABLE = 'visit_id_mapping_table'
 
 PERSON_ID_MAPPING_QUERY_SKELETON = '''
 SELECT
@@ -80,6 +80,10 @@ def table_exists(project_id, dataset_id, table_id):
             raise
         return False
 
+def list_dataset(project_id, dataset_id):
+    pass
+    # bq_service = bq_utils.create_service()
+
 
 def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, dataset_id):
     """
@@ -91,6 +95,8 @@ def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, data
     :param id_offset: constant to add to *_id fields
     :return: the query
     """
+    person_id_mapping_table = PERSON_ID_MAPPING_TABLE
+    visit_id_mapping_table = VISIT_ID_MAPPING_TABLE
     source_person_id_field = 'person_id'
     json_path = os.path.join(fields_path, table_name + '.json')
     visit_id_flag = False
@@ -112,6 +118,7 @@ def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, data
             else:
                 col_expr = field_name
             col_exprs.append(col_expr)
+        col_expr_str = ',\n  '.join(col_exprs)
         q = 'SELECT\n  '
         q += ',\n  '.join(col_exprs)
         q += '\nFROM'
@@ -120,22 +127,24 @@ def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, data
         person_mapping_table = PERSON_ID_MAPPING_TABLE
         visit_mapping_table = VISIT_ID_MAPPING_TABLE
         for hpo in hpos_to_merge:
-            q_dum = ' ( SELECT col_exprs FROM `%(project_id)s.%(dataset_id)s.%(hpo)s_%(table_name)s` t' % locals()
+            if not table_exists(project_id, dataset_id, hpo + '_' + table_name):
+                continue
+            q_dum = ' ( SELECT * FROM `%(project_id)s.%(dataset_id)s.%(hpo)s_%(table_name)s` t' % locals()
             if visit_id_flag and hpo in hpos_with_visit:
                 q_dum += '\n LEFT JOIN '
                 q_dum += '''
-                    ( SELECT global_person_id, mapping_person_id
+                    ( SELECT global_person_id, hpo, mapping_person_id
                         FROM
-                        `%(project_id)s.%(dataset_id)s.hpo_%(person_mapping_table)s`
+                        `%(project_id)s.%(dataset_id)s.%(person_id_mapping_table)s`
                     )
                     person_id_map ON t.person_id = person_id_map.mapping_person_id
                     AND
-                    person_mapping_map.hpo = '%(hpo)s' ''' % locals()
+                    person_id_map.hpo = '%(hpo)s' ''' % locals()
                 q_dum += '\n LEFT JOIN  '
                 q_dum += '''
-                ( SELECT global_visit_id, mapping_visit_id
+                ( SELECT global_visit_id, hpo, mapping_visit_id
                     FROM
-                    `%(project_id)s.%(dataset_id)s.%(hpo)s_%(visit_mapping_table)s`
+                    `%(project_id)s.%(dataset_id)s.%(visit_id_mapping_table)s`
                 )
                 visit_id_map ON t.visit_occurrence_id = visit_id_map.mapping_visit_id
                 AND
@@ -143,16 +152,18 @@ def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, data
             else:
                 q_dum += '\n LEFT JOIN '
                 q_dum += '''
-                    ( SELECT global_person_id, mapping_person_id, null as global_visit_id
+                    ( SELECT global_person_id, hpo, mapping_person_id, null as global_visit_id
                         FROM
-                        `%(project_id)s.%(dataset_id)s.hpo_%(person_mapping_table)s`
+                        `%(project_id)s.%(dataset_id)s.%(person_id_mapping_table)s`
                     )
                     person_id_map ON t.person_id = person_id_map.mapping_person_id
                     AND
-                    person_mapping_map.hpo = '%(hpo)s' ''' % locals()
+                    person_id_map.hpo = '%(hpo)s' ''' % locals()
 
             q_dum += ')'
             q_blocks.append(q_dum)
+        if len(q_blocks) == 0 :
+            return ""
         q += "\n UNION ALL \n".join(q_blocks)
         q += ')'
         return q
@@ -177,15 +188,22 @@ def query(q, destination_table_id, write_disposition):
 def main(args):
     # list of hpos with person table and creating person id mapping table queries
     os.environ['BIGQUERY_DATASET_ID'] = args.dataset_id
-    hpos_to_merge = []
     # establlishing locals()
     project_id = args.project_id
     dataset_id = args.dataset_id
 
+    hpos_to_merge = []
     for item in resources.hpo_csv() + [{'hpo_id': 'fake', 'name': 'FAKE'}]:
         hpo_id = item['hpo_id']
         if table_exists(args.project_id, args.dataset_id, hpo_id + '_person'):
             hpos_to_merge.append(hpo_id)
+
+    hpos_with_visit = []
+    for item in resources.hpo_csv() + [{'hpo_id': 'fake', 'name': 'FAKE'}]:
+        hpo_id = item['hpo_id']
+        if table_exists(args.project_id, args.dataset_id, hpo_id + '_visit_occurrence'):
+            hpos_with_visit.append(hpo_id)
+
     hpo_queries = []
     print 'merge hpos?', hpos_to_merge
     for hpo in hpos_to_merge:
@@ -193,38 +211,54 @@ def main(args):
     union_all_blocks = 'UNION ALL'.join(hpo_queries)
     person_mapping_query = PERSON_ID_MAPPING_QUERY_SKELETON % locals()
 
-    print 'Loading ' + PERSON_ID_MAPPING_TABLE
-    query_result = query(person_mapping_query,
-                         destination_table_id=PERSON_ID_MAPPING_TABLE,
-                         write_disposition='WRITE_TRUNCATE')
-    time.sleep(BQ_WAIT_TIME)
-    if 'errors' in query_result['status']:
-        print '{} load failed!'.format(PERSON_ID_MAPPING_TABLE)
-    else:
-        print '{} load success!'.format(PERSON_ID_MAPPING_TABLE)
+    # print 'Loading ' + PERSON_ID_MAPPING_TABLE
+    # query_result = query(person_mapping_query,
+                         # destination_table_id=PERSON_ID_MAPPING_TABLE,
+                         # write_disposition='WRITE_TRUNCATE')
+    # time.sleep(BQ_WAIT_TIME)
+    # if 'errors' in query_result['status']:
+        # print '{} load failed!'.format(PERSON_ID_MAPPING_TABLE)
+    # else:
+        # print '{} load success!'.format(PERSON_ID_MAPPING_TABLE)
 
-    # list of hpos with visit table and creating visit id mapping table queries
-    hpos_with_visit = []
-    for item in resources.hpo_csv() + [{'hpo_id': 'fake', 'name': 'FAKE'}]:
-        hpo_id = item['hpo_id']
-        if table_exists(project_id, args.dataset_id, hpo_id + '_visit_occurrence'):
-            hpos_with_visit.append(hpo_id)
+    # # list of hpos with visit table and creating visit id mapping table queries
+
     visit_hpo_queries = []
     for hpo in hpos_with_visit:
         visit_hpo_queries.append(VISIT_ID_HPO_BLOCK % locals())
     union_all_blocks = '\n UNION ALL'.join(visit_hpo_queries)
     visit_mapping_query = VIST_ID_MAPPING_QUERY_SKELETON % locals()
 
-    print 'Loading ' + VISIT_ID_MAPPING_TABLE
-    query_result = query(visit_mapping_query,
-                         destination_table_id=VISIT_ID_MAPPING_TABLE,
-                         write_disposition='WRITE_TRUNCATE')
-    if 'errors' in query_result['status']:
-        print '{} load failed!'.format(VISIT_ID_MAPPING_TABLE)
+    # print 'Loading ' + VISIT_ID_MAPPING_TABLE
+    # query_result = query(visit_mapping_query,
+                         # destination_table_id=VISIT_ID_MAPPING_TABLE,
+                         # write_disposition='WRITE_TRUNCATE')
+    # if 'errors' in query_result['status']:
+        # print '{} load failed!'.format(VISIT_ID_MAPPING_TABLE)
+    # else:
+        # print '{} load success!'.format(VISIT_ID_MAPPING_TABLE)
+    # time.sleep(BQ_WAIT_TIME)
+
+    jobs_to_wait_on = []
+    table_errors = []
+    for table_name in TABLE_NAMES:
+        q = construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, dataset_id)
+        print 'Merging table: ' + table_name
+        query_result = query(q, destination_table_id='merged_'+table_name, write_disposition='WRITE_TRUNCATE')
+        if 'errors' in query_result['status']:
+            table_errors.append(table_name)
+        query_job_id = query_result['jobReference']['jobId']
+        jobs_to_wait_on.append(query_job_id)
+
+    incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10)
+    if len(incomplete_jobs) == 0:
+        if len(error_tables) == 0:
+            print " ---- Merge succesful! ---- "
+        else:
+            print " ---- Following tables fail --- "
+            print ",".join(table_errors)
     else:
-        print '{} load success!'.format(VISIT_ID_MAPPING_TABLE)
-    time.sleep(BQ_WAIT_TIME)
-    return
+        raise RuntimeError("---- Merge takes too long! ---- ")
 
 
 if __name__ == '__main__':
