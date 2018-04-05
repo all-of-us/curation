@@ -279,12 +279,12 @@ def copy_files(hpo_id):
 
     """
     hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    drc_private_bucket = gcs_utils.get_private_drc_bucket()
+    drc_private_bucket = gcs_utils.get_drc_bucket()
 
     bucket_items = gcs_utils.list_bucket(hpo_bucket)
 
     today = datetime.date.today()
-    prefix = hpo_id + '-' + today.strftime("%Y%m%d") + '/'
+    prefix = hpo_id + '/'
 
     for item in bucket_items:
         item_name = item['name']

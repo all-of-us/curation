@@ -18,9 +18,6 @@ MIMETYPES = {'json': 'application/json',
 def get_drc_bucket():
     return os.environ.get('DRC_BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
 
-def get_private_drc_bucket():
-    return os.environ.get('DRC_PRIVATE_BUCKET_NAME')
-
 def get_hpo_bucket(hpo_id):
     """
     Get the name of an HPO site's private bucket
