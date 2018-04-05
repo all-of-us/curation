@@ -1,6 +1,5 @@
 import StringIO
 import unittest
-import datetime
 
 import mock
 from google.appengine.ext import testbed
@@ -236,25 +235,24 @@ class ValidationTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_copy_five_persons(self, mock_check_cron):
-
+        folder_prefix = 'dummy-prefix-2018-03-22-v1/'
         # upload all five_persons files
         for cdm_file in test_util.FIVE_PERSONS_FILES:
-            test_util.write_cloud_file(self.hpo_bucket, cdm_file)
+            test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix)
 
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.COPY_HPO_FILES_URL)
-            today = datetime.date.today()
-            prefix = test_util.FAKE_HPO_ID + '-' + today.strftime("%Y%m%d") + '/'
+            prefix = test_util.FAKE_HPO_ID + '/' + folder_prefix
             expected_bucket_items = [prefix + item.split('/')[-1] for item in test_util.FIVE_PERSONS_FILES]
 
-            list_bucket_result = gcs_utils.list_bucket(gcs_utils.get_private_drc_bucket())
+            list_bucket_result = gcs_utils.list_bucket(gcs_utils.get_drc_bucket())
             actual_bucket_items = [item['name'] for item in list_bucket_result]
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
 
     def tearDown(self):
         self._empty_bucket()
-        to_delete_list = gcs_utils.list_bucket(gcs_utils.get_private_drc_bucket())
+        to_delete_list = gcs_utils.list_bucket(gcs_utils.get_drc_bucket())
         for bucket_item in to_delete_list:
-            gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+            gcs_utils.delete_object(gcs_utils.get_drc_bucket(), bucket_item['name'])
         self.testbed.deactivate()
