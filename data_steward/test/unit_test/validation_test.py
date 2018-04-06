@@ -239,12 +239,15 @@ class ValidationTest(unittest.TestCase):
         # upload all five_persons files
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix)
+            test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix + folder_prefix)
 
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.COPY_HPO_FILES_URL)
-            prefix = test_util.FAKE_HPO_ID + '/' + folder_prefix
+            prefix = test_util.FAKE_HPO_ID + '_' + self.hpo_bucket + '/' + folder_prefix
             expected_bucket_items = [prefix + item.split('/')[-1] for item in test_util.FIVE_PERSONS_FILES]
+            expected_bucket_items.extend([prefix + folder_prefix + item.split('/')[-1] for item in
+                                          test_util.FIVE_PERSONS_FILES])
 
             list_bucket_result = gcs_utils.list_bucket(gcs_utils.get_drc_bucket())
             actual_bucket_items = [item['name'] for item in list_bucket_result]

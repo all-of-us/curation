@@ -283,7 +283,7 @@ def copy_files(hpo_id):
 
     bucket_items = gcs_utils.list_bucket(hpo_bucket)
 
-    prefix = hpo_id + '/'
+    prefix = hpo_id + '_' + hpo_bucket + '/'
 
     for item in bucket_items:
         item_name = item['name']
