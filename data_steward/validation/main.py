@@ -254,7 +254,7 @@ def _get_to_process_list(bucket, bucket_items):
         # this is not in a try/except block because this follows a bucket read which is in a try/except
         folder_bucket_items = [item for item in bucket_items if item['name'].startswith(folder_name)]
         submitted_bucket_items = [item for item in folder_bucket_items if basename(item) not in common.IGNORE_LIST]
-        if len(submitted_bucket_items)>0:
+        if len(submitted_bucket_items) > 0:
             folders_with_submitted_files.append(folder_name)
             latest_datetime = max([updated_datetime_object(item) for item in submitted_bucket_items])
             folder_datetime_list.append(latest_datetime)
@@ -283,7 +283,6 @@ def copy_files(hpo_id):
 
     bucket_items = gcs_utils.list_bucket(hpo_bucket)
 
-    today = datetime.date.today()
     prefix = hpo_id + '/'
 
     for item in bucket_items:
