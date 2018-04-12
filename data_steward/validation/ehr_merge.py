@@ -185,23 +185,21 @@ def query(q, destination_table_id, write_disposition):
     return qr
 
 
-def main(args):
+def merge(dataset_id, project_id):
     # list of hpos with person table and creating person id mapping table queries
-    os.environ['BIGQUERY_DATASET_ID'] = args.dataset_id
+    os.environ['BIGQUERY_DATASET_ID'] = dataset_id
     # establlishing locals()
-    project_id = args.project_id
-    dataset_id = args.dataset_id
 
     hpos_to_merge = []
     for item in resources.hpo_csv() + [{'hpo_id': 'fake', 'name': 'FAKE'}]:
         hpo_id = item['hpo_id']
-        if table_exists(args.project_id, args.dataset_id, hpo_id + '_person'):
+        if table_exists(project_id, dataset_id, hpo_id + '_person'):
             hpos_to_merge.append(hpo_id)
 
     hpos_with_visit = []
     for item in resources.hpo_csv() + [{'hpo_id': 'fake', 'name': 'FAKE'}]:
         hpo_id = item['hpo_id']
-        if table_exists(args.project_id, args.dataset_id, hpo_id + '_visit_occurrence'):
+        if table_exists(project_id, dataset_id, hpo_id + '_visit_occurrence'):
             hpos_with_visit.append(hpo_id)
 
     hpo_queries = []
@@ -269,4 +267,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_id',
                         default='circle_test_dataset',
                         help='Dataset containing a CDM from all EHR')
-    main(parser.parse_args())
+    args = parser.parse_args()
+    project_id = args.project_id
+    dataset_id = args.dataset_id
+    merge(dataset_id, project_id)
