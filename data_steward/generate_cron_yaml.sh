@@ -15,17 +15,25 @@ echo "cron:" > $filename
 
 echo "- description: validate all hpos" >> $filename
 echo "  url: /data_steward/v1/ValidateAllHpoFiles" >> $filename
-echo "  schedule: every 240 hours" >> $filename
+echo "  schedule: every 6 hours" >> $filename
 
 
 echo "- description: website generation">> $filename
 echo "  url: /tasks/sitegen">> $filename
-echo "  schedule: every 60 minutes">> $filename
+echo "  schedule: every 240 minutes">> $filename
 for i in "${hpos[@]}"
 do
   temp="${i%\"}"
   temp="${temp#\"}"
   echo "- description: validate hpo $temp">> $filename
   echo "  url: /data_steward/v1/ValidateHpoFiles/$temp">> $filename
+  echo "  schedule: every 240 hours">> $filename 
+done
+for i in "${hpos[@]}"
+do
+  temp="${i%\"}"
+  temp="${temp#\"}"
+  echo "- description: copy hpo $temp files">> $filename
+  echo "  url: /data_steward/v1/CopyFiles/$temp">> $filename
   echo "  schedule: every 24 hours">> $filename 
 done

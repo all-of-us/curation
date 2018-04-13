@@ -8,15 +8,24 @@ basic_scaling:
     idle_timeout: 60m
 
 skip_files:
-- ci/
-- test/
-- tools/
+  - ^(.*/)?#.*#$
+  - ^(.*/)?.*~$
+  - ^(.*/)?.*\.py[co]$
+  - ^(.*/)?.*\.sh$
+  - ^(.*/)?.*/RCS/.*$
+  - ^(.*/)?\..*$
+  - ci/
+  - config/
+  - test/
+  - tools/
 
 handlers:
 - url: /tasks/.*
   script: spec.main.app
   login: admin
+  secure: always
 
 - url: /.*
   script: validation.main.app
   login: admin
+  secure: always
