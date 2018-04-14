@@ -360,3 +360,16 @@ def list_tables():
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
     return bq_service.tables().list(projectId=app_id, datasetId=dataset_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+
+
+def list_dataset_contents(dataset_id):
+    project_id = app_identity.get_application_id()
+    service = create_service()
+    req = service.tables().list(projectId=project_id, datasetId=dataset_id)
+    all_tables = []
+    while req:
+        resp = req.execute()
+        items = [item['id'].split('.')[-1] for item in resp.get('tables', [])]
+        all_tables.extend(items or [])
+        req = service.tables().list_next(req, resp)
+    return all_tables
