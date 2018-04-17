@@ -1,4 +1,5 @@
 import unittest
+import time
 
 import mock
 from google.appengine.ext import testbed
@@ -47,13 +48,14 @@ class MergeEHRTest(unittest.TestCase):
                 test_util.write_cloud_str(self.pitt_bucket, cdm_table + '.csv', 'dummy\n')
             bq_utils.load_cdm_csv(FAKE_HPO_ID, cdm_table)
             bq_utils.load_cdm_csv(PITT_HPO_ID, cdm_table)
+        time.sleep(5)
 
     @mock.patch('api_util.check_cron')
     def test_merge_EHR(self, mock_check_cron):
         self._load_datasets()
         # enable exception propagation as described at https://goo.gl/LqDgnj
         old_dataset_items = bq_utils.list_dataset_contents(bq_utils.get_dataset_id())
-        expected_items = ['person_id_mapping_table','visit_id_mapping_table']
+        expected_items = ['person_id_mapping_table', 'visit_id_mapping_table']
         expected_items.extend(['merged_' + table_name for table_name in common.CDM_TABLES])
 
         return_string = ehr_merge.merge(bq_utils.get_dataset_id(), self.project_id)
@@ -66,8 +68,7 @@ class MergeEHRTest(unittest.TestCase):
             self.assertEqual(int(result['rows'][0]['f'][0]['v']),
                              2*globals().get(table_name.upper() + '_COUNT', 0),
                              msg='failed for table merged_{}'.format(table_name))
-        self.assertSetEqual(set(old_dataset_items  + expected_items), set(dataset_items))
-        
+        self.assertSetEqual(set(old_dataset_items + expected_items), set(dataset_items))
 
     def tearDown(self):
         self._empty_bucket(self.hpo_bucket)

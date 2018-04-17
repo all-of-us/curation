@@ -113,7 +113,6 @@ def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, data
     visit_id_mapping_table = VISIT_ID_MAPPING_TABLE
     source_person_id_field = 'person_id'
     json_path = os.path.join(fields_path, table_name + '.json')
-    hpos = 'nyc'
     with open(json_path, 'r') as fp:
         visit_id_flag = False
         person_id_flag = False
@@ -121,7 +120,7 @@ def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, data
         col_exprs = []
         for field in fields:
             field_name = field['name']
-            field_type = field['type']
+            # field_type = field['type']
             if field_name == 'person_id':
                 person_id_flag = True
                 col_expr = 'global_person_id as person_id'
@@ -129,6 +128,7 @@ def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, data
                 visit_id_flag = True
                 col_expr = 'global_visit_id as visit_occurrence_id'
             # elif field_name.endswith('_id') and not field_name.endswith('concept_id') and field_type == 'integer':
+            # not using this because we refer to other ids in some tables which will get overwritten
             elif field_name == table_name + '_id':
                 col_expr = 'ROW_NUMBER() OVER() as %(field_name)s ' % locals()
             else:
@@ -140,8 +140,6 @@ def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, data
         q += '\nFROM'
         q += '\n ('
         q_blocks = []
-        person_mapping_table = PERSON_ID_MAPPING_TABLE
-        visit_mapping_table = VISIT_ID_MAPPING_TABLE
         for hpo in hpos_to_merge:
             if not table_exists(project_id, dataset_id, hpo + '_' + table_name):
                 continue
@@ -255,16 +253,16 @@ def merge(dataset_id, project_id):
             query_result = bq_utils.get_job_details(job_id)
             if 'errors' in query_result['status']:
                 table_errors.append(table_name)
-                if table_name in REQUIRED_TABLES:
+                if table_name in common.REQUIRED_TABLES:
                     required_tables_flag = False
         if len(table_errors) == 0:
             logging.info(" ---- Merge succesful! ---- ")
             return "success: " + ','.join(hpos_to_merge)
         else:
+            logging.info(" ---- Following tables fail --- " + ",".join(table_errors))
             if not required_tables_flag:
                 return "required-not-done"
             return "required-done"
-            logging.info(" ---- Following tables fail --- " + ",".join(table_errors))
     else:
         raise RuntimeError("---- Merge takes too long! ---- ")
 
