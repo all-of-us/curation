@@ -43,7 +43,8 @@ def get_table_id(hpo_id, table_name):
     return hpo_id + '_' + table_name
 
 
-def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, write_disposition='WRITE_TRUNCATE'):
+def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, write_disposition='WRITE_TRUNCATE',
+             allow_jagged_rows=False):
     """
     Load csv file from a bucket into a table in bigquery
     :param schema_path: Path to the schema json file
@@ -69,8 +70,9 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
                             'tableId': table_id
                         },
                         'skipLeadingRows': 1,
-                        "allowQuotedNewlines": True,
-                        'writeDisposition': 'WRITE_TRUNCATE'
+                        'allowQuotedNewlines': True,
+                        'writeDisposition': 'WRITE_TRUNCATE',
+                        'allowJaggedRows': allow_jagged_rows
                     }
             }
     }
@@ -94,7 +96,8 @@ def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix=""):
     fields_filename = os.path.join(resources.fields_path, cdm_table_name + '.json')
     gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix, cdm_table_name)
     table_id = get_table_id(hpo_id, cdm_table_name)
-    return load_csv(fields_filename, gcs_object_path, app_id, dataset_id, table_id)
+    allow_jagged_rows = cdm_table_name == 'observation'
+    return load_csv(fields_filename, gcs_object_path, app_id, dataset_id, table_id, allow_jagged_rows=allow_jagged_rows)
 
 
 def delete_table(table_id):
