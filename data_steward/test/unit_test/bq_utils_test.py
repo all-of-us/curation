@@ -8,7 +8,7 @@ from validation.achilles import ACHILLES_TABLES
 from google.appengine.ext import testbed
 from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
 from test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_CSV
-from test_util import PITT_FIVE_PERSONS_PERSON_CSV
+from test_util import PITT_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_OBSERVATION_CSV
 import test_util
 import mock
 # import time
@@ -255,6 +255,28 @@ class BqUtilsTest(unittest.TestCase):
         # TODO figure out how to count this
         # self.assertEquals(mock_time_sleep.call_count, bq_utils.BQ_DEFAULT_RETRY_COUNT)
         pass
+
+    def test_load_ehr_observation(self):
+        observation_query = "SELECT observation_id FROM {}.{} ORDER BY observation_id"
+        hpo_id = 'pitt'
+        expected_observation_ids = [int(row['observation_id'])
+                                    for row in resources._csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)]
+        with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'rb') as fp:
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket(hpo_id), 'observation.csv', fp)
+        result = bq_utils.load_cdm_csv(hpo_id, 'observation')
+        job_id = result['jobReference']['jobId']
+        incomplete_jobs = bq_utils.wait_on_jobs([job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        self.assertEqual(len(incomplete_jobs), 0, 'pitt_observation load job did not complete')
+        load_job_result = bq_utils.get_job_details(job_id)
+        load_job_result_status = load_job_result['status']
+        load_job_errors = load_job_result_status.get('errors')
+        self.assertIsNone(load_job_errors, msg='pitt_observation load job failed: ' + str(load_job_errors))
+        query_string = observation_query.format(bq_utils.get_dataset_id(), 'pitt_observation')
+        query_results_response = bq_utils.query_table(query_string)
+        query_job_errors = query_results_response.get('errors')
+        self.assertIsNone(query_job_errors)
+        actual_result = [int(row['f'][0]['v']) for row in query_results_response['rows']]
+        self.assertListEqual(actual_result, expected_observation_ids)
 
     def tearDown(self):
         self._drop_tables()

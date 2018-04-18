@@ -2,21 +2,25 @@
     {
         "type": "integer", 
         "name": "cohort_definition_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to a record in the COHORT_DEFINITION table containing relevant Cohort Definition information."
     }, 
     {
         "type": "integer", 
         "name": "subject_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to the subject in the cohort. These could be referring to records in the PERSON, PROVIDER, VISIT_OCCURRENCE table."
     }, 
     {
         "type": "date", 
         "name": "cohort_start_date", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The date when the Cohort Definition criteria for the Person, Provider or Visit first match."
     }, 
     {
         "type": "date", 
         "name": "cohort_end_date", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The date when the Cohort Definition criteria for the Person, Provider or Visit no longer match or the Cohort membership was terminated."
     }
 ]

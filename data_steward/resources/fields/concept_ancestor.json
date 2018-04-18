@@ -2,21 +2,25 @@
     {
         "type": "integer", 
         "name": "ancestor_concept_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to the concept in the concept table for the higher-level concept that forms the ancestor in the relationship."
     }, 
     {
         "type": "integer", 
         "name": "descendant_concept_id", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "A foreign key to the concept in the concept table for the lower-level concept that forms the descendant in the relationship."
     }, 
     {
         "type": "integer", 
         "name": "min_levels_of_separation", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The minimum separation in number of levels of hierarchy between ancestor and descendant concepts. This is an attribute that is used to simplify hierarchic analysis."
     }, 
     {
         "type": "integer", 
         "name": "max_levels_of_separation", 
-        "mode": "required"
+        "mode": "required", 
+        "description": "The maximum separation in number of levels of hierarchy between ancestor and descendant concepts. This is an attribute that is used to simplify hierarchic analysis."
     }
 ]
