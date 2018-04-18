@@ -71,5 +71,10 @@ class MergeEHRTest(unittest.TestCase):
         self.assertSetEqual(set(old_dataset_items + expected_items), set(dataset_items))
 
     def tearDown(self):
+        delete_list = ['person_id_mapping_table', 'visit_id_mapping_table'] + ['merged_' + table_name for table_name in
+                                                                               common.CDM_TABLES]
+        for table_id in delete_list:
+            if table_id not in common.VOCABULARY_TABLES:
+                bq_utils.delete_table(table_id)
         self._empty_bucket(self.hpo_bucket)
         self.testbed.deactivate()
