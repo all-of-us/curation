@@ -9,7 +9,6 @@ Currently the following environment variables must be set:
  * APPLICATION_ID: GCP project ID (e.g. all-of-us-ehr-dev)
  * GOOGLE_APPLICATION_CREDENTIALS: path to service account key json file (e.g. /path/to/all-of-us-ehr-dev-abc123.json)
 """
-import argparse
 import json
 import os
 import logging
@@ -67,7 +66,6 @@ def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, data
     json_path = os.path.join(fields_path, table_name + '.json')
     with open(json_path, 'r') as fp:
         visit_id_flag = False
-        person_id_flag = False
         fields = json.load(fp)
         col_exprs = []
         for field in fields:
