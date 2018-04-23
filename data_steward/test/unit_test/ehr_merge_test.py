@@ -20,9 +20,9 @@ PROCEDURE_OCCURRENCE_COUNT = 50
 VISIT_OCCURRENCE_COUNT = 50
 
 
-class MergeEHRTest(unittest.TestCase):
+class EhrMergeTest(unittest.TestCase):
     def setUp(self):
-        super(MergeEHRTest, self).setUp()
+        super(EhrMergeTest, self).setUp()
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_app_identity_stub()
