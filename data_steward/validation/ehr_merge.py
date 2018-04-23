@@ -163,7 +163,6 @@ def merge(dataset_id, project_id):
         jobs_to_wait_on.append(query_job_id)
 
     incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10)
-    required_tables_flag = True
     if len(incomplete_jobs) == 0:
         status_list = [bq_utils.get_job_details(job_id)['status'] for job_id in jobs_to_wait_on]
         table_errors = [list(common.CDM_TABLES)[ind] for ind, _ in enumerate(jobs_to_wait_on)
