@@ -124,7 +124,6 @@ def create_mapping_table(hpos_with_visit, project_id, dataset_id):
     :returns: string if visit table failed; otherwise none
 
     """
-    pass
     # # list of hpos with visit table and creating visit id mapping table queries
     visit_hpo_queries = []
     for hpo in hpos_with_visit:
