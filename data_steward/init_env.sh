@@ -41,6 +41,7 @@ export BUCKET_NAME_UNIONED_EHR="${BUCKET_PREFIX}_drc"
 # See https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#datasetReference.datasetId
 DATASET_PREFIX="${CURRENT_BRANCH}_${USERNAME_PREFIX}"
 export BIGQUERY_DATASET_ID="${DATASET_PREFIX}_ehr"
+export RDR_DATASET_ID="${DATASET_PREFIX}_rdr"
 
 # .circlerc is sourced before each test and deploy command
 # See https://www.compose.com/articles/experience-with-circleci/#dontcommitcredentials
@@ -54,5 +55,6 @@ then
   echo "export BUCKET_NAME_PITT=${BUCKET_NAME_PITT}" >> $HOME/.circlerc
   echo "export BUCKET_NAME_CHS=${BUCKET_NAME_CHS}" >> $HOME/.circlerc
   echo "export BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID}" >> $HOME/.circlerc
+  echo "export RDR_DATASET_ID=${RDR_DATASET_ID}" >> $HOME/.circlerc
   echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >> $HOME/.circlerc
 fi
