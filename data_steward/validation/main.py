@@ -372,21 +372,19 @@ def _write_string_to_file(bucket, name, string):
 
 @api_util.auth_required_cron
 def merge_ehr():
-    hpo_id = 'merged'
+    hpo_id = 'unioned-ehr'
     app_id = bq_utils.app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
-    merge_return_string = ehr_merge.merge(dataset_id=dataset_id, project_id=app_id)
-    if merge_return_string != 'required-not-done':
-        run_achilles(hpo_id)
+    ehr_merge.merge(dataset_id=dataset_id, project_id=app_id)
 
-        now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%d')
-        folder_prefix = 'merged-' + now_datetime_string
-        run_export(hpo_id, folder_prefix=folder_prefix)
-        logging.info('uploading achilles index files')
-        _upload_achilles_files(hpo_id, folder_prefix)
+    run_achilles(hpo_id)
+    now_date_string = datetime.datetime.now().strftime('%Y-%m-%d')
+    folder_prefix = 'unioned-ehr-' + now_date_string
+    run_export(hpo_id, folder_prefix=folder_prefix)
+    logging.info('uploading achilles index files')
+    _upload_achilles_files(hpo_id, folder_prefix)
 
-        return 'merge-and-achilles-done'
-    return 'only-merge-done'
+    return 'merge-and-achilles-done'
 
 
 app.add_url_rule(

@@ -63,22 +63,22 @@ class EhrMergeTest(unittest.TestCase):
         # enable exception propagation as described at https://goo.gl/LqDgnj
         old_dataset_items = bq_utils.list_dataset_contents(bq_utils.get_dataset_id())
         expected_items = ['visit_id_mapping_table']
-        expected_items.extend(['merged_' + table_name for table_name in common.CDM_TABLES])
+        expected_items.extend(['unioned_ehr_' + table_name for table_name in common.CDM_TABLES])
 
         return_string = ehr_merge.merge(bq_utils.get_dataset_id(), self.project_id)
         self.assertEqual(return_string, "success: " + ','.join([CHS_HPO_ID, PITT_HPO_ID]))
         # check the result files were placed in bucket
         dataset_items = bq_utils.list_dataset_contents(bq_utils.get_dataset_id())
         for table_name in common.CDM_TABLES:
-            cmd = 'SELECT COUNT(1) FROM merged_{}'.format(table_name)
+            cmd = 'SELECT COUNT(1) FROM unioned_ehr_{}'.format(table_name)
             result = bq_utils.query(cmd)
             self.assertEqual(int(result['rows'][0]['f'][0]['v']),
                              2*globals().get(table_name.upper() + '_COUNT', 0),
-                             msg='failed for table merged_{}'.format(table_name))
+                             msg='failed for table unioned_ehr_{}'.format(table_name))
         self.assertSetEqual(set(old_dataset_items + expected_items), set(dataset_items))
 
     def tearDown(self):
-        delete_list = ['visit_id_mapping_table'] + ['merged_' + table_name for table_name in common.CDM_TABLES]
+        delete_list = ['visit_id_mapping_table'] + ['unioned_ehr_' + table_name for table_name in common.CDM_TABLES]
         for table_id in delete_list:
             if table_id not in common.VOCABULARY_TABLES:
                 bq_utils.delete_table(table_id)

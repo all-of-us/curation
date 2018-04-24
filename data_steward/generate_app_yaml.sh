@@ -20,8 +20,8 @@ echo "env_variables:">>app.yaml
 echo  "  BIGQUERY_DATASET_ID: \"${env}_fake\"" >> app.yaml
 echo  "  BUCKET_NAME_FAKE: \"$APPLICATION_ID-fake\"">> app.yaml
 echo  "  BUCKET_NAME_NYC: \"$APPLICATION_ID-nyc\"">> app.yaml
-echo  "  BUCKET_NAME_MERGED: \"$APPLICATION_ID-nyc\"">> app.yaml
 echo  "  DRC_BUCKET_NAME: \"$APPLICATION_ID-drc-spec\"">> app.yaml
+echo  "  BUCKET_NAME_UNIONED_EHR: \"$APPLICATION_ID-drc-spec\"">> app.yaml
 for i in "${hpos[@]}"
 do
   temp="${i%\"}"

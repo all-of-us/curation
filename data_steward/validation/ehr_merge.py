@@ -52,13 +52,12 @@ TABLE_NAMES = ['person', 'visit_occurrence', 'condition_occurrence', 'procedure_
 
 def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, dataset_id):
     """
-    Get select query for CDM table with proper qualifiers and using cdr_id for person_id
+    Get union query for CDM table with proper qualifiers and using global_visit_id for visit_occurrence_id
     :param table_name: name of the CDM table
-    :param source_hpo: hpo names
-    :param project_id: ID of the source table
+    :param hpos_to_merge: hpos that should be unioned. sufficient condition is existence of person table
+    :param hpos_with_visit: hpos that have visit table loaded
+    :param project_id: source project name
     :param dataset_id: source dataset name
-    :param id_offset: constant to add to *_id fields
-    :param no_source: no source tables flag
     :return: the query
     """
     visit_id_mapping_table = VISIT_ID_MAPPING_TABLE
@@ -86,24 +85,24 @@ def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, data
         q += ',\n  '.join(col_exprs)
         q += '\nFROM'
         q += '\n ('
-        q_blocks = []
+        q_subquery_blocks = []
         for hpo in hpos_to_merge:
-            q_dum = ' ( SELECT * FROM `%(project_id)s.%(dataset_id)s.%(hpo)s_%(table_name)s` t' % locals()
+            q_subquery = ' ( SELECT * FROM `%(project_id)s.%(dataset_id)s.%(hpo)s_%(table_name)s` t' % locals()
             if visit_id_flag and hpo in hpos_with_visit:
-                q_dum += '\n LEFT JOIN  '
-                q_dum += VISIT_ID_MAPPING_TABLE_SUBQUERY % locals()
-            q_dum += ')'
-            q_blocks.append(q_dum)
-        if len(q_blocks) == 0:
+                q_subquery += '\n LEFT JOIN  '
+                q_subquery += VISIT_ID_MAPPING_TABLE_SUBQUERY % locals()
+            q_subquery += ')'
+            q_subquery_blocks.append(q_subquery)
+        if len(q_subquery_blocks) == 0:
             return ""
-        q += "\n UNION ALL \n".join(q_blocks)
+        q += "\n UNION ALL \n".join(q_subquery_blocks)
         q += ')'
         return q
 
 
 def query(q, destination_table_id, write_disposition):
     """
-    Run query, write to stdout any errors encountered
+    Run query, log any errors encountered
     :param q: SQL statement
     :param destination_table_id: if set, output is saved in a table with the specified id
     :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY (default)
@@ -117,6 +116,15 @@ def query(q, destination_table_id, write_disposition):
 
 
 def create_mapping_table(hpos_with_visit, project_id, dataset_id):
+    """ creates the visit mapping table
+
+    :hpos_with_visit: hpos that should be including the visit occurrence table
+    :project_id: project with the dataset
+    :dataset_id: dataset with the tables
+    :returns: string if visit table failed; otherwise none
+
+    """
+    pass
     # # list of hpos with visit table and creating visit id mapping table queries
     visit_hpo_queries = []
     for hpo in hpos_with_visit:
@@ -136,13 +144,18 @@ def create_mapping_table(hpos_with_visit, project_id, dataset_id):
             return "visit mapping table failed"
     else:
         logging.error('{} load taking too long!'.format(VISIT_ID_MAPPING_TABLE))
-        raise RuntimeError("visit mapping table failed")
+        raise RuntimeError("visit mapping table taking too long. see job id: {}".format(visit_mapping_query_job_id))
 
 
 def merge(dataset_id, project_id):
-    # list of hpos with person table and creating person id mapping table queries
-    existing_tables = bq_utils.list_dataset_contents(dataset_id)
+    """merge hpo ehr data
 
+    :dataset_id: source and target dataset
+    :project_id: project in which everything happens
+    :returns: string with job details
+
+    """
+    existing_tables = bq_utils.list_dataset_contents(dataset_id)
     hpos_to_merge = []
     hpos_with_visit = []
     for item in resources.hpo_csv():
@@ -158,7 +171,7 @@ def merge(dataset_id, project_id):
     for table_name in common.CDM_TABLES:
         q = construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, dataset_id)
         logging.info('Merging table: ' + table_name)
-        query_result = query(q, destination_table_id='merged_'+table_name, write_disposition='WRITE_TRUNCATE')
+        query_result = query(q, destination_table_id='unioned_ehr_'+table_name, write_disposition='WRITE_TRUNCATE')
         query_job_id = query_result['jobReference']['jobId']
         jobs_to_wait_on.append(query_job_id)
 
@@ -176,8 +189,7 @@ def merge(dataset_id, project_id):
         else:
             logging.error(" ---- Following tables fail --- " + ",".join(table_errors))
             if not required_tables_flag:
-                print " ---- Following tables fail --- " + ",".join(table_errors)
-                raise RuntimeError(" ---- Following tables fail --- " + ",".join(table_errors))
+                raise RuntimeError(" ---- Required tables fail --- " + ",".join(required_table_error_list))
             return "required-done"
     else:
         raise RuntimeError("---- Merge takes too long! ---- : IDs: {}".format(','.join(incomplete_jobs)))
