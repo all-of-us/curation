@@ -6,6 +6,7 @@ gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_FAKE}
 gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_NYC}
 gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_PITT}
 gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_CHS}
+gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_UNIONED_EHR}
 
 # Create dataset
 bq mk --dataset --description "Test dataset for ${USERNAME}" ${APPLICATION_ID}:${BIGQUERY_DATASET_ID}

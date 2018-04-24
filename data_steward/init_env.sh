@@ -28,6 +28,7 @@ export BUCKET_NAME_FAKE="${PROJECT_PREFIX}_${USERNAME_PREFIX}_hpo_fake"
 export BUCKET_NAME_NYC="${PROJECT_PREFIX}_${USERNAME_PREFIX}_hpo_nyc"
 export BUCKET_NAME_PITT="${PROJECT_PREFIX}_${USERNAME_PREFIX}_hpo_pitt"
 export BUCKET_NAME_CHS="${PROJECT_PREFIX}_${USERNAME_PREFIX}_hpo_chs"
+export BUCKET_NAME_UNIONED_EHR="${PROJECT_PREFIX}_${USERNAME_PREFIX}_drc"
 
 # Datasets can be scoped by project so we prefix with username
 # Note: Dataset IDs must be alphanumeric (plus underscores) and <= 1024 characters
