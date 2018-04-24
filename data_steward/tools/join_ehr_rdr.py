@@ -1,9 +1,16 @@
 """
-Combine synthetic EHR and RDR data sets to form another data set
+Combine data sets `ehr` and `rdr` to form another data set `combined`
 
- * Create a mapping table which arbitrarily maps EHR person_id to RDR person_id and assigns a cdr_id
- * For each CDM table, load the EHR data and append RDR data (ignore RDR person table)
- * RDR entity IDs (e.g. visit_occurrence_id, measurement_id) start at 1B
+ * Copy `rdr.person` table as-is to `combined.person`
+
+ * Create table `combined.<hpo>_visit_mapping(dest_visit_occurrence_id, source_table_name, source_visit_occurrence_id)`
+   and populate it with UNION ALL of `visit_occurrence_id`s from ehr and rdr records that link to `combined.person`
+
+ * Create tables `combined.<hpo>_{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL of
+   `ehr` and `rdr` records that link to `combined.person`. Use `combined.<hpo>_visit_mapping.dest_visit_occurrence_id`
+   for records that have a (valid) `visit_occurrence_id`.
+
+ * Load `combined.<hpo>_observation` with records derived from values in `ehr.<hpo>_person`
 
 ## Notes
 Currently the following environment variables must be set:
@@ -14,7 +21,7 @@ Currently the following environment variables must be set:
 import argparse
 import json
 import os
-import time
+import logging
 
 import bq_utils
 from resources import fields_path
@@ -43,7 +50,7 @@ TABLE_NAMES = ['person', 'visit_occurrence', 'condition_occurrence', 'procedure_
                'device_exposure', 'measurement', 'observation', 'death']
 
 
-def construct_query(table_name, source, project_id, dataset_id, id_offset=None):
+def construct_mapping_query(table_name, source, project_id, dataset_id, id_offset=None):
     """
     Get select query for CDM table with proper qualifiers and using cdr_id for person_id
     :param table_name: name of the CDM table
@@ -78,49 +85,47 @@ def construct_query(table_name, source, project_id, dataset_id, id_offset=None):
 
 def query(q, destination_table_id, write_disposition):
     """
-    Run query, write to stdout any errors encountered
+    Run query and block until job is done
     :param q: SQL statement
     :param destination_table_id: if set, output is saved in a table with the specified id
     :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY (default)
-    :return: query result
     """
-    qr = bq_utils.query(q, destination_table_id=destination_table_id, write_disposition=write_disposition)
-    if 'errors' in qr['status']:
-        print '== ERROR =='
-        print qr
-        print '\n'
-    return qr
+    query_job_result = bq_utils.query(q, destination_table_id=destination_table_id, write_disposition=write_disposition)
+    query_job_id = query_job_result['jobReference']['jobId']
+    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
+    if len(incomplete_jobs) > 0:
+        raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
 
 def main(args):
     mapping_query = ID_MAPPING_QUERY % args.__dict__
-    print 'Loading ' + MAPPING_TABLE_ID
+    logging.log(logging.INFO, 'Loading ' + MAPPING_TABLE_ID)
+
     query(mapping_query, destination_table_id=MAPPING_TABLE_ID, write_disposition='WRITE_TRUNCATE')
-    time.sleep(BQ_WAIT_TIME)
 
     for table_name in TABLE_NAMES:
-        q = construct_query(table_name, 'ehr', args.ehr_project, args.ehr_dataset)
-        print 'Loading EHR table: ' + table_name
+        q = construct_mapping_query(table_name, 'ehr', args.ehr_project, args.ehr_dataset)
+        logging.log(logging.INFO, 'Loading EHR table: ' + table_name)
         query(q, destination_table_id=table_name, write_disposition='WRITE_TRUNCATE')
 
     for table_name in [table_name for table_name in TABLE_NAMES if table_name != 'person']:
-        q = construct_query(table_name, 'rdr', args.rdr_project, args.rdr_dataset, ONE_BILLION)
-        print 'Loading RDR table: ' + table_name
+        q = construct_mapping_query(table_name, 'rdr', args.rdr_project, args.rdr_dataset, ONE_BILLION)
+        logging.log(logging.INFO, 'Loading RDR table: ' + table_name)
         query(q, destination_table_id=table_name, write_disposition='WRITE_APPEND')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--ehr_project',
-                        default='pmi-drc-api-test',
+                        default='aou-res-curation-test',
                         help='Project containing the EHR dataset')
     parser.add_argument('--ehr_dataset',
                         default='synthetic_derivative_test_load',
-                        help='Dataset containing a CDM from synthetic EHR')
+                        help='Dataset containing EHR data in OMOP format')
     parser.add_argument('--rdr_project',
                         default='all-of-us-rdr-sandbox',
                         help='Project containing the RDR dataset')
     parser.add_argument('--rdr_dataset',
                         default='test_etl_6',
-                        help='Dataset containing a CDM from RDR ETL')
+                        help='Dataset containing RDR data in OMOP format')
     main(parser.parse_args())

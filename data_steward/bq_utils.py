@@ -22,6 +22,18 @@ class InvalidOperationError(RuntimeError):
         super(InvalidOperationError, self).__init__(msg)
 
 
+class BigQueryJobWaitError(RuntimeError):
+    """Raised when jobs fail to complete after waiting"""
+
+    BigQueryJobWaitErrorMsg = 'The following BigQuery jobs failed to complete: %s.'
+
+    def __init__(self, job_ids, reason=''):
+        msg = self.BigQueryJobWaitErrorMsg % job_ids
+        if reason:
+            msg += ' Reason: %s' % reason
+        super(BigQueryJobWaitError, self).__init__(msg)
+
+
 def get_dataset_id():
     return os.environ.get('BIGQUERY_DATASET_ID')
 
