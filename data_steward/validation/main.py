@@ -372,14 +372,14 @@ def _write_string_to_file(bucket, name, string):
 
 @api_util.auth_required_cron
 def merge_ehr():
-    hpo_id = 'unioned-ehr'
+    hpo_id = 'unioned_ehr'
     app_id = bq_utils.app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
     ehr_merge.merge(dataset_id=dataset_id, project_id=app_id)
 
     run_achilles(hpo_id)
-    now_date_string = datetime.datetime.now().strftime('%Y-%m-%d')
-    folder_prefix = 'unioned-ehr-' + now_date_string
+    now_date_string = datetime.datetime.now().strftime('%Y_%m_%d')
+    folder_prefix = 'unioned_ehr_' + now_date_string
     run_export(hpo_id, folder_prefix=folder_prefix)
     logging.info('uploading achilles index files')
     _upload_achilles_files(hpo_id, folder_prefix)
