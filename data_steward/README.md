@@ -23,6 +23,7 @@ the internet. The following environment variables are needed to configure access
 | `APPLICATION_ID` | Google cloud project ID. For development, we use `aou-res-curation-test`. |
 | `BIGQUERY_DATASET_ID` | ID of the biquery dataset where CDM data are to be loaded. Must be in the project associated with `APPLICATION_ID`. |
 | `RDR_DATASET_ID` | ID of the biquery dataset where RDR data are to be loaded. |
+| `EHR_RDR_DATASET_ID` | ID of the biquery dataset where the combined EHR and RDR data are to be loaded. |
 | `DRC_BUCKET_NAME` | Name of the bucket where specification document and report is located. |
 | `BUCKET_NAME_<HPO_ID>` | Name of the bucket where CDM files are to be uploaded by HPO site with id `<HPO_ID>`. Note that in order to run unit tests, you must have defined `BUCKET_NAME_NYC`, `BUCKET_NAME_PITT`, `BUCKET_NAME_CHS`, `BUCKET_NAME_FAKE`|
 
