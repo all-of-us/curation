@@ -1,0 +1,101 @@
+observation_id,person_id,observation_concept_id,observation_date,observation_datetime,observation_type_concept_id,value_as_number,value_as_string,value_as_concept_id,qualifier_concept_id,unit_concept_id,provider_id,visit_occurrence_id,observation_source_value,observation_source_concept_id,unit_source_value,qualifier_source_value,value_source_concept_id,value_source_value,questionnaire_response_id
+18622592,999,0,2017-07-24,2017-07-24 23:59:57,45905771,,pjktubzfpaaqqkolykof,0,0,0,,,SecondaryContactInfo_SecondContactsAddressOne,1585926,,,0,,579164908
+18622593,999,0,2017-07-24,2017-07-24 23:59:57,45905771,,gygsguwukyoukbmcgzwn,0,0,0,,,SecondContactsAddress_SecondContactZipCode,1585930,,,0,,579164908
+18622594,999,0,2017-07-24,2017-07-24 23:59:57,45905771,,Vermont,0,0,0,,,SecondContactsAddress_SecondContactState,1585929,,,1586079,SecondContactState_Vermont,579164908
+18622599,999,0,2017-07-24,2017-07-24 23:59:57,45905771,,facsxormqswclzptdsqz,0,0,0,,,SecondaryContactInfo_PersonOneMiddleInitial,1585908,,,0,,579164908
+18622600,999,0,2017-07-24,2017-07-24 23:59:57,45905771,,zljsvhkzqoxxoqapfjbh,0,0,0,,,SecondaryContactInfo_PersonOneEmail,1585915,,,0,,579164908
+18622601,999,0,2017-07-24,2017-07-24 23:59:57,45905771,,wxjuisnuqlkofvordonx,0,0,0,,,SecondaryContactInfo_SecondContactsFirstName,1585923,,,0,,579164908
+18622606,999,0,2017-07-24,2017-07-24 23:59:57,45905771,,cwtmzbaciewjcvjtuiiw,0,0,0,,,EmploymentWorkAddress_AddressLineOne,1585962,,,0,,579164908
+18622634,999,0,2017-06-20,2017-06-20 23:59:57,45905771,,signature,0,0,0,,,ExtraConsent_CABoRSignature,1585490,,,0,,674000324
+18622648,999,0,2017-06-20,2017-06-20 23:59:57,45905771,,Columbia University Medical Center / New York-Presbyterian,0,0,0,,,ColumbiaSitePairing_ColumbiaCare,1585580,,,1585581,ColumbiaCare_ColumbiaUniversityMedCenter,674000324
+18622664,999,0,2017-07-08,2017-07-08 23:59:57,45905771,,Monthly,0,0,0,,,Past3MonthUseFrequency_Marijuana3MonthUse,1585650,,,1585653,Marijuana3MonthUse_Monthly,749569893
+18622693,8,0,2015-03-24,2015-03-24 22:56:59,45905771,,Weill Cornell Medicine / New York-Presbyterian,0,0,0,,,ColumbiaSitePairing_ColumbiaCare,1585580,,,1585582,ColumbiaCare_WeillCornell,550121939
+18624903,7,0,2017-11-26,2017-11-26 07:16:34,45905771,,Other tissue (free text field),0,0,0,,,OrganTransplant_OrganTransplantDescription,1585806,,,1585808,OrganTransplantDescription_OtherTissue,318594243
+18624911,7,0,2017-11-26,2017-11-26 07:16:34,45905771,,etyaupftuaueicrebdhu,0,0,0,,,OutsideTravel6Month_OutsideTravel6MonthWhere,903065,,,0,,318594243
+18624947,7,0,2017-12-21,2017-12-21 07:16:34,45905771,,Some days,0,0,0,,,CigarSmoking_CurrentCigarFrequency,1586177,,,1586179,CurrentCigarFrequency_SomeDays,284242108
+18628170,2,0,2015-07-25,2015-07-25 15:37:38,45905771,,srjysaszwnlvqhlbvgan,0,0,0,,,SecondaryContactInfo_SecondContactsMiddleInitial,1585924,,,0,,251063197
+18628175,2,0,2015-07-25,2015-07-25 15:37:38,45905771,,Friend,0,0,0,,,SecondaryContactInfo_SecondContactsRelationship,1585933,,,1585935,SecondContactsRelationship_Friend,251063197
+18628176,2,0,2015-07-25,2015-07-25 15:37:38,45905771,,imzyjnhdvwbwxhoretxa,0,0,0,,,SecondaryContactInfo_PersonOneEmail,1585915,,,0,,251063197
+18628177,2,0,2015-07-25,2015-07-25 15:37:38,45905771,,jkcanicuksuniwwjhwfj,0,0,0,,,SecondaryContactInfo_SecondContactsNumber,1585932,,,0,,251063197
+18628178,2,0,2015-07-25,2015-07-25 15:37:38,45905771,,tpffxifunvfvsyjitkop,0,0,0,,,SecondaryContactInfo_SecondContactsFirstName,1585923,,,0,,251063197
+18628183,2,0,2015-07-25,2015-07-25 15:37:38,45905771,,gskowlrcjfwyswgvapci,0,0,0,,,EmploymentWorkAddress_Country,1585967,,,0,,251063197
+18628184,2,0,2015-07-25,2015-07-25 15:37:38,45905771,,repshqzkezvplrlrimcj,0,0,0,,,EmploymentWorkAddress_AddressLineOne,1585962,,,0,,251063197
+18628185,2,0,2015-07-25,2015-07-25 15:37:38,45905771,,aijcqjhrcvhmpvujvpds,0,0,0,,,EmploymentWorkAddress_City,1585964,,,0,,251063197
+18628200,2,0,2015-06-13,2015-06-13 15:37:38,45905771,,PMI Not Sure,0,0,0,,,YesNone_MenstrualStoppedReason,1585789,,,903092,PMI_NotSure,305023725
+18628206,2,0,2015-06-13,2015-06-13 15:37:38,45905771,,2002-01-15,0,0,0,,,OrganTransplant_Date,1585809,,,0,,305023725
+18628257,2,0,2015-07-01,2015-07-01 15:37:38,45905771,,Once or twice,0,0,0,,,Past3MonthUseFrequency_Marijuana3MonthUse,1585650,,,1585652,Marijuana3MonthUse_OneOrTwice,185648754
+18634964,10,0,2015-09-28,2015-09-28 06:40:17,45905771,,review,0,0,0,,,EHRConsentPII_TakeAsMuchTime,1586124,,,1586125,TakeAsMuchTime_Review,364633468
+18634985,10,0,2015-10-02,2015-10-02 06:40:17,45905771,,Once or twice,0,0,0,,,Past3MonthUseFrequency_Marijuana3MonthUse,1585650,,,1585652,Marijuana3MonthUse_OneOrTwice,939273185
+18634986,10,0,2015-10-02,2015-10-02 06:40:17,45905771,,Monthly,0,0,0,,,Past3MonthUseFrequency_Cocaine3MonthUse,1585656,,,1585659,Cocaine3MonthUse_Monthly,939273185
+18637337,3,0,2014-01-24,2014-01-24 12:55:53,45905771,,fdrqqdhuzbbeuwlecwkg,0,0,0,,,SecondContactsAddress_SecondContactZipCode,1585930,,,0,,650704159
+18637338,3,0,2014-01-24,2014-01-24 12:55:53,45905771,,ebtkvblkmlryboyjfujo,0,0,0,,,SecondaryContactInfo_SecondContactsLastName,1585925,,,0,,650704159
+18637339,3,0,2014-01-24,2014-01-24 12:55:53,45905771,,mtiaupkclnioexxyahli,0,0,0,,,SecondaryContactInfo_SecondContactsMiddleInitial,1585924,,,0,,650704159
+18637343,3,0,2014-01-24,2014-01-24 12:55:53,45905771,,wpagkzgwsiisidtuznfh,0,0,0,,,SecondaryContactInfo_PersonOneMiddleInitial,1585908,,,0,,650704159
+18637344,3,0,2014-01-24,2014-01-24 12:55:53,45905771,,mkmcpcbpmxricdqgtihy,0,0,0,,,SecondaryContactInfo_SecondContactsNumber,1585932,,,0,,650704159
+18637345,3,0,2014-01-24,2014-01-24 12:55:53,45905771,,msdknvkcnqrfyszuraif,0,0,0,,,SecondaryContactInfo_SecondContactsFirstName,1585923,,,0,,650704159
+18637347,3,0,2014-01-24,2014-01-24 12:55:53,45905771,,mufrsjcxkdncozujyjkc,0,0,0,,,EmploymentWorkAddress_State,1585965,,,0,,650704159
+18637348,3,0,2014-01-24,2014-01-24 12:55:53,45905771,,wotmieuifxphhteycqtm,0,0,0,,,EmploymentWorkAddress_AddressLineOne,1585962,,,0,,650704159
+18637349,3,0,2014-01-24,2014-01-24 12:55:53,45905771,,lnwgbpfbrlcsgwqukoco,0,0,0,,,EmploymentWorkAddress_City,1585964,,,0,,650704159
+18637404,3,0,2014-01-07,2014-01-07 12:55:53,45905771,,Not at all,0,0,0,,,HookahSmoking_CurrentHookahFrequency,1586185,,,1586188,CurrentHookahFrequency_NotAtAll,748753125
+18638925,6,0,2017-12-28,2017-12-28 20:15:33,45905771,,vnwratjnwdesbwoqrdqt,0,0,0,,,SecondaryContactInfo_SecondContactsLastName,1585925,,,0,,412824044
+18638930,6,0,2017-12-28,2017-12-28 20:15:33,45905771,,Spouse or Partner,0,0,0,,,SecondaryContactInfo_SecondContactsRelationship,1585933,,,1585938,SecondContactsRelationship_SpousePartner,412824044
+18638931,6,0,2017-12-28,2017-12-28 20:15:33,45905771,,eouskgylltpairtotpqc,0,0,0,,,SecondaryContactInfo_PersonOneEmail,1585915,,,0,,412824044
+18638934,6,0,2017-12-28,2017-12-28 20:15:33,45905771,,xnsptovwyfgbppagbltu,0,0,0,,,EmploymentWorkAddress_State,1585965,,,0,,412824044
+18638935,6,0,2017-12-28,2017-12-28 20:15:33,45905771,,dihiweetvygeknuyykoe,0,0,0,,,EmploymentWorkAddress_AddressLineOne,1585962,,,0,,412824044
+18638936,6,0,2017-12-28,2017-12-28 20:15:33,45905771,,wfiyfwkuqhhzumnijqkj,0,0,0,,,EmploymentWorkAddress_City,1585964,,,0,,412824044
+18638988,6,0,2017-12-25,2017-12-25 20:15:33,45905771,,Some days,0,0,0,,,SmokelessTobacco_SmokelessTobaccoFrequency,1586193,,,1586195,SmokelessTobaccoFrequency_SomeDays,253588250
+18651528,5,0,2016-07-28,2016-07-28 04:30:01,45905771,,zocmgwttrortuxponrge,0,0,0,,,SecondaryContactInfo_SecondContactsAddressOne,1585926,,,0,,424718233
+18651529,5,0,2016-07-28,2016-07-28 04:30:01,45905771,,Connecticut,0,0,0,,,SecondContactsAddress_SecondContactState,1585929,,,1586034,SecondContactState_Connecticut,424718233
+18651534,5,0,2016-07-28,2016-07-28 04:30:01,45905771,,dgfujhtegqnoazsmgbpg,0,0,0,,,SecondaryContactInfo_PersonOneMiddleInitial,1585908,,,0,,424718233
+18651535,5,0,2016-07-28,2016-07-28 04:30:01,45905771,,Spouse or Partner,0,0,0,,,SecondaryContactInfo_SecondContactsRelationship,1585933,,,1585938,SecondContactsRelationship_SpousePartner,424718233
+18651536,5,0,2016-07-28,2016-07-28 04:30:01,45905771,,tbwrtuxgteqnvzdshnkp,0,0,0,,,SecondaryContactInfo_SecondContactsEmail,1585931,,,0,,424718233
+18651542,5,0,2016-07-28,2016-07-28 04:30:01,45905771,,ooshxoledlfzgsamjdke,0,0,0,,,EmploymentWorkAddress_Country,1585967,,,0,,424718233
+18651543,5,0,2016-07-28,2016-07-28 04:30:01,45905771,,rqzqqsbebsrmkzagqjhw,0,0,0,,,EmploymentWorkAddress_State,1585965,,,0,,424718233
+18651554,5,0,2016-07-28,2016-07-28 04:30:01,45905771,,zueuhxutmtnileggmvsm,0,0,0,,,SocialSecurity_SocialSecurityNumber,1585950,,,0,,424718233
+18651569,5,0,2016-06-15,2016-06-15 04:30:01,45905771,,Not sure,0,0,0,,,OverallHealth_HysterectomyHistory,1585791,,,1585794,HysterectomyHistory_NotSure,683205837
+18651587,5,0,2016-06-05,2016-06-05 04:30:01,45905771,,signature,0,0,0,,,ExtraConsent_CABoRSignature,1585490,,,0,,497375022
+18651599,5,0,2016-06-05,2016-06-05 04:30:01,45905771,,kqtniipyhqhwwiaybnsq,0,0,0,,,PIIAddress_StreetAddress2,1585247,,,0,,497375022
+18651605,5,0,2016-07-01,2016-07-01 04:30:01,45905771,,Not at all,0,0,0,,,Smoking_SmokeFrequency,1585860,,,1585863,SmokeFrequency_NotAtAll,686035146
+18651615,5,0,2016-07-01,2016-07-01 04:30:01,45905771,,Daily or almost daily,0,0,0,,,Past3MonthUseFrequency_Marijuana3MonthUse,1585650,,,1585655,Marijuana3MonthUse_Daily,686035146
+18653061,4,0,2014-12-20,2014-12-20 06:45:54,45905771,,*I do not live in any listed area,0,0,0,,,MichiganSitePairing_LiveInFollowingAreas,1585563,,,1585566,LiveInFollowingAreas_DoNotLiveInListedAreas,879526541
+18622591,999,0,2017-07-24,2017-07-24 23:59:57,45905771,,Grade 12 or GED (High school graduate),0,0,0,,,EducationLevel_HighestGrade,1585940,,,1585945,HighestGrade_TwelveOrGED,579164908
+18628169,2,0,2015-07-25,2015-07-25 15:37:38,45905771,,Never attended school or only attended kindergarten,0,0,0,,,EducationLevel_HighestGrade,1585940,,,1585941,HighestGrade_NeverAttended,251063197
+18637336,3,0,2014-01-24,2014-01-24 12:55:53,45905771,,College 4 years or more (College graduate),0,0,0,,,EducationLevel_HighestGrade,1585940,,,1585947,HighestGrade_CollegeGraduate,650704159
+18651527,5,0,2016-07-28,2016-07-28 04:30:01,45905771,,Grades 5 through 8 (Middle School),0,0,0,,,EducationLevel_HighestGrade,1585940,,,1585943,HighestGrade_FiveThroughEight,424718233
+18622658,999,0,2017-07-08,2017-07-08 23:59:57,45905771,,Two to four times a month,0,0,0,,,Alcohol_DrinkFrequencyPastYear,1586201,,,1586204,DrinkFrequencyPastYear_2to4PerMonth,749569893
+18637410,3,0,2014-01-07,2014-01-07 12:55:53,45905771,,Four or more times a week,0,0,0,,,Alcohol_DrinkFrequencyPastYear,1586201,,,1586206,DrinkFrequencyPastYear_4orMorePerWeek,748753125
+18651610,5,0,2016-07-01,2016-07-01 04:30:01,45905771,,Monthly or less,0,0,0,,,Alcohol_DrinkFrequencyPastYear,1586201,,,1586203,DrinkFrequencyPastYear_MonthlyOrLess,686035146
+18622660,999,0,2017-07-08,2017-07-08 23:59:57,45905771,,1 or 2,0,0,0,,,Alcohol_AverageDailyDrinkCount,1586207,,,1586208,AverageDailyDrinkCount_1or2,749569893
+18628254,2,0,2015-07-01,2015-07-01 15:37:38,45905771,,3 or 4,0,0,0,,,Alcohol_AverageDailyDrinkCount,1586207,,,1586209,AverageDailyDrinkCount_3or4,185648754
+18634982,10,0,2015-10-02,2015-10-02 06:40:17,45905771,,5 or 6,0,0,0,,,Alcohol_AverageDailyDrinkCount,1586207,,,1586210,AverageDailyDrinkCount_5or6,939273185
+18637412,3,0,2014-01-07,2014-01-07 12:55:53,45905771,,7 to 9,0,0,0,,,Alcohol_AverageDailyDrinkCount,1586207,,,1586211,AverageDailyDrinkCount_7to9,748753125
+18638998,6,0,2017-12-25,2017-12-25 20:15:33,45905771,,3 or 4,0,0,0,,,Alcohol_AverageDailyDrinkCount,1586207,,,1586209,AverageDailyDrinkCount_3or4,253588250
+18628186,2,0,2015-07-25,2015-07-25 15:37:38,45905771,,Out of work for less than 1 year,0,0,0,,,Employment_EmploymentStatus,1585952,,,1585956,EmploymentStatus_OutOfWorkLessThanOne,251063197
+18638937,6,0,2017-12-28,2017-12-28 20:15:33,45905771,,Out of work for less than 1 year,0,0,0,,,Employment_EmploymentStatus,1585952,,,1585956,EmploymentStatus_OutOfWorkLessThanOne,412824044
+18651545,5,0,2016-07-28,2016-07-28 04:30:01,45905771,,Self-­‐employed,0,0,0,,,Employment_EmploymentStatus,1585952,,,1585954,EmploymentStatus_SelfEmployed,424718233
+18622661,999,0,2017-07-08,2017-07-08 23:59:57,45905771,,Never in the last year,0,0,0,,,Alcohol_6orMoreDrinksOccurence,1586213,,,1585634,6orMoreDrinksOccurence_NeverInLastYear,749569893
+18628255,2,0,2015-07-01,2015-07-01 15:37:38,45905771,,Never in the last year,0,0,0,,,Alcohol_6orMoreDrinksOccurence,1586213,,,1585634,6orMoreDrinksOccurence_NeverInLastYear,185648754
+18651612,5,0,2016-07-01,2016-07-01 04:30:01,45905771,,Never in the last year,0,0,0,,,Alcohol_6orMoreDrinksOccurence,1586213,,,1585634,6orMoreDrinksOccurence_NeverInLastYear,686035146
+18621533,9,0,2015-01-29,2015-01-29 19:08:41,45905771,,2017-09-13 12:21:40,0,0,0,,,ExtraConsent_FitnessTrackerVideo,1585475,,,0,,425448754
+18622636,999,0,2017-06-20,2017-06-20 23:59:57,45905771,,2017-10-07 18:35:08,0,0,0,,,ExtraConsent_FitnessTrackerVideo,1585475,,,0,,674000324
+18622681,8,0,2015-03-24,2015-03-24 22:56:59,45905771,,2017-06-14 01:43:40,0,0,0,,,ExtraConsent_FitnessTrackerVideo,1585475,,,0,,550121939
+18624929,7,0,2017-11-26,2017-11-26 07:16:34,45905771,,2017-07-25 10:42:14,0,0,0,,,ExtraConsent_FitnessTrackerVideo,1585475,,,0,,909200314
+18628230,2,0,2015-05-17,2015-05-17 15:37:38,45905771,,2017-06-27 19:26:13,0,0,0,,,ExtraConsent_FitnessTrackerVideo,1585475,,,0,,421173319
+18634951,10,0,2015-09-20,2015-09-20 06:40:17,45905771,,2017-09-16 03:57:22,0,0,0,,,ExtraConsent_FitnessTrackerVideo,1585475,,,0,,578244147
+18637376,3,0,2013-12-21,2013-12-21 12:55:53,45905771,,2017-07-10 23:28:33,0,0,0,,,ExtraConsent_FitnessTrackerVideo,1585475,,,0,,559369644
+18638965,6,0,2017-11-12,2017-11-12 20:15:33,45905771,,2017-09-25 05:02:12,0,0,0,,,ExtraConsent_FitnessTrackerVideo,1585475,,,0,,481976777
+18651589,5,0,2016-06-05,2016-06-05 04:30:01,45905771,,2017-07-05 10:27:16,0,0,0,,,ExtraConsent_FitnessTrackerVideo,1585475,,,0,,497375022
+18653051,4,0,2014-12-20,2014-12-20 06:45:54,45905771,,2017-07-30 11:21:42,0,0,0,,,ExtraConsent_FitnessTrackerVideo,1585475,,,0,,879526541
+18621535,9,0,2015-01-29,2015-01-29 19:08:41,45905771,,2017-09-05 19:24:21,0,0,0,,,ExtraConsent_PhysicalMeausrementsVideo,1585480,,,0,,425448754
+18622638,999,0,2017-06-20,2017-06-20 23:59:57,45905771,,2017-07-09 21:11:47,0,0,0,,,ExtraConsent_PhysicalMeausrementsVideo,1585480,,,0,,674000324
+18622683,8,0,2015-03-24,2015-03-24 22:56:59,45905771,,2017-08-14 04:00:26,0,0,0,,,ExtraConsent_PhysicalMeausrementsVideo,1585480,,,0,,550121939
+18624931,7,0,2017-11-26,2017-11-26 07:16:34,45905771,,2017-08-19 22:07:52,0,0,0,,,ExtraConsent_PhysicalMeausrementsVideo,1585480,,,0,,909200314
+18628232,2,0,2015-05-17,2015-05-17 15:37:38,45905771,,2017-06-27 02:53:45,0,0,0,,,ExtraConsent_PhysicalMeausrementsVideo,1585480,,,0,,421173319
+18634953,10,0,2015-09-20,2015-09-20 06:40:17,45905771,,2017-06-29 20:22:55,0,0,0,,,ExtraConsent_PhysicalMeausrementsVideo,1585480,,,0,,578244147
+18637378,3,0,2013-12-21,2013-12-21 12:55:53,45905771,,2017-10-04 08:16:59,0,0,0,,,ExtraConsent_PhysicalMeausrementsVideo,1585480,,,0,,559369644
+18638967,6,0,2017-11-12,2017-11-12 20:15:33,45905771,,2017-07-30 20:33:19,0,0,0,,,ExtraConsent_PhysicalMeausrementsVideo,1585480,,,0,,481976777
+18651591,5,0,2016-06-05,2016-06-05 04:30:01,45905771,,2017-08-23 02:56:47,0,0,0,,,ExtraConsent_PhysicalMeausrementsVideo,1585480,,,0,,497375022
+18653053,4,0,2014-12-20,2014-12-20 06:45:54,45905771,,2017-08-30 22:55:37,0,0,0,,,ExtraConsent_PhysicalMeausrementsVideo,1585480,,,0,,879526541
+18621534,9,0,2015-01-29,2015-01-29 19:08:41,45905771,,2017-08-29 13:48:57,0,0,0,,,ExtraConsent_WelcomeVideo,1585481,,,0,,425448754
+18622637,999,0,2017-06-20,2017-06-20 23:59:57,45905771,,2017-08-16 02:18:10,0,0,0,,,ExtraConsent_WelcomeVideo,1585481,,,0,,674000324
+18622682,8,0,2015-03-24,2015-03-24 22:56:59,45905771,,2017-10-07 07:30:34,0,0,0,,,ExtraConsent_WelcomeVideo,1585481,,,0,,550121939

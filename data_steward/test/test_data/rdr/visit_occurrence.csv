@@ -1,0 +1,6 @@
+visit_occurrence_id,person_id,visit_concept_id,visit_start_date,visit_start_datetime,visit_end_date,visit_end_datetime,visit_type_concept_id,provider_id,care_site_id,visit_source_value,visit_source_concept_id,admitting_source_concept_id,admitting_source_value,discharge_to_concept_id,discharge_to_source_value,preceding_visit_occurrence_id
+134064486,2,9202,2015-07-31,2015-07-31 15:37:38,2015-07-31,2015-07-31 15:37:38,44818519,,28,134064486,0,0,,0,,
+625324655,6,9202,2018-02-11,2018-02-11 20:15:33,2018-02-11,2018-02-11 20:15:33,44818519,,11,625324655,0,0,,0,,
+294124684,5,9202,2016-09-18,2016-09-18 04:30:01,2016-09-18,2016-09-18 04:30:01,44818519,,40,294124684,0,0,,0,,
+477962335,3,9202,2014-02-25,2014-02-25 12:55:53,2014-02-25,2014-02-25 12:55:53,44818519,,58,477962335,0,0,,0,,
+588955773,999,9202,2017-08-29,2017-08-29 23:59:57,2017-08-29,2017-08-29 23:59:57,44818519,,84,588955773,0,0,,0,,

@@ -68,6 +68,8 @@ PITT_FIVE_PERSONS_FILES = [
     PITT_FIVE_PERSONS_MEASUREMENT_CSV,
     PITT_FIVE_PERSONS_OBSERVATION_CSV]
 
+RDR_PATH = os.path.join(TEST_DATA_PATH, 'rdr')
+
 TEST_DATA_EXPORT_PATH = os.path.join(TEST_DATA_PATH, 'export')
 TEST_DATA_EXPORT_SYNPUF_PATH = os.path.join(TEST_DATA_EXPORT_PATH, 'synpuf')
 
@@ -224,3 +226,15 @@ def populate_achilles(hpo_bucket, include_heel=True):
         load_results = bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
         running_jobs.append(load_results['jobReference']['jobId'])
     bq_utils.wait_on_jobs(running_jobs)
+
+
+def generate_rdr_files():
+    """
+    Generate test csv files based on a sample of synthetic RDR data
+    :return:
+    """
+    d = 'rdr_dataset_2018_4_17'
+    for table in common.CDM_TABLES:
+        q = 'SELECT * FROM fake_%s WHERE person_id IN (SELECT person_id FROM sample_person_id)' % table
+        cmd = 'bq query --dataset_id=%(d)s --format=csv "%(q)s" > %(table)s.csv' % locals()
+        os.system(cmd)
