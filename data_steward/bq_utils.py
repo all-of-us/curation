@@ -300,7 +300,8 @@ def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEF
             },
             'query': q,
             'timeoutMs':60000,
-            'useLegacySql': use_legacy_sql
+            'useLegacySql': use_legacy_sql,
+            "maxResults": 1000
         }
         return bq_service.jobs().query(projectId=app_id, body=job_body).execute(num_retries=retry_count)
 

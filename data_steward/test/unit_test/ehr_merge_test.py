@@ -8,6 +8,7 @@ import gcs_utils
 import bq_utils
 import test_util
 from validation import ehr_merge
+from validation.export import query_result_to_payload
 
 FAKE_HPO_ID = 'fake'
 PITT_HPO_ID = 'pitt'
@@ -77,10 +78,62 @@ class EhrMergeTest(unittest.TestCase):
                              msg='failed for table unioned_ehr_{}'.format(table_name))
         self.assertSetEqual(set(old_dataset_items + expected_items), set(dataset_items))
 
+        table_name = 'condition_occurrence'
+        cmd_union = 'SELECT * FROM unioned_ehr_{}'.format(table_name)
+        cmd_pitt = 'SELECT * FROM pitt_{}'.format(table_name)
+        cmd_visit_mapping = "SELECT global_visit_id, mapping_visit_id FROM visit_id_mapping_table where hpo='pitt'"
+        qr_union = bq_utils.query(cmd_union)
+        qr_pitt = bq_utils.query(cmd_pitt)
+        qr_visit_mapping = bq_utils.query(cmd_visit_mapping)
+
+        union_result = query_result_to_payload(qr_union)
+        pitt_result = query_result_to_payload(qr_pitt)
+        visit_mapping_result = query_result_to_payload(qr_visit_mapping)
+
+        def get_element_from_list_of_lists(index, list_of_lists):
+            return [list_item[index] for list_item in list_of_lists]
+
+        for ind, pitt_visit_id in enumerate(pitt_result['VISIT_OCCURRENCE_ID']):
+            if pitt_visit_id not in visit_mapping_result['MAPPING_VISIT_ID']:
+                continue
+            global_visit_id_index = visit_mapping_result['MAPPING_VISIT_ID'].index(pitt_visit_id)
+            global_visit_id = visit_mapping_result['GLOBAL_VISIT_ID'][global_visit_id_index]
+            union_visit_id_index = union_result['VISIT_OCCURRENCE_ID'].index(global_visit_id)
+            pitt_cols_without_id = [values for key, values in pitt_result.items()
+                                    if key not in [u'VISIT_OCCURRENCE_ID', u'CONDITION_OCCURRENCE_ID']]
+            union_cols_without_id = [values for key, values in union_result.items()
+                                     if key not in [u'VISIT_OCCURRENCE_ID', u'CONDITION_OCCURRENCE_ID']]
+            self.assertListEqual(get_element_from_list_of_lists(ind, pitt_cols_without_id),
+                                 get_element_from_list_of_lists(union_visit_id_index, union_cols_without_id))
+
+    def test_query_construction(self):
+        table_name = 'condition_occurrence'
+        hpos_to_merge = ['chs', 'pitt', 'chci']
+        hpos_with_visit = ['chci', 'pitt']
+        project_id = 'dummy_project'
+        dataset_id = 'dummy_dataset'
+
+        # checks whther the required blocks exits
+        q = ehr_merge.construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, dataset_id)
+        self.assertIn('global_visit_id', q)  # condition table requires a join
+        self.assertIn('visit_id_mapping_table', q)
+        self.assertIn("visit_id_map.hpo = 'pitt'", q)
+        self.assertIn("visit_id_map.hpo = 'chci'", q)
+        self.assertNotIn("visit_id_map.hpo = 'chs'", q)  # chs visit doesn't exist
+
+        # checks that the visit blocks do not exist
+        q = ehr_merge.construct_query('person', hpos_to_merge, hpos_with_visit, project_id, dataset_id)
+        self.assertNotIn('global_visit_id', q)  # condition table requires a join
+        self.assertNotIn('visit_id_mapping_table', q)
+        self.assertNotIn("visit_id_map.hpo = 'pitt'", q)
+        self.assertNotIn("visit_id_map.hpo = 'chci'", q)
+        self.assertNotIn("visit_id_map.hpo = 'chs'", q)  # chs visit doesn't exist
+
     def tearDown(self):
         delete_list = ['visit_id_mapping_table'] + ['unioned_ehr_' + table_name for table_name in common.CDM_TABLES]
+        existing_tables = bq_utils.list_dataset_contents(bq_utils.get_dataset_id())
         for table_id in delete_list:
-            if table_id not in common.VOCABULARY_TABLES:
+            if table_id not in common.VOCABULARY_TABLES and table_id in existing_tables:
                 bq_utils.delete_table(table_id)
         self._empty_bucket(self.hpo_bucket)
         self.testbed.deactivate()
