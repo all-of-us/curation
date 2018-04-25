@@ -396,3 +396,46 @@ def list_dataset_contents(dataset_id):
         all_tables.extend(items or [])
         req = service.tables().list_next(req, resp)
     return all_tables
+
+
+def copy_table(src_table_id, dst_table_id, src_dataset_id=None, dst_dataset_id=None, write_disposition='WRITE_TRUNCATE'):
+    """
+    Copy bigquery table synchronously
+
+    :param src_dataset_id: dataset containing the source table
+    :param src_table_id: id of the source table
+    :param dst_dataset_id: dataset to copy to
+    :param dst_table_id: id of the destination table
+    :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY
+    :return:
+    """
+    if src_dataset_id is None:
+        src_dataset_id = get_dataset_id()
+    if dst_dataset_id is None:
+        dst_dataset_id = src_dataset_id
+    bq_service = create_service()
+    app_id = app_identity.get_application_id()
+    job_body = {
+        'configuration':
+            {
+                'copy': {
+                    'sourceTable': {
+                        'projectId': app_id,
+                        'datasetId': src_dataset_id,
+                        'tableId': src_table_id
+                    },
+                    'destinationTable': {
+                        'projectId': app_id,
+                        'datasetId': dst_dataset_id,
+                        'tableId': dst_table_id
+                    },
+                    'writeDisposition': write_disposition
+                }
+            }
+    }
+    insert_result = bq_service.jobs().insert(projectId=app_id, body=job_body).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+    job_id = insert_result['jobReference']['jobId']
+    incomplete_jobs = wait_on_jobs([job_id])
+    if len(incomplete_jobs) > 0:
+        reason = 'Failed to copy %s.%s to %s.%s' % (src_dataset_id, src_table_id, dst_dataset_id, dst_table_id)
+        raise BigQueryJobWaitError(incomplete_jobs, reason)
