@@ -76,7 +76,8 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
                     }
             }
     }
-    insert_result = bq_service.jobs().insert(projectId=project_id, body=job_body).execute()
+    insert_job = bq_service.jobs().insert(projectId=project_id, body=job_body)
+    insert_result = insert_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
     return insert_result
 
 
@@ -112,7 +113,8 @@ def delete_table(table_id):
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
     bq_service = create_service()
-    return bq_service.tables().delete(projectId=app_id, datasetId=dataset_id, tableId=table_id).execute()
+    delete_job = bq_service.tables().delete(projectId=app_id, datasetId=dataset_id, tableId=table_id)
+    return delete_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
 
 
 def table_exists(table_id):
@@ -128,7 +130,7 @@ def table_exists(table_id):
         bq_service.tables().get(
             projectId=app_id,
             datasetId=dataset_id,
-            tableId=table_id).execute()
+            tableId=table_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
         return True
     except HttpError, err:
         if err.resp.status != 404:
@@ -169,7 +171,7 @@ def get_job_details(job_id):
     """
     bq_service = create_service()
     app_id = app_identity.get_application_id()
-    return bq_service.jobs().get(projectId=app_id, jobId=job_id).execute()
+    return bq_service.jobs().get(projectId=app_id, jobId=job_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
 
 
 def merge_tables(source_dataset_id,
@@ -207,7 +209,7 @@ def merge_tables(source_dataset_id,
 
     bq_service = create_service()
     insert_result = bq_service.jobs().insert(projectId=app_id,
-                                             body=job_body).execute()
+                                             body=job_body).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
     job_id = insert_result['jobReference']['jobId']
     incomplete_jobs = wait_on_jobs([job_id], retry_count=BQ_QUERY_DELAY_SECONDS)
 
@@ -246,18 +248,18 @@ def query_table(query_string):
 
     bq_service = create_service()
     insert_result = bq_service.jobs().insert(projectId=app_id,
-                                             body=job_body).execute()
+                                             body=job_body).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
     job_id = insert_result['jobReference']['jobId']
     incomplete_jobs = wait_on_jobs([job_id], retry_count=BQ_QUERY_DELAY_SECONDS)
     if len(incomplete_jobs) > 0:
         return None
     # TODO if error we may not want to query
     query_result = bq_service.jobs().getQueryResults(projectId=app_id,
-                                                     jobId=job_id).execute()
+                                                     jobId=job_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
     return query_result
 
 
-def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=3):
+def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEFAULT_RETRY_COUNT):
     """
     Execute a SQL query on BigQuery dataset
     :param q: SQL statement
@@ -299,7 +301,7 @@ def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=3):
             'timeoutMs':60000,
             'useLegacySql': use_legacy_sql
         }
-        return bq_service.jobs().query(projectId=app_id, body=job_body).execute()
+        return bq_service.jobs().query(projectId=app_id, body=job_body).execute(num_retries=retry_count)
 
 
 def create_table(table_id, fields, drop_existing=False):
@@ -326,7 +328,8 @@ def create_table(table_id, fields, drop_existing=False):
         },
         'schema': {'fields': fields}
     }
-    return bq_service.tables().insert(projectId=app_id, datasetId=dataset_id, body=insert_body).execute()
+    insert_job = bq_service.tables().insert(projectId=app_id, datasetId=dataset_id, body=insert_body)
+    return insert_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
 
 
 def create_standard_table(table_name, table_id, drop_existing=False):
@@ -355,4 +358,4 @@ def list_tables():
     bq_service = create_service()
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
-    return bq_service.tables().list(projectId=app_id, datasetId=dataset_id).execute()
+    return bq_service.tables().list(projectId=app_id, datasetId=dataset_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
