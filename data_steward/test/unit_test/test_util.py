@@ -238,3 +238,8 @@ def generate_rdr_files():
         q = 'SELECT * FROM fake_%s WHERE person_id IN (SELECT person_id FROM sample_person_id)' % table
         cmd = 'bq query --dataset_id=%(d)s --format=csv "%(q)s" > %(table)s.csv' % locals()
         os.system(cmd)
+
+
+def bash(cmd):
+    import subprocess
+    return subprocess.check_call(['/bin/bash', '-c', cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
