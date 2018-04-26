@@ -135,14 +135,15 @@ def delete_table(table_id):
     return delete_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
 
 
-def table_exists(table_id):
+def table_exists(table_id, dataset_id=None):
     """
     Determine whether a bigquery table exists
     :param table_id: id of the table
     :return: `True` if the table exists, `False` otherwise
     """
     app_id = app_identity.get_application_id()
-    dataset_id = get_dataset_id()
+    if dataset_id is None:
+        dataset_id = get_dataset_id()
     bq_service = create_service()
     try:
         bq_service.tables().get(
@@ -407,6 +408,8 @@ def copy_table(src_table_id, dst_table_id, src_dataset_id=None, dst_dataset_id=N
     :param dst_dataset_id: dataset to copy to
     :param dst_table_id: id of the destination table
     :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY
+    :raises
+        BigQueryJobWaitError: if copy job fails to complete after several retries
     :return:
     """
     if src_dataset_id is None:
