@@ -97,6 +97,17 @@ def query(q, destination_table_id, write_disposition):
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
 
+def copy_rdr_person():
+    """
+    Copy person table from the RDR dataset to the combined dataset
+
+    Note: Overwrites if a person table already exists
+    """
+    src_dataset_id = bq_utils.get_rdr_dataset_id()
+    dst_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+    bq_utils.copy_table('person', 'person', src_dataset_id=src_dataset_id, dst_dataset_id=dst_dataset_id)
+
+
 def main(args):
     mapping_query = ID_MAPPING_QUERY % args.__dict__
     logging.log(logging.INFO, 'Loading ' + MAPPING_TABLE_ID)
