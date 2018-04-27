@@ -25,6 +25,13 @@ PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
 
+class InternalValidationError(RuntimeError):
+    """Raised when an internal error occurs during validation"""
+
+    def __init__(self, msg):
+        super(InternalValidationError, self).__init__(msg)
+
+
 def all_required_files_loaded(hpo_id, folder_prefix):
     result_file = gcs_utils.get_object(gcs_utils.get_hpo_bucket(hpo_id), folder_prefix + common.RESULT_CSV)
     result_file = StringIO.StringIO(result_file)
@@ -112,7 +119,8 @@ def validate_hpo_files(hpo_id):
     """
     validation end point for individual hpo_ids
     """
-    return run_validation(hpo_id)
+    run_validation(hpo_id)
+    return 'validation done!'
 
 
 @api_util.auth_required_cron
@@ -129,22 +137,28 @@ def validate_all_hpos():
 def run_validation(hpo_id, error_ignore_flag=False):
     """
     runs validation for a single hpo_id
-    param hpo_id : which hpo_id to run for
-    param error_ignore_flag : ignore errors when running for all
+
+    :param hpo_id : which hpo_id to run for
+    :param error_ignore_flag : ignore errors when running for all
+    :raises
+    InternalValidationError:
+      Raised when an internal error is encountered during validation
     """
     logging.info(' Validating hpo_id %s' % hpo_id)
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     try:
+        # TODO improve exception handling
         bucket_items = gcs_utils.list_bucket(bucket)
     except:
         if error_ignore_flag:
-            logging.warning('skipping {}. bucket does not exist.'.format(hpo_id))
+            logging.info('Skipping hpo_id %s. Unable to read from bucket %s.' % (hpo_id, bucket))
             return 'skipping'
-        raise RuntimeError('{} does not exist. create bucket before validation for hpo {}'.format(bucket, hpo_id))
+        else:
+            raise
     to_process_folder_list = _get_to_process_list(bucket, bucket_items)
-    return_string_list = []
 
     for folder_prefix in to_process_folder_list:
+        logging.info('Processing gs://%s/%s' % (bucket, folder_prefix))
         # separate cdm from the unknown (unexpected) files
         found_cdm_files = []
         unknown_files = []
@@ -156,8 +170,6 @@ def run_validation(hpo_id, error_ignore_flag=False):
                 if item in common.IGNORE_LIST + common.CDM_FILES:
                     continue
                 unknown_files.append(item)
-
-        return_string_list.append('"{}": "started"'.format(folder_prefix))
 
         errors = []
         results = []
@@ -181,7 +193,10 @@ def run_validation(hpo_id, error_ignore_flag=False):
                     else:
                         parsed = loaded = 1
                 else:
-                    logging.info("Wait timeout exceeded before load job with id '%s' was done" % load_job_id)
+                    message_fmt = "Loading %s table %s failed because job id '%s' did not complete."
+                    message = message_fmt % (hpo_id, cdm_table_name, load_job_id)
+                    logging.error(message)
+                    raise InternalValidationError(message)
             else:
                 # load empty table
                 table_id = bq_utils.get_table_id(hpo_id, cdm_table_name)
@@ -208,8 +223,6 @@ def run_validation(hpo_id, error_ignore_flag=False):
 
         now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
-
-    return ','.join(return_string_list)
 
 
 def _validation_done(bucket, folder):

@@ -124,7 +124,7 @@ def create_mapping_table(hpos_with_visit, project_id, dataset_id):
     :returns: string if visit table failed; otherwise none
 
     """
-    # # list of hpos with visit table and creating visit id mapping table queries
+    # list of hpos with visit table and creating visit id mapping table queries
     visit_hpo_queries = []
     for hpo in hpos_with_visit:
         visit_hpo_queries.append(VISIT_ID_HPO_BLOCK % locals())
@@ -139,11 +139,14 @@ def create_mapping_table(hpos_with_visit, project_id, dataset_id):
     if len(incomplete_jobs) == 0:
         query_result = bq_utils.get_job_details(visit_mapping_query_job_id)
         if 'errors' in query_result['status']:
-            logging.error('{} load failed!'.format(VISIT_ID_MAPPING_TABLE))
-            return "visit mapping table failed"
+            errors = query_result['status']['errors']
+            message = 'Failed to load %s due to the following error(s): %s' % (VISIT_ID_MAPPING_TABLE, errors)
+            logging.error(message)
+            raise RuntimeError(message)
     else:
-        logging.error('{} load taking too long!'.format(VISIT_ID_MAPPING_TABLE))
-        raise RuntimeError("visit mapping table taking too long. see job id: {}".format(visit_mapping_query_job_id))
+        message = 'Failed to load %s. Job with ID %s never completed.' % (VISIT_ID_MAPPING_TABLE, visit_mapping_query_job_id)
+        logging.error(message)
+        raise RuntimeError(message)
 
 
 def merge(dataset_id, project_id):

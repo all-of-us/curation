@@ -56,7 +56,7 @@ class EhrMergeTest(unittest.TestCase):
             load_jobs.append(pitt_load_job_id)
         incomplete_jobs = bq_utils.wait_on_jobs(load_jobs, retry_count=7)
         if len(incomplete_jobs) > 0:
-            raise RuntimeError('loading taking too long')
+            raise RuntimeError('BigQuery jobs %s failed to complete' % incomplete_jobs)
 
     @mock.patch('api_util.check_cron')
     def test_merge_EHR(self, mock_check_cron):
