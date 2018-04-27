@@ -154,9 +154,10 @@ def merge(dataset_id, project_id):
 
     :dataset_id: source and target dataset
     :project_id: project in which everything happens
-    :returns: string with job details
+    :returns: list of tables generated successfully
 
     """
+    logging.info('Starting merge')
     existing_tables = bq_utils.list_dataset_contents(dataset_id)
     hpos_to_merge = []
     hpos_with_visit = []
@@ -166,7 +167,8 @@ def merge(dataset_id, project_id):
             hpos_to_merge.append(hpo_id)
         if hpo_id + '_visit_occurrence' in existing_tables:
             hpos_with_visit.append(hpo_id)
-
+    logging.info('HPOs to merge: %s' % hpos_to_merge)
+    logging.info('HPOs with visit_occurrence: %s' % hpos_with_visit)
     create_mapping_table(hpos_with_visit, project_id, dataset_id)
 
     jobs_to_wait_on = []
@@ -179,22 +181,20 @@ def merge(dataset_id, project_id):
 
     incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10)
     if len(incomplete_jobs) == 0:
-        status_list = [bq_utils.get_job_details(job_id)['status'] for job_id in jobs_to_wait_on]
-        table_errors = [list(common.CDM_TABLES)[ind] for ind, _ in enumerate(jobs_to_wait_on)
-                        if 'errors' in status_list[ind]]
-        required_table_error_list = [table_name for table_name in table_errors
-                                     if table_name in common.REQUIRED_TABLES]
-        required_tables_flag = len(required_table_error_list) == 0
-        if len(table_errors) == 0:
-            logging.info(" ---- Merge succesful! ---- ")
-            return "success: " + ','.join(hpos_to_merge)
-        else:
-            logging.error(" ---- Following tables fail --- " + ",".join(table_errors))
-            if not required_tables_flag:
-                raise RuntimeError(" ---- Required tables fail --- " + ",".join(required_table_error_list))
-            return "required-done"
+        tables_created = []
+        for job_id in jobs_to_wait_on:
+            job_details = bq_utils.get_job_details(job_id)
+            status = job_details['status']
+            table = job_details['configuration']['query']['destinationTable']['tableId']
+            if 'errors' in status:
+                logging.error('Job ID %s errors: %s' % (job_id, status['errors']))
+            else:
+                tables_created.append(table)
+        return tables_created
     else:
-        raise RuntimeError("---- Merge takes too long! ---- : IDs: {}".format(','.join(incomplete_jobs)))
+        message = "Merge failed because job id(s) %s did not complete." % incomplete_jobs
+        logging.error(message)
+        raise RuntimeError(message)
 
 
 if __name__ == '__main__':

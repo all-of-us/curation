@@ -66,8 +66,7 @@ class EhrMergeTest(unittest.TestCase):
         expected_items = ['visit_id_mapping_table']
         expected_items.extend(['unioned_ehr_' + table_name for table_name in common.CDM_TABLES])
 
-        return_string = ehr_merge.merge(bq_utils.get_dataset_id(), self.project_id)
-        self.assertEqual(return_string, "success: " + ','.join([CHS_HPO_ID, PITT_HPO_ID]))
+        ehr_merge.merge(bq_utils.get_dataset_id(), self.project_id)
         # check the result files were placed in bucket
         dataset_items = bq_utils.list_dataset_contents(bq_utils.get_dataset_id())
         for table_name in common.CDM_TABLES:
