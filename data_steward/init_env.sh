@@ -47,4 +47,5 @@ then
   echo "export BUCKET_NAME_PITT=${BUCKET_NAME_PITT}" >> $HOME/.circlerc
   echo "export BUCKET_NAME_CHS=${BUCKET_NAME_CHS}" >> $HOME/.circlerc
   echo "export BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID}" >> $HOME/.circlerc
+  echo "export BUCKET_NAME_UNIONED_EHR=${PROJECT_PREFIX}_${USERNAME_PREFIX}_drc" >> $HOME/.circlerc
 fi
