@@ -1,5 +1,3 @@
-# TODO Make tests cross-compatible. Won't work on Windows and only works in test (not on GAE).
-
 import unittest
 import os
 import common
@@ -27,7 +25,7 @@ class CombineEhrRdrTest(unittest.TestCase):
     def _load_csv(cls, dataset_id, table_id, local_path, schema):
         cmd_fmt = "bq load --replace --source_format=CSV --allow_jagged_rows --skip_leading_rows=1 %s.%s %s %s"
         cmd = cmd_fmt % (dataset_id, table_id, local_path, schema)
-        result = test_util.bash(cmd)
+        result = test_util.command(cmd)
         return result
 
     @classmethod

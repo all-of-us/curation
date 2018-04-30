@@ -241,5 +241,26 @@ def generate_rdr_files():
 
 
 def bash(cmd):
+    """
+    Run a bash-specific command
+
+    :param cmd: the command to run
+    :return: 0 if successful
+    :raises
+      CalledProcessError: raised when command has a non-zero result
+
+    Note: On Windows, bash and the gcloud SDK binaries (e.g. bq, gsutil) must be in PATH
+    """
     import subprocess
-    return subprocess.check_call(['/bin/bash', '-c', cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    import platform
+
+    bash_cmd = '/bin/bash'
+    if platform.system().lower().startswith('windows'):
+        # extensions are not inferred
+        cmd = cmd.replace('bq ', 'bq.cmd ').replace('gsutil ', 'gsutil.cmd ')
+        bash_cmd = 'bash'
+    return subprocess.check_call([bash_cmd, '-c', cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
+def command(cmd):
+    return os.system(cmd)
