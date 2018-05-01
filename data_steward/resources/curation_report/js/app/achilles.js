@@ -613,7 +613,8 @@
 						$('#dropdown-datasources').append('<li onclick="setDatasource(' + i + ');">' + root.datasources[i].name + '</li>');
 					}
 					viewModel.datasource(viewModel.datasources[0]);
-					app.run('#/' + viewModel.datasource().name + '/dashboard');
+					app.run('#/' + viewModel.datasource().name + '/person');
+					// app.run('#/' + viewModel.datasource().name + '/dashboard');
 				});
 
 			});
