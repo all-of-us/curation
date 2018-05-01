@@ -19,9 +19,7 @@ ALL_REPORT_FILES = map(lambda s: s + '.json', ALL_REPORTS)
 IGNORE_LIST = [RESULT_CSV, ERRORS_CSV, WARNINGS_CSV, PROCESSED_TXT] + ALL_ACHILLES_INDEX_FILES
 VOCABULARY_TABLES = ['concept', 'concept_ancestor', 'concept_class', 'concept_relationship', 'concept_synonym',
                      'domain', 'drug_strength', 'relationship', 'vocabulary']
-REQUIRED_TABLES = ['person', 'visit_occurrence', 'condition_occurrence', 'drug_exposure', 'measurement',
-                   'procedure_occurrence']
+REQUIRED_TABLES = ['person']
 REQUIRED_FILES = [table + '.csv' for table in REQUIRED_TABLES]
 ACHILLES_EXPORT_PREFIX_STRING = "curation_report/data/"
 ACHILLES_EXPORT_DATASOURCES_JSON = ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json'
-
