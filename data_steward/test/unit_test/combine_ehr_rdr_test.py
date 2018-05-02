@@ -125,9 +125,10 @@ class CombineEhrRdrTest(unittest.TestCase):
         pass
 
     def tearDown(self):
-        # TODO clear the combined dataset
-        pass
+        self.drop_combined_tables()
+        self.testbed.deactivate()
 
     @classmethod
     def tearDownClass(cls):
-        pass
+        test_util.delete_all_tables(CombineEhrRdrTest.EHR_DATASET_ID)
+        test_util.delete_all_tables(CombineEhrRdrTest.RDR_DATASET_ID)
