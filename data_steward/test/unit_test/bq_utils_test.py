@@ -282,25 +282,6 @@ class BqUtilsTest(unittest.TestCase):
         actual_result = [int(row['f'][0]['v']) for row in query_results_response['rows']]
         self.assertListEqual(actual_result, expected_observation_ids)
 
-    def test_copy_table(self):
-        bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
-        with open(NYC_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(bucket, 'person.csv', fp)
-        gcs_object_path = 'gs://%s/%s.csv' % (bucket, 'person')
-        fields_filename = os.path.join(resources.fields_path, 'person.json')
-        app_id = app_identity.get_application_id()
-        dataset_id = bq_utils.get_dataset_id()
-        result = bq_utils.load_csv(fields_filename, gcs_object_path, app_id, dataset_id, 'person')
-        job_id = result['jobReference']['jobId']
-        bq_utils.wait_on_jobs([job_id])
-        bq_utils.copy_table('person', 'person_copy')
-        result = bq_utils.list_tables()
-        tables = result['tables']
-        actual = set([table['tableReference']['tableId'] for table in tables
-                      if table['tableReference']['tableId'] not in common.VOCABULARY_TABLES])
-        expected = {'person', 'person_copy'}
-        self.assertSetEqual(actual, expected)
-
     def tearDown(self):
         test_util.delete_all_tables(self.EHR_DATASET_ID)
         self._empty_bucket()
