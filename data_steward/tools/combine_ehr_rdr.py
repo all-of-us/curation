@@ -1,6 +1,8 @@
 """
 Combine data sets `ehr` and `rdr` to form another data set `combined`
 
+ * Find the `person_id`s of those who have consented to share EHR data
+
  * Copy `rdr.person` table as-is to `combined.person`
 
  * Create table `combined.<hpo>_visit_mapping(dest_visit_occurrence_id, source_table_name, source_visit_occurrence_id)`
@@ -25,8 +27,12 @@ import logging
 
 import bq_utils
 from resources import fields_path
+from google.appengine.api import app_identity
 
 BQ_WAIT_TIME = 2
+SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
+CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
+CONCEPT_ID_CONSENT_PERMISSION_NO = 1586101   # ConsentPermission_No
 ONE_BILLION = 1000000000
 MAPPING_TABLE_ID = 'ehr_rdr_id_mapping'
 ID_MAPPING_QUERY = '''
@@ -81,6 +87,46 @@ def construct_mapping_query(table_name, source, project_id, dataset_id, id_offse
         q += '\nFROM `%(project_id)s.%(dataset_id)s.%(table_name)s` t' % locals()
         q += '\nJOIN %s m ON t.person_id = m.%s' % (MAPPING_TABLE_ID, source_person_id_field)
         return q
+
+
+def consented_person_id_query(dataset_id, project_id=app_identity.get_application_id()):
+    """
+    Returns query used to get only those participants who have consented to share EHR data
+
+    :param dataset_id: Data set with RDR data in OMOP
+    :param project_id: Project with the dataset. By default env var APPLICATION_ID.
+    :return:
+    """
+    return '''
+    WITH yes_consent AS (
+     SELECT 
+       person_id, 
+       observation_datetime
+     FROM `{project_id}.{dataset_id}.observation`
+     WHERE observation_source_value = '{source_value_ehr_consent}'
+     AND value_source_concept_id = {concept_id_consent_permission_yes}
+    ),
+    no_consent AS (
+     SELECT
+       person_id,
+       observation_datetime
+     FROM `{project_id}.{dataset_id}.observation`
+     WHERE observation_source_value = '{source_value_ehr_consent}'
+     AND value_source_concept_id = {concept_id_consent_permission_no}
+    )
+    SELECT DISTINCT person_id 
+    FROM yes_consent y
+    WHERE NOT EXISTS (
+     SELECT 1 FROM no_consent n
+     WHERE n.person_id = y.person_id
+     AND n.observation_datetime >= y.observation_datetime
+    )
+    '''.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        source_value_ehr_consent=SOURCE_VALUE_EHR_CONSENT,
+        concept_id_consent_permission_yes=CONCEPT_ID_CONSENT_PERMISSION_YES,
+        concept_id_consent_permission_no=CONCEPT_ID_CONSENT_PERMISSION_NO)
 
 
 def query(q, destination_table_id, write_disposition):
