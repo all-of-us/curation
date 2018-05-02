@@ -5,7 +5,7 @@ import resources
 import bq_utils
 import test_util
 
-from tools.combine_ehr_rdr import copy_rdr_person
+from tools.combine_ehr_rdr import copy_rdr_person, consented_person, CONSENTED_PERSON_TABLE_ID
 from google.appengine.api import app_identity
 from google.appengine.ext import testbed
 
@@ -17,9 +17,28 @@ class CombineEhrRdrTest(unittest.TestCase):
     APP_ID = app_identity.get_application_id()
 
     @classmethod
+    def _list_files_in(cls, path):
+        return [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+
+    @classmethod
+    def _must_load_datasets(cls):
+        table_list = bq_utils.list_tables(cls.EHR_DATASET_ID)
+        curr_tables = [t['tableReference']['tableId'] for t in table_list['tables']]
+        req_tables = [f.split(os.sep)[-1].split('.')[0] for f in cls._list_files_in(test_util.NYC_FIVE_PERSONS_PATH)]
+        if not set(curr_tables).issuperset(set(req_tables)):
+            return True
+        table_list = bq_utils.list_tables(cls.RDR_DATASET_ID)
+        curr_tables = [t['tableReference']['tableId'] for t in table_list['tables']]
+        req_tables = [f.split(os.sep)[-1].split('.')[0] for f in cls._list_files_in(test_util.RDR_PATH)]
+        if not set(curr_tables).issuperset(set(req_tables)):
+            return True
+        return False
+
+    @classmethod
     def setUpClass(cls):
         # Ensure test EHR and RDR datasets
-        cls._load_ehr_and_rdr_datasets()
+        if cls._must_load_datasets():
+            cls._load_ehr_and_rdr_datasets()
 
     @classmethod
     def _load_csv(cls, dataset_id, table_id, local_path, schema):
@@ -58,8 +77,37 @@ class CombineEhrRdrTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.drop_combined_tables()
 
+    def test_consented_person_id(self):
+        """
+        Test observation data has seven (7) persons with consent records as described below
+         1: No
+         2: Yes
+         3: NULL
+         4: No  followed by Yes
+         5: Yes followed by No
+         6: Yes followed by NULL
+         7: NULL and Yes with same date/time
+        """
+        # sanity check
+        self.assertFalse(bq_utils.table_exists(CONSENTED_PERSON_TABLE_ID, self.COMBINED_DATASET_ID))
+
+        consented_person()
+        self.assertTrue(bq_utils.table_exists(CONSENTED_PERSON_TABLE_ID, self.COMBINED_DATASET_ID),
+                        'Table {dataset}.{table} created by consented_person'.format(dataset=self.COMBINED_DATASET_ID,
+                                                                                     table=CONSENTED_PERSON_TABLE_ID))
+        response = bq_utils.query('SELECT * FROM {dataset}.{table}'.format(dataset=self.COMBINED_DATASET_ID,
+                                                                           table=CONSENTED_PERSON_TABLE_ID))
+        rows = test_util.response2rows(response)
+        expected = {2, 4}
+        actual = set(row['person_id'] for row in rows)
+        self.assertSetEqual(expected,
+                            actual,
+                            'Records in {dataset}.{table}'.format(dataset=self.COMBINED_DATASET_ID,
+                                                                  table=CONSENTED_PERSON_TABLE_ID))
+
     def test_copy_rdr_person(self):
-        # person table from rdr is used as-is
+        consented_person()
+        # person records from rdr with consent
         self.assertFalse(bq_utils.table_exists('person', self.COMBINED_DATASET_ID))  # sanity check
         copy_rdr_person()
         self.assertTrue(bq_utils.table_exists('person', self.COMBINED_DATASET_ID))

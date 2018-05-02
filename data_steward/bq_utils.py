@@ -280,7 +280,8 @@ def query_table(query_string):
     return query_result
 
 
-def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEFAULT_RETRY_COUNT, write_disposition = 'WRITE_EMPTY'):
+def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEFAULT_RETRY_COUNT,
+          write_disposition='WRITE_EMPTY', destination_dataset_id=None):
     """
     Execute a SQL query on BigQuery dataset
 
@@ -289,6 +290,7 @@ def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEF
     :param destination_table_id: if set, output is saved in a table with the specified id
     :param retry_count: number of times to retry with randomized exponential backoff
     :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY (default)
+    :param destination_dataset_id: dataset ID of destination table (EHR dataset by default)
     :return: if destination_table_id is supplied then job info, otherwise job query response
              (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
     """
@@ -296,6 +298,8 @@ def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEF
     app_id = app_identity.get_application_id()
 
     if destination_table_id:
+        if destination_dataset_id is None:
+            destination_dataset_id = get_dataset_id()
         job_body = {
             'configuration':
                 {
@@ -308,7 +312,7 @@ def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEF
                         },
                         'destinationTable': {
                             'projectId': app_id,
-                            'datasetId': get_dataset_id(),
+                            'datasetId': destination_dataset_id,
                             'tableId': destination_table_id
                         },
                         'writeDisposition': write_disposition
@@ -370,9 +374,11 @@ def create_standard_table(table_name, table_id, drop_existing=False):
     return create_table(table_id, fields, drop_existing)
 
 
-def list_tables():
+def list_tables(dataset_id=get_dataset_id()):
     """
     List all the tables in the dataset
+
+    :param dataset_id: dataset to list tables for (EHR dataset by default)
     :return: an object with the structure described at https://goo.gl/Z17MWs
 
     Example:
@@ -382,7 +388,6 @@ def list_tables():
     """
     bq_service = create_service()
     app_id = app_identity.get_application_id()
-    dataset_id = get_dataset_id()
     return bq_service.tables().list(projectId=app_id, datasetId=dataset_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
 
 

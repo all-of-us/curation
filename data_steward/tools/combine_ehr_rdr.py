@@ -1,9 +1,9 @@
 """
 Combine data sets `ehr` and `rdr` to form another data set `combined`
 
- * Find the `person_id`s of those who have consented to share EHR data
+ * Load `person_id` of those who have consented to share EHR data in `combined.consented_person`
 
- * Copy `rdr.person` table as-is to `combined.person`
+ * Copy the `rdr.person` records referenced in `combined.consented_person` to `combined.person`
 
  * Create table `combined.<hpo>_visit_mapping(dest_visit_occurrence_id, source_table_name, source_visit_occurrence_id)`
    and populate it with UNION ALL of `visit_occurrence_id`s from ehr and rdr records that link to `combined.person`
@@ -27,12 +27,10 @@ import logging
 
 import bq_utils
 from resources import fields_path
-from google.appengine.api import app_identity
 
 BQ_WAIT_TIME = 2
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
-CONCEPT_ID_CONSENT_PERMISSION_NO = 1586101   # ConsentPermission_No
 ONE_BILLION = 1000000000
 MAPPING_TABLE_ID = 'ehr_rdr_id_mapping'
 ID_MAPPING_QUERY = '''
@@ -52,6 +50,7 @@ JOIN
 FROM `%(ehr_project)s.%(ehr_dataset)s.person`) AS ehr
 ON rdr.row_id = ehr.row_id
 '''
+CONSENTED_PERSON_TABLE_ID = 'consented_person'
 TABLE_NAMES = ['person', 'visit_occurrence', 'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
                'device_exposure', 'measurement', 'observation', 'death']
 
@@ -89,54 +88,50 @@ def construct_mapping_query(table_name, source, project_id, dataset_id, id_offse
         return q
 
 
-def consented_person_id_query(dataset_id, project_id=app_identity.get_application_id()):
+def consented_person_id_query():
     """
     Returns query used to get only those participants who have consented to share EHR data
-
-    :param dataset_id: Data set with RDR data in OMOP
-    :param project_id: Project with the dataset. By default env var APPLICATION_ID.
     :return:
     """
     return '''
-    WITH yes_consent AS (
-     SELECT 
-       person_id, 
-       observation_datetime
-     FROM `{project_id}.{dataset_id}.observation`
-     WHERE observation_source_value = '{source_value_ehr_consent}'
-     AND value_source_concept_id = {concept_id_consent_permission_yes}
-    ),
-    no_consent AS (
-     SELECT
-       person_id,
-       observation_datetime
-     FROM `{project_id}.{dataset_id}.observation`
-     WHERE observation_source_value = '{source_value_ehr_consent}'
-     AND value_source_concept_id = {concept_id_consent_permission_no}
-    )
-    SELECT DISTINCT person_id 
-    FROM yes_consent y
-    WHERE NOT EXISTS (
-     SELECT 1 FROM no_consent n
-     WHERE n.person_id = y.person_id
-     AND n.observation_datetime >= y.observation_datetime
-    )
-    '''.format(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        source_value_ehr_consent=SOURCE_VALUE_EHR_CONSENT,
-        concept_id_consent_permission_yes=CONCEPT_ID_CONSENT_PERMISSION_YES,
-        concept_id_consent_permission_no=CONCEPT_ID_CONSENT_PERMISSION_NO)
+    WITH ordered_response AS
+     (SELECT
+        person_id, 
+        value_source_concept_id,
+        observation_datetime,
+        ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY observation_datetime DESC, value_source_concept_id ASC) AS rn
+      FROM {dataset_id}.observation
+      WHERE observation_source_value = '{source_value_ehr_consent}')
+    
+     SELECT person_id 
+     FROM ordered_response
+     WHERE rn = 1 
+       AND value_source_concept_id = {concept_id_consent_permission_yes}
+    '''.format(dataset_id=bq_utils.get_rdr_dataset_id(),
+               source_value_ehr_consent=SOURCE_VALUE_EHR_CONSENT,
+               concept_id_consent_permission_yes=CONCEPT_ID_CONSENT_PERMISSION_YES)
 
 
-def query(q, destination_table_id, write_disposition):
+def consented_person():
+    """
+    Create and load consented person table in combined dataset
+
+    :return:
+    """
+    q = consented_person_id_query()
+    query(q, CONSENTED_PERSON_TABLE_ID, 'WRITE_TRUNCATE')
+
+
+def query(q, dst_table_id, write_disposition='WRITE_TRUNCATE'):
     """
     Run query and block until job is done
     :param q: SQL statement
-    :param destination_table_id: if set, output is saved in a table with the specified id
-    :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY (default)
+    :param dst_table_id: if set, output is saved in a table with the specified id
+    :param write_disposition: WRITE_TRUNCATE (default), WRITE_APPEND or WRITE_EMPTY
     """
-    query_job_result = bq_utils.query(q, destination_table_id=destination_table_id, write_disposition=write_disposition)
+    dst_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+    query_job_result = bq_utils.query(q, destination_table_id=dst_table_id, write_disposition=write_disposition,
+                                      destination_dataset_id=dst_dataset_id)
     query_job_id = query_job_result['jobReference']['jobId']
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
     if len(incomplete_jobs) > 0:
@@ -149,26 +144,32 @@ def copy_rdr_person():
 
     Note: Overwrites if a person table already exists
     """
-    src_dataset_id = bq_utils.get_rdr_dataset_id()
-    dst_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
-    bq_utils.copy_table('person', 'person', src_dataset_id=src_dataset_id, dst_dataset_id=dst_dataset_id)
+    q = '''SELECT *
+      FROM {rdr_dataset_id}.person rp
+      WHERE EXISTS
+       (SELECT 1 FROM {ehr_rdr_dataset_id}.{consented_person} cp 
+        WHERE rp.person_id = cp.person_id)
+    '''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+               ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+               consented_person=CONSENTED_PERSON_TABLE_ID)
+    query(q, 'person')
 
 
 def main(args):
     mapping_query = ID_MAPPING_QUERY % args.__dict__
     logging.log(logging.INFO, 'Loading ' + MAPPING_TABLE_ID)
 
-    query(mapping_query, destination_table_id=MAPPING_TABLE_ID, write_disposition='WRITE_TRUNCATE')
+    query(mapping_query, dst_table_id=MAPPING_TABLE_ID, write_disposition='WRITE_TRUNCATE')
 
     for table_name in TABLE_NAMES:
         q = construct_mapping_query(table_name, 'ehr', args.ehr_project, args.ehr_dataset)
         logging.log(logging.INFO, 'Loading EHR table: ' + table_name)
-        query(q, destination_table_id=table_name, write_disposition='WRITE_TRUNCATE')
+        query(q, dst_table_id=table_name, write_disposition='WRITE_TRUNCATE')
 
     for table_name in [table_name for table_name in TABLE_NAMES if table_name != 'person']:
         q = construct_mapping_query(table_name, 'rdr', args.rdr_project, args.rdr_dataset, ONE_BILLION)
         logging.log(logging.INFO, 'Loading RDR table: ' + table_name)
-        query(q, destination_table_id=table_name, write_disposition='WRITE_APPEND')
+        query(q, dst_table_id=table_name, write_disposition='WRITE_APPEND')
 
 
 if __name__ == '__main__':
