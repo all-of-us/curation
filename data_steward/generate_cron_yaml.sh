@@ -15,7 +15,7 @@ echo "cron:" > $filename
 
 echo "- description: validate all hpos" >> $filename
 echo "  url: /data_steward/v1/ValidateAllHpoFiles" >> $filename
-echo "  schedule: every 6 hours" >> $filename
+echo "  schedule: every 3 hours" >> $filename
 
 
 echo "- description: website generation">> $filename
