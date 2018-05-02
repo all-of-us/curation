@@ -19,6 +19,8 @@ BQ_TIMEOUT_RETRIES = 3
 
 
 class BqUtilsTest(unittest.TestCase):
+    EHR_DATASET_ID = bq_utils.get_dataset_id()
+
     def setUp(self):
         super(BqUtilsTest, self).setUp()
         self.testbed = testbed.Testbed()
@@ -30,7 +32,7 @@ class BqUtilsTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)
-        self._drop_tables()
+        test_util.delete_all_tables(self.EHR_DATASET_ID)
         self._empty_bucket()
 
     def _empty_bucket(self):
@@ -300,6 +302,6 @@ class BqUtilsTest(unittest.TestCase):
         self.assertSetEqual(actual, expected)
 
     def tearDown(self):
-        self._drop_tables()
+        test_util.delete_all_tables(self.EHR_DATASET_ID)
         self._empty_bucket()
         self.testbed.deactivate()

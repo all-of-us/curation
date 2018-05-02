@@ -128,6 +128,27 @@ def empty_bucket(bucket):
     for bucket_item in bucket_items:
         gcs_utils.delete_object(bucket, bucket_item['name'])
 
+
+def delete_all_tables(dataset_id):
+    """
+    Remove all non-vocabulary tables from a dataset
+
+    :param dataset_id: ID of the dataset with the tables to delete
+    :return: list of deleted tables
+    """
+    import bq_utils
+
+    deleted = []
+    result = bq_utils.list_tables(dataset_id)
+    tables = result.get('tables', [])
+    for table in tables:
+        table_id = table['tableReference']['tableId']
+        if table_id not in common.VOCABULARY_TABLES:
+            bq_utils.delete_table(table_id)
+            deleted.append(table_id)
+    return deleted
+
+
 import requests
 
 

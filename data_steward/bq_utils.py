@@ -119,19 +119,22 @@ def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix=""):
     return load_csv(fields_filename, gcs_object_path, app_id, dataset_id, table_id, allow_jagged_rows=allow_jagged_rows)
 
 
-def delete_table(table_id):
+def delete_table(table_id, dataset_id=None):
     """
     Delete bigquery table by id
 
     Note: This will throw `HttpError` if the table doesn't exist. Use `table_exists` prior if necessary.
     :param table_id: id of the table
+    :param dataset_id: id of the dataset (EHR dataset by default)
     :return:
     """
     assert(table_id not in common.VOCABULARY_TABLES)
     app_id = app_identity.get_application_id()
-    dataset_id = get_dataset_id()
+    if dataset_id is None:
+        dataset_id = get_dataset_id()
     bq_service = create_service()
     delete_job = bq_service.tables().delete(projectId=app_id, datasetId=dataset_id, tableId=table_id)
+    logging.debug('Deleting {dataset_id}.{table_id}'.format(dataset_id=dataset_id, table_id=table_id))
     return delete_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
 
 
@@ -374,7 +377,7 @@ def create_standard_table(table_name, table_id, drop_existing=False):
     return create_table(table_id, fields, drop_existing)
 
 
-def list_tables(dataset_id=get_dataset_id()):
+def list_tables(dataset_id=None):
     """
     List all the tables in the dataset
 
@@ -388,6 +391,8 @@ def list_tables(dataset_id=get_dataset_id()):
     """
     bq_service = create_service()
     app_id = app_identity.get_application_id()
+    if dataset_id is None:
+        dataset_id = get_dataset_id()
     return bq_service.tables().list(projectId=app_id, datasetId=dataset_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
 
 
