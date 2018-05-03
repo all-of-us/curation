@@ -13,10 +13,12 @@ MIMETYPES = {'json': 'application/json',
              'woff': 'application/font-woff',
              'ttf': 'application/font-sfnt',
              'eot': 'application/vnd.ms-fontobject'}
+GCS_DEFAULT_RETRY_COUNT = 5
 
 
 def get_drc_bucket():
     return os.environ.get('DRC_BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
+
 
 def get_hpo_bucket(hpo_id):
     """
@@ -62,7 +64,7 @@ def list_bucket_dir(gcs_path):
 
     all_objects = []
     while req:
-        resp = req.execute()
+        resp = req.execute(num_retries=GCS_DEFAULT_RETRY_COUNT)
         items = [item for item in resp.get('items', []) if item['name'] != prefix]
         all_objects.extend(items or [])
         req = service.objects().list_next(req, resp)
@@ -94,7 +96,7 @@ def list_bucket(bucket):
     req = service.objects().list(bucket=bucket)
     all_objects = []
     while req:
-        resp = req.execute()
+        resp = req.execute(num_retries=GCS_DEFAULT_RETRY_COUNT)
         all_objects.extend(resp.get('items', []))
         req = service.objects().list_next(req, resp)
     return all_objects
@@ -136,7 +138,7 @@ def upload_object(bucket, name, fp):
         (mimetype, encoding) = mimetypes.guess_type(name)
     media_body = googleapiclient.http.MediaIoBaseUpload(fp, mimetype)
     req = service.objects().insert(bucket=bucket, body=body, media_body=media_body)
-    return req.execute()
+    return req.execute(num_retries=GCS_DEFAULT_RETRY_COUNT)
 
 
 def delete_object(bucket, name):
@@ -148,7 +150,7 @@ def delete_object(bucket, name):
     """
     service = create_service()
     req = service.objects().delete(bucket=bucket, object=name)
-    resp = req.execute()
+    resp = req.execute(num_retries=GCS_DEFAULT_RETRY_COUNT)
     # TODO return something useful
     return resp
 
@@ -164,5 +166,5 @@ def copy_object(source_bucket, source_object_id, destination_bucket, destination
                                  destinationBucket=destination_bucket,
                                  destinationObject=destination_object_id,
                                  body = dict())
-    return req.execute()
+    return req.execute(num_retries=GCS_DEFAULT_RETRY_COUNT)
 
