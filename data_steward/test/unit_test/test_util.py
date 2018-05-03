@@ -144,7 +144,7 @@ def delete_all_tables(dataset_id):
     for table in tables:
         table_id = table['tableReference']['tableId']
         if table_id not in common.VOCABULARY_TABLES:
-            bq_utils.delete_table(table_id)
+            bq_utils.delete_table(table_id, dataset_id)
             deleted.append(table_id)
     return deleted
 
@@ -339,3 +339,12 @@ def _transform_row(row, schema):
         log[col_name] = row_value
 
     return log
+
+
+def list_files_in(path):
+    """
+    List the abs paths to files (not dirs) in the supplied path
+    :param path:
+    :return:
+    """
+    return [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]

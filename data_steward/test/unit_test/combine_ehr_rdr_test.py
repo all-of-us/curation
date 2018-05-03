@@ -1,81 +1,63 @@
 import unittest
 import os
 import common
-import resources
+import gcs_utils
 import bq_utils
+import resources
 import test_util
 
 from tools.combine_ehr_rdr import copy_rdr_person, consented_person, CONSENTED_PERSON_TABLE_ID
-from google.appengine.api import app_identity
 from google.appengine.ext import testbed
 
 
 class CombineEhrRdrTest(unittest.TestCase):
-    EHR_DATASET_ID = bq_utils.get_dataset_id()
-    RDR_DATASET_ID = bq_utils.get_rdr_dataset_id()
-    COMBINED_DATASET_ID = bq_utils.get_ehr_rdr_dataset_id()
-    APP_ID = app_identity.get_application_id()
-
-    @classmethod
-    def _list_files_in(cls, path):
-        return [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-
-    @classmethod
-    def _must_load_datasets(cls):
-        table_list = bq_utils.list_tables(cls.EHR_DATASET_ID)
-        curr_tables = [t['tableReference']['tableId'] for t in table_list['tables']]
-        req_tables = [f.split(os.sep)[-1].split('.')[0] for f in cls._list_files_in(test_util.NYC_FIVE_PERSONS_PATH)]
-        if not set(curr_tables).issuperset(set(req_tables)):
-            return True
-        table_list = bq_utils.list_tables(cls.RDR_DATASET_ID)
-        curr_tables = [t['tableReference']['tableId'] for t in table_list['tables']]
-        req_tables = [f.split(os.sep)[-1].split('.')[0] for f in cls._list_files_in(test_util.RDR_PATH)]
-        if not set(curr_tables).issuperset(set(req_tables)):
-            return True
-        return False
 
     @classmethod
     def setUpClass(cls):
-        # Ensure test EHR and RDR datasets
-        if cls._must_load_datasets():
-            cls._load_ehr_and_rdr_datasets()
+        cls.testbed = testbed.Testbed()
+        cls.testbed.activate()
+        cls.testbed.init_app_identity_stub()
+        cls.testbed.init_memcache_stub()
+        cls.testbed.init_urlfetch_stub()
+        cls.testbed.init_blobstore_stub()
+        cls.testbed.init_datastore_v3_stub()
+        ehr_dataset_id = bq_utils.get_dataset_id()
+        rdr_dataset_id = bq_utils.get_rdr_dataset_id()
+        test_util.delete_all_tables(ehr_dataset_id)
+        test_util.delete_all_tables(rdr_dataset_id)
+        cls.load_dataset_from_files(ehr_dataset_id, test_util.NYC_FIVE_PERSONS_PATH)
+        cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
 
-    @classmethod
-    def _load_csv(cls, dataset_id, table_id, local_path, schema):
-        cmd_fmt = "bq load --replace --source_format=CSV --allow_jagged_rows --skip_leading_rows=1 %s.%s %s %s"
-        cmd = cmd_fmt % (dataset_id, table_id, local_path, schema)
-        result = test_util.command(cmd)
-        return result
-
-    @classmethod
-    def _load_dataset_from_files(cls, dataset_id, path):
-        for cdm_table in common.CDM_TABLES:
-            cdm_file_name = os.path.join(path, cdm_table + '.csv')
-            schema = os.path.join(resources.fields_path, cdm_table + '.json')
-            if os.path.exists(cdm_file_name):
-                cls._load_csv(dataset_id, cdm_table, cdm_file_name, schema)
-
-    @classmethod
-    def _load_ehr_and_rdr_datasets(cls):
-        cls._load_dataset_from_files(CombineEhrRdrTest.EHR_DATASET_ID, test_util.NYC_FIVE_PERSONS_PATH)
-        cls._load_dataset_from_files(CombineEhrRdrTest.RDR_DATASET_ID, test_util.RDR_PATH)
-
-    def drop_combined_tables(self):
-        cmd_fmt = "for i in $(bq ls %s | awk '{print $1}'); do bq rm -ft %s.$i; done;"
-        cmd = cmd_fmt % (self.COMBINED_DATASET_ID, self.COMBINED_DATASET_ID)
-        result = test_util.bash(cmd)
-        return result
+    @staticmethod
+    def load_dataset_from_files(dataset_id, path):
+        app_id = bq_utils.app_identity.get_application_id()
+        bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
+        test_util.empty_bucket(bucket)
+        job_ids = []
+        fs = test_util.list_files_in(path)
+        for f in fs:
+            filename = f.split(os.sep)[-1]
+            assert filename in common.CDM_FILES
+            table, _ = filename.split('.')
+            schema = os.path.join(resources.fields_path, table + '.json')
+            gcs_path = 'gs://{bucket}/{filename}'.format(bucket=bucket, filename=filename)
+            with open(f, 'r') as fp:
+                response = gcs_utils.upload_object(bucket, filename, fp)
+            load_results = bq_utils.load_csv(schema, gcs_path, app_id, dataset_id, table)
+            load_job_id = load_results['jobReference']['jobId']
+            job_ids.append(load_job_id)
+        incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
+        if len(incomplete_jobs) > 0:
+            message = "Job id(s) %s failed to complete" % incomplete_jobs
+            raise RuntimeError(message)
+        test_util.empty_bucket(bucket)
 
     def setUp(self):
         super(CombineEhrRdrTest, self).setUp()
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_urlfetch_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_datastore_v3_stub()
-        self.drop_combined_tables()
+        self.APP_ID = bq_utils.app_identity.get_application_id()
+        self.COMBINED_DATASET_ID = bq_utils.get_ehr_rdr_dataset_id()
+        self.DRC_BUCKET = gcs_utils.get_drc_bucket()
+        test_util.delete_all_tables(self.COMBINED_DATASET_ID)
 
     def test_consented_person_id(self):
         """
@@ -90,7 +72,6 @@ class CombineEhrRdrTest(unittest.TestCase):
         """
         # sanity check
         self.assertFalse(bq_utils.table_exists(CONSENTED_PERSON_TABLE_ID, self.COMBINED_DATASET_ID))
-
         consented_person()
         self.assertTrue(bq_utils.table_exists(CONSENTED_PERSON_TABLE_ID, self.COMBINED_DATASET_ID),
                         'Table {dataset}.{table} created by consented_person'.format(dataset=self.COMBINED_DATASET_ID,
@@ -125,10 +106,12 @@ class CombineEhrRdrTest(unittest.TestCase):
         pass
 
     def tearDown(self):
-        self.drop_combined_tables()
-        self.testbed.deactivate()
+        test_util.delete_all_tables(self.COMBINED_DATASET_ID)
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_all_tables(CombineEhrRdrTest.EHR_DATASET_ID)
-        test_util.delete_all_tables(CombineEhrRdrTest.RDR_DATASET_ID)
+        ehr_dataset_id = bq_utils.get_dataset_id()
+        rdr_dataset_id = bq_utils.get_rdr_dataset_id()
+        test_util.delete_all_tables(ehr_dataset_id)
+        test_util.delete_all_tables(rdr_dataset_id)
+        cls.testbed.deactivate()
