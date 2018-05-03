@@ -174,14 +174,22 @@ def run_validation(hpo_id, error_ignore_flag=False):
         errors = []
         results = []
         found_cdm_file_names = found_cdm_files
+
+        # Create all tables first to simplify downstream processes
+        # (e.g. ehr_union doesn't have to check if tables exist)
+        for cdm_file_name in common.CDM_FILES:
+            cdm_table_name = cdm_file_name.split('.')[0]
+            table_id = bq_utils.get_table_id(hpo_id, cdm_table_name)
+            bq_utils.create_standard_table(cdm_table_name, table_id, drop_existing=True)
+
         for cdm_file_name in common.CDM_FILES:
             found = parsed = loaded = 0
             cdm_table_name = cdm_file_name.split('.')[0]
+
             if cdm_file_name in found_cdm_file_names:
                 found = 1
                 load_results = bq_utils.load_cdm_csv(hpo_id, cdm_table_name, folder_prefix)
                 load_job_id = load_results['jobReference']['jobId']
-
                 incomplete_jobs = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_LOAD_RETRY_COUNT)
 
                 if len(incomplete_jobs) == 0:
@@ -197,10 +205,7 @@ def run_validation(hpo_id, error_ignore_flag=False):
                     message = message_fmt % (hpo_id, cdm_table_name, load_job_id)
                     logging.error(message)
                     raise InternalValidationError(message)
-            else:
-                # load empty table
-                table_id = bq_utils.get_table_id(hpo_id, cdm_table_name)
-                bq_utils.create_standard_table(cdm_table_name, table_id, drop_existing=True)
+
             if cdm_file_name in common.REQUIRED_FILES or found:
                 results.append((cdm_file_name, found, parsed, loaded))
 
