@@ -183,6 +183,7 @@ def run_validation(hpo_id, error_ignore_flag=False):
             bq_utils.create_standard_table(cdm_table_name, table_id, drop_existing=True)
 
         for cdm_file_name in common.CDM_FILES:
+            logging.info('Validating ' + cdm_file_name)
             found = parsed = loaded = 0
             cdm_table_name = cdm_file_name.split('.')[0]
 
@@ -198,6 +199,12 @@ def run_validation(hpo_id, error_ignore_flag=False):
                     if 'errorResult' in job_status:
                         error_messages = ['{}'.format(item['message'], item['location']) for item in job_status['errors']]
                         errors.append((cdm_file_name, ' || '.join(error_messages)))
+                        logging.info(
+                            'Errors found in gs://{bucket}/{folder_prefix}/{cdm_file_name}'.format(
+                                bucket=bucket, folder_prefix=folder_prefix, cdm_file_name=cdm_file_name)
+                        )
+                        for error_message in error_messages:
+                            logging.info(error_message)
                     else:
                         parsed = loaded = 1
                 else:
