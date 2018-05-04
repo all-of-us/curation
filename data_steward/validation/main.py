@@ -140,7 +140,7 @@ def validate_all_hpos():
     for item in resources.hpo_csv():
         hpo_id = item['hpo_id']
         try:
-            run_validation(hpo_id, True)
+            run_validation(hpo_id)
         except BucketDoesNotExistError as bucket_error:
             bucket = bucket_error.bucket
             logging.warn('Bucket `{bucket}` configured for hpo_id `hpo_id` does not exist'.format(bucket=bucket,
