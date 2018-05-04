@@ -216,7 +216,7 @@ def run_validation(hpo_id):
                     job_status = job_resource['status']
                     if 'errorResult' in job_status:
                         # These are issues (which we report back) as opposed to internal errors
-                        issues = ['{}'.format(item['message'], item['location']) for item in job_status['errors']]
+                        issues = ['{} at {}'.format(item['message'], item['location']) for item in job_status['errors']]
                         errors.append((cdm_file_name, ' || '.join(issues)))
                         logging.info(
                             'Issues found in gs://{bucket}/{folder_prefix}/{cdm_file_name}'.format(
