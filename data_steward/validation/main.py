@@ -6,6 +6,7 @@ import os
 import datetime
 
 from flask import Flask
+from googleapiclient.errors import HttpError
 
 import achilles
 import achilles_heel
@@ -30,6 +31,14 @@ class InternalValidationError(RuntimeError):
 
     def __init__(self, msg):
         super(InternalValidationError, self).__init__(msg)
+
+
+class BucketDoesNotExistError(RuntimeError):
+    """Raised when a configured bucket does not exist"""
+
+    def __init__(self, msg, bucket):
+        super(BucketDoesNotExistError, self).__init__(msg)
+        self.bucket = bucket
 
 
 def all_required_files_loaded(hpo_id, folder_prefix):
@@ -106,7 +115,7 @@ def _upload_achilles_files(hpo_id, folder_prefix):
     results = []
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     for filename in common.ACHILLES_INDEX_FILES:
-        logging.info('uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
+        logging.debug('Uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
         bucket_file_name = filename.split(resources.resource_path + os.sep)[1].strip()
         with open(filename, 'r') as fp:
             upload_result = gcs_utils.upload_object(bucket, folder_prefix + bucket_file_name, fp)
@@ -130,31 +139,40 @@ def validate_all_hpos():
     """
     for item in resources.hpo_csv():
         hpo_id = item['hpo_id']
-        run_validation(hpo_id, True)
+        try:
+            run_validation(hpo_id, True)
+        except BucketDoesNotExistError as bucket_error:
+            bucket = bucket_error.bucket
+            logging.warn('Bucket `{bucket}` configured for hpo_id `hpo_id` does not exist'.format(bucket=bucket,
+                                                                                                  hpo_id=hpo_id))
     return 'validation done!'
 
 
-def run_validation(hpo_id, error_ignore_flag=False):
+def list_bucket(bucket):
+    try:
+        return gcs_utils.list_bucket(bucket)
+    except HttpError as err:
+        if err.resp.status == 404:
+            raise BucketDoesNotExistError('Failed to list objects in bucket', bucket)
+        raise
+    except Exception:
+        raise
+
+
+def run_validation(hpo_id):
     """
     runs validation for a single hpo_id
 
     :param hpo_id : which hpo_id to run for
-    :param error_ignore_flag : ignore errors when running for all
     :raises
+    BucketDoesNotExistError:
+      Raised when a configured bucket does not exist
     InternalValidationError:
       Raised when an internal error is encountered during validation
     """
     logging.info(' Validating hpo_id %s' % hpo_id)
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    try:
-        # TODO improve exception handling
-        bucket_items = gcs_utils.list_bucket(bucket)
-    except:
-        if error_ignore_flag:
-            logging.info('Skipping hpo_id %s. Unable to read from bucket %s.' % (hpo_id, bucket))
-            return 'skipping'
-        else:
-            raise
+    bucket_items = list_bucket(bucket)
     to_process_folder_list = _get_to_process_list(bucket, bucket_items)
 
     for folder_prefix in to_process_folder_list:
@@ -183,7 +201,7 @@ def run_validation(hpo_id, error_ignore_flag=False):
             bq_utils.create_standard_table(cdm_table_name, table_id, drop_existing=True)
 
         for cdm_file_name in common.CDM_FILES:
-            logging.info('Validating ' + cdm_file_name)
+            logging.info('Validating file `{file_name}`'.format(file_name=cdm_file_name))
             found = parsed = loaded = 0
             cdm_table_name = cdm_file_name.split('.')[0]
 
@@ -197,19 +215,24 @@ def run_validation(hpo_id, error_ignore_flag=False):
                     job_resource = bq_utils.get_job_details(job_id=load_job_id)
                     job_status = job_resource['status']
                     if 'errorResult' in job_status:
-                        error_messages = ['{}'.format(item['message'], item['location']) for item in job_status['errors']]
-                        errors.append((cdm_file_name, ' || '.join(error_messages)))
+                        # These are issues (which we report back) as opposed to internal errors
+                        issues = ['{}'.format(item['message'], item['location']) for item in job_status['errors']]
+                        errors.append((cdm_file_name, ' || '.join(issues)))
                         logging.info(
-                            'Errors found in gs://{bucket}/{folder_prefix}/{cdm_file_name}'.format(
+                            'Issues found in gs://{bucket}/{folder_prefix}/{cdm_file_name}'.format(
                                 bucket=bucket, folder_prefix=folder_prefix, cdm_file_name=cdm_file_name)
                         )
-                        for error_message in error_messages:
-                            logging.info(error_message)
+                        for issue in issues:
+                            logging.info(issue)
                     else:
+                        # Processed ok
                         parsed = loaded = 1
                 else:
-                    message_fmt = "Loading %s table %s failed because job id '%s' did not complete."
+                    # Incomplete jobs are internal unrecoverable errors.
+                    # Aborting the process allows for this submission to be validated when system recovers.
+                    message_fmt = 'Loading hpo_id `%s` table `%s` failed because job id `%s` did not complete.'
                     message = message_fmt % (hpo_id, cdm_table_name, load_job_id)
+                    message += ' Aborting processing `gs://%s/%s`.' % (bucket, folder_prefix)
                     logging.error(message)
                     raise InternalValidationError(message)
 
@@ -230,10 +253,12 @@ def run_validation(hpo_id, error_ignore_flag=False):
             run_achilles(hpo_id)
             run_export(hpo_id, folder_prefix=folder_prefix)
 
-        logging.info('uploading achilles index files')
+        logging.info('Uploading achilles index files to `gs://%s/%s`.' % (bucket, folder_prefix))
         _upload_achilles_files(hpo_id, folder_prefix)
 
         now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+        logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.' %
+                     (bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT))
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
 
 

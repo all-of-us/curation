@@ -1,6 +1,7 @@
 import unittest
 
 from google.appengine.ext import testbed
+from googleapiclient.errors import HttpError
 
 import gcs_utils
 from test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
@@ -55,6 +56,11 @@ class GcsUtilsTest(unittest.TestCase):
         expected = 100
         actual = gcs_utils.get_metadata(self.hpo_bucket, 'this_file_does_not_exist', expected)
         self.assertEqual(expected, actual)
+
+    def test_list_bucket_404_when_bucket_does_not_exist(self):
+        with self.assertRaises(HttpError) as cm:
+            gcs_utils.list_bucket('some-bucket-which-does-not-exist-123')
+        self.assertEqual(cm.exception.resp.status, 404)
 
     def tearDown(self):
         self._empty_bucket()
