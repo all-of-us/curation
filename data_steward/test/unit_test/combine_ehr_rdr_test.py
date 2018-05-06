@@ -6,7 +6,7 @@ import bq_utils
 import resources
 import test_util
 
-from tools.combine_ehr_rdr import copy_rdr_person, consented_person, CONSENTED_PERSON_TABLE_ID
+from tools.combine_ehr_rdr import copy_rdr_person, ehr_consent, EHR_CONSENT_TABLE_ID
 from google.appengine.ext import testbed
 
 
@@ -43,7 +43,7 @@ class CombineEhrRdrTest(unittest.TestCase):
             gcs_path = 'gs://{bucket}/{filename}'.format(bucket=bucket, filename=filename)
             with open(f, 'r') as fp:
                 response = gcs_utils.upload_object(bucket, filename, fp)
-            load_results = bq_utils.load_csv(schema, gcs_path, app_id, dataset_id, table)
+            load_results = bq_utils.load_csv(schema, gcs_path, app_id, dataset_id, table, allow_jagged_rows=True)
             load_job_id = load_results['jobReference']['jobId']
             job_ids.append(load_job_id)
         incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
@@ -71,23 +71,23 @@ class CombineEhrRdrTest(unittest.TestCase):
          7: NULL and Yes with same date/time
         """
         # sanity check
-        self.assertFalse(bq_utils.table_exists(CONSENTED_PERSON_TABLE_ID, self.COMBINED_DATASET_ID))
-        consented_person()
-        self.assertTrue(bq_utils.table_exists(CONSENTED_PERSON_TABLE_ID, self.COMBINED_DATASET_ID),
+        self.assertFalse(bq_utils.table_exists(EHR_CONSENT_TABLE_ID, self.COMBINED_DATASET_ID))
+        ehr_consent()
+        self.assertTrue(bq_utils.table_exists(EHR_CONSENT_TABLE_ID, self.COMBINED_DATASET_ID),
                         'Table {dataset}.{table} created by consented_person'.format(dataset=self.COMBINED_DATASET_ID,
-                                                                                     table=CONSENTED_PERSON_TABLE_ID))
+                                                                                     table=EHR_CONSENT_TABLE_ID))
         response = bq_utils.query('SELECT * FROM {dataset}.{table}'.format(dataset=self.COMBINED_DATASET_ID,
-                                                                           table=CONSENTED_PERSON_TABLE_ID))
+                                                                           table=EHR_CONSENT_TABLE_ID))
         rows = test_util.response2rows(response)
         expected = {2, 4}
         actual = set(row['person_id'] for row in rows)
         self.assertSetEqual(expected,
                             actual,
                             'Records in {dataset}.{table}'.format(dataset=self.COMBINED_DATASET_ID,
-                                                                  table=CONSENTED_PERSON_TABLE_ID))
+                                                                  table=EHR_CONSENT_TABLE_ID))
 
     def test_copy_rdr_person(self):
-        consented_person()
+        ehr_consent()
         # person records from rdr with consent
         self.assertFalse(bq_utils.table_exists('person', self.COMBINED_DATASET_ID))  # sanity check
         copy_rdr_person()

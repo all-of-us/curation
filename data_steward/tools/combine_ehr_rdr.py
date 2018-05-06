@@ -1,14 +1,14 @@
 """
 Combine data sets `ehr` and `rdr` to form another data set `combined`
 
- * Load `person_id` of those who have consented to share EHR data in `combined.consented_person`
+ * Load `person_id` of those who have consented to share EHR data in `combined.ehr_consent`
 
- * Copy the `rdr.person` records referenced in `combined.consented_person` to `combined.person`
+ * Copy all `rdr.person` records to `combined.person`
 
- * Create table `combined.<hpo>_visit_mapping(dest_visit_occurrence_id, source_table_name, source_visit_occurrence_id)`
-   and populate it with UNION ALL of `visit_occurrence_id`s from ehr and rdr records that link to `combined.person`
+ * Load `combined.visit_mapping(dst_visit_occurrence_id, src_dataset, src_visit_occurrence_id)`
+   with UNION ALL of all `rdr.visit_occurrence_id`s and `ehr.visit_occurrence_id`s that link to `combined.ehr_consent`
 
- * Create tables `combined.<hpo>_{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL of
+ * Create tables `combined.{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL of
    `ehr` and `rdr` records that link to `combined.person`. Use `combined.<hpo>_visit_mapping.dest_visit_occurrence_id`
    for records that have a (valid) `visit_occurrence_id`.
 
@@ -19,8 +19,10 @@ Currently the following environment variables must be set:
  * BIGQUERY_DATASET_ID: BQ dataset where combined result is stored (e.g. test_join_ehr_rdr)
  * APPLICATION_ID: GCP project ID (e.g. all-of-us-ehr-dev)
  * GOOGLE_APPLICATION_CREDENTIALS: location of service account key json file (e.g. /path/to/all-of-us-ehr-dev-abc123.json)
+
+TODO
+ * Communicate to data steward EHR records not matched with RDR
 """
-import argparse
 import json
 import os
 import logging
@@ -28,69 +30,37 @@ import logging
 import bq_utils
 from resources import fields_path
 
-BQ_WAIT_TIME = 2
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
-ONE_BILLION = 1000000000
-MAPPING_TABLE_ID = 'ehr_rdr_id_mapping'
-ID_MAPPING_QUERY = '''
-SELECT 
-  rdr.row_id AS cdr_id
- ,rdr.person_id AS rdr_person_id
- ,ehr.person_id AS ehr_person_id
-FROM 
-(SELECT 
-   ROW_NUMBER() OVER (ORDER BY person_id) AS row_id
-  ,person_id
-FROM `%(rdr_project)s.%(rdr_dataset)s.person`) AS rdr
-JOIN
-(SELECT 
-   ROW_NUMBER() OVER (ORDER BY person_id) AS row_id
-  ,person_id
-FROM `%(ehr_project)s.%(ehr_dataset)s.person`) AS ehr
-ON rdr.row_id = ehr.row_id
-'''
-CONSENTED_PERSON_TABLE_ID = 'consented_person'
-TABLE_NAMES = ['person', 'visit_occurrence', 'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
+EHR_CONSENT_TABLE_ID = '_ehr_consent'
+VISIT_OCCURRENCE = 'visit_occurrence'
+VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
+TABLE_NAMES = ['person', VISIT_OCCURRENCE, 'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
                'device_exposure', 'measurement', 'observation', 'death']
+DOMAIN_TABLES = [VISIT_OCCURRENCE, 'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
+                 'device_exposure', 'measurement', 'observation']
 
 
-def construct_mapping_query(table_name, source, project_id, dataset_id, id_offset=None):
+def query(q, dst_table_id, write_disposition='WRITE_TRUNCATE'):
     """
-    Get select query for CDM table with proper qualifiers and using cdr_id for person_id
-    :param table_name: name of the CDM table
-    :param source: 'ehr' or 'rdr'
-    :param project_id: ID of the source table
-    :param dataset_id: source dataset name
-    :param id_offset: constant to add to *_id fields
-    :return: the query
+    Run query and block until job is done
+    :param q: SQL statement
+    :param dst_table_id: if set, output is saved in a table with the specified id
+    :param write_disposition: WRITE_TRUNCATE (default), WRITE_APPEND or WRITE_EMPTY
     """
-    assert(source in ['ehr', 'rdr'])
-    source_person_id_field = source + '_person_id'
-    json_path = os.path.join(fields_path, table_name + '.json')
-    with open(json_path, 'r') as fp:
-        fields = json.load(fp)
-        col_exprs = []
-        for field in fields:
-            field_name = field['name']
-            field_type = field['type']
-            if field_name == 'person_id':
-                col_expr = 'cdr_id as person_id'
-            elif id_offset and field_name.endswith('_id') and not field_name.endswith('concept_id') and field_type == 'integer':
-                col_expr = '%(field_name)s + %(id_offset)s as %(field_name)s' % locals()
-            else:
-                col_expr = field_name
-            col_exprs.append(col_expr)
-        q = 'SELECT\n  '
-        q += ',\n  '.join(col_exprs)
-        q += '\nFROM `%(project_id)s.%(dataset_id)s.%(table_name)s` t' % locals()
-        q += '\nJOIN %s m ON t.person_id = m.%s' % (MAPPING_TABLE_ID, source_person_id_field)
-        return q
+    dst_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+    query_job_result = bq_utils.query(q, destination_table_id=dst_table_id, write_disposition=write_disposition,
+                                      destination_dataset_id=dst_dataset_id)
+    query_job_id = query_job_result['jobReference']['jobId']
+    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
+    if len(incomplete_jobs) > 0:
+        raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
 
-def consented_person_id_query():
+def ehr_consent_query():
     """
     Returns query used to get only those participants who have consented to share EHR data
+
     :return:
     """
     return '''
@@ -112,30 +82,14 @@ def consented_person_id_query():
                concept_id_consent_permission_yes=CONCEPT_ID_CONSENT_PERMISSION_YES)
 
 
-def consented_person():
+def ehr_consent():
     """
-    Create and load consented person table in combined dataset
+    Create and load ehr consent table in combined dataset
 
     :return:
     """
-    q = consented_person_id_query()
-    query(q, CONSENTED_PERSON_TABLE_ID, 'WRITE_TRUNCATE')
-
-
-def query(q, dst_table_id, write_disposition='WRITE_TRUNCATE'):
-    """
-    Run query and block until job is done
-    :param q: SQL statement
-    :param dst_table_id: if set, output is saved in a table with the specified id
-    :param write_disposition: WRITE_TRUNCATE (default), WRITE_APPEND or WRITE_EMPTY
-    """
-    dst_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
-    query_job_result = bq_utils.query(q, destination_table_id=dst_table_id, write_disposition=write_disposition,
-                                      destination_dataset_id=dst_dataset_id)
-    query_job_id = query_job_result['jobReference']['jobId']
-    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
-    if len(incomplete_jobs) > 0:
-        raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+    q = ehr_consent_query()
+    query(q, EHR_CONSENT_TABLE_ID, 'WRITE_TRUNCATE')
 
 
 def copy_rdr_person():
@@ -144,46 +98,144 @@ def copy_rdr_person():
 
     Note: Overwrites if a person table already exists
     """
-    q = '''SELECT *
-      FROM {rdr_dataset_id}.person rp
-      WHERE EXISTS
-       (SELECT 1 FROM {ehr_rdr_dataset_id}.{consented_person} cp 
-        WHERE rp.person_id = cp.person_id)
-    '''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-               ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
-               consented_person=CONSENTED_PERSON_TABLE_ID)
+    q = '''SELECT * FROM {rdr_dataset_id}.person rp'''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id())
     query(q, 'person')
 
 
-def main(args):
-    mapping_query = ID_MAPPING_QUERY % args.__dict__
-    logging.log(logging.INFO, 'Loading ' + MAPPING_TABLE_ID)
+def mapping_query(domain_table):
+    """
+    Returns query used to get mapping of domain tables for those participants who have consented to share EHR data
 
-    query(mapping_query, dst_table_id=MAPPING_TABLE_ID, write_disposition='WRITE_TRUNCATE')
+    :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
+    :return:
+    """
+    return '''
+    WITH all_records AS
+    (
+        SELECT
+          '{rdr_dataset_id}'  AS src_dataset_id, 
+          {domain_table}_id AS src_{domain_table}_id
+        FROM {rdr_dataset_id}.{domain_table}
 
-    for table_name in TABLE_NAMES:
-        q = construct_mapping_query(table_name, 'ehr', args.ehr_project, args.ehr_dataset)
-        logging.log(logging.INFO, 'Loading EHR table: ' + table_name)
-        query(q, dst_table_id=table_name, write_disposition='WRITE_TRUNCATE')
+        UNION ALL
 
-    for table_name in [table_name for table_name in TABLE_NAMES if table_name != 'person']:
-        q = construct_mapping_query(table_name, 'rdr', args.rdr_project, args.rdr_dataset, ONE_BILLION)
-        logging.log(logging.INFO, 'Loading RDR table: ' + table_name)
-        query(q, dst_table_id=table_name, write_disposition='WRITE_APPEND')
+        SELECT
+          '{ehr_dataset_id}'  AS src_dataset_id, 
+          {domain_table}_id AS src_{domain_table}_id
+        FROM {ehr_dataset_id}.{domain_table} t
+        WHERE EXISTS
+           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
+            WHERE t.person_id = c.person_id)
+    )
+    SELECT 
+      ROW_NUMBER() OVER (ORDER BY src_dataset_id, src_{domain_table}_id) AS {domain_table}_id,
+      src_dataset_id,
+      src_{domain_table}_id
+    FROM all_records
+    '''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+               ehr_dataset_id=bq_utils.get_dataset_id(),
+               ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+               domain_table=domain_table,
+               ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+
+
+def mapping_table_for(domain_table):
+    """
+    Get name of mapping table generated for a domain table
+
+    :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
+    :return:
+    """
+    return '_mapping_' + domain_table
+
+
+def load_query(domain_table):
+    """
+    Returns query used to load a domain table
+
+    :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
+    :return:
+    """
+    rdr_dataset_id = bq_utils.get_rdr_dataset_id()
+    ehr_dataset_id = bq_utils.get_dataset_id()
+    ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+    mapping_table = mapping_table_for(domain_table)
+    json_path = os.path.join(fields_path, domain_table + '.json')
+    is_visit_occurrence = domain_table == VISIT_OCCURRENCE
+    id_col = '{domain_table}_id'.format(domain_table=domain_table)
+
+    # Generate expressions for select
+    with open(json_path, 'r') as fp:
+        fields = json.load(fp)
+        col_exprs = []
+        for field in fields:
+            field_name = field['name']
+            field_type = field['type']
+            if field_name == id_col:
+                # Use mapping for unique ID column
+                col_expr = 'm.%(field_name)s ' % locals()
+            elif field_name == VISIT_OCCURRENCE_ID:
+                # Replace with mapped visit_occurrence_id
+                # Note: This is only reached when domain_table != visit_occurrence
+                col_expr = 'mv.' + VISIT_OCCURRENCE_ID
+            else:
+                col_expr = field_name
+            col_exprs.append(col_expr)
+    cols = ',\n  '.join(col_exprs)
+
+    visit_join_expr = ''
+    if not is_visit_occurrence:
+        # Include a join to mapping for visit_occurrence
+        # Note: Left join for records that aren't mapped to visits
+        mv = mapping_table_for(VISIT_OCCURRENCE)
+        visit_join_expr = '''
+        LEFT JOIN {ehr_rdr_dataset_id}.{mapping_visit_occurrence} mv 
+          ON t.visit_occurrence_id = mv.src_visit_occurrence_id
+         AND m.src_dataset_id = mv.src_dataset_id'''.format(ehr_rdr_dataset_id=ehr_rdr_dataset_id,
+                                                            mapping_visit_occurrence=mv)
+
+    return '''
+    SELECT {cols} 
+    FROM {rdr_dataset_id}.{domain_table} t 
+      JOIN {ehr_rdr_dataset_id}.{mapping_table} m
+        ON t.{domain_table}_id = m.src_{domain_table}_id {visit_join_expr}
+    WHERE m.src_dataset_id = '{rdr_dataset_id}'
+    
+    UNION ALL
+    
+    SELECT {cols} 
+    FROM {ehr_dataset_id}.{domain_table} t 
+      JOIN {ehr_rdr_dataset_id}.{mapping_table} m
+        ON t.{domain_table}_id = m.src_{domain_table}_id {visit_join_expr}
+    WHERE m.src_dataset_id = '{ehr_dataset_id}'
+    '''.format(cols=cols,
+               domain_table=domain_table,
+               rdr_dataset_id=rdr_dataset_id,
+               ehr_dataset_id=ehr_dataset_id,
+               mapping_table=mapping_table,
+               visit_join_expr=visit_join_expr,
+               ehr_rdr_dataset_id=ehr_rdr_dataset_id)
+
+
+def main():
+    logging.info('EHR + RDR combine started')
+    logging.info('Loading {ehr_consent_table_id}...'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID))
+    q = ehr_consent_query()
+    logging.debug('Query for {ehr_consent_table_id} is {q}'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID, q=q))
+    query(q, EHR_CONSENT_TABLE_ID)
+    for domain_table in DOMAIN_TABLES:
+        logging.info('Mapping {domain_table}...'.format(domain_table=domain_table))
+        q = mapping_query(domain_table)
+        mapping_table = mapping_table_for(domain_table)
+        logging.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
+        query(q, mapping_table)
+    for domain_table in DOMAIN_TABLES:
+        logging.info('Loading {domain_table}...'.format(domain_table=domain_table))
+        q = load_query(domain_table)
+        logging.debug('Query for {domain_table} is {q}'.format(domain_table=domain_table, q=q))
+        query(q, domain_table)
+    logging.info('EHR + RDR combine ended')
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--ehr_project',
-                        default='aou-res-curation-test',
-                        help='Project containing the EHR dataset')
-    parser.add_argument('--ehr_dataset',
-                        default='synthetic_derivative_test_load',
-                        help='Dataset containing EHR data in OMOP format')
-    parser.add_argument('--rdr_project',
-                        default='all-of-us-rdr-sandbox',
-                        help='Project containing the RDR dataset')
-    parser.add_argument('--rdr_dataset',
-                        default='test_etl_6',
-                        help='Dataset containing RDR data in OMOP format')
-    main(parser.parse_args())
+    main()
