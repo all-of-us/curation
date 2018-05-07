@@ -429,7 +429,7 @@ def merge_ehr():
 
     run_achilles(hpo_id)
     now_date_string = datetime.datetime.now().strftime('%Y_%m_%d')
-    folder_prefix = 'unioned_ehr_' + now_date_string
+    folder_prefix = 'unioned_ehr_' + now_date_string + '/'
     run_export(hpo_id, folder_prefix=folder_prefix)
     logging.info('uploading achilles index files')
     _upload_achilles_files(hpo_id, folder_prefix)
