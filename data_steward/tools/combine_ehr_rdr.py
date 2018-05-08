@@ -89,7 +89,8 @@ def ehr_consent():
     :return:
     """
     q = ehr_consent_query()
-    query(q, EHR_CONSENT_TABLE_ID, 'WRITE_TRUNCATE')
+    logging.debug('Query for {ehr_consent_table_id} is {q}'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID, q=q))
+    query(q, EHR_CONSENT_TABLE_ID)
 
 
 def copy_rdr_person():
@@ -99,12 +100,13 @@ def copy_rdr_person():
     Note: Overwrites if a person table already exists
     """
     q = '''SELECT * FROM {rdr_dataset_id}.person rp'''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id())
+    logging.debug('Query for person is `{q}`'.format(q=q))
     query(q, 'person')
 
 
 def mapping_query(domain_table):
     """
-    Returns query used to get mapping of domain tables for those participants who have consented to share EHR data
+    Returns query used to get mapping of all records from RDR combined with EHR records of consented participants
 
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :return:
@@ -149,6 +151,19 @@ def mapping_table_for(domain_table):
     return '_mapping_' + domain_table
 
 
+def mapping(domain_table):
+    """
+    Create and load a mapping of all records from RDR combined with EHR records of consented participants
+
+    :param domain_table:
+    :return:
+    """
+    q = mapping_query(domain_table)
+    mapping_table = mapping_table_for(domain_table)
+    logging.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
+    query(q, mapping_table)
+
+
 def load_query(domain_table):
     """
     Returns query used to load a domain table
@@ -186,7 +201,7 @@ def load_query(domain_table):
     visit_join_expr = ''
     if not is_visit_occurrence:
         # Include a join to mapping for visit_occurrence
-        # Note: Left join for records that aren't mapped to visits
+        # Note: Using left join in order to keep records that aren't mapped to visits
         mv = mapping_table_for(VISIT_OCCURRENCE)
         visit_join_expr = '''
         LEFT JOIN {ehr_rdr_dataset_id}.{mapping_visit_occurrence} mv 
@@ -217,24 +232,28 @@ def load_query(domain_table):
                ehr_rdr_dataset_id=ehr_rdr_dataset_id)
 
 
+def load(domain_table):
+    """
+    Load a domain table
+    :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
+    """
+    q = load_query(domain_table)
+    logging.debug('Query for {domain_table} is {q}'.format(domain_table=domain_table, q=q))
+    query(q, domain_table)
+
+
 def main():
     logging.info('EHR + RDR combine started')
     logging.info('Loading {ehr_consent_table_id}...'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID))
-    q = ehr_consent_query()
-    logging.debug('Query for {ehr_consent_table_id} is {q}'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID, q=q))
-    query(q, EHR_CONSENT_TABLE_ID)
+    ehr_consent()
+    copy_rdr_person()
     for domain_table in DOMAIN_TABLES:
         logging.info('Mapping {domain_table}...'.format(domain_table=domain_table))
-        q = mapping_query(domain_table)
-        mapping_table = mapping_table_for(domain_table)
-        logging.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
-        query(q, mapping_table)
+        mapping(domain_table)
     for domain_table in DOMAIN_TABLES:
         logging.info('Loading {domain_table}...'.format(domain_table=domain_table))
-        q = load_query(domain_table)
-        logging.debug('Query for {domain_table} is {q}'.format(domain_table=domain_table, q=q))
-        query(q, domain_table)
-    logging.info('EHR + RDR combine ended')
+        load(domain_table)
+    logging.info('EHR + RDR combine completed')
 
 
 if __name__ == '__main__':
