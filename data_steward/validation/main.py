@@ -159,11 +159,12 @@ def list_bucket(bucket):
         raise
 
 
-def run_validation(hpo_id):
+def run_validation(hpo_id, force_run=False):
     """
     runs validation for a single hpo_id
 
-    :param hpo_id : which hpo_id to run for
+    :param hpo_id: which hpo_id to run for
+    :param force_run: if True, process the latest submission whether or not it has already been processed before
     :raises
     BucketDoesNotExistError:
       Raised when a configured bucket does not exist
@@ -173,7 +174,7 @@ def run_validation(hpo_id):
     logging.info(' Validating hpo_id %s' % hpo_id)
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     bucket_items = list_bucket(bucket)
-    to_process_folder_list = _get_to_process_list(bucket, bucket_items)
+    to_process_folder_list = _get_to_process_list(bucket, bucket_items, force_run)
 
     for folder_prefix in to_process_folder_list:
         logging.info('Processing gs://%s/%s' % (bucket, folder_prefix))
@@ -268,10 +269,11 @@ def _validation_done(bucket, folder):
     return False
 
 
-def _get_to_process_list(bucket, bucket_items):
+def _get_to_process_list(bucket, bucket_items, force_process=False):
     """returns a set of folders to process as part of validation
 
     :bucket: bucket to look into
+    :param force_process: if True return most recent folder whether or not it has been processed already
     :returns: list of folder prefix strings of form "<folder_name>/"
 
     """
@@ -313,8 +315,12 @@ def _get_to_process_list(bucket, bucket_items):
     if len(folder_datetime_list) > 0:
         latest_datetime_index = folder_datetime_list.index(max(folder_datetime_list))
         to_process_folder = folders_with_submitted_files[latest_datetime_index]
-        if not _validation_done(bucket, to_process_folder):
+        if force_process:
             return [to_process_folder]
+        else:
+            processed = _validation_done(bucket, to_process_folder)
+            if not processed:
+                return [to_process_folder]
     return []
 
 

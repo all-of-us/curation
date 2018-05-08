@@ -231,6 +231,17 @@ class ValidationTest(unittest.TestCase):
         folder_list = main._get_to_process_list(self.hpo_bucket, bucket_items)
         self.assertListEqual(folder_list, [folder_prefix_3])
 
+    def test_check_processed(self):
+        folder_prefix = 'folder/'
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'person.csv', '\n')
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + common.PROCESSED_TXT, '\n')
+
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        result = main._get_to_process_list(self.hpo_bucket, bucket_items, force_process=False)
+        self.assertListEqual([], result)
+        result = main._get_to_process_list(self.hpo_bucket, bucket_items, force_process=True)
+        self.assertListEqual(result, [folder_prefix])
+
     @mock.patch('api_util.check_cron')
     def test_copy_five_persons(self, mock_check_cron):
         folder_prefix = 'dummy-prefix-2018-03-22-v1/'
