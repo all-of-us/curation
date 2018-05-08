@@ -6,7 +6,7 @@ import bq_utils
 import resources
 import test_util
 
-from tools.combine_ehr_rdr import copy_rdr_person, ehr_consent, EHR_CONSENT_TABLE_ID
+from tools.combine_ehr_rdr import copy_rdr_person, ehr_consent, main, EHR_CONSENT_TABLE_ID
 from google.appengine.ext import testbed
 
 
@@ -87,15 +87,40 @@ class CombineEhrRdrTest(unittest.TestCase):
                                                                   table=EHR_CONSENT_TABLE_ID))
 
     def test_copy_rdr_person(self):
-        ehr_consent()
-        # person records from rdr with consent
         self.assertFalse(bq_utils.table_exists('person', self.COMBINED_DATASET_ID))  # sanity check
         copy_rdr_person()
         self.assertTrue(bq_utils.table_exists('person', self.COMBINED_DATASET_ID))
 
     def test_ehr_only_records_excluded(self):
-        # any ehr records whose person_id is missing from rdr are excluded
-        pass
+        """
+        EHR person records which are missing from RDR are excluded from combined
+        """
+        main()
+        q = '''
+        WITH ehr_only AS
+        (SELECT person_id 
+         FROM {ehr_dataset_id}.person ep
+         WHERE NOT EXISTS 
+           (SELECT 1 
+            FROM {rdr_dataset_id}.person rp 
+            WHERE rp.person_id = ep.person_id)
+        )
+        SELECT 
+          ehr_only.person_id AS ehr_person_id,
+          p.person_id        AS combined_person_id
+        FROM ehr_only 
+          LEFT JOIN {ehr_rdr_dataset_id}.person p
+            ON ehr_only.person_id = p.person_id
+        '''.format(ehr_dataset_id=bq_utils.get_dataset_id(),
+                   rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+                   ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id())
+        response = bq_utils.query(q)
+        rows = test_util.response2rows(response)
+        self.assertGreater(len(rows), 0, 'Test data is missing EHR-only records')
+        for row in rows:
+            combined_person_id = row['combined_person_id']
+            self.assertIsNone(combined_person_id,
+                              'EHR-only person_id `{ehr_person_id}` found in combined when it should be excluded')
 
     def test_rdr_only_records_included(self):
         # all rdr records are included whether or not there is corresponding ehr
