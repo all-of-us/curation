@@ -54,7 +54,7 @@ class EhrMergeTest(unittest.TestCase):
             pitt_load_job_id = pitt_load_results['jobReference']['jobId']
             load_jobs.append(chs_load_job_id)
             load_jobs.append(pitt_load_job_id)
-        incomplete_jobs = bq_utils.wait_on_jobs(load_jobs, retry_count=7)
+        incomplete_jobs = bq_utils.wait_on_jobs(load_jobs)
         if len(incomplete_jobs) > 0:
             raise RuntimeError('BigQuery jobs %s failed to complete' % incomplete_jobs)
 

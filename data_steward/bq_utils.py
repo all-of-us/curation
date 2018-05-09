@@ -12,9 +12,7 @@ import gcs_utils
 import time
 import logging
 
-BQ_LOAD_DELAY_SECONDS = 5
-BQ_QUERY_DELAY_SECONDS = 5
-BQ_DEFAULT_RETRY_COUNT = 5
+BQ_DEFAULT_RETRY_COUNT = 10
 
 
 class InvalidOperationError(RuntimeError):
@@ -213,7 +211,7 @@ def merge_tables(source_dataset_id,
     insert_result = bq_service.jobs().insert(projectId=app_id,
                                              body=job_body).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
     job_id = insert_result['jobReference']['jobId']
-    incomplete_jobs = wait_on_jobs([job_id], retry_count=BQ_QUERY_DELAY_SECONDS)
+    incomplete_jobs = wait_on_jobs([job_id])
 
     if len(incomplete_jobs) == 0:
         job_status = get_job_details(job_id)['status']
@@ -252,7 +250,7 @@ def query_table(query_string):
     insert_result = bq_service.jobs().insert(projectId=app_id,
                                              body=job_body).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
     job_id = insert_result['jobReference']['jobId']
-    incomplete_jobs = wait_on_jobs([job_id], retry_count=BQ_QUERY_DELAY_SECONDS)
+    incomplete_jobs = wait_on_jobs([job_id])
     if len(incomplete_jobs) > 0:
         return None
     # TODO if error we may not want to query

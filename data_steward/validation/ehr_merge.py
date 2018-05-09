@@ -135,7 +135,7 @@ def create_mapping_table(hpos_with_visit, project_id, dataset_id):
                          destination_table_id=VISIT_ID_MAPPING_TABLE,
                          write_disposition='WRITE_TRUNCATE')
     visit_mapping_query_job_id = query_result['jobReference']['jobId']
-    incomplete_jobs = bq_utils.wait_on_jobs([visit_mapping_query_job_id], retry_count=10)
+    incomplete_jobs = bq_utils.wait_on_jobs([visit_mapping_query_job_id])
     if len(incomplete_jobs) == 0:
         query_result = bq_utils.get_job_details(visit_mapping_query_job_id)
         if 'errors' in query_result['status']:
@@ -179,7 +179,7 @@ def merge(dataset_id, project_id):
         query_job_id = query_result['jobReference']['jobId']
         jobs_to_wait_on.append(query_job_id)
 
-    incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on, retry_count=10)
+    incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on)
     if len(incomplete_jobs) == 0:
         tables_created = []
         for job_id in jobs_to_wait_on:

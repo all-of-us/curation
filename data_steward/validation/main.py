@@ -210,7 +210,7 @@ def run_validation(hpo_id, force_run=False):
                 found = 1
                 load_results = bq_utils.load_cdm_csv(hpo_id, cdm_table_name, folder_prefix)
                 load_job_id = load_results['jobReference']['jobId']
-                incomplete_jobs = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_LOAD_RETRY_COUNT)
+                incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
 
                 if len(incomplete_jobs) == 0:
                     job_resource = bq_utils.get_job_details(job_id=load_job_id)

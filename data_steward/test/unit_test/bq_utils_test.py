@@ -62,7 +62,7 @@ class BqUtilsTest(unittest.TestCase):
         load_results = bq_utils.load_csv(schema_path, gcs_object_path, app_id, dataset_id, table_name)
 
         load_job_id = load_results['jobReference']['jobId']
-        incomplete_jobs = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
         self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(table_name))
         query_response = bq_utils.query('SELECT COUNT(1) FROM %(table_name)s' % locals())
         self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
@@ -75,7 +75,7 @@ class BqUtilsTest(unittest.TestCase):
 
         load_job_id = result['jobReference']['jobId']
         table_id = result['configuration']['load']['destinationTable']['tableId']
-        incomplete_jobs = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
         self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(table_id))
         query_response = bq_utils.query('SELECT 1 FROM %(table_id)s' % locals())
         self.assertEqual(query_response['totalRows'], '5')
@@ -90,7 +90,7 @@ class BqUtilsTest(unittest.TestCase):
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
 
         load_job_id = result['jobReference']['jobId']
-        incomplete_jobs = bq_utils.wait_on_jobs([load_job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
         self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(PERSON))
 
         table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)
@@ -120,7 +120,7 @@ class BqUtilsTest(unittest.TestCase):
         expected_result = nyc_person_ids + pitt_person_ids
         expected_result.sort()
 
-        incomplete_jobs = bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
+        incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
         self.assertEqual(len(incomplete_jobs), 0, 'loading tables {},{} timed out'.format('nyc_person', 'pitt_person'))
 
         table_ids = ['nyc_person', 'pitt_person']
@@ -165,7 +165,7 @@ class BqUtilsTest(unittest.TestCase):
         result = bq_utils.load_cdm_csv('pitt', 'person')
         running_jobs.append(result['jobReference']['jobId'])
 
-        incomplete_jobs = bq_utils.wait_on_jobs(running_jobs, retry_count=BQ_TIMEOUT_RETRIES)
+        incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
         self.assertEqual(len(incomplete_jobs), 0, 'loading tables {},{} timed out'.format('nyc_measurement', 'pitt_person'))
 
         table_names = ['nyc_measurement', 'pitt_person']
@@ -265,7 +265,7 @@ class BqUtilsTest(unittest.TestCase):
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket(hpo_id), 'observation.csv', fp)
         result = bq_utils.load_cdm_csv(hpo_id, 'observation')
         job_id = result['jobReference']['jobId']
-        incomplete_jobs = bq_utils.wait_on_jobs([job_id], retry_count=BQ_TIMEOUT_RETRIES)
+        incomplete_jobs = bq_utils.wait_on_jobs([job_id])
         self.assertEqual(len(incomplete_jobs), 0, 'pitt_observation load job did not complete')
         load_job_result = bq_utils.get_job_details(job_id)
         load_job_result_status = load_job_result['status']

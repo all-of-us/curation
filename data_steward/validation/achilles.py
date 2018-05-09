@@ -60,7 +60,7 @@ def run_analyses(hpo_id):
             insert_query_job_result = bq_utils.query(query, False, table_id)
             query_job_id = insert_query_job_result['jobReference']['jobId']
 
-            incomplete_jobs = bq_utils.wait_on_jobs([query_job_id], retry_count=4)
+            incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
             if len(incomplete_jobs) > 0:
                 logging.critical('tempresults doesnt get created in 15 secs')
                 raise RuntimeError('Tempresults taking too long to create')
