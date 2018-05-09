@@ -244,7 +244,8 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     @mock.patch('time.sleep', return_value=None)
-    @mock.patch('bq_utils.job_status_done', side_effect=[False, False, True, False, False, False, False])
+    @mock.patch('bq_utils.job_status_done', side_effect=[False, False, True, False, False, False, False,
+                                                         False, False, False, False, False])
     def test_wait_on_jobs_some_fail(self, mock_job_status_done, mock_time_sleep):
         job_ids = list(range(2))
         actual = bq_utils.wait_on_jobs(job_ids)
