@@ -128,7 +128,7 @@ def validate_hpo_files(hpo_id):
     """
     validation end point for individual hpo_ids
     """
-    run_validation(hpo_id)
+    run_validation(hpo_id, force_run=True)
     return 'validation done!'
 
 
