@@ -6,7 +6,8 @@ import bq_utils
 import resources
 import test_util
 
-from tools.combine_ehr_rdr import copy_rdr_person, ehr_consent, main, EHR_CONSENT_TABLE_ID
+from tools.combine_ehr_rdr import copy_rdr_person, ehr_consent, main, mapping_table_for
+from tools.combine_ehr_rdr import DOMAIN_TABLES, EHR_CONSENT_TABLE_ID
 from google.appengine.ext import testbed
 
 
@@ -34,15 +35,16 @@ class CombineEhrRdrTest(unittest.TestCase):
         bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         test_util.empty_bucket(bucket)
         job_ids = []
-        fs = test_util.list_files_in(path)
-        for f in fs:
-            filename = f.split(os.sep)[-1]
-            assert filename in common.CDM_FILES
-            table, _ = filename.split('.')
+        for table in common.CDM_TABLES:
+            filename = table + '.csv'
             schema = os.path.join(resources.fields_path, table + '.json')
+            f = os.path.join(path, filename)
+            if os.path.exists(os.path.join(path, filename)):
+                with open(f, 'r') as fp:
+                    gcs_utils.upload_object(bucket, filename, fp)
+            else:
+                test_util.write_cloud_str(bucket, filename, '\n')
             gcs_path = 'gs://{bucket}/{filename}'.format(bucket=bucket, filename=filename)
-            with open(f, 'r') as fp:
-                response = gcs_utils.upload_object(bucket, filename, fp)
             load_results = bq_utils.load_csv(schema, gcs_path, app_id, dataset_id, table, allow_jagged_rows=True)
             load_job_id = load_results['jobReference']['jobId']
             job_ids.append(load_job_id)
@@ -122,9 +124,27 @@ class CombineEhrRdrTest(unittest.TestCase):
             self.assertIsNone(combined_person_id,
                               'EHR-only person_id `{ehr_person_id}` found in combined when it should be excluded')
 
-    def test_rdr_only_records_included(self):
+    def test_all_rdr_records_included(self):
+        main()
         # all rdr records are included whether or not there is corresponding ehr
-        pass
+        for domain_table in DOMAIN_TABLES:
+            mapping_table = mapping_table_for(domain_table)
+            q = '''SELECT rt.{domain_table}_id as id
+               FROM {rdr_dataset_id}.{domain_table} rt
+               LEFT JOIN {ehr_rdr_dataset_id}.{mapping_table} m
+               ON rt.{domain_table}_id = m.src_{domain_table}_id
+               WHERE
+                 m.{domain_table}_id IS NULL 
+               OR NOT EXISTS
+                 (SELECT 1 FROM {ehr_rdr_dataset_id}.{domain_table} t
+                  WHERE t.{domain_table}_id = m.{domain_table}_id)'''.format(
+                domain_table=domain_table,
+                rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+                ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                mapping_table=mapping_table)
+            response = bq_utils.query(q)
+            rows = test_util.response2rows(response)
+            self.assertEqual(0, len(rows), "RDR records should map to records in mapping and combined tables")
 
     def test_ehr_person_to_observation(self):
         # ehr person table converts to observation records
