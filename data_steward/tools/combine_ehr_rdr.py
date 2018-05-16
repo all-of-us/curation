@@ -185,7 +185,6 @@ def load_query(domain_table):
         col_exprs = []
         for field in fields:
             field_name = field['name']
-            field_type = field['type']
             if field_name == id_col:
                 # Use mapping for unique ID column
                 col_expr = 'm.%(field_name)s ' % locals()

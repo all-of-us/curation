@@ -5,7 +5,6 @@ import gcs_utils
 import resources
 import common
 from validation.achilles import ACHILLES_TABLES
-from google.appengine.api import app_identity
 from google.appengine.ext import testbed
 from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
 from test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_CSV

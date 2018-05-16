@@ -257,7 +257,7 @@ def generate_rdr_files():
     d = 'rdr_dataset_2018_4_17'
     for table in common.CDM_TABLES:
         q = 'SELECT * FROM fake_%s WHERE person_id IN (SELECT person_id FROM sample_person_id)' % table
-        cmd = 'bq query --dataset_id=%(d)s --format=csv "%(q)s" > %(table)s.csv' % locals()
+        cmd = 'bq query --dataset_id={d} --format=csv "{q}" > %(table)s.csv'.format(d=d, q=q)
         os.system(cmd)
 
 
