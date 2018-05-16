@@ -2,6 +2,14 @@
 
 # Copy prefixed tables from one dataset to another, removing (or replacing) prefix
 # Note: Attempts to create the target dataset before copying
+#
+# # Example Usages
+#
+# ## Copy `dataset1.prefix_tableA` to `dataset2.tableA`
+# > tools/table_copy.sh --source_dataset dataset1 --source_prefix prefix_ --target_dataset dataset2
+#
+# ## Copy `dataset1.tableA` to `dataset1.prefix_tableA`
+# > tools/table_copy.sh --source_dataset dataset1 --target_prefix prefix_ --target_dataset dataset1
 
 USAGE="tools/table_copy.sh --source_dataset <SOURCE_DATASET> --source_prefix <SOURCE_PREFIX> --target_dataset <TARGET_DATASET> [--target_prefix <TARGET_PREFIX:''>]"
 

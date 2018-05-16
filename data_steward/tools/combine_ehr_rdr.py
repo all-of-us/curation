@@ -6,19 +6,32 @@ Combine data sets `ehr` and `rdr` to form another data set `combined`
  * Copy all `rdr.person` records to `combined.person`
 
  * Load `combined.visit_mapping(dst_visit_occurrence_id, src_dataset, src_visit_occurrence_id)`
-   with UNION ALL of all `rdr.visit_occurrence_id`s and `ehr.visit_occurrence_id`s that link to `combined.ehr_consent`
+   with UNION ALL of:
+     1) all `rdr.visit_occurrence_id`s and
+     2) `ehr.visit_occurrence_id`s that link to `combined.ehr_consent`
 
- * Create tables `combined.{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL of
-   `ehr` and `rdr` records that link to `combined.person`. Use `combined.<hpo>_visit_mapping.dest_visit_occurrence_id`
+ * Create and load tables `combined.{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL
+   of `ehr` and `rdr` records that link to `combined.person`. Use `combined.visit_mapping.dest_visit_occurrence_id`
    for records that have a (valid) `visit_occurrence_id`.
 
- * Load `combined.<hpo>_observation` with records derived from values in `ehr.<hpo>_person`
+ * (Not implemented) Load `combined.<hpo>_observation` with records derived from values in `ehr.<hpo>_person`
 
 ## Notes
+
 Currently the following environment variables must be set:
- * BIGQUERY_DATASET_ID: BQ dataset where combined result is stored (e.g. test_join_ehr_rdr)
+ * BIGQUERY_DATASET_ID: BQ dataset where unioned EHR data is stored
+ * RDR_DATASET_ID: BQ dataset where the RDR is stored
+ * EHR_RDR_DATASET_ID: BQ dataset where the combined result will be stored
  * APPLICATION_ID: GCP project ID (e.g. all-of-us-ehr-dev)
  * GOOGLE_APPLICATION_CREDENTIALS: location of service account key json file (e.g. /path/to/all-of-us-ehr-dev-abc123.json)
+
+Assumptions made:
+ * The tables are NOT prefixed in the dataset referred to by BIGQUERY_DATASET_ID (use `table_copy.sh` as needed)
+ * The RDR dataset exists. It must be loaded from the GCS bucket where RDR dumps are placed (i.e. using `import_rdr_omop.sh`).
+
+Caveats:
+ * Generating the curation report with `run_achilles_and_export.py` requires you to create a copy of the output
+   tables with prefixes (use `table_copy.sh`)
 
 TODO
  * Communicate to data steward EHR records not matched with RDR
@@ -59,10 +72,12 @@ def query(q, dst_table_id, write_disposition='WRITE_TRUNCATE'):
 
 def ehr_consent_query():
     """
-    Returns query used to get only those participants who have consented to share EHR data
+    Returns query used to get the `person_id` of only those participants who have consented to share EHR data
 
     :return:
     """
+    # Consenting are strictly those whose *most recent* (based on observation_datetime) consent record is YES
+    # If the most recent record is NO or NULL, they are NOT consenting
     return '''
     WITH ordered_response AS
      (SELECT
@@ -176,30 +191,35 @@ def load_query(domain_table):
     ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
     mapping_table = mapping_table_for(domain_table)
     json_path = os.path.join(fields_path, domain_table + '.json')
-    is_visit_occurrence = domain_table == VISIT_OCCURRENCE
+    has_visit_occurrence_id = False
     id_col = '{domain_table}_id'.format(domain_table=domain_table)
 
-    # Generate expressions for select
+    # Generate column expressions for select, ensuring that
+    #  1) we get the record IDs from the mapping table and
+    #  2) if there is a reference to `visit_occurrence` we get `visit_occurrence_id` from the mapping visit table
     with open(json_path, 'r') as fp:
         fields = json.load(fp)
         col_exprs = []
         for field in fields:
             field_name = field['name']
             if field_name == id_col:
-                # Use mapping for unique ID column
-                col_expr = 'm.%(field_name)s ' % locals()
+                # Use mapping for record ID column
+                # m is an alias that should resolve to the associated mapping table
+                col_expr = 'm.{field_name} '.format(field_name=field_name)
             elif field_name == VISIT_OCCURRENCE_ID:
                 # Replace with mapped visit_occurrence_id
+                # mv is an alias that should resolve to the mapping visit table
                 # Note: This is only reached when domain_table != visit_occurrence
                 col_expr = 'mv.' + VISIT_OCCURRENCE_ID
+                has_visit_occurrence_id = True
             else:
                 col_expr = field_name
             col_exprs.append(col_expr)
     cols = ',\n  '.join(col_exprs)
 
     visit_join_expr = ''
-    if not is_visit_occurrence:
-        # Include a join to mapping for visit_occurrence
+    if has_visit_occurrence_id:
+        # Include a join to mapping visit table
         # Note: Using left join in order to keep records that aren't mapped to visits
         mv = mapping_table_for(VISIT_OCCURRENCE)
         visit_join_expr = '''
@@ -234,6 +254,7 @@ def load_query(domain_table):
 def load(domain_table):
     """
     Load a domain table
+
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     """
     q = load_query(domain_table)
