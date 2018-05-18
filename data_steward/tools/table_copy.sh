@@ -31,13 +31,19 @@ then
   TARGET_PREFIX=""
 fi
 
-if [ -z "${SOURCE_DATASET}" ] || [ -z "${SOURCE_PREFIX}" ] || [ -z "${TARGET_DATASET}" ]
+if [ -z "${SOURCE_DATASET}" ] || [ -z "${TARGET_DATASET}" ]
 then
   echo "Usage: $USAGE"
   exit 1
 fi
 
-for t in $(bq ls ${SOURCE_DATASET} | grep TABLE | awk '{print $1}' | grep ${SOURCE_PREFIX})
+# Copy the tables
+# Tables beginning with underscore "_" are skipped
+for t in $(bq ls -n 500 ${SOURCE_DATASET} |
+           grep TABLE |
+           awk '{print $1}' |
+           grep -v ^\_ |
+           ( [[ "${SOURCE_PREFIX}" ]] && grep ${SOURCE_PREFIX} || cat ))
 do
   TARGET_TABLE=${t//${SOURCE_PREFIX}/}
   CP_CMD="bq cp ${SOURCE_DATASET}.${t} ${TARGET_DATASET}.${TARGET_PREFIX}${TARGET_TABLE}"
