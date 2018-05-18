@@ -13,11 +13,13 @@ import common
 import bq_utils
 from validation.main import run_export as _run_export
 from validation.main import run_achilles as _run_achilles
+from validation.main import _upload_achilles_files
 
 
 def main(args):
     hpo_id = args.hpo_id
     folder = args.folder
+    folder_prefix = folder + '/'
     for table_name in common.CDM_TABLES:
         table_id = hpo_id + '_' + table_name
         if bq_utils.table_exists(table_id):
@@ -27,7 +29,8 @@ def main(args):
             bq_utils.create_standard_table(table_name, table_id, False)
 
     _run_achilles(hpo_id)
-    _run_export(hpo_id, folder + '/')
+    _run_export(hpo_id, folder_prefix)
+    _upload_achilles_files(hpo_id, folder_prefix)
 
 
 if __name__ == '__main__':
