@@ -42,6 +42,7 @@ import logging
 
 import bq_utils
 from resources import fields_path
+import common
 
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
@@ -50,8 +51,7 @@ VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
 TABLE_NAMES = ['person', VISIT_OCCURRENCE, 'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
                'device_exposure', 'measurement', 'observation', 'death']
-DOMAIN_TABLES = [VISIT_OCCURRENCE, 'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
-                 'device_exposure', 'measurement', 'observation']
+DOMAIN_TABLES = [table for table in common.CDM_TABLES if table != 'person']
 
 
 def query(q, dst_table_id, write_disposition='WRITE_TRUNCATE'):
@@ -95,6 +95,39 @@ def ehr_consent_query():
     '''.format(dataset_id=bq_utils.get_rdr_dataset_id(),
                source_value_ehr_consent=SOURCE_VALUE_EHR_CONSENT,
                concept_id_consent_permission_yes=CONCEPT_ID_CONSENT_PERMISSION_YES)
+
+
+def assert_tables_in(dataset_id):
+    """
+    Raise assertion error if any CDM tables missing from a dataset
+    :param dataset_id: dataset to check for tables in
+    """
+    tables = bq_utils.list_dataset_contents(dataset_id)
+    logging.debug('Dataset {dataset_id} has tables: {tables}'.format(dataset_id=dataset_id, tables=tables))
+    for table in common.CDM_TABLES:
+        assert table in tables, '{table} not in {dataset_id}'.format(table=table, dataset_id=dataset_id)
+
+
+def assert_ehr_and_rdr_tables():
+    """
+    Raise assertion error if any CDM tables missing from EHR or RDR dataset
+    """
+    ehr_dataset_id = bq_utils.get_dataset_id()
+    assert_tables_in(ehr_dataset_id)
+    rdr_dataset_id = bq_utils.get_rdr_dataset_id()
+    assert_tables_in(rdr_dataset_id)
+
+
+def create_cdm_tables():
+    """
+    Create all CDM tables
+
+    Note: Recreates any existing tables
+    """
+    ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+    for table in common.CDM_TABLES:
+        logging.debug('Creating table {dataset}.{table}...'.format(table=table, dataset=ehr_rdr_dataset_id))
+        bq_utils.create_standard_table(table, table, drop_existing=True, dataset_id=ehr_rdr_dataset_id)
 
 
 def ehr_consent():
@@ -264,8 +297,13 @@ def load(domain_table):
 
 def main():
     logging.info('EHR + RDR combine started')
+    logging.info('Verifying all CDM tables in EHR and RDR datasets...')
+    assert_ehr_and_rdr_tables()
+    logging.info('Creating destination CDM tables...')
+    create_cdm_tables()
     logging.info('Loading {ehr_consent_table_id}...'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID))
     ehr_consent()
+    logging.info('Copying person table from RDR...')
     copy_rdr_person()
     for domain_table in DOMAIN_TABLES:
         logging.info('Mapping {domain_table}...'.format(domain_table=domain_table))

@@ -336,22 +336,24 @@ def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEF
         return bq_service.jobs().query(projectId=app_id, body=job_body).execute(num_retries=retry_count)
 
 
-def create_table(table_id, fields, drop_existing=False):
+def create_table(table_id, fields, drop_existing=False, dataset_id=None):
     """
     Create a table with the given table id and schema
     :param table_id: id of the resulting table
     :param fields: a list of `dict` with the following keys: type, name, mode
     :param drop_existing: if True delete an existing table with the given table_id
+    :param dataset_id: dataset to create the table in (defaults to EHR dataset)
     :return: table reference object
     """
-    if table_exists(table_id):
+    if dataset_id is None:
+        dataset_id = get_dataset_id()
+    if table_exists(table_id, dataset_id):
         if drop_existing:
-            delete_table(table_id)
+            delete_table(table_id, dataset_id)
         else:
             raise InvalidOperationError('Attempt to create an existing table with id `%s`.' % table_id)
     bq_service = create_service()
     app_id = app_identity.get_application_id()
-    dataset_id = get_dataset_id()
     insert_body = {
         "tableReference": {
             "projectId": app_id,
@@ -364,17 +366,18 @@ def create_table(table_id, fields, drop_existing=False):
     return insert_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
 
 
-def create_standard_table(table_name, table_id, drop_existing=False):
+def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=None):
     """
     Create a supported OHDSI table
     :param table_name: the name of a table whose schema is specified
     :param table_id: name fo the table to create in the bigquery dataset
     :param drop_existing: if True delete an existing table with the given table_id
+    :param dataset_id: dataset to create the table in
     :return: table reference object
     """
     fields_filename = os.path.join(resources.fields_path, table_name + '.json')
     fields = json.load(open(fields_filename, 'r'))
-    return create_table(table_id, fields, drop_existing)
+    return create_table(table_id, fields, drop_existing, dataset_id)
 
 
 def list_tables(dataset_id=None):
