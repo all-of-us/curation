@@ -1,20 +1,22 @@
 """
 Combine data sets `ehr` and `rdr` to form another data set `combined`
 
+ * Create all the CDM tables in `combined`
+
  * Load `person_id` of those who have consented to share EHR data in `combined.ehr_consent`
 
  * Copy all `rdr.person` records to `combined.person`
+
+ * Copy `ehr.death` records that link to `combined.ehr_consent`
 
  * Load `combined.visit_mapping(dst_visit_occurrence_id, src_dataset, src_visit_occurrence_id)`
    with UNION ALL of:
      1) all `rdr.visit_occurrence_id`s and
      2) `ehr.visit_occurrence_id`s that link to `combined.ehr_consent`
 
- * Create and load tables `combined.{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL
+ * Load tables `combined.{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL
    of `ehr` and `rdr` records that link to `combined.person`. Use `combined.visit_mapping.dest_visit_occurrence_id`
    for records that have a (valid) `visit_occurrence_id`.
-
- * (Not implemented) Load `combined.<hpo>_observation` with records derived from values in `ehr.<hpo>_person`
 
 ## Notes
 
@@ -34,14 +36,16 @@ Caveats:
    tables with prefixes (use `table_copy.sh`)
 
 TODO
+ * Load fact relationship records from RDR
+   - measurement: concept_id 21
+   - observation: concept_id 27
+ * Load `combined.<hpo>_observation` with records derived from values in `ehr.<hpo>_person`
  * Communicate to data steward EHR records not matched with RDR
 """
-import json
-import os
 import logging
 
 import bq_utils
-from resources import fields_path
+import resources
 import common
 
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
@@ -49,9 +53,11 @@ CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
 EHR_CONSENT_TABLE_ID = '_ehr_consent'
 VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
-TABLE_NAMES = ['person', VISIT_OCCURRENCE, 'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
-               'device_exposure', 'measurement', 'observation', 'death']
-DOMAIN_TABLES = [table for table in common.CDM_TABLES if table != 'person']
+RDR_TABLES_TO_COPY = ['person', 'location', 'care_site']
+EHR_TABLES_TO_COPY = ['death']
+DOMAIN_TABLES = ['visit_occurrence', 'condition_occurrence', 'drug_exposure', 'measurement', 'procedure_occurrence',
+                 'observation', 'device_exposure']
+TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES
 
 
 def query(q, dst_table_id, write_disposition='WRITE_TRUNCATE'):
@@ -104,7 +110,7 @@ def assert_tables_in(dataset_id):
     """
     tables = bq_utils.list_dataset_contents(dataset_id)
     logging.debug('Dataset {dataset_id} has tables: {tables}'.format(dataset_id=dataset_id, tables=tables))
-    for table in common.CDM_TABLES:
+    for table in TABLES_TO_PROCESS:
         assert table in tables, '{table} not in {dataset_id}'.format(table=table, dataset_id=dataset_id)
 
 
@@ -141,15 +147,37 @@ def ehr_consent():
     query(q, EHR_CONSENT_TABLE_ID)
 
 
-def copy_rdr_person():
+def copy_rdr_table(table):
     """
-    Copy person table from the RDR dataset to the combined dataset
+    Copy table from the RDR dataset to the combined dataset
 
-    Note: Overwrites if a person table already exists
+    Note: Overwrites if a table already exists
     """
-    q = '''SELECT * FROM {rdr_dataset_id}.person rp'''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id())
-    logging.debug('Query for person is `{q}`'.format(q=q))
-    query(q, 'person')
+    q = '''SELECT * FROM {rdr_dataset_id}.{table}'''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(), table=table)
+    logging.debug('Query for {table} is `{q}`'.format(table=table, q=q))
+    query(q, table)
+
+
+def copy_ehr_table(table):
+    """
+    Copy table from EHR (consenting participants only) to the combined dataset without regenerating ids
+
+    Note: Overwrites if a table already exists
+    """
+    fields = resources.fields_for(table)
+    field_names = [field['name'] for field in fields]
+    assert 'person_id' in field_names
+    q = '''
+      SELECT * FROM {ehr_dataset_id}.{table} t
+      WHERE EXISTS
+           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
+            WHERE t.person_id = c.person_id)
+    '''.format(ehr_dataset_id=bq_utils.get_dataset_id(),
+               table=table,
+               ehr_consent_table_id=EHR_CONSENT_TABLE_ID,
+               ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id())
+    logging.debug('Query for {table} is `{q}`'.format(table=table, q=q))
+    query(q, table)
 
 
 def mapping_query(domain_table):
@@ -223,31 +251,29 @@ def load_query(domain_table):
     ehr_dataset_id = bq_utils.get_dataset_id()
     ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
     mapping_table = mapping_table_for(domain_table)
-    json_path = os.path.join(fields_path, domain_table + '.json')
     has_visit_occurrence_id = False
     id_col = '{domain_table}_id'.format(domain_table=domain_table)
+    fields = resources.fields_for(domain_table)
 
     # Generate column expressions for select, ensuring that
     #  1) we get the record IDs from the mapping table and
     #  2) if there is a reference to `visit_occurrence` we get `visit_occurrence_id` from the mapping visit table
-    with open(json_path, 'r') as fp:
-        fields = json.load(fp)
-        col_exprs = []
-        for field in fields:
-            field_name = field['name']
-            if field_name == id_col:
-                # Use mapping for record ID column
-                # m is an alias that should resolve to the associated mapping table
-                col_expr = 'm.{field_name} '.format(field_name=field_name)
-            elif field_name == VISIT_OCCURRENCE_ID:
-                # Replace with mapped visit_occurrence_id
-                # mv is an alias that should resolve to the mapping visit table
-                # Note: This is only reached when domain_table != visit_occurrence
-                col_expr = 'mv.' + VISIT_OCCURRENCE_ID
-                has_visit_occurrence_id = True
-            else:
-                col_expr = field_name
-            col_exprs.append(col_expr)
+    col_exprs = []
+    for field in fields:
+        field_name = field['name']
+        if field_name == id_col:
+            # Use mapping for record ID column
+            # m is an alias that should resolve to the associated mapping table
+            col_expr = 'm.{field_name} '.format(field_name=field_name)
+        elif field_name == VISIT_OCCURRENCE_ID:
+            # Replace with mapped visit_occurrence_id
+            # mv is an alias that should resolve to the mapping visit table
+            # Note: This is only reached when domain_table != visit_occurrence
+            col_expr = 'mv.' + VISIT_OCCURRENCE_ID
+            has_visit_occurrence_id = True
+        else:
+            col_expr = field_name
+        col_exprs.append(col_expr)
     cols = ',\n  '.join(col_exprs)
 
     visit_join_expr = ''
@@ -301,10 +327,14 @@ def main():
     assert_ehr_and_rdr_tables()
     logging.info('Creating destination CDM tables...')
     create_cdm_tables()
-    logging.info('Loading {ehr_consent_table_id}...'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID))
     ehr_consent()
-    logging.info('Copying person table from RDR...')
-    copy_rdr_person()
+    for table in RDR_TABLES_TO_COPY:
+        logging.info('Copying {table} table from RDR...'.format(table=table))
+        copy_rdr_table(table)
+    for table in EHR_TABLES_TO_COPY:
+        logging.info('Copying {table} table from EHR...'.format(table=table))
+        copy_ehr_table(table)
+    logging.info('Loading {ehr_consent_table_id}...'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID))
     for domain_table in DOMAIN_TABLES:
         logging.info('Mapping {domain_table}...'.format(domain_table=domain_table))
         mapping(domain_table)

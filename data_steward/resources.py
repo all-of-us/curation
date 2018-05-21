@@ -2,6 +2,7 @@ import inspect
 import os
 import csv
 import cachetools
+import json
 
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -57,3 +58,9 @@ def achilles_index_files():
         for name in files:
             achilles_index_files.append(os.path.join(path, name))
     return achilles_index_files
+
+
+def fields_for(table):
+    json_path = os.path.join(fields_path, table + '.json')
+    with open(json_path, 'r') as fp:
+        return json.load(fp)
