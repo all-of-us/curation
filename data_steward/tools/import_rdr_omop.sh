@@ -30,8 +30,12 @@ do
   table_name="${filename%.*}"
   echo "Importing ${DATA_SET}.${table_name}..."
   bq rm -f ${DATA_SET}.${table_name}
-  schema_name="${table_name}"
-  bq load --allow_quoted_newlines --skip_leading_rows=1 ${DATA_SET}.${table_name} $file resources/fields/${schema_name}.json
+  CLUSTERING_ARGS=
+  if grep -q person_id resources/fields/${table_name}.json
+  then
+    CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id "
+  fi
+  bq load --allow_quoted_newlines ${CLUSTERING_ARGS}--skip_leading_rows=1 ${DATA_SET}.${table_name} $file resources/fields/${table_name}.json
 done
 
 echo "Done."

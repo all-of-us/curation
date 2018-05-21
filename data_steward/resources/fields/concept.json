@@ -42,13 +42,13 @@
         "description": "The concept code represents the identifier of the Concept in the source vocabulary, such as SNOMED-CT concept IDs, RxNorm RXCUIs etc. Note that concept codes are not unique across vocabularies."
     }, 
     {
-        "type": "date", 
+        "type": "string", 
         "name": "valid_start_date", 
         "mode": "required", 
         "description": "The date when the Concept was first recorded. The default value is 1-Jan-1970, meaning, the Concept has no (known) date of inception."
     }, 
     {
-        "type": "date", 
+        "type": "string", 
         "name": "valid_end_date", 
         "mode": "required", 
         "description": "The date when the Concept became invalid because it was deleted or superseded (updated) by a new concept. The default value is 31-Dec-2099, meaning, the Concept is valid until it becomes deprecated."
