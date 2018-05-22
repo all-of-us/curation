@@ -14,33 +14,33 @@ import bq_utils
 from validation.main import run_export as _run_export
 from validation.main import run_achilles as _run_achilles
 from validation.main import _upload_achilles_files
+from gcs_utils import get_hpo_bucket
 
 
 def main(args):
-    hpo_id = args.hpo_id
     folder = args.folder
+    target_bucket = args.bucket
     folder_prefix = folder + '/'
     for table_name in common.CDM_TABLES:
-        table_id = hpo_id + '_' + table_name
+        table_id = table_name
         if bq_utils.table_exists(table_id):
             print table_id, ' exists'
         else:
             print table_id, ' being created'
             bq_utils.create_standard_table(table_name, table_id, False)
 
-    _run_achilles(hpo_id)
-    _run_export(hpo_id, folder_prefix)
-    _upload_achilles_files(hpo_id, folder_prefix)
+    # _run_achilles()
+    _run_export(folder_prefix=folder_prefix, target_bucket=target_bucket)
+    _upload_achilles_files(folder_prefix=folder_prefix, target_bucket=target_bucket)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.argumentparser(formatter_class=argparse.rawdescriptionhelpformatter)
+    parser.add_argument('--bucket',
+                        default=get_hpo_bucket('nyc'),
+                        help='Identifier for the bucket. Output tables will be prepended with {hpo_id}_.')
     parser.add_argument('--folder',
-                        required=True,
-                        help='Folder in the HPO bucket to save curation report')
-    parser.add_argument('--hpo_id',
-                        default='fake',
-                        help='Identifier for the HPO. Output tables will be prepended with {hpo_id}_.')
-
+                        default='',
+                        help='Identifier for the folder in which achilles results sit. Output tables will be prepended with {hpo_id}_.')
     args = parser.parse_args()
     main(args)
