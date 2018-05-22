@@ -54,7 +54,7 @@ def all_required_files_loaded(hpo_id, folder_prefix):
 
 def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
     if hpo_id is None and target_bucket is None:
-        raise RuntimeError('either hpo_id or target_bucket should be specified') 
+        raise RuntimeError('either hpo_id or target_bucket should be specified')
     if hpo_id is None:
         hpo_id = 'default'
         hpo_bucket = target_bucket
@@ -73,7 +73,7 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
     """
     results = []
     if hpo_id is None and target_bucket is None:
-        raise RuntimeError('either hpo_id or target_bucket should be specified') 
+        raise RuntimeError('either hpo_id or target_bucket should be specified')
 
     if hpo_id is None:
         hpo_bucket = target_bucket
