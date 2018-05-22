@@ -19,7 +19,7 @@ class CombineEhrRdrTest(unittest.TestCase):
     def setUpClass(cls):
         # TODO base class this
         logger = logging.getLogger()
-        logger.level = logging.DEBUG
+        logger.level = logging.INFO
         stream_handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(stream_handler)
         cls.testbed = testbed.Testbed()
@@ -185,6 +185,12 @@ class CombineEhrRdrTest(unittest.TestCase):
         for table in common.CDM_TABLES:
             actual = bq_utils.table_exists(table, self.combined_dataset_id)
             self.assertTrue(actual, 'Table {table} not created in combined dataset'.format(table=table))
+
+    def _fact_relationship_loaded(self):
+        # TODO
+        # All fact_id_1 where domain_concept_id_1==21 map to measurement
+        # All fact_id_2 where domain_concept_id_2==27 map to observation
+        pass
 
     def test_main(self):
         main()
