@@ -46,7 +46,7 @@ def get_commands(sql_path):
         return filter(is_active_command, commands)
 
 
-def qualify_tables(command, hpo_id):
+def qualify_tables(command, hpo_id=None):
     """
     Replaces placeholder text with proper qualifiers and renames temp tables
     :param command:
@@ -58,7 +58,10 @@ def qualify_tables(command, hpo_id):
         return bq_utils.get_table_id(hpo_id, table_name)
 
     # TODO ensure this remains consistent with bq_utils.get_table_id
-    table_prefix = hpo_id + '_'
+    if hpo_id is None:
+        table_prefix = ""
+    else:
+        table_prefix = hpo_id + '_'
     command = command.replace(PREFIX_PLACEHOLDER, table_prefix)
     command = re.sub('(temp.[^\s])', temp_repl, command)
     return command
