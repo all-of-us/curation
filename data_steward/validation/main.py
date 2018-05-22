@@ -52,8 +52,14 @@ def all_required_files_loaded(hpo_id, folder_prefix):
     return True
 
 
-def save_datasources_json(hpo_id, folder_prefix=""):
-    hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
+    if hpo_id is None and target_bucket is None:
+        raise RuntimeError('either hpo_id or target_bucket should be specified') 
+    if hpo_id is None:
+        hpo_id = 'default'
+        hpo_bucket = target_bucket
+    else:
+        hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
     datasource = dict(name=hpo_id, folder=hpo_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO.StringIO(json.dumps(datasources))
@@ -61,15 +67,24 @@ def save_datasources_json(hpo_id, folder_prefix=""):
     return result
 
 
-def run_export(hpo_id, folder_prefix):
+def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
     """
     this function also changes the datasources.json file
     """
     results = []
-    logging.info('running export for hpo_id %s' % hpo_id)
+    if hpo_id is None and target_bucket is None:
+        raise RuntimeError('either hpo_id or target_bucket should be specified') 
+
+    if hpo_id is None:
+        hpo_bucket = target_bucket
+        logging.info('running export to bucket %s' % target_bucket)
+        _reports_prefix = ACHILLES_EXPORT_PREFIX_STRING + 'default' + "/"
+    else:
+        hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+        logging.info('running export for hpo_id %s' % hpo_id)
+        _reports_prefix = ACHILLES_EXPORT_PREFIX_STRING + hpo_id + "/"
+
     # TODO : add check for required tables
-    hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    _reports_prefix = ACHILLES_EXPORT_PREFIX_STRING + hpo_id + "/"
     for export_name in common.ALL_REPORTS:
         sql_path = os.path.join(export.EXPORT_PATH, export_name)
         result = export.export_from_path(sql_path, hpo_id)
@@ -77,24 +92,25 @@ def run_export(hpo_id, folder_prefix):
         fp = StringIO.StringIO(content)
         result = gcs_utils.upload_object(hpo_bucket, folder_prefix + _reports_prefix + export_name + '.json', fp)
         results.append(result)
-
-    datasources_json_result = save_datasources_json(hpo_id, folder_prefix)
+    datasources_json_result = save_datasources_json(hpo_id=hpo_id, folder_prefix=folder_prefix, target_bucket=hpo_bucket)
     results.append(datasources_json_result)
 
     return results
 
 
-def run_achilles(hpo_id):
+def run_achilles(hpo_id=None):
     """checks for full results and run achilles/heel
 
     :hpo_id: hpo on which to run achilles
     :returns:
     """
-    logging.info('running achilles for hpo_id %s' % hpo_id)
+    if hpo_id is not None:
+        logging.info('running achilles for hpo_id %s' % hpo_id)
     achilles.create_tables(hpo_id, True)
     achilles.load_analyses(hpo_id)
     achilles.run_analyses(hpo_id=hpo_id)
-    logging.info('running achilles_heel for hpo_id %s' % hpo_id)
+    if hpo_id is not None:
+        logging.info('running achilles_heel for hpo_id %s' % hpo_id)
     achilles_heel.create_tables(hpo_id, True)
     achilles_heel.run_heel(hpo_id=hpo_id)
 
@@ -105,7 +121,7 @@ def upload_achilles_files(hpo_id):
     return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
 
 
-def _upload_achilles_files(hpo_id, folder_prefix):
+def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     """uploads achilles web files to the corresponding hpo bucket
 
     :hpo_id: which hpo bucket do these files go into
@@ -113,7 +129,13 @@ def _upload_achilles_files(hpo_id, folder_prefix):
 
     """
     results = []
-    bucket = gcs_utils.get_hpo_bucket(hpo_id)
+    if hpo_id is None:
+        if target_bucket is None:
+            raise RuntimeError('either hpo_id or target_bucket must be specified')
+        bucket = target_bucket
+    else:
+        bucket = gcs_utils.get_hpo_bucket(hpo_id)
+
     for filename in common.ACHILLES_INDEX_FILES:
         logging.debug('Uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
         bucket_file_name = filename.split(resources.resource_path + os.sep)[1].strip()
@@ -252,7 +274,7 @@ def run_validation(hpo_id, force_run=False):
 
         if all_required_files_loaded(hpo_id, folder_prefix=folder_prefix):
             run_achilles(hpo_id)
-            run_export(hpo_id, folder_prefix=folder_prefix)
+            run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
 
         logging.info('Uploading achilles index files to `gs://%s/%s`.' % (bucket, folder_prefix))
         _upload_achilles_files(hpo_id, folder_prefix)
@@ -436,7 +458,7 @@ def merge_ehr():
     run_achilles(hpo_id)
     now_date_string = datetime.datetime.now().strftime('%Y_%m_%d')
     folder_prefix = 'unioned_ehr_' + now_date_string + '/'
-    run_export(hpo_id, folder_prefix=folder_prefix)
+    run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
     logging.info('uploading achilles index files')
     _upload_achilles_files(hpo_id, folder_prefix)
 

@@ -57,6 +57,8 @@ def get_table_id(hpo_id, table_name):
     :param table_name: name of the CDM table
     :return: the table id
     """
+    if hpo_id is None:
+        return table_name
     # TODO revisit this; currently prefixing table names with hpo_id
     return hpo_id + '_' + table_name
 

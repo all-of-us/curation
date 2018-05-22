@@ -43,7 +43,7 @@ def list_dirs_only(root):
         return dirnames
 
 
-def export_from_path(p, hpo_id):
+def export_from_path(p, hpo_id=None):
     """
     Export results
     :param p: path to SQL file
