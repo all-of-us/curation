@@ -111,7 +111,9 @@ def assert_tables_in(dataset_id):
     tables = bq_utils.list_dataset_contents(dataset_id)
     logging.debug('Dataset {dataset_id} has tables: {tables}'.format(dataset_id=dataset_id, tables=tables))
     for table in TABLES_TO_PROCESS:
-        assert table in tables, '{table} not in {dataset_id}'.format(table=table, dataset_id=dataset_id)
+        if table not in tables:
+            raise RuntimeError(
+                'Dataset {dataset} is missing table {table}. Aborting.'.format(dataset=dataset_id, table=table))
 
 
 def assert_ehr_and_rdr_tables():
@@ -166,7 +168,9 @@ def copy_ehr_table(table):
     """
     fields = resources.fields_for(table)
     field_names = [field['name'] for field in fields]
-    assert 'person_id' in field_names
+    if 'person_id' not in field_names:
+        raise RuntimeError('Cannot copy EHR table {table}. It is missing columns needed for consent filter'.format(
+            table=table))
     q = '''
       SELECT * FROM {ehr_dataset_id}.{table} t
       WHERE EXISTS
