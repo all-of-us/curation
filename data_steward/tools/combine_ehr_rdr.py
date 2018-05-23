@@ -48,6 +48,8 @@ import bq_utils
 import resources
 import common
 
+logger = logging.getLogger(__name__)
+
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
 EHR_CONSENT_TABLE_ID = '_ehr_consent'
@@ -117,7 +119,7 @@ def assert_tables_in(dataset_id):
     :param dataset_id: dataset to check for tables in
     """
     tables = bq_utils.list_dataset_contents(dataset_id)
-    logging.debug('Dataset {dataset_id} has tables: {tables}'.format(dataset_id=dataset_id, tables=tables))
+    logger.debug('Dataset {dataset_id} has tables: {tables}'.format(dataset_id=dataset_id, tables=tables))
     for table in TABLES_TO_PROCESS:
         if table not in tables:
             raise RuntimeError(
@@ -142,7 +144,7 @@ def create_cdm_tables():
     """
     ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
     for table in common.CDM_TABLES:
-        logging.debug('Creating table {dataset}.{table}...'.format(table=table, dataset=ehr_rdr_dataset_id))
+        logger.debug('Creating table {dataset}.{table}...'.format(table=table, dataset=ehr_rdr_dataset_id))
         bq_utils.create_standard_table(table, table, drop_existing=True, dataset_id=ehr_rdr_dataset_id)
 
 
@@ -153,7 +155,7 @@ def ehr_consent():
     :return:
     """
     q = ehr_consent_query()
-    logging.debug('Query for {ehr_consent_table_id} is {q}'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID, q=q))
+    logger.debug('Query for {ehr_consent_table_id} is {q}'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID, q=q))
     query(q, EHR_CONSENT_TABLE_ID)
 
 
@@ -164,7 +166,7 @@ def copy_rdr_table(table):
     Note: Overwrites if a table already exists
     """
     q = '''SELECT * FROM {rdr_dataset_id}.{table}'''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(), table=table)
-    logging.debug('Query for {table} is `{q}`'.format(table=table, q=q))
+    logger.debug('Query for {table} is `{q}`'.format(table=table, q=q))
     query(q, table)
 
 
@@ -188,7 +190,7 @@ def copy_ehr_table(table):
                table=table,
                ehr_consent_table_id=EHR_CONSENT_TABLE_ID,
                ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id())
-    logging.debug('Query for {table} is `{q}`'.format(table=table, q=q))
+    logger.debug('Query for {table} is `{q}`'.format(table=table, q=q))
     query(q, table)
 
 
@@ -248,7 +250,7 @@ def mapping(domain_table):
     """
     q = mapping_query(domain_table)
     mapping_table = mapping_table_for(domain_table)
-    logging.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
+    logger.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
     query(q, mapping_table)
 
 
@@ -329,7 +331,7 @@ def load(domain_table):
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     """
     q = load_query(domain_table)
-    logging.debug('Query for {domain_table} is {q}'.format(domain_table=domain_table, q=q))
+    logger.debug('Query for {domain_table} is {q}'.format(domain_table=domain_table, q=q))
     query(q, domain_table)
 
 
@@ -375,33 +377,33 @@ def load_fact_relationship():
     Load fact_relationship table
     """
     q = fact_relationship_query()
-    logging.debug('Query for fact_relationship is {q}'.format(q=q))
+    logger.debug('Query for fact_relationship is {q}'.format(q=q))
     query(q, 'fact_relationship')
 
 
 def main():
-    logging.info('EHR + RDR combine started')
-    logging.info('Verifying all CDM tables in EHR and RDR datasets...')
+    logger.info('EHR + RDR combine started')
+    logger.info('Verifying all CDM tables in EHR and RDR datasets...')
     assert_ehr_and_rdr_tables()
-    logging.info('Creating destination CDM tables...')
+    logger.info('Creating destination CDM tables...')
     create_cdm_tables()
     ehr_consent()
     for table in RDR_TABLES_TO_COPY:
-        logging.info('Copying {table} table from RDR...'.format(table=table))
+        logger.info('Copying {table} table from RDR...'.format(table=table))
         copy_rdr_table(table)
     for table in EHR_TABLES_TO_COPY:
-        logging.info('Copying {table} table from EHR...'.format(table=table))
+        logger.info('Copying {table} table from EHR...'.format(table=table))
         copy_ehr_table(table)
-    logging.info('Loading {ehr_consent_table_id}...'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID))
+    logger.info('Loading {ehr_consent_table_id}...'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID))
     for domain_table in DOMAIN_TABLES:
-        logging.info('Mapping {domain_table}...'.format(domain_table=domain_table))
+        logger.info('Mapping {domain_table}...'.format(domain_table=domain_table))
         mapping(domain_table)
     for domain_table in DOMAIN_TABLES:
-        logging.info('Loading {domain_table}...'.format(domain_table=domain_table))
+        logger.info('Loading {domain_table}...'.format(domain_table=domain_table))
         load(domain_table)
-    logging.info('Loading fact_relationship...')
+    logger.info('Loading fact_relationship...')
     load_fact_relationship()
-    logging.info('EHR + RDR combine completed')
+    logger.info('EHR + RDR combine completed')
 
 
 if __name__ == '__main__':

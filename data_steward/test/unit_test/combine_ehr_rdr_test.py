@@ -11,6 +11,7 @@ import sys
 from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
 from tools.combine_ehr_rdr import DOMAIN_TABLES, EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY
 from google.appengine.ext import testbed
+from tools.combine_ehr_rdr import logger
 
 
 class CombineEhrRdrTest(unittest.TestCase):
@@ -18,7 +19,6 @@ class CombineEhrRdrTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # TODO base class this
-        logger = logging.getLogger()
         logger.level = logging.INFO
         stream_handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(stream_handler)
@@ -211,3 +211,4 @@ class CombineEhrRdrTest(unittest.TestCase):
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
         cls.testbed.deactivate()
+        logger.handlers = []
