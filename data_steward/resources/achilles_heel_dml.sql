@@ -230,50 +230,20 @@ select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERR
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
 where or1.analysis_id in (
-		7,
-		8,
-		9,
-		114,
-		115,
-		118,
 		207,
-		208,
 		209,
-		210,
-		302,
 		409,
-		410,
 		411,
-		412,
 		413,
 		509,
-		--510, taken out from this umbrella rule and implemented separately
 		609,
-		610,
-		612,
 		613,
 		709,
-		710,
 		711,
-		712,
 		713,
 		809,
-		810,
-		812,
 		813,
-		814,
-		908,
-		909,
-		910,
-		1008,
-		1009,
-		1010,
-		1415,
-		1500,
-		1501,
-		1600,
-		1601,
-		1701
+		814
 		) --all explicit counts of data anamolies
 	and or1.count_value > 0
 UNION ALL
@@ -289,8 +259,6 @@ UNION ALL
 inner join synpuf_100.achilles_analysis oa1
 	on ord1.analysis_id = oa1.analysis_id
 where ord1.analysis_id in (
-		103,
-		105,
 		206,
 		406,
 		506,
@@ -301,26 +269,7 @@ where ord1.analysis_id in (
 		717,
 		806,
 		906,
-		907,
-		1006,
-		1007,
-		1502,
-		1503,
-		1504,
-		1505,
-		1506,
-		1507,
-		1508,
-		1509,
-		1510,
-		1511,
-		1602,
-		1603,
-		1604,
-		1605,
-		1606,
-		1607,
-		1608
+		1006
 		)
 	and ord1.min_value < 0
 	 group by  ord1.analysis_id, oa1.analysis_name
@@ -365,17 +314,18 @@ where or1.analysis_id in (
 		4,
 		5,
 		200,
-		301,
+-- 		301, --Number of providers by specialty concept_id
 		400,
 		500,
 		505,
 		600,
 		700,
-		800,
-		900,
-		1000,
-		1609,
-		1610
+		800
+-- 		,
+-- 		900, Move to NOTIFICATION Drug Era
+-- 		1000,Move to NOTIFICATION Drug Era
+-- 		1609,Move to NOTIFICATION Cost
+-- 		1610
 		)
 	and or1.stratum_1 is not null
 	and c1.concept_id is null
@@ -794,7 +744,36 @@ inner join synpuf_100.achilles_analysis oa1
 	on ord1.analysis_id = oa1.analysis_id
 where ord1.analysis_id in (717)
 	and ord1.max_value > 600
- group by  ord1.analysis_id, oa1.analysis_name ;
+ group by  ord1.analysis_id, oa1.analysis_name
+
+ UNION ALL
+
+ select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('WARNING: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; count (n=' ), cast(or1.count_value  as string) ), ') should not be > 0' )as achilles_heel_warning, 1 as rule_id, or1.count_value
+ from  synpuf_100.achilles_results or1
+inner join synpuf_100.achilles_analysis oa1
+	on or1.analysis_id = oa1.analysis_id
+where or1.analysis_id in (
+		7,
+		8,
+		9,
+		) --all explicit counts of potential data anamolies
+	and or1.count_value > 0;
+
+UNION ALL
+
+select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('WARNING: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; count (n=' ), cast(or1.count_value  as string) ), ') should not be > 0' )as achilles_heel_warning, 1 as rule_id, or1.count_value
+ from  synpuf_100.achilles_results or1
+inner join synpuf_100.achilles_analysis oa1
+	on or1.analysis_id = oa1.analysis_id
+where or1.analysis_id in (
+		210, --Number of visit records with invalid care_site_id
+		302, --Number of providers with invalid care site id
+		412, --Number of condition occurrence records with invalid provider_id
+		612, --Number of procedure occurrence records with invalid provider_id
+		712, --Number of drug exposure records with invalid provider_id
+		812 --Number of observation records with invalid provider_id
+		) --all explicit counts of data anamolies
+	and or1.count_value > 0
 
 
 
@@ -1157,4 +1136,64 @@ select  'NOTIFICATION: Percentage of patients with at least 1 Measurement, 1 Dx 
  from  synpuf_100.achilles_results_derived d
 where d.measure_id = 'ach_2002:Percentage'
 and d.statistic_value < 20.5  --threshold identified in the DataQuality study
+
+UNION ALL
+
+select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('NOTIFICATION: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; count (n=' ), cast(or1.count_value  as string) ), ') should not be > 0' )as achilles_heel_warning, 1 as rule_id, or1.count_value
+ from  synpuf_100.achilles_results or1
+inner join synpuf_100.achilles_analysis oa1
+	on or1.analysis_id = oa1.analysis_id
+where or1.analysis_id in (
+		114, --Number of persons with observation period before year-of-birth
+		115, --Number of persons with observation period end < observation period start
+		118, --Number of observation periods with invalid person_id
+		208, --Number of visit records outside valid observation period
+		410, --Number of condition occurrence records outside valid observation period
+		610, --Number of procedure occurrence records outside valid observation period
+		710, --Number of drug exposure records outside valid observation period
+		810, --Number of observation records outside valid observation period
+		908, --Number of drug eras without valid person
+		909, --Number of drug eras outside valid observation period
+		910, --Number of drug eras with end date < start date
+		1008, --Number of condition eras without valid person
+		1009, --Number of condition eras outside valid observation period
+		1010 --Number of condition eras with end date < start date
+		) --all explicit counts of data anamolies
+	and or1.count_value > 0
+UNION ALL
+--ruleid 2 distributions where min should not be negative
+--insert into synpuf_100.achilles_heel_results (
+--	analysis_id,
+--	achilles_heel_warning,
+--	rule_id,
+--	record_count
+--	)
+select distinct  ord1.analysis_id, concat(concat(concat(concat(concat(concat('NOTIFICATION: ' , cast(ord1.analysis_id  as string) ), ' - ' ), oa1.analysis_name ), ' (count = ' ), cast(COUNT(ord1.min_value)  as string) ), '); min value should not be negative' )as achilles_heel_warning, 2 as rule_id, COUNT(ord1.min_value) as record_count
+  from  synpuf_100.achilles_results_dist ord1
+inner join synpuf_100.achilles_analysis oa1
+	on ord1.analysis_id = oa1.analysis_id
+where ord1.analysis_id in (
+		103, --Distribution of age at first observation period
+		105, --Length of observation (days) of first observation period
+		907 --Distribution of drug era length, by drug_concept_id
+		)
+	and ord1.min_value < 0
+	 group by  ord1.analysis_id, oa1.analysis_name
+
+UNION ALL
+
+select  or1.analysis_id, concat(concat(concat(concat(concat(concat('NOTIFICATION: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; ' ), cast(COUNT(distinct stratum_1)  as string) ), ' concepts in data are not in vocabulary' )as achilles_heel_warning, 4 as rule_id, COUNT(distinct stratum_1) as record_count
+  from  synpuf_100.achilles_results or1
+inner join synpuf_100.achilles_analysis oa1
+	on or1.analysis_id = oa1.analysis_id
+left join concept c1
+	on or1.stratum_1 = cast(c1.concept_id  as string)
+where or1.analysis_id in (
+		301, --Number of providers by specialty concept_id
+		900, --Number of persons with at least one drug era, by drug_concept_id
+		1000 --Number of persons with at least one condition era, by condition_concept_id
+		)
+	and or1.stratum_1 is not null
+	and c1.concept_id is null
+ group by  or1.analysis_id, oa1.analysis_name
 ;
