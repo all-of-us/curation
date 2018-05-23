@@ -145,6 +145,16 @@ class ValidationTest(unittest.TestCase):
             json_export_files.append(hpo_report_file)
         return json_export_files
 
+    def table_has_clustering(self, table_info):
+        clustering = table_info.get('clustering')
+        self.assertIsNotNone(clustering)
+        fields = clustering.get('fields')
+        self.assertSetEqual(set(fields), {'person_id'})
+        time_partitioning = table_info.get('timePartitioning')
+        self.assertIsNotNone(time_partitioning)
+        tpe = time_partitioning.get('type')
+        self.assertEqual(tpe, 'DAY')
+
     @mock.patch('api_util.check_cron')
     def test_validate_five_persons_success(self, mock_check_cron):
         prefix = 'dummy-prefix-2018-03-22/'
@@ -155,23 +165,25 @@ class ValidationTest(unittest.TestCase):
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=prefix)
 
+        expected_tables = ['person',
+                           'visit_occurrence',
+                           'condition_occurrence',
+                           'procedure_occurrence',
+                           'drug_exposure',
+                           'measurement']
+        cdm_files = [table + '.csv' for table in expected_tables]
+
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
-            # check the result file was putin bucket
-            expected_bucket_items = common.REQUIRED_FILES + common.IGNORE_LIST + json_export_files
-            # want to keep this test the same. So adding all the old required files.
-            expected_bucket_items = expected_bucket_items + ['measurement.csv',
-                                                             'procedure_occurrence.csv',
-                                                             'drug_exposure.csv',
-                                                             'condition_occurrence.csv',
-                                                             'visit_occurrence.csv']
-            expected_bucket_items = [prefix + item for item in expected_bucket_items]
+            # check the result file was put in bucket
+            expected_object_names = cdm_files + common.IGNORE_LIST + json_export_files
+            expected_objects = [prefix + item for item in expected_object_names]
 
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
-            actual_bucket_items = [item['name'] for item in list_bucket_result]
-            self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
+            actual_objects = [item['name'] for item in list_bucket_result]
+            self.assertSetEqual(set(expected_objects), set(actual_objects))
 
             # result says file found, parsed, loaded
             actual_result = test_util.read_cloud_file(self.hpo_bucket, prefix + common.RESULT_CSV)
@@ -182,6 +194,19 @@ class ValidationTest(unittest.TestCase):
             actual_result_items.sort()
             self.assertListEqual(expected_result_items, actual_result_items)
             self.assertTrue(main.all_required_files_loaded(test_util.FAKE_HPO_ID, folder_prefix=prefix))
+
+        import bq_utils
+        import json
+        for table in expected_tables:
+            fields_file = os.path.join(resources.fields_path, table + '.json')
+            table_id = bq_utils.get_table_id(test_util.FAKE_HPO_ID, table)
+            table_info = bq_utils.get_table_info(table_id)
+            with open(fields_file, 'r') as fp:
+                fields = json.load(fp)
+                field_names = [field['name'] for field in fields]
+                if 'person_id' in field_names:
+                    self.table_has_clustering(table_info)
+
 
     @mock.patch('api_util.check_cron')
     def test_validation_done_folder(self, mock_check_cron):
