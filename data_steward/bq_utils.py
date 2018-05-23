@@ -61,6 +61,24 @@ def get_table_id(hpo_id, table_name):
     return hpo_id + '_' + table_name
 
 
+def get_table_info(table_id, dataset_id=None, project_id=None):
+    """
+    Get metadata describing a table
+
+    :param table_id: ID of the table
+    :param dataset_id: ID of the dataset containing the table (EHR dataset by default)
+    :param project_id: associated project ID (default app ID by default)
+    :return:
+    """
+    bq_service = create_service()
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+    if dataset_id is None:
+        dataset_id = get_dataset_id()
+    job = bq_service.tables().get(projectId=project_id, datasetId=dataset_id, tableId=table_id)
+    return job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+
+
 def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, write_disposition='WRITE_TRUNCATE',
              allow_jagged_rows=False):
     """
@@ -75,24 +93,28 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
     bq_service = create_service()
 
     fields = json.load(open(schema_path, 'r'))
-    job_body = {
-        'configuration':
-            {
-                'load':
-                    {
-                        'sourceUris': [gcs_object_path],
-                        'schema': {'fields': fields},
-                        'destinationTable': {
-                            'projectId': project_id,
-                            'datasetId': dataset_id,
-                            'tableId': table_id
-                        },
-                        'skipLeadingRows': 1,
-                        'allowQuotedNewlines': True,
-                        'writeDisposition': 'WRITE_TRUNCATE',
-                        'allowJaggedRows': allow_jagged_rows
-                    }
+    load = {'sourceUris': [gcs_object_path],
+            'schema': {'fields': fields},
+            'destinationTable': {
+                'projectId': project_id,
+                'datasetId': dataset_id,
+                'tableId': table_id},
+            'skipLeadingRows': 1,
+            'allowQuotedNewlines': True,
+            'writeDisposition': 'WRITE_TRUNCATE',
+            'allowJaggedRows': allow_jagged_rows
             }
+    field_names = [field['name'] for field in fields]
+    if 'person_id' in field_names:
+        load['clustering'] = {
+            'fields': ['person_id']
+        }
+        load['timePartitioning'] = {
+            'type': 'DAY'
+        }
+    job_body = {'configuration': {
+        'load': load
+        }
     }
     insert_job = bq_service.jobs().insert(projectId=project_id, body=job_body)
     insert_result = insert_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
@@ -362,6 +384,14 @@ def create_table(table_id, fields, drop_existing=False, dataset_id=None):
         },
         'schema': {'fields': fields}
     }
+    field_names = [field['name'] for field in fields]
+    if 'person_id' in field_names:
+        insert_body['clustering'] = {
+            'fields': ['person_id']
+        }
+        insert_body['timePartitioning'] = {
+            'type': 'DAY'
+        }
     insert_job = bq_service.tables().insert(projectId=app_id, datasetId=dataset_id, body=insert_body)
     return insert_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
 

@@ -79,8 +79,17 @@ class BqUtilsTest(unittest.TestCase):
         table_id = result['configuration']['load']['destinationTable']['tableId']
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
         self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(table_id))
-        query_response = bq_utils.query('SELECT 1 FROM %(table_id)s' % locals())
-        self.assertEqual(query_response['totalRows'], '5')
+        table_info = bq_utils.get_table_info(table_id)
+        num_rows = table_info.get('numRows')
+        self.assertEqual(num_rows, '5')
+        clustering = table_info.get('clustering')
+        self.assertIsNotNone(clustering)
+        fields = clustering.get('fields')
+        self.assertSetEqual(set(fields), {'person_id'})
+        time_partitioning = table_info.get('timePartitioning')
+        self.assertIsNotNone(time_partitioning)
+        tpe = time_partitioning.get('type')
+        self.assertEqual(tpe, 'DAY')
 
     def test_load_cdm_csv_error_on_bad_table_name(self):
         with self.assertRaises(ValueError) as cm:
