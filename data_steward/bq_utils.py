@@ -104,16 +104,8 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
             'writeDisposition': 'WRITE_TRUNCATE',
             'allowJaggedRows': allow_jagged_rows
             }
-    field_names = [field['name'] for field in fields]
-    if 'person_id' in field_names:
-        load['clustering'] = {
-            'fields': ['person_id']
-        }
-        load['timePartitioning'] = {
-            'type': 'DAY'
-        }
     job_body = {'configuration': {
-        'load': load
+            'load': load
         }
     }
     insert_job = bq_service.jobs().insert(projectId=project_id, body=job_body)
