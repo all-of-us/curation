@@ -4,8 +4,10 @@ import unittest
 import mock
 from google.appengine.ext import testbed
 
-import common
+import json
 import os
+import common
+import bq_utils
 import gcs_utils
 import resources
 import test_util
@@ -195,8 +197,7 @@ class ValidationTest(unittest.TestCase):
             self.assertListEqual(expected_result_items, actual_result_items)
             self.assertTrue(main.all_required_files_loaded(test_util.FAKE_HPO_ID, folder_prefix=prefix))
 
-        import bq_utils
-        import json
+        # check tables exist and are clustered as expected
         for table in expected_tables:
             fields_file = os.path.join(resources.fields_path, table + '.json')
             table_id = bq_utils.get_table_id(test_util.FAKE_HPO_ID, table)
