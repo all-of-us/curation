@@ -273,38 +273,6 @@ def merge_tables(source_dataset_id,
     return True, ""
 
 
-def query_table(query_string):
-    """run a query job
-    :param query_string:    query command in SQL language.
-                            should contaon fully qualified ; dataset.table
-    :returns: query result (for details see
-                            https://https://goo.gl/xrXidw)
-    """
-    bq_service = create_service()
-
-    app_id = app_identity.get_application_id()
-
-    job_body = {
-        'configuration': {
-            "query": {
-                "query": query_string,
-            }
-        }
-    }
-
-    bq_service = create_service()
-    insert_result = bq_service.jobs().insert(projectId=app_id,
-                                             body=job_body).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
-    job_id = insert_result['jobReference']['jobId']
-    incomplete_jobs = wait_on_jobs([job_id])
-    if len(incomplete_jobs) > 0:
-        return None
-    # TODO if error we may not want to query
-    query_result = bq_service.jobs().getQueryResults(projectId=app_id,
-                                                     jobId=job_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
-    return query_result
-
-
 def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEFAULT_RETRY_COUNT,
           write_disposition='WRITE_EMPTY', destination_dataset_id=None):
     """
