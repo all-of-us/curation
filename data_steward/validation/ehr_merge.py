@@ -149,6 +149,10 @@ def create_mapping_table(hpos_with_visit, project_id, dataset_id):
         raise RuntimeError(message)
 
 
+def result_table_for(table_id):
+    return 'unioned_ehr_' + table_id
+
+
 def merge(dataset_id, project_id):
     """merge hpo ehr data
 
@@ -171,11 +175,18 @@ def merge(dataset_id, project_id):
     logging.info('HPOs with visit_occurrence: %s' % hpos_with_visit)
     create_mapping_table(hpos_with_visit, project_id, dataset_id)
 
+    # before loading [drop and] create all tables to ensure they are set up properly
+    for cdm_file_name in common.CDM_FILES:
+        cdm_table_name = cdm_file_name.split('.')[0]
+        result_table = result_table_for(cdm_table_name)
+        bq_utils.create_standard_table(cdm_table_name, result_table, drop_existing=True)
+
     jobs_to_wait_on = []
     for table_name in common.CDM_TABLES:
         q = construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, dataset_id)
         logging.info('Merging table: ' + table_name)
-        query_result = query(q, destination_table_id='unioned_ehr_'+table_name, write_disposition='WRITE_TRUNCATE')
+        result_table = result_table_for(table_name)
+        query_result = query(q, destination_table_id=result_table, write_disposition='WRITE_TRUNCATE')
         query_job_id = query_result['jobReference']['jobId']
         jobs_to_wait_on.append(query_job_id)
 

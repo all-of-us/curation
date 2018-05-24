@@ -3,12 +3,14 @@ import mock
 from google.appengine.ext import testbed
 
 import common
+import json
 import os
 import gcs_utils
 import bq_utils
 import test_util
 from validation import ehr_merge
 from validation.export import query_result_to_payload
+import resources
 
 FAKE_HPO_ID = 'fake'
 PITT_HPO_ID = 'pitt'
@@ -40,12 +42,18 @@ class EhrMergeTest(unittest.TestCase):
 
     def _load_datasets(self):
         load_jobs = []
+        self.expected_tables = dict()
         for cdm_table in common.CDM_TABLES:
             cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
+            result_table = ehr_merge.result_table_for(cdm_table)
             if os.path.exists(cdm_file_name):
+                # one copy for chs, the other for pitt
+                csv_rows = resources._csv_to_list(cdm_file_name)
+                self.expected_tables[result_table] = csv_rows + list(csv_rows)
                 test_util.write_cloud_file(self.chs_bucket, cdm_file_name)
                 test_util.write_cloud_file(self.pitt_bucket, cdm_file_name)
             else:
+                self.expected_tables[result_table] = []
                 test_util.write_cloud_str(self.chs_bucket, cdm_table + '.csv', 'dummy\n')
                 test_util.write_cloud_str(self.pitt_bucket, cdm_table + '.csv', 'dummy\n')
             chs_load_results = bq_utils.load_cdm_csv(CHS_HPO_ID, cdm_table)
@@ -58,29 +66,57 @@ class EhrMergeTest(unittest.TestCase):
         if len(incomplete_jobs) > 0:
             raise RuntimeError('BigQuery jobs %s failed to complete' % incomplete_jobs)
 
+    def _table_has_clustering(self, table_info):
+        clustering = table_info.get('clustering')
+        self.assertIsNotNone(clustering)
+        fields = clustering.get('fields')
+        self.assertSetEqual(set(fields), {'person_id'})
+        time_partitioning = table_info.get('timePartitioning')
+        self.assertIsNotNone(time_partitioning)
+        tpe = time_partitioning.get('type')
+        self.assertEqual(tpe, 'DAY')
+
     @mock.patch('api_util.check_cron')
     def test_merge_EHR(self, mock_check_cron):
         self._load_datasets()
-        # enable exception propagation as described at https://goo.gl/LqDgnj
-        old_dataset_items = bq_utils.list_dataset_contents(bq_utils.get_dataset_id())
+        dataset_id = bq_utils.get_dataset_id()
+        old_dataset_items = bq_utils.list_dataset_contents(dataset_id)
         expected_items = ['visit_id_mapping_table']
-        expected_items.extend(['unioned_ehr_' + table_name for table_name in common.CDM_TABLES])
+        expected_items.extend([ehr_merge.result_table_for(table_name) for table_name in common.CDM_TABLES])
 
-        ehr_merge.merge(bq_utils.get_dataset_id(), self.project_id)
-        # check the result files were placed in bucket
-        dataset_items = bq_utils.list_dataset_contents(bq_utils.get_dataset_id())
+        ehr_merge.merge(dataset_id, self.project_id)
+
+        # Check row counts for each output table
+        dataset_items = bq_utils.list_dataset_contents(dataset_id)
         for table_name in common.CDM_TABLES:
-            cmd = 'SELECT COUNT(1) FROM unioned_ehr_{}'.format(table_name)
-            result = bq_utils.query(cmd)
-            self.assertEqual(int(result['rows'][0]['f'][0]['v']),
-                             2*globals().get(table_name.upper() + '_COUNT', 0),
-                             msg='failed for table unioned_ehr_{}'.format(table_name))
+            result_table = ehr_merge.result_table_for(table_name)
+            expected_rows = self.expected_tables[result_table]
+            expected_count = len(expected_rows)
+            table_info = bq_utils.get_table_info(result_table)
+            actual_count = int(table_info.get('numRows'))
+            msg = 'Unexpected row count in table {result_table} after ehr union'.format(result_table=result_table)
+            self.assertEqual(actual_count, expected_count, msg)
+
+            # Check for clustering if table has person_id
+            fields_file = os.path.join(resources.fields_path, table_name + '.json')
+            with open(fields_file, 'r') as fp:
+                fields = json.load(fp)
+                field_names = [field['name'] for field in fields]
+                if 'person_id' in field_names:
+                    self._table_has_clustering(table_info)
         self.assertSetEqual(set(old_dataset_items + expected_items), set(dataset_items))
 
         table_name = 'condition_occurrence'
-        cmd_union = 'SELECT * FROM unioned_ehr_{}'.format(table_name)
-        cmd_pitt = 'SELECT * FROM pitt_{}'.format(table_name)
-        cmd_visit_mapping = "SELECT global_visit_id, mapping_visit_id FROM visit_id_mapping_table where hpo='pitt'"
+        hpo_id = 'pitt'
+        result_table = ehr_merge.result_table_for(table_name)
+        pitt_table = bq_utils.get_table_id(hpo_id, table_name)
+        cmd_union = 'SELECT * FROM ' + result_table
+        cmd_pitt = 'SELECT * FROM ' + pitt_table
+        cmd_visit_mapping = """
+          SELECT global_visit_id, 
+                 mapping_visit_id 
+          FROM visit_id_mapping_table 
+          WHERE hpo='{hpo_id}'""".format(hpo_id=hpo_id)
         qr_union = bq_utils.query(cmd_union)
         qr_pitt = bq_utils.query(cmd_pitt)
         qr_visit_mapping = bq_utils.query(cmd_visit_mapping)
