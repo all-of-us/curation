@@ -14,7 +14,6 @@ import mock
 # import time
 
 PERSON = 'person'
-BQ_TIMEOUT_RETRIES = 3
 
 
 class BqUtilsTest(unittest.TestCase):
@@ -46,6 +45,16 @@ class BqUtilsTest(unittest.TestCase):
                 table_id = table['tableReference']['tableId']
                 if table_id not in common.VOCABULARY_TABLES:
                     bq_utils.delete_table(table_id)
+
+    def _table_has_clustering(self, table_info):
+        clustering = table_info.get('clustering')
+        self.assertIsNotNone(clustering)
+        fields = clustering.get('fields')
+        self.assertSetEqual(set(fields), {'person_id'})
+        time_partitioning = table_info.get('timePartitioning')
+        self.assertIsNotNone(time_partitioning)
+        tpe = time_partitioning.get('type')
+        self.assertEqual(tpe, 'DAY')
 
     def test_load_csv(self):
         from google.appengine.api import app_identity
@@ -82,14 +91,7 @@ class BqUtilsTest(unittest.TestCase):
         table_info = bq_utils.get_table_info(table_id)
         num_rows = table_info.get('numRows')
         self.assertEqual(num_rows, '5')
-        clustering = table_info.get('clustering')
-        self.assertIsNotNone(clustering)
-        fields = clustering.get('fields')
-        self.assertSetEqual(set(fields), {'person_id'})
-        time_partitioning = table_info.get('timePartitioning')
-        self.assertIsNotNone(time_partitioning)
-        tpe = time_partitioning.get('type')
-        self.assertEqual(tpe, 'DAY')
+        self._table_has_clustering(table_info)
 
     def test_load_cdm_csv_error_on_bad_table_name(self):
         with self.assertRaises(ValueError) as cm:
@@ -134,18 +136,20 @@ class BqUtilsTest(unittest.TestCase):
         incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
         self.assertEqual(len(incomplete_jobs), 0, 'loading tables {},{} timed out'.format('nyc_person', 'pitt_person'))
 
+        dataset_id = bq_utils.get_dataset_id()
         table_ids = ['nyc_person', 'pitt_person']
-        success_flag, error = bq_utils.merge_tables(bq_utils.get_dataset_id(),
+        merged_table_id = 'merged_nyc_pitt'
+        success_flag, error = bq_utils.merge_tables(dataset_id,
                                                     table_ids,
-                                                    bq_utils.get_dataset_id(),
-                                                    'merged_nyc_pitt')
+                                                    dataset_id,
+                                                    merged_table_id)
 
         self.assertTrue(success_flag)
         self.assertEqual(error, "")
 
-        query_string = "SELECT person_id FROM {}.{} LIMIT 1000".format(bq_utils.get_dataset_id(), 'merged_nyc_pitt')
-
-        merged_query_job_result = bq_utils.query_table(query_string)
+        query_string = 'SELECT person_id FROM {dataset_id}.{table_id}'.format(dataset_id=dataset_id,
+                                                                              table_id=merged_table_id)
+        merged_query_job_result = bq_utils.query(query_string)
 
         self.assertIsNone(merged_query_job_result.get('errors', None))
         actual_result = [int(row['f'][0]['v']) for row in merged_query_job_result['rows']]
@@ -269,8 +273,12 @@ class BqUtilsTest(unittest.TestCase):
         pass
 
     def test_load_ehr_observation(self):
-        observation_query = "SELECT observation_id FROM {}.{} ORDER BY observation_id"
         hpo_id = 'pitt'
+        dataset_id = bq_utils.get_dataset_id()
+        table_id = bq_utils.get_table_id(hpo_id, table_name='observation')
+        q = 'SELECT observation_id FROM {dataset_id}.{table_id} ORDER BY observation_id'.format(
+            dataset_id=dataset_id,
+            table_id=table_id)
         expected_observation_ids = [int(row['observation_id'])
                                     for row in resources._csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)]
         with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'rb') as fp:
@@ -283,8 +291,7 @@ class BqUtilsTest(unittest.TestCase):
         load_job_result_status = load_job_result['status']
         load_job_errors = load_job_result_status.get('errors')
         self.assertIsNone(load_job_errors, msg='pitt_observation load job failed: ' + str(load_job_errors))
-        query_string = observation_query.format(bq_utils.get_dataset_id(), 'pitt_observation')
-        query_results_response = bq_utils.query_table(query_string)
+        query_results_response = bq_utils.query(q)
         query_job_errors = query_results_response.get('errors')
         self.assertIsNone(query_job_errors)
         actual_result = [int(row['f'][0]['v']) for row in query_results_response['rows']]
