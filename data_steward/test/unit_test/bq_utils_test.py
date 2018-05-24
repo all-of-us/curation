@@ -91,7 +91,6 @@ class BqUtilsTest(unittest.TestCase):
         table_info = bq_utils.get_table_info(table_id)
         num_rows = table_info.get('numRows')
         self.assertEqual(num_rows, '5')
-        self._table_has_clustering(table_info)
 
     def test_load_cdm_csv_error_on_bad_table_name(self):
         with self.assertRaises(ValueError) as cm:
@@ -194,13 +193,13 @@ class BqUtilsTest(unittest.TestCase):
 
     def test_create_table(self):
         table_id = 'some_random_table_id'
-        fields = [dict(name='id', type='integer', mode='required'),
+        fields = [dict(name='person_id', type='integer', mode='required'),
                   dict(name='name', type='string', mode='nullable')]
         result = bq_utils.create_table(table_id, fields)
         self.assertTrue('kind' in result)
         self.assertEqual(result['kind'], 'bigquery#table')
-        # sanity check
-        self.assertTrue(bq_utils.table_exists(table_id))
+        table_info = bq_utils.get_table_info(table_id)
+        self._table_has_clustering(table_info)
 
     def test_create_existing_table_without_drop_raises_error(self):
         table_id = 'some_random_table_id'
