@@ -755,7 +755,7 @@ inner join synpuf_100.achilles_analysis oa1
 where or1.analysis_id in (
 		7,
 		8,
-		9,
+		9
 		) --all explicit counts of potential data anamolies
 	and or1.count_value > 0;
 
