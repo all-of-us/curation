@@ -499,8 +499,8 @@ inner join synpuf_100.achilles_analysis oa1
 inner join concept c1
 	on or1.stratum_1 = cast(c1.concept_id  as string)
 where or1.analysis_id in (
-		400,
-		1000
+		400
+-- 		1000
 		)
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
@@ -757,7 +757,7 @@ where or1.analysis_id in (
 		8,
 		9
 		) --all explicit counts of potential data anamolies
-	and or1.count_value > 0;
+	and or1.count_value > 0
 
 UNION ALL
 
@@ -774,7 +774,7 @@ where or1.analysis_id in (
 		812 --Number of observation records with invalid provider_id
 		) --all explicit counts of data anamolies
 	and or1.count_value > 0
-
+;
 
 
 --rules may require first a derived measure and the subsequent data quality
@@ -1056,18 +1056,18 @@ where a.year_cnt> 0;
 --ruleid 40  this rule was under umbrella rule 1 and was made into a separate rule
 
 
-insert into synpuf_100.achilles_heel_results (
-	analysis_id,
-	achilles_heel_warning,
-	rule_id,
-	record_count
-	)
-select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: Death event outside observation period, ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; count (n=' ), cast(or1.count_value  as string) ), ') should not be > 0' )as achilles_heel_warning, 40 as rule_id, or1.count_value
- from  synpuf_100.achilles_results or1
-inner join synpuf_100.achilles_analysis oa1
-	on or1.analysis_id = oa1.analysis_id
-where or1.analysis_id in (510)
-	and or1.count_value > 0;
+-- insert into synpuf_100.achilles_heel_results (
+-- 	analysis_id,
+-- 	achilles_heel_warning,
+-- 	rule_id,
+-- 	record_count
+-- 	)
+-- select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: Death event outside observation period, ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; count (n=' ), cast(or1.count_value  as string) ), ') should not be > 0' )as achilles_heel_warning, 40 as rule_id, or1.count_value
+--  from  synpuf_100.achilles_results or1
+-- inner join synpuf_100.achilles_analysis oa1
+-- 	on or1.analysis_id = oa1.analysis_id
+-- where or1.analysis_id in (510)
+-- 	and or1.count_value > 0;
 
 
 --ruleid 41 DQ rule, data density
@@ -1136,9 +1136,14 @@ select  'NOTIFICATION: Percentage of patients with at least 1 Measurement, 1 Dx 
  from  synpuf_100.achilles_results_derived d
 where d.measure_id = 'ach_2002:Percentage'
 and d.statistic_value < 20.5  --threshold identified in the DataQuality study
+;
 
-UNION ALL
-
+insert into synpuf_100.achilles_heel_results (
+	analysis_id,
+	achilles_heel_warning,
+	rule_id,
+	record_count
+	)
 select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('NOTIFICATION: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; count (n=' ), cast(or1.count_value  as string) ), ') should not be > 0' )as achilles_heel_warning, 1 as rule_id, or1.count_value
  from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
@@ -1160,6 +1165,7 @@ where or1.analysis_id in (
 		1010 --Number of condition eras with end date < start date
 		) --all explicit counts of data anamolies
 	and or1.count_value > 0
+
 UNION ALL
 --ruleid 2 distributions where min should not be negative
 --insert into synpuf_100.achilles_heel_results (
