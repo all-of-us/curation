@@ -62,21 +62,21 @@ class AchillesHeelTest(unittest.TestCase):
 
         # test new heel re-categorization
         cmd = validation.sql_wrangle.qualify_tables(
-            """SELECT COUNT(1) FROM {prefix}achilles_heel_results 
+            """SELECT COUNT(1) FROM {prefix}achilles_heel_results
             WHERE achilles_heel_warning like 'ERROR:%'""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
             FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         self.assertEqual(ACHILLES_HEEL_RESULTS_ERROR_COUNT, int(result['rows'][0]['f'][0]['v']))
 
         cmd = validation.sql_wrangle.qualify_tables(
-            """SELECT COUNT(1) FROM {prefix}achilles_heel_results 
+            """SELECT COUNT(1) FROM {prefix}achilles_heel_results
             WHERE achilles_heel_warning like 'WARNING:%'""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
             FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         self.assertEqual(ACHILLES_HEEL_RESULTS_WARNING_COUNT, int(result['rows'][0]['f'][0]['v']))
 
         cmd = validation.sql_wrangle.qualify_tables(
-            """SELECT COUNT(1) FROM {prefix}achilles_heel_results 
+            """SELECT COUNT(1) FROM {prefix}achilles_heel_results
             WHERE achilles_heel_warning like 'NOTIFICATION:%'""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
             FAKE_HPO_ID)
         result = bq_utils.query(cmd)
