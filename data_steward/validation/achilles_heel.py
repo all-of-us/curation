@@ -89,9 +89,7 @@ def run_heel(hpo_id):
             table_id = sql_wrangle.get_drop_table_name(command)
             bq_utils.delete_table(table_id)
         else:
-            print(command)
             bq_utils.query(command)
-            time.sleep(1)
 
 
 def create_tables(hpo_id, drop_existing=False):
