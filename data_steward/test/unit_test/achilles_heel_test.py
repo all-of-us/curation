@@ -11,7 +11,10 @@ from test_util import FAKE_HPO_ID
 import gcs_utils
 import test_util
 
-ACHILLES_HEEL_RESULTS_COUNT = 23
+ACHILLES_HEEL_RESULTS_COUNT = 21
+ACHILLES_HEEL_RESULTS_ERROR_COUNT = 2
+ACHILLES_HEEL_RESULTS_WARNING_COUNT = 14
+ACHILLES_HEEL_RESULTS_NOTIFICATION_COUNT = 5
 ACHILLES_RESULTS_DERIVED_COUNT = 282
 BQ_TIMEOUT_RETRIES = 3
 
@@ -51,11 +54,33 @@ class AchillesHeelTest(unittest.TestCase):
         cmd = validation.sql_wrangle.qualify_tables(
             'SELECT COUNT(1) FROM %sachilles_heel_results' % validation.sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
         result = bq_utils.query(cmd)
-        self.assertEqual(int(result['rows'][0]['f'][0]['v']), ACHILLES_HEEL_RESULTS_COUNT)
+        self.assertEqual(ACHILLES_HEEL_RESULTS_COUNT, int(result['rows'][0]['f'][0]['v']))
         cmd = validation.sql_wrangle.qualify_tables(
             'SELECT COUNT(1) FROM %sachilles_results_derived' % validation.sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
         result = bq_utils.query(cmd)
-        self.assertEqual(int(result['rows'][0]['f'][0]['v']), ACHILLES_RESULTS_DERIVED_COUNT)
+        self.assertEqual(ACHILLES_RESULTS_DERIVED_COUNT, int(result['rows'][0]['f'][0]['v']))
+
+        # test new heel re-categorization
+        cmd = validation.sql_wrangle.qualify_tables(
+            """SELECT COUNT(1) FROM {prefix}achilles_heel_results
+            WHERE achilles_heel_warning like 'ERROR:%'""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
+            FAKE_HPO_ID)
+        result = bq_utils.query(cmd)
+        self.assertEqual(ACHILLES_HEEL_RESULTS_ERROR_COUNT, int(result['rows'][0]['f'][0]['v']))
+
+        cmd = validation.sql_wrangle.qualify_tables(
+            """SELECT COUNT(1) FROM {prefix}achilles_heel_results
+            WHERE achilles_heel_warning like 'WARNING:%'""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
+            FAKE_HPO_ID)
+        result = bq_utils.query(cmd)
+        self.assertEqual(ACHILLES_HEEL_RESULTS_WARNING_COUNT, int(result['rows'][0]['f'][0]['v']))
+
+        cmd = validation.sql_wrangle.qualify_tables(
+            """SELECT COUNT(1) FROM {prefix}achilles_heel_results
+            WHERE achilles_heel_warning like 'NOTIFICATION:%'""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
+            FAKE_HPO_ID)
+        result = bq_utils.query(cmd)
+        self.assertEqual(ACHILLES_HEEL_RESULTS_NOTIFICATION_COUNT, int(result['rows'][0]['f'][0]['v']))
 
     def tearDown(self):
         test_util.empty_bucket(self.hpo_bucket)
