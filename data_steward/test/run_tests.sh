@@ -4,6 +4,7 @@
 
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+. ${BASE_DIR}/init_env.sh test
 . ${BASE_DIR}/tools/set_path.sh
 
 subset="all"

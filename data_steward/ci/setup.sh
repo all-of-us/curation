@@ -1,5 +1,8 @@
 #!/bin/bash
 
+BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+source ${BASE_DIR}/init_env.sh
+
 # Create buckets
 gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${DRC_BUCKET_NAME}
 gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_FAKE}
