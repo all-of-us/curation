@@ -1,6 +1,6 @@
 # Data Steward
 
-Specification document and data curation processes for data submitted to the DRC.
+Curation pipeline for data submitted to the DRC.
 
 ## Development Requirements
 
