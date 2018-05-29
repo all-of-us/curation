@@ -35,7 +35,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.argumentparser(formatter_class=argparse.rawdescriptionhelpformatter)
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--bucket',
                         default=get_hpo_bucket('nyc'),
                         help='Identifier for the bucket. Output tables will be prepended with {hpo_id}_.')
