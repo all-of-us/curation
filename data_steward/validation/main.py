@@ -276,9 +276,13 @@ def run_validation(hpo_id, force_run=False):
             if cdm_file_name in common.REQUIRED_FILES or found:
                 results.append((cdm_file_name, found, parsed, loaded))
 
+        def is_pii(filename):
+            if filename.startswith('pii'):
+                return True
+            return False
         # (filename, message) for each unknown file
         warnings = [
-            (unknown_file, UNKNOWN_FILE) for unknown_file in unknown_files
+            (unknown_file, UNKNOWN_FILE) for unknown_file in unknown_files if not is_pii(unknown_file)
         ]
 
         # output to GCS
