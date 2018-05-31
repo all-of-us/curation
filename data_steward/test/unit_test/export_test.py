@@ -74,6 +74,8 @@ class ExportTest(unittest.TestCase):
     def test_run_export_with_target_bucket(self):
         folder_prefix = 'dummy-prefix-2018-03-24/'
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        test_util.get_synpuf_results_files()
+        test_util.populate_achilles(self.hpo_bucket, hpo_id=None)
         main.run_export(folder_prefix=folder_prefix, target_bucket=bucket_nyc)
         for report in common.ALL_REPORT_FILES:
             _reports_prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + 'default' + '/'
