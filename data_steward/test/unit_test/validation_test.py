@@ -300,7 +300,6 @@ class ValidationTest(unittest.TestCase):
 
     def tearDown(self):
         self._empty_bucket()
-        to_delete_list = gcs_utils.list_bucket(
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
         test_util.empty_bucket(bucket_nyc)
         test_util.empty_bucket(gcs_utils.get_drc_bucket())

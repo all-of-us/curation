@@ -214,7 +214,7 @@ def write_cloud_fp(bucket, name, fp):
     return gcs_utils.upload_object(bucket, name, fp)
 
 
-def populate_achilles(hpo_bucket, include_heel=True):
+def populate_achilles(hpo_bucket, hpo_id = FAKE_HPO_ID, include_heel=True):
     from validation import achilles, achilles_heel
     from google.appengine.api import app_identity
     import bq_utils
@@ -227,7 +227,7 @@ def populate_achilles(hpo_bucket, include_heel=True):
     write_cloud_file(hpo_bucket, achilles_analysis_file_path)
     gcs_path = 'gs://' + hpo_bucket + '/' + test_file_name
     dataset_id = bq_utils.get_dataset_id()
-    table_id = bq_utils.get_table_id(FAKE_HPO_ID, achilles.ACHILLES_ANALYSIS)
+    table_id = bq_utils.get_table_id(hpo_id, achilles.ACHILLES_ANALYSIS)
     bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
 
     table_names = [achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST]
@@ -243,7 +243,7 @@ def populate_achilles(hpo_bucket, include_heel=True):
         write_cloud_file(hpo_bucket, test_file_path)
         gcs_path = 'gs://' + hpo_bucket + '/' + test_file_name
         dataset_id = bq_utils.get_dataset_id()
-        table_id = bq_utils.get_table_id(FAKE_HPO_ID, table_name)
+        table_id = bq_utils.get_table_id(hpo_id, table_name)
         load_results = bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
         running_jobs.append(load_results['jobReference']['jobId'])
     bq_utils.wait_on_jobs(running_jobs)
