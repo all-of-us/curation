@@ -55,8 +55,9 @@ def all_required_files_loaded(hpo_id, folder_prefix):
 def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
     if hpo_id is None and target_bucket is None:
         raise RuntimeError('either hpo_id or target_bucket should be specified')
-    if hpo_id is None:
-        hpo_id = 'default'
+
+    if target_bucket is not None:
+        hpo_id = 'default' if hpo_id is None else hpo_id
         hpo_bucket = target_bucket
     else:
         hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
@@ -75,14 +76,18 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
     if hpo_id is None and target_bucket is None:
         raise RuntimeError('either hpo_id or target_bucket should be specified')
 
-    if hpo_id is None:
+    if target_bucket is not None:
         hpo_bucket = target_bucket
         logging.info('running export to bucket %s' % target_bucket)
-        _reports_prefix = ACHILLES_EXPORT_PREFIX_STRING + 'default' + "/"
     else:
         hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
         logging.info('running export for hpo_id %s' % hpo_id)
+
+    if hpo_id is None:
+        _reports_prefix = ACHILLES_EXPORT_PREFIX_STRING + 'default' + "/"
+    else:
         _reports_prefix = ACHILLES_EXPORT_PREFIX_STRING + hpo_id + "/"
+
 
     # TODO : add check for required tables
     for export_name in common.ALL_REPORTS:
@@ -129,11 +134,11 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
 
     """
     results = []
-    if hpo_id is None:
-        if target_bucket is None:
-            raise RuntimeError('either hpo_id or target_bucket must be specified')
+    if target_bucket is not None:
         bucket = target_bucket
     else:
+        if hpo_id is None:
+            raise RuntimeError('either hpo_id or target_bucket must be specified')
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
 
     for filename in common.ACHILLES_INDEX_FILES:
