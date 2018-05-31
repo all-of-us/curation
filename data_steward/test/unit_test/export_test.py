@@ -71,6 +71,27 @@ class ExportTest(unittest.TestCase):
             _exist_check = gcs_utils.get_metadata(self.hpo_bucket, _reports_prefix + report)
             self.assertIsNotNone(_exist_check)
 
+    def test_run_export_with_target_bucket(self):
+        folder_prefix = 'dummy-prefix-2018-03-24/'
+        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        main.run_export(folder_prefix=folder_prefix, target_bucket=bucket_nyc)
+        for report in common.ALL_REPORT_FILES:
+            _reports_prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + 'default' + '/'
+            _exist_check = gcs_utils.get_metadata(bucket_nyc, _reports_prefix + report)
+            self.assertIsNotNone(_exist_check)
+
+    def test_run_export_with_target_bucket_and_hpo_id(self):
+        folder_prefix = 'dummy-prefix-2018-03-24/'
+        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        main.run_export(hpo_id=test_util.FAKE_HPO_ID, folder_prefix=folder_prefix, target_bucket=bucket_nyc)
+        for report in common.ALL_REPORT_FILES:
+            _reports_prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + test_util.FAKE_HPO_ID + '/'
+            _exist_check = gcs_utils.get_metadata(bucket_nyc, _reports_prefix + report)
+            self.assertIsNotNone(_exist_check)
+
+
     def tearDown(self):
-        # self._empty_bucket()
+        self._empty_bucket()
+        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        test_util.empty_bucket(bucket_nyc)
         self.testbed.deactivate()

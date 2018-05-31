@@ -288,9 +288,20 @@ class ValidationTest(unittest.TestCase):
             actual_bucket_items = [item['name'] for item in list_bucket_result]
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
 
+    def test_target_bucket_upload(self):
+        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        folder_prefix = 'test-folder-fake/'
+        test_util.empty_bucket(bucket_nyc)
+
+        main._upload_achilles_files(hpo_id=None, folder_prefix=folder_prefix, target_bucket=bucket_nyc)
+        actual_bucket_files = set([item['name'] for item in gcs_utils.list_bucket(bucket_nyc)])
+        expected_bucket_files = set(['test-folder-fake/' + item for item in common.ALL_ACHILLES_INDEX_FILES])
+        self.assertSetEqual(expected_bucket_files, actual_bucket_files)
+
     def tearDown(self):
         self._empty_bucket()
-        to_delete_list = gcs_utils.list_bucket(gcs_utils.get_drc_bucket())
-        for bucket_item in to_delete_list:
-            gcs_utils.delete_object(gcs_utils.get_drc_bucket(), bucket_item['name'])
+        to_delete_list = gcs_utils.list_bucket(
+        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        test_util.empty_bucket(bucket_nyc)
+        test_util.empty_bucket(gcs_utils.get_drc_bucket())
         self.testbed.deactivate()
