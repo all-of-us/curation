@@ -53,6 +53,8 @@ logger = logging.getLogger(__name__)
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
 EHR_CONSENT_TABLE_ID = '_ehr_consent'
+PERSON_TABLE = 'person'
+OBSERVATION_TABLE = 'observation'
 VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
 RDR_TABLES_TO_COPY = ['person', 'location', 'care_site']
@@ -168,6 +170,60 @@ def copy_rdr_table(table):
     q = '''SELECT * FROM {rdr_dataset_id}.{table}'''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(), table=table)
     logger.debug('Query for {table} is `{q}`'.format(table=table, q=q))
     query(q, table)
+
+
+def move_ehr_person_to_observation():
+    """
+    This function moves the demographics from the EHR person table to
+    the observation table in the combined data set
+    :return:
+    """
+    q = '''select person_id, observation_concept_id, observation_type_concept_id,
+            observation_datetime, value_as_concept_id, value_as_string,
+            observation_source_value, observation_source_concept_id
+         from (
+          --Race
+          SELECT person_id, 4013886 as observation_concept_id, 38000280 as observation_type_concept_id, 
+          NULL as observation_datetime,
+          race_concept_id as value_as_concept_id,
+          NULL as value_as_string,
+          race_source_value as observation_source_value, 
+          race_source_concept_id as observation_source_concept_id
+          FROM {ehr_dataset_id}.person
+        ), 
+        ( 
+          --Ethnicity
+          SELECT person_id, 4271761 as observation_concept_id, 38000280 as observation_type_concept_id, 
+          NULL as observation_datetime,
+          ethnicity_concept_id as value_as_concept_id,
+          NULL as value_as_string,
+          ethnicity_source_value as observation_source_value, 
+          ethnicity_source_concept_id as observation_source_concept_id
+          FROM {ehr_dataset_id}.person
+        ),
+        ( 
+          --Gender
+          SELECT person_id, 4135376 as observation_concept_id, 38000280 as observation_type_concept_id, 
+          NULL as observation_datetime,
+          gender_concept_id as value_as_concept_id,
+          NULL as value_as_string,
+          gender_source_value as observation_source_value, 
+          gender_source_concept_id as observation_source_concept_id
+          FROM {ehr_dataset_id}.person
+        ),
+        ( 
+          --DOB
+          SELECT person_id, 4083587 as observation_concept_id, 38000280 as observation_type_concept_id, 
+          birth_datetime as observation_datetime,
+          NULL as value_as_concpet_id,
+          birth_datetime as value_as_string,
+          '' as observation_source_value,
+          NULL as observation_source_concept_id
+          FROM {ehr_dataset_id}.person
+        )
+    '''.format(ehr_dataset_id=bq_utils.get_dataset_id())
+    logger.debug('Copying EHR person table from {ehr_dataset_id} to combined dataset. Query is `{q}`'.format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
+    query(q, OBSERVATION_TABLE, 'WRITE_APPEND')
 
 
 def copy_ehr_table(table):
@@ -391,6 +447,8 @@ def main():
     for table in RDR_TABLES_TO_COPY:
         logger.info('Copying {table} table from RDR...'.format(table=table))
         copy_rdr_table(table)
+    logger.info('Translating {table} table from EHR...'.format(table=PERSON_TABLE))
+    move_ehr_person_to_observation()
     for table in EHR_TABLES_TO_COPY:
         logger.info('Copying {table} table from EHR...'.format(table=table))
         copy_ehr_table(table)
