@@ -9,9 +9,11 @@ import logging
 import sys
 
 from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
+from tools.combine_ehr_rdr import copy_ehr_table, move_ehr_person_to_observation
 from tools.combine_ehr_rdr import DOMAIN_TABLES, EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY
 from google.appengine.ext import testbed
 from tools.combine_ehr_rdr import logger
+from validation.export import
 
 
 class CombineEhrRdrTest(unittest.TestCase):
@@ -70,7 +72,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         self.drc_bucket = gcs_utils.get_drc_bucket()
         test_util.delete_all_tables(self.combined_dataset_id)
 
-    def test_consented_person_id(self):
+    def _test_consented_person_id(self):
         """
         Test observation data has seven (7) persons with consent records as described below
          1: No
@@ -97,7 +99,7 @@ class CombineEhrRdrTest(unittest.TestCase):
                             'Records in {dataset}.{table}'.format(dataset=self.combined_dataset_id,
                                                                   table=EHR_CONSENT_TABLE_ID))
 
-    def test_copy_rdr_tables(self):
+    def _test_copy_rdr_tables(self):
         for table in RDR_TABLES_TO_COPY:
             self.assertFalse(bq_utils.table_exists(table, self.combined_dataset_id))  # sanity check
             copy_rdr_table(table)
@@ -123,6 +125,59 @@ class CombineEhrRdrTest(unittest.TestCase):
             msg_fmt = 'Table {table} has {rdr_count} in rdr and {combined_count} in combined (expected to be equal)'
             self.assertEqual(rdr_count, combined_count,
                              msg_fmt.format(table=table, rdr_count=rdr_count, combined_count=combined_count))
+
+    def test_person_move(self):
+        move_ehr_person_to_observation()
+        for table in RDR_TABLES_TO_COPY:
+            # person table query
+            q_person = '''
+                SELECT (person_id,
+                        gender_concept_id,
+                        gender_source_value,
+                        race_concept_id,
+                        race_source_value,
+                        birth_datetime,
+                        ethnicity_concept_id,
+                        ethnicity_source_value)
+                FROM {ehr_dataset_id}.person
+            '''.format(ehr_dataset_id=self.ehr_dataset_id)
+            response_person = bq_utils.query(q_person)
+            print response
+            q_obs = '''
+                SELECT (person_id,
+                        observation_concept_id,
+                        observation_type_concept_id,
+                        observation_datetime,
+                        value_as_concept_id,
+                        value_as_string,
+                        observation_source_value,
+                        observation_source_concept_id)
+                FROM {ehr_dataset_id}.observation
+            '''.format(ehr_dataset_id=self.ehr_dataset_id)
+            response_obs = bq_utils.query(q_obs)
+            print response
+            return
+            # Check 
+            q = '''
+              WITH rdr AS
+               (SELECT COUNT(1) n FROM {rdr_dataset_id}.{table}),
+              combined AS
+               (SELECT COUNT(1) n FROM {combined_dataset_id}.{table})
+              SELECT 
+                rdr.n      AS rdr_count, 
+                combined.n AS combined_count 
+              FROM rdr, combined
+            '''.format(rdr_dataset_id=self.rdr_dataset_id, combined_dataset_id=self.combined_dataset_id, table=table)
+            response = bq_utils.query(q)
+            print response
+            rows = test_util.response2rows(response)
+            self.assertTrue(len(rows) == 1)  # sanity check
+            row = rows[0]
+            rdr_count, combined_count = row['rdr_count'], row['combined_count']
+            msg_fmt = 'Table {table} has {rdr_count} in rdr and {combined_count} in combined (expected to be equal)'
+            self.assertEqual(rdr_count, combined_count,
+                             msg_fmt.format(table=table, rdr_count=rdr_count, combined_count=combined_count))
+
 
     def _ehr_only_records_excluded(self):
         """
@@ -208,7 +263,7 @@ class CombineEhrRdrTest(unittest.TestCase):
     def tearDownClass(cls):
         ehr_dataset_id = bq_utils.get_dataset_id()
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-        test_util.delete_all_tables(ehr_dataset_id)
-        test_util.delete_all_tables(rdr_dataset_id)
+        # test_util.delete_all_tables(ehr_dataset_id)
+        # test_util.delete_all_tables(rdr_dataset_id)
         cls.testbed.deactivate()
         logger.handlers = []
