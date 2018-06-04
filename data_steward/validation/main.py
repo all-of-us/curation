@@ -53,18 +53,26 @@ def all_required_files_loaded(hpo_id, folder_prefix):
 
 
 def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
-    if hpo_id is None and target_bucket is None:
-        raise RuntimeError('either hpo_id or target_bucket should be specified')
+    """
+    Generate and save datasources.json (from curation report) in a GCS bucket
 
-    if target_bucket is not None:
-        hpo_id = 'default' if hpo_id is None else hpo_id
-        hpo_bucket = target_bucket
+    :param hpo_id: the ID of the HPO that report should go to
+    :param folder_prefix: relative path in GCS to save to (without 'gs://')
+    :param target_bucket: GCS bucket to save to. If not supplied, uses the bucket assigned to hpo_id.
+    :return:
+    """
+    if hpo_id is None:
+        if target_bucket is None:
+            raise RuntimeError('Cannot save datasources.json if neither hpo_id or target_bucket are specified.')
+        hpo_id = 'default'
     else:
-        hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+        if target_bucket is None:
+            target_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+
     datasource = dict(name=hpo_id, folder=hpo_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO.StringIO(json.dumps(datasources))
-    result = gcs_utils.upload_object(hpo_bucket, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON, datasources_fp)
+    result = gcs_utils.upload_object(target_bucket, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON, datasources_fp)
     return result
 
 
