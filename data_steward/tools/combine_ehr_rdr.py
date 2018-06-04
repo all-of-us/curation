@@ -178,11 +178,11 @@ def move_ehr_person_to_observation():
     the observation table in the combined data set
     :return:
     """
-    q = '''select person_id, observation_concept_id, observation_type_concept_id,
-            observation_datetime, value_as_concept_id, value_as_string,
-            observation_source_value, observation_source_concept_id
-         from (
-          --Race
+    
+    # q = '''select person_id, observation_concept_id, observation_type_concept_id,
+            # observation_datetime, value_as_concept_id, value_as_string,
+            # observation_source_value, observation_source_concept_id
+    q = ''' --Race
           SELECT person_id, 4013886 as observation_concept_id, 38000280 as observation_type_concept_id, 
           NULL as observation_datetime,
           race_concept_id as value_as_concept_id,
@@ -190,8 +190,9 @@ def move_ehr_person_to_observation():
           race_source_value as observation_source_value, 
           race_source_concept_id as observation_source_concept_id
           FROM {ehr_dataset_id}.person
-        ), 
-        ( 
+
+          UNION ALL
+
           --Ethnicity
           SELECT person_id, 4271761 as observation_concept_id, 38000280 as observation_type_concept_id, 
           NULL as observation_datetime,
@@ -200,8 +201,9 @@ def move_ehr_person_to_observation():
           ethnicity_source_value as observation_source_value, 
           ethnicity_source_concept_id as observation_source_concept_id
           FROM {ehr_dataset_id}.person
-        ),
-        ( 
+
+          UNION ALL
+
           --Gender
           SELECT person_id, 4135376 as observation_concept_id, 38000280 as observation_type_concept_id, 
           NULL as observation_datetime,
@@ -210,8 +212,9 @@ def move_ehr_person_to_observation():
           gender_source_value as observation_source_value, 
           gender_source_concept_id as observation_source_concept_id
           FROM {ehr_dataset_id}.person
-        ),
-        ( 
+
+          UNION ALL
+
           --DOB
           SELECT person_id, 4083587 as observation_concept_id, 38000280 as observation_type_concept_id, 
           birth_datetime as observation_datetime,
@@ -220,10 +223,9 @@ def move_ehr_person_to_observation():
           '' as observation_source_value,
           NULL as observation_source_concept_id
           FROM {ehr_dataset_id}.person
-        )
     '''.format(ehr_dataset_id=bq_utils.get_dataset_id())
     logger.debug('Copying EHR person table from {ehr_dataset_id} to combined dataset. Query is `{q}`'.format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
-    query(q, OBSERVATION_TABLE, 'WRITE_APPEND')
+    query(q, dst_table_id=OBSERVATION_TABLE, write_disposition='WRITE_APPEND')
 
 
 def copy_ehr_table(table):
