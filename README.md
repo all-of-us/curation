@@ -11,11 +11,7 @@ or tag you need. The specification document should always be consistent with the
 ## Directory Overview
 
 *   `data_steward`
-    *   `spec` Source for the specification document. HPO data stewards will refer to this document to understand the
-        structure and contents of the data that they are responsible for submitting to the DRC. It produces a static 
-        website and stores it in a specially provisioned GCS bucket.
-        [README](data_steward/spec/README.md) 
-    *   `validation` Source for data curation processes. DRC will execute this package in order to assess whether
+    *   `validation` Source for data curation pipeline. DRC will execute this package in order to assess whether
         data sets submitted by HPO data stewards satisfy the requirements outlined in the specification document.
         HPO data stewards may refer to this package to validate their data sets __before__ submitting them
         to the DRC.

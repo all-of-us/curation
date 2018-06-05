@@ -1,6 +1,7 @@
 # Data Steward
 
-Specification document and data curation processes for data submitted to the DRC.
+Curation pipeline for data submitted to the DRC. For instructions and resources related to data submission, see the 
+[EHR Operations Group Knowledge Repository](https://sites.google.com/view/ehrupload).
 
 ## Development Requirements
 

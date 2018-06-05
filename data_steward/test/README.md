@@ -1,9 +1,24 @@
 # Tests for Curation
 
-These tests can be run with:
+## Running Tests
+
+The following environment variables must be available
+ 
+| name | description |
+| ---- | ----------- |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Location of service account credentials in JSON format (see [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials#howtheywork)) |
+| `GH_USERNAME` | Your github username |
+
+Create cloud resources needed by tests:
 
 ```Shell
-./run_tests.sh -g ${sdk_dir}
+./../ci/setup.sh
+```
+
+Run tests:
+
+```Shell
+./run_tests.sh [-g /path/to/gae/sdk] [-r test-file-pattern] 
 ```
 
 ## Directory Structure

@@ -1,5 +1,5 @@
 #!/bin/bash
-hpos=( $(cut -d ',' -f1 ./spec/_data/hpo.csv) )
+hpos=( $(cut -d ',' -f1 ./resources/hpo.csv) )
 hpos=("${hpos[@]:1}")
 
 if [ $1 = "mouse=a" ]
@@ -14,8 +14,8 @@ appid="aou-res-curation-$env"
 export APPLICATION_ID="aou-res-curation-$env"
 export BIGQUERY_DATASET_ID="${env}_temp"
 export BUCKET_NAME_FAKE="$APPLICATION_ID-fake"
-export DRC_BUCKET_NAME="$APPLICATION_ID-drc-spec"
-export BUCKET_NAME_UNIONED_EHR="$APPLICATION_ID-drc-spec"
+export DRC_BUCKET_NAME="$APPLICATION_ID-drc"
+export BUCKET_NAME_UNIONED_EHR="$APPLICATION_ID-drc"
 export BUCKET_NAME_NYC="$APPLICATION_ID-nyc"
 for i in "${hpos[@]}"
 do

@@ -19,10 +19,6 @@ skip_files:
   - tools/
 
 handlers:
-- url: /tasks/.*
-  script: spec.main.app
-  login: admin
-  secure: always
 
 - url: /.*
   script: validation.main.app
