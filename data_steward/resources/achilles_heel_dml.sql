@@ -660,9 +660,9 @@ inner join synpuf_100.achilles_results ar2
 			420,
 			620,
 			720,
-			820,
-			920,
-			1020
+			820
+-- 			920,
+-- 			1020
 			)
 where (
 		cast(ar1.stratum_1  as int64) + 1 = cast(ar2.stratum_1  as int64)
@@ -689,9 +689,10 @@ inner join synpuf_100.achilles_results ar2
 			402,
 			602,
 			702,
-			802,
-			902,
-			1002
+			802
+-- 			,
+-- 			902,
+-- 			1002
 			)
 where (
 		round(cast(ar1.stratum_2 as float64),0) + 1 = round(cast(ar2.stratum_2 as float64),0)
@@ -1156,13 +1157,13 @@ where or1.analysis_id in (
 		410, --Number of condition occurrence records outside valid observation period
 		610, --Number of procedure occurrence records outside valid observation period
 		710, --Number of drug exposure records outside valid observation period
-		810, --Number of observation records outside valid observation period
-		908, --Number of drug eras without valid person
-		909, --Number of drug eras outside valid observation period
-		910, --Number of drug eras with end date < start date
-		1008, --Number of condition eras without valid person
-		1009, --Number of condition eras outside valid observation period
-		1010 --Number of condition eras with end date < start date
+		810 --Number of observation records outside valid observation period
+-- 		908, --Number of drug eras without valid person
+-- 		909, --Number of drug eras outside valid observation period
+-- 		910, --Number of drug eras with end date < start date
+-- 		1008, --Number of condition eras without valid person
+-- 		1009, --Number of condition eras outside valid observation period
+-- 		1010 --Number of condition eras with end date < start date
 		) --all explicit counts of data anamolies
 	and or1.count_value > 0
 
