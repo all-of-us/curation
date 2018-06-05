@@ -80,7 +80,7 @@ class AchillesHeelTest(unittest.TestCase):
                     500, 511, 512, 513, 514, 515,
                     602, 612, 620, 702, 712, 720, 802, 812, 820]
         cmd = validation.sql_wrangle.qualify_tables(
-            """SELECT analysis_id FROM {prefix}achilles_heel_results 
+            """SELECT analysis_id FROM {prefix}achilles_heel_results
             WHERE achilles_heel_warning like 'WARNING:%'
             GROUP BY analysis_id""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
             FAKE_HPO_ID)
@@ -94,7 +94,7 @@ class AchillesHeelTest(unittest.TestCase):
         notifications = [101, 103, 105, 114, 115, 118, 208, 301, 410, 610,
                          710, 810, 900, 907, 1000, 1800, 1807]
         cmd = validation.sql_wrangle.qualify_tables(
-            """SELECT analysis_id FROM {prefix}achilles_heel_results 
+            """SELECT analysis_id FROM {prefix}achilles_heel_results
             WHERE achilles_heel_warning like 'NOTIFICATION:%' and analysis_id is not null
             GROUP BY analysis_id""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
             FAKE_HPO_ID)
