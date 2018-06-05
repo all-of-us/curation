@@ -65,8 +65,8 @@ class AchillesHeelTest(unittest.TestCase):
                   600, 605, 606, 609, 613, 700, 705, 706, 709, 711, 713, 715, 716, 717, 800, 805, 806,
                   809, 813, 814, 906, 1006, 1609, 1805]
         cmd = validation.sql_wrangle.qualify_tables(
-            """SELECT analysis_id FROM {prefix}achilles_heel_results 
-            WHERE achilles_heel_warning like 'ERROR:%' 
+            """SELECT analysis_id FROM {prefix}achilles_heel_results
+            WHERE achilles_heel_warning like 'ERROR:%'
             GROUP BY analysis_id""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
             FAKE_HPO_ID)
         result = bq_utils.query(cmd)
