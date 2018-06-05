@@ -78,36 +78,37 @@ def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
 
 def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
     """
-    this function also changes the datasources.json file
+    Run export queries for an HPO and store JSON payloads in specified folder in (optional) target bucket
+
+    :type hpo_id: ID of the HPO to run export for. This is the data source name in the report.
+    :param folder_prefix: Relative base path to store report. empty by default.
+    :param target_bucket: Bucket to save report. If None, use bucket associated with hpo_id.
     """
     results = []
-    if hpo_id is None and target_bucket is None:
-        raise RuntimeError('either hpo_id or target_bucket should be specified')
 
-    if target_bucket is not None:
-        hpo_bucket = target_bucket
-        logging.info('running export to bucket %s' % target_bucket)
-    else:
-        hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
-        logging.info('running export for hpo_id %s' % hpo_id)
-
+    # Using separate var rather than hpo_id here because hpo_id None needed in calls below
+    datasource_name = 'default'
     if hpo_id is None:
-        _reports_prefix = ACHILLES_EXPORT_PREFIX_STRING + 'default' + "/"
+        if target_bucket is None:
+            raise RuntimeError('Cannot export if neither hpo_id or target_bucket is specified.')
     else:
-        _reports_prefix = ACHILLES_EXPORT_PREFIX_STRING + hpo_id + "/"
+        datasource_name = hpo_id
+        if target_bucket is None:
+            target_bucket = gcs_utils.get_hpo_bucket(hpo_id)
 
-
-    # TODO : add check for required tables
+    logging.info('Exporting {datasource_name} report to bucket {target_bucket}'.format(datasource_name=datasource_name,
+                                                                                       target_bucket=target_bucket))
+    # Run export queries and store json payloads in specified folder in the target bucket
+    reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
     for export_name in common.ALL_REPORTS:
         sql_path = os.path.join(export.EXPORT_PATH, export_name)
         result = export.export_from_path(sql_path, hpo_id)
         content = json.dumps(result)
         fp = StringIO.StringIO(content)
-        result = gcs_utils.upload_object(hpo_bucket, folder_prefix + _reports_prefix + export_name + '.json', fp)
+        result = gcs_utils.upload_object(target_bucket, reports_prefix + export_name + '.json', fp)
         results.append(result)
-    datasources_json_result = save_datasources_json(hpo_id=hpo_id, folder_prefix=folder_prefix, target_bucket=hpo_bucket)
-    results.append(datasources_json_result)
-
+    result = save_datasources_json(hpo_id=hpo_id, folder_prefix=folder_prefix, target_bucket=target_bucket)
+    results.append(result)
     return results
 
 
