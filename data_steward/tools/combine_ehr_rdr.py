@@ -188,7 +188,7 @@ def move_ehr_person_to_observation():
                 ROW_NUMBER() OVER() + {offset} AS observation_id,
                 person_id,
                 observation_concept_id,
-                CAST(NULL as DATE) as observation_date,
+                EXTRACT(DATE FROM observation_datetime) as observation_date,
                 observation_type_concept_id,
                 observation_datetime,
                 CAST(NULL AS FLOAT64) as value_as_number,
@@ -208,7 +208,7 @@ def move_ehr_person_to_observation():
             FROM
             (
               SELECT person_id, 4013886 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              NULL as observation_datetime,
+              birth_datetime as observation_datetime,
               race_concept_id as value_as_concept_id,
               NULL as value_as_string,
               race_source_value as observation_source_value, 
@@ -219,7 +219,7 @@ def move_ehr_person_to_observation():
 
               --Ethnicity
               SELECT person_id, 4271761 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              NULL as observation_datetime,
+              birth_datetime as observation_datetime,
               ethnicity_concept_id as value_as_concept_id,
               NULL as value_as_string,
               ethnicity_source_value as observation_source_value, 
@@ -230,7 +230,7 @@ def move_ehr_person_to_observation():
 
               --Gender
               SELECT person_id, 4135376 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              NULL as observation_datetime,
+              birth_datetime as observation_datetime,
               gender_concept_id as value_as_concept_id,
               NULL as value_as_string,
               gender_source_value as observation_source_value, 

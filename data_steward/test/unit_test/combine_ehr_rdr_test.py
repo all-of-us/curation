@@ -139,7 +139,8 @@ class CombineEhrRdrTest(unittest.TestCase):
                     race_source_value,
                     CAST(birth_datetime as STRING),
                     ethnicity_concept_id,
-                    ethnicity_source_value)
+                    ethnicity_source_value,
+                    EXTRACT(DATE FROM birth_datetime))
             FROM {ehr_dataset_id}.person
         '''.format(ehr_dataset_id=self.ehr_dataset_id)
         response_ehr_person = [[item['v'] for item in row['f']] for row in query_result_to_payload(bq_utils.query(q_person))['F0_']]
@@ -148,7 +149,8 @@ class CombineEhrRdrTest(unittest.TestCase):
                     observation_concept_id,
                     value_as_concept_id,
                     value_as_string,
-                    observation_source_value)
+                    observation_source_value,
+                    observation_date)
             FROM {ehr_dataset_id}.observation obs
             WHERE   obs.observation_concept_id=4013886 -- Race - 4013886
                 OR  obs.observation_concept_id=4271761 -- Ethnic group - 4271761
@@ -163,16 +165,16 @@ class CombineEhrRdrTest(unittest.TestCase):
         ethnicity_concept_id = '4271761'
 
         # expected lists
-        expected_gender_list = [(row[0], gender_concept_id, row[1]) for row in response_ehr_person]
-        expected_race_list = [(row[0], race_concept_id, row[3]) for row in response_ehr_person]
-        expected_dob_list = [(row[0], dob_concept_id, row[5]) for row in response_ehr_person]
-        expected_ethnicity_list = [(row[0], ethnicity_concept_id, row[6]) for row in response_ehr_person]
+        expected_gender_list = [(row[0], gender_concept_id, row[1], row[8]) for row in response_ehr_person]
+        expected_race_list = [(row[0], race_concept_id, row[3], row[8]) for row in response_ehr_person]
+        expected_dob_list = [(row[0], dob_concept_id, row[5], row[8]) for row in response_ehr_person]
+        expected_ethnicity_list = [(row[0], ethnicity_concept_id, row[6], row[8]) for row in response_ehr_person]
 
         # actual lists
-        actual_gender_list = [(row[0], row[1], row[2])for row in response_obs if row[1] == gender_concept_id]
-        actual_race_list = [(row[0], row[1], row[2])for row in response_obs if row[1] == race_concept_id]
-        actual_dob_list = [(row[0], row[1], row[3])for row in response_obs if row[1] == dob_concept_id]
-        actual_ethnicity_list = [(row[0], row[1], row[2])for row in response_obs if row[1] == ethnicity_concept_id]
+        actual_gender_list = [(row[0], row[1], row[2], row[5])for row in response_obs if row[1] == gender_concept_id]
+        actual_race_list = [(row[0], row[1], row[2], row[5])for row in response_obs if row[1] == race_concept_id]
+        actual_dob_list = [(row[0], row[1], row[3], row[5])for row in response_obs if row[1] == dob_concept_id]
+        actual_ethnicity_list = [(row[0], row[1], row[2], row[5])for row in response_obs if row[1] == ethnicity_concept_id]
 
         self.assertListEqual(sorted(expected_gender_list), sorted(actual_gender_list), 'gender check fails')
         self.assertListEqual(sorted(expected_race_list), sorted(actual_race_list), 'race check fails')
