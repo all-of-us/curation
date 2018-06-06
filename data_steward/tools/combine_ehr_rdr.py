@@ -178,7 +178,7 @@ def move_ehr_person_to_observation():
     the observation table in the combined data set
     :return:
     """
-    
+
     q_max_ehr_obs_id = '''select max(observation_id) from {}.observation '''.format(bq_utils.get_dataset_id())
     q_max_rdr_obs_id = '''select max(observation_id) from {}.observation '''.format(bq_utils.get_rdr_dataset_id())
     max_ehr_obs_id = int(bq_utils.query(q_max_ehr_obs_id)['rows'][0]['f'][0]['v'])
