@@ -20,7 +20,7 @@
     {
         "type": "date", 
         "name": "observation_date", 
-        "mode": "required", 
+        "mode": "nullable", 
         "description": "The date of the observation."
     }, 
     {
