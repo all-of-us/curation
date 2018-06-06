@@ -9,7 +9,7 @@ import logging
 import sys
 
 from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
-from tools.combine_ehr_rdr import copy_ehr_table, move_ehr_person_to_observation
+from tools.combine_ehr_rdr import move_ehr_person_to_observation
 from tools.combine_ehr_rdr import DOMAIN_TABLES, EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY
 from google.appengine.ext import testbed
 from tools.combine_ehr_rdr import logger
@@ -112,9 +112,9 @@ class CombineEhrRdrTest(unittest.TestCase):
                (SELECT COUNT(1) n FROM {rdr_dataset_id}.{table}),
               combined AS
                (SELECT COUNT(1) n FROM {combined_dataset_id}.{table})
-              SELECT 
-                rdr.n      AS rdr_count, 
-                combined.n AS combined_count 
+              SELECT
+                rdr.n      AS rdr_count,
+                combined.n AS combined_count
               FROM rdr, combined
             '''.format(rdr_dataset_id=self.rdr_dataset_id, combined_dataset_id=self.combined_dataset_id, table=table)
             response = bq_utils.query(q)
@@ -128,6 +128,7 @@ class CombineEhrRdrTest(unittest.TestCase):
 
     def test_ehr_person_to_observation(self):
         # ehr person table converts to observation records
+        self.load_dataset_from_files(self.combined_dataset_id, test_util.NYC_FIVE_PERSONS_PATH)
         move_ehr_person_to_observation()
         # person table query
         q_person = '''
@@ -136,7 +137,7 @@ class CombineEhrRdrTest(unittest.TestCase):
                     gender_source_value,
                     race_concept_id,
                     race_source_value,
-                    birth_datetime,
+                    CAST(birth_datetime as STRING),
                     ethnicity_concept_id,
                     ethnicity_source_value)
             FROM {ehr_dataset_id}.person
@@ -155,28 +156,34 @@ class CombineEhrRdrTest(unittest.TestCase):
                 OR  obs.observation_concept_id=4083587 -- DOB - 4083587
         '''.format(ehr_dataset_id=self.combined_dataset_id)
         response_obs = [[item['v'] for item in row['f']] for row in query_result_to_payload(bq_utils.query(q_obs))['F0_']]
-        # concept ids 
+        # concept ids
         gender_concept_id = '4135376'
         race_concept_id = '4013886'
         dob_concept_id = '4083587'
         ethnicity_concept_id = '4271761'
 
         # expected lists
-        expected_gender_list = [(row[0],gender_concept_id, row[1]) for row in response_ehr_person]
-        expected_race_list = [(row[0],race_concept_id, row[3]) for row in response_ehr_person]
+        expected_gender_list = [(row[0], gender_concept_id, row[1]) for row in response_ehr_person]
+        expected_race_list = [(row[0], race_concept_id, row[3]) for row in response_ehr_person]
         expected_dob_list = [(row[0], dob_concept_id, row[5]) for row in response_ehr_person]
         expected_ethnicity_list = [(row[0], ethnicity_concept_id, row[6]) for row in response_ehr_person]
 
         # actual lists
-        actual_gender_list = [(row[0],row[1], row[2])for row in response_obs if row[1] == gender_concept_id]
-        actual_race_list = [(row[0],row[1], row[2])for row in response_obs if row[1]==race_concept_id]
-        actual_dob_list = [(row[0], row[1], row[3])for row in response_obs if row[1]==dob_concept_id]
-        actual_ethnicity_list = [(row[0],row[1], row[2])for row in response_obs if row[1]==ethnicity_concept_id]
+        actual_gender_list = [(row[0], row[1], row[2])for row in response_obs if row[1] == gender_concept_id]
+        actual_race_list = [(row[0], row[1], row[2])for row in response_obs if row[1] == race_concept_id]
+        actual_dob_list = [(row[0], row[1], row[3])for row in response_obs if row[1] == dob_concept_id]
+        actual_ethnicity_list = [(row[0], row[1], row[2])for row in response_obs if row[1] == ethnicity_concept_id]
 
-        self.assertListEqual(sorted(expected_gender_list), sorted(actual_gender_list),'gender check fails')
-        self.assertListEqual(sorted(expected_race_list), sorted(actual_race_list),'race check fails')
-        self.assertListEqual(sorted(expected_dob_list), sorted(actual_dob_list),'dob check fails')
-        self.assertListEqual(sorted(expected_ethnicity_list), sorted(actual_ethnicity_list),'ethnicity check fails')
+        self.assertListEqual(sorted(expected_gender_list), sorted(actual_gender_list), 'gender check fails')
+        self.assertListEqual(sorted(expected_race_list), sorted(actual_race_list), 'race check fails')
+        self.assertListEqual(sorted(expected_dob_list), sorted(actual_dob_list), 'dob check fails')
+        self.assertListEqual(sorted(expected_ethnicity_list), sorted(actual_ethnicity_list), 'ethnicity check fails')
+
+        obs_ehr_row_count = int(bq_utils.get_table_info('observation', self.ehr_dataset_id)['numRows'])
+        person_ehr_row_count = int(bq_utils.get_table_info('person', self.ehr_dataset_id)['numRows'])
+        obs_final_row_count = int(bq_utils.get_table_info('observation', self.combined_dataset_id)['numRows'])
+
+        self.assertEqual(obs_ehr_row_count + 4*person_ehr_row_count, obs_final_row_count)
 
     def _ehr_only_records_excluded(self):
         """
@@ -184,17 +191,17 @@ class CombineEhrRdrTest(unittest.TestCase):
         """
         q = '''
         WITH ehr_only AS
-        (SELECT person_id 
+        (SELECT person_id
          FROM {ehr_dataset_id}.person ep
-         WHERE NOT EXISTS 
-           (SELECT 1 
-            FROM {rdr_dataset_id}.person rp 
+         WHERE NOT EXISTS
+           (SELECT 1
+            FROM {rdr_dataset_id}.person rp
             WHERE rp.person_id = ep.person_id)
         )
-        SELECT 
+        SELECT
           ehr_only.person_id AS ehr_person_id,
           p.person_id        AS combined_person_id
-        FROM ehr_only 
+        FROM ehr_only
           LEFT JOIN {ehr_rdr_dataset_id}.person p
             ON ehr_only.person_id = p.person_id
         '''.format(ehr_dataset_id=self.ehr_dataset_id,
@@ -219,7 +226,7 @@ class CombineEhrRdrTest(unittest.TestCase):
                LEFT JOIN {ehr_rdr_dataset_id}.{mapping_table} m
                ON rt.{domain_table}_id = m.src_{domain_table}_id
                WHERE
-                 m.{domain_table}_id IS NULL 
+                 m.{domain_table}_id IS NULL
                OR NOT EXISTS
                  (SELECT 1 FROM {ehr_rdr_dataset_id}.{domain_table} t
                   WHERE t.{domain_table}_id = m.{domain_table}_id)'''.format(
@@ -258,7 +265,7 @@ class CombineEhrRdrTest(unittest.TestCase):
     def tearDownClass(cls):
         ehr_dataset_id = bq_utils.get_dataset_id()
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-        # test_util.delete_all_tables(ehr_dataset_id)
-        # test_util.delete_all_tables(rdr_dataset_id)
+        test_util.delete_all_tables(ehr_dataset_id)
+        test_util.delete_all_tables(rdr_dataset_id)
         cls.testbed.deactivate()
         logger.handlers = []
