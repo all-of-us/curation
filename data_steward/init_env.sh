@@ -9,7 +9,7 @@ fi
 
 # Require username in GH_USERNAME or CIRCLE_USERNAME
 export APPLICATION_ID="aou-res-curation-$CONFIG"
-export USERNAME="${GH_USERNAME:-${CIRCLE_USERNAME:-}}"
+export USERNAME=$(echo "${GH_USERNAME:-${CIRCLE_USERNAME:-}}" | tr '[:upper:]' '[:lower:]')
 
 if [ -z "${USERNAME}" ]
 then
