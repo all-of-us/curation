@@ -13,6 +13,7 @@ futures==3.2.0
 google-api-core==1.1.0
 google-api-python-client==1.6.6
 google-auth==1.4.1
+google-auth-oauthlib==0.2.0
 google-cloud-bigquery==1.0.0
 google-cloud-core==0.28.1
 google-resumable-media==0.3.1
@@ -35,7 +36,10 @@ mistune==0.8.3
 nbconvert==5.3.1
 nbformat==4.4.0
 notebook==5.4.1
+numpy==1.14.3
 oauth2client==4.1.2
+oauthlib==2.0.7
+pandas==0.23.0
 pandocfilters==1.4.2
 pathlib2==2.3.2
 pexpect==4.5.0
@@ -51,6 +55,7 @@ pytz==2018.4
 pyzmq==17.0.0
 qtconsole==4.3.1
 requests==2.18.4
+requests-oauthlib==0.8.0
 rsa==3.4.2
 scandir==1.7
 Send2Trash==1.5.0
