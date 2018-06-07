@@ -904,7 +904,7 @@ if __name__ == '__main__' :
     else:
         dropped_fields = ""
     # print sql
-    Logging.log(subject='composer',object=table,action='formatted.removed.columns',value=remove['columns'])
+    Logging.log(subject='composer',object=table,action='formatted.removed.columns',value=(remove['columns'] if 'columns' in remove else []))
     sql = sql.replace(":dropped_fields",dropped_fields)
     # print sql  
     #
