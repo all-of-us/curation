@@ -1,0 +1,30 @@
+SELECT *  FROM ( SELECT observation_id,person_id,observation_concept_id,observation_type_concept_id,value_as_number,value_as_string,value_as_concept_id,qualifier_concept_id,unit_concept_id,provider_id,visit_occurrence_id,observation_source_value,observation_source_concept_id,unit_source_value,qualifier_source_value,value_source_concept_id,value_source_value,questionnaire_response_id ,observation_date,observation_datetime from (
+                    SELECT observation_id,person_id,observation_concept_id,observation_type_concept_id,value_as_number,value_as_string,value_as_concept_id,qualifier_concept_id,unit_concept_id,provider_id,visit_occurrence_id,observation_source_value,observation_source_concept_id,unit_source_value,qualifier_source_value,value_source_concept_id,value_source_value,questionnaire_response_id ,
+               DATE_SUB( CAST(observation_date AS DATE), INTERVAL (SELECT seed from raw.people_seed xii WHERE xii.person_id = observation.person_id) DAY) as observation_date
+            ,
+               DATE_SUB( CAST(observation_datetime AS DATE), INTERVAL (SELECT seed from raw.people_seed xii WHERE xii.person_id = observation.person_id) DAY) as observation_datetime
+            
+                    FROM raw.observation
+                
+
+                        WHERE observation_source_concept_id in (
+                            SELECT concept_id 
+                            FROM raw.concept 
+                            WHERE vocabulary_id = 'PPI' AND concept_class_id in ('Question','PPI Modifier')
+                            
+                            AND REGEXP_CONTAINS(concept_code,'(Date|Orientation|Language_SpokenWrittenLanguage|Gender|BiologicalSexAtBirth_SexAtBirth|Race_WhatRace|EducationLevel_HighestGrade|_EmploymentStatus)') IS FALSE
+                        )
+
+                       
+                    ) UNION ALL SELECT observation_id,person_id,observation_concept_id,observation_type_concept_id,value_as_number,value_as_string,value_as_concept_id,qualifier_concept_id,unit_concept_id,provider_id,visit_occurrence_id,observation_source_value,observation_source_concept_id,unit_source_value,qualifier_source_value,value_source_concept_id,value_source_value,questionnaire_response_id ,observation_date,observation_datetime FROM ( 
+                    SELECT CAST( DATE_SUB( CAST(value_as_string AS DATE), INTERVAL (SELECT seed from raw.people_seed xii WHERE xii.person_id = x.person_id) DAY) AS STRING) as value_as_string,person_id, 
+               DATE_SUB( CAST(observation_date AS DATE), INTERVAL (SELECT seed from raw.people_seed xii WHERE xii.person_id = x.person_id) DAY) as observation_date
+            ,
+               DATE_SUB( CAST(observation_datetime AS DATE), INTERVAL (SELECT seed from raw.people_seed xii WHERE xii.person_id = x.person_id) DAY) as observation_datetime
+              ,provider_id,observation_concept_id,value_as_number,observation_id,unit_source_value,unit_concept_id,value_source_value,qualifier_concept_id,observation_source_value,observation_type_concept_id,observation_source_concept_id,qualifier_source_value,value_as_concept_id,value_source_concept_id,questionnaire_response_id,visit_occurrence_id
+                    FROM raw.observation x where observation_source_value in (
+                        SELECT concept_code from raw.concept WHERE REGEXP_CONTAINS(concept_code,'Date|DATE|date') IS TRUE
+                        AND REGEXP_CONTAINS(concept_code,'(Orientation|Language_SpokenWrittenLanguage|Gender|BiologicalSexAtBirth_SexAtBirth|Race_WhatRace|EducationLevel_HighestGrade|_EmploymentStatus)') IS FALSE
+                    )
+                     ) ) WHERE REGEXP_CONTAINS(observation_source_value,'Text|TextBox|_City|_Zip|WordAddress|OrganTransplatDescription_|OutsideTravel6Months_|PersonalMedicalhistory_AdditionalDiagnosis|circulatory_HowOldWereYouHypertension|GeneralConsent_OtherComments|PPIFeedback_|DiagnosisHistory_WhichConditions|OtherCancer_|PostPMBFeedback_|_HowOldWereYou|_AreYouAPatientAllOfUsPartner|PIIName_|SocialSecurity|PIIAddress_|Address_PII|_Phone|_Email|Signature|SanDiegoBloodBank|AZSArizonaSpecific') IS FALSE AND person_id in (856256, 562270, 867291,178533) AND person_id not in (SELECT person_id FROM raw.observation where observation_source_value = 'PIIBirthInformation_BirthDate' and DATE_DIFF(CURRENT_DATE, CAST(value_as_string AS DATE),YEAR) > 89)
+3a599689-3fac-4375-ba92-90ff06d9ad98 PENDING True None
