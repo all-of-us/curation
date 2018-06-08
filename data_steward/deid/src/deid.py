@@ -55,6 +55,7 @@ import json
 import logging
 from google.cloud import bigquery as bq
 from datetime import datetime
+import time
 import os
 
 #
@@ -110,17 +111,7 @@ class Policy :
         OBSERVATION_FILTERS = {"race":'Race_WhatRace',"gender":'Gender',"orientation":'Orientation',"employment":'_EmploymentStatus',"sex_at_birth":'BiologicalSexAtBirth_SexAtBirth',"language":'Language_SpokenWrittenLanguage',"education":'EducationLevel_HighestGrade'}
         BEGIN_OF_TIME = '1980-07-21'
 
-    @staticmethod
-    def get_dropped_fields(fields):
-        """ 
-            In order to preserve structural integrity of the database we must empty the values of the fields systematically
-            @NOTE:
-        """
-        r = []
-        for name in fields :
-            r.append("""'' as :name """.replace(":name",name))
-        
-        return r
+
     def __init__(self,**args):
         """
             This function loads basic specifications for a policy
@@ -725,6 +716,43 @@ def initialization(client,dataset):
         r = client.query(sql,location='US',job_config=job)        
         Logging.log(subject='composer',object='big.query',action='create.table',value=r.job_id)
 
+def finalize(client,i_dataset, o_dataset,table,fields):
+    """
+        This function is designed or intended to finalize the import process by insuring the tables are adequately structured
+        @NOTE: The prefix i indicates input, and the prefix o indicates output
+
+        @param client     Big query client object
+        @param i_dataset  input dataset
+        @param o_dataset  output dataset
+        @param table      target table name
+    """
+    
+    ischema = client.get_table(client.dataset(i_dataset).table(table)).schema
+    table   = client.get_table(client.dataset(o_dataset).table(table))
+    ischema_size = len(ischema)
+    
+    newfields = [bq.SchemaField(name=field.name,field_type=field.field_type) for field in ischema if field.name in fields]
+    oschema = table.schema + newfields
+    # oschema = []
+    
+    # for ofield in table.schema :
+    #     if ofield.field_type not in ['DATE','TIMESTAMP'] :
+    #         field = [ifield for ifield in ischema if ifield.name == ofield.name][0]
+            
+    #         del ischema[ischema.index(field)]
+    #     else :
+    #         field = ofield
+    #     oschema.append(bq.SchemaField(name=field.name,field_type=field.field_type))
+    Logging.log(subject='composer',object='finalize',action='validation',value= (len(oschema) == ischema_size)*1 )
+    if len(oschema) == ischema_size:
+        try:
+            table.schema = oschema
+            client.update_table(table,['schema'])
+            Logging.log(subject='composer',object='finalize',action='update.schema',value={"table":table.table_id,"schema":[" ".join([field.name,field.field_type])for field in newfields]} )
+        except Exception,e:
+            print e
+            Logging.log(subject='composer',object='finalize.error',action='finalize.error',value=e.message )
+    
 #
 # The code below will implement the orchestration and parameter handling from the command line 
 #             
@@ -742,6 +770,7 @@ if __name__ == '__main__' :
     #   - Initialize class level parameters
     #
     CONSTANTS = SYS_ARGS['config']['constants']
+    
     account_path = CONSTANTS['service-account-path']    
     Policy.TERMS.SEXUAL_ORIENTATION_NOT_STRAIGHT= CONSTANTS['sexual-orientation']['not-straight']
     Policy.TERMS.SEXUAL_ORIENTATION_STRAIGHT    = CONSTANTS['sexual-orientation']['straight']
@@ -755,7 +784,8 @@ if __name__ == '__main__' :
     table       = SYS_ARGS['table']    
     o_dataset   = SYS_ARGS['o_dataset']
     remove      = SYS_ARGS['config']['suppression'][table] if table in SYS_ARGS['config']['suppression'] else []
-    
+    COMPUTE_FIELDS = SYS_ARGS['config']['compute'][table] if 'compute' in SYS_ARGS['config'] and table in SYS_ARGS['config']['compute'] else {}
+
     initialization(client,i_dataset)
 
     #
@@ -893,19 +923,29 @@ if __name__ == '__main__' :
         FILTER += EXCLUDE_AGE_SQL
     FILTER = " ".join(FILTER)
     
-    sql = "SELECT * :dropped_fields FROM ("+sql+") "+FILTER
+    sql = "SELECT * :computed_fields FROM ("+sql+") "+FILTER
     
     #
     # Bug-fix:
     #   Insuring the tables maintain their structural integrity
-    dropped_fields = Policy.get_dropped_fields(remove['columns']) if 'columns' in remove else []
-    if len(dropped_fields) > 0 :
-        dropped_fields = ","+",".join(dropped_fields)
+    # dropped_fields = Policy.get_aliased_dropped_fields(remove['columns'],FIELD_ALIAS) if 'columns' in remove else []
+    DROPPED_FIELDS = remove['columns'] if 'columns' in remove else []
+    if not COMPUTE_FIELDS:
+        compute_fields = ""
     else:
-        dropped_fields = ""
+        compute_fields =  ",".join([""]+COMPUTE_FIELDS.values() )
+        #
+        # In case the fields to be dropped are specified as needing to be computed
+        # @NOTE: This (the compute entry of the configuration) should ONLY be used for built-in aggregate SQL functions
+        #
+        DROPPED_FIELDS = list(set(DROPPED_FIELDS) - set(COMPUTE_FIELDS.keys()))
+    Logging.log(subject="composer", object=table,action="compute.fields",value=COMPUTE_FIELDS.keys())
+    sql = sql.replace(":computed_fields",compute_fields)
+
+    
     # print sql
-    Logging.log(subject='composer',object=table,action='formatted.removed.columns',value=(remove['columns'] if 'columns' in remove else []))
-    sql = sql.replace(":dropped_fields",dropped_fields)
+    Logging.log(subject='composer',object=table,action='formatted.removed.columns',value=DROPPED_FIELDS)
+    
     # print sql  
     #
     # @Log: We are logging here the operaton that is expected to take place
@@ -918,15 +958,34 @@ if __name__ == '__main__' :
     job.destination = client.dataset(o_dataset).table(table)
     job.use_query_cache = True
     job.allow_large_results = True
-    job.priority = 'BATCH'
+    
+    job.priority = 'BATCH' if 'filter' not in SYS_ARGS else 'INTERACTIVE'
+    Logging.log(subject='composer',object=table,action='job.setup',value={"priority":job.priority})
     # job.dry_run = True    
     r = client.query(sql,location='US',job_config=job)
-
+    
     #
     # @Log: We are logging here the operaton that is expected to take place
     # {"action":"submit-sql","input":job.job_id,"subject":table,"object":{"status":job.state,"running""job.running}}     
-    print r.job_id,r.state,r.running() ,r.errors
     Logging.log(subject="composer",object=r.job_id,action="submit.job",value={"from":i_dataset+"."+table,"to":o_dataset})
-    # print dir(r)
-    #@TODO: monitor jobs once submitted
-    pass
+    #
+    # Once the job has been submitted we need to update the resultset with
+    # @TODO Find a way to use add_done_callback
+    #
+    while True:
+        if client.get_job(r.job_id).state == 'DONE' :
+            break
+        else:
+            print "sleeping ... "
+            time.sleep(10)
+        pass
+    job = client.get_job(r.job_id)
+    if job.errors is None:
+        
+        finalize(client,i_dataset,o_dataset,SYS_ARGS['table'] ,DROPPED_FIELDS)
+    
+    # Logging.log(subject='composer',object=r.job_id,action='job.status',value='FAILURE' if job.errors is None else 'SUCCESS')
+    #
+    # At this point the job should be stopped and we can check the status of the job
+    #
+
