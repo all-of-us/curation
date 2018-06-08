@@ -709,10 +709,10 @@ def initialization(client,dataset):
 
         
         sql = """
-                SELECT person_id, DATE_DIFF(CURRENT_DATE,CAST(value_as_string as DATE) , DAY)+ CAST (300*rand() AS INT64) as seed 
+                SELECT person_id, DATE_DIFF(CURRENT_DATE,CAST(value_as_string as DATE) , DAY)+ CAST (720*rand() AS INT64) as seed 
                 FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' 
                 UNION ALL
-                SELECT person_id, CAST(300*rand() AS INT64)+ CAST (300*rand() AS INT64) as seed
+                SELECT person_id, CAST(360*rand() AS INT64)+ CAST (360*rand() AS INT64) as seed
                 FROM :i_dataset.observation WHERE person_id not in (SELECT person_id FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' GROUP BY person_id)
                 GROUP BY person_id
         """.replace(":i_dataset",dataset)
