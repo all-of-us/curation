@@ -707,7 +707,15 @@ def initialization(client,dataset):
         # At this point we have either destroyed the table or it does NOT exist yet
         #
 
-        sql = "SELECT person_id, DATE_DIFF(CURRENT_DATE,CAST(value_as_string as DATE) , DAY)+ CAST (700*rand() AS INT64) as seed FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' GROUP BY person_id,value_as_string ORDER BY 1".replace(":i_dataset",dataset)
+        
+        sql = """
+                SELECT person_id, DATE_DIFF(CURRENT_DATE,CAST(value_as_string as DATE) , DAY)+ CAST (300*rand() AS INT64) as seed 
+                FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' 
+                UNION ALL
+                SELECT person_id, CAST(300*rand() AS INT64)+ CAST (300*rand() AS INT64) as seed
+                FROM :i_dataset.observation WHERE person_id not in (SELECT person_id FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' GROUP BY person_id)
+                GROUP BY person_id
+        """.replace(":i_dataset",dataset)
         job = bq.QueryJobConfig()
         job.destination = client.dataset(dataset).table("people_seed")
         job.use_query_cache = True
@@ -972,13 +980,15 @@ if __name__ == '__main__' :
     # Once the job has been submitted we need to update the resultset with
     # @TODO Find a way to use add_done_callback
     #
+    Logging.log(subject="composer",object=r.job_id,action="sleeping",value=datetime.now().strftime("%Y-%d-%m %H:%M %s"))
     while True:
         if client.get_job(r.job_id).state == 'DONE' :
             break
         else:
-            print "sleeping ... "
+            
             time.sleep(10)
         pass
+    Logging.log(subject="composer",object=r.job_id,action="awaken",value=datetime.now().strftime("%Y-%d-%m %H:%M %s"))
     job = client.get_job(r.job_id)
     if job.errors is None:
         
