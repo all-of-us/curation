@@ -269,10 +269,14 @@ class Shift (Policy):
             # shifted_field = """
             #     DATE_SUB( DATE_SUB(DATE_SUB( CAST(:name AS DATE),INTERVAL :year YEAR),INTERVAL :month MONTH),INTERVAL :day DAY) as :name
             # """.replace(':name',field.name).replace(":year",str(year)).replace(":month",str(month)).replace(":day",str(day))
-           
-            shifted_field = """
-               DATE_SUB( CAST(:name AS DATE), INTERVAL (SELECT seed from :i_dataset.people_seed xii WHERE xii.person_id = :table.person_id) DAY) as :name
-            """.replace(":name",field.name).replace(":table",table).replace(":i_dataset",dataset)
+            if field.field_type == 'DATE' :
+                shifted_field = """DATE_SUB(CAST(:name AS DATE), INTERVAL date_diff( CAST(:name AS DATE),(select anchor from :i_dataset.people_seed xii where xii.person_id = :table.person_id),DAY) DAY) as :name """
+            else:
+                shifted_field = """TIMESTAMP_SUB(CAST(:name AS TIMESTAMP), INTERVAL TIMESTAMP_DIFF( CAST(:name AS TIMESTAMP),(select CAST(anchor AS TIMESTAMP) from :i_dataset.people_seed xii where xii.person_id = :table.person_id),DAY) DAY) as :name"""
+            shifted_field = shifted_field.replace(":name",field.name).replace(":table",table).replace(":i_dataset",dataset)
+            # shifted_field = """
+            #    DATE_SUB( CAST(:name AS DATE), INTERVAL (SELECT seed from :i_dataset.people_seed xii WHERE xii.person_id = :table.person_id) DAY) as :name
+            # """.replace(":name",field.name).replace(":table",table).replace(":i_dataset",dataset)
             # shifted_field = shifted_field.replace(":name",field.name).replace(":i_dataset",dataset)
             r.append(shifted_field)
         Logging.log(subject=self.name(),action='shifting.dates',object=[field.name for field in fields],value=[field.name for field in fields])   
@@ -708,13 +712,21 @@ def initialization(client,dataset):
         #
 
         
-        sql = """
-                SELECT person_id, DATE_DIFF(CURRENT_DATE,CAST(value_as_string as DATE) , DAY)+ CAST (720*rand() AS INT64) as seed 
-                FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' 
-                UNION ALL
-                SELECT person_id, CAST(360*rand() AS INT64)+ CAST (360*rand() AS INT64) as seed
-                FROM :i_dataset.observation WHERE person_id not in (SELECT person_id FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' GROUP BY person_id)
-                GROUP BY person_id
+        # sql = """
+        #         SELECT person_id, DATE_DIFF(CURRENT_DATE,CAST(value_as_string as DATE) , DAY)+ CAST (720*rand() AS INT64) as seed 
+        #         FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' 
+        #         UNION ALL
+        #         SELECT person_id, CAST(360*rand() AS INT64)+ CAST (360*rand() AS INT64) as seed
+        #         FROM :i_dataset.observation WHERE person_id not in (SELECT person_id FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' GROUP BY person_id)
+        #         GROUP BY person_id
+        # """.replace(":i_dataset",dataset)
+        sql = """    
+        SELECT person_id, DATE_SUB(CAST(value_as_string as DATE) , INTERVAL CAST (720*rand() AS INT64) DAY) as anchor
+        FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' 
+        UNION ALL
+        SELECT person_id, DATE_SUB(CURRENT_DATE , INTERVAL CAST (720*rand() AS INT64) DAY) as anchor
+        FROM :i_dataset.observation WHERE person_id not in (SELECT person_id FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' GROUP BY person_id)
+        GROUP BY person_id
         """.replace(":i_dataset",dataset)
         job = bq.QueryJobConfig()
         job.destination = client.dataset(dataset).table("people_seed")
@@ -723,7 +735,19 @@ def initialization(client,dataset):
         # job.dry_run = True    
         r = client.query(sql,location='US',job_config=job)        
         Logging.log(subject='composer',object='big.query',action='create.table',value=r.job_id)
+        wait(client,r.job_id)
 
+def wait(client,job_id) :
+    Logging.log(subject="composer",object="deid",action="sleep",value=job_id)
+    while True:
+        if client.get_job(job_id).state == 'DONE' :
+            break
+        else:
+            
+            time.sleep(10)
+        pass
+    Logging.log(subject="composer",object="deid",action="awakening",value=job_id)
+    
 def finalize(client,i_dataset, o_dataset,table,fields):
     """
         This function is designed or intended to finalize the import process by insuring the tables are adequately structured
@@ -980,15 +1004,16 @@ if __name__ == '__main__' :
     # Once the job has been submitted we need to update the resultset with
     # @TODO Find a way to use add_done_callback
     #
-    Logging.log(subject="composer",object=r.job_id,action="sleeping",value=datetime.now().strftime("%Y-%d-%m %H:%M %s"))
-    while True:
-        if client.get_job(r.job_id).state == 'DONE' :
-            break
-        else:
+    # Logging.log(subject="composer",object=r.job_id,action="sleeping",value=datetime.now().strftime("%Y-%d-%m %H:%M %s"))
+    # while True:
+    #     if client.get_job(r.job_id).state == 'DONE' :
+    #         break
+    #     else:
             
-            time.sleep(10)
-        pass
-    Logging.log(subject="composer",object=r.job_id,action="awaken",value=datetime.now().strftime("%Y-%d-%m %H:%M %s"))
+    #         time.sleep(10)
+    #     pass
+    # Logging.log(subject="composer",object=r.job_id,action="awaken",value=datetime.now().strftime("%Y-%d-%m %H:%M %s"))
+    wait(client,r.job_id)
     job = client.get_job(r.job_id)
     if job.errors is None:
         
