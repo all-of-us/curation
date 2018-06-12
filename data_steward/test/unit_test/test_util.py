@@ -13,6 +13,7 @@ EMPTY_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'empty_validation_result.
 ALL_FILES_UNPARSEABLE_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'all_files_unparseable_validation_result.csv')
 ALL_FILES_UNPARSEABLE_VALIDATION_RESULT_NO_HPO_JSON = os.path.join(TEST_DATA_PATH, 'all_files_unparseable_validation_result_no_hpo.json')
 BAD_PERSON_FILE_BQ_LOAD_ERRORS_CSV = os.path.join(TEST_DATA_PATH, 'bq_errors_bad_person.csv')
+EMPTY_WARNINGS_CSV = os.path.join(TEST_DATA_PATH, 'empty_warnings.csv')
 
 # Test files for five person sample
 FIVE_PERSONS_PATH = os.path.join(TEST_DATA_PATH, 'five_persons')

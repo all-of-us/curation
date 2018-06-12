@@ -195,6 +195,16 @@ def list_bucket(bucket):
         raise
 
 
+def is_pii(filename):
+    """
+    Returns True if filename is a PII file
+    :param filename:
+    :return:
+    """
+    # TODO make this check more explicit
+    return filename.startswith('pii')
+
+
 def run_validation(hpo_id, force_run=False):
     """
     runs validation for a single hpo_id
@@ -222,9 +232,9 @@ def run_validation(hpo_id, force_run=False):
             if _is_cdm_file(item):
                 found_cdm_files.append(item)
             else:
-                if item in common.IGNORE_LIST + common.CDM_FILES:
-                    continue
-                unknown_files.append(item)
+                is_known_file = item in common.IGNORE_LIST or is_pii(item)
+                if not is_known_file:
+                    unknown_files.append(item)
 
         errors = []
         results = []
