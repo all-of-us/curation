@@ -208,7 +208,6 @@ class ValidationTest(unittest.TestCase):
                 if 'person_id' in field_names:
                     self.table_has_clustering(table_info)
 
-
     @mock.patch('api_util.check_cron')
     def test_validation_done_folder(self, mock_check_cron):
         folder_prefix_v1 = 'dummy-prefix-2018-03-22-v1/'
@@ -297,6 +296,19 @@ class ValidationTest(unittest.TestCase):
         actual_bucket_files = set([item['name'] for item in gcs_utils.list_bucket(bucket_nyc)])
         expected_bucket_files = set(['test-folder-fake/' + item for item in common.ALL_ACHILLES_INDEX_FILES])
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
+
+    @mock.patch('api_util.check_cron')
+    def test_pii_files_ignore(self, mock_check_cron):
+        folder_prefix = 'dummy-prefix-2018-03-22/'
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'pii_person.csv', contents_str='.')
+
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(test_util.VALIDATE_HPO_FILES_URL)
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.WARNINGS_CSV)
+            with open(test_util.EMPTY_WARNINGS_CSV, 'r') as f:
+                expected = f.read()
+                self.assertEqual(expected, actual_result)
 
     def tearDown(self):
         self._empty_bucket()
