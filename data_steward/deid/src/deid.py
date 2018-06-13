@@ -205,7 +205,8 @@ class Shift (Policy):
                     #     date_sub((SELECT CAST(value_as_string as DATE) FROM :i_dataset.observation ii where ii.person_id = person_id and observation_source_value='ExtraConsent_TodaysDate' limit 1) , INTERVAL 
                     #     date_diff(:name, (SELECT seed from :i_dataset.people_seed ii where ii.person_id = person_id), DAY) DAY) AS STRING) as :name
                     # """.replace(":name","value_as_string")
-                    shifted_date = """CAST( DATE_SUB( CAST(:name AS DATE), INTERVAL (SELECT seed from :i_dataset.people_seed xii WHERE xii.person_id = :table.person_id) DAY) AS STRING) as :name"""
+                    # shifted_date = """CAST( DATE_SUB( CAST(:name AS DATE), INTERVAL (SELECT seed from :i_dataset.people_seed xii WHERE xii.person_id = :table.person_id) DAY) AS STRING) as :name"""
+                    shifted_date = """CAST( DATE_SUB(CAST(:name AS DATE), INTERVAL date_diff( CAST(:name AS DATE),(select anchor from :i_dataset.people_seed xii where xii.person_id = :table.person_id),DAY) DAY) AS STRING) as :name """
                     shifted_date = shifted_date.replace(":name","value_as_string").replace(":i_dataset",dataset).replace(":table","x")
                     sql_fields = self.__get_shifted_fields(fields,dataset,"x")
                     #--AND person_id = 562270
@@ -538,6 +539,7 @@ class Group(Policy):
             Other if not {M,F}            
             
             @NOTE : The table has fields with redundant information (shit design) i.e gender_source_value and gender_concept_id
+            The goal of a database is to organize access to data, redundancies are a source of inefficiencies.
 
             @param dataset
             @param table
