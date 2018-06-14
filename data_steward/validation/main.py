@@ -371,7 +371,7 @@ def _get_to_process_list(bucket, bucket_items, force_process=False):
 
 
 def _is_cdm_file(gcs_file_name):
-    return gcs_file_name.lower() in common.CDM_FILES
+    return gcs_file_name in common.CDM_FILES
 
 
 @api_util.auth_required_cron
