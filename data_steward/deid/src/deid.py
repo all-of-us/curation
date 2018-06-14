@@ -40,11 +40,12 @@
         The codebase is developed with python 2.7.x platform
 
         pip install -r requirements.txt
-    python deid.py --i_datase <input_dataset> --table <table_name> --o_dataset <output_dataset>
+    python deid.py --i_datase <input_dataset> --table <table_name> --o_dataset <output_dataset> --config <path_config>
 
 @TODO: 
     - Improve the logs (make sure they're expressive and usable for mining)
     - Limitations append an existing table isn't yet supported
+@NOTE:
     
     
     
@@ -180,7 +181,7 @@ class Shift (Policy):
                 self.cache[name] = p or q
                 joined_fields = [field.name for field in fields]
                 if self.cache[name] == True :
-                    self.policies[name] = {"join":{"sql":None,"fields":joined_fields,"shifted_values":sql_fields}}
+                    self.policies[name] = {"join":{"sql":None,"fields":joined_fields,"shifted_values":sql_fields,"date_fields":fields}}
 
                 if q :
                    
@@ -219,25 +220,6 @@ class Shift (Policy):
                     )
                     """.replace(":i_dataset",dataset).replace(":shifted_fields",",".join(sql_fields)).replace(":shifted_date",shifted_date).replace(":filter",sql_filter)
                     
-                    # _sql = """
-                    
-                    #     SELECT CAST (DATE_DIFF(CAST(x.value_as_string AS DATE),CAST(y.value_as_string AS DATE),DAY) as STRING) as value_as_string, x.person_id, :shifted_fields :fields
-                    #     FROM :i_dataset.observation x INNER JOIN (
-                    #         SELECT MAX(value_as_string) as value_as_string, person_id
-                    #         FROM :i_dataset.observation
-                    #         WHERE observation_source_value = 'ExtraConsent_TodaysDate'
-                            
-                    #         GROUP BY person_id
-                    #     ) y ON x.person_id = y.person_id 
-                        
-                    #     WHERE observation_source_value in (
-                            
-                    #         SELECT concept_code from :i_dataset.concept 
-                    #         WHERE REGEXP_CONTAINS(concept_code,'(DATE|Date|date)') IS TRUE
-                            
-                    #     )
-                         
-                    # """.replace(":i_dataset",dataset).replace(":shifted_fields",",".join(sql_fields))
                     
                     self.policies[name]["union"] = {"sql":_sql,"fields":union_fields,"shifted_values":sql_fields}
                     
@@ -821,7 +803,7 @@ if __name__ == '__main__' :
     COMPUTE_FIELDS = SYS_ARGS['config']['compute'][table] if 'compute' in SYS_ARGS['config'] and table in SYS_ARGS['config']['compute'] else {}
 
     initialization(client,i_dataset)
-
+    
     #
     # The operation will be performed via the implementation of a form of iterator-design pattern
     # design information here https://en.wikipedia.org/wiki/Iterator_pattern
@@ -867,7 +849,7 @@ if __name__ == '__main__' :
     # @Log: We are logging here the operaton that is expected to take place
     # {"action":"building-sql","input":fields,"subject":table,"object":""}
     
-
+    joined_fields = None
     if 'shift' in r :
         
         if 'join' in r['shift'] :
@@ -992,36 +974,49 @@ if __name__ == '__main__' :
     job.destination = client.dataset(o_dataset).table(table)
     job.use_query_cache = True
     job.allow_large_results = True
-    
+    # job._properties['load']['timePartitioning'] = {'type': 'DAY', 'field': 'person_id'}
+    # if joined_fields not in ["",None]:
+    job.time_partitioning = bq.table.TimePartitioning(type_=bq.table.TimePartitioningType.DAY)
+    #
+    # DC-134:
+    # The following line is a hack that gets the clustering working
+    # After looking into the source code, it would seem this is the best place to get it to work
+    #
+    job._properties['query']['clustering'] = {'fields':['person_id']}
+    print (job._properties)
     job.priority = 'BATCH' if 'filter' not in SYS_ARGS else 'INTERACTIVE'
-    Logging.log(subject='composer',object=table,action='job.setup',value={"priority":job.priority})
-    # job.dry_run = True    
+    
+    job.dry_run = True    
+    #
+    # If the query can run, then we will proceed to creating the tables with partitioning on person and 
     r = client.query(sql,location='US',job_config=job)
-    
-    #
-    # @Log: We are logging here the operaton that is expected to take place
-    # {"action":"submit-sql","input":job.job_id,"subject":table,"object":{"status":job.state,"running""job.running}}     
-    Logging.log(subject="composer",object=r.job_id,action="submit.job",value={"from":i_dataset+"."+table,"to":o_dataset})
-    #
-    # Once the job has been submitted we need to update the resultset with
-    # @TODO Find a way to use add_done_callback
-    #
-    # Logging.log(subject="composer",object=r.job_id,action="sleeping",value=datetime.now().strftime("%Y-%d-%m %H:%M %s"))
-    # while True:
-    #     if client.get_job(r.job_id).state == 'DONE' :
-    #         break
-    #     else:
-            
-    #         time.sleep(10)
-    #     pass
-    # Logging.log(subject="composer",object=r.job_id,action="awaken",value=datetime.now().strftime("%Y-%d-%m %H:%M %s"))
-    wait(client,r.job_id)
-    job = client.get_job(r.job_id)
-    if job.errors is None:
+    Logging.log(subject='composer',object=table,action='job.setup',value={"priority":job.priority,"can.run":1*(r.errors is None) })
+    if r.errors is None and r.state == 'DONE' :
+        job.dry_run= False
+        r = client.query(sql,location='US',job_config=job)
+        #
+        # @Log: We are logging here the operaton that is expected to take place
+        # {"action":"submit-sql","input":job.job_id,"subject":table,"object":{"status":job.state,"running""job.running}}     
+        Logging.log(subject="composer",object=r.job_id,action="submit.job",value={"from":i_dataset+"."+table,"to":o_dataset})
+        #
+        # Once the job has been submitted we need to update the resultset with
+        # @TODO Find a way to use add_done_callback
+        #
         
-        finalize(client,i_dataset,o_dataset,SYS_ARGS['table'] ,DROPPED_FIELDS)
+        wait(client,r.job_id)
+        job = client.get_job(r.job_id)
+        if job.errors is None:
+            
+            finalize(client,i_dataset,o_dataset,SYS_ARGS['table'] ,DROPPED_FIELDS)
+
+    else:
+        #
+        # There is no need to run the query if it can't run upon evaluation
+        # For dry_run to provide an estimate of the number of bytes it will process it must first evaluate query generated
+        # If the evaluation of the query doesn't pass, we shouldn't run it at all.
+        pass
     
-    # Logging.log(subject='composer',object=r.job_id,action='job.status',value='FAILURE' if job.errors is None else 'SUCCESS')
+    Logging.log(subject='composer',object=r.job_id,action='job.status',value='SUCCESS' if job.errors is None else 'FAILURE')
     #
     # At this point the job should be stopped and we can check the status of the job
     #
