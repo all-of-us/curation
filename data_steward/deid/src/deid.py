@@ -1018,6 +1018,4 @@ if __name__ == '__main__' :
     
     Logging.log(subject='composer',object=r.job_id,action='job.status',value='SUCCESS' if job.errors is None else 'FAILURE')
     #
-    # At this point the job should be stopped and we can check the status of the job
-    #
 
