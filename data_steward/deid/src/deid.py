@@ -983,7 +983,6 @@ if __name__ == '__main__' :
     # After looking into the source code, it would seem this is the best place to get it to work
     #
     job._properties['query']['clustering'] = {'fields':['person_id']}
-    print (job._properties)
     job.priority = 'BATCH' if 'filter' not in SYS_ARGS else 'INTERACTIVE'
     
     job.dry_run = True    
