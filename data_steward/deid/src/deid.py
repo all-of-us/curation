@@ -855,7 +855,8 @@ if __name__ == '__main__' :
     # @Log: We are logging here the operaton that is expected to take place
     # {"action":"building-sql","input":fields,"subject":table,"object":""}
     
-    joined_fields = None
+    join_fields = ""
+    shifted_values = ""
     if 'shift' in r :
         
         if 'join' in r['shift'] :
@@ -893,11 +894,14 @@ if __name__ == '__main__' :
             
         else:
             pass
+    
     sql = sql.replace(":shifted_date_columns",shifted_values)
     #
     # At this point we should submit the sql query with information about the target
     #
     FILTER = [ ]
+    _fields = list(fields)
+
     fields = ",".join(fields) + join_fields 
 
     if 'rows' in remove :
@@ -926,15 +930,15 @@ if __name__ == '__main__' :
         if 'WHERE' not in FILTER :
             FILTER += ["WHERE"]            
         else:
-            FILTER += ["AND"]
+            FILTER += ["AND"] 
         FILTER += [SYS_ARGS['filter']]
     #
     # This is not ideal but we have to remove a portion of the population given their age
     # For now we hard code this instruction and set the age as a parameter
     # @TODO: ... urgh!!
     #
-
-    if 'exclude-age' in CONSTANTS :
+    
+    if 'exclude-age' in CONSTANTS and 'person_id' in _fields:
         EXCLUDE_AGE_SQL = "person_id not in (SELECT person_id FROM :i_dataset.observation where observation_source_value = 'PIIBirthInformation_BirthDate' and DATE_DIFF(CURRENT_DATE, CAST(value_as_string AS DATE),YEAR) > :age)"
         EXCLUDE_AGE_SQL = EXCLUDE_AGE_SQL.replace(":age",str(CONSTANTS['exclude-age'])).replace(":i_dataset",i_dataset)
         if 'rows' in remove or 'filter' in SYS_ARGS :
@@ -988,7 +992,8 @@ if __name__ == '__main__' :
     # The following line is a hack that gets the clustering working
     # After looking into the source code, it would seem this is the best place to get it to work
     #
-    job._properties['query']['clustering'] = {'fields':['person_id']}
+    if 'person_id' in _fields :
+        job._properties['query']['clustering'] = {'fields':['person_id']}
     job.priority = 'BATCH' if 'filter' not in SYS_ARGS else 'INTERACTIVE'
     
     job.dry_run = True    

@@ -29,7 +29,8 @@
 		"death":{"columns":["cause_concept_id","cause_source_value","cause_source_concept_id"]},
 		"condition_occurrence":{"columns":["provider_id","visit_occurrence_id"]},
 		"device_exposure":{"columns":["provider_id","visit_occurrence_id"]},
-		"location":{"columns":["address_1","address_2","city","zip","county","location_source_value"] }
+		"location":{"columns":["address_1","address_2","city","zip","county","location_source_value"] },
+		"care_site":{"columns":["care_site_name","care_site_source_value","care_site_source_value"]}
 	},
 	"compute":{
 		"person":{
