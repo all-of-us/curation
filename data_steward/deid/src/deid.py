@@ -759,6 +759,12 @@ def finalize(client,i_dataset, o_dataset,table,fields):
     #     else :
     #         field = ofield
     #     oschema.append(bq.SchemaField(name=field.name,field_type=field.field_type))
+
+    # Stopgap to fill in output field descriptions to those from input dataset (DC-135)
+    # TODO Set field descriptions prospectively
+    for ofield in oschema:
+        ofield._description = next((ifield.description for ifield in ischema if ifield.name == ofield.name), None)
+
     Logging.log(subject='composer',object='finalize',action='validation',value= (len(oschema) == ischema_size)*1 )
     if len(oschema) == ischema_size:
         try:
