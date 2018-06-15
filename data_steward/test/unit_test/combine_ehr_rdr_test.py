@@ -128,7 +128,8 @@ class CombineEhrRdrTest(unittest.TestCase):
 
     def test_ehr_person_to_observation(self):
         # ehr person table converts to observation records
-        self.load_dataset_from_files(self.combined_dataset_id, test_util.NYC_FIVE_PERSONS_PATH)
+        create_cdm_tables()
+        copy_rdr_table('person')
         move_ehr_person_to_observation()
         # person table query
         q_person = '''
@@ -181,11 +182,10 @@ class CombineEhrRdrTest(unittest.TestCase):
         self.assertListEqual(sorted(expected_dob_list), sorted(actual_dob_list), 'dob check fails')
         self.assertListEqual(sorted(expected_ethnicity_list), sorted(actual_ethnicity_list), 'ethnicity check fails')
 
-        obs_ehr_row_count = int(bq_utils.get_table_info('observation', self.ehr_dataset_id)['numRows'])
         person_ehr_row_count = int(bq_utils.get_table_info('person', self.ehr_dataset_id)['numRows'])
-        obs_final_row_count = int(bq_utils.get_table_info('observation', self.combined_dataset_id)['numRows'])
+        obs_row_count = int(bq_utils.get_table_info('observation', self.combined_dataset_id)['numRows'])
 
-        self.assertEqual(obs_ehr_row_count + 4*person_ehr_row_count, obs_final_row_count)
+        self.assertEqual(person_ehr_row_count * 4, obs_row_count)
 
     def _ehr_only_records_excluded(self):
         """
@@ -242,12 +242,15 @@ class CombineEhrRdrTest(unittest.TestCase):
 
     def test_create_cdm_tables(self):
         # Sanity check
+        tables_before = bq_utils.list_tables(self.combined_dataset_id).get('tables', [])
+        table_names_before = [t['tableReference']['tableId'] for t in tables_before]
         for table in common.CDM_TABLES:
-            self.assertFalse(bq_utils.table_exists(table, self.combined_dataset_id))
+            self.assertNotIn(table, table_names_before)
         create_cdm_tables()
+        tables_after = bq_utils.list_tables(self.combined_dataset_id).get('tables', [])
+        table_names_after = [t['tableReference']['tableId'] for t in tables_after]
         for table in common.CDM_TABLES:
-            actual = bq_utils.table_exists(table, self.combined_dataset_id)
-            self.assertTrue(actual, 'Table {table} not created in combined dataset'.format(table=table))
+            self.assertIn(table, table_names_after)
 
     def _fact_relationship_loaded(self):
         # TODO
