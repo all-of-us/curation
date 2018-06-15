@@ -96,6 +96,6 @@ class DeidTest(unittest.TestCase):
             # Check table field descriptions
             actual_items = [(item.name, item.description) for item in table.schema]
             actual_schema = dict(actual_items)
-            expected_items = [(item['name'], item['description']) for item in self.get_schema(table_name)]
+            expected_items = [(item['name'], item.get('description', None)) for item in self.get_schema(table_name)]
             expected_schema = dict(expected_items)
             self.assertDictEqual(expected_schema, actual_schema)
