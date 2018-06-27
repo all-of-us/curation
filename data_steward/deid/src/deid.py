@@ -705,8 +705,11 @@ def initialization(client,dataset):
         #         GROUP BY person_id
         # """.replace(":i_dataset",dataset)
         sql = """    
-        SELECT person_id, DATE_SUB(CAST(value_as_string as DATE) , INTERVAL CAST (720*rand() AS INT64) DAY) as anchor
+        
+        SELECT person_id, DATE_SUB( MAX(CAST(value_as_string as DATE)) , INTERVAL CAST (720*rand() AS INT64) DAY) as anchor
         FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' 
+        GROUP BY person_id
+
         UNION ALL
         SELECT person_id, DATE_SUB(CURRENT_DATE , INTERVAL CAST (720*rand() AS INT64) DAY) as anchor
         FROM :i_dataset.observation WHERE person_id not in (SELECT person_id FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' GROUP BY person_id)
