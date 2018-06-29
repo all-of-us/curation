@@ -477,7 +477,7 @@ def merge_ehr():
     hpo_id = 'unioned_ehr'
     app_id = bq_utils.app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
-    ehr_merge.merge(dataset_id=dataset_id, project_id=app_id)
+    ehr_merge.main(dataset_id=dataset_id, project_id=app_id)
 
     run_achilles(hpo_id)
     now_date_string = datetime.datetime.now().strftime('%Y_%m_%d')

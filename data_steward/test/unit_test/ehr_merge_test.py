@@ -1,26 +1,17 @@
 import unittest
-import mock
+import json
+import os
 from google.appengine.ext import testbed
 
 import common
-import json
-import os
+import resources
 import gcs_utils
 import bq_utils
 import test_util
 from validation import ehr_merge
-from validation.export import query_result_to_payload
-import resources
 
-FAKE_HPO_ID = 'fake'
 PITT_HPO_ID = 'pitt'
 CHS_HPO_ID = 'chs'
-CONDITION_OCCURRENCE_COUNT = 45
-DRUG_EXPOSURE_COUNT = 47
-MEASUREMENT_COUNT = 234
-PERSON_COUNT = 5
-PROCEDURE_OCCURRENCE_COUNT = 50
-VISIT_OCCURRENCE_COUNT = 50
 
 
 class EhrMergeTest(unittest.TestCase):
@@ -33,38 +24,50 @@ class EhrMergeTest(unittest.TestCase):
         self.testbed.init_urlfetch_stub()
         self.testbed.init_blobstore_stub()
         self.testbed.init_datastore_v3_stub()
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
-        self.pitt_bucket = gcs_utils.get_hpo_bucket(PITT_HPO_ID)
-        self.chs_bucket = gcs_utils.get_hpo_bucket(CHS_HPO_ID)
         self.project_id = bq_utils.app_identity.get_application_id()
-        self._empty_bucket = test_util.empty_bucket
-        self._empty_bucket(self.hpo_bucket)
+        self.hpo_ids = [CHS_HPO_ID, PITT_HPO_ID]
+        self.input_dataset_id = bq_utils.get_dataset_id()
+        self.output_dataset_id = bq_utils.get_unioned_dataset_id()
+        self._empty_hpo_buckets()
+        test_util.delete_all_tables(self.input_dataset_id)
+        test_util.delete_all_tables(self.output_dataset_id)
+
+    def _empty_hpo_buckets(self):
+        for hpo_id in self.hpo_ids:
+            bucket = gcs_utils.get_hpo_bucket(hpo_id)
+            test_util.empty_bucket(bucket)
 
     def _load_datasets(self):
-        load_jobs = []
-        self.expected_tables = dict()
+        """
+        Load five persons data for each test hpo
+        """
+        # expected_tables is for testing output
+        # it maps table name to list of expected records ex: "unioned_ehr_visit_occurrence" -> [{}, {}, ...]
+        expected_tables = dict()
+        running_jobs = []
         for cdm_table in common.CDM_TABLES:
             cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
-            result_table = ehr_merge.result_table_for(cdm_table)
-            if os.path.exists(cdm_file_name):
-                # one copy for chs, the other for pitt
-                csv_rows = resources._csv_to_list(cdm_file_name)
-                self.expected_tables[result_table] = csv_rows + list(csv_rows)
-                test_util.write_cloud_file(self.chs_bucket, cdm_file_name)
-                test_util.write_cloud_file(self.pitt_bucket, cdm_file_name)
-            else:
-                self.expected_tables[result_table] = []
-                test_util.write_cloud_str(self.chs_bucket, cdm_table + '.csv', 'dummy\n')
-                test_util.write_cloud_str(self.pitt_bucket, cdm_table + '.csv', 'dummy\n')
-            chs_load_results = bq_utils.load_cdm_csv(CHS_HPO_ID, cdm_table)
-            pitt_load_results = bq_utils.load_cdm_csv(PITT_HPO_ID, cdm_table)
-            chs_load_job_id = chs_load_results['jobReference']['jobId']
-            pitt_load_job_id = pitt_load_results['jobReference']['jobId']
-            load_jobs.append(chs_load_job_id)
-            load_jobs.append(pitt_load_job_id)
-        incomplete_jobs = bq_utils.wait_on_jobs(load_jobs)
+            output_table = ehr_merge.output_table_for(cdm_table)
+            expected_tables[output_table] = []
+            for hpo_id in self.hpo_ids:
+                # upload csv into hpo bucket
+                bucket = gcs_utils.get_hpo_bucket(hpo_id)
+                if os.path.exists(cdm_file_name):
+                    test_util.write_cloud_file(bucket, cdm_file_name)
+                    csv_rows = resources._csv_to_list(cdm_file_name)
+                else:
+                    # results in empty table
+                    test_util.write_cloud_str(bucket, cdm_table + '.csv', 'dummy\n')
+                    csv_rows = []
+                # load table from csv
+                result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
+                running_jobs.append(result['jobReference']['jobId'])
+                expected_tables[output_table] += list(csv_rows)
+        incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
         if len(incomplete_jobs) > 0:
-            raise RuntimeError('BigQuery jobs %s failed to complete' % incomplete_jobs)
+            message = "Job id(s) %s failed to complete" % incomplete_jobs
+            raise RuntimeError(message)
+        self.expected_tables = expected_tables
 
     def _table_has_clustering(self, table_info):
         clustering = table_info.get('clustering')
@@ -76,99 +79,101 @@ class EhrMergeTest(unittest.TestCase):
         tpe = time_partitioning.get('type')
         self.assertEqual(tpe, 'DAY')
 
-    @mock.patch('api_util.check_cron')
-    def test_merge_EHR(self, mock_check_cron):
+    def _dataset_tables(self, dataset_id):
+        """
+        Get names of existing tables in specified dataset
+
+        :param dataset_id: identifies the dataset
+        :return: list of table_ids
+        """
+        result = bq_utils.list_tables(dataset_id)
+        tables = result.get('tables', [])
+        return [table['tableReference']['tableId'] for table in tables]
+
+    def test_union_ehr(self):
         self._load_datasets()
-        dataset_id = bq_utils.get_dataset_id()
-        old_dataset_items = bq_utils.list_dataset_contents(dataset_id)
-        expected_items = ['visit_id_mapping_table']
-        expected_items.extend([ehr_merge.result_table_for(table_name) for table_name in common.CDM_TABLES])
+        input_tables_before = set(self._dataset_tables(self.input_dataset_id))
 
-        ehr_merge.merge(dataset_id, self.project_id)
+        # output should be mapping tables and cdm tables
+        output_tables_before = self._dataset_tables(self.output_dataset_id)
+        mapping_tables = [ehr_merge.mapping_table_for(table) for table in ehr_merge.tables_to_map()]
+        output_cdm_tables = [ehr_merge.output_table_for(table) for table in common.CDM_TABLES]
+        expected_output = set(output_tables_before + mapping_tables + output_cdm_tables)
 
-        # Check row counts for each output table
-        dataset_items = bq_utils.list_dataset_contents(dataset_id)
+        # perform ehr union
+        ehr_merge.main(self.input_dataset_id, self.output_dataset_id, self.project_id, self.hpo_ids)
+
+        # input dataset should be unchanged
+        input_tables_after = set(self._dataset_tables(self.input_dataset_id))
+        self.assertSetEqual(input_tables_before, input_tables_after)
+
+        # check for each output table
         for table_name in common.CDM_TABLES:
-            result_table = ehr_merge.result_table_for(table_name)
+            # output table exists and row count is sum of those submitted by hpos
+            result_table = ehr_merge.output_table_for(table_name)
             expected_rows = self.expected_tables[result_table]
             expected_count = len(expected_rows)
-            table_info = bq_utils.get_table_info(result_table)
+            table_info = bq_utils.get_table_info(result_table, dataset_id=self.output_dataset_id)
             actual_count = int(table_info.get('numRows'))
             msg = 'Unexpected row count in table {result_table} after ehr union'.format(result_table=result_table)
-            self.assertEqual(actual_count, expected_count, msg)
+            self.assertEqual(expected_count, actual_count, msg)
+            # TODO Compare table rows to expected accounting for the new ids and ignoring field types
+            # q = 'SELECT * FROM {dataset}.{table}'.format(dataset=self.output_dataset_id, table=result_table)
+            # query_response = bq_utils.query(q)
+            # actual_rows = test_util.response2rows(query_response)
 
-            # Check for clustering if table has person_id
+            # output table has clustering on person_id where applicable
             fields_file = os.path.join(resources.fields_path, table_name + '.json')
             with open(fields_file, 'r') as fp:
                 fields = json.load(fp)
                 field_names = [field['name'] for field in fields]
                 if 'person_id' in field_names:
                     self._table_has_clustering(table_info)
-        self.assertSetEqual(set(old_dataset_items + expected_items), set(dataset_items))
 
-        table_name = 'condition_occurrence'
-        hpo_id = 'pitt'
-        result_table = ehr_merge.result_table_for(table_name)
-        pitt_table = bq_utils.get_table_id(hpo_id, table_name)
-        cmd_union = 'SELECT * FROM ' + result_table
-        cmd_pitt = 'SELECT * FROM ' + pitt_table
-        cmd_visit_mapping = """
-          SELECT global_visit_id, 
-                 mapping_visit_id 
-          FROM visit_id_mapping_table 
-          WHERE hpo='{hpo_id}'""".format(hpo_id=hpo_id)
-        qr_union = bq_utils.query(cmd_union)
-        qr_pitt = bq_utils.query(cmd_pitt)
-        qr_visit_mapping = bq_utils.query(cmd_visit_mapping)
+        actual_output = set(self._dataset_tables(self.output_dataset_id))
+        self.assertSetEqual(expected_output, actual_output)
 
-        union_result = query_result_to_payload(qr_union)
-        pitt_result = query_result_to_payload(qr_pitt)
-        visit_mapping_result = query_result_to_payload(qr_visit_mapping)
+    # TODO Figure out a good way to test query structure (unless we deem functional tests good enough)
+    # Functions below are for reference
 
-        def get_element_from_list_of_lists(index, list_of_lists):
-            return [list_item[index] for list_item in list_of_lists]
+    def _test_mapping_query(self):
+        table_name = 'measurement'
+        hpo_ids = ['chs', 'pitt']
+        project_id = bq_utils.app_identity.get_application_id()
+        dataset_id = bq_utils.get_dataset_id()
+        q = ehr_merge.mapping_query(table_name, hpo_ids, dataset_id, project_id)
 
-        for ind, pitt_visit_id in enumerate(pitt_result['VISIT_OCCURRENCE_ID']):
-            if pitt_visit_id not in visit_mapping_result['MAPPING_VISIT_ID']:
-                continue
-            global_visit_id_index = visit_mapping_result['MAPPING_VISIT_ID'].index(pitt_visit_id)
-            global_visit_id = visit_mapping_result['GLOBAL_VISIT_ID'][global_visit_id_index]
-            union_visit_id_index = union_result['VISIT_OCCURRENCE_ID'].index(global_visit_id)
-            pitt_cols_without_id = [values for key, values in pitt_result.items()
-                                    if key not in [u'VISIT_OCCURRENCE_ID', u'CONDITION_OCCURRENCE_ID']]
-            union_cols_without_id = [values for key, values in union_result.items()
-                                     if key not in [u'VISIT_OCCURRENCE_ID', u'CONDITION_OCCURRENCE_ID']]
-            self.assertListEqual(get_element_from_list_of_lists(ind, pitt_cols_without_id),
-                                 get_element_from_list_of_lists(union_visit_id_index, union_cols_without_id))
+    def _test_table_hpo_subquery(self):
+        # person is a simple select, no ids should be mapped
+        ehr_merge.table_hpo_subquery(
+            'person', hpo_id=CHS_HPO_ID, input_dataset_id='input', output_dataset_id='output')
 
-    def test_query_construction(self):
-        table_name = 'condition_occurrence'
-        hpos_to_merge = ['chs', 'pitt', 'chci']
-        hpos_with_visit = ['chci', 'pitt']
-        project_id = 'dummy_project'
-        dataset_id = 'dummy_dataset'
+        # _mapping_visit_occurrence(src_table_id, src_visit_occurrence_id, visit_occurrence_id)
+        # visit_occurrence_id should be mapped
+        visit_occurrence = ehr_merge.table_hpo_subquery(
+            'visit_occurrence', hpo_id=CHS_HPO_ID, input_dataset_id='input', output_dataset_id='output')
 
-        # checks whther the required blocks exits
-        q = ehr_merge.construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, dataset_id)
-        self.assertIn('global_visit_id', q)  # condition table requires a join
-        self.assertIn('visit_id_mapping_table', q)
-        self.assertIn("visit_id_map.hpo = 'pitt'", q)
-        self.assertIn("visit_id_map.hpo = 'chci'", q)
-        self.assertNotIn("visit_id_map.hpo = 'chs'", q)  # chs visit doesn't exist
+        # visit_occurrence_id and condition_occurrence_id should be mapped
+        condition_occurrence = ehr_merge.table_hpo_subquery(
+            'condition_occurrence', hpo_id=CHS_HPO_ID, input_dataset_id='input', output_dataset_id='output')
 
-        # checks that the visit blocks do not exist
-        q = ehr_merge.construct_query('person', hpos_to_merge, hpos_with_visit, project_id, dataset_id)
-        self.assertNotIn('global_visit_id', q)  # condition table requires a join
-        self.assertNotIn('visit_id_mapping_table', q)
-        self.assertNotIn("visit_id_map.hpo = 'pitt'", q)
-        self.assertNotIn("visit_id_map.hpo = 'chci'", q)
-        self.assertNotIn("visit_id_map.hpo = 'chs'", q)  # chs visit doesn't exist
+    def _test_table_union_query(self):
+        measurement = ehr_merge.table_union_query(
+            'measurement', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
+        # person is a simple union without has no mapping
+        person = ehr_merge.table_union_query(
+            'person', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
+        visit_occurrence = ehr_merge.table_union_query(
+            'visit_occurrence', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
+        death = ehr_merge.table_union_query(
+            'death', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
+        care_site = ehr_merge.table_union_query(
+            'care_site', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
+        location = ehr_merge.table_union_query(
+            'location', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
 
     def tearDown(self):
-        delete_list = ['visit_id_mapping_table'] + ['unioned_ehr_' + table_name for table_name in common.CDM_TABLES]
-        existing_tables = bq_utils.list_dataset_contents(bq_utils.get_dataset_id())
-        for table_id in delete_list:
-            if table_id not in common.VOCABULARY_TABLES and table_id in existing_tables:
-                bq_utils.delete_table(table_id)
-        self._empty_bucket(self.hpo_bucket)
+        self._empty_hpo_buckets()
+        test_util.delete_all_tables(self.input_dataset_id)
+        test_util.delete_all_tables(self.output_dataset_id)
         self.testbed.deactivate()

@@ -12,6 +12,7 @@ gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_UNIONE
 bq mk --dataset --description "Test RDR dataset for ${USERNAME}" ${APPLICATION_ID}:${RDR_DATASET_ID}
 bq mk --dataset --description "Test EHR-RDR dataset for ${USERNAME}" ${APPLICATION_ID}:${EHR_RDR_DATASET_ID}
 bq mk --dataset --description "Test EHR dataset for ${USERNAME}" ${APPLICATION_ID}:${BIGQUERY_DATASET_ID}
+bq mk --dataset --description "Test EHR union dataset for ${USERNAME}" ${APPLICATION_ID}:${UNIONED_DATASET_ID}
 
 # Create vocabulary tables if they do not already exist
 VOCABULARY_DATASET="${APPLICATION_ID}:aou_full_vocabulary_2018_01_04"

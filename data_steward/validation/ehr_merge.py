@@ -1,214 +1,361 @@
 """
-Combine EHR datasets to form full data set
+Create a new CDM dataset which is the union of all EHR datasets submitted by HPOs
 
- * Create visit_id_mapping_table to create a global visit id then used in other tables to replce visit_occurrence_id
+ 1) Create empty output tables to ensure proper schema, clustering, etc.
+
+ 2) For all tables -EXCEPT person- that have numeric primary key columns, create mapping tables used to assign new
+    IDs in output.
+
+    The structure of the mapping table follows this convention:
+
+    _mapping_<cdm_table> (         -- table name is derived from the CDM table it maps
+      src_table_id:       STRING,  -- identifies input table whose ids are to be mapped
+      src_<cdm_table>_id: INTEGER, -- original value of unique identifier in source table
+      <cdm_table>_id:     INTEGER  -- new unique identifier which will be used in output
+    )
+
+    For example, this table is eventually used to load the output visit_occurrence table:
+
+    _mapping_measurement_id (
+      src_table_id:       STRING,
+      src_measurement_id: INTEGER,
+      measurement_id:     INTEGER
+    )
+
+    The table _mapping_measurement_id is loaded with a query which looks like this:
+
+    WITH all_measurement AS (
+      (SELECT
+        'chs_measurement'  AS src_table_id,
+        measurement_id     AS src_measurement_id
+       FROM `project_id.dataset_id.chs_measurement`)
+
+      UNION ALL
+
+      (SELECT
+        'pitt_measurement' AS src_table_id,
+        measurement_id     AS src_measurement_id
+       FROM `project_id.dataset_id.pitt_measurement`)
+
+      -- ...  <subqueries for each hpo_id>
+
+      UNION ALL
+
+      (SELECT
+        'nyc_measurement' AS src_table_id,
+        measurement_id    AS src_measurement_id
+       FROM `project_id.dataset_id.nyc_measurement`)
+    )
+
+    SELECT
+      src_table_id,
+      src_measurement_id,
+      ROW_NUMBER() OVER () AS measurement_id
+    FROM all_measurement
+
+ 3) For all tables, compose a query to fetch the union of records submitted by all HPOs and save the results in output.
+   * Use new primary keys in output where applicable
+   * Use new visit_occurrence_id where applicable
 
 ## Notes
 Currently the following environment variables must be set:
- * BIGQUERY_DATASET_ID: BQ dataset where combined result is stored (e.g. test_join_ehr_rdr)
- * APPLICATION_ID: GCP project ID (e.g. all-of-us-ehr-dev)
  * GOOGLE_APPLICATION_CREDENTIALS: path to service account key json file (e.g. /path/to/all-of-us-ehr-dev-abc123.json)
+ * APPLICATION_ID: GCP project ID (e.g. all-of-us-ehr-dev)
+ * BIGQUERY_DATASET_ID: input dataset where submissions are stored
+ * UNIONED_DATASET_ID: output dataset where unioned results should be stored
+
+TODO
+ * Besides `visit_occurrence` also handle mapping of other foreign key fields (e.g. `location_id`)
 """
-import json
 import os
 import logging
+from google.appengine.api.app_identity import app_identity
 
 import bq_utils
 import resources
 import common
-from resources import fields_path
 
-BQ_WAIT_TIME = 10
-VISIT_ID_MAPPING_TABLE = 'visit_id_mapping_table'
+VISIT_OCCURRENCE = 'visit_occurrence'
+VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
+UNION_ALL = '''
 
-VIST_ID_MAPPING_QUERY_SKELETON = '''
-SELECT
-    ROW_NUMBER() OVER() as global_visit_id
-    ,hpo
-    ,visit_occurrence_id as mapping_visit_id
-FROM
-(%(union_all_blocks)s);
+        UNION ALL
+        
 '''
 
-VISIT_ID_HPO_BLOCK = '''
-(SELECT
-  visit_occurrence_id
-  ,"%(hpo)s" as hpo
-FROM `%(project_id)s.%(dataset_id)s.%(hpo)s_visit_occurrence`)
-'''
 
-VISIT_ID_MAPPING_TABLE_SUBQUERY = '''
-( SELECT global_visit_id, hpo, mapping_visit_id
-FROM
-`%(project_id)s.%(dataset_id)s.%(visit_id_mapping_table)s`
-)
-visit_id_map ON t.visit_occurrence_id = visit_id_map.mapping_visit_id
-AND
-visit_id_map.hpo = '%(hpo)s' '''
-
-TABLE_NAMES = ['person', 'visit_occurrence', 'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
-               'device_exposure', 'measurement', 'observation', 'death']
-
-
-def construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, dataset_id):
+def output_table_for(table_id):
     """
-    Get union query for CDM table with proper qualifiers and using global_visit_id for visit_occurrence_id
-    :param table_name: name of the CDM table
-    :param hpos_to_merge: hpos that should be unioned. sufficient condition is existence of person table
-    :param hpos_with_visit: hpos that have visit table loaded
-    :param project_id: source project name
-    :param dataset_id: source dataset name
-    :return: the query
+    Get the name of the table where results of the union will be stored
+
+    :param table_id: name of a CDM table
+    :return: name of the table where results of the union will be stored
     """
-    visit_id_mapping_table = VISIT_ID_MAPPING_TABLE
-    source_person_id_field = 'person_id'
-    json_path = os.path.join(fields_path, table_name + '.json')
-    with open(json_path, 'r') as fp:
-        visit_id_flag = False
-        fields = json.load(fp)
-        col_exprs = []
-        for field in fields:
-            field_name = field['name']
-            # field_type = field['type']
-            if field_name == 'visit_occurrence_id':
-                visit_id_flag = True
-                col_expr = 'global_visit_id as visit_occurrence_id'
-            # elif field_name.endswith('_id') and not field_name.endswith('concept_id') and field_type == 'integer':
-            # not using this because we refer to other ids in some tables which will get overwritten
-            elif field_name == table_name + '_id':
-                col_expr = 'ROW_NUMBER() OVER() as %(field_name)s ' % locals()
-            else:
-                col_expr = field_name
-            col_exprs.append(col_expr)
-        col_expr_str = ',\n  '.join(col_exprs)
-        q = 'SELECT\n  '
-        q += ',\n  '.join(col_exprs)
-        q += '\nFROM'
-        q += '\n ('
-        q_subquery_blocks = []
-        for hpo in hpos_to_merge:
-            q_subquery = ' ( SELECT * FROM `%(project_id)s.%(dataset_id)s.%(hpo)s_%(table_name)s` t' % locals()
-            if visit_id_flag and hpo in hpos_with_visit:
-                q_subquery += '\n LEFT JOIN  '
-                q_subquery += VISIT_ID_MAPPING_TABLE_SUBQUERY % locals()
-            q_subquery += ')'
-            q_subquery_blocks.append(q_subquery)
-        if len(q_subquery_blocks) == 0:
-            return ""
-        q += "\n UNION ALL \n".join(q_subquery_blocks)
-        q += ')'
-        return q
-
-
-def query(q, destination_table_id, write_disposition):
-    """
-    Run query, log any errors encountered
-    :param q: SQL statement
-    :param destination_table_id: if set, output is saved in a table with the specified id
-    :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY (default)
-    :return: query result
-    """
-    qr = bq_utils.query(q, destination_table_id=destination_table_id, write_disposition=write_disposition)
-    if 'errors' in qr['status']:
-        logging.error('== ERROR ==')
-        logging.error(str(qr))
-    return qr
-
-
-def create_mapping_table(hpos_with_visit, project_id, dataset_id):
-    """ creates the visit mapping table
-
-    :hpos_with_visit: hpos that should be including the visit occurrence table
-    :project_id: project with the dataset
-    :dataset_id: dataset with the tables
-    :returns: string if visit table failed; otherwise none
-
-    """
-    # list of hpos with visit table and creating visit id mapping table queries
-    visit_hpo_queries = []
-    for hpo in hpos_with_visit:
-        visit_hpo_queries.append(VISIT_ID_HPO_BLOCK % locals())
-    union_all_blocks = '\n UNION ALL'.join(visit_hpo_queries)
-    visit_mapping_query = VIST_ID_MAPPING_QUERY_SKELETON % locals()
-    logging.info('Loading ' + VISIT_ID_MAPPING_TABLE)
-    query_result = query(visit_mapping_query,
-                         destination_table_id=VISIT_ID_MAPPING_TABLE,
-                         write_disposition='WRITE_TRUNCATE')
-    visit_mapping_query_job_id = query_result['jobReference']['jobId']
-    incomplete_jobs = bq_utils.wait_on_jobs([visit_mapping_query_job_id])
-    if len(incomplete_jobs) == 0:
-        query_result = bq_utils.get_job_details(visit_mapping_query_job_id)
-        if 'errors' in query_result['status']:
-            errors = query_result['status']['errors']
-            message = 'Failed to load %s due to the following error(s): %s' % (VISIT_ID_MAPPING_TABLE, errors)
-            logging.error(message)
-            raise RuntimeError(message)
-    else:
-        message = 'Failed to load %s. Job with ID %s never completed.' % (VISIT_ID_MAPPING_TABLE, visit_mapping_query_job_id)
-        logging.error(message)
-        raise RuntimeError(message)
-
-
-def result_table_for(table_id):
     return 'unioned_ehr_' + table_id
 
 
-def merge(dataset_id, project_id):
+def has_primary_key(table):
+    """
+    Determines if a CDM table contains a numeric primary key field
+
+    :param table: name of a CDM table
+    :return: True if the CDM table contains a primary key field, False otherwise
+    """
+    assert(table in common.CDM_TABLES)
+    fields = resources.fields_for(table)
+    id_field = table + '_id'
+    return any(field for field in fields if field['type'] == 'integer' and field['name'] == id_field)
+
+
+def tables_to_map():
+    """
+    Determine which CDM tables must have ids remapped
+
+    :return: the list of table names
+    """
+    result = []
+    for table in common.CDM_TABLES:
+        if table != 'person' and has_primary_key(table):
+            result.append(table)
+    return result
+
+
+def mapping_query(table_name, hpo_ids, dataset_id=None, project_id=None):
+    """
+    Get query used to generate new ids for a CDM table
+
+    :param table_name: name of CDM table
+    :param hpo_ids: identifies the HPOs
+    :param dataset_id: identifies the BQ dataset containing the input table
+    :param project_id: identifies the GCP project containing the dataset
+    :return: the query
+    """
+    if dataset_id is None:
+        dataset_id = bq_utils.get_dataset_id()
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+
+    subqueries = []
+    for hpo_id in hpo_ids:
+        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        subquery = '''
+        (SELECT '{table_id}' AS src_table_id,
+          {table_name}_id AS src_{table_name}_id
+          FROM `{project_id}.{dataset_id}.{table_id}`)
+        '''.format(table_id=table_id, table_name=table_name, project_id=project_id, dataset_id=dataset_id)
+        subqueries.append(subquery)
+
+    union_all_query = UNION_ALL.join(subqueries)
+
+    return '''
+    WITH all_{table_name} AS (
+      {union_all_query}
+    )
+    SELECT 
+        src_table_id,
+        src_{table_name}_id,
+        ROW_NUMBER() OVER () AS {table_name}_id
+    FROM all_{table_name}
+    '''.format(union_all_query=union_all_query, table_name=table_name)
+
+
+def mapping_table_for(domain_table):
+    """
+    Get name of mapping table generated for a domain table
+
+    :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
+    :return:
+    """
+    return '_mapping_' + domain_table
+
+
+def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id, project_id):
+    """
+    Create and load a table that assigns unique ids to records in domain tables
+    Note: Overwrites if the table already exists
+
+    :param domain_table:
+    :param hpo_ids: identifies which HPOs' data to include in union
+    :param input_dataset_id: identifies dataset containing HPO raw data
+    :param output_dataset_id: identifies dataset where mapping table should be output
+    :param project_id: identifies GCP project that contain the datasets
+    :return:
+    """
+    q = mapping_query(domain_table, hpo_ids, input_dataset_id, project_id)
+    mapping_table = mapping_table_for(domain_table)
+    logging.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
+    query(q, mapping_table, output_dataset_id, 'WRITE_TRUNCATE')
+
+
+def query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND'):
+    """
+    Run query and save results to a table
+
+    :param q: SQL statement
+    :param dst_table_id: save results in a table with the specified id
+    :param write_disposition: WRITE_TRUNCATE, WRITE_EMPTY, or WRITE_APPEND (default)
+    :return: query result
+    """
+    query_job_result = bq_utils.query(q,
+                                      destination_table_id=dst_table_id,
+                                      destination_dataset_id=dst_dataset_id,
+                                      write_disposition=write_disposition)
+    query_job_id = query_job_result['jobReference']['jobId']
+    job_status = query_job_result['status']
+    error_result = job_status.get('errorResult')
+    if error_result is not None:
+        msg = 'Job {job_id} failed because: {error_result}'.format(job_id=query_job_id, error_result=error_result)
+        raise bq_utils.InvalidOperationError(msg)
+    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
+    if len(incomplete_jobs) > 0:
+        raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+
+
+def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
+    """
+    Returns query used to retrieve all records in a submitted table
+
+    :param table_name: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
+    :param hpo_id: identifies the HPO
+    :param input_dataset_id: identifies dataset containing HPO submission
+    :param output_dataset_id:
+    :return:
+    """
+    is_id_mapped = table_name in tables_to_map()
+    fields = resources.fields_for(table_name)
+    table_id = bq_utils.get_table_id(hpo_id, table_name)
+
+    # Generate column expressions for select
+    if not is_id_mapped:
+        col_exprs = [field['name'] for field in fields]
+        cols = ',\n        '.join(col_exprs)
+        return '''
+    SELECT {cols} 
+    FROM {input_dataset_id}.{table_id}'''.format(cols=cols,
+                                                 table_id=table_id,
+                                                 input_dataset_id=input_dataset_id)
+    else:
+        # Ensure that
+        #  1) we get the record IDs from the mapping table and
+        #  2) if there is a reference to `visit_occurrence` get `visit_occurrence_id` from the mapping visit table
+        mapping_table = mapping_table_for(table_name) if is_id_mapped else None
+        has_visit_occurrence_id = False
+        id_col = '{table_name}_id'.format(table_name=table_name)
+        col_exprs = []
+
+        for field in fields:
+            field_name = field['name']
+            if field_name == id_col:
+                # Use mapping for record ID column
+                # m is an alias that should resolve to the associated mapping table
+                col_expr = 'm.{field_name}'.format(field_name=field_name)
+            elif field_name == VISIT_OCCURRENCE_ID:
+                # Replace with mapped visit_occurrence_id
+                # mv is an alias that should resolve to the mapping visit table
+                # Note: This is only reached when table_name != visit_occurrence
+                col_expr = 'mv.' + VISIT_OCCURRENCE_ID
+                has_visit_occurrence_id = True
+            else:
+                col_expr = field_name
+            col_exprs.append(col_expr)
+        cols = ',\n        '.join(col_exprs)
+
+        visit_join_expr = ''
+        if has_visit_occurrence_id:
+            # Include a join to mapping visit table
+            # Note: Using left join in order to keep records that aren't mapped to visits
+            mv = mapping_table_for(VISIT_OCCURRENCE)
+            src_visit_table_id = bq_utils.get_table_id(hpo_id, VISIT_OCCURRENCE)
+            visit_join_expr = '''
+            LEFT JOIN {output_dataset_id}.{mapping_visit_occurrence} mv 
+              ON t.visit_occurrence_id = mv.src_visit_occurrence_id 
+             AND mv.src_table_id = '{src_visit_table_id}'
+            '''.format(output_dataset_id=output_dataset_id,
+                       mapping_visit_occurrence=mv,
+                       src_visit_table_id=src_visit_table_id)
+
+        return '''
+        SELECT {cols} 
+        FROM {ehr_dataset_id}.{table_id} t 
+          JOIN {output_dataset_id}.{mapping_table} m
+            ON t.{table_name}_id = m.src_{table_name}_id 
+           AND m.src_table_id = '{table_id}' {visit_join_expr}
+        '''.format(cols=cols,
+                   table_id=table_id,
+                   ehr_dataset_id=input_dataset_id,
+                   output_dataset_id=output_dataset_id,
+                   mapping_table=mapping_table,
+                   visit_join_expr=visit_join_expr,
+                   table_name=table_name)
+
+
+def table_union_query(table_name, hpo_ids, input_dataset_id, output_dataset_id):
+    """
+    For a CDM table returns a query which aggregates all records from each HPO's submission for that table
+
+    :param table_name:
+    :param hpo_ids:
+    :param input_dataset_id:
+    :param output_dataset_id:
+    :return:
+    """
+    subqueries = []
+    for hpo_id in hpo_ids:
+        subquery = table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id)
+        subqueries.append(subquery)
+    return UNION_ALL.join(subqueries)
+
+
+def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
+    """
+    Create and load a single domain table with union of all HPO domain tables
+
+    :param cdm_table: name of the CDM table (e.g. 'person', 'visit_occurrence', 'death')
+    :param hpo_ids: identifies which HPOs to include in union
+    :param input_dataset_id: identifies dataset containing input data
+    :param output_dataset_id: identifies dataset where result of union should be output
+    :return:
+    """
+    output_table = output_table_for(cdm_table)
+    logging.info('Loading union of {domain_table} tables from {hpo_ids} into {output_table}'.format(
+        domain_table=cdm_table,
+        hpo_ids=hpo_ids,
+        output_table=output_table))
+    q = table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
+    logging.debug('Query for union of {domain_table} tables from {hpo_ids} is {q}'.format(
+        domain_table=cdm_table, hpo_ids=hpo_ids, q=q))
+    query_result = query(q, output_table, output_dataset_id)
+    return query_result
+
+
+def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     """merge hpo ehr data
 
     :dataset_id: source and target dataset
     :project_id: project in which everything happens
     :returns: list of tables generated successfully
-
     """
-    logging.info('Starting merge')
-    existing_tables = bq_utils.list_dataset_contents(dataset_id)
-    hpos_to_merge = []
-    hpos_with_visit = []
-    for item in resources.hpo_csv():
-        hpo_id = item['hpo_id']
-        if hpo_id + '_person' in existing_tables:
-            hpos_to_merge.append(hpo_id)
-        if hpo_id + '_visit_occurrence' in existing_tables:
-            hpos_with_visit.append(hpo_id)
-    logging.info('HPOs to merge: %s' % hpos_to_merge)
-    logging.info('HPOs with visit_occurrence: %s' % hpos_with_visit)
-    create_mapping_table(hpos_with_visit, project_id, dataset_id)
+    logging.info('EHR union started')
+    if hpo_ids is None:
+        hpo_ids = [item['hpo_id'] for item in resources.hpo_csv()]
 
-    # before loading [drop and] create all tables to ensure they are set up properly
-    for cdm_file_name in common.CDM_FILES:
-        cdm_table_name = cdm_file_name.split('.')[0]
-        result_table = result_table_for(cdm_table_name)
-        bq_utils.create_standard_table(cdm_table_name, result_table, drop_existing=True)
+    # Create empty output tables to ensure proper schema, clustering, etc.
+    for table in common.CDM_TABLES:
+        result_table = output_table_for(table)
+        bq_utils.create_standard_table(table, result_table, drop_existing=True, dataset_id=output_dataset_id)
 
-    jobs_to_wait_on = []
+    # Create mapping tables
+    for domain_table in tables_to_map():
+        logging.info('Mapping {domain_table}...'.format(domain_table=domain_table))
+        mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id, project_id)
+
+    # Load all tables with union of submitted tables
     for table_name in common.CDM_TABLES:
-        q = construct_query(table_name, hpos_to_merge, hpos_with_visit, project_id, dataset_id)
-        logging.info('Merging table: ' + table_name)
-        result_table = result_table_for(table_name)
-        query_result = query(q, destination_table_id=result_table, write_disposition='WRITE_TRUNCATE')
-        query_job_id = query_result['jobReference']['jobId']
-        jobs_to_wait_on.append(query_job_id)
-
-    incomplete_jobs = bq_utils.wait_on_jobs(jobs_to_wait_on)
-    if len(incomplete_jobs) == 0:
-        tables_created = []
-        for job_id in jobs_to_wait_on:
-            job_details = bq_utils.get_job_details(job_id)
-            status = job_details['status']
-            table = job_details['configuration']['query']['destinationTable']['tableId']
-            if 'errors' in status:
-                logging.error('Job ID %s errors: %s' % (job_id, status['errors']))
-            else:
-                tables_created.append(table)
-        return tables_created
-    else:
-        message = "Merge failed because job id(s) %s did not complete." % incomplete_jobs
-        logging.error(message)
-        raise RuntimeError(message)
+        logging.info('Creating union of table {table}...'.format(table=table_name))
+        load(table_name, hpo_ids, input_dataset_id, output_dataset_id)
 
 
 if __name__ == '__main__':
-    dataset_id = os.environ['BIGQUERY_DATASET_ID']
-    project_id = os.environ['APPLICATION_ID']
-    merge(dataset_id, project_id)
+    main(input_dataset_id=os.environ['BIGQUERY_DATASET_ID'],
+         output_dataset_id=os.environ['UNIONED_DATASET_ID'],
+         project_id=os.environ['APPLICATION_ID'])
