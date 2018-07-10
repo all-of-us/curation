@@ -17,6 +17,9 @@ echo "- description: validate all hpos" >> $filename
 echo "  url: /data_steward/v1/ValidateAllHpoFiles" >> $filename
 echo "  schedule: every 3 hours" >> $filename
 
+echo "- description: ehr union" >> $filename
+echo "  url: /data_steward/v1/UnionEHR" >> $filename
+echo "  schedule: every 24 hours" >> $filename
 
 echo "- description: website generation">> $filename
 echo "  url: /tasks/sitegen">> $filename

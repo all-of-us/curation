@@ -67,6 +67,7 @@ Currently the following environment variables must be set:
 TODO
  * Besides `visit_occurrence` also handle mapping of other foreign key fields (e.g. `location_id`)
 """
+import argparse
 import os
 import logging
 from google.appengine.api.app_identity import app_identity
@@ -356,6 +357,15 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
 
 
 if __name__ == '__main__':
-    main(input_dataset_id=os.environ['BIGQUERY_DATASET_ID'],
-         output_dataset_id=os.environ['UNIONED_DATASET_ID'],
-         project_id=os.environ['APPLICATION_ID'])
+    parser = argparse.ArgumentParser(
+        description='Create a new CDM dataset which is the union of all EHR datasets submitted by HPOs',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('project_id',
+                        help='Project associated with the input and output datasets')
+    parser.add_argument('input_dataset_id',
+                        help='Dataset where HPO submissions are stored')
+    parser.add_argument('output_dataset_id',
+                        help='Dataset where the results should be stored')
+    parser.add_argument('-hpo_id', nargs='+', help='HPOs to process (all by default)')
+    args = parser.parse_args()
+    main(**args)

@@ -8,15 +8,15 @@ import resources
 import gcs_utils
 import bq_utils
 import test_util
-from validation import ehr_merge
+from validation import ehr_union
 
 PITT_HPO_ID = 'pitt'
 CHS_HPO_ID = 'chs'
 
 
-class EhrMergeTest(unittest.TestCase):
+class EhrUnionTest(unittest.TestCase):
     def setUp(self):
-        super(EhrMergeTest, self).setUp()
+        super(EhrUnionTest, self).setUp()
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_app_identity_stub()
@@ -47,7 +47,7 @@ class EhrMergeTest(unittest.TestCase):
         running_jobs = []
         for cdm_table in common.CDM_TABLES:
             cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
-            output_table = ehr_merge.output_table_for(cdm_table)
+            output_table = ehr_union.output_table_for(cdm_table)
             expected_tables[output_table] = []
             for hpo_id in self.hpo_ids:
                 # upload csv into hpo bucket
@@ -96,12 +96,12 @@ class EhrMergeTest(unittest.TestCase):
 
         # output should be mapping tables and cdm tables
         output_tables_before = self._dataset_tables(self.output_dataset_id)
-        mapping_tables = [ehr_merge.mapping_table_for(table) for table in ehr_merge.tables_to_map()]
-        output_cdm_tables = [ehr_merge.output_table_for(table) for table in common.CDM_TABLES]
+        mapping_tables = [ehr_union.mapping_table_for(table) for table in ehr_union.tables_to_map()]
+        output_cdm_tables = [ehr_union.output_table_for(table) for table in common.CDM_TABLES]
         expected_output = set(output_tables_before + mapping_tables + output_cdm_tables)
 
         # perform ehr union
-        ehr_merge.main(self.input_dataset_id, self.output_dataset_id, self.project_id, self.hpo_ids)
+        ehr_union.main(self.input_dataset_id, self.output_dataset_id, self.project_id, self.hpo_ids)
 
         # input dataset should be unchanged
         input_tables_after = set(self._dataset_tables(self.input_dataset_id))
@@ -110,7 +110,7 @@ class EhrMergeTest(unittest.TestCase):
         # check for each output table
         for table_name in common.CDM_TABLES:
             # output table exists and row count is sum of those submitted by hpos
-            result_table = ehr_merge.output_table_for(table_name)
+            result_table = ehr_union.output_table_for(table_name)
             expected_rows = self.expected_tables[result_table]
             expected_count = len(expected_rows)
             table_info = bq_utils.get_table_info(result_table, dataset_id=self.output_dataset_id)
@@ -141,35 +141,35 @@ class EhrMergeTest(unittest.TestCase):
         hpo_ids = ['chs', 'pitt']
         project_id = bq_utils.app_identity.get_application_id()
         dataset_id = bq_utils.get_dataset_id()
-        q = ehr_merge.mapping_query(table_name, hpo_ids, dataset_id, project_id)
+        q = ehr_union.mapping_query(table_name, hpo_ids, dataset_id, project_id)
 
     def _test_table_hpo_subquery(self):
         # person is a simple select, no ids should be mapped
-        ehr_merge.table_hpo_subquery(
+        ehr_union.table_hpo_subquery(
             'person', hpo_id=CHS_HPO_ID, input_dataset_id='input', output_dataset_id='output')
 
         # _mapping_visit_occurrence(src_table_id, src_visit_occurrence_id, visit_occurrence_id)
         # visit_occurrence_id should be mapped
-        visit_occurrence = ehr_merge.table_hpo_subquery(
+        visit_occurrence = ehr_union.table_hpo_subquery(
             'visit_occurrence', hpo_id=CHS_HPO_ID, input_dataset_id='input', output_dataset_id='output')
 
         # visit_occurrence_id and condition_occurrence_id should be mapped
-        condition_occurrence = ehr_merge.table_hpo_subquery(
+        condition_occurrence = ehr_union.table_hpo_subquery(
             'condition_occurrence', hpo_id=CHS_HPO_ID, input_dataset_id='input', output_dataset_id='output')
 
     def _test_table_union_query(self):
-        measurement = ehr_merge.table_union_query(
+        measurement = ehr_union.table_union_query(
             'measurement', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
         # person is a simple union without has no mapping
-        person = ehr_merge.table_union_query(
+        person = ehr_union.table_union_query(
             'person', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
-        visit_occurrence = ehr_merge.table_union_query(
+        visit_occurrence = ehr_union.table_union_query(
             'visit_occurrence', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
-        death = ehr_merge.table_union_query(
+        death = ehr_union.table_union_query(
             'death', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
-        care_site = ehr_merge.table_union_query(
+        care_site = ehr_union.table_union_query(
             'care_site', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
-        location = ehr_merge.table_union_query(
+        location = ehr_union.table_union_query(
             'location', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
 
     def tearDown(self):
