@@ -1,7 +1,7 @@
 import resources
 import os
 
-CDM_TABLES = set([r['table_name'] for r in resources.cdm_csv()])
+CDM_TABLES = resources.cdm_schemas().keys()
 CDM_FILES = map(lambda t: t + '.csv', CDM_TABLES)
 ACHILLES_INDEX_FILES = resources.achilles_index_files()
 ALL_ACHILLES_INDEX_FILES = [name.split(resources.resource_path + os.sep)[1].strip() for name in ACHILLES_INDEX_FILES]
