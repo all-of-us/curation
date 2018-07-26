@@ -10,21 +10,21 @@
 		"observation":{
 			"rows":{"observation_source_value":[
 					"Text","TextBox",
-					"_City","_Zip","WordAddress",
-					"OrganTransplatDescription_",
+					"City","Zip","WorkAddress",
+					"OrganTransplantDescription",
 					"OutsideTravel6Months_",
 					"PersonalMedicalhistory_AdditionalDiagnosis","circulatory_HowOldWereYouHypertension","GeneralConsent_OtherComments","PPIFeedback_",
-					"DiagnosisHistory_WhichConditions","OtherCancer_","PostPMBFeedback_",
+					"DiagnosisHistory_WhichConditions","OtherCancer","PostPMBFeedback",
 					"_HowOldWereYou",
 					"_AreYouAPatientAllOfUsPartner",
-					"PIIName_",
+					"PIIName",
 					"SocialSecurity",
-					"PIIAddress_","Address_PII","_Phone","_Email","Signature","SanDiegoBloodBank","AZSArizonaSpecific"
+					"PIIAddress","Address_PII","Phone","Email","Signature","SanDiegoBloodBank","AZSArizonaSpecific"
 				]},
 			"columns":[]
 		},
 		"note":{"columns":["note_text"]},
-		"measurement":{"columns":["note_text"]},
+		"measurement":{"columns":["visit_detail_id","provider_id"]},
 		"person":{"columns":["year_of_birth","month_of_birth","day_of_birth","location_id","provider_id","care_site_id","person_source_value","race_source_concept_id","race_source_value","gender_source_concept_id","gender_source_value","ethnicity_source_value","ethnicity_source_concept_id"]},
 		"death":{"columns":["cause_concept_id","cause_source_value","cause_source_concept_id"]},
 		"condition_occurrence":{"columns":["provider_id","visit_occurrence_id"]},
