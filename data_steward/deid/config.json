@@ -10,7 +10,7 @@
 		"observation":{
 			"rows":{"observation_source_value":[
 					"Text","TextBox",
-					"_City","_Zip","WordAddress",
+					"City","Zip","WorkAddress",
 					"OrganTransplatDescription_",
 					"OutsideTravel6Months_",
 					"PersonalMedicalhistory_AdditionalDiagnosis","circulatory_HowOldWereYouHypertension","GeneralConsent_OtherComments","PPIFeedback_",
