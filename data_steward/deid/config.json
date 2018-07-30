@@ -11,7 +11,7 @@
 			"rows":{"observation_source_value":[
 					"Text","TextBox",
 					"City","Zip","WorkAddress",
-					"OrganTransplatDescription",
+					"OrganTransplantDescription",
 					"OutsideTravel6Months_",
 					"PersonalMedicalhistory_AdditionalDiagnosis","circulatory_HowOldWereYouHypertension","GeneralConsent_OtherComments","PPIFeedback_",
 					"DiagnosisHistory_WhichConditions","OtherCancer","PostPMBFeedback",
