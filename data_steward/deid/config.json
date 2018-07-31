@@ -1,46 +1,125 @@
 {
-	"constants":{
-		"service-account-path":"/home/steve/git/rdc/deid/config/account/account.json",
-		"sexual-orientation":{"straight":"SexualOrientation_Straight","not-straight":"SexualOrientation_None"},
-		"observation-filter":{"race":"Race_WhatRace","gender":"Gender","orientation":"Orientation","employment":"_EmploymentStatus","sex_at_birth":"BiologicalSexAtBirth_SexAtBirth","language":"Language_SpokenWrittenLanguage","education":"EducationLevel_HighestGrade"},
-		"exclude-age":89,
-		"begin-of-time":"2010-01-18"
-	},
-	"suppression":{
-		"observation":{
-			"rows":{"observation_source_value":[
-					"Text","TextBox",
-					"City","Zip","WorkAddress",
-					"OrganTransplantDescription",
-					"OutsideTravel6Months_",
-					"PersonalMedicalhistory_AdditionalDiagnosis","circulatory_HowOldWereYouHypertension","GeneralConsent_OtherComments","PPIFeedback_",
-					"DiagnosisHistory_WhichConditions","OtherCancer","PostPMBFeedback",
-					"_HowOldWereYou",
-					"_AreYouAPatientAllOfUsPartner",
-					"PIIName",
-					"SocialSecurity",
-					"PIIAddress","Address_PII","Phone","Email","Signature","SanDiegoBloodBank","AZSArizonaSpecific"
-				]},
-			"columns":[]
-		},
-		"note":{"columns":["note_text"]},
-		"measurement":{"columns":["visit_detail_id","provider_id"]},
-		"person":{"columns":["year_of_birth","month_of_birth","day_of_birth","location_id","provider_id","care_site_id","person_source_value","race_source_concept_id","race_source_value","gender_source_concept_id","gender_source_value","ethnicity_source_value","ethnicity_source_concept_id"]},
-		"death":{"columns":["cause_concept_id","cause_source_value","cause_source_concept_id"]},
-		"condition_occurrence":{"columns":["provider_id","visit_occurrence_id"]},
-		"device_exposure":{"columns":["provider_id","visit_occurrence_id"]},
-		"location":{"columns":["address_1","address_2","city","zip","county","location_source_value"] },
-		"care_site":{"columns":["care_site_name","care_site_source_value","care_site_source_value"]}
-	},
-	"compute":{
-		"person":{
-			"year_of_birth":"EXTRACT(YEAR FROM birth_datetime) as year_of_birth",
-			"day_of_birth":"EXTRACT(DAY FROM birth_datetime) as day_of_birth",
-			"month_of_birth":"EXTRACT(MONTH FROM birth_datetime) as month_of_birth"
-		}
-	}
-	
-	
-	
-
+  "constants": {
+    "service-account-path": "/home/steve/git/rdc/deid/config/account/account.json",
+    "sexual-orientation": {
+      "straight": "SexualOrientation_Straight",
+      "not-straight": "SexualOrientation_None"
+    },
+    "observation-filter": {
+      "race": "Race_WhatRace",
+      "gender": "Gender",
+      "orientation": "Orientation",
+      "employment": "_EmploymentStatus",
+      "sex_at_birth": "BiologicalSexAtBirth_SexAtBirth",
+      "language": "Language_SpokenWrittenLanguage",
+      "education": "EducationLevel_HighestGrade"
+    },
+    "exclude-age": 89,
+    "begin-of-time": "2010-01-18"
+  },
+  "suppression": {
+    "observation": {
+      "rows": {
+        "observation_source_value": [
+          "Text",
+          "TextBox",
+          "City",
+          "Zip",
+          "WorkAddress",
+          "OrganTransplantDescription",
+          "OutsideTravel6Months_",
+          "PersonalMedicalhistory_AdditionalDiagnosis",
+          "circulatory_HowOldWereYouHypertension",
+          "GeneralConsent_OtherComments",
+          "PPIFeedback_",
+          "DiagnosisHistory_WhichConditions",
+          "OtherCancer",
+          "PostPMBFeedback",
+          "_HowOldWereYou",
+          "_AreYouAPatientAllOfUsPartner",
+          "PIIName",
+          "SocialSecurity",
+          "PIIAddress",
+          "Address_PII",
+          "Phone",
+          "Email",
+          "Signature",
+          "SanDiegoBloodBank",
+          "AZSArizonaSpecific"
+        ]
+      },
+      "columns": []
+    },
+    "note": {
+      "columns": [
+        "note_text"
+      ]
+    },
+    "measurement": {
+      "columns": [
+        "visit_detail_id",
+        "provider_id"
+      ]
+    },
+    "person": {
+      "columns": [
+        "year_of_birth",
+        "month_of_birth",
+        "day_of_birth",
+        "location_id",
+        "provider_id",
+        "care_site_id",
+        "person_source_value",
+        "race_source_concept_id",
+        "race_source_value",
+        "gender_source_concept_id",
+        "gender_source_value",
+        "ethnicity_source_value",
+        "ethnicity_source_concept_id"
+      ]
+    },
+    "death": {
+      "columns": [
+        "cause_concept_id",
+        "cause_source_value",
+        "cause_source_concept_id"
+      ]
+    },
+    "condition_occurrence": {
+      "columns": [
+        "provider_id",
+        "visit_occurrence_id"
+      ]
+    },
+    "device_exposure": {
+      "columns": [
+        "provider_id",
+        "visit_occurrence_id"
+      ]
+    },
+    "location": {
+      "columns": [
+        "address_1",
+        "address_2",
+        "city",
+        "zip",
+        "county",
+        "location_source_value"
+      ]
+    },
+    "care_site": {
+      "columns": [
+        "care_site_name",
+        "care_site_source_value",
+        "care_site_source_value"
+      ]
+    }
+  },
+  "compute": {
+    "person": {
+      "year_of_birth": "EXTRACT(YEAR FROM birth_datetime) as year_of_birth",
+      "day_of_birth": "EXTRACT(DAY FROM birth_datetime) as day_of_birth",
+      "month_of_birth": "EXTRACT(MONTH FROM birth_datetime) as month_of_birth"
+    }
+  }
 }
