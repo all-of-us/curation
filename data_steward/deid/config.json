@@ -57,7 +57,7 @@
     },
     "measurement": {
       "columns": [
-        "visit_detail_id",
+        "visit_occurrence_id",
         "provider_id"
       ]
     },
