@@ -187,7 +187,7 @@ def job_status_done(job_id):
     return job_running_status == 'DONE'
 
 
-def wait_on_jobs(job_ids, retry_count=BQ_DEFAULT_RETRY_COUNT, max_poll_interval=16):
+def wait_on_jobs(job_ids, retry_count=BQ_DEFAULT_RETRY_COUNT, max_poll_interval=300):
     """
     Exponential backoff wait for jobs to complete
     :param job_ids:
