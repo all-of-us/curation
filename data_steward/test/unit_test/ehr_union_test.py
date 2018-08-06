@@ -138,6 +138,26 @@ class EhrUnionTest(unittest.TestCase):
         actual_output = set(self._dataset_tables(self.output_dataset_id))
         self.assertSetEqual(expected_output, actual_output)
 
+        # explicit check that output person_ids are same as input
+        chs_person_table_id = bq_utils.get_table_id(CHS_HPO_ID, 'person')
+        pitt_person_table_id = bq_utils.get_table_id(PITT_HPO_ID, 'person')
+        q = '''SELECT DISTINCT person_id FROM (
+           SELECT person_id FROM {dataset_id}.{chs_person_table_id}
+           UNION ALL
+           SELECT person_id FROM {dataset_id}.{pitt_person_table_id}
+        ) ORDER BY person_id ASC'''.format(dataset_id=self.input_dataset_id,
+                                           chs_person_table_id=chs_person_table_id,
+                                           pitt_person_table_id=pitt_person_table_id)
+        response = bq_utils.query(q)
+        expected_rows = test_util.response2rows(response)
+        person_table_id = ehr_union.output_table_for('person')
+        q = '''SELECT DISTINCT person_id 
+               FROM {dataset_id}.{table_id} 
+               ORDER BY person_id ASC'''.format(dataset_id=self.output_dataset_id, table_id=person_table_id)
+        response = bq_utils.query(q)
+        actual_rows = test_util.response2rows(response)
+        self.assertListEqual(expected_rows, actual_rows)
+
     def test_subqueries(self):
         hpo_ids = ['chs', 'pitt']
         project_id = bq_utils.app_identity.get_application_id()
