@@ -68,7 +68,6 @@ TODO
  * Besides `visit_occurrence` also handle mapping of other foreign key fields (e.g. `location_id`)
 """
 import argparse
-import os
 import logging
 from google.appengine.api.app_identity import app_identity
 
@@ -102,7 +101,7 @@ def has_primary_key(table):
     :param table: name of a CDM table
     :return: True if the CDM table contains a primary key field, False otherwise
     """
-    assert(table in common.CDM_TABLES)
+    assert (table in common.CDM_TABLES)
     fields = resources.fields_for(table)
     id_field = table + '_id'
     return any(field for field in fields if field['type'] == 'integer' and field['name'] == id_field)
@@ -121,6 +120,40 @@ def tables_to_map():
     return result
 
 
+def _list_all_table_ids(dataset_id):
+    result = bq_utils.list_tables(dataset_id)
+    tables = result.get('tables', [])
+    return [table['tableReference']['tableId'] for table in tables]
+
+
+def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
+    """
+    Get list of subqueries (one for each HPO table found in the source) that comprise the ID mapping query
+
+    :param table_name: name of a CDM table whose ID field must be remapped
+    :param hpo_ids: list of HPOs to process
+    :param dataset_id: identifies the source dataset
+    :param project_id: identifies the GCP project
+    :return: list of subqueries
+    """
+    result = []
+    # Exclude subqueries that reference tables that are missing from source dataset
+    all_table_ids = _list_all_table_ids(dataset_id)
+    for hpo_id in hpo_ids:
+        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        if table_id in all_table_ids:
+            subquery = '''
+                (SELECT '{table_id}' AS src_table_id,
+                  {table_name}_id AS src_{table_name}_id
+                  FROM `{project_id}.{dataset_id}.{table_id}`)
+                '''.format(table_id=table_id, table_name=table_name, project_id=project_id, dataset_id=dataset_id)
+            result.append(subquery)
+        else:
+            logging.info(
+                'Excluding table {table_id} from mapping query because it does not exist'.format(table_id=table_id))
+    return result
+
+
 def mapping_query(table_name, hpo_ids, dataset_id=None, project_id=None):
     """
     Get query used to generate new ids for a CDM table
@@ -135,19 +168,8 @@ def mapping_query(table_name, hpo_ids, dataset_id=None, project_id=None):
         dataset_id = bq_utils.get_dataset_id()
     if project_id is None:
         project_id = app_identity.get_application_id()
-
-    subqueries = []
-    for hpo_id in hpo_ids:
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
-        subquery = '''
-        (SELECT '{table_id}' AS src_table_id,
-          {table_name}_id AS src_{table_name}_id
-          FROM `{project_id}.{dataset_id}.{table_id}`)
-        '''.format(table_id=table_id, table_name=table_name, project_id=project_id, dataset_id=dataset_id)
-        subqueries.append(subquery)
-
+    subqueries = _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id)
     union_all_query = UNION_ALL.join(subqueries)
-
     return '''
     WITH all_{table_name} AS (
       {union_all_query}
@@ -173,11 +195,11 @@ def mapping_table_for(domain_table):
 def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id, project_id):
     """
     Create and load a table that assigns unique ids to records in domain tables
-    Note: Overwrites if the table already exists
+    Note: Overwrites destination table if it already exists
 
     :param domain_table:
     :param hpo_ids: identifies which HPOs' data to include in union
-    :param input_dataset_id: identifies dataset containing HPO raw data
+    :param input_dataset_id: identifies dataset with multiple CDMs, each from an HPO submission
     :param output_dataset_id: identifies dataset where mapping table should be output
     :param project_id: identifies GCP project that contain the datasets
     :return:
@@ -194,7 +216,8 @@ def query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND'):
 
     :param q: SQL statement
     :param dst_table_id: save results in a table with the specified id
-    :param write_disposition: WRITE_TRUNCATE, WRITE_EMPTY, or WRITE_APPEND (default)
+    :param dst_dataset_id: identifies output dataset
+    :param write_disposition: WRITE_TRUNCATE, WRITE_EMPTY, or WRITE_APPEND (default, to preserve schema)
     :return: query result
     """
     query_job_result = bq_utils.query(q,
@@ -290,20 +313,41 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                    table_name=table_name)
 
 
+def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
+    """
+    Get list of subqueries (one for each HPO table found in the source) that comprise the load query
+
+    :param table_name: name of a CDM table to load
+    :param hpo_ids: list of HPOs to process
+    :param input_dataset_id: identifies the source dataset
+    :param output_dataset_id: identifies the output dataset
+    :return: list of subqueries
+    """
+    result = []
+    # Exclude subqueries that reference tables that are missing from source dataset
+    all_table_ids = _list_all_table_ids(input_dataset_id)
+    for hpo_id in hpo_ids:
+        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        if table_id in all_table_ids:
+            subquery = table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id)
+            result.append(subquery)
+        else:
+            logging.info(
+                'Excluding table {table_id} from mapping query because it does not exist'.format(table_id=table_id))
+    return result
+
+
 def table_union_query(table_name, hpo_ids, input_dataset_id, output_dataset_id):
     """
     For a CDM table returns a query which aggregates all records from each HPO's submission for that table
 
-    :param table_name:
-    :param hpo_ids:
-    :param input_dataset_id:
-    :param output_dataset_id:
-    :return:
+    :param table_name: name of a CDM table loaded by the resulting query
+    :param hpo_ids: list of HPOs to process
+    :param input_dataset_id: identifies the source dataset
+    :param output_dataset_id: identifies the output dataset
+    :return: query used to load the table in the output dataset
     """
-    subqueries = []
-    for hpo_id in hpo_ids:
-        subquery = table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id)
-        subqueries.append(subquery)
+    subqueries = _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id)
     return UNION_ALL.join(subqueries)
 
 
@@ -330,10 +374,13 @@ def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
 
 
 def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
-    """merge hpo ehr data
+    """
+    Create a new CDM which is the union of all EHR datasets submitted by HPOs
 
-    :dataset_id: source and target dataset
-    :project_id: project in which everything happens
+    :param input_dataset_id identifies a dataset containing multiple CDMs, one for each HPO submission
+    :param output_dataset_id identifies the dataset to store the new CDM in
+    :param project_id: project containing the datasets
+    :param hpo_ids: (optional) identifies HPOs to process, by default process all
     :returns: list of tables generated successfully
     """
     logging.info('EHR union started')
@@ -343,6 +390,7 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     # Create empty output tables to ensure proper schema, clustering, etc.
     for table in common.CDM_TABLES:
         result_table = output_table_for(table)
+        logging.info('Creating {dataset_id}.{table_id}...'.format(dataset_id=output_dataset_id, table_id=result_table))
         bq_utils.create_standard_table(table, result_table, drop_existing=True, dataset_id=output_dataset_id)
 
     # Create mapping tables

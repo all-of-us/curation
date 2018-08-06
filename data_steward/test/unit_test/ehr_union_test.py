@@ -37,6 +37,11 @@ class EhrUnionTest(unittest.TestCase):
             bucket = gcs_utils.get_hpo_bucket(hpo_id)
             test_util.empty_bucket(bucket)
 
+    def _create_hpo_table(self, hpo_id, table, dataset_id):
+        table_id = bq_utils.get_table_id(hpo_id, table)
+        bq_utils.create_table(table_id, resources.fields_for(table), dataset_id=dataset_id)
+        return table_id
+
     def _load_datasets(self):
         """
         Load five persons data for each test hpo
@@ -133,19 +138,63 @@ class EhrUnionTest(unittest.TestCase):
         actual_output = set(self._dataset_tables(self.output_dataset_id))
         self.assertSetEqual(expected_output, actual_output)
 
-    # TODO Figure out a good way to test query structure (unless we deem functional tests good enough)
-    # Functions below are for reference
-
-    def _test_mapping_query(self):
-        table_name = 'measurement'
+    def test_subqueries(self):
         hpo_ids = ['chs', 'pitt']
         project_id = bq_utils.app_identity.get_application_id()
         dataset_id = bq_utils.get_dataset_id()
-        q = ehr_union.mapping_query(table_name, hpo_ids, dataset_id, project_id)
+        table = 'measurement'
+        mapping_msg = 'Expected mapping subquery count %s but got %s'
+        union_msg = 'Expected union subquery count %s but got %s'
+
+        # Should not generate subqueries when HPO tables do not exist
+        pitt_table_id = self._create_hpo_table('pitt', table, dataset_id)
+        expected_count = 1
+
+        subqueries = ehr_union._mapping_subqueries(table, hpo_ids, dataset_id, project_id)
+        actual_count = len(subqueries)
+        self.assertEqual(expected_count, actual_count, mapping_msg % (expected_count, actual_count))
+        subquery = subqueries[0]
+        self.assertTrue(pitt_table_id in subquery)
+
+        subqueries = ehr_union._union_subqueries(table, hpo_ids, dataset_id, self.output_dataset_id)
+        self.assertEqual(expected_count, actual_count, union_msg % (expected_count, actual_count))
+        subquery = subqueries[0]
+        self.assertTrue(pitt_table_id in subquery)
+
+        # After adding measurement table for chs, should generate subqueries for both
+        chs_table_id = self._create_hpo_table('chs', table, dataset_id)
+        expected_count = 2
+        subqueries = ehr_union._mapping_subqueries(table, hpo_ids, dataset_id, project_id)
+        actual_count = len(subqueries)
+        self.assertEqual(expected_count, actual_count, mapping_msg % (expected_count, actual_count))
+        self.assertTrue(any(sq for sq in subqueries if pitt_table_id in sq))
+        self.assertTrue(any(sq for sq in subqueries if chs_table_id in sq))
+
+        subqueries = ehr_union._union_subqueries(table, hpo_ids, dataset_id, self.output_dataset_id)
+        actual_count = len(subqueries)
+        self.assertEqual(expected_count, actual_count, union_msg % (expected_count, actual_count))
+        self.assertTrue(any(sq for sq in subqueries if pitt_table_id in sq))
+        self.assertTrue(any(sq for sq in subqueries if chs_table_id in sq))
+
+    # TODO Figure out a good way to test query structure
+    # One option may be for each query under test to generate an abstract syntax tree
+    # (using e.g. https://github.com/andialbrecht/sqlparse) and compare it to an expected tree fragment.
+    # Functions below are for reference
+
+    def _test_mapping_query(self):
+        table = 'measurement'
+        hpo_ids = ['chs', 'pitt']
+        project_id = bq_utils.app_identity.get_application_id()
+        dataset_id = bq_utils.get_dataset_id()
+        created_tables = []
+        for hpo_id in hpo_ids:
+            hpo_table = self._create_hpo_table(hpo_id, table, dataset_id)
+            created_tables.append(hpo_table)
+        q = ehr_union.mapping_query(table, hpo_ids, dataset_id, project_id)
 
     def _test_table_hpo_subquery(self):
         # person is a simple select, no ids should be mapped
-        ehr_union.table_hpo_subquery(
+        person = ehr_union.table_hpo_subquery(
             'person', hpo_id=CHS_HPO_ID, input_dataset_id='input', output_dataset_id='output')
 
         # _mapping_visit_occurrence(src_table_id, src_visit_occurrence_id, visit_occurrence_id)
