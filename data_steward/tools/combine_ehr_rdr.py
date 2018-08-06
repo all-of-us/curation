@@ -244,7 +244,7 @@ def move_ehr_person_to_observation():
               birth_datetime as observation_datetime,
               NULL as value_as_concept_id,
               birth_datetime as value_as_string,
-              '' as observation_source_value,
+              NULL as observation_source_value,
               NULL as observation_source_concept_id
               FROM {ehr_dataset_id}.person
             )
