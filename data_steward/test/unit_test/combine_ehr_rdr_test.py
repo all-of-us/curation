@@ -258,10 +258,26 @@ class CombineEhrRdrTest(unittest.TestCase):
         # All fact_id_2 where domain_concept_id_2==27 map to observation
         pass
 
+    def _check_ehr_person_observation(self):
+        q = '''SELECT * FROM {dataset_id}.person'''.format(dataset_id=self.ehr_dataset_id)
+        person_response = bq_utils.query(q)
+        person_rows = test_util.response2rows(person_response)
+        q = '''SELECT observation_concept_id 
+               FROM {ehr_rdr_dataset_id}.observation
+               WHERE observation_type_concept_id = 38000280'''.format(ehr_rdr_dataset_id=self.combined_dataset_id)
+        # observation should contain 4 records per person of type EHR
+        expected = len(person_rows) * 4
+        observation_response = bq_utils.query(q)
+        observation_rows = test_util.response2rows(observation_response)
+        actual = len(observation_rows)
+        self.assertEqual(actual, expected,
+                         'Expected %s EHR person records in observation but found %s' % (expected, actual))
+
     def test_main(self):
         main()
         self._ehr_only_records_excluded()
         self._all_rdr_records_included()
+        self._check_ehr_person_observation()
 
     def tearDown(self):
         test_util.delete_all_tables(self.combined_dataset_id)
