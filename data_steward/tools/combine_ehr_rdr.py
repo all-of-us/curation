@@ -72,12 +72,12 @@ DIASTOLIC_TO_SYSTOLIC_CONCEPT_ID = 46233682
 SYSTOLIC_TO_DIASTOLIC_CONCEPT_ID = 46233683
 
 
-def query(q, dst_table_id, write_disposition='WRITE_TRUNCATE'):
+def query(q, dst_table_id, write_disposition='WRITE_APPEND'):
     """
     Run query and block until job is done
     :param q: SQL statement
     :param dst_table_id: if set, output is saved in a table with the specified id
-    :param write_disposition: WRITE_TRUNCATE (default), WRITE_APPEND or WRITE_EMPTY
+    :param write_disposition: WRITE_TRUNCATE, WRITE_EMPTY, or WRITE_APPEND (default, to preserve schema)
     """
     dst_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
     query_job_result = bq_utils.query(q, destination_table_id=dst_table_id, write_disposition=write_disposition,

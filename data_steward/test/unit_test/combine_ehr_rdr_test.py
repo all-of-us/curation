@@ -262,13 +262,14 @@ class CombineEhrRdrTest(unittest.TestCase):
         q = '''SELECT * FROM {dataset_id}.person'''.format(dataset_id=self.ehr_dataset_id)
         person_response = bq_utils.query(q)
         person_rows = test_util.response2rows(person_response)
-        q = '''SELECT observation_concept_id 
+        q = '''SELECT * 
                FROM {ehr_rdr_dataset_id}.observation
                WHERE observation_type_concept_id = 38000280'''.format(ehr_rdr_dataset_id=self.combined_dataset_id)
         # observation should contain 4 records per person of type EHR
         expected = len(person_rows) * 4
         observation_response = bq_utils.query(q)
         observation_rows = test_util.response2rows(observation_response)
+        # TODO check row content is as expected
         actual = len(observation_rows)
         self.assertEqual(actual, expected,
                          'Expected %s EHR person records in observation but found %s' % (expected, actual))
