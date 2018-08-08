@@ -39,7 +39,7 @@ fi
 
 # Copy the tables
 # Tables beginning with underscore "_" are skipped
-for t in $(bq ls -n 500 ${SOURCE_DATASET} |
+for t in $(bq ls -n 2000 ${SOURCE_DATASET} |
            grep TABLE |
            awk '{print $1}' |
            grep -v ^\_ |
