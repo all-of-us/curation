@@ -149,6 +149,7 @@ class Shift (Policy):
                 
         
     """
+    OBSERVATION_DATES = 'Date|date|DATE|ExtraConsent_(.*Video$|Fitness|Health)'
     def __init__(self,**args):
         Policy.__init__(self,**args)
         
@@ -207,20 +208,21 @@ class Shift (Policy):
                     #     date_diff(:name, (SELECT seed from :i_dataset.people_seed ii where ii.person_id = person_id), DAY) DAY) AS STRING) as :name
                     # """.replace(":name","value_as_string")
                     # shifted_date = """CAST( DATE_SUB( CAST(:name AS DATE), INTERVAL (SELECT seed from :i_dataset.people_seed xii WHERE xii.person_id = :table.person_id) DAY) AS STRING) as :name"""
-                    shifted_date = """CAST( DATE_SUB(CAST(:name AS DATE), INTERVAL date_diff( CAST(:name AS DATE),(select anchor from :i_dataset.people_seed xii where xii.person_id = :table.person_id),DAY) DAY) AS STRING) as :name """
+                    shifted_date = """CAST( DATE_SUB(CAST( CAST(:name AS TIMESTAMP) AS DATE), INTERVAL date_diff( CAST(CAST(:name AS TIMESTAMP) AS DATE),(select anchor from :i_dataset.people_seed xii where xii.person_id = :table.person_id),DAY) DAY) AS STRING) as :name """
                     shifted_date = shifted_date.replace(":name","value_as_string").replace(":i_dataset",dataset).replace(":table","x")
                     sql_fields = self.__get_shifted_fields(fields,dataset,"x")
                     #--AND person_id = 562270
                     sql_filter = "|".join(Policy.TERMS.OBSERVATION_FILTERS.values())
-                    _sql = """
-                    SELECT :shifted_date,person_id, :shifted_fields :fields
-                    FROM :i_dataset.observation x where observation_source_value in (
-                        SELECT concept_code from :i_dataset.concept WHERE REGEXP_CONTAINS(concept_code,'Date|DATE|date') IS TRUE
-                        AND REGEXP_CONTAINS(concept_code,'(:filter)') IS FALSE
-                    )
-                    """.replace(":i_dataset",dataset).replace(":shifted_fields",",".join(sql_fields)).replace(":shifted_date",shifted_date).replace(":filter",sql_filter)
-                    
-                    
+                    # _sql = """
+                    # SELECT :shifted_date,person_id, :shifted_fields :fields
+                    # FROM :i_dataset.observation x where observation_source_value in (
+                    #     SELECT concept_code from :i_dataset.concept WHERE REGEXP_CONTAINS(concept_code,'Date|DATE|date') IS TRUE
+                    #     AND REGEXP_CONTAINS(concept_code,'(:filter)') IS FALSE
+                    # )
+                    # """.replace(":i_dataset",dataset).replace(":shifted_fields",",".join(sql_fields)).replace(":shifted_date",shifted_date).replace(":filter",sql_filter)
+                    _sql = """SELECT :shifted_date,person_id, :shifted_fields :fields FROM :i_dataset.observation x WHERE REGEXP_CONTAINS(trim(observation_source_value),'Date|date|DATE|ExtraConsent_(.*Video$|Fitness|Health)')"""
+                    _sql = _sql.replace(":shifted_fields",",".join(sql_fields)).replace(":shifted_date",shifted_date).replace(":i_dataset",dataset)
+
                     self.policies[name]["union"] = {"sql":_sql,"fields":union_fields,"shifted_values":sql_fields}
                     
                     # self.policies[name]['meta'] = 'foo'
@@ -339,7 +341,7 @@ class DropFields(Policy):
                     # As a result of filtering out the above fields, we need to run a cascading Unions of which each will have its dates shifted.
                     #
                     codes = "'"+"','".join(self.concept_class_id)+"'"
-                    sql_filter = "Date|"+ "|".join(Policy.TERMS.OBSERVATION_FILTERS.values())
+                    sql_filter = Shift.OBSERVATION_DATES+"|"+ "|".join(Policy.TERMS.OBSERVATION_FILTERS.values())
                     #
                     # @Log: We are logging here the operaton that is expected to take place
                     # {"action":"drop-fields","input":sql_filter,"subject":table,"object":"rows"}
@@ -1045,11 +1047,14 @@ if __name__ == '__main__' :
             #   - destroy the temporary table
             #  
             if 'person_id' in _fields :            
-                FINAL_SQL =  """ select (ROW_NUMBER() OVER()) * 1000 as person_id, :fields FROM :i_dataset.people_seed INNER JOIN :o_dataset.:tmp_table ON people_seed.person_id = :tmp_table.person_id"""
+                # CAUTION :
+                # DO NOT perform a direct join on people_seed, ROW_NUMBER() OVER() otherwise the records may NOT align!!
+
+
+                FINAL_SQL = """ SELECT p.id as person_id, :fields FROM :o_dataset.:tmp_table INNER JOIN (SELECT * FROM (SELECT ROW_NUMBER() OVER() * 1000 as id,person_id FROM :i_dataset.people_seed)) p ON p.person_id = :tmp_table.person_id"""
                 FINAL_SQL = FINAL_SQL.replace(":fields",",".join([field_name for field_name in fields if field_name != 'person_id']) ).replace(":tmp_table",TMP_TABLE).replace(":o_dataset",o_dataset).replace(":i_dataset",i_dataset)
             else:
                 FINAL_SQL = """select * from :o_dataset.:tmp_table""".replace(":o_dataset",o_dataset).replace(":tmp_table",TMP_TABLE)
-            
             job.destination = client.dataset(o_dataset).table(table)
             job.dry_run = False
             out = client.query(FINAL_SQL,location='US',job_config=job)
