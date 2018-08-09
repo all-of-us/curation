@@ -1049,7 +1049,7 @@ if __name__ == '__main__' :
                 FINAL_SQL = FINAL_SQL.replace(":fields",",".join([field_name for field_name in fields if field_name != 'person_id']) ).replace(":tmp_table",TMP_TABLE).replace(":o_dataset",o_dataset).replace(":i_dataset",i_dataset)
             else:
                 FINAL_SQL = """select * from :o_dataset.:tmp_table""".replace(":o_dataset",o_dataset).replace(":tmp_table",TMP_TABLE)
-            print FINAL_SQL
+            
             job.destination = client.dataset(o_dataset).table(table)
             job.dry_run = False
             out = client.query(FINAL_SQL,location='US',job_config=job)
