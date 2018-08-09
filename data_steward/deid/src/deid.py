@@ -706,12 +706,12 @@ def initialization(client,dataset):
         # """.replace(":i_dataset",dataset)
         sql = """    
         
-        SELECT person_id, DATE_SUB( MAX(CAST(value_as_string as DATE)) , INTERVAL CAST (720*rand() AS INT64) DAY) as anchor
+        SELECT person_id, DATE_SUB( MAX(CAST(value_as_string as DATE)) , INTERVAL CAST (365*rand() AS INT64) DAY) as anchor
         FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' 
         GROUP BY person_id
 
         UNION ALL
-        SELECT person_id, DATE_SUB(CURRENT_DATE , INTERVAL CAST (720*rand() AS INT64) DAY) as anchor
+        SELECT person_id, DATE_SUB(CURRENT_DATE , INTERVAL CAST (365*rand() AS INT64) DAY) as anchor
         FROM :i_dataset.observation WHERE person_id not in (SELECT person_id FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' GROUP BY person_id)
         GROUP BY person_id
         """.replace(":i_dataset",dataset)
@@ -731,11 +731,11 @@ def wait(client,job_id) :
             break
         else:
             
-            time.sleep(10)
+            time.sleep(5)
         pass
     Logging.log(subject="composer",object="deid",action="awakening",value=job_id)
     
-def finalize(client,i_dataset, o_dataset,table,fields):
+def finalize(**args): #client,i_dataset, o_dataset,table,o_table,fields):
     """
         This function is designed or intended to finalize the import process by insuring the tables are adequately structured
         @NOTE: The prefix i indicates input, and the prefix o indicates output
@@ -745,9 +745,14 @@ def finalize(client,i_dataset, o_dataset,table,fields):
         @param o_dataset  output dataset
         @param table      target table name
     """
-    
-    ischema = client.get_table(client.dataset(i_dataset).table(table)).schema
-    table   = client.get_table(client.dataset(o_dataset).table(table))
+    client      = args['client']
+    i_dataset   = args['i_dataset']
+    i_table     = args['i_table']
+    o_dataset   = args['o_dataset']
+    o_table     = args['o_table']
+    fields      = args['fields']
+    ischema = client.get_table(client.dataset(i_dataset).table(i_table)).schema
+    table   = client.get_table(client.dataset(o_dataset).table(o_table))
     ischema_size = len(ischema)
     
     newfields = [bq.SchemaField(name=field.name,field_type=field.field_type) for field in ischema if field.name in fields]
@@ -995,7 +1000,7 @@ if __name__ == '__main__' :
     # The following line is a hack that gets the clustering working
     # After looking into the source code, it would seem this is the best place to get it to work
     #
-    if 'person_id' in _fields :
+    if 'person_id' in _fields and 'no-cluster' not in SYS_ARGS :
         job._properties['query']['clustering'] = {'fields':['person_id']}
     job.priority = 'BATCH' if 'filter' not in SYS_ARGS else 'INTERACTIVE'
     
@@ -1005,23 +1010,54 @@ if __name__ == '__main__' :
     r = client.query(sql,location='US',job_config=job)
     Logging.log(subject='composer',object=table,action='job.setup',value={"priority":job.priority,"can.run":1*(r.errors is None) })
     if r.errors is None and r.state == 'DONE' :
+        #
+        # DC-161
+        # We are performing this run into a temporary location 
+        TMP_TABLE = '_tmp_'+SYS_ARGS['table']
+        job.destination = client.dataset(o_dataset).table(TMP_TABLE)
         job.dry_run= False
         r = client.query(sql,location='US',job_config=job)
         #
         # @Log: We are logging here the operaton that is expected to take place
-        # {"action":"submit-sql","input":job.job_id,"subject":table,"object":{"status":job.state,"running""job.running}}     
-        Logging.log(subject="composer",object=r.job_id,action="submit.job",value={"from":i_dataset+"."+table,"to":o_dataset})
+        # {"action":"submit-sql","input":job.job_id,"subject":table,"object":{"status":job.state,"running""job.running}}    
+
+        # Logging.log(subject="composer",object=r.job_id,action="submit.job",value={"from":i_dataset+"."+table,"to":o_dataset})
+        Logging.log(subject="composer",object=r.job_id,action="submit.job",value={"from":i_dataset+"."+table,"to":(o_dataset+"."+TMP_TABLE)})
         #
         # Once the job has been submitted we need to update the resultset with
         # @TODO Find a way to use add_done_callback
         #
         
         wait(client,r.job_id)
-        job = client.get_job(r.job_id)
-        if job.errors is None:
-            
-            finalize(client,i_dataset,o_dataset,SYS_ARGS['table'] ,DROPPED_FIELDS)
-
+        out = client.get_job(r.job_id)
+        if out.errors is None:
+            finalize(client=client,i_dataset=i_dataset,o_dataset=o_dataset,i_table=SYS_ARGS['table'],o_table=TMP_TABLE,fields=DROPPED_FIELDS)
+            #
+            # At this point the temporary table is finalized and has all we need
+            schema = client.get_table(client.dataset(o_dataset).table(TMP_TABLE)).schema
+            fields = [ str(item.name) for item in schema if item.name != 'person_id']
+            #
+            # DC-161 
+            # We replace the person_id by the research id because it has the potential to affect filters for instance filtering by age.
+            # To avoid this we will do the following :
+            #   - put the first run into a temporary  table
+            #   - join the results of the temporary table into the final table
+            #   - destroy the temporary table
+            #  
+            if 'person_id' in _fields :            
+                FINAL_SQL =  """ select (ROW_NUMBER() OVER()) * 1000 as person_id, :fields FROM :i_dataset.people_seed INNER JOIN :o_dataset.:tmp_table ON people_seed.person_id = :tmp_table.person_id"""
+                FINAL_SQL = FINAL_SQL.replace(":fields",",".join([field_name for field_name in fields if field_name != 'person_id']) ).replace(":tmp_table",TMP_TABLE).replace(":o_dataset",o_dataset).replace(":i_dataset",i_dataset)
+            else:
+                FINAL_SQL = """select * from :o_dataset.:tmp_table""".replace(":o_dataset",o_dataset).replace(":tmp_table",TMP_TABLE)
+            print FINAL_SQL
+            job.destination = client.dataset(o_dataset).table(table)
+            job.dry_run = False
+            out = client.query(FINAL_SQL,location='US',job_config=job)
+            Logging.log(subject='composer',object=out.job_id,action='submit.job',value={"from":(o_dataset+"."+TMP_TABLE),"to":(o_dataset+"."+SYS_ARGS['table'])})
+            wait(client,out.job_id)
+            finalize(client=client,i_dataset=o_dataset,o_dataset=o_dataset,i_table=TMP_TABLE,o_table=SYS_ARGS['table'] ,fields = DROPPED_FIELDS)
+            client.delete_table(client.dataset(o_dataset).table(TMP_TABLE))
+            Logging.log(subject='composer',object=TMP_TABLE,action='finalize',value={"from":(o_dataset+"."+TMP_TABLE),"to":(o_dataset+"."+SYS_ARGS['table'])})
     else:
         #
         # There is no need to run the query if it can't run upon evaluation
@@ -1029,6 +1065,6 @@ if __name__ == '__main__' :
         # If the evaluation of the query doesn't pass, we shouldn't run it at all.
         pass
     
-    Logging.log(subject='composer',object=r.job_id,action='job.status',value='SUCCESS' if job.errors is None else 'FAILURE')
+    Logging.log(subject='composer',object=out.job_id,action='job.status',value='SUCCESS' if out.errors is None else 'FAILURE')
     #
 
