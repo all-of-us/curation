@@ -45,7 +45,7 @@
 @TODO: 
     - Improve the logs (make sure they're expressive and usable for mining)
     - Limitations append an existing table isn't yet supported
-@NOTE:
+@NOTE (limitations):
     
     
     
