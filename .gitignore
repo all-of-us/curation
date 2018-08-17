@@ -117,3 +117,4 @@ site/_site/
 test/dest
 tmp/*
 /data_steward/test/test_data/export/synpuf/*.csv
+.circleci/oldconfig.yml
