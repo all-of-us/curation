@@ -395,8 +395,14 @@ def list_tables(dataset_id=None, max_results=LIST_TABLES_MAX_RESULTS):
     app_id = app_identity.get_application_id()
     if dataset_id is None:
         dataset_id = get_dataset_id()
+    results = []
     request = bq_service.tables().list(projectId=app_id, datasetId=dataset_id, maxResults=max_results)
-    return request.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+    while request is not None:
+        response = request.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+        tables = response.get('tables', [])
+        results.extend(tables or [])
+        request = bq_service.tables().list_next(request, response)
+    return results
 
 
 def list_dataset_contents(dataset_id):

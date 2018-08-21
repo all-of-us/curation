@@ -242,12 +242,12 @@ class CombineEhrRdrTest(unittest.TestCase):
 
     def test_create_cdm_tables(self):
         # Sanity check
-        tables_before = bq_utils.list_tables(self.combined_dataset_id).get('tables', [])
+        tables_before = bq_utils.list_tables(self.combined_dataset_id)
         table_names_before = [t['tableReference']['tableId'] for t in tables_before]
         for table in common.CDM_TABLES:
             self.assertNotIn(table, table_names_before)
         create_cdm_tables()
-        tables_after = bq_utils.list_tables(self.combined_dataset_id).get('tables', [])
+        tables_after = bq_utils.list_tables(self.combined_dataset_id)
         table_names_after = [t['tableReference']['tableId'] for t in tables_after]
         for table in common.CDM_TABLES:
             self.assertIn(table, table_names_after)
