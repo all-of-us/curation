@@ -39,12 +39,11 @@ class BqUtilsTest(unittest.TestCase):
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
 
     def _drop_tables(self):
-        result = bq_utils.list_tables()
-        if result['totalItems'] > 0:
-            for table in result['tables']:
-                table_id = table['tableReference']['tableId']
-                if table_id not in common.VOCABULARY_TABLES:
-                    bq_utils.delete_table(table_id)
+        tables = bq_utils.list_tables()
+        for table in tables:
+            table_id = table['tableReference']['tableId']
+            if table_id not in common.VOCABULARY_TABLES:
+                bq_utils.delete_table(table_id)
 
     def _table_has_clustering(self, table_info):
         clustering = table_info.get('clustering')

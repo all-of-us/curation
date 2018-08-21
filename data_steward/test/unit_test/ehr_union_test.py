@@ -91,8 +91,7 @@ class EhrUnionTest(unittest.TestCase):
         :param dataset_id: identifies the dataset
         :return: list of table_ids
         """
-        result = bq_utils.list_tables(dataset_id)
-        tables = result.get('tables', [])
+        tables = bq_utils.list_tables(dataset_id)
         return [table['tableReference']['tableId'] for table in tables]
 
     def test_union_ehr(self):
