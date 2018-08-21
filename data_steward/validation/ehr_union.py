@@ -121,8 +121,7 @@ def tables_to_map():
 
 
 def _list_all_table_ids(dataset_id):
-    result = bq_utils.list_tables(dataset_id)
-    tables = result.get('tables', [])
+    tables = bq_utils.list_tables(dataset_id)
     return [table['tableReference']['tableId'] for table in tables]
 
 
