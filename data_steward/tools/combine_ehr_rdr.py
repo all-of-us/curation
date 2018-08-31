@@ -53,6 +53,8 @@ logger = logging.getLogger(__name__)
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
 EHR_CONSENT_TABLE_ID = '_ehr_consent'
+PERSON_TABLE = 'person'
+OBSERVATION_TABLE = 'observation'
 VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
 RDR_TABLES_TO_COPY = ['person', 'location', 'care_site']
@@ -70,12 +72,12 @@ DIASTOLIC_TO_SYSTOLIC_CONCEPT_ID = 46233682
 SYSTOLIC_TO_DIASTOLIC_CONCEPT_ID = 46233683
 
 
-def query(q, dst_table_id, write_disposition='WRITE_TRUNCATE'):
+def query(q, dst_table_id, write_disposition='WRITE_APPEND'):
     """
     Run query and block until job is done
     :param q: SQL statement
     :param dst_table_id: if set, output is saved in a table with the specified id
-    :param write_disposition: WRITE_TRUNCATE (default), WRITE_APPEND or WRITE_EMPTY
+    :param write_disposition: WRITE_TRUNCATE, WRITE_EMPTY, or WRITE_APPEND (default, to preserve schema)
     """
     dst_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
     query_job_result = bq_utils.query(q, destination_table_id=dst_table_id, write_disposition=write_disposition,
@@ -168,6 +170,88 @@ def copy_rdr_table(table):
     q = '''SELECT * FROM {rdr_dataset_id}.{table}'''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(), table=table)
     logger.debug('Query for {table} is `{q}`'.format(table=table, q=q))
     query(q, table)
+
+
+def move_ehr_person_to_observation():
+    """
+    This function moves the demographics from the EHR person table to
+    the observation table in the combined data set
+    :return:
+    """
+
+    q_max_ehr_obs_id = '''select max(observation_id) from {}.observation '''.format(bq_utils.get_dataset_id())
+    q_max_rdr_obs_id = '''select max(observation_id) from {}.observation '''.format(bq_utils.get_rdr_dataset_id())
+    max_ehr_obs_id = int(bq_utils.query(q_max_ehr_obs_id)['rows'][0]['f'][0]['v'])
+    max_rdr_obs_id = int(bq_utils.query(q_max_rdr_obs_id)['rows'][0]['f'][0]['v'])
+    q = ''' --Race
+            SELECT
+                ROW_NUMBER() OVER() + {offset} AS observation_id,
+                person_id,
+                observation_concept_id,
+                EXTRACT(DATE FROM observation_datetime) as observation_date,
+                observation_type_concept_id,
+                observation_datetime,
+                CAST(NULL AS FLOAT64) as value_as_number,
+                value_as_concept_id,
+                CAST(value_as_string AS STRING) as value_as_string,
+                observation_source_value,
+                observation_source_concept_id,
+                NULL as qualifier_concept_id,
+                NULL as unit_concept_id,
+                NULL as provider_id,
+                NULL as visit_occurrence_id,
+                CAST(NULL AS STRING) as unit_source_value,
+                CAST(NULL AS STRING) as qualifier_source_value,
+                NULL as value_source_concept_id,
+                CAST(NULL AS STRING) as value_source_value,
+                NULL as questionnaire_response_id
+            FROM
+            (
+              SELECT person_id, 4013886 as observation_concept_id, 38000280 as observation_type_concept_id, 
+              birth_datetime as observation_datetime,
+              race_concept_id as value_as_concept_id,
+              NULL as value_as_string,
+              race_source_value as observation_source_value, 
+              race_source_concept_id as observation_source_concept_id
+              FROM {ehr_dataset_id}.person
+
+              UNION ALL
+
+              --Ethnicity
+              SELECT person_id, 4271761 as observation_concept_id, 38000280 as observation_type_concept_id, 
+              birth_datetime as observation_datetime,
+              ethnicity_concept_id as value_as_concept_id,
+              NULL as value_as_string,
+              ethnicity_source_value as observation_source_value, 
+              ethnicity_source_concept_id as observation_source_concept_id
+              FROM {ehr_dataset_id}.person
+
+              UNION ALL
+
+              --Gender
+              SELECT person_id, 4135376 as observation_concept_id, 38000280 as observation_type_concept_id, 
+              birth_datetime as observation_datetime,
+              gender_concept_id as value_as_concept_id,
+              NULL as value_as_string,
+              gender_source_value as observation_source_value, 
+              gender_source_concept_id as observation_source_concept_id
+              FROM {ehr_dataset_id}.person
+
+              UNION ALL
+
+              --DOB
+              SELECT person_id, 4083587 as observation_concept_id, 38000280 as observation_type_concept_id, 
+              birth_datetime as observation_datetime,
+              NULL as value_as_concept_id,
+              birth_datetime as value_as_string,
+              NULL as observation_source_value,
+              NULL as observation_source_concept_id
+              FROM {ehr_dataset_id}.person
+            )
+    '''.format(ehr_dataset_id=bq_utils.get_dataset_id(),
+               offset = max_ehr_obs_id + max_rdr_obs_id)
+    logger.debug('Copying EHR person table from {ehr_dataset_id} to combined dataset. Query is `{q}`'.format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
+    query(q, dst_table_id=OBSERVATION_TABLE, write_disposition='WRITE_APPEND')
 
 
 def copy_ehr_table(table):
@@ -391,6 +475,8 @@ def main():
     for table in RDR_TABLES_TO_COPY:
         logger.info('Copying {table} table from RDR...'.format(table=table))
         copy_rdr_table(table)
+    logger.info('Translating {table} table from EHR...'.format(table=PERSON_TABLE))
+    move_ehr_person_to_observation()
     for table in EHR_TABLES_TO_COPY:
         logger.info('Copying {table} table from EHR...'.format(table=table))
         copy_ehr_table(table)

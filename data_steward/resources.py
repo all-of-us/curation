@@ -3,8 +3,18 @@ import os
 import csv
 import cachetools
 import json
+import vocabulary
 
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
+ACHILLES_ANALYSIS = 'achilles_analysis'
+ACHILLES_RESULTS = 'achilles_results'
+ACHILLES_RESULTS_DIST = 'achilles_results_dist'
+ACHILLES_TABLES = [ACHILLES_ANALYSIS, ACHILLES_RESULTS, ACHILLES_RESULTS_DIST]
+
+ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
+ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
+ACHILLES_HEEL_TABLES = [ACHILLES_HEEL_RESULTS, ACHILLES_RESULTS_DERIVED]
 
 # spec/_data/*
 data_path = os.path.join(base_path, 'spec', '_data')
@@ -64,3 +74,28 @@ def fields_for(table):
     json_path = os.path.join(fields_path, table + '.json')
     with open(json_path, 'r') as fp:
         return json.load(fp)
+
+
+def cdm_schemas(include_achilles=False, include_vocabulary=False):
+    """
+    Get a dictionary mapping table_name -> schema
+
+    :param include_achilles:
+    :param include_vocabulary:
+    :return:
+    """
+    result = dict()
+    for f in os.listdir(fields_path):
+        file_path = os.path.join(fields_path, f)
+        with open(file_path, 'r') as fp:
+            file_name = os.path.basename(f)
+            table_name, _ = file_name.split('.')
+            schema = json.load(fp)
+            include_table = True
+            if table_name in vocabulary.VOCABULARY_TABLES and not include_vocabulary:
+                include_table = False
+            elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
+                include_table = False
+            if include_table:
+                result[table_name] = schema
+    return result

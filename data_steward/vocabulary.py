@@ -1,0 +1,11 @@
+CONCEPT = 'concept'
+CONCEPT_ANCESTOR = 'concept_ancestor'
+CONCEPT_CLASS = 'concept_class'
+CONCEPT_RELATIONSHIP = 'concept_relationship'
+CONCEPT_SYNONYM = 'concept_synonym'
+DOMAIN = 'domain'
+DRUG_STRENGTH = 'drug_strength'
+RELATIONSHIP = 'relationship'
+VOCABULARY = 'vocabulary'
+VOCABULARY_TABLES = [CONCEPT, CONCEPT_ANCESTOR, CONCEPT_CLASS, CONCEPT_RELATIONSHIP, CONCEPT_SYNONYM, DOMAIN,
+                     DRUG_STRENGTH, RELATIONSHIP, VOCABULARY]

@@ -21,14 +21,6 @@ def main(args):
     folder = args.folder
     target_bucket = args.bucket
     folder_prefix = folder + '/'
-    for table_name in common.CDM_TABLES:
-        table_id = table_name
-        if bq_utils.table_exists(table_id):
-            print table_id, ' exists'
-        else:
-            print table_id, ' being created'
-            bq_utils.create_standard_table(table_name, table_id, False)
-
     _run_achilles()
     _run_export(folder_prefix=folder_prefix, target_bucket=target_bucket)
     _upload_achilles_files(folder_prefix=folder_prefix, target_bucket=target_bucket)

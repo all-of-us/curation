@@ -16,7 +16,7 @@ import common
 import export
 import gcs_utils
 import resources
-import ehr_merge
+import ehr_union
 from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV, ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
 UNKNOWN_FILE = 'Unknown file'
@@ -152,8 +152,8 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
 
     for filename in common.ACHILLES_INDEX_FILES:
         logging.debug('Uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
-        bucket_file_name = filename.split(resources.resource_path + os.sep)[1].strip()
-        with open(filename, 'r') as fp:
+        bucket_file_name = filename.split(resources.resource_path + os.sep)[1].strip().replace('\\', '/')
+        with open(filename, 'rb') as fp:
             upload_result = gcs_utils.upload_object(bucket, folder_prefix + bucket_file_name, fp)
             results.append(upload_result)
     return results
@@ -473,11 +473,12 @@ def _write_string_to_file(bucket, name, string):
 
 
 @api_util.auth_required_cron
-def merge_ehr():
+def union_ehr():
     hpo_id = 'unioned_ehr'
     app_id = bq_utils.app_identity.get_application_id()
-    dataset_id = bq_utils.get_dataset_id()
-    ehr_merge.merge(dataset_id=dataset_id, project_id=app_id)
+    input_dataset_id = bq_utils.get_dataset_id()
+    output_dataset_id = bq_utils.get_unioned_dataset_id()
+    ehr_union.main(input_dataset_id, output_dataset_id, app_id)
 
     run_achilles(hpo_id)
     now_date_string = datetime.datetime.now().strftime('%Y_%m_%d')
@@ -515,7 +516,7 @@ app.add_url_rule(
     methods=['GET'])
 
 app.add_url_rule(
-    PREFIX + 'MergeEHR',
-    endpoint='merge_ehr',
-    view_func=merge_ehr,
+    PREFIX + 'UnionEHR',
+    endpoint='union_ehr',
+    view_func=union_ehr,
     methods=['GET'])

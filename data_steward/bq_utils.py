@@ -13,6 +13,8 @@ import time
 import logging
 
 BQ_DEFAULT_RETRY_COUNT = 10
+# Maximum results returned by list_tables (API has a low default value)
+LIST_TABLES_MAX_RESULTS = 2000
 
 
 class InvalidOperationError(RuntimeError):
@@ -36,6 +38,10 @@ class BigQueryJobWaitError(RuntimeError):
 
 def get_dataset_id():
     return os.environ.get('BIGQUERY_DATASET_ID')
+
+
+def get_unioned_dataset_id():
+    return os.environ.get('UNIONED_DATASET_ID')
 
 
 def get_rdr_dataset_id():
@@ -182,7 +188,7 @@ def job_status_done(job_id):
     return job_running_status == 'DONE'
 
 
-def wait_on_jobs(job_ids, retry_count=BQ_DEFAULT_RETRY_COUNT, max_poll_interval=16):
+def wait_on_jobs(job_ids, retry_count=BQ_DEFAULT_RETRY_COUNT, max_poll_interval=300):
     """
     Exponential backoff wait for jobs to complete
     :param job_ids:
@@ -372,11 +378,12 @@ def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=
     return create_table(table_id, fields, drop_existing, dataset_id)
 
 
-def list_tables(dataset_id=None):
+def list_tables(dataset_id=None, max_results=LIST_TABLES_MAX_RESULTS):
     """
     List all the tables in the dataset
 
     :param dataset_id: dataset to list tables for (EHR dataset by default)
+    :param max_results: maximum number of results to return
     :return: an object with the structure described at https://goo.gl/Z17MWs
 
     Example:
@@ -388,7 +395,8 @@ def list_tables(dataset_id=None):
     app_id = app_identity.get_application_id()
     if dataset_id is None:
         dataset_id = get_dataset_id()
-    return bq_service.tables().list(projectId=app_id, datasetId=dataset_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+    request = bq_service.tables().list(projectId=app_id, datasetId=dataset_id, maxResults=max_results)
+    return request.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
 
 
 def list_dataset_contents(dataset_id):
