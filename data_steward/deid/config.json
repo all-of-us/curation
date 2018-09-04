@@ -45,7 +45,14 @@
           "Email",
           "Signature",
           "SanDiegoBloodBank",
-          "AZSArizonaSpecific"
+          "AZSArizonaSpecific",
+          "^E8[0-4].*",
+          "^E91[0,3].*",
+          "^E9([9,7,6,5]|28.0).*",
+          "^79[8,9].*",
+          "^V3.*",
+          "^(76[4-9]|77[0-9])\\\\.([0-9]){0,2}.*"
+          
         ]
       },
       "columns": []
