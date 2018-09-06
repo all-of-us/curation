@@ -136,6 +136,13 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     :return: list of subqueries
     """
     result = []
+    # Hpo_unique num ia a Dict initiated to store the unique id which are being assigned to the HPO_sites
+    hpo_unique_num = {}
+    i = 10
+    for hpo_id in hpo_ids:
+        hpo_unique_num[hpo_id] = i * 100000000
+        i += 1
+
     # Exclude subqueries that reference tables that are missing from source dataset
     all_table_ids = _list_all_table_ids(dataset_id)
     for hpo_id in hpo_ids:
@@ -143,9 +150,11 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
         if table_id in all_table_ids:
             subquery = '''
                 (SELECT '{table_id}' AS src_table_id,
-                  {table_name}_id AS src_{table_name}_id
+                  {table_name}_id AS src_{table_name}_id,
+                  ROW_NUMBER() over() + {hpo_unique_num} as {table_name}_id
                   FROM `{project_id}.{dataset_id}.{table_id}`)
-                '''.format(table_id=table_id, table_name=table_name, project_id=project_id, dataset_id=dataset_id)
+                '''.format(table_id=table_id, table_name=table_name, project_id=project_id, dataset_id=dataset_id,
+                           hpo_unique_num=hpo_unique_num[hpo_id])
             result.append(subquery)
         else:
             logging.info(
@@ -176,7 +185,7 @@ def mapping_query(table_name, hpo_ids, dataset_id=None, project_id=None):
     SELECT 
         src_table_id,
         src_{table_name}_id,
-        ROW_NUMBER() OVER () AS {table_name}_id
+        {table_name}_id
     FROM all_{table_name}
     '''.format(union_all_query=union_all_query, table_name=table_name)
 
