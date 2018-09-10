@@ -28,6 +28,7 @@ fi
 bq_drc_dataset=$([[ "${bq_drc_dataset}" ]] && echo "${bq_drc_dataset}" || echo "prod_drc_dataset")
 application_id=$([[ "${application_id}" ]] && echo "${application_id}" || echo "aou-res-curation-test")
 bq_vocab_dataset=$([[ "${bq_vocab_dataset}" ]] && echo "${bq_vocab_dataset}" || echo "vocabulary20180104")
+current_dir=`pwd`
 
 echo "bq_drc_dataset --> ${bq_drc_dataset}"
 echo "application_id --> ${application_id}"
@@ -36,6 +37,7 @@ echo "bq_vocab_dataset --> ${bq_vocab_dataset}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${gsutil_key}"
 export APPLICATION_ID="${application_id}"
+export PYTHONPATH="/Users/karthik/Dev/google-cloud-sdk/platform/google_appengine:${current_dir}/lib"
 
 #set application environment (ie dev, test, prod)
 gcloud config set project $application_id
@@ -56,37 +58,45 @@ pip install -t lib -r requirements.txt
 ########################################################
 #Take a Snapshot of EHR Dataset (step 4)
 ########################################################
+echo "-------------------------->Take a Snapshot of EHR Dataset (step 4)"
 ehr_dataset="ehr$today"
 echo "ehr_dataset --> $ehr_dataset"
 
 bq mk --dataset --description "snapshot prod_drc_dataset" ${application_id}:${ehr_dataset}
 
 #copy tables
+echo "tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_drc_dataset} --target_dataset ${ehr_dataset}"
 tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_drc_dataset} --target_dataset ${ehr_dataset}
 
 
 ########################################################
 #Take a Snapshot of Unioned EHR Submissions (step 5)
 ########################################################
+echo "-------------------------->Take a Snapshot of Unioned EHR Submissions (step 5)"
 rdr_dataset="rdr$today"
 source_prefix="unioned_ehr_"
 unioned_ehr_dataset="unioned_$ehr_dataset"
 
-bq mk --dataset --description "copy ehr_union prod_drc_dataset" ${application_id}:$unioned_ehr_dataset
+echo "bq mk --dataset --description "copy ehr_union from ${bq_drc_dataset}" ${application_id}:$unioned_ehr_dataset"
+bq mk --dataset --description "copy ehr_union from ${bq_drc_dataset}" ${application_id}:$unioned_ehr_dataset
 
 #Create the clinical tables for unioned EHR data set
+echo "python cdm.py $unioned_ehr_dataset"
 python cdm.py $unioned_ehr_dataset
 
+
 #Copy OMOP vocabulary to unioned EHR data set
+echo "python cdm.py --component vocabulary $unioned_ehr_dataset"
 python cdm.py --component vocabulary $unioned_ehr_dataset
+echo "tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_vocab_dataset} --target_dataset ${unioned_ehr_dataset}"
 tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_vocab_dataset} --target_dataset ${unioned_ehr_dataset}
 
 #copy unioned ehr clinical tables tables
+echo "tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_drc_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset}"
 tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_drc_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset}
 
 #Close virtual environment and remove
-source deactivate
-exit 1
+deactivate
 
 ########################################################
 #Combine RDR and Unioned EHR data (step 6)
@@ -119,7 +129,7 @@ export BUCKET_NAME_NYC="test-bucket"
 python run_achilles_and_export.py --bucket=drc-curation-internal --folder=${cdr}
 
 #Close virtual environment and remove
-source deactivate
+deactivate
 
 ########################################################
 # De-identify the combined dataset (step 7)
@@ -176,11 +186,11 @@ python deid.py --i_dataset ${cdr} --table location --o_dataset ${cdr_deid} --con
 python deid.py --i_dataset ${cdr} --table care_site --o_dataset ${cdr_deid} --config ../prod_config.json --log
 
 #Close virtual environment and remove
-source deactivate
+deactivate
 
 #Switch to curation virtual env
 source curation_env/bin/activate
 #Run Achilles
 python run_achilles_and_export.py --bucket=drc-curation-internal --folder=${cdr_deid}
 
-source deactivate
+deactivate
