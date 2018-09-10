@@ -54,6 +54,7 @@ class AchillesTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         test_util.empty_bucket(self.hpo_bucket)
+        test_util.delete_all_tables(bq_utils.get_dataset_id())
 
     def _load_dataset(self):
         for cdm_table in common.CDM_TABLES:
@@ -114,5 +115,6 @@ class AchillesTest(unittest.TestCase):
             self.assertFalse(is_temp)
 
     def tearDown(self):
+        test_util.delete_all_tables(bq_utils.get_dataset_id())
         test_util.empty_bucket(self.hpo_bucket)
         self.testbed.deactivate()
