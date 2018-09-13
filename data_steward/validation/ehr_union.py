@@ -136,9 +136,9 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     :return: list of subqueries
     """
     result = []
-    # Hpo_unique num ia a Dict initiated to store the unique id which are being assigned to the HPO_sites
+    # Hpo_unique num stores the unique id assigned to the HPO_sites
     hpo_unique_num = {}
-    i = 10
+    i = 1
     for hpo_id in hpo_ids:
         hpo_unique_num[hpo_id] = i * 100000000
         i += 1
