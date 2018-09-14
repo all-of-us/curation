@@ -57,6 +57,6 @@ for t in $(bq ls -n 2000 ${SOURCE_DATASET} |
            ( [[ "${SOURCE_PREFIX}" ]] && grep ${SOURCE_PREFIX} || cat ))
 do
   TARGET_TABLE=${t//${SOURCE_PREFIX}/} #replace all occurrences, use ${parameter//pattern/replacement_string}
-  CP_CMD="bq cp ${SOURCE_DATASET}.${t} ${TARGET_DATASET}.${TARGET_PREFIX}${TARGET_TABLE}"
+  CP_CMD="bq cp -f ${SOURCE_DATASET}.${t} ${TARGET_DATASET}.${TARGET_PREFIX}${TARGET_TABLE}"
   echo $(${CP_CMD})
 done
