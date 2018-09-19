@@ -94,6 +94,9 @@ tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${applicat
 #copy unioned ehr clinical tables tables
 echo "tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_drc_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset}"
 tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_drc_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset}
+#copy mapping tables tables
+echo "tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_drc_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_"
+tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_drc_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_
 
 #Close virtual environment and remove
 deactivate
