@@ -9,7 +9,7 @@ import logging
 import sys
 
 from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
-from tools.combine_ehr_rdr import move_ehr_person_to_observation
+from tools.combine_ehr_rdr import move_ehr_person_to_observation, mapping_query
 from tools.combine_ehr_rdr import DOMAIN_TABLES, EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY
 from google.appengine.ext import testbed
 from tools.combine_ehr_rdr import logger
@@ -144,7 +144,8 @@ class CombineEhrRdrTest(unittest.TestCase):
                     EXTRACT(DATE FROM birth_datetime))
             FROM {ehr_dataset_id}.person
         '''.format(ehr_dataset_id=self.ehr_dataset_id)
-        response_ehr_person = [[item['v'] for item in row['f']] for row in query_result_to_payload(bq_utils.query(q_person))['F0_']]
+        response_ehr_person = [[item['v'] for item in row['f']] for row in
+                               query_result_to_payload(bq_utils.query(q_person))['F0_']]
         q_obs = '''
             SELECT (person_id,
                     observation_concept_id,
@@ -158,7 +159,8 @@ class CombineEhrRdrTest(unittest.TestCase):
                 OR  obs.observation_concept_id=4135376 -- Gender - 4135376
                 OR  obs.observation_concept_id=4083587 -- DOB - 4083587
         '''.format(ehr_dataset_id=self.combined_dataset_id)
-        response_obs = [[item['v'] for item in row['f']] for row in query_result_to_payload(bq_utils.query(q_obs))['F0_']]
+        response_obs = [[item['v'] for item in row['f']] for row in
+                        query_result_to_payload(bq_utils.query(q_obs))['F0_']]
         # concept ids
         gender_concept_id = '4135376'
         race_concept_id = '4013886'
@@ -172,10 +174,11 @@ class CombineEhrRdrTest(unittest.TestCase):
         expected_ethnicity_list = [(row[0], ethnicity_concept_id, row[6], row[8]) for row in response_ehr_person]
 
         # actual lists
-        actual_gender_list = [(row[0], row[1], row[2], row[5])for row in response_obs if row[1] == gender_concept_id]
-        actual_race_list = [(row[0], row[1], row[2], row[5])for row in response_obs if row[1] == race_concept_id]
-        actual_dob_list = [(row[0], row[1], row[3], row[5])for row in response_obs if row[1] == dob_concept_id]
-        actual_ethnicity_list = [(row[0], row[1], row[2], row[5])for row in response_obs if row[1] == ethnicity_concept_id]
+        actual_gender_list = [(row[0], row[1], row[2], row[5]) for row in response_obs if row[1] == gender_concept_id]
+        actual_race_list = [(row[0], row[1], row[2], row[5]) for row in response_obs if row[1] == race_concept_id]
+        actual_dob_list = [(row[0], row[1], row[3], row[5]) for row in response_obs if row[1] == dob_concept_id]
+        actual_ethnicity_list = [(row[0], row[1], row[2], row[5]) for row in response_obs if
+                                 row[1] == ethnicity_concept_id]
 
         self.assertListEqual(sorted(expected_gender_list), sorted(actual_gender_list), 'gender check fails')
         self.assertListEqual(sorted(expected_race_list), sorted(actual_race_list), 'race check fails')
@@ -186,6 +189,41 @@ class CombineEhrRdrTest(unittest.TestCase):
         obs_row_count = int(bq_utils.get_table_info('observation', self.combined_dataset_id)['numRows'])
 
         self.assertEqual(person_ehr_row_count * 4, obs_row_count)
+
+    def test_mapping_query(self):
+        table = 'visit_occurrence'
+        q = mapping_query(table)
+        expected_query = '''
+    WITH all_records AS
+    (
+        SELECT
+          '{rdr_dataset_id}'  AS src_dataset_id, 
+          {domain_table}_id AS src_{domain_table}_id
+          NULL as src_hpo_id 
+        FROM {rdr_dataset_id}.{domain_table}
+
+        UNION ALL
+
+        SELECT
+          '{ehr_dataset_id}'  AS src_dataset_id, 
+          {domain_table}_id AS src_{domain_table}_id,
+          SUBSTR(v.src_table_id, 1, STRPOS(v.src_table_id, "_{domain_table}")-1) AS src_hpo_id
+        FROM {ehr_dataset_id}.{domain_table} t
+        JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id 
+        WHERE EXISTS
+           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
+            WHERE t.person_id = c.person_id)
+    )
+    SELECT 
+      ROW_NUMBER() OVER (ORDER BY src_dataset_id, src_{domain_table}_id) AS {domain_table}_id,
+      src_dataset_id,
+      src_{domain_table}_id,
+      src_hpo_id
+    FROM all_records
+    '''.format(rdr_dataset_id=self.rdr_dataset_id, domain_table=table, ehr_dataset_id=self.ehr_dataset_id,
+                   ehr_consent_table_id=EHR_CONSENT_TABLE_ID, ehr_rdr_dataset_id=self.combined_dataset_id)
+
+        self.assertEqual(q, expected_query, "Mapping query for \n {q} \n to is not as expected".format(q=q))
 
     def _ehr_only_records_excluded(self):
         """
