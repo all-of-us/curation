@@ -12,7 +12,7 @@ import gcs_utils
 import resources
 import test_util
 from validation import main
-
+import datetime
 
 class ValidationTest(unittest.TestCase):
     def setUp(self):
@@ -104,6 +104,7 @@ class ValidationTest(unittest.TestCase):
                         in common.CDM_FILES]
             self.assertEqual(expected, actual_result)
 
+
     @mock.patch('api_util.check_cron')
     def test_bad_file_names(self, mock_check_cron):
         folder_prefix = 'dummy-prefix-2018-03-22/'
@@ -139,6 +140,45 @@ class ValidationTest(unittest.TestCase):
             expected_result_items.sort()
             actual_result_items.sort()
             self.assertListEqual(expected_result_items, actual_result_items)
+
+    def test_retention_checks_list_submitted_bucket_items(self):
+        outside_retention = datetime.datetime.today() - datetime.timedelta(days=29)
+        outside_retention_str = outside_retention.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        bucket_items = [{'name': '2018-09-01/person.csv',
+                         'timeCreated': outside_retention_str,
+                         'updated': outside_retention_str}]
+        # if the file expires within a day it should not be returned
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        expected_result = []
+        self.assertListEqual(expected_result, actual_result)
+
+        # if the file within retention period it should be returned
+        within_retention = datetime.datetime.today() - datetime.timedelta(days=25)
+        within_retention_str = within_retention.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        item_2 = {'name': '2018-09-01/visit_occurrence.csv',
+                  'timeCreated': within_retention_str,
+                  'updated': within_retention_str}
+        bucket_items.append(item_2)
+        expected_result = [item_2]
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        self.assertListEqual(expected_result, actual_result)
+
+        actual_result = main.list_submitted_bucket_items([])
+        self.assertListEqual([], actual_result)
+
+        unknown_item = {'name': '2018-09-01/nyc_cu_person.csv',
+                        'timeCreated': within_retention_str,
+                        'updated': within_retention_str}
+        bucket_items = [unknown_item]
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        self.assertListEqual(actual_result, bucket_items)
+
+        ignored_item = dict(name='2018-09-01/' + common.RESULT_CSV,
+                            timeCreated=within_retention_str,
+                            updated=within_retention_str)
+        bucket_items = [ignored_item]
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        self.assertListEqual([], actual_result)
 
     def get_json_export_files(self, hpo_id):
         json_export_files = [common.ACHILLES_EXPORT_DATASOURCES_JSON]
