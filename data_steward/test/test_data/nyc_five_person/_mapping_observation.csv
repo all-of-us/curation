@@ -1,0 +1,6 @@
+observation_id,src_dataset_id,src_observation_id,src_hpo_id
+1,nyc_cu_observation,1,nyc_cu
+2,nyc_cu_observation,2,nyc_cu
+3,nyc_cu_observation,3,nyc_cu
+4,nyc_cu_observation,4,nyc_cu
+5,nyc_cu_observation,5,nyc_cu

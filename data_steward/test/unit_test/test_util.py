@@ -348,3 +348,65 @@ def list_files_in(path):
     :return:
     """
     return [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+
+
+def get_table_summary(dataset_id):
+    """
+    Get summary of tables in a bq dataset
+    :param dataset_id: identifies the dataset
+    :return: list of dict with keys: project_id dataset_id table_id creation_time type
+    """
+    import bq_utils
+    q = '''
+        SELECT * FROM {dataset_id}.__TABLES_SUMMARY__
+        '''.format(dataset_id=dataset_id)
+    response = bq_utils.query(q)
+    rows = response2rows(response)
+    return rows
+
+
+def table_count_query(dataset_id, table_id, where=''):
+    return '''
+      SELECT '{table_id}' AS table_id, COUNT(1) AS n
+      FROM {dataset_id}.{table_id} t
+      {where}
+      '''.format(dataset_id=dataset_id, table_id=table_id, where=where)
+
+
+def get_table_counts(dataset_id, table_ids=None, where=''):
+    """
+    Evaluate counts for tables in a dataset
+
+    :param dataset_id: dataset with the tables
+    :param table_ids: tables to include (all by default)
+    :param where: an optional SQL where clause
+    :return: a mapping of table_id => count
+    """
+    import bq_utils
+    if table_ids is None:
+        tables = get_table_summary(dataset_id)
+        table_ids = set(t['table_id'] for t in tables)
+    count_subqueries = [table_count_query(dataset_id, table_id, where) for table_id in table_ids]
+    count_query = '\nUNION ALL\n'.join(count_subqueries)
+    response = bq_utils.query(count_query)
+    rows = response2rows(response)
+    table_counts = dict()
+    for row in rows:
+        table_id = row['table_id']
+        table_counts[table_id] = row['n']
+    return table_counts
+
+
+def normalize_field_payload(field):
+    """
+    Standardize schema field payload so it is easy to compare in tests
+    :param field: a field from a table/query's schema
+    :return: the normalized field
+    """
+    result = field.copy()
+    values_to_lower = ['type', 'mode']
+    for key in result.keys():
+        value = result[key]
+        if key in values_to_lower:
+            result[key] = value.lower()
+    return result
