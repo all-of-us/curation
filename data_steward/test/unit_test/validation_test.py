@@ -124,8 +124,7 @@ class ValidationTest(unittest.TestCase):
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
             # check content of the bucket is correct
-            expected_bucket_items = exclude_file_list + [folder_prefix + item for item in common.CDM_FILES or
-                                                         main.is_pii(item)==True]
+            expected_bucket_items = exclude_file_list + [folder_prefix + item for item in common.IGNORE_LIST]
             # [common.RESULT_CSV, common.WARNINGS_CSV]
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             actual_bucket_items = [item['name'] for item in list_bucket_result]
