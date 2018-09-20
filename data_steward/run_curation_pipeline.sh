@@ -37,7 +37,9 @@ echo "bq_vocab_dataset --> ${bq_vocab_dataset}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${gsutil_key}"
 export APPLICATION_ID="${application_id}"
-export PYTHONPATH="/Users/karthik/Dev/google-cloud-sdk/platform/google_appengine:${current_dir}/lib"
+#Each person needs to set this to the path of their own gcloud sdk
+path_to_gcloud_sdk="~/Dev/google-cloud-sdk/platform/google_appengine:${current_dir}/lib"
+export PYTHONPATH="$PATH:${path_to_gcloud_sdk}"
 
 #set application environment (ie dev, test, prod)
 gcloud config set project $application_id
@@ -122,7 +124,7 @@ python cdm.py --component vocabulary ${cdr}
 tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_vocab_dataset} --target_dataset ${cdr}
 
 #Combine EHR and PPI data sets
-python combine_ehr_rdr.py
+python tools/combine_ehr_rdr.py
 
 #Run Achilles
 export BIGQUERY_DATASET_ID="${cdr}"
