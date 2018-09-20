@@ -344,7 +344,7 @@ def list_submitted_bucket_items(folder_bucketitems):
     """
     files_list = []
     object_retention_days = 30
-    today = datetime.date.today()
+    today = datetime.datetime.today()
     for file_name in folder_bucketitems:
         if basename(file_name) not in common.IGNORE_LIST:
             #in common.CDM_FILES or is_pii(basename(file_name)):
@@ -360,7 +360,7 @@ def initial_date_time_object(gcs_object_metadata):
     :return: datetime object
     """
     date_created = datetime.datetime.strptime(gcs_object_metadata['timeCreated'], '%Y-%m-%dT%H:%M:%S.%fZ')
-    return date_created.date()
+    return date_created
 
 
 def _get_to_process_list(bucket, bucket_items, force_process=False):
