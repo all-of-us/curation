@@ -36,7 +36,7 @@ jobs:
         command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
     - run:
         working_directory: ~/curation
-        command: sudo apt-get update && sudo apt-get install google-cloud-sdk
+        command: sudo apt-get update && sudo apt-get install dpkg && sudo apt-get install google-cloud-sdk
     - run:
         working_directory: ~/curation
         command: sudo apt-get install google-cloud-sdk-app-engine-python

@@ -315,6 +315,54 @@ def _validation_done(bucket, folder):
     return False
 
 
+def basename(gcs_object_metadata):
+    """returns name of file inside folder
+
+    :gcs_object_metadata: metadata as returned by list bucket
+    :returns: name without folder name
+
+    """
+    name = gcs_object_metadata['name']
+    if len(name.split('/')) > 1:
+        return '/'.join(name.split('/')[1:])
+
+
+def updated_datetime_object(gcs_object_metadata):
+    """returns update datetime
+
+    :gcs_object_metadata: metadata as returned by list bucket
+    :returns: datetime object
+
+    """
+    return datetime.datetime.strptime(gcs_object_metadata['updated'], '%Y-%m-%dT%H:%M:%S.%fZ')
+
+
+def list_submitted_bucket_items(folder_bucketitems):
+    """
+    :param folder_bucketitems: List of Bucket items
+    :return: list of files
+    """
+    files_list = []
+    object_retention_days = 30
+    today = datetime.datetime.today()
+    for file_name in folder_bucketitems:
+        if basename(file_name) not in common.IGNORE_LIST:
+            #in common.CDM_FILES or is_pii(basename(file_name)):
+            created_date = initial_date_time_object(file_name)
+            if created_date + datetime.timedelta(days=object_retention_days) - datetime.timedelta(days=1) > today:
+                files_list.append(file_name)
+    return files_list
+
+
+def initial_date_time_object(gcs_object_metadata):
+    """
+    :param gcs_object_metadata: metadata as returned by list bucket
+    :return: datetime object
+    """
+    date_created = datetime.datetime.strptime(gcs_object_metadata['timeCreated'], '%Y-%m-%dT%H:%M:%S.%fZ')
+    return date_created
+
+
 def _get_to_process_list(bucket, bucket_items, force_process=False):
     """returns a set of folders to process as part of validation
 
@@ -326,33 +374,13 @@ def _get_to_process_list(bucket, bucket_items, force_process=False):
     # files in root are ignored here
     all_folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items
                            if len(item['name'].split('/')) > 1])
-
-    def basename(gcs_object_metadata):
-        """returns name of file inside folder
-
-        :gcs_object_metadata: metadata as returned by list bucket
-        :returns: name without folder name
-
-        """
-        name = gcs_object_metadata['name']
-        if len(name.split('/')) > 1:
-            return '/'.join(name.split('/')[1:])
-
-    def updated_datetime_object(gcs_object_metadata):
-        """returns update datetime
-
-        :gcs_object_metadata: metadata as returned by list bucket
-        :returns: datetime object
-
-        """
-        return datetime.datetime.strptime(gcs_object_metadata['updated'], '%Y-%m-%dT%H:%M:%S.%fZ')
-
     folder_datetime_list = []
     folders_with_submitted_files = []
     for folder_name in all_folder_list:
         # this is not in a try/except block because this follows a bucket read which is in a try/except
         folder_bucket_items = [item for item in bucket_items if item['name'].startswith(folder_name)]
-        submitted_bucket_items = [item for item in folder_bucket_items if basename(item) not in common.IGNORE_LIST]
+        submitted_bucket_items = list_submitted_bucket_items(folder_bucket_items)
+        #[item for item in folder_bucket_items if basename(item) not in common.IGNORE_LIST]
         if len(submitted_bucket_items) > 0:
             folders_with_submitted_files.append(folder_name)
             latest_datetime = max([updated_datetime_object(item) for item in submitted_bucket_items])
