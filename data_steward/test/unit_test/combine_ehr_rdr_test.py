@@ -223,7 +223,7 @@ class CombineEhrRdrTest(unittest.TestCase):
     '''.format(rdr_dataset_id=self.rdr_dataset_id, domain_table=table, ehr_dataset_id=self.ehr_dataset_id,
                    ehr_consent_table_id=EHR_CONSENT_TABLE_ID, ehr_rdr_dataset_id=self.combined_dataset_id)
 
-        self.assertEqual(q, expected_query, "Mapping query for \n {q} \n to is not as expected".format(q=q))
+        self.assertEqual(expected_query, q, "Mapping query for \n {q} \n to is not as expected".format(q=q))
 
     def _ehr_only_records_excluded(self):
         """

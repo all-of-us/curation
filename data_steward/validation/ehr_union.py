@@ -11,7 +11,8 @@ Create a new CDM dataset which is the union of all EHR datasets submitted by HPO
     _mapping_<cdm_table> (         -- table name is derived from the CDM table it maps
       src_table_id:       STRING,  -- identifies input table whose ids are to be mapped
       src_<cdm_table>_id: INTEGER, -- original value of unique identifier in source table
-      <cdm_table>_id:     INTEGER  -- new unique identifier which will be used in output
+      <cdm_table>_id:     INTEGER, -- new unique identifier which will be used in output
+      hpo_id:             STRING   -- identifier of the hpo site
     )
 
     For example, this table is eventually used to load the output visit_occurrence table:
@@ -19,7 +20,8 @@ Create a new CDM dataset which is the union of all EHR datasets submitted by HPO
     _mapping_measurement_id (
       src_table_id:       STRING,
       src_measurement_id: INTEGER,
-      measurement_id:     INTEGER
+      measurement_id:     INTEGER,
+      hpo_id:             STRING
     )
 
     The table _mapping_measurement_id is loaded with a query which looks like this:
@@ -51,6 +53,7 @@ Create a new CDM dataset which is the union of all EHR datasets submitted by HPO
       src_table_id,
       src_measurement_id,
       ROW_NUMBER() OVER () AS measurement_id
+      SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id
     FROM all_measurement
 
  3) For all tables, compose a query to fetch the union of records submitted by all HPOs and save the results in output.
@@ -176,7 +179,8 @@ def mapping_query(table_name, hpo_ids, dataset_id=None, project_id=None):
     SELECT 
         src_table_id,
         src_{table_name}_id,
-        ROW_NUMBER() OVER () AS {table_name}_id
+        ROW_NUMBER() OVER () AS {table_name}_id,
+        SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_{table_name}")-1) AS src_hpo_id
     FROM all_{table_name}
     '''.format(union_all_query=union_all_query, table_name=table_name)
 

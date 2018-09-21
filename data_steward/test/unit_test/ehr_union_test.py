@@ -200,16 +200,43 @@ class EhrUnionTest(unittest.TestCase):
     # (using e.g. https://github.com/andialbrecht/sqlparse) and compare it to an expected tree fragment.
     # Functions below are for reference
 
-    def _test_mapping_query(self):
+    def test_mapping_query(self):
         table = 'measurement'
         hpo_ids = ['chs', 'pitt']
+        mapping_msg = 'Expected mapping subquery count %s but got %s for hpo_id %s'
         project_id = bq_utils.app_identity.get_application_id()
         dataset_id = bq_utils.get_dataset_id()
         created_tables = []
         for hpo_id in hpo_ids:
             hpo_table = self._create_hpo_table(hpo_id, table, dataset_id)
             created_tables.append(hpo_table)
-        q = ehr_union.mapping_query(table, hpo_ids, dataset_id, project_id)
+        query = ehr_union.mapping_query(table, hpo_ids, dataset_id, project_id)
+        #testing the query string
+        expected_query='''
+            WITH all_measurement AS (
+      
+                (SELECT 'chs_measurement' AS src_table_id,
+                  measurement_id AS src_measurement_id
+                  FROM `aou-res-curation-test.cukarthik_ehr.chs_measurement`)
+                
+
+        UNION ALL
+        
+
+                (SELECT 'pitt_measurement' AS src_table_id,
+                  measurement_id AS src_measurement_id
+                  FROM `aou-res-curation-test.cukarthik_ehr.pitt_measurement`)
+                
+    )
+    SELECT 
+        src_table_id,
+        src_measurement_id,
+        ROW_NUMBER() OVER () AS measurement_id,
+        SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id
+    FROM all_measurement
+    '''
+        self.assertEqual(expected_query.strip(), query.strip(), "Mapping query for \n {q} \n to is not as expected".format(q=query))
+
 
     def _test_table_hpo_subquery(self):
         # person is a simple select, no ids should be mapped
