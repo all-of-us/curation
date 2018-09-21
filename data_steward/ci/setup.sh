@@ -8,6 +8,12 @@ gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_PITT}
 gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_CHS}
 gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_UNIONED_EHR}
 
+# Delete datasets if existing
+bq rm -r -d -f ${APPLICATION_ID}:${RDR_DATASET_ID}
+bq rm -r -d -f ${APPLICATION_ID}:${EHR_RDR_DATASET_ID}
+bq rm -r -d -f ${APPLICATION_ID}:${BIGQUERY_DATASET_ID}
+bq rm -r -d -f ${APPLICATION_ID}:${UNIONED_DATASET_ID}
+
 # Create datasets
 bq mk --dataset --description "Test RDR dataset for ${USERNAME}" ${APPLICATION_ID}:${RDR_DATASET_ID}
 bq mk --dataset --description "Test EHR-RDR dataset for ${USERNAME}" ${APPLICATION_ID}:${EHR_RDR_DATASET_ID}
