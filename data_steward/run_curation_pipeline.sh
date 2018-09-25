@@ -3,7 +3,7 @@
 # This script automates the curation playbook (https://docs.google.com/document/d/1QnwUhJmrVc9JNt64goeRw-K7490gbaF7DsYhTTt9tUo/edit#heading=h.k24j7tgoprtn)
 # It assuming steps 1-3 are already done via a daily cron job. This script automates 4-7.
 
-today=`date '+%Y%m%d'`
+today=$(date '+%Y%m%d')
 echo "today --> $today"
 
 USAGE="run_curation_pipeline.sh --gsutil_key <Path to Google Keyfile Path> --app_id <Application ID> [--bq_dataset <BigQuery EHR Dataset: default is prod_drc_dataset>] [--vocabulary20180104 <BigQuery Vocab Dataset: default is vocabulary20180104>] "
@@ -28,7 +28,7 @@ fi
 bq_drc_dataset=$([[ "${bq_drc_dataset}" ]] && echo "${bq_drc_dataset}" || echo "prod_drc_dataset")
 application_id=$([[ "${application_id}" ]] && echo "${application_id}" || echo "aou-res-curation-test")
 bq_vocab_dataset=$([[ "${bq_vocab_dataset}" ]] && echo "${bq_vocab_dataset}" || echo "vocabulary20180104")
-current_dir=`pwd`
+current_dir=$(pwd)
 
 echo "bq_drc_dataset --> ${bq_drc_dataset}"
 echo "application_id --> ${application_id}"
