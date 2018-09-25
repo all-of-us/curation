@@ -16,8 +16,8 @@ jobs:
       command: /sbin/init
     steps:
     # Machine Setup
-    #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
-    # The following `checkout` command checks out your code to your working directory.
+
+    # `checkout` checks out your code to your working directory.
     - checkout
     # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
     - run: mkdir -p $CIRCLE_ARTIFACTS
@@ -50,42 +50,18 @@ jobs:
         working_directory: ~/curation
         command: ~/curation/data_steward/ci/setup.sh
     # Dependencies
-    #   This would typically go in either a build or a build-and-test job when using workflows
-    # Restore the dependency cache
-#    - restore_cache:
-#        keys:
-#        # This branch if available
-#        - v1-dep-{{ .Branch }}-
-#        # Default branch if not
-#        - v1-dep-develop-
-#        # Any branch if there are none on the default branch - this should be unnecessary if you have your default branch configured correctly
-#        - v1-dep-
-    # This is based on our 1.0 configuration file or project settings
-    - run: pip install --upgrade pip
-    - run: cd ~/curation/data_steward/ && pip install -t lib/ -r requirements.txt
-    # Save dependency cache
-#    - save_cache:
-#        key: v1-dep-{{ .Branch }}-{{ epoch }}
-#        paths:
-        # This is a broad list of cache paths to include many possible development environments
-        # You can probably delete some of these entries
-
+    - run:
+        command: pip install --upgrade pip
+    - run:
+        command: cd ~/curation/data_steward/ && pip install -t lib/ -r requirements.txt
     # Test
     #   This would typically be a build job when using workflows, possibly combined with build
-    # This is based on your 1.0 configuration file or project settings
     - run:
         command: ~/curation/data_steward/test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/
         no_output_timeout: 3000s
-    # Deployment
-    # Your existing circle.yml file contains deployment steps.
-    # The config translation tool does not support translating deployment steps
-    # since deployment in CircleCI 2.0 are better handled through workflows.
-    # See the documentation for more information https://circleci.com/docs/2.0/workflows/
-    # Teardown
-    #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
     # Save test results
-#    - store_test_results:
-#        path: /tmp/circleci-test-results
+    #    - store_test_results:
+    #        path: /tmp/circleci-test-results
     # Save artifacts
     - store_artifacts:
         path: /tmp/circleci-artifacts
@@ -105,7 +81,5 @@ jobs:
 #        - run: ~/ci/deploy.sh all-of-us-rdr-staging config/config_staging.json ~/gcloud-credentials.key
 #        - run: ~/rest-api/test/test_server.sh -i https://all-of-us-rdr-staging.appspot.com -c ~/gcloud-credentials.key
 
-## Stable and production deployments are not done automatically but can be
-## manually executed with the test.sh and deploy.sh pair, e.g.:
 ## ~/ci/deploy.sh all-of-us-rdr-stable config/config_stable.json <configurator key file>
 ## ~/ci/deploy.sh all-of-us-rdr config/config_prod.json <configurator key file>
