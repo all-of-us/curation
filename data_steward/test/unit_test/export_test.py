@@ -18,6 +18,13 @@ class ExportTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.testbed = testbed.Testbed()
+        cls.testbed.activate()
+        cls.testbed.init_app_identity_stub()
+        cls.testbed.init_memcache_stub()
+        cls.testbed.init_urlfetch_stub()
+        cls.testbed.init_blobstore_stub()
+        cls.testbed.init_datastore_v3_stub()
         fake_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
@@ -26,13 +33,6 @@ class ExportTest(unittest.TestCase):
 
     def setUp(self):
         super(ExportTest, self).setUp()
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_urlfetch_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
 
     def _empty_bucket(self):
@@ -141,9 +141,9 @@ class ExportTest(unittest.TestCase):
         self._empty_bucket()
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
         test_util.empty_bucket(bucket_nyc)
-        self.testbed.deactivate()
 
     @classmethod
     def tearDownClass(cls):
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
+        cls.testbed.deactivate()
