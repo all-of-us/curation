@@ -73,6 +73,7 @@ RDR_PATH = os.path.join(TEST_DATA_PATH, 'rdr')
 
 TEST_DATA_EXPORT_PATH = os.path.join(TEST_DATA_PATH, 'export')
 TEST_DATA_EXPORT_SYNPUF_PATH = os.path.join(TEST_DATA_EXPORT_PATH, 'synpuf')
+DESCRIPTION = 'description'
 
 
 def _create_five_persons_success_result():
@@ -409,4 +410,6 @@ def normalize_field_payload(field):
         value = result[key]
         if key in values_to_lower:
             result[key] = value.lower()
+    if DESCRIPTION not in field:
+        result[DESCRIPTION] = ''
     return result

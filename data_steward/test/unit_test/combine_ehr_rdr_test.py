@@ -45,8 +45,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         job_ids = []
         for table in common.CDM_TABLES:
             job_ids.append(CombineEhrRdrTest._upload_file_to_bucket(bucket, dataset_id, path, table))
-            #hard-coding list of tables for testing purposes
-            if mappings and table in ['visit_occurrence', 'condition_occurrence', 'procedure_occurrence', 'measurement', 'drug_exposure', 'observation']:
+            if mappings and table in DOMAIN_TABLES:
                 mapping_table = '_mapping_{table}'.format(table=table)
                 job_ids.append(CombineEhrRdrTest._upload_file_to_bucket(bucket, dataset_id, path, mapping_table))
         incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
@@ -278,6 +277,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         output_tables = combined_counts.keys()
         expected_counts = dict()
         expected_diffs = ['observation']
+        self.maxDiff = None
 
         for t in DOMAIN_TABLES:
             expected_mapping_table = mapping_table_for(t)
@@ -293,7 +293,6 @@ class CombineEhrRdrTest(unittest.TestCase):
             actual_count = combined_counts[expected_mapping_table]
             expected_count = actual_count if t in expected_diffs else ehr_counts[t] + rdr_counts[t]
             expected_counts[expected_mapping_table] = expected_count
-        self.maxDiff = None
         self.assertDictContainsSubset(expected=expected_counts, actual=combined_counts)
 
     def _all_rdr_records_included(self):

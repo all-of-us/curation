@@ -1,5 +1,6 @@
 import unittest
 import resources
+import vocabulary
 
 
 class ResourcesTest(unittest.TestCase):
@@ -19,6 +20,23 @@ class ResourcesTest(unittest.TestCase):
 
         for expected_table_name in expected_table_names:
             self.assertIn(expected_table_name, actual_table_names)
+
+    def test_cdm_schemas(self):
+        schemas = resources.cdm_schemas()
+        table_names = schemas.keys()
+
+        result_internal_tables = filter(resources.is_internal_table, table_names)
+        self.assertListEqual([], result_internal_tables,
+                             msg='Internal tables %s should not be in result of cdm_schemas()' % result_internal_tables)
+
+        achilles_tables = resources.ACHILLES_TABLES + resources.ACHILLES_HEEL_TABLES
+        result_achilles_tables = [table_name for table_name in table_names if table_name in achilles_tables]
+        self.assertListEqual([], result_achilles_tables,
+                             msg='Achilles tables %s should not be in result of cdm_schemas()' % result_achilles_tables)
+
+        result_vocab_tables = [table_name for table_name in table_names if table_name in vocabulary.VOCABULARY_TABLES]
+        self.assertListEqual([], result_vocab_tables ,
+                             msg='Vocabulary tables %s should not be in result of cdm_schemas()' % result_vocab_tables)
 
     def tearDown(self):
         super(ResourcesTest, self).tearDown()
