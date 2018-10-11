@@ -6,7 +6,7 @@
 today=$(date '+%Y%m%d')
 echo "today --> $today"
 
-USAGE="run_curation_pipeline.sh --gsutil_key <Path to Google Keyfile Path> --app_id <Application ID> [--bq_dataset <BigQuery EHR Dataset: default is prod_drc_dataset>] [--vocabulary20180104 <BigQuery Vocab Dataset: default is vocabulary20180104>] "
+USAGE="run_curation_pipeline.sh --gsutil_key <Path to Google Keyfile Path> --app_id <Application ID>[--bq_dataset <BigQuery EHR Dataset: default is prod_drc_dataset>] [--vocabulary20180104 <BigQuery Vocab Dataset: default is vocabulary20180104>] "
 
 while true; do
   case "$1" in
@@ -25,7 +25,7 @@ then
   exit 1
 fi
 
-bq_drc_dataset=$([[ "${bq_drc_dataset}" ]] && echo "${bq_drc_dataset}" || echo "prod_drc_dataset")
+bq_drc_dataset=$([[ "${bq_drc_dataset}" ]] && echo "${bq_drc_dataset}" || echo "auto_pipeline_input")
 application_id=$([[ "${application_id}" ]] && echo "${application_id}" || echo "aou-res-curation-test")
 bq_vocab_dataset=$([[ "${bq_vocab_dataset}" ]] && echo "${bq_vocab_dataset}" || echo "vocabulary20180104")
 current_dir=$(pwd)
@@ -38,7 +38,7 @@ echo "bq_vocab_dataset --> ${bq_vocab_dataset}"
 export GOOGLE_APPLICATION_CREDENTIALS="${gsutil_key}"
 export APPLICATION_ID="${application_id}"
 #Each person needs to set this to the path of their own gcloud sdk
-path_to_gcloud_sdk="~/Dev/google-cloud-sdk/platform/google_appengine:${current_dir}/lib"
+path_to_gcloud_sdk="/Users/ksdkalluri/google-cloud-sdk/platform/google_appengine:${current_dir}/lib"
 export PYTHONPATH="$PATH:${path_to_gcloud_sdk}"
 
 #set application environment (ie dev, test, prod)
@@ -75,7 +75,7 @@ tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${applicat
 #Take a Snapshot of Unioned EHR Submissions (step 5)
 ########################################################
 echo "-------------------------->Take a Snapshot of Unioned EHR Submissions (step 5)"
-rdr_dataset="rdr$today"
+rdr_dataset="krishna_rdr"
 source_prefix="unioned_ehr_"
 unioned_ehr_dataset="unioned_$ehr_dataset"
 
@@ -101,7 +101,7 @@ echo "tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${ap
 tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_drc_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_
 
 #Close virtual environment and remove
-deactivate
+#deactivate
 
 ########################################################
 #Combine RDR and Unioned EHR data (step 6)
@@ -124,14 +124,14 @@ python cdm.py --component vocabulary ${cdr}
 tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_vocab_dataset} --target_dataset ${cdr}
 
 #Combine EHR and PPI data sets
-python tools/combine_ehr_rdr.py
+python combine_ehr_rdr.py
 
 #Run Achilles
 export BIGQUERY_DATASET_ID="${cdr}"
 #export GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
 export BUCKET_NAME_NYC="test-bucket"
 
-python run_achilles_and_export.py --bucket=drc-curation-internal --folder=${cdr}
+python run_achilles_and_export.py --bucket=drc_curation_internal_test --folder=${cdr}
 
 #Close virtual environment and remove
 deactivate
@@ -154,8 +154,8 @@ python cdm.py --component vocabulary ${cdr_deid}
 tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_vocab_dataset} --target_dataset ${cdr_deid}
 
 #The location and care_site tables must be deleted (due to this bug):
-bq rm --table ${application_id}:${cdr_deid}.location
-bq rm --table ${application_id}:${cdr_deid}.care_site
+bq rm -f --table ${application_id}:${cdr_deid}.location
+bq rm -f --table ${application_id}:${cdr_deid}.care_site
 
 cd deid
 
@@ -176,26 +176,25 @@ pip install -r requirements.txt
 cd src
 set -e
 
-source deid_env/bin/activate
-
-python deid.py --i_dataset ${cdr} --table person --o_dataset ${cdr_deid} --config ../prod_config.json --log
-python deid.py --i_dataset ${cdr} --table visit_occurrence --o_dataset ${cdr_deid} --config ../prod_config.json --log
-python deid.py --i_dataset ${cdr} --table condition_occurrence --o_dataset ${cdr_deid} --config ../prod_config.json --log
-python deid.py --i_dataset ${cdr} --table drug_exposure --o_dataset ${cdr_deid} --config ../prod_config.json --log
-python deid.py --i_dataset ${cdr} --table procedure_occurrence --o_dataset ${cdr_deid} --config ../prod_config.json --log
-python deid.py --i_dataset ${cdr} --table device_exposure --o_dataset ${cdr_deid} --config ../prod_config.json --log
-python deid.py --i_dataset ${cdr} --table death --o_dataset ${cdr_deid} --config ../prod_config.json --log
-python deid.py --i_dataset ${cdr} --table measurement --o_dataset ${cdr_deid} --config ../prod_config.json --log
-python deid.py --i_dataset ${cdr} --table observation --o_dataset ${cdr_deid} --config ../prod_config.json --log
-python deid.py --i_dataset ${cdr} --table location --o_dataset ${cdr_deid} --config ../prod_config.json --log
-python deid.py --i_dataset ${cdr} --table care_site --o_dataset ${cdr_deid} --config ../prod_config.json --log
+python deid.py --i_dataset ${cdr} --table person --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table visit_occurrence --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table condition_occurrence --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table drug_exposure --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table procedure_occurrence --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table device_exposure --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table death --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table measurement --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table observation --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table location --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table care_site --o_dataset ${cdr_deid} --config ../test_config.json --log
 
 #Close virtual environment and remove
 deactivate
 
+cd ../..
 #Switch to curation virtual env
 source curation_env/bin/activate
 #Run Achilles
-python run_achilles_and_export.py --bucket=drc-curation-internal --folder=${cdr_deid}
+python run_achilles_and_export.py --bucket=drc_curation_internal_test --folder=${cdr_deid}
 
 deactivate
