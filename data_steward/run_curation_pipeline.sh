@@ -35,11 +35,15 @@ echo "application_id --> ${application_id}"
 echo "gsutil_key --> ${gsutil_key}"
 echo "bq_vocab_dataset --> ${bq_vocab_dataset}"
 
+
 export GOOGLE_APPLICATION_CREDENTIALS="${gsutil_key}"
 export APPLICATION_ID="${application_id}"
 #Each person needs to set this to the path of their own gcloud sdk
-path_to_gcloud_sdk="/Users/ksdkalluri/google-cloud-sdk/platform/google_appengine:${current_dir}/lib"
-export PYTHONPATH="$PATH:${path_to_gcloud_sdk}"
+#path_to_gcloud_sdk="/Users/ksdkalluri/google-cloud-sdk/platform/google_appengine:${current_dir}/lib"
+#export PYTHONPATH="$PATH:${path_to_gcloud_sdk}"
+
+#Each person needs to set this to the path of their own gcloud sdk
+#source tools/set_path.sh
 
 #set application environment (ie dev, test, prod)
 gcloud config set project $application_id
@@ -52,6 +56,8 @@ virtualenv curation_env
 
 # activate it
 source curation_env/bin/activate
+
+source tools/set_path.sh
 
 # install the requirements in the virtualenv
 pip install -t lib -r requirements.txt
@@ -124,14 +130,14 @@ python cdm.py --component vocabulary ${cdr}
 tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${application_id} --source_dataset ${bq_vocab_dataset} --target_dataset ${cdr}
 
 #Combine EHR and PPI data sets
-python combine_ehr_rdr.py
+python tools/combine_ehr_rdr.py
 
 #Run Achilles
 export BIGQUERY_DATASET_ID="${cdr}"
 #export GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
 export BUCKET_NAME_NYC="test-bucket"
 
-python run_achilles_and_export.py --bucket=drc_curation_internal_test --folder=${cdr}
+python tools/run_achilles_and_export.py --bucket=drc_curation_internal_test --folder=${cdr}
 
 #Close virtual environment and remove
 deactivate
@@ -157,6 +163,7 @@ tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${applicat
 bq rm -f --table ${application_id}:${cdr_deid}.location
 bq rm -f --table ${application_id}:${cdr_deid}.care_site
 
+unset PYTHONPATH
 cd deid
 
 #NOTE: Create a copy of config.json
@@ -169,6 +176,7 @@ virtualenv deid_env
 # activate it
 source deid_env/bin/activate
 
+source ../tools/set_path.sh
 # install the requirements in the virtualenv
 pip install -r requirements.txt
 #------------------------------------------------
@@ -193,8 +201,11 @@ deactivate
 
 cd ../..
 #Switch to curation virtual env
+unset PYTHONPATH
 source curation_env/bin/activate
 #Run Achilles
-python run_achilles_and_export.py --bucket=drc_curation_internal_test --folder=${cdr_deid}
+source tools/set_path.sh
+python tools/run_achilles_and_export.py --bucket=drc_curation_internal_test --folder=${cdr_deid}
 
+unset PYTHONPATH
 deactivate
