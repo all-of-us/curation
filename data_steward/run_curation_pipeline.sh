@@ -6,7 +6,9 @@
 today=$(date '+%Y%m%d')
 echo "today --> $today"
 
-USAGE="run_curation_pipeline.sh --gsutil_key <Path to Google Keyfile Path> --app_id <Application ID>[--bq_dataset <BigQuery EHR Dataset: default is prod_drc_dataset>] [--vocabulary20180104 <BigQuery Vocab Dataset: default is vocabulary20180104>] "
+USAGE="run_curation_pipeline.sh --gsutil_key <Path to Google Keyfile Path> --app_id <Application ID>[--bq_dataset <BigQuery EHR Dataset: default is prod_drc_dataset>] [--vocabulary20180104 <BigQuery Vocab Dataset: default is vocabulary20180104>] [--dataset_prefix <prefix on output datasets: default empty>]"
+
+dataset_prefix=""
 
 while true; do
   case "$1" in
@@ -14,6 +16,7 @@ while true; do
     --bq_dataset) bq_drc_dataset=$2; shift 2;;
     --bq_vocab_dataset) bq_vocab_dataset=$2; shift 2;;
     --gsutil_key) gsutil_key=$2; shift 2;;
+    --dataset_prefix) dataset_prefix=$2; shift 2;;
     -- ) shift; break ;;
     * ) break ;;
   esac
@@ -34,7 +37,7 @@ echo "bq_drc_dataset --> ${bq_drc_dataset}"
 echo "application_id --> ${application_id}"
 echo "gsutil_key --> ${gsutil_key}"
 echo "bq_vocab_dataset --> ${bq_vocab_dataset}"
-
+echo "dataset_prefix --> ${dataset_prefix}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${gsutil_key}"
 export APPLICATION_ID="${application_id}"
@@ -52,22 +55,22 @@ gcloud config set project $application_id
 #---------Create curation virtual environment----------
 set -e
 # create a new environment in directory curation_env
-virtualenv curation_env
+virtualenv  -p `which python2.7` curation_env
 
 # activate it
 source curation_env/bin/activate
 
-source tools/set_path.sh
-
 # install the requirements in the virtualenv
 pip install -t lib -r requirements.txt
+
+source tools/set_path.sh
 #------------------------------------------------------
 
 ########################################################
 #Take a Snapshot of EHR Dataset (step 4)
 ########################################################
 echo "-------------------------->Take a Snapshot of EHR Dataset (step 4)"
-ehr_dataset="ehr$today"
+ehr_dataset="${dataset_prefix}ehr${today}"
 echo "ehr_dataset --> $ehr_dataset"
 
 bq mk --dataset --description "snapshot prod_drc_dataset" ${application_id}:${ehr_dataset}
@@ -83,7 +86,7 @@ tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${applicat
 echo "-------------------------->Take a Snapshot of Unioned EHR Submissions (step 5)"
 rdr_dataset="krishna_rdr"
 source_prefix="unioned_ehr_"
-unioned_ehr_dataset="unioned_$ehr_dataset"
+unioned_ehr_dataset="${dataset_prefix}unioned_ehr${today}"
 
 echo "bq mk --dataset --description "copy ehr_union from ${bq_drc_dataset}" ${application_id}:$unioned_ehr_dataset"
 bq mk --dataset --description "copy ehr_union from ${bq_drc_dataset}" ${application_id}:$unioned_ehr_dataset
@@ -112,7 +115,7 @@ tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${applicat
 ########################################################
 #Combine RDR and Unioned EHR data (step 6)
 ########################################################
-cdr="combined$today"
+cdr="${dataset_prefix}combined${today}"
 version="v0-2-rc3"
 
 export RDR_DATASET_ID="${rdr_dataset}"
@@ -171,12 +174,11 @@ cd deid
 #------Create de-id virtual environment----------
 set -e
 # create a new environment in directory deid_env
-virtualenv deid_env
+virtualenv -p `which python2.7` deid_env
 
 # activate it
 source deid_env/bin/activate
 
-source ../tools/set_path.sh
 # install the requirements in the virtualenv
 pip install -r requirements.txt
 #------------------------------------------------

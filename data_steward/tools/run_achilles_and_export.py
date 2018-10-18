@@ -9,8 +9,6 @@ The following environment variables must be set:
 Note: Any missing CDM tables will be created and will remain empty
 """
 import argparse
-import common
-import bq_utils
 from validation.main import run_export as _run_export
 from validation.main import run_achilles as _run_achilles
 from validation.main import _upload_achilles_files
