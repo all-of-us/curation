@@ -6,7 +6,9 @@
 today=$(date '+%Y%m%d')
 echo "today --> $today"
 
-USAGE="run_curation_pipeline.sh --gsutil_key <Path to Google Keyfile Path> --app_id <Application ID>[--bq_dataset <BigQuery EHR Dataset: default is prod_drc_dataset>] [--vocabulary20180104 <BigQuery Vocab Dataset: default is vocabulary20180104>] [--dataset_prefix <prefix on output datasets: default empty>]"
+USAGE="run_curation_pipeline.sh --key_file <Keyfile Path> --app_id <Application ID> [--bq_dataset <BigQuery EHR Dataset: default is prod_drc_dataset>]
+[--vocabulary20180104 <BigQuery Vocab Dataset: default is vocabulary20180104>] [--dataset_prefix <prefix on output datasets: default empty>]
+[--bq_rdr_dataset <RDR dataset>] [--result_bucket <Internal bucket>]"
 
 dataset_prefix=""
 
@@ -15,14 +17,16 @@ while true; do
     --app_id) application_id=$2; shift 2;;
     --bq_dataset) bq_drc_dataset=$2; shift 2;;
     --bq_vocab_dataset) bq_vocab_dataset=$2; shift 2;;
-    --gsutil_key) gsutil_key=$2; shift 2;;
+    --key_file) key_file=$2; shift 2;;
+    --bq_rdr_dataset) rdr_dataset=$2; shift 2;;
     --dataset_prefix) dataset_prefix=$2; shift 2;;
+    --result_bucket) result_bucket=$2; shift 2;;
     -- ) shift; break ;;
     * ) break ;;
   esac
 done
 
-if [ -z "${gsutil_key}" ] || [ -z "${application_id}" ]
+if [ -z "${key_file}" ] || [ -z "${application_id}" ]
 then
   echo "Please specify the location of your GS Utils key path AND application ID. Usage: $USAGE"
   exit 1
@@ -31,15 +35,19 @@ fi
 bq_drc_dataset=$([[ "${bq_drc_dataset}" ]] && echo "${bq_drc_dataset}" || echo "auto_pipeline_input")
 application_id=$([[ "${application_id}" ]] && echo "${application_id}" || echo "aou-res-curation-test")
 bq_vocab_dataset=$([[ "${bq_vocab_dataset}" ]] && echo "${bq_vocab_dataset}" || echo "vocabulary20180104")
+bq_rdr_dataset=$([[ "${bq_rdr_dataset}" ]] && echo "${bq_rdr_dataset}" || echo "test_rdr")
+result_bucket=$([[ "${result_bucket}" ]] && echo "${result_bucket}" || echo "drc_curation_internal_test")
 current_dir=$(pwd)
 
 echo "bq_drc_dataset --> ${bq_drc_dataset}"
 echo "application_id --> ${application_id}"
-echo "gsutil_key --> ${gsutil_key}"
+echo "key_file --> ${key_file}"
+echo "bq_rdr_dataaset --> ${bq_rdr_dataset}"
 echo "bq_vocab_dataset --> ${bq_vocab_dataset}"
+echo "result_bucket --> ${result_bucket}"
 echo "dataset_prefix --> ${dataset_prefix}"
 
-export GOOGLE_APPLICATION_CREDENTIALS="${gsutil_key}"
+export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export APPLICATION_ID="${application_id}"
 #Each person needs to set this to the path of their own gcloud sdk
 #path_to_gcloud_sdk="/Users/ksdkalluri/google-cloud-sdk/platform/google_appengine:${current_dir}/lib"
@@ -84,7 +92,7 @@ tools/table_copy.sh --source_app_id ${application_id} --target_app_id ${applicat
 #Take a Snapshot of Unioned EHR Submissions (step 5)
 ########################################################
 echo "-------------------------->Take a Snapshot of Unioned EHR Submissions (step 5)"
-rdr_dataset="krishna_rdr"
+rdr_dataset="${bq_rdr_dataset}"
 source_prefix="unioned_ehr_"
 unioned_ehr_dataset="${dataset_prefix}unioned_ehr${today}"
 
@@ -140,7 +148,7 @@ export BIGQUERY_DATASET_ID="${cdr}"
 #export GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
 export BUCKET_NAME_NYC="test-bucket"
 
-python tools/run_achilles_and_export.py --bucket=drc_curation_internal_test --folder=${cdr}
+python tools/run_achilles_and_export.py --bucket=${result_bucket} --folder=${cdr}
 
 #Close virtual environment and remove
 deactivate
@@ -207,7 +215,7 @@ unset PYTHONPATH
 source curation_env/bin/activate
 #Run Achilles
 source tools/set_path.sh
-python tools/run_achilles_and_export.py --bucket=drc_curation_internal_test --folder=${cdr_deid}
+python tools/run_achilles_and_export.py --bucket=${result_bucket} --folder=${cdr_deid}
 
 unset PYTHONPATH
 deactivate
