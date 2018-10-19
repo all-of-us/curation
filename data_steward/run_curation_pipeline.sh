@@ -46,6 +46,7 @@ echo "bq_rdr_dataaset --> ${bq_rdr_dataset}"
 echo "bq_vocab_dataset --> ${bq_vocab_dataset}"
 echo "result_bucket --> ${result_bucket}"
 echo "dataset_prefix --> ${dataset_prefix}"
+echo "current_dir --> ${current_dir}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export APPLICATION_ID="${application_id}"
@@ -63,7 +64,7 @@ gcloud config set project $application_id
 #---------Create curation virtual environment----------
 set -e
 # create a new environment in directory curation_env
-virtualenv  -p `which python2.7` curation_env
+virtualenv  -p $(which python2.7) curation_env
 
 # activate it
 source curation_env/bin/activate
@@ -182,7 +183,7 @@ cd deid
 #------Create de-id virtual environment----------
 set -e
 # create a new environment in directory deid_env
-virtualenv -p `which python2.7` deid_env
+virtualenv -p $(which python2.7) deid_env
 
 # activate it
 source deid_env/bin/activate
