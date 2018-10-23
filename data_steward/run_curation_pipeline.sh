@@ -23,6 +23,7 @@ while true; do
     --rdr_dataset) rdr_dataset=$2; shift 2;;
     --dataset_prefix) dataset_prefix=$2; shift 2;;
     --result_bucket) result_bucket=$2; shift 2;;
+    --deid_config) deid_config=$2; shift 2;;
     -- ) shift; break ;;
     * ) break ;;
   esac
@@ -45,6 +46,7 @@ echo "bq_rdr_dataaset --> ${rdr_dataset}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "result_bucket --> ${result_bucket}"
 echo "dataset_prefix --> ${dataset_prefix}"
+echo "deid_config --> ${deid_config}"
 echo "current_dir --> ${current_dir}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
@@ -183,17 +185,17 @@ pip install -r requirements.txt
 cd src
 set -e
 
-python deid.py --i_dataset ${cdr} --table person --o_dataset ${cdr_deid} --config ../test_config.json --log
-python deid.py --i_dataset ${cdr} --table visit_occurrence --o_dataset ${cdr_deid} --config ../test_config.json --log
-python deid.py --i_dataset ${cdr} --table condition_occurrence --o_dataset ${cdr_deid} --config ../test_config.json --log
-python deid.py --i_dataset ${cdr} --table drug_exposure --o_dataset ${cdr_deid} --config ../test_config.json --log
-python deid.py --i_dataset ${cdr} --table procedure_occurrence --o_dataset ${cdr_deid} --config ../test_config.json --log
-python deid.py --i_dataset ${cdr} --table device_exposure --o_dataset ${cdr_deid} --config ../test_config.json --log
-python deid.py --i_dataset ${cdr} --table death --o_dataset ${cdr_deid} --config ../test_config.json --log
-python deid.py --i_dataset ${cdr} --table measurement --o_dataset ${cdr_deid} --config ../test_config.json --log
-python deid.py --i_dataset ${cdr} --table observation --o_dataset ${cdr_deid} --config ../test_config.json --log
-python deid.py --i_dataset ${cdr} --table location --o_dataset ${cdr_deid} --config ../test_config.json --log
-python deid.py --i_dataset ${cdr} --table care_site --o_dataset ${cdr_deid} --config ../test_config.json --log
+python deid.py --i_dataset ${cdr} --table person --o_dataset ${cdr_deid} --config ${deid_config} --log
+python deid.py --i_dataset ${cdr} --table visit_occurrence --o_dataset ${cdr_deid} --config ${deid_config} --log
+python deid.py --i_dataset ${cdr} --table condition_occurrence --o_dataset ${cdr_deid} --config ${deid_config} --log
+python deid.py --i_dataset ${cdr} --table drug_exposure --o_dataset ${cdr_deid} --config ${deid_config} --log
+python deid.py --i_dataset ${cdr} --table procedure_occurrence --o_dataset ${cdr_deid} --config ${deid_config} --log
+python deid.py --i_dataset ${cdr} --table device_exposure --o_dataset ${cdr_deid} --config ${deid_config} --log
+python deid.py --i_dataset ${cdr} --table death --o_dataset ${cdr_deid} --config ${deid_config} --log
+python deid.py --i_dataset ${cdr} --table measurement --o_dataset ${cdr_deid} --config ${deid_config} --log
+python deid.py --i_dataset ${cdr} --table observation --o_dataset ${cdr_deid} --config ${deid_config} --log
+python deid.py --i_dataset ${cdr} --table location --o_dataset ${cdr_deid} --config ${deid_config} --log
+python deid.py --i_dataset ${cdr} --table care_site --o_dataset ${cdr_deid} --config ${deid_config} --log
 
 #Close virtual environment and remove
 deactivate
