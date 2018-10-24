@@ -10,9 +10,17 @@ rdr_dataset="test_rdr"
 result_bucket="drc_curation_internal_test"
 dataset_prefix=""
 
-USAGE="run_curation_pipeline.sh --key_file <path to key file> --app_id <Application ID> [--ehr_dataset <EHR dataset: default is ${ehr_dataset}>]
-[--vocab_dataset <vocab dataset: default is ${vocab_dataset}>] [--dataset_prefix <prefix on output datasets: default empty>]
-[--rdr_dataset <RDR dataset: default is ${rdr_dataset}>] [--result_bucket <Internal bucket: default is ${result_bucket}>]"
+USAGE="
+Usage: run_curation_pipeline.sh
+  --key_file <path to key file>
+  --app_id <application id>
+  --deid_config <path to deid config json file>
+  [--ehr_dataset <EHR dataset: default is ${ehr_dataset}>]
+  [--vocab_dataset <vocab dataset: default is ${vocab_dataset}>]
+  [--dataset_prefix <prefix on output datasets: default empty>]
+  [--rdr_dataset <RDR dataset: default is ${rdr_dataset}>]
+  [--result_bucket <Internal bucket: default is ${result_bucket}>]
+"
 
 while true; do
   case "$1" in
@@ -29,9 +37,9 @@ while true; do
   esac
 done
 
-if [ -z "${key_file}" ] || [ -z "${app_id}" ]
+if [ -z "${key_file}" ] || [ -z "${app_id}" ] || [ -z "${deid_config}" ]
 then
-  echo "Specify the key file location AND application ID. Usage: $USAGE"
+  echo "Specify the key file location, application ID and deid config file. $USAGE"
   exit 1
 fi
 
@@ -53,6 +61,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export APPLICATION_ID="${app_id}"
 
 #set application environment (ie dev, test, prod)
+gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
 
