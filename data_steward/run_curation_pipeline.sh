@@ -150,8 +150,6 @@ export BUCKET_NAME_NYC="test-bucket"
 
 python tools/run_achilles_and_export.py --bucket=${result_bucket} --folder=${cdr}
 
-#Close virtual environment and remove
-deactivate
 
 ########################################################
 # De-identify the combined dataset (step 7)
@@ -174,6 +172,8 @@ tools/table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source
 bq rm -f --table ${app_id}:${cdr_deid}.location
 bq rm -f --table ${app_id}:${cdr_deid}.care_site
 
+#Close virtual environment and remove
+deactivate
 unset PYTHONPATH
 cd deid
 
