@@ -61,4 +61,5 @@ then
   echo "export EHR_RDR_DATASET_ID=${EHR_RDR_DATASET_ID}" >> $HOME/.circlerc
   echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >> $HOME/.circlerc
   echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >> $HOME/.circlerc
+  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/data_steward/ci" >> $HOME/.circlerc
 fi

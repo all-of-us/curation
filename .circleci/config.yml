@@ -42,7 +42,7 @@ jobs:
         command: sudo apt-get install google-cloud-sdk-app-engine-python
     - run:
         working_directory: ~/curation
-        command: chmod 700 ~/curation/data_steward/ci/activate_creds.sh && chmod 700 ~/curation/data_steward/ci/setup.sh
+        command: chmod 700 ~/curation/data_steward/ci/activate_creds.sh && chmod 700 ~/curation/data_steward/ci/setup.sh && chmod 700 ~/curation/data_steward/ci/create_bucket.sh
     - run:
         working_directory: ~/curation
         command: ~/curation/data_steward/ci/activate_creds.sh ~/gcloud-credentials-key.json

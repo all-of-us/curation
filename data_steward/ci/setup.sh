@@ -1,12 +1,14 @@
 #!/bin/bash
 
+gcloud config set project ${APPLICATION_ID}
+
 # Create buckets
-gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${DRC_BUCKET_NAME}
-gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_FAKE}
-gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_NYC}
-gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_PITT}
-gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_CHS}
-gsutil mb -c regional -l us-east4 -p ${APPLICATION_ID} gs://${BUCKET_NAME_UNIONED_EHR}
+create_bucket.sh ${DRC_BUCKET_NAME}
+create_bucket.sh ${BUCKET_NAME_FAKE}
+create_bucket.sh ${BUCKET_NAME_NYC}
+create_bucket.sh ${BUCKET_NAME_PITT}
+create_bucket.sh ${BUCKET_NAME_CHS}
+create_bucket.sh ${BUCKET_NAME_UNIONED_EHR}
 
 # Delete datasets if existing
 bq rm -r -d -f ${APPLICATION_ID}:${RDR_DATASET_ID}
