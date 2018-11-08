@@ -288,60 +288,6 @@ def command(cmd):
     return os.system(cmd)
 
 
-def response2rows(r):
-    """
-    Convert a query response to a list of dict
-
-    :param r: a query response object
-    :return: list of dict
-    """
-    rows = r.get('rows', [])
-    schema = r.get('schema', {'fields': None})['fields']
-    return [_transform_row(row, schema) for row in rows]
-
-
-def _transform_row(row, schema):
-    """
-    Apply the given schema to the given BigQuery data row. Adapted from https://goo.gl/dWszQJ.
-
-    :param row: A single BigQuery row to transform
-    :param schema: The BigQuery table schema to apply to the row, specifically the list of field dicts.
-    :returns: Row as a dict
-    """
-
-    log = {}
-
-    # Match each schema column with its associated row value
-    for index, col_dict in enumerate(schema):
-        col_name = col_dict['name']
-        row_value = row['f'][index]['v']
-
-        if row_value is None:
-            log[col_name] = None
-            continue
-
-        # Recurse on nested records
-        if col_dict['type'] == 'RECORD':
-            row_value = self._recurse_on_row(col_dict, row_value)
-
-        # Otherwise just cast the value
-        elif col_dict['type'] == 'INTEGER':
-            row_value = int(row_value)
-
-        elif col_dict['type'] == 'FLOAT':
-            row_value = float(row_value)
-
-        elif col_dict['type'] == 'BOOLEAN':
-            row_value = row_value in ('True', 'true', 'TRUE')
-
-        elif col_dict['type'] == 'TIMESTAMP':
-            row_value = float(row_value)
-
-        log[col_name] = row_value
-
-    return log
-
-
 def list_files_in(path):
     """
     List the abs paths to files (not dirs) in the supplied path
@@ -362,7 +308,7 @@ def get_table_summary(dataset_id):
         SELECT * FROM {dataset_id}.__TABLES_SUMMARY__
         '''.format(dataset_id=dataset_id)
     response = bq_utils.query(q)
-    rows = response2rows(response)
+    rows = bq_utils.response2rows(response)
     return rows
 
 
@@ -390,7 +336,7 @@ def get_table_counts(dataset_id, table_ids=None, where=''):
     count_subqueries = [table_count_query(dataset_id, table_id, where) for table_id in table_ids]
     count_query = '\nUNION ALL\n'.join(count_subqueries)
     response = bq_utils.query(count_query)
-    rows = response2rows(response)
+    rows = bq_utils.response2rows(response)
     table_counts = dict()
     for row in rows:
         table_id = row['table_id']
