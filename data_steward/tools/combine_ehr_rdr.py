@@ -290,10 +290,7 @@ def mapping_query(domain_table):
     rows = bq_utils.response2rows(mapping_constant_query_result)
     mapping_constant = rows[0]['constant']
 
-    return '''
-    WITH all_records AS
-    (
-        SELECT
+    return '''SELECT
           '{rdr_dataset_id}'  AS src_dataset_id,
           {domain_table}_id AS src_{domain_table}_id, 
           'rdr' as src_hpo_id,
@@ -312,8 +309,6 @@ def mapping_query(domain_table):
         WHERE EXISTS
            (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
             WHERE t.person_id = c.person_id)
-    )
-    FROM all_records
     '''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
                ehr_dataset_id=bq_utils.get_dataset_id(),
                ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),

@@ -239,10 +239,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         rows = bq_utils.response2rows(mapping_constant_query_result)
         mapping_constant = rows[0]['constant']
         q = mapping_query(table_name)
-        expected_query = '''
-    WITH all_records AS
-    (
-        SELECT
+        expected_query = '''SELECT
           '{rdr_dataset_id}'  AS src_dataset_id,
           {domain_table}_id AS src_{domain_table}_id, 
           'rdr' as src_hpo_id,
@@ -261,8 +258,6 @@ class CombineEhrRdrTest(unittest.TestCase):
         WHERE EXISTS
            (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
             WHERE t.person_id = c.person_id)
-    )
-    FROM all_records
     '''.format(rdr_dataset_id=self.rdr_dataset_id, domain_table=table_name, ehr_dataset_id=self.ehr_dataset_id,
                    ehr_consent_table_id=EHR_CONSENT_TABLE_ID, ehr_rdr_dataset_id=self.combined_dataset_id,
                 mapping_constant=mapping_constant)
