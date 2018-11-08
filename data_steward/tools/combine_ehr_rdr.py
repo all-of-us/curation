@@ -285,38 +285,36 @@ def mapping_query(domain_table):
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :return:
     """
-    return '''
-    WITH all_records AS
-    (
-        SELECT
-          '{rdr_dataset_id}'  AS src_dataset_id, 
-          {domain_table}_id AS src_{domain_table}_id,
-          NULL as src_hpo_id 
-        FROM {rdr_dataset_id}.{domain_table}
+    q = '''select MAX({domain_table}_id) as constant from {rdr_dataset_id}.{domain_table}'''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(), domain_table=domain_table)
+    mapping_constant_query_result = bq_utils.query(q)
+    rows = bq_utils.response2rows(mapping_constant_query_result)
+    mapping_constant = rows[0]['constant']
 
-        UNION ALL
+    return '''SELECT
+          '{rdr_dataset_id}'  AS src_dataset_id,
+          {domain_table}_id AS src_{domain_table}_id, 
+          'rdr' as src_hpo_id,
+          {domain_table}_id AS {domain_table}_id
+          FROM {rdr_dataset_id}.{domain_table}
 
-        SELECT
+          UNION ALL
+
+          SELECT
           '{ehr_dataset_id}'  AS src_dataset_id, 
           t.{domain_table}_id AS src_{domain_table}_id,
-          v.src_hpo_id AS src_hpo_id
-        FROM {ehr_dataset_id}.{domain_table} t
-        JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id 
+        v.src_hpo_id AS src_hpo_id,
+          t.{domain_table}_id + {mapping_constant} AS {domain_table}_id          
+          FROM {ehr_dataset_id}.{domain_table} t
+        JOIN {ehr_dataset_id}._mapping_{domain_table} v on t.{domain_table}_id = v.{domain_table}_id 
         WHERE EXISTS
-           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
+          (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
             WHERE t.person_id = c.person_id)
-    )
-    SELECT 
-      ROW_NUMBER() OVER (ORDER BY src_dataset_id, src_{domain_table}_id) AS {domain_table}_id,
-      src_dataset_id,
-      src_{domain_table}_id,
-      src_hpo_id
-    FROM all_records
     '''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-               ehr_dataset_id=bq_utils.get_dataset_id(),
-               ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
-               domain_table=domain_table,
-               ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+            ehr_dataset_id=bq_utils.get_dataset_id(),
+            ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+            domain_table=domain_table,
+            mapping_constant=mapping_constant,
+            ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
 
 
 def mapping_table_for(domain_table):
@@ -336,10 +334,13 @@ def mapping(domain_table):
     :param domain_table:
     :return:
     """
-    q = mapping_query(domain_table)
-    mapping_table = mapping_table_for(domain_table)
-    logger.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
-    query(q, mapping_table)
+    all_table_ids = bq_utils._list_all_table_ids(bq_utils.get_rdr_dataset_id())
+    table_id = bq_utils.get_table_id(domain_table)
+    if table_id in all_table_ids:
+        q = mapping_query(domain_table)
+        mapping_table = mapping_table_for(domain_table)
+        logger.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
+        query(q, mapping_table)
 
 
 def load_query(domain_table):
