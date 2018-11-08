@@ -237,11 +237,7 @@ class CombineEhrRdrTest(unittest.TestCase):
             rdr_dataset_id=self.rdr_dataset_id, table_name=table_name)
         mapping_constant_query_result = bq_utils.query(que)
         rows = bq_utils.response2rows(mapping_constant_query_result)
-        #print rows
-        #print mapping_constant_query_result
-        #print rows
         mapping_constant = rows[0]['constant']
-        #print mapping_constant
         q = mapping_query(table_name)
         expected_query = '''
     WITH all_records AS
