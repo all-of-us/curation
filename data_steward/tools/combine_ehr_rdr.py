@@ -336,7 +336,6 @@ def mapping(domain_table):
     :param domain_table:
     :return:
     """
-    all_table_ids = bq_utils._list_all_table_ids(bq_utils.get_rdr_dataset_id())
     if domain_table in DOMAIN_TABLES:
         q = mapping_query(domain_table)
         mapping_table = mapping_table_for(domain_table)
