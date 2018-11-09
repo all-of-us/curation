@@ -32,7 +32,7 @@
     {
         "type": "timestamp", 
         "name": "specimen_datetime", 
-        "mode": "required",
+        "mode": "nullable",
         "description": "The date and time on the date when the Specimen was obtained from the person."
     }, 
     {
