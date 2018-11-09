@@ -238,6 +238,8 @@ class CombineEhrRdrTest(unittest.TestCase):
         mapping_constant_query_result = bq_utils.query(que)
         rows = bq_utils.response2rows(mapping_constant_query_result)
         mapping_constant = rows[0]['constant']
+        if mapping_constant is None:
+            mapping_constant = 0
         q = mapping_query(table_name)
         expected_query = '''SELECT
           '{rdr_dataset_id}'  AS src_dataset_id,
@@ -252,7 +254,7 @@ class CombineEhrRdrTest(unittest.TestCase):
           '{ehr_dataset_id}'  AS src_dataset_id, 
           t.{domain_table}_id AS src_{domain_table}_id
           v.src_hpo_id AS src_hpo_id,
-          t.{domain_table}_id + mapping_constant AS {domain_table}_id          
+          t.{domain_table}_id + {mapping_constant} AS {domain_table}_id          
         FROM {ehr_dataset_id}.{domain_table} t
         JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id 
         WHERE EXISTS

@@ -469,3 +469,7 @@ def _transform_row(row, schema):
         log[col_name] = row_value
 
     return log
+
+def _list_all_table_ids(dataset_id):
+    tables = list_tables(dataset_id)
+    return [table['tableReference']['tableId'] for table in tables]

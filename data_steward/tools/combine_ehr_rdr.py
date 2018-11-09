@@ -289,6 +289,8 @@ def mapping_query(domain_table):
     mapping_constant_query_result = bq_utils.query(q)
     rows = bq_utils.response2rows(mapping_constant_query_result)
     mapping_constant = rows[0]['constant']
+    if mapping_constant is None:
+        mapping_constant = 0
 
     return '''SELECT
           '{rdr_dataset_id}'  AS src_dataset_id,
@@ -303,7 +305,7 @@ def mapping_query(domain_table):
           '{ehr_dataset_id}'  AS src_dataset_id, 
           t.{domain_table}_id AS src_{domain_table}_id
           v.src_hpo_id AS src_hpo_id,
-          t.{domain_table}_id + mapping_constant AS {domain_table}_id          
+          t.{domain_table}_id + {mapping_constant} AS {domain_table}_id          
         FROM {ehr_dataset_id}.{domain_table} t
         JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id 
         WHERE EXISTS
@@ -334,10 +336,14 @@ def mapping(domain_table):
     :param domain_table:
     :return:
     """
-    q = mapping_query(domain_table)
-    mapping_table = mapping_table_for(domain_table)
-    logger.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
-    query(q, mapping_table)
+    if domain_table in DOMAIN_TABLES:
+        q = mapping_query(domain_table)
+        mapping_table = mapping_table_for(domain_table)
+        logger.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
+        query(q, mapping_table)
+    else:
+        logging.info(
+            'Excluding table {table_id} from mapping query because it does not exist'.format(table_id=domain_table))
 
 
 def load_query(domain_table):
