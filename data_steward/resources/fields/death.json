@@ -14,7 +14,7 @@
     {
         "type": "timestamp", 
         "name": "death_datetime", 
-        "mode": "nullable", 
+        "mode": "required",
         "description": "The date and time the person was deceased. If the precise date including day or month is not known or not allowed, December is used as the default month, and the last day of the month the default day."
     }, 
     {

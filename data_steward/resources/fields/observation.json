@@ -26,7 +26,7 @@
     {
         "type": "timestamp", 
         "name": "observation_datetime", 
-        "mode": "nullable", 
+        "mode": "required",
         "description": "The date and time of the observation."
     }, 
     {
