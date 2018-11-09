@@ -289,6 +289,8 @@ def mapping_query(domain_table):
     mapping_constant_query_result = bq_utils.query(q)
     rows = bq_utils.response2rows(mapping_constant_query_result)
     mapping_constant = rows[0]['constant']
+    if mapping_constant is None:
+        mapping_constant = 0
 
     return '''SELECT
           '{rdr_dataset_id}'  AS src_dataset_id,
@@ -335,12 +337,13 @@ def mapping(domain_table):
     :return:
     """
     all_table_ids = bq_utils._list_all_table_ids(bq_utils.get_rdr_dataset_id())
-    table_id = bq_utils.get_table_id(domain_table)
-    if table_id in all_table_ids:
+    if domain_table in DOMAIN_TABLES:
         q = mapping_query(domain_table)
         mapping_table = mapping_table_for(domain_table)
         logger.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
         query(q, mapping_table)
+    else:
+        logging.info('Excluding table {table_id} from mapping query because it does not exist'.format(table_id=domain_table))
 
 
 def load_query(domain_table):
