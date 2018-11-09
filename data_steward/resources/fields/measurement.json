@@ -26,7 +26,7 @@
     {
         "type": "timestamp", 
         "name": "measurement_datetime", 
-        "mode": "nullable", 
+        "mode": "required",
         "description": "The date and time of the Measurement. Some database systems don't have a datatype of time. To accomodate all temporal analyses, datatype datetime can be used (combining measurement_date and measurement_time [forum discussion](http://forums.ohdsi.org/t/date-time-and-datetime-problem-and-the-world-of-hours-and-1day/314))"
     }, 
     {

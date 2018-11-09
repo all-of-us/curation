@@ -32,7 +32,7 @@
     {
         "type": "timestamp", 
         "name": "birth_datetime", 
-        "mode": "nullable", 
+        "mode": "nullable",
         "description": "The date and time of birth of the person."
     }, 
     {

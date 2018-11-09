@@ -26,7 +26,7 @@
     {
         "type": "timestamp", 
         "name": "visit_start_datetime", 
-        "mode": "nullable", 
+        "mode": "required",
         "description": "The date and time of the visit started."
     }, 
     {
@@ -38,7 +38,7 @@
     {
         "type": "timestamp", 
         "name": "visit_end_datetime", 
-        "mode": "nullable", 
+        "mode": "required",
         "description": "The date and time of the visit end."
     }, 
     {
