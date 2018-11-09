@@ -42,7 +42,7 @@
         "description": "The title of the Note as it appears in the source."
     },
     {
-        "type": "string", 
+        "type": "string",
         "name": "note_text", 
         "mode": "required", 
         "description": "The content of the Note."
@@ -60,7 +60,7 @@
         "description": "A foreign key to the predefined Concept in the Standardized Vocabularies reflecting the language of the note"
     },
     {
-        "type": "integer", 
+        "type": "integer",
         "name": "provider_id", 
         "mode": "nullable", 
         "description": "A foreign key to the Provider in the PROVIDER table who took the Note."
