@@ -199,37 +199,45 @@ class CombineEhrRdrTest(unittest.TestCase):
 
     def _check_combined_size(self):
         """
-        verifies that the sum of the count of ehr_dataset and max_id in rdr_dataset is less than or equal to
+        verifies that the sum of the max_id in ehr_dataset and max_id in rdr_dataset is less than or equal to
         the max_id in combined_dataset
         """
+        # get max_id in ehr_dataset
+        ehr_max_rows = {}
+        for table_name in DOMAIN_TABLES:
+            query_for_max = '''select MAX({table_name}_id) as max_ehr_rows from {ehr_dataset_id}.{table_name}'''.format(
+                ehr_dataset_id=self.ehr_dataset_id, table_name=table_name)
+            max_rows_query_result = bq_utils.query(query_for_max)
+            max_rows = bq_utils.response2rows(max_rows_query_result)[0]['max_ehr_rows']
+            if max_rows is None:
+                max_rows = 0
+            ehr_max_rows[table_name] = max_rows
+
         # get max_id in rdr_dataset
         rdr_max_rows = {}
         for table_name in DOMAIN_TABLES:
             query_for_max = '''select MAX({table_name}_id) as max_rows from {rdr_dataset_id}.{table_name}'''.format(
                 rdr_dataset_id=self.rdr_dataset_id, table_name=table_name)
             max_rows_query_result = bq_utils.query(query_for_max)
-            max_rows = test_util.response2rows(max_rows_query_result)[0]['max_rows']
+            max_rows = bq_utils.response2rows(max_rows_query_result)[0]['max_rows']
+            if max_rows is None:
+                max_rows = 0
             rdr_max_rows[table_name] = max_rows
+
         # get max_id in combined_dataset
         ehr_rdr_max_rows = {}
         for table_name in DOMAIN_TABLES:
             query_for_max = '''select MAX({table_name}_id) as max_combined_rows from {combined_dataset_id}.{table_name}'''.format(
                 combined_dataset_id=self.combined_dataset_id, table_name=table_name)
             max_rows_query_result = bq_utils.query(query_for_max)
-            max_rows = test_util.response2rows(max_rows_query_result)[0]['max_combined_rows']
+            max_rows = bq_utils.response2rows(max_rows_query_result)[0]['max_combined_rows']
+            if max_rows is None:
+                max_rows = 0
             ehr_rdr_max_rows[table_name] = max_rows
-        # get total row count of ehr_dataset
-        where = '''
-                WHERE EXISTS
-                   (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
-                    WHERE t.person_id = c.person_id)
-                '''.format(ehr_rdr_dataset_id=self.combined_dataset_id,
-                           ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
-        ehr_counts = test_util.get_table_counts(self.ehr_dataset_id, DOMAIN_TABLES, where)
-        # assert that the sum is more than or equal to the max_id in combined_dataset
-        # (this allows for duplicates in ehr_dataset)
+
         for table_name in DOMAIN_TABLES:
-            assert(ehr_counts[table_name] + rdr_max_rows[table_name] >= ehr_rdr_max_rows[table_name])
+            if table_name != 'observation':
+                assert(ehr_max_rows[table_name] + rdr_max_rows[table_name] >= ehr_rdr_max_rows[table_name])
 
     def test_mapping_query(self):
         table_name = 'visit_occurrence'
