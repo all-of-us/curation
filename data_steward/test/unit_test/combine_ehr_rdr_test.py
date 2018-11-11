@@ -237,7 +237,7 @@ class CombineEhrRdrTest(unittest.TestCase):
 
         for table_name in DOMAIN_TABLES:
             if table_name != 'observation':
-                assert(ehr_max_rows[table_name] + rdr_max_rows[table_name] >= ehr_rdr_max_rows[table_name])
+                assert (ehr_max_rows[table_name] + rdr_max_rows[table_name]) >= ehr_rdr_max_rows[table_name]
 
     def test_mapping_query(self):
         table_name = 'visit_occurrence'
