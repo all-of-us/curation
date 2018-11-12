@@ -140,7 +140,7 @@ class EhrUnionTest(unittest.TestCase):
             # TODO Compare table rows to expected accounting for the new ids and ignoring field types
             # q = 'SELECT * FROM {dataset}.{table}'.format(dataset=self.output_dataset_id, table=result_table)
             # query_response = bq_utils.query(q)
-            # actual_rows = test_util.response2rows(query_response)
+            # actual_rows = bq_utils.response2rows(query_response)
 
             # output table has clustering on person_id where applicable
             fields_file = os.path.join(resources.fields_path, table_name + '.json')
@@ -164,13 +164,13 @@ class EhrUnionTest(unittest.TestCase):
                                            chs_person_table_id=chs_person_table_id,
                                            pitt_person_table_id=pitt_person_table_id)
         response = bq_utils.query(q)
-        expected_rows = test_util.response2rows(response)
+        expected_rows = bq_utils.response2rows(response)
         person_table_id = ehr_union.output_table_for('person')
         q = '''SELECT DISTINCT person_id 
                FROM {dataset_id}.{table_id} 
                ORDER BY person_id ASC'''.format(dataset_id=self.output_dataset_id, table_id=person_table_id)
         response = bq_utils.query(q)
-        actual_rows = test_util.response2rows(response)
+        actual_rows = bq_utils.response2rows(response)
         self.assertListEqual(expected_rows, actual_rows)
 
     def test_subqueries(self):

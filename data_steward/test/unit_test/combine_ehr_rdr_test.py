@@ -98,7 +98,7 @@ class CombineEhrRdrTest(unittest.TestCase):
                                                                                      table=EHR_CONSENT_TABLE_ID))
         response = bq_utils.query('SELECT * FROM {dataset}.{table}'.format(dataset=self.combined_dataset_id,
                                                                            table=EHR_CONSENT_TABLE_ID))
-        rows = test_util.response2rows(response)
+        rows = bq_utils.response2rows(response)
         expected = {2, 4}
         actual = set(row['person_id'] for row in rows)
         self.assertSetEqual(expected,
@@ -125,7 +125,7 @@ class CombineEhrRdrTest(unittest.TestCase):
               FROM rdr, combined
             '''.format(rdr_dataset_id=self.rdr_dataset_id, combined_dataset_id=self.combined_dataset_id, table=table)
             response = bq_utils.query(q)
-            rows = test_util.response2rows(response)
+            rows = bq_utils.response2rows(response)
             self.assertTrue(len(rows) == 1)  # sanity check
             row = rows[0]
             rdr_count, combined_count = row['rdr_count'], row['combined_count']
@@ -197,16 +197,63 @@ class CombineEhrRdrTest(unittest.TestCase):
 
         self.assertEqual(person_ehr_row_count * 4, obs_row_count)
 
+    def _check_combined_size(self):
+        """
+        verifies that the sum of the max_id in ehr_dataset and max_id in rdr_dataset is less than or equal to
+        the max_id in combined_dataset
+        """
+        # get max_id in ehr_dataset
+        ehr_max_rows = {}
+        for table_name in DOMAIN_TABLES:
+            query_for_max = '''select MAX({table_name}_id) as max_ehr_rows from {ehr_dataset_id}.{table_name}'''.format(
+                ehr_dataset_id=self.ehr_dataset_id, table_name=table_name)
+            max_rows_query_result = bq_utils.query(query_for_max)
+            max_rows = bq_utils.response2rows(max_rows_query_result)[0]['max_ehr_rows']
+            if max_rows is None:
+                max_rows = 0
+            ehr_max_rows[table_name] = max_rows
+
+        # get max_id in rdr_dataset
+        rdr_max_rows = {}
+        for table_name in DOMAIN_TABLES:
+            query_for_max = '''select MAX({table_name}_id) as max_rows from {rdr_dataset_id}.{table_name}'''.format(
+                rdr_dataset_id=self.rdr_dataset_id, table_name=table_name)
+            max_rows_query_result = bq_utils.query(query_for_max)
+            max_rows = bq_utils.response2rows(max_rows_query_result)[0]['max_rows']
+            if max_rows is None:
+                max_rows = 0
+            rdr_max_rows[table_name] = max_rows
+
+        # get max_id in combined_dataset
+        ehr_rdr_max_rows = {}
+        for table_name in DOMAIN_TABLES:
+            query_for_max = '''select MAX({table_name}_id) as max_combined_rows from {combined_dataset_id}.{table_name}'''.format(
+                combined_dataset_id=self.combined_dataset_id, table_name=table_name)
+            max_rows_query_result = bq_utils.query(query_for_max)
+            max_rows = bq_utils.response2rows(max_rows_query_result)[0]['max_combined_rows']
+            if max_rows is None:
+                max_rows = 0
+            ehr_rdr_max_rows[table_name] = max_rows
+
+        for table_name in DOMAIN_TABLES:
+            if table_name != 'observation':
+                self.assertTrue((ehr_max_rows[table_name] + rdr_max_rows[table_name]) >= ehr_rdr_max_rows[table_name])
+
     def test_mapping_query(self):
-        table = 'visit_occurrence'
-        q = mapping_query(table)
-        expected_query = '''
-    WITH all_records AS
-    (
-        SELECT
-          '{rdr_dataset_id}'  AS src_dataset_id, 
-          {domain_table}_id AS src_{domain_table}_id,
-          NULL as src_hpo_id 
+        table_name = 'visit_occurrence'
+        que = '''select MAX({table_name}_id) as constant from {rdr_dataset_id}.{table_name}'''.format(
+            rdr_dataset_id=self.rdr_dataset_id, table_name=table_name)
+        mapping_constant_query_result = bq_utils.query(que)
+        rows = bq_utils.response2rows(mapping_constant_query_result)
+        mapping_constant = rows[0]['constant']
+        if mapping_constant is None:
+            mapping_constant = 0
+        q = mapping_query(table_name)
+        expected_query = '''SELECT
+          '{rdr_dataset_id}'  AS src_dataset_id,
+          {domain_table}_id AS src_{domain_table}_id, 
+          'rdr' as src_hpo_id,
+          {domain_table}_id AS {domain_table}_id
         FROM {rdr_dataset_id}.{domain_table}
 
         UNION ALL
@@ -214,21 +261,16 @@ class CombineEhrRdrTest(unittest.TestCase):
         SELECT
           '{ehr_dataset_id}'  AS src_dataset_id, 
           t.{domain_table}_id AS src_{domain_table}_id,
-          v.src_hpo_id AS src_hpo_id
+          v.src_hpo_id AS src_hpo_id,
+          t.{domain_table}_id + {mapping_constant} AS {domain_table}_id          
         FROM {ehr_dataset_id}.{domain_table} t
         JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id 
         WHERE EXISTS
            (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
             WHERE t.person_id = c.person_id)
-    )
-    SELECT 
-      ROW_NUMBER() OVER (ORDER BY src_dataset_id, src_{domain_table}_id) AS {domain_table}_id,
-      src_dataset_id,
-      src_{domain_table}_id,
-      src_hpo_id
-    FROM all_records
-    '''.format(rdr_dataset_id=self.rdr_dataset_id, domain_table=table, ehr_dataset_id=self.ehr_dataset_id,
-                   ehr_consent_table_id=EHR_CONSENT_TABLE_ID, ehr_rdr_dataset_id=self.combined_dataset_id)
+    '''.format(rdr_dataset_id=self.rdr_dataset_id, domain_table=table_name, ehr_dataset_id=self.ehr_dataset_id,
+                   ehr_consent_table_id=EHR_CONSENT_TABLE_ID, ehr_rdr_dataset_id=self.combined_dataset_id,
+                mapping_constant=mapping_constant)
 
         self.assertEqual(expected_query, q, "Mapping query for \n {q} \n to is not as expected".format(q=q))
 
@@ -255,7 +297,7 @@ class CombineEhrRdrTest(unittest.TestCase):
                    rdr_dataset_id=self.rdr_dataset_id,
                    ehr_rdr_dataset_id=self.combined_dataset_id)
         response = bq_utils.query(q)
-        rows = test_util.response2rows(response)
+        rows = bq_utils.response2rows(response)
         self.assertGreater(len(rows), 0, 'Test data is missing EHR-only records')
         for row in rows:
             combined_person_id = row['combined_person_id']
@@ -315,7 +357,7 @@ class CombineEhrRdrTest(unittest.TestCase):
                 ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
                 mapping_table=mapping_table)
             response = bq_utils.query(q)
-            rows = test_util.response2rows(response)
+            rows = bq_utils.response2rows(response)
             self.assertEqual(0, len(rows), "RDR records should map to records in mapping and combined tables")
 
     def test_create_cdm_tables(self):
@@ -339,14 +381,14 @@ class CombineEhrRdrTest(unittest.TestCase):
     def _check_ehr_person_observation(self):
         q = '''SELECT * FROM {dataset_id}.person'''.format(dataset_id=self.ehr_dataset_id)
         person_response = bq_utils.query(q)
-        person_rows = test_util.response2rows(person_response)
+        person_rows = bq_utils.response2rows(person_response)
         q = '''SELECT * 
                FROM {ehr_rdr_dataset_id}.observation
                WHERE observation_type_concept_id = 38000280'''.format(ehr_rdr_dataset_id=self.combined_dataset_id)
         # observation should contain 4 records per person of type EHR
         expected = len(person_rows) * 4
         observation_response = bq_utils.query(q)
-        observation_rows = test_util.response2rows(observation_response)
+        observation_rows = bq_utils.response2rows(observation_response)
         # TODO check row content is as expected
         actual = len(observation_rows)
         self.assertEqual(actual, expected,
@@ -355,6 +397,7 @@ class CombineEhrRdrTest(unittest.TestCase):
     def test_main(self):
         main()
         self._mapping_table_checks()
+        self._check_combined_size()
         self._ehr_only_records_excluded()
         self._all_rdr_records_included()
         self._check_ehr_person_observation()
