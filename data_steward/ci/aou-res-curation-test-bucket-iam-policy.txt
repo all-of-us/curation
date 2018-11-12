@@ -1,0 +1,20 @@
+{
+  "bindings": [ 
+    {
+      "members": [
+        "group:all-of-us-data-curation-eng@googlegroups.com",
+        "serviceAccount:aou-res-curation-test@appspot.gserviceaccount.com",
+        "serviceAccount:circleci-test@aou-res-curation-test.iam.gserviceaccount.com"
+      ],
+      "role": "roles/storage.objectAdmin"
+    },
+    {
+      "members": [
+        "group:all-of-us-data-curation-eng@googlegroups.com",
+        "serviceAccount:aou-res-curation-test@appspot.gserviceaccount.com",
+        "serviceAccount:circleci-test@aou-res-curation-test.iam.gserviceaccount.com"
+      ],
+      "role": "roles/storage.objectViewer"
+    }
+  ]
+}
