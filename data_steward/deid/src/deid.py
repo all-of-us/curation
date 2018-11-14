@@ -197,7 +197,7 @@ class Shift (Policy):
                     # @NOTE: The date-shifting here is redundant, but it's an artifact of mixing relational & meta-model in the database
                     #
                    
-                    shifted_date = """CAST( DATE_SUB(CAST( CAST(:name AS TIMESTAMP) AS DATE), INTERVAL ABS(date_diff( CAST(CAST(:name AS TIMESTAMP) AS DATE),(select anchor from :i_dataset.people_seed xii where xii.person_id = :table.person_id),DAY)) DAY) AS STRING) as :name """
+                    shifted_date = """CAST( DATE_SUB(CAST( CAST(:name AS TIMESTAMP) AS DATE), INTERVAL (select date_shift from :i_dataset.people_seed xii where xii.person_id = :table.person_id) DAY) AS STRING) as :name """
                     shifted_date = shifted_date.replace(":name","value_as_string").replace(":i_dataset",dataset).replace(":table","x")
                     sql_fields = self.__get_shifted_fields(fields,dataset,"x")
                     #--AND person_id = 562270
@@ -238,9 +238,9 @@ class Shift (Policy):
             #     DATE_SUB( DATE_SUB(DATE_SUB( CAST(:name AS DATE),INTERVAL :year YEAR),INTERVAL :month MONTH),INTERVAL :day DAY) as :name
             # """.replace(':name',field.name).replace(":year",str(year)).replace(":month",str(month)).replace(":day",str(day))
             if field.field_type == 'DATE' :
-                shifted_field = """DATE_SUB(CAST(:name AS DATE), INTERVAL ABS(date_diff( CAST(:name AS DATE),(select anchor from :i_dataset.people_seed xii where xii.person_id = :table.person_id),DAY)) DAY) as :name"""
+                shifted_field = """DATE_SUB(CAST(:name AS DATE), INTERVAL  (select date_shift from :i_dataset.people_seed xii where xii.person_id = :table.person_id) DAY) as :name"""
             else:
-                shifted_field = """TIMESTAMP_SUB(CAST(:name AS TIMESTAMP), INTERVAL ABS(TIMESTAMP_DIFF( CAST(:name AS TIMESTAMP),(select CAST(anchor AS TIMESTAMP) from :i_dataset.people_seed xii where xii.person_id = :table.person_id),DAY)) DAY) as :name"""
+                shifted_field = """TIMESTAMP_SUB(CAST(:name AS TIMESTAMP), INTERVAL  (select date_shift from :i_dataset.people_seed xii where xii.person_id = :table.person_id) DAY) as :name"""
             shifted_field = shifted_field.replace(":name",field.name).replace(":table",table).replace(":i_dataset",dataset)
             # shifted_field = """
             #    DATE_SUB( CAST(:name AS DATE), INTERVAL (SELECT seed from :i_dataset.people_seed xii WHERE xii.person_id = :table.person_id) DAY) as :name
@@ -689,16 +689,11 @@ def initialization(client,dataset):
         #         FROM :i_dataset.observation WHERE person_id not in (SELECT person_id FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' GROUP BY person_id)
         #         GROUP BY person_id
         # """.replace(":i_dataset",dataset)
-        sql = """    
-        
-        SELECT person_id, DATE_SUB( MAX(CAST(value_as_string as DATE)) , INTERVAL CAST (365*rand() AS INT64) DAY) as anchor
-        FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' 
-        GROUP BY person_id
 
-        UNION ALL
-        SELECT person_id, DATE_SUB(CURRENT_DATE , INTERVAL CAST (365*rand() AS INT64) DAY) as anchor
-        FROM :i_dataset.observation WHERE person_id not in (SELECT person_id FROM :i_dataset.observation WHERE observation_source_value = 'ExtraConsent_TodaysDate' GROUP BY person_id)
-        GROUP BY person_id
+        #Create the date shift
+        sql = """    
+        SELECT person_id, CAST (365*rand() AS INT64) as date_shift
+        FROM :i_dataset.person 
         """.replace(":i_dataset",dataset)
         job = bq.QueryJobConfig()
         job.destination = client.dataset(dataset).table("people_seed")
