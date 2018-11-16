@@ -11,11 +11,14 @@ import gcs_utils
 
 import time
 import logging
+import socket
 
+SOCKET_TIMEOUT = 600000
 BQ_DEFAULT_RETRY_COUNT = 10
 # Maximum results returned by list_tables (API has a low default value)
 LIST_TABLES_MAX_RESULTS = 2000
 
+socket.setdefaulttimeout(SOCKET_TIMEOUT)
 
 class InvalidOperationError(RuntimeError):
     """Raised when an invalid Big Query operation attempted during the validation process"""
@@ -320,7 +323,7 @@ def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEF
                 'datasetId': get_dataset_id()
             },
             'query': q,
-            'timeoutMs': 60000,
+            'timeoutMs': SOCKET_TIMEOUT,
             'useLegacySql': use_legacy_sql
         }
         return bq_service.jobs().query(projectId=app_id, body=job_body).execute(num_retries=retry_count)
