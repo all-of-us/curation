@@ -53,6 +53,7 @@
               "SanDiegoBloodBank",
               "AZSArizonaSpecific",
               "ExtraConsent_EverReceivedUPMCCare",
+              "ExtraConsent_ScheduledWithPACares",
               "EastSoutheastMichigan_CareAtHenryFord",
               "ResideAZCArizona_AZCArizonaSpecific",
               "QTCQuestScheduling_QTCQuestSite",
@@ -82,7 +83,8 @@
         ]
       },
       "columns": [
-        "value_as_string"      
+        "value_as_string",
+        "value_source_value"
       ]
     },
     "note": {
