@@ -404,23 +404,61 @@ def load_query(domain_table):
         # Note: Using left join in order to keep records that aren't mapped to visits
         mv = mapping_table_for(VISIT_OCCURRENCE)
         visit_join_expr = '''
-        LEFT JOIN {ehr_rdr_dataset_id}.{mapping_visit_occurrence} mv 
-          ON t.visit_occurrence_id = mv.src_visit_occurrence_id
+        LEFT JOIN 
+        (
+            SELECT *
+            FROM (
+              SELECT
+                  *, 
+                  row_number() OVER (PARTITION BY mv.visit_occurrence_id, mv.src_hpo_id ) AS row_num
+              FROM {ehr_rdr_dataset_id}.{mapping_visit_occurrence} mv 
+            )
+            WHERE row_num = 1  
+        ) mv  ON t.visit_occurrence_id = mv.src_visit_occurrence_id
          AND m.src_dataset_id = mv.src_dataset_id'''.format(ehr_rdr_dataset_id=ehr_rdr_dataset_id,
                                                             mapping_visit_occurrence=mv)
 
     return '''
     SELECT {cols} 
     FROM {rdr_dataset_id}.{domain_table} t 
-      JOIN {ehr_rdr_dataset_id}.{mapping_table} m
-        ON t.{domain_table}_id = m.src_{domain_table}_id {visit_join_expr}
+    JOIN 
+    (
+        SELECT *
+        FROM (
+          SELECT
+              *, 
+              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id ) AS row_num
+          FROM {ehr_rdr_dataset_id}.{mapping_table} as m
+        )
+        WHERE row_num = 1
+    ) m        ON t.{domain_table}_id = m.src_{domain_table}_id {visit_join_expr}
     WHERE m.src_dataset_id = '{rdr_dataset_id}'
     
     UNION ALL
     
-    SELECT {cols} 
-    FROM {ehr_dataset_id}.{domain_table} t 
-      JOIN {ehr_rdr_dataset_id}.{mapping_table} m
+    SELECT {cols}
+    FROM
+    ( 
+        SELECT *
+        FROM (
+          SELECT
+              *, 
+              row_number() OVER (PARTITION BY m.{domain_table}_id) AS row_num
+          FROM {ehr_dataset_id}.{domain_table} as m
+        )
+        WHERE row_num = 1
+    ) t 
+    JOIN 
+    (
+        SELECT *
+        FROM (
+          SELECT
+              *, 
+              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id) AS row_num
+          FROM {ehr_rdr_dataset_id}.{mapping_table} as m
+        )
+        WHERE row_num = 1
+    ) m
         ON t.{domain_table}_id = m.src_{domain_table}_id {visit_join_expr}
     WHERE m.src_dataset_id = '{ehr_dataset_id}'
     '''.format(cols=cols,
