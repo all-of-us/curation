@@ -410,7 +410,7 @@ def load_query(domain_table):
             FROM (
               SELECT
                   *, 
-                  row_number() OVER (PARTITION BY mv.visit_occurrence_id ) AS row_num
+                  row_number() OVER (PARTITION BY mv.visit_occurrence_id, mv.src_hpo_id ) AS row_num
               FROM {ehr_rdr_dataset_id}.{mapping_visit_occurrence} mv 
             )
             WHERE row_num = 1  
@@ -427,7 +427,7 @@ def load_query(domain_table):
         FROM (
           SELECT
               *, 
-              row_number() OVER (PARTITION BY m.src_{domain_table}_id) AS row_num
+              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id ) AS row_num
           FROM {ehr_rdr_dataset_id}.{mapping_table} as m
         )
         WHERE row_num = 1
@@ -454,7 +454,7 @@ def load_query(domain_table):
         FROM (
           SELECT
               *, 
-              row_number() OVER (PARTITION BY m.src_{domain_table}_id) AS row_num
+              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id) AS row_num
           FROM {ehr_rdr_dataset_id}.{mapping_table} as m
         )
         WHERE row_num = 1
