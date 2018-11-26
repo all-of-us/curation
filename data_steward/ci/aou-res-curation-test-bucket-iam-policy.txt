@@ -2,7 +2,7 @@
   "bindings": [ 
     {
       "members": [
-        "group:all-of-us-data-curation-eng@googlegroups.com",
+        "all-of-us-data-curation-eng.staging@staging.pmi-ops.org",
         "serviceAccount:aou-res-curation-test@appspot.gserviceaccount.com",
         "serviceAccount:circleci-test@aou-res-curation-test.iam.gserviceaccount.com"
       ],
@@ -10,7 +10,7 @@
     },
     {
       "members": [
-        "group:all-of-us-data-curation-eng@googlegroups.com",
+        "all-of-us-data-curation-eng.staging@staging.pmi-ops.org",
         "serviceAccount:aou-res-curation-test@appspot.gserviceaccount.com",
         "serviceAccount:circleci-test@aou-res-curation-test.iam.gserviceaccount.com"
       ],
