@@ -19,16 +19,16 @@ WHERE
 GROUP BY
   REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+")"""
     query_job = client.query(Query)
-    # df = query_job.result().to_dataframe()
-    # df['upload_timestamp'] = pd.to_datetime(df['upload_timestamp'])
-    # df['date'] = df['upload_timestamp'].apply(lambda x: x.strftime('%Y-%m-%d'))
-    # df['time'] = df['upload_timestamp'].apply(lambda x: x.strftime('%H:%M:%S'))
-    # df['date_time'] = df['date']+'T'+df['time']+'Z'
-    # export_data = pd.DataFrame
-    # path_prefix = 'gs://drc-curation-internal'
-    # df['file_path'] = path_prefix+df['file_path']
-    # export_data = df[['date_time', 'file_path']]
-    # export_data.to_csv('recent_uploads.txt', index=False, sep=' ', header=None)
+    df = query_job.result().to_dataframe()
+    df['upload_timestamp'] = pd.to_datetime(df['upload_timestamp'])
+    df['date'] = df['upload_timestamp'].apply(lambda x: x.strftime('%Y-%m-%d'))
+    df['time'] = df['upload_timestamp'].apply(lambda x: x.strftime('%H:%M:%S'))
+    df['date_time'] = df['date']+'T'+df['time']+'Z'
+    export_data = pd.DataFrame
+    path_prefix = 'gs://drc-curation-internal'
+    df['file_path'] = path_prefix+df['file_path']
+    export_data = df[['date_time', 'file_path']]
+    export_data.to_csv('recent_uploads.txt', index=False, sep=' ', header=None)
 
 
 get_latest_querey()
