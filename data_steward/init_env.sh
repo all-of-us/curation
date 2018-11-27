@@ -26,23 +26,23 @@ CURRENT_BRANCH="${CIRCLE_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
 # Replace dashes, slashes with underscore
 CURRENT_BRANCH="${CURRENT_BRANCH//-/_}"
 CURRENT_BRANCH="${CURRENT_BRANCH//\//_}"
-BUCKET_PREFIX="${PROJECT_PREFIX}_${CURRENT_BRANCH}_${USERNAME_PREFIX}"
+BUCKET_PREFIX="${USERNAME_PREFIX}_${CURRENT_BRANCH}"
 
 # GCS buckets are globally unique, so we prefix with project id and username
 export DRC_BUCKET_NAME="${BUCKET_PREFIX}_drc"
-export BUCKET_NAME_FAKE="${BUCKET_PREFIX}_hpo_fake"
-export BUCKET_NAME_NYC="${BUCKET_PREFIX}_hpo_nyc"
-export BUCKET_NAME_PITT="${BUCKET_PREFIX}_hpo_pitt"
-export BUCKET_NAME_CHS="${BUCKET_PREFIX}_hpo_chs"
+export BUCKET_NAME_FAKE="${BUCKET_PREFIX}_fake"
+export BUCKET_NAME_NYC="${BUCKET_PREFIX}_nyc"
+export BUCKET_NAME_PITT="${BUCKET_PREFIX}_pitt"
+export BUCKET_NAME_CHS="${BUCKET_PREFIX}_chs"
 export BUCKET_NAME_UNIONED_EHR="${BUCKET_PREFIX}_drc"
 
 # Datasets can be scoped by project so we prefix with username
 # Note: Dataset IDs must be alphanumeric (plus underscores) and <= 1024 characters
 # See https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#datasetReference.datasetId
-DATASET_PREFIX="${CURRENT_BRANCH}_${USERNAME_PREFIX}"
+DATASET_PREFIX="${USERNAME_PREFIX}_${CURRENT_BRANCH}"
 export BIGQUERY_DATASET_ID="${DATASET_PREFIX}_ehr"
 export RDR_DATASET_ID="${DATASET_PREFIX}_rdr"
-export EHR_RDR_DATASET_ID="${DATASET_PREFIX}_ehr_rdr"
+export EHR_RDR_DATASET_ID="${DATASET_PREFIX}_combined"
 export UNIONED_DATASET_ID="${DATASET_PREFIX}_unioned"
 
 # .circlerc is sourced before each test and deploy command
