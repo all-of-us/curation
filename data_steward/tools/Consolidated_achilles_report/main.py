@@ -3,10 +3,6 @@ import os
 import Bigquery_query
 
 DRC_BUCKET_PATH = 'gs://drc-curation-internal/'
-RPT_NYC_CU = {'updated': '2018-07-22T01:33:04Z',
-              'report_path': 'gs://drc-curation-internal/nyc_cu/aou364/2018-07-09-v1/curation_report/data/nyc_cu',
-              'name': '2018-07-09-v1',
-              'hpo_id': 'nyc_cu'}
 DATASOURCES_PATH = 'curation_report/data/datasources.json'
 
 
@@ -90,12 +86,12 @@ def download_report(s):
     cdir = os.getcwd()
     if not os.path.exists('%s/curation_report/data' % (cdir)):
         os.mkdir('%s/curation_report/data' % (cdir))
-    else:
-        if os.path.exists('%s/curation_report/data/%s' % (cdir, s['hpo_id'])):
+
+    if os.path.exists('%s/curation_report/data/%s' % (cdir, s['hpo_id'])):
             cmd = 'gsutil -m cp -r %s ./curation_report/data/' % (s['report_path'])
             print 'Downloading %s rpt with cmd: `%s`...' % (s['hpo_id'], cmd)
             os.system(cmd)
-        else:
+    else:
             os.mkdir('%s/curation_report/data/%s' % (cdir, s['hpo_id']))
             cmd = 'gsutil -m cp -r %s ./curation_report/data/' % (s['report_path'])
             print 'Downloading %s rpt with cmd: `%s`...' % (s['hpo_id'], cmd)
