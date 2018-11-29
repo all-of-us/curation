@@ -1,5 +1,3 @@
-#import pandas as pd
-#from google.cloud import bigquery as bq
 from google.appengine.api.app_identity import app_identity
 
 import bq_utils
