@@ -1,6 +1,6 @@
 import json
 import os
-import Bigquery_query
+import query_reports
 
 DRC_BUCKET_PATH = 'gs://drc-curation-internal/'
 DATASOURCES_PATH = 'curation_report/data/datasources.json'
@@ -100,11 +100,11 @@ def download_report(s):
 
 
 def main():
-    bq_list = Bigquery_query.get_latest_querey()
+    bq_list = query_reports.get_latest_querey()
     reports = transform_bq_list(bq_list)
     for report in reports:
          print 'processing report: \n %s\n...' % json.dumps(report, indent=4)
-         #download_report(report)
+         download_report(report)
          update_source_name(report)
     update_datasources(reports)
 

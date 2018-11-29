@@ -118,4 +118,4 @@ test/dest
 tmp/*
 /data_steward/test/test_data/export/synpuf/*.csv
 .circleci/oldconfig.yml
-/data_steward/tools/Consolidated_achilles_report/curation_report/data/*
+/data_steward/tools/consolidated_achilles_report/curation_report/data/*
