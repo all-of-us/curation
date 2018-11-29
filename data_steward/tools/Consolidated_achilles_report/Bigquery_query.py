@@ -1,35 +1,39 @@
 #import pandas as pd
 #from google.cloud import bigquery as bq
-import bq_utils
+from google.appengine.api.app_identity import app_identity
 
-def get_latest_querey():
-    Query = """SELECT
+import bq_utils
+import gcs_utils
+import os
+import json
+
+LATEST_REPORTS_JSON = 'latest_reports.json'
+LATEST_REPORTS_QUERY = """
+ SELECT
   MAX(timestamp) AS upload_timestamp,
-  MAX(SUBSTR(protopayload_auditlog.resourceName, 49)) as file_path
+  CONCAT('gs://{drc_bucket}', MAX(SUBSTR(protopayload_auditlog.resourceName, 49))) as file_path
 FROM
-  `aou-res-curation-prod.GcsBucketLogging.cloudaudit_googleapis_com_data_access_2018*` l
+  `{app_id}.GcsBucketLogging.cloudaudit_googleapis_com_data_access_2018*` l
 WHERE
   _TABLE_SUFFIX > '0801'
   AND protopayload_auditlog.resourceName LIKE '%aou%'
   AND protopayload_auditlog.methodName = 'storage.objects.create'
-  AND resource.labels.bucket_name LIKE 'drc-curation-internal'
+  AND resource.labels.bucket_name LIKE '{drc_bucket}'
   AND protopayload_auditlog.resourceName LIKE '%datasources.json'
 GROUP BY
   REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+")"""
-    query_job = bq_utils.query(Query)
-    response_list = bq_utils.response2rows(query_job)
-    for row in response_list:
-        print row
-    # df = query_job.result().to_dataframe()
-    # df['upload_timestamp'] = pd.to_datetime(df['upload_timestamp'])
-    # df['date'] = df['upload_timestamp'].apply(lambda x: x.strftime('%Y-%m-%d'))
-    # df['time'] = df['upload_timestamp'].apply(lambda x: x.strftime('%H:%M:%S'))
-    # df['date_time'] = df['date']+'T'+df['time']+'Z'
-    # export_data = pd.DataFrame
-    # path_prefix = 'gs://drc-curation-internal'
-    # df['file_path'] = path_prefix+df['file_path']
-    # export_data = df[['date_time', 'file_path']]
-    # export_data.to_csv('recent_uploads.txt', index=False, sep=' ', header=None)
 
 
-get_latest_querey()
+def get_latest_querey(app_id=None, drc_bucket=None):
+    if app_id is None:
+        app_id = app_identity.get_application_id()
+    if drc_bucket is None:
+        drc_bucket = gcs_utils.get_drc_bucket()
+    if not os.path.exists(LATEST_REPORTS_JSON):
+        query = LATEST_REPORTS_QUERY.format(app_id=app_id, drc_bucket=drc_bucket)
+        query_job = bq_utils.query(query)
+        result = bq_utils.response2rows(query_job)
+        with open(LATEST_REPORTS_JSON, 'w') as fp:
+            json.dump(result, fp, sort_keys=True, indent=4)
+    with open(LATEST_REPORTS_JSON, 'r') as fp:
+        return json.load(fp)

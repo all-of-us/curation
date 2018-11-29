@@ -24,20 +24,21 @@ def get_submission_name(p):
     raise RuntimeError('Invalid submission path: %s' % p)
 
 
-def get_most_recent():
+def transform_bq_list(uploads):
     """
     Get paths to all most recent report files
 
     :return:
     """
-    with open('recent_uploads.txt', 'r') as fp:
-        ls = fp.readlines()
-        for l in ls:
-            dte, p = l.strip().split(' ')
-            hpo_id = get_hpo_id(p)
-            report_path = p.replace('datasources.json', hpo_id)
-            name = get_submission_name(p)
-            yield dict(hpo_id=hpo_id, updated=dte, report_path=report_path, name=name)
+    results = []
+    for upload in uploads:
+        dte, p = upload['upload_timestamp'], upload['file_path']
+        hpo_id = get_hpo_id(p)
+        report_path = p.replace('datasources.json', hpo_id)
+        name = get_submission_name(p)
+        result = dict(hpo_id=hpo_id, updated=dte, report_path=report_path, name=name)
+        results.append(result)
+    return results
 
 
 def read_text(p):
@@ -99,13 +100,13 @@ def download_report(s):
 
 
 def main():
-    Bigquery_query.get_latest_querey()
-    # rpts = list(get_most_recent())
-    # for rpt in rpts:
-    #     print 'processing rpt: \n %s\n...' % json.dumps(rpt, indent=4)
-    #     download_report(rpt)
-    #     update_source_name(rpt)
-    # update_datasources(rpts)
+    bq_list = Bigquery_query.get_latest_querey()
+    reports = transform_bq_list(bq_list)
+    for report in reports:
+         print 'processing report: \n %s\n...' % json.dumps(report, indent=4)
+         #download_report(report)
+         update_source_name(report)
+    update_datasources(reports)
 
 
 if __name__ == '__main__':

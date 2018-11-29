@@ -17,7 +17,10 @@ GCS_DEFAULT_RETRY_COUNT = 5
 
 
 def get_drc_bucket():
-    return os.environ.get('DRC_BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
+    result = os.environ.get('DRC_BUCKET_NAME')
+    if result is None:
+        result = app_identity.get_default_gcs_bucket_name()
+    return result
 
 
 def get_hpo_bucket(hpo_id):
