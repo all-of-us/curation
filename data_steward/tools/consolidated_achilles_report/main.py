@@ -103,9 +103,9 @@ def main():
     bq_list = query_reports.get_latest_querey()
     reports = transform_bq_list(bq_list)
     for report in reports:
-         print 'processing report: \n %s\n...' % json.dumps(report, indent=4)
-         download_report(report)
-         update_source_name(report)
+        print 'processing report: \n %s\n...' % json.dumps(report, indent=4)
+        download_report(report)
+        update_source_name(report)
     update_datasources(reports)
 
 

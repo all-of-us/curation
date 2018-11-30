@@ -56,7 +56,7 @@ source report_env/bin/activate
 pip install -t lib -r requirements.txt
 
 # Add the google appengine sdk to the PYTHONPATH
-source ~/curation/data_steward/tools/set_path.sh
+source ../set_path.sh
 
 # Run Query, Gets latest submissions and downloads the curation reports
 python main.py
