@@ -1,8 +1,9 @@
+import gcs_utils
 import json
 import os
 import query_reports
 
-DRC_BUCKET_PATH = 'gs://drc-curation-internal/'
+DRC_BUCKET_PATH = 'gs://%s/' % gcs_utils.get_drc_bucket()
 DATASOURCES_PATH = 'curation_report/data/datasources.json'
 
 
