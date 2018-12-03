@@ -101,7 +101,7 @@ def download_report(s):
 
 
 def main():
-    bq_list = query_reports.get_latest_querey()
+    bq_list = query_reports.get_most_recent()
     reports = transform_bq_list(bq_list)
     for report in reports:
         print 'processing report: \n %s\n...' % json.dumps(report, indent=4)

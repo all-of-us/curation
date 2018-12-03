@@ -22,7 +22,7 @@ GROUP BY
   REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+")"""
 
 
-def get_latest_querey(app_id=None, drc_bucket=None):
+def get_most_recent(app_id=None, drc_bucket=None):
     if app_id is None:
         app_id = app_identity.get_application_id()
     if drc_bucket is None:
