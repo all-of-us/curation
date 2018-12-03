@@ -5,7 +5,7 @@ Usage: run_consolidated_report.sh
 --key_file <path to key file>
 --app_id <application id>
 --bucket_name <bucket name>
---dataaset <daataset id>"
+--dataset <dataset id>"
 while true; do
   case "$1" in
     --key_file) key_file=$2; shift 2;;
