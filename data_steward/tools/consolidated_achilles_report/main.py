@@ -90,14 +90,14 @@ def download_report(s):
         os.mkdir('%s/curation_report/data' % (cdir))
 
     if os.path.exists('%s/curation_report/data/%s' % (cdir, s['hpo_id'])):
-            cmd = 'gsutil -m cp -r %s ./curation_report/data/' % (s['report_path'])
-            print 'Downloading %s rpt with cmd: `%s`...' % (s['hpo_id'], cmd)
-            os.system(cmd)
+        cmd = 'gsutil -m cp -r %s ./curation_report/data/' % (s['report_path'])
+        print 'Downloading %s rpt with cmd: `%s`...' % (s['hpo_id'], cmd)
+        os.system(cmd)
     else:
-            os.mkdir('%s/curation_report/data/%s' % (cdir, s['hpo_id']))
-            cmd = 'gsutil -m cp -r %s ./curation_report/data/' % (s['report_path'])
-            print 'Downloading %s rpt with cmd: `%s`...' % (s['hpo_id'], cmd)
-            os.system(cmd)
+        os.mkdir('%s/curation_report/data/%s' % (cdir, s['hpo_id']))
+        cmd = 'gsutil -m cp -r %s ./curation_report/data/' % (s['report_path'])
+        print 'Downloading %s rpt with cmd: `%s`...' % (s['hpo_id'], cmd)
+        os.system(cmd)
 
 
 def main():
