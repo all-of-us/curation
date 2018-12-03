@@ -23,6 +23,14 @@ GROUP BY
 
 
 def get_most_recent(app_id=None, drc_bucket=None):
+    """
+    Query audit logs for paths to the most recent datasources.json files in the DRC bucket.
+
+    Note: Results are cached in a local json file to avoid unnecessary queries.
+    :param app_id: identifies the GCP project
+    :param drc_bucket: identifies the DRC bucket
+    :return: list of dict with keys `file_path`, `upload_timestamp`
+    """
     if app_id is None:
         app_id = app_identity.get_application_id()
     if drc_bucket is None:
