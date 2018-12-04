@@ -1,0 +1,14 @@
+[
+    {
+        "type": "integer",
+        "name": "person_id",
+        "mode": "required",
+        "description": "The participant ID for this row"
+    },
+    {
+        "type": "integer",
+        "name": "location_id",
+        "mode": "required",
+        "description": "A foreign key to the location OMOP table for additional addresses (integer)."
+    }
+]

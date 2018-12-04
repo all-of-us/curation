@@ -1,0 +1,14 @@
+[
+    {
+        "type": "integer",
+        "name": "person_id",
+        "mode": "required",
+        "description": "The participant ID for this row"
+    },
+    {
+        "type": "string",
+        "name": "phone_number",
+        "mode": "required",
+        "description": "The participant's phone number"
+    }
+]

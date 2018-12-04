@@ -1,0 +1,14 @@
+[
+    {
+        "type": "integer",
+        "name": "person_id",
+        "mode": "required",
+        "description": "The participant ID for this row"
+    },
+    {
+        "type": "string",
+        "name": "email",
+        "mode": "required",
+        "description": "The participant's email address"
+    }
+]
