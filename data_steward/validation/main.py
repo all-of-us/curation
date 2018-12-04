@@ -46,7 +46,7 @@ def all_required_files_loaded(hpo_id, folder_prefix):
     result_file = StringIO.StringIO(result_file)
     result_items = resources._csv_file_to_list(result_file)
     for item in result_items:
-        if item['cdm_file_name'] in common.REQUIRED_FILES:
+        if item['file_name'] in common.REQUIRED_FILES:
             if item['loaded'] != '1':
                 return False
     return True
@@ -195,16 +195,6 @@ def list_bucket(bucket):
         raise
 
 
-def is_pii(filename):
-    """
-    Returns True if filename is a PII file
-    :param filename:
-    :return:
-    """
-    # TODO make this check more explicit
-    return filename.startswith('pii')
-
-
 def run_validation(hpo_id, force_run=False):
     """
     runs validation for a single hpo_id
@@ -227,64 +217,39 @@ def run_validation(hpo_id, force_run=False):
         # separate cdm from the unknown (unexpected) files
         found_cdm_files = []
         unknown_files = []
+        found_pii_files = []
         folder_items = [item['name'].split('/')[1] for item in bucket_items if item['name'].startswith(folder_prefix)]
         for item in folder_items:
             if _is_cdm_file(item):
                 found_cdm_files.append(item)
+            elif _is_pii_file(item):
+                found_pii_files.append(item)
             else:
-                is_known_file = item in common.IGNORE_LIST or is_pii(item)
+                is_known_file = item in common.IGNORE_LIST
                 if not is_known_file:
                     unknown_files.append(item)
 
         errors = []
         results = []
-        found_cdm_file_names = found_cdm_files
 
         # Create all tables first to simplify downstream processes
         # (e.g. ehr_union doesn't have to check if tables exist)
-        for cdm_file_name in common.CDM_FILES:
-            cdm_table_name = cdm_file_name.split('.')[0]
-            table_id = bq_utils.get_table_id(hpo_id, cdm_table_name)
-            bq_utils.create_standard_table(cdm_table_name, table_id, drop_existing=True)
+        for file_name in common.CDM_FILES + common.PII_FILES:
+            table_name = file_name.split('.')[0]
+            table_id = bq_utils.get_table_id(hpo_id, table_name)
+            bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
 
         for cdm_file_name in common.CDM_FILES:
-            logging.info('Validating file `{file_name}`'.format(file_name=cdm_file_name))
-            found = parsed = loaded = 0
-            cdm_table_name = cdm_file_name.split('.')[0]
+            file_results, file_errors = perform_validation_on_file(cdm_file_name, found_cdm_files, hpo_id,
+                                                                   folder_prefix, bucket)
+            results.extend(file_results)
+            errors.extend(file_errors)
 
-            if cdm_file_name in found_cdm_file_names:
-                found = 1
-                load_results = bq_utils.load_cdm_csv(hpo_id, cdm_table_name, folder_prefix)
-                load_job_id = load_results['jobReference']['jobId']
-                incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
-
-                if len(incomplete_jobs) == 0:
-                    job_resource = bq_utils.get_job_details(job_id=load_job_id)
-                    job_status = job_resource['status']
-                    if 'errorResult' in job_status:
-                        # These are issues (which we report back) as opposed to internal errors
-                        issues = [item['message'] for item in job_status['errors']]
-                        errors.append((cdm_file_name, ' || '.join(issues)))
-                        logging.info(
-                            'Issues found in gs://{bucket}/{folder_prefix}/{cdm_file_name}'.format(
-                                bucket=bucket, folder_prefix=folder_prefix, cdm_file_name=cdm_file_name)
-                        )
-                        for issue in issues:
-                            logging.info(issue)
-                    else:
-                        # Processed ok
-                        parsed = loaded = 1
-                else:
-                    # Incomplete jobs are internal unrecoverable errors.
-                    # Aborting the process allows for this submission to be validated when system recovers.
-                    message_fmt = 'Loading hpo_id `%s` table `%s` failed because job id `%s` did not complete.'
-                    message = message_fmt % (hpo_id, cdm_table_name, load_job_id)
-                    message += ' Aborting processing `gs://%s/%s`.' % (bucket, folder_prefix)
-                    logging.error(message)
-                    raise InternalValidationError(message)
-
-            if cdm_file_name in common.REQUIRED_FILES or found:
-                results.append((cdm_file_name, found, parsed, loaded))
+        for pii_file_name in common.PII_FILES:
+            file_results, file_errors = perform_validation_on_file(pii_file_name, found_pii_files, hpo_id,
+                                                                   folder_prefix, bucket)
+            results.extend(file_results)
+            errors.extend(file_errors)
 
         # (filename, message) for each unknown file
         warnings = [
@@ -307,6 +272,50 @@ def run_validation(hpo_id, force_run=False):
         logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.' %
                      (bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT))
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
+
+
+def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefix, bucket):
+    errors = []
+    results = []
+    logging.info('Validating file `{file_name}`'.format(file_name=file_name))
+    found = parsed = loaded = 0
+    table_name = file_name.split('.')[0]
+
+    if file_name in found_file_names:
+        found = 1
+        load_results = bq_utils.load_cdm_or_pii_csv(hpo_id, table_name, folder_prefix)
+        load_job_id = load_results['jobReference']['jobId']
+        incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
+
+        if len(incomplete_jobs) == 0:
+            job_resource = bq_utils.get_job_details(job_id=load_job_id)
+            job_status = job_resource['status']
+            if 'errorResult' in job_status:
+                # These are issues (which we report back) as opposed to internal errors
+                issues = [item['message'] for item in job_status['errors']]
+                errors.append((file_name, ' || '.join(issues)))
+                logging.info(
+                    'Issues found in gs://{bucket}/{folder_prefix}/{file_name}'.format(
+                        bucket=bucket, folder_prefix=folder_prefix, file_name=file_name)
+                )
+                for issue in issues:
+                    logging.info(issue)
+            else:
+                # Processed ok
+                parsed = loaded = 1
+        else:
+            # Incomplete jobs are internal unrecoverable errors.
+            # Aborting the process allows for this submission to be validated when system recovers.
+            message_fmt = 'Loading hpo_id `%s` table `%s` failed because job id `%s` did not complete.'
+            message = message_fmt % (hpo_id, table_name, load_job_id)
+            message += ' Aborting processing `gs://%s/%s`.' % (bucket, folder_prefix)
+            logging.error(message)
+            raise InternalValidationError(message)
+
+    if file_name in common.REQUIRED_FILES or found:
+        results.append((file_name, found, parsed, loaded))
+
+    return results, errors
 
 
 def _validation_done(bucket, folder):
@@ -402,6 +411,10 @@ def _is_cdm_file(gcs_file_name):
     return gcs_file_name.lower() in common.CDM_FILES
 
 
+def _is_pii_file(gcs_file_name):
+    return gcs_file_name.lower() in common.PII_FILES
+
+
 @api_util.auth_required_cron
 def copy_files(hpo_id):
     """copies over files from hpo bucket to drc bucket
@@ -465,18 +478,18 @@ def _save_warnings_in_gcs(bucket, name, warnings):
     return result
 
 
-def _save_result_in_gcs(bucket, name, cdm_file_results):
+def _save_result_in_gcs(bucket, name, results):
     """
     Save the validation results in GCS
     :param bucket: bucket to save to
     :param name: name of the file (object) to save to in GCS
-    :param cdm_file_results: list of tuples (<cdm_file_name>, <found>)
+    :param file_results: list of tuples (<file_name>, <found>)
     :return:
     """
     f = StringIO.StringIO()
-    f.write('"cdm_file_name","found","parsed","loaded"\n')
-    for (cdm_file_name, found, parsed, loaded) in cdm_file_results:
-        line = '"%(cdm_file_name)s","%(found)s","%(parsed)s","%(loaded)s"\n' % locals()
+    f.write('"file_name","found","parsed","loaded"\n')
+    for (file_name, found, parsed, loaded) in results:
+        line = '"%(file_name)s","%(found)s","%(parsed)s","%(loaded)s"\n' % locals()
         f.write(line)
     f.seek(0)
     result = gcs_utils.upload_object(bucket, name, f)

@@ -52,7 +52,7 @@ class ValidationTest(unittest.TestCase):
             # TODO fix this for all cdm files and use object comparison
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULT_CSV)
             actual = resources._csv_file_to_list(StringIO.StringIO(actual_result))
-            expected = [{'cdm_file_name': cdm_file_name, 'found': '0', 'parsed': '0', 'loaded': '0'} for cdm_file_name
+            expected = [{'file_name': cdm_file_name, 'found': '0', 'parsed': '0', 'loaded': '0'} for cdm_file_name
                         in common.REQUIRED_FILES]
             self.assertEqual(expected, actual)
             self.assertFalse(main.all_required_files_loaded(test_util.FAKE_HPO_ID, folder_prefix))
@@ -100,7 +100,7 @@ class ValidationTest(unittest.TestCase):
             # check content of the file is correct
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULT_CSV)
             actual_result = resources._csv_file_to_list(StringIO.StringIO(actual_result))
-            expected = [{'cdm_file_name': cdm_file_name, 'found': '1', 'parsed': '0', 'loaded': '0'} for cdm_file_name
+            expected = [{'file_name': cdm_file_name, 'found': '1', 'parsed': '0', 'loaded': '0'} for cdm_file_name
                         in common.CDM_FILES]
             self.assertEqual(expected, actual_result)
 
@@ -338,17 +338,21 @@ class ValidationTest(unittest.TestCase):
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
     @mock.patch('api_util.check_cron')
-    def test_pii_files_ignore(self, mock_check_cron):
+    def test_pii_files_loaded(self, mock_check_cron):
         folder_prefix = 'dummy-prefix-2018-03-22/'
-        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'pii_person.csv', contents_str='.')
+        expected_result_items = resources._csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'pii_name.csv', contents_str='.')
 
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
-            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.WARNINGS_CSV)
-            with open(test_util.EMPTY_WARNINGS_CSV, 'r') as f:
-                expected = f.read()
-                self.assertEqual(expected, actual_result)
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULT_CSV)
+            actual_result_file = StringIO.StringIO(actual_result)
+            actual_result_items = resources._csv_file_to_list(actual_result_file)
+            # sort in order to compare
+            expected_result_items.sort()
+            actual_result_items.sort()
+            self.assertListEqual(expected_result_items, actual_result_items)
 
     def tearDown(self):
         self._empty_bucket()

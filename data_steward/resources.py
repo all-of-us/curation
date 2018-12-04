@@ -86,6 +86,16 @@ def is_internal_table(table_id):
     return table_id.startswith('_')
 
 
+def is_pii_table(table_id):
+    """
+    Return True if specified table is a pii table
+
+    :param table_id: identifies the table
+    :return: True if specified table is a pii table, False otherwise
+    """
+    return table_id.startswith('pii')
+
+
 def cdm_schemas(include_achilles=False, include_vocabulary=False):
     """
     Get a dictionary mapping table_name -> schema
@@ -107,6 +117,8 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
             elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
                 include_table = False
             elif is_internal_table(table_name):
+                include_table = False
+            elif is_pii_table(table_name):
                 include_table = False
             if include_table:
                 result[table_name] = schema

@@ -75,6 +75,7 @@ TEST_DATA_EXPORT_PATH = os.path.join(TEST_DATA_PATH, 'export')
 TEST_DATA_EXPORT_SYNPUF_PATH = os.path.join(TEST_DATA_EXPORT_PATH, 'synpuf')
 DESCRIPTION = 'description'
 
+PII_FILE_LOAD_RESULT_CSV = os.path.join(TEST_DATA_PATH, 'pii_file_load_result.csv')
 
 def _create_five_persons_success_result():
     """
@@ -82,11 +83,11 @@ def _create_five_persons_success_result():
     """
     import csv
 
-    field_names = ['cdm_file_name', 'found', 'parsed', 'loaded']
+    field_names = ['file_name', 'found', 'parsed', 'loaded']
 
     expected_result_items = []
     for cdm_file in common.CDM_FILES:
-        expected_item = dict(cdm_file_name=cdm_file, found="1", parsed="1", loaded="1")
+        expected_item = dict(file_name=cdm_file, found="1", parsed="1", loaded="1")
         expected_result_items.append(expected_item)
     with open(FIVE_PERSONS_SUCCESS_RESULT_CSV, 'w') as f:
         writer = csv.DictWriter(f, field_names, quoting=csv.QUOTE_ALL)

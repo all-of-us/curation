@@ -86,7 +86,7 @@ def _page(name):
 
 
 def hpo_log_item_to_obj(hpo_id, item):
-    file_name = item['cdm_file_name']
+    file_name = item['file_name']
     table_name = file_name.split('.')[0]
     return dict(hpo_id=hpo_id,
                 file_name=file_name,
