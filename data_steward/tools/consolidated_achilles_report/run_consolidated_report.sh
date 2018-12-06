@@ -51,12 +51,12 @@ pip install -t lib -r requirements.txt
 source tools/set_path.sh
 
 #Copy the curation report directory from resources to consolidated achilles report
-#cp -R resources/curation_report/  tools/consolidated_achilles_report/curation_report/
+cp -R resources/curation_report/  tools/consolidated_achilles_report/curation_report/
 
 cd tools/consolidated_achilles_report/
 
 # Run Query, Gets latest submissions and downloads the curation reports
-#python main.py
+python main.py
 
 # Unset the PYTHONPATH set during the venv installation
 unset PYTHONPATH
