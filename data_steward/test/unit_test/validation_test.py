@@ -339,6 +339,7 @@ class ValidationTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
+        # tests if pii files are loaded
         folder_prefix = 'dummy-prefix-2018-03-22/'
         expected_result_items = resources._csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
         test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'pii_name.csv', contents_str='.')
