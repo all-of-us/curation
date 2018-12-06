@@ -37,29 +37,26 @@ export BIGQUERY_DATASET_ID="${dataset}"
 gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
-cd ../..
-
-#Copy the curation report directory from resources to consolidated achilles report
-cp -R resources/curation_report/  tools/consolidated_achilles_report/curation_report/
-
-cd tools/Consolidated_achilles_report/
-
-#---------Create reports virtual environment----------
 set -e
 # create a new environment in directory curation_env
-virtualenv  -p $(which python2.7) report_env
+virtualenv  -p $(which python2.7) curation_env
 
 # activate the report_env virtual environment
-source report_env/bin/activate
+source curation_env/bin/activate
 
 # install the requirements in the virtualenv
 pip install -t lib -r requirements.txt
 
 # Add the google appengine sdk to the PYTHONPATH
-source ../set_path.sh
+source tools/set_path.sh
+
+#Copy the curation report directory from resources to consolidated achilles report
+#cp -R resources/curation_report/  tools/consolidated_achilles_report/curation_report/
+
+cd tools/consolidated_achilles_report/
 
 # Run Query, Gets latest submissions and downloads the curation reports
-python main.py
+#python main.py
 
 # Unset the PYTHONPATH set during the venv installation
 unset PYTHONPATH
@@ -67,7 +64,6 @@ unset PYTHONPATH
 #deacticate virtual environment
 deactivate
 
-#change the directory to curation_report
 cd curation_report
 
 #run server.py to serve the curation report locally
