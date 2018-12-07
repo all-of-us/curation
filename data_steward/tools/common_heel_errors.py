@@ -22,7 +22,7 @@ heel_error_query ='''select '{hpo_id}' as hpo_name,
             order by record_count desc limit 5'''
 
 
-def parse_json_csv(key=None):
+def parse_json_csv():
     """
     :param key: hard coded value used to select the keys of json files in first iteration of the for loop as the header
     :return: None
@@ -32,8 +32,7 @@ def parse_json_csv(key=None):
     input_file.close()
     error_data = open(HEEL_ERRORS_CSV, 'a')
     output = csv.writer(error_data)
-    if key == 1:
-        output.writerow(parsed_json[0].keys())
+    output.writerow(parsed_json[0].keys())
     for row in parsed_json:
         output.writerow(row.values())
 
@@ -45,7 +44,7 @@ def most_common_heel_errors(app_id=None,dataset_id=None, hpo_ids=None):
     :param hpo_ids: list of Hpo_ids
     :return: None
     """
-    key = 1
+    heel_errors = list()
     if app_id is None:
         app_id = app_identity.get_application_id()
     if dataset_id is None:
@@ -56,10 +55,10 @@ def most_common_heel_errors(app_id=None,dataset_id=None, hpo_ids=None):
                 query = heel_error_query.format(app_id=app_id, dataset_id=dataset_id, hpo_id=hpo_id)
                 query_job = bq_utils.query(query)
                 result = bq_utils.response2rows(query_job)
-                with open(HEEL_ERRORS_JSON, 'w') as fp:
-                    json.dump(result, fp, sort_keys=True, indent=4)
-                parse_json_csv(key=key)
-                key += 1
+                heel_errors.extend(result)
+    with open(HEEL_ERRORS_JSON, 'w') as fp:
+        json.dump(heel_errors, fp, sort_keys=True, indent=4)
+    parse_json_csv()
 
 
 if __name__ == '__main__':
