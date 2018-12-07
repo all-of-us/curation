@@ -124,24 +124,56 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
     return insert_result
 
 
-def load_cdm_or_pii_csv(hpo_id, table_name, source_folder_prefix=""):
+def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix=""):
     """
     Load CDM file from a bucket into a table in bigquery
     :param hpo_id: ID for the HPO site
     :param cdm_table_name: name of the CDM table
     :return: an object describing the associated bigquery job
     """
-    if table_name not in common.CDM_TABLES + common.PII_TABLES:
-        raise ValueError('{} is not a valid table to load'.format(table_name))
+    if cdm_table_name not in common.CDM_TABLES:
+        raise ValueError('{} is not a valid table to load'.format(cdm_table_name))
 
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    fields_filename = os.path.join(resources.fields_path, table_name + '.json')
-    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix, table_name)
-    table_id = get_table_id(hpo_id, table_name)
-    allow_jagged_rows = table_name == 'observation'
+    fields_filename = os.path.join(resources.fields_path, cdm_table_name + '.json')
+    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix, cdm_table_name)
+    table_id = get_table_id(hpo_id, cdm_table_name)
+    allow_jagged_rows = cdm_table_name == 'observation'
     return load_csv(fields_filename, gcs_object_path, app_id, dataset_id, table_id, allow_jagged_rows=allow_jagged_rows)
+
+
+def load_pii_csv(hpo_id, pii_table_name, source_folder_prefix=""):
+    """
+    Load PII file from a bucket into a table in bigquery
+    :param hpo_id: ID for the HPO site
+    :param pii_table_name: name of the CDM table
+    :return: an object describing the associated bigquery job
+    """
+    if pii_table_name not in common.PII_TABLES:
+        raise ValueError('{} is not a valid table to load'.format(pii_table_name))
+
+    app_id = app_identity.get_application_id()
+    dataset_id = get_dataset_id()
+    bucket = gcs_utils.get_hpo_bucket(hpo_id)
+    fields_filename = os.path.join(resources.fields_path, pii_table_name + '.json')
+    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix, pii_table_name)
+    table_id = get_table_id(hpo_id, pii_table_name)
+    return load_csv(fields_filename, gcs_object_path, app_id, dataset_id, table_id)
+
+
+def load_cdm_or_pii_csv(hpo_id, table_name, source_folder_prefix=""):
+    """
+    Load CDM or PII file from a bucket into a table in bigquery
+    :param hpo_id: ID for the HPO site
+    :param cdm_table_name: name of the CDM table
+    :return: an object describing the associated bigquery job
+    """
+    if table_name.startswith('pii'):
+        return load_pii_csv(hpo_id, table_name, source_folder_prefix)
+    else:
+        return load_cdm_csv(hpo_id, table_name, source_folder_prefix)
 
 
 def delete_table(table_id, dataset_id=None):
