@@ -43,10 +43,10 @@ gcloud config set project ${app_id}
 
 set -e
 # create a new environment in directory curation_env
-virtualenv report_env
+virtualenv curation_env
 
 # activate the report_env virtual environment
-source "report_env/${VENV_BIN}/activate"
+source "curation_env/${VENV_BIN}/activate"
 
 # install the requirements in the virtualenv
 pip install -t lib -r requirements.txt
