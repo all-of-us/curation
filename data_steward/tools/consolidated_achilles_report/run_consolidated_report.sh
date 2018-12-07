@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 USAGE="
-Usage: run_consolidated_report.sh
+Usage: tools/consolidated_achilles_report/run_consolidated_report.sh
 --key_file <path to key file>
 --app_id <application id>
 --bucket_name <bucket name>
