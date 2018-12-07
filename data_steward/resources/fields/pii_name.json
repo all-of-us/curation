@@ -14,7 +14,7 @@
     {
         "type": "string",
         "name": "middle_name",
-        "mode": "required",
+        "mode": "nullable",
         "description": "The participant’s middle name (or initial)"
     },
     {
@@ -26,13 +26,13 @@
     {
         "type": "string",
         "name": "suffix",
-        "mode": "required",
+        "mode": "nullable",
         "description": "The participant’s provided suffix (eg, III)"
     },
     {
         "type": "string",
         "name": "prefix",
-        "mode": "required",
+        "mode": "nullable",
         "description": "The participant’s provided prefix or title (eg, Dr.)"
     }
 ]
