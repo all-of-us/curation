@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 USAGE="
 Usage: tools/consolidated_achilles_report/run_consolidated_report.sh
 --key_file <path to key file>
@@ -34,15 +33,20 @@ export APPLICATION_ID="${app_id}"
 export DRC_BUCKET_NAME="${bucket_name}"
 export BIGQUERY_DATASET_ID="${dataset}"
 
+VENV_BIN="bin"
+if [[ "$OSTYPE" == "msys" ]]; then
+    VENV_BIN="Scripts"
+fi
+
 gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
 set -e
 # create a new environment in directory curation_env
-virtualenv  -p $(which python2.7) curation_env
+virtualenv report_env
 
 # activate the report_env virtual environment
-source curation_env/bin/activate
+source "report_env/${VENV_BIN}/activate"
 
 # install the requirements in the virtualenv
 pip install -t lib -r requirements.txt
@@ -68,4 +72,3 @@ cd curation_report
 
 #run server.py to serve the curation report locally
 python server.py
-
