@@ -283,7 +283,7 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefi
 
     if file_name in found_file_names:
         found = 1
-        load_results = bq_utils.load_cdm_or_pii_csv(hpo_id, table_name, folder_prefix)
+        load_results = bq_utils.load_from_csv(hpo_id, table_name, folder_prefix)
         load_job_id = load_results['jobReference']['jobId']
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
 

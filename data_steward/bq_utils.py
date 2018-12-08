@@ -163,11 +163,11 @@ def load_pii_csv(hpo_id, pii_table_name, source_folder_prefix=""):
     return load_csv(fields_filename, gcs_object_path, app_id, dataset_id, table_id)
 
 
-def load_cdm_or_pii_csv(hpo_id, table_name, source_folder_prefix=""):
+def load_from_csv(hpo_id, table_name, source_folder_prefix=""):
     """
     Load CDM or PII file from a bucket into a table in bigquery
     :param hpo_id: ID for the HPO site
-    :param cdm_table_name: name of the CDM table
+    :param table_name: name of the CDM or PII table
     :return: an object describing the associated bigquery job
     """
     if table_name.startswith('pii'):

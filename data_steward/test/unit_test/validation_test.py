@@ -14,10 +14,6 @@ import test_util
 from validation import main
 import datetime
 
-PII_NAME_CONTENTS = """person_id,first_name,middle_name,last_name,suffix,prefix
-1,John,,Doe,,,
-2,Jane,Smith,Doe,III,Dr.,"""
-
 
 class ValidationTest(unittest.TestCase):
     def setUp(self):
@@ -347,7 +343,7 @@ class ValidationTest(unittest.TestCase):
         # tests if pii files are loaded
         folder_prefix = 'dummy-prefix-2018-03-22/'
         expected_result_items = resources._csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
-        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'pii_name.csv', contents_str=PII_NAME_CONTENTS)
+        test_util.write_cloud_file(self.hpo_bucket, test_util.PII_NAME_FILE, prefix=folder_prefix)
 
         main.app.testing = True
         with main.app.test_client() as c:
