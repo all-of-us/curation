@@ -55,7 +55,7 @@ pip install -t lib -r requirements.txt
 source tools/set_path.sh
 
 #Copy the curation report directory from resources to consolidated achilles report
-cp -R resources/curation_report/  tools/consolidated_achilles_report/curation_report/
+cp -R resources/curation_report/  tools/consolidated_achilles_report/
 
 cd tools/consolidated_achilles_report/
 
