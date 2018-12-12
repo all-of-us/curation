@@ -344,6 +344,7 @@ class ValidationTest(unittest.TestCase):
         folder_prefix = 'dummy-prefix-2018-03-22/'
         expected_result_items = resources._csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
         test_util.write_cloud_file(self.hpo_bucket, test_util.PII_NAME_FILE, prefix=folder_prefix)
+        test_util.write_cloud_file(self.hpo_bucket, test_util.PII_MRN_BAD_PERSON_ID_FILE, prefix=folder_prefix)
 
         main.app.testing = True
         with main.app.test_client() as c:

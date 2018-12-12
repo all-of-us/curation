@@ -76,7 +76,9 @@ TEST_DATA_EXPORT_SYNPUF_PATH = os.path.join(TEST_DATA_EXPORT_PATH, 'synpuf')
 DESCRIPTION = 'description'
 
 PII_NAME_FILE = os.path.join(TEST_DATA_PATH, 'pii_name.csv')
+PII_MRN_BAD_PERSON_ID_FILE = os.path.join(TEST_DATA_PATH, 'pii_mrn.csv')
 PII_FILE_LOAD_RESULT_CSV = os.path.join(TEST_DATA_PATH, 'pii_file_load_result.csv')
+
 
 def _create_five_persons_success_result():
     """
