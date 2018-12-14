@@ -1,0 +1,20 @@
+[
+    {
+        "type": "integer",
+        "name": "person_id",
+        "mode": "required",
+        "description": "The participant ID for this row"
+    },
+    {
+        "type": "string",
+        "name": "health_system",
+        "mode": "required",
+        "description": "The health system for which the MRN applies."
+    },
+    {
+        "type": "string",
+        "name": "MRN",
+        "mode": "required",
+        "description": "A medical record number (or similar patient identifier)"
+    }
+]

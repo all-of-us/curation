@@ -1,0 +1,38 @@
+[
+    {
+        "type": "integer",
+        "name": "person_id",
+        "mode": "required",
+        "description": "The participant ID for this row"
+    },
+    {
+        "type": "string",
+        "name": "first_name",
+        "mode": "required",
+        "description": "The participant’s first (given) name"
+    },
+    {
+        "type": "string",
+        "name": "middle_name",
+        "mode": "nullable",
+        "description": "The participant’s middle name (or initial)"
+    },
+    {
+        "type": "string",
+        "name": "last_name",
+        "mode": "required",
+        "description": "The participant’s last (family) name"
+    },
+    {
+        "type": "string",
+        "name": "suffix",
+        "mode": "nullable",
+        "description": "The participant’s provided suffix (eg, III)"
+    },
+    {
+        "type": "string",
+        "name": "prefix",
+        "mode": "nullable",
+        "description": "The participant’s provided prefix or title (eg, Dr.)"
+    }
+]

@@ -85,12 +85,12 @@ class SpecTest(unittest.TestCase):
 
     def test_hpo_log_item_to_obj(self):
         hpo_id = 'foo'
-        log_item = dict(cdm_file_name='person.csv', found='0', parsed='0', loaded='0')
+        log_item = dict(file_name='person.csv', found='0', parsed='0', loaded='0')
         expected = dict(hpo_id=hpo_id, file_name='person.csv', table_name='person', found=False, parsed=False, loaded=False)
         actual = main.hpo_log_item_to_obj(hpo_id, log_item)
         self.assertDictEqual(expected, actual)
 
-        log_item = dict(cdm_file_name='person.csv', found='1', parsed='1', loaded='1')
+        log_item = dict(file_name='person.csv', found='1', parsed='1', loaded='1')
         expected = dict(hpo_id=hpo_id, file_name='person.csv', table_name='person', found=True, parsed=True, loaded=True)
         actual = main.hpo_log_item_to_obj(hpo_id, log_item)
         self.assertDictEqual(expected, actual)
