@@ -12,7 +12,7 @@ PID_IN_COL2 = ["visit_occurrence.csv","condition_occurrence.csv","drug_exposure.
                "procedure_occurrence.csv","observation.csv","device_exposure.csv","specimen.csv","note.csv"]
 
 
-def retract_from_hpo_files(pid, bucket, folder_path=None, force=False):
+def retract_from_bucket(pid, bucket, folder_path=None, force=False):
     """
     data retraction end point
     """
@@ -121,5 +121,5 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--folder_path', help='Folder path', required=False)
 
     args = vars(parser.parse_args())
-    result = retract_from_hpo_files(args['pid'], args['bucket'], args['folder_path'], args['f'])
+    result = retract_from_bucket(args['pid'], args['bucket'], args['folder_path'], args['f'])
 
