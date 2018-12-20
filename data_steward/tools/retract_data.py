@@ -16,8 +16,9 @@ def retract_from_bucket(pid, bucket, folder_path=None, force=False):
     """
     data retraction end point
     """
-    if folder_path[-1] != '/':
-        folder_path = folder_path+'/'
+    if folder_path is not None:
+        if folder_path[-1] != '/':
+            folder_path = folder_path+'/'
     result = run_retraction(pid, bucket, folder_path, force)
     return result
 
@@ -30,11 +31,14 @@ def run_retraction(pid, bucket, folder, force):
     bucket_items = val.list_bucket(bucket)
 
     # Get list of folders in the bucket
-    folder_list = val._get_to_process_list(bucket, bucket_items)
+    folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items if len(item['name'].split('/')) > 1])
     result = []
 
     if folder is None:
-        to_process_folder_list = folder_list
+        to_process_folder_list = list(folder_list)
+        print("Found the following folders to retract data from:")
+        for folder_item in to_process_folder_list:
+            print(folder_item)
     else:
         if folder in folder_list:
             to_process_folder_list = [folder]
@@ -54,20 +58,15 @@ def run_retraction(pid, bucket, folder, force):
 
         print('Found the following files to retract data from:')
         for file_name in found_files:
-            print(bucket+'/'+folder+file_name)
+            print(bucket+'/'+folder_prefix+file_name)
 
-        # Make sure user types Y to proceed
-        response = raw_input("Proceed? Please press Y/n\n")
-        while response not in ("Y", "y", "n", "N"):
-            response = raw_input("Please press Y/n\n")
-        if response == "y":
-            while response not in ("Y", "n", "N"):
-                response = raw_input("Please press Y\n")
+        print("Proceed?")
+        response = get_response()
         if response == "Y":
             retract(pid, bucket, found_files, folder_prefix, force)
         elif response.lower() == "n":
-            print("Quitting")
-            return result
+            print("Ignoring folder %s" % folder_prefix)
+            continue
 
     return result
 
@@ -80,13 +79,9 @@ def retract(pid, bucket, found_files, folder_prefix, force):
             response = "Y"
         else:
             # Make sure user types Y to proceed
-            response = raw_input("Are you sure you want to retract rows for person_id %s from path %s/%s%s? "
-                                 "Please press Y/n\n" % (pid, bucket, folder_prefix, file_name))
-            while response not in ("Y", "y", "n", "N"):
-                response = raw_input("Please press Y/n\n")
-            if response == "y":
-                while response not in ("Y", "n", "N"):
-                    response = raw_input("Please press Y\n")
+            print("Are you sure you want to retract rows for person_id %s from path %s/%s%s?"
+                  % (pid, bucket, folder_prefix, file_name))
+            response = get_response()
         if response == "Y":
             # Output and input file content initialization
             retracted_file_string = StringIO.StringIO()
@@ -107,9 +102,20 @@ def retract(pid, bucket, found_files, folder_prefix, force):
             # Write result back to bucket
             result.append(gcs_utils.upload_object(bucket, folder_prefix + file_name, retracted_file_string))
         elif response.lower() == "n":
-            print("Quitting")
-            return result
+            print("Ignoring file %s" % file_name)
+            continue
     return result
+
+
+# Make sure user types Y to proceed
+def get_response():
+    response = raw_input("Please press Y/n\n")
+    while response not in ("Y", "y", "n", "N"):
+        response = raw_input("Please press Y/n\n")
+    if response == "y":
+        while response not in ("Y", "n", "N"):
+            response = raw_input("Please press Y\n")
+    return response
 
 
 if __name__ == '__main__':
