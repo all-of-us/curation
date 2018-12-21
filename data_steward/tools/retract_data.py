@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import StringIO
-import logging
 from validation import main as val
 import argparse
 
@@ -36,12 +35,14 @@ def run_retraction(pid, bucket, folder, force):
 
     if folder is None:
         to_process_folder_list = list(folder_list)
-        print("Found the following folders to retract data from:")
+        print("Retracting data from the following folders:")
         for folder_item in to_process_folder_list:
             print(folder_item)
     else:
         if folder in folder_list:
             to_process_folder_list = [folder]
+            print("Retracting data from the following folders:")
+            print(folder)
         else:
             print('Folder %s does not exist in bucket %s. Exiting' % (folder, bucket))
             return result
