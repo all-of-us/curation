@@ -141,9 +141,9 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     result = []
     # Hpo_unique num stores the unique id assigned to the HPO_sites
     hpo_unique_num = {}
-    i = 1
+    i = 2
     for hpo_id in hpo_ids:
-        hpo_unique_num[hpo_id] = i * 100000000
+        hpo_unique_num[hpo_id] = i * 1000000000000000
         i += 1
 
     # Exclude subqueries that reference tables that are missing from source dataset

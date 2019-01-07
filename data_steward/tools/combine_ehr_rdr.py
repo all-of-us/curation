@@ -301,18 +301,13 @@ def mapping_query(domain_table):
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :return:
     """
-    q = '''select MAX({domain_table}_id) as constant from {rdr_dataset_id}.{domain_table}'''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(), domain_table=domain_table)
-    mapping_constant_query_result = bq_utils.query(q)
-    rows = bq_utils.response2rows(mapping_constant_query_result)
-    mapping_constant = rows[0]['constant']
-    if mapping_constant is None:
-        mapping_constant = 0
+    rdr_mapping_constant = 1000000000000000
 
     return '''SELECT
           '{rdr_dataset_id}'  AS src_dataset_id,
-          {domain_table}_id AS src_{domain_table}_id, 
+          {domain_table}_id  AS src_{domain_table}_id,
           'rdr' as src_hpo_id,
-          {domain_table}_id AS {domain_table}_id
+          {domain_table}_id + {mapping_constant}  AS {domain_table}_id
         FROM {rdr_dataset_id}.{domain_table}
 
         UNION ALL
@@ -321,17 +316,17 @@ def mapping_query(domain_table):
           '{ehr_dataset_id}'  AS src_dataset_id, 
           t.{domain_table}_id AS src_{domain_table}_id,
           v.src_hpo_id AS src_hpo_id,
-          t.{domain_table}_id + {mapping_constant} AS {domain_table}_id          
+          t.{domain_table}_id  AS {domain_table}_id
         FROM {ehr_dataset_id}.{domain_table} t
-        JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id 
+        JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id
         WHERE EXISTS
-           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
+           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c
             WHERE t.person_id = c.person_id)
     '''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
                ehr_dataset_id=bq_utils.get_dataset_id(),
                ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
                domain_table=domain_table,
-               mapping_constant=mapping_constant,
+               mapping_constant=rdr_mapping_constant,
                ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
 
 
