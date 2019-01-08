@@ -5,7 +5,7 @@ from google.appengine.ext import testbed
 
 import gcs_utils
 import test_util
-from tools import retract_data
+from tools import retract_data as rd
 
 
 class RetractionTest(unittest.TestCase):
@@ -37,16 +37,15 @@ class RetractionTest(unittest.TestCase):
             with open(file_path) as f:
                 for line in f:
                     line = line.strip()
-                    if line != '':
-                        if (file_name in retract_data.PID_IN_COL1 and line.split(',')[0] != pid) or \
-                                (file_name in retract_data.PID_IN_COL2 and line.split(',')[1] != pid):
-                                expected_result[file_name].append(line)
+                    if (file_name in rd.PID_IN_COL1 and rd.get_integer(line.split(",")[0]) != pid) or \
+                       (file_name in rd.PID_IN_COL2 and rd.get_integer(line.split(",")[1]) != pid):
+                        expected_result[file_name].append(line)
 
             # write file to cloud for testing
             test_util.write_cloud_file(self.hpo_bucket, file_path, prefix=folder_prefix)
 
         with mock.patch('__builtin__.raw_input', return_value='Y') as _raw_input:
-            retract_data.retract_from_bucket(pid, self.hpo_bucket, folder_path=folder_prefix, force=True)
+            rd.retract_from_bucket(pid, self.hpo_bucket, folder_path=folder_prefix, force=True)
 
         actual_result = {}
         for file_path in test_util.FIVE_PERSONS_FILES:

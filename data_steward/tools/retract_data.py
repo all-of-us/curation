@@ -64,7 +64,7 @@ def run_retraction(pid, bucket, folder, force):
         print("Proceed?")
         response = get_response()
         if response == "Y":
-            retract(pid, bucket, found_files, folder_prefix, force)
+            result = retract(pid, bucket, found_files, folder_prefix, force)
         elif response.lower() == "n":
             print("Ignoring folder %s" % folder_prefix)
             continue
@@ -90,16 +90,11 @@ def retract(pid, bucket, found_files, folder_prefix, force):
             input_contents = input_file_string.split('\n')
 
             # Check if file has person_id in first or second column
-            if file_name in PID_IN_COL1:
-                for input_line in input_contents:
-                    if input_line != '':
-                        if input_line.split(",")[0] != pid:
-                            retracted_file_string.write(input_line + '\n')
-            elif file_name in PID_IN_COL2:
-                for input_line in input_contents:
-                    if input_line != '':
-                        if input_line.split(",")[1] != pid:
-                            retracted_file_string.write(input_line + '\n')
+            for input_line in input_contents:
+                if input_line != '':
+                    if (file_name in PID_IN_COL1 and get_integer(input_line.split(",")[0]) != pid) or \
+                       (file_name in PID_IN_COL2 and get_integer(input_line.split(",")[1]) != pid):
+                        retracted_file_string.write(input_line + '\n')
             # Write result back to bucket
             result.append(gcs_utils.upload_object(bucket, folder_prefix + file_name, retracted_file_string))
         elif response.lower() == "n":
@@ -119,6 +114,15 @@ def get_response():
     return response
 
 
+def get_integer(num_str):
+    try:
+        num = int(eval(str(num_str)))
+        if type(num) == int:
+            return num
+    except:
+        return None
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -128,5 +132,6 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--folder_path', help='Folder path', required=False)
 
     args = vars(parser.parse_args())
-    result = retract_from_bucket(args['pid'], args['bucket'], args['folder_path'], args['f'])
+    # result is mainly for debugging file uploads
+    result = retract_from_bucket(get_integer(args['pid']), args['bucket'], args['folder_path'], args['f'])
 
