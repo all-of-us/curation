@@ -2,6 +2,7 @@
 import StringIO
 from validation import main as val
 import argparse
+import ast
 
 import gcs_utils
 
@@ -88,6 +89,7 @@ def retract(pid, bucket, found_files, folder_prefix, force):
             retracted_file_string = StringIO.StringIO()
             input_file_string = gcs_utils.get_object(bucket, folder_prefix + file_name)
             input_contents = input_file_string.split('\n')
+            modified_flag = False
 
             # Check if file has person_id in first or second column
             for input_line in input_contents:
@@ -95,8 +97,14 @@ def retract(pid, bucket, found_files, folder_prefix, force):
                     if (file_name in PID_IN_COL1 and get_integer(input_line.split(",")[0]) != pid) or \
                        (file_name in PID_IN_COL2 and get_integer(input_line.split(",")[1]) != pid):
                         retracted_file_string.write(input_line + '\n')
+                    else:
+                        modified_flag = True
             # Write result back to bucket
-            result.append(gcs_utils.upload_object(bucket, folder_prefix + file_name, retracted_file_string))
+            if modified_flag:
+                print("Overwriting file %s/%s%s" % (bucket, folder_prefix, file_name))
+                result.append(gcs_utils.upload_object(bucket, folder_prefix + file_name, retracted_file_string))
+            else:
+                print("Skipping file %s/%s%s since pid %s not found" % (bucket, folder_prefix, file_name, pid))
         elif response.lower() == "n":
             print("Ignoring file %s" % file_name)
             continue
@@ -116,10 +124,10 @@ def get_response():
 
 def get_integer(num_str):
     try:
-        num = int(eval(str(num_str)))
-        if type(num) == int:
+        num = int(ast.literal_eval(str(num_str)))
+        if isinstance(num, int):
             return num
-    except:
+    except ValueError:
         return None
 
 
