@@ -45,7 +45,7 @@ class RetractionTest(unittest.TestCase):
             test_util.write_cloud_file(self.hpo_bucket, file_path, prefix=folder_prefix)
 
         with mock.patch('__builtin__.raw_input', return_value='Y') as _raw_input:
-            rd.retract_from_bucket(pid, self.hpo_bucket, folder_path=folder_prefix, force=True)
+            rd.run_retraction(pid, self.hpo_bucket, folder=folder_prefix, force=True)
 
         actual_result = {}
         for file_path in test_util.FIVE_PERSONS_FILES:

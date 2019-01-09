@@ -3,38 +3,32 @@ import StringIO
 from validation import main as val
 import argparse
 import ast
+import common
 
 import gcs_utils
 
 # TODO Accommodate should new PII or CDM files be added
-PID_IN_COL1 = ["person.csv", "pii_name.csv", "pii_email.csv", "pii_phone_number.csv", "pii_address.csv", "pii_mrn.csv"]
+PID_IN_COL1 = ["person.csv"] + common.PII_TABLES
 PID_IN_COL2 = ["visit_occurrence.csv", "condition_occurrence.csv", "drug_exposure.csv", "measurement.csv",
                "procedure_occurrence.csv", "observation.csv", "device_exposure.csv", "specimen.csv", "note.csv"]
 
 
-def retract_from_bucket(pid, bucket, folder_path=None, force=False):
-    """
-    data retraction end point
-    """
-    if folder_path is not None:
-        if folder_path[-1] != '/':
-            folder_path = folder_path + '/'
-    result = run_retraction(pid, bucket, folder_path, force)
-    return result
-
-
 def run_retraction(pid, bucket, folder, force):
     """
-    Retract from a folder in a GCS bucket all records associated with a pid
+    Retract from a folder/folders in a GCS bucket all records associated with a pid
 
     :param pid: person_id
     :param bucket: bucket containing records to retract
     :param folder: folder in the bucket; if unspecified, retract from all folders
     :param force: if False then prompt for each file
-    :return: metadata for each object updated in order to retract
+    :return: metadata for each object updated in order to retract as a list of lists
     """
     print('Retracting from bucket %s' % bucket)
     bucket_items = val.list_bucket(bucket)
+
+    if folder is not None:
+        if folder[-1] != '/':
+            folder = folder + '/'
 
     # Get list of folders in the bucket
     folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items if len(item['name'].split('/')) > 1])
@@ -70,7 +64,8 @@ def run_retraction(pid, bucket, folder, force):
         print("Proceed?")
         response = get_response()
         if response == "Y":
-            result = retract(pid, bucket, found_files, folder_prefix, force)
+            folder_upload_output = retract(pid, bucket, found_files, folder_prefix, force)
+            result.append(folder_upload_output)
         elif response.lower() == "n":
             print("Skipping folder %s" % folder_prefix)
 
@@ -78,6 +73,16 @@ def run_retraction(pid, bucket, folder, force):
 
 
 def retract(pid, bucket, found_files, folder_prefix, force):
+    """
+    Retract from a folder in a GCS bucket all records associated with a pid
+
+    :param pid: person_id
+    :param bucket: bucket containing records to retract
+    :param found_files: files found in the current folder
+    :param folder_prefix: current folder being processed
+    :param force: if False then prompt for each file
+    :return: metadata for each object updated in order to retract
+    """
     result = []
     for file_name in found_files:
         if force:
@@ -146,4 +151,4 @@ if __name__ == '__main__':
 
     args = vars(parser.parse_args())
     # result is mainly for debugging file uploads
-    result = retract_from_bucket(get_integer(args['pid']), args['bucket'], args['folder_path'], args['f'])
+    result = run_retraction(get_integer(args['pid']), args['bucket'], args['folder_path'], args['f'])
