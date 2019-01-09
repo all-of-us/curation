@@ -38,7 +38,7 @@ class RetractionTest(unittest.TestCase):
                 for line in f:
                     line = line.strip()
                     if (file_name in rd.PID_IN_COL1 and rd.get_integer(line.split(",")[0]) != pid) or \
-                       (file_name in rd.PID_IN_COL2 and rd.get_integer(line.split(",")[1]) != pid):
+                            (file_name in rd.PID_IN_COL2 and rd.get_integer(line.split(",")[1]) != pid):
                         expected_result[file_name].append(line)
 
             # write file to cloud for testing

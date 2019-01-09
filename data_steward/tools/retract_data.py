@@ -7,9 +7,9 @@ import ast
 import gcs_utils
 
 # TODO Accommodate should new PII or CDM files be added
-PID_IN_COL1 = ["person.csv","pii_name.csv","pii_email.csv","pii_phone_number.csv","pii_address.csv","pii_mrn.csv"]
-PID_IN_COL2 = ["visit_occurrence.csv","condition_occurrence.csv","drug_exposure.csv","measurement.csv",
-               "procedure_occurrence.csv","observation.csv","device_exposure.csv","specimen.csv","note.csv"]
+PID_IN_COL1 = ["person.csv", "pii_name.csv", "pii_email.csv", "pii_phone_number.csv", "pii_address.csv", "pii_mrn.csv"]
+PID_IN_COL2 = ["visit_occurrence.csv", "condition_occurrence.csv", "drug_exposure.csv", "measurement.csv",
+               "procedure_occurrence.csv", "observation.csv", "device_exposure.csv", "specimen.csv", "note.csv"]
 
 
 def retract_from_bucket(pid, bucket, folder_path=None, force=False):
@@ -18,7 +18,7 @@ def retract_from_bucket(pid, bucket, folder_path=None, force=False):
     """
     if folder_path is not None:
         if folder_path[-1] != '/':
-            folder_path = folder_path+'/'
+            folder_path = folder_path + '/'
     result = run_retraction(pid, bucket, folder_path, force)
     return result
 
@@ -65,7 +65,7 @@ def run_retraction(pid, bucket, folder, force):
 
         print('Found the following files to retract data from:')
         for file_name in found_files:
-            print(bucket+'/'+folder_prefix+file_name)
+            print(bucket + '/' + folder_prefix + file_name)
 
         print("Proceed?")
         response = get_response()
@@ -99,7 +99,7 @@ def retract(pid, bucket, found_files, folder_prefix, force):
             for input_line in input_contents:
                 if input_line != '':
                     if (file_name in PID_IN_COL1 and get_integer(input_line.split(",")[0]) != pid) or \
-                       (file_name in PID_IN_COL2 and get_integer(input_line.split(",")[1]) != pid):
+                            (file_name in PID_IN_COL2 and get_integer(input_line.split(",")[1]) != pid):
                         retracted_file_string.write(input_line + '\n')
                     else:
                         modified_flag = True
@@ -147,4 +147,3 @@ if __name__ == '__main__':
     args = vars(parser.parse_args())
     # result is mainly for debugging file uploads
     result = retract_from_bucket(get_integer(args['pid']), args['bucket'], args['folder_path'], args['f'])
-
