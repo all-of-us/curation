@@ -45,7 +45,7 @@ class RetractionTest(unittest.TestCase):
             test_util.write_cloud_file(self.hpo_bucket, file_path, prefix=folder_prefix)
 
         with mock.patch('__builtin__.raw_input', return_value='Y') as _raw_input:
-            rd.run_retraction(pid, self.hpo_bucket, folder=folder_prefix, force=True)
+            retract_result = rd.run_retraction(pid, self.hpo_bucket, folder=folder_prefix, force=True)
 
         actual_result = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
@@ -56,6 +56,10 @@ class RetractionTest(unittest.TestCase):
 
         for key in expected_result.keys():
             self.assertListEqual(expected_result[key], actual_result[key])
+
+        # metadata for each updated file is returned
+        # TODO test that files lacking records for PID are not updated
+        self.assertEqual(len(retract_result), len(expected_result.keys()))
 
     def tearDown(self):
         self._empty_bucket()
