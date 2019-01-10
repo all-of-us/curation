@@ -123,12 +123,10 @@ def retract(pid, bucket, found_files, folder_prefix, force):
 
 # Make sure user types Y to proceed
 def get_response():
-    response = raw_input("Please press Y/n\n")
-    while response not in ("Y", "y", "n", "N"):
-        response = raw_input("Please press Y/n\n")
-    if response == "y":
-        while response not in ("Y", "n", "N"):
-            response = raw_input("Please press Y\n")
+    prompt_text = 'Please press Y/n\n'
+    response = raw_input(prompt_text)
+    while response not in ('Y', 'n', 'N'):
+        response = raw_input(prompt_text)
     return response
 
 
