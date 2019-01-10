@@ -32,7 +32,7 @@ def run_retraction(pid, bucket, folder, force):
 
     # Get list of folders in the bucket
     folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items if len(item['name'].split('/')) > 1])
-    result = []
+    result_dict = {}
 
     if folder is None:
         to_process_folder_list = list(folder_list)
@@ -41,7 +41,7 @@ def run_retraction(pid, bucket, folder, force):
             to_process_folder_list = [folder]
         else:
             print('Folder %s does not exist in bucket %s. Exiting' % (folder, bucket))
-            return result
+            return result_dict
 
     print("Retracting data from the following folders:")
     for folder_item in to_process_folder_list:
@@ -65,11 +65,10 @@ def run_retraction(pid, bucket, folder, force):
         response = get_response()
         if response == "Y":
             folder_upload_output = retract(pid, bucket, found_files, folder_prefix, force)
-            result.append(folder_upload_output)
+            result_dict[folder_prefix] = folder_upload_output
         elif response.lower() == "n":
             print("Skipping folder %s" % folder_prefix)
-
-    return result
+    return result_dict
 
 
 def retract(pid, bucket, found_files, folder_prefix, force):
@@ -83,7 +82,7 @@ def retract(pid, bucket, found_files, folder_prefix, force):
     :param force: if False then prompt for each file
     :return: metadata for each object updated in order to retract
     """
-    result = []
+    result_list = []
     for file_name in found_files:
         if force:
             print("Force retracting rows for person_id %s from path %s/%s%s" % (pid, bucket, folder_prefix, file_name))
@@ -108,17 +107,17 @@ def retract(pid, bucket, found_files, folder_prefix, force):
                         retracted_file_string.write(input_line + '\n')
                     else:
                         modified_flag = True
+            # TODO: return number of lines removed, message if no file in the folder was updated
             # Write result back to bucket
             if modified_flag:
                 print("Overwriting file %s/%s%s" % (bucket, folder_prefix, file_name))
                 upload_result = gcs_utils.upload_object(bucket, folder_prefix + file_name, retracted_file_string)
-                result.append(upload_result)
+                result_list.append(upload_result)
             else:
                 print("Skipping file %s/%s%s since pid %s not found" % (bucket, folder_prefix, file_name, pid))
         elif response.lower() == "n":
             print("Ignoring file %s" % file_name)
-            continue
-    return result
+    return result_list
 
 
 # Make sure user types Y to proceed

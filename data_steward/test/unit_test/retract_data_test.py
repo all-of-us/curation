@@ -59,7 +59,7 @@ class RetractionTest(unittest.TestCase):
 
         # metadata for each updated file is returned
         # TODO test that files lacking records for PID are not updated
-        self.assertEqual(len(retract_result), len(expected_result.keys()))
+        self.assertEqual(len(retract_result[folder_prefix]), len(expected_result.keys()))
 
     def tearDown(self):
         self._empty_bucket()
