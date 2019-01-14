@@ -245,9 +245,9 @@ class CombineEhrRdrTest(unittest.TestCase):
         q = mapping_query(table_name)
         expected_query = '''SELECT
           '{rdr_dataset_id}'  AS src_dataset_id,
-          {domain_table}_id AS src_{domain_table}_id, 
+          {domain_table}_id  AS src_{domain_table}_id,
           'rdr' as src_hpo_id,
-          {domain_table}_id + {mapping_constant} AS {domain_table}_id
+          {domain_table}_id + {mapping_constant}  AS {domain_table}_id
         FROM {rdr_dataset_id}.{domain_table}
 
         UNION ALL
@@ -256,11 +256,11 @@ class CombineEhrRdrTest(unittest.TestCase):
           '{ehr_dataset_id}'  AS src_dataset_id, 
           t.{domain_table}_id AS src_{domain_table}_id,
           v.src_hpo_id AS src_hpo_id,
-          t.{domain_table}_id  AS {domain_table}_id          
+          t.{domain_table}_id  AS {domain_table}_id
         FROM {ehr_dataset_id}.{domain_table} t
-        JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id 
+        JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id
         WHERE EXISTS
-           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
+           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c
             WHERE t.person_id = c.person_id)
     '''.format(rdr_dataset_id=self.rdr_dataset_id, domain_table=table_name, ehr_dataset_id=self.ehr_dataset_id,
                    ehr_consent_table_id=EHR_CONSENT_TABLE_ID, ehr_rdr_dataset_id=self.combined_dataset_id,

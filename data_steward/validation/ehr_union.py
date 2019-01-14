@@ -395,7 +395,6 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     :param hpo_ids: (optional) identifies HPOs to process, by default process all
     :returns: list of tables generated successfully
     """
-    logging.info('EHR union started')
     if hpo_ids is None:
         hpo_ids = [item['hpo_id'] for item in resources.hpo_csv()]
 
@@ -428,4 +427,5 @@ if __name__ == '__main__':
                         help='Dataset where the results should be stored')
     parser.add_argument('-hpo_id', nargs='+', help='HPOs to process (all by default)')
     args = parser.parse_args()
-    main(**args)
+    if args.input_dataset_id:
+        main(args.input_dataset_id, args.output_dataset_id, args.project_id)
