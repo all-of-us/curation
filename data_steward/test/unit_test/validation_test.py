@@ -78,7 +78,7 @@ class ValidationTest(unittest.TestCase):
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.ERRORS_CSV)
             with open(test_util.BAD_PERSON_FILE_BQ_LOAD_ERRORS_CSV, 'r') as f:
                 expected = f.read()
-                self.assertTrue(set(expected).issubset(set(actual_result)))
+                self.assertTrue(expected, actual_result)
 
     @mock.patch('api_util.check_cron')
     def test_all_files_unparseable_output(self, mock_check_cron):
