@@ -76,9 +76,11 @@ class ValidationTest(unittest.TestCase):
 
             # check content of the file is correct
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.ERRORS_CSV)
-            with open(test_util.BAD_PERSON_FILE_BQ_LOAD_ERRORS_CSV, 'r') as f:
-                expected = f.read()
-                self.assertEqual(expected, actual_result)
+            actual = resources._csv_file_to_list(StringIO.StringIO(actual_result))
+            for row in actual:
+                row.pop('message', None)
+            expected = [{'file_name': 'person.csv', 'type': 'error'}]
+            self.assertEqual(actual, expected)
 
     @mock.patch('api_util.check_cron')
     def test_all_files_unparseable_output(self, mock_check_cron):
@@ -105,7 +107,6 @@ class ValidationTest(unittest.TestCase):
                         in common.CDM_FILES]
             self.assertEqual(expected, actual_result)
 
-
     @mock.patch('api_util.check_cron')
     def test_bad_file_names(self, mock_check_cron):
         folder_prefix = 'dummy-prefix-2018-03-22/'
@@ -118,7 +119,7 @@ class ValidationTest(unittest.TestCase):
         expected_result_items = []
         for file_name in exclude_file_list:
             test_util.write_cloud_str(self.hpo_bucket, file_name, ".")
-            expected_item = dict(file_name=file_name.split('/')[1], message=main.UNKNOWN_FILE)
+            expected_item = dict(type="warning", file_name=file_name.split('/')[1], message=main.UNKNOWN_FILE)
             expected_result_items.append(expected_item)
 
         main.app.testing = True
@@ -132,15 +133,13 @@ class ValidationTest(unittest.TestCase):
             actual_bucket_items = [item['name'] for item in list_bucket_result]
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
 
-            # check content of the warnings file is correct
+            # check content of the errors file includes warnings and is correct
             actual_result = test_util.read_cloud_file(self.hpo_bucket,
-                                                      folder_prefix + common.WARNINGS_CSV)
+                                                      folder_prefix + common.ERRORS_CSV)
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = resources._csv_file_to_list(actual_result_file)
-            # sort in order to compare
-            expected_result_items.sort()
-            actual_result_items.sort()
-            self.assertListEqual(expected_result_items, actual_result_items)
+            for expected_result_item in expected_result_items:
+                self.assertIn(expected_result_item, actual_result_items)
 
     def test_retention_checks_list_submitted_bucket_items(self):
         outside_retention = datetime.datetime.today() - datetime.timedelta(days=29)

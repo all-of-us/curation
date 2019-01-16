@@ -258,8 +258,7 @@ def run_validation(hpo_id, force_run=False):
 
         # output to GCS
         _save_result_in_gcs(bucket, folder_prefix + RESULT_CSV, results)
-        _save_warnings_in_gcs(bucket, folder_prefix + WARNINGS_CSV, warnings)
-        _save_errors_in_gcs(bucket, folder_prefix + ERRORS_CSV, errors)
+        _save_errors_warnings_in_gcs(bucket, folder_prefix + ERRORS_CSV, errors, warnings)
 
         if all_required_files_loaded(hpo_id, folder_prefix=folder_prefix):
             run_achilles(hpo_id)
@@ -439,38 +438,21 @@ def copy_files(hpo_id):
     return '{"copy-status": "done"}'
 
 
-def _save_errors_in_gcs(bucket, name, errors):
-    """Save errors.csv into hpo bucket
-
-    :bucket:  bucket to save in
-    :name: file_name to save to
-    :errors: list of errors of form (file_name, errors)
-    :returns: result of upload operation. not being used for now.
-
+def _save_errors_warnings_in_gcs(bucket, name, errors, warnings):
     """
-    f = StringIO.StringIO()
-    f.write('"file_name","errors"\n')
-    for (file_name, message) in errors:
-        line = '"%(file_name)s","%(message)s"\n' % locals()
-        f.write(line)
-    f.seek(0)
-    result = gcs_utils.upload_object(bucket, name, f)
-    f.close()
-    return result
-
-
-def _save_warnings_in_gcs(bucket, name, warnings):
-    """
-    Save the warnings in GCS
+    Save the errors and warnings in GCS
     :param bucket: bucket to save to
     :param name: name of the file (object) to save to in GCS
-    :param warnings: list of tuples (<file_name>, <message>)
+    :param errors/warnings: list of tuples (<file_name>, <message>)
     :return:
     """
     f = StringIO.StringIO()
-    f.write('"file_name","message"\n')
+    f.write('"type","file_name","message"\n')
+    for (file_name, message) in errors:
+        line = '"error","%(file_name)s","%(message)s"\n' % locals()
+        f.write(line)
     for (file_name, message) in warnings:
-        line = '"%(file_name)s","%(message)s"\n' % locals()
+        line = '"warning","%(file_name)s","%(message)s"\n' % locals()
         f.write(line)
     f.seek(0)
     result = gcs_utils.upload_object(bucket, name, f)
