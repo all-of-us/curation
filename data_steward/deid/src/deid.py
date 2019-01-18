@@ -692,7 +692,7 @@ def initialization(client,dataset):
 
         #Create the date shift
         sql = """    
-        SELECT person_id, CAST (365*rand() AS INT64) as date_shift
+        SELECT person_id, CAST(CEIL(365*rand()) AS INT64) as date_shift
         FROM :i_dataset.person 
         """.replace(":i_dataset",dataset)
         job = bq.QueryJobConfig()
