@@ -235,7 +235,7 @@ class EhrUnionTest(unittest.TestCase):
       
                 (SELECT 'chs_measurement' AS src_table_id,
                   measurement_id AS src_measurement_id,
-                  ROW_NUMBER() over() + 100000000 as measurement_id
+                  ROW_NUMBER() over() + 2000000000000000 as measurement_id
                   FROM `{app_id}.{dataset_id}.chs_measurement`)
                 
 
@@ -244,7 +244,7 @@ class EhrUnionTest(unittest.TestCase):
 
                 (SELECT 'pitt_measurement' AS src_table_id,
                   measurement_id AS src_measurement_id,
-                  ROW_NUMBER() over() + 200000000 as measurement_id
+                  ROW_NUMBER() over() + 3000000000000000 as measurement_id
                   FROM `{app_id}.{dataset_id}.pitt_measurement`)
                 
     )

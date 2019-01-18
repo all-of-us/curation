@@ -141,9 +141,9 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     result = []
     # Hpo_unique num stores the unique id assigned to the HPO_sites
     hpo_unique_num = {}
-    i = 1
+    i = common.EHR_ID_MULTIPLIER_START
     for hpo_id in hpo_ids:
-        hpo_unique_num[hpo_id] = i * 100000000
+        hpo_unique_num[hpo_id] = i * common.ID_CONSTANT_FACTOR
         i += 1
 
     # Exclude subqueries that reference tables that are missing from source dataset
@@ -428,4 +428,5 @@ if __name__ == '__main__':
                         help='Dataset where the results should be stored')
     parser.add_argument('-hpo_id', nargs='+', help='HPOs to process (all by default)')
     args = parser.parse_args()
-    main(**args)
+    if args.input_dataset_id:
+        main(args.input_dataset_id, args.output_dataset_id, args.project_id)
