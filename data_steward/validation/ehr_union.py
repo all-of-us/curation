@@ -141,9 +141,9 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     result = []
     # Hpo_unique num stores the unique id assigned to the HPO_sites
     hpo_unique_num = {}
-    i = 2
+    i = common.EHR_ID_MULTIPLIER_START
     for hpo_id in hpo_ids:
-        hpo_unique_num[hpo_id] = i * 1000000000000000
+        hpo_unique_num[hpo_id] = i * common.ID_CONSTANT_FACTOR
         i += 1
 
     # Exclude subqueries that reference tables that are missing from source dataset
@@ -395,6 +395,7 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     :param hpo_ids: (optional) identifies HPOs to process, by default process all
     :returns: list of tables generated successfully
     """
+    logging.info('EHR union started')
     if hpo_ids is None:
         hpo_ids = [item['hpo_id'] for item in resources.hpo_csv()]
 

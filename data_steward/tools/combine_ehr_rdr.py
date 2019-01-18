@@ -301,7 +301,6 @@ def mapping_query(domain_table):
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :return:
     """
-    rdr_mapping_constant = 1000000000000000
 
     return '''SELECT
           '{rdr_dataset_id}'  AS src_dataset_id,
@@ -326,7 +325,7 @@ def mapping_query(domain_table):
                ehr_dataset_id=bq_utils.get_dataset_id(),
                ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
                domain_table=domain_table,
-               mapping_constant=rdr_mapping_constant,
+               mapping_constant=common.RDR_ID_CONSTANT,
                ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
 
 

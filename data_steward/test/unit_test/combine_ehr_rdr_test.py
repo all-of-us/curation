@@ -200,7 +200,6 @@ class CombineEhrRdrTest(unittest.TestCase):
 
     def test_mapping_query(self):
         table_name = 'visit_occurrence'
-        rdr_mapping_constant = 1000000000000000
         q = mapping_query(table_name)
         expected_query = '''SELECT
           '{rdr_dataset_id}'  AS src_dataset_id,
@@ -222,8 +221,8 @@ class CombineEhrRdrTest(unittest.TestCase):
            (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c
             WHERE t.person_id = c.person_id)
     '''.format(rdr_dataset_id=self.rdr_dataset_id, domain_table=table_name, ehr_dataset_id=self.ehr_dataset_id,
-                   ehr_consent_table_id=EHR_CONSENT_TABLE_ID, ehr_rdr_dataset_id=self.combined_dataset_id,
-                mapping_constant=rdr_mapping_constant)
+               ehr_consent_table_id=EHR_CONSENT_TABLE_ID, ehr_rdr_dataset_id=self.combined_dataset_id,
+               mapping_constant=common.RDR_ID_CONSTANT)
 
         self.assertEqual(expected_query, q, "Mapping query for \n {q} \n to is not as expected".format(q=q))
 

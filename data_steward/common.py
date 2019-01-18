@@ -30,3 +30,16 @@ CLINICAL = 'clinical'
 ACHILLES = 'achilles'
 CDM_COMPONENTS = [CLINICAL, VOCABULARY, ACHILLES]
 
+# ID Spaces
+#
+# The following constants are added to values in all ID (or "primary key") fields to prevent
+# collisions during union/combine phases
+
+# Values for ID fields for each HPO are summed with a factor of ID_CONSTANT_FACTOR
+ID_CONSTANT_FACTOR = 1000000000000000
+
+# Added to value in all ID fields in records coming from the RDR
+RDR_ID_CONSTANT = ID_CONSTANT_FACTOR
+
+# Starting factor to create ID spaces for each HPO (without RDR collisions)
+EHR_ID_MULTIPLIER_START = 2
