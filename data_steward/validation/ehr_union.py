@@ -83,6 +83,7 @@ VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
 CARE_SITE = 'care_site'
 CARE_SITE_ID = 'care_site_id'
+PERSON_ID = 'person_id'
 LOCATION = 'location'
 LOCATION_ID = 'location_id'
 FACT_RELATIONSHIP = 'fact_relationship'
@@ -317,7 +318,12 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
     :param output_dataset_id:
     :return:
     """
-    is_id_mapped = table_name in common.CDM_TABLES
+    tables_to_ref = []
+    for table in common.CDM_TABLES:
+        if has_primary_key(table):
+            tables_to_ref.append(table)
+
+    is_id_mapped = table_name in tables_to_ref
     fields = resources.fields_for(table_name)
     table_id = bq_utils.get_table_id(hpo_id, table_name)
 
@@ -346,7 +352,10 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             if field_name == id_col:
                 # Use mapping for record ID column
                 # m is an alias that should resolve to the associated mapping table
-                col_expr = 'm.{field_name}'.format(field_name=field_name)
+                if field_name == PERSON_ID:
+                    col_expr = '{field_name}'.format(field_name=field_name)
+                else:
+                    col_expr = 'm.{field_name}'.format(field_name=field_name)
             elif field_name == VISIT_OCCURRENCE_ID:
                 # Replace with mapped visit_occurrence_id
                 # mv is an alias that should resolve to the mapping visit table
@@ -407,30 +416,44 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             src_location_table_id = bq_utils.get_table_id(hpo_id, LOCATION)
             location_join_expr = '''
                         LEFT JOIN {output_dataset_id}.{mapping_location} loc 
-                          ON t.care_site_id = loc.src_location_id 
-                         AND loc.src_table_id = '{src_care_table_id}'
+                          ON t.location_id = loc.src_location_id 
+                         AND loc.src_table_id = '{src_location_id}'
                         '''.format(output_dataset_id=output_dataset_id,
                                    mapping_location=lc,
-                                   src_care_table_id=src_location_table_id)
+                                   src_location_id=src_location_table_id)
 
+        if table_id == '{hpo_id}_person'.format(hpo_id=hpo_id):
+            return '''
+                    SELECT {cols} 
+                    FROM {ehr_dataset_id}.{table_id} t 
+                       {visit_join_expr} 
+                       {care_site_join_expr} 
+                       {location_join_expr} 
+                    '''.format(cols=cols,
+                               table_id=table_id,
+                               ehr_dataset_id=input_dataset_id,
+                               visit_join_expr=visit_join_expr,
+                               care_site_join_expr=care_site_join_expr,
+                               location_join_expr=location_join_expr)
 
-        return '''
-        SELECT {cols} 
-        FROM {ehr_dataset_id}.{table_id} t 
-          JOIN {output_dataset_id}.{mapping_table} m
-            ON t.{table_name}_id = m.src_{table_name}_id 
-           AND m.src_table_id = '{table_id}' {visit_join_expr} 
-           {care_site_join_expr} 
-           {location_join_expr} 
-        '''.format(cols=cols,
-                   table_id=table_id,
-                   ehr_dataset_id=input_dataset_id,
-                   output_dataset_id=output_dataset_id,
-                   mapping_table=mapping_table,
-                   visit_join_expr=visit_join_expr,
-                   care_site_join_expr=care_site_join_expr,
-                   location_join_expr=location_join_expr,
-                   table_name=table_name)
+        else:
+            return '''
+            SELECT {cols} 
+            FROM {ehr_dataset_id}.{table_id} t 
+            JOIN {output_dataset_id}.{mapping_table} m
+                ON t.{table_name}_id = m.src_{table_name}_id 
+            AND m.src_table_id = '{table_id}' {visit_join_expr} 
+            {care_site_join_expr} 
+            {location_join_expr} 
+            '''.format(cols=cols,
+                       table_id=table_id,
+                       ehr_dataset_id=input_dataset_id,
+                       output_dataset_id=output_dataset_id,
+                       mapping_table=mapping_table,
+                       visit_join_expr=visit_join_expr,
+                       care_site_join_expr=care_site_join_expr,
+                       location_join_expr=location_join_expr,
+                       table_name=table_name)
 
 
 def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
