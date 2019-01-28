@@ -28,4 +28,4 @@ used to analyze datasets created by [validation](#validation) and [achilles](#ac
 
 ### Mapping Architecture
 Data lineage generated to the CDR tables uses the following structure.
-[Data Lineage](domaintable_mapping_diagram.png)
+![Data Lineage](domaintable_mapping_diagram.png)
