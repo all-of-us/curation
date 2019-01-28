@@ -25,3 +25,7 @@ This will automate the backend configuration of
 [Atlas](http://www.ohdsi.org/web/wiki/doku.php?id=documentation:software:atlas), a tool which will be leveraged for more
 robust data characterization and data quality analysis. It will populate `source` and `source_daimon` tables so Atlas can be 
 used to analyze datasets created by [validation](#validation) and [achilles](#achilles).
+
+### Mapping Architecture
+Data lineage generated to the CDR tables uses the following structure.
+[Data Lineage](domaintable_mapping_diagram.png)
