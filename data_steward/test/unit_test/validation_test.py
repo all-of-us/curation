@@ -108,6 +108,35 @@ class ValidationTest(unittest.TestCase):
             self.assertEqual(expected, actual_result)
 
     @mock.patch('api_util.check_cron')
+    def test_curation_report_ignored(self, mock_check_cron):
+        folder_prefix = 'dummy-prefix-2018-03-22/'
+        exclude_file_list = ["person.csv"]
+        exclude_file_list = [folder_prefix + item for item in exclude_file_list]
+        expected_result_items = []
+        for file_name in exclude_file_list:
+            test_util.write_cloud_str(self.hpo_bucket, file_name, ".")
+
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(test_util.VALIDATE_HPO_FILES_URL)
+
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(test_util.VALIDATE_HPO_FILES_URL)
+            # check content of the bucket is correct
+            expected_bucket_items = exclude_file_list + [folder_prefix + item for item in common.IGNORE_LIST]
+            list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
+            actual_bucket_items = [item['name'] for item in list_bucket_result]
+            self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
+
+            # check content of the errors file includes warnings and is correct
+            actual_result = test_util.read_cloud_file(self.hpo_bucket,
+                                                      folder_prefix + common.ERRORS_CSV)
+            actual_result_file = StringIO.StringIO(actual_result)
+            actual_result_items = resources._csv_file_to_list(actual_result_file)
+            self.assertListEqual(expected_result_items, actual_result_items)
+
+    @mock.patch('api_util.check_cron')
     def test_bad_file_names(self, mock_check_cron):
         folder_prefix = 'dummy-prefix-2018-03-22/'
         exclude_file_list = ["person_final.csv",

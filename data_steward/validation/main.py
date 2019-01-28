@@ -218,7 +218,8 @@ def run_validation(hpo_id, force_run=False):
         found_cdm_files = []
         unknown_files = []
         found_pii_files = []
-        folder_items = [item['name'].split('/')[1] for item in bucket_items if item['name'].startswith(folder_prefix)]
+        folder_items = [item['name'][len(folder_prefix):] for item in bucket_items
+                        if item['name'].startswith(folder_prefix)]
         for item in folder_items:
             if _is_cdm_file(item):
                 found_cdm_files.append(item)
