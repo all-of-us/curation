@@ -120,18 +120,18 @@ class ValidationTest(unittest.TestCase):
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
-        main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
             # check content of the bucket is correct
             expected_bucket_items = exclude_file_list + [folder_prefix + item for item in common.IGNORE_LIST]
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
             actual_bucket_items = [item['name'] for item in list_bucket_result]
+            actual_bucket_items = [item for item in actual_bucket_items
+                                   if not main.is_string_excluded_file(item[len(folder_prefix):])]
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
 
-            # check content of the errors file includes warnings and is correct
-            actual_result = test_util.read_cloud_file(self.hpo_bucket,
-                                                      folder_prefix + common.ERRORS_CSV)
+            # check that the errors file is empty
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.ERRORS_CSV)
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = resources._csv_file_to_list(actual_result_file)
             self.assertListEqual(expected_result_items, actual_result_items)

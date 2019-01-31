@@ -17,7 +17,7 @@ import export
 import gcs_utils
 import resources
 import ehr_union
-from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV, ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from common import RESULT_CSV, ERRORS_CSV, ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
@@ -226,8 +226,7 @@ def run_validation(hpo_id, force_run=False):
             elif _is_pii_file(item):
                 found_pii_files.append(item)
             else:
-                is_known_file = item in common.IGNORE_LIST
-                if not is_known_file:
+                if not (is_known_file(item) or is_string_excluded_file(item)):
                     unknown_files.append(item)
 
         errors = []
@@ -415,6 +414,14 @@ def _is_pii_file(gcs_file_name):
     return gcs_file_name.lower() in common.PII_FILES
 
 
+def is_known_file(file_name):
+    return file_name in common.IGNORE_LIST
+
+
+def is_string_excluded_file(file_name):
+    return any(file_name.startswith(prefix) for prefix in common.IGNORE_STRING_LIST)
+
+
 @api_util.auth_required_cron
 def copy_files(hpo_id):
     """copies over files from hpo bucket to drc bucket
@@ -445,7 +452,7 @@ def _save_errors_warnings_in_gcs(bucket, name, errors, warnings):
     :param bucket: bucket to save to
     :param name: name of the file (object) to save to in GCS
     :param errors/warnings: list of tuples (<file_name>, <message>)
-    :return:
+    :return: metadata for uploaded file
     """
     f = StringIO.StringIO()
     f.write('"type","file_name","message"\n')
@@ -467,7 +474,7 @@ def _save_result_in_gcs(bucket, name, results):
     :param bucket: bucket to save to
     :param name: name of the file (object) to save to in GCS
     :param file_results: list of tuples (<file_name>, <found>)
-    :return:
+    :return: metadata for uploaded file
     """
     f = StringIO.StringIO()
     f.write('"file_name","found","parsed","loaded"\n')
@@ -486,7 +493,7 @@ def _write_string_to_file(bucket, name, string):
     :param bucket: bucket to save to
     :param name: name of the file (object) to save to in GCS
     :param cdm_file_results: list of tuples (<cdm_file_name>, <found>)
-    :return:
+    :return: metadata for uploaded file
     """
     f = StringIO.StringIO()
     f.write(string)
