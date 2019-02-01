@@ -25,6 +25,9 @@ BQ_LOAD_RETRY_COUNT = 7
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
+RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
+ERROR_FILE_HEADERS = ["File Name", "Message"]
+
 
 class InternalValidationError(RuntimeError):
     """Raised when an internal error occurs during validation"""
@@ -259,6 +262,7 @@ def run_validation(hpo_id, force_run=False):
         # output to GCS
         _save_result_in_gcs(bucket, folder_prefix + RESULT_CSV, results)
         _save_errors_warnings_in_gcs(bucket, folder_prefix + ERRORS_CSV, errors, warnings)
+        _save_results_html_in_gcs(bucket, folder_prefix + common.ERROR_REPORT_HTML, results, errors, warnings)
 
         if all_required_files_loaded(hpo_id, folder_prefix=folder_prefix):
             run_achilles(hpo_id)
@@ -477,6 +481,79 @@ def _save_result_in_gcs(bucket, name, results):
     result = gcs_utils.upload_object(bucket, name, f)
     f.close()
     return result
+
+
+def _save_results_html_in_gcs(bucket, file_name, results, errors, warnings):
+    """
+    Save the validation results in GCS
+    :param bucket: bucket to save to
+    :param file_name: name of the file (object) to save to in GCS
+    :param results: list of tuples (<cdm_file_name>, <found>, <loaded>, <parsed>)
+    :param errors: list of tuples (<cdm_file_name>, <message>)
+    :param warnings: list of tuples (<cdm_file_name>, <message>)
+    :return:
+    """
+    html_report_list = []
+    with open(resources.html_boilerplate_path) as f:
+        for line in f:
+            html_report_list.append(line)
+    html_report_list.append('\n')
+    html_report_list.append(create_html_table(RESULT_FILE_HEADERS, results, "Results"))
+    html_report_list.append('\n')
+    html_report_list.append(create_html_table(ERROR_FILE_HEADERS, errors, "Errors"))
+    html_report_list.append('\n')
+    html_report_list.append(create_html_table(ERROR_FILE_HEADERS, warnings, "Warnings"))
+    html_report_list.append('\n')
+    html_report_list.append('</body>\n')
+    html_report_list.append('</html>\n')
+
+    f = StringIO.StringIO()
+    for line in html_report_list:
+        f.write(line)
+    f.seek(0)
+    result = gcs_utils.upload_object(bucket, file_name, f)
+    f.close()
+    return result
+
+
+def create_html_table(headers, table, table_name):
+    html_report_list = []
+    table_config = 'id="dataframe" style="width:80%" class="center"'
+    html_report_list.append(html_tag_wrapper(table_name, 'caption'))
+    table_header_row = create_html_row(headers, 'th', 'tr')
+    html_report_list.append(html_tag_wrapper(table_header_row, 'thead'))
+    results_rows = []
+    for item in table:
+        results_rows.append(create_html_row(item, 'td', 'tr', headers))
+    table_body_rows = '\n'.join(results_rows)
+    html_report_list.append(html_tag_wrapper(table_body_rows, 'tbody'))
+    return html_tag_wrapper('\n'.join(html_report_list), 'table', table_config)
+
+
+def create_html_row(row_items, item_tag, row_tag, headers=None):
+    row_item_list = []
+    checkbox_style = 'style="text-align:center; font-size:150%; font-weight:bold; color:{0};"'
+    tick_color = 'green'
+    tick_code = '&#x2714'
+    cross_color = 'red'
+    cross_code = '&#x2718'
+    for row_item in row_items:
+        if row_item == 1 and headers == RESULT_FILE_HEADERS:
+            row_item_list.append(html_tag_wrapper(tick_code, item_tag, checkbox_style.format(tick_color)))
+        elif row_item == 0 and headers == RESULT_FILE_HEADERS:
+            row_item_list.append(html_tag_wrapper(cross_code, item_tag, checkbox_style.format(cross_color)))
+        else:
+            row_item_list.append(html_tag_wrapper(row_item, item_tag))
+    row_item_string = '\n'.join(row_item_list)
+    row_item_string = html_tag_wrapper(row_item_string, row_tag)
+    return row_item_string
+
+
+def html_tag_wrapper(text, tag, message=''):
+    if message == '':
+        return '<%(tag)s>\n%(text)s\n</%(tag)s>' % locals()
+    else:
+        return '<%(tag)s %(message)s>\n%(text)s\n</%(tag)s>' % locals()
 
 
 def _write_string_to_file(bucket, name, string):

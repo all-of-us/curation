@@ -356,6 +356,27 @@ class ValidationTest(unittest.TestCase):
             actual_result_items.sort()
             self.assertListEqual(expected_result_items, actual_result_items)
 
+    @mock.patch('api_util.check_cron')
+    def test_html_report(self, mock_check_cron):
+        folder_prefix = 'dummy-prefix-2018-03-22/'
+        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'person.csv', ".\n .,.,.")
+        expected_result_file = test_util.HTML_ERROR_REPORT_FILE
+        expected_result_items = []
+
+        with open(expected_result_file, 'r') as f:
+            for line in f:
+                expected_result_items.append(line.strip())
+
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(test_util.VALIDATE_HPO_FILES_URL)
+
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.ERROR_REPORT_HTML)
+            actual_result_file = StringIO.StringIO(actual_result)
+            actual_result_items = actual_result_file.getvalue().split('\n')
+            self.assertSetEqual(set(expected_result_items), set(actual_result_items))
+
+
     def tearDown(self):
         self._empty_bucket()
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')

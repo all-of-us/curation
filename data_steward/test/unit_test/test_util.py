@@ -78,6 +78,7 @@ PII_NAME_FILE = os.path.join(TEST_DATA_PATH, 'pii_name.csv')
 PII_MRN_BAD_PERSON_ID_FILE = os.path.join(TEST_DATA_PATH, 'pii_mrn.csv')
 PII_FILE_LOAD_RESULT_CSV = os.path.join(TEST_DATA_PATH, 'pii_file_load_result.csv')
 
+HTML_ERROR_REPORT_FILE = os.path.join(TEST_DATA_PATH, 'error_report.html')
 
 def _create_five_persons_success_result():
     """

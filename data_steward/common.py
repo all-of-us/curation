@@ -11,6 +11,7 @@ PII_FILES = map(lambda t: t+'.csv', PII_TABLES)
 RESULT_CSV = 'result.csv'
 ERRORS_CSV = 'errors.csv'
 WARNINGS_CSV = 'warnings.csv'
+ERROR_REPORT_HTML = 'error_report.html'
 PROCESSED_TXT = 'processed.txt'
 LOG_JSON = 'log.json'
 ACHILLES_HEEL_REPORT = 'achillesheel'

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+#dataframe {
+font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+border-collapse: collapse;
+width: 100%;
+}
+
+table.center {
+margin-left: auto;
+margin-right: auto;
+margin-top: 64px;
+}
+
+#dataframe td, #dataframe th {
+border: 1px solid #ddd;
+padding: 8px;
+}
+
+#dataframe tr:nth-child(even){background-color: #f2f2f2;}
+
+#dataframe tr:hover {background-color: #ddd;}
+
+#dataframe th {
+padding-top: 12px;
+padding-bottom: 12px;
+text-align: center;
+background-color: #85C1E9;
+color: white;
+}
+
+img {
+position: absolute;
+left: 0;
+top: 0;
+}
+
+caption {
+font-size: 20px;
+text-align: left;
+font-weight: 200;
+padding: 5px;
+}
+
+</style>
+<title>Report</title>
+</head>
+
+<body>
+<img src="curation_report/images/all-of-us-logo.png" alt="Icon" height="64">

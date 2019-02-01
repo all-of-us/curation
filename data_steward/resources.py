@@ -26,6 +26,7 @@ fields_path = os.path.join(resource_path, 'fields')
 cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
 achilles_index_path = os.path.join(resource_path, 'curation_report')
 
+html_boilerplate_path = os.path.join(resource_path, 'html_boilerplate.txt')
 
 @cachetools.cached(cache={})
 def _csv_to_list(csv_path):
