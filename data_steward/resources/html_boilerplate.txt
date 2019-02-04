@@ -45,8 +45,8 @@ padding: 5px;
 }
 
 </style>
-<title>Report</title>
+<title>All of Us Submission Error Report</title>
 </head>
 
 <body>
-<img src="curation_report/images/all-of-us-logo.png" alt="Icon" height="64">
+<h1>All of Us Submission Error Report</h1>

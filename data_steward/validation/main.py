@@ -537,11 +537,14 @@ def create_html_row(row_items, item_tag, row_tag, headers=None):
     tick_code = '&#x2714'
     cross_color = 'red'
     cross_code = '&#x2718'
-    for row_item in row_items:
+    message = "BigQuery generated the following message while processing the files: " + "<br/>"
+    for index, row_item in enumerate(row_items):
         if row_item == 1 and headers == RESULT_FILE_HEADERS:
             row_item_list.append(html_tag_wrapper(tick_code, item_tag, checkbox_style.format(tick_color)))
         elif row_item == 0 and headers == RESULT_FILE_HEADERS:
             row_item_list.append(html_tag_wrapper(cross_code, item_tag, checkbox_style.format(cross_color)))
+        elif index == 1 and headers == ERROR_FILE_HEADERS:
+            row_item_list.append(html_tag_wrapper(message + row_item.replace(' || ', '<br/>'), item_tag))
         else:
             row_item_list.append(html_tag_wrapper(row_item, item_tag))
     row_item_string = '\n'.join(row_item_list)
