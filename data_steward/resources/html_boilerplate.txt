@@ -45,8 +45,8 @@ padding: 5px;
 }
 
 </style>
-<title>All of Us Submission Error Report</title>
+<title>All of Us Submission Results</title>
 </head>
 
 <body>
-<h1>All of Us Submission Error Report</h1>
+<h1>All of Us Submission Results</h1>

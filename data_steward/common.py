@@ -11,7 +11,7 @@ PII_FILES = map(lambda t: t+'.csv', PII_TABLES)
 RESULT_CSV = 'result.csv'
 ERRORS_CSV = 'errors.csv'
 WARNINGS_CSV = 'warnings.csv'
-ERROR_REPORT_HTML = 'error_report.html'
+RESULTS_HTML = 'results.html'
 PROCESSED_TXT = 'processed.txt'
 LOG_JSON = 'log.json'
 ACHILLES_HEEL_REPORT = 'achillesheel'
@@ -19,7 +19,7 @@ PERSON_REPORT = 'person'
 DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
 ALL_REPORT_FILES = map(lambda s: s + '.json', ALL_REPORTS)
-IGNORE_LIST = [RESULT_CSV, ERRORS_CSV, PROCESSED_TXT, ERROR_REPORT_HTML] + ALL_ACHILLES_INDEX_FILES
+IGNORE_LIST = [RESULT_CSV, ERRORS_CSV, PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES
 VOCABULARY_TABLES = ['concept', 'concept_ancestor', 'concept_class', 'concept_relationship', 'concept_synonym',
                      'domain', 'drug_strength', 'relationship', 'vocabulary']
 REQUIRED_TABLES = ['person']

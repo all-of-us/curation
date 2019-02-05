@@ -357,10 +357,10 @@ class ValidationTest(unittest.TestCase):
             self.assertListEqual(expected_result_items, actual_result_items)
 
     @mock.patch('api_util.check_cron')
-    def test_html_report(self, mock_check_cron):
-        folder_prefix = 'dummy-prefix-2018-03-22/'
+    def test_html_report_person_only(self, mock_check_cron):
+        folder_prefix = '2019-01-01/'
         test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'person.csv', ".\n .,.,.")
-        expected_result_file = test_util.HTML_ERROR_REPORT_FILE
+        expected_result_file = test_util.PERSON_ONLY_RESULTS_FILE
         expected_result_items = []
 
         with open(expected_result_file, 'r') as f:
@@ -371,11 +371,24 @@ class ValidationTest(unittest.TestCase):
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
-            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.ERROR_REPORT_HTML)
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = actual_result_file.getvalue().split('\n')
             self.assertSetEqual(set(expected_result_items), set(actual_result_items))
 
+    @mock.patch('api_util.check_cron')
+    def test_html_report_five_person(self, mock_check_cron):
+        folder_prefix = '2019-01-01/'
+        for cdm_file in test_util.FIVE_PERSONS_FILES:
+            test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix)
+        with open(test_util.FIVE_PERSON_RESULTS_FILE, 'r') as f:
+            expected_result = f.read()
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(test_util.VALIDATE_HPO_FILES_URL)
+            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
+            actual_result_file = StringIO.StringIO(actual_result).getvalue()
+            self.assertEqual(expected_result, actual_result_file)
 
     def tearDown(self):
         self._empty_bucket()

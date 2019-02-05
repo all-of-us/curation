@@ -262,7 +262,7 @@ def run_validation(hpo_id, force_run=False):
         # output to GCS
         _save_result_in_gcs(bucket, folder_prefix + RESULT_CSV, results)
         _save_errors_warnings_in_gcs(bucket, folder_prefix + ERRORS_CSV, errors, warnings)
-        _save_results_html_in_gcs(bucket, folder_prefix + common.ERROR_REPORT_HTML, results, errors, warnings)
+        _save_results_html_in_gcs(bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings)
 
         if all_required_files_loaded(hpo_id, folder_prefix=folder_prefix):
             run_achilles(hpo_id)
