@@ -27,6 +27,8 @@ app = Flask(__name__)
 
 RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
 ERROR_FILE_HEADERS = ["File Name", "Message"]
+RESULT_FAIL_COLOR = '&#x2714'
+RESULT_PASS_COLOR = '&#x2718'
 
 
 class InternalValidationError(RuntimeError):
@@ -487,18 +489,16 @@ def create_html_table(headers, table, table_name):
 def create_html_row(row_items, item_tag, row_tag, headers=None):
     row_item_list = []
     checkbox_style = 'style="text-align:center; font-size:150%; font-weight:bold; color:{0};"'
-    tick_color = 'green'
-    cross_color = 'red'
     message = "BigQuery generated the following message while processing the files: " + "<br/>"
     for index, row_item in enumerate(row_items):
         if row_item == 1 and headers == RESULT_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(get_checkbox_code_from_color(tick_color),
+            row_item_list.append(html_tag_wrapper(RESULT_PASS_COLOR,
                                                   item_tag,
-                                                  checkbox_style.format(tick_color)))
+                                                  checkbox_style.format(RESULT_PASS_COLOR)))
         elif row_item == 0 and headers == RESULT_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(get_checkbox_code_from_color(cross_color),
+            row_item_list.append(html_tag_wrapper(RESULT_FAIL_COLOR,
                                                   item_tag,
-                                                  checkbox_style.format(cross_color)))
+                                                  checkbox_style.format(RESULT_FAIL_COLOR)))
         elif index == 1 and headers == ERROR_FILE_HEADERS:
             row_item_list.append(html_tag_wrapper(message + row_item.replace(' || ', '<br/>'), item_tag))
         else:
@@ -506,17 +506,6 @@ def create_html_row(row_items, item_tag, row_tag, headers=None):
     row_item_string = '\n'.join(row_item_list)
     row_item_string = html_tag_wrapper(row_item_string, row_tag)
     return row_item_string
-
-
-def get_checkbox_code_from_color(color):
-    code = 'unknown'
-    if color == 'green':
-        # tick
-        code = '&#x2714'
-    elif color == 'red':
-        # cross
-        code = '&#x2718'
-    return code
 
 
 def get_checkbox_color_from_code(code):
