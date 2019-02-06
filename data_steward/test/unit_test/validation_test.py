@@ -277,20 +277,18 @@ class ValidationTest(unittest.TestCase):
     def test_pii_files_loaded(self, mock_check_cron):
         # tests if pii files are loaded
         folder_prefix = 'dummy-prefix-2018-03-22/'
-        expected_result_items = resources._csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
         test_util.write_cloud_file(self.hpo_bucket, test_util.PII_NAME_FILE, prefix=folder_prefix)
         test_util.write_cloud_file(self.hpo_bucket, test_util.PII_MRN_BAD_PERSON_ID_FILE, prefix=folder_prefix)
+        rs = resources._csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
+        expected_results = [(r['file_name'], int(r['found']), int(r['parsed']), int(r['loaded'])) for r in rs]
+        expected_html_table = create_html_table(RESULT_FILE_HEADERS, expected_results, "Results")
 
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
-            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULT_CSV)
-            actual_result_file = StringIO.StringIO(actual_result)
-            actual_result_items = resources._csv_file_to_list(actual_result_file)
-            # sort in order to compare
-            expected_result_items.sort()
-            actual_result_items.sort()
-            self.assertListEqual(expected_result_items, actual_result_items)
+            obj = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
+            actual_results_html = StringIO.StringIO(obj).getvalue()
+            self.assertIn(expected_html_table, actual_results_html)
 
     @mock.patch('api_util.check_cron')
     def test_html_report_person_only(self, mock_check_cron):
@@ -325,7 +323,6 @@ class ValidationTest(unittest.TestCase):
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
             actual_result_file = StringIO.StringIO(actual_result).getvalue()
             self.assertEqual(expected_result, actual_result_file)
-
 
     def tearDown(self):
         self._empty_bucket()
