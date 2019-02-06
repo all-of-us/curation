@@ -17,7 +17,7 @@ import export
 import gcs_utils
 import resources
 import ehr_union
-from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV, ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
@@ -44,13 +44,10 @@ class BucketDoesNotExistError(RuntimeError):
         self.bucket = bucket
 
 
-def all_required_files_loaded(hpo_id, folder_prefix):
-    result_file = gcs_utils.get_object(gcs_utils.get_hpo_bucket(hpo_id), folder_prefix + common.RESULT_CSV)
-    result_file = StringIO.StringIO(result_file)
-    result_items = resources._csv_file_to_list(result_file)
-    for item in result_items:
-        if item['file_name'] in common.REQUIRED_FILES:
-            if item['loaded'] != '1':
+def all_required_files_loaded(result_items):
+    for (file_name, found, parsed, loaded) in result_items:
+        if file_name in common.REQUIRED_FILES:
+            if loaded != 1:
                 return False
     return True
 
@@ -260,11 +257,9 @@ def run_validation(hpo_id, force_run=False):
         ]
 
         # output to GCS
-        _save_result_in_gcs(bucket, folder_prefix + RESULT_CSV, results)
-        _save_errors_warnings_in_gcs(bucket, folder_prefix + ERRORS_CSV, errors, warnings)
         _save_results_html_in_gcs(bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings)
 
-        if all_required_files_loaded(hpo_id, folder_prefix=folder_prefix):
+        if all_required_files_loaded(results):
             run_achilles(hpo_id)
             run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
 
@@ -440,47 +435,6 @@ def copy_files(hpo_id):
                               destination_object_id=prefix + item_name)
 
     return '{"copy-status": "done"}'
-
-
-def _save_errors_warnings_in_gcs(bucket, name, errors, warnings):
-    """
-    Save the errors and warnings in GCS
-    :param bucket: bucket to save to
-    :param name: name of the file (object) to save to in GCS
-    :param errors/warnings: list of tuples (<file_name>, <message>)
-    :return:
-    """
-    f = StringIO.StringIO()
-    f.write('"type","file_name","message"\n')
-    for (file_name, message) in errors:
-        line = '"error","%(file_name)s","%(message)s"\n' % locals()
-        f.write(line)
-    for (file_name, message) in warnings:
-        line = '"warning","%(file_name)s","%(message)s"\n' % locals()
-        f.write(line)
-    f.seek(0)
-    result = gcs_utils.upload_object(bucket, name, f)
-    f.close()
-    return result
-
-
-def _save_result_in_gcs(bucket, name, results):
-    """
-    Save the validation results in GCS
-    :param bucket: bucket to save to
-    :param name: name of the file (object) to save to in GCS
-    :param file_results: list of tuples (<file_name>, <found>)
-    :return:
-    """
-    f = StringIO.StringIO()
-    f.write('"file_name","found","parsed","loaded"\n')
-    for (file_name, found, parsed, loaded) in results:
-        line = '"%(file_name)s","%(found)s","%(parsed)s","%(loaded)s"\n' % locals()
-        f.write(line)
-    f.seek(0)
-    result = gcs_utils.upload_object(bucket, name, f)
-    f.close()
-    return result
 
 
 def _save_results_html_in_gcs(bucket, file_name, results, errors, warnings):
