@@ -239,13 +239,13 @@ def run_validation(hpo_id, force_run=False):
             table_id = bq_utils.get_table_id(hpo_id, table_name)
             bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
 
-        for cdm_file_name in common.CDM_FILES:
+        for cdm_file_name in sorted(common.CDM_FILES):
             file_results, file_errors = perform_validation_on_file(cdm_file_name, found_cdm_files, hpo_id,
                                                                    folder_prefix, bucket)
             results.extend(file_results)
             errors.extend(file_errors)
 
-        for pii_file_name in common.PII_FILES:
+        for pii_file_name in sorted(common.PII_FILES):
             file_results, file_errors = perform_validation_on_file(pii_file_name, found_pii_files, hpo_id,
                                                                    folder_prefix, bucket)
             results.extend(file_results)
@@ -529,30 +529,12 @@ def get_checkbox_color_from_code(code):
         color = 'red'
     return color
 
+
 def html_tag_wrapper(text, tag, message=''):
     if message == '':
         return '<%(tag)s>\n%(text)s\n</%(tag)s>' % locals()
     else:
         return '<%(tag)s %(message)s>\n%(text)s\n</%(tag)s>' % locals()
-
-
-def read_html_table_to_list(file_string, table_name):
-    lines = file_string.split('\n')
-    results = []
-    result_line = []
-    for idx, line in enumerate(lines):
-        line = line.strip()
-        if line == table_name and lines[idx-1] == "<caption>":
-            while line != "<caption>":
-                if line[0] != '<':
-                    if line[0] == '&':
-                        result_line.append(get_checkbox_color_from_code(line))
-                    else:
-                        if not result_line:
-                            results.append(tuple(result_line))
-                            result_line = []
-                        result_line.append(line)
-    return results
 
 
 def _write_string_to_file(bucket, name, string):

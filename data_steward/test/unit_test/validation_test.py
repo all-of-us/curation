@@ -14,7 +14,7 @@ import test_util
 from validation import main
 import datetime
 
-from validation.main import RESULT_FILE_HEADERS, ERROR_FILE_HEADERS, create_html_table, read_html_table_to_list
+from validation.main import RESULT_FILE_HEADERS, ERROR_FILE_HEADERS, create_html_table
 
 
 class ValidationTest(unittest.TestCase):
@@ -47,7 +47,7 @@ class ValidationTest(unittest.TestCase):
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
             expected_result_list = [(cdm_file_name, 1, 0, 0) for cdm_file_name in common.CDM_FILES]
-            # expected_results_html = create_html_table(RESULT_FILE_HEADERS, expected_results, "Results")
+            expected_results_html = create_html_table(RESULT_FILE_HEADERS, expected_result_list, "Results")
 
             # check the result file was put in bucket
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
@@ -58,9 +58,8 @@ class ValidationTest(unittest.TestCase):
 
             # check content of the file is correct
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-            actual_result = StringIO.StringIO(actual_result).getvalue()
-            actual_result_list = read_html_table_to_list(actual_result, "Results")
-            self.assertIn(set(expected_result_list), set(actual_result_list))
+            actual_result_file = StringIO.StringIO(actual_result).getvalue()
+            self.assertIn(expected_results_html, actual_result_file)
 
     @mock.patch('api_util.check_cron')
     def test_bad_file_names(self, mock_check_cron):
@@ -156,7 +155,7 @@ class ValidationTest(unittest.TestCase):
             test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix)
             expected_files.append(os.path.basename(cdm_file))
         with open(test_util.FIVE_PERSON_RESULTS_FILE, 'r') as f:
-            expected_result = f.read()
+            expected_result_file = f.read()
         json_export_files = self.get_json_export_files(test_util.FAKE_HPO_ID)
 
         main.app.testing = True
@@ -172,7 +171,7 @@ class ValidationTest(unittest.TestCase):
             self.assertSetEqual(set(expected_objects), set(actual_objects))
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
             actual_result_file = StringIO.StringIO(actual_result).getvalue()
-            self.assertEqual(set(expected_result), set(actual_result_file))
+            self.assertEqual(expected_result_file, actual_result_file)
 
         # check tables exist and are clustered as expected
         for table in common.CDM_TABLES:
@@ -309,7 +308,7 @@ class ValidationTest(unittest.TestCase):
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
             actual_result_file = StringIO.StringIO(actual_result)
             actual_result_items = actual_result_file.getvalue().split('\n')
-            self.assertSetEqual(set(expected_result_items), set(actual_result_items))
+            self.assertSetEqual(expected_result_items, actual_result_items)
 
     @mock.patch('api_util.check_cron')
     def test_html_report_five_person(self, mock_check_cron):
