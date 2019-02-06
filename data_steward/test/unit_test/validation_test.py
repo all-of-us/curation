@@ -14,7 +14,7 @@ import test_util
 from validation import main
 import datetime
 
-from validation.main import RESULT_FILE_HEADERS, ERROR_FILE_HEADERS, create_html_table
+from validation.main import RESULT_FILE_HEADERS, ERROR_FILE_HEADERS, create_html_table, read_html_table_to_list
 
 
 class ValidationTest(unittest.TestCase):
@@ -46,8 +46,8 @@ class ValidationTest(unittest.TestCase):
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
-            expected_results = [(cdm_file_name, 1, 0, 0) for cdm_file_name in common.CDM_FILES]
-            expected_results_html = create_html_table(RESULT_FILE_HEADERS, expected_results, "Results")
+            expected_result_list = [(cdm_file_name, 1, 0, 0) for cdm_file_name in common.CDM_FILES]
+            # expected_results_html = create_html_table(RESULT_FILE_HEADERS, expected_results, "Results")
 
             # check the result file was put in bucket
             list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
@@ -59,7 +59,8 @@ class ValidationTest(unittest.TestCase):
             # check content of the file is correct
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
             actual_result = StringIO.StringIO(actual_result).getvalue()
-            self.assertIn(expected_results_html, actual_result)
+            actual_result_list = read_html_table_to_list(actual_result, "Results")
+            self.assertIn(set(expected_result_list), set(actual_result_list))
 
     @mock.patch('api_util.check_cron')
     def test_bad_file_names(self, mock_check_cron):
@@ -171,7 +172,7 @@ class ValidationTest(unittest.TestCase):
             self.assertSetEqual(set(expected_objects), set(actual_objects))
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
             actual_result_file = StringIO.StringIO(actual_result).getvalue()
-            self.assertEqual(expected_result, actual_result_file)
+            self.assertEqual(set(expected_result), set(actual_result_file))
 
         # check tables exist and are clustered as expected
         for table in common.CDM_TABLES:

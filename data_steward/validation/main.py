@@ -488,15 +488,17 @@ def create_html_row(row_items, item_tag, row_tag, headers=None):
     row_item_list = []
     checkbox_style = 'style="text-align:center; font-size:150%; font-weight:bold; color:{0};"'
     tick_color = 'green'
-    tick_code = '&#x2714'
     cross_color = 'red'
-    cross_code = '&#x2718'
     message = "BigQuery generated the following message while processing the files: " + "<br/>"
     for index, row_item in enumerate(row_items):
         if row_item == 1 and headers == RESULT_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(tick_code, item_tag, checkbox_style.format(tick_color)))
+            row_item_list.append(html_tag_wrapper(get_checkbox_code_from_color(tick_color),
+                                                  item_tag,
+                                                  checkbox_style.format(tick_color)))
         elif row_item == 0 and headers == RESULT_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(cross_code, item_tag, checkbox_style.format(cross_color)))
+            row_item_list.append(html_tag_wrapper(get_checkbox_code_from_color(cross_color),
+                                                  item_tag,
+                                                  checkbox_style.format(cross_color)))
         elif index == 1 and headers == ERROR_FILE_HEADERS:
             row_item_list.append(html_tag_wrapper(message + row_item.replace(' || ', '<br/>'), item_tag))
         else:
@@ -506,11 +508,51 @@ def create_html_row(row_items, item_tag, row_tag, headers=None):
     return row_item_string
 
 
+def get_checkbox_code_from_color(color):
+    code = 'unknown'
+    if color == 'green':
+        # tick
+        code = '&#x2714'
+    elif color == 'red':
+        # cross
+        code = '&#x2718'
+    return code
+
+
+def get_checkbox_color_from_code(code):
+    color = 'unknown'
+    if code == '&#x2714':
+        # tick
+        color = 'green'
+    elif code == '&#x2718':
+        # cross
+        color = 'red'
+    return color
+
 def html_tag_wrapper(text, tag, message=''):
     if message == '':
         return '<%(tag)s>\n%(text)s\n</%(tag)s>' % locals()
     else:
         return '<%(tag)s %(message)s>\n%(text)s\n</%(tag)s>' % locals()
+
+
+def read_html_table_to_list(file_string, table_name):
+    lines = file_string.split('\n')
+    results = []
+    result_line = []
+    for idx, line in enumerate(lines):
+        line = line.strip()
+        if line == table_name and lines[idx-1] == "<caption>":
+            while line != "<caption>":
+                if line[0] != '<':
+                    if line[0] == '&':
+                        result_line.append(get_checkbox_color_from_code(line))
+                    else:
+                        if not result_line:
+                            results.append(tuple(result_line))
+                            result_line = []
+                        result_line.append(line)
+    return results
 
 
 def _write_string_to_file(bucket, name, string):
