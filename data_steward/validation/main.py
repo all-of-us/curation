@@ -27,8 +27,10 @@ app = Flask(__name__)
 
 RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
 ERROR_FILE_HEADERS = ["File Name", "Message"]
-RESULT_FAIL_COLOR = '&#x2714'
-RESULT_PASS_COLOR = '&#x2718'
+RESULT_FAIL_CODE = '&#x2718'
+RESULT_PASS_CODE = '&#x2714'
+RESULT_FAIL_COLOR = 'red'
+RESULT_PASS_COLOR = 'green'
 
 
 class InternalValidationError(RuntimeError):
@@ -321,7 +323,8 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefi
             logging.error(message)
             raise InternalValidationError(message)
 
-    results.append((file_name, found, parsed, loaded))
+    if file_name in common.SUBMISSION_FILES:
+        results.append((file_name, found, parsed, loaded))
 
     return results, errors
 
@@ -500,11 +503,11 @@ def create_html_row(row_items, item_tag, row_tag, headers=None):
     message = "BigQuery generated the following message while processing the files: " + "<br/>"
     for index, row_item in enumerate(row_items):
         if row_item == 1 and headers == RESULT_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(RESULT_PASS_COLOR,
+            row_item_list.append(html_tag_wrapper(RESULT_PASS_CODE,
                                                   item_tag,
                                                   checkbox_style.format(RESULT_PASS_COLOR)))
         elif row_item == 0 and headers == RESULT_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(RESULT_FAIL_COLOR,
+            row_item_list.append(html_tag_wrapper(RESULT_FAIL_CODE,
                                                   item_tag,
                                                   checkbox_style.format(RESULT_FAIL_COLOR)))
         elif index == 1 and headers == ERROR_FILE_HEADERS:
