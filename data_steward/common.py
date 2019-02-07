@@ -8,6 +8,7 @@ ALL_ACHILLES_INDEX_FILES = [name.split(resources.resource_path + os.sep)[1].stri
 DATASOURCES_JSON = os.path.join(resources.achilles_index_path, 'data/datasources.json')
 PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_mrn']
 PII_FILES = map(lambda t: t+'.csv', PII_TABLES)
+SUBMISSION_FILES = CDM_FILES + PII_FILES
 RESULTS_HTML = 'results.html'
 PROCESSED_TXT = 'processed.txt'
 LOG_JSON = 'log.json'
