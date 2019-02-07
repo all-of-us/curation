@@ -112,12 +112,13 @@ class ValidationTest(unittest.TestCase):
         expected_results = []
         test_file_names = [os.path.basename(f) for f in test_util.FIVE_PERSONS_FILES]
 
-        for cdm_file in common.CDM_FILES + common.PII_FILES:
-            expected_result = (cdm_file, 0, 0, 0)
+        for cdm_file in common.SUBMISSION_FILES:
             if cdm_file in test_file_names:
                 expected_result = (cdm_file, 1, 1, 1)
                 test_file = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_file)
                 test_util.write_cloud_file(self.hpo_bucket, test_file, prefix=self.folder_prefix)
+            else:
+                expected_result = (cdm_file, 0, 0, 0)
             expected_results.append(expected_result)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)
