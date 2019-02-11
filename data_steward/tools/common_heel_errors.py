@@ -8,8 +8,9 @@ import os
 import json
 import csv
 from google.appengine.api.app_identity import app_identity
+import argparse
 
-hpo_ids = [item['hpo_id'] for item in resources.hpo_csv()]
+hpo_id_list = [item['hpo_id'] for item in resources.hpo_csv()]
 HEEL_ERRORS_JSON = 'heel_errors.json'
 HEEL_ERRORS_CSV = 'heel_errors.csv'
 heel_error_query ='''select '{hpo_id}' as hpo_name,
@@ -19,7 +20,7 @@ heel_error_query ='''select '{hpo_id}' as hpo_name,
             record_count
             FROM `{app_id}.{dataset_id}.{hpo_id}_achilles_heel_results`
             WHERE achilles_heel_warning like 'ERROR:%'
-            order by record_count desc limit 5'''
+            order by record_count desc limit 10'''
 
 
 def parse_json_csv():
@@ -37,7 +38,7 @@ def parse_json_csv():
         output.writerow(row.values())
 
 
-def most_common_heel_errors(app_id=None,dataset_id=None, hpo_ids=None):
+def most_common_heel_errors(app_id=None, dataset_id=None, hpo_ids=None):
     """
     :param app_id: Application Id
     :param dataset_id: Dataset Id
@@ -45,10 +46,6 @@ def most_common_heel_errors(app_id=None,dataset_id=None, hpo_ids=None):
     :return: None
     """
     heel_errors = list()
-    if app_id is None:
-        app_id = app_identity.get_application_id()
-    if dataset_id is None:
-        dataset_id = bq_utils.get_dataset_id()
     if not os.path.exists(HEEL_ERRORS_JSON) and not os.path.exists(HEEL_ERRORS_CSV):
         for hpo_id in hpo_ids:
             if bq_utils.table_exists(table_id='{hpo_id}_achilles_heel_results'.format(hpo_id=hpo_id), dataset_id=dataset_id):
@@ -61,5 +58,31 @@ def most_common_heel_errors(app_id=None,dataset_id=None, hpo_ids=None):
     parse_json_csv()
 
 
+def run_heel_errors_report(name=None, app_id=None, dataset_id=None):
+    if app_id is None:
+        app_id = app_identity.get_application_id()
+    if dataset_id is None:
+        dataset_id = bq_utils.get_dataset_id()
+    if name is "hpo_ids":
+        most_common_heel_errors(hpo_ids=hpo_id_list)
+    else:
+        dataset_list = list()
+        dataset_list.append(name)
+        most_common_heel_errors(hpo_ids=dataset_list, app_id=app_id, dataset_id=dataset_id)
+
+
 if __name__ == '__main__':
-    most_common_heel_errors(hpo_ids=hpo_ids)
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--name',
+                        default="hpo_ids",
+                        help='Name of the dataset on which the heel_results should be obtained.("hpo_ids" for '
+                             'all the hpos. Dataset name for any other dataset.')
+    parser.add_argument('--app_id',
+                        default=app_identity.get_application_id(),
+                        help='Identifier for the application.')
+    parser.add_argument('--dataset_id',
+                        default=bq_utils.get_dataset_id(),
+                        help='Identifier for the dataset.')
+
+    args = parser.parse_args()
+    run_heel_errors_report(args)
