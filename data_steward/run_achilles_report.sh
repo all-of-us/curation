@@ -5,7 +5,7 @@ result_bucket="drc_curation_internal_test"
 vocab_dataset="vocabulary20180104"
 
 USAGE="
-Usage: run_PPI_PM_achilles.sh
+Usage: run_achilles_report.sh
   --key_file <path to key file>
   --app_id <application id>
   [--dataset <Dataset ID: default is ${dataset}>]
