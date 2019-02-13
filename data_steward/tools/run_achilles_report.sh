@@ -48,26 +48,31 @@ gcloud config set project ${app_id}
 
 #---------Create curation virtual environment----------
 set -e
+
+cd ../../
 # create a new environment in directory curation_env
-virtualenv  -p $(which python2.7) curation_envx
+virtualenv  -p $(which python2.7) achilles_env
+
 
 # activate it
-source tools/curation_env/bin/activate
+source achilles_env/bin/activate
 
 # install the requirements in the virtualenv
+cd data_steward
 pip install -t lib -r requirements.txt
 
-source tools/set_path.sh
+cd tools
+source set_path.sh
 #------------------------------------------------------
 
 export BIGQUERY_DATASET_ID="${dataset}"
 export BUCKET_NAME_NYC="test-bucket"
 
 # copy vocabulary tables to the rdr dataset to run the achilles analysis.
-tools/table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${dataset}
+./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${dataset}
 
 # Run Achilles analysis
-python tools/run_achilles_and_export.py --bucket=${result_bucket} --folder=${dataset}
+python run_achilles_and_export.py --bucket=${result_bucket} --folder=${dataset}
 
 unset PYTHONPATH
 deactivate
