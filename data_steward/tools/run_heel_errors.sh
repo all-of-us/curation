@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-report_for="hpo"
+# report_for variable takes in the name of the dataset needed to get the top 10 heel errors from.
+# If needed to be run on all the Hpo's give "all_hpo" as a parameter
+report_for="all_hpo"
 
 USAGE="
 Usage: run_heel_errors.sh
@@ -48,19 +50,22 @@ gcloud config set project ${app_id}
 #---------Create curation virtual environment----------
 set -e
 # --------create a new environment------------
+cd ../..
 virtualenv  -p $(which python2.7) heel_env
 
+cd data_steward
 # ---------activate venv-------------
-source heel_env/bin/activate
+source ../heel_env/bin/activate
 
 #-------install the requirements in the virtualenv--------
-pip install -t lib -r requirements.txt
 
+pip install -t lib -r requirements.txt
+cd tools
 #-------Set python path to add the modules and lib--------
-source tools/set_path.sh
+source set_path.sh
 
 #----------------Run the heel errors script------------------
-python tools/common_heel_errors.py ${report_for} ${dataset_id}
+python common_heel_errors.py ${report_for} ${dataset_id}
 
 #-----------Deactivate the venv and unset the python path
 deactivate

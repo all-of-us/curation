@@ -54,16 +54,10 @@ def most_common_heel_errors(app_id, dataset_id, hpo_ids):
     :param hpo_ids: list of Hpo_ids
     :return: None
     """
-    print(hpo_ids)
     heel_errors = list()
     if not os.path.exists(HEEL_ERRORS_JSON) and not os.path.exists(HEEL_ERRORS_CSV):
-        if len(hpo_ids) == 1:
-            for hpo_id in hpo_ids:
-                query = heel_error_query2.format(hpo_id=hpo_id, app_id=app_id, dataset_id=dataset_id)
-                query_job = bq_utils.query(query)
-                result = bq_utils.response2rows(query_job)
-                heel_errors.extend(result)
-        else:
+
+        if hpo_ids == hpo_id_list:
             for hpo_id in hpo_ids:
                 if bq_utils.table_exists(table_id='{hpo_id}_achilles_heel_results'.
                                          format(hpo_id=hpo_id), dataset_id=dataset_id):
@@ -71,9 +65,17 @@ def most_common_heel_errors(app_id, dataset_id, hpo_ids):
                     query_job = bq_utils.query(query)
                     result = bq_utils.response2rows(query_job)
                     heel_errors.extend(result)
-    with open(HEEL_ERRORS_JSON, 'w') as fp:
-        json.dump(heel_errors, fp, sort_keys=True, indent=4)
-    parse_json_csv()
+        else:
+            if bq_utils.table_exists(table_id='achilles_heel_results', dataset_id=dataset_id):
+                for hpo_id in hpo_ids:
+                    query = heel_error_query2.format(hpo_id=hpo_id, app_id=app_id, dataset_id=dataset_id)
+                    query_job = bq_utils.query(query)
+                    result = bq_utils.response2rows(query_job)
+                    heel_errors.extend(result)
+
+        with open(HEEL_ERRORS_JSON, 'w') as fp:
+            json.dump(heel_errors, fp, sort_keys=True, indent=4)
+        parse_json_csv()
 
 
 def main(report_for, dataset_id, app_id=None):
@@ -81,11 +83,9 @@ def main(report_for, dataset_id, app_id=None):
         app_id = app_identity.get_application_id()
     if dataset_id is None:
         dataset_id = bq_utils.get_dataset_id()
-    if report_for == 'hpo':
-        print(report_for)
+    if report_for == 'all_hpo':
         most_common_heel_errors(hpo_ids=hpo_id_list, app_id=app_id, dataset_id=dataset_id)
     else:
-        print(report_for)
         dataset_list = [report_for]
         most_common_heel_errors(hpo_ids=dataset_list, app_id=app_id, dataset_id=dataset_id)
 
