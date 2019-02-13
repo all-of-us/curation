@@ -79,6 +79,12 @@ def most_common_heel_errors(app_id, dataset_id, hpo_ids):
 
 
 def main(report_for, dataset_id, app_id=None):
+    """
+        :param app_id: Application Id
+        :param dataset_id: Dataset Id
+        :param report_for: name of dataset or hpo
+        :return: None
+        """
     if app_id is None:
         app_id = app_identity.get_application_id()
     if dataset_id is None:
