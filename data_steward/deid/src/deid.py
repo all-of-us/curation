@@ -670,7 +670,7 @@ def initialization(client,dataset):
             
             ref = client.dataset(dataset).table("people_seed")            
             client.delete_table(ref)
-            Logging.log(subject='composer',object='big.query',action='drop.table',value=ref.to_api_repr)
+            Logging.log(subject='composer',object='big.query',action='drop.table',value=str(ref.to_api_repr))
             has_table = True
     #
     # We create the table here if there was an error found
