@@ -191,6 +191,31 @@ class ValidationTest(unittest.TestCase):
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
     @mock.patch('api_util.check_cron')
+    def _test_curation_report_ignored(self, mock_check_cron):
+        exclude_file_list = ["person.csv"]
+        exclude_file_list = [self.folder_prefix + item for item in exclude_file_list]
+        expected_result_items = []
+        for file_name in exclude_file_list:
+            test_util.write_cloud_str(self.hpo_bucket, file_name, ".")
+
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(test_util.VALIDATE_HPO_FILES_URL)
+
+        # check content of the bucket is correct
+        expected_bucket_items = exclude_file_list + [self.folder_prefix + item for item in common.IGNORE_LIST]
+        list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
+        actual_bucket_items = [item['name'] for item in list_bucket_result]
+        actual_bucket_items = [item for item in actual_bucket_items
+                               if not main._is_string_excluded_file(item[len(self.folder_prefix):])]
+        self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
+
+        # check that the errors file is empty
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)
+        self.assertListEqual(expected_result_items, r['errors'])
+
+    @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
         # tests if pii files are loaded
         test_file_paths = [test_util.PII_NAME_FILE, test_util.PII_MRN_BAD_PERSON_ID_FILE]

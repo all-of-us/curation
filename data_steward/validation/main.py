@@ -205,15 +205,14 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
     found_cdm_files = []
     unknown_files = []
     found_pii_files = []
-    folder_items = [item['name'].split('/')[1] for item in bucket_items if item['name'].startswith(folder_prefix)]
+    folder_items = [item['name'][len(folder_prefix):] for item in bucket_items if item['name'].startswith(folder_prefix)]
     for item in folder_items:
         if _is_cdm_file(item):
             found_cdm_files.append(item)
         elif _is_pii_file(item):
             found_pii_files.append(item)
         else:
-            is_known_file = item in common.IGNORE_LIST
-            if not is_known_file:
+            if not (_is_known_file(item) or _is_string_excluded_file(item)):
                 unknown_files.append(item)
 
     errors = []
@@ -424,6 +423,14 @@ def _is_cdm_file(gcs_file_name):
 
 def _is_pii_file(gcs_file_name):
     return gcs_file_name.lower() in common.PII_FILES
+
+
+def _is_known_file(gcs_file_name):
+    return gcs_file_name in common.IGNORE_LIST
+
+
+def _is_string_excluded_file(gcs_file_name):
+    return any(gcs_file_name.startswith(prefix) for prefix in common.IGNORE_STRING_LIST)
 
 
 @api_util.auth_required_cron
