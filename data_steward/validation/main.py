@@ -17,13 +17,20 @@ import export
 import gcs_utils
 import resources
 import ehr_union
-from common import RESULT_CSV, WARNINGS_CSV, ERRORS_CSV, ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
+
+RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
+ERROR_FILE_HEADERS = ["File Name", "Message"]
+RESULT_FAIL_CODE = '&#x2718'
+RESULT_PASS_CODE = '&#x2714'
+RESULT_FAIL_COLOR = 'red'
+RESULT_PASS_COLOR = 'green'
 
 
 class InternalValidationError(RuntimeError):
@@ -41,13 +48,10 @@ class BucketDoesNotExistError(RuntimeError):
         self.bucket = bucket
 
 
-def all_required_files_loaded(hpo_id, folder_prefix):
-    result_file = gcs_utils.get_object(gcs_utils.get_hpo_bucket(hpo_id), folder_prefix + common.RESULT_CSV)
-    result_file = StringIO.StringIO(result_file)
-    result_items = resources._csv_file_to_list(result_file)
-    for item in result_items:
-        if item['file_name'] in common.REQUIRED_FILES:
-            if item['loaded'] != '1':
+def all_required_files_loaded(result_items):
+    for (file_name, found, parsed, loaded) in result_items:
+        if file_name in common.REQUIRED_FILES:
+            if loaded != 1:
                 return False
     return True
 
@@ -164,7 +168,7 @@ def validate_hpo_files(hpo_id):
     """
     validation end point for individual hpo_ids
     """
-    run_validation(hpo_id, force_run=True)
+    process_hpo(hpo_id, force_run=True)
     return 'validation done!'
 
 
@@ -176,7 +180,7 @@ def validate_all_hpos():
     for item in resources.hpo_csv():
         hpo_id = item['hpo_id']
         try:
-            run_validation(hpo_id)
+            process_hpo(hpo_id)
         except BucketDoesNotExistError as bucket_error:
             bucket = bucket_error.bucket
             logging.warn('Bucket `{bucket}` configured for hpo_id `hpo_id` does not exist'.format(bucket=bucket,
@@ -195,7 +199,53 @@ def list_bucket(bucket):
         raise
 
 
-def run_validation(hpo_id, force_run=False):
+def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
+    logging.info('Validating %s submission in gs://%s/%s' % (hpo_id, bucket, folder_prefix))
+    # separate cdm from the unknown (unexpected) files
+    found_cdm_files = []
+    unknown_files = []
+    found_pii_files = []
+    folder_items = [item['name'].split('/')[1] for item in bucket_items if item['name'].startswith(folder_prefix)]
+    for item in folder_items:
+        if _is_cdm_file(item):
+            found_cdm_files.append(item)
+        elif _is_pii_file(item):
+            found_pii_files.append(item)
+        else:
+            is_known_file = item in common.IGNORE_LIST
+            if not is_known_file:
+                unknown_files.append(item)
+
+    errors = []
+    results = []
+
+    # Create all tables first to simplify downstream processes
+    # (e.g. ehr_union doesn't have to check if tables exist)
+    for file_name in common.CDM_FILES + common.PII_FILES:
+        table_name = file_name.split('.')[0]
+        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
+
+    for cdm_file_name in sorted(common.CDM_FILES):
+        file_results, file_errors = perform_validation_on_file(cdm_file_name, found_cdm_files, hpo_id,
+                                                               folder_prefix, bucket)
+        results.extend(file_results)
+        errors.extend(file_errors)
+
+    for pii_file_name in sorted(common.PII_FILES):
+        file_results, file_errors = perform_validation_on_file(pii_file_name, found_pii_files, hpo_id,
+                                                               folder_prefix, bucket)
+        results.extend(file_results)
+        errors.extend(file_errors)
+
+    # (filename, message) for each unknown file
+    warnings = [
+        (unknown_file, UNKNOWN_FILE) for unknown_file in unknown_files
+    ]
+    return dict(results=results, errors=errors, warnings=warnings)
+
+
+def process_hpo(hpo_id, force_run=False):
     """
     runs validation for a single hpo_id
 
@@ -207,65 +257,27 @@ def run_validation(hpo_id, force_run=False):
     InternalValidationError:
       Raised when an internal error is encountered during validation
     """
-    logging.info(' Validating hpo_id %s' % hpo_id)
+    logging.info('Processing hpo_id %s' % hpo_id)
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     bucket_items = list_bucket(bucket)
-    to_process_folder_list = _get_to_process_list(bucket, bucket_items, force_run)
-
-    for folder_prefix in to_process_folder_list:
-        logging.info('Processing gs://%s/%s' % (bucket, folder_prefix))
-        # separate cdm from the unknown (unexpected) files
-        found_cdm_files = []
-        unknown_files = []
-        found_pii_files = []
-        folder_items = [item['name'].split('/')[1] for item in bucket_items if item['name'].startswith(folder_prefix)]
-        for item in folder_items:
-            if _is_cdm_file(item):
-                found_cdm_files.append(item)
-            elif _is_pii_file(item):
-                found_pii_files.append(item)
-            else:
-                is_known_file = item in common.IGNORE_LIST
-                if not is_known_file:
-                    unknown_files.append(item)
-
-        errors = []
-        results = []
-
-        # Create all tables first to simplify downstream processes
-        # (e.g. ehr_union doesn't have to check if tables exist)
-        for file_name in common.CDM_FILES + common.PII_FILES:
-            table_name = file_name.split('.')[0]
-            table_id = bq_utils.get_table_id(hpo_id, table_name)
-            bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
-
-        for cdm_file_name in common.CDM_FILES:
-            file_results, file_errors = perform_validation_on_file(cdm_file_name, found_cdm_files, hpo_id,
-                                                                   folder_prefix, bucket)
-            results.extend(file_results)
-            errors.extend(file_errors)
-
-        for pii_file_name in common.PII_FILES:
-            file_results, file_errors = perform_validation_on_file(pii_file_name, found_pii_files, hpo_id,
-                                                                   folder_prefix, bucket)
-            results.extend(file_results)
-            errors.extend(file_errors)
-
-        # (filename, message) for each unknown file
-        warnings = [
-            (unknown_file, UNKNOWN_FILE) for unknown_file in unknown_files
-        ]
+    folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
+    if folder_prefix is None:
+        logging.info('No submissions to process in %s bucket %s' % (hpo_id, bucket))
+    else:
+        validate_result = validate_submission(hpo_id, bucket, bucket_items, folder_prefix)
+        results, errors, warnings = validate_result['results'], validate_result['errors'], validate_result['warnings']
 
         # output to GCS
-        _save_result_in_gcs(bucket, folder_prefix + RESULT_CSV, results)
-        _save_errors_warnings_in_gcs(bucket, folder_prefix + ERRORS_CSV, errors, warnings)
+        _save_results_html_in_gcs(bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings)
 
-        if all_required_files_loaded(hpo_id, folder_prefix=folder_prefix):
+        if not all_required_files_loaded(results):
+            logging.info('Required files not loaded in %s. Skipping achilles.' % folder_prefix)
+        else:
+            logging.info('Running achilles on %s' % folder_prefix)
             run_achilles(hpo_id)
             run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
-
-        logging.info('Uploading achilles index files to `gs://%s/%s`.' % (bucket, folder_prefix))
-        _upload_achilles_files(hpo_id, folder_prefix)
+            logging.info('Uploading achilles index files to `gs://%s/%s`.' % (bucket, folder_prefix))
+            _upload_achilles_files(hpo_id, folder_prefix)
 
         now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.' %
@@ -311,7 +323,7 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefi
             logging.error(message)
             raise InternalValidationError(message)
 
-    if file_name in common.REQUIRED_FILES or found:
+    if file_name in common.SUBMISSION_FILES:
         results.append((file_name, found, parsed, loaded))
 
     return results, errors
@@ -371,7 +383,7 @@ def initial_date_time_object(gcs_object_metadata):
     return date_created
 
 
-def _get_to_process_list(bucket, bucket_items, force_process=False):
+def _get_submission_folder(bucket, bucket_items, force_process=False):
     """returns a set of folders to process as part of validation
 
     :bucket: bucket to look into
@@ -398,12 +410,12 @@ def _get_to_process_list(bucket, bucket_items, force_process=False):
         latest_datetime_index = folder_datetime_list.index(max(folder_datetime_list))
         to_process_folder = folders_with_submitted_files[latest_datetime_index]
         if force_process:
-            return [to_process_folder]
+            return to_process_folder
         else:
             processed = _validation_done(bucket, to_process_folder)
             if not processed:
-                return [to_process_folder]
-    return []
+                return to_process_folder
+    return None
 
 
 def _is_cdm_file(gcs_file_name):
@@ -438,45 +450,80 @@ def copy_files(hpo_id):
     return '{"copy-status": "done"}'
 
 
-def _save_errors_warnings_in_gcs(bucket, name, errors, warnings):
-    """
-    Save the errors and warnings in GCS
-    :param bucket: bucket to save to
-    :param name: name of the file (object) to save to in GCS
-    :param errors/warnings: list of tuples (<file_name>, <message>)
-    :return:
-    """
-    f = StringIO.StringIO()
-    f.write('"type","file_name","message"\n')
-    for (file_name, message) in errors:
-        line = '"error","%(file_name)s","%(message)s"\n' % locals()
-        f.write(line)
-    for (file_name, message) in warnings:
-        line = '"warning","%(file_name)s","%(message)s"\n' % locals()
-        f.write(line)
-    f.seek(0)
-    result = gcs_utils.upload_object(bucket, name, f)
-    f.close()
-    return result
-
-
-def _save_result_in_gcs(bucket, name, results):
+def _save_results_html_in_gcs(bucket, file_name, results, errors, warnings):
     """
     Save the validation results in GCS
     :param bucket: bucket to save to
-    :param name: name of the file (object) to save to in GCS
-    :param file_results: list of tuples (<file_name>, <found>)
+    :param file_name: name of the file (object) to save to in GCS
+    :param results: list of tuples (<cdm_file_name>, <found>, <loaded>, <parsed>)
+    :param errors: list of tuples (<cdm_file_name>, <message>)
+    :param warnings: list of tuples (<cdm_file_name>, <message>)
     :return:
     """
+    html_report_list = []
+    with open(resources.html_boilerplate_path) as f:
+        for line in f:
+            html_report_list.append(line)
+    html_report_list.append('\n')
+    html_report_list.append(create_html_table(RESULT_FILE_HEADERS, results, "Results"))
+    html_report_list.append('\n')
+    html_report_list.append(create_html_table(ERROR_FILE_HEADERS, errors, "Errors"))
+    html_report_list.append('\n')
+    html_report_list.append(create_html_table(ERROR_FILE_HEADERS, warnings, "Warnings"))
+    html_report_list.append('\n')
+    html_report_list.append('</body>\n')
+    html_report_list.append('</html>\n')
+
     f = StringIO.StringIO()
-    f.write('"file_name","found","parsed","loaded"\n')
-    for (file_name, found, parsed, loaded) in results:
-        line = '"%(file_name)s","%(found)s","%(parsed)s","%(loaded)s"\n' % locals()
+    for line in html_report_list:
         f.write(line)
     f.seek(0)
-    result = gcs_utils.upload_object(bucket, name, f)
+    result = gcs_utils.upload_object(bucket, file_name, f)
     f.close()
     return result
+
+
+def create_html_table(headers, table, table_name):
+    html_report_list = []
+    table_config = 'id="dataframe" style="width:80%" class="center"'
+    html_report_list.append(html_tag_wrapper(table_name, 'caption'))
+    table_header_row = create_html_row(headers, 'th', 'tr')
+    html_report_list.append(html_tag_wrapper(table_header_row, 'thead'))
+    results_rows = []
+    for item in table:
+        results_rows.append(create_html_row(item, 'td', 'tr', headers))
+    table_body_rows = '\n'.join(results_rows)
+    html_report_list.append(html_tag_wrapper(table_body_rows, 'tbody'))
+    return html_tag_wrapper('\n'.join(html_report_list), 'table', table_config)
+
+
+def create_html_row(row_items, item_tag, row_tag, headers=None):
+    row_item_list = []
+    checkbox_style = 'style="text-align:center; font-size:150%; font-weight:bold; color:{0};"'
+    message = "BigQuery generated the following message while processing the files: " + "<br/>"
+    for index, row_item in enumerate(row_items):
+        if row_item == 1 and headers == RESULT_FILE_HEADERS:
+            row_item_list.append(html_tag_wrapper(RESULT_PASS_CODE,
+                                                  item_tag,
+                                                  checkbox_style.format(RESULT_PASS_COLOR)))
+        elif row_item == 0 and headers == RESULT_FILE_HEADERS:
+            row_item_list.append(html_tag_wrapper(RESULT_FAIL_CODE,
+                                                  item_tag,
+                                                  checkbox_style.format(RESULT_FAIL_COLOR)))
+        elif index == 1 and headers == ERROR_FILE_HEADERS:
+            row_item_list.append(html_tag_wrapper(message + row_item.replace(' || ', '<br/>'), item_tag))
+        else:
+            row_item_list.append(html_tag_wrapper(row_item, item_tag))
+    row_item_string = '\n'.join(row_item_list)
+    row_item_string = html_tag_wrapper(row_item_string, row_tag)
+    return row_item_string
+
+
+def html_tag_wrapper(text, tag, message=''):
+    if message == '':
+        return '<%(tag)s>\n%(text)s\n</%(tag)s>' % locals()
+    else:
+        return '<%(tag)s %(message)s>\n%(text)s\n</%(tag)s>' % locals()
 
 
 def _write_string_to_file(bucket, name, string):
