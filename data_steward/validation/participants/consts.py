@@ -59,7 +59,7 @@ ADDRESS_ABBREVIATIONS = {
 'co': 'county',
 'ctr': 'center',
 'dr': 'drive',
-'e'; 'east',
+'e': 'east',
 'expy': 'expressway',
 'hts': 'heights',
 'hwy': 'highway',
