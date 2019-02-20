@@ -74,7 +74,6 @@ import argparse
 import logging
 from google.appengine.api.app_identity import app_identity
 
-import os
 import bq_utils
 import resources
 import common
@@ -82,11 +81,27 @@ from tools.combine_ehr_rdr import OBSERVATION_TABLE, PERSON_TABLE
 
 VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
+FACT_RELATIONSHIP = 'fact_relationship'
 UNION_ALL = '''
 
         UNION ALL
         
 '''
+
+
+def get_hpo_offsets(hpo_ids):
+    """
+    For each HPO, get a numeric constant to add to record ids
+
+    :param hpo_ids: list of HPO identifiers
+    :return: a dictionary mapping hpo_id => numeric offset
+    """
+    result = dict()
+    i = common.EHR_ID_MULTIPLIER_START
+    for hpo_id in hpo_ids:
+        result[hpo_id] = i * common.ID_CONSTANT_FACTOR
+        i += 1
+    return result
 
 
 def output_table_for(table_id):
@@ -141,12 +156,7 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     :return: list of subqueries
     """
     result = []
-    # Hpo_unique num stores the unique id assigned to the HPO_sites
-    hpo_unique_num = {}
-    i = common.EHR_ID_MULTIPLIER_START
-    for hpo_id in hpo_ids:
-        hpo_unique_num[hpo_id] = i * common.ID_CONSTANT_FACTOR
-        i += 1
+    hpo_unique_identifiers = get_hpo_offsets(hpo_ids)
 
     # Exclude subqueries that reference tables that are missing from source dataset
     all_table_ids = _list_all_table_ids(dataset_id)
@@ -156,10 +166,10 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
             subquery = '''
                 (SELECT '{table_id}' AS src_table_id,
                   {table_name}_id AS src_{table_name}_id,
-                  ROW_NUMBER() over() + {hpo_unique_num} as {table_name}_id
+                  {table_name}_id + {hpo_unique_num} as {table_name}_id
                   FROM `{project_id}.{dataset_id}.{table_id}`)
                 '''.format(table_id=table_id, table_name=table_name, project_id=project_id, dataset_id=dataset_id,
-                           hpo_unique_num=hpo_unique_num[hpo_id])
+                           hpo_unique_num=hpo_unique_identifiers[hpo_id])
             result.append(subquery)
         else:
             logging.info(
@@ -247,6 +257,50 @@ def query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND'):
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
     if len(incomplete_jobs) > 0:
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+
+
+def fact_relationship_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id):
+    """
+    Get query for all fact_relationship records with mapped fact_id
+
+    :param hpo_id: identifies the HPO
+    :param input_dataset_id: identifies dataset containing HPO submission
+    :param output_dataset_id: identifies dataset where output is saved
+    :return: the query
+    """
+    table_id = bq_utils.get_table_id(hpo_id, FACT_RELATIONSHIP)
+    fact_query = '''SELECT F.domain_concept_id_1,
+        CASE
+            WHEN F.domain_concept_id_1= {measurement_domain_concept_id} THEN M1.measurement_id
+            WHEN F.domain_concept_id_1= {person_domain_concept_id} THEN fact_id_1
+            ELSE 0
+        END AS fact_id_1,
+        F.domain_concept_id_2,
+        CASE
+            WHEN F.domain_concept_id_2= {measurement_domain_concept_id} THEN M2.measurement_id
+            WHEN F.domain_concept_id_2= {person_domain_concept_id} THEN fact_id_2
+            ELSE 0
+        END AS fact_id_2,
+        relationship_concept_id
+        FROM
+        `{input_dataset}.{table_id}` AS F
+        LEFT JOIN
+            `{dataset_id}._mapping_measurement` AS M1
+        ON
+            M1.src_measurement_id = F.fact_id_1
+            AND (F.domain_concept_id_1 = {measurement_domain_concept_id}) AND (M1.src_hpo_id = '{hpo_id}')
+        LEFT JOIN
+            `{dataset_id}._mapping_measurement` AS M2
+        ON
+            M2.src_measurement_id = F.fact_id_2
+            AND (F.domain_concept_id_2 = {measurement_domain_concept_id}) AND (M2.src_hpo_id = '{hpo_id}')'''.format(
+        table_id=table_id,
+        input_dataset=input_dataset_id,
+        hpo_id=hpo_id,
+        dataset_id=output_dataset_id,
+        measurement_domain_concept_id=common.MEASUREMENT_DOMAIN_CONCEPT_ID,
+        person_domain_concept_id=common.PERSON_DOMAIN_CONCEPT_ID)
+    return fact_query
 
 
 def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
@@ -343,8 +397,12 @@ def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
     for hpo_id in hpo_ids:
         table_id = bq_utils.get_table_id(hpo_id, table_name)
         if table_id in all_table_ids:
-            subquery = table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id)
-            result.append(subquery)
+            if table_name == FACT_RELATIONSHIP:
+                subquery = fact_relationship_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id)
+                result.append(subquery)
+            else:
+                subquery = table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id)
+                result.append(subquery)
         else:
             logging.info(
                 'Excluding table {table_id} from mapping query because it does not exist'.format(table_id=table_id))
