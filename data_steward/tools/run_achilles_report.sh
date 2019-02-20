@@ -33,7 +33,7 @@ fi
 
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
-echo "dataset --> ${rdr_dataset}"
+echo "dataset --> ${dataset}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "result_bucket --> ${result_bucket}"
 
@@ -51,11 +51,11 @@ set -e
 
 cd ../../
 # create a new environment in directory curation_env
-virtualenv  -p $(which python2.7) achilles_env
+virtualenv  -p $(which python2.7) curation_env
 
 
 # activate it
-source achilles_env/bin/activate
+source curation_env/bin/activate
 
 # install the requirements in the virtualenv
 cd data_steward
