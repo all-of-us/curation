@@ -3,12 +3,11 @@ A module to perform initial participant identity matching based on PII data.
 
 Compares site PII data to values from the RDR, looking to identify discrepancies.
 """
-from datetime import datetime
 from dateutil.parser import parse
-import logging
 
-#import bq_utils
+
 import validation.participants.consts as consts
+
 
 def _get_observation_match_values(dataset):
     """
@@ -36,9 +35,11 @@ def _get_observation_match_values(dataset):
 #    results = bq_utils.query(query_string)
     return {}
 
+
 def _get_hpo_site_names():
     # This will have to do until I can talk with other engineers.
     return []
+
 
 def _get_pii_names(hpo):
     """
@@ -65,6 +66,7 @@ def _get_pii_emails(hpo):
     """
     return []
 
+
 def _get_pii_phone_numbers(hpo):
     """
     Get email addresses from the site's PII table.
@@ -76,6 +78,7 @@ def _get_pii_phone_numbers(hpo):
     [(1, '5558675309'), (48, '5558004600'), (99, '5551002000')]
     """
     return []
+
 
 def _get_pii_addresses(hpo):
     """
@@ -91,6 +94,7 @@ def _get_pii_addresses(hpo):
      (2, 'street_8', 'street_10', 'yuma', 'az', 22222)]
     """
     return []
+
 
 def _record_match_value(results, person_id, field, match):
     """
@@ -111,6 +115,7 @@ def _record_match_value(results, person_id, field, match):
         # set yet.
         results[person_id] = {field: match}
     return results
+
 
 def _clean_street(street):
     """
@@ -139,6 +144,7 @@ def _clean_street(street):
 
     # for each part of the address, see if it exists in the list of known
     # abbreviations.  if so, expand the abbreviation
+    # TODO ensure 50A and 50 A are recognized as the same
     for part in clean_street.split():
         expansion = consts.ADDRESS_ABBREVIATIONS.get(part)
         if expansion:
@@ -147,6 +153,7 @@ def _clean_street(street):
     # removes possible multiple spaces.
     clean_street = ' '.join(clean_street.split())
     return clean_street
+
 
 def _clean_state(state):
     """
@@ -169,6 +176,7 @@ def _clean_state(state):
     clean_state = clean_state.lower()
     return clean_state if clean_state in consts.STATE_ABBREVIATIONS else ''
 
+
 def _clean_zip(code):
     """
     Helper function to return 5 character zip codes only.
@@ -184,14 +192,19 @@ def _clean_zip(code):
     clean_code = ''
     code = code.strip()
 
-    if len(code) > 5 and code[5] in ['-', ' ']:
-        code = code[0:5]
+    # ensure hyphenated part is ignored
+    code = code.split('-')[0]
+    code = code.split(' ')[0]
+
+    # perform zero padding upto 5 chars
+    code = code.zfill(5)
 
     for char in code:
         if char.isdigit():
             clean_code += char
 
     return clean_code
+
 
 def _clean_phone(number):
     """
@@ -211,6 +224,7 @@ def _clean_phone(number):
             clean_number += char
     return clean_number
 
+
 def _clean_email(email):
     """
     Helper function to return emails with lowercase characters and no whitespace.
@@ -226,6 +240,7 @@ def _clean_email(email):
 
     clean_email = email.strip()
     return clean_email.lower()
+
 
 def _clean_name(name):
     """
@@ -246,6 +261,7 @@ def _clean_name(name):
             clean_name += char
     return clean_name.lower()
 
+
 def _compare_address_lists(list_one, list_two):
     """
     Counts the number of elements in list one that are not in list two.
@@ -256,10 +272,12 @@ def _compare_address_lists(list_one, list_two):
     :return: the count of items in list_one that are missing from list_two
     """
     diff = 0
+    # TODO ensure 7 and 7th are identified as the same
     for part in list_one:
         if part not in list_two:
             diff += 1
     return diff
+
 
 def _compare_name_fields(hpo, first_names, middle_names, last_names, match_values):
     """
@@ -302,6 +320,7 @@ def _compare_name_fields(hpo, first_names, middle_names, last_names, match_value
 
     return person_ids, match_values
 
+
 def _compare_email_addresses(hpo, email_addresses, match_values):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
@@ -327,6 +346,7 @@ def _compare_email_addresses(hpo, email_addresses, match_values):
 
     return person_ids, match_values
 
+
 def _compare_phone_numbers(hpo, phone_numbers, match_values):
     """
     Compare the digit based phone numbers from PII and Observation tables.
@@ -351,6 +371,7 @@ def _compare_phone_numbers(hpo, phone_numbers, match_values):
         _record_match_value(match_values, person_id, consts.CONTACT_PHONE, match_str)
 
     return person_ids, match_values
+
 
 def _compare_address_fields(hpo, streets_one, streets_two, cities, states, zips, match_values):
     """
@@ -378,22 +399,22 @@ def _compare_address_fields(hpo, streets_one, streets_two, cities, states, zips,
         updated match_values dictionary.
     """
     person_ids = set()
-    for person_id, addr_1, addr_2, city, state, zip_code in _get_pii_addresses(hpo):
+    for person_id, pii_addr_one, pii_addr_two, city, state, zip_code in _get_pii_addresses(hpo):
         person_ids.add(person_id)
 
         rdr_addr_one = _clean_street(streets_one.get(person_id))
-        addr_1 = _clean_street(addr_1)
+        pii_addr_one = _clean_street(pii_addr_one)
         rdr_addr_two = _clean_street(streets_two.get(person_id))
-        addr_2 = _clean_street(addr_2)
+        pii_addr_two = _clean_street(pii_addr_two)
 
         # easy case, fields 1 and 2 from both sources match exactly
-        if rdr_addr_one == addr_1 and rdr_addr_two == addr_2:
+        if rdr_addr_one == pii_addr_one and rdr_addr_two == pii_addr_two:
             _record_match_value(match_values, person_id, consts.STREET_ONE, consts.MATCH)
             _record_match_value(match_values, person_id, consts.STREET_TWO, consts.MATCH)
         else:
             # convert two fields to one field and store as a list of strings
-            full_rdr_street = rdr_addr_one  + ' ' + rdr_addr_two
-            full_pii_street = addr_1  + ' ' + addr_2
+            full_rdr_street = rdr_addr_one + ' ' + rdr_addr_two
+            full_pii_street = pii_addr_one + ' ' + pii_addr_two
             full_rdr_street_list = full_rdr_street.split()
             full_pii_street_list = full_pii_street.split()
 
@@ -426,6 +447,7 @@ def _compare_address_fields(hpo, streets_one, streets_two, cities, states, zips,
 
     return person_ids, match_values
 
+
 def _compare_birth_dates(person_id_set, rdr_birthdates, ehr_birthdates, match_values):
     """
     Compare birth dates for people.
@@ -455,7 +477,7 @@ def _compare_birth_dates(person_id_set, rdr_birthdates, ehr_birthdates, match_va
         elif rdr_birthdate is None and ehr_birthdate is None:
             _record_match_value(match_values, person_id, consts.BIRTHDATE, consts.MATCH)
         elif isinstance(rdr_birthdate, str) and isinstance(ehr_birthdate, str):
-           # convert values to datetime objects
+            # convert values to datetime objects
             rdr_date = parse(rdr_birthdate)
             ehr_date = parse(ehr_birthdate)
             # convert datetime objects to Year/month/day strings and compare
@@ -468,6 +490,7 @@ def _compare_birth_dates(person_id_set, rdr_birthdates, ehr_birthdates, match_va
             _record_match_value(match_values, person_id, consts.BIRTHDATE, consts.MISMATCH)
 
     return match_values
+
 
 def _validate_hpo_pii(hpo, rdr_values, match_values):
     """
@@ -505,7 +528,6 @@ def _validate_hpo_pii(hpo, rdr_values, match_values):
     person_id_set, match_values = _compare_address_fields(hpo, streets_one, streets_two, cities, states, zips, match_values)
     person_ids.update(person_id_set)
 
-
     rdr_birthdate = rdr_values.get(consts.OBS_PII_BIRTH_DATETIME)
     ehr_birthdate = rdr_values.get(consts.OBS_EHR_BIRTH_DATETIME)
     match_values = _compare_birth_dates(person_ids, rdr_birthdate, ehr_birthdate, match_values)
@@ -520,7 +542,7 @@ def match_participants(dataset):
     :param dataset:  The string name of the dataset to use when matching participants
     :return: results of the field comparison for each hpo
     """
-    #TODO:  implement stubs to get data from BigQuery
+    # TODO:  implement stubs to get data from BigQuery
     rdr_values = _get_observation_match_values(dataset)
 
     # TODO: get list of hpos.  what is the easiest way to get this data?  Read BigQuery tables

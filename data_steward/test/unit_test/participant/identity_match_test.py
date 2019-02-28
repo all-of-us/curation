@@ -4,6 +4,7 @@ import unittest
 import validation.participants.consts as consts
 import validation.participants.identity_match as id_match
 
+
 class IdentityMatchTest(unittest.TestCase):
 
     @classmethod
@@ -26,7 +27,7 @@ class IdentityMatchTest(unittest.TestCase):
             'street-two': 'Apt.   4E',
             'city': 'Frog Pond',
             'state': 'AL',
-            'zip': '35645-1112',
+            'zip': '05645-1112',
             'ehr_birthdate': '1990-01-01 00:00:00+00',
             'reported_birthdate': '1990-01-01'
         }
@@ -54,7 +55,7 @@ class IdentityMatchTest(unittest.TestCase):
                 {self.pid: self.participant_info.get('zip')},
             consts.OBS_EHR_BIRTH_DATETIME:
                 {self.pid: self.participant_info.get('ehr_birthdate')},
-            consts.OBS_PII_BIRTH_DATETIME :
+            consts.OBS_PII_BIRTH_DATETIME:
                 {self.pid: self.participant_info.get('reported_birthdate')},
         }
 
@@ -190,7 +191,7 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_match_participants_different_phone_numbers(self):
         # pre conditions
-        self.mock_pii_phone_numbers.return_value = [(self.pid,'867-5309')]
+        self.mock_pii_phone_numbers.return_value = [(self.pid, '867-5309')]
 
         # test
         results = id_match.match_participants(self.dataset)
@@ -213,6 +214,16 @@ class IdentityMatchTest(unittest.TestCase):
     def test_match_participants_integer_phone_numbers(self):
         # pre conditions
         self.mock_pii_phone_numbers.return_value = [(self.pid, 5558675309)]
+
+        # test
+        results = id_match.match_participants(self.dataset)
+
+        # post conditions
+        self.assertEqual(results, self.expected)
+
+    def test_match_participants_formatted_phone_numbers(self):
+        # pre conditions
+        self.mock_pii_phone_numbers.return_value = [(self.pid, '(555) 867-5309')]
 
         # test
         results = id_match.match_participants(self.dataset)
@@ -291,7 +302,7 @@ class IdentityMatchTest(unittest.TestCase):
             '',
             'Frog Pond',
             'AL',
-            '35645')]
+            '05645')]
 
         # test
         results = id_match.match_participants(self.dataset)
@@ -313,7 +324,7 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_match_participants_none_birthdate(self):
         # pre conditions
-        self.observation_values [consts.OBS_EHR_BIRTH_DATETIME][self.pid] = None
+        self.observation_values[consts.OBS_EHR_BIRTH_DATETIME][self.pid] = None
         self.mock_obs_values.return_value = self.observation_values
 
         # test
@@ -326,7 +337,7 @@ class IdentityMatchTest(unittest.TestCase):
     def test_match_participants_none_birthdates(self):
         # pre conditions
         self.observation_values[consts.OBS_EHR_BIRTH_DATETIME][self.pid] = None
-        self.observation_values [consts.OBS_PII_BIRTH_DATETIME][self.pid] = None
+        self.observation_values[consts.OBS_PII_BIRTH_DATETIME][self.pid] = None
         self.mock_obs_values.return_value = self.observation_values
 
         # test
@@ -337,7 +348,8 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_match_participants_epoch_birthdates(self):
         # pre conditions
-        self.observation_values [consts.OBS_PII_BIRTH_DATETIME][self.pid] = 631227824000
+        # TODO cover epoch datetimes if necessary
+        self.observation_values[consts.OBS_PII_BIRTH_DATETIME][self.pid] = 631170000
         self.mock_obs_values.return_value = self.observation_values
 
         # test
@@ -345,4 +357,39 @@ class IdentityMatchTest(unittest.TestCase):
 
         # post conditions
         self.expected[self.pid][consts.BIRTHDATE] = consts.MISMATCH
+        self.assertEqual(results, self.expected)
+
+    def test_match_participants_middle_initial(self):
+        # pre conditions
+        self.mock_pii_names.return_value = [(self.pid, 'Fancy-Nancy', 'Knight', 'Drew')]
+
+        # test
+        results = id_match.match_participants(self.dataset)
+
+        # post conditions
+        self.expected[self.pid][consts.FIRST_NAME] = consts.MATCH
+        self.expected[self.pid][consts.MIDDLE_NAME] = consts.MISMATCH
+        self.expected[self.pid][consts.LAST_NAME] = consts.MATCH
+        self.assertEqual(results, self.expected)
+
+    def test_match_participants_zero_zipcode_address_fields(self):
+        # pre conditions
+        # mock seems to read zero prefixed integers wrong (different base system)
+        self.mock_pii_addresses.return_value = [
+            (self.pid,
+            '1',
+            '2',
+            '3',
+            '44',
+            '5645')]
+
+        # test
+        results = id_match.match_participants(self.dataset)
+
+        # post conditions
+        self.expected[self.pid][consts.STREET_ONE] = consts.MISMATCH
+        self.expected[self.pid][consts.STREET_TWO] = consts.MISMATCH
+        self.expected[self.pid][consts.CITY] = consts.MISMATCH
+        self.expected[self.pid][consts.STATE] = consts.MISMATCH
+        self.expected[self.pid][consts.ZIP] = consts.MATCH
         self.assertEqual(results, self.expected)

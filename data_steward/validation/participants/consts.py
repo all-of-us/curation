@@ -11,7 +11,7 @@ OBS_PII_STREET_ADDRESS_STATE = 1585249
 OBS_PII_STREET_ADDRESS_ZIP = 1585250
 OBS_PII_CONSENT_PRIMARY_PHONE = None
 OBS_EHR_BIRTH_DATETIME = 4083587
-OBS_PII_BIRTH_DATETIME = 1585259 
+OBS_PII_BIRTH_DATETIME = 1585259
 
 # response dictionary keys
 EMAIL = 'email'
@@ -39,97 +39,97 @@ DATE = '%Y-%m-%d'
 
 # state abbreviations.  used to validate state abbreviations
 STATE_ABBREVIATIONS = [
-'al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'fl', 'ga', 'hi', 'id', 'il',
-'in',' ia', 'ks', 'ky', 'la', 'me', 'md', 'ma', 'mi', 'mn', 'ms', 'mo', 'mt', 
-'ne', 'nv', 'nh', 'nj', 'nm', 'ny', 'nc', 'nd', 'oh', 'ok', 'or', 'pa', 'ri',
-'sc', 'sd', 'tn', 'tx', 'ut', 'vt', 'va', 'wa', 'wv', 'wi', 'wy',
-# Commonwealth/Territory: 	Abbreviation:
-'as', 'dc', 'fm', 'gu', 'mh', 'mp', 'pw', 'pr', 'vi',
-# Military "State": 	Abbreviation:
-'aa', 'ae', 'ap',
+    'al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'fl', 'ga', 'hi', 'id', 'il',
+    'in', 'ia', 'ks', 'ky', 'la', 'me', 'md', 'ma', 'mi', 'mn', 'ms', 'mo', 'mt',
+    'ne', 'nv', 'nh', 'nj', 'nm', 'ny', 'nc', 'nd', 'oh', 'ok', 'or', 'pa', 'ri',
+    'sc', 'sd', 'tn', 'tx', 'ut', 'vt', 'va', 'wa', 'wv', 'wi', 'wy',
+    # Commonwealth/Territory: 	Abbreviation:
+    'as', 'dc', 'fm', 'gu', 'mh', 'mp', 'pw', 'pr', 'vi',
+    # Military "State": 	Abbreviation:
+    'aa', 'ae', 'ap',
 ]
 
 ADDRESS_ABBREVIATIONS = {
-'#': 'number',
-'apt': 'apartment',
-'ave': 'avenue',
-'blvd': 'boulevard',
-'cir': 'circle',
-'ct': 'court',
-'co': 'county',
-'ctr': 'center',
-'dr': 'drive',
-'e': 'east',
-'expy': 'expressway',
-'hts': 'heights',
-'hwy': 'highway',
-'is': 'island',
-'jct': 'junction',
-'lk': 'lake',
-'ln': 'lane',
-'mtn': 'mountain',
-'n': 'north',
-'ne': 'northeast',
-'num': 'number',
-'nw': 'northwest',
-'pkwy': 'parkway',
-'pl': 'place',
-'plz': 'plaza',
-'rd': 'road',
-'rdg': 'ridge',
-'rm': 'room',
-'s': 'south',
-'se': 'southeast',
-'sq': 'square',
-'st': 'street',
-'sta': 'station',
-'ste': 'suite',
-'sw': 'southwest',
-'ter': 'terrace',
-'tpke': 'turnpike',
-'trl': 'trail',
-'vly': 'valley',
-'w': 'west',
-'way': 'way',
+    '#': 'number',
+    'apt': 'apartment',
+    'ave': 'avenue',
+    'blvd': 'boulevard',
+    'cir': 'circle',
+    'ct': 'court',
+    'co': 'county',
+    'ctr': 'center',
+    'dr': 'drive',
+    'e': 'east',
+    'expy': 'expressway',
+    'hts': 'heights',
+    'hwy': 'highway',
+    'is': 'island',
+    'jct': 'junction',
+    'lk': 'lake',
+    'ln': 'lane',
+    'mtn': 'mountain',
+    'n': 'north',
+    'ne': 'northeast',
+    'num': 'number',
+    'nw': 'northwest',
+    'pkwy': 'parkway',
+    'pl': 'place',
+    'plz': 'plaza',
+    'rd': 'road',
+    'rdg': 'ridge',
+    'rm': 'room',
+    's': 'south',
+    'se': 'southeast',
+    'sq': 'square',
+    'st': 'street',
+    'sta': 'station',
+    'ste': 'suite',
+    'sw': 'southwest',
+    'ter': 'terrace',
+    'tpke': 'turnpike',
+    'trl': 'trail',
+    'vly': 'valley',
+    'w': 'west',
+    'way': 'way',
  }
 
 ################################################################################
 #  Participant Matching Validation Queries
 # Select observation table attributes to validate
 PPI_OBSERVATION_VALUES = (
-'SELECT person_id, observation_concept_id, value_as_string '
-'FROM {dataset}.{table} '
-'WHERE observation_concept_id IN (' +
-', '.join([str(OBS_PII_NAME_FIRST), str(OBS_PII_NAME_MIDDLE), 
-           str(OBS_PII_NAME_LAST), str(OBS_PII_EMAIL_ADDRESS), 
-           str(OBS_PII_PHONE), str(OBS_PII_STREET_ADDRESS_ONE), 
-           str(OBS_PII_STREET_ADDRESS_TWO), str(OBS_PII_STREET_ADDRESS_CITY), 
-           str(OBS_PII_STREET_ADDRESS_STATE), str(OBS_PII_STREET_ADDRESS_ZIP), 
-           str(OBS_PII_BIRTH_DATETIME), str(OBS_EHR_BIRTH_DATETIME)]) +
-') ORDER BY observation_concept_id, person_id'
+    'SELECT person_id, observation_concept_id, value_as_string '
+    'FROM {dataset}.{table} '
+    'WHERE observation_concept_id IN (' +
+    ', '.join([str(OBS_PII_NAME_FIRST), str(OBS_PII_NAME_MIDDLE),
+               str(OBS_PII_NAME_LAST), str(OBS_PII_EMAIL_ADDRESS),
+               str(OBS_PII_PHONE), str(OBS_PII_STREET_ADDRESS_ONE),
+               str(OBS_PII_STREET_ADDRESS_TWO), str(OBS_PII_STREET_ADDRESS_CITY),
+               str(OBS_PII_STREET_ADDRESS_STATE), str(OBS_PII_STREET_ADDRESS_ZIP),
+               str(OBS_PII_BIRTH_DATETIME), str(OBS_EHR_BIRTH_DATETIME)]) +
+    ') ORDER BY observation_concept_id, person_id'
 )
 # Select PII table email.
 PII_EMAIL_VALUES = (
-'SELECT person_id, email '
-'FROM {dataset}.{hpo_site_str}_pii_email'
+    'SELECT person_id, email '
+    'FROM {dataset}.{hpo_site_str}_pii_email'
 )
 # Select PII table phone number.
 PII_PHONE_NUMBER_VALUES = (
-'SELECT person_id, phone_number '
-'FROM {dataset}.{hpo_site_str}_pii_phone_number'
+    'SELECT person_id, phone_number '
+    'FROM {dataset}.{hpo_site_str}_pii_phone_number'
 )
 # Select PII table location_id.  OMOP location id.
 PII_LOCATION_IDS = (
-'SELECT person_id, location_id '
-'FROM {dataset}.{hpo_site_str}_pii_address'
+    'SELECT person_id, location_id '
+    'FROM {dataset}.{hpo_site_str}_pii_address'
 )
 PII_LOCATION_VALUES = (
-'SELECT location_id, address_1, address_2, city, state, zip '
-'FROM {dataset}.location'
+    'SELECT location_id, address_1, address_2, city, state, zip '
+    'FROM {dataset}.location'
 )
 
 # Select PII table name
 PII_NAME_VALUES = (
-'SELECT person_id, first_name, middle_name, last_name ' 
-'FROM {dataset}.{hpo_site_str}_pii_name'
+    'SELECT person_id, first_name, middle_name, last_name '
+    'FROM {dataset}.{hpo_site_str}_pii_name'
 )
