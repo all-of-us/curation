@@ -35,7 +35,12 @@ do
   then
     CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id "
   fi
-  bq load --allow_quoted_newlines ${CLUSTERING_ARGS}--skip_leading_rows=1 ${DATA_SET}.${table_name} $file resources/fields/${table_name}.json
+  JAGGED_ROWS=
+  if [ "${filename}" = "observation_period.csv" ]
+  then
+    JAGGED_ROWS="--allow_jagged_rows "
+  fi
+  bq load --allow_quoted_newlines ${JAGGED_ROWS}${CLUSTERING_ARGS}--skip_leading_rows=1 ${DATA_SET}.${table_name} $file resources/fields/${table_name}.json
 done
 
 echo "Done."

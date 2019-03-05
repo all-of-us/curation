@@ -1,42 +1,42 @@
 [
     {
-        "type": "integer", 
-        "name": "observation_period_id", 
-        "mode": "required", 
+        "type": "integer",
+        "name": "observation_period_id",
+        "mode": "required",
         "description": "A unique identifier for each observation period."
-    }, 
+    },
     {
-        "type": "integer", 
-        "name": "person_id", 
-        "mode": "required", 
+        "type": "integer",
+        "name": "person_id",
+        "mode": "required",
         "description": "A foreign key identifier to the person for whom the observation period is defined. The demographic details of that person are stored in the person table."
-    }, 
+    },
     {
-        "type": "date", 
-        "name": "observation_period_start_date", 
-        "mode": "required", 
+        "type": "date",
+        "name": "observation_period_start_date",
+        "mode": "required",
         "description": "The start date of the observation period for which data are available from the data source."
-    }, 
+    },
     {
-        "type": "timestamp", 
-        "name": "observation_period_start_datetime", 
-        "mode": "required"
-    }, 
-    {
-        "type": "date", 
-        "name": "observation_period_end_date", 
-        "mode": "required", 
+        "type": "date",
+        "name": "observation_period_end_date",
+        "mode": "required",
         "description": "The end date of the observation period for which data are available from the data source."
-    }, 
+    },
     {
-        "type": "timestamp", 
-        "name": "observation_period_end_datetime", 
-        "mode": "required"
-    }, 
-    {
-        "type": "integer", 
-        "name": "period_type_concept_id", 
-        "mode": "required", 
+        "type": "integer",
+        "name": "period_type_concept_id",
+        "mode": "required",
         "description": "A foreign key identifier to the predefined concept in the Standardized Vocabularies reflecting the source of the observation period information"
+    },
+    {
+        "type": "timestamp",
+        "name": "observation_period_start_datetime",
+        "mode": "nullable"
+    },
+    {
+        "type": "timestamp",
+        "name": "observation_period_end_datetime",
+        "mode": "nullable"
     }
 ]
