@@ -83,6 +83,7 @@ VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
 CARE_SITE = 'care_site'
 CARE_SITE_ID = 'care_site_id'
+PERSON = 'person'
 PERSON_ID = 'person_id'
 LOCATION = 'location'
 LOCATION_ID = 'location_id'
@@ -329,6 +330,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
 
     # Generate column expressions for select
     if not is_id_mapped:
+        # e.g. death
         col_exprs = [field['name'] for field in fields]
         cols = ',\n        '.join(col_exprs)
         return '''
@@ -337,9 +339,10 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                                                  table_id=table_id,
                                                  input_dataset_id=input_dataset_id)
     else:
-        # Ensure that
-        #  1) we get the record IDs from the mapping table and
-        #  2) if there is a reference to `visit_occurrence` get `visit_occurrence_id` from the mapping visit table
+        # Ensure that we
+        #  1) populate primary key from the mapping table and
+        #  2) populate any foreign key fields from the mapping visit table
+        # NOTE: Assumes that besides person_id foreign keys exist only for visit_occurrence, location, care_site
         mapping_table = mapping_table_for(table_name) if is_id_mapped else None
         has_visit_occurrence_id = False
         has_care_site_id = False
@@ -422,13 +425,12 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                                    mapping_location=lc,
                                    src_location_id=src_location_table_id)
 
-        if table_id == '{hpo_id}_person'.format(hpo_id=hpo_id):
+        if table_name == PERSON:
             return '''
                     SELECT {cols} 
-                    FROM {ehr_dataset_id}.{table_id} t 
-                       {visit_join_expr} 
+                    FROM {ehr_dataset_id}.{table_id} t
+                       {location_join_expr}
                        {care_site_join_expr} 
-                       {location_join_expr} 
                     '''.format(cols=cols,
                                table_id=table_id,
                                ehr_dataset_id=input_dataset_id,
@@ -442,7 +444,8 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             FROM {ehr_dataset_id}.{table_id} t 
             JOIN {output_dataset_id}.{mapping_table} m
                 ON t.{table_name}_id = m.src_{table_name}_id 
-            AND m.src_table_id = '{table_id}' {visit_join_expr} 
+            AND m.src_table_id = '{table_id}' 
+            {visit_join_expr} 
             {care_site_join_expr} 
             {location_join_expr} 
             '''.format(cols=cols,
