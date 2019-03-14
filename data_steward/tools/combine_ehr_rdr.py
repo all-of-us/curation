@@ -183,7 +183,9 @@ def move_ehr_person_to_observation():
     q_max_rdr_obs_id = '''select max(observation_id) from {}.observation '''.format(bq_utils.get_rdr_dataset_id())
     max_ehr_obs_id = int(bq_utils.query(q_max_ehr_obs_id)['rows'][0]['f'][0]['v'])
     max_rdr_obs_id = int(bq_utils.query(q_max_rdr_obs_id)['rows'][0]['f'][0]['v'])
-    q = ''' --Race
+    q = '''
+        SELECT * FROM
+            (
             SELECT
                 ROW_NUMBER() OVER() + {offset} AS observation_id,
                 person_id,
@@ -206,67 +208,88 @@ def move_ehr_person_to_observation():
                 CAST(NULL AS STRING) as value_source_value,
                 NULL as questionnaire_response_id
             FROM
-            (
-              SELECT person_id, 4013886 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
-                ELSE birth_datetime
-              END AS observation_datetime,
-              race_concept_id as value_as_concept_id,
-              NULL as value_as_string,
-              race_source_value as observation_source_value, 
-              race_source_concept_id as observation_source_concept_id
-              FROM {ehr_dataset_id}.person
-              WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+                (
+                --Race
+                SELECT 
+                    person_id,
+                    4013886 as observation_concept_id,
+                    38000280 as observation_type_concept_id, 
+                    CASE
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        ELSE birth_datetime
+                    END AS observation_datetime,
+                    race_concept_id as value_as_concept_id,
+                    NULL as value_as_string,
+                    race_source_value as observation_source_value, 
+                    race_source_concept_id as observation_source_concept_id
+                FROM {ehr_dataset_id}.person
+                    
+                WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
 
-              UNION ALL
+                UNION ALL
 
-              --Ethnicity
-              SELECT person_id, 4271761 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
-                ELSE birth_datetime
-              END AS observation_datetime,
-              ethnicity_concept_id as value_as_concept_id,
-              NULL as value_as_string,
-              ethnicity_source_value as observation_source_value, 
-              ethnicity_source_concept_id as observation_source_concept_id
-              FROM {ehr_dataset_id}.person
-              WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+                --Ethnicity
+                SELECT 
+                    person_id,
+                    4271761 as observation_concept_id,
+                    38000280 as observation_type_concept_id, 
+                    CASE
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        ELSE birth_datetime
+                    END AS observation_datetime,
+                    ethnicity_concept_id as value_as_concept_id,
+                    NULL as value_as_string,
+                    ethnicity_source_value as observation_source_value, 
+                    ethnicity_source_concept_id as observation_source_concept_id
+                FROM {ehr_dataset_id}.person
+                WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
 
-              UNION ALL
+                UNION ALL
 
-              --Gender
-              SELECT person_id, 4135376 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
-                ELSE birth_datetime
-              END AS observation_datetime,
-              gender_concept_id as value_as_concept_id,
-              NULL as value_as_string,
-              gender_source_value as observation_source_value, 
-              gender_source_concept_id as observation_source_concept_id
-              FROM {ehr_dataset_id}.person
-              WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+                --Gender
+                SELECT 
+                    person_id,
+                    4135376 as observation_concept_id,
+                    38000280 as observation_type_concept_id, 
+                    CASE
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        ELSE birth_datetime
+                    END AS observation_datetime,
+                    gender_concept_id as value_as_concept_id,
+                    NULL as value_as_string,
+                    gender_source_value as observation_source_value, 
+                    gender_source_concept_id as observation_source_concept_id
+                FROM {ehr_dataset_id}.person
+                WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
 
-              UNION ALL
+                UNION ALL
 
-              --DOB
-              SELECT person_id, 4083587 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
-                ELSE birth_datetime
-              END AS observation_datetime,
-              NULL as value_as_concept_id,
-              birth_datetime as value_as_string,
-              NULL as observation_source_value,
-              NULL as observation_source_concept_id
-              FROM {ehr_dataset_id}.person
-              WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
-            )
-    '''.format(ehr_dataset_id=bq_utils.get_dataset_id(),
-               offset = max_ehr_obs_id + max_rdr_obs_id)
-    logger.debug('Copying EHR person table from {ehr_dataset_id} to combined dataset. Query is `{q}`'.format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
+                --DOB
+                SELECT 
+                    person_id,
+                    4083587 as observation_concept_id,
+                    38000280 as observation_type_concept_id, 
+                    CASE
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        ELSE birth_datetime
+                    END AS observation_datetime,
+                    NULL as value_as_concept_id,
+                    birth_datetime as value_as_string,
+                    NULL as observation_source_value,
+                    NULL as observation_source_concept_id
+                FROM {ehr_dataset_id}.person
+                WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+                )
+            ) AS person_to_obs
+        WHERE EXISTS
+            (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} AS consent
+            WHERE person_to_obs.person_id = consent.person_id)
+        '''.format(ehr_dataset_id=bq_utils.get_dataset_id(),
+                   offset=max_ehr_obs_id + max_rdr_obs_id,
+                   ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                   ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+    logger.debug('Copying EHR person table from {ehr_dataset_id} to combined dataset. Query is `{q}`'
+                 .format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
     query(q, dst_table_id=OBSERVATION_TABLE, write_disposition='WRITE_APPEND')
 
 
