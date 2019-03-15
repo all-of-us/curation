@@ -36,12 +36,14 @@ RESULT_PASS_COLOR = 'green'
 class InternalValidationError(RuntimeError):
     """Raised when an internal error occurs during validation"""
 
+
     def __init__(self, msg):
         super(InternalValidationError, self).__init__(msg)
 
 
 class BucketDoesNotExistError(RuntimeError):
     """Raised when a configured bucket does not exist"""
+
 
     def __init__(self, msg, bucket):
         super(BucketDoesNotExistError, self).__init__(msg)
@@ -267,7 +269,10 @@ def process_hpo(hpo_id, force_run=False):
         results, errors, warnings = validate_result['results'], validate_result['errors'], validate_result['warnings']
 
         # output to GCS
-        _save_results_html_in_gcs(bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings)
+        logging.info("STARTING TO CREATE RESULTS FILE")
+        rezult = _save_results_html_in_gcs(bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings)
+        logging.info("UPLOAD RESULTS ARE %s", rezult)
+        logging.info("FINISHED CREATING RESULTS FILE")
 
         if not all_required_files_loaded(results):
             logging.info('Required files not loaded in %s. Skipping achilles.' % folder_prefix)
@@ -383,12 +388,23 @@ def initial_date_time_object(gcs_object_metadata):
 
 
 def _get_submission_folder(bucket, bucket_items, force_process=False):
-    """returns a set of folders to process as part of validation
+    """
+    Get the string name of the most recent submission directory for validation
 
-    :bucket: bucket to look into
-    :param force_process: if True return most recent folder whether or not it has been processed already
-    :returns: list of folder prefix strings of form "<folder_name>/"
+    Skips directories listed in IGNORE_DIRECTORIES with a case insensitive
+    match.
 
+    :param bucket: string bucket name to look into
+    :param bucket_items: list of unicode string items in the bucket
+    :param force_process: if True return most recently updated directory, even
+         if it has already been processed.
+    :returns: a directory prefix string of the form "<directory_name>/" if
+        the directory has not been processed, it is not an ignored directory,
+        and force_process is False.  a directory prefix string of the form
+        "<directory_name>/" if the directory has been processed, it is not an
+        ignored directory, and force_process is True.  None if the directory
+        has been processed and force_process is False or no submission
+        directory exists
     """
     # files in root are ignored here
     all_folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items
@@ -396,10 +412,18 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
     folder_datetime_list = []
     folders_with_submitted_files = []
     for folder_name in all_folder_list:
+        # DC-343  special temporary case where we have to deal with a possible
+        # directory dumped into the bucket by 'ehr sync' process from RDR
+        if folder_name.lower() in common.IGNORE_DIRECTORIES:
+            logging.info("Skipping %s directory.  It is not a submission "
+                         "directory.", folder_name)
+            continue
+
         # this is not in a try/except block because this follows a bucket read which is in a try/except
         folder_bucket_items = [item for item in bucket_items if item['name'].startswith(folder_name)]
         submitted_bucket_items = list_submitted_bucket_items(folder_bucket_items)
         #[item for item in folder_bucket_items if basename(item) not in common.IGNORE_LIST]
+
         if len(submitted_bucket_items) > 0:
             folders_with_submitted_files.append(folder_name)
             latest_datetime = max([updated_datetime_object(item) for item in submitted_bucket_items])

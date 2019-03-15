@@ -47,3 +47,6 @@ RDR_ID_CONSTANT = ID_CONSTANT_FACTOR
 
 # Starting factor to create ID spaces for each HPO (without RDR collisions)
 EHR_ID_MULTIPLIER_START = 2
+
+PARTICIPANT_DIR = 'participant'
+IGNORE_DIRECTORIES = [PARTICIPANT_DIR]
