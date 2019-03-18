@@ -64,6 +64,14 @@ def load_heel(hpo_id):
 
 
 def run_heel(hpo_id):
+    """
+    Run heel commands
+
+    :param hpo_id:  string name for the hpo identifier
+    :returns: None
+    :raises RuntimeError: Raised if BigQuery takes longer than 30 seconds
+        to complete a job on a temporary table
+    """
     # very long test
     commands = _get_heel_commands(hpo_id)
     count = 0
@@ -99,7 +107,6 @@ def create_tables(hpo_id, drop_existing=False):
     :param drop_existing: if True, drop existing tables
     :return:
     """
-
     for table_name in ACHILLES_HEEL_TABLES:
         table_id = bq_utils.get_table_id(hpo_id, table_name)
         bq_utils.create_standard_table(table_name, table_id, drop_existing)

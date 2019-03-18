@@ -34,12 +34,12 @@ def attribute_name(file_path):
 
 
 def list_files_only(root):
-    for dirname, dirnames, filenames in os.walk(root):
+    for _, _, filenames in os.walk(root):
         return filenames
 
 
 def list_dirs_only(root):
-    for dirname, dirnames, filenames in os.walk(root):
+    for _, dirnames, _ in os.walk(root):
         return dirnames
 
 

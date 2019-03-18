@@ -142,11 +142,11 @@ def upload_achilles_files(hpo_id):
 
 
 def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
-    """uploads achilles web files to the corresponding hpo bucket
+    """
+    uploads achilles web files to the corresponding hpo bucket
 
     :hpo_id: which hpo bucket do these files go into
     :returns:
-
     """
     results = []
     if target_bucket is not None:
@@ -251,7 +251,8 @@ def process_hpo(hpo_id, force_run=False):
     runs validation for a single hpo_id
 
     :param hpo_id: which hpo_id to run for
-    :param force_run: if True, process the latest submission whether or not it has already been processed before
+    :param force_run: if True, process the latest submission whether or not it
+        has already been processed before
     :raises
     BucketDoesNotExistError:
       Raised when a configured bucket does not exist
@@ -269,10 +270,7 @@ def process_hpo(hpo_id, force_run=False):
         results, errors, warnings = validate_result['results'], validate_result['errors'], validate_result['warnings']
 
         # output to GCS
-        logging.info("STARTING TO CREATE RESULTS FILE")
-        rezult = _save_results_html_in_gcs(bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings)
-        logging.info("UPLOAD RESULTS ARE %s", rezult)
-        logging.info("FINISHED CREATING RESULTS FILE")
+        _save_results_html_in_gcs(bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings)
 
         if not all_required_files_loaded(results):
             logging.info('Required files not loaded in %s. Skipping achilles.' % folder_prefix)
