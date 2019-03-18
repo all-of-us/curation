@@ -99,16 +99,16 @@ def ehr_consent_query():
     return '''
     WITH ordered_response AS
      (SELECT
-        person_id, 
+        person_id,
         value_source_concept_id,
         observation_datetime,
         ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY observation_datetime DESC, value_source_concept_id ASC) AS rn
       FROM {dataset_id}.observation
       WHERE observation_source_value = '{source_value_ehr_consent}')
-    
-     SELECT person_id 
+
+     SELECT person_id
      FROM ordered_response
-     WHERE rn = 1 
+     WHERE rn = 1
        AND value_source_concept_id = {concept_id_consent_permission_yes}
     '''.format(dataset_id=bq_utils.get_rdr_dataset_id(),
                source_value_ehr_consent=SOURCE_VALUE_EHR_CONSENT,
@@ -183,7 +183,9 @@ def move_ehr_person_to_observation():
     q_max_rdr_obs_id = '''select max(observation_id) from {}.observation '''.format(bq_utils.get_rdr_dataset_id())
     max_ehr_obs_id = int(bq_utils.query(q_max_ehr_obs_id)['rows'][0]['f'][0]['v'])
     max_rdr_obs_id = int(bq_utils.query(q_max_rdr_obs_id)['rows'][0]['f'][0]['v'])
-    q = ''' --Race
+    q = '''
+        SELECT * FROM
+            (
             SELECT
                 ROW_NUMBER() OVER() + {offset} AS observation_id,
                 person_id,
@@ -206,67 +208,88 @@ def move_ehr_person_to_observation():
                 CAST(NULL AS STRING) as value_source_value,
                 NULL as questionnaire_response_id
             FROM
-            (
-              SELECT person_id, 4013886 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
-                ELSE birth_datetime
-              END AS observation_datetime,
-              race_concept_id as value_as_concept_id,
-              NULL as value_as_string,
-              race_source_value as observation_source_value, 
-              race_source_concept_id as observation_source_concept_id
-              FROM {ehr_dataset_id}.person
-              WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+                (
+                --Race
+                SELECT
+                    person_id,
+                    4013886 as observation_concept_id,
+                    38000280 as observation_type_concept_id,
+                    CASE
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        ELSE birth_datetime
+                    END AS observation_datetime,
+                    race_concept_id as value_as_concept_id,
+                    NULL as value_as_string,
+                    race_source_value as observation_source_value,
+                    race_source_concept_id as observation_source_concept_id
+                FROM {ehr_dataset_id}.person
 
-              UNION ALL
+                WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
 
-              --Ethnicity
-              SELECT person_id, 4271761 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
-                ELSE birth_datetime
-              END AS observation_datetime,
-              ethnicity_concept_id as value_as_concept_id,
-              NULL as value_as_string,
-              ethnicity_source_value as observation_source_value, 
-              ethnicity_source_concept_id as observation_source_concept_id
-              FROM {ehr_dataset_id}.person
-              WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+                UNION ALL
 
-              UNION ALL
+                --Ethnicity
+                SELECT
+                    person_id,
+                    4271761 as observation_concept_id,
+                    38000280 as observation_type_concept_id,
+                    CASE
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        ELSE birth_datetime
+                    END AS observation_datetime,
+                    ethnicity_concept_id as value_as_concept_id,
+                    NULL as value_as_string,
+                    ethnicity_source_value as observation_source_value,
+                    ethnicity_source_concept_id as observation_source_concept_id
+                FROM {ehr_dataset_id}.person
+                WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
 
-              --Gender
-              SELECT person_id, 4135376 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
-                ELSE birth_datetime
-              END AS observation_datetime,
-              gender_concept_id as value_as_concept_id,
-              NULL as value_as_string,
-              gender_source_value as observation_source_value, 
-              gender_source_concept_id as observation_source_concept_id
-              FROM {ehr_dataset_id}.person
-              WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+                UNION ALL
 
-              UNION ALL
+                --Gender
+                SELECT
+                    person_id,
+                    4135376 as observation_concept_id,
+                    38000280 as observation_type_concept_id,
+                    CASE
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        ELSE birth_datetime
+                    END AS observation_datetime,
+                    gender_concept_id as value_as_concept_id,
+                    NULL as value_as_string,
+                    gender_source_value as observation_source_value,
+                    gender_source_concept_id as observation_source_concept_id
+                FROM {ehr_dataset_id}.person
+                WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
 
-              --DOB
-              SELECT person_id, 4083587 as observation_concept_id, 38000280 as observation_type_concept_id, 
-              CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
-                ELSE birth_datetime
-              END AS observation_datetime,
-              NULL as value_as_concept_id,
-              birth_datetime as value_as_string,
-              NULL as observation_source_value,
-              NULL as observation_source_concept_id
-              FROM {ehr_dataset_id}.person
-              WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
-            )
-    '''.format(ehr_dataset_id=bq_utils.get_dataset_id(),
-               offset = max_ehr_obs_id + max_rdr_obs_id)
-    logger.debug('Copying EHR person table from {ehr_dataset_id} to combined dataset. Query is `{q}`'.format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
+                UNION ALL
+
+                --DOB
+                SELECT
+                    person_id,
+                    4083587 as observation_concept_id,
+                    38000280 as observation_type_concept_id,
+                    CASE
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        ELSE birth_datetime
+                    END AS observation_datetime,
+                    NULL as value_as_concept_id,
+                    birth_datetime as value_as_string,
+                    NULL as observation_source_value,
+                    NULL as observation_source_concept_id
+                FROM {ehr_dataset_id}.person
+                WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+                )
+            ) AS person_to_obs
+        WHERE EXISTS
+            (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} AS consent
+            WHERE person_to_obs.person_id = consent.person_id)
+        '''.format(ehr_dataset_id=bq_utils.get_dataset_id(),
+                   offset=max_ehr_obs_id + max_rdr_obs_id,
+                   ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                   ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+    logger.debug('Copying EHR person table from {ehr_dataset_id} to combined dataset. Query is `{q}`'
+                 .format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
     query(q, dst_table_id=OBSERVATION_TABLE, write_disposition='WRITE_APPEND')
 
 
@@ -284,7 +307,7 @@ def copy_ehr_table(table):
     q = '''
       SELECT * FROM {ehr_dataset_id}.{table} t
       WHERE EXISTS
-           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
+           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c
             WHERE t.person_id = c.person_id)
     '''.format(ehr_dataset_id=bq_utils.get_dataset_id(),
                table=table,
@@ -312,7 +335,7 @@ def mapping_query(domain_table):
         UNION ALL
 
         SELECT
-          '{ehr_dataset_id}'  AS src_dataset_id, 
+          '{ehr_dataset_id}'  AS src_dataset_id,
           t.{domain_table}_id AS src_{domain_table}_id,
           v.src_hpo_id AS src_hpo_id,
           t.{domain_table}_id  AS {domain_table}_id
@@ -398,56 +421,56 @@ def load_query(domain_table):
         # Note: Using left join in order to keep records that aren't mapped to visits
         mv = mapping_table_for(VISIT_OCCURRENCE)
         visit_join_expr = '''
-        LEFT JOIN 
+        LEFT JOIN
         (
             SELECT *
             FROM (
               SELECT
-                  *, 
+                  *,
                   row_number() OVER (PARTITION BY mv.visit_occurrence_id, mv.src_hpo_id ) AS row_num
-              FROM {ehr_rdr_dataset_id}.{mapping_visit_occurrence} mv 
+              FROM {ehr_rdr_dataset_id}.{mapping_visit_occurrence} mv
             )
-            WHERE row_num = 1  
+            WHERE row_num = 1
         ) mv  ON t.visit_occurrence_id = mv.src_visit_occurrence_id
          AND m.src_dataset_id = mv.src_dataset_id'''.format(ehr_rdr_dataset_id=ehr_rdr_dataset_id,
                                                             mapping_visit_occurrence=mv)
 
     return '''
-    SELECT {cols} 
-    FROM {rdr_dataset_id}.{domain_table} t 
-    JOIN 
+    SELECT {cols}
+    FROM {rdr_dataset_id}.{domain_table} t
+    JOIN
     (
         SELECT *
         FROM (
           SELECT
-              *, 
+              *,
               row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id ) AS row_num
           FROM {ehr_rdr_dataset_id}.{mapping_table} as m
         )
         WHERE row_num = 1
     ) m        ON t.{domain_table}_id = m.src_{domain_table}_id {visit_join_expr}
     WHERE m.src_dataset_id = '{rdr_dataset_id}'
-    
+
     UNION ALL
-    
+
     SELECT {cols}
     FROM
-    ( 
-        SELECT *
-        FROM (
-          SELECT
-              *, 
-              row_number() OVER (PARTITION BY m.{domain_table}_id) AS row_num
-          FROM {ehr_dataset_id}.{domain_table} as m
-        )
-        WHERE row_num = 1
-    ) t 
-    JOIN 
     (
         SELECT *
         FROM (
           SELECT
-              *, 
+              *,
+              row_number() OVER (PARTITION BY m.{domain_table}_id) AS row_num
+          FROM {ehr_dataset_id}.{domain_table} as m
+        )
+        WHERE row_num = 1
+    ) t
+    JOIN
+    (
+        SELECT *
+        FROM (
+          SELECT
+              *,
               row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id) AS row_num
           FROM {ehr_rdr_dataset_id}.{mapping_table} as m
         )
@@ -481,17 +504,17 @@ def fact_relationship_query():
     :return:
     """
     return '''
-    SELECT 
+    SELECT
       fr.domain_concept_id_1 AS domain_concept_id_1,
       CASE
-          WHEN domain_concept_id_1 = 21 
-            THEN m1.measurement_id 
+          WHEN domain_concept_id_1 = 21
+            THEN m1.measurement_id
           WHEN domain_concept_id_1 = 27
             THEN o1.observation_id
       END AS fact_id_1,
       fr.domain_concept_id_2,
-      CASE 
-          WHEN domain_concept_id_2 = 21 
+      CASE
+          WHEN domain_concept_id_2 = 21
             THEN m2.measurement_id
           WHEN domain_concept_id_2 = 27
             THEN o2.observation_id
