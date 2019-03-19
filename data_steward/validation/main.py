@@ -460,16 +460,27 @@ def copy_files(hpo_id):
     """copies over files from hpo bucket to drc bucket
 
     :hpo_id: hpo from which to copy
-
+    :return: json string indicating the job has finished
     """
     hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
     drc_private_bucket = gcs_utils.get_drc_bucket()
 
-    bucket_items = gcs_utils.list_bucket(hpo_bucket)
+    bucket_items = list_bucket(hpo_bucket)
+
+    ignored_items = 0
+    filtered_bucket_items = []
+    for item in bucket_items:
+        item_root = item['name'].split('/')[0] + '/'
+        if item_root.lower() in common.IGNORE_DIRECTORIES:
+            ignored_items += 1
+        else:
+            filtered_bucket_items.append(item)
+
+    logging.info("Ignoring %d items in %s", ignored_items, hpo_bucket)
 
     prefix = hpo_id + '/' + hpo_bucket + '/'
 
-    for item in bucket_items:
+    for item in filtered_bucket_items:
         item_name = item['name']
         gcs_utils.copy_object(source_bucket=hpo_bucket,
                               source_object_id=item_name,
