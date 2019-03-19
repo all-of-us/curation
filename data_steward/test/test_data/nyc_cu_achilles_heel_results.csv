@@ -1,0 +1,57 @@
+analysis_id,achilles_heel_warning,rule_id,record_count
+713,ERROR: 713-Number of drug exposure records with invalid visit_id; count (n=45540) should not be > 0,1,45540
+711,ERROR: 711-Number of drug exposure records with end date < start date; count (n=118688) should not be > 0,1,118688
+813,ERROR: 813-Number of observation records with invalid visit_id; count (n=360) should not be > 0,1,360
+613,ERROR: 613-Number of procedure occurrence records with invalid visit_id; count (n=1528) should not be > 0,1,1528
+413,ERROR: 413-Number of condition occurrence records with invalid visit_id; count (n=10060) should not be > 0,1,10060
+209,ERROR: 209-Number of visit records with end date < start date; count (n=1) should not be > 0,1,1
+712,WARNING: 712-Number of drug exposure records with invalid provider_id; count (n=299812) should not be > 0,1,299812
+612,WARNING: 612-Number of procedure occurrence records with invalid provider_id; count (n=325661) should not be > 0,1,325661
+412,WARNING: 412-Number of condition occurrence records with invalid provider_id; count (n=582888) should not be > 0,1,582888
+812,WARNING: 812-Number of observation records with invalid provider_id; count (n=3970) should not be > 0,1,3970
+410,NOTIFICATION: 410-Number of condition occurrence records outside valid observation period; count (n=1178531) should not be > 0,1,1178531
+208,NOTIFICATION: 208-Number of visit records outside valid observation period; count (n=350225) should not be > 0,1,350225
+810,NOTIFICATION: 810-Number of observation records outside valid observation period; count (n=153776) should not be > 0,1,153776
+710,NOTIFICATION: 710-Number of drug exposure records outside valid observation period; count (n=763821) should not be > 0,1,763821
+610,NOTIFICATION: 610-Number of procedure occurrence records outside valid observation period; count (n=481191) should not be > 0,1,481191
+406,ERROR: 406 - Distribution of age by condition_concept_id (count = 11); min value should not be negative,2,11
+506,ERROR: 506 - Distribution of age at death by gender (count = 1); min value should not be negative,2,1
+706,ERROR: 706 - Distribution of age by drug_concept_id (count = 8); min value should not be negative,2,8
+513,"WARNING: 513-Distribution of time from death to last visit (count = 1); max value should not be positive, otherwise its a zombie with data >1mo after death ",3,1
+512,"WARNING: 512-Distribution of time from death to last drug (count = 1); max value should not be positive, otherwise its a zombie with data >1mo after death ",3,1
+514,"WARNING: 514-Distribution of time from death to last procedure (count = 1); max value should not be positive, otherwise its a zombie with data >1mo after death ",3,1
+511,"WARNING: 511-Distribution of time from death to last condition (count = 1); max value should not be positive, otherwise its a zombie with data >1mo after death ",3,1
+515,"WARNING: 515-Distribution of time from death to last observation (count = 1); max value should not be positive, otherwise its a zombie with data >1mo after death ",3,1
+4,ERROR: 4-Number of persons by race; 2 concepts in data are not in vocabulary,4,2
+705,"ERROR: 705-Number of drug exposure records, by drug_concept_id by drug_type_concept_id; 1 concepts in data are not in vocabulary",5,1
+600,"WARNING: 600-Number of persons with at least one procedure occurrence, by procedure_concept_id; data with unmapped concepts",6,
+400,"WARNING: 400-Number of persons with at least one condition occurrence, by condition_concept_id; data with unmapped concepts",6,
+4,WARNING: 4-Number of persons by race; data with unmapped concepts,6,
+5,WARNING: 5-Number of persons by ethnicity; data with unmapped concepts,6,
+200,"WARNING: 200-Number of persons with at least one visit occurrence, by visit_concept_id; data with unmapped concepts",6,
+800,"WARNING: 800-Number of persons with at least one observation occurrence, by observation_concept_id; data with unmapped concepts",6,
+700,"WARNING: 700-Number of persons with at least one drug exposure, by drug_concept_id; data with unmapped concepts",6,
+202,"ERROR: 202-Number of persons by visit occurrence start month, by visit_concept_id; 16 concepts in data are not in correct vocabulary",10,16
+400,"ERROR: 400-Number of persons with at least one condition occurrence, by condition_concept_id; 719 concepts in data are not in correct vocabulary",12,719
+600,"ERROR: 600-Number of persons with at least one procedure occurrence, by procedure_concept_id; 529 concepts in data are not in correct vocabulary",14,529
+720,WARNING: 720-Number of drug exposure records  by drug exposure start month; theres a 100% change in monthly count of events,22,
+620,WARNING: 620-Number of procedure occurrence records  by procedure occurrence start month; theres a 100% change in monthly count of events,22,
+420,WARNING: 420-Number of condition occurrence records by condition occurrence start month; theres a 100% change in monthly count of events,22,
+820,WARNING: 820-Number of observation records  by observation start month; theres a 100% change in monthly count of events,22,
+402,"WARNING: 402-Number of persons by condition occurrence start month, by condition_concept_id; 49 concepts have a 100% change in monthly count of events",23,49
+802,"WARNING: 802-Number of persons by observation occurrence start month, by observation_concept_id; 6 concepts have a 100% change in monthly count of events",23,6
+602,"WARNING: 602-Number of persons by procedure occurrence start month, by procedure_concept_id; 25 concepts have a 100% change in monthly count of events",23,25
+702,"WARNING: 702-Number of persons by drug exposure start month, by drug_concept_id; 32 concepts have a 100% change in monthly count of events",23,32
+715,WARNING: 715-Distribution of days_supply by drug_concept_id (count = 16); max value should not be > 180,24,16
+716,WARNING: 716-Distribution of refills by drug_concept_id (count = 840); max value should not be > 10,25,840
+717,WARNING: 717-Distribution of quantity by drug_concept_id (count = 342); max value should not be > 600,26,342
+,NOTIFICATION:Unmapped data over percentage threshold in:Observation,27,
+,NOTIFICATION:Unmapped data over percentage threshold in:DrugExposure,27,
+,NOTIFICATION:Unmapped data over percentage threshold in:Measurement,27,
+,NOTIFICATION:Unmapped data over percentage threshold in:Procedure,27,
+,NOTIFICATION:Unmapped data over percentage threshold in:Condition,27,
+,NOTIFICATION: [GeneralPopulationOnly] Not all deciles represented at first observation,33,
+,NOTIFICATION: Count of unmapped source values exceeds threshold in: drug_exposure,34,6347
+,NOTIFICATION: Count of unmapped source values exceeds threshold in: condition_occurrence,34,2030
+,NOTIFICATION: [GeneralPopulationOnly] Count of distinct specialties of providers in the PROVIDER table is below threshold,38,0
+,"NOTIFICATION: Percentage of patients with at least 1 Measurement, 1 Dx and 1 Rx is below threshold",44,

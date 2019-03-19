@@ -1,43 +1,38 @@
 #!/usr/bin/env bash
 
-# report_for variable takes in the name of the dataset needed to get the top 10 heel errors from.
-# If needed to be run on all the Hpo's give "all_hpo" as a parameter
-report_for="all_hpo"
+# Fetch the most prevalent achilles heel errors in a dataset
+
+all_hpo=
+OUTPUT_FILENAME="heel_errors.csv"
 
 USAGE="
 Usage: run_heel_errors.sh
   --key_file <path to key file>
   --app_id <application id>
   --dataset_id <EHR dataset>
-  [--report_for <Report For: default is ${report_for}>]
+  [--all_hpo]
 "
 while true; do
   case "$1" in
     --app_id) app_id=$2; shift 2;;
     --dataset_id) dataset_id=$2; shift 2;;
     --key_file) key_file=$2; shift 2;;
-    --report_for) report_for=$2; shift 2;;
+    --all_hpo) all_hpo=1; shift;;
     -- ) shift; break ;;
     * ) break ;;
   esac
 done
 
-
 echo "dataset_id --> ${dataset_id}"
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
-echo "report_for --> ${report_for}"
+echo "all_hpo --> ${all_hpo}"
 
-if [ -z "${key_file}" ] || [ -z "${app_id}" ] || [ -z "${dataset_id}" ]
+if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${dataset_id}" ]]
 then
   echo "Specify the key file location, Application ID and Dataset ID. $USAGE"
   exit 1
 fi
-
-echo "dataset_id --> ${dataset_id}"
-echo "app_id --> ${app_id}"
-echo "key_file --> ${key_file}"
-echo "report_for --> ${report_for}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export APPLICATION_ID="${app_id}"
@@ -47,26 +42,25 @@ export BIGQUERY_DATASET_ID="${dataset_id}"
 gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
-#---------Create curation virtual environment----------
+#-------Set python path to add the modules and lib--------
 set -e
-# --------create a new environment------------
-cd ../..
-virtualenv  -p $(which python2.7) heel_env
+BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+cd ${BASE_DIR}
+virtualenv  -p $(which python2.7) ${BASE_DIR}/curation_env
+source tools/set_path.sh
 
-cd data_steward
 # ---------activate venv-------------
-source ../heel_env/bin/activate
+source curation_env/bin/activate
 
 #-------install the requirements in the virtualenv--------
-
 pip install -t lib -r requirements.txt
-cd tools
-#-------Set python path to add the modules and lib--------
-source set_path.sh
 
 #----------------Run the heel errors script------------------
-python common_heel_errors.py ${report_for} ${dataset_id}
+ALL_HPO_OPT=
+if [[ "${all_hpo}" -eq "1" ]]; then
+ ALL_HPO_OPT="--all_hpo"
+fi
 
-#-----------Deactivate the venv and unset the python path
+cd tools
+python top_heel_errors.py --app_id ${app_id} --dataset_id ${dataset_id} ${ALL_HPO_OPT} ${OUTPUT_FILENAME}
 deactivate
-unset PYTHONPATH
