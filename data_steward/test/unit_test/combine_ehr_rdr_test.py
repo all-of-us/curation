@@ -20,6 +20,9 @@ class CombineEhrRdrTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
         # TODO base class this
         logger.level = logging.INFO
         stream_handler = logging.StreamHandler(sys.stdout)
@@ -137,66 +140,90 @@ class CombineEhrRdrTest(unittest.TestCase):
         # ehr person table converts to observation records
         create_cdm_tables()
         copy_rdr_table('person')
+        ehr_consent()
         move_ehr_person_to_observation()
-        # person table query
-        q_person = '''
-            SELECT (person_id,
-                    gender_concept_id,
-                    gender_source_value,
-                    race_concept_id,
-                    race_source_value,
-                    CAST(birth_datetime as STRING),
-                    ethnicity_concept_id,
-                    ethnicity_source_value,
-                    EXTRACT(DATE FROM birth_datetime))
-            FROM {ehr_dataset_id}.person
-        '''.format(ehr_dataset_id=self.ehr_dataset_id)
-        response_ehr_person = [[item['v'] for item in row['f']] for row in
-                               query_result_to_payload(bq_utils.query(q_person))['F0_']]
-        q_obs = '''
-            SELECT (person_id,
+
+        concept_id = dict()
+        # concept ids
+        concept_id['gender'] = 4135376
+        concept_id['race'] = 4013886
+        concept_id['dob'] = 4083587
+        concept_id['ethnicity'] = 4271761
+
+        person_query = '''
+            SELECT * FROM
+                (SELECT person_id,
+                        gender_concept_id,
+                        gender_source_value,
+                        race_concept_id,
+                        race_source_value,
+                        CAST(birth_datetime AS STRING) AS birth_datetime,
+                        ethnicity_concept_id,
+                        ethnicity_source_value,
+                        EXTRACT(DATE FROM birth_datetime) AS birth_date
+                FROM {ehr_dataset_id}.person
+                ) AS ehr_person
+            WHERE EXISTS
+                (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} consent
+                WHERE ehr_person.person_id = consent.person_id)
+            '''.format(ehr_dataset_id=self.ehr_dataset_id,
+                       ehr_rdr_dataset_id=self.combined_dataset_id,
+                       ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+        person_response = bq_utils.query(person_query)
+        person_rows = bq_utils.response2rows(person_response)
+
+        # construct dicts of expected values
+        expected = dict()
+        for key in concept_id:
+            for person_row in person_rows:
+                pid = person_row['person_id']
+                if pid not in expected:
+                    expected[pid] = dict()
+                expected[pid][key] = dict()
+                expected[pid][key]['concept_id'] = concept_id[key]
+                expected[pid][key]['concept_id_value'] = None if key == 'dob' else person_row[key+'_concept_id']
+                expected[pid][key]['value_as_string'] = person_row['birth_datetime'] if key == 'dob' else None
+                expected[pid][key]['concept_source_value'] = None if key == 'dob' else person_row[key+'_source_value']
+                expected[pid][key]['birth_date'] = person_row['birth_date']
+
+        # query for observation table records
+        query = '''
+            SELECT person_id,
                     observation_concept_id,
                     value_as_concept_id,
                     value_as_string,
                     observation_source_value,
-                    observation_date)
-            FROM {ehr_dataset_id}.observation obs
-            WHERE   obs.observation_concept_id=4013886 -- Race - 4013886
-                OR  obs.observation_concept_id=4271761 -- Ethnic group - 4271761
-                OR  obs.observation_concept_id=4135376 -- Gender - 4135376
-                OR  obs.observation_concept_id=4083587 -- DOB - 4083587
-        '''.format(ehr_dataset_id=self.combined_dataset_id)
-        response_obs = [[item['v'] for item in row['f']] for row in
-                        query_result_to_payload(bq_utils.query(q_obs))['F0_']]
-        # concept ids
-        gender_concept_id = '4135376'
-        race_concept_id = '4013886'
-        dob_concept_id = '4083587'
-        ethnicity_concept_id = '4271761'
+                    observation_date
+            FROM {ehr_rdr_dataset_id}.observation AS obs
+            WHERE obs.observation_concept_id = {concept_id}
+            '''
 
-        # expected lists
-        expected_gender_list = [(row[0], gender_concept_id, row[1], row[8]) for row in response_ehr_person]
-        expected_race_list = [(row[0], race_concept_id, row[3], row[8]) for row in response_ehr_person]
-        expected_dob_list = [(row[0], dob_concept_id, row[5], row[8]) for row in response_ehr_person]
-        expected_ethnicity_list = [(row[0], ethnicity_concept_id, row[6], row[8]) for row in response_ehr_person]
+        obs_query = dict()
+        obs_response = dict()
+        obs_rows = dict()
 
-        # actual lists
-        actual_gender_list = [(row[0], row[1], row[2], row[5]) for row in response_obs if row[1] == gender_concept_id]
-        actual_race_list = [(row[0], row[1], row[2], row[5]) for row in response_obs if row[1] == race_concept_id]
-        actual_dob_list = [(row[0], row[1], row[3], row[5]) for row in response_obs if row[1] == dob_concept_id]
-        actual_ethnicity_list = [(row[0], row[1], row[2], row[5]) for row in response_obs if
-                                 row[1] == ethnicity_concept_id]
+        # extract actual results
+        actual = dict()
+        for key in concept_id:
+            obs_query[key] = query.format(ehr_rdr_dataset_id=self.combined_dataset_id,
+                                          concept_id=concept_id[key])
+            obs_response[key] = bq_utils.query(obs_query[key])
+            obs_rows[key] = bq_utils.response2rows(obs_response[key])
 
-        self.assertListEqual(sorted(expected_gender_list), sorted(actual_gender_list), 'gender check fails')
-        self.assertListEqual(sorted(expected_race_list), sorted(actual_race_list), 'race check fails')
-        self.assertListEqual(sorted(expected_dob_list), sorted(actual_dob_list), 'dob check fails')
-        self.assertListEqual(sorted(expected_ethnicity_list), sorted(actual_ethnicity_list), 'ethnicity check fails')
+            for obs_row in obs_rows[key]:
+                pid = obs_row['person_id']
+                if pid not in actual:
+                    actual[pid] = dict()
+                actual[pid][key] = dict()
+                actual[pid][key]['concept_id'] = obs_row['observation_concept_id']
+                actual[pid][key]['concept_id_value'] = None if key == 'dob' else obs_row['value_as_concept_id']
+                actual[pid][key]['value_as_string'] = obs_row['value_as_string'] if key == 'dob' else None
+                actual[pid][key]['concept_source_value'] = None if key == 'dob' else obs_row['observation_source_value']
+                actual[pid][key]['birth_date'] = obs_row['observation_date']
 
-        person_ehr_row_count = int(bq_utils.get_table_info('person', self.ehr_dataset_id)['numRows'])
-        obs_row_count = int(bq_utils.get_table_info('observation', self.combined_dataset_id)['numRows'])
-
-        self.assertEqual(person_ehr_row_count * 4, obs_row_count)
-
+        for pid in expected:
+            for key in concept_id:
+                self.assertDictEqual(expected[pid][key], actual[pid][key])
 
     def test_mapping_query(self):
         table_name = 'visit_occurrence'
@@ -211,7 +238,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         UNION ALL
 
         SELECT
-          '{ehr_dataset_id}'  AS src_dataset_id, 
+          '{ehr_dataset_id}'  AS src_dataset_id,
           t.{domain_table}_id AS src_{domain_table}_id,
           v.src_hpo_id AS src_hpo_id,
           t.{domain_table}_id  AS {domain_table}_id
@@ -262,7 +289,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         """
         where = '''
                 WHERE EXISTS
-                   (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c 
+                   (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c
                     WHERE t.person_id = c.person_id)
                 '''.format(ehr_rdr_dataset_id=self.combined_dataset_id, ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
         ehr_counts = test_util.get_table_counts(self.ehr_dataset_id, DOMAIN_TABLES, where)
@@ -331,12 +358,22 @@ class CombineEhrRdrTest(unittest.TestCase):
         pass
 
     def _check_ehr_person_observation(self):
-        q = '''SELECT * FROM {dataset_id}.person'''.format(dataset_id=self.ehr_dataset_id)
+        q = '''
+            SELECT *
+            FROM {dataset_id}.person AS p
+            WHERE EXISTS
+                (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} AS consent
+                WHERE p.person_id = consent.person_id)
+            '''.format(dataset_id=self.ehr_dataset_id,
+                       ehr_rdr_dataset_id=self.combined_dataset_id,
+                       ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
         person_response = bq_utils.query(q)
         person_rows = bq_utils.response2rows(person_response)
-        q = '''SELECT * 
-               FROM {ehr_rdr_dataset_id}.observation
-               WHERE observation_type_concept_id = 38000280'''.format(ehr_rdr_dataset_id=self.combined_dataset_id)
+        q = '''
+            SELECT *
+            FROM {ehr_rdr_dataset_id}.observation
+            WHERE observation_type_concept_id = 38000280
+            '''.format(ehr_rdr_dataset_id=self.combined_dataset_id)
         # observation should contain 4 records per person of type EHR
         expected = len(person_rows) * 4
         observation_response = bq_utils.query(q)
@@ -346,12 +383,28 @@ class CombineEhrRdrTest(unittest.TestCase):
         self.assertEqual(actual, expected,
                          'Expected %s EHR person records in observation but found %s' % (expected, actual))
 
+    def _check_ehr_person_observation_filter_on_consent(self):
+        expected = []
+        q = '''
+            SELECT *
+            FROM {ehr_rdr_dataset_id}.observation o
+            WHERE o.observation_type_concept_id = 38000280
+            AND NOT EXISTS
+                (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} AS consent
+                WHERE o.person_id = consent.person_id)
+            '''.format(ehr_rdr_dataset_id=self.combined_dataset_id,
+                       ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+        person_response = bq_utils.query(q)
+        actual = bq_utils.response2rows(person_response)
+        self.assertEqual(expected, actual)
+
     def test_main(self):
         main()
         self._mapping_table_checks()
         self._ehr_only_records_excluded()
         self._all_rdr_records_included()
         self._check_ehr_person_observation()
+        self._check_ehr_person_observation_filter_on_consent()
 
     def tearDown(self):
         test_util.delete_all_tables(self.combined_dataset_id)
