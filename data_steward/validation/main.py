@@ -12,12 +12,12 @@ import api_util
 import bq_utils
 import common
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
-import data_steward.validation.achilles as achilles
-import data_steward.validation.achilles_heel as achilles_heel
-import data_steward.validation.ehr_union as ehr_union
-import data_steward.validation.export as export
 import gcs_utils
 import resources
+import validation.achilles as achilles
+import validation.achilles_heel as achilles_heel
+import validation.ehr_union as ehr_union
+import validation.export as export
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
