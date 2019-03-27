@@ -268,54 +268,11 @@ class CombineEhrRdrTest(unittest.TestCase):
         # All fact_id_2 where domain_concept_id_2==27 map to observation
         pass
 
-    def _check_ehr_person_observation(self):
-        q = '''
-            SELECT *
-            FROM {dataset_id}.person AS p
-            WHERE EXISTS
-                (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} AS consent
-                WHERE p.person_id = consent.person_id)
-            '''.format(dataset_id=self.ehr_dataset_id,
-                       ehr_rdr_dataset_id=self.combined_dataset_id,
-                       ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
-        person_response = bq_utils.query(q)
-        person_rows = bq_utils.response2rows(person_response)
-        q = '''
-            SELECT *
-            FROM {ehr_rdr_dataset_id}.observation
-            WHERE observation_type_concept_id = 38000280
-            '''.format(ehr_rdr_dataset_id=self.combined_dataset_id)
-        # observation should contain 4 records per person of type EHR
-        expected = len(person_rows) * 4
-        observation_response = bq_utils.query(q)
-        observation_rows = bq_utils.response2rows(observation_response)
-        # TODO check row content is as expected
-        actual = len(observation_rows)
-        self.assertEqual(actual, expected,
-                         'Expected %s EHR person records in observation but found %s' % (expected, actual))
-
-    def _check_ehr_person_observation_filter_on_consent(self):
-        expected = []
-        q = '''
-            SELECT *
-            FROM {ehr_rdr_dataset_id}.observation o
-            WHERE o.observation_type_concept_id = 38000280
-            AND NOT EXISTS
-                (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} AS consent
-                WHERE o.person_id = consent.person_id)
-            '''.format(ehr_rdr_dataset_id=self.combined_dataset_id,
-                       ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
-        person_response = bq_utils.query(q)
-        actual = bq_utils.response2rows(person_response)
-        self.assertEqual(expected, actual)
-
     def test_main(self):
         main()
         self._mapping_table_checks()
         self._ehr_only_records_excluded()
         self._all_rdr_records_included()
-        self._check_ehr_person_observation()
-        self._check_ehr_person_observation_filter_on_consent()
 
     def tearDown(self):
         test_util.delete_all_tables(self.combined_dataset_id)

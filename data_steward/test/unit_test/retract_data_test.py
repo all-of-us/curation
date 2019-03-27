@@ -28,7 +28,7 @@ class RetractionTest(unittest.TestCase):
 
     def test_five_person_data_retraction(self):
         folder_prefix = 'dummy-prefix-2018-03-22/'
-        pid = 7
+        pid = 17
         expected_result = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
             # generate results files

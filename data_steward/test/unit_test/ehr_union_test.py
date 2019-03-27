@@ -244,7 +244,7 @@ class EhrUnionTest(unittest.TestCase):
       
                 (SELECT 'chs_measurement' AS src_table_id,
                   measurement_id AS src_measurement_id,
-                  ROW_NUMBER() over() + 2000000000000000 as measurement_id
+                  ROW_NUMBER() over() + 3000000000000000 as measurement_id
                   FROM `{app_id}.{dataset_id}.chs_measurement`)
                 
 
@@ -253,7 +253,7 @@ class EhrUnionTest(unittest.TestCase):
 
                 (SELECT 'pitt_measurement' AS src_table_id,
                   measurement_id AS src_measurement_id,
-                  ROW_NUMBER() over() + 3000000000000000 as measurement_id
+                  ROW_NUMBER() over() + 4000000000000000 as measurement_id
                   FROM `{app_id}.{dataset_id}.pitt_measurement`)
                 
     )
@@ -344,6 +344,31 @@ class EhrUnionTest(unittest.TestCase):
                 self.assertDictEqual(expected[pid][key], actual[pid][key])
         self.assertEqual(expected_query.strip(), query.strip(),
                          "Mapping query for \n {q} \n to is not as expected".format(q=query))
+
+    def test_ehr_person_observation(self):
+        self._load_datasets()
+
+        # perform ehr union
+        ehr_union.main(self.input_dataset_id, self.output_dataset_id, self.project_id, self.hpo_ids)
+
+        q_person = '''
+            SELECT *
+            FROM {output_dataset_id}.unioned_ehr_person AS p
+            '''.format(output_dataset_id=self.output_dataset_id)
+        person_response = bq_utils.query(q_person)
+        person_rows = bq_utils.response2rows(person_response)
+        q_observation = '''
+            SELECT *
+            FROM {output_dataset_id}.unioned_ehr_observation
+            WHERE observation_type_concept_id = 38000280
+            '''.format(output_dataset_id=self.output_dataset_id)
+        # observation should contain 4 records per person of type EHR
+        expected = len(person_rows) * 4
+        observation_response = bq_utils.query(q_observation)
+        observation_rows = bq_utils.response2rows(observation_response)
+        actual = len(observation_rows)
+        self.assertEqual(actual, expected,
+                         'Expected %s EHR person records in observation but found %s' % (expected, actual))
 
     def _test_table_hpo_subquery(self):
         # person is a simple select, no ids should be mapped

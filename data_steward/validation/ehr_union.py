@@ -80,10 +80,6 @@ import resources
 import common
 from tools.combine_ehr_rdr import OBSERVATION_TABLE, PERSON_TABLE
 
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
-
-logger = logging.getLogger(__name__)
-
 VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
 UNION_ALL = '''
@@ -513,7 +509,7 @@ def move_ehr_person_to_observation(output_dataset_id):
                    key_dob=pto_concept_id['dob'], dob_key_offset=pto_concept_offset['dob'],
                    key_ethnicity=pto_concept_id['ethnicity'], ethnicity_key_offset=pto_concept_offset['ethnicity'],
                    person_to_obs_query=get_person_to_observation_query(output_dataset_id))
-    logger.debug('Copying EHR person table from {ehr_dataset_id} to unioned dataset. Query is `{q}`'
+    logging.info('Copying EHR person table from {ehr_dataset_id} to unioned dataset. Query is `{q}`'
                  .format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
     dst_table_id = output_table_for(OBSERVATION_TABLE)
     dst_dataset_id = output_dataset_id
@@ -557,7 +553,7 @@ def map_ehr_person_to_observation(output_dataset_id):
                    person_to_obs_query=get_person_to_observation_query(output_dataset_id))
     dst_dataset_id = output_dataset_id
     dst_table_id = mapping_table_for(table_name)
-    logger.debug('Mapping EHR person table from {ehr_dataset_id} to unioned dataset. Query is `{q}`'
+    logging.info('Mapping EHR person table from {ehr_dataset_id} to unioned dataset. Query is `{q}`'
                  .format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
     query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
 
