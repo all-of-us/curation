@@ -9,7 +9,7 @@ import logging
 import sys
 
 from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
-from tools.combine_ehr_rdr import move_ehr_person_to_observation, mapping_query
+from tools.combine_ehr_rdr import mapping_query
 from tools.combine_ehr_rdr import DOMAIN_TABLES, EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY
 from google.appengine.ext import testbed
 from tools.combine_ehr_rdr import logger
@@ -135,95 +135,6 @@ class CombineEhrRdrTest(unittest.TestCase):
             msg_fmt = 'Table {table} has {rdr_count} in rdr and {combined_count} in combined (expected to be equal)'
             self.assertEqual(rdr_count, combined_count,
                              msg_fmt.format(table=table, rdr_count=rdr_count, combined_count=combined_count))
-
-    def test_ehr_person_to_observation(self):
-        # ehr person table converts to observation records
-        create_cdm_tables()
-        copy_rdr_table('person')
-        ehr_consent()
-        move_ehr_person_to_observation()
-
-        concept_id = dict()
-        # concept ids
-        concept_id['gender'] = 4135376
-        concept_id['race'] = 4013886
-        concept_id['dob'] = 4083587
-        concept_id['ethnicity'] = 4271761
-
-        person_query = '''
-            SELECT * FROM
-                (SELECT person_id,
-                        gender_concept_id,
-                        gender_source_value,
-                        race_concept_id,
-                        race_source_value,
-                        CAST(birth_datetime AS STRING) AS birth_datetime,
-                        ethnicity_concept_id,
-                        ethnicity_source_value,
-                        EXTRACT(DATE FROM birth_datetime) AS birth_date
-                FROM {ehr_dataset_id}.person
-                ) AS ehr_person
-            WHERE EXISTS
-                (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} consent
-                WHERE ehr_person.person_id = consent.person_id)
-            '''.format(ehr_dataset_id=self.ehr_dataset_id,
-                       ehr_rdr_dataset_id=self.combined_dataset_id,
-                       ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
-        person_response = bq_utils.query(person_query)
-        person_rows = bq_utils.response2rows(person_response)
-
-        # construct dicts of expected values
-        expected = dict()
-        for key in concept_id:
-            for person_row in person_rows:
-                pid = person_row['person_id']
-                if pid not in expected:
-                    expected[pid] = dict()
-                expected[pid][key] = dict()
-                expected[pid][key]['concept_id'] = concept_id[key]
-                expected[pid][key]['concept_id_value'] = None if key == 'dob' else person_row[key + '_concept_id']
-                expected[pid][key]['value_as_string'] = person_row['birth_datetime'] if key == 'dob' else None
-                expected[pid][key]['concept_source_value'] = None if key == 'dob' else person_row[key + '_source_value']
-                expected[pid][key]['birth_date'] = person_row['birth_date']
-
-        # query for observation table records
-        query = '''
-            SELECT person_id,
-                    observation_concept_id,
-                    value_as_concept_id,
-                    value_as_string,
-                    observation_source_value,
-                    observation_date
-            FROM {ehr_rdr_dataset_id}.observation AS obs
-            WHERE obs.observation_concept_id = {concept_id}
-            '''
-
-        obs_query = dict()
-        obs_response = dict()
-        obs_rows = dict()
-
-        # extract actual results
-        actual = dict()
-        for key in concept_id:
-            obs_query[key] = query.format(ehr_rdr_dataset_id=self.combined_dataset_id,
-                                          concept_id=concept_id[key])
-            obs_response[key] = bq_utils.query(obs_query[key])
-            obs_rows[key] = bq_utils.response2rows(obs_response[key])
-
-            for obs_row in obs_rows[key]:
-                pid = obs_row['person_id']
-                if pid not in actual:
-                    actual[pid] = dict()
-                actual[pid][key] = dict()
-                actual[pid][key]['concept_id'] = obs_row['observation_concept_id']
-                actual[pid][key]['concept_id_value'] = None if key == 'dob' else obs_row['value_as_concept_id']
-                actual[pid][key]['value_as_string'] = obs_row['value_as_string'] if key == 'dob' else None
-                actual[pid][key]['concept_source_value'] = None if key == 'dob' else obs_row['observation_source_value']
-                actual[pid][key]['birth_date'] = obs_row['observation_date']
-
-        for pid in expected:
-            for key in concept_id:
-                self.assertDictEqual(expected[pid][key], actual[pid][key])
 
     def test_mapping_query(self):
         table_name = 'visit_occurrence'

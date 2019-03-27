@@ -51,11 +51,14 @@ class EhrUnionTest(unittest.TestCase):
         expected_tables = dict()
         running_jobs = []
         for cdm_table in common.CDM_TABLES:
-            cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
             output_table = ehr_union.output_table_for(cdm_table)
             expected_tables[output_table] = []
             for hpo_id in self.hpo_ids:
                 # upload csv into hpo bucket
+                if hpo_id == CHS_HPO_ID:
+                    cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
+                else:
+                    cdm_file_name = os.path.join(test_util.PITT_FIVE_PERSONS_PATH, cdm_table + '.csv')
                 bucket = gcs_utils.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_file_name):
                     test_util.write_cloud_file(bucket, cdm_file_name)
@@ -68,6 +71,11 @@ class EhrUnionTest(unittest.TestCase):
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
                 expected_tables[output_table] += list(csv_rows)
+        # ensure person to observation output is as expected
+        output_table_person = ehr_union.output_table_for(ehr_union.PERSON_TABLE)
+        output_table_observation = ehr_union.output_table_for(ehr_union.OBSERVATION_TABLE)
+        expected_tables[output_table_observation] += 4 * expected_tables[output_table_person]
+
         incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
         if len(incomplete_jobs) > 0:
             message = "Job id(s) %s failed to complete" % incomplete_jobs
@@ -100,7 +108,8 @@ class EhrUnionTest(unittest.TestCase):
 
         # output should be mapping tables and cdm tables
         output_tables_before = self._dataset_tables(self.output_dataset_id)
-        mapping_tables = [ehr_union.mapping_table_for(table) for table in ehr_union.tables_to_map()]
+        mapping_tables = [ehr_union.mapping_table_for(table) for table in
+                          ehr_union.tables_to_map() + [ehr_union.PERSON_TABLE]]
         output_cdm_tables = [ehr_union.output_table_for(table) for table in common.CDM_TABLES]
         expected_output = set(output_tables_before + mapping_tables + output_cdm_tables)
 
@@ -255,6 +264,84 @@ class EhrUnionTest(unittest.TestCase):
         SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id
     FROM all_measurement
     '''.format(dataset_id=dataset_id, app_id=app_id)
+        self.assertEqual(expected_query.strip(), query.strip(), "Mapping query for \n {q} \n to is not as expected".format(q=query))
+
+    def test_ehr_person_to_observation(self):
+        # ehr person table converts to observation records
+        self._load_datasets()
+
+        # perform ehr union
+        ehr_union.main(self.input_dataset_id, self.output_dataset_id, self.project_id, self.hpo_ids)
+
+        person_query = '''
+            SELECT 
+                person_id,
+                gender_concept_id,
+                gender_source_value,
+                race_concept_id,
+                race_source_value,
+                CAST(birth_datetime AS STRING) AS birth_datetime,
+                ethnicity_concept_id,
+                ethnicity_source_value,
+                EXTRACT(DATE FROM birth_datetime) AS birth_date
+            FROM {input_dataset_id}.person
+            '''.format(input_dataset_id=self.input_dataset_id)
+        person_response = bq_utils.query(person_query)
+        person_rows = bq_utils.response2rows(person_response)
+
+        # construct dicts of expected values
+        expected = dict()
+        concept_id = common.pto_concept_id
+        for key in concept_id:
+            for person_row in person_rows:
+                pid = person_row['person_id']
+                if pid not in expected:
+                    expected[pid] = dict()
+                expected[pid][key] = dict()
+                expected[pid][key]['concept_id'] = concept_id[key]
+                expected[pid][key]['concept_id_value'] = None if key == 'dob' else person_row[key+'_concept_id']
+                expected[pid][key]['value_as_string'] = person_row['birth_datetime'] if key == 'dob' else None
+                expected[pid][key]['concept_source_value'] = None if key == 'dob' else person_row[key+'_source_value']
+                expected[pid][key]['birth_date'] = person_row['birth_date']
+
+        # query for observation table records
+        query = '''
+            SELECT person_id,
+                    observation_concept_id,
+                    value_as_concept_id,
+                    value_as_string,
+                    observation_source_value,
+                    observation_date
+            FROM {output_dataset_id}.observation AS obs
+            WHERE obs.observation_concept_id = {concept_id}
+            '''
+
+        obs_query = dict()
+        obs_response = dict()
+        obs_rows = dict()
+
+        # extract actual results
+        actual = dict()
+        for key in concept_id:
+            obs_query[key] = query.format(output_dataset_id=self.output_dataset_id,
+                                          concept_id=concept_id[key])
+            obs_response[key] = bq_utils.query(obs_query[key])
+            obs_rows[key] = bq_utils.response2rows(obs_response[key])
+
+            for obs_row in obs_rows[key]:
+                pid = obs_row['person_id']
+                if pid not in actual:
+                    actual[pid] = dict()
+                actual[pid][key] = dict()
+                actual[pid][key]['concept_id'] = obs_row['observation_concept_id']
+                actual[pid][key]['concept_id_value'] = None if key == 'dob' else obs_row['value_as_concept_id']
+                actual[pid][key]['value_as_string'] = obs_row['value_as_string'] if key == 'dob' else None
+                actual[pid][key]['concept_source_value'] = None if key == 'dob' else obs_row['observation_source_value']
+                actual[pid][key]['birth_date'] = obs_row['observation_date']
+
+        for pid in expected:
+            for key in concept_id:
+                self.assertDictEqual(expected[pid][key], actual[pid][key])
         self.assertEqual(expected_query.strip(), query.strip(),
                          "Mapping query for \n {q} \n to is not as expected".format(q=query))
 
