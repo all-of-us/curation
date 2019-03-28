@@ -264,7 +264,8 @@ class EhrUnionTest(unittest.TestCase):
         SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id
     FROM all_measurement
     '''.format(dataset_id=dataset_id, app_id=app_id)
-        self.assertEqual(expected_query.strip(), query.strip(), "Mapping query for \n {q} \n to is not as expected".format(q=query))
+        self.assertEqual(expected_query.strip(), query.strip(),
+                         "Mapping query for \n {q} \n to is not as expected".format(q=query))
 
     def test_ehr_person_to_observation(self):
         # ehr person table converts to observation records
@@ -284,8 +285,8 @@ class EhrUnionTest(unittest.TestCase):
                 ethnicity_concept_id,
                 ethnicity_source_value,
                 EXTRACT(DATE FROM birth_datetime) AS birth_date
-            FROM {input_dataset_id}.person
-            '''.format(input_dataset_id=self.input_dataset_id)
+            FROM {output_dataset_id}.unioned_ehr_person
+            '''.format(output_dataset_id=self.output_dataset_id)
         person_response = bq_utils.query(person_query)
         person_rows = bq_utils.response2rows(person_response)
 
@@ -312,7 +313,7 @@ class EhrUnionTest(unittest.TestCase):
                     value_as_string,
                     observation_source_value,
                     observation_date
-            FROM {output_dataset_id}.observation AS obs
+            FROM {output_dataset_id}.unioned_ehr_observation AS obs
             WHERE obs.observation_concept_id = {concept_id}
             '''
 
@@ -342,10 +343,8 @@ class EhrUnionTest(unittest.TestCase):
         for pid in expected:
             for key in concept_id:
                 self.assertDictEqual(expected[pid][key], actual[pid][key])
-        self.assertEqual(expected_query.strip(), query.strip(),
-                         "Mapping query for \n {q} \n to is not as expected".format(q=query))
 
-    def test_ehr_person_observation(self):
+    def test_ehr_person_to_observation_counts(self):
         self._load_datasets()
 
         # perform ehr union
