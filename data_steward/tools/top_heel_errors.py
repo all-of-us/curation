@@ -1,14 +1,15 @@
 """
 Fetch the most prevalent achilles heel errors in a dataset
 """
-import resources
-import bq_utils
-import os
-import json
 import csv
-from google.appengine.api.app_identity import app_identity
 from functools import partial
+import json
+import os
 
+from google.appengine.api.app_identity import app_identity
+
+import bq_utils
+import resources
 
 HPO_ID_LIST = [item['hpo_id'] for item in resources.hpo_csv()]
 JSON = 'json'
@@ -23,7 +24,8 @@ FIELD_ACHILLES_HEEL_WARNING = 'achilles_heel_warning'
 FIELD_HEEL_ERROR = 'heel_error'
 FIELD_RULE_ID = 'rule_id'
 FIELD_RECORD_COUNT = 'record_count'
-FIELDS = [FIELD_DATASET_NAME, FIELD_ANALYSIS_ID, FIELD_HEEL_ERROR, FIELD_RULE_ID, FIELD_RECORD_COUNT]
+FIELDS = [FIELD_DATASET_NAME, FIELD_ANALYSIS_ID, FIELD_HEEL_ERROR,
+          FIELD_RULE_ID, FIELD_RECORD_COUNT]
 RESULT_LIMIT = 10
 
 # Query template
@@ -38,9 +40,10 @@ HEEL_ERROR_QUERY = '''
  ORDER BY record_count DESC LIMIT {result_limit}
 '''
 
-# The function query_format is used to fill in the remaining components after substituting aliases, result limit
-# ex: query_format(dataset_name='', app_id='')
-query_format = partial(HEEL_ERROR_QUERY.format,
+# The function QUERY_FORMAT is used to fill in the remaining components after
+# substituting aliases, result limit
+# ex: QUERY_FORMAT(dataset_name='', app_id='')
+QUERY_FORMAT = partial(HEEL_ERROR_QUERY.format,
                        field_dataset_name=FIELD_DATASET_NAME,
                        field_heel_error=FIELD_HEEL_ERROR,
                        result_limit=RESULT_LIMIT)
@@ -61,6 +64,8 @@ def save_csv(l, file_name):
         writer.writeheader()
         writer.writerows(l)
 
+    print("Wrote file:\t{}".format(file_name))
+
 
 def save_json(l, file_name):
     """
@@ -72,13 +77,15 @@ def save_json(l, file_name):
     with open(file_name, 'w') as fp:
         json.dump(l, fp, sort_keys=True, indent=4)
 
+    print("Wrote file:\t{}".format(file_name))
+
 
 def get_hpo_subqueries(app_id, dataset_id, all_table_ids):
     result = []
     for hpo_id in HPO_ID_LIST:
         table_id = bq_utils.get_table_id(hpo_id, resources.ACHILLES_HEEL_RESULTS)
         if table_id in all_table_ids:
-            subquery = query_format(dataset_name=hpo_id,
+            subquery = QUERY_FORMAT(dataset_name=hpo_id,
                                     app_id=app_id,
                                     dataset_id=dataset_id,
                                     table_id=table_id)
@@ -88,11 +95,15 @@ def get_hpo_subqueries(app_id, dataset_id, all_table_ids):
 
 def construct_query(app_id, dataset_id, all_hpo=False):
     """
-    Construct appropriate and executable query to retrieve most prevalent errors from achilles heel results table(s)
+    Construct query to retrieve most prevalent errors from achilles heel results table(s)
+
+    Construct an appropriate and executable query.
 
     :param app_id: Identifies the google cloud project containing the dataset
-    :param dataset_id: Identifies the dataset where from achilles heel results should be obtained
-    :param all_hpo: If `True` query <hpo_id>_achilles_heel_results, otherwise just achilles_heel_results (default)
+    :param dataset_id: Identifies the dataset where from achilles heel results
+        should be obtained
+    :param all_hpo: If `True` query <hpo_id>_achilles_heel_results, otherwise
+        just achilles_heel_results (default)
     :return: The query or :None if no achilles heel results table is found whatsoever
     """
     query = None
@@ -108,7 +119,7 @@ def construct_query(app_id, dataset_id, all_hpo=False):
         # Fetch from achilles_heel_results table
         table_id = resources.ACHILLES_HEEL_RESULTS
         if table_id in all_table_ids:
-            query = query_format(dataset_name=dataset_id,
+            query = QUERY_FORMAT(dataset_name=dataset_id,
                                  app_id=app_id,
                                  dataset_id=dataset_id,
                                  table_id=table_id)
@@ -120,9 +131,12 @@ def top_heel_errors(app_id, dataset_id, all_hpo=False):
     Retrieve most prevalent errors from achilles heel results
 
     :param app_id: Identifies the google cloud project containing the dataset
-    :param dataset_id: Identifies the dataset where from achilles heel results should be obtained
-    :param all_hpo: If `True` query <hpo_id>_achilles_heel_results, otherwise just achilles_heel_results (default)
-    :return: Results as a list of dict, :None if no achilles heel results table is found whatsoever
+    :param dataset_id: Identifies the dataset where from achilles heel results
+        should be obtained
+    :param all_hpo: If `True` query <hpo_id>_achilles_heel_results, otherwise
+        just achilles_heel_results (default)
+    :return: Results as a list of dict, :None if no achilles heel results table
+        is found whatsoever
     """
     result = None
     query = construct_query(app_id, dataset_id, all_hpo)
@@ -135,12 +149,17 @@ def top_heel_errors(app_id, dataset_id, all_hpo=False):
 
 def main(app_id, dataset_id, file_name, all_hpo=False, file_format=None):
     """
-    Retrieve most prevalent errors from achilles heel results table(s) and save results to a file at specified path
+    Retrieve most prevalent errors from achilles heel results table(s)
+
+    Retrieve most prevalent errors from achilles heel results table(s) and save
+    results to a file at specified path
 
     :param app_id: Identifies the google cloud project containing the dataset
-    :param dataset_id: Identifies the dataset where from achilles heel results should be obtained
+    :param dataset_id: Identifies the dataset where from achilles heel results
+        should be obtained
     :param file_name: Path of file to save to
-    :param all_hpo: If `True` query <hpo_id>_achilles_heel_results, otherwise just achilles_heel_results (default)
+    :param all_hpo: If `True` query <hpo_id>_achilles_heel_results, otherwise
+        just achilles_heel_results (default)
     :param file_format: csv or json
     """
     if app_id is None:
@@ -149,6 +168,7 @@ def main(app_id, dataset_id, file_name, all_hpo=False, file_format=None):
         dataset_id = bq_utils.get_dataset_id()
     if os.path.exists(file_name):
         # Do not overwrite existing
+#        raise RuntimeError('File {} already exists'.format(file_name))
         raise IOError('File %s already exists' % file_name)
     if file_format is None:
         # Attempt to determine format
@@ -161,22 +181,26 @@ def main(app_id, dataset_id, file_name, all_hpo=False, file_format=None):
         save_csv(heel_errors, file_name)
     elif file_format == JSON:
         save_json(heel_errors, file_name)
+    else:
+        save_csv(heel_errors, file_name)
 
 
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--app_id',
+    PARSER = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    PARSER.add_argument('--app_id',
                         required=True,
                         help='Identifies the google cloud project')
-    parser.add_argument('--dataset_id',
+    PARSER.add_argument('--dataset_id',
                         required=True,
-                        help='Name of the dataset where from achilles heel results should be obtained')
-    parser.add_argument('--all_hpo',
+                        help=('Name of the dataset where from achilles heel '
+                              'results should be obtained'))
+    PARSER.add_argument('--all_hpo',
                         help='If specified fetch top results for all HPOs',
                         action='store_true')
-    parser.add_argument('--format', help='Output format', choices=OUTPUT_FORMATS)
-    parser.add_argument('file_name', help='Path of file to save results to')
-    args = parser.parse_args()
-    main(args.app_id, args.dataset_id, args.file_name, args.all_hpo, args.format)
+    PARSER.add_argument('--format', help='Output format', choices=OUTPUT_FORMATS,
+                        default=CSV)
+    PARSER.add_argument('file_name', help='Path of file to save results to')
+    ARGS = PARSER.parse_args()
+    main(ARGS.app_id, ARGS.dataset_id, ARGS.file_name, ARGS.all_hpo, ARGS.format)

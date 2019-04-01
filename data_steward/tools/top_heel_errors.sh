@@ -6,7 +6,7 @@ all_hpo=
 OUTPUT_FILENAME="heel_errors.csv"
 
 USAGE="
-Usage: run_heel_errors.sh
+Usage: top_heel_errors.sh
   --key_file <path to key file>
   --app_id <application id>
   --dataset_id <EHR dataset>
@@ -46,11 +46,13 @@ gcloud config set project ${app_id}
 set -e
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 cd ${BASE_DIR}
-virtualenv  -p $(which python2.7) ${BASE_DIR}/curation_env
+VIRTUAL_ENV=${BASE_DIR}/top_heel_errors_env
+virtualenv  -p $(which python2.7) ${VIRTUAL_ENV}
 source tools/set_path.sh
+set +e
 
 # ---------activate venv-------------
-source curation_env/bin/activate
+source ${VIRTUAL_ENV}/bin/activate
 
 #-------install the requirements in the virtualenv--------
 pip install -t lib -r requirements.txt
@@ -63,4 +65,8 @@ fi
 
 cd tools
 python top_heel_errors.py --app_id ${app_id} --dataset_id ${dataset_id} ${ALL_HPO_OPT} ${OUTPUT_FILENAME}
+
+#----------cleanup-------------------
+rm -rf ${VIRTUAL_ENV}
+export PYTHONPATH=
 deactivate
