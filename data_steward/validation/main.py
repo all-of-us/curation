@@ -8,16 +8,16 @@ import datetime
 from flask import Flask
 from googleapiclient.errors import HttpError
 
-import achilles
-import achilles_heel
 import api_util
 import bq_utils
 import common
-import export
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 import gcs_utils
 import resources
-import ehr_union
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+import validation.achilles as achilles
+import validation.achilles_heel as achilles_heel
+import validation.ehr_union as ehr_union
+import validation.export as export
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
@@ -49,7 +49,7 @@ class BucketDoesNotExistError(RuntimeError):
 
 
 def all_required_files_loaded(result_items):
-    for (file_name, found, parsed, loaded) in result_items:
+    for (file_name, _, _, loaded) in result_items:
         if file_name in common.REQUIRED_FILES:
             if loaded != 1:
                 return False
@@ -62,12 +62,14 @@ def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
 
     :param hpo_id: the ID of the HPO that report should go to
     :param folder_prefix: relative path in GCS to save to (without 'gs://')
-    :param target_bucket: GCS bucket to save to. If not supplied, uses the bucket assigned to hpo_id.
+    :param target_bucket: GCS bucket to save to. If not supplied, uses the
+        bucket assigned to hpo_id.
     :return:
     """
     if hpo_id is None:
         if target_bucket is None:
-            raise RuntimeError('Cannot save datasources.json if neither hpo_id or target_bucket are specified.')
+            raise RuntimeError('Cannot save datasources.json if neither hpo_id '
+                               'or target_bucket are specified.')
         hpo_id = 'default'
     else:
         if target_bucket is None:
@@ -76,7 +78,9 @@ def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
     datasource = dict(name=hpo_id, folder=hpo_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO.StringIO(json.dumps(datasources))
-    result = gcs_utils.upload_object(target_bucket, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON, datasources_fp)
+    result = gcs_utils.upload_object(target_bucket,
+                                     folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON,
+                                     datasources_fp)
     return result
 
 
@@ -100,8 +104,8 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
         if target_bucket is None:
             target_bucket = gcs_utils.get_hpo_bucket(hpo_id)
 
-    logging.info('Exporting {datasource_name} report to bucket {target_bucket}'.format(datasource_name=datasource_name,
-                                                                                       target_bucket=target_bucket))
+    logging.info('Exporting %s report to bucket %s', datasource_name, target_bucket)
+
     # Run export queries and store json payloads in specified folder in the target bucket
     reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
     for export_name in common.ALL_REPORTS:
@@ -140,11 +144,11 @@ def upload_achilles_files(hpo_id):
 
 
 def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
-    """uploads achilles web files to the corresponding hpo bucket
+    """
+    uploads achilles web files to the corresponding hpo bucket
 
     :hpo_id: which hpo bucket do these files go into
     :returns:
-
     """
     results = []
     if target_bucket is not None:
@@ -183,8 +187,8 @@ def validate_all_hpos():
             process_hpo(hpo_id)
         except BucketDoesNotExistError as bucket_error:
             bucket = bucket_error.bucket
-            logging.warn('Bucket `{bucket}` configured for hpo_id `hpo_id` does not exist'.format(bucket=bucket,
-                                                                                                  hpo_id=hpo_id))
+            logging.warn('Bucket `%s` configured for hpo_id `%s` does not exist',
+                         bucket, hpo_id)
     return 'validation done!'
 
 
@@ -193,19 +197,21 @@ def list_bucket(bucket):
         return gcs_utils.list_bucket(bucket)
     except HttpError as err:
         if err.resp.status == 404:
-            raise BucketDoesNotExistError('Failed to list objects in bucket', bucket)
+            raise BucketDoesNotExistError('Failed to list objects in bucket ', bucket)
         raise
     except Exception:
         raise
 
 
 def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
-    logging.info('Validating %s submission in gs://%s/%s' % (hpo_id, bucket, folder_prefix))
+    logging.info('Validating %s submission in gs://%s/%s',
+                 hpo_id, bucket, folder_prefix)
     # separate cdm from the unknown (unexpected) files
     found_cdm_files = []
     unknown_files = []
     found_pii_files = []
-    folder_items = [item['name'][len(folder_prefix):] for item in bucket_items if item['name'].startswith(folder_prefix)]
+    folder_items = [item['name'][len(folder_prefix):] \
+                    for item in bucket_items if item['name'].startswith(folder_prefix)]
     for item in folder_items:
         if _is_cdm_file(item):
             found_cdm_files.append(item)
@@ -249,45 +255,48 @@ def process_hpo(hpo_id, force_run=False):
     runs validation for a single hpo_id
 
     :param hpo_id: which hpo_id to run for
-    :param force_run: if True, process the latest submission whether or not it has already been processed before
+    :param force_run: if True, process the latest submission whether or not it
+        has already been processed before
     :raises
     BucketDoesNotExistError:
       Raised when a configured bucket does not exist
     InternalValidationError:
       Raised when an internal error is encountered during validation
     """
-    logging.info('Processing hpo_id %s' % hpo_id)
+    logging.info('Processing hpo_id %s', hpo_id)
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     bucket_items = list_bucket(bucket)
     folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
     if folder_prefix is None:
-        logging.info('No submissions to process in %s bucket %s' % (hpo_id, bucket))
+        logging.info('No submissions to process in %s bucket %s', hpo_id, bucket)
     else:
         validate_result = validate_submission(hpo_id, bucket, bucket_items, folder_prefix)
-        results, errors, warnings = validate_result['results'], validate_result['errors'], validate_result['warnings']
+        results = validate_result['results']
+        errors = validate_result['errors']
+        warnings = validate_result['warnings']
 
         # output to GCS
         _save_results_html_in_gcs(bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings)
 
         if not all_required_files_loaded(results):
-            logging.info('Required files not loaded in %s. Skipping achilles.' % folder_prefix)
+            logging.info('Required files not loaded in %s. Skipping achilles.', folder_prefix)
         else:
-            logging.info('Running achilles on %s' % folder_prefix)
+            logging.info('Running achilles on %s', folder_prefix)
             run_achilles(hpo_id)
             run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
-            logging.info('Uploading achilles index files to `gs://%s/%s`.' % (bucket, folder_prefix))
+            logging.info('Uploading achilles index files to `gs://%s/%s`.', bucket, folder_prefix)
             _upload_achilles_files(hpo_id, folder_prefix)
 
         now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-        logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.' %
-                     (bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT))
+        logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
+                     bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT)
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
 
 
 def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefix, bucket):
     errors = []
     results = []
-    logging.info('Validating file `{file_name}`'.format(file_name=file_name))
+    logging.info('Validating file `%s`', file_name)
     found = parsed = loaded = 0
     table_name = file_name.split('.')[0]
 
@@ -297,17 +306,15 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefi
         load_job_id = load_results['jobReference']['jobId']
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
 
-        if len(incomplete_jobs) == 0:
+        if incomplete_jobs == []:
             job_resource = bq_utils.get_job_details(job_id=load_job_id)
             job_status = job_resource['status']
             if 'errorResult' in job_status:
                 # These are issues (which we report back) as opposed to internal errors
                 issues = [item['message'] for item in job_status['errors']]
                 errors.append((file_name, ' || '.join(issues)))
-                logging.info(
-                    'Issues found in gs://{bucket}/{folder_prefix}/{file_name}'.format(
-                        bucket=bucket, folder_prefix=folder_prefix, file_name=file_name)
-                )
+                logging.info('Issues found in gs://%s/%s/%s',
+                             bucket, folder_prefix, file_name)
                 for issue in issues:
                     logging.info(issue)
             else:
@@ -344,6 +351,7 @@ def basename(gcs_object_metadata):
     name = gcs_object_metadata['name']
     if len(name.split('/')) > 1:
         return '/'.join(name.split('/')[1:])
+    return ''
 
 
 def updated_datetime_object(gcs_object_metadata):
@@ -366,9 +374,12 @@ def list_submitted_bucket_items(folder_bucketitems):
     today = datetime.datetime.today()
     for file_name in folder_bucketitems:
         if basename(file_name) not in common.IGNORE_LIST:
-            #in common.CDM_FILES or is_pii(basename(file_name)):
+            # in common.CDM_FILES or is_pii(basename(file_name)):
             created_date = initial_date_time_object(file_name)
-            if created_date + datetime.timedelta(days=object_retention_days) - datetime.timedelta(days=1) > today:
+            retention_time = datetime.timedelta(days=object_retention_days)
+            retention_start_time = datetime.timedelta(days=1)
+            age_threshold = created_date + retention_time - retention_start_time
+            if age_threshold > today:
                 files_list.append(file_name)
     return files_list
 
@@ -383,29 +394,47 @@ def initial_date_time_object(gcs_object_metadata):
 
 
 def _get_submission_folder(bucket, bucket_items, force_process=False):
-    """returns a set of folders to process as part of validation
+    """
+    Get the string name of the most recent submission directory for validation
 
-    :bucket: bucket to look into
-    :param force_process: if True return most recent folder whether or not it has been processed already
-    :returns: list of folder prefix strings of form "<folder_name>/"
+    Skips directories listed in IGNORE_DIRECTORIES with a case insensitive
+    match.
 
+    :param bucket: string bucket name to look into
+    :param bucket_items: list of unicode string items in the bucket
+    :param force_process: if True return most recently updated directory, even if it has already been processed.
+    :returns: a directory prefix string of the form "<directory_name>/" if
+        the directory has not been processed, it is not an ignored directory,
+        and force_process is False.  a directory prefix string of the form
+        "<directory_name>/" if the directory has been processed, it is not an
+        ignored directory, and force_process is True.  None if the directory
+        has been processed and force_process is False or no submission
+        directory exists
     """
     # files in root are ignored here
     all_folder_list = set([item['name'].split('/')[0] + '/' for item in bucket_items
                            if len(item['name'].split('/')) > 1])
+
     folder_datetime_list = []
     folders_with_submitted_files = []
     for folder_name in all_folder_list:
+        # DC-343  special temporary case where we have to deal with a possible
+        # directory dumped into the bucket by 'ehr sync' process from RDR
+        if folder_name.lower() in common.IGNORE_DIRECTORIES:
+            logging.info("Skipping %s directory.  It is not a submission "
+                         "directory.", folder_name)
+            continue
+
         # this is not in a try/except block because this follows a bucket read which is in a try/except
         folder_bucket_items = [item for item in bucket_items if item['name'].startswith(folder_name)]
         submitted_bucket_items = list_submitted_bucket_items(folder_bucket_items)
-        #[item for item in folder_bucket_items if basename(item) not in common.IGNORE_LIST]
-        if len(submitted_bucket_items) > 0:
+
+        if submitted_bucket_items and submitted_bucket_items != []:
             folders_with_submitted_files.append(folder_name)
             latest_datetime = max([updated_datetime_object(item) for item in submitted_bucket_items])
             folder_datetime_list.append(latest_datetime)
 
-    if len(folder_datetime_list) > 0:
+    if folder_datetime_list and folder_datetime_list != []:
         latest_datetime_index = folder_datetime_list.index(max(folder_datetime_list))
         to_process_folder = folders_with_submitted_files[latest_datetime_index]
         if force_process:
@@ -438,16 +467,27 @@ def copy_files(hpo_id):
     """copies over files from hpo bucket to drc bucket
 
     :hpo_id: hpo from which to copy
-
+    :return: json string indicating the job has finished
     """
     hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
     drc_private_bucket = gcs_utils.get_drc_bucket()
 
-    bucket_items = gcs_utils.list_bucket(hpo_bucket)
+    bucket_items = list_bucket(hpo_bucket)
+
+    ignored_items = 0
+    filtered_bucket_items = []
+    for item in bucket_items:
+        item_root = item['name'].split('/')[0] + '/'
+        if item_root.lower() in common.IGNORE_DIRECTORIES:
+            ignored_items += 1
+        else:
+            filtered_bucket_items.append(item)
+
+    logging.info("Ignoring %d items in %s", ignored_items, hpo_bucket)
 
     prefix = hpo_id + '/' + hpo_bucket + '/'
 
-    for item in bucket_items:
+    for item in filtered_bucket_items:
         item_name = item['name']
         gcs_utils.copy_object(source_bucket=hpo_bucket,
                               source_object_id=item_name,
@@ -529,8 +569,8 @@ def create_html_row(row_items, item_tag, row_tag, headers=None):
 def html_tag_wrapper(text, tag, message=''):
     if message == '':
         return '<%(tag)s>\n%(text)s\n</%(tag)s>' % locals()
-    else:
-        return '<%(tag)s %(message)s>\n%(text)s\n</%(tag)s>' % locals()
+
+    return '<%(tag)s %(message)s>\n%(text)s\n</%(tag)s>' % locals()
 
 
 def _write_string_to_file(bucket, name, string):
@@ -584,7 +624,6 @@ app.add_url_rule(
     endpoint='upload_achilles_files',
     view_func=upload_achilles_files,
     methods=['GET'])
-
 
 app.add_url_rule(
     PREFIX + 'CopyFiles/<string:hpo_id>',

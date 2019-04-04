@@ -1,21 +1,30 @@
+"""
+Unit test components of data_steward.validation.main
+"""
+import datetime
+import json
+import os
 import StringIO
 import unittest
 
-import mock
 from google.appengine.ext import testbed
+import mock
 
-import json
-import os
-import common
 import bq_utils
+import common
+import test.unit_test.test_util as test_util
 import gcs_utils
 import resources
-import test_util
 from validation import main
-import datetime
 
 
 class ValidationTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
     def setUp(self):
         super(ValidationTest, self).setUp()
         self.testbed = testbed.Testbed()
@@ -263,6 +272,177 @@ class ValidationTest(unittest.TestCase):
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
             actual_result_file = StringIO.StringIO(actual_result).getvalue()
             self.assertEqual(expected_result, actual_result_file)
+
+    @mock.patch('validation.main.run_export')
+    @mock.patch('validation.main.run_achilles')
+    @mock.patch('gcs_utils.upload_object')
+    @mock.patch('validation.main.validate_submission')
+    @mock.patch('gcs_utils.list_bucket')
+    @mock.patch('gcs_utils.get_hpo_bucket')
+    def test_process_hpo_ignore_dirs(
+            self,
+            mock_hpo_bucket,
+            mock_bucket_list,
+            mock_validation,
+            mock_upload,
+            mock_run_achilles,
+            mock_export):
+        """
+        Test process_hpo with directories we want to ignore.
+
+        This should process one directory whose case insensitive root
+        does not match 'participant'.  Otherwise, process_hpo should work
+        as before and only process items in directories and the most recent
+        directory.  Checks to see if other functions are called with the
+        correct argument lists.  Process_hpo calls _get_submission_folder,
+        which is where the ignoring actually occurs.
+
+        :param mock_hpo_bucket: mock the hpo bucket name.
+        :param mock_bucket_list: mocks the list of items in the hpo bucket.
+        :param mock_validation: mock performing validation
+        :param mock_upload: mock uploading to a bucket
+        :param mock_run_achilles: mock running the achilles reports
+        :param mock_export: mock exporting the files
+        """
+
+        # pre-conditions
+        mock_hpo_bucket.return_value = 'noob'
+        yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
+        yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        moment = datetime.datetime.now()
+        now = moment.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        mock_bucket_list.return_value = [
+            {'name': 'unknown.pdf', 'timeCreated': now, 'updated': now},
+            {'name': 'participant/no-site/foo.pdf', 'timeCreated': now, 'updated': now},
+            {'name': 'PARTICIPANT/siteone/foo.pdf', 'timeCreated': now, 'updated': now},
+            {'name': 'Participant/sitetwo/foo.pdf', 'timeCreated': now, 'updated': now},
+            {'name': 'submission/person.csv', 'timeCreated': yesterday, 'updated': yesterday},
+            {'name': 'SUBMISSION/measurement.csv', 'timeCreated': now, 'updated': now}
+        ]
+
+        mock_validation.return_value = {
+            'results': [('SUBMISSION/measurement.csv', 1, 1, 1)],
+            'errors': [],
+            'warnings': []}
+        mock_export.return_value = '{"success":  "true"}'
+
+        # test
+        main.process_hpo('noob', force_run=True)
+
+        # post conditions
+        self.assertTrue(mock_validation.called)
+        self.assertEqual(
+            mock_validation.assert_called_once_with(
+                'noob', 'noob', mock_bucket_list.return_value, 'SUBMISSION/'
+            ),
+            None
+        )
+        self.assertTrue(mock_run_achilles.called)
+        self.assertTrue(mock_export.called)
+        self.assertEqual(
+            mock_export.assert_called_once_with(
+                hpo_id='noob', folder_prefix='SUBMISSION/'
+            ),
+            None
+        )
+        # make sure upload is called for only the most recent
+        # non-participant directory
+        self.assertTrue(mock_upload.called)
+        for call in mock_upload.call_args_list:
+            args, _ = call
+            bucket = args[0]
+            filepath = args[1]
+            self.assertEqual('noob', bucket)
+            self.assertTrue(filepath.startswith('SUBMISSION/'))
+
+    @mock.patch('gcs_utils.copy_object')
+    @mock.patch('gcs_utils.list_bucket')
+    @mock.patch('gcs_utils.get_drc_bucket')
+    @mock.patch('gcs_utils.get_hpo_bucket')
+    @mock.patch('api_util.check_cron')
+    def test_copy_files_ignore_dir(
+            self,
+            mock_check_cron,
+            mock_hpo_bucket,
+            mock_drc_bucket,
+            mock_bucket_list,
+            mock_copy):
+        """
+        Test copying files to the drc internal bucket.
+
+        This should copy anything in the site's bucket except for files named
+        participant.  Copy_files uses a case insensitive match, so any
+        capitalization scheme should be detected and left out of the copy.
+        Anything else should be copied.  Mocks are used to determine if the
+        test ran as expected and all statements would execute in a producstion
+        environment.
+
+        :param mock_check_cron: mocks the cron decorator.
+        :param mock_hpo_bucket: mock the hpo bucket name.
+        :param mock_drc_bucket: mocks the internal drc bucket name.
+        :param mock_bucket_list: mocks the list of items in the hpo bucket.
+        :param mock_copy: mocks the utility call to actually perform the copy.
+        """
+        # pre-conditions
+        mock_hpo_bucket.return_value = 'noob'
+        mock_drc_bucket.return_value = 'unit_test_drc_internal'
+        mock_bucket_list.return_value = [
+            {'name': 'participant/no-site/foo.pdf', },
+            {'name': 'PARTICIPANT/siteone/foo.pdf', },
+            {'name': 'Participant/sitetwo/foo.pdf', },
+            {'name': 'submission/person.csv', },
+            {'name': 'SUBMISSION/measurement.csv', }
+        ]
+
+        # test
+        result = main.copy_files('noob')
+
+        # post conditions
+        expected = '{"copy-status": "done"}'
+        self.assertEqual(result, expected)
+        self.assertTrue(mock_check_cron.called)
+        self.assertTrue(mock_hpo_bucket.called)
+        self.assertTrue(mock_drc_bucket.called)
+        self.assertTrue(mock_bucket_list.called)
+        # make sure copy is called for only the non-participant directories
+        expected_calls = [
+            mock.call(source_bucket='noob',
+                      source_object_id='submission/person.csv',
+                      destination_bucket='unit_test_drc_internal',
+                      destination_object_id='noob/noob/submission/person.csv'),
+            mock.call(source_bucket='noob',
+                      source_object_id='SUBMISSION/measurement.csv',
+                      destination_bucket='unit_test_drc_internal',
+                      destination_object_id='noob/noob/SUBMISSION/measurement.csv')
+        ]
+        self.assertTrue(mock_copy.called)
+        self.assertEqual(mock_copy.call_count, 2)
+        self.assertEqual(mock_copy.assert_has_calls(expected_calls, any_order=True), None)
+
+        unexpected_calls = [
+            mock.call(source_bucket='noob',
+                      source_object_id='participant/no-site/foo.pdf',
+                      destination_bucket='unit_test_drc_internal',
+                      destination_object_id='noob/noob/participant/no-site/foo.pdf'),
+            mock.call(source_bucket='noob',
+                      source_object_id='PARTICIPANT/siteone/foo.pdf',
+                      destination_bucket='unit_test_drc_internal',
+                      destination_object_id='noob/noob/PARTICIPANT/siteone/foo.pdf'),
+            mock.call(source_bucket='noob',
+                      source_object_id='Participant/sitetwo/foo.pdf',
+                      destination_bucket='unit_test_drc_internal',
+                      destination_object_id='noob/noob/Participant/sitetwo/foo.pdf')
+        ]
+        # can't easily use assertRaises here.  3.5 has mock.assert_not_called
+        # that should be used when we upgrade instead of this
+        for call in unexpected_calls:
+            try:
+                mock_copy.assert_has_calls([call], any_order=True)
+            except AssertionError:
+                pass
+            else:
+                raise AssertionError("Unexpected call in mock_copy calls:  {}"
+                                     .format(call))
 
     def tearDown(self):
         self._empty_bucket()
