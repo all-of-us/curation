@@ -10,8 +10,8 @@ PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_m
 AOU_REQUIRED = ['care_site', 'condition_occurrence', 'death', 'device_exposure', 'drug_exposure',
                 'fact_relationship', 'location', 'measurement', 'note', 'observation', 'person',
                 'procedure_occurrence', 'provider', 'specimen', 'visit_occurrence']
-AOU_REQUIRED_FILES = map(lambda t: t+'.csv', AOU_REQUIRED)
-PII_FILES = map(lambda t: t+'.csv', PII_TABLES)
+AOU_REQUIRED_FILES = map(lambda t: t + '.csv', AOU_REQUIRED)
+PII_FILES = map(lambda t: t + '.csv', PII_TABLES)
 SUBMISSION_FILES = AOU_REQUIRED_FILES + PII_FILES
 RESULTS_HTML = 'results.html'
 PROCESSED_TXT = 'processed.txt'

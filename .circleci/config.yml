@@ -12,59 +12,59 @@ jobs:
       PYTHONPATH: /usr/lib/google-cloud-sdk/platform/google_appengine/:~/curation/data_steward:~/curation/data_steward/lib
 
     docker:
-    - image: circleci/build-image:ubuntu-14.04-XXL-upstart-1189-5614f37
-      command: /sbin/init
+      - image: circleci/build-image:ubuntu-14.04-XXL-upstart-1189-5614f37
+        command: /sbin/init
     steps:
-    # Machine Setup
+      # Machine Setup
 
-    # `checkout` checks out your code to your working directory.
-    - checkout
-    # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
-    - run: mkdir -p $CIRCLE_ARTIFACTS
-    # This is based on our 1.0 configuration file or project settings
-    - run:
-        working_directory: ~/curation
-        command: ~/curation/data_steward/init_env.sh
-    - run:
-        working_directory: ~/curation
-        command: cat $HOME/.circlerc
-    - run:
-        working_directory: ~/curation
-        command: echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-    - run:
-        working_directory: ~/curation
-        command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-    - run:
-        working_directory: ~/curation
-        command: sudo apt-get update && sudo apt-get install dpkg && sudo apt-get install google-cloud-sdk
-    - run:
-        working_directory: ~/curation
-        command: sudo apt-get install google-cloud-sdk-app-engine-python
-    - run:
-        working_directory: ~/curation
-        command: chmod 700 ~/curation/data_steward/ci/activate_creds.sh && chmod 700 ~/curation/data_steward/ci/setup.sh && chmod 700 ~/curation/data_steward/ci/create_bucket.sh
-    - run:
-        working_directory: ~/curation
-        command: ~/curation/data_steward/ci/activate_creds.sh ~/gcloud-credentials-key.json
-    - run:
-        working_directory: ~/curation
-        command: ~/curation/data_steward/ci/setup.sh
-    # Dependencies
-    - run:
-        command: pip install --upgrade pip
-    - run:
-        command: cd ~/curation/data_steward/ && pip install -t lib/ -r requirements.txt
-    # Test
-    #   This would typically be a build job when using workflows, possibly combined with build
-    - run:
-        command: ~/curation/data_steward/test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/
-        no_output_timeout: 3000s
-    # Save test results
-    #    - store_test_results:
-    #        path: /tmp/circleci-test-results
-    # Save artifacts
-    - store_artifacts:
-        path: /tmp/circleci-artifacts
+      # `checkout` checks out your code to your working directory.
+      - checkout
+      # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
+      - run: mkdir -p $CIRCLE_ARTIFACTS
+      # This is based on our 1.0 configuration file or project settings
+      - run:
+          working_directory: ~/curation
+          command: ~/curation/data_steward/init_env.sh
+      - run:
+          working_directory: ~/curation
+          command: cat $HOME/.circlerc
+      - run:
+          working_directory: ~/curation
+          command: echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+      - run:
+          working_directory: ~/curation
+          command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+      - run:
+          working_directory: ~/curation
+          command: sudo apt-get update && sudo apt-get install dpkg && sudo apt-get install google-cloud-sdk
+      - run:
+          working_directory: ~/curation
+          command: sudo apt-get install google-cloud-sdk-app-engine-python
+      - run:
+          working_directory: ~/curation
+          command: chmod 700 ~/curation/data_steward/ci/activate_creds.sh && chmod 700 ~/curation/data_steward/ci/setup.sh && chmod 700 ~/curation/data_steward/ci/create_bucket.sh
+      - run:
+          working_directory: ~/curation
+          command: ~/curation/data_steward/ci/activate_creds.sh ~/gcloud-credentials-key.json
+      - run:
+          working_directory: ~/curation
+          command: ~/curation/data_steward/ci/setup.sh
+      # Dependencies
+      - run:
+          command: pip install --upgrade pip
+      - run:
+          command: cd ~/curation/data_steward/ && pip install -t lib/ -r requirements.txt
+      # Test
+      #   This would typically be a build job when using workflows, possibly combined with build
+      - run:
+          command: ~/curation/data_steward/test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/
+          no_output_timeout: 3000s
+      # Save test results
+      #    - store_test_results:
+      #        path: /tmp/circleci-test-results
+      # Save artifacts
+      - store_artifacts:
+          path: /tmp/circleci-artifacts
 #    - store_artifacts:
 #        path: /tmp/circleci-test-results
 # To deploy to staging, cut a GitHub release on a green build, with tag of

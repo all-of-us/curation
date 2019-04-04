@@ -1,15 +1,15 @@
 {
   "allow_nonprod_requests": false,
   "user_info": {
-    "user":""
+    "user": ""
   },
-  "envs":{
+  "envs": {
     "GOOGLE_APPLICATION_CREDENTIALS": "",
-    "APPLICATION_ID":"",
-    "BIGQUERY_DATASET_ID":"",
-    "DRC_BUCKET_NAME":"staging-bucket-drc",
-    "BUCKET_NAME_NYC":"staging-bucket-steward-nyc",
-    "BUCKET_NAME_PITT":"staging-bucket-steward-pitt",
-    "BUCKET_NAME_FAKE":"staging-bucket-steward-fake"
+    "APPLICATION_ID": "",
+    "BIGQUERY_DATASET_ID": "",
+    "DRC_BUCKET_NAME": "staging-bucket-drc",
+    "BUCKET_NAME_NYC": "staging-bucket-steward-nyc",
+    "BUCKET_NAME_PITT": "staging-bucket-steward-pitt",
+    "BUCKET_NAME_FAKE": "staging-bucket-steward-fake"
   }
 }

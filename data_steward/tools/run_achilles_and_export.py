@@ -4,7 +4,8 @@ Run achilles, achilles_heel, and export on an existing OMOP CDM BigQuery dataset
 The following environment variables must be set:
   * BIGQUERY_DATASET_ID: BQ dataset where the OMOP CDM is stored
   * APPLICATION_ID: GCP project ID (e.g. all-of-us-ehr-dev)
-  * GOOGLE_APPLICATION_CREDENTIALS: location of service account key json file (e.g. /path/to/all-of-us-ehr-dev-abc123.json)
+  * GOOGLE_APPLICATION_CREDENTIALS: location of service account key json file (e.g.
+  /path/to/all-of-us-ehr-dev-abc123.json)
 
 Note: Any missing CDM tables will be created and will remain empty
 """
@@ -31,6 +32,7 @@ if __name__ == '__main__':
                         help='Identifier for the bucket. Output tables will be prepended with {hpo_id}_.')
     parser.add_argument('--folder',
                         default='',
-                        help='Identifier for the folder in which achilles results sit. Output tables will be prepended with {hpo_id}_.')
+                        help='Identifier for the folder in which achilles results sit. Output tables will be '
+                             'prepended with {hpo_id}_.')
     args = parser.parse_args()
     main(args)

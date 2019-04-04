@@ -298,11 +298,11 @@ class IdentityMatchTest(unittest.TestCase):
         # pre conditions
         self.mock_pii_addresses.return_value = [
             (self.pid,
-            '88 Lingerlost Road   Apt.   4E',
-            '',
-            'Frog Pond',
-            'AL',
-            '05645')]
+             '88 Lingerlost Road   Apt.   4E',
+             '',
+             'Frog Pond',
+             'AL',
+             '05645')]
 
         # test
         results = id_match.match_participants(self.dataset)
@@ -377,11 +377,11 @@ class IdentityMatchTest(unittest.TestCase):
         # mock seems to read zero prefixed integers wrong (different base system)
         self.mock_pii_addresses.return_value = [
             (self.pid,
-            '1',
-            '2',
-            '3',
-            '44',
-            '5645')]
+             '1',
+             '2',
+             '3',
+             '44',
+             '5645')]
 
         # test
         results = id_match.match_participants(self.dataset)

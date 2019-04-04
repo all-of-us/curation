@@ -181,9 +181,9 @@ class CombineEhrRdrTest(unittest.TestCase):
                     expected[pid] = dict()
                 expected[pid][key] = dict()
                 expected[pid][key]['concept_id'] = concept_id[key]
-                expected[pid][key]['concept_id_value'] = None if key == 'dob' else person_row[key+'_concept_id']
+                expected[pid][key]['concept_id_value'] = None if key == 'dob' else person_row[key + '_concept_id']
                 expected[pid][key]['value_as_string'] = person_row['birth_datetime'] if key == 'dob' else None
-                expected[pid][key]['concept_source_value'] = None if key == 'dob' else person_row[key+'_source_value']
+                expected[pid][key]['concept_source_value'] = None if key == 'dob' else person_row[key + '_source_value']
                 expected[pid][key]['birth_date'] = person_row['birth_date']
 
         # query for observation table records

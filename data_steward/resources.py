@@ -28,6 +28,7 @@ achilles_index_path = os.path.join(resource_path, 'curation_report')
 
 html_boilerplate_path = os.path.join(resource_path, 'html_boilerplate.txt')
 
+
 @cachetools.cached(cache={})
 def _csv_to_list(csv_path):
     """

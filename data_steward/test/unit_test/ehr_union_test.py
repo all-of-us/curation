@@ -227,10 +227,10 @@ class EhrUnionTest(unittest.TestCase):
             hpo_table = self._create_hpo_table(hpo_id, table, dataset_id)
             created_tables.append(hpo_table)
         query = ehr_union.mapping_query(table, hpo_ids, dataset_id, project_id)
-        dataset_id=os.environ.get('BIGQUERY_DATASET_ID')
+        dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
         app_id = os.getenv('APPLICATION_ID')
-        #testing the query string
-        expected_query='''
+        # testing the query string
+        expected_query = '''
             WITH all_measurement AS (
       
                 (SELECT 'chs_measurement' AS src_table_id,
@@ -255,8 +255,8 @@ class EhrUnionTest(unittest.TestCase):
         SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id
     FROM all_measurement
     '''.format(dataset_id=dataset_id, app_id=app_id)
-        self.assertEqual(expected_query.strip(), query.strip(), "Mapping query for \n {q} \n to is not as expected".format(q=query))
-
+        self.assertEqual(expected_query.strip(), query.strip(),
+                         "Mapping query for \n {q} \n to is not as expected".format(q=query))
 
     def _test_table_hpo_subquery(self):
         # person is a simple select, no ids should be mapped

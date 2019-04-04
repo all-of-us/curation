@@ -91,22 +91,22 @@ ADDRESS_ABBREVIATIONS = {
     'vly': 'valley',
     'w': 'west',
     'way': 'way',
- }
+}
 
 ################################################################################
 #  Participant Matching Validation Queries
 # Select observation table attributes to validate
 PPI_OBSERVATION_VALUES = (
-    'SELECT person_id, observation_concept_id, value_as_string '
-    'FROM {dataset}.{table} '
-    'WHERE observation_concept_id IN (' +
-    ', '.join([str(OBS_PII_NAME_FIRST), str(OBS_PII_NAME_MIDDLE),
-               str(OBS_PII_NAME_LAST), str(OBS_PII_EMAIL_ADDRESS),
-               str(OBS_PII_PHONE), str(OBS_PII_STREET_ADDRESS_ONE),
-               str(OBS_PII_STREET_ADDRESS_TWO), str(OBS_PII_STREET_ADDRESS_CITY),
-               str(OBS_PII_STREET_ADDRESS_STATE), str(OBS_PII_STREET_ADDRESS_ZIP),
-               str(OBS_PII_BIRTH_DATETIME), str(OBS_EHR_BIRTH_DATETIME)]) +
-    ') ORDER BY observation_concept_id, person_id'
+        'SELECT person_id, observation_concept_id, value_as_string '
+        'FROM {dataset}.{table} '
+        'WHERE observation_concept_id IN (' +
+        ', '.join([str(OBS_PII_NAME_FIRST), str(OBS_PII_NAME_MIDDLE),
+                   str(OBS_PII_NAME_LAST), str(OBS_PII_EMAIL_ADDRESS),
+                   str(OBS_PII_PHONE), str(OBS_PII_STREET_ADDRESS_ONE),
+                   str(OBS_PII_STREET_ADDRESS_TWO), str(OBS_PII_STREET_ADDRESS_CITY),
+                   str(OBS_PII_STREET_ADDRESS_STATE), str(OBS_PII_STREET_ADDRESS_ZIP),
+                   str(OBS_PII_BIRTH_DATETIME), str(OBS_EHR_BIRTH_DATETIME)]) +
+        ') ORDER BY observation_concept_id, person_id'
 )
 # Select PII table email.
 PII_EMAIL_VALUES = (

@@ -168,7 +168,7 @@ def main(app_id, dataset_id, file_name, all_hpo=False, file_format=None):
         dataset_id = bq_utils.get_dataset_id()
     if os.path.exists(file_name):
         # Do not overwrite existing
-#        raise RuntimeError('File {} already exists'.format(file_name))
+        #        raise RuntimeError('File {} already exists'.format(file_name))
         raise IOError('File %s already exists' % file_name)
     if file_format is None:
         # Attempt to determine format

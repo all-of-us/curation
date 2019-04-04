@@ -11,6 +11,7 @@ from test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_
 from test_util import PITT_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_OBSERVATION_CSV
 import test_util
 import mock
+
 # import time
 
 PERSON = 'person'
@@ -126,8 +127,8 @@ class BqUtilsTest(unittest.TestCase):
                           resources._csv_to_list(NYC_FIVE_PERSONS_PERSON_CSV)]
         pitt_person_ids = [int(row['person_id'])
                            for row in resources._csv_to_list(
-                               PITT_FIVE_PERSONS_PERSON_CSV
-                           )]
+                PITT_FIVE_PERSONS_PERSON_CSV
+            )]
         expected_result = nyc_person_ids + pitt_person_ids
         expected_result.sort()
 
@@ -164,7 +165,7 @@ class BqUtilsTest(unittest.TestCase):
         )
 
         # print error_msg
-        assert(not success_flag)
+        assert (not success_flag)
 
     def test_merge_with_unmatched_schema(self):
         running_jobs = []
@@ -179,14 +180,15 @@ class BqUtilsTest(unittest.TestCase):
         running_jobs.append(result['jobReference']['jobId'])
 
         incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
-        self.assertEqual(len(incomplete_jobs), 0, 'loading tables {},{} timed out'.format('nyc_measurement', 'pitt_person'))
+        self.assertEqual(len(incomplete_jobs), 0,
+                         'loading tables {},{} timed out'.format('nyc_measurement', 'pitt_person'))
 
         table_names = ['nyc_measurement', 'pitt_person']
         success, error = bq_utils.merge_tables(
-          bq_utils.get_dataset_id(),
-          table_names,
-          bq_utils.get_dataset_id(),
-          'merged_nyc_pitt'
+            bq_utils.get_dataset_id(),
+            table_names,
+            bq_utils.get_dataset_id(),
+            'merged_nyc_pitt'
         )
         self.assertFalse(success)
 

@@ -5,7 +5,6 @@ Compares site PII data to values from the RDR, looking to identify discrepancies
 """
 from dateutil.parser import parse
 
-
 import validation.participants.consts as consts
 
 
@@ -32,7 +31,7 @@ def _get_observation_match_values(dataset):
     query_string = consts.PPI_OBSERVATION_VALUES.format(dataset=dataset,
                                                         table='observation')
     print(query_string)
-#    results = bq_utils.query(query_string)
+    #    results = bq_utils.query(query_string)
     return {}
 
 
@@ -53,6 +52,7 @@ def _get_pii_names(hpo):
     [(1, 'suzie', '', 'q'), (48, 'johnny', 'B', 'Good'), (99, 'roy', 'g', 'biv')]
     """
     return []
+
 
 def _get_pii_emails(hpo):
     """
@@ -471,7 +471,7 @@ def _compare_birth_dates(person_id_set, rdr_birthdates, ehr_birthdates, match_va
         ehr_birthdate = ehr_birthdates.get(person_id)
 
         if (rdr_birthdate is None and ehr_birthdate is not None) \
-            or (ehr_birthdate is None and rdr_birthdate is not None):
+                or (ehr_birthdate is None and rdr_birthdate is not None):
             _record_match_value(match_values, person_id, consts.BIRTHDATE, consts.MISMATCH)
             return match_values
         elif rdr_birthdate is None and ehr_birthdate is None:
@@ -525,7 +525,8 @@ def _validate_hpo_pii(hpo, rdr_values, match_values):
     cities = rdr_values.get(consts.OBS_PII_STREET_ADDRESS_CITY)
     states = rdr_values.get(consts.OBS_PII_STREET_ADDRESS_STATE)
     zips = rdr_values.get(consts.OBS_PII_STREET_ADDRESS_ZIP)
-    person_id_set, match_values = _compare_address_fields(hpo, streets_one, streets_two, cities, states, zips, match_values)
+    person_id_set, match_values = _compare_address_fields(hpo, streets_one, streets_two, cities, states, zips,
+                                                          match_values)
     person_ids.update(person_id_set)
 
     rdr_birthdate = rdr_values.get(consts.OBS_PII_BIRTH_DATETIME)
