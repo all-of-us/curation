@@ -36,14 +36,12 @@ RESULT_PASS_COLOR = 'green'
 class InternalValidationError(RuntimeError):
     """Raised when an internal error occurs during validation"""
 
-
     def __init__(self, msg):
         super(InternalValidationError, self).__init__(msg)
 
 
 class BucketDoesNotExistError(RuntimeError):
     """Raised when a configured bucket does not exist"""
-
 
     def __init__(self, msg, bucket):
         super(BucketDoesNotExistError, self).__init__(msg)
@@ -213,7 +211,7 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
     unknown_files = []
     found_pii_files = []
     folder_items = [item['name'][len(folder_prefix):] \
-        for item in bucket_items if item['name'].startswith(folder_prefix)]
+                    for item in bucket_items if item['name'].startswith(folder_prefix)]
     for item in folder_items:
         if _is_cdm_file(item):
             found_cdm_files.append(item)
@@ -376,7 +374,7 @@ def list_submitted_bucket_items(folder_bucketitems):
     today = datetime.datetime.today()
     for file_name in folder_bucketitems:
         if basename(file_name) not in common.IGNORE_LIST:
-            #in common.CDM_FILES or is_pii(basename(file_name)):
+            # in common.CDM_FILES or is_pii(basename(file_name)):
             created_date = initial_date_time_object(file_name)
             retention_time = datetime.timedelta(days=object_retention_days)
             retention_start_time = datetime.timedelta(days=1)
@@ -391,10 +389,7 @@ def initial_date_time_object(gcs_object_metadata):
     :param gcs_object_metadata: metadata as returned by list bucket
     :return: datetime object
     """
-    date_created = datetime.datetime.strptime(
-        gcs_object_metadata['timeCreated'],
-        '%Y-%m-%dT%H:%M:%S.%fZ'
-    )
+    date_created = datetime.datetime.strptime(gcs_object_metadata['timeCreated'], '%Y-%m-%dT%H:%M:%S.%fZ')
     return date_created
 
 
@@ -407,8 +402,7 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
 
     :param bucket: string bucket name to look into
     :param bucket_items: list of unicode string items in the bucket
-    :param force_process: if True return most recently updated directory, even
-         if it has already been processed.
+    :param force_process: if True return most recently updated directory, even if it has already been processed.
     :returns: a directory prefix string of the form "<directory_name>/" if
         the directory has not been processed, it is not an ignored directory,
         and force_process is False.  a directory prefix string of the form
@@ -435,12 +429,12 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
         folder_bucket_items = [item for item in bucket_items if item['name'].startswith(folder_name)]
         submitted_bucket_items = list_submitted_bucket_items(folder_bucket_items)
 
-        if submitted_bucket_items != []:
+        if submitted_bucket_items and submitted_bucket_items != []:
             folders_with_submitted_files.append(folder_name)
             latest_datetime = max([updated_datetime_object(item) for item in submitted_bucket_items])
             folder_datetime_list.append(latest_datetime)
 
-    if folder_datetime_list != []:
+    if folder_datetime_list and folder_datetime_list != []:
         latest_datetime_index = folder_datetime_list.index(max(folder_datetime_list))
         to_process_folder = folders_with_submitted_files[latest_datetime_index]
         if force_process:
@@ -630,7 +624,6 @@ app.add_url_rule(
     endpoint='upload_achilles_files',
     view_func=upload_achilles_files,
     methods=['GET'])
-
 
 app.add_url_rule(
     PREFIX + 'CopyFiles/<string:hpo_id>',

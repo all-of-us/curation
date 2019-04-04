@@ -25,7 +25,6 @@ class ValidationTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-
     def setUp(self):
         super(ValidationTest, self).setUp()
         self.testbed = testbed.Testbed()
@@ -40,12 +39,10 @@ class ValidationTest(unittest.TestCase):
         self.folder_prefix = '2019-01-01/'
         self._empty_bucket()
 
-
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         for bucket_item in bucket_items:
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
-
 
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
@@ -55,7 +52,6 @@ class ValidationTest(unittest.TestCase):
         expected_results = [(f, 1, 0, 0) for f in common.SUBMISSION_FILES]
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
-
 
     def test_bad_file_names(self):
         bad_file_names = ["avisit_occurrence.csv",
@@ -70,7 +66,6 @@ class ValidationTest(unittest.TestCase):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)
         self.assertListEqual(expected_warnings, r['warnings'])
-
 
     def test_retention_checks_list_submitted_bucket_items(self):
         outside_retention = datetime.datetime.today() - datetime.timedelta(days=29)
@@ -111,7 +106,6 @@ class ValidationTest(unittest.TestCase):
         actual_result = main.list_submitted_bucket_items(bucket_items)
         self.assertListEqual([], actual_result)
 
-
     def table_has_clustering(self, table_info):
         clustering = table_info.get('clustering')
         self.assertIsNotNone(clustering)
@@ -150,7 +144,6 @@ class ValidationTest(unittest.TestCase):
                 if 'person_id' in field_names:
                     self.table_has_clustering(table_info)
 
-
     def test_folder_list(self):
         folder_prefix_1 = '2018-03-22-v1/'
         folder_prefix_2 = '2018-03-22-v2/'
@@ -166,7 +159,6 @@ class ValidationTest(unittest.TestCase):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         folder_prefix = main._get_submission_folder(self.hpo_bucket, bucket_items)
         self.assertEqual(folder_prefix, folder_prefix_3)
-
 
     def test_check_processed(self):
         test_util.write_cloud_str(self.hpo_bucket, self.folder_prefix + 'person.csv', '\n')
@@ -196,7 +188,6 @@ class ValidationTest(unittest.TestCase):
             list_bucket_result = gcs_utils.list_bucket(gcs_utils.get_drc_bucket())
             actual_bucket_items = [item['name'] for item in list_bucket_result]
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
-
 
     def test_target_bucket_upload(self):
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
@@ -282,7 +273,6 @@ class ValidationTest(unittest.TestCase):
             actual_result_file = StringIO.StringIO(actual_result).getvalue()
             self.assertEqual(expected_result, actual_result_file)
 
-
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
     @mock.patch('gcs_utils.upload_object')
@@ -322,16 +312,16 @@ class ValidationTest(unittest.TestCase):
         moment = datetime.datetime.now()
         now = moment.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         mock_bucket_list.return_value = [
-            {'name':  'unknown.pdf', 'timeCreated': now, 'updated': now},
-            {'name':  'participant/no-site/foo.pdf', 'timeCreated': now, 'updated': now},
-            {'name':  'PARTICIPANT/siteone/foo.pdf', 'timeCreated': now, 'updated': now},
-            {'name':  'Participant/sitetwo/foo.pdf', 'timeCreated': now, 'updated': now},
-            {'name':  'submission/person.csv', 'timeCreated': yesterday, 'updated': yesterday},
-            {'name':  'SUBMISSION/measurement.csv', 'timeCreated': now, 'updated': now}
+            {'name': 'unknown.pdf', 'timeCreated': now, 'updated': now},
+            {'name': 'participant/no-site/foo.pdf', 'timeCreated': now, 'updated': now},
+            {'name': 'PARTICIPANT/siteone/foo.pdf', 'timeCreated': now, 'updated': now},
+            {'name': 'Participant/sitetwo/foo.pdf', 'timeCreated': now, 'updated': now},
+            {'name': 'submission/person.csv', 'timeCreated': yesterday, 'updated': yesterday},
+            {'name': 'SUBMISSION/measurement.csv', 'timeCreated': now, 'updated': now}
         ]
 
         mock_validation.return_value = {
-            'results':[('SUBMISSION/measurement.csv', 1, 1, 1)],
+            'results': [('SUBMISSION/measurement.csv', 1, 1, 1)],
             'errors': [],
             'warnings': []}
         mock_export.return_value = '{"success":  "true"}'
@@ -365,7 +355,6 @@ class ValidationTest(unittest.TestCase):
             self.assertEqual('noob', bucket)
             self.assertTrue(filepath.startswith('SUBMISSION/'))
 
-
     @mock.patch('gcs_utils.copy_object')
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('gcs_utils.get_drc_bucket')
@@ -398,11 +387,11 @@ class ValidationTest(unittest.TestCase):
         mock_hpo_bucket.return_value = 'noob'
         mock_drc_bucket.return_value = 'unit_test_drc_internal'
         mock_bucket_list.return_value = [
-            {'name':  'participant/no-site/foo.pdf',},
-            {'name':  'PARTICIPANT/siteone/foo.pdf',},
-            {'name':  'Participant/sitetwo/foo.pdf',},
-            {'name':  'submission/person.csv',},
-            {'name':  'SUBMISSION/measurement.csv',}
+            {'name': 'participant/no-site/foo.pdf', },
+            {'name': 'PARTICIPANT/siteone/foo.pdf', },
+            {'name': 'Participant/sitetwo/foo.pdf', },
+            {'name': 'submission/person.csv', },
+            {'name': 'SUBMISSION/measurement.csv', }
         ]
 
         # test
@@ -454,7 +443,6 @@ class ValidationTest(unittest.TestCase):
             else:
                 raise AssertionError("Unexpected call in mock_copy calls:  {}"
                                      .format(call))
-
 
     def tearDown(self):
         self._empty_bucket()
