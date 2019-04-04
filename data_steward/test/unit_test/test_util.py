@@ -11,7 +11,8 @@ COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
 TEST_DATA_PATH = os.path.join(resources.base_path, 'test', 'test_data')
 EMPTY_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'empty_validation_result.csv')
 ALL_FILES_UNPARSEABLE_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'all_files_unparseable_validation_result.csv')
-ALL_FILES_UNPARSEABLE_VALIDATION_RESULT_NO_HPO_JSON = os.path.join(TEST_DATA_PATH, 'all_files_unparseable_validation_result_no_hpo.json')
+ALL_FILES_UNPARSEABLE_VALIDATION_RESULT_NO_HPO_JSON = os.path.join(TEST_DATA_PATH,
+                                                                   'all_files_unparseable_validation_result_no_hpo.json')
 EMPTY_ERROR_CSV = os.path.join(TEST_DATA_PATH, 'empty_error.csv')
 
 # Test files for five person sample
@@ -33,8 +34,8 @@ FIVE_PERSONS_SUCCESS_RESULT_CSV = os.path.join(TEST_DATA_PATH, 'five_persons_suc
 FIVE_PERSONS_SUCCESS_RESULT_NO_HPO_JSON = os.path.join(TEST_DATA_PATH, 'five_persons_success_result_no_hpo.json')
 
 # OMOP NYC and PITT test data from synpuf
-NYC_FIVE_PERSONS_PATH = os.path.join(TEST_DATA_PATH,'nyc_five_person')
-PITT_FIVE_PERSONS_PATH = os.path.join(TEST_DATA_PATH,'pitt_five_person')
+NYC_FIVE_PERSONS_PATH = os.path.join(TEST_DATA_PATH, 'nyc_five_person')
+PITT_FIVE_PERSONS_PATH = os.path.join(TEST_DATA_PATH, 'pitt_five_person')
 
 NYC_FIVE_PERSONS_PERSON_CSV = os.path.join(NYC_FIVE_PERSONS_PATH, 'person.csv')
 NYC_FIVE_PERSONS_VISIT_OCCURRENCE_CSV = os.path.join(NYC_FIVE_PERSONS_PATH, 'visit_occurrence.csv')
@@ -80,6 +81,7 @@ PII_FILE_LOAD_RESULT_CSV = os.path.join(TEST_DATA_PATH, 'pii_file_load_result.cs
 
 PERSON_ONLY_RESULTS_FILE = os.path.join(TEST_DATA_PATH, 'person_only_results.html')
 FIVE_PERSON_RESULTS_FILE = os.path.join(TEST_DATA_PATH, 'five_person_results.html')
+
 
 def _create_five_persons_success_result():
     """
@@ -210,7 +212,7 @@ def write_cloud_str(bucket, name, contents_str):
     return write_cloud_fp(bucket, name, fp)
 
 
-def write_cloud_file(bucket, f, prefix = ""):
+def write_cloud_file(bucket, f, prefix=""):
     name = os.path.basename(f)
     with open(f, 'r') as fp:
         return write_cloud_fp(bucket, prefix + name, fp)
@@ -220,7 +222,7 @@ def write_cloud_fp(bucket, name, fp):
     return gcs_utils.upload_object(bucket, name, fp)
 
 
-def populate_achilles(hpo_bucket, hpo_id = FAKE_HPO_ID, include_heel=True):
+def populate_achilles(hpo_bucket, hpo_id=FAKE_HPO_ID, include_heel=True):
     from validation import achilles, achilles_heel
     from google.appengine.api import app_identity
     import bq_utils

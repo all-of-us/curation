@@ -8,7 +8,6 @@ import mimetypes
 from google.appengine.api import app_identity
 import googleapiclient.discovery
 
-
 MIMETYPES = {'json': 'application/json',
              'woff': 'application/font-woff',
              'ttf': 'application/font-sfnt',
@@ -168,6 +167,5 @@ def copy_object(source_bucket, source_object_id, destination_bucket, destination
                                  sourceObject=source_object_id,
                                  destinationBucket=destination_bucket,
                                  destinationObject=destination_object_id,
-                                 body = dict())
+                                 body=dict())
     return req.execute(num_retries=GCS_DEFAULT_RETRY_COUNT)
-

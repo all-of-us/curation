@@ -3,8 +3,8 @@ api_version: 1
 threadsafe: yes
 instance_class: B8
 basic_scaling:
-    max_instances: 10
-    idle_timeout: 60m
+  max_instances: 10
+  idle_timeout: 60m
 
 skip_files:
   - ^(.*/)?#.*#$
@@ -19,12 +19,12 @@ skip_files:
   - tools/
 
 handlers:
-- url: /tasks/.*
-  script: spec.main.app
-  login: admin
-  secure: always
+  - url: /tasks/.*
+    script: spec.main.app
+    login: admin
+    secure: always
 
-- url: /.*
-  script: validation.main.app
-  login: admin
-  secure: always
+  - url: /.*
+    script: validation.main.app
+    login: admin
+    secure: always

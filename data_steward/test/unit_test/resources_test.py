@@ -35,7 +35,7 @@ class ResourcesTest(unittest.TestCase):
                              msg='Achilles tables %s should not be in result of cdm_schemas()' % result_achilles_tables)
 
         result_vocab_tables = [table_name for table_name in table_names if table_name in vocabulary.VOCABULARY_TABLES]
-        self.assertListEqual([], result_vocab_tables ,
+        self.assertListEqual([], result_vocab_tables,
                              msg='Vocabulary tables %s should not be in result of cdm_schemas()' % result_vocab_tables)
 
     def tearDown(self):

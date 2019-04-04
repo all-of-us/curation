@@ -41,23 +41,32 @@ def auth_required(role_whitelist):
                     raise Unauthorized('HTTPS is required for %r' % appid)
                 check_auth(role_whitelist)
             return func(*args, **kwargs)
+
         return wrapped
+
     return auth_required_wrapper
+
 
 def auth_required_cron(func):
     """A decorator that ensures that the user is a cron job."""
+
     def wrapped(*args, **kwargs):
         check_cron()
         return func(*args, **kwargs)
+
     return wrapped
+
 
 def nonprod(func):
     """The decorated function may never run in environments without config.ALLOW_NONPROD_REQUESTS."""
+
     def wrapped(*args, **kwargs):
         if not config.getSettingJson(config.ALLOW_NONPROD_REQUESTS, False):
             raise Forbidden('Request not allowed in production environment (according to config).')
         return func(*args, **kwargs)
+
     return wrapped
+
 
 def check_auth(role_whitelist):
     """Raises Unauthorized or Forbidden if the current user is not allowed."""
@@ -72,6 +81,7 @@ def check_auth(role_whitelist):
         role_whitelist))
     raise Forbidden()
 
+
 def get_oauth_id():
     """Returns user email ID if OAUTH token present, or None."""
     try:
@@ -80,6 +90,7 @@ def get_oauth_id():
         user_email = None
         logging.error('OAuth failure: {}'.format(e))
     return user_email
+
 
 def check_cron():
     """Raises Forbidden if the current user is not a cron job."""
@@ -90,8 +101,10 @@ def check_cron():
         get_oauth_id()))
     raise Forbidden()
 
+
 def lookup_user_info(user_email):
     return config.getSettingJson(config.USER_INFO, {}).get(user_email)
+
 
 def _is_self_request():
     return (request.remote_addr is None
@@ -132,8 +145,9 @@ def get_whitelisted_ips(user_info):
             for rng in user_info['whitelisted_ip_ranges']['ip6'] + \
             user_info['whitelisted_ip_ranges']['ip4']]
 
+
 def enforce_ip_whitelisted(request_ip, whitelisted_ips):
-    if whitelisted_ips == None: # No whitelist means "don't apply restrictions"
+    if whitelisted_ips == None:  # No whitelist means "don't apply restrictions"
         return
     logging.info('IP RANGES ALLOWED: {}'.format(whitelisted_ips))
     ip = netaddr.IPAddress(request_ip)
@@ -142,8 +156,10 @@ def enforce_ip_whitelisted(request_ip, whitelisted_ips):
         raise Forbidden('Client IP not whitelisted: {}'.format(ip))
     logging.info('IP {} ALLOWED'.format(ip))
 
+
 def get_whitelisted_appids(user_info):
     return user_info.get('whitelisted_appids')
+
 
 def enforce_appid_whitelisted(request_app_id, whitelisted_appids):
     if not whitelisted_appids:  # No whitelist means "don't apply restrictions"
@@ -157,6 +173,7 @@ def enforce_appid_whitelisted(request_app_id, whitelisted_appids):
     else:
         logging.info('NO APP ID FOUND WHEN REQUIRED TO BE ONE OF: {}'.format(whitelisted_appids))
     raise Forbidden()
+
 
 def update_model(old_model, new_model):
     """Updates a model.
@@ -198,6 +215,7 @@ def format_json_code(obj, field_name):
     else:
         obj[field_without_id] = UNSET
 
+
 def format_json_hpo(obj, field_name):
     if obj[field_name]:
         from dao.hpo_dao import HPODao
@@ -205,13 +223,16 @@ def format_json_hpo(obj, field_name):
     else:
         obj[field_name] = UNSET
 
+
 def unix_time_millis(dt):
     return int((dt - EPOCH).total_seconds() * 1000)
+
 
 def parse_json_enum(obj, field_name, enum_cls):
     """Converts a field of a dictionary from a string to an enum."""
     if field_name in obj and obj[field_name] is not None:
         obj[field_name] = enum_cls(obj[field_name])
+
 
 def format_json_enum(obj, field_name):
     """Converts a field of a dictionary from a enum to an string."""
@@ -220,10 +241,12 @@ def format_json_enum(obj, field_name):
     else:
         obj[field_name] = UNSET
 
+
 def remove_field(dict_, field_name):
     """Removes a field from the dict if it exists."""
     if field_name in dict_:
         del dict_[field_name]
+
 
 def searchable_representation(str_):
     """Takes a string, and returns a searchable representation.

@@ -53,6 +53,7 @@ def qualify_tables(command, hpo_id=None):
     :param hpo_id:
     :return:
     """
+
     def temp_repl(m):
         table_name = m.group(1).replace('.', '_')
         return bq_utils.get_table_id(hpo_id, table_name)

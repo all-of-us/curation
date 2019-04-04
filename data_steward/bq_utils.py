@@ -20,6 +20,7 @@ LIST_TABLES_MAX_RESULTS = 2000
 
 socket.setdefaulttimeout(SOCKET_TIMEOUT)
 
+
 class InvalidOperationError(RuntimeError):
     """Raised when an invalid Big Query operation attempted during the validation process"""
 
@@ -116,8 +117,8 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
             'allowJaggedRows': allow_jagged_rows
             }
     job_body = {'configuration': {
-            'load': load
-        }
+        'load': load
+    }
     }
     insert_job = bq_service.jobs().insert(projectId=project_id, body=job_body)
     insert_result = insert_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
@@ -185,7 +186,7 @@ def delete_table(table_id, dataset_id=None):
     :param dataset_id: id of the dataset (EHR dataset by default)
     :return:
     """
-    assert(table_id not in common.VOCABULARY_TABLES)
+    assert (table_id not in common.VOCABULARY_TABLES)
     app_id = app_identity.get_application_id()
     if dataset_id is None:
         dataset_id = get_dataset_id()
@@ -279,10 +280,10 @@ def merge_tables(source_dataset_id,
             "copy": {
                 "sourceTables": source_tables,
                 "destinationTable": {
-                          "projectId": app_id,
-                          "datasetId": destination_dataset_id,
-                          "tableId": destination_table_id
-                        },
+                    "projectId": app_id,
+                    "datasetId": destination_dataset_id,
+                    "tableId": destination_table_id
+                },
                 "writeDisposition": "WRITE_TRUNCATE",
             }
         }
@@ -464,6 +465,7 @@ def response2rows(r):
     schema = r.get('schema', {'fields': None})['fields']
     return [_transform_row(row, schema) for row in rows]
 
+
 def _transform_row(row, schema):
     """
     Apply the given schema to the given BigQuery data row. Adapted from https://goo.gl/dWszQJ.
@@ -504,6 +506,7 @@ def _transform_row(row, schema):
         log[col_name] = row_value
 
     return log
+
 
 def _list_all_table_ids(dataset_id):
     tables = list_tables(dataset_id)

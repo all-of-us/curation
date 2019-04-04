@@ -25,11 +25,13 @@ Currently the following environment variables must be set:
  * RDR_DATASET_ID: BQ dataset where the RDR is stored
  * EHR_RDR_DATASET_ID: BQ dataset where the combined result will be stored
  * APPLICATION_ID: GCP project ID (e.g. all-of-us-ehr-dev)
- * GOOGLE_APPLICATION_CREDENTIALS: location of service account key json file (e.g. /path/to/all-of-us-ehr-dev-abc123.json)
+ * GOOGLE_APPLICATION_CREDENTIALS: location of service account key json file (e.g.
+ /path/to/all-of-us-ehr-dev-abc123.json)
 
 Assumptions made:
  * The tables are NOT prefixed in the dataset referred to by BIGQUERY_DATASET_ID (use `table_copy.sh` as needed)
- * The RDR dataset exists. It must be loaded from the GCS bucket where RDR dumps are placed (i.e. using `import_rdr_omop.sh`).
+ * The RDR dataset exists. It must be loaded from the GCS bucket where RDR dumps are placed (i.e. using
+ `import_rdr_omop.sh`).
 
 Caveats:
  * Generating the curation report with `run_achilles_and_export.py` requires you to create a copy of the output
@@ -215,7 +217,8 @@ def move_ehr_person_to_observation():
                     4013886 as observation_concept_id,
                     38000280 as observation_type_concept_id,
                     CASE
-                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',
+                        CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
                         ELSE birth_datetime
                     END AS observation_datetime,
                     race_concept_id as value_as_concept_id,
@@ -234,7 +237,8 @@ def move_ehr_person_to_observation():
                     4271761 as observation_concept_id,
                     38000280 as observation_type_concept_id,
                     CASE
-                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',
+                        CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
                         ELSE birth_datetime
                     END AS observation_datetime,
                     ethnicity_concept_id as value_as_concept_id,
@@ -252,7 +256,8 @@ def move_ehr_person_to_observation():
                     4135376 as observation_concept_id,
                     38000280 as observation_type_concept_id,
                     CASE
-                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',
+                        CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
                         ELSE birth_datetime
                     END AS observation_datetime,
                     gender_concept_id as value_as_concept_id,
@@ -270,7 +275,8 @@ def move_ehr_person_to_observation():
                     4083587 as observation_concept_id,
                     38000280 as observation_type_concept_id,
                     CASE
-                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                        WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',
+                        CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
                         ELSE birth_datetime
                     END AS observation_datetime,
                     NULL as value_as_concept_id,
