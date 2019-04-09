@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+# Reformat files
+# Load vocabulary files in the specified path to
+USAGE="tools/load_vocab.sh --app_id APP_ID --in_dir /PATH/TO/VOCAB_FILES --gcs_path gs://BUCKET/PATH --dataset DATASET"
+SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+BASE_DIR="$( cd ${SCRIPT_PATH} && cd .. && pwd )"
+AOU_GENERAL_PATH="${BASE_DIR}/resources/aou_general"
+AOU_GENERAL_CONCEPT_ID="2000000000"
+while true; do
+  case "$1" in
+    --app_id) APP_ID=$2; shift 2;;
+    --in_dir) IN_DIR=$2; shift 2;;
+    --dataset) DATASET=$2; shift 2;;
+    --gcs_path) GCS_PATH=$2; shift 2;;
+    -- ) shift; break ;;
+    * ) break ;;
+  esac
+done
+
+if [[ -z "${APP_ID}" ]] || [[ -z "${IN_DIR}" ]]
+then
+  echo "Usage: $USAGE"
+  exit 1
+fi
+
+# Create backup of input files
+BACKUP_DIR="${IN_DIR}-backup"
+echo "Creating backup in ${BACKUP_DIR}..."
+mkdir ${BACKUP_DIR}
+cp ${IN_DIR}/* ${BACKUP_DIR}
+
+OMOP_VOCABULARY_VERSION=$(cat ${IN_DIR}/VOCABULARY.csv | grep 44819096 | cut -f4)
+echo "Version of OMOP Standard vocabulary is ${OMOP_VOCABULARY_VERSION}"
+
+# Derive version of AoU_General vocabulary based on md5 of files
+CHECKSUM_LIST=$( cd ${AOU_GENERAL_PATH} && md5sum $(ls ${AOU_GENERAL_PATH}) )
+CHECKSUM_ALL=$( echo ${CHECKSUM_LIST} | md5sum )
+AOU_GENERAL_VERSION=$( echo ${CHECKSUM_ALL} | cut -d' ' -f1 )
+echo "Version of AoU_General vocabulary is ${AOU_GENERAL_VERSION}"
+
+# Append vocabulary record to file
+# vocabulary_id 	vocabulary_name 	vocabulary_reference 	vocabulary_version 	vocabulary_concept_id
+echo -e "AoU_General\tAoU_General\thttps://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g\t${AOU_GENERAL_VERSION}\t${AOU_GENERAL_CONCEPT_ID}" >> ${IN_DIR}/VOCABULARY.csv
+
+# Append concept records to file
+tail -n +2 resources/aou_general/concept.csv >> ${IN_DIR}/CONCEPT.csv
+
+# Transform the dates
+for file in $(ls ${IN_DIR})
+do
+  echo "Transforming ${file} and saving to ${IN_DIR}..."
+  python ${SCRIPT_PATH}/vocab_transform.py --file ${IN_DIR}/${file} --out_dir ${IN_DIR}
+done
+
+if [[ -z "${GCS_PATH}" ]]
+then
+  echo "GCS path not specified, skipping GCS upload and BigQuery load"
+  exit 0
+fi
+
+echo "Uploading ${IN_DIR}/* to ${GCS_PATH}..."
+gsutil -m cp ${IN_DIR}/* ${GCS_PATH}
+
+if [[ -z "${DATASET}" ]]
+then
+  echo "Dataset not specified, skipping BigQuery load"
+  exit 0
+fi
+
+echo "Creating and loading dataset ${DATASET}..."
+bq mk --project_id ${APP_ID} --dataset_id ${DATASET} --description "Vocabulary ${OMOP_VOCABULARY_VERSION} loaded from ${GCS_PATH}"
+
+for file in $(gsutil ls ${GCS_PATH})
+do
+ filename=$(basename ${file,,})
+ table_name="${filename%.*}"
+ gsutil cp ${file} .
+ echo "Loading ${DATASET}.${table_name}..."
+ bq load --project_id ${APP_ID} --source_format CSV --quote "" --field_delimiter "\t" --max_bad_records 500 --skip_leading_rows 1 ${DATASET}.${table_name} ${file} resources/fields/${table_name}.json
+done
