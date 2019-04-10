@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 
-# Reformat files
-# Load vocabulary files in the specified path to
+# Given a path to vocabulary csv files downloaded from Athena and specified by --in_dir:
+# 1. Add the local vocabulary AoU_General
+# 2. Transform the vocabulary files to a format BigQuery can load
+# 3. Upload the transformed files to the GCS path specified by --gcs_path
+# 4. Load the vocabulary in the dataset specified by --dataset
 USAGE="tools/load_vocab.sh --app_id APP_ID --in_dir /PATH/TO/VOCAB_FILES --gcs_path gs://BUCKET/PATH --dataset DATASET"
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
 BASE_DIR="$( cd ${SCRIPT_PATH} && cd .. && pwd )"
 AOU_GENERAL_PATH="${BASE_DIR}/resources/aou_general"
-AOU_GENERAL_CONCEPT_ID="2000000000"
+AOU_GENERAL_VOCABULARY_CONCEPT_ID="2000000000"
+AOU_GENERAL_VOCABULARY_REFERENCE="https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g"
+OMOP_VOCABULARY_CONCEPT_ID="44819096"
 while true; do
   case "$1" in
     --app_id) APP_ID=$2; shift 2;;
@@ -30,7 +35,8 @@ echo "Creating backup in ${BACKUP_DIR}..."
 mkdir ${BACKUP_DIR}
 cp ${IN_DIR}/* ${BACKUP_DIR}
 
-OMOP_VOCABULARY_VERSION=$(cat ${IN_DIR}/VOCABULARY.csv | grep 44819096 | cut -f4)
+# Determine the version of the OMOP vocabulary
+OMOP_VOCABULARY_VERSION=$(cat ${IN_DIR}/VOCABULARY.csv | grep ${OMOP_VOCABULARY_CONCEPT_ID} | cut -f4)
 echo "Version of OMOP Standard vocabulary is ${OMOP_VOCABULARY_VERSION}"
 
 # Derive version of AoU_General vocabulary based on md5 of files
@@ -41,7 +47,7 @@ echo "Version of AoU_General vocabulary is ${AOU_GENERAL_VERSION}"
 
 # Append vocabulary record to file
 # vocabulary_id 	vocabulary_name 	vocabulary_reference 	vocabulary_version 	vocabulary_concept_id
-echo -e "AoU_General\tAoU_General\thttps://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g\t${AOU_GENERAL_VERSION}\t${AOU_GENERAL_CONCEPT_ID}" >> ${IN_DIR}/VOCABULARY.csv
+echo -e "AoU_General\tAoU_General\t${AOU_GENERAL_VOCABULARY_REFERENCE}\t${AOU_GENERAL_VERSION}\t${AOU_GENERAL_VOCABULARY_CONCEPT_ID}" >> ${IN_DIR}/VOCABULARY.csv
 
 # Append concept records to file
 tail -n +2 resources/aou_general/concept.csv >> ${IN_DIR}/CONCEPT.csv
