@@ -3,12 +3,28 @@ A module to perform initial participant identity matching based on PII data.
 
 Compares site PII data to values from the RDR, looking to identify discrepancies.
 """
+import logging
+
 from dateutil.parser import parse
 
-import validation.participants.consts as consts
+import bq_utils
+import resources as rc
+import constants.validation.participants.identity_match as consts
+
+LOGGER = logging.getLogger(__name__)
 
 
-def _get_observation_match_values(dataset):
+def _get_utf8_string(value):
+    result = ''
+    try:
+        result = value.encode('utf-8', 'ignore')
+    except AttributeError:
+        LOGGER.debug("Value '{}' can not be utf-8 encoded", value)
+
+    return result
+
+
+def _get_all_observation_match_values(project, date_string):
     """
     Get the desired matching values from the combined observation table.
 
@@ -16,60 +32,86 @@ def _get_observation_match_values(dataset):
     used in participant matching.  Returned query data is limited to the
     person_id, observation_concept_id, and the value_as_string fields.
 
-    :param dataset:  The string name of the dataset to use when matching participants
+    :param date_string: a string formatted date as YYYYMMDD that will be used
+        to identify which dataset to use as a lookup
 
-    :return:  A dictionary with observation_concept_id as keys.  Each value is
-        a dictionary of person_ids with the associated value of the concept_id.
-        For example:
-        { 1585260: {person_id_1:  "email_address", person_id_2: "email_address"},
-          1585596: {person_id_1: "first_name", person_id_2: "first_name"},
-          1585597: {person_id_1: "middle_name", },
-          1585598: {person_id_1: "last_name", person_id_2: "last_name"},
-          ...,
-        }
+    :return: The name of the interim table
     """
-    query_string = consts.PPI_OBSERVATION_VALUES.format(dataset=dataset,
-                                                        table='observation')
-    print(query_string)
-    #    results = bq_utils.query(query_string)
-    return {}
+    query_string = consts.ALL_PPI_OBSERVATION_VALUES.format(
+        project=project,
+        date_string=date_string,
+        table=consts.OBSERVATION_TABLE
+
+    )
+
+    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    results = bq_utils.query(
+        query_string,
+        destination_table_id=consts.ID_MATCH_TABLE,
+        write_disposition='WRITE_TRUNCATE'
+    )  # how can I set this to be temporary?
+
+    return consts.ID_MATCH_TABLE
+
+
+def _get_observation_match_values(table_name, date_string, concept_id):
+    """
+    Get the desired matching values from the combined observation table.
+
+    This retrieves all possible matching values from the observation table
+    used in participant matching.  Returned query data is limited to the
+    person_id, observation_concept_id, and the value_as_string fields.
+
+    :param date_string: a string formatted date as YYYYMMDD that will be used
+        to identify which dataset to use as a lookup
+    :param concept_id: the id of the concept to verify from the RDR data
+
+    :return:  A dictionary with observation_source_concept_id as the key.
+        The value is a dictionary of person_ids with the associated value
+        of the concept_id.
+        For example:
+        {person_id_1:  "email_address", person_id_2: "email_address"}
+        {person_id_1: "first_name", person_id_2: "first_name"}
+        {person_id_1: "middle_name", }
+        {person_id_1: "last_name", person_id_2: "last_name"}
+    """
+    query_string = consts.PPI_OBSERVATION_VALUES.format(date_string=date_string,
+                                                        table=table_name,
+                                                        field_value=concept_id)
+
+    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    results = bq_utils.query(query_string)
+    row_results = bq_utils.response_to_large_rowset(results)
+
+    result_dict = {}
+    for item in row_results:
+        person_id = item.get(consts.PERSON_ID)
+        value = item.get(consts.STRING_VALUE)
+        value = _get_utf8_string(value)
+
+
+        exists = result_dict.get(person_id)
+        if exists is None:
+            result_dict[person_id] = value
+        else:
+            if exists == value:
+                pass
+            else:
+                LOGGER.error("Trying to reset value for person_id\t%s.")
+
+    return result_dict
 
 
 def _get_hpo_site_names():
-    # This will have to do until I can talk with other engineers.
-    return []
+    hpo_ids = []
+    for site in rc.hpo_csv():
+        hpo_ids.append(site[consts.HPO_ID])
+    return hpo_ids
 
 
-def _get_pii_names(hpo):
+def _get_pii_values(hpo, date_string, table, field):
     """
-    Get names from the site's PII table.
-
-    :param hpo: hpo string to use when identifying table names for lookup.
-
-    :return:  A list of tuples with the first tuple element as the pserson_id
-    and the second tuple element as the first name, the third tuple element
-    is the middle name, the fourth tuple element is the last name.  For example,
-    [(1, 'suzie', '', 'q'), (48, 'johnny', 'B', 'Good'), (99, 'roy', 'g', 'biv')]
-    """
-    return []
-
-
-def _get_pii_emails(hpo):
-    """
-    Get email addresses from the site's PII table.
-
-    :param hpo:  hpo string to use when identifying table names for lookup.
-
-    :return:  A list of tuples with the first tuple element as the person_id
-    and the second tuple element as the email address.
-    [(1, 'anon@gmail.com'), (99, '')]
-    """
-    return []
-
-
-def _get_pii_phone_numbers(hpo):
-    """
-    Get email addresses from the site's PII table.
+    Get values from the site's PII table.
 
     :param hpo:  hpo string to use when identifying table names for lookup.
 
@@ -77,7 +119,56 @@ def _get_pii_phone_numbers(hpo):
     and the second tuple element as the phone number.
     [(1, '5558675309'), (48, '5558004600'), (99, '5551002000')]
     """
-    return []
+    query_string = consts.PII_VALUES.format(date_string=date_string,
+                                            hpo_site_str=hpo,
+                                            field=field,
+                                            table_suffix=table)
+    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    results = bq_utils.query(query_string)
+    row_results = bq_utils.large_response_to_rows(results)
+
+    result_list = []
+    for item in row_results:
+        person_id = item.get(consts.PERSON_ID)
+        value = item.get(field)
+
+        value = _get_utf8_string(value)
+
+        result_list.append((person_id, value))
+
+    return result_list
+
+def _get_location_pii(hpo, date_string, table, field):
+    location_ids = _get_pii_values(hpo, date_string, table, consts.LOCATION_ID_FIELD)
+
+    location_id_list = []
+    location_id_dict = {}
+    for location_id in location_ids:
+        location_id_list.append(location_id[1])
+        location_id_dict[location_id[1]] = location_id[0]
+
+    location_id_str = ', '.join(location_id_list)
+    query_string = consts.PII_LOCATION_VALUES.format(
+        date_string=date_string,
+        field=field,
+        id_list=location_id_str
+    )
+
+    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    results = bq_utils.query(query_string)
+    row_results = bq_utils.large_response_to_rows(results)
+
+    result_list = []
+    for item in row_results:
+        location_id = item.get(consts.LOCATION_ID_FIELD)
+        value = item.get(field)
+
+        value = _get_utf8_string(value)
+
+        person_id = location_id_dict.get(location_id, '')
+        result_list.append((person_id, value))
+
+    return result_list
 
 
 def _get_pii_addresses(hpo):
@@ -279,7 +370,7 @@ def _compare_address_lists(list_one, list_two):
     return diff
 
 
-def _compare_name_fields(hpo, first_names, middle_names, last_names, match_values):
+def _compare_name_fields(hpo, date_string, concept_id, pii_field):
     """
     For an hpo, compare all first, middle, and last name fields to omop settings.
 
@@ -287,41 +378,29 @@ def _compare_name_fields(hpo, first_names, middle_names, last_names, match_value
     tables with the values in the OMOP observation table.
 
     :param hpo: string name of hop to search.
-    :param first_names:  dictionary of first names where person_id is the key
-        and name is the value
-    :param middle_names: dictionary of middle names where person_id is the key
-        and name is the value
-    :param last_names: dictionary of last names where person_id is the key
-        and name is the value
-    :param match_values: current result set dictionary to update with new
-        match information
+    :param date_string: a string formatted date as YYYYMMDD that will be used
+        to identify which dataset to use as a lookup
     :return: a set of person_ids from the hpo PII name table that had name
         comparison performed and the updated match_values dictionary.
     """
     person_ids = set()
 
-    for person_id, first, middle, last in _get_pii_names(hpo):
+    obs_names = _get_observation_match_values(
+        consts.ID_MATCH_TABLE, date_string, concept_id
+    )
+
+    for person_id, name in _get_pii_values(hpo, date_string, consts.PII_NAME_TABLE, pii_field):
         person_ids.add(person_id)
-        first = _clean_name(first)
-        middle = _clean_name(middle)
-        last = _clean_name(last)
-        rdr_first = _clean_name(first_names.get(person_id))
-        rdr_middle = _clean_name(middle_names.get(person_id))
-        rdr_last = _clean_name(last_names.get(person_id))
+        name = _clean_name(name)
+        rdr_name = _clean_name(obs_names.get(person_id))
 
-        match_str = consts.MATCH if rdr_first == first else consts.MISMATCH
-        _record_match_value(match_values, person_id, consts.FIRST_NAME, match_str)
-
-        match_str = consts.MATCH if rdr_middle == middle else consts.MISMATCH
-        _record_match_value(match_values, person_id, consts.MIDDLE_NAME, match_str)
-
-        match_str = consts.MATCH if rdr_last == last else consts.MISMATCH
-        _record_match_value(match_values, person_id, consts.LAST_NAME, match_str)
+        match_str = consts.MATCH if rdr_name == name else consts.MISMATCH
+        _record_match_value(match_values, person_id, pii_field, match_str)
 
     return person_ids, match_values
 
 
-def _compare_email_addresses(hpo, email_addresses, match_values):
+def _compare_email_addresses(hpo, date_string, concept_id, pii_field):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -335,7 +414,11 @@ def _compare_email_addresses(hpo, email_addresses, match_values):
     """
     person_ids = set()
 
-    for person_id, email in _get_pii_emails(hpo):
+    email_addresses = _get_observation_match_values(
+        consts.ID_MATCH_TABLE, date_string, concept_id
+    )
+
+    for person_id, email in _get_pii_values(hpo, date_string, consts.PII_EMAIL_TABLE, pii_field):
         person_ids.add(person_id)
 
         rdr_email = _clean_email(email_addresses.get(person_id))
@@ -347,7 +430,7 @@ def _compare_email_addresses(hpo, email_addresses, match_values):
     return person_ids, match_values
 
 
-def _compare_phone_numbers(hpo, phone_numbers, match_values):
+def _compare_phone_numbers(hpo, date_string, concept_id, pii_field):
     """
     Compare the digit based phone numbers from PII and Observation tables.
 
@@ -361,7 +444,11 @@ def _compare_phone_numbers(hpo, phone_numbers, match_values):
     """
     person_ids = set()
 
-    for person_id, number in _get_pii_phone_numbers(hpo):
+    phone_numbers = _get_observation_match_values(
+        consts.ID_MATCH_TABLE, date_string, concept_id
+    )
+
+    for person_id, number in _get_pii_values(hpo, date_string, consts.PII_PHONE_TABLE, pii_field):
         person_ids.add(person_id)
 
         rdr_phone = _clean_phone(phone_numbers.get(person_id))
@@ -373,7 +460,104 @@ def _compare_phone_numbers(hpo, phone_numbers, match_values):
     return person_ids, match_values
 
 
-def _compare_address_fields(hpo, streets_one, streets_two, cities, states, zips, match_values):
+def _compare_cities(hpo, date_string, concept_id, pii_field):
+    """
+    Compare email addresses from hpo PII table and OMOP observation table.
+
+    :param hpo:  hpo site name.  used to query the correct pii table.
+    :param email_addresses: dictionary of email addresses where person_id is
+        the key and email address is the value
+    :param match_values: current result set dictionary to update with new
+        match information
+    :return: a set of person_ids for which email addresses were compared for the
+        site. and the updated match_value dictionary.
+    """
+    person_ids = set()
+
+    cities = _get_observation_match_values(
+        consts.ID_MATCH_TABLE, date_string, concept_id
+    )
+
+    for person_id, city in _get_location_pii(hpo, date_string, consts.PII_ADDRESS_TABLE, pii_field):
+        person_ids.add(person_id)
+
+        rdr_city = _clean_name(cities.get(person_id))
+        pii_city = _clean_name(city)
+
+        match_str = consts.MATCH if rdr_city == pii_city else consts.MISMATCH
+        _record_match_value(match_values, person_id, consts.CITY, match_str)
+
+    return person_ids, match_values
+
+
+def _compare_states(hpo, date_string, concept_id, pii_field):
+    """
+    Compare email addresses from hpo PII table and OMOP observation table.
+
+    :param hpo:  hpo site name.  used to query the correct pii table.
+    :param email_addresses: dictionary of email addresses where person_id is
+        the key and email address is the value
+    :param match_values: current result set dictionary to update with new
+        match information
+    :return: a set of person_ids for which email addresses were compared for the
+        site. and the updated match_value dictionary.
+    """
+    person_ids = set()
+
+    states = _get_observation_match_values(
+        consts.ID_MATCH_TABLE, date_string, concept_id
+    )
+
+    for person_id, state in _get_location_pii(hpo, date_string, consts.PII_ADDRESS_TABLE, pii_field):
+        person_ids.add(person_id)
+
+        rdr_state = _clean_state(states.get(person_id))
+        pii_state = _clean_state(state)
+
+        match_str = consts.MATCH if rdr_state == pii_state else consts.MISMATCH
+        _record_match_value(match_values, person_id, consts.STATE, match_str)
+
+    return person_ids, match_values
+
+
+def _compare_zip_codes(hpo, date_string, concept_id, pii_field):
+    """
+    Compare email addresses from hpo PII table and OMOP observation table.
+
+    :param hpo:  hpo site name.  used to query the correct pii table.
+    :param email_addresses: dictionary of email addresses where person_id is
+        the key and email address is the value
+    :param match_values: current result set dictionary to update with new
+        match information
+    :return: a set of person_ids for which email addresses were compared for the
+        site. and the updated match_value dictionary.
+    """
+    person_ids = set()
+
+    zip_codes = _get_observation_match_values(
+        consts.ID_MATCH_TABLE, date_string, concept_id
+    )
+
+    for person_id, zip_code in _get_location_pii(hpo, date_string, consts.PII_ADDRESS_TABLE, pii_field):
+        person_ids.add(person_id)
+
+        rdr_zip = _clean_zip(zip_codes.get(person_id))
+        pii_zip = _clean_zip(zip_code)
+
+        match_str = consts.MATCH if rdr_zip == pii_zip else consts.MISMATCH
+        _record_match_value(match_values, person_id, consts.ZIP, match_str)
+
+    return person_ids, match_values
+
+
+def _compare_street_addresses(
+        hpo,
+        date_string,
+        concept_id_one,
+        concept_id_two,
+        field_one,
+        field_two
+    ):
     """
     Compare the components of the standard address field.
 
@@ -383,23 +567,31 @@ def _compare_address_fields(hpo, streets_one, streets_two, cities, states, zips,
     a single field.  Both are either set as a match or not match.
 
     :param hpo:  hpo site name used to download pii from the site's pii table
-    :param streets_one: dictionary of rdr street address one values where
-        person_id is the key and the address is the value
-    :param streets_two: dictionary of rdr street address two values where
-        person_id is the key and the address is the value
-    :param cities: dictionary of city values where person_id is the key
-        and city names are the values
-    :param states: dictionary of state values where person_id is the key and
-        state postal abbreviations are the values
-    :param zips: dictionary of zip codes where person_id is the key and U.S.
-        postal codes are the values
-    :param match_values: current result set dictionary to update with new
-        match information
     :return: a set of person_ids for which site pii addresses were compared and
         updated match_values dictionary.
     """
     person_ids = set()
-    for person_id, pii_addr_one, pii_addr_two, city, state, zip_code in _get_pii_addresses(hpo):
+
+    rdr_address_ones = _get_observation_match_values(
+        consts.ID_MATCH_TABLE, date_string, concept_id_one
+    )
+
+    rdr_address_twos = _get_observation_match_values(
+        consts.ID_MATCH_TABLE, date_string, concept_id_two
+    )
+
+    pii_street_ones = _get_location_pii(hpo, date_string, consts.PII_ADDRESS_TABLE, field_one)
+    pii_street_twos = _get_location_pii(hpo, date_string, consts.PII_ADDRESS_TABLE, field_two)
+
+    pii_street_addresses = {}
+    for person_id, street in pii_street_ones:
+        pii_street_addresses[person_id] = [person_id, street]
+
+    for person_id, street in pii_street_twos:
+        current_value = pii_street_addresses.get(person_id, [])
+        pii_street_addresses[person_id] = current_value.append(street)
+
+    for person_id, pii_addr_one, pii_addr_two in pii_street_addresses:
         person_ids.add(person_id)
 
         rdr_addr_one = _clean_street(streets_one.get(person_id))
@@ -430,25 +622,16 @@ def _compare_address_fields(hpo, streets_one, streets_two, cities, states, zips,
                 _record_match_value(match_values, person_id, consts.STREET_ONE, consts.MATCH)
                 _record_match_value(match_values, person_id, consts.STREET_TWO, consts.MATCH)
 
-        rdr_city = _clean_name(cities.get(person_id))
-        city = _clean_name(city)
-        match_str = consts.MATCH if rdr_city == city else consts.MISMATCH
-        _record_match_value(match_values, person_id, consts.CITY, match_str)
-
-        rdr_state = _clean_state(states.get(person_id))
-        state = _clean_state(state)
-        match_str = consts.MATCH if rdr_state == state else consts.MISMATCH
-        _record_match_value(match_values, person_id, consts.STATE, match_str)
-
-        rdr_zip = _clean_zip(zips.get(person_id))
-        zip_code = _clean_zip(zip_code)
-        match_str = consts.MATCH if rdr_zip == zip_code else consts.MISMATCH
-        _record_match_value(match_values, person_id, consts.ZIP, match_str)
-
     return person_ids, match_values
 
 
-def _compare_birth_dates(person_id_set, rdr_birthdates, ehr_birthdates, match_values):
+def _compare_birth_dates(
+    hpo,
+    date_string,
+    person_id_set,
+    concept_id_pii,
+    concept_id_ehr
+    ):
     """
     Compare birth dates for people.
 
@@ -465,6 +648,14 @@ def _compare_birth_dates(person_id_set, rdr_birthdates, ehr_birthdates, match_va
         match information
     :return: updated match_values dictionary
     """
+    pii_birthdates = _get_observation_match_values(
+        consts.ID_MATCH_TABLE, date_string, concept_id_pii
+    )
+
+    ehr_birthdates = _get_observation_match_values(
+        consts.ID_MATCH_TABLE, date_string, concept_id_ehr
+    )
+
     # compare birth_datetime from observation to observation and record results.
     for person_id in person_id_set:
         rdr_birthdate = rdr_birthdates.get(person_id)
@@ -492,7 +683,7 @@ def _compare_birth_dates(person_id_set, rdr_birthdates, ehr_birthdates, match_va
     return match_values
 
 
-def _validate_hpo_pii(hpo, rdr_values, match_values):
+def _validate_hpo_pii(hpo, rdr_values, date_string, match_values):
     """
     For an hpo, validate the information submitted from their PII tables.
 
@@ -500,33 +691,12 @@ def _validate_hpo_pii(hpo, rdr_values, match_values):
 
     :param hpo: hpo site string
     :param rdr_values: dictionary of values pulled from OMOP tables
+    :param date_string: a string formatted date as YYYYMMDD that will be used
+        to identify which dataset to use as a lookup
     :param match_values: current result set dictionary to update with new
         match information
     :return: updated match_values dictionary
     """
-    person_ids = set()
-
-    first_names = rdr_values.get(consts.OBS_PII_NAME_FIRST)
-    middle_names = rdr_values.get(consts.OBS_PII_NAME_MIDDLE)
-    last_names = rdr_values.get(consts.OBS_PII_NAME_LAST)
-    person_id_set, match_values = _compare_name_fields(hpo, first_names, middle_names, last_names, match_values)
-    person_ids.update(person_id_set)
-
-    email_addresses = rdr_values.get(consts.OBS_PII_EMAIL_ADDRESS)
-    person_id_set, match_values = _compare_email_addresses(hpo, email_addresses, match_values)
-    person_ids.update(person_id_set)
-
-    phone_numbers = rdr_values.get(consts.OBS_PII_PHONE)
-    person_id_set, match_values = _compare_phone_numbers(hpo, phone_numbers, match_values)
-    person_ids.update(person_id_set)
-
-    streets_one = rdr_values.get(consts.OBS_PII_STREET_ADDRESS_ONE)
-    streets_two = rdr_values.get(consts.OBS_PII_STREET_ADDRESS_TWO)
-    cities = rdr_values.get(consts.OBS_PII_STREET_ADDRESS_CITY)
-    states = rdr_values.get(consts.OBS_PII_STREET_ADDRESS_STATE)
-    zips = rdr_values.get(consts.OBS_PII_STREET_ADDRESS_ZIP)
-    person_id_set, match_values = _compare_address_fields(hpo, streets_one, streets_two, cities, states, zips,
-                                                          match_values)
     person_ids.update(person_id_set)
 
     rdr_birthdate = rdr_values.get(consts.OBS_PII_BIRTH_DATETIME)
@@ -535,25 +705,103 @@ def _validate_hpo_pii(hpo, rdr_values, match_values):
 
     return match_values
 
+def _update_known_person_ids(person_ids, hpo, person_id_set):
+    current_value = person_ids.get(hpo, set())
+    person_ids[hpo] = current_value.update(person_id_set)
 
-def match_participants(dataset):
+
+def match_participants(project, date_string):
     """
     Entry point for performing participant matching of PPI, EHR, and PII data.
 
-    :param dataset:  The string name of the dataset to use when matching participants
+    :param project: a string representing the project name
+    :param date_string: a string formatted date as YYYYMMDD that will be used
+        to identify which dataset to use as a lookup
+
     :return: results of the field comparison for each hpo
     """
-    # TODO:  implement stubs to get data from BigQuery
-    rdr_values = _get_observation_match_values(dataset)
+    rdr_values = _get_all_observation_match_values(project, date_string)
 
-    # TODO: get list of hpos.  what is the easiest way to get this data?  Read BigQuery tables
-    # or do we maintain a list somewhere?
     hpo_sites = _get_hpo_site_names()
 
     results = {}
+    person_ids = {}
+
+    # validate first names
     for site in hpo_sites:
-        match_values = _validate_hpo_pii(site, rdr_values, {})
-        results.update(match_values)
+        person_id_set, match_values = _compare_name_fields(
+            site, date_string, consts.OBS_PII_NAME_FIRST, consts.FIRST_NAME
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+
+    # validate last names
+    for site in hpo_sites:
+        person_id_set, match_values = _compare_name_fields(
+            site, date_string, consts.OBS_PII_NAME_LAST, consts.LAST_NAME
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+
+    # validate middle names
+    for site in hpo_sites:
+        person_id_set, match_values = _compare_name_fields(
+            site, date_string, consts.OBS_PII_NAME_MIDDLE, consts.MIDDLE_NAME
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+
+    # validate email addresses
+    for site in hpo_sites:
+        person_id_set, match_values = _compare_email_addresses(
+            site, date_string, consts.OBS_PII_EMAIL_ADDRESS, consts.EMAIL_FIELD
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+
+    # validate phone numbers
+    for site in hpo_sites:
+        person_id_set, match_values = _compare_phone_numbers(
+            site, date_string, consts.OBS_PII_PHONE, consts.PHONE_NUMBER_FIELD
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+
+    # validate zip codes
+    for site in hpo_sites:
+        person_id_set, match_values = _compare_zip_codes(
+            site, date_string, consts.OBS_PII_STREET_ADDRESS_ZIP, consts.ZIP_CODE_FIELD
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+
+    # validate city
+    for site in hpo_sites:
+        person_id_set, match_values = _compare_cities(
+            site, date_string, consts.OBS_PII_STREET_ADDRESS_CITY, consts.CITY_FIELD
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+
+    # validate state
+    for site in hpo_sites:
+        person_id_set, match_values = _compare_states(
+            site, date_string, consts.OBS_PII_STREET_ADDRESS_STATE, consts.STATE_FIELD
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+
+    # validate street addresses
+    for site in hpo_sites:
+        person_id_set, match_values = _compare_street_addresses(
+            site,
+            date_string,
+            consts.OBS_PII_STREET_ADDRESS_ONE,
+            consts.OBS_PII_STREET_ADDRESS_TWO,
+            consts.ADDRESS_ONE_FIELD,
+            consts.ADDRESS_TWO_FIELD
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+
+    # validate birth dates
+    for site, participants in person_ids.iteritems():
+        #TODO:  Continue working on this comparison method.
+        match_values = _compare_birth_dates(site, date_string, participants, consts.OBS_PII_BIRTH_DATETIME,
+        consts.OBS_EHR_BIRTH_DATETIME)
+#        match_values = _validate_hpo_pii(site, rdr_values, date_string, {})
+#        results.update(match_values)
         # TODO:  generate hpo site report
 
     # TODO:  generate aggregate site report
@@ -562,5 +810,7 @@ def match_participants(dataset):
 
 
 if __name__ == '__main__':
-    DATASET = 'combined20190211'
-    match_participants(DATASET)
+    DATASET = '20190326'
+#    PROJECT = 'aou-res-curation-prod'
+    PROJECT = 'aou-res-curation-test'
+    match_participants(PROJECT, DATASET)

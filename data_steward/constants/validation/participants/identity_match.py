@@ -30,8 +30,9 @@ PRIMARY_PHONE = 'primary-phone'
 BIRTHDATE = 'birthdate'
 
 # DRC match responses
-MATCH = "matches"
-MISMATCH = "did not match"
+MATCH = "Match"
+MISMATCH = "NoMatch"
+MISSING = "Missing"
 
 # Date format strings
 FULL_DATETIME = '%Y-%m-%d %H:%M:%S%z'
@@ -97,39 +98,71 @@ ADDRESS_ABBREVIATIONS = {
 #  Participant Matching Validation Queries
 # Select observation table attributes to validate
 PPI_OBSERVATION_VALUES = (
-        'SELECT person_id, observation_concept_id, value_as_string '
-        'FROM {dataset}.{table} '
-        'WHERE observation_concept_id IN (' +
-        ', '.join([str(OBS_PII_NAME_FIRST), str(OBS_PII_NAME_MIDDLE),
-                   str(OBS_PII_NAME_LAST), str(OBS_PII_EMAIL_ADDRESS),
-                   str(OBS_PII_PHONE), str(OBS_PII_STREET_ADDRESS_ONE),
-                   str(OBS_PII_STREET_ADDRESS_TWO), str(OBS_PII_STREET_ADDRESS_CITY),
-                   str(OBS_PII_STREET_ADDRESS_STATE), str(OBS_PII_STREET_ADDRESS_ZIP),
-                   str(OBS_PII_BIRTH_DATETIME), str(OBS_EHR_BIRTH_DATETIME)]) +
-        ') ORDER BY observation_concept_id, person_id'
-)
-# Select PII table email.
-PII_EMAIL_VALUES = (
-    'SELECT person_id, email '
-    'FROM {dataset}.{hpo_site_str}_pii_email'
-)
-# Select PII table phone number.
-PII_PHONE_NUMBER_VALUES = (
-    'SELECT person_id, phone_number '
-    'FROM {dataset}.{hpo_site_str}_pii_phone_number'
-)
-# Select PII table location_id.  OMOP location id.
-PII_LOCATION_IDS = (
-    'SELECT person_id, location_id '
-    'FROM {dataset}.{hpo_site_str}_pii_address'
-)
-PII_LOCATION_VALUES = (
-    'SELECT location_id, address_1, address_2, city, state, zip '
-    'FROM {dataset}.location'
+    'SELECT person_id, observation_source_concept_id, value_as_string '
+    'FROM `{project}.combined{date_string}.{table}` '
+    'WHERE observation_source_concept_id={field_value} '
+    'ORDER BY person_id'
 )
 
-# Select PII table name
-PII_NAME_VALUES = (
-    'SELECT person_id, first_name, middle_name, last_name '
-    'FROM {dataset}.{hpo_site_str}_pii_name'
+# Select observation table attributes to validate
+ALL_PPI_OBSERVATION_VALUES = (
+    'SELECT person_id, observation_source_concept_id, value_as_string '
+    'FROM `{project}.combined{date_string}.{table}` '
+    'WHERE observation_source_concept_id IN (' +
+    ', '.join([str(OBS_PII_NAME_FIRST), str(OBS_PII_NAME_MIDDLE),
+               str(OBS_PII_NAME_LAST), str(OBS_PII_EMAIL_ADDRESS),
+               str(OBS_PII_PHONE), str(OBS_PII_STREET_ADDRESS_ONE),
+               str(OBS_PII_STREET_ADDRESS_TWO), str(OBS_PII_STREET_ADDRESS_CITY),
+               str(OBS_PII_STREET_ADDRESS_STATE), str(OBS_PII_STREET_ADDRESS_ZIP),
+               str(OBS_PII_BIRTH_DATETIME)]) +
+    ')'
 )
+
+# Select PII table values.
+PII_VALUES = (
+    'SELECT person_id, {field} '
+    'FROM ehr{date_string}.{hpo_site_str}{table_suffix}'
+)
+
+PII_LOCATION_VALUES = (
+    'SELECT location_id, {field} '
+    'FROM combined{date_string}.location '
+    'WHERE location_id IN ({id_list})'
+)
+
+# Select EHR birth datetime
+EHR_BIRTH_DATETIME_VALUES = (
+    'SELECT person_id, observation_concept_id, value_as_string '
+    'FROM `{project}.combined{date_string}.{table}` '
+    'WHERE observation_concept_id={field} '
+    'ORDER BY person_id'
+)
+
+# Table names
+OBSERVATION_TABLE = 'observation'
+ID_MATCH_TABLE = 'id_match_table'
+PII_EMAIL_TABLE = '_pii_email'
+PII_PHONE_TABLE = '_pii_phone_number'
+PII_ADDRESS_TABLE = '_pii_address'
+PII_NAME_TABLE = '_pii_name'
+
+# Field names
+OBS_CONCEPT_ID = 'observation_concept_id'
+OBS_SOURCE_CONCEPT_ID = 'observation_source_concept_id'
+PERSON_ID = 'person_id'
+STRING_VALUE = 'value_as_string'
+FIRST_NAME = 'first_name'
+MIDDLE_NAME = 'middle_name'
+LAST_NAME = 'last_name'
+EMAIL_FIELD = 'email'
+PHONE_NUMBER_FIELD = 'phone_number'
+ZIP_CODE_FIELD = 'zip'
+STATE_FIELD = 'state'
+CITY_FIELD = 'city'
+ADDRESS_ONE_FIELD = 'address_1'
+ADDRESS_TWO_FIELD = 'address_2'
+LOCATION_ID_FIELD = 'location_id'
+
+# HPO dictionary keys
+HPO_ID = 'hpo_id'
+

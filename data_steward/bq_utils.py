@@ -1,23 +1,22 @@
+# Python imports
 import json
 import logging
 import os
 import socket
 import time
 
+#Third party imports
 from google.appengine.api import app_identity
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+# Project imports
 import common
+import constants.bq_utils as bq_consts
 import gcs_utils
 import resources
 
-SOCKET_TIMEOUT = 600000
-BQ_DEFAULT_RETRY_COUNT = 10
-# Maximum results returned by list_tables (API has a low default value)
-LIST_TABLES_MAX_RESULTS = 2000
-
-socket.setdefaulttimeout(SOCKET_TIMEOUT)
+socket.setdefaulttimeout(bq_consts.SOCKET_TIMEOUT)
 
 
 class InvalidOperationError(RuntimeError):
@@ -87,7 +86,7 @@ def get_table_info(table_id, dataset_id=None, project_id=None):
     if dataset_id is None:
         dataset_id = get_dataset_id()
     job = bq_service.tables().get(projectId=project_id, datasetId=dataset_id, tableId=table_id)
-    return job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+    return job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
 def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, write_disposition='WRITE_TRUNCATE',
@@ -105,7 +104,7 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
 
     fields = json.load(open(schema_path, 'r'))
     load = {'sourceUris': [gcs_object_path],
-            'schema': {'fields': fields},
+            bq_consts.SCHEMA: {bq_consts.FIELDS: fields},
             'destinationTable': {
                 'projectId': project_id,
                 'datasetId': dataset_id,
@@ -121,7 +120,7 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
     }
     }
     insert_job = bq_service.jobs().insert(projectId=project_id, body=job_body)
-    insert_result = insert_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+    insert_result = insert_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
     return insert_result
 
 
@@ -193,7 +192,7 @@ def delete_table(table_id, dataset_id=None):
     bq_service = create_service()
     delete_job = bq_service.tables().delete(projectId=app_id, datasetId=dataset_id, tableId=table_id)
     logging.debug('Deleting {dataset_id}.{table_id}'.format(dataset_id=dataset_id, table_id=table_id))
-    return delete_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+    return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
 def table_exists(table_id, dataset_id=None):
@@ -210,7 +209,7 @@ def table_exists(table_id, dataset_id=None):
         bq_service.tables().get(
             projectId=app_id,
             datasetId=dataset_id,
-            tableId=table_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+            tableId=table_id).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
         return True
     except HttpError, err:
         if err.resp.status != 404:
@@ -224,7 +223,7 @@ def job_status_done(job_id):
     return job_running_status == 'DONE'
 
 
-def wait_on_jobs(job_ids, retry_count=BQ_DEFAULT_RETRY_COUNT, max_poll_interval=300):
+def wait_on_jobs(job_ids, retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT, max_poll_interval=300):
     """
     Exponential backoff wait for jobs to complete
     :param job_ids:
@@ -253,7 +252,7 @@ def get_job_details(job_id):
     """
     bq_service = create_service()
     app_id = app_identity.get_application_id()
-    return bq_service.jobs().get(projectId=app_id, jobId=job_id).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+    return bq_service.jobs().get(projectId=app_id, jobId=job_id).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
 def merge_tables(source_dataset_id,
@@ -291,8 +290,8 @@ def merge_tables(source_dataset_id,
 
     bq_service = create_service()
     insert_result = bq_service.jobs().insert(projectId=app_id,
-                                             body=job_body).execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
-    job_id = insert_result['jobReference']['jobId']
+                                             body=job_body).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+    job_id = insert_result[bq_consts.JOB_REFERENCE][bq_consts.JOB_ID]
     incomplete_jobs = wait_on_jobs([job_id])
 
     if len(incomplete_jobs) == 0:
@@ -309,8 +308,12 @@ def merge_tables(source_dataset_id,
     return True, ""
 
 
-def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEFAULT_RETRY_COUNT,
-          write_disposition='WRITE_EMPTY', destination_dataset_id=None):
+def query(q,
+          use_legacy_sql=False,
+          destination_table_id=None,
+          retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
+          write_disposition='WRITE_EMPTY',
+          destination_dataset_id=None):
     """
     Execute a SQL query on BigQuery dataset
 
@@ -356,7 +359,7 @@ def query(q, use_legacy_sql=False, destination_table_id=None, retry_count=BQ_DEF
                 'datasetId': get_dataset_id()
             },
             'query': q,
-            'timeoutMs': SOCKET_TIMEOUT,
+            'timeoutMs': bq_consts.SOCKET_TIMEOUT,
             'useLegacySql': use_legacy_sql
         }
         return bq_service.jobs().query(projectId=app_id, body=job_body).execute(num_retries=retry_count)
@@ -386,18 +389,18 @@ def create_table(table_id, fields, drop_existing=False, dataset_id=None):
             "datasetId": dataset_id,
             "tableId": table_id
         },
-        'schema': {'fields': fields}
+        bq_consts.SCHEMA: {bq_consts.FIELDS: fields}
     }
     field_names = [field['name'] for field in fields]
     if 'person_id' in field_names:
         insert_body['clustering'] = {
-            'fields': ['person_id']
+            bq_consts.FIELDS: ['person_id']
         }
         insert_body['timePartitioning'] = {
             'type': 'DAY'
         }
     insert_job = bq_service.tables().insert(projectId=app_id, datasetId=dataset_id, body=insert_body)
-    return insert_job.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+    return insert_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
 def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=None):
@@ -414,7 +417,7 @@ def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=
     return create_table(table_id, fields, drop_existing, dataset_id)
 
 
-def list_tables(dataset_id=None, max_results=LIST_TABLES_MAX_RESULTS):
+def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS):
     """
     List all the tables in the dataset
 
@@ -434,7 +437,7 @@ def list_tables(dataset_id=None, max_results=LIST_TABLES_MAX_RESULTS):
     results = []
     request = bq_service.tables().list(projectId=app_id, datasetId=dataset_id, maxResults=max_results)
     while request is not None:
-        response = request.execute(num_retries=BQ_DEFAULT_RETRY_COUNT)
+        response = request.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
         tables = response.get('tables', [])
         results.extend(tables or [])
         request = bq_service.tables().list_next(request, response)
@@ -454,6 +457,34 @@ def list_dataset_contents(dataset_id):
     return all_tables
 
 
+def response_to_large_rowset(query_response):
+    """
+    Convert a query response to a list of dictionary objects
+
+    This automatically uses the pageToken feature to iterate through a
+    large result set.  Use cautiously.
+
+    :param query_response: the query response object to iterate
+    :return: list of dictionaries
+    """
+    bq_service = create_service()
+    app_id = app_identity.get_application_id()
+
+    page_token = query_response.get(bq_consts.PAGE_TOKEN)
+    job_ref = query_response.get(bq_consts.JOB_REFERENCE)
+    job_id = job_ref.get(bq_consts.JOB_ID)
+
+    result_list = response2rows(query_response)
+    while page_token:
+        next_grouping = bq_service.jobs()\
+            .getQueryResults(projectId=app_id, jobId=job_id, pageToken=page_token)\
+            .execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+        page_token = next_grouping.get(bq_consts.PAGE_TOKEN)
+        intermediate_rows = response2rows(next_grouping)
+        result_list.extend(intermediate_rows)
+
+    return result_list
+
 def response2rows(r):
     """
     Convert a query response to a list of dict
@@ -461,8 +492,8 @@ def response2rows(r):
     :param r: a query response object
     :return: list of dict
     """
-    rows = r.get('rows', [])
-    schema = r.get('schema', {'fields': None})['fields']
+    rows = r.get(bq_consts.ROWS, [])
+    schema = r.get(bq_consts.SCHEMA, {bq_consts.FIELDS: None})[bq_consts.FIELDS]
     return [_transform_row(row, schema) for row in rows]
 
 
