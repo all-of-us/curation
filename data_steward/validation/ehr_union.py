@@ -469,16 +469,13 @@ def move_ehr_person_to_observation(output_dataset_id):
     :return:
     """
 
-    pto_concept_id = common.pto_concept_id
-    pto_concept_offset = common.pto_concept_offset
-
     q = '''
         SELECT
             CASE observation_concept_id
-                WHEN {key_gender} THEN pto.person_id + {pto_offset} + {gender_key_offset}
-                WHEN {key_race} THEN pto.person_id + {pto_offset} + {race_key_offset}
-                WHEN {key_dob} THEN pto.person_id + {pto_offset} + {dob_key_offset}
-                WHEN {key_ethnicity} THEN pto.person_id + {pto_offset} + {ethnicity_key_offset}
+                WHEN {gender_concept_id} THEN pto.person_id + {pto_offset} + {gender_offset}
+                WHEN {race_concept_id} THEN pto.person_id + {pto_offset} + {race_offset}
+                WHEN {dob_concept_id} THEN pto.person_id + {pto_offset} + {dob_offset}
+                WHEN {ethnicity_concept_id} THEN pto.person_id + {pto_offset} + {ethnicity_offset}
             END AS observation_id,
             person_id,
             observation_concept_id,
@@ -504,10 +501,10 @@ def move_ehr_person_to_observation(output_dataset_id):
             ORDER BY person_id) AS pto
         '''.format(output_dataset_id=output_dataset_id,
                    pto_offset=common.EHR_PERSON_TO_OBS_CONSTANT,
-                   key_gender=pto_concept_id['gender'], gender_key_offset=pto_concept_offset['gender'],
-                   key_race=pto_concept_id['race'], race_key_offset=pto_concept_offset['race'],
-                   key_dob=pto_concept_id['dob'], dob_key_offset=pto_concept_offset['dob'],
-                   key_ethnicity=pto_concept_id['ethnicity'], ethnicity_key_offset=pto_concept_offset['ethnicity'],
+                   gender_concept_id=common.GENDER_CONCEPT_ID, gender_offset=common.GENDER_CONSTANT_FACTOR,
+                   race_concept_id=common.RACE_CONCEPT_ID, race_offset=common.RACE_CONSTANT_FACTOR,
+                   dob_concept_id=common.DOB_CONCEPT_ID, dob_offset=common.DOB_CONSTANT_FACTOR,
+                   ethnicity_concept_id=common.ETHNICITY_CONCEPT_ID, ethnicity_offset=common.ETHNICITY_CONSTANT_FACTOR,
                    person_to_obs_query=get_person_to_observation_query(output_dataset_id))
     logging.info('Copying EHR person table from {ehr_dataset_id} to unioned dataset. Query is `{q}`'
                  .format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
@@ -525,17 +522,14 @@ def map_ehr_person_to_observation(output_dataset_id):
     """
     table_name = OBSERVATION_TABLE
 
-    pto_concept_id = common.pto_concept_id
-    pto_concept_offset = common.pto_concept_offset
-
     q = '''
         SELECT
             mp.src_table_id AS src_table_id,
             CASE observation_concept_id
-                WHEN {key_gender} THEN pto.person_id + {pto_offset} + {gender_key_offset}
-                WHEN {key_race} THEN pto.person_id + {pto_offset} + {race_key_offset}
-                WHEN {key_dob} THEN pto.person_id + {pto_offset} + {dob_key_offset}
-                WHEN {key_ethnicity} THEN pto.person_id + {pto_offset} + {ethnicity_key_offset}
+                WHEN {gender_concept_id} THEN pto.person_id + {pto_offset} + {gender_offset}
+                WHEN {race_concept_id} THEN pto.person_id + {pto_offset} + {race_offset}
+                WHEN {dob_concept_id} THEN pto.person_id + {pto_offset} + {dob_offset}
+                WHEN {ethnicity_concept_id} THEN pto.person_id + {pto_offset} + {ethnicity_offset}
             END AS observation_id,
             pto.person_id AS src_observation_id,
             mp.src_hpo_id AS src_hpo_id
@@ -546,10 +540,10 @@ def map_ehr_person_to_observation(output_dataset_id):
             ON pto.person_id = mp.src_person_id
         '''.format(output_dataset_id=output_dataset_id,
                    pto_offset=common.EHR_PERSON_TO_OBS_CONSTANT,
-                   key_gender=pto_concept_id['gender'], gender_key_offset=pto_concept_offset['gender'],
-                   key_race=pto_concept_id['race'], race_key_offset=pto_concept_offset['race'],
-                   key_dob=pto_concept_id['dob'], dob_key_offset=pto_concept_offset['dob'],
-                   key_ethnicity=pto_concept_id['ethnicity'], ethnicity_key_offset=pto_concept_offset['ethnicity'],
+                   gender_concept_id=common.GENDER_CONCEPT_ID, gender_offset=common.GENDER_CONSTANT_FACTOR,
+                   race_concept_id=common.RACE_CONCEPT_ID, race_offset=common.RACE_CONSTANT_FACTOR,
+                   dob_concept_id=common.DOB_CONCEPT_ID, dob_offset=common.DOB_CONSTANT_FACTOR,
+                   ethnicity_concept_id=common.ETHNICITY_CONCEPT_ID, ethnicity_offset=common.ETHNICITY_CONSTANT_FACTOR,
                    person_to_obs_query=get_person_to_observation_query(output_dataset_id))
     dst_dataset_id = output_dataset_id
     dst_table_id = mapping_table_for(table_name)

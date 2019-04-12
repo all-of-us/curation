@@ -267,6 +267,35 @@ class EhrUnionTest(unittest.TestCase):
         self.assertEqual(expected_query.strip(), query.strip(),
                          "Mapping query for \n {q} \n to is not as expected".format(q=query))
 
+    def convert_ehr_person_to_observation(self, person_row):
+        obs_rows = []
+        dob_row = {'observation_concept_id': common.DOB_CONCEPT_ID,
+                   'observation_source_value': None,
+                   'value_as_string': person_row['birth_datetime'],
+                   'person_id': person_row['person_id'],
+                   'observation_date': person_row['birth_date'],
+                   'value_as_concept_id': None}
+        gender_row = {'observation_concept_id': common.GENDER_CONCEPT_ID,
+                      'observation_source_value': person_row['gender_source_value'],
+                      'value_as_string': None,
+                      'person_id': person_row['person_id'],
+                      'observation_date': person_row['birth_date'],
+                      'value_as_concept_id': person_row['gender_concept_id']}
+        race_row = {'observation_concept_id': common.RACE_CONCEPT_ID,
+                    'observation_source_value': person_row['race_source_value'],
+                    'value_as_string': None,
+                    'person_id': person_row['person_id'],
+                    'observation_date': person_row['birth_date'],
+                    'value_as_concept_id': person_row['race_concept_id']}
+        ethnicity_row = {'observation_concept_id': common.ETHNICITY_CONCEPT_ID,
+                         'observation_source_value': person_row['ethnicity_source_value'],
+                         'value_as_string': None,
+                         'person_id': person_row['person_id'],
+                         'observation_date': person_row['birth_date'],
+                         'value_as_concept_id': person_row['ethnicity_concept_id']}
+        obs_rows.extend([dob_row, gender_row, race_row, ethnicity_row])
+        return obs_rows
+
     def test_ehr_person_to_observation(self):
         # ehr person table converts to observation records
         self._load_datasets()
@@ -291,19 +320,9 @@ class EhrUnionTest(unittest.TestCase):
         person_rows = bq_utils.response2rows(person_response)
 
         # construct dicts of expected values
-        expected = dict()
-        concept_id = common.pto_concept_id
-        for key in concept_id:
-            for person_row in person_rows:
-                pid = person_row['person_id']
-                if pid not in expected:
-                    expected[pid] = dict()
-                expected[pid][key] = dict()
-                expected[pid][key]['concept_id'] = concept_id[key]
-                expected[pid][key]['concept_id_value'] = None if key == 'dob' else person_row[key+'_concept_id']
-                expected[pid][key]['value_as_string'] = person_row['birth_datetime'] if key == 'dob' else None
-                expected[pid][key]['concept_source_value'] = None if key == 'dob' else person_row[key+'_source_value']
-                expected[pid][key]['birth_date'] = person_row['birth_date']
+        expected = []
+        for person_row in person_rows:
+            expected.extend(self.convert_ehr_person_to_observation(person_row))
 
         # query for observation table records
         query = '''
@@ -314,35 +333,20 @@ class EhrUnionTest(unittest.TestCase):
                     observation_source_value,
                     observation_date
             FROM {output_dataset_id}.unioned_ehr_observation AS obs
-            WHERE obs.observation_concept_id = {concept_id}
+            WHERE obs.observation_concept_id IN ({gender_concept_id},{race_concept_id},{dob_concept_id},{ethnicity_concept_id})
             '''
 
-        obs_query = dict()
-        obs_response = dict()
-        obs_rows = dict()
+        obs_query = query.format(output_dataset_id=self.output_dataset_id,
+                                 gender_concept_id=common.GENDER_CONCEPT_ID,
+                                 race_concept_id=common.RACE_CONCEPT_ID,
+                                 dob_concept_id=common.DOB_CONCEPT_ID,
+                                 ethnicity_concept_id=common.ETHNICITY_CONCEPT_ID)
+        obs_response = bq_utils.query(obs_query)
+        obs_rows = bq_utils.response2rows(obs_response)
+        actual = obs_rows
 
-        # extract actual results
-        actual = dict()
-        for key in concept_id:
-            obs_query[key] = query.format(output_dataset_id=self.output_dataset_id,
-                                          concept_id=concept_id[key])
-            obs_response[key] = bq_utils.query(obs_query[key])
-            obs_rows[key] = bq_utils.response2rows(obs_response[key])
-
-            for obs_row in obs_rows[key]:
-                pid = obs_row['person_id']
-                if pid not in actual:
-                    actual[pid] = dict()
-                actual[pid][key] = dict()
-                actual[pid][key]['concept_id'] = obs_row['observation_concept_id']
-                actual[pid][key]['concept_id_value'] = None if key == 'dob' else obs_row['value_as_concept_id']
-                actual[pid][key]['value_as_string'] = obs_row['value_as_string'] if key == 'dob' else None
-                actual[pid][key]['concept_source_value'] = None if key == 'dob' else obs_row['observation_source_value']
-                actual[pid][key]['birth_date'] = obs_row['observation_date']
-
-        for pid in expected:
-            for key in concept_id:
-                self.assertDictEqual(expected[pid][key], actual[pid][key])
+        self.assertEqual(len(expected), len(actual))
+        self.assertItemsEqual(expected, actual)
 
     def test_ehr_person_to_observation_counts(self):
         self._load_datasets()

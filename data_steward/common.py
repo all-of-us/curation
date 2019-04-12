@@ -42,7 +42,7 @@ CDM_COMPONENTS = [CLINICAL, VOCABULARY, ACHILLES]
 # Values for ID fields for each HPO are summed with a factor of ID_CONSTANT_FACTOR
 ID_CONSTANT_FACTOR = 1000000000000000
 
-KEY_CONSTANT_FACTOR = 1000000000000
+CONCEPT_CONSTANT_FACTOR = 1000000000000
 
 # Added to value in all ID fields in records coming from the RDR
 RDR_ID_CONSTANT = ID_CONSTANT_FACTOR
@@ -54,19 +54,15 @@ EHR_PERSON_TO_OBS_CONSTANT = 2 * ID_CONSTANT_FACTOR
 EHR_ID_MULTIPLIER_START = 3
 
 # person to observation (pto) constants
+GENDER_CONCEPT_ID = 4135376
+RACE_CONCEPT_ID = 4013886
+DOB_CONCEPT_ID = 4083587
+ETHNICITY_CONCEPT_ID = 4271761
 
-pto_concept_id = dict()
-# concept ids
-pto_concept_id['gender'] = 4135376
-pto_concept_id['race'] = 4013886
-pto_concept_id['dob'] = 4083587
-pto_concept_id['ethnicity'] = 4271761
-
-pto_concept_offset = dict()
-# concept offsets
-demographic_concepts = ['gender', 'race', 'dob', 'ethnicity']
-for i, concept in enumerate(demographic_concepts):
-    pto_concept_offset[concept] = (i+1) * KEY_CONSTANT_FACTOR
+GENDER_CONSTANT_FACTOR = 1 * CONCEPT_CONSTANT_FACTOR
+RACE_CONSTANT_FACTOR = 2 * CONCEPT_CONSTANT_FACTOR
+DOB_CONSTANT_FACTOR = 3 * CONCEPT_CONSTANT_FACTOR
+ETHNICITY_CONSTANT_FACTOR = 4 * CONCEPT_CONSTANT_FACTOR
 
 
 PARTICIPANT_DIR = 'participant/'
