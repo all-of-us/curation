@@ -105,6 +105,15 @@ PPI_OBSERVATION_VALUES = (
 )
 
 # Select observation table attributes to validate
+EHR_OBSERVATION_VALUES = (
+    'SELECT person_id, observation_concept_id, value_as_string '
+    'FROM `{project}.combined{date_string}.{table}` '
+    'WHERE observation_concept_id={field_value} '
+    'AND person_id IN ({person_id_csv}) '
+    'ORDER BY person_id'
+)
+
+# Select observation table attributes to validate
 ALL_PPI_OBSERVATION_VALUES = (
     'SELECT person_id, observation_source_concept_id, value_as_string '
     'FROM `{project}.combined{date_string}.{table}` '
