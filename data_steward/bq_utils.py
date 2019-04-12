@@ -541,3 +541,40 @@ def _transform_row(row, schema):
 def _list_all_table_ids(dataset_id):
     tables = list_tables(dataset_id)
     return [table['tableReference']['tableId'] for table in tables]
+
+
+def create_dataset(
+        project_id=None,
+        dataset_id=None,
+        description=None,
+        friendly_name=None
+    ):
+    """
+    """
+    if dataset_id is None:
+        raise RuntimeError("Cannot create a dataset without a name")
+
+    if description is None:
+        raise RuntimeError("Will not create a dataset without a description")
+
+    if project_id is None:
+        app_id = app_identity.get_application_id()
+    else:
+        app_id = project_id
+
+    bq_service = create_service()
+
+    job_body = {
+        bq_consts.DATASET_REFERENCE: {
+            bq_consts.PROJECT_ID: app_id,
+            bq_consts.DATASET_ID: dataset_id,
+        },
+        bq_consts.DESCRIPTION: description,
+    }
+
+    if friendly_name:
+        job_body.update({bq_consts.FRIENDLY_NAME: friendly_name})
+
+    insert_dataset = bq_service.datasets().insert(projectId=app_id, body=job_body)
+    insert_result = insert_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+    return insert_result
