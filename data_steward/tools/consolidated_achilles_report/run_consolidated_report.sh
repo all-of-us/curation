@@ -16,7 +16,7 @@ while true; do
   esac
 done
 
-if [ -z "${key_file}" ] || [ -z "${app_id}" ] || [ -z "${bucket_name}" ] || [ -z "${dataset}" ]
+if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${bucket_name}" ]] || [[ -z "${dataset}" ]]
 then
   echo "Specify the key file location, application_id, bucket_name and dataset. $USAGE"
   exit 1
@@ -55,12 +55,15 @@ pip install -t lib -r requirements.txt
 source tools/set_path.sh
 
 #Copy the curation report directory from resources to consolidated achilles report
-cp -R resources/curation_report/  tools/consolidated_achilles_report/
+cp -R resources/curation_report/  tools/consolidated_achilles_report/curation_report/
 
 cd tools/consolidated_achilles_report/
 
 # Run Query, Gets latest submissions and downloads the curation reports
-python main.py
+python get_all_achilles_reports.py
+
+#Run Query, gets latest results.html and downloads the files
+python get_all_results_html.py
 
 # Unset the PYTHONPATH set during the venv installation
 unset PYTHONPATH
