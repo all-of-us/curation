@@ -95,7 +95,7 @@ def is_pii_table(table_id):
     :param table_id: identifies the table
     :return: True if specified table is a pii table, False otherwise
     """
-    return table_id.startswith('pii')
+    return table_id.startswith('pii') or table_id.startswith('participant')
 
 
 def cdm_schemas(include_achilles=False, include_vocabulary=False):
