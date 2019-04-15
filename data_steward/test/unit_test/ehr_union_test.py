@@ -51,11 +51,14 @@ class EhrUnionTest(unittest.TestCase):
         expected_tables = dict()
         running_jobs = []
         for cdm_table in common.CDM_TABLES:
-            cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
             output_table = ehr_union.output_table_for(cdm_table)
             expected_tables[output_table] = []
             for hpo_id in self.hpo_ids:
                 # upload csv into hpo bucket
+                if hpo_id == CHS_HPO_ID:
+                    cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
+                else:
+                    cdm_file_name = os.path.join(test_util.PITT_FIVE_PERSONS_PATH, cdm_table + '.csv')
                 bucket = gcs_utils.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_file_name):
                     test_util.write_cloud_file(bucket, cdm_file_name)
@@ -68,6 +71,11 @@ class EhrUnionTest(unittest.TestCase):
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
                 expected_tables[output_table] += list(csv_rows)
+        # ensure person to observation output is as expected
+        output_table_person = ehr_union.output_table_for(ehr_union.PERSON_TABLE)
+        output_table_observation = ehr_union.output_table_for(ehr_union.OBSERVATION_TABLE)
+        expected_tables[output_table_observation] += 4 * expected_tables[output_table_person]
+
         incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
         if len(incomplete_jobs) > 0:
             message = "Job id(s) %s failed to complete" % incomplete_jobs
@@ -100,7 +108,8 @@ class EhrUnionTest(unittest.TestCase):
 
         # output should be mapping tables and cdm tables
         output_tables_before = self._dataset_tables(self.output_dataset_id)
-        mapping_tables = [ehr_union.mapping_table_for(table) for table in ehr_union.tables_to_map()]
+        mapping_tables = [ehr_union.mapping_table_for(table) for table in
+                          ehr_union.tables_to_map() + [ehr_union.PERSON_TABLE]]
         output_cdm_tables = [ehr_union.output_table_for(table) for table in common.CDM_TABLES]
         expected_output = set(output_tables_before + mapping_tables + output_cdm_tables)
 
@@ -235,7 +244,7 @@ class EhrUnionTest(unittest.TestCase):
       
                 (SELECT 'chs_measurement' AS src_table_id,
                   measurement_id AS src_measurement_id,
-                  ROW_NUMBER() over() + 2000000000000000 as measurement_id
+                  ROW_NUMBER() over() + 3000000000000000 as measurement_id
                   FROM `{app_id}.{dataset_id}.chs_measurement`)
                 
 
@@ -244,7 +253,7 @@ class EhrUnionTest(unittest.TestCase):
 
                 (SELECT 'pitt_measurement' AS src_table_id,
                   measurement_id AS src_measurement_id,
-                  ROW_NUMBER() over() + 3000000000000000 as measurement_id
+                  ROW_NUMBER() over() + 4000000000000000 as measurement_id
                   FROM `{app_id}.{dataset_id}.pitt_measurement`)
                 
     )
@@ -257,6 +266,112 @@ class EhrUnionTest(unittest.TestCase):
     '''.format(dataset_id=dataset_id, app_id=app_id)
         self.assertEqual(expected_query.strip(), query.strip(),
                          "Mapping query for \n {q} \n to is not as expected".format(q=query))
+
+    def convert_ehr_person_to_observation(self, person_row):
+        obs_rows = []
+        dob_row = {'observation_concept_id': common.DOB_CONCEPT_ID,
+                   'observation_source_value': None,
+                   'value_as_string': person_row['birth_datetime'],
+                   'person_id': person_row['person_id'],
+                   'observation_date': person_row['birth_date'],
+                   'value_as_concept_id': None}
+        gender_row = {'observation_concept_id': common.GENDER_CONCEPT_ID,
+                      'observation_source_value': person_row['gender_source_value'],
+                      'value_as_string': None,
+                      'person_id': person_row['person_id'],
+                      'observation_date': person_row['birth_date'],
+                      'value_as_concept_id': person_row['gender_concept_id']}
+        race_row = {'observation_concept_id': common.RACE_CONCEPT_ID,
+                    'observation_source_value': person_row['race_source_value'],
+                    'value_as_string': None,
+                    'person_id': person_row['person_id'],
+                    'observation_date': person_row['birth_date'],
+                    'value_as_concept_id': person_row['race_concept_id']}
+        ethnicity_row = {'observation_concept_id': common.ETHNICITY_CONCEPT_ID,
+                         'observation_source_value': person_row['ethnicity_source_value'],
+                         'value_as_string': None,
+                         'person_id': person_row['person_id'],
+                         'observation_date': person_row['birth_date'],
+                         'value_as_concept_id': person_row['ethnicity_concept_id']}
+        obs_rows.extend([dob_row, gender_row, race_row, ethnicity_row])
+        return obs_rows
+
+    def test_ehr_person_to_observation(self):
+        # ehr person table converts to observation records
+        self._load_datasets()
+
+        # perform ehr union
+        ehr_union.main(self.input_dataset_id, self.output_dataset_id, self.project_id, self.hpo_ids)
+
+        person_query = '''
+            SELECT 
+                person_id,
+                gender_concept_id,
+                gender_source_value,
+                race_concept_id,
+                race_source_value,
+                CAST(birth_datetime AS STRING) AS birth_datetime,
+                ethnicity_concept_id,
+                ethnicity_source_value,
+                EXTRACT(DATE FROM birth_datetime) AS birth_date
+            FROM {output_dataset_id}.unioned_ehr_person
+            '''.format(output_dataset_id=self.output_dataset_id)
+        person_response = bq_utils.query(person_query)
+        person_rows = bq_utils.response2rows(person_response)
+
+        # construct dicts of expected values
+        expected = []
+        for person_row in person_rows:
+            expected.extend(self.convert_ehr_person_to_observation(person_row))
+
+        # query for observation table records
+        query = '''
+            SELECT person_id,
+                    observation_concept_id,
+                    value_as_concept_id,
+                    value_as_string,
+                    observation_source_value,
+                    observation_date
+            FROM {output_dataset_id}.unioned_ehr_observation AS obs
+            WHERE obs.observation_concept_id IN ({gender_concept_id},{race_concept_id},{dob_concept_id},{ethnicity_concept_id})
+            '''
+
+        obs_query = query.format(output_dataset_id=self.output_dataset_id,
+                                 gender_concept_id=common.GENDER_CONCEPT_ID,
+                                 race_concept_id=common.RACE_CONCEPT_ID,
+                                 dob_concept_id=common.DOB_CONCEPT_ID,
+                                 ethnicity_concept_id=common.ETHNICITY_CONCEPT_ID)
+        obs_response = bq_utils.query(obs_query)
+        obs_rows = bq_utils.response2rows(obs_response)
+        actual = obs_rows
+
+        self.assertEqual(len(expected), len(actual))
+        self.assertItemsEqual(expected, actual)
+
+    def test_ehr_person_to_observation_counts(self):
+        self._load_datasets()
+
+        # perform ehr union
+        ehr_union.main(self.input_dataset_id, self.output_dataset_id, self.project_id, self.hpo_ids)
+
+        q_person = '''
+            SELECT *
+            FROM {output_dataset_id}.unioned_ehr_person AS p
+            '''.format(output_dataset_id=self.output_dataset_id)
+        person_response = bq_utils.query(q_person)
+        person_rows = bq_utils.response2rows(person_response)
+        q_observation = '''
+            SELECT *
+            FROM {output_dataset_id}.unioned_ehr_observation
+            WHERE observation_type_concept_id = 38000280
+            '''.format(output_dataset_id=self.output_dataset_id)
+        # observation should contain 4 records per person of type EHR
+        expected = len(person_rows) * 4
+        observation_response = bq_utils.query(q_observation)
+        observation_rows = bq_utils.response2rows(observation_response)
+        actual = len(observation_rows)
+        self.assertEqual(actual, expected,
+                         'Expected %s EHR person records in observation but found %s' % (expected, actual))
 
     def _test_table_hpo_subquery(self):
         # person is a simple select, no ids should be mapped

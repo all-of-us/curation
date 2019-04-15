@@ -74,9 +74,11 @@ import argparse
 import logging
 from google.appengine.api.app_identity import app_identity
 
+import os
 import bq_utils
 import resources
 import common
+from tools.combine_ehr_rdr import OBSERVATION_TABLE, PERSON_TABLE
 
 VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
@@ -385,6 +387,171 @@ def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
     return query_result
 
 
+def get_person_to_observation_query(dataset_id):
+    q = """
+        --Race
+        SELECT
+            person_id,
+            4013886 as observation_concept_id,
+            38000280 as observation_type_concept_id,
+            CASE
+                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                ELSE birth_datetime
+            END AS observation_datetime,
+            race_concept_id as value_as_concept_id,
+            NULL as value_as_string,
+            race_source_value as observation_source_value,
+            race_source_concept_id as observation_source_concept_id
+        FROM {dataset_id}.unioned_ehr_person
+        WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+
+        UNION ALL
+
+        --Ethnicity
+        SELECT
+            person_id,
+            4271761 as observation_concept_id,
+            38000280 as observation_type_concept_id,
+            CASE
+                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                ELSE birth_datetime
+            END AS observation_datetime,
+            ethnicity_concept_id as value_as_concept_id,
+            NULL as value_as_string,
+            ethnicity_source_value as observation_source_value,
+            ethnicity_source_concept_id as observation_source_concept_id
+        FROM {dataset_id}.unioned_ehr_person
+        WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+
+        UNION ALL
+
+        --Gender
+        SELECT
+            person_id,
+            4135376 as observation_concept_id,
+            38000280 as observation_type_concept_id,
+            CASE
+                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                ELSE birth_datetime
+            END AS observation_datetime,
+            gender_concept_id as value_as_concept_id,
+            NULL as value_as_string,
+            gender_source_value as observation_source_value,
+            gender_source_concept_id as observation_source_concept_id
+        FROM {dataset_id}.unioned_ehr_person
+        WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+
+        UNION ALL
+
+        --DOB
+        SELECT
+            person_id,
+            4083587 as observation_concept_id,
+            38000280 as observation_type_concept_id,
+            CASE
+                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                ELSE birth_datetime
+            END AS observation_datetime,
+            NULL as value_as_concept_id,
+            birth_datetime as value_as_string,
+            NULL as observation_source_value,
+            NULL as observation_source_concept_id
+        FROM {dataset_id}.unioned_ehr_person
+        WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
+        """.format(dataset_id=dataset_id)
+    return q
+
+
+def move_ehr_person_to_observation(output_dataset_id):
+    """
+    This function moves the demographics from the EHR person table to
+    the observation table in the combined data set
+    :return:
+    """
+
+    q = '''
+        SELECT
+            CASE observation_concept_id
+                WHEN {gender_concept_id} THEN pto.person_id + {pto_offset} + {gender_offset}
+                WHEN {race_concept_id} THEN pto.person_id + {pto_offset} + {race_offset}
+                WHEN {dob_concept_id} THEN pto.person_id + {pto_offset} + {dob_offset}
+                WHEN {ethnicity_concept_id} THEN pto.person_id + {pto_offset} + {ethnicity_offset}
+            END AS observation_id,
+            person_id,
+            observation_concept_id,
+            EXTRACT(DATE FROM observation_datetime) as observation_date,
+            observation_type_concept_id,
+            observation_datetime,
+            CAST(NULL AS FLOAT64) as value_as_number,
+            value_as_concept_id,
+            CAST(value_as_string AS STRING) as value_as_string,
+            observation_source_value,
+            observation_source_concept_id,
+            NULL as qualifier_concept_id,
+            NULL as unit_concept_id,
+            NULL as provider_id,
+            NULL as visit_occurrence_id,
+            CAST(NULL AS STRING) as unit_source_value,
+            CAST(NULL AS STRING) as qualifier_source_value,
+            NULL as value_source_concept_id,
+            CAST(NULL AS STRING) as value_source_value,
+            NULL as questionnaire_response_id
+        FROM
+            ({person_to_obs_query}
+            ORDER BY person_id) AS pto
+        '''.format(output_dataset_id=output_dataset_id,
+                   pto_offset=common.EHR_PERSON_TO_OBS_CONSTANT,
+                   gender_concept_id=common.GENDER_CONCEPT_ID, gender_offset=common.GENDER_CONSTANT_FACTOR,
+                   race_concept_id=common.RACE_CONCEPT_ID, race_offset=common.RACE_CONSTANT_FACTOR,
+                   dob_concept_id=common.DOB_CONCEPT_ID, dob_offset=common.DOB_CONSTANT_FACTOR,
+                   ethnicity_concept_id=common.ETHNICITY_CONCEPT_ID, ethnicity_offset=common.ETHNICITY_CONSTANT_FACTOR,
+                   person_to_obs_query=get_person_to_observation_query(output_dataset_id))
+    logging.info('Copying EHR person table from {ehr_dataset_id} to unioned dataset. Query is `{q}`'
+                 .format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
+    dst_table_id = output_table_for(OBSERVATION_TABLE)
+    dst_dataset_id = output_dataset_id
+    query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
+
+
+def map_ehr_person_to_observation(output_dataset_id):
+    """
+    Maps the newly created observation records from person into the observation mapping table
+    :param input_dataset_id:
+    :param output_dataset_id:
+    :param hpo_id:
+    """
+    table_name = OBSERVATION_TABLE
+
+    q = '''
+        SELECT
+            mp.src_table_id AS src_table_id,
+            CASE observation_concept_id
+                WHEN {gender_concept_id} THEN pto.person_id + {pto_offset} + {gender_offset}
+                WHEN {race_concept_id} THEN pto.person_id + {pto_offset} + {race_offset}
+                WHEN {dob_concept_id} THEN pto.person_id + {pto_offset} + {dob_offset}
+                WHEN {ethnicity_concept_id} THEN pto.person_id + {pto_offset} + {ethnicity_offset}
+            END AS observation_id,
+            pto.person_id AS src_observation_id,
+            mp.src_hpo_id AS src_hpo_id
+        FROM
+            ({person_to_obs_query}) AS pto
+            JOIN
+            {output_dataset_id}._mapping_person AS mp
+            ON pto.person_id = mp.src_person_id
+        '''.format(output_dataset_id=output_dataset_id,
+                   pto_offset=common.EHR_PERSON_TO_OBS_CONSTANT,
+                   gender_concept_id=common.GENDER_CONCEPT_ID, gender_offset=common.GENDER_CONSTANT_FACTOR,
+                   race_concept_id=common.RACE_CONCEPT_ID, race_offset=common.RACE_CONSTANT_FACTOR,
+                   dob_concept_id=common.DOB_CONCEPT_ID, dob_offset=common.DOB_CONSTANT_FACTOR,
+                   ethnicity_concept_id=common.ETHNICITY_CONCEPT_ID, ethnicity_offset=common.ETHNICITY_CONSTANT_FACTOR,
+                   person_to_obs_query=get_person_to_observation_query(output_dataset_id))
+    dst_dataset_id = output_dataset_id
+    dst_table_id = mapping_table_for(table_name)
+    logging.info('Mapping EHR person table from {ehr_dataset_id} to unioned dataset. Query is `{q}`'
+                 .format(ehr_dataset_id=bq_utils.get_dataset_id(), q=q))
+    query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
+
+
 def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     """
     Create a new CDM which is the union of all EHR datasets submitted by HPOs
@@ -414,6 +581,20 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     for table_name in common.CDM_TABLES:
         logging.info('Creating union of table {table}...'.format(table=table_name))
         load(table_name, hpo_ids, input_dataset_id, output_dataset_id)
+
+    logging.info('Creation of Unioned EHR complete')
+
+    # create person mapping table
+    domain_table = PERSON_TABLE
+    logging.info('Mapping {domain_table}...'.format(domain_table=domain_table))
+    mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id, project_id)
+
+    logging.info('Starting process for Person to Observation')
+    # Map and move EHR person records into four rows in observation, one each for race, ethnicity, dob and gender
+    map_ehr_person_to_observation(output_dataset_id)
+    move_ehr_person_to_observation(output_dataset_id)
+
+    logging.info('Completed Person to Observation')
 
 
 if __name__ == '__main__':
