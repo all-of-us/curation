@@ -5,7 +5,7 @@
 # 2. Transform the vocabulary files to a format BigQuery can load
 # 3. Upload the transformed files to the GCS path specified by --gcs_path
 # 4. Load the vocabulary in the dataset specified by --dataset
-USAGE="tools/load_vocab.sh --app_id APP_ID --in_dir /PATH/TO/VOCAB_FILES --gcs_path gs://BUCKET/PATH --dataset DATASET"
+USAGE="tools/load_vocab.sh --app_id APP_ID --in_dir /PATH/TO/VOCAB_FILES --out_dir /PATH/TO/TRANSFORMED --gcs_path gs://BUCKET/PATH --dataset DATASET"
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
 BASE_DIR="$( cd ${SCRIPT_PATH} && cd .. && pwd )"
 AOU_GENERAL_PATH="${BASE_DIR}/resources/aou_general"
@@ -16,6 +16,7 @@ while true; do
   case "$1" in
     --app_id) APP_ID=$2; shift 2;;
     --in_dir) IN_DIR=$2; shift 2;;
+    --out_dir) OUT_DIR=$2; shift 2;;
     --dataset) DATASET=$2; shift 2;;
     --gcs_path) GCS_PATH=$2; shift 2;;
     -- ) shift; break ;;
@@ -23,17 +24,11 @@ while true; do
   esac
 done
 
-if [[ -z "${APP_ID}" ]] || [[ -z "${IN_DIR}" ]]
+if [[ -z "${APP_ID}" ]] || [[ -z "${IN_DIR}" ]] || [[ -z "${OUT_DIR}" ]]
 then
   echo "Usage: $USAGE"
   exit 1
 fi
-
-# Create backup of input files
-BACKUP_DIR="${IN_DIR}-backup"
-echo "Creating backup in ${BACKUP_DIR}..."
-mkdir ${BACKUP_DIR}
-cp ${IN_DIR}/* ${BACKUP_DIR}
 
 # Determine the version of the OMOP vocabulary
 OMOP_VOCABULARY_VERSION=$(cat ${IN_DIR}/VOCABULARY.csv | grep ${OMOP_VOCABULARY_CONCEPT_ID} | cut -f4)
@@ -55,8 +50,9 @@ tail -n +2 resources/aou_general/concept.csv >> ${IN_DIR}/CONCEPT.csv
 # Transform the dates
 for file in $(ls ${IN_DIR})
 do
-  echo "Transforming ${file} and saving to ${IN_DIR}..."
-  python ${SCRIPT_PATH}/vocab_transform.py --file ${IN_DIR}/${file} --out_dir ${IN_DIR}
+  in_file="${IN_DIR}/${file}"
+  echo "Transforming ${in_file} and saving to ${OUT_DIR}..."
+  python ${BASE_DIR}/vocabulary.py transform_csv --file ${in_file} --out_dir ${OUT_DIR}
 done
 
 if [[ -z "${GCS_PATH}" ]]
@@ -65,8 +61,8 @@ then
   exit 0
 fi
 
-echo "Uploading ${IN_DIR}/* to ${GCS_PATH}..."
-gsutil -m cp ${IN_DIR}/* ${GCS_PATH}
+echo "Uploading ${OUT_DIR}/* to ${GCS_PATH}..."
+gsutil -m cp ${OUT_DIR}/* ${GCS_PATH}
 
 if [[ -z "${DATASET}" ]]
 then

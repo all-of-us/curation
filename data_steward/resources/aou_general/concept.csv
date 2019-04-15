@@ -1,8 +1,8 @@
 concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concept	concept_code	valid_start_date	valid_end_date	invalid_reason
-2000000001	Other alone	Observation	AoU_General	Answer	S	WhatRaceEthnicity_GeneralOther	20170517	20991231
-2000000002	Other and Unknown	Observation	AoU_General	Answer	S	GenderIdentity_GeneralOtherUnknown	20170517	20991231
-2000000003	Non-Straight	Observation	AoU_General	Answer	S	SexualOrientation_GeneralNonStraight	20170517	20991231
-2000000004	Employed for wages or self-employed	Observation	AoU_General	Answer	S	EmploymentStatus_GeneralEmpolyedSelfEmployed	20170517	20991231
-2000000005	Out of work for 1 year or more / out of work for less than 1 year / A homemaker / A student / Retired / Unable to work (disabled)	Observation	AoU_General	Answer	S	EmploymentStatus_GeneralNotWorking	20170517	20991231
-2000000006	College 4 years or more / Advanced degree	Observation	AoU_General	Answer	S	HighestGrade_GeneralCollegeAndAbove	20170517	20991231
-2000000007	Never attended school or only attended kindergarten / primary / middle school / some high school	Observation	AoU_General	Answer	S	HighestGrade_GeneralNotHighSchoolGraduate	20170517	20991231
+2000000001	Other alone	Observation	AoU_General	Answer	S	WhatRaceEthnicity_GeneralOther	20170517	20991231	
+2000000002	Other and Unknown	Observation	AoU_General	Answer	S	GenderIdentity_GeneralOtherUnknown	20170517	20991231	
+2000000003	Non-Straight	Observation	AoU_General	Answer	S	SexualOrientation_GeneralNonStraight	20170517	20991231	
+2000000004	Employed for wages or self-employed	Observation	AoU_General	Answer	S	EmploymentStatus_GeneralEmpolyedSelfEmployed	20170517	20991231	
+2000000005	Out of work for 1 year or more / out of work for less than 1 year / A homemaker / A student / Retired / Unable to work (disabled)	Observation	AoU_General	Answer	S	EmploymentStatus_GeneralNotWorking	20170517	20991231	
+2000000006	College 4 years or more / Advanced degree	Observation	AoU_General	Answer	S	HighestGrade_GeneralCollegeAndAbove	20170517	20991231	
+2000000007	Never attended school or only attended kindergarten / primary / middle school / some high school	Observation	AoU_General	Answer	S	HighestGrade_GeneralNotHighSchoolGraduate	20170517	20991231	
