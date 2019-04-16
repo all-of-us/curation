@@ -1,6 +1,9 @@
+import csv
 import unittest
 import StringIO
-from vocabulary import _transform_csv, DELIMITER, LINE_TERMINATOR, format_date_str
+from vocabulary import _transform_csv, DELIMITER, LINE_TERMINATOR, format_date_str, append_vocabulary, get_aou_general_vocabulary_row
+import test_util
+import os
 
 
 class VocabularyTest(unittest.TestCase):
@@ -43,3 +46,21 @@ class VocabularyTest(unittest.TestCase):
         self.assertEqual('2019-01-23', format_date_str('2019-01-23'))
         with self.assertRaises(ValueError):
             format_date_str('201901234')
+
+    def test_append_vocabulary(self):
+        in_path = test_util.TEST_VOCABULARY_VOCABULARY_CSV
+        out_path = os.tempnam()
+        expected_last_row = get_aou_general_vocabulary_row()
+
+        append_vocabulary(in_path, out_path)
+        with open(in_path, 'rb') as in_fp, open(out_path, 'rb') as out_fp:
+            # same content as input
+            for in_row in in_fp:
+                out_row = out_fp.readline()
+                self.assertEqual(in_row, out_row)
+            # new row added
+            actual_last_row = out_fp.readline()
+            self.assertEqual(actual_last_row, expected_last_row)
+            # end of file
+            self.assertEqual('', out_fp.readline())
+        os.remove(out_path)

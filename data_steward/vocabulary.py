@@ -3,19 +3,10 @@ import csv
 import re
 import sys
 
+from resources import CONCEPT, VOCABULARY, AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
+
 csv.field_size_limit(sys.maxsize)
 
-CONCEPT = 'concept'
-CONCEPT_ANCESTOR = 'concept_ancestor'
-CONCEPT_CLASS = 'concept_class'
-CONCEPT_RELATIONSHIP = 'concept_relationship'
-CONCEPT_SYNONYM = 'concept_synonym'
-DOMAIN = 'domain'
-DRUG_STRENGTH = 'drug_strength'
-RELATIONSHIP = 'relationship'
-VOCABULARY = 'vocabulary'
-VOCABULARY_TABLES = [CONCEPT, CONCEPT_ANCESTOR, CONCEPT_CLASS, CONCEPT_RELATIONSHIP, CONCEPT_SYNONYM, DOMAIN,
-                     DRUG_STRENGTH, RELATIONSHIP, VOCABULARY]
 DELIMITER = '\t'
 LINE_TERMINATOR = '\n'
 RAW_DATE_REGEX = r'\d{8}$'  # yyyymmdd
@@ -23,6 +14,11 @@ BQ_DATE_REGEX = r'\d{4}-\d{2}-\d{2}$'  # yyyy-mm-dd
 
 TRANSFORM_CSV = 'transform_csv'
 ERRORS = 'errors'
+
+AOU_GEN = 'AoU_General'
+AOU_GEN_VOCABULARY_CONCEPT_ID = '2000000000'
+AOU_GEN_VOCABULARY_REFERENCE = 'https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g'
+OMOP_VOCABULARY_CONCEPT_ID = '44819096'
 
 
 def format_date_str(s):
@@ -77,6 +73,64 @@ def transform_csv(file_path, out_dir):
         os.makedirs(err_dir)
     with open(file_path, 'rb') as in_fp, open(out_file_name, 'wb') as out_fp, open(err_file_name, 'wb') as err_fp:
         _transform_csv(in_fp, out_fp, err_fp)
+
+
+def get_aou_general_version():
+    return hash_dir(AOU_GENERAL_PATH)
+
+
+def get_aou_general_vocabulary_row():
+    aou_gen_version = get_aou_general_version()
+    # vocabulary_id vocabulary_name vocabulary_reference vocabulary_version vocabulary_concept_id
+    return DELIMITER.join([AOU_GEN, AOU_GEN, AOU_GEN_VOCABULARY_REFERENCE, aou_gen_version, AOU_GEN_VOCABULARY_CONCEPT_ID])
+
+
+def append_concepts(in_path, out_path):
+    with open(out_path, 'wb') as out_fp:
+        # copy original rows
+        with open(in_path, 'rb') as in_fp:
+            for row in in_fp:
+                out_fp.write(row)
+
+        # append new rows
+        with open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as aou_gen_fp:
+            for row in aou_gen_fp:
+                out_fp.write(row)
+
+
+def append_vocabulary(in_path, out_path):
+    new_row = get_aou_general_vocabulary_row()
+    with open(out_path, 'wb') as out_fp:
+        # copy original rows
+        with open(in_path, 'rb') as in_fp:
+            for row in in_fp:
+                out_fp.write(row)
+        # append new row
+        out_fp.write(new_row)
+
+
+def add_aou_general(in_dir, out_dir):
+    fs = os.listdir(in_dir)
+    concept_in_path = None
+    vocabulary_in_path = None
+    # Case-insensitive search for concept and vocabulary files
+    for f in fs:
+        t, _ = os.path.splitext(f.lower())
+        in_path = os.path.join(in_dir, f)
+        if t == CONCEPT:
+            concept_in_path = in_path
+        elif t == VOCABULARY:
+            vocabulary_in_path = in_path
+    if concept_in_path is None:
+        raise IOError('CONCEPT.csv was not found in %s' % in_dir)
+    if vocabulary_in_path is None:
+        raise IOError('VOCABULARY.csv was not found in %s' % in_dir)
+
+    concept_out_path = os.path.join(out_dir, os.path.basename(concept_in_path))
+    append_concepts(concept_in_path, concept_out_path)
+
+    vocabulary_out_path = os.path.join(out_dir, os.path.basename(vocabulary_in_path))
+    append_vocabulary(vocabulary_in_path, vocabulary_out_path)
 
 
 if __name__ == '__main__':

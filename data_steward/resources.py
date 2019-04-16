@@ -1,11 +1,23 @@
+import hashlib
 import inspect
 import os
 import csv
 import cachetools
 import json
-import vocabulary
 
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
+CONCEPT = 'concept'
+CONCEPT_ANCESTOR = 'concept_ancestor'
+CONCEPT_CLASS = 'concept_class'
+CONCEPT_RELATIONSHIP = 'concept_relationship'
+CONCEPT_SYNONYM = 'concept_synonym'
+DOMAIN = 'domain'
+DRUG_STRENGTH = 'drug_strength'
+RELATIONSHIP = 'relationship'
+VOCABULARY = 'vocabulary'
+VOCABULARY_TABLES = [CONCEPT, CONCEPT_ANCESTOR, CONCEPT_CLASS, CONCEPT_RELATIONSHIP, CONCEPT_SYNONYM, DOMAIN,
+                     DRUG_STRENGTH, RELATIONSHIP, VOCABULARY]
 
 ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
@@ -25,7 +37,8 @@ resource_path = os.path.join(base_path, 'resources')
 fields_path = os.path.join(resource_path, 'fields')
 cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
 achilles_index_path = os.path.join(resource_path, 'curation_report')
-aou_general_path = os.path.join(resource_path, 'aou_general')
+AOU_GENERAL_PATH = os.path.join(resource_path, 'aou_general')
+AOU_GENERAL_CONCEPT_CSV_PATH = os.path.join(AOU_GENERAL_PATH, 'concept.csv')
 
 html_boilerplate_path = os.path.join(resource_path, 'html_boilerplate.txt')
 
@@ -115,7 +128,7 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
             table_name, _ = file_name.split('.')
             schema = json.load(fp)
             include_table = True
-            if table_name in vocabulary.VOCABULARY_TABLES and not include_vocabulary:
+            if table_name in VOCABULARY_TABLES and not include_vocabulary:
                 include_table = False
             elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
                 include_table = False
@@ -126,3 +139,15 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
             if include_table:
                 result[table_name] = schema
     return result
+
+
+def hash_dir(in_dir):
+    """
+    Generate an MD5 digest from the contents of a directory
+    """
+    fs = os.listdir(in_dir)
+    hash_obj = hashlib.md5()
+    for f in fs:
+        p = os.path.join(in_dir, f)
+        hash_obj.update(open(p, 'rb').read())
+    return hash_obj.hexdigest()
