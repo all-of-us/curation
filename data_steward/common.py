@@ -2,16 +2,16 @@ import resources
 import os
 
 CDM_TABLES = resources.cdm_schemas().keys()
-CDM_FILES = map(lambda t: t + '.csv', CDM_TABLES)
+CDM_FILES = [table + '.csv' for table in CDM_TABLES]
 ACHILLES_INDEX_FILES = resources.achilles_index_files()
 ALL_ACHILLES_INDEX_FILES = [name.split(resources.resource_path + os.sep)[1].strip() for name in ACHILLES_INDEX_FILES]
 DATASOURCES_JSON = os.path.join(resources.achilles_index_path, 'data/datasources.json')
-PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_mrn']
+PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_mrn', 'participant_match']
 AOU_REQUIRED = ['care_site', 'condition_occurrence', 'death', 'device_exposure', 'drug_exposure',
                 'fact_relationship', 'location', 'measurement', 'note', 'observation', 'person',
                 'procedure_occurrence', 'provider', 'specimen', 'visit_occurrence']
-AOU_REQUIRED_FILES = map(lambda t: t + '.csv', AOU_REQUIRED)
-PII_FILES = map(lambda t: t + '.csv', PII_TABLES)
+AOU_REQUIRED_FILES = [table + '.csv' for table in AOU_REQUIRED]
+PII_FILES = [table + '.csv' for table in PII_TABLES]
 SUBMISSION_FILES = AOU_REQUIRED_FILES + PII_FILES
 RESULTS_HTML = 'results.html'
 PROCESSED_TXT = 'processed.txt'
@@ -20,7 +20,7 @@ ACHILLES_HEEL_REPORT = 'achillesheel'
 PERSON_REPORT = 'person'
 DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
-ALL_REPORT_FILES = map(lambda s: s + '.json', ALL_REPORTS)
+ALL_REPORT_FILES = [report + '.json' for report in ALL_REPORTS]
 IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES
 VOCABULARY_TABLES = ['concept', 'concept_ancestor', 'concept_class', 'concept_relationship', 'concept_synonym',
                      'domain', 'drug_strength', 'relationship', 'vocabulary']
