@@ -313,7 +313,8 @@ def query(q,
           destination_table_id=None,
           retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
           write_disposition='WRITE_EMPTY',
-          destination_dataset_id=None):
+          destination_dataset_id=None,
+          batch=None):
     """
     Execute a SQL query on BigQuery dataset
 
@@ -328,6 +329,8 @@ def query(q,
     """
     bq_service = create_service()
     app_id = app_identity.get_application_id()
+
+    priority_mode = bq_consts.INTERACTIVE if batch is None else bq_consts.BATCH
 
     if destination_table_id:
         if destination_dataset_id is None:
@@ -360,8 +363,11 @@ def query(q,
             },
             'query': q,
             'timeoutMs': bq_consts.SOCKET_TIMEOUT,
-            'useLegacySql': use_legacy_sql
+            'useLegacySql': use_legacy_sql,
+            bq_consts.PRIORITY_TAG: priority_mode,
         }
+        for key, value in job_body.iteritems():
+            print('{}\t\t{}'.format(key,value))
         return bq_service.jobs().query(projectId=app_id, body=job_body).execute(num_retries=retry_count)
 
 
@@ -457,7 +463,7 @@ def list_dataset_contents(dataset_id):
     return all_tables
 
 
-def response_to_large_rowset(query_response):
+def large_response_to_rowlist(query_response):
     """
     Convert a query response to a list of dictionary objects
 
@@ -548,7 +554,8 @@ def create_dataset(
         project_id=None,
         dataset_id=None,
         description=None,
-        friendly_name=None
+        friendly_name=None,
+        overwrite_existing=None
     ):
     """
     """
@@ -562,6 +569,11 @@ def create_dataset(
         app_id = app_identity.get_application_id()
     else:
         app_id = project_id
+
+    if overwrite_existing is None:
+        overwrite_existing = bq_consts.TRUE
+    else:
+        overwrite_existing = bq_consts.FALSE
 
     bq_service = create_service()
 
@@ -577,5 +589,15 @@ def create_dataset(
         job_body.update({bq_consts.FRIENDLY_NAME: friendly_name})
 
     insert_dataset = bq_service.datasets().insert(projectId=app_id, body=job_body)
-    insert_result = insert_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+    try:
+        insert_result = insert_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+    except HttpError:
+        rm_dataset = bq_service.datasets().delete(
+            projectId=app_id,
+            datasetId=dataset_id,
+            deleteContents=overwrite_existing
+        )
+        rm_result = rm_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+        insert_result = insert_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+
     return insert_result
