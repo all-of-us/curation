@@ -5,7 +5,15 @@
 # 2. Transform the vocabulary files to a format BigQuery can load
 # 3. Upload the transformed files to the GCS path specified by --gcs_path
 # 4. Load the vocabulary in the dataset specified by --dataset
-USAGE="tools/load_vocab.sh --app_id APP_ID --in_dir /PATH/TO/VOCAB_FILES --out_dir /PATH/TO/TRANSFORMED --gcs_path gs://BUCKET/PATH --dataset DATASET"
+
+USAGE="
+tools/load_vocab.sh --app_id app_id --in_dir in_dir --out_dir out_dir --gcs_path gcs_path --dataset dataset
+ --app_id   app_id   GCP project associated with the dataset
+ --in_dir   in_dir   directory where vocabulary files are located
+ --out_dir  out_dir  directory where transformed files should be saved
+ --gcs_path gcs_path full GCS path to save transformed files
+ --dataset  dataset  name of BigQuery dataset to create and load vocabulary
+"
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
 BASE_DIR="$( cd ${SCRIPT_PATH} && cd .. && pwd )"
 AOU_GENERAL_PATH="${BASE_DIR}/resources/aou_general"
@@ -30,21 +38,27 @@ then
   exit 1
 fi
 
+# Move vocabulary files to backup folder
+BACKUP_DIR="${IN_DIR}-backup"
+echo "Creating backup in ${BACKUP_DIR}..."
+mkdir ${BACKUP_DIR}
+mv ${IN_DIR}/* ${BACKUP_DIR}
+
 # Determine the version of the OMOP vocabulary
-OMOP_VOCABULARY_VERSION=$(cat ${IN_DIR}/VOCABULARY.csv | grep ${OMOP_VOCABULARY_CONCEPT_ID} | cut -f4)
+OMOP_VOCABULARY_VERSION=$(cat ${BACKUP_DIR}/VOCABULARY.csv | grep ${OMOP_VOCABULARY_CONCEPT_ID} | cut -f4)
 echo "Version of OMOP Standard vocabulary is ${OMOP_VOCABULARY_VERSION}"
 
-# Derive version of AoU_General vocabulary based on md5 of files
+# Create a version string for the vocabulary AoU_General based on md5 of files
 CHECKSUM_LIST=$( cd ${AOU_GENERAL_PATH} && md5sum $(ls ${AOU_GENERAL_PATH}) )
 CHECKSUM_ALL=$( echo ${CHECKSUM_LIST} | md5sum )
 AOU_GENERAL_VERSION=$( echo ${CHECKSUM_ALL} | cut -d' ' -f1 )
 echo "Version of AoU_General vocabulary is ${AOU_GENERAL_VERSION}"
 
-# Append vocabulary record to file
+# Append record to vocabulary.csv
 # vocabulary_id 	vocabulary_name 	vocabulary_reference 	vocabulary_version 	vocabulary_concept_id
 echo -e "AoU_General\tAoU_General\t${AOU_GENERAL_VOCABULARY_REFERENCE}\t${AOU_GENERAL_VERSION}\t${AOU_GENERAL_VOCABULARY_CONCEPT_ID}" >> ${IN_DIR}/VOCABULARY.csv
 
-# Append concept records to file
+# Append records to concept.csv
 tail -n +2 resources/aou_general/concept.csv >> ${IN_DIR}/CONCEPT.csv
 
 # Transform the dates
