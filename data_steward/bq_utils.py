@@ -171,7 +171,7 @@ def load_from_csv(hpo_id, table_name, source_folder_prefix=""):
     :param table_name: name of the CDM or PII table
     :return: an object describing the associated bigquery job
     """
-    if table_name.startswith('pii'):
+    if resources.is_pii_table(table_name):
         return load_pii_csv(hpo_id, table_name, source_folder_prefix)
     else:
         return load_cdm_csv(hpo_id, table_name, source_folder_prefix)

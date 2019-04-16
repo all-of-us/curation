@@ -1,0 +1,62 @@
+[
+    {
+        "type": "integer",
+        "name": "person_id",
+        "mode": "required",
+        "description": "A unique identifier for each person."
+    },
+    {
+        "type": "string",
+        "name": "first_name",
+        "mode": "nullable",
+        "description": "Allowed values for this field is match, no_match, missing, and excluded."
+    },
+    {
+        "type": "string",
+        "name": "last_name",
+        "mode": "nullable",
+        "description": "Allowed values for this field is match, no_match, missing, and excluded."
+    },
+    {
+        "type": "string",
+        "name": "dob",
+        "mode": "nullable",
+        "description": "Allowed values for this field is match, no_match, missing, and excluded."
+    },
+    {
+        "type": "string",
+        "name": "sex",
+        "mode": "nullable",
+        "description": "Allowed values for this field is match, no_match, missing, and excluded."
+    },
+    {
+        "type": "string",
+        "name": "address",
+        "mode": "nullable",
+        "description": "Allowed values for this field is match, no_match, missing, and excluded."
+    },
+    {
+        "type": "string",
+        "name": "phone_number",
+        "mode": "nullable",
+        "description": "Allowed values for this field is match, no_match, missing, and excluded."
+    },
+    {
+        "type": "string",
+        "name": "email",
+        "mode": "nullable",
+        "description": "Allowed values for this field is match, no_match, missing, and excluded."
+    },
+    {
+        "type": "string",
+        "name": "algorithm_validation",
+        "mode": "nullable",
+        "description": "Algorithm Validation is for the sites’ “automated” matching approach: eg, first name, last name, and DOB all matched."
+    },
+    {
+        "type": "integer",
+        "name": "manual_validation",
+        "mode": "nullable",
+        "description": "Manual validation additionally tracks whether an individual manually reviewed the EHR-AoU linkage. The expectation is that every submitted participant would match either by algorithm or manually."
+    }
+]
