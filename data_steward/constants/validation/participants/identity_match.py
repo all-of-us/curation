@@ -99,7 +99,8 @@ ADDRESS_ABBREVIATIONS = {
 # Select observation table attributes to validate
 PPI_OBSERVATION_VALUES = (
     'SELECT person_id, observation_source_concept_id, value_as_string '
-    'FROM `{project}.combined{date_string}.{table}` '
+    #'FROM `{project}.lrwb_combined{date_string}.{table}` '
+    'FROM `{project}.{dataset}.{table}` '
     'WHERE observation_source_concept_id={field_value} '
     'ORDER BY person_id'
 )
@@ -107,7 +108,7 @@ PPI_OBSERVATION_VALUES = (
 # Select observation table attributes to validate
 EHR_OBSERVATION_VALUES = (
     'SELECT person_id, observation_concept_id, value_as_string '
-    'FROM `{project}.combined{date_string}.{table}` '
+    'FROM `{project}.lrwb_combined{date_string}.{table}` '
     'WHERE observation_concept_id={field_value} '
     'AND person_id IN ({person_id_csv}) '
     'ORDER BY person_id'
@@ -116,7 +117,7 @@ EHR_OBSERVATION_VALUES = (
 # Select observation table attributes to validate
 ALL_PPI_OBSERVATION_VALUES = (
     'SELECT person_id, observation_source_concept_id, value_as_string '
-    'FROM `{project}.combined{date_string}.{table}` '
+    'FROM `{project}.lrwb_combined{date_string}.{table}` '
     'WHERE observation_source_concept_id IN (' +
     ', '.join([str(OBS_PII_NAME_FIRST), str(OBS_PII_NAME_MIDDLE),
                str(OBS_PII_NAME_LAST), str(OBS_PII_EMAIL_ADDRESS),
@@ -130,19 +131,19 @@ ALL_PPI_OBSERVATION_VALUES = (
 # Select PII table values.
 PII_VALUES = (
     'SELECT person_id, {field} '
-    'FROM ehr{date_string}.{hpo_site_str}{table_suffix}'
+    'FROM `{project}.{dataset}.{hpo_site_str}{table_suffix}`'
 )
 
 PII_LOCATION_VALUES = (
     'SELECT location_id, {field} '
-    'FROM combined{date_string}.location '
+    'FROM `{project}.lrwb_combined{date_string}.location` '
     'WHERE location_id IN ({id_list})'
 )
 
 # Select EHR birth datetime
 EHR_BIRTH_DATETIME_VALUES = (
     'SELECT person_id, observation_concept_id, value_as_string '
-    'FROM `{project}.combined{date_string}.{table}` '
+    'FROM `{project}.lrwb_combined{date_string}.{table}` '
     'WHERE observation_concept_id={field} '
     'ORDER BY person_id'
 )
@@ -154,6 +155,7 @@ PII_EMAIL_TABLE = '_pii_email'
 PII_PHONE_TABLE = '_pii_phone_number'
 PII_ADDRESS_TABLE = '_pii_address'
 PII_NAME_TABLE = '_pii_name'
+VALIDATION_TABLE_SUFFIX = '_identity_match'
 
 # Field names
 OBS_CONCEPT_ID = 'observation_concept_id'
