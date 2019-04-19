@@ -108,7 +108,7 @@ PPI_OBSERVATION_VALUES = (
 # Select observation table attributes to validate
 EHR_OBSERVATION_VALUES = (
     'SELECT person_id, observation_concept_id, value_as_string '
-    'FROM `{project}.lrwb_combined{date_string}.{table}` '
+    'FROM `{project}.{data_set}.{table}` '
     'WHERE observation_concept_id={field_value} '
     'AND person_id IN ({person_id_csv}) '
     'ORDER BY person_id'
@@ -136,16 +136,22 @@ PII_VALUES = (
 
 PII_LOCATION_VALUES = (
     'SELECT location_id, {field} '
-    'FROM `{project}.lrwb_combined{date_string}.location` '
+    'FROM `{project}.{data_set}.location` '
     'WHERE location_id IN ({id_list})'
 )
 
 # Select EHR birth datetime
 EHR_BIRTH_DATETIME_VALUES = (
     'SELECT person_id, observation_concept_id, value_as_string '
-    'FROM `{project}.lrwb_combined{date_string}.{table}` '
+    'FROM `{project}.{data_set}.{table}` '
     'WHERE observation_concept_id={field} '
     'ORDER BY person_id'
+)
+
+
+INSERT_MATCH_VALUES = (
+    'INSERT `{project}.{dataset}.{table}` ({id_field}, {field}) '
+    'VALUES {values}'
 )
 
 # Table names
@@ -158,13 +164,13 @@ PII_NAME_TABLE = '_pii_name'
 VALIDATION_TABLE_SUFFIX = '_identity_match'
 
 # Field names
-OBS_CONCEPT_ID = 'observation_concept_id'
-OBS_SOURCE_CONCEPT_ID = 'observation_source_concept_id'
-PERSON_ID = 'person_id'
-STRING_VALUE = 'value_as_string'
-FIRST_NAME = 'first_name'
-MIDDLE_NAME = 'middle_name'
-LAST_NAME = 'last_name'
+OBS_CONCEPT_ID_FIELD = 'observation_concept_id'
+OBS_SOURCE_CONCEPT_ID_FIELD = 'observation_source_concept_id'
+PERSON_ID_FIELD = 'person_id'
+STRING_VALUE_FIELD = 'value_as_string'
+FIRST_NAME_FIELD = 'first_name'
+MIDDLE_NAME_FIELD = 'middle_name'
+LAST_NAME_FIELD = 'last_name'
 EMAIL_FIELD = 'email'
 PHONE_NUMBER_FIELD = 'phone_number'
 ZIP_CODE_FIELD = 'zip'
@@ -173,6 +179,7 @@ CITY_FIELD = 'city'
 ADDRESS_ONE_FIELD = 'address_1'
 ADDRESS_TWO_FIELD = 'address_2'
 LOCATION_ID_FIELD = 'location_id'
+BIRTH_DATE_FIELD = 'birth_date'
 
 # HPO dictionary keys
 HPO_ID = 'hpo_id'
