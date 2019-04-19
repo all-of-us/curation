@@ -785,6 +785,69 @@ def  _append_to_result_table(
     results = bq_utils.query(query, batch=True)
 
 
+def _remove_sparse_records(project, dataset, site):
+    """
+    Remove sparsely populated records.
+
+    The sparse records were perviously merged into a unified record.  This
+    removes the sparse data records.
+
+    :param project: The project string identifier
+    :param dataset: The validation dataset identifier
+    :param site: The site to merge validation results for
+    """
+    result_table = site + consts.VALIDATION_TABLE_SUFFIX
+
+    LOGGER.debug("Removing lingering sparse records from %s.%s.%s", project, dataset, result_table)
+
+    query =consts.MERGE_DELETE_SPARSE_RECORDS.format(
+        project=project,
+        dataset=dataset,
+        table=result_table,
+        field_one=consts.VALIDATION_FIELDS[0],
+        field_two=consts.VALIDATION_FIELDS[1],
+        field_three=consts.VALIDATION_FIELDS[2],
+        field_four=consts.VALIDATION_FIELDS[3],
+        field_five=consts.VALIDATION_FIELDS[4],
+        field_six=consts.VALIDATION_FIELDS[5],
+        field_seven=consts.VALIDATION_FIELDS[6],
+        field_eight=consts.VALIDATION_FIELDS[7],
+        field_nine=consts.VALIDATION_FIELDS[8],
+        field_ten=consts.VALIDATION_FIELDS[9],
+        field_eleven=consts.VALIDATION_FIELDS[10]
+    )
+
+    results = bq_utils.query(query, batch=True)
+
+
+def _merge_fields_into_single_record(project, dataset, site):
+    """
+    Merge records with a single populated field into a fully populated record.
+
+    The records are inserted into the table via insert methods for each validated
+    field type.  This means the rows are primarily comprised of null fields.
+    This merges the data from the primarily null fields into a single populated
+    record.
+
+    :param project: The project string identifier
+    :param dataset: The validation dataset identifier
+    :param site: The site to merge validation results for
+    """
+    result_table = site + consts.VALIDATION_TABLE_SUFFIX
+
+    LOGGER.debug("Unifying sparse records for %s.%s.%s", project, dataset, result_table)
+
+    for validation_field in consts.VALIDATION_FIELDS:
+        query =consts.MERGE_UNIFY_SITE_RECORDS.format(
+            project=project,
+            dataset=dataset,
+            table=result_table,
+            field=validation_field
+        )
+
+        results = bq_utils.query(query, batch=True)
+
+
 def match_participants(project, date_string, dest_dataset_id):
     """
     Entry point for performing participant matching of PPI, EHR, and PII data.
@@ -1027,7 +1090,11 @@ def match_participants(project, date_string, dest_dataset_id):
             consts.BIRTH_DATE_FIELD
         )
 
-    # TODO:  generate single clean record for each participant at each site
+    # generate single clean record for each participant at each site
+    for site in hpo_sites:
+        _merge_fields_into_single_record(project, validation_dataset, site)
+        _remove_sparse_records(project, validation_dataset, site)
+
     # TODO:  generate hpo site reports
 
     # TODO:  generate aggregate site report
