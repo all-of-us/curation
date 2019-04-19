@@ -366,8 +366,6 @@ def query(q,
             'useLegacySql': use_legacy_sql,
             bq_consts.PRIORITY_TAG: priority_mode,
         }
-        for key, value in job_body.iteritems():
-            print('{}\t\t{}'.format(key,value))
         return bq_service.jobs().query(projectId=app_id, body=job_body).execute(num_retries=retry_count)
 
 

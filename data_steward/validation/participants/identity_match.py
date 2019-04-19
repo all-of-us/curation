@@ -26,7 +26,10 @@ def _get_utf8_string(value):
     try:
         result = value.encode('utf-8', 'ignore')
     except AttributeError:
-        LOGGER.debug("Value '{}' can not be utf-8 encoded", value)
+        if value is None:
+            LOGGER.debug("Value '%s' can not be utf-8 encoded", value)
+        elif isinstance(value, int):
+            result = str(value)
 
     return result
 
@@ -58,20 +61,15 @@ def _get_all_observation_match_values(project, date_string, destination_dataset)
         write_disposition='WRITE_TRUNCATE'
     )
 
-#    import sys
-#    sys.exit(3)
     query_job_id = results['jobReference']['jobId']
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
     if incomplete_jobs != []:
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
-    for key, value in results.iteritems():
-        print('{}\t\t{}'.format(key, value))
-    print('\n\n----------------------------------------\n\n')
     return consts.ID_MATCH_TABLE
 
 
-def _get_ehr_observation_match_values(project, table_name, date_string, concept_id):
+def _get_ehr_observation_match_values(project, dataset, table_name, concept_id, id_list):
     """
     Get the desired matching values from the combined observation table.
 
@@ -94,20 +92,20 @@ def _get_ehr_observation_match_values(project, table_name, date_string, concept_
     """
     query_string = consts.EHR_OBSERVATION_VALUES.format(
         project=project,
-        date_string=date_string,
+        data_set=dataset,
         table=table_name,
-        field_value=concept_id
+        field_value=concept_id,
+        person_id_csv=id_list
     )
 
-    print'{}\t{}\t{}'.format(project, date_string, destination_dataset)
     LOGGER.debug("Participant validation ran the query\n%s", query_string)
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
     result_dict = {}
     for item in row_results:
-        person_id = item.get(consts.PERSON_ID)
-        value = item.get(consts.STRING_VALUE)
+        person_id = item.get(consts.PERSON_ID_FIELD)
+        value = item.get(consts.STRING_VALUE_FIELD)
         value = _get_utf8_string(value)
 
         exists = result_dict.get(person_id)
@@ -122,7 +120,7 @@ def _get_ehr_observation_match_values(project, table_name, date_string, concept_
     return result_dict
 
 
-def _get_ppi_observation_match_values(project, dataset, table_name, date_string, concept_id):
+def _get_ppi_observation_match_values(project, dataset, table_name, concept_id):
     """
     Get the desired matching values from the combined observation table.
 
@@ -146,23 +144,18 @@ def _get_ppi_observation_match_values(project, dataset, table_name, date_string,
     query_string = consts.PPI_OBSERVATION_VALUES.format(
         project=project,
         dataset=dataset,
-        #date_string=date_string,
         table=table_name,
         field_value=concept_id
     )
 
-    print(query_string)
     LOGGER.debug("Participant validation ran the query\n%s", query_string)
-    print'{}\t{}\t{}'.format(project, date_string, table_name)
     results = bq_utils.query(query_string)
-#    import sys
-#    sys.exit(3)
     row_results = bq_utils.large_response_to_rowlist(results)
 
     result_dict = {}
     for item in row_results:
-        person_id = item.get(consts.PERSON_ID)
-        value = item.get(consts.STRING_VALUE)
+        person_id = item.get(consts.PERSON_ID_FIELD)
+        value = item.get(consts.STRING_VALUE_FIELD)
         value = _get_utf8_string(value)
 
         exists = result_dict.get(person_id)
@@ -184,7 +177,7 @@ def _get_hpo_site_names():
     return hpo_ids
 
 
-def _get_pii_values(project, dataset, hpo, date_string, table, field):
+def _get_pii_values(project, dataset, hpo, table, field):
     """
     Get values from the site's PII table.
 
@@ -197,46 +190,52 @@ def _get_pii_values(project, dataset, hpo, date_string, table, field):
     query_string = consts.PII_VALUES.format(
         project=project,
         dataset=dataset,
-        #date_string=date_string,
         hpo_site_str=hpo,
         field=field,
         table_suffix=table
     )
+
     LOGGER.debug("Participant validation ran the query\n%s", query_string)
-    print query_string
+
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
     result_list = []
     for item in row_results:
-        person_id = item.get(consts.PERSON_ID)
+        person_id = item.get(consts.PERSON_ID_FIELD)
         value = item.get(field)
 
         value = _get_utf8_string(value)
-
         result_list.append((person_id, value))
 
     return result_list
 
-def _get_location_pii(hpo, date_string, table, field):
-    location_ids = _get_pii_values(hpo, date_string, table, consts.LOCATION_ID_FIELD)
+def _get_location_pii(project, dataset, hpo, date_string, table, field):
+    location_ids = _get_pii_values(
+        project,
+        dataset,
+        hpo,
+        table,
+        consts.LOCATION_ID_FIELD
+    )
 
     location_id_list = []
     location_id_dict = {}
     for location_id in location_ids:
         location_id_list.append(location_id[1])
-        location_id_dict[location_id[1]] = location_id[0]
+        location_id_dict[int(location_id[1])] = location_id[0]
+
 
     location_id_str = ', '.join(location_id_list)
     query_string = consts.PII_LOCATION_VALUES.format(
         project=project,
-        date_string=date_string,
+        data_set='lrwb_combined' + date_string,
         field=field,
         id_list=location_id_str
     )
 
     LOGGER.debug("Participant validation ran the query\n%s", query_string)
-    print'{}\t{}\t{}'.format(project, date_string, destination_dataset)
+
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
@@ -415,7 +414,7 @@ def _compare_address_lists(list_one, list_two):
     return diff
 
 
-def _compare_name_fields(project, dataset, hpo, date_string, concept_id, pii_field):
+def _compare_name_fields(project, dataset, hpo, concept_id, pii_field):
     """
     For an hpo, compare all first, middle, and last name fields to omop settings.
 
@@ -432,10 +431,10 @@ def _compare_name_fields(project, dataset, hpo, date_string, concept_id, pii_fie
     match_values = {}
 
     obs_names = _get_ppi_observation_match_values(
-        project, dataset, consts.ID_MATCH_TABLE, date_string, concept_id
+        project, dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, name in _get_pii_values(project, 'lrwb_pii_tables', hpo, date_string, consts.PII_NAME_TABLE, pii_field):
+    for person_id, name in _get_pii_values(project, 'lrwb_pii_tables', hpo, consts.PII_NAME_TABLE, pii_field):
         person_ids.add(person_id)
         name = _clean_name(name)
         rdr_name = _clean_name(obs_names.get(person_id))
@@ -446,7 +445,7 @@ def _compare_name_fields(project, dataset, hpo, date_string, concept_id, pii_fie
     return person_ids, match_values
 
 
-def _compare_email_addresses(project, hpo, date_string, concept_id, pii_field):
+def _compare_email_addresses(project, dataset, hpo, concept_id, pii_field):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -460,10 +459,10 @@ def _compare_email_addresses(project, hpo, date_string, concept_id, pii_field):
     match_values = {}
 
     email_addresses = _get_ppi_observation_match_values(
-        project, consts.ID_MATCH_TABLE, date_string, concept_id
+        project, dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, email in _get_pii_values(project, hpo, date_string, consts.PII_EMAIL_TABLE, pii_field):
+    for person_id, email in _get_pii_values(project, 'lrwb_pii_tables', hpo, consts.PII_EMAIL_TABLE, pii_field):
         person_ids.add(person_id)
 
         rdr_email = _clean_email(email_addresses.get(person_id))
@@ -475,7 +474,7 @@ def _compare_email_addresses(project, hpo, date_string, concept_id, pii_field):
     return person_ids, match_values
 
 
-def _compare_phone_numbers(project, hpo, date_string, concept_id, pii_field):
+def _compare_phone_numbers(project, dataset, hpo, concept_id, pii_field):
     """
     Compare the digit based phone numbers from PII and Observation tables.
 
@@ -489,10 +488,10 @@ def _compare_phone_numbers(project, hpo, date_string, concept_id, pii_field):
     match_values = {}
 
     phone_numbers = _get_ppi_observation_match_values(
-        project, consts.ID_MATCH_TABLE, date_string, concept_id
+        project, dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, number in _get_pii_values(project, hpo, date_string, consts.PII_PHONE_TABLE, pii_field):
+    for person_id, number in _get_pii_values(project, 'lrwb_pii_tables', hpo, consts.PII_PHONE_TABLE, pii_field):
         person_ids.add(person_id)
 
         rdr_phone = _clean_phone(phone_numbers.get(person_id))
@@ -504,7 +503,7 @@ def _compare_phone_numbers(project, hpo, date_string, concept_id, pii_field):
     return person_ids, match_values
 
 
-def _compare_cities(project, hpo, date_string, concept_id, pii_field):
+def _compare_cities(project, dataset, hpo, date_string, concept_id, pii_field):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -518,10 +517,10 @@ def _compare_cities(project, hpo, date_string, concept_id, pii_field):
     match_values = {}
 
     cities = _get_ppi_observation_match_values(
-        project, consts.ID_MATCH_TABLE, date_string, concept_id
+        project, dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, city in _get_location_pii(project, hpo, date_string, consts.PII_ADDRESS_TABLE, pii_field):
+    for person_id, city in _get_location_pii(project, 'lrwb_pii_tables', hpo, date_string, consts.PII_ADDRESS_TABLE, pii_field):
         person_ids.add(person_id)
 
         rdr_city = _clean_name(cities.get(person_id))
@@ -533,7 +532,7 @@ def _compare_cities(project, hpo, date_string, concept_id, pii_field):
     return person_ids, match_values
 
 
-def _compare_states(project, hpo, date_string, concept_id, pii_field):
+def _compare_states(project, dataset, hpo, date_string, concept_id, pii_field):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -547,10 +546,10 @@ def _compare_states(project, hpo, date_string, concept_id, pii_field):
     match_values = {}
 
     states = _get_ppi_observation_match_values(
-        project, consts.ID_MATCH_TABLE, date_string, concept_id
+        project, dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, state in _get_location_pii(project, hpo, date_string, consts.PII_ADDRESS_TABLE, pii_field):
+    for person_id, state in _get_location_pii(project, 'lrwb_pii_tables', hpo, date_string, consts.PII_ADDRESS_TABLE, pii_field):
         person_ids.add(person_id)
 
         rdr_state = _clean_state(states.get(person_id))
@@ -562,7 +561,7 @@ def _compare_states(project, hpo, date_string, concept_id, pii_field):
     return person_ids, match_values
 
 
-def _compare_zip_codes(project, hpo, date_string, concept_id, pii_field):
+def _compare_zip_codes(project, dataset, hpo, date_string, concept_id, pii_field):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -576,10 +575,19 @@ def _compare_zip_codes(project, hpo, date_string, concept_id, pii_field):
     match_values = {}
 
     zip_codes = _get_ppi_observation_match_values(
-        project, consts.ID_MATCH_TABLE, date_string, concept_id
+        project, dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, zip_code in _get_location_pii(project, hpo, date_string, consts.PII_ADDRESS_TABLE, pii_field):
+    pii_zip_codes = _get_location_pii(
+        project,
+        'lrwb_pii_tables',
+        hpo,
+        date_string,
+        consts.PII_ADDRESS_TABLE,
+        pii_field
+    )
+
+    for person_id, zip_code in pii_zip_codes:
         person_ids.add(person_id)
 
         rdr_zip = _clean_zip(zip_codes.get(person_id))
@@ -593,6 +601,7 @@ def _compare_zip_codes(project, hpo, date_string, concept_id, pii_field):
 
 def _compare_street_addresses(
         project,
+        dataset,
         hpo,
         date_string,
         concept_id_one,
@@ -617,15 +626,15 @@ def _compare_street_addresses(
     address_two_match_values = {}
 
     rdr_address_ones = _get_ppi_observation_match_values(
-        project, consts.ID_MATCH_TABLE, date_string, concept_id_one
+        project, dataset, consts.ID_MATCH_TABLE, concept_id_one
     )
 
     rdr_address_twos = _get_ppi_observation_match_values(
-        project, consts.ID_MATCH_TABLE, date_string, concept_id_two
+        project, dataset, consts.ID_MATCH_TABLE, concept_id_two
     )
 
-    pii_street_ones = _get_location_pii(project, hpo, date_string, consts.PII_ADDRESS_TABLE, field_one)
-    pii_street_twos = _get_location_pii(project, hpo, date_string, consts.PII_ADDRESS_TABLE, field_two)
+    pii_street_ones = _get_location_pii(project, 'lrwb_pii_tables', hpo, date_string, consts.PII_ADDRESS_TABLE, field_one)
+    pii_street_twos = _get_location_pii(project, 'lrwb_pii_tables', hpo, date_string, consts.PII_ADDRESS_TABLE, field_two)
 
     pii_street_addresses = {}
     for person_id, street in pii_street_ones:
@@ -633,14 +642,23 @@ def _compare_street_addresses(
 
     for person_id, street in pii_street_twos:
         current_value = pii_street_addresses.get(person_id, [])
-        pii_street_addresses[person_id] = current_value.append(street)
 
-    for person_id, pii_addr_one, pii_addr_two in pii_street_addresses:
+        if current_value == []:
+            current_value = [person_id, '', street]
+        else:
+            current_value.append(street)
+
+        pii_street_addresses[person_id] = current_value
+
+    for person_id, addresses in pii_street_addresses.iteritems():
         person_ids.add(person_id)
 
-        rdr_addr_one = _clean_street(streets_one.get(person_id))
+        pii_addr_one = addresses[1]
+        pii_addr_two = addresses[2]
+
+        rdr_addr_one = _clean_street(rdr_address_ones.get(person_id))
         pii_addr_one = _clean_street(pii_addr_one)
-        rdr_addr_two = _clean_street(streets_two.get(person_id))
+        rdr_addr_two = _clean_street(rdr_address_twos.get(person_id))
         pii_addr_two = _clean_street(pii_addr_two)
 
         # easy case, fields 1 and 2 from both sources match exactly
@@ -671,7 +689,7 @@ def _compare_street_addresses(
 
 def _compare_birth_dates(
         project,
-        hpo,
+        dataset,
         date_string,
         person_id_set,
         concept_id_pii,
@@ -694,16 +712,18 @@ def _compare_birth_dates(
     match_values = {}
 
     pii_birthdates = _get_ppi_observation_match_values(
-        project, consts.ID_MATCH_TABLE, date_string, concept_id_pii
+        project, dataset, consts.ID_MATCH_TABLE, concept_id_pii
     )
 
+    person_id_list = [str(person_id) for person_id in person_id_set]
+
     ehr_birthdates = _get_ehr_observation_match_values(
-        project, consts.OBSERVATION_TABLE, date_string, concept_id_ehr, ', '.join(list(person_id_set))
+        project, 'lrwb_combined' + date_string, consts.OBSERVATION_TABLE, concept_id_ehr, ', '.join(person_id_list)
     )
 
     # compare birth_datetime from ppi info to ehr info and record results.
     for person_id in person_id_set:
-        rdr_birthdate = rdr_birthdates.get(person_id)
+        rdr_birthdate = pii_birthdates.get(person_id)
         ehr_birthdate = ehr_birthdates.get(person_id)
 
         if (rdr_birthdate is None and ehr_birthdate is not None) \
@@ -730,7 +750,39 @@ def _compare_birth_dates(
 
 def _update_known_person_ids(person_ids, hpo, person_id_set):
     current_value = person_ids.get(hpo, set())
-    person_ids[hpo] = current_value.update(person_id_set)
+    current_value.update(person_id_set)
+    person_ids[hpo] = current_value
+    return person_ids
+
+
+def  _append_to_result_table(
+        site,
+        match_values,
+        project,
+        validation_dataset,
+        field_name
+    ):
+    result_table = site + consts.VALIDATION_TABLE_SUFFIX
+
+    # create initial values list for insertion
+    values_list = []
+    for key, value in match_values.iteritems():
+        values_list.append('(' + str(key) + ', \'' + value + '\')')
+
+    values_str = ', '.join(values_list)
+
+    query = consts.INSERT_MATCH_VALUES.format(
+        project=project,
+        dataset=validation_dataset,
+        table=result_table,
+        field=field_name,
+        values=values_str,
+        id_field=consts.PERSON_ID_FIELD
+    )
+
+    LOGGER.debug("Inserting match values for site: %s\t\tfield: %s", site, field_name)
+
+    results = bq_utils.query(query, batch=True)
 
 
 def match_participants(project, date_string, dest_dataset_id):
@@ -772,92 +824,128 @@ def match_participants(project, date_string, dest_dataset_id):
     results = {}
     person_ids = {}
 
-
     # validate first names
     for site in hpo_sites:
         person_id_set, match_values = _compare_name_fields(
-            project, validation_dataset, site, date_string, consts.OBS_PII_NAME_FIRST, consts.FIRST_NAME
+            project,
+            validation_dataset,
+            site,
+            consts.OBS_PII_NAME_FIRST,
+            consts.FIRST_NAME_FIELD
         )
         person_ids = _update_known_person_ids(person_ids, site, person_id_set)
 
-        result_table = site + consts.VALIDATION_TABLE_SUFFIX
-        query = 'INSERT `{project}.{dataset}.{table}` ({id_field}, {field}) VALUES {values}'
-#        query = 'UPDATE `{project}.{dataset}.{table}` SET {field} = \'{value}\' WHERE {id_field} = {id_value}'
-        values = ''
-        for key, value in match_values.iteritems():
-            values = values + '(' + str(key) + ', \'' + value + '\'),'
-
-        values = values[0:-1]
-        q = query.format(project=project, dataset=validation_dataset, table=result_table,
-            field=consts.FIRST_NAME, values=values, id_field=consts.PERSON_ID)
-        results = bq_utils.query(
-#                q
-            q, batch=True
+        _append_to_result_table(
+            site,
+            match_values,
+            project,
+            validation_dataset,
+            consts.FIRST_NAME_FIELD
         )
 
-
-    import sys
-    sys.exit(3)
     # validate last names
     for site in hpo_sites:
         person_id_set, match_values = _compare_name_fields(
-            project, validation_dataset, site, date_string, consts.OBS_PII_NAME_LAST, consts.LAST_NAME
+            project,
+            validation_dataset,
+            site,
+            consts.OBS_PII_NAME_LAST,
+            consts.LAST_NAME_FIELD
         )
         person_ids = _update_known_person_ids(person_ids, site, person_id_set)
         # write last name matches for hpo to table
+        _append_to_result_table(
+            site,
+            match_values,
+            project,
+            validation_dataset,
+            consts.LAST_NAME_FIELD
+        )
 
     # validate middle names
     for site in hpo_sites:
         person_id_set, match_values = _compare_name_fields(
-            project, validation_dataset, site, date_string, consts.OBS_PII_NAME_MIDDLE, consts.MIDDLE_NAME
+            project,
+            validation_dataset,
+            site,
+            consts.OBS_PII_NAME_MIDDLE,
+            consts.MIDDLE_NAME_FIELD
         )
         person_ids = _update_known_person_ids(person_ids, site, person_id_set)
         # write middle name matches for hpo to table
-
-    # validate email addresses
-    for site in hpo_sites:
-        person_id_set, match_values = _compare_email_addresses(
-            project, site, date_string, consts.OBS_PII_EMAIL_ADDRESS, consts.EMAIL_FIELD
+        _append_to_result_table(
+            site,
+            match_values,
+            project,
+            validation_dataset,
+            consts.MIDDLE_NAME_FIELD
         )
-        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
-        # write email matches for hpo to table
-
-    # validate phone numbers
-    for site in hpo_sites:
-        person_id_set, match_values = _compare_phone_numbers(
-            project, site, date_string, consts.OBS_PII_PHONE, consts.PHONE_NUMBER_FIELD
-        )
-        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
-        # write phone number matches for hpo to table
 
     # validate zip codes
     for site in hpo_sites:
         person_id_set, match_values = _compare_zip_codes(
-            project, site, date_string, consts.OBS_PII_STREET_ADDRESS_ZIP, consts.ZIP_CODE_FIELD
+            project,
+            validation_dataset,
+            site,
+            date_string,
+            consts.OBS_PII_STREET_ADDRESS_ZIP,
+            consts.ZIP_CODE_FIELD
         )
         person_ids = _update_known_person_ids(person_ids, site, person_id_set)
         # write zip codes matces for hpo to table
+        _append_to_result_table(
+            site,
+            match_values,
+            project,
+            validation_dataset,
+            consts.ZIP_CODE_FIELD
+        )
 
     # validate city
     for site in hpo_sites:
         person_id_set, match_values = _compare_cities(
-            project, site, date_string, consts.OBS_PII_STREET_ADDRESS_CITY, consts.CITY_FIELD
+            project,
+            validation_dataset,
+            site,
+            date_string,
+            consts.OBS_PII_STREET_ADDRESS_CITY,
+            consts.CITY_FIELD
         )
         person_ids = _update_known_person_ids(person_ids, site, person_id_set)
         # write city matches for hpo to table
+        _append_to_result_table(
+            site,
+            match_values,
+            project,
+            validation_dataset,
+            consts.CITY_FIELD
+        )
 
     # validate state
     for site in hpo_sites:
         person_id_set, match_values = _compare_states(
-            project, site, date_string, consts.OBS_PII_STREET_ADDRESS_STATE, consts.STATE_FIELD
+            project,
+            validation_dataset,
+            site,
+            date_string,
+            consts.OBS_PII_STREET_ADDRESS_STATE,
+            consts.STATE_FIELD
         )
         person_ids = _update_known_person_ids(person_ids, site, person_id_set)
         # write state matches for hpo to table
+        _append_to_result_table(
+            site,
+            match_values,
+            project,
+            validation_dataset,
+            consts.STATE_FIELD
+        )
 
     # validate street addresses
     for site in hpo_sites:
-        person_id_set, match_values = _compare_street_addresses(
+        person_id_set, address_one_match_values, address_two_match_values = _compare_street_addresses(
             project,
+            validation_dataset,
             site,
             date_string,
             consts.OBS_PII_STREET_ADDRESS_ONE,
@@ -867,14 +955,79 @@ def match_participants(project, date_string, dest_dataset_id):
         )
         person_ids = _update_known_person_ids(person_ids, site, person_id_set)
         # write street address matches for hpo to table
+        _append_to_result_table(
+            site,
+            address_one_match_values,
+            project,
+            validation_dataset,
+            consts.ADDRESS_ONE_FIELD
+        )
+        _append_to_result_table(
+            site,
+            address_two_match_values,
+            project,
+            validation_dataset,
+            consts.ADDRESS_TWO_FIELD
+        )
+
+    # validate email addresses
+    for site in hpo_sites:
+        person_id_set, match_values = _compare_email_addresses(
+            project,
+            validation_dataset,
+            site,
+            consts.OBS_PII_EMAIL_ADDRESS,
+            consts.EMAIL_FIELD
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+        # write email matches for hpo to table
+        _append_to_result_table(
+            site,
+            match_values,
+            project,
+            validation_dataset,
+            consts.EMAIL_FIELD
+        )
+
+    # validate phone numbers
+    for site in hpo_sites:
+        person_id_set, match_values = _compare_phone_numbers(
+            project,
+            validation_dataset,
+            site,
+            consts.OBS_PII_PHONE,
+            consts.PHONE_NUMBER_FIELD
+        )
+        person_ids = _update_known_person_ids(person_ids, site, person_id_set)
+        # write phone number matches for hpo to table
+        _append_to_result_table(
+            site,
+            match_values,
+            project,
+            validation_dataset,
+            consts.PHONE_NUMBER_FIELD
+        )
 
     # validate birth dates
     for site, participants in person_ids.iteritems():
-        #TODO:  Continue working on this comparison method.
-        match_values = _compare_birth_dates(site, date_string, participants, consts.OBS_PII_BIRTH_DATETIME,
-        consts.OBS_EHR_BIRTH_DATETIME)
+        match_values = _compare_birth_dates(
+            project,
+            validation_dataset,
+            date_string,
+            participants,
+            consts.OBS_PII_BIRTH_DATETIME,
+            consts.OBS_EHR_BIRTH_DATETIME
+        )
         # write birthday match for hpo to table
+        _append_to_result_table(
+            site,
+            match_values,
+            project,
+            validation_dataset,
+            consts.BIRTH_DATE_FIELD
+        )
 
+    # TODO:  generate single clean record for each participant at each site
     # TODO:  generate hpo site reports
 
     # TODO:  generate aggregate site report
