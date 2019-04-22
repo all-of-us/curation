@@ -1,7 +1,7 @@
-import csv
 import unittest
 import StringIO
-from vocabulary import _transform_csv, DELIMITER, LINE_TERMINATOR, format_date_str, append_vocabulary, get_aou_general_vocabulary_row
+from vocabulary import *
+from vocabulary import _transform_csv
 import test_util
 import os
 
@@ -17,13 +17,13 @@ class VocabularyTest(unittest.TestCase):
         super(VocabularyTest, self).setUp()
 
     @staticmethod
-    def do_transform_csv(input_text):
+    def do_transform_file(input_text):
         in_fp = StringIO.StringIO(input_text)
         out_fp = StringIO.StringIO()
         _transform_csv(in_fp, out_fp)
         return out_fp.getvalue()
 
-    def test_transform_csv(self):
+    def test_transform_file(self):
         header = ['concept_id', 'valid_start_date', 'valid_end_date', 'invalid_reason']
         row1 = ['1', '2017-05-17', '2099-12-31', '']
         row2 = ['2', '2019-01-01', '2099-12-31', '']
@@ -33,12 +33,12 @@ class VocabularyTest(unittest.TestCase):
         # after transform should output valid csv with date format yyyy-mm-dd
         expected_text = LINE_TERMINATOR.join(lines) + LINE_TERMINATOR
         input_text = expected_text.replace('-', '')
-        actual_text = VocabularyTest.do_transform_csv(input_text)
+        actual_text = VocabularyTest.do_transform_file(input_text)
         self.assertEqual(expected_text, actual_text)
 
         # windows line endings are replaced with linux ones
         input_text = expected_text.replace(LINE_TERMINATOR, '\r\n')
-        actual_text = VocabularyTest.do_transform_csv(input_text)
+        actual_text = VocabularyTest.do_transform_file(input_text)
         self.assertEqual(expected_text, actual_text)
 
     def test_format_date_str(self):
@@ -63,4 +63,34 @@ class VocabularyTest(unittest.TestCase):
             self.assertEqual(actual_last_row, expected_last_row)
             # end of file
             self.assertEqual('', out_fp.readline())
+
+        # should fail when concepts already in input
+        out_path_2 = os.tempnam()
+        with self.assertRaises(RuntimeError) as context:
+            append_vocabulary(out_path, out_path_2)
+        self.assertEqual(ERROR_APPENDING.format(in_path=out_path), context.exception.message)
+
         os.remove(out_path)
+        os.remove(out_path_2)
+
+    def test_append_concepts(self):
+        in_path = test_util.TEST_VOCABULARY_CONCEPT_CSV
+        out_path = os.tempnam()
+        append_concepts(in_path, out_path)
+        with open(in_path, 'rb') as in_fp, open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as add_fp:
+            # Note: Test files are small so memory usage here is acceptable
+            original_lines = in_fp.readlines()
+            all_lines = add_fp.readlines()
+            expected_lines = original_lines + all_lines[1:]
+            with open(out_path, 'rb') as out_fp:
+                actual_lines = out_fp.readlines()
+                self.assertSequenceEqual(actual_lines, expected_lines)
+
+        out_path_2 = os.tempnam()
+        # should fail when concepts already in input
+        with self.assertRaises(RuntimeError) as context:
+            append_concepts(out_path, out_path_2)
+        self.assertEqual(ERROR_APPENDING.format(in_path=out_path), context.exception.message)
+
+        os.remove(out_path)
+        os.remove(out_path_2)

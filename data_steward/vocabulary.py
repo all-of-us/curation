@@ -12,13 +12,18 @@ LINE_TERMINATOR = '\n'
 RAW_DATE_REGEX = r'\d{8}$'  # yyyymmdd
 BQ_DATE_REGEX = r'\d{4}-\d{2}-\d{2}$'  # yyyy-mm-dd
 
-TRANSFORM_CSV = 'transform_csv'
+TRANSFORM_FILES = 'transform_files'
+APPEND_VOCABULARY = 'append_vocabulary'
+APPEND_CONCEPTS = 'append_concepts'
+ADD_AOU_GENERAL = 'add_aou_general'
 ERRORS = 'errors'
 
 AOU_GEN = 'AoU_General'
 AOU_GEN_VOCABULARY_CONCEPT_ID = '2000000000'
 AOU_GEN_VOCABULARY_REFERENCE = 'https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g'
 OMOP_VOCABULARY_CONCEPT_ID = '44819096'
+
+ERROR_APPENDING = 'Appending to {in_path} which already contains rows for ' + AOU_GEN
 
 
 def format_date_str(s):
@@ -57,9 +62,9 @@ def _transform_csv(in_fp, out_fp, err_fp=None):
             err_fp.write(message)
 
 
-def transform_csv(file_path, out_dir):
+def transform_file(file_path, out_dir):
     """
-    Transform a local csv file (for BQ load) and save result in specified directory
+    Format file date fields and standardize line endings a local csv file and save result in specified directory
 
     :param file_path: Path to the csv file
     :param out_dir: Directory to save the transformed file
@@ -75,6 +80,19 @@ def transform_csv(file_path, out_dir):
         _transform_csv(in_fp, out_fp, err_fp)
 
 
+def transform_files(in_dir, out_dir):
+    """
+    Transform vocabulary files in a directory and save result in another directory
+
+    :param in_dir: Directory containing vocabulary csv files
+    :param out_dir: Directory to save the transformed file
+    """
+    fs = os.listdir(in_dir)
+    for f in fs:
+        in_path = os.path.join(in_dir, f)
+        transform_file(in_path, out_dir)
+
+
 def get_aou_general_version():
     return hash_dir(AOU_GENERAL_PATH)
 
@@ -87,13 +105,16 @@ def get_aou_general_vocabulary_row():
 
 def append_concepts(in_path, out_path):
     with open(out_path, 'wb') as out_fp:
-        # copy original rows
+        # copy original rows line by line for memory efficiency
         with open(in_path, 'rb') as in_fp:
             for row in in_fp:
+                if AOU_GEN in row:
+                    raise RuntimeError(ERROR_APPENDING.format(in_path=in_path))
                 out_fp.write(row)
 
         # append new rows
         with open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as aou_gen_fp:
+            _ = next(aou_gen_fp)  # skip header
             for row in aou_gen_fp:
                 out_fp.write(row)
 
@@ -101,9 +122,11 @@ def append_concepts(in_path, out_path):
 def append_vocabulary(in_path, out_path):
     new_row = get_aou_general_vocabulary_row()
     with open(out_path, 'wb') as out_fp:
-        # copy original rows
+        # copy original rows line by line for memory efficiency
         with open(in_path, 'rb') as in_fp:
             for row in in_fp:
+                if AOU_GEN in row:
+                    raise RuntimeError(ERROR_APPENDING.format(in_path=in_path))
                 out_fp.write(row)
         # append new row
         out_fp.write(new_row)
@@ -137,9 +160,15 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('command', choices=[TRANSFORM_CSV])
-    parser.add_argument('--file', required=True)
+    parser.add_argument('command', choices=[TRANSFORM_FILES, ADD_AOU_GENERAL, APPEND_VOCABULARY, APPEND_CONCEPTS])
+    parser.add_argument('--in_dir', required=True)
     parser.add_argument('--out_dir', required=True)
     args = parser.parse_args()
-    if args.command == TRANSFORM_CSV:
-        transform_csv(args.file, args.out_dir)
+    if args.command == TRANSFORM_FILES:
+        transform_files(args.in_dir, args.out_dir)
+    elif args.command == ADD_AOU_GENERAL:
+        add_aou_general(args.in_dir, args.out_dir)
+    elif args.command == APPEND_VOCABULARY:
+        append_vocabulary(args.file, args.out_dir)
+    elif args.command == APPEND_CONCEPTS:
+        append_concepts(args.file, args.out_dir)
