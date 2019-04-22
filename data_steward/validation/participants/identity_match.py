@@ -22,7 +22,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _get_utf8_string(value):
-    result = ''
+    result = None
     try:
         result = value.encode('utf-8', 'ignore')
     except AttributeError:
@@ -34,7 +34,7 @@ def _get_utf8_string(value):
     return result
 
 
-def _get_all_observation_match_values(project, date_string, destination_dataset):
+def _set_observation_match_values_table(project, rdr_dataset, destination_dataset):
     """
     Get the desired matching values from the combined observation table.
 
@@ -49,7 +49,7 @@ def _get_all_observation_match_values(project, date_string, destination_dataset)
     """
     query_string = consts.ALL_PPI_OBSERVATION_VALUES.format(
         project=project,
-        date_string=date_string,
+        dataset=rdr_dataset,
         table=consts.OBSERVATION_TABLE
     )
 
@@ -77,8 +77,6 @@ def _get_ehr_observation_match_values(project, dataset, table_name, concept_id, 
     used in participant matching.  Returned query data is limited to the
     person_id, observation_concept_id, and the value_as_string fields.
 
-    :param date_string: a string formatted date as YYYYMMDD that will be used
-        to identify which dataset to use as a lookup
     :param concept_id: the id of the concept to verify from the RDR data
 
     :return:  A dictionary with observation_source_concept_id as the key.
@@ -128,8 +126,6 @@ def _get_ppi_observation_match_values(project, dataset, table_name, concept_id):
     used in participant matching.  Returned query data is limited to the
     person_id, observation_concept_id, and the value_as_string fields.
 
-    :param date_string: a string formatted date as YYYYMMDD that will be used
-        to identify which dataset to use as a lookup
     :param concept_id: the id of the concept to verify from the RDR data
 
     :return:  A dictionary with observation_source_concept_id as the key.
@@ -177,7 +173,7 @@ def _get_hpo_site_names():
     return hpo_ids
 
 
-def _get_pii_values(project, dataset, hpo, table, field):
+def _get_pii_values(project, pii_dataset, hpo, table, field):
     """
     Get values from the site's PII table.
 
@@ -189,7 +185,7 @@ def _get_pii_values(project, dataset, hpo, table, field):
     """
     query_string = consts.PII_VALUES.format(
         project=project,
-        dataset=dataset,
+        dataset=pii_dataset,
         hpo_site_str=hpo,
         field=field,
         table_suffix=table
@@ -210,10 +206,10 @@ def _get_pii_values(project, dataset, hpo, table, field):
 
     return result_list
 
-def _get_location_pii(project, dataset, hpo, date_string, table, field):
+def _get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
     location_ids = _get_pii_values(
         project,
-        dataset,
+        pii_dataset,
         hpo,
         table,
         consts.LOCATION_ID_FIELD
@@ -229,7 +225,7 @@ def _get_location_pii(project, dataset, hpo, date_string, table, field):
     location_id_str = ', '.join(location_id_list)
     query_string = consts.PII_LOCATION_VALUES.format(
         project=project,
-        data_set='lrwb_combined' + date_string,
+        data_set=rdr_dataset,
         field=field,
         id_list=location_id_str
     )
@@ -414,7 +410,7 @@ def _compare_address_lists(list_one, list_two):
     return diff
 
 
-def _compare_name_fields(project, dataset, hpo, concept_id, pii_field):
+def _compare_name_fields(project, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
     """
     For an hpo, compare all first, middle, and last name fields to omop settings.
 
@@ -422,30 +418,35 @@ def _compare_name_fields(project, dataset, hpo, concept_id, pii_field):
     tables with the values in the OMOP observation table.
 
     :param hpo: string name of hop to search.
-    :param date_string: a string formatted date as YYYYMMDD that will be used
-        to identify which dataset to use as a lookup
     :return: a set of person_ids from the hpo PII name table that had name
         comparison performed and the updated match_values dictionary.
     """
     person_ids = set()
     match_values = {}
 
-    obs_names = _get_ppi_observation_match_values(
-        project, dataset, consts.ID_MATCH_TABLE, concept_id
+    rdr_names = _get_ppi_observation_match_values(
+        project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, name in _get_pii_values(project, 'lrwb_pii_tables', hpo, consts.PII_NAME_TABLE, pii_field):
-        person_ids.add(person_id)
-        name = _clean_name(name)
-        rdr_name = _clean_name(obs_names.get(person_id))
+    pii_names = _get_pii_values(project, pii_dataset, hpo, consts.PII_NAME_TABLE, pii_field)
 
-        match_str = consts.MATCH if rdr_name == name else consts.MISMATCH
+    for person_id, pii_name in pii_names:
+        person_ids.add(person_id)
+        rdr_name = rdr_names.get(person_id)
+
+        if rdr_name is None or pii_name is None:
+            match_str = consts.MISSING
+        else:
+            pii_name = _clean_name(pii_name)
+            rdr_name = _clean_name(rdr_name)
+            match_str = consts.MATCH if rdr_name == pii_name else consts.MISMATCH
+
         match_values[person_id] = match_str
 
     return person_ids, match_values
 
 
-def _compare_email_addresses(project, dataset, hpo, concept_id, pii_field):
+def _compare_email_addresses(project, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -459,22 +460,28 @@ def _compare_email_addresses(project, dataset, hpo, concept_id, pii_field):
     match_values = {}
 
     email_addresses = _get_ppi_observation_match_values(
-        project, dataset, consts.ID_MATCH_TABLE, concept_id
+        project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, email in _get_pii_values(project, 'lrwb_pii_tables', hpo, consts.PII_EMAIL_TABLE, pii_field):
+    pii_emails = _get_pii_values(project, pii_dataset, hpo, consts.PII_EMAIL_TABLE, pii_field)
+
+    for person_id, pii_email in pii_emails:
         person_ids.add(person_id)
+        rdr_email = email_addresses.get(person_id)
 
-        rdr_email = _clean_email(email_addresses.get(person_id))
-        pii_email = _clean_email(email)
+        if rdr_email is None or pii_email is None:
+            match_str = consts.MISSING
+        else:
+            rdr_email = _clean_email(rdr_email)
+            pii_email = _clean_email(pii_email)
+            match_str = consts.MATCH if rdr_email == pii_email else consts.MISMATCH
 
-        match_str = consts.MATCH if rdr_email == pii_email else consts.MISMATCH
         match_values[person_id] = match_str
 
     return person_ids, match_values
 
 
-def _compare_phone_numbers(project, dataset, hpo, concept_id, pii_field):
+def _compare_phone_numbers(project, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
     """
     Compare the digit based phone numbers from PII and Observation tables.
 
@@ -488,22 +495,34 @@ def _compare_phone_numbers(project, dataset, hpo, concept_id, pii_field):
     match_values = {}
 
     phone_numbers = _get_ppi_observation_match_values(
-        project, dataset, consts.ID_MATCH_TABLE, concept_id
+        project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, number in _get_pii_values(project, 'lrwb_pii_tables', hpo, consts.PII_PHONE_TABLE, pii_field):
+    pii_phone_numbers = _get_pii_values(
+        project,
+        pii_dataset,
+        hpo,
+        consts.PII_PHONE_TABLE,
+        pii_field
+    )
+
+    for person_id, pii_number in pii_phone_numbers:
         person_ids.add(person_id)
+        rdr_phone = phone_numbers.get(person_id)
 
-        rdr_phone = _clean_phone(phone_numbers.get(person_id))
-        pii_number = _clean_phone(number)
+        if rdr_phone is None or pii_number is None:
+            match_str = consts.MISSING
+        else:
+            rdr_phone = _clean_phone(rdr_phone)
+            pii_number = _clean_phone(pii_number)
+            match_str = consts.MATCH if rdr_phone == pii_number else consts.MISMATCH
 
-        match_str = consts.MATCH if rdr_phone == pii_number else consts.MISMATCH
         match_values[person_id] = match_str
 
     return person_ids, match_values
 
 
-def _compare_cities(project, dataset, hpo, date_string, concept_id, pii_field):
+def _compare_cities(project, validation_dataset, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -517,22 +536,35 @@ def _compare_cities(project, dataset, hpo, date_string, concept_id, pii_field):
     match_values = {}
 
     cities = _get_ppi_observation_match_values(
-        project, dataset, consts.ID_MATCH_TABLE, concept_id
+        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, city in _get_location_pii(project, 'lrwb_pii_tables', hpo, date_string, consts.PII_ADDRESS_TABLE, pii_field):
+    pii_cities = _get_location_pii(
+        project,
+        rdr_dataset,
+        pii_dataset,
+        hpo,
+        consts.PII_ADDRESS_TABLE,
+        pii_field
+    )
+
+    for person_id, pii_city in pii_cities:
         person_ids.add(person_id)
+        rdr_city = cities.get(person_id)
 
-        rdr_city = _clean_name(cities.get(person_id))
-        pii_city = _clean_name(city)
+        if rdr_city is None or pii_city is None:
+            match_str = consts.MISSING
+        else:
+            rdr_city = _clean_name(rdr_city)
+            pii_city = _clean_name(pii_city)
+            match_str = consts.MATCH if rdr_city == pii_city else consts.MISMATCH
 
-        match_str = consts.MATCH if rdr_city == pii_city else consts.MISMATCH
         match_values[person_id] = match_str
 
     return person_ids, match_values
 
 
-def _compare_states(project, dataset, hpo, date_string, concept_id, pii_field):
+def _compare_states(project, validation_dataset, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -546,22 +578,35 @@ def _compare_states(project, dataset, hpo, date_string, concept_id, pii_field):
     match_values = {}
 
     states = _get_ppi_observation_match_values(
-        project, dataset, consts.ID_MATCH_TABLE, concept_id
+        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    for person_id, state in _get_location_pii(project, 'lrwb_pii_tables', hpo, date_string, consts.PII_ADDRESS_TABLE, pii_field):
+    pii_states = _get_location_pii(
+        project,
+        rdr_dataset,
+        pii_dataset,
+        hpo,
+        consts.PII_ADDRESS_TABLE,
+        pii_field
+    )
+
+    for person_id, pii_state in pii_states:
         person_ids.add(person_id)
+        rdr_state = states.get(person_id)
 
-        rdr_state = _clean_state(states.get(person_id))
-        pii_state = _clean_state(state)
+        if rdr_state is None or pii_state is None:
+            match_str = consts.MISSING
+        else:
+            rdr_state = _clean_state(rdr_state)
+            pii_state = _clean_state(pii_state)
+            match_str = consts.MATCH if rdr_state == pii_state else consts.MISMATCH
 
-        match_str = consts.MATCH if rdr_state == pii_state else consts.MISMATCH
         match_values[person_id] = match_str
 
     return person_ids, match_values
 
 
-def _compare_zip_codes(project, dataset, hpo, date_string, concept_id, pii_field):
+def _compare_zip_codes(project, validation_dataset, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -575,25 +620,29 @@ def _compare_zip_codes(project, dataset, hpo, date_string, concept_id, pii_field
     match_values = {}
 
     zip_codes = _get_ppi_observation_match_values(
-        project, dataset, consts.ID_MATCH_TABLE, concept_id
+        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
     pii_zip_codes = _get_location_pii(
         project,
-        'lrwb_pii_tables',
+        rdr_dataset,
+        pii_dataset,
         hpo,
-        date_string,
         consts.PII_ADDRESS_TABLE,
         pii_field
     )
 
-    for person_id, zip_code in pii_zip_codes:
+    for person_id, pii_zip_code in pii_zip_codes:
         person_ids.add(person_id)
+        rdr_zip = zip_codes.get(person_id)
 
-        rdr_zip = _clean_zip(zip_codes.get(person_id))
-        pii_zip = _clean_zip(zip_code)
+        if rdr_zip is None or pii_zip_code is None:
+            match_str = consts.MISSING
+        else:
+            rdr_zip = _clean_zip(rdr_zip)
+            pii_zip = _clean_zip(pii_zip_code)
+            match_str = consts.MATCH if rdr_zip == pii_zip else consts.MISMATCH
 
-        match_str = consts.MATCH if rdr_zip == pii_zip else consts.MISMATCH
         match_values[person_id] = match_str
 
     return person_ids, match_values
@@ -601,9 +650,10 @@ def _compare_zip_codes(project, dataset, hpo, date_string, concept_id, pii_field
 
 def _compare_street_addresses(
         project,
-        dataset,
+        validation_dataset,
+        rdr_dataset,
+        pii_dataset,
         hpo,
-        date_string,
         concept_id_one,
         concept_id_two,
         field_one,
@@ -626,15 +676,19 @@ def _compare_street_addresses(
     address_two_match_values = {}
 
     rdr_address_ones = _get_ppi_observation_match_values(
-        project, dataset, consts.ID_MATCH_TABLE, concept_id_one
+        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_one
     )
 
     rdr_address_twos = _get_ppi_observation_match_values(
-        project, dataset, consts.ID_MATCH_TABLE, concept_id_two
+        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_two
     )
 
-    pii_street_ones = _get_location_pii(project, 'lrwb_pii_tables', hpo, date_string, consts.PII_ADDRESS_TABLE, field_one)
-    pii_street_twos = _get_location_pii(project, 'lrwb_pii_tables', hpo, date_string, consts.PII_ADDRESS_TABLE, field_two)
+    pii_street_ones = _get_location_pii(
+        project, rdr_dataset, pii_dataset, hpo, consts.PII_ADDRESS_TABLE, field_one
+    )
+    pii_street_twos = _get_location_pii(
+        project, rdr_dataset, pii_dataset, hpo, consts.PII_ADDRESS_TABLE, field_two
+    )
 
     pii_street_addresses = {}
     for person_id, street in pii_street_ones:
@@ -689,8 +743,8 @@ def _compare_street_addresses(
 
 def _compare_birth_dates(
         project,
-        dataset,
-        date_string,
+        validation_dataset,
+        rdr_dataset,
         person_id_set,
         concept_id_pii,
         concept_id_ehr
@@ -712,13 +766,17 @@ def _compare_birth_dates(
     match_values = {}
 
     pii_birthdates = _get_ppi_observation_match_values(
-        project, dataset, consts.ID_MATCH_TABLE, concept_id_pii
+        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_pii
     )
 
     person_id_list = [str(person_id) for person_id in person_id_set]
 
     ehr_birthdates = _get_ehr_observation_match_values(
-        project, 'lrwb_combined' + date_string, consts.OBSERVATION_TABLE, concept_id_ehr, ', '.join(person_id_list)
+        project,
+        rdr_dataset,
+        consts.OBSERVATION_TABLE,
+        concept_id_ehr,
+        ', '.join(person_id_list)
     )
 
     # compare birth_datetime from ppi info to ehr info and record results.
@@ -726,12 +784,8 @@ def _compare_birth_dates(
         rdr_birthdate = pii_birthdates.get(person_id)
         ehr_birthdate = ehr_birthdates.get(person_id)
 
-        if (rdr_birthdate is None and ehr_birthdate is not None) \
-                or (ehr_birthdate is None and rdr_birthdate is not None):
-            match_values[person_id] = consts.MISMATCH
-            return match_values
-        elif rdr_birthdate is None and ehr_birthdate is None:
-            match_values[person_id] = consts.MATCH
+        if rdr_birthdate is None or ehr_birthdate is None:
+            match_values[person_id] = consts.MISSING
         elif isinstance(rdr_birthdate, str) and isinstance(ehr_birthdate, str):
             # convert values to datetime objects
             rdr_date = parse(rdr_birthdate)
@@ -784,6 +838,7 @@ def  _append_to_result_table(
 
     results = bq_utils.query(query, batch=True)
 
+    return results
 
 def _remove_sparse_records(project, dataset, site):
     """
@@ -794,13 +849,13 @@ def _remove_sparse_records(project, dataset, site):
 
     :param project: The project string identifier
     :param dataset: The validation dataset identifier
-    :param site: The site to merge validation results for
+    :param site: The site to delete sparse validation results for
     """
     result_table = site + consts.VALIDATION_TABLE_SUFFIX
 
     LOGGER.debug("Removing lingering sparse records from %s.%s.%s", project, dataset, result_table)
 
-    query =consts.MERGE_DELETE_SPARSE_RECORDS.format(
+    query = consts.MERGE_DELETE_SPARSE_RECORDS.format(
         project=project,
         dataset=dataset,
         table=result_table,
@@ -818,6 +873,7 @@ def _remove_sparse_records(project, dataset, site):
     )
 
     results = bq_utils.query(query, batch=True)
+    return results
 
 
 def _merge_fields_into_single_record(project, dataset, site):
@@ -838,7 +894,7 @@ def _merge_fields_into_single_record(project, dataset, site):
     LOGGER.debug("Unifying sparse records for %s.%s.%s", project, dataset, result_table)
 
     for validation_field in consts.VALIDATION_FIELDS:
-        query =consts.MERGE_UNIFY_SITE_RECORDS.format(
+        query = consts.MERGE_UNIFY_SITE_RECORDS.format(
             project=project,
             dataset=dataset,
             table=result_table,
@@ -846,15 +902,54 @@ def _merge_fields_into_single_record(project, dataset, site):
         )
 
         results = bq_utils.query(query, batch=True)
+    return results
 
 
-def match_participants(project, date_string, dest_dataset_id):
+def _change_nulls_to_missing_value(project, dataset, site):
+    """
+    Change existing null values to indicate the match item was/is missing.
+
+    After merging records and deleting sparse records, it is possible for null
+    values to exist if the item did not exist in either the concept table or
+    the pii table.  To eliminate this possibility, all null values will be
+    updated to the constant missing value.
+
+    :param project: The project string identifier
+    :param dataset: The validation dataset identifier
+    :param site: The site to delete sparse validation results for
+    """
+    result_table = site + consts.VALIDATION_TABLE_SUFFIX
+
+    LOGGER.debug("Setting null fields to %s in %s.%s.%s", consts.MISSING, project, dataset, result_table)
+
+    query = consts.MERGE_SET_MISSING_FIELDS.format(
+        project=project,
+        dataset=dataset,
+        table=result_table,
+        field_one=consts.VALIDATION_FIELDS[0],
+        field_two=consts.VALIDATION_FIELDS[1],
+        field_three=consts.VALIDATION_FIELDS[2],
+        field_four=consts.VALIDATION_FIELDS[3],
+        field_five=consts.VALIDATION_FIELDS[4],
+        field_six=consts.VALIDATION_FIELDS[5],
+        field_seven=consts.VALIDATION_FIELDS[6],
+        field_eight=consts.VALIDATION_FIELDS[7],
+        field_nine=consts.VALIDATION_FIELDS[8],
+        field_ten=consts.VALIDATION_FIELDS[9],
+        field_eleven=consts.VALIDATION_FIELDS[10],
+        value=consts.MISSING
+    )
+
+    results = bq_utils.query(query, batch=True)
+    return results
+
+
+
+def match_participants(project, rdr_dataset, pii_dataset, dest_dataset_id):
     """
     Entry point for performing participant matching of PPI, EHR, and PII data.
 
     :param project: a string representing the project name
-    :param date_string: a string formatted date as YYYYMMDD that will be used
-        to identify which dataset to use as a lookup
 
     :return: results of the field comparison for each hpo
     """
@@ -867,7 +962,7 @@ def match_participants(project, date_string, dest_dataset_id):
     validation_dataset = validation_dataset.get(bq_consts.DATASET_ID, '')
 
     # create intermediate observation table in new dataset
-    rdr_values = _get_all_observation_match_values(project, date_string, dest_dataset_id)
+    _set_observation_match_values_table(project, rdr_dataset, dest_dataset_id)
 
     hpo_sites = ['lrwb_test_table']
 #    hpo_sites = _get_hpo_site_names()
@@ -881,7 +976,7 @@ def match_participants(project, date_string, dest_dataset_id):
             site_name + consts.VALIDATION_TABLE_SUFFIX,
             field_list,
             drop_existing=True,
-            dataset_id=dest_dataset_id
+            dataset_id=validation_dataset
         )
 
     results = {}
@@ -892,6 +987,7 @@ def match_participants(project, date_string, dest_dataset_id):
         person_id_set, match_values = _compare_name_fields(
             project,
             validation_dataset,
+            pii_dataset,
             site,
             consts.OBS_PII_NAME_FIRST,
             consts.FIRST_NAME_FIELD
@@ -911,6 +1007,7 @@ def match_participants(project, date_string, dest_dataset_id):
         person_id_set, match_values = _compare_name_fields(
             project,
             validation_dataset,
+            pii_dataset,
             site,
             consts.OBS_PII_NAME_LAST,
             consts.LAST_NAME_FIELD
@@ -930,6 +1027,7 @@ def match_participants(project, date_string, dest_dataset_id):
         person_id_set, match_values = _compare_name_fields(
             project,
             validation_dataset,
+            pii_dataset,
             site,
             consts.OBS_PII_NAME_MIDDLE,
             consts.MIDDLE_NAME_FIELD
@@ -949,8 +1047,9 @@ def match_participants(project, date_string, dest_dataset_id):
         person_id_set, match_values = _compare_zip_codes(
             project,
             validation_dataset,
+            rdr_dataset,
+            pii_dataset,
             site,
-            date_string,
             consts.OBS_PII_STREET_ADDRESS_ZIP,
             consts.ZIP_CODE_FIELD
         )
@@ -969,8 +1068,9 @@ def match_participants(project, date_string, dest_dataset_id):
         person_id_set, match_values = _compare_cities(
             project,
             validation_dataset,
+            rdr_dataset,
+            pii_dataset,
             site,
-            date_string,
             consts.OBS_PII_STREET_ADDRESS_CITY,
             consts.CITY_FIELD
         )
@@ -989,8 +1089,9 @@ def match_participants(project, date_string, dest_dataset_id):
         person_id_set, match_values = _compare_states(
             project,
             validation_dataset,
+            rdr_dataset,
+            pii_dataset,
             site,
-            date_string,
             consts.OBS_PII_STREET_ADDRESS_STATE,
             consts.STATE_FIELD
         )
@@ -1009,8 +1110,9 @@ def match_participants(project, date_string, dest_dataset_id):
         person_id_set, address_one_match_values, address_two_match_values = _compare_street_addresses(
             project,
             validation_dataset,
+            rdr_dataset,
+            pii_dataset,
             site,
-            date_string,
             consts.OBS_PII_STREET_ADDRESS_ONE,
             consts.OBS_PII_STREET_ADDRESS_TWO,
             consts.ADDRESS_ONE_FIELD,
@@ -1038,6 +1140,7 @@ def match_participants(project, date_string, dest_dataset_id):
         person_id_set, match_values = _compare_email_addresses(
             project,
             validation_dataset,
+            pii_dataset,
             site,
             consts.OBS_PII_EMAIL_ADDRESS,
             consts.EMAIL_FIELD
@@ -1057,6 +1160,7 @@ def match_participants(project, date_string, dest_dataset_id):
         person_id_set, match_values = _compare_phone_numbers(
             project,
             validation_dataset,
+            pii_dataset,
             site,
             consts.OBS_PII_PHONE,
             consts.PHONE_NUMBER_FIELD
@@ -1076,7 +1180,7 @@ def match_participants(project, date_string, dest_dataset_id):
         match_values = _compare_birth_dates(
             project,
             validation_dataset,
-            date_string,
+            rdr_dataset,
             participants,
             consts.OBS_PII_BIRTH_DATETIME,
             consts.OBS_EHR_BIRTH_DATETIME
@@ -1094,6 +1198,7 @@ def match_participants(project, date_string, dest_dataset_id):
     for site in hpo_sites:
         _merge_fields_into_single_record(project, validation_dataset, site)
         _remove_sparse_records(project, validation_dataset, site)
+        _change_nulls_to_missing_value(project, validation_dataset, site)
 
     # TODO:  generate hpo site reports
 
@@ -1103,9 +1208,8 @@ def match_participants(project, date_string, dest_dataset_id):
 
 
 if __name__ == '__main__':
-    DATASET = '20190415'
-#    PROJECT = 'aou-res-curation-prod'
+    RDR_DATASET = 'lrwb_combined20190415'
+    PII_DATASET = 'lrwb_pii_tables'
     PROJECT = 'aou-res-curation-test'
-    DEST_DATASET_ID = 'temp_dataset_id' + DATASET
-    match_participants(PROJECT, DATASET, DEST_DATASET_ID)
-#    bq_utils.create_dataset(dataset_id='lrwb_validation_test1', description='provenance info')
+    DEST_DATASET_ID = 'temp_dataset_id20190415'
+    match_participants(PROJECT, RDR_DATASET, PII_DATASET, DEST_DATASET_ID)
