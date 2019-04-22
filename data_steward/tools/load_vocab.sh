@@ -7,10 +7,9 @@
 # 4. Load the vocabulary in the dataset specified by --dataset
 
 USAGE="
-tools/load_vocab.sh --app_id app_id --in_dir in_dir --out_dir out_dir --gcs_path gcs_path --dataset dataset
+tools/load_vocab.sh --app_id app_id --in_dir in_dir [--gcs_path gcs_path --dataset dataset]
  --app_id   app_id   GCP project associated with the dataset
  --in_dir   in_dir   directory where vocabulary files are located
- --out_dir  out_dir  directory where transformed files should be saved
  --gcs_path gcs_path full GCS path to save transformed files
  --dataset  dataset  name of BigQuery dataset to create and load vocabulary
 "
@@ -24,7 +23,6 @@ while true; do
   case "$1" in
     --app_id) APP_ID=$2; shift 2;;
     --in_dir) IN_DIR=$2; shift 2;;
-    --out_dir) OUT_DIR=$2; shift 2;;
     --dataset) DATASET=$2; shift 2;;
     --gcs_path) GCS_PATH=$2; shift 2;;
     -- ) shift; break ;;
@@ -32,20 +30,16 @@ while true; do
   esac
 done
 
-if [[ -z "${APP_ID}" ]] || [[ -z "${IN_DIR}" ]] || [[ -z "${OUT_DIR}" ]]
+if [[ -z "${APP_ID}" ]] || [[ -z "${IN_DIR}" ]]
 then
   echo "Usage: $USAGE"
   exit 1
 fi
 
-# Move vocabulary files to backup folder
-BACKUP_DIR="${IN_DIR}-backup"
-echo "Creating backup in ${BACKUP_DIR}..."
-mkdir ${BACKUP_DIR}
-mv ${IN_DIR}/* ${BACKUP_DIR}
+source ${SCRIPT_PATH}/set_path.sh
 
 # Determine the version of the OMOP vocabulary
-OMOP_VOCABULARY_VERSION=$(cat ${BACKUP_DIR}/VOCABULARY.csv | grep ${OMOP_VOCABULARY_CONCEPT_ID} | cut -f4)
+OMOP_VOCABULARY_VERSION=$(cat ${IN_DIR}/VOCABULARY.csv | grep ${OMOP_VOCABULARY_CONCEPT_ID} | cut -f4)
 echo "Version of OMOP Standard vocabulary is ${OMOP_VOCABULARY_VERSION}"
 
 # Create a version string for the vocabulary AoU_General based on md5 of files
@@ -54,39 +48,41 @@ CHECKSUM_ALL=$( echo ${CHECKSUM_LIST} | md5sum )
 AOU_GENERAL_VERSION=$( echo ${CHECKSUM_ALL} | cut -d' ' -f1 )
 echo "Version of AoU_General vocabulary is ${AOU_GENERAL_VERSION}"
 
-# Append record to vocabulary.csv
-# vocabulary_id 	vocabulary_name 	vocabulary_reference 	vocabulary_version 	vocabulary_concept_id
-echo -e "AoU_General\tAoU_General\t${AOU_GENERAL_VOCABULARY_REFERENCE}\t${AOU_GENERAL_VERSION}\t${AOU_GENERAL_VOCABULARY_CONCEPT_ID}" >> ${IN_DIR}/VOCABULARY.csv
+# Move vocabulary files to backup folder
+BACKUP_DIR="${IN_DIR}-backup"
+echo "Creating backup in ${BACKUP_DIR}..."
+mkdir ${BACKUP_DIR}
+cp ${IN_DIR}/* ${BACKUP_DIR}
 
-# Append records to concept.csv
-tail -n +2 resources/aou_general/concept.csv >> ${IN_DIR}/CONCEPT.csv
+# Format dates, standardize line endings
+echo "Transforming the files in ${IN_DIR}..."
+python ${BASE_DIR}/vocabulary.py transform_files --in_dir ${BACKUP_DIR} --out_dir ${IN_DIR}
 
-# Transform the dates
-for file in $(ls ${IN_DIR})
-do
-  in_file="${IN_DIR}/${file}"
-  echo "Transforming ${in_file} and saving to ${OUT_DIR}..."
-  python ${BASE_DIR}/vocabulary.py transform_csv --file ${in_file} --out_dir ${OUT_DIR}
-done
+TEMP_DIR=$(mktemp -d)
+echo "Created temp dir ${TEMP_DIR}"
 
+# Append AoU_General vocabulary and concept records
+echo "Adding AoU_General to vocabulary in ${IN_DIR}..."
+cp ${IN_DIR}/* ${TEMP_DIR}
+python ${BASE_DIR}/vocabulary.py add_aou_general --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
+
+# Upload to bucket
 if [[ -z "${GCS_PATH}" ]]
 then
   echo "GCS path not specified, skipping GCS upload and BigQuery load"
   exit 0
 fi
+echo "Uploading ${IN_DIR}/* to ${GCS_PATH}..."
+gsutil -m cp ${IN_DIR}/* ${GCS_PATH}
 
-echo "Uploading ${OUT_DIR}/* to ${GCS_PATH}..."
-gsutil -m cp ${OUT_DIR}/* ${GCS_PATH}
-
+# Load in BigQuery dataset
 if [[ -z "${DATASET}" ]]
 then
   echo "Dataset not specified, skipping BigQuery load"
   exit 0
 fi
-
 echo "Creating and loading dataset ${DATASET}..."
 bq mk --project_id ${APP_ID} --dataset_id ${DATASET} --description "Vocabulary ${OMOP_VOCABULARY_VERSION} loaded from ${GCS_PATH}"
-
 for file in $(gsutil ls ${GCS_PATH})
 do
  filename=$(basename ${file,,})
