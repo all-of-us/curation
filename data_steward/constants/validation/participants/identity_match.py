@@ -33,6 +33,8 @@ BIRTHDATE = 'birthdate'
 MATCH = "Match"
 MISMATCH = "NoMatch"
 MISSING = "Missing"
+YES = "Yes"
+NO = "No"
 
 # Date format strings
 FULL_DATETIME = '%Y-%m-%d %H:%M:%S%z'
@@ -99,7 +101,6 @@ ADDRESS_ABBREVIATIONS = {
 # Select observation table attributes to validate
 PPI_OBSERVATION_VALUES = (
     'SELECT person_id, observation_source_concept_id, value_as_string '
-    #'FROM `{project}.lrwb_combined{date_string}.{table}` '
     'FROM `{project}.{dataset}.{table}` '
     'WHERE observation_source_concept_id={field_value} '
     'ORDER BY person_id'
@@ -117,7 +118,7 @@ EHR_OBSERVATION_VALUES = (
 # Select observation table attributes to validate
 ALL_PPI_OBSERVATION_VALUES = (
     'SELECT person_id, observation_source_concept_id, value_as_string '
-    'FROM `{project}.lrwb_combined{date_string}.{table}` '
+    'FROM `{project}.{dataset}.{table}` '
     'WHERE observation_source_concept_id IN (' +
     ', '.join([str(OBS_PII_NAME_FIRST), str(OBS_PII_NAME_MIDDLE),
                str(OBS_PII_NAME_LAST), str(OBS_PII_EMAIL_ADDRESS),
@@ -246,6 +247,36 @@ MERGE_DELETE_SPARSE_RECORDS = (
     'orig.{field_nine} IS NULL AND orig.{field_ten} IS NULL AND '
     'orig.{field_eleven} IS NULL THEN '
     '  DELETE '
+)
+
+# Remove records that were previous merged into the unified participant record
+# This is very long to be absolutely explicit
+MERGE_SET_MISSING_FIELDS = (
+    'MERGE `{project}.{dataset}.{table}` AS orig '
+    'USING `{project}.{dataset}.{table}` AS updater '
+    'ON orig.person_id = updater.person_id '
+    'WHEN MATCHED AND orig.{field_one} IS NULL THEN '
+    '  UPDATE SET orig.{field_one} = \'{value}\' '
+    'WHEN MATCHED AND orig.{field_two} IS NULL THEN '
+    '  UPDATE SET orig.{field_two} = \'{value}\' '
+    'WHEN MATCHED AND orig.{field_three} IS NULL THEN '
+    '  UPDATE SET orig.{field_three} = \'{value}\' '
+    'WHEN MATCHED AND orig.{field_four} IS NULL THEN '
+    '  UPDATE SET orig.{field_four} = \'{value}\' '
+    'WHEN MATCHED AND orig.{field_five} IS NULL THEN '
+    '  UPDATE SET orig.{field_five} = \'{value}\' '
+    'WHEN MATCHED AND orig.{field_six} IS NULL THEN '
+    '  UPDATE SET orig.{field_six} = \'{value}\' '
+    'WHEN MATCHED AND orig.{field_seven} IS NULL THEN '
+    '  UPDATE SET orig.{field_seven} = \'{value}\' '
+    'WHEN MATCHED AND orig.{field_eight} IS NULL THEN '
+    '  UPDATE SET orig.{field_eight} = \'{value}\' '
+    'WHEN MATCHED AND orig.{field_nine} IS NULL THEN '
+    '  UPDATE SET orig.{field_nine} = \'{value}\' '
+    'WHEN MATCHED AND orig.{field_ten} IS NULL THEN '
+    '  UPDATE SET orig.{field_ten} = \'{value}\' '
+    'WHEN MATCHED AND orig.{field_eleven} IS NULL THEN '
+    '  UPDATE SET orig.{field_eleven} = \'{value}\' '
 )
 
 # Table names
