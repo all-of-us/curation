@@ -66,6 +66,8 @@ echo "Adding AoU_General to vocabulary in ${IN_DIR}..."
 cp ${IN_DIR}/* ${TEMP_DIR}
 python ${BASE_DIR}/vocabulary.py add_aou_general --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
 
+rm -rf ${TEMP_DIR}
+
 # Upload to bucket
 if [[ -z "${GCS_PATH}" ]]
 then
