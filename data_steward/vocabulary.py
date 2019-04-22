@@ -2,6 +2,7 @@ import os
 import csv
 import re
 import sys
+import warnings
 
 from resources import CONCEPT, VOCABULARY, AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
 
@@ -109,8 +110,10 @@ def append_concepts(in_path, out_path):
         with open(in_path, 'rb') as in_fp:
             for row in in_fp:
                 if AOU_GEN in row:
-                    raise RuntimeError(ERROR_APPENDING.format(in_path=in_path))
-                out_fp.write(row)
+                    # skip it so it is appended below
+                    warnings.warn(ERROR_APPENDING.format(in_path=in_path))
+                else:
+                    out_fp.write(row)
 
         # append new rows
         with open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as aou_gen_fp:
@@ -126,8 +129,10 @@ def append_vocabulary(in_path, out_path):
         with open(in_path, 'rb') as in_fp:
             for row in in_fp:
                 if AOU_GEN in row:
-                    raise RuntimeError(ERROR_APPENDING.format(in_path=in_path))
-                out_fp.write(row)
+                    # skip it so it is appended below
+                    warnings.warn(ERROR_APPENDING.format(in_path=in_path))
+                else:
+                    out_fp.write(row)
         # append new row
         out_fp.write(new_row)
 
