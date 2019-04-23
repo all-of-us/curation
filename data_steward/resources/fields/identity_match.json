@@ -36,39 +36,45 @@
         "description": "Identifies whether this field's EHR data matches the PPI data."
     },
     {
-        "type": "string", 
-        "name": "address_1", 
-        "mode": "nullable", 
+        "type": "string",
+        "name": "address_1",
+        "mode": "nullable",
         "description": "Identifies whether this field's EHR data matches the PPI data."
-    }, 
+    },
     {
-        "type": "string", 
-        "name": "address_2", 
-        "mode": "nullable", 
+        "type": "string",
+        "name": "address_2",
+        "mode": "nullable",
         "description": "Identifies whether this field's EHR data matches the PPI data."
-    }, 
+    },
     {
-        "type": "string", 
-        "name": "city", 
-        "mode": "nullable", 
+        "type": "string",
+        "name": "city",
+        "mode": "nullable",
         "description": "Identifies whether this field's EHR data matches the PPI data."
-    }, 
+    },
     {
-        "type": "string", 
-        "name": "state", 
-        "mode": "nullable", 
+        "type": "string",
+        "name": "state",
+        "mode": "nullable",
         "description": "Identifies whether this field's EHR data matches the PPI data."
-    }, 
+    },
     {
-        "type": "string", 
-        "name": "zip", 
-        "mode": "nullable", 
+        "type": "string",
+        "name": "zip",
+        "mode": "nullable",
         "description": "Identifies whether this field's EHR data matches the PPI data."
-    }, 
+    },
     {
-        "type": "string", 
-        "name": "birth_date", 
-        "mode": "nullable", 
+        "type": "string",
+        "name": "birth_date",
+        "mode": "nullable",
         "description": "Identifies whether this field's EHR data matches the PPI data."
-    } 
+    },
+    {
+        "type": "string",
+        "name": "algorithm",
+        "mode": "nullable",
+        "description": "Identifies whether this records fields were validated with an algorithm."
+    }
 ]
