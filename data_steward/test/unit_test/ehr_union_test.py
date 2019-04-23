@@ -120,15 +120,19 @@ class EhrUnionTest(unittest.TestCase):
         input_tables_after = set(self._dataset_tables(self.input_dataset_id))
         self.assertSetEqual(input_tables_before, input_tables_after)
 
-        # fact_relation_query test
+        # fact_relationship from pitt
         hpo_unique_identifiers = ehr_union.get_hpo_unique_identifiers(self.hpo_ids)
-        q = '''SELECT fact_id_1, fact_id_2 FROM `{input_dataset}.{hpo_id}_fact_relationship`
+        pitt_offset = hpo_unique_identifiers[PITT_HPO_ID]
+        q = '''SELECT fact_id_1, fact_id_2 
+               FROM `{input_dataset}.{hpo_id}_fact_relationship`
                where domain_concept_id_1 = 21 and domain_concept_id_2 = 21'''.format(
             input_dataset=self.input_dataset_id,
             hpo_id=PITT_HPO_ID)
         response = bq_utils.query(q)
         result = bq_utils.response2rows(response)
-        pre_union_fact_id_1, pre_union_fact_id_2 = result[0]["fact_id_1"], result[0]["fact_id_2"]
+
+        expected_fact_id_1 = result[0]["fact_id_1"] + pitt_offset
+        expected_fact_id_2 = result[0]["fact_id_2"] + pitt_offset
 
         q = '''SELECT fr.fact_id_1, fr.fact_id_2 FROM `{dataset_id}.unioned_ehr_fact_relationship` fr
             join `{dataset_id}._mapping_measurement` mm on fr.fact_id_1 = mm.measurement_id
@@ -136,9 +140,9 @@ class EhrUnionTest(unittest.TestCase):
                                                      hpo_id=PITT_HPO_ID)
         response = bq_utils.query(q)
         result = bq_utils.response2rows(response)
-        fact_id_1, fact_id_2 = result[0]["fact_id_1"], result[0]["fact_id_2"]
-        self.assertEqual((pre_union_fact_id_1 + hpo_unique_identifiers[PITT_HPO_ID]), fact_id_1)
-        self.assertEqual((pre_union_fact_id_2 + hpo_unique_identifiers[PITT_HPO_ID]), fact_id_2)
+        actual_fact_id_1, actual_fact_id_2 = result[0]["fact_id_1"], result[0]["fact_id_2"]
+        self.assertEqual(expected_fact_id_1, actual_fact_id_1)
+        self.assertEqual(expected_fact_id_2, actual_fact_id_2)
 
         # mapping tables
         tables_to_map = ehr_union.tables_to_map()

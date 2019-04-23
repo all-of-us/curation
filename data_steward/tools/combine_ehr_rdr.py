@@ -64,14 +64,6 @@ EHR_TABLES_TO_COPY = ['death']
 DOMAIN_TABLES = ['visit_occurrence', 'condition_occurrence', 'drug_exposure', 'measurement', 'procedure_occurrence',
                  'observation', 'device_exposure']
 TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES
-MEASUREMENT_DOMAIN_CONCEPT_ID = 21
-OBSERVATION_DOMAIN_CONCEPT_ID = 27
-OBSERVATION_TO_MEASUREMENT_CONCEPT_ID = 581410
-MEASUREMENT_TO_OBSERVATION_CONCEPT_ID = 581411
-PARENT_TO_CHILD_MEASUREMENT_CONCEPT_ID = 581436
-CHILD_TO_PARENT_MEASUREMENT_CONCEPT_ID = 581437
-DIASTOLIC_TO_SYSTOLIC_CONCEPT_ID = 46233682
-SYSTOLIC_TO_DIASTOLIC_CONCEPT_ID = 46233683
 
 
 def query(q, dst_table_id, write_disposition='WRITE_APPEND'):
@@ -389,32 +381,34 @@ def fact_relationship_query():
     SELECT
       fr.domain_concept_id_1 AS domain_concept_id_1,
       CASE
-          WHEN domain_concept_id_1 = 21
+          WHEN domain_concept_id_1 = {measurement_domain_concept_id}
             THEN m1.measurement_id
-          WHEN domain_concept_id_1 = 27
+          WHEN domain_concept_id_1 = {observation_domain_concept_id}
             THEN o1.observation_id
       END AS fact_id_1,
       fr.domain_concept_id_2,
       CASE
-          WHEN domain_concept_id_2 = 21
+          WHEN domain_concept_id_2 = {measurement_domain_concept_id}
             THEN m2.measurement_id
-          WHEN domain_concept_id_2 = 27
+          WHEN domain_concept_id_2 = {observation_domain_concept_id}
             THEN o2.observation_id
       END AS fact_id_2,
       fr.relationship_concept_id AS relationship_concept_id
     FROM {rdr_dataset_id}.fact_relationship fr
       LEFT JOIN {combined_dataset_id}.{mapping_measurement} m1
-        ON m1.src_measurement_id = fr.fact_id_1 AND fr.domain_concept_id_1=21
+        ON m1.src_measurement_id = fr.fact_id_1 AND fr.domain_concept_id_1={measurement_domain_concept_id}
       LEFT JOIN {combined_dataset_id}.{mapping_observation} o1
-        ON o1.src_observation_id = fr.fact_id_1 AND fr.domain_concept_id_1=27
+        ON o1.src_observation_id = fr.fact_id_1 AND fr.domain_concept_id_1={observation_domain_concept_id}
       LEFT JOIN {combined_dataset_id}.{mapping_measurement} m2
-        ON m2.src_measurement_id = fr.fact_id_2 AND fr.domain_concept_id_2=21
+        ON m2.src_measurement_id = fr.fact_id_2 AND fr.domain_concept_id_2={measurement_domain_concept_id}
       LEFT JOIN {combined_dataset_id}.{mapping_observation} o2
-        ON o2.src_observation_id = fr.fact_id_2 AND fr.domain_concept_id_2=27
+        ON o2.src_observation_id = fr.fact_id_2 AND fr.domain_concept_id_2={observation_domain_concept_id}
     '''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
                combined_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
                mapping_measurement=mapping_table_for('measurement'),
-               mapping_observation=mapping_table_for('observation'))
+               mapping_observation=mapping_table_for('observation'),
+               measurement_domain_concept_id=common.MEASUREMENT_DOMAIN_CONCEPT_ID,
+               observation_domain_concept_id=common.OBSERVATION_DOMAIN_CONCEPT_ID)
 
 
 def load_fact_relationship():

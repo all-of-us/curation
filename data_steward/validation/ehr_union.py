@@ -74,7 +74,6 @@ import argparse
 import logging
 from google.appengine.api.app_identity import app_identity
 
-import os
 import bq_utils
 import resources
 import common
@@ -255,26 +254,26 @@ def query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND'):
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
 
-def fact_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
+def fact_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id):
     """
     Returns query used to retrieve all records in a submitted table
 
-    :param table_name: domain table name(fact_relationship)
     :param hpo_id: identifies the HPO
     :param input_dataset_id: identifies dataset containing HPO submission
     :param output_dataset_id:
     :return:
     """
+    table_id = bq_utils.get_table_id(hpo_id, FACT_RELATIONSHIP)
     fact_query = '''SELECT F.domain_concept_id_1,
         CASE
-            WHEN F.domain_concept_id_1= 21 THEN M1.measurement_id
-            WHEN F.domain_concept_id_1= 56 THEN fact_id_1
+            WHEN F.domain_concept_id_1= {measurement_domain_concept_id} THEN M1.measurement_id
+            WHEN F.domain_concept_id_1= {person_domain_concept_id} THEN fact_id_1
             ELSE 0
         END AS fact_id_1,
         F.domain_concept_id_2,
         CASE
-            WHEN F.domain_concept_id_2= 21 THEN M2.measurement_id
-            WHEN F.domain_concept_id_2= 56 THEN fact_id_2
+            WHEN F.domain_concept_id_2= {measurement_domain_concept_id} THEN M2.measurement_id
+            WHEN F.domain_concept_id_2= {person_domain_concept_id} THEN fact_id_2
             ELSE 0
         END AS fact_id_2,
         relationship_concept_id
@@ -284,15 +283,18 @@ def fact_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             `{dataset_id}._mapping_measurement` AS M1
         ON
             M1.src_measurement_id = F.fact_id_1
-            AND (F.domain_concept_id_1 = 21) AND (M1.src_hpo_id = '{hpo_id}')
+            AND (F.domain_concept_id_1 = {measurement_domain_concept_id}) AND (M1.src_hpo_id = '{hpo_id}')
         LEFT JOIN
             `{dataset_id}._mapping_measurement` AS M2
         ON
             M2.src_measurement_id = F.fact_id_2
-            AND (F.domain_concept_id_2 = 21) AND (M2.src_hpo_id = '{hpo_id}')'''.format(table_id=table_name,
-                                                                                        input_dataset=input_dataset_id,
-                                                                                        hpo_id=hpo_id,
-                                                                                        dataset_id=output_dataset_id)
+            AND (F.domain_concept_id_2 = {measurement_domain_concept_id}) AND (M2.src_hpo_id = '{hpo_id}')'''.format(
+        table_id=table_id,
+        input_dataset=input_dataset_id,
+        hpo_id=hpo_id,
+        dataset_id=output_dataset_id,
+        measurement_domain_concept_id=common.MEASUREMENT_DOMAIN_CONCEPT_ID,
+        person_domain_concept_id=common.PERSON_DOMAIN_CONCEPT_ID)
     return fact_query
 
 
@@ -390,8 +392,8 @@ def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
     for hpo_id in hpo_ids:
         table_id = bq_utils.get_table_id(hpo_id, table_name)
         if table_id in all_table_ids:
-            if '{fact}'.format(fact=FACT_RELATIONSHIP) in table_id:
-                subquery = fact_hpo_subquery(table_id, hpo_id, input_dataset_id, output_dataset_id)
+            if table_name == FACT_RELATIONSHIP:
+                subquery = fact_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id)
                 result.append(subquery)
             else:
                 subquery = table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id)
