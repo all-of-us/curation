@@ -4,6 +4,7 @@ from vocabulary import *
 from vocabulary import _transform_csv
 import test_util
 import os
+import mock
 
 
 class VocabularyTest(unittest.TestCase):
@@ -64,11 +65,11 @@ class VocabularyTest(unittest.TestCase):
             # end of file
             self.assertEqual('', out_fp.readline())
 
-        # should fail when concepts already in input
+        # should warn when concepts already in input
         out_path_2 = os.tempnam()
-        with self.assertRaises(RuntimeError) as context:
+        with mock.patch('warnings.warn') as warn_call:
             append_vocabulary(out_path, out_path_2)
-        self.assertEqual(ERROR_APPENDING.format(in_path=out_path), context.exception.message)
+            warn_call.assert_called()
 
         os.remove(out_path)
         os.remove(out_path_2)
@@ -86,11 +87,11 @@ class VocabularyTest(unittest.TestCase):
                 actual_lines = out_fp.readlines()
                 self.assertSequenceEqual(actual_lines, expected_lines)
 
+        # should warn when concepts already in input
         out_path_2 = os.tempnam()
-        # should fail when concepts already in input
-        with self.assertRaises(RuntimeError) as context:
+        with mock.patch('warnings.warn') as warn_call:
             append_concepts(out_path, out_path_2)
-        self.assertEqual(ERROR_APPENDING.format(in_path=out_path), context.exception.message)
+            warn_call.assert_called()
 
         os.remove(out_path)
         os.remove(out_path_2)
