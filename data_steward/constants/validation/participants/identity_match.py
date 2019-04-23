@@ -98,6 +98,9 @@ ADDRESS_ABBREVIATIONS = {
 
 ################################################################################
 #  Participant Matching Validation Queries
+# Select all results from table
+VALIDATION_RESULTS_VALUES = 'SELECT * FROM `{project}.{dataset}.{table}`'
+
 # Select observation table attributes to validate
 PPI_OBSERVATION_VALUES = (
     'SELECT person_id, observation_source_concept_id, value_as_string '
@@ -151,7 +154,7 @@ EHR_BIRTH_DATETIME_VALUES = (
 
 # Insert match values for the field into the site table
 INSERT_MATCH_VALUES = (
-    'INSERT `{project}.{dataset}.{table}` ({id_field}, {field}) '
+    'INSERT `{project}.{dataset}.{table}` ({id_field}, {field}, {algorithm_field}) '
     'VALUES {values}'
 )
 
@@ -305,6 +308,7 @@ ADDRESS_ONE_FIELD = 'address_1'
 ADDRESS_TWO_FIELD = 'address_2'
 LOCATION_ID_FIELD = 'location_id'
 BIRTH_DATE_FIELD = 'birth_date'
+ALGORITHM_FIELD = 'algorithm'
 
 VALIDATION_FIELDS = [
     FIRST_NAME_FIELD, MIDDLE_NAME_FIELD, LAST_NAME_FIELD,
@@ -316,3 +320,4 @@ VALIDATION_FIELDS = [
 # HPO dictionary keys
 HPO_ID = 'hpo_id'
 
+REPORT_TITLE = 'id-validation.csv'
