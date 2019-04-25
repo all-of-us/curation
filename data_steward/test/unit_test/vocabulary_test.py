@@ -29,7 +29,7 @@ class VocabularyTest(unittest.TestCase):
         row1 = ['1', '2017-05-17', '2099-12-31', '']
         row2 = ['2', '2019-01-01', '2099-12-31', '']
         rows = [header, row1, row2]
-        lines = map(lambda r: DELIMITER.join(r), rows)
+        lines = [DELIMITER.join(row) for row in rows]
 
         # after transform should output valid csv with date format yyyy-mm-dd
         expected_text = LINE_TERMINATOR.join(lines) + LINE_TERMINATOR
