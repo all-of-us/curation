@@ -1,6 +1,8 @@
 import os
 import unittest
 from google.appengine.ext import testbed
+
+import common
 from tools.top_heel_errors import top_heel_errors, RESULT_LIMIT, FIELD_ANALYSIS_ID, FIELD_RECORD_COUNT, \
     FIELD_DATASET_NAME, FIELD_ACHILLES_HEEL_WARNING
 
@@ -70,10 +72,10 @@ class TopHeelErrorsTest(unittest.TestCase):
         :param hpo_id: if specified, prefix to use on csv test file and bq table, otherwise no prefix is used
         :return: contents of the file as list of objects
         """
-        schema_path = os.path.join(resources.fields_path, resources.ACHILLES_HEEL_RESULTS + '.json')
-        table_id = resources.ACHILLES_HEEL_RESULTS
+        schema_path = os.path.join(resources.fields_path, common.ACHILLES_HEEL_RESULTS + '.json')
+        table_id = common.ACHILLES_HEEL_RESULTS
         if hpo_id is not None:
-            table_id = bq_utils.get_table_id(hpo_id, resources.ACHILLES_HEEL_RESULTS)
+            table_id = bq_utils.get_table_id(hpo_id, common.ACHILLES_HEEL_RESULTS)
         test_file_name = table_id + '.csv'
         test_file_path = os.path.join(test_util.TEST_DATA_PATH, test_file_name)
         test_util.write_cloud_file(self.bucket, test_file_path)

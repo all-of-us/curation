@@ -4,7 +4,8 @@ import re
 import sys
 import warnings
 
-from resources import CONCEPT, VOCABULARY, AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
+from resources import AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
+from common import CONCEPT, VOCABULARY
 
 csv.field_size_limit(sys.maxsize)
 

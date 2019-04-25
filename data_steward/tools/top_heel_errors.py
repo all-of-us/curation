@@ -9,6 +9,7 @@ import os
 from google.appengine.api.app_identity import app_identity
 
 import bq_utils
+import common
 import resources
 
 HPO_ID_LIST = [item['hpo_id'] for item in resources.hpo_csv()]
@@ -83,7 +84,7 @@ def save_json(l, file_name):
 def get_hpo_subqueries(app_id, dataset_id, all_table_ids):
     result = []
     for hpo_id in HPO_ID_LIST:
-        table_id = bq_utils.get_table_id(hpo_id, resources.ACHILLES_HEEL_RESULTS)
+        table_id = bq_utils.get_table_id(hpo_id, common.ACHILLES_HEEL_RESULTS)
         if table_id in all_table_ids:
             subquery = QUERY_FORMAT(dataset_name=hpo_id,
                                     app_id=app_id,
@@ -117,7 +118,7 @@ def construct_query(app_id, dataset_id, all_hpo=False):
         query = UNION_ALL.join(enclosed)
     else:
         # Fetch from achilles_heel_results table
-        table_id = resources.ACHILLES_HEEL_RESULTS
+        table_id = common.ACHILLES_HEEL_RESULTS
         if table_id in all_table_ids:
             query = QUERY_FORMAT(dataset_name=dataset_id,
                                  app_id=app_id,

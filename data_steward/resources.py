@@ -5,28 +5,9 @@ import csv
 import cachetools
 import json
 
+from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES
+
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-
-CONCEPT = 'concept'
-CONCEPT_ANCESTOR = 'concept_ancestor'
-CONCEPT_CLASS = 'concept_class'
-CONCEPT_RELATIONSHIP = 'concept_relationship'
-CONCEPT_SYNONYM = 'concept_synonym'
-DOMAIN = 'domain'
-DRUG_STRENGTH = 'drug_strength'
-RELATIONSHIP = 'relationship'
-VOCABULARY = 'vocabulary'
-VOCABULARY_TABLES = [CONCEPT, CONCEPT_ANCESTOR, CONCEPT_CLASS, CONCEPT_RELATIONSHIP, CONCEPT_SYNONYM, DOMAIN,
-                     DRUG_STRENGTH, RELATIONSHIP, VOCABULARY]
-
-ACHILLES_ANALYSIS = 'achilles_analysis'
-ACHILLES_RESULTS = 'achilles_results'
-ACHILLES_RESULTS_DIST = 'achilles_results_dist'
-ACHILLES_TABLES = [ACHILLES_ANALYSIS, ACHILLES_RESULTS, ACHILLES_RESULTS_DIST]
-
-ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
-ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
-ACHILLES_HEEL_TABLES = [ACHILLES_HEEL_RESULTS, ACHILLES_RESULTS_DERIVED]
 
 # spec/_data/*
 data_path = os.path.join(base_path, 'spec', '_data')
