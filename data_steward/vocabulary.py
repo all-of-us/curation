@@ -1,30 +1,26 @@
 import csv
 import os
-import re
 import sys
 import warnings
 
-from resources import AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
-from common import CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, RAW_DATE_REGEX, BQ_DATE_REGEX, TRANSFORM_FILES, \
+from dateutil import parser
+from common import CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, TRANSFORM_FILES, \
     APPEND_VOCABULARY, APPEND_CONCEPTS, ADD_AOU_GENERAL, ERRORS, AOU_GEN, AOU_GEN_VOCABULARY_CONCEPT_ID, \
     AOU_GEN_VOCABULARY_REFERENCE, ERROR_APPENDING
+from resources import AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
 
 csv.field_size_limit(sys.maxsize)
 
 
-def format_date_str(s):
+def format_date_str(date_str):
     """
     Format a date string to yyyymmdd if it is not already
-    :param s: the date string
+    :param date_str: the date string
     :return: the formatted date string
     """
-    if re.match(BQ_DATE_REGEX, s):
-        return s
-    elif re.match(RAW_DATE_REGEX, s):
-        parts = s[0:4], s[4:6], s[6:8]
-        return '-'.join(parts)
-    else:
-        raise ValueError('Cannot parse value {v} as date'.format(v=s))
+    date_obj = parser.parse(date_str)
+    formatted_date_str = date_obj.strftime('%Y-%m-%d')
+    return formatted_date_str
 
 
 def _transform_csv(in_fp, out_fp, err_fp=None):
