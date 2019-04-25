@@ -6,8 +6,8 @@ import warnings
 
 from dateutil import parser
 from common import CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, TRANSFORM_FILES, \
-    APPEND_VOCABULARY, APPEND_CONCEPTS, ADD_AOU_GENERAL, ERRORS, AOU_GEN, AOU_GEN_VOCABULARY_CONCEPT_ID, \
-    AOU_GEN_VOCABULARY_REFERENCE, ERROR_APPENDING
+    APPEND_VOCABULARY, APPEND_CONCEPTS, ADD_AOU_GENERAL, ERRORS, AOU_GEN_ID, AOU_GEN_VOCABULARY_CONCEPT_ID, \
+    AOU_GEN_VOCABULARY_REFERENCE, ERROR_APPENDING, AOU_GEN_NAME
 from resources import AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
 
 csv.field_size_limit(sys.maxsize)
@@ -86,7 +86,7 @@ def get_aou_general_version():
 def get_aou_general_vocabulary_row():
     aou_gen_version = get_aou_general_version()
     # vocabulary_id vocabulary_name vocabulary_reference vocabulary_version vocabulary_concept_id
-    return DELIMITER.join([AOU_GEN, AOU_GEN, AOU_GEN_VOCABULARY_REFERENCE, aou_gen_version,
+    return DELIMITER.join([AOU_GEN_ID, AOU_GEN_NAME, AOU_GEN_VOCABULARY_REFERENCE, aou_gen_version,
                            AOU_GEN_VOCABULARY_CONCEPT_ID])
 
 
@@ -95,7 +95,7 @@ def append_concepts(in_path, out_path):
         # copy original rows line by line for memory efficiency
         with open(in_path, 'rb') as in_fp:
             for row in in_fp:
-                if AOU_GEN in row:
+                if AOU_GEN_ID in row:
                     # skip it so it is appended below
                     warnings.warn(ERROR_APPENDING.format(in_path=in_path))
                 else:
@@ -114,7 +114,7 @@ def append_vocabulary(in_path, out_path):
         # copy original rows line by line for memory efficiency
         with open(in_path, 'rb') as in_fp:
             for row in in_fp:
-                if AOU_GEN in row:
+                if AOU_GEN_ID in row:
                     # skip it so it is appended below
                     warnings.warn(ERROR_APPENDING.format(in_path=in_path))
                 else:
