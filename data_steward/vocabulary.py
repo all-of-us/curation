@@ -107,9 +107,9 @@ def append_concepts(in_path, out_path):
             # Sending the first five lines of the file because tab delimiters
             # are causing trouble with the Sniffer and has_header method
             five_lines = ''
-            for index in range(0, 5):
+            for _ in range(0, 5):
                 five_lines += aou_gen_fp.readline()
-                
+
             has_header = csv.Sniffer().has_header(five_lines)
             aou_gen_fp.seek(0)
             # skip header if present
