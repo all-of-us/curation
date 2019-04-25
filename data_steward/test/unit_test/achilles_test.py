@@ -1,15 +1,15 @@
+import os
 import unittest
 
-import os
 from google.appengine.ext import testbed
 
 import bq_utils
-import resources
-import validation.sql_wrangle
-from validation import achilles
-from test_util import FAKE_HPO_ID
 import gcs_utils
+import resources
 import test_util
+import validation.sql_wrangle
+from test_util import FAKE_HPO_ID
+from validation import achilles
 
 # This may change if we strip out unused analyses
 ACHILLES_LOOKUP_COUNT = 215

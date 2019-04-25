@@ -1,15 +1,15 @@
+import os
 import unittest
 
-import os
 from google.appengine.ext import testbed
 
 import bq_utils
-import resources
-import validation.sql_wrangle
-from validation import achilles_heel
-from test_util import FAKE_HPO_ID
 import gcs_utils
+import resources
 import test_util
+import validation.sql_wrangle
+from test_util import FAKE_HPO_ID
+from validation import achilles_heel
 
 ACHILLES_HEEL_RESULTS_COUNT = 19
 ACHILLES_HEEL_RESULTS_ERROR_COUNT = 2

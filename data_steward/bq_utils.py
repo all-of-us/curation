@@ -1,17 +1,16 @@
-import os
-from googleapiclient.discovery import build
-from google.appengine.api import app_identity
 import json
+import logging
+import os
+import socket
+import time
 
+from google.appengine.api import app_identity
+from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-import resources
 import common
 import gcs_utils
-
-import time
-import logging
-import socket
+import resources
 
 SOCKET_TIMEOUT = 600000
 BQ_DEFAULT_RETRY_COUNT = 10

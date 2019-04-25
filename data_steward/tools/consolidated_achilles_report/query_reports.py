@@ -1,9 +1,10 @@
+import json
+import os
+
 from google.appengine.api.app_identity import app_identity
 
 import bq_utils
 import gcs_utils
-import os
-import json
 
 LATEST_REPORTS_JSON = 'latest_reports.json'
 LATEST_REPORTS_QUERY = """

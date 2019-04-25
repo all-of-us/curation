@@ -1,6 +1,6 @@
-from google.appengine.ext import vendor
-
 import socket
+
+from google.appengine.ext import vendor
 
 DEFAULT_FETCH_DEADLINE = 300
 # Add any libraries installed in the "lib" folder.

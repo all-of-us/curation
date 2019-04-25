@@ -1,19 +1,19 @@
-import unittest
+import logging
 import os
+import sys
+import unittest
+
+from google.appengine.ext import testbed
+
+import bq_utils
 import common
 import gcs_utils
-import bq_utils
 import resources
 import test_util
-import logging
-import sys
-
-from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
-from tools.combine_ehr_rdr import move_ehr_person_to_observation, mapping_query
 from tools.combine_ehr_rdr import DOMAIN_TABLES, EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY
-from google.appengine.ext import testbed
+from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
 from tools.combine_ehr_rdr import logger
-from validation.export import query_result_to_payload
+from tools.combine_ehr_rdr import move_ehr_person_to_observation, mapping_query
 
 
 class CombineEhrRdrTest(unittest.TestCase):

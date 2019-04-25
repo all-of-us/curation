@@ -1,20 +1,20 @@
 """
 Unit test components of data_steward.validation.main
 """
+import StringIO
 import datetime
 import json
 import os
-import StringIO
 import unittest
 
-from google.appengine.ext import testbed
 import mock
+from google.appengine.ext import testbed
 
 import bq_utils
 import common
-import test.unit_test.test_util as test_util
 import gcs_utils
 import resources
+import test.unit_test.test_util as test_util
 from validation import main
 
 

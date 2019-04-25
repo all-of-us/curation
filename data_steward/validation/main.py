@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import StringIO
+import datetime
 import json
 import logging
 import os
-import datetime
 
 from flask import Flask
 from googleapiclient.errors import HttpError
@@ -11,13 +11,13 @@ from googleapiclient.errors import HttpError
 import api_util
 import bq_utils
 import common
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 import gcs_utils
 import resources
 import validation.achilles as achilles
 import validation.achilles_heel as achilles_heel
 import validation.ehr_union as ehr_union
 import validation.export as export
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7

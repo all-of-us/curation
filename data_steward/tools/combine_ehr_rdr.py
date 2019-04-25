@@ -47,8 +47,8 @@ TODO
 import logging
 
 import bq_utils
-import resources
 import common
+import resources
 
 logger = logging.getLogger(__name__)
 

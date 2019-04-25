@@ -3,10 +3,10 @@ OMOP CDM utility functions
 """
 
 import argparse
-import common
-import bq_utils
 import logging
 
+import bq_utils
+import common
 import resources
 
 logger = logging.getLogger(__name__)

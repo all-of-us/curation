@@ -72,11 +72,12 @@ TODO
 """
 import argparse
 import logging
+
 from google.appengine.api.app_identity import app_identity
 
 import bq_utils
-import resources
 import common
+import resources
 
 VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
