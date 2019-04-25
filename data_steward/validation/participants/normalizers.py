@@ -14,11 +14,41 @@ import constants.validation.participants.identity_match as consts
 LOGGER = logging.getLogger(__name__)
 
 
-def clean_street(street):
+def normalize_city_name(city):
+    """
+    Helper function to return names with lowercase alphabetic characters only.
+
+    :param city:  string to normalize.
+    :return:  a string with everything that is not an alphabetic character
+        removed and all characters are lower cased.
+    """
+    if city is None:
+        return ''
+    elif not isinstance(city, str):
+        city = str(city)
+
+    normalized_city = ''
+    city = city.lower()
+    for char in city:
+        if char.isalnum():
+            normalized_city += char
+        else:
+            normalized_city += ' '
+
+    for part in normalized_city.split():
+        expansion = consts.CITY_ABBREVIATIONS.get(part)
+        if expansion:
+            normalized_city = normalized_city.replace(part, expansion)
+
+    normalized_city = ' '.join(normalized_city.split())
+    return normalized_city
+
+
+def normalize_street(street):
     """
     Helper function to return normalized street addresses.
 
-    :param street:  string to clean.
+    :param street:  string to normalize.
     :return:  a normalized alphanumeric string with all alphabetic characters
         lower cased, leading and trailing white space stripped, abbreviations
         expanded, and punctuation removed or an empty string.
@@ -28,31 +58,31 @@ def clean_street(street):
     elif not isinstance(street, str):
         street = str(street)
 
-    cleaned_street = ''
+    normalized_street = ''
     street = street.lower()
-    street = street.replace('#', ' # ')  # ensure hash is found by itself
     # replace all punctuation with a space, excpet for # which is sometimes used
     # for number
     for char in street:
-        if char.isalnum() or char == '#':
-            cleaned_street += char
+        if char.isalnum():
+            normalized_street += char
         else:
-            cleaned_street += ' '
+            normalized_street += ' '
 
     # for each part of the address, see if it exists in the list of known
     # abbreviations.  if so, expand the abbreviation
     # TODO ensure 50A and 50 A are recognized as the same
-    for part in cleaned_street.split():
+    # TODO ensure 7 and 7th are identified as the same
+    for part in normalized_street.split():
         expansion = consts.ADDRESS_ABBREVIATIONS.get(part)
         if expansion:
-            cleaned_street = cleaned_street.replace(part, expansion)
+            normalized_street = normalized_street.replace(part, expansion)
 
     # removes possible multiple spaces.
-    cleaned_street = ' '.join(cleaned_street.split())
-    return cleaned_street
+    normalized_street = ' '.join(normalized_street.split())
+    return normalized_street
 
 
-def clean_state(state):
+def normalize_state(state):
     """
     Helper function to return state abbreviations with lowercase characters and no whitespace.
 
@@ -60,7 +90,7 @@ def clean_state(state):
     or military state code and returns the code lower cased.  If the code is
     not a valid abbreviation, an empty string is returned.
 
-    :param state:  string to clean.
+    :param state:  string to normalize.
     :return:  a two character string with all alphabetic characters lower cased
         and all whitespace removed or empty string.
     """
@@ -69,16 +99,16 @@ def clean_state(state):
     elif not isinstance(state, str):
         state = str(state)
 
-    cleaned_state = state.strip()
-    cleaned_state = cleaned_state.lower()
-    return cleaned_state if cleaned_state in consts.STATE_ABBREVIATIONS else ''
+    normalized_state = state.strip()
+    normalized_state = normalized_state.lower()
+    return normalized_state if normalized_state in consts.STATE_ABBREVIATIONS else ''
 
 
-def clean_zip(code):
+def normalize_zip(code):
     """
     Helper function to return 5 character zip codes only.
 
-    :param code:  string to clean and format as a zip code
+    :param code:  string to normalize and format as a zip code
     :return: a five character digit string to compare as a zip code
     """
     if code is None:
@@ -86,7 +116,7 @@ def clean_zip(code):
     elif not isinstance(code, str):
         code = str(code)
 
-    cleaned_code = ''
+    normalized_code = ''
     code = code.strip()
 
     # ensure hyphenated part is ignored
@@ -98,16 +128,16 @@ def clean_zip(code):
 
     for char in code:
         if char.isdigit():
-            cleaned_code += char
+            normalized_code += char
 
-    return cleaned_code
+    return normalized_code
 
 
-def clean_phone(number):
+def normalize_phone(number):
     """
     Helper function to return only character digits.
 
-    :param number:  string to clean.
+    :param number:  string to normalize.
     :return:  a string with everything that is not a digit removed.
     """
     if number is None:
@@ -115,18 +145,18 @@ def clean_phone(number):
     elif not isinstance(number, str):
         number = str(number)
 
-    cleaned_number = ''
+    normalized_number = ''
     for char in number:
         if char.isdigit():
-            cleaned_number += char
-    return cleaned_number
+            normalized_number += char
+    return normalized_number
 
 
-def clean_email(email):
+def normalize_email(email):
     """
     Helper function to return emails with lowercase characters and no whitespace.
 
-    :param email:  string to clean.
+    :param email:  string to normalize.
     :return:  a string with all alphabetic characters lower cased and all
         whitespace removed.
     """
@@ -135,15 +165,15 @@ def clean_email(email):
     elif not isinstance(email, str):
         email = str(email)
 
-    cleaned_email = email.strip()
-    return cleaned_email.lower()
+    normalized_email = email.strip()
+    return normalized_email.lower()
 
 
-def clean_name(name):
+def normalize_name(name):
     """
     Helper function to return names with lowercase alphabetic characters only.
 
-    :param name:  string to clean.
+    :param name:  string to normalize.
     :return:  a string with everything that is not an alphabetic character
         removed and all characters are lower cased.
     """
@@ -152,8 +182,8 @@ def clean_name(name):
     elif not isinstance(name, str):
         name = str(name)
 
-    cleaned_name = ''
+    normalized_name = ''
     for char in name:
         if char.isalpha():
-            cleaned_name += char
-    return cleaned_name.lower()
+            normalized_name += char
+    return normalized_name.lower()

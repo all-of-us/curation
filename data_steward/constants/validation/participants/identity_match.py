@@ -53,10 +53,14 @@ STATE_ABBREVIATIONS = [
 ]
 
 ADDRESS_ABBREVIATIONS = {
-    '#': 'number',
+    'aly': 'alley',
+    'anx': 'annex',
     'apt': 'apartment',
     'ave': 'avenue',
+    'bch': 'beach',
     'blvd': 'boulevard',
+    'bnd': 'bend',
+    'btm': 'bottom',
     'cir': 'circle',
     'ct': 'court',
     'co': 'county',
@@ -78,13 +82,16 @@ ADDRESS_ABBREVIATIONS = {
     'pkwy': 'parkway',
     'pl': 'place',
     'plz': 'plaza',
+    'po': 'post office',
     'rd': 'road',
     'rdg': 'ridge',
+    'rr': 'rural route',
     'rm': 'room',
     's': 'south',
     'se': 'southeast',
     'sq': 'square',
     'st': 'street',
+    'str': 'street',
     'sta': 'station',
     'ste': 'suite',
     'sw': 'southwest',
@@ -94,6 +101,11 @@ ADDRESS_ABBREVIATIONS = {
     'vly': 'valley',
     'w': 'west',
     'way': 'way',
+}
+
+CITY_ABBREVIATIONS = {
+    'st':  'saint',
+    'afb': 'air force base',
 }
 
 ################################################################################
@@ -309,6 +321,7 @@ ADDRESS_TWO_FIELD = 'address_2'
 LOCATION_ID_FIELD = 'location_id'
 BIRTH_DATE_FIELD = 'birth_date'
 ALGORITHM_FIELD = 'algorithm'
+ADDRESS_MATCH_FIELD = 'address'
 
 VALIDATION_FIELDS = [
     FIRST_NAME_FIELD, MIDDLE_NAME_FIELD, LAST_NAME_FIELD,
