@@ -103,7 +103,11 @@ def append_concepts(in_path, out_path):
 
         # append new rows
         with open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as aou_gen_fp:
-            _ = next(aou_gen_fp)  # skip header
+            has_header = csv.Sniffer().has_header(aou_gen_fp.read(1024))
+            aou_gen_fp.seek(0)
+            # skip header if present
+            if has_header:
+                next(aou_gen_fp)
             for row in aou_gen_fp:
                 out_fp.write(row)
 
