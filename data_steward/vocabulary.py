@@ -104,7 +104,13 @@ def append_concepts(in_path, out_path):
 
         # append new rows
         with open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as aou_gen_fp:
-            has_header = csv.Sniffer().has_header(aou_gen_fp.read(1024))
+            # Sending the first five lines of the file because tab delimiters
+            # are causing trouble with the Sniffer and has_header method
+            five_lines = ''
+            for index in range(0, 5):
+                five_lines += aou_gen_fp.readline()
+                
+            has_header = csv.Sniffer().has_header(five_lines)
             aou_gen_fp.seek(0)
             # skip header if present
             if has_header:
