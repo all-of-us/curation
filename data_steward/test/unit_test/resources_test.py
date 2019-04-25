@@ -1,6 +1,5 @@
 import unittest
 import resources
-import vocabulary
 
 
 class ResourcesTest(unittest.TestCase):
