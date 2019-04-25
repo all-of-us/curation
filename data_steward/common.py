@@ -1,11 +1,3 @@
-import resources
-import os
-
-CDM_TABLES = resources.cdm_schemas().keys()
-CDM_FILES = map(lambda t: t + '.csv', CDM_TABLES)
-ACHILLES_INDEX_FILES = resources.achilles_index_files()
-ALL_ACHILLES_INDEX_FILES = [name.split(resources.resource_path + os.sep)[1].strip() for name in ACHILLES_INDEX_FILES]
-DATASOURCES_JSON = os.path.join(resources.achilles_index_path, 'data/datasources.json')
 PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_mrn']
 AOU_REQUIRED = ['care_site', 'condition_occurrence', 'death', 'device_exposure', 'drug_exposure',
                 'fact_relationship', 'location', 'measurement', 'note', 'observation', 'person',
@@ -21,7 +13,6 @@ PERSON_REPORT = 'person'
 DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
 ALL_REPORT_FILES = map(lambda s: s + '.json', ALL_REPORTS)
-IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES
 
 # Vocabulary
 CONCEPT = 'concept'
@@ -68,3 +59,17 @@ EHR_ID_MULTIPLIER_START = 2
 
 PARTICIPANT_DIR = 'participant/'
 IGNORE_DIRECTORIES = [PARTICIPANT_DIR]
+DELIMITER = '\t'
+LINE_TERMINATOR = '\n'
+RAW_DATE_REGEX = r'\d{8}$'  # yyyymmdd
+BQ_DATE_REGEX = r'\d{4}-\d{2}-\d{2}$'  # yyyy-mm-dd
+TRANSFORM_FILES = 'transform_files'
+APPEND_VOCABULARY = 'append_vocabulary'
+APPEND_CONCEPTS = 'append_concepts'
+ADD_AOU_GENERAL = 'add_aou_general'
+ERRORS = 'errors'
+AOU_GEN = 'AoU_General'
+AOU_GEN_VOCABULARY_CONCEPT_ID = '2000000000'
+AOU_GEN_VOCABULARY_REFERENCE = 'https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g'
+OMOP_VOCABULARY_CONCEPT_ID = '44819096'
+ERROR_APPENDING = 'Appending to {in_path} which already contains rows for ' + AOU_GEN

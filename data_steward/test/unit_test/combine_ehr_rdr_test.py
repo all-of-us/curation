@@ -46,7 +46,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         test_util.empty_bucket(bucket)
         job_ids = []
-        for table in common.CDM_TABLES:
+        for table in resources.CDM_TABLES:
             job_ids.append(CombineEhrRdrTest._upload_file_to_bucket(bucket, dataset_id, path, table))
             if mappings and table in DOMAIN_TABLES:
                 mapping_table = '_mapping_{table}'.format(table=table)
@@ -343,12 +343,12 @@ class CombineEhrRdrTest(unittest.TestCase):
         # Sanity check
         tables_before = bq_utils.list_tables(self.combined_dataset_id)
         table_names_before = [t['tableReference']['tableId'] for t in tables_before]
-        for table in common.CDM_TABLES:
+        for table in resources.CDM_TABLES:
             self.assertNotIn(table, table_names_before)
         create_cdm_tables()
         tables_after = bq_utils.list_tables(self.combined_dataset_id)
         table_names_after = [t['tableReference']['tableId'] for t in tables_after]
-        for table in common.CDM_TABLES:
+        for table in resources.CDM_TABLES:
             self.assertIn(table, table_names_after)
 
     def _fact_relationship_loaded(self):

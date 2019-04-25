@@ -104,7 +104,7 @@ def has_primary_key(table):
     :param table: name of a CDM table
     :return: True if the CDM table contains a primary key field, False otherwise
     """
-    assert (table in common.CDM_TABLES)
+    assert (table in resources.CDM_TABLES)
     fields = resources.fields_for(table)
     id_field = table + '_id'
     return any(field for field in fields if field['type'] == 'integer' and field['name'] == id_field)
@@ -117,7 +117,7 @@ def tables_to_map():
     :return: the list of table names
     """
     result = []
-    for table in common.CDM_TABLES:
+    for table in resources.CDM_TABLES:
         if table != 'person' and has_primary_key(table):
             result.append(table)
     return result
@@ -400,7 +400,7 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
         hpo_ids = [item['hpo_id'] for item in resources.hpo_csv()]
 
     # Create empty output tables to ensure proper schema, clustering, etc.
-    for table in common.CDM_TABLES:
+    for table in resources.CDM_TABLES:
         result_table = output_table_for(table)
         logging.info('Creating {dataset_id}.{table_id}...'.format(dataset_id=output_dataset_id, table_id=result_table))
         bq_utils.create_standard_table(table, result_table, drop_existing=True, dataset_id=output_dataset_id)
@@ -411,7 +411,7 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
         mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id, project_id)
 
     # Load all tables with union of submitted tables
-    for table_name in common.CDM_TABLES:
+    for table_name in resources.CDM_TABLES:
         logging.info('Creating union of table {table}...'.format(table=table_name))
         load(table_name, hpo_ids, input_dataset_id, output_dataset_id)
 

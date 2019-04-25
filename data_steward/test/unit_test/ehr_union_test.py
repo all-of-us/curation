@@ -50,7 +50,7 @@ class EhrUnionTest(unittest.TestCase):
         # it maps table name to list of expected records ex: "unioned_ehr_visit_occurrence" -> [{}, {}, ...]
         expected_tables = dict()
         running_jobs = []
-        for cdm_table in common.CDM_TABLES:
+        for cdm_table in resources.CDM_TABLES:
             cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
             output_table = ehr_union.output_table_for(cdm_table)
             expected_tables[output_table] = []
@@ -101,7 +101,7 @@ class EhrUnionTest(unittest.TestCase):
         # output should be mapping tables and cdm tables
         output_tables_before = self._dataset_tables(self.output_dataset_id)
         mapping_tables = [ehr_union.mapping_table_for(table) for table in ehr_union.tables_to_map()]
-        output_cdm_tables = [ehr_union.output_table_for(table) for table in common.CDM_TABLES]
+        output_cdm_tables = [ehr_union.output_table_for(table) for table in resources.CDM_TABLES]
         expected_output = set(output_tables_before + mapping_tables + output_cdm_tables)
 
         # perform ehr union
@@ -128,7 +128,7 @@ class EhrUnionTest(unittest.TestCase):
             self.assertEqual(expected_num_rows, actual_num_rows, message)
 
         # check for each output table
-        for table_name in common.CDM_TABLES:
+        for table_name in resources.CDM_TABLES:
             # output table exists and row count is sum of those submitted by hpos
             result_table = ehr_union.output_table_for(table_name)
             expected_rows = self.expected_tables[result_table]

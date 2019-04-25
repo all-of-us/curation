@@ -96,7 +96,7 @@ def _create_five_persons_success_result():
     field_names = ['file_name', 'found', 'parsed', 'loaded']
 
     expected_result_items = []
-    for cdm_file in common.CDM_FILES:
+    for cdm_file in resources.CDM_FILES:
         expected_item = dict(file_name=cdm_file, found="1", parsed="1", loaded="1")
         expected_result_items.append(expected_item)
     with open(FIVE_PERSONS_SUCCESS_RESULT_CSV, 'w') as f:
@@ -267,7 +267,7 @@ def generate_rdr_files():
     :return:
     """
     d = 'rdr_dataset_2018_4_17'
-    for table in common.CDM_TABLES:
+    for table in resources.CDM_TABLES:
         q = 'SELECT * FROM fake_%s WHERE person_id IN (SELECT person_id FROM sample_person_id)' % table
         cmd = 'bq query --dataset_id={d} --format=csv "{q}" > %(table)s.csv'.format(d=d, q=q)
         os.system(cmd)

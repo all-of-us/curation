@@ -1,31 +1,15 @@
-import os
 import csv
+import os
 import re
 import sys
 import warnings
 
 from resources import AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
-from common import CONCEPT, VOCABULARY
+from common import CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, RAW_DATE_REGEX, BQ_DATE_REGEX, TRANSFORM_FILES, \
+    APPEND_VOCABULARY, APPEND_CONCEPTS, ADD_AOU_GENERAL, ERRORS, AOU_GEN, AOU_GEN_VOCABULARY_CONCEPT_ID, \
+    AOU_GEN_VOCABULARY_REFERENCE, ERROR_APPENDING
 
 csv.field_size_limit(sys.maxsize)
-
-DELIMITER = '\t'
-LINE_TERMINATOR = '\n'
-RAW_DATE_REGEX = r'\d{8}$'  # yyyymmdd
-BQ_DATE_REGEX = r'\d{4}-\d{2}-\d{2}$'  # yyyy-mm-dd
-
-TRANSFORM_FILES = 'transform_files'
-APPEND_VOCABULARY = 'append_vocabulary'
-APPEND_CONCEPTS = 'append_concepts'
-ADD_AOU_GENERAL = 'add_aou_general'
-ERRORS = 'errors'
-
-AOU_GEN = 'AoU_General'
-AOU_GEN_VOCABULARY_CONCEPT_ID = '2000000000'
-AOU_GEN_VOCABULARY_REFERENCE = 'https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g'
-OMOP_VOCABULARY_CONCEPT_ID = '44819096'
-
-ERROR_APPENDING = 'Appending to {in_path} which already contains rows for ' + AOU_GEN
 
 
 def format_date_str(s):
@@ -101,7 +85,8 @@ def get_aou_general_version():
 def get_aou_general_vocabulary_row():
     aou_gen_version = get_aou_general_version()
     # vocabulary_id vocabulary_name vocabulary_reference vocabulary_version vocabulary_concept_id
-    return DELIMITER.join([AOU_GEN, AOU_GEN, AOU_GEN_VOCABULARY_REFERENCE, aou_gen_version, AOU_GEN_VOCABULARY_CONCEPT_ID])
+    return DELIMITER.join([AOU_GEN, AOU_GEN, AOU_GEN_VOCABULARY_REFERENCE, aou_gen_version,
+                           AOU_GEN_VOCABULARY_CONCEPT_ID])
 
 
 def append_concepts(in_path, out_path):
