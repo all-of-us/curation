@@ -1,14 +1,14 @@
-import unittest
 import json
 import os
+import unittest
+
 from google.appengine.ext import testbed
 import moz_sql_parser
 import dpath
 
-import common
-import resources
-import gcs_utils
 import bq_utils
+import gcs_utils
+import resources
 import test_util
 from validation import ehr_union
 

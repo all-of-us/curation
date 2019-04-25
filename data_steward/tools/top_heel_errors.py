@@ -2,9 +2,9 @@
 Fetch the most prevalent achilles heel errors in a dataset
 """
 import csv
-from functools import partial
 import json
 import os
+from functools import partial
 
 from google.appengine.api.app_identity import app_identity
 

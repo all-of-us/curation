@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import StringIO
-from validation import main as val
 import argparse
 import ast
-import common
 
+import common
 import gcs_utils
+from validation import main as val
 
 # TODO Accommodate should new PII or CDM files be added
 PID_IN_COL1 = ["person.csv"] + common.PII_TABLES

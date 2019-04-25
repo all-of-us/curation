@@ -1,14 +1,14 @@
 import os
 import unittest
+
 from google.appengine.ext import testbed
 
+import bq_utils
 import common
+import resources
+import test_util
 from tools.top_heel_errors import top_heel_errors, RESULT_LIMIT, FIELD_ANALYSIS_ID, FIELD_RECORD_COUNT, \
     FIELD_DATASET_NAME, FIELD_ACHILLES_HEEL_WARNING
-
-import test_util
-import resources
-import bq_utils
 
 HPO_NYC = 'nyc_cu'
 HPO_PITT = 'pitt'

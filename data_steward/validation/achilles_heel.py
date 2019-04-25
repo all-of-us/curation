@@ -1,10 +1,10 @@
-import resources
-import os
-import bq_utils
-import re
-import sql_wrangle
 import logging
-import time
+import os
+import re
+
+import bq_utils
+import resources
+import sql_wrangle
 
 ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
 ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'

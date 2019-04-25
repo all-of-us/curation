@@ -1,9 +1,10 @@
+import csv
 import hashlib
 import inspect
-import os
-import csv
-import cachetools
 import json
+import os
+
+import cachetools
 
 from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML
 

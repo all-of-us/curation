@@ -5,12 +5,6 @@ flash config file and check requirements for each environment
 
 """
 import argparse
-import json
-import os
-import time
-
-import bq_utils
-from resources import fields_path
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)

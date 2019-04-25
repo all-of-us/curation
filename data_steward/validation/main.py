@@ -6,7 +6,6 @@ import logging
 import os
 
 from flask import Flask
-from google.appengine.api.app_identity import app_identity
 from googleapiclient.errors import HttpError
 
 import api_util
@@ -20,12 +19,16 @@ import validation.achilles_heel as achilles_heel
 import validation.ehr_union as ehr_union
 import validation.export as export
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from google.appengine.api.app_identity import app_identity
 
+UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
+RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
+ERROR_FILE_HEADERS = ["File Name", "Message"]
 RESULT_FAIL_CODE = '&#x2718'
 RESULT_PASS_CODE = '&#x2714'
 RESULT_FAIL_COLOR = 'red'

@@ -1,10 +1,10 @@
 """
 Unit test components of data_steward.validation.main
 """
-import StringIO
 import datetime
 import json
 import os
+import StringIO
 import unittest
 
 import mock
