@@ -1,4 +1,5 @@
 import csv
+import logging
 import os
 import sys
 import warnings
@@ -55,6 +56,10 @@ def transform_file(file_path, out_dir):
     out_file_name = os.path.join(out_dir, file_name)
     err_dir = os.path.join(out_dir, ERRORS)
     err_file_name = os.path.join(err_dir, file_name)
+    try:
+        os.makedirs(err_dir)
+    except OSError:
+        logging.debug("Error directory:\t%s\t already exists", err_dir)
     if not os.path.exists(err_dir):
         os.makedirs(err_dir)
     with open(file_path, 'rb') as in_fp, open(out_file_name, 'wb') as out_fp, open(err_file_name, 'wb') as err_fp:
