@@ -128,16 +128,16 @@ def append_vocabulary(in_path, out_path):
 
 
 def add_aou_general(in_dir, out_dir):
-    fs = os.listdir(in_dir)
+    file_names = os.listdir(in_dir)
     concept_in_path = None
     vocabulary_in_path = None
     # Case-insensitive search for concept and vocabulary files
-    for f in fs:
-        t, _ = os.path.splitext(f.lower())
-        in_path = os.path.join(in_dir, f)
-        if t == CONCEPT:
+    for file_name in file_names:
+        table_name, _ = os.path.splitext(file_name.lower())
+        in_path = os.path.join(in_dir, file_name)
+        if table_name == CONCEPT:
             concept_in_path = in_path
-        elif t == VOCABULARY:
+        elif table_name == VOCABULARY:
             vocabulary_in_path = in_path
     if concept_in_path is None:
         raise IOError('CONCEPT.csv was not found in %s' % in_dir)
