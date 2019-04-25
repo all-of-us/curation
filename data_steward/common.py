@@ -127,4 +127,4 @@ AOU_GEN_NAME = 'AoU_General'
 AOU_GEN_VOCABULARY_CONCEPT_ID = '2000000000'
 AOU_GEN_VOCABULARY_REFERENCE = 'https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g'
 OMOP_VOCABULARY_CONCEPT_ID = '44819096'
-ERROR_APPENDING = 'Appending to {in_path} which already contains rows for ' + AOU_GEN
+ERROR_APPENDING = 'Appending to {in_path} which already contains rows for ' + AOU_GEN_ID
