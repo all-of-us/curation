@@ -35,16 +35,25 @@ class VocabularyTest(unittest.TestCase):
         expected_text = LINE_TERMINATOR.join(lines) + LINE_TERMINATOR
         input_text = expected_text.replace('-', '')
         actual_text = VocabularyTest.do_transform_file(input_text)
-        self.assertEqual(expected_text, actual_text)
+        msg_fmt = 'Dates were not formatted as expected.\nExpected:\n{0}\nActual:\n{1}'
+        self.assertEqual(expected_text,
+                         actual_text,
+                         msg_fmt.format(expected_text, actual_text))
 
         # windows line endings are replaced with linux ones
         input_text = expected_text.replace(LINE_TERMINATOR, '\r\n')
         actual_text = VocabularyTest.do_transform_file(input_text)
-        self.assertEqual(expected_text, actual_text)
+        self.assertEqual(expected_text,
+                         actual_text,
+                         'Windows line endings were not replaced as expected.')
 
     def test_format_date_str(self):
-        self.assertEqual('2019-01-23', format_date_str('20190123'))
-        self.assertEqual('2019-01-23', format_date_str('2019-01-23'))
+        expected = '2019-01-23'
+        msg_fmt = 'Date not formatted as expected.\nExpected:\n{0}\nActual:\n{1}'
+        actual = format_date_str('20190123')
+        self.assertEqual(expected, actual, msg_fmt.format(expected, actual))
+        actual = format_date_str('2019-01-23')
+        self.assertEqual(expected, actual, msg_fmt.format(expected, actual))
         with self.assertRaises(ValueError):
             format_date_str('201901234')
 
