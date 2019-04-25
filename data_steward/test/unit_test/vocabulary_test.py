@@ -1,15 +1,16 @@
+import os
 import shutil
+import StringIO
 import tempfile
 import unittest
-import StringIO
 
+import mock
+
+from common import DELIMITER, LINE_TERMINATOR
 from resources import AOU_GENERAL_CONCEPT_CSV_PATH
+import test_util
 from vocabulary import _transform_csv, format_date_str, get_aou_general_vocabulary_row, \
     append_vocabulary, append_concepts
-from common import DELIMITER, LINE_TERMINATOR
-import test_util
-import os
-import mock
 
 
 class VocabularyTest(unittest.TestCase):
