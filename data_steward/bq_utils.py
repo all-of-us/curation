@@ -131,7 +131,7 @@ def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix=""):
     :param cdm_table_name: name of the CDM table
     :return: an object describing the associated bigquery job
     """
-    if cdm_table_name not in common.CDM_TABLES:
+    if cdm_table_name not in resources.CDM_TABLES:
         raise ValueError('{} is not a valid table to load'.format(cdm_table_name))
 
     app_id = app_identity.get_application_id()

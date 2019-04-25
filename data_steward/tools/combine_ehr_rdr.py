@@ -139,7 +139,7 @@ def create_cdm_tables():
     Note: Recreates any existing tables
     """
     ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
-    for table in common.CDM_TABLES:
+    for table in resources.CDM_TABLES:
         logger.debug('Creating table {dataset}.{table}...'.format(table=table, dataset=ehr_rdr_dataset_id))
         bq_utils.create_standard_table(table, table, drop_existing=True, dataset_id=ehr_rdr_dataset_id)
 

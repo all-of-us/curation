@@ -5,7 +5,7 @@ import csv
 import cachetools
 import json
 
-from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES
+from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML
 
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -22,6 +22,8 @@ AOU_GENERAL_PATH = os.path.join(resource_path, 'aou_general')
 AOU_GENERAL_CONCEPT_CSV_PATH = os.path.join(AOU_GENERAL_PATH, 'concept.csv')
 
 html_boilerplate_path = os.path.join(resource_path, 'html_boilerplate.txt')
+
+DATASOURCES_JSON = os.path.join(achilles_index_path, 'data/datasources.json')
 
 
 @cachetools.cached(cache={})
@@ -132,3 +134,10 @@ def hash_dir(in_dir):
         file_path = os.path.join(in_dir, file_name)
         hash_obj.update(open(file_path, 'rb').read())
     return hash_obj.hexdigest()
+
+
+CDM_TABLES = cdm_schemas().keys()
+ACHILLES_INDEX_FILES = achilles_index_files()
+CDM_FILES = map(lambda t: t + '.csv', CDM_TABLES)
+ALL_ACHILLES_INDEX_FILES = [name.split(resource_path + os.sep)[1].strip() for name in ACHILLES_INDEX_FILES]
+IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES

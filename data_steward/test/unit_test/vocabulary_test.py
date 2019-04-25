@@ -1,7 +1,12 @@
+import shutil
+import tempfile
 import unittest
 import StringIO
-from vocabulary import *
-from vocabulary import _transform_csv
+
+from resources import AOU_GENERAL_CONCEPT_CSV_PATH
+from vocabulary import _transform_csv, format_date_str, get_aou_general_vocabulary_row, \
+    append_vocabulary, append_concepts
+from common import DELIMITER, LINE_TERMINATOR
 import test_util
 import os
 import mock
@@ -59,48 +64,51 @@ class VocabularyTest(unittest.TestCase):
 
     def test_append_vocabulary(self):
         in_path = test_util.TEST_VOCABULARY_VOCABULARY_CSV
-        out_path = os.tempnam()
+        out_dir = tempfile.mkdtemp()
+        out_path = os.path.join(out_dir, 'VOCABULARY_1.CSV')
+        out_path_2 = os.path.join(out_dir, 'VOCABULARY_2.CSV')
         expected_last_row = get_aou_general_vocabulary_row()
 
-        append_vocabulary(in_path, out_path)
-        with open(in_path, 'rb') as in_fp, open(out_path, 'rb') as out_fp:
-            # same content as input
-            for in_row in in_fp:
-                out_row = out_fp.readline()
-                self.assertEqual(in_row, out_row)
-            # new row added
-            actual_last_row = out_fp.readline()
-            self.assertEqual(actual_last_row, expected_last_row)
-            # end of file
-            self.assertEqual('', out_fp.readline())
+        try:
+            append_vocabulary(in_path, out_path)
+            with open(in_path, 'rb') as in_fp, open(out_path, 'rb') as out_fp:
+                # same content as input
+                for in_row in in_fp:
+                    out_row = out_fp.readline()
+                    self.assertEqual(in_row, out_row)
+                # new row added
+                actual_last_row = out_fp.readline()
+                self.assertEqual(actual_last_row, expected_last_row)
+                # end of file
+                self.assertEqual('', out_fp.readline())
 
-        # should warn when concepts already in input
-        out_path_2 = os.tempnam()
-        with mock.patch('warnings.warn') as warn_call:
-            append_vocabulary(out_path, out_path_2)
-            warn_call.assert_called()
-
-        os.remove(out_path)
-        os.remove(out_path_2)
+            # should warn when concepts already in input
+            with mock.patch('warnings.warn') as warn_call:
+                append_vocabulary(out_path, out_path_2)
+                warn_call.assert_called()
+        finally:
+            shutil.rmtree(out_dir)
 
     def test_append_concepts(self):
         in_path = test_util.TEST_VOCABULARY_CONCEPT_CSV
-        out_path = os.tempnam()
-        append_concepts(in_path, out_path)
-        with open(in_path, 'rb') as in_fp, open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as add_fp:
-            # Note: Test files are small so memory usage here is acceptable
-            original_lines = in_fp.readlines()
-            all_lines = add_fp.readlines()
-            expected_lines = original_lines + all_lines[1:]
-            with open(out_path, 'rb') as out_fp:
-                actual_lines = out_fp.readlines()
-                self.assertSequenceEqual(actual_lines, expected_lines)
+        out_dir = tempfile.mkdtemp()
+        out_path = os.path.join(out_dir, 'CONCEPT_1.CSV')
+        out_path_2 = os.path.join(out_dir, 'CONCEPT_2.CSV')
 
-        # should warn when concepts already in input
-        out_path_2 = os.tempnam()
-        with mock.patch('warnings.warn') as warn_call:
-            append_concepts(out_path, out_path_2)
-            warn_call.assert_called()
+        try:
+            append_concepts(in_path, out_path)
+            with open(in_path, 'rb') as in_fp, open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as add_fp:
+                # Note: Test files are small so memory usage here is acceptable
+                original_lines = in_fp.readlines()
+                all_lines = add_fp.readlines()
+                expected_lines = original_lines + all_lines[1:]
+                with open(out_path, 'rb') as out_fp:
+                    actual_lines = out_fp.readlines()
+                    self.assertSequenceEqual(actual_lines, expected_lines)
 
-        os.remove(out_path)
-        os.remove(out_path_2)
+            # should warn when concepts already in input
+            with mock.patch('warnings.warn') as warn_call:
+                append_concepts(out_path, out_path_2)
+                warn_call.assert_called()
+        finally:
+            shutil.rmtree(out_dir)

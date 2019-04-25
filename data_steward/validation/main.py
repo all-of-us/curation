@@ -157,7 +157,7 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
             raise RuntimeError('either hpo_id or target_bucket must be specified')
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
 
-    for filename in common.ACHILLES_INDEX_FILES:
+    for filename in resources.ACHILLES_INDEX_FILES:
         logging.debug('Uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
         bucket_file_name = filename.split(resources.resource_path + os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
@@ -225,12 +225,12 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
 
     # Create all tables first to simplify downstream processes
     # (e.g. ehr_union doesn't have to check if tables exist)
-    for file_name in common.CDM_FILES + common.PII_FILES:
+    for file_name in resources.CDM_FILES + common.PII_FILES:
         table_name = file_name.split('.')[0]
         table_id = bq_utils.get_table_id(hpo_id, table_name)
         bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
 
-    for cdm_file_name in sorted(common.CDM_FILES):
+    for cdm_file_name in sorted(resources.CDM_FILES):
         file_results, file_errors = perform_validation_on_file(cdm_file_name, found_cdm_files, hpo_id,
                                                                folder_prefix, bucket)
         results.extend(file_results)
@@ -443,7 +443,7 @@ def list_submitted_bucket_items(folder_bucketitems):
     object_retention_days = 30
     today = datetime.datetime.today()
     for file_name in folder_bucketitems:
-        if basename(file_name) not in common.IGNORE_LIST:
+        if basename(file_name) not in resources.IGNORE_LIST:
             # in common.CDM_FILES or is_pii(basename(file_name)):
             created_date = initial_date_time_object(file_name)
             retention_time = datetime.timedelta(days=object_retention_days)
@@ -517,7 +517,7 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
 
 
 def _is_cdm_file(gcs_file_name):
-    return gcs_file_name.lower() in common.CDM_FILES
+    return gcs_file_name.lower() in resources.CDM_FILES
 
 
 def _is_pii_file(gcs_file_name):
@@ -525,7 +525,7 @@ def _is_pii_file(gcs_file_name):
 
 
 def _is_known_file(gcs_file_name):
-    return gcs_file_name in common.IGNORE_LIST
+    return gcs_file_name in resources.IGNORE_LIST
 
 
 def _is_string_excluded_file(gcs_file_name):
