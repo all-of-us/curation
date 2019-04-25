@@ -193,6 +193,57 @@ def change_nulls_to_missing_value(project, dataset, site):
 
     return results
 
+
+def get_address_match(address_values):
+    """
+    Return a value indicating whether an address matches or was even validated.
+
+    The address pieces are individually validated, but this allows the report
+    to show the address as a single unit that is matched, not matched, or
+    missing.  The values returned are identified by the constants file.
+    If (address_line_1 OR address_line_2 OR (address_line_1 AND address_line_2))
+    AND (city AND state AND ZIP) match, the address matches.
+    If (address_line_1 AND address_line_2 AND (address_line_1 AND address_line_2))
+    AND (city OR state OR ZIP) do not match, the address does not match.
+    If (address_line_1 AND address_line_2 AND (address_line_1 AND address_line_2))
+    are missing OR (city OR state OR ZIP) are missing, the address is missing.
+
+    :param address_values:  a list of address value matches in their commonly
+        expected order:  [address line 1, address line 2, city, state, zip]
+
+    :return:  A constant string value indicating the address should be considered
+        a match, not match, or not validated.
+    """
+    address_one = address_values[0]
+    address_two = address_values[1]
+    city = address_values[2]
+    state = address_values[3]
+    zip_code = address_values[4]
+
+    data_exists = [consts.MATCH, consts.MISMATCH]
+    if address_one == consts.MATCH or address_two == consts.MATCH:
+        if city == consts.MATCH and state == consts.MATCH and zip_code == consts.MATCH:
+            # all fields validated and match
+           return consts.MATCH
+        elif city in data_exists and state in data_exists and zip_code in data_exists:
+            # all fields validated, but do not match
+            return consts.MISMATCH
+        else:
+            # some fields could not be validated
+            return consts.MISSING
+
+    if address_one in data_exists and address_two in data_exists:
+        if city in data_exists and state in data_exists and zip_code in data_exists:
+            # all fields validated
+            return consts.MISMATCH
+        else:
+            # some fields could not be validated
+            return consts.MISSING
+
+    # else, address data could not be validated, return missing
+    return consts.MISSING
+
+
 def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     """
     Write the validation csv from the site validation table.
@@ -206,10 +257,14 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     # sets up a file stream to write to the bucket
     report_file = StringIO.StringIO()
 
+    address_fields = [consts.ADDRESS_ONE_FIELD, consts.ADDRESS_TWO_FIELD,
+                      consts.CITY_FIELD, consts.STATE_FIELD,
+                      consts.ZIP_CODE_FIELD
+                     ]
+
     fields = [consts.PERSON_ID_FIELD, consts.FIRST_NAME_FIELD, consts.MIDDLE_NAME_FIELD,
-              consts.LAST_NAME_FIELD, consts.BIRTH_DATE_FIELD, consts.ADDRESS_ONE_FIELD,
-              consts.ADDRESS_TWO_FIELD, consts.CITY_FIELD, consts.STATE_FIELD,
-              consts.ZIP_CODE_FIELD, consts.PHONE_NUMBER_FIELD, consts.EMAIL_FIELD,
+              consts.LAST_NAME_FIELD, consts.BIRTH_DATE_FIELD,
+              consts.ADDRESS_MATCH_FIELD, consts.PHONE_NUMBER_FIELD, consts.EMAIL_FIELD,
               consts.ALGORITHM_FIELD
              ]
 
@@ -232,17 +287,20 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
 
         row_results = bq_utils.large_response_to_rowlist(results)
         for item in row_results:
+            address_values = [
+                item.get(consts.ADDRESS_ONE_FIELD),
+                item.get(consts.ADDRESS_TWO_FIELD),
+                item.get(consts.CITY_FIELD),
+                item.get(consts.STATE_FIELD),
+                item.get(consts.ZIP_CODE_FIELD)
+            ]
             values = [
                 str(item.get(consts.PERSON_ID_FIELD)),
                 item.get(consts.FIRST_NAME_FIELD),
                 item.get(consts.MIDDLE_NAME_FIELD),
                 item.get(consts.LAST_NAME_FIELD),
                 item.get(consts.BIRTH_DATE_FIELD),
-                item.get(consts.ADDRESS_ONE_FIELD),
-                item.get(consts.ADDRESS_TWO_FIELD),
-                item.get(consts.CITY_FIELD),
-                item.get(consts.STATE_FIELD),
-                item.get(consts.ZIP_CODE_FIELD),
+                get_address_match(address_values),
                 item.get(consts.PHONE_NUMBER_FIELD),
                 item.get(consts.EMAIL_FIELD),
                 item.get(consts.ALGORITHM_FIELD)

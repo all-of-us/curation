@@ -14,9 +14,10 @@ from dateutil.parser import parse
 
 # Project imports
 import bq_utils
+import gcs_utils
 import constants.validation.participants.identity_match as consts
 import constants.bq_utils as bq_consts
-import validation.participants.cleaners as cleaners
+import validation.participants.normalizers as normalizer
 import validation.participants.readers as readers
 import validation.participants.writers as writers
 
@@ -33,14 +34,20 @@ def _compare_address_lists(list_one, list_two):
     :return: the count of items in list_one that are missing from list_two
     """
     diff = 0
-    # TODO ensure 7 and 7th are identified as the same
     for part in list_one:
         if part not in list_two:
             diff += 1
     return diff
 
 
-def _compare_name_fields(project, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
+def _compare_name_fields(
+        project,
+        rdr_dataset,
+        pii_dataset,
+        hpo,
+        concept_id,
+        pii_field
+    ):
     """
     For an hpo, compare all first, middle, and last name fields to omop settings.
 
@@ -58,7 +65,13 @@ def _compare_name_fields(project, rdr_dataset, pii_dataset, hpo, concept_id, pii
         project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    pii_names = readers.get_pii_values(project, pii_dataset, hpo, consts.PII_NAME_TABLE, pii_field)
+    pii_names = readers.get_pii_values(
+        project,
+        pii_dataset,
+        hpo,
+        consts.PII_NAME_TABLE,
+        pii_field
+    )
 
     for person_id, pii_name in pii_names:
         person_ids.add(person_id)
@@ -67,8 +80,8 @@ def _compare_name_fields(project, rdr_dataset, pii_dataset, hpo, concept_id, pii
         if rdr_name is None or pii_name is None:
             match_str = consts.MISSING
         else:
-            pii_name = cleaners.clean_name(pii_name)
-            rdr_name = cleaners.clean_name(rdr_name)
+            pii_name = normalizer.normalize_name(pii_name)
+            rdr_name = normalizer.normalize_name(rdr_name)
             match_str = consts.MATCH if rdr_name == pii_name else consts.MISMATCH
 
         match_values[person_id] = match_str
@@ -76,7 +89,14 @@ def _compare_name_fields(project, rdr_dataset, pii_dataset, hpo, concept_id, pii
     return person_ids, match_values
 
 
-def _compare_email_addresses(project, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
+def _compare_email_addresses(
+        project,
+        rdr_dataset,
+        pii_dataset,
+        hpo,
+        concept_id,
+        pii_field
+    ):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -93,7 +113,13 @@ def _compare_email_addresses(project, rdr_dataset, pii_dataset, hpo, concept_id,
         project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
     )
 
-    pii_emails = readers.get_pii_values(project, pii_dataset, hpo, consts.PII_EMAIL_TABLE, pii_field)
+    pii_emails = readers.get_pii_values(
+        project,
+        pii_dataset,
+        hpo,
+        consts.PII_EMAIL_TABLE,
+        pii_field
+    )
 
     for person_id, pii_email in pii_emails:
         person_ids.add(person_id)
@@ -102,8 +128,8 @@ def _compare_email_addresses(project, rdr_dataset, pii_dataset, hpo, concept_id,
         if rdr_email is None or pii_email is None:
             match_str = consts.MISSING
         else:
-            rdr_email = cleaners.clean_email(rdr_email)
-            pii_email = cleaners.clean_email(pii_email)
+            rdr_email = normalizer.normalize_email(rdr_email)
+            pii_email = normalizer.normalize_email(pii_email)
             match_str = consts.MATCH if rdr_email == pii_email else consts.MISMATCH
 
         match_values[person_id] = match_str
@@ -111,7 +137,14 @@ def _compare_email_addresses(project, rdr_dataset, pii_dataset, hpo, concept_id,
     return person_ids, match_values
 
 
-def _compare_phone_numbers(project, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
+def _compare_phone_numbers(
+        project,
+        rdr_dataset,
+        pii_dataset,
+        hpo,
+        concept_id,
+        pii_field
+    ):
     """
     Compare the digit based phone numbers from PII and Observation tables.
 
@@ -143,8 +176,8 @@ def _compare_phone_numbers(project, rdr_dataset, pii_dataset, hpo, concept_id, p
         if rdr_phone is None or pii_number is None:
             match_str = consts.MISSING
         else:
-            rdr_phone = cleaners.clean_phone(rdr_phone)
-            pii_number = cleaners.clean_phone(pii_number)
+            rdr_phone = normalizer.normalize_phone(rdr_phone)
+            pii_number = normalizer.normalize_phone(pii_number)
             match_str = consts.MATCH if rdr_phone == pii_number else consts.MISMATCH
 
         match_values[person_id] = match_str
@@ -152,7 +185,15 @@ def _compare_phone_numbers(project, rdr_dataset, pii_dataset, hpo, concept_id, p
     return person_ids, match_values
 
 
-def _compare_cities(project, validation_dataset, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
+def _compare_cities(
+        project,
+        validation_dataset,
+        rdr_dataset,
+        pii_dataset,
+        hpo,
+        concept_id,
+        pii_field
+    ):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -185,8 +226,8 @@ def _compare_cities(project, validation_dataset, rdr_dataset, pii_dataset, hpo, 
         if rdr_city is None or pii_city is None:
             match_str = consts.MISSING
         else:
-            rdr_city = cleaners.clean_name(rdr_city)
-            pii_city = cleaners.clean_name(pii_city)
+            rdr_city = normalizer.normalize_city_name(rdr_city)
+            pii_city = normalizer.normalize_city_name(pii_city)
             match_str = consts.MATCH if rdr_city == pii_city else consts.MISMATCH
 
         match_values[person_id] = match_str
@@ -194,7 +235,15 @@ def _compare_cities(project, validation_dataset, rdr_dataset, pii_dataset, hpo, 
     return person_ids, match_values
 
 
-def _compare_states(project, validation_dataset, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
+def _compare_states(
+        project,
+        validation_dataset,
+        rdr_dataset,
+        pii_dataset,
+        hpo,
+        concept_id,
+        pii_field
+    ):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -227,8 +276,8 @@ def _compare_states(project, validation_dataset, rdr_dataset, pii_dataset, hpo, 
         if rdr_state is None or pii_state is None:
             match_str = consts.MISSING
         else:
-            rdr_state = cleaners.clean_state(rdr_state)
-            pii_state = cleaners.clean_state(pii_state)
+            rdr_state = normalizer.normalize_state(rdr_state)
+            pii_state = normalizer.normalize_state(pii_state)
             match_str = consts.MATCH if rdr_state == pii_state else consts.MISMATCH
 
         match_values[person_id] = match_str
@@ -236,7 +285,15 @@ def _compare_states(project, validation_dataset, rdr_dataset, pii_dataset, hpo, 
     return person_ids, match_values
 
 
-def _compare_zip_codes(project, validation_dataset, rdr_dataset, pii_dataset, hpo, concept_id, pii_field):
+def _compare_zip_codes(
+        project,
+        validation_dataset,
+        rdr_dataset,
+        pii_dataset,
+        hpo,
+        concept_id,
+        pii_field
+    ):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
@@ -269,8 +326,8 @@ def _compare_zip_codes(project, validation_dataset, rdr_dataset, pii_dataset, hp
         if rdr_zip is None or pii_zip_code is None:
             match_str = consts.MISSING
         else:
-            rdr_zip = cleaners.clean_zip(rdr_zip)
-            pii_zip = cleaners.clean_zip(pii_zip_code)
+            rdr_zip = normalizer.normalize_zip(rdr_zip)
+            pii_zip = normalizer.normalize_zip(pii_zip_code)
             match_str = consts.MATCH if rdr_zip == pii_zip else consts.MISMATCH
 
         match_values[person_id] = match_str
@@ -340,10 +397,10 @@ def _compare_street_addresses(
         pii_addr_one = addresses[1]
         pii_addr_two = addresses[2]
 
-        rdr_addr_one = cleaners.clean_street(rdr_address_ones.get(person_id))
-        pii_addr_one = cleaners.clean_street(pii_addr_one)
-        rdr_addr_two = cleaners.clean_street(rdr_address_twos.get(person_id))
-        pii_addr_two = cleaners.clean_street(pii_addr_two)
+        rdr_addr_one = normalizer.normalize_street(rdr_address_ones.get(person_id))
+        pii_addr_one = normalizer.normalize_street(pii_addr_one)
+        rdr_addr_two = normalizer.normalize_street(rdr_address_twos.get(person_id))
+        pii_addr_two = normalizer.normalize_street(pii_addr_two)
 
         # easy case, fields 1 and 2 from both sources match exactly
         if rdr_addr_one == pii_addr_one and rdr_addr_two == pii_addr_two:
@@ -694,13 +751,20 @@ def match_participants(project, rdr_dataset, pii_dataset, dest_dataset_id):
         writers.remove_sparse_records(project, validation_dataset, site)
         writers.change_nulls_to_missing_value(project, validation_dataset, site)
 
-    # TODO: generate hpo site reports
+    # generate hpo site reports
+    for site in hpo_sites:
+        #bucket = gcs_utils.get_hpo_bucket(site)
+        bucket = 'lrwb_aou111'
+        #TODO:  implement a way to get the submission folder
+        import os
+        filename = os.path.join(gcs_utils.get_submission_directory(site),  consts.REPORT_TITLE)
+        writers.create_site_validation_report(project, validation_dataset, [site], bucket, filename)
 
-
-    # TODO: generate aggregate site report
+    # generate aggregate site report
     bucket = 'lrwb_drc_curation_internal_test'
-    filename = validation_dataset+ '/' + consts.REPORT_TITLE
-    writers.create_site_validation_report(project, validation_dataset, ['lrwb_test_table'], bucket, filename)
+    #bucket = gcs_utils.get_drc_bucket()
+    filename = validation_dataset + '/' + consts.REPORT_TITLE
+    writers.create_site_validation_report(project, validation_dataset, hpo_sites, bucket, filename)
 
     return results
 

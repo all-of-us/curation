@@ -169,3 +169,20 @@ def copy_object(source_bucket, source_object_id, destination_bucket, destination
                                  destinationObject=destination_object_id,
                                  body=dict())
     return req.execute(num_retries=GCS_DEFAULT_RETRY_COUNT)
+
+
+def get_submission_directory(site):
+    """
+    Get the most recent submission directory name.
+
+    :param site:  The site identifier
+
+    :return:  The most recent submission directory.
+    """
+    #bucket = get_hpo_bucket(site)
+    bucket = 'lrwb_aou111'
+    contents = list_bucket(bucket)
+    for item in contents:
+        print item
+        print '\n\n'
+    return 'a'
