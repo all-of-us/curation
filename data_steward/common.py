@@ -22,14 +22,32 @@ DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
 ALL_REPORT_FILES = map(lambda s: s + '.json', ALL_REPORTS)
 IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES
-VOCABULARY_TABLES = ['concept', 'concept_ancestor', 'concept_class', 'concept_relationship', 'concept_synonym',
-                     'domain', 'drug_strength', 'relationship', 'vocabulary']
+
+# Vocabulary
+CONCEPT = 'concept'
+CONCEPT_ANCESTOR = 'concept_ancestor'
+CONCEPT_CLASS = 'concept_class'
+CONCEPT_RELATIONSHIP = 'concept_relationship'
+CONCEPT_SYNONYM = 'concept_synonym'
+DOMAIN = 'domain'
+DRUG_STRENGTH = 'drug_strength'
+RELATIONSHIP = 'relationship'
+VOCABULARY = 'vocabulary'
+VOCABULARY_TABLES = [CONCEPT, CONCEPT_ANCESTOR, CONCEPT_CLASS, CONCEPT_RELATIONSHIP, CONCEPT_SYNONYM, DOMAIN,
+                     DRUG_STRENGTH, RELATIONSHIP, VOCABULARY]
+# Achilles
+ACHILLES_ANALYSIS = 'achilles_analysis'
+ACHILLES_RESULTS = 'achilles_results'
+ACHILLES_RESULTS_DIST = 'achilles_results_dist'
+ACHILLES_TABLES = [ACHILLES_ANALYSIS, ACHILLES_RESULTS, ACHILLES_RESULTS_DIST]
+ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
+ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
+ACHILLES_HEEL_TABLES = [ACHILLES_HEEL_RESULTS, ACHILLES_RESULTS_DERIVED]
 REQUIRED_TABLES = ['person']
 REQUIRED_FILES = [table + '.csv' for table in REQUIRED_TABLES]
 ACHILLES_EXPORT_PREFIX_STRING = "curation_report/data/"
 IGNORE_STRING_LIST = [ACHILLES_EXPORT_PREFIX_STRING]
 ACHILLES_EXPORT_DATASOURCES_JSON = ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json'
-VOCABULARY = 'vocabulary'
 CLINICAL = 'clinical'
 ACHILLES = 'achilles'
 CDM_COMPONENTS = [CLINICAL, VOCABULARY, ACHILLES]
