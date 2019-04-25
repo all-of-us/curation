@@ -48,17 +48,17 @@ def _transform_csv(in_fp, out_fp, err_fp=None):
     csv_reader = csv.reader(in_fp, delimiter=DELIMITER)
     header = next(csv_reader)
     date_indexes = []
-    for i in range(0, len(header)):
-        if header[i].endswith('_date'):
-            date_indexes.append(i)
+    for index, item in enumerate(header):
+        if item.endswith('_date'):
+            date_indexes.append(index)
     csv_writer = csv.writer(out_fp, delimiter=DELIMITER, lineterminator=LINE_TERMINATOR)
     csv_writer.writerow(header)
-    for row_index, row in enumerate(csv_reader):
+    for row in csv_reader:
         try:
             for i in date_indexes:
                 row[i] = format_date_str(row[i])
             csv_writer.writerow(row)
-        except Exception, e:
+        except (ValueError, IndexError), e:
             message = 'Error %s transforming row:\n%s' % (e.message, row)
             err_fp.write(message)
 
@@ -71,7 +71,6 @@ def transform_file(file_path, out_dir):
     :param out_dir: Directory to save the transformed file
     """
     file_name = os.path.basename(file_path)
-    table_name, _ = os.path.splitext(file_name.lower())
     out_file_name = os.path.join(out_dir, file_name)
     err_dir = os.path.join(out_dir, ERRORS)
     err_file_name = os.path.join(err_dir, file_name)
