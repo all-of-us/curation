@@ -72,22 +72,16 @@ TODO
 """
 import argparse
 import logging
+
 from google.appengine.api.app_identity import app_identity
 
 import bq_utils
-import resources
 import common
+import resources
+from common import VISIT_OCCURRENCE, VISIT_OCCURRENCE_ID, CARE_SITE, CARE_SITE_ID, PERSON, PERSON_ID, LOCATION, \
+    LOCATION_ID, FACT_RELATIONSHIP
 from tools.combine_ehr_rdr import OBSERVATION_TABLE, PERSON_TABLE
 
-VISIT_OCCURRENCE = 'visit_occurrence'
-VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
-CARE_SITE = 'care_site'
-CARE_SITE_ID = 'care_site_id'
-PERSON = 'person'
-PERSON_ID = 'person_id'
-LOCATION = 'location'
-LOCATION_ID = 'location_id'
-FACT_RELATIONSHIP = 'fact_relationship'
 UNION_ALL = '''
 
         UNION ALL

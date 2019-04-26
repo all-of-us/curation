@@ -45,12 +45,14 @@ class EhrUnionTest(unittest.TestCase):
         test_util.delete_all_tables(self.input_dataset_id)
         test_util.delete_all_tables(self.output_dataset_id)
 
+        # TODO Generalize to work for all foreign key references
         # Collect all primary key fields in CDM tables
         mapped_fields = []
         for table in ehr_union.tables_to_map():
-            mapped_field = table + '_id'
-            mapped_fields.append(mapped_field)
+            field = table + '_id'
+            mapped_fields.append(field)
         self.mapped_fields = mapped_fields
+        self.implemented_foreign_keys = [common.VISIT_OCCURRENCE_ID, common.CARE_SITE_ID, common.LOCATION_ID]
 
     def _empty_hpo_buckets(self):
         for hpo_id in self.hpo_ids:
@@ -458,16 +460,20 @@ class EhrUnionTest(unittest.TestCase):
         fields = resources.fields_for(table)
         id_field = table + '_id'
         key_ind = 0
+        expected_join = None
+        actual_join = None
         for field in fields:
             if field['name'] in self.mapped_fields:
-                key_ind += 1
+                # key_ind += 1  # TODO use this increment when we generalize solution for all foreign keys
                 if field['name'] == id_field:
                     # Primary key, mapping table associated with this one should be INNER joined
+                    key_ind += 1
                     expr = 'inner join on primary key'
                     actual_join = first_or_none(dpath.util.values(stmt, 'from/%s/join/value' % key_ind))
                     expected_join = dataset_out + '.' + ehr_union.mapping_table_for(table)
-                else:
+                elif field['name'] in self.implemented_foreign_keys:
                     # Foreign key, mapping table associated with the referenced table should be LEFT joined
+                    key_ind += 1
                     expr = 'left join on foreign key'
                     actual_join = first_or_none(dpath.util.values(stmt, 'from/%s/left join/value' % key_ind))
                     joined_table = field['name'].replace('_id', '')
