@@ -1,3 +1,5 @@
+import re
+
 # field lookup values
 OBS_PII_NAME_FIRST = 1585596
 OBS_PII_NAME_MIDDLE = 1585597
@@ -52,12 +54,23 @@ STATE_ABBREVIATIONS = [
     'aa', 'ae', 'ap',
 ]
 
+AT = '@'
+
+NUMERIC_ENDINGS_REGEX = '(\d+)(st|nd|rd|th)'
+
+COMPILED_NUMERIC_ENDINGS_REGEX = re.compile(NUMERIC_ENDINGS_REGEX)
+
+ALPHA_NUMERIC = '(\d+)[a-zA-Z]+'
+
+COMPILED_ALPHA_NUMERIC = re.compile(ALPHA_NUMERIC)
+
 ADDRESS_ABBREVIATIONS = {
     'aly': 'alley',
     'anx': 'annex',
     'apt': 'apartment',
     'ave': 'avenue',
     'bch': 'beach',
+    'bldg': 'building',
     'blvd': 'boulevard',
     'bnd': 'bend',
     'btm': 'bottom',

@@ -30,10 +30,8 @@ def normalize_city_name(city):
     normalized_city = ''
     city = city.lower()
     for char in city:
-        if char.isalnum():
+        if char.isalnum() or char.isspace():
             normalized_city += char
-        else:
-            normalized_city += ' '
 
     for part in normalized_city.split():
         expansion = consts.CITY_ABBREVIATIONS.get(part)
@@ -42,6 +40,51 @@ def normalize_city_name(city):
 
     normalized_city = ' '.join(normalized_city.split())
     return normalized_city
+
+
+def _get_numeric_part_only(part):
+    """
+    Clean common alphabetic endings from numbers.
+
+    This removes commonly used st, th, nd, and rd endings that
+    may follow digits.
+
+    :param part:  The string to remove st, th, nd, and rd endings from, if
+        they exist following digits.
+
+    :return:  The digits only, or None.
+    """
+    match = consts.COMPILED_NUMERIC_ENDINGS_REGEX.match(part)
+
+    if match:
+        return part[0:-2]
+
+    return None
+
+
+def _get_alpha_numeric_parts(part):
+    """
+    return the split digit and numeric components as a single string.
+
+    :param part:  The string component being checked for digits followed by
+        alphabetic characters.
+
+    :return:  The string digits and alphabetic characters split by a space, if
+        they exist, or None.
+    """
+    match = consts.COMPILED_ALPHA_NUMERIC.match(part)
+
+    if match:
+        digits = ''
+        alphas = ''
+        for char in part:
+            if char.isalpha():
+                alphas += char
+            elif char.isdigit():
+                digits += char
+        return ' '.join([digits, alphas])
+
+    return None
 
 
 def normalize_street(street):
@@ -60,8 +103,7 @@ def normalize_street(street):
 
     normalized_street = ''
     street = street.lower()
-    # replace all punctuation with a space, excpet for # which is sometimes used
-    # for number
+    # replace all punctuation with a space
     for char in street:
         if char.isalnum():
             normalized_street += char
@@ -70,12 +112,24 @@ def normalize_street(street):
 
     # for each part of the address, see if it exists in the list of known
     # abbreviations.  if so, expand the abbreviation
-    # TODO ensure 50A and 50 A are recognized as the same
-    # TODO ensure 7 and 7th are identified as the same
     for part in normalized_street.split():
         expansion = consts.ADDRESS_ABBREVIATIONS.get(part)
+        # expand recognized abbreviations
         if expansion:
             normalized_street = normalized_street.replace(part, expansion)
+            part = expansion
+
+        # normalize 7 and 7th as the same
+        number = _get_numeric_part_only(part)
+        if number:
+            normalized_street = normalized_street.replace(part, number)
+            part = number
+
+        # normalize 50A and 50 A as the same
+        alpha_num = _get_alpha_numeric_parts(part)
+        if alpha_num:
+            normalized_street = normalized_street.replace(part, alpha_num)
+            part = alpha_num
 
     # removes possible multiple spaces.
     normalized_street = ' '.join(normalized_street.split())
@@ -166,7 +220,7 @@ def normalize_email(email):
         email = str(email)
 
     normalized_email = email.strip()
-    return normalized_email.lower()
+    return normalized_email.lower() if consts.AT in normalized_email else ''
 
 
 def normalize_name(name):
