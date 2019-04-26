@@ -3,13 +3,15 @@ import logging
 import os
 import sys
 import warnings
-
-from dateutil import parser
+import re
 
 from common import CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, TRANSFORM_FILES, \
     APPEND_VOCABULARY, APPEND_CONCEPTS, ADD_AOU_GENERAL, ERRORS, AOU_GEN_ID, AOU_GEN_VOCABULARY_CONCEPT_ID, \
     AOU_GEN_VOCABULARY_REFERENCE, ERROR_APPENDING, AOU_GEN_NAME
 from resources import AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
+
+RAW_DATE_PATTERN = re.compile(r'\d{8}$')
+BQ_DATE_PATTERN = re.compile(r'\d{4}-\d{2}-\d{2}$')
 
 csv.field_size_limit(sys.maxsize)
 
@@ -19,9 +21,15 @@ def format_date_str(date_str):
     Format a date string to yyyymmdd if it is not already
     :param date_str: the date string
     :return: the formatted date string
+    :raises:  ValueError if a valid date object cannot be parsed from the string
     """
-    date_obj = parser.parse(date_str)
-    formatted_date_str = date_obj.strftime('%Y-%m-%d')
+    if BQ_DATE_PATTERN.match(date_str):
+        formatted_date_str = date_str
+    elif RAW_DATE_PATTERN.match(date_str):
+        parts = date_str[0:4], date_str[4:6], date_str[6:8]
+        formatted_date_str = '-'.join(parts)
+    else:
+        raise ValueError('Cannot parse value {v} as date'.format(v=date_str))
     return formatted_date_str
 
 
@@ -161,11 +169,11 @@ def add_aou_general(in_dir, out_dir):
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('command', choices=[TRANSFORM_FILES, ADD_AOU_GENERAL, APPEND_VOCABULARY, APPEND_CONCEPTS])
-    parser.add_argument('--in_dir', required=True)
-    parser.add_argument('--out_dir', required=True)
-    args = parser.parse_args()
+    arg_parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    arg_parser.add_argument('command', choices=[TRANSFORM_FILES, ADD_AOU_GENERAL, APPEND_VOCABULARY, APPEND_CONCEPTS])
+    arg_parser.add_argument('--in_dir', required=True)
+    arg_parser.add_argument('--out_dir', required=True)
+    args = arg_parser.parse_args()
     if args.command == TRANSFORM_FILES:
         transform_files(args.in_dir, args.out_dir)
     elif args.command == ADD_AOU_GENERAL:

@@ -42,12 +42,6 @@ source ${SCRIPT_PATH}/set_path.sh
 OMOP_VOCABULARY_VERSION=$(cat ${IN_DIR}/VOCABULARY.csv | grep ${OMOP_VOCABULARY_CONCEPT_ID} | cut -f4)
 echo "Version of OMOP Standard vocabulary is ${OMOP_VOCABULARY_VERSION}"
 
-# Create a version string for the vocabulary AoU_General based on md5 of files
-CHECKSUM_LIST=$( cd ${AOU_GENERAL_PATH} && md5sum $(ls ${AOU_GENERAL_PATH}) )
-CHECKSUM_ALL=$( echo ${CHECKSUM_LIST} | md5sum )
-AOU_GENERAL_VERSION=$( echo ${CHECKSUM_ALL} | cut -d' ' -f1 )
-echo "Version of AoU_General vocabulary is ${AOU_GENERAL_VERSION}"
-
 # Move vocabulary files to backup folder
 BACKUP_DIR="${IN_DIR}-backup"
 echo "Creating backup in ${BACKUP_DIR}..."
