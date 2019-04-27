@@ -137,7 +137,7 @@ PPI_OBSERVATION_VALUES = (
 # Select observation table attributes to validate
 EHR_OBSERVATION_VALUES = (
     'SELECT person_id, observation_concept_id, value_as_string '
-    'FROM `{project}.{data_set}.{table}` '
+    'FROM `{project}.{dataset}.{table}` '
     'WHERE observation_concept_id={field_value} '
     'AND person_id IN ({person_id_csv}) '
     'ORDER BY person_id'
@@ -165,14 +165,14 @@ PII_VALUES = (
 
 PII_LOCATION_VALUES = (
     'SELECT location_id, {field} '
-    'FROM `{project}.{data_set}.location` '
+    'FROM `{project}.{dataset}.location` '
     'WHERE location_id IN ({id_list})'
 )
 
 # Select EHR birth datetime
 EHR_BIRTH_DATETIME_VALUES = (
     'SELECT person_id, observation_concept_id, value_as_string '
-    'FROM `{project}.{data_set}.{table}` '
+    'FROM `{project}.{dataset}.{table}` '
     'WHERE observation_concept_id={field} '
     'ORDER BY person_id'
 )
