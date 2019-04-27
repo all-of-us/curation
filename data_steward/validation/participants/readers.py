@@ -37,8 +37,9 @@ def create_match_values_table(project, rdr_dataset, destination_dataset):
     used in participant matching.  Returned query data is limited to the
     person_id, observation_concept_id, and the value_as_string fields.
 
-    :param date_string: a string formatted date as YYYYMMDD that will be used
-        to identify which dataset to use as a lookup
+    :param project:  The project name to query
+    :param rdr_dataset:  The rdr dataset name to query
+    :param destination_dataset:  The dataset to write the result table to
 
     :return: The name of the interim table
     """
@@ -53,7 +54,8 @@ def create_match_values_table(project, rdr_dataset, destination_dataset):
         query_string,
         destination_dataset_id=destination_dataset,
         destination_table_id=consts.ID_MATCH_TABLE,
-        write_disposition='WRITE_TRUNCATE'
+        write_disposition='WRITE_TRUNCATE',
+        batch=True
     )
 
     query_job_id = results['jobReference']['jobId']
@@ -72,7 +74,11 @@ def get_ehr_match_values(project, dataset, table_name, concept_id, id_list):
     used in participant matching.  Returned query data is limited to the
     person_id, observation_concept_id, and the value_as_string fields.
 
-    :param concept_id: the id of the concept to verify from the RDR data
+    :param project: The name of the project to query for ehr values
+    :param dataset:  The name of the dataset to query for ehr values
+    :param table_name:  The name of the table to query for ehr values
+    :param concept_id: the id of the concept to identify with ehr data
+    :param id_list:  list of person_id values to limit the result set to
 
     :return:  A dictionary with observation_source_concept_id as the key.
         The value is a dictionary of person_ids with the associated value
@@ -85,7 +91,7 @@ def get_ehr_match_values(project, dataset, table_name, concept_id, id_list):
     """
     query_string = consts.EHR_OBSERVATION_VALUES.format(
         project=project,
-        data_set=dataset,
+        dataset=dataset,
         table=table_name,
         field_value=concept_id,
         person_id_csv=id_list
@@ -121,6 +127,11 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
     used in participant matching.  Returned query data is limited to the
     person_id, observation_concept_id, and the value_as_string fields.
 
+    :param project: The name of the project to query for rdr values
+    :param dataset:  The name of the dataset to query for rdr values.  In this
+        module, it is likely the validation dataset
+    :param table_name:  The name of the table to query for rdr values.  In
+        this module, it is likely the validation dataset
     :param concept_id: the id of the concept to verify from the RDR data
 
     :return:  A dictionary with observation_source_concept_id as the key.
@@ -177,7 +188,11 @@ def get_pii_values(project, pii_dataset, hpo, table, field):
     """
     Get values from the site's PII table.
 
+    :param project: The name of the project to query for pii values
+    :param pii_dataset:  The name of the dataset to query for pii values.
     :param hpo:  hpo string to use when identifying table names for lookup.
+    :param table:  The name of the table suffix to query for pii values.
+    :param field:  The field name to look up values for
 
     :return:  A list of tuples with the first tuple element as the person_id
     and the second tuple element as the phone number.
@@ -214,10 +229,12 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
     :param rdr_dataset:  The dataset to get actual location info from
     :param pii_dataset:  The dataset with a location_id.  location_id comes from
         a pii_address table.
+    :param hpo:  site identifier used to prefix table names
+    :param table:  table name to retrieve pii values for
     :param field:  The actual field to retrieve a value for:  either address_one,
         address_two, city, state, or zip.
 
-    :return:  a list of (person_id, value) tuples.
+    :return:  a list of [(person_id, value)] tuples.
     """
     location_ids = get_pii_values(
         project,
@@ -237,7 +254,7 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
     location_id_str = ', '.join(location_id_list)
     query_string = consts.PII_LOCATION_VALUES.format(
         project=project,
-        data_set=rdr_dataset,
+        dataset=rdr_dataset,
         field=field,
         id_list=location_id_str
     )
