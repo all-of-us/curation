@@ -18,7 +18,7 @@ import gcs_utils
 LOGGER = logging.getLogger(__name__)
 
 
-def  append_to_result_table(
+def append_to_result_table(
         site,
         match_values,
         project,
@@ -29,7 +29,7 @@ def  append_to_result_table(
     Append items in match_values to the table generated from site name.
 
     :param site:  string identifier for the hpo site.
-    :param match_values:  dictionary of person_ids and matche values for a field
+    :param match_values:  dictionary of person_ids and match values for a field
     :param project:  the project BigQuery project name
     :param dataset:  name of the dataset containing the table to append to
     :param field_name:  name of the field to insert values into
@@ -62,6 +62,9 @@ def  append_to_result_table(
         results = bq_utils.query(query, batch=True)
     except oauth2client.client.HttpAccessTokenRefreshError:
         LOGGER.exception("Encountered an excpetion when inserting records")
+        raise
+
+    LOGGER.info("Inserted match values for site:  %s\t\tfield:  %s", site, field_name)
 
     return results
 
@@ -105,6 +108,9 @@ def remove_sparse_records(project, dataset, site):
         results = bq_utils.query(query, batch=True)
     except oauth2client.client.HttpAccessTokenRefreshError:
         LOGGER.exception("Encountered an excpetion when removing sparse records")
+        raise
+
+    LOGGER.info("Removed sparse records from:  %s.%s.%s", project, dataset, result_table)
 
     return results
 
@@ -142,6 +148,9 @@ def merge_fields_into_single_record(project, dataset, site):
             results = bq_utils.query(query, batch=True)
         except oauth2client.client.HttpAccessTokenRefreshError:
             LOGGER.exception("Encountered an excpetion when merging records")
+            raise
+
+    LOGGER.info("Unified sparse records for:  %s.%s.%s", project, dataset, result_table)
 
     return results
 
@@ -190,8 +199,26 @@ def change_nulls_to_missing_value(project, dataset, site):
         results = bq_utils.query(query, batch=True)
     except oauth2client.client.HttpAccessTokenRefreshError:
         LOGGER.exception("Encountered an excpetion when filling null records")
+        raise
+
+    LOGGER.info(
+        "Set null fields to %s in %s.%s.%s",
+        consts.MISSING,
+        project,
+        dataset,
+        result_table
+    )
 
     return results
+
+
+def _get_match_rank(match_list):
+    if consts.MISMATCH in match_list:
+        return consts.MISMATCH
+    elif consts.MISSING in match_list:
+        return consts.MISSING
+
+    return consts.MATCH
 
 
 def get_address_match(address_values):
@@ -220,28 +247,11 @@ def get_address_match(address_values):
     state = address_values[3]
     zip_code = address_values[4]
 
-    data_exists = [consts.MATCH, consts.MISMATCH]
-    if address_one == consts.MATCH or address_two == consts.MATCH:
-        if city == consts.MATCH and state == consts.MATCH and zip_code == consts.MATCH:
-            # all fields validated and match
-           return consts.MATCH
-        elif city in data_exists and state in data_exists and zip_code in data_exists:
-            # all fields validated, but do not match
-            return consts.MISMATCH
-        else:
-            # some fields could not be validated
-            return consts.MISSING
+    streets_match = _get_match_rank([address_one, address_two])
 
-    if address_one in data_exists and address_two in data_exists:
-        if city in data_exists and state in data_exists and zip_code in data_exists:
-            # all fields validated
-            return consts.MISMATCH
-        else:
-            # some fields could not be validated
-            return consts.MISSING
+    areas_match = _get_match_rank([city, state, zip_code])
 
-    # else, address data could not be validated, return missing
-    return consts.MISSING
+    return _get_match_rank([streets_match, areas_match])
 
 
 def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
@@ -254,21 +264,16 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     :param bucket:  The bucket to write the csv to.
     :param filename:  The file name to give the csv report.
     """
-    # sets up a file stream to write to the bucket
-    report_file = StringIO.StringIO()
-
-    address_fields = [consts.ADDRESS_ONE_FIELD, consts.ADDRESS_TWO_FIELD,
-                      consts.CITY_FIELD, consts.STATE_FIELD,
-                      consts.ZIP_CODE_FIELD
-                     ]
-
-    fields = [consts.PERSON_ID_FIELD, consts.FIRST_NAME_FIELD, consts.MIDDLE_NAME_FIELD,
+    fields = [consts.PERSON_ID_FIELD, consts.FIRST_NAME_FIELD,
               consts.LAST_NAME_FIELD, consts.BIRTH_DATE_FIELD,
               consts.ADDRESS_MATCH_FIELD, consts.PHONE_NUMBER_FIELD, consts.EMAIL_FIELD,
               consts.ALGORITHM_FIELD
              ]
 
     fields_str = ','.join(fields) + '\n'
+
+    # sets up a file stream to write to the bucket
+    report_file = StringIO.StringIO()
     report_file.write(fields_str)
 
     # write to the report file
@@ -297,7 +302,6 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
             values = [
                 str(item.get(consts.PERSON_ID_FIELD)),
                 item.get(consts.FIRST_NAME_FIELD),
-                item.get(consts.MIDDLE_NAME_FIELD),
                 item.get(consts.LAST_NAME_FIELD),
                 item.get(consts.BIRTH_DATE_FIELD),
                 get_address_match(address_values),
@@ -312,5 +316,6 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     report_file.seek(0)
     report_result = gcs_utils.upload_object(bucket, filename, report_file)
     report_file.close()
+
     LOGGER.debug("Wrote validation report csv:  %s", bucket + filename)
     return report_result
