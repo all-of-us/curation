@@ -266,8 +266,8 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     """
     fields = [consts.PERSON_ID_FIELD, consts.FIRST_NAME_FIELD,
               consts.LAST_NAME_FIELD, consts.BIRTH_DATE_FIELD,
-              consts.ADDRESS_MATCH_FIELD, consts.PHONE_NUMBER_FIELD, consts.EMAIL_FIELD,
-              consts.ALGORITHM_FIELD
+              consts.ADDRESS_MATCH_FIELD, consts.PHONE_NUMBER_FIELD,
+              consts.EMAIL_FIELD, consts.ALGORITHM_FIELD
              ]
 
     fields_str = ','.join(fields) + '\n'
@@ -289,6 +289,9 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
             results = bq_utils.query(query_string, batch=True)
         except oauth2client.client.HttpAccessTokenRefreshError:
             LOGGER.exception("Encountered an excpetion when selecting site records")
+            report_file.write("Unable to report id validation match records "
+                              "for site:\t%s.\n", site)
+            break
 
         row_results = bq_utils.large_response_to_rowlist(results)
         for item in row_results:

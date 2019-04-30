@@ -41,6 +41,7 @@ NO = "No"
 # Date format strings
 FULL_DATETIME = '%Y-%m-%d %H:%M:%S%z'
 DATE = '%Y-%m-%d'
+DRC_DATE_FORMAT = '%Y%m%d'
 
 # state abbreviations.  used to validate state abbreviations
 STATE_ABBREVIATIONS = [
@@ -63,6 +64,8 @@ COMPILED_NUMERIC_ENDINGS_REGEX = re.compile(NUMERIC_ENDINGS_REGEX)
 ALPHA_NUMERIC = '(\d+)[a-zA-Z]+'
 
 COMPILED_ALPHA_NUMERIC = re.compile(ALPHA_NUMERIC)
+
+DRC_DATE_REGEX = '\d{8}'
 
 ADDRESS_ABBREVIATIONS = {
     'aly': 'alley',
@@ -347,3 +350,6 @@ VALIDATION_FIELDS = [
 HPO_ID = 'hpo_id'
 
 REPORT_TITLE = 'id-validation.csv'
+REPORT_DIRECTORY = 'drc-validations-{date}'
+
+DESTINATION_DATASET_DESCRIPTION = '{version} {rdr_dataset} + {ehr_dataset}'
