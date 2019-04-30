@@ -21,7 +21,7 @@ class IdentityMatchTest(unittest.TestCase):
         self.project = 'foo'
         self.dest_dataset = 'bar{}'.format(self.date_string)
         self.pii_dataset = 'ehr20190211'
-        self.rdr_dataset = 'combined20190211'
+        self.rdr_dataset = 'combined{}'.format(self.date_string)
         self.dataset = 'combined20190211'
         self.site_list = ['bogus-site', 'awesome-site']
         self.bucket_ids = ['aou-bogus', 'aou-awesome']
