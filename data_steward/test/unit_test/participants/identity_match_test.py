@@ -1,8 +1,10 @@
+import os
 import unittest
 
-import mock
+from mock import call, patch
 
-import validation.participants.consts as consts
+import constants.bq_utils as bq_consts
+import constants.validation.participants.identity_match as consts
 import validation.participants.identity_match as id_match
 
 
@@ -15,7 +17,15 @@ class IdentityMatchTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
+        self.date_string = 20190503
+        self.project = 'foo'
+        self.dest_dataset = 'bar{}'.format(self.date_string)
+        self.pii_dataset = 'ehr20190211'
+        self.rdr_dataset = 'combined20190211'
         self.dataset = 'combined20190211'
+        self.site_list = ['bogus-site', 'awesome-site']
+        self.bucket_ids = ['aou-bogus', 'aou-awesome']
+        self.internal_bucket_id = 'fantastic-internal'
         self.pid = 8888
         self.participant_info = {
             'person_id': self.pid,
@@ -30,7 +40,7 @@ class IdentityMatchTest(unittest.TestCase):
             'state': 'AL',
             'zip': '05645-1112',
             'ehr_birthdate': '1990-01-01 00:00:00+00',
-            'reported_birthdate': '1990-01-01'
+            'rdr_birthdate': '1990-01-01'
         }
 
         self.observation_values = {
@@ -57,340 +67,229 @@ class IdentityMatchTest(unittest.TestCase):
             consts.OBS_EHR_BIRTH_DATETIME:
                 {self.pid: self.participant_info.get('ehr_birthdate')},
             consts.OBS_PII_BIRTH_DATETIME:
-                {self.pid: self.participant_info.get('reported_birthdate')},
+                {self.pid: self.participant_info.get('rdr_birthdate')},
         }
 
-        mock_obs_values_patcher = mock.patch('validation.participants.identity_match._get_observation_match_values')
-        mock_site_names_patcher = mock.patch('validation.participants.identity_match._get_hpo_site_names')
-        mock_pii_names_patcher = mock.patch('validation.participants.identity_match._get_pii_names')
-        mock_pii_emails_patcher = mock.patch('validation.participants.identity_match._get_pii_emails')
-        mock_pii_phone_numbers_patcher = mock.patch('validation.participants.identity_match._get_pii_phone_numbers')
-        mock_pii_addresses_patcher = mock.patch('validation.participants.identity_match._get_pii_addresses')
+        mock_dest_dataset_patcher = patch(
+            'validation.participants.identity_match.bq_utils.create_dataset'
+        )
+        self.mock_dest_dataset = mock_dest_dataset_patcher.start()
+        self.mock_dest_dataset.return_value = {
+            bq_consts.DATASET_REF: {bq_consts.DATASET_ID: self.dest_dataset}
+        }
+        self.addCleanup(mock_dest_dataset_patcher.stop)
 
-        self.mock_obs_values = mock_obs_values_patcher.start()
-        self.mock_obs_values.return_value = self.observation_values
-        self.addCleanup(mock_obs_values_patcher.stop)
+        mock_match_tables_patcher = patch(
+            'validation.participants.identity_match.readers.create_match_values_table'
+        )
+        self.mock_match_tables = mock_match_tables_patcher.start()
+        self.addCleanup(mock_match_tables_patcher.stop)
 
+        mock_site_names_patcher = patch(
+            'validation.participants.identity_match.readers.get_hpo_site_names'
+        )
         self.mock_site_names = mock_site_names_patcher.start()
-        self.mock_site_names.return_value = ['bogus-site']
+        self.mock_site_names.return_value = self.site_list
         self.addCleanup(mock_site_names_patcher.stop)
 
-        self.mock_pii_names = mock_pii_names_patcher.start()
-        self.mock_pii_names.return_value = [
-            (self.pid,
-             self.participant_info.get('first'),
-             self.participant_info.get('middle'),
-             self.participant_info.get('last'))]
-        self.addCleanup(mock_pii_names_patcher.stop)
+        mock_pii_match_tables_patcher = patch(
+            'validation.participants.identity_match.bq_utils.create_table'
+        )
+        self.mock_pii_match_tables = mock_pii_match_tables_patcher.start()
+        self.addCleanup(mock_pii_match_tables_patcher.stop)
 
-        self.mock_pii_emails = mock_pii_emails_patcher.start()
-        self.mock_pii_emails.return_value = [
-            (self.pid,
-             self.participant_info.get('email'))]
-        self.addCleanup(mock_pii_emails_patcher.stop)
+        mock_ehr_match_values_patcher = patch(
+            'validation.participants.identity_match.readers.get_ehr_match_values'
+        )
+        self.mock_ehr_values = mock_ehr_match_values_patcher.start()
+        self.mock_ehr_values.side_effect = [
+            {self.pid: self.participant_info.get('ehr_birthdate')},
+            {self.pid: self.participant_info.get('ehr_birthdate')},
+        ]
+        self.addCleanup(mock_ehr_match_values_patcher.stop)
 
-        self.mock_pii_phone_numbers = mock_pii_phone_numbers_patcher.start()
-        self.mock_pii_phone_numbers.return_value = [
-            (self.pid,
-             self.participant_info.get('phone'))]
-        self.addCleanup(mock_pii_phone_numbers_patcher.stop)
+        mock_rdr_match_values_patcher = patch(
+            'validation.participants.identity_match.readers.get_rdr_match_values'
+        )
+        self.mock_rdr_values = mock_rdr_match_values_patcher.start()
+        self.mock_rdr_values.side_effect = [
+            {self.pid: self.participant_info.get('first')},
+            {self.pid: self.participant_info.get('first')},
+            {self.pid: self.participant_info.get('last')},
+            {self.pid: self.participant_info.get('last')},
+            {self.pid: self.participant_info.get('middle')},
+            {self.pid: self.participant_info.get('middle')},
+            {self.pid: self.participant_info.get('zip')},
+            {self.pid: self.participant_info.get('zip')},
+            {self.pid: self.participant_info.get('city')},
+            {self.pid: self.participant_info.get('city')},
+            {self.pid: self.participant_info.get('state')},
+            {self.pid: self.participant_info.get('state')},
+            {self.pid: self.participant_info.get('street-one')},
+            {self.pid: self.participant_info.get('street-two')},
+            {self.pid: self.participant_info.get('street-one')},
+            {self.pid: self.participant_info.get('street-two')},
+            {self.pid: self.participant_info.get('email')},
+            {self.pid: self.participant_info.get('email')},
+            {self.pid: self.participant_info.get('phone')},
+            {self.pid: self.participant_info.get('phone')},
+            {self.pid: self.participant_info.get('rdr_birthdate')},
+            {self.pid: self.participant_info.get('rdr_birthdate')},
+        ]
+        self.addCleanup(mock_rdr_match_values_patcher.stop)
 
-        self.mock_pii_addresses = mock_pii_addresses_patcher.start()
-        self.mock_pii_addresses.return_value = [
-            (self.pid,
-             self.participant_info.get('street-one'),
-             self.participant_info.get('street-two'),
-             self.participant_info.get('city'),
-             self.participant_info.get('state'),
-             self.participant_info.get('zip'))]
-        self.addCleanup(mock_pii_addresses_patcher.stop)
+        mock_pii_values_patcher = patch(
+            'validation.participants.identity_match.readers.get_pii_values'
+        )
+        self.mock_pii_values = mock_pii_values_patcher.start()
+        self.mock_pii_values.side_effect = [
+            [(self.pid, self.participant_info.get('first'))],
+            [(self.pid, self.participant_info.get('first'))],
+            [(self.pid, self.participant_info.get('last'))],
+            [(self.pid, self.participant_info.get('last'))],
+            [(self.pid, self.participant_info.get('middle'))],
+            [(self.pid, self.participant_info.get('middle'))],
+            [(self.pid, self.participant_info.get('email'))],
+            [(self.pid, self.participant_info.get('email'))],
+            [(self.pid, self.participant_info.get('phone'))],
+            [(self.pid, self.participant_info.get('phone'))],
+        ]
+        self.addCleanup(mock_pii_values_patcher.stop)
 
-        self.expected = {self.pid:
-            {
-                consts.FIRST_NAME: consts.MATCH,
-                consts.MIDDLE_NAME: consts.MATCH,
-                consts.LAST_NAME: consts.MATCH,
-                consts.EMAIL: consts.MATCH,
-                consts.CONTACT_PHONE: consts.MATCH,
-                consts.STREET_ONE: consts.MATCH,
-                consts.STREET_TWO: consts.MATCH,
-                consts.CITY: consts.MATCH,
-                consts.STATE: consts.MATCH,
-                consts.ZIP: consts.MATCH,
-                consts.BIRTHDATE: consts.MATCH,
-            }
+        mock_append_to_result_table = patch(
+            'validation.participants.identity_match.writers.append_to_result_table'
+        )
+        self.mock_table_append = mock_append_to_result_table.start()
+        self.addCleanup(mock_append_to_result_table.stop)
+
+        mock_location_pii_patcher = patch(
+            'validation.participants.identity_match.readers.get_location_pii'
+        )
+        self.mock_location_pii = mock_location_pii_patcher.start()
+        self.mock_location_pii.side_effect = [
+            [(self.pid, self.participant_info.get('zip'))],
+            [(self.pid, self.participant_info.get('zip'))],
+            [(self.pid, self.participant_info.get('city'))],
+            [(self.pid, self.participant_info.get('city'))],
+            [(self.pid, self.participant_info.get('state'))],
+            [(self.pid, self.participant_info.get('state'))],
+            [(self.pid, self.participant_info.get('street-one'))],
+            [(self.pid, self.participant_info.get('street-two'))],
+            [(self.pid, self.participant_info.get('street-one'))],
+            [(self.pid, self.participant_info.get('street-two'))],
+        ]
+        self.addCleanup(mock_location_pii_patcher.stop)
+
+        mock_merge_fields_patcher = patch(
+            'validation.participants.identity_match.writers.merge_fields_into_single_record'
+        )
+        self.mock_merge_fields = mock_merge_fields_patcher.start()
+        self.addCleanup(mock_merge_fields_patcher.stop)
+
+        mock_remove_sparse_records_patcher = patch(
+            'validation.participants.identity_match.writers.remove_sparse_records'
+        )
+        self.mock_remove_sparse_records = mock_remove_sparse_records_patcher.start()
+        self.addCleanup(mock_remove_sparse_records_patcher.stop)
+
+        mock_change_nulls_patcher = patch(
+            'validation.participants.identity_match.writers.change_nulls_to_missing_value'
+        )
+        self.mock_change_nulls = mock_change_nulls_patcher.start()
+        self.addCleanup(mock_change_nulls_patcher.stop)
+
+        mock_hpo_bucket_patcher = patch(
+            'validation.participants.identity_match.gcs_utils.get_hpo_bucket'
+        )
+        self.mock_hpo_bucket = mock_hpo_bucket_patcher.start()
+        self.mock_hpo_bucket.side_effect = self.bucket_ids
+        self.addCleanup(mock_hpo_bucket_patcher.stop)
+
+        mock_validation_report_patcher = patch(
+            'validation.participants.identity_match.writers.create_site_validation_report'
+        )
+        self.mock_validation_report = mock_validation_report_patcher.start()
+        self.addCleanup(mock_validation_report_patcher.stop)
+
+        mock_drc_bucket_patcher = patch('validation.participants.identity_match.gcs_utils.get_drc_bucket')
+        self.mock_drc_bucket = mock_drc_bucket_patcher.start()
+        self.mock_drc_bucket.return_value = self.internal_bucket_id
+        self.addCleanup(mock_drc_bucket_patcher.stop)
+
+        self.expected = {
+            self.pid:
+                {
+                    consts.FIRST_NAME: consts.MATCH,
+                    consts.MIDDLE_NAME: consts.MATCH,
+                    consts.LAST_NAME: consts.MATCH,
+                    consts.EMAIL: consts.MATCH,
+                    consts.CONTACT_PHONE: consts.MATCH,
+                    consts.STREET_ONE: consts.MATCH,
+                    consts.STREET_TWO: consts.MATCH,
+                    consts.CITY: consts.MATCH,
+                    consts.STATE: consts.MATCH,
+                    consts.ZIP: consts.MATCH,
+                    consts.BIRTHDATE: consts.MATCH,
+                }
         }
 
     def test_match_participants_same_participant(self):
         # pre conditions
 
         # test
-        results = id_match.match_participants(self.dataset)
+        results = id_match.match_participants(
+            self.project, self.rdr_dataset, self.pii_dataset, self.dest_dataset
+        )
 
         # post conditions
-        self.assertEqual(results, self.expected)
+        self.assertEqual(self.mock_dest_dataset.call_count, 1)
+        self.assertEqual(
+            self.mock_dest_dataset.assert_called_with(
+                dataset_id=self.dest_dataset,
+                description=consts.DESTINATION_DATASET_DESCRIPTION.format(
+                    version='', rdr_dataset=self.rdr_dataset, ehr_dataset=self.pii_dataset
+                ),
+                overwrite_existing=True
+            ),
+            None
+        )
 
-    def test_match_participants_different_names(self):
-        # pre conditions
-        self.mock_pii_names.return_value = [(self.pid, 'George', '', 'Costanza')]
+        self.assertEqual(self.mock_match_tables.call_count, 1)
+        self.assertEqual(
+            self.mock_match_tables.assert_called_with(
+                self.project, self.rdr_dataset, self.dest_dataset
+            ),
+            None
+        )
 
-        # test
-        results = id_match.match_participants(self.dataset)
+        self.assertEqual(self.mock_site_names.call_count, 1)
+        self.assertEqual(
+            self.mock_site_names.assert_called_once_with(),
+            None
+        )
 
-        # post conditions
-        self.expected[self.pid][consts.FIRST_NAME] = consts.MISMATCH
-        self.expected[self.pid][consts.MIDDLE_NAME] = consts.MISMATCH
-        self.expected[self.pid][consts.LAST_NAME] = consts.MISMATCH
+        num_sites = len(self.site_list)
+        self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
-        self.assertEqual(results, self.expected)
+        self.assertEqual(self.mock_ehr_values.call_count, num_sites)
+        self.assertEqual(self.mock_rdr_values.call_count, num_sites * 11)
+        self.assertEqual(self.mock_pii_values.call_count, num_sites * 5)
+        self.assertEqual(self.mock_table_append.call_count, num_sites * 11)
+        self.assertEqual(self.mock_location_pii.call_count, num_sites * 5)
+        self.assertEqual(self.mock_merge_fields.call_count, num_sites)
+        self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
+        self.assertEqual(self.mock_change_nulls.call_count, num_sites)
+        self.assertEqual(self.mock_hpo_bucket.call_count, num_sites)
+        self.assertEqual(self.mock_drc_bucket.call_count, 1)
+        self.assertEqual(self.mock_validation_report.call_count, num_sites + 1)
 
-    def test_match_participants_none_and_integer_name(self):
-        # pre conditions
-        self.mock_pii_names.return_value = [(self.pid, 99, 'k', None)]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.FIRST_NAME] = consts.MISMATCH
-        self.expected[self.pid][consts.LAST_NAME] = consts.MISMATCH
-
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_different_emails(self):
-        # pre conditions
-        self.mock_pii_emails.return_value = [(self.pid, 'oscar-THE-grouch@aol.com')]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.EMAIL] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_none_emails(self):
-        # pre conditions
-        self.mock_pii_emails.return_value = [(self.pid, None)]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.EMAIL] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_integer_emails(self):
-        # pre conditions
-        self.mock_pii_emails.return_value = [(self.pid, 99)]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.EMAIL] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_different_phone_numbers(self):
-        # pre conditions
-        self.mock_pii_phone_numbers.return_value = [(self.pid, '867-5309')]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.CONTACT_PHONE] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_none_phone_numbers(self):
-        # pre conditions
-        self.mock_pii_phone_numbers.return_value = [(self.pid, None)]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.CONTACT_PHONE] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_integer_phone_numbers(self):
-        # pre conditions
-        self.mock_pii_phone_numbers.return_value = [(self.pid, 5558675309)]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_formatted_phone_numbers(self):
-        # pre conditions
-        self.mock_pii_phone_numbers.return_value = [(self.pid, '(555) 867-5309')]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_different_address_fields(self):
-        # pre conditions
-        self.mock_pii_addresses.return_value = [
-            (self.pid,
-             '99 Problems',
-             '',
-             'Oakland',
-             'MI',
-             '90210')]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.STREET_ONE] = consts.MISMATCH
-        self.expected[self.pid][consts.STREET_TWO] = consts.MISMATCH
-        self.expected[self.pid][consts.CITY] = consts.MISMATCH
-        self.expected[self.pid][consts.STATE] = consts.MISMATCH
-        self.expected[self.pid][consts.ZIP] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_none_address_fields(self):
-        # pre conditions
-        self.mock_pii_addresses.return_value = [
-            (self.pid,
-             None,
-             None,
-             None,
-             None,
-             None)]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.STREET_ONE] = consts.MISMATCH
-        self.expected[self.pid][consts.STREET_TWO] = consts.MISMATCH
-        self.expected[self.pid][consts.CITY] = consts.MISMATCH
-        self.expected[self.pid][consts.STATE] = consts.MISMATCH
-        self.expected[self.pid][consts.ZIP] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_integer_address_fields(self):
-        # pre conditions
-        self.mock_pii_addresses.return_value = [
-            (self.pid,
-             1,
-             2,
-             3,
-             44,
-             90210)]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.STREET_ONE] = consts.MISMATCH
-        self.expected[self.pid][consts.STREET_TWO] = consts.MISMATCH
-        self.expected[self.pid][consts.CITY] = consts.MISMATCH
-        self.expected[self.pid][consts.STATE] = consts.MISMATCH
-        self.expected[self.pid][consts.ZIP] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_split_but_same_street_address(self):
-        # pre conditions
-        self.mock_pii_addresses.return_value = [
-            (self.pid,
-             '88 Lingerlost Road   Apt.   4E',
-             '',
-             'Frog Pond',
-             'AL',
-             '05645')]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_different_birthdates(self):
-        # pre conditions
-        self.observation_values[consts.OBS_EHR_BIRTH_DATETIME][self.pid] = '2010-01-01'
-        self.mock_obs_values.return_value = self.observation_values
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.BIRTHDATE] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_none_birthdate(self):
-        # pre conditions
-        self.observation_values[consts.OBS_EHR_BIRTH_DATETIME][self.pid] = None
-        self.mock_obs_values.return_value = self.observation_values
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.BIRTHDATE] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_none_birthdates(self):
-        # pre conditions
-        self.observation_values[consts.OBS_EHR_BIRTH_DATETIME][self.pid] = None
-        self.observation_values[consts.OBS_PII_BIRTH_DATETIME][self.pid] = None
-        self.mock_obs_values.return_value = self.observation_values
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_epoch_birthdates(self):
-        # pre conditions
-        # TODO cover epoch datetimes if necessary
-        self.observation_values[consts.OBS_PII_BIRTH_DATETIME][self.pid] = 631170000
-        self.mock_obs_values.return_value = self.observation_values
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.BIRTHDATE] = consts.MISMATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_middle_initial(self):
-        # pre conditions
-        self.mock_pii_names.return_value = [(self.pid, 'Fancy-Nancy', 'Knight', 'Drew')]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.FIRST_NAME] = consts.MATCH
-        self.expected[self.pid][consts.MIDDLE_NAME] = consts.MISMATCH
-        self.expected[self.pid][consts.LAST_NAME] = consts.MATCH
-        self.assertEqual(results, self.expected)
-
-    def test_match_participants_zero_zipcode_address_fields(self):
-        # pre conditions
-        # mock seems to read zero prefixed integers wrong (different base system)
-        self.mock_pii_addresses.return_value = [
-            (self.pid,
-             '1',
-             '2',
-             '3',
-             '44',
-             '5645')]
-
-        # test
-        results = id_match.match_participants(self.dataset)
-
-        # post conditions
-        self.expected[self.pid][consts.STREET_ONE] = consts.MISMATCH
-        self.expected[self.pid][consts.STREET_TWO] = consts.MISMATCH
-        self.expected[self.pid][consts.CITY] = consts.MISMATCH
-        self.expected[self.pid][consts.STATE] = consts.MISMATCH
-        self.expected[self.pid][consts.ZIP] = consts.MATCH
-        self.assertEqual(results, self.expected)
+        site_filename = os.path.join(
+            consts.REPORT_DIRECTORY.format(date=self.date_string), consts.REPORT_TITLE
+        )
+        drc_filename = os.path.join(self.dest_dataset, consts.REPORT_TITLE)
+        expected_report_calls = [
+            call(self.project, self.dest_dataset, [self.site_list[0]], self.bucket_ids[0], site_filename),
+            call(self.project, self.dest_dataset, [self.site_list[1]], self.bucket_ids[1], site_filename),
+            call(self.project, self.dest_dataset, self.site_list, self.internal_bucket_id, drc_filename)
+        ]
+        self.assertEqual(self.mock_validation_report.mock_calls, expected_report_calls)

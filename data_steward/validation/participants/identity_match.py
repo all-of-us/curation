@@ -6,8 +6,11 @@ A module to perform initial participant identity matching based on PII data.
 Compares site PII data to values from the RDR, looking to identify discrepancies.
 """
 # Python imports
+from datetime import datetime
 import json
 import logging
+import os
+import re
 
 # Third party imports
 from dateutil.parser import parse
@@ -15,8 +18,8 @@ from dateutil.parser import parse
 # Project imports
 import bq_utils
 import gcs_utils
-import constants.validation.participants.identity_match as consts
 import constants.bq_utils as bq_consts
+import constants.validation.participants.identity_match as consts
 import validation.participants.normalizers as normalizer
 import validation.participants.readers as readers
 import validation.participants.writers as writers
@@ -496,6 +499,15 @@ def _update_known_person_ids(person_ids, hpo, person_id_set):
     return person_ids
 
 
+def _get_date_string(dataset):
+    date_string = dataset[-8:]
+
+    if re.match(consts.DRC_DATE_REGEX, date_string):
+        return date_string
+
+    return datetime.now().strftime(consts.DRC_DATE_FORMAT)
+
+
 def match_participants(project, rdr_dataset, pii_dataset, dest_dataset_id):
     """
     Entry point for performing participant matching of PPI, EHR, and PII data.
@@ -504,10 +516,20 @@ def match_participants(project, rdr_dataset, pii_dataset, dest_dataset_id):
 
     :return: results of the field comparison for each hpo
     """
+    date_string = _get_date_string(dest_dataset_id)
+
+    if dest_dataset_id[-8:] != date_string:
+        dest_dataset_id += date_string
+
     # create new dataset for the intermediate tables and results
-    dataset_result = bq_utils.create_dataset(dataset_id=dest_dataset_id,
-                                             description='provenance info',
-                                             overwrite_existing=True)
+    dataset_result = bq_utils.create_dataset(
+        dataset_id=dest_dataset_id,
+        description=consts.DESTINATION_DATASET_DESCRIPTION.format(
+            version='',
+            rdr_dataset=rdr_dataset,
+            ehr_dataset=pii_dataset
+        ),
+        overwrite_existing=True)
 
     validation_dataset = dataset_result.get(bq_consts.DATASET_REF, {})
     validation_dataset = validation_dataset.get(bq_consts.DATASET_ID, '')
@@ -515,10 +537,10 @@ def match_participants(project, rdr_dataset, pii_dataset, dest_dataset_id):
     # create intermediate observation table in new dataset
     readers.create_match_values_table(project, rdr_dataset, dest_dataset_id)
 
-    hpo_sites = ['lrwb_test_table']
-#    hpo_sites = readers.get_hpo_site_names()
+    hpo_sites = readers.get_hpo_site_names()
 
     field_list = []
+    #TODO:  create a proper config file to store this path
     with open('resources/fields/identity_match.json') as json_file:
         field_list = json.load(json_file)
 
@@ -658,7 +680,7 @@ def match_participants(project, rdr_dataset, pii_dataset, dest_dataset_id):
 
     # validate street addresses
     for site in hpo_sites:
-        person_id_set, address_one_match_values, address_two_match_values = _compare_street_addresses(
+        person_id_set, address_one_matches, address_two_matches = _compare_street_addresses(
             project,
             validation_dataset,
             rdr_dataset,
@@ -673,14 +695,14 @@ def match_participants(project, rdr_dataset, pii_dataset, dest_dataset_id):
         # write street address matches for hpo to table
         writers.append_to_result_table(
             site,
-            address_one_match_values,
+            address_one_matches,
             project,
             validation_dataset,
             consts.ADDRESS_ONE_FIELD
         )
         writers.append_to_result_table(
             site,
-            address_two_match_values,
+            address_two_matches,
             project,
             validation_dataset,
             consts.ADDRESS_TWO_FIELD
@@ -753,17 +775,18 @@ def match_participants(project, rdr_dataset, pii_dataset, dest_dataset_id):
 
     # generate hpo site reports
     for site in hpo_sites:
-        #bucket = gcs_utils.get_hpo_bucket(site)
-        bucket = 'lrwb_aou111'
-        #TODO:  implement a way to get the submission folder
-        import os
-        filename = os.path.join(gcs_utils.get_submission_directory(site),  consts.REPORT_TITLE)
-        writers.create_site_validation_report(project, validation_dataset, [site], bucket, filename)
+        bucket = gcs_utils.get_hpo_bucket(site)
+        filename = os.path.join(
+            consts.REPORT_DIRECTORY.format(date=date_string),
+            consts.REPORT_TITLE
+        )
+        writers.create_site_validation_report(
+            project, validation_dataset, [site], bucket, filename
+        )
 
     # generate aggregate site report
-    bucket = 'lrwb_drc_curation_internal_test'
-    #bucket = gcs_utils.get_drc_bucket()
-    filename = validation_dataset + '/' + consts.REPORT_TITLE
+    bucket = gcs_utils.get_drc_bucket()
+    filename = os.path.join(validation_dataset, consts.REPORT_TITLE)
     writers.create_site_validation_report(project, validation_dataset, hpo_sites, bucket, filename)
 
     return results
@@ -773,5 +796,5 @@ if __name__ == '__main__':
     RDR_DATASET = 'lrwb_combined20190415'
     PII_DATASET = 'lrwb_pii_tables'
     PROJECT = 'aou-res-curation-test'
-    DEST_DATASET_ID = 'temp_dataset_id20190415'
+    DEST_DATASET_ID = 'temp_dataset_id'
     match_participants(PROJECT, RDR_DATASET, PII_DATASET, DEST_DATASET_ID)

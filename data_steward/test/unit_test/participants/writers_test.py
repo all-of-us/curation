@@ -2,7 +2,7 @@
 import unittest
 
 # Third party imports
-from mock import patch
+from mock import ANY, call, patch
 import oauth2client
 
 # Project imports
@@ -322,5 +322,134 @@ class WritersTest(unittest.TestCase):
         expected = consts.MISMATCH
         self.assertEqual(actual, expected)
 
-    def test_create_site_validation_report(self):
-        raise NotImplementedError()
+    @patch('validation.participants.writers.gcs_utils.upload_object')
+    @patch('validation.participants.writers.bq_utils.large_response_to_rowlist')
+    @patch('validation.participants.writers.bq_utils.query')
+    @patch('validation.participants.writers.StringIO.StringIO')
+    def test_create_site_validation_report(
+            self,
+            mock_report_file,
+            mock_query,
+            mock_response,
+            mock_upload
+    ):
+        # preconditions
+        bucket = 'abc'
+        filename = 'output.csv'
+        mock_response.return_value = [
+            {
+                consts.ADDRESS_ONE_FIELD: consts.MATCH,
+                consts.ADDRESS_TWO_FIELD: consts.MATCH,
+                consts.CITY_FIELD: consts.MATCH,
+                consts.STATE_FIELD: consts.MATCH,
+                consts.ZIP_CODE_FIELD: consts.MATCH,
+                consts.PERSON_ID_FIELD: 1,
+                consts.FIRST_NAME_FIELD: consts.MATCH,
+                consts.LAST_NAME_FIELD: consts.MATCH,
+                consts.MIDDLE_NAME_FIELD: consts.MATCH,
+                consts.BIRTH_DATE_FIELD: consts.MATCH,
+                consts.PHONE_NUMBER_FIELD: consts.MATCH,
+                consts.EMAIL_FIELD: consts.MATCH,
+                consts.ALGORITHM_FIELD: consts.MATCH,
+            },
+            {
+                consts.ADDRESS_ONE_FIELD: consts.MATCH,
+                consts.ADDRESS_TWO_FIELD: consts.MATCH,
+                consts.CITY_FIELD: consts.MATCH,
+                consts.STATE_FIELD: consts.MATCH,
+                consts.ZIP_CODE_FIELD: consts.MISMATCH,
+                consts.PERSON_ID_FIELD: 2,
+                consts.FIRST_NAME_FIELD: consts.MATCH,
+                consts.LAST_NAME_FIELD: consts.MATCH,
+                consts.MIDDLE_NAME_FIELD: consts.MATCH,
+                consts.BIRTH_DATE_FIELD: consts.MISMATCH,
+                consts.PHONE_NUMBER_FIELD: consts.MATCH,
+                consts.EMAIL_FIELD: consts.MATCH,
+                consts.ALGORITHM_FIELD: consts.MATCH,
+            },
+        ]
+
+        # test
+        result = writer.create_site_validation_report(self.project, self.dataset, [self.site], bucket, filename)
+
+        # post conditions
+        self.assertEqual(mock_report_file.call_count, 1)
+        self.assertEqual(mock_query.call_count, len([self.site]))
+        self.assertEqual(mock_response.call_count, len([self.site]))
+        self.assertEqual(mock_upload.call_count, 1)
+
+        expected_query = consts.VALIDATION_RESULTS_VALUES.format(
+            project=self.project,
+            dataset=self.dataset,
+            table=self.site + consts.VALIDATION_TABLE_SUFFIX,
+        )
+        self.assertEqual(
+            mock_query.assert_called_with(expected_query, batch=True),
+            None
+        )
+
+        self.assertEqual(
+            mock_upload.assert_called_with(
+                bucket, filename, ANY
+            ),
+            None
+        )
+
+        expected_report_calls = [
+            call(),
+            call().write('person_id,first_name,last_name,birth_date,address,phone_number,email,algorithm\n'),
+            call().write('1,Match,Match,Match,Match,Match,Match,Match\n'),
+            call().write('2,Match,Match,NoMatch,NoMatch,Match,Match,Match\n'),
+            call().seek(0),
+            call().close()
+        ]
+        self.assertEqual(mock_report_file.mock_calls, expected_report_calls)
+
+    @patch('validation.participants.writers.gcs_utils.upload_object')
+    @patch('validation.participants.writers.bq_utils.query')
+    @patch('validation.participants.writers.StringIO.StringIO')
+    def test_create_site_validation_report_with_errors(
+            self,
+            mock_report_file,
+            mock_query,
+            mock_upload
+    ):
+        # preconditions
+        mock_query.side_effect = oauth2client.client.HttpAccessTokenRefreshError()
+
+        bucket = 'abc'
+        filename = 'output.csv'
+
+        # test
+        result = writer.create_site_validation_report(self.project, self.dataset, [self.site], bucket, filename)
+
+        # post conditions
+        self.assertEqual(mock_report_file.call_count, 1)
+        self.assertEqual(mock_query.call_count, len([self.site]))
+        self.assertEqual(mock_upload.call_count, 1)
+
+        expected_query = consts.VALIDATION_RESULTS_VALUES.format(
+            project=self.project,
+            dataset=self.dataset,
+            table=self.site + consts.VALIDATION_TABLE_SUFFIX,
+        )
+        self.assertEqual(
+            mock_query.assert_called_with(expected_query, batch=True),
+            None
+        )
+
+        self.assertEqual(
+            mock_upload.assert_called_with(
+                bucket, filename, ANY
+            ),
+            None
+        )
+
+        expected_report_calls = [
+            call(),
+            call().write('person_id,first_name,last_name,birth_date,address,phone_number,email,algorithm\n'),
+            call().write("Unable to report id validation match records for site:\t%s.\n", self.site),
+            call().seek(0),
+            call().close()
+        ]
+        self.assertEqual(mock_report_file.mock_calls, expected_report_calls)
