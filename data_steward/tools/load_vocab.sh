@@ -81,8 +81,10 @@ echo "Creating and loading dataset ${DATASET}..."
 bq mk --project_id ${APP_ID} --dataset_id ${DATASET} --description "Vocabulary ${OMOP_VOCABULARY_VERSION} loaded from ${GCS_PATH}"
 for file in $(gsutil ls ${GCS_PATH})
 do
- filename=$(basename ${file,,})
- table_name="${filename%.*}"
+ filename=$(basename ${file})
+ # bash3 friendly lowercase
+ filename_lower=$(echo ${filename} | tr '[:upper:]' '[:lower:]')
+ table_name="${filename_lower%.*}"
  gsutil cp ${file} .
  echo "Loading ${DATASET}.${table_name}..."
  bq load --project_id ${APP_ID} --source_format CSV --quote "" --field_delimiter "\t" --max_bad_records 500 --skip_leading_rows 1 ${DATASET}.${table_name} ${file} resources/fields/${table_name}.json
