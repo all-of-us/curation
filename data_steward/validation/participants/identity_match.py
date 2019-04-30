@@ -516,9 +516,9 @@ def match_participants(project, rdr_dataset, pii_dataset, dest_dataset_id):
 
     :return: results of the field comparison for each hpo
     """
-    date_string = _get_date_string(dest_dataset_id)
+    date_string = _get_date_string(rdr_dataset)
 
-    if dest_dataset_id[-8:] != date_string:
+    if not re.match(consts.DRC_DATE_REGEX, dest_dataset_id[-8:]):
         dest_dataset_id += date_string
 
     # create new dataset for the intermediate tables and results
