@@ -34,6 +34,10 @@ CLINICAL = 'clinical'
 ACHILLES = 'achilles'
 CDM_COMPONENTS = [CLINICAL, VOCABULARY, ACHILLES]
 
+
+# Validation Main Constant space
+ACHILLES_HEEL_RESULTS_VALIDATION = '_achilles_heel_results'
+
 # ID Spaces
 #
 # The following constants are added to values in all ID (or "primary key") fields to prevent

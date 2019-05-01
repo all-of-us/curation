@@ -11,6 +11,7 @@ from googleapiclient.errors import HttpError
 import api_util
 import bq_utils
 import common
+import common_sql
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 import gcs_utils
 import resources
@@ -32,17 +33,6 @@ RESULT_FAIL_CODE = '&#x2718'
 RESULT_PASS_CODE = '&#x2714'
 RESULT_FAIL_COLOR = 'red'
 RESULT_PASS_COLOR = 'green'
-
-ACHILLES_HEEL_RESULTS = '_achilles_heel_results'
-HEEL_ERROR_QUERY = '''
-     SELECT analysis_id AS Analysis_ID,
-      achilles_heel_warning AS Heel_Error,
-      rule_id AS Rule_ID,
-      record_count AS Record_Count
-     FROM `{application}.{dataset}.{table_id}`
-     WHERE achilles_heel_warning LIKE 'ERROR:%'
-     ORDER BY record_count DESC, analysis_id
-    '''
 
 
 class InternalValidationError(RuntimeError):
@@ -297,14 +287,14 @@ def process_hpo(hpo_id, force_run=False):
             _upload_achilles_files(hpo_id, folder_prefix)
 
         # get top heel errors
-        heel_result = _get_heel_errors(hpo_id)
+        heel_result = get_heel_result(hpo_id)
 
-        heel_errors = _convert_heel_reports_to_csv(heel_result)
+        heel_errors = _convert_heel_result_to_csv(heel_result)
 
         heel_error_header = get_heel_error_header(heel_result)
 
-        _save_results_html_in_gcs(hpo_id, bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings, heel_errors,
-                                  heel_error_header)
+        _save_results_html_in_gcs(hpo_id, bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings,
+                                  heel_errors, heel_error_header)
 
         now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
@@ -312,19 +302,18 @@ def process_hpo(hpo_id, force_run=False):
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
 
 
-def _convert_heel_reports_to_csv(list_of_dicts):
+def _convert_heel_result_to_csv(list_of_dicts):
     result_list = list()
-    dummy_heel_errors = ['--', '--', '--', '--']
-    if list_of_dicts is None or list_of_dicts == []:
-        return result_list.append(tuple(dummy_heel_errors))
+    if list_of_dicts is []:
+        return result_list.append(tuple())
     else:
-        for item in list_of_dicts:
-            x = tuple(item.values())
-            result_list.append(x)
+        for dict_item in list_of_dicts:
+            dict_values = tuple(dict_item.values())
+            result_list.append(dict_values)
         return result_list
 
 
-def _get_heel_errors(hpo_id, app_id=None, dataset_id=None):
+def get_heel_result(hpo_id, app_id=None, dataset_id=None):
     """
     :param hpo_id: the name of the hpo_id for which validation is being done
     :param app_id: name of the big query application id
@@ -336,25 +325,29 @@ def _get_heel_errors(hpo_id, app_id=None, dataset_id=None):
     if dataset_id is None:
         dataset_id = bq_utils.get_dataset_id()
     table_name = '{hpo_name}{results_table}'.format(hpo_name=hpo_id,
-                                                    results_table=ACHILLES_HEEL_RESULTS)
+                                                    results_table=common.ACHILLES_HEEL_RESULTS_VALIDATION)
     result = None
     if bq_utils.table_exists(table_name):
-        query = HEEL_ERROR_QUERY.format(application=app_id,
-                                        dataset=dataset_id,
-                                        table_id=table_name)
+        query = common_sql.HEEL_ERROR_QUERY_VALIDATION.format(application=app_id,
+                                                              dataset=dataset_id,
+                                                              table_id=table_name)
         if query:
             # Found achilles_heel_results table(s), run the query
             response = bq_utils.query(query)
             result = bq_utils.response2rows(response)
+    if result is None:
+        result = []
     return result
 
 
 def get_heel_error_header(list_of_dicts):
-    fake_header_list = ['Record_Count', 'Heel_Error', 'Analysis_ID', 'Rule_ID']
-    if list_of_dicts is None or list_of_dicts == []:
+    fake_header_list = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
+    if not list_of_dicts:
         return fake_header_list
     else:
-        return list(list_of_dicts[0].keys())
+        header_list = list(list_of_dicts[0].keys())
+        header_list = [header.replace('_', ' ') for header in header_list]
+        return header_list
 
 
 def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefix, bucket):
