@@ -11,6 +11,7 @@ from googleapiclient.errors import HttpError
 import api_util
 import bq_utils
 import common
+import common_sql
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 import gcs_utils
 import resources
@@ -18,6 +19,7 @@ import validation.achilles as achilles
 import validation.achilles_heel as achilles_heel
 import validation.ehr_union as ehr_union
 import validation.export as export
+from google.appengine.api.app_identity import app_identity
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
@@ -275,9 +277,6 @@ def process_hpo(hpo_id, force_run=False):
         errors = validate_result['errors']
         warnings = validate_result['warnings']
 
-        # output to GCS
-        _save_results_html_in_gcs(bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings)
-
         if not all_required_files_loaded(results):
             logging.info('Required files not loaded in %s. Skipping achilles.', folder_prefix)
         else:
@@ -287,10 +286,68 @@ def process_hpo(hpo_id, force_run=False):
             logging.info('Uploading achilles index files to `gs://%s/%s`.', bucket, folder_prefix)
             _upload_achilles_files(hpo_id, folder_prefix)
 
+        # get top heel errors
+        heel_result = get_heel_result(hpo_id)
+
+        heel_errors = _convert_heel_result_to_csv(heel_result)
+
+        heel_error_header = get_heel_error_header(heel_result)
+
+        _save_results_html_in_gcs(hpo_id, bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings,
+                                  heel_errors, heel_error_header)
+
         now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
                      bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT)
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
+
+
+def _convert_heel_result_to_csv(list_of_dicts):
+    result_list = list()
+    if list_of_dicts is []:
+        return result_list.append(tuple())
+    else:
+        for dict_item in list_of_dicts:
+            dict_values = tuple(dict_item.values())
+            result_list.append(dict_values)
+        return result_list
+
+
+def get_heel_result(hpo_id, app_id=None, dataset_id=None):
+    """
+    :param hpo_id: the name of the hpo_id for which validation is being done
+    :param app_id: name of the big query application id
+    :param dataset_id: name of the big query dataset id
+    :return: returns dictionary of rows
+    """
+    if app_id is None:
+        app_id = app_identity.get_application_id()
+    if dataset_id is None:
+        dataset_id = bq_utils.get_dataset_id()
+    table_name = '{hpo_name}{results_table}'.format(hpo_name=hpo_id,
+                                                    results_table=common.ACHILLES_HEEL_RESULTS_VALIDATION)
+    result = None
+    if bq_utils.table_exists(table_name):
+        query = common_sql.HEEL_ERROR_QUERY_VALIDATION.format(application=app_id,
+                                                              dataset=dataset_id,
+                                                              table_id=table_name)
+        if query:
+            # Found achilles_heel_results table(s), run the query
+            response = bq_utils.query(query)
+            result = bq_utils.response2rows(response)
+    if result is None:
+        result = []
+    return result
+
+
+def get_heel_error_header(list_of_dicts):
+    fake_header_list = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
+    if not list_of_dicts:
+        return fake_header_list
+    else:
+        header_list = list(list_of_dicts[0].keys())
+        header_list = [header.replace('_', ' ') for header in header_list]
+        return header_list
 
 
 def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefix, bucket):
@@ -497,9 +554,10 @@ def copy_files(hpo_id):
     return '{"copy-status": "done"}'
 
 
-def _save_results_html_in_gcs(bucket, file_name, results, errors, warnings):
+def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnings, heel_errors, heel_error_header):
     """
     Save the validation results in GCS
+    :param hpo_id: name of the hpo_id
     :param bucket: bucket to save to
     :param file_name: name of the file (object) to save to in GCS
     :param results: list of tuples (<cdm_file_name>, <found>, <loaded>, <parsed>)
@@ -507,16 +565,22 @@ def _save_results_html_in_gcs(bucket, file_name, results, errors, warnings):
     :param warnings: list of tuples (<cdm_file_name>, <message>)
     :return:
     """
+    results_heading = '{hpo_id} EHR Submission Results'.format(hpo_id=hpo_id.upper())
     html_report_list = []
     with open(resources.html_boilerplate_path) as f:
         for line in f:
             html_report_list.append(line)
+
+    html_report_list.append('\n')
+    html_report_list.append(html_tag_wrapper(results_heading, 'h1', 'align="center"'))
     html_report_list.append('\n')
     html_report_list.append(create_html_table(RESULT_FILE_HEADERS, results, "Results"))
     html_report_list.append('\n')
     html_report_list.append(create_html_table(ERROR_FILE_HEADERS, errors, "Errors"))
     html_report_list.append('\n')
     html_report_list.append(create_html_table(ERROR_FILE_HEADERS, warnings, "Warnings"))
+    html_report_list.append('\n')
+    html_report_list.append(create_html_table(heel_error_header, heel_errors, "Heel Errors"))
     html_report_list.append('\n')
     html_report_list.append('</body>\n')
     html_report_list.append('</html>\n')
@@ -537,8 +601,9 @@ def create_html_table(headers, table, table_name):
     table_header_row = create_html_row(headers, 'th', 'tr')
     html_report_list.append(html_tag_wrapper(table_header_row, 'thead'))
     results_rows = []
-    for item in table:
-        results_rows.append(create_html_row(item, 'td', 'tr', headers))
+    if table is not None:
+        for item in table:
+            results_rows.append(create_html_row(item, 'td', 'tr', headers))
     table_body_rows = '\n'.join(results_rows)
     html_report_list.append(html_tag_wrapper(table_body_rows, 'tbody'))
     return html_tag_wrapper('\n'.join(html_report_list), 'table', table_config)

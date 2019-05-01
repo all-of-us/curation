@@ -36,8 +36,10 @@ class ValidationTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.hpo_id = test_util.FAKE_HPO_ID
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
+        self.bigquery_dataset_id = bq_utils.get_dataset_id()
         self.folder_prefix = '2019-01-01/'
         self._empty_bucket()
+        test_util.delete_all_tables(self.bigquery_dataset_id)
 
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
@@ -449,4 +451,5 @@ class ValidationTest(unittest.TestCase):
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
         test_util.empty_bucket(bucket_nyc)
         test_util.empty_bucket(gcs_utils.get_drc_bucket())
+        test_util.delete_all_tables(self.bigquery_dataset_id)
         self.testbed.deactivate()
