@@ -8,6 +8,7 @@ import logging
 import StringIO
 
 # Third party imports
+import googleapiclient
 import oauth2client
 
 # Project imports
@@ -60,7 +61,8 @@ def append_to_result_table(
 
     try:
         results = bq_utils.query(query, batch=True)
-    except oauth2client.client.HttpAccessTokenRefreshError:
+    except (oauth2client.client.HttpAccessTokenRefreshError,
+            googleapiclient.errors.HttpError):
         LOGGER.exception("Encountered an excpetion when inserting records")
         raise
 
@@ -101,12 +103,14 @@ def remove_sparse_records(project, dataset, site):
         field_eight=consts.VALIDATION_FIELDS[7],
         field_nine=consts.VALIDATION_FIELDS[8],
         field_ten=consts.VALIDATION_FIELDS[9],
-        field_eleven=consts.VALIDATION_FIELDS[10]
+        field_eleven=consts.VALIDATION_FIELDS[10],
+        field_twelve=consts.VALIDATION_FIELDS[11]
     )
 
     try:
         results = bq_utils.query(query, batch=True)
-    except oauth2client.client.HttpAccessTokenRefreshError:
+    except (oauth2client.client.HttpAccessTokenRefreshError,
+            googleapiclient.errors.HttpError):
         LOGGER.exception("Encountered an excpetion when removing sparse records")
         raise
 
@@ -146,7 +150,8 @@ def merge_fields_into_single_record(project, dataset, site):
 
         try:
             results = bq_utils.query(query, batch=True)
-        except oauth2client.client.HttpAccessTokenRefreshError:
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
             LOGGER.exception("Encountered an excpetion when merging records")
             raise
 
@@ -192,12 +197,14 @@ def change_nulls_to_missing_value(project, dataset, site):
         field_nine=consts.VALIDATION_FIELDS[8],
         field_ten=consts.VALIDATION_FIELDS[9],
         field_eleven=consts.VALIDATION_FIELDS[10],
+        field_twelve=consts.VALIDATION_FIELDS[11],
         value=consts.MISSING
     )
 
     try:
         results = bq_utils.query(query, batch=True)
-    except oauth2client.client.HttpAccessTokenRefreshError:
+    except (oauth2client.client.HttpAccessTokenRefreshError,
+            googleapiclient.errors.HttpError):
         LOGGER.exception("Encountered an excpetion when filling null records")
         raise
 
@@ -287,7 +294,8 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
 
         try:
             results = bq_utils.query(query_string, batch=True)
-        except oauth2client.client.HttpAccessTokenRefreshError:
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
             LOGGER.exception("Encountered an excpetion when selecting site records")
             report_file.write("Unable to report id validation match records "
                               "for site:\t%s.\n", site)
