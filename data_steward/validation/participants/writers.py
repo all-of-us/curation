@@ -265,7 +265,7 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     :param filename:  The file name to give the csv report.
     """
     fields = [consts.PERSON_ID_FIELD, consts.FIRST_NAME_FIELD,
-              consts.LAST_NAME_FIELD, consts.BIRTH_DATE_FIELD,
+              consts.LAST_NAME_FIELD, consts.BIRTH_DATE_FIELD, consts.SEX_FIELD,
               consts.ADDRESS_MATCH_FIELD, consts.PHONE_NUMBER_FIELD,
               consts.EMAIL_FIELD, consts.ALGORITHM_FIELD
              ]
@@ -307,6 +307,7 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
                 item.get(consts.FIRST_NAME_FIELD),
                 item.get(consts.LAST_NAME_FIELD),
                 item.get(consts.BIRTH_DATE_FIELD),
+                item.get(consts.SEX_FIELD),
                 get_address_match(address_values),
                 item.get(consts.PHONE_NUMBER_FIELD),
                 item.get(consts.EMAIL_FIELD),

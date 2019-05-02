@@ -14,6 +14,8 @@ OBS_PII_STREET_ADDRESS_ZIP = 1585250
 OBS_PII_CONSENT_PRIMARY_PHONE = None
 OBS_EHR_BIRTH_DATETIME = 4083587
 OBS_PII_BIRTH_DATETIME = 1585259
+OBS_PII_SEX = 1585845
+SEX_CONCEPT_IDS = {1585846: 'male', 1585847: 'female', 1585848: 'intersex'}
 
 # response dictionary keys
 EMAIL = 'email'
@@ -137,13 +139,10 @@ PPI_OBSERVATION_VALUES = (
     'ORDER BY person_id'
 )
 
-# Select observation table attributes to validate
-EHR_OBSERVATION_VALUES = (
-    'SELECT person_id, observation_concept_id, value_as_string '
+# Select values from ehr person table
+EHR_PERSON_VALUES = (
+    'SELECT person_id, {field} '
     'FROM `{project}.{dataset}.{table}` '
-    'WHERE observation_concept_id={field_value} '
-    'AND person_id IN ({person_id_csv}) '
-    'ORDER BY person_id'
 )
 
 # Select observation table attributes to validate
@@ -156,7 +155,7 @@ ALL_PPI_OBSERVATION_VALUES = (
                str(OBS_PII_PHONE), str(OBS_PII_STREET_ADDRESS_ONE),
                str(OBS_PII_STREET_ADDRESS_TWO), str(OBS_PII_STREET_ADDRESS_CITY),
                str(OBS_PII_STREET_ADDRESS_STATE), str(OBS_PII_STREET_ADDRESS_ZIP),
-               str(OBS_PII_BIRTH_DATETIME)]) +
+               str(OBS_PII_BIRTH_DATETIME), str(OBS_PII_SEX)]) +
     ')'
 )
 
@@ -312,11 +311,13 @@ MERGE_SET_MISSING_FIELDS = (
 
 # Table names
 OBSERVATION_TABLE = 'observation'
+PERSON_TABLE = 'person'
 ID_MATCH_TABLE = 'id_match_table'
 PII_EMAIL_TABLE = '_pii_email'
 PII_PHONE_TABLE = '_pii_phone_number'
 PII_ADDRESS_TABLE = '_pii_address'
 PII_NAME_TABLE = '_pii_name'
+EHR_PERSON_TABLE_SUFFIX = '_person'
 VALIDATION_TABLE_SUFFIX = '_identity_match'
 
 # Field names
@@ -329,6 +330,7 @@ MIDDLE_NAME_FIELD = 'middle_name'
 LAST_NAME_FIELD = 'last_name'
 EMAIL_FIELD = 'email'
 PHONE_NUMBER_FIELD = 'phone_number'
+SEX_FIELD = 'sex'
 ZIP_CODE_FIELD = 'zip'
 STATE_FIELD = 'state'
 CITY_FIELD = 'city'
@@ -338,6 +340,8 @@ LOCATION_ID_FIELD = 'location_id'
 BIRTH_DATE_FIELD = 'birth_date'
 ALGORITHM_FIELD = 'algorithm'
 ADDRESS_MATCH_FIELD = 'address'
+GENDER_FIELD = 'gender_concept_id'
+BIRTH_DATETIME_FIELD = 'birth_datetime'
 
 VALIDATION_FIELDS = [
     FIRST_NAME_FIELD, MIDDLE_NAME_FIELD, LAST_NAME_FIELD,

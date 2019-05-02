@@ -98,15 +98,17 @@ class IdentityMatchTest(unittest.TestCase):
         self.mock_pii_match_tables = mock_pii_match_tables_patcher.start()
         self.addCleanup(mock_pii_match_tables_patcher.stop)
 
-        mock_ehr_match_values_patcher = patch(
-            'validation.participants.identity_match.readers.get_ehr_match_values'
+        mock_ehr_person_values_patcher = patch(
+            'validation.participants.identity_match.readers.get_ehr_person_values'
         )
-        self.mock_ehr_values = mock_ehr_match_values_patcher.start()
-        self.mock_ehr_values.side_effect = [
+        self.mock_ehr_person = mock_ehr_person_values_patcher.start()
+        self.mock_ehr_person.side_effect = [
+            {self.pid: 'Female'},
+            {self.pid: 'female'},
             {self.pid: self.participant_info.get('ehr_birthdate')},
             {self.pid: self.participant_info.get('ehr_birthdate')},
         ]
-        self.addCleanup(mock_ehr_match_values_patcher.stop)
+        self.addCleanup(mock_ehr_person_values_patcher.stop)
 
         mock_rdr_match_values_patcher = patch(
             'validation.participants.identity_match.readers.get_rdr_match_values'
@@ -133,6 +135,8 @@ class IdentityMatchTest(unittest.TestCase):
             {self.pid: self.participant_info.get('email')},
             {self.pid: self.participant_info.get('phone')},
             {self.pid: self.participant_info.get('phone')},
+            {self.pid: 'Female'},
+            {self.pid: 'male'},
             {self.pid: self.participant_info.get('rdr_birthdate')},
             {self.pid: self.participant_info.get('rdr_birthdate')},
         ]
@@ -271,10 +275,10 @@ class IdentityMatchTest(unittest.TestCase):
         num_sites = len(self.site_list)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
-        self.assertEqual(self.mock_ehr_values.call_count, num_sites)
-        self.assertEqual(self.mock_rdr_values.call_count, num_sites * 11)
+        self.assertEqual(self.mock_ehr_person.call_count, num_sites * 2)
+        self.assertEqual(self.mock_rdr_values.call_count, num_sites * 12)
         self.assertEqual(self.mock_pii_values.call_count, num_sites * 5)
-        self.assertEqual(self.mock_table_append.call_count, num_sites * 11)
+        self.assertEqual(self.mock_table_append.call_count, num_sites * 12)
         self.assertEqual(self.mock_location_pii.call_count, num_sites * 5)
         self.assertEqual(self.mock_merge_fields.call_count, num_sites)
         self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)

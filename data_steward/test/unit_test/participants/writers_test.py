@@ -351,6 +351,7 @@ class WritersTest(unittest.TestCase):
                 consts.PHONE_NUMBER_FIELD: consts.MATCH,
                 consts.EMAIL_FIELD: consts.MATCH,
                 consts.ALGORITHM_FIELD: consts.MATCH,
+                consts.SEX_FIELD: consts.MATCH,
             },
             {
                 consts.ADDRESS_ONE_FIELD: consts.MATCH,
@@ -366,6 +367,7 @@ class WritersTest(unittest.TestCase):
                 consts.PHONE_NUMBER_FIELD: consts.MATCH,
                 consts.EMAIL_FIELD: consts.MATCH,
                 consts.ALGORITHM_FIELD: consts.MATCH,
+                consts.SEX_FIELD: consts.MISSING,
             },
         ]
 
@@ -397,9 +399,9 @@ class WritersTest(unittest.TestCase):
 
         expected_report_calls = [
             call(),
-            call().write('person_id,first_name,last_name,birth_date,address,phone_number,email,algorithm\n'),
-            call().write('1,Match,Match,Match,Match,Match,Match,Match\n'),
-            call().write('2,Match,Match,NoMatch,NoMatch,Match,Match,Match\n'),
+            call().write('person_id,first_name,last_name,birth_date,sex,address,phone_number,email,algorithm\n'),
+            call().write('1,Match,Match,Match,Match,Match,Match,Match,Match\n'),
+            call().write('2,Match,Match,NoMatch,Missing,NoMatch,Match,Match,Match\n'),
             call().seek(0),
             call().close()
         ]
@@ -447,7 +449,7 @@ class WritersTest(unittest.TestCase):
 
         expected_report_calls = [
             call(),
-            call().write('person_id,first_name,last_name,birth_date,address,phone_number,email,algorithm\n'),
+            call().write('person_id,first_name,last_name,birth_date,sex,address,phone_number,email,algorithm\n'),
             call().write("Unable to report id validation match records for site:\t%s.\n", self.site),
             call().seek(0),
             call().close()
