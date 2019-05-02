@@ -43,33 +43,6 @@ class IdentityMatchTest(unittest.TestCase):
             'rdr_birthdate': '1990-01-01'
         }
 
-        self.observation_values = {
-            consts.OBS_PII_NAME_FIRST:
-                {self.pid: self.participant_info.get('first')},
-            consts.OBS_PII_NAME_MIDDLE:
-                {self.pid: self.participant_info.get('middle')},
-            consts.OBS_PII_NAME_LAST:
-                {self.pid: self.participant_info.get('last')},
-            consts.OBS_PII_EMAIL_ADDRESS:
-                {self.pid: self.participant_info.get('email')},
-            consts.OBS_PII_PHONE:
-                {self.pid: self.participant_info.get('phone')},
-            consts.OBS_PII_STREET_ADDRESS_ONE:
-                {self.pid: self.participant_info.get('street-one')},
-            consts.OBS_PII_STREET_ADDRESS_TWO:
-                {self.pid: self.participant_info.get('street-two')},
-            consts.OBS_PII_STREET_ADDRESS_CITY:
-                {self.pid: self.participant_info.get('city')},
-            consts.OBS_PII_STREET_ADDRESS_STATE:
-                {self.pid: self.participant_info.get('state')},
-            consts.OBS_PII_STREET_ADDRESS_ZIP:
-                {self.pid: self.participant_info.get('zip')},
-            consts.OBS_EHR_BIRTH_DATETIME:
-                {self.pid: self.participant_info.get('ehr_birthdate')},
-            consts.OBS_PII_BIRTH_DATETIME:
-                {self.pid: self.participant_info.get('rdr_birthdate')},
-        }
-
         mock_dest_dataset_patcher = patch(
             'validation.participants.identity_match.bq_utils.create_dataset'
         )
@@ -219,23 +192,6 @@ class IdentityMatchTest(unittest.TestCase):
         self.mock_drc_bucket = mock_drc_bucket_patcher.start()
         self.mock_drc_bucket.return_value = self.internal_bucket_id
         self.addCleanup(mock_drc_bucket_patcher.stop)
-
-        self.expected = {
-            self.pid:
-                {
-                    consts.FIRST_NAME: consts.MATCH,
-                    consts.MIDDLE_NAME: consts.MATCH,
-                    consts.LAST_NAME: consts.MATCH,
-                    consts.EMAIL: consts.MATCH,
-                    consts.CONTACT_PHONE: consts.MATCH,
-                    consts.STREET_ONE: consts.MATCH,
-                    consts.STREET_TWO: consts.MATCH,
-                    consts.CITY: consts.MATCH,
-                    consts.STATE: consts.MATCH,
-                    consts.ZIP: consts.MATCH,
-                    consts.BIRTHDATE: consts.MATCH,
-                }
-        }
 
     def test_match_participants_same_participant(self):
         # pre conditions
