@@ -445,7 +445,7 @@ def _compare_genders(
 
     # compare gender from ppi info to ehr info and record results.
     for person_id, ehr_gender in ehr_genders.iteritems():
-        rdr_gender = pii_genders.get(person_id)
+        rdr_gender = pii_genders.get(person_id, '')
         ehr_gender = consts.SEX_CONCEPT_IDS.get(ehr_gender, '')
 
         rdr_gender = rdr_gender.lower()

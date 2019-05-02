@@ -73,6 +73,12 @@
     },
     {
         "type": "string",
+        "name": "sex",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
         "name": "algorithm",
         "mode": "nullable",
         "description": "Identifies whether this records fields were validated with an algorithm."

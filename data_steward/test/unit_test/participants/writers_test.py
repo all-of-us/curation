@@ -122,7 +122,8 @@ class WritersTest(unittest.TestCase):
             field_eight=consts.VALIDATION_FIELDS[7],
             field_nine=consts.VALIDATION_FIELDS[8],
             field_ten=consts.VALIDATION_FIELDS[9],
-            field_eleven=consts.VALIDATION_FIELDS[10]
+            field_eleven=consts.VALIDATION_FIELDS[10],
+            field_twelve=consts.VALIDATION_FIELDS[11]
         )
 
         self.assertEqual(mock_query.call_count, 1)
@@ -157,7 +158,8 @@ class WritersTest(unittest.TestCase):
             field_eight=consts.VALIDATION_FIELDS[7],
             field_nine=consts.VALIDATION_FIELDS[8],
             field_ten=consts.VALIDATION_FIELDS[9],
-            field_eleven=consts.VALIDATION_FIELDS[10]
+            field_eleven=consts.VALIDATION_FIELDS[10],
+            field_twelve=consts.VALIDATION_FIELDS[11]
         )
 
         self.assertEqual(mock_query.call_count, 1)
@@ -176,10 +178,10 @@ class WritersTest(unittest.TestCase):
             project=self.project,
             dataset=self.dataset,
             table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-            field=consts.VALIDATION_FIELDS[10]
+            field=consts.VALIDATION_FIELDS[11]
         )
 
-        self.assertEqual(mock_query.call_count, 11)
+        self.assertEqual(mock_query.call_count, 12)
         self.assertEqual(
             mock_query.assert_called_with(expected_merge, batch=True),
             None
@@ -233,6 +235,7 @@ class WritersTest(unittest.TestCase):
             field_nine=consts.VALIDATION_FIELDS[8],
             field_ten=consts.VALIDATION_FIELDS[9],
             field_eleven=consts.VALIDATION_FIELDS[10],
+            field_twelve=consts.VALIDATION_FIELDS[11],
             value=consts.MISSING
         )
 
@@ -269,6 +272,7 @@ class WritersTest(unittest.TestCase):
             field_nine=consts.VALIDATION_FIELDS[8],
             field_ten=consts.VALIDATION_FIELDS[9],
             field_eleven=consts.VALIDATION_FIELDS[10],
+            field_twelve=consts.VALIDATION_FIELDS[11],
             value=consts.MISSING
         )
 
