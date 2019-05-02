@@ -61,34 +61,35 @@ class ReadersTest(unittest.TestCase):
 
     @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.readers.bq_utils.query')
-    def test_get_ehr_match_values_with_duplicate_keys(self, mock_query, mock_response):
+    def test_get_ehr_person_values_with_duplicate_keys(self, mock_query, mock_response):
         # pre conditions
         mock_query.return_value = {}
+        column_name = 'birth_datetime'
         mock_response.return_value = [
             {
                 consts.PERSON_ID_FIELD: 1,
-                consts.STRING_VALUE_FIELD: 'saLLy',
+                column_name: 'saLLy',
             },
             {
                 consts.PERSON_ID_FIELD: 2,
-                consts.STRING_VALUE_FIELD: 'Rudy'
+                column_name: 'Rudy'
             },
             {
                 consts.PERSON_ID_FIELD: 3,
-                consts.STRING_VALUE_FIELD: 'MaTiLdA'
+                column_name: 'MaTiLdA'
             },
             {
                 consts.PERSON_ID_FIELD: 2,
-                consts.STRING_VALUE_FIELD: 'Rudy'
+                column_name: 'Rudy'
             },
             {
                 consts.PERSON_ID_FIELD: 3,
-                consts.STRING_VALUE_FIELD: 'mattie'
+                column_name: 'mattie'
             },
         ]
 
         # test
-        actual = reader.get_ehr_match_values('project-foo', 'ehr-bar', 'table-doh', 'concept-bah', 'ids-humbug')
+        actual = reader.get_ehr_person_values('project-foo', 'ehr-bar', 'table-doh', column_name)
 
         # post-conditions
         expected = {1: 'saLLy', 2: 'Rudy', 3: 'MaTiLdA'}
@@ -98,12 +99,11 @@ class ReadersTest(unittest.TestCase):
         self.assertEqual(mock_response.call_count, 1)
         self.assertEqual(
             mock_query.assert_called_with(
-                consts.EHR_OBSERVATION_VALUES.format(
+                consts.EHR_PERSON_VALUES.format(
                     project='project-foo',
                     dataset='ehr-bar',
                     table='table-doh',
-                    field_value='concept-bah',
-                    person_id_csv='ids-humbug'
+                    field=column_name
                 )
             ),
             None
@@ -111,26 +111,27 @@ class ReadersTest(unittest.TestCase):
 
     @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.readers.bq_utils.query')
-    def test_get_ehr_match_values(self, mock_query, mock_response):
+    def test_get_ehr_person_values(self, mock_query, mock_response):
         # pre conditions
         mock_query.return_value = {}
+        column_name = 'gender_concept_id'
         mock_response.return_value = [
             {
                 consts.PERSON_ID_FIELD: 1,
-                consts.STRING_VALUE_FIELD: 'saLLy',
+                column_name: 'saLLy',
             },
             {
                 consts.PERSON_ID_FIELD: 2,
-                consts.STRING_VALUE_FIELD: 'Rudy'
+                column_name: 'Rudy'
             },
             {
                 consts.PERSON_ID_FIELD: 3,
-                consts.STRING_VALUE_FIELD: 'MaTiLdA'
+                column_name: 'MaTiLdA'
             },
         ]
 
         # test
-        actual = reader.get_ehr_match_values('project-foo', 'ehr-bar', 'table-doh', 'concept-bah', 'ids-humbug')
+        actual = reader.get_ehr_person_values('project-foo', 'ehr-bar', 'table-doh', column_name)
 
         # post-conditions
         expected = {1: 'saLLy', 2: 'Rudy', 3: 'MaTiLdA'}
@@ -140,12 +141,11 @@ class ReadersTest(unittest.TestCase):
         self.assertEqual(mock_response.call_count, 1)
         self.assertEqual(
             mock_query.assert_called_with(
-                consts.EHR_OBSERVATION_VALUES.format(
+                consts.EHR_PERSON_VALUES.format(
                     project='project-foo',
                     dataset='ehr-bar',
                     table='table-doh',
-                    field_value='concept-bah',
-                    person_id_csv='ids-humbug'
+                    field=column_name
                 )
             ),
             None

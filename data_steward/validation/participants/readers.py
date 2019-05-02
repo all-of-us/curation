@@ -66,7 +66,7 @@ def create_match_values_table(project, rdr_dataset, destination_dataset):
     return consts.ID_MATCH_TABLE
 
 
-def get_ehr_match_values(project, dataset, table_name, concept_id, id_list):
+def get_ehr_person_values(project, dataset, table_name, column_name):
     """
     Get the desired matching values from the combined observation table.
 
@@ -85,16 +85,12 @@ def get_ehr_match_values(project, dataset, table_name, concept_id, id_list):
         of the concept_id.
         For example:
         {person_id_1:  "email_address", person_id_2: "email_address"}
-        {person_id_1: "first_name", person_id_2: "first_name"}
-        {person_id_1: "middle_name", }
-        {person_id_1: "last_name", person_id_2: "last_name"}
     """
-    query_string = consts.EHR_OBSERVATION_VALUES.format(
+    query_string = consts.EHR_PERSON_VALUES.format(
         project=project,
         dataset=dataset,
         table=table_name,
-        field_value=concept_id,
-        person_id_csv=id_list
+        field=column_name,
     )
 
     LOGGER.debug("Participant validation ran the query\n%s", query_string)
@@ -104,7 +100,7 @@ def get_ehr_match_values(project, dataset, table_name, concept_id, id_list):
     result_dict = {}
     for item in row_results:
         person_id = item.get(consts.PERSON_ID_FIELD)
-        value = item.get(consts.STRING_VALUE_FIELD)
+        value = item.get(column_name)
         value = _get_utf8_string(value)
 
         exists = result_dict.get(person_id)
@@ -140,7 +136,6 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
         For example:
         {person_id_1:  "email_address", person_id_2: "email_address"}
         {person_id_1: "first_name", person_id_2: "first_name"}
-        {person_id_1: "middle_name", }
         {person_id_1: "last_name", person_id_2: "last_name"}
     """
     query_string = consts.PPI_OBSERVATION_VALUES.format(
