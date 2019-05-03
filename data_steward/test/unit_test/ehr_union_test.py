@@ -7,6 +7,7 @@ import moz_sql_parser
 import dpath
 
 import bq_utils
+import common
 import gcs_utils
 import resources
 import test_util
