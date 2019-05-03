@@ -1,0 +1,11 @@
+concept_id,concept_name                                                   ,drug_class_name
+21604254  ,OPIOIDS                                                        ,Opioids
+21604303  ,OTHER ANALGESICS AND ANTIPYRETICS                              ,Pain NSAIDS
+21601855  ,HMG CoA reductase inhibitors                                   ,Statins
+21601462  ,"LOW-CEILING DIURETICS, THIAZIDES"                             ,Diuretics
+21601783  ,"ACE INHIBITORS, PLAIN"                                        ,ACE Inhibitor
+21600744  ,"BLOOD GLUCOSE LOWERING DRUGS, EXCL. INSULINS"                 ,Oral Hypoglycemics
+21601745  ,SELECTIVE CALCIUM CHANNEL BLOCKERS WITH MAINLY VASCULAR EFFECTS,CCB
+21601278  ,VACCINES                                                       ,Vaccines
+21603933  ,"ANTIINFLAMMATORY AND ANTIRHEUMATIC PRODUCTS, NON-STEROIDS"    ,MSK NSAIDS
+21602796  ,ANTIBACTERIALS FOR SYSTEMIC USE                                ,Antibiotics

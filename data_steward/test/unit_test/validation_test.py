@@ -1,20 +1,20 @@
 """
 Unit test components of data_steward.validation.main
 """
+import StringIO
 import datetime
 import json
 import os
-import StringIO
 import unittest
 
-from google.appengine.ext import testbed
 import mock
+from google.appengine.ext import testbed
 
 import bq_utils
 import common
-import test.unit_test.test_util as test_util
 import gcs_utils
 import resources
+import test.unit_test.test_util as test_util
 from validation import main
 
 
@@ -40,11 +40,49 @@ class ValidationTest(unittest.TestCase):
         self.folder_prefix = '2019-01-01/'
         self._empty_bucket()
         test_util.delete_all_tables(self.bigquery_dataset_id)
+        self._create_drug_class_table()
 
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         for bucket_item in bucket_items:
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+
+    def _create_drug_class_table(self):
+        table_name = 'drug_class'
+        fields = [{"type": "integer", "name": "concept_id", "mode": "required"},
+                  {"type": "string", "name": "concept_name", "mode": "required"},
+                  {"type": "string", "name": "drug_class_name", "mode": "required"}]
+        bq_utils.create_table(table_id=table_name, fields=fields, drop_existing=True,
+                              dataset_id=self.bigquery_dataset_id)
+        q = '''
+        SELECT
+      concept_id,
+      concept_name,
+      CASE
+        WHEN c.concept_id = 21602796 THEN 'Antibiotics'
+        WHEN c.concept_id = 21601745 THEN 'CCB'
+        WHEN c.concept_id = 21601462 THEN 'Diuretics'
+        WHEN c.concept_id = 21604254 THEN 'Opioids'
+        WHEN c.concept_id = 21601855 THEN 'Statins'
+        WHEN c.concept_id = 21603933 THEN 'MSK NSAIDS'
+        WHEN c.concept_id = 21600744 THEN 'Oral Hypoglycemics'
+        WHEN c.concept_id = 21604303 THEN 'Pain NSAIDS'
+        WHEN c.concept_id = 21601278 THEN 'Vaccines'
+        WHEN c.concept_id = 21601783 THEN 'ACE Inhibitor'
+        ELSE '0'
+      END AS drug_class_name
+    FROM
+      `{dataset_id}.concept` c
+    WHERE
+      c.concept_id IN (21602796, 21601745, 21601462, 21604254, 21601855, 21603933, 21600744, 21604303, 21601278,
+      21601783)
+        '''.format(dataset_id=self.bigquery_dataset_id)
+        bq_utils.query(q,
+                       use_legacy_sql=False,
+                       destination_table_id='drug_class',
+                       retry_count=bq_utils.BQ_DEFAULT_RETRY_COUNT,
+                       write_disposition='WRITE_TRUNCATE',
+                       destination_dataset_id=self.bigquery_dataset_id)
 
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error

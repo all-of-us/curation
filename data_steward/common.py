@@ -37,6 +37,7 @@ CDM_COMPONENTS = [CLINICAL, VOCABULARY, ACHILLES]
 
 # Validation Main Constant space
 ACHILLES_HEEL_RESULTS_VALIDATION = '_achilles_heel_results'
+DRUG_CHECK_TABLE_VALIDATION = '_drug_exposure'
 
 # ID Spaces
 #

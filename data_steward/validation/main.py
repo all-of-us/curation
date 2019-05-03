@@ -1,25 +1,25 @@
 #!/usr/bin/env python
 import StringIO
+import datetime
 import json
 import logging
 import os
-import datetime
 
 from flask import Flask
+from google.appengine.api.app_identity import app_identity
 from googleapiclient.errors import HttpError
 
 import api_util
 import bq_utils
 import common
 import common_sql
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 import gcs_utils
 import resources
 import validation.achilles as achilles
 import validation.achilles_heel as achilles_heel
 import validation.ehr_union as ehr_union
 import validation.export as export
-from google.appengine.api.app_identity import app_identity
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
@@ -286,15 +286,18 @@ def process_hpo(hpo_id, force_run=False):
             logging.info('Uploading achilles index files to `gs://%s/%s`.', bucket, folder_prefix)
             _upload_achilles_files(hpo_id, folder_prefix)
 
-        # get top heel errors
-        heel_result = get_heel_result(hpo_id)
+        # Get heel errors
+        heel_errors, heel_header_list = get_heel_errors_in_results_html(hpo_id,
+                                                                        common_sql.HEEL_ERROR_QUERY_VALIDATION,
+                                                                        common.ACHILLES_HEEL_RESULTS_VALIDATION)
 
-        heel_errors = _convert_heel_result_to_csv(heel_result)
-
-        heel_error_header = get_heel_error_header(heel_result)
+        # Get Drug check counts into results.html
+        drug_checks, drug_header_list = get_drug_checks_in_results_html(hpo_id,
+                                                                        common_sql.DRUG_CHECKS_QUERY_VALIDATION,
+                                                                        common.DRUG_CHECK_TABLE_VALIDATION)
 
         _save_results_html_in_gcs(hpo_id, bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings,
-                                  heel_errors, heel_error_header)
+                                  heel_errors, heel_header_list, drug_checks, drug_header_list)
 
         now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
@@ -302,7 +305,58 @@ def process_hpo(hpo_id, force_run=False):
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
 
 
-def _convert_heel_result_to_csv(list_of_dicts):
+def get_heel_errors_in_results_html(hpo_id, query_string, table_id):
+    heel_result = get_query_result(hpo_id, query_string, table_id)
+    heel_errors = _convert_query_result_to_list_of_rows(heel_result)
+    if not heel_result:
+        heel_header_list = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
+    else:
+        heel_header_list = _get_query_result_header(heel_result)
+    return heel_errors, heel_header_list
+
+
+def get_drug_checks_in_results_html(hpo_id, query_string, table_id):
+    drug_check_result = get_query_result(hpo_id, query_string, table_id)
+    drug_checks = _convert_query_result_to_list_of_rows(drug_check_result)
+    if not drug_checks:
+        drug_checks_header_list = ['Counts by Drug class',
+                                   'Drug Class Concept Name',
+                                   'Drug Class',
+                                   'Percentage',
+                                   'Drug Class Concept ID']
+    else:
+        drug_checks_header_list = _get_query_result_header(drug_check_result)
+    return drug_checks, drug_checks_header_list
+
+
+def get_query_result(hpo_id, query_string, table_id, app_id=None, dataset_id=None, ):
+    """
+    :param hpo_id: the name of the hpo_id for which validation is being done
+    :param table_id: Name of the table running analysis on
+    :param query_string: variable name of the query string stored in the common_sql
+    :param app_id: name of the big query application id
+    :param dataset_id: name of the big query dataset id
+    :return: returns dictionary of rows
+    """
+    if app_id is None:
+        app_id = app_identity.get_application_id()
+    if dataset_id is None:
+        dataset_id = bq_utils.get_dataset_id()
+    table_name = '{hpo_name}{results_table}'.format(hpo_name=hpo_id,
+                                                    results_table=table_id)
+    result = None
+    if bq_utils.table_exists(table_name):
+        query = query_string.format(application=app_id, dataset=dataset_id, table_id=table_name)
+        if query:
+            # Found achilles_heel_results table(s), run the query
+            response = bq_utils.query(query)
+            result = bq_utils.response2rows(response)
+    if result is None:
+        result = []
+    return result
+
+
+def _convert_query_result_to_list_of_rows(list_of_dicts):
     result_list = list()
     if list_of_dicts is []:
         return result_list.append(tuple())
@@ -313,41 +367,10 @@ def _convert_heel_result_to_csv(list_of_dicts):
         return result_list
 
 
-def get_heel_result(hpo_id, app_id=None, dataset_id=None):
-    """
-    :param hpo_id: the name of the hpo_id for which validation is being done
-    :param app_id: name of the big query application id
-    :param dataset_id: name of the big query dataset id
-    :return: returns dictionary of rows
-    """
-    if app_id is None:
-        app_id = app_identity.get_application_id()
-    if dataset_id is None:
-        dataset_id = bq_utils.get_dataset_id()
-    table_name = '{hpo_name}{results_table}'.format(hpo_name=hpo_id,
-                                                    results_table=common.ACHILLES_HEEL_RESULTS_VALIDATION)
-    result = None
-    if bq_utils.table_exists(table_name):
-        query = common_sql.HEEL_ERROR_QUERY_VALIDATION.format(application=app_id,
-                                                              dataset=dataset_id,
-                                                              table_id=table_name)
-        if query:
-            # Found achilles_heel_results table(s), run the query
-            response = bq_utils.query(query)
-            result = bq_utils.response2rows(response)
-    if result is None:
-        result = []
-    return result
-
-
-def get_heel_error_header(list_of_dicts):
-    fake_header_list = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
-    if not list_of_dicts:
-        return fake_header_list
-    else:
-        header_list = list(list_of_dicts[0].keys())
-        header_list = [header.replace('_', ' ') for header in header_list]
-        return header_list
+def _get_query_result_header(list_of_dicts):
+    header_list = list(list_of_dicts[0].keys())
+    header_list = [header.replace('_', ' ') for header in header_list]
+    return header_list
 
 
 def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefix, bucket):
@@ -554,7 +577,9 @@ def copy_files(hpo_id):
     return '{"copy-status": "done"}'
 
 
-def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnings, heel_errors, heel_error_header):
+def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnings,
+                              heel_errors, heel_error_header,
+                              drug_checks, drug_check_header):
     """
     Save the validation results in GCS
     :param hpo_id: name of the hpo_id
@@ -581,6 +606,8 @@ def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnin
     html_report_list.append(create_html_table(ERROR_FILE_HEADERS, warnings, "Warnings"))
     html_report_list.append('\n')
     html_report_list.append(create_html_table(heel_error_header, heel_errors, "Heel Errors"))
+    html_report_list.append('\n')
+    html_report_list.append(create_html_table(drug_check_header, drug_checks, "Drug Concept Mapping Percentages"))
     html_report_list.append('\n')
     html_report_list.append('</body>\n')
     html_report_list.append('</html>\n')
