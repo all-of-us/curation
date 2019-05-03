@@ -21,6 +21,9 @@ jobs:
       - checkout
       # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
       - run: mkdir -p $CIRCLE_ARTIFACTS
+      - run:
+          working_directory: ~/curation
+          command: if [[ ! -z $CIRCLE_PR_NUMBER ]] ; then echo "THIS IS A PULL REQUEST" ; else echo "THIS IS A COMMIT ONLY" ; fi
       # This is based on our 1.0 configuration file or project settings
       - run:
           working_directory: ~/curation

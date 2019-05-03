@@ -11,7 +11,7 @@ import logging
 # Project imports
 import bq_utils
 import resources as rc
-import constants.validation.participants.identity_match as consts
+import constants.validation.participants.readers as consts
 
 LOGGER = logging.getLogger(__name__)
 

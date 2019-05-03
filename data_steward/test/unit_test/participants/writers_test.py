@@ -6,7 +6,7 @@ from mock import ANY, call, patch
 import oauth2client
 
 # Project imports
-import constants.validation.participants.identity_match as consts
+import constants.validation.participants.writers as consts
 import validation.participants.writers as writer
 
 

@@ -13,7 +13,7 @@ import oauth2client
 
 # Project imports
 import bq_utils
-import constants.validation.participants.identity_match as consts
+import constants.validation.participants.writers as consts
 import gcs_utils
 
 LOGGER = logging.getLogger(__name__)

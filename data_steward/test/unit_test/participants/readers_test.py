@@ -5,7 +5,7 @@ import unittest
 from mock import patch
 
 # Project imports
-import constants.validation.participants.identity_match as consts
+import constants.validation.participants.readers as consts
 import validation.participants.readers as reader
 
 
