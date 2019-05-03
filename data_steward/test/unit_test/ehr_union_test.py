@@ -183,7 +183,7 @@ class EhrUnionTest(unittest.TestCase):
             self.assertEqual(expected_num_rows, actual_num_rows, message)
 
         # check for each output table
-        for table_name in common.CDM_TABLES:
+        for table_name in resources.CDM_TABLES:
             # output table exists and row count is sum of those submitted by hpos
             result_table = ehr_union.output_table_for(table_name)
             expected_rows = self.expected_tables[result_table]
@@ -491,7 +491,7 @@ class EhrUnionTest(unittest.TestCase):
         subquery_fails = []
 
         # Key fields should be populated using associated mapping tables
-        for table in common.CDM_TABLES:
+        for table in resources.CDM_TABLES:
             subquery_fail = self.get_table_hpo_subquery_error(table, input_dataset_id, output_dataset_id)
             if subquery_fail is not None:
                 subquery_fails.append(subquery_fail)

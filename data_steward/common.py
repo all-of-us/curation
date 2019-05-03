@@ -1,11 +1,3 @@
-import resources
-import os
-
-CDM_TABLES = resources.cdm_schemas().keys()
-CDM_FILES = [table + '.csv' for table in CDM_TABLES]
-ACHILLES_INDEX_FILES = resources.achilles_index_files()
-ALL_ACHILLES_INDEX_FILES = [name.split(resources.resource_path + os.sep)[1].strip() for name in ACHILLES_INDEX_FILES]
-DATASOURCES_JSON = os.path.join(resources.achilles_index_path, 'data/datasources.json')
 PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_mrn', 'participant_match']
 AOU_REQUIRED = ['care_site', 'condition_occurrence', 'death', 'device_exposure', 'drug_exposure',
                 'fact_relationship', 'location', 'measurement', 'note', 'observation', 'person',
@@ -21,7 +13,6 @@ PERSON_REPORT = 'person'
 DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
 ALL_REPORT_FILES = [report + '.json' for report in ALL_REPORTS]
-IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES
 
 # Vocabulary
 CONCEPT = 'concept'
