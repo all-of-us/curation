@@ -197,7 +197,7 @@ class IdentityMatchTest(unittest.TestCase):
         # pre conditions
 
         # test
-        results = id_match.match_participants(
+        id_match.match_participants(
             self.project, self.rdr_dataset, self.pii_dataset, self.dest_dataset
         )
 

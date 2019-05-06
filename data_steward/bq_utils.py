@@ -595,7 +595,9 @@ def create_dataset(
             datasetId=dataset_id,
             deleteContents=overwrite_existing
         )
-        rm_result = rm_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-        insert_result = insert_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+        rm_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+        insert_result = insert_dataset.execute(
+            num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT
+        )
 
     return insert_result

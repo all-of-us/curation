@@ -376,7 +376,9 @@ class WritersTest(unittest.TestCase):
         ]
 
         # test
-        result = writer.create_site_validation_report(self.project, self.dataset, [self.site], bucket, filename)
+        writer.create_site_validation_report(
+            self.project, self.dataset, [self.site], bucket, filename
+        )
 
         # post conditions
         self.assertEqual(mock_report_file.call_count, 1)
@@ -427,7 +429,9 @@ class WritersTest(unittest.TestCase):
         filename = 'output.csv'
 
         # test
-        result = writer.create_site_validation_report(self.project, self.dataset, [self.site], bucket, filename)
+        writer.create_site_validation_report(
+            self.project, self.dataset, [self.site], bucket, filename
+        )
 
         # post conditions
         self.assertEqual(mock_report_file.call_count, 1)
