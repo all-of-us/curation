@@ -45,3 +45,35 @@ FROM (
     Counts_by_Drug_class DESC,
     Drug_Class_Concept_ID
 '''
+
+# Used in validation_test/_create_drug_class_table()
+drug_class_query = '''
+SELECT
+  concept_id,
+  concept_name,
+  CASE
+    WHEN c.concept_id = 21602796 THEN 'Antibiotics'
+    WHEN c.concept_id = 21601745 THEN 'CCB'
+    WHEN c.concept_id = 21601462 THEN 'Diuretics'
+    WHEN c.concept_id = 21604254 THEN 'Opioids'
+    WHEN c.concept_id = 21601855 THEN 'Statins'
+    WHEN c.concept_id = 21603933 THEN 'MSK NSAIDS'
+    WHEN c.concept_id = 21600744 THEN 'Oral Hypoglycemics'
+    WHEN c.concept_id = 21604303 THEN 'Pain NSAIDS'
+    WHEN c.concept_id = 21601278 THEN 'Vaccines'
+    WHEN c.concept_id = 21601783 THEN 'ACE Inhibitor'
+    ELSE '0'
+  END AS drug_class_name
+FROM
+  `{dataset_id}.concept` c
+WHERE
+  c.concept_id IN (21602796,
+    21601745,
+    21601462,
+    21604254,
+    21601855,
+    21603933,
+    21600744,
+    21604303,
+    21601278,
+    21601783) '''
