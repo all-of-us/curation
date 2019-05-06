@@ -813,14 +813,16 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
     # generate aggregate site report
     bucket = gcs_utils.get_drc_bucket()
     filename = os.path.join(validation_dataset, consts.REPORT_TITLE)
-    writers.create_site_validation_report(project, validation_dataset, hpo_sites, bucket, filename)
+    writers.create_site_validation_report(
+        project, validation_dataset, hpo_sites, bucket, filename
+    )
 
     return results
 
 
 if __name__ == '__main__':
-    RDR_DATASET = 'lrwb_combined20190415'
-    PII_DATASET = 'lrwb_pii_tables'
-    PROJECT = 'aou-res-curation-test'
-    DEST_DATASET_ID = 'temp_dataset_id'
+    RDR_DATASET = 'lrwb_combined20190415'   # the combined dataset
+    PII_DATASET = 'lrwb_pii_tables'         # the ehr dataset
+    PROJECT = 'aou-res-curation-test'       # the project identifier
+    DEST_DATASET_ID = 'temp_dataset_id'     # desired name of the validation dataset
     match_participants(PROJECT, RDR_DATASET, PII_DATASET, DEST_DATASET_ID)
