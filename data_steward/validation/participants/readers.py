@@ -46,7 +46,8 @@ def create_match_values_table(project, rdr_dataset, destination_dataset):
     query_string = consts.ALL_PPI_OBSERVATION_VALUES.format(
         project=project,
         dataset=rdr_dataset,
-        table=consts.OBSERVATION_TABLE
+        table=consts.OBSERVATION_TABLE,
+        pii_list=', '.join(consts.PII_CODES_LIST)
     )
 
     LOGGER.debug("Participant validation ran the query\n%s", query_string)

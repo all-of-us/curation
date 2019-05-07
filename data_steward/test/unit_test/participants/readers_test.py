@@ -48,8 +48,10 @@ class ReadersTest(unittest.TestCase):
         self.assertEqual(
             mock_query.assert_called_with(
                 consts.ALL_PPI_OBSERVATION_VALUES.format(
-                    project='project-foo', dataset='rdr-foo', table=consts.OBSERVATION_TABLE
-
+                    project='project-foo',
+                    dataset='rdr-foo',
+                    table=consts.OBSERVATION_TABLE,
+                    pii_list=', '.join(consts.PII_CODES_LIST)
                 ),
                 destination_dataset_id='destination-bar',
                 destination_table_id=consts.ID_MATCH_TABLE,
