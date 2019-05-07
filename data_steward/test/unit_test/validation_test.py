@@ -53,11 +53,9 @@ class ValidationTest(unittest.TestCase):
         fields = [{"type": "integer", "name": "concept_id", "mode": "required"},
                   {"type": "string", "name": "concept_name", "mode": "required"},
                   {"type": "string", "name": "drug_class_name", "mode": "required"}]
-        bq_utils.create_table(table_id=table_name, fields=fields, drop_existing=True,
-                              dataset_id=self.bigquery_dataset_id)
+        bq_utils.create_table(table_id=table_name, fields=fields, drop_existing=True, dataset_id=self.bigquery_dataset_id)
 
-        q = common_sql.drug_class_query.format(dataset_id=self.bigquery_dataset_id)
-        bq_utils.query(q,
+        bq_utils.query(q=common_sql.DRUG_CLASS_QUERY.format(dataset_id=self.bigquery_dataset_id),
                        use_legacy_sql=False,
                        destination_table_id='drug_class',
                        retry_count=bq_utils.BQ_DEFAULT_RETRY_COUNT,
@@ -81,7 +79,7 @@ class ValidationTest(unittest.TestCase):
         expected_warnings = []
         for file_name in bad_file_names:
             test_util.write_cloud_str(self.hpo_bucket, self.folder_prefix + file_name, ".")
-            expected_item = (file_name, main.UNKNOWN_FILE)
+            expected_item = (file_name, common.UNKNOWN_FILE)
             expected_warnings.append(expected_item)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)

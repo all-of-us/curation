@@ -33,7 +33,13 @@ VOCABULARY = 'vocabulary'
 CLINICAL = 'clinical'
 ACHILLES = 'achilles'
 CDM_COMPONENTS = [CLINICAL, VOCABULARY, ACHILLES]
+UNKNOWN_FILE = 'Unknown file'
 
+# Table headers
+RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
+ERROR_FILE_HEADERS = ["File Name", "Message"]
+DRUG_CHECK_HEADERS = ['Counts by Drug class', 'Drug Class Concept Name', 'Drug Class', 'Percentage', 'Drug Class Concept ID']
+HEEL_ERROR_HEADERS = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
 
 # Validation Main Constant space
 ACHILLES_HEEL_RESULTS_VALIDATION = '_achilles_heel_results'
