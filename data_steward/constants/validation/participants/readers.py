@@ -18,15 +18,17 @@ EHR_PERSON_VALUES = (
 ALL_PPI_OBSERVATION_VALUES = (
     'SELECT person_id, observation_source_concept_id, value_as_string '
     'FROM `{project}.{dataset}.{table}` '
-    'WHERE observation_source_concept_id IN (' +
-    ', '.join([str(id_match.OBS_PII_NAME_FIRST), str(id_match.OBS_PII_NAME_MIDDLE),
-               str(id_match.OBS_PII_NAME_LAST), str(id_match.OBS_PII_EMAIL_ADDRESS),
-               str(id_match.OBS_PII_PHONE), str(id_match.OBS_PII_STREET_ADDRESS_ONE),
-               str(id_match.OBS_PII_STREET_ADDRESS_TWO), str(id_match.OBS_PII_STREET_ADDRESS_CITY),
-               str(id_match.OBS_PII_STREET_ADDRESS_STATE), str(id_match.OBS_PII_STREET_ADDRESS_ZIP),
-               str(id_match.OBS_PII_BIRTH_DATETIME), str(id_match.OBS_PII_SEX)]) +
-    ')'
+    'WHERE observation_source_concept_id IN ({pii_list})'
 )
+
+PII_CODES_LIST = [
+    str(id_match.OBS_PII_NAME_FIRST), str(id_match.OBS_PII_NAME_MIDDLE),
+    str(id_match.OBS_PII_NAME_LAST), str(id_match.OBS_PII_EMAIL_ADDRESS),
+    str(id_match.OBS_PII_PHONE), str(id_match.OBS_PII_STREET_ADDRESS_ONE),
+    str(id_match.OBS_PII_STREET_ADDRESS_TWO), str(id_match.OBS_PII_STREET_ADDRESS_CITY),
+    str(id_match.OBS_PII_STREET_ADDRESS_STATE), str(id_match.OBS_PII_STREET_ADDRESS_ZIP),
+    str(id_match.OBS_PII_BIRTH_DATETIME), str(id_match.OBS_PII_SEX)
+]
 
 # Select PII table values.
 PII_VALUES = (
