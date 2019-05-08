@@ -351,13 +351,10 @@ def get_query_result(hpo_id, query_string, table_id, app_id=None, dataset_id=Non
 
 def _convert_query_result_to_row_list(list_of_dicts):
     row_list = list()
-    if list_of_dicts is []:
-        return row_list.append(tuple())
-    else:
-        for dict_item in list_of_dicts:
-            dict_values = tuple(dict_item.values())
-            row_list.append(dict_values)
-        return row_list
+    for dict_item in list_of_dicts:
+        dict_values = tuple(dict_item.values())
+        row_list.append(dict_values)
+    return row_list
 
 
 def _get_query_result_header(list_of_dicts):
