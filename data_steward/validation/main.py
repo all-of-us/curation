@@ -1,34 +1,31 @@
 #!/usr/bin/env python
 import StringIO
+import datetime
 import json
 import logging
 import os
-import datetime
 
 from flask import Flask
+from google.appengine.api.app_identity import app_identity
 from googleapiclient.errors import HttpError
 
 import api_util
 import bq_utils
 import common
 import common_sql
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 import gcs_utils
 import resources
 import validation.achilles as achilles
 import validation.achilles_heel as achilles_heel
 import validation.ehr_union as ehr_union
 import validation.export as export
-from google.appengine.api.app_identity import app_identity
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
-UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
-RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
-ERROR_FILE_HEADERS = ["File Name", "Message"]
 RESULT_FAIL_CODE = '&#x2718'
 RESULT_PASS_CODE = '&#x2714'
 RESULT_FAIL_COLOR = 'red'
@@ -247,7 +244,7 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
 
     # (filename, message) for each unknown file
     warnings = [
-        (unknown_file, UNKNOWN_FILE) for unknown_file in unknown_files
+        (unknown_file, common.UNKNOWN_FILE) for unknown_file in unknown_files
     ]
     return dict(results=results, errors=errors, warnings=warnings)
 
@@ -286,15 +283,20 @@ def process_hpo(hpo_id, force_run=False):
             logging.info('Uploading achilles index files to `gs://%s/%s`.', bucket, folder_prefix)
             _upload_achilles_files(hpo_id, folder_prefix)
 
-        # get top heel errors
-        heel_result = get_heel_result(hpo_id)
+        # Get heel errors into results.html
+        heel_errors, heel_header_list = add_table_in_results_html(hpo_id,
+                                                                  common_sql.HEEL_ERROR_QUERY_VALIDATION,
+                                                                  common.ACHILLES_HEEL_RESULTS_VALIDATION,
+                                                                  common.HEEL_ERROR_HEADERS)
 
-        heel_errors = _convert_heel_result_to_csv(heel_result)
-
-        heel_error_header = get_heel_error_header(heel_result)
+        # Get Drug check counts into results.html
+        drug_checks, drug_header_list = add_table_in_results_html(hpo_id,
+                                                                  common_sql.DRUG_CHECKS_QUERY_VALIDATION,
+                                                                  common.DRUG_CHECK_TABLE_VALIDATION,
+                                                                  common.DRUG_CHECK_HEADERS)
 
         _save_results_html_in_gcs(hpo_id, bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings,
-                                  heel_errors, heel_error_header)
+                                  heel_errors, heel_header_list, drug_checks, drug_header_list)
 
         now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
@@ -302,20 +304,29 @@ def process_hpo(hpo_id, force_run=False):
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
 
 
-def _convert_heel_result_to_csv(list_of_dicts):
-    result_list = list()
-    if list_of_dicts is []:
-        return result_list.append(tuple())
+def add_table_in_results_html(hpo_id, query_string, table_id, headers):
+    """
+    Adds a new table in results.html file
+    :param hpo_id: the name of the hpo_id for which validation is being done
+    :param query_string: variable name of the query string stored in the common_sql
+    :param table_id: name of the table running analysis on
+    :param headers: expected headers
+    :return: returns list of contents(rows) and headers
+    """
+    query_result = get_query_result(hpo_id, query_string, table_id)
+    row_list = _convert_query_result_to_row_list(query_result)
+    if not query_result:
+        header_list = headers
     else:
-        for dict_item in list_of_dicts:
-            dict_values = tuple(dict_item.values())
-            result_list.append(dict_values)
-        return result_list
+        header_list = _get_query_result_header(query_result)
+    return row_list, header_list
 
 
-def get_heel_result(hpo_id, app_id=None, dataset_id=None):
+def get_query_result(hpo_id, query_string, table_id, app_id=None, dataset_id=None):
     """
     :param hpo_id: the name of the hpo_id for which validation is being done
+    :param table_id: Name of the table running analysis on
+    :param query_string: variable name of the query string stored in the common_sql
     :param app_id: name of the big query application id
     :param dataset_id: name of the big query dataset id
     :return: returns dictionary of rows
@@ -325,12 +336,10 @@ def get_heel_result(hpo_id, app_id=None, dataset_id=None):
     if dataset_id is None:
         dataset_id = bq_utils.get_dataset_id()
     table_name = '{hpo_name}{results_table}'.format(hpo_name=hpo_id,
-                                                    results_table=common.ACHILLES_HEEL_RESULTS_VALIDATION)
+                                                    results_table=table_id)
     result = None
     if bq_utils.table_exists(table_name):
-        query = common_sql.HEEL_ERROR_QUERY_VALIDATION.format(application=app_id,
-                                                              dataset=dataset_id,
-                                                              table_id=table_name)
+        query = query_string.format(application=app_id, dataset=dataset_id, table_id=table_name)
         if query:
             # Found achilles_heel_results table(s), run the query
             response = bq_utils.query(query)
@@ -340,14 +349,18 @@ def get_heel_result(hpo_id, app_id=None, dataset_id=None):
     return result
 
 
-def get_heel_error_header(list_of_dicts):
-    fake_header_list = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
-    if not list_of_dicts:
-        return fake_header_list
-    else:
-        header_list = list(list_of_dicts[0].keys())
-        header_list = [header.replace('_', ' ') for header in header_list]
-        return header_list
+def _convert_query_result_to_row_list(list_of_dicts):
+    row_list = list()
+    for dict_item in list_of_dicts:
+        dict_values = tuple(dict_item.values())
+        row_list.append(dict_values)
+    return row_list
+
+
+def _get_query_result_header(list_of_dicts):
+    header_list = list(list_of_dicts[0].keys())
+    header_list = [header.replace('_', ' ') for header in header_list]
+    return header_list
 
 
 def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefix, bucket):
@@ -554,7 +567,9 @@ def copy_files(hpo_id):
     return '{"copy-status": "done"}'
 
 
-def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnings, heel_errors, heel_error_header):
+def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnings,
+                              heel_errors, heel_error_header,
+                              drug_checks, drug_check_header):
     """
     Save the validation results in GCS
     :param hpo_id: name of the hpo_id
@@ -574,13 +589,15 @@ def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnin
     html_report_list.append('\n')
     html_report_list.append(html_tag_wrapper(results_heading, 'h1', 'align="center"'))
     html_report_list.append('\n')
-    html_report_list.append(create_html_table(RESULT_FILE_HEADERS, results, "Results"))
+    html_report_list.append(create_html_table(common.RESULT_FILE_HEADERS, results, "Results"))
     html_report_list.append('\n')
-    html_report_list.append(create_html_table(ERROR_FILE_HEADERS, errors, "Errors"))
+    html_report_list.append(create_html_table(common.ERROR_FILE_HEADERS, errors, "Errors"))
     html_report_list.append('\n')
-    html_report_list.append(create_html_table(ERROR_FILE_HEADERS, warnings, "Warnings"))
+    html_report_list.append(create_html_table(common.ERROR_FILE_HEADERS, warnings, "Warnings"))
     html_report_list.append('\n')
     html_report_list.append(create_html_table(heel_error_header, heel_errors, "Heel Errors"))
+    html_report_list.append('\n')
+    html_report_list.append(create_html_table(drug_check_header, drug_checks, "Drug Concept Mapping Percentages"))
     html_report_list.append('\n')
     html_report_list.append('</body>\n')
     html_report_list.append('</html>\n')
@@ -595,34 +612,48 @@ def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnin
 
 
 def create_html_table(headers, table, table_name):
+    """
+    Creates a html table
+    :param headers: headers for the table
+    :param table: row list of the table contents
+    :param table_name: name of the table in the html file
+    :return: table string in html format
+    """
     html_report_list = []
     table_config = 'id="dataframe" style="width:80%" class="center"'
     html_report_list.append(html_tag_wrapper(table_name, 'caption'))
     table_header_row = create_html_row(headers, 'th', 'tr')
     html_report_list.append(html_tag_wrapper(table_header_row, 'thead'))
     results_rows = []
-    if table is not None:
-        for item in table:
-            results_rows.append(create_html_row(item, 'td', 'tr', headers))
+    for item in table:
+        results_rows.append(create_html_row(item, 'td', 'tr', headers))
     table_body_rows = '\n'.join(results_rows)
     html_report_list.append(html_tag_wrapper(table_body_rows, 'tbody'))
     return html_tag_wrapper('\n'.join(html_report_list), 'table', table_config)
 
 
 def create_html_row(row_items, item_tag, row_tag, headers=None):
+    """
+    Creates a html row based on conditions for formatting (if necessary) else applies default formatting
+    :param row_items: the element in the row
+    :param item_tag: tag for the row item
+    :param row_tag: tag for the entire row
+    :param headers: table headers
+    :return:
+    """
     row_item_list = []
     checkbox_style = 'style="text-align:center; font-size:150%; font-weight:bold; color:{0};"'
     message = "BigQuery generated the following message while processing the files: " + "<br/>"
     for index, row_item in enumerate(row_items):
-        if row_item == 1 and headers == RESULT_FILE_HEADERS:
+        if row_item == 1 and headers == common.RESULT_FILE_HEADERS:
             row_item_list.append(html_tag_wrapper(RESULT_PASS_CODE,
                                                   item_tag,
                                                   checkbox_style.format(RESULT_PASS_COLOR)))
-        elif row_item == 0 and headers == RESULT_FILE_HEADERS:
+        elif row_item == 0 and headers == common.RESULT_FILE_HEADERS:
             row_item_list.append(html_tag_wrapper(RESULT_FAIL_CODE,
                                                   item_tag,
                                                   checkbox_style.format(RESULT_FAIL_COLOR)))
-        elif index == 1 and headers == ERROR_FILE_HEADERS:
+        elif index == 1 and headers == common.ERROR_FILE_HEADERS:
             row_item_list.append(html_tag_wrapper(message + row_item.replace(' || ', '<br/>'), item_tag))
         else:
             row_item_list.append(html_tag_wrapper(row_item, item_tag))
