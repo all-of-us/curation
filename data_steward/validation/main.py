@@ -21,7 +21,6 @@ import validation.ehr_union as ehr_union
 import validation.export as export
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
-
 BQ_LOAD_RETRY_COUNT = 7
 
 PREFIX = '/data_steward/v1/'
@@ -352,7 +351,7 @@ def get_query_result(hpo_id, query_string, table_id, app_id=None, dataset_id=Non
 
 def _convert_query_result_to_row_list(list_of_dicts):
     row_list = list()
-    if not list_of_dicts:
+    if list_of_dicts is []:
         return row_list.append(tuple())
     else:
         for dict_item in list_of_dicts:
