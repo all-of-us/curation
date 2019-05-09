@@ -16,8 +16,8 @@ while true; do
   esac
 done
 
-if [ -z "${ACCOUNT}" ] || [ -z "${PROJECT}" ] || [ -z "${DIRECTORY}" ] \
-  || [ -z "${DATA_SET}" ]
+if [[ -z "${ACCOUNT}" ]] || [[ -z "${PROJECT}" ]] || [[ -z "${DIRECTORY}" ]] \
+  || [[ -z "${DATA_SET}" ]]
 then
   echo "Usage: $USAGE"
   exit 1
@@ -36,7 +36,7 @@ do
     CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id "
   fi
   JAGGED_ROWS=
-  if [ "${filename}" = "observation_period.csv" ]
+  if [[ "${filename}" = "observation_period.csv" ]]
   then
     JAGGED_ROWS="--allow_jagged_rows "
   fi
