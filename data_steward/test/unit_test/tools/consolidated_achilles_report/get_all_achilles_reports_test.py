@@ -1,5 +1,3 @@
-import mock
-from mock import patch
 import unittest
 
 import tools.consolidated_achilles_report.get_all_achilles_reports as achilles_report
@@ -38,7 +36,7 @@ class GetAllAchillesReportsTest(unittest.TestCase):
 
     def test_get_hpo_id_with_bad_bucket(self):
         # pre conditions
-        filepath = self.filepath.replace(self.drc_bucket_name, 
+        filepath = self.filepath.replace(self.drc_bucket_name,
                                          self.drc_bucket_name + 'bunk')
 
         # test
