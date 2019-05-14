@@ -130,7 +130,7 @@ def hash_dir(in_dir):
     Generate an MD5 digest from the contents of a directory
     """
     file_names = os.listdir(in_dir)
-    hash_obj = hashlib.sha1()
+    hash_obj = hashlib.sha256()
     for file_name in file_names:
         file_path = os.path.join(in_dir, file_name)
         hash_obj.update(open(file_path, 'rb').read())
