@@ -15,9 +15,6 @@ tools/load_vocab.sh --app_id app_id --in_dir in_dir [--gcs_path gcs_path --datas
 "
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
 BASE_DIR="$( cd ${SCRIPT_PATH} && cd .. && pwd )"
-AOU_GENERAL_PATH="${BASE_DIR}/resources/aou_general"
-AOU_GENERAL_VOCABULARY_CONCEPT_ID="2000000000"
-AOU_GENERAL_VOCABULARY_REFERENCE="https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g"
 OMOP_VOCABULARY_CONCEPT_ID="44819096"
 while true; do
   case "$1" in
@@ -39,7 +36,7 @@ fi
 source ${SCRIPT_PATH}/set_path.sh
 
 # Determine the version of the OMOP vocabulary
-OMOP_VOCABULARY_VERSION=$(cat ${IN_DIR}/VOCABULARY.csv | grep ${OMOP_VOCABULARY_CONCEPT_ID} | cut -f4)
+OMOP_VOCABULARY_VERSION="$(grep ${OMOP_VOCABULARY_CONCEPT_ID} ${IN_DIR}/VOCABULARY.csv | cut -f4)"
 echo "Version of OMOP Standard vocabulary is ${OMOP_VOCABULARY_VERSION}"
 
 # Move vocabulary files to backup folder
