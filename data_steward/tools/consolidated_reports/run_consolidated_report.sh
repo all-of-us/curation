@@ -78,6 +78,7 @@ unset PYTHONPATH
 #deacticate virtual environment
 deactivate
 
+#exit here if reports are for results.html
 if [[ "$report_for" == "results" ]]; then
     exit
 fi
