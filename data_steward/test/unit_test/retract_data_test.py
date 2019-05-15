@@ -9,6 +9,12 @@ from tools import retract_data as rd
 
 
 class RetractionTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
     def setUp(self):
         super(RetractionTest, self).setUp()
         self.testbed = testbed.Testbed()
