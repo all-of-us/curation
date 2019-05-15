@@ -496,7 +496,7 @@ def table_union_query(table_name, hpo_ids, input_dataset_id, output_dataset_id):
 def fact_table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
     temp_query = table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
 
-    null_condition_query = ''' 
+    null_condition_query = '''
     SELECT domain_concept_id_1,
      fact_id_1,
      domain_concept_id_2,
