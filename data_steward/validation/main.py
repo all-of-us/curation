@@ -295,12 +295,19 @@ def process_hpo(hpo_id, force_run=False):
                                                                   common.DRUG_CHECK_TABLE_VALIDATION,
                                                                   common.DRUG_CHECK_HEADERS)
 
-        _save_results_html_in_gcs(hpo_id, bucket, folder_prefix + common.RESULTS_HTML, results, errors, warnings,
+        now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+
+        results_html_folder_prefix = "Folder: " + folder_prefix[:-1]
+        results_html_timestamp = "Report timestamp: " + now_datetime_string.replace('T', ' ') + " ET"
+
+        _save_results_html_in_gcs(hpo_id, bucket, folder_prefix + common.RESULTS_HTML,
+                                  results_html_folder_prefix, results_html_timestamp,
+                                  results, errors, warnings,
                                   heel_errors, heel_header_list, drug_checks, drug_header_list)
 
-        now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
                      bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT)
+
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
 
 
@@ -567,7 +574,8 @@ def copy_files(hpo_id):
     return '{"copy-status": "done"}'
 
 
-def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnings,
+def _save_results_html_in_gcs(hpo_id, bucket, file_name, folder_prefix, timestamp,
+                              results, errors, warnings,
                               heel_errors, heel_error_header,
                               drug_checks, drug_check_header):
     """
@@ -580,7 +588,7 @@ def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnin
     :param warnings: list of tuples (<cdm_file_name>, <message>)
     :return:
     """
-    results_heading = '{hpo_id} EHR Submission Results'.format(hpo_id=hpo_id.upper())
+    results_heading = '{hpo_id} EHR Submission Results'.format(hpo_id=hpo_id.upper().replace('_', ' '))
     html_report_list = []
     with open(resources.html_boilerplate_path) as f:
         for line in f:
@@ -588,6 +596,10 @@ def _save_results_html_in_gcs(hpo_id, bucket, file_name, results, errors, warnin
 
     html_report_list.append('\n')
     html_report_list.append(html_tag_wrapper(results_heading, 'h1', 'align="center"'))
+    html_report_list.append('\n')
+    html_report_list.append(html_tag_wrapper(folder_prefix, 'h3', 'align="right"'))
+    html_report_list.append('\n')
+    html_report_list.append(html_tag_wrapper(timestamp, 'h3', 'align="right"'))
     html_report_list.append('\n')
     html_report_list.append(create_html_table(common.RESULT_FILE_HEADERS, results, "Results"))
     html_report_list.append('\n')

@@ -49,6 +49,10 @@ h1 {
 font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
 }
 
+h3 {
+font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+}
+
 </style>
 <title>EHR Submission Results</title>
 </head>
