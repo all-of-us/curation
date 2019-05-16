@@ -297,10 +297,11 @@ def process_hpo(hpo_id, force_run=False):
 
         now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
 
+        hpo_name = get_hpo_name(hpo_id)
         results_html_folder_prefix = "Folder: " + folder_prefix[:-1]
         results_html_timestamp = "Report timestamp: " + now_datetime_string.replace('T', ' ') + " ET"
 
-        _save_results_html_in_gcs(hpo_id, bucket, folder_prefix + common.RESULTS_HTML,
+        _save_results_html_in_gcs(hpo_name, bucket, folder_prefix + common.RESULTS_HTML,
                                   results_html_folder_prefix, results_html_timestamp,
                                   results, errors, warnings,
                                   heel_errors, heel_header_list, drug_checks, drug_header_list)
@@ -309,6 +310,16 @@ def process_hpo(hpo_id, force_run=False):
                      bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT)
 
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
+
+
+def get_hpo_name(hpo_id):
+    hpo_name = "HPO"
+    hpo_list_of_dicts = resources.hpo_csv()
+    for hpo_dict in hpo_list_of_dicts:
+        if hpo_dict['hpo_id'].lower() == hpo_id.lower():
+            hpo_name = hpo_dict['name']
+            return hpo_name
+    return hpo_name
 
 
 def add_table_in_results_html(hpo_id, query_string, table_id, headers):
@@ -574,7 +585,7 @@ def copy_files(hpo_id):
     return '{"copy-status": "done"}'
 
 
-def _save_results_html_in_gcs(hpo_id, bucket, file_name, folder_prefix, timestamp,
+def _save_results_html_in_gcs(hpo_name, bucket, file_name, folder_prefix, timestamp,
                               results, errors, warnings,
                               heel_errors, heel_error_header,
                               drug_checks, drug_check_header):
@@ -588,7 +599,7 @@ def _save_results_html_in_gcs(hpo_id, bucket, file_name, folder_prefix, timestam
     :param warnings: list of tuples (<cdm_file_name>, <message>)
     :return:
     """
-    results_heading = '{hpo_id} EHR Submission Results'.format(hpo_id=hpo_id.upper().replace('_', ' '))
+    results_heading = '{hpo_name}<br>EHR Submission Results'.format(hpo_name=hpo_name)
     html_report_list = []
     with open(resources.html_boilerplate_path) as f:
         for line in f:
