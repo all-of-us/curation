@@ -64,12 +64,13 @@ class ValidationTest(unittest.TestCase):
                        destination_dataset_id=self.bigquery_dataset_id)
 
     # ignore the timestamp and folder tags from testing
-    def _remove_timestamp_tags_from_results(self, result_file):
+    @staticmethod
+    def _remove_timestamp_tags_from_results(result_file):
         # convert to list to avoid using regex
         result_list = result_file.split('\n')
-        remove_start_index = result_list.index('</h1>') + 1
-        # the timestamp and folder tags span 6 indices starting immediately after h1 tag ends
-        output_result_list = result_list[:remove_start_index] + result_list[remove_start_index + 6:]
+        remove_start_index = result_list.index('</h1>') + 4
+        # the folder tags span 3 indices starting immediately after h1 tag ends, timestamp tags span 3 indices after
+        output_result_list = result_list[:remove_start_index] + result_list[remove_start_index + 3:]
         output_result_file = '\n'.join(output_result_list)
         return output_result_file
 
@@ -229,7 +230,7 @@ class ValidationTest(unittest.TestCase):
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
     @mock.patch('api_util.check_cron')
-    def test_curation_report_ignored(self, mock_check_cron):
+    def _test_curation_report_ignored(self, mock_check_cron):
         exclude_file_list = ["person.csv"]
         exclude_file_list = [self.folder_prefix + item for item in exclude_file_list]
         expected_result_items = []
