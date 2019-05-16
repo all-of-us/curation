@@ -230,7 +230,7 @@ class ValidationTest(unittest.TestCase):
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
     @mock.patch('api_util.check_cron')
-    def _test_curation_report_ignored(self, mock_check_cron):
+    def test_curation_report_ignored(self, mock_check_cron):
         exclude_file_list = ["person.csv"]
         exclude_file_list = [self.folder_prefix + item for item in exclude_file_list]
         expected_result_items = []
