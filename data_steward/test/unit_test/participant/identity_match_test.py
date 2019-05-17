@@ -1,5 +1,6 @@
-import mock
 import unittest
+
+import mock
 
 import validation.participants.consts as consts
 import validation.participants.identity_match as id_match

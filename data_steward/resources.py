@@ -1,20 +1,14 @@
-import inspect
-import os
 import csv
-import cachetools
+import hashlib
+import inspect
 import json
-import vocabulary
+import os
+
+import cachetools
+
+from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML
 
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-
-ACHILLES_ANALYSIS = 'achilles_analysis'
-ACHILLES_RESULTS = 'achilles_results'
-ACHILLES_RESULTS_DIST = 'achilles_results_dist'
-ACHILLES_TABLES = [ACHILLES_ANALYSIS, ACHILLES_RESULTS, ACHILLES_RESULTS_DIST]
-
-ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
-ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
-ACHILLES_HEEL_TABLES = [ACHILLES_HEEL_RESULTS, ACHILLES_RESULTS_DERIVED]
 
 # spec/_data/*
 data_path = os.path.join(base_path, 'spec', '_data')
@@ -25,8 +19,12 @@ resource_path = os.path.join(base_path, 'resources')
 fields_path = os.path.join(resource_path, 'fields')
 cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
 achilles_index_path = os.path.join(resource_path, 'curation_report')
+AOU_GENERAL_PATH = os.path.join(resource_path, 'aou_general')
+AOU_GENERAL_CONCEPT_CSV_PATH = os.path.join(AOU_GENERAL_PATH, 'concept.csv')
 
 html_boilerplate_path = os.path.join(resource_path, 'html_boilerplate.txt')
+
+DATASOURCES_JSON = os.path.join(achilles_index_path, 'data/datasources.json')
 
 
 @cachetools.cached(cache={})
@@ -114,7 +112,7 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
             table_name, _ = file_name.split('.')
             schema = json.load(fp)
             include_table = True
-            if table_name in vocabulary.VOCABULARY_TABLES and not include_vocabulary:
+            if table_name in VOCABULARY_TABLES and not include_vocabulary:
                 include_table = False
             elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
                 include_table = False
@@ -125,3 +123,22 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
             if include_table:
                 result[table_name] = schema
     return result
+
+
+def hash_dir(in_dir):
+    """
+    Generate an MD5 digest from the contents of a directory
+    """
+    file_names = os.listdir(in_dir)
+    hash_obj = hashlib.sha256()
+    for file_name in file_names:
+        file_path = os.path.join(in_dir, file_name)
+        hash_obj.update(open(file_path, 'rb').read())
+    return hash_obj.hexdigest()
+
+
+CDM_TABLES = cdm_schemas().keys()
+ACHILLES_INDEX_FILES = achilles_index_files()
+CDM_FILES = map(lambda t: t + '.csv', CDM_TABLES)
+ALL_ACHILLES_INDEX_FILES = [name.split(resource_path + os.sep)[1].strip() for name in ACHILLES_INDEX_FILES]
+IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES

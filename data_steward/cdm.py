@@ -3,9 +3,11 @@ OMOP CDM utility functions
 """
 
 import argparse
-import common
-import bq_utils
 import logging
+
+import bq_utils
+import common
+import resources
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ def create_all_tables(dataset_id):
     :return:
     """
     logger.debug('Creating all CDM tables in {dataset_id}...'.format(dataset_id=dataset_id))
-    for table in common.CDM_TABLES:
+    for table in resources.CDM_TABLES:
         create_table(table, dataset_id)
 
 
@@ -50,7 +52,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--table',
                         help='A specific CDM table to create (creates all by default)',
-                        choices=list(common.CDM_TABLES))
+                        choices=list(resources.CDM_TABLES))
     parser.add_argument('--component',
                         help='Subset of CDM tables to create',
                         choices=list(common.CDM_COMPONENTS))

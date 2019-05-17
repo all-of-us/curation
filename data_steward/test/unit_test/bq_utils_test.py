@@ -1,16 +1,18 @@
-import unittest
 import os
+import unittest
+
+import mock
+from google.appengine.ext import testbed
+
 import bq_utils
+import common
 import gcs_utils
 import resources
-import common
-from validation.achilles import ACHILLES_TABLES
-from google.appengine.ext import testbed
+import test_util
 from test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
 from test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_CSV
 from test_util import PITT_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_OBSERVATION_CSV
-import test_util
-import mock
+from validation.achilles import ACHILLES_TABLES
 
 # import time
 
@@ -224,7 +226,7 @@ class BqUtilsTest(unittest.TestCase):
         self.assertTrue(result_2['creationTime'] > result_1['creationTime'])
 
     def test_create_standard_table(self):
-        standard_tables = list(common.CDM_TABLES) + ACHILLES_TABLES
+        standard_tables = list(resources.CDM_TABLES) + ACHILLES_TABLES
         for standard_table in standard_tables:
             table_id = 'prefix_for_test_' + standard_table
             result = bq_utils.create_standard_table(standard_table, table_id)
