@@ -1,16 +1,15 @@
+import os
 import unittest
 
-import os
-import StringIO
 from google.appengine.ext import testbed
 
 import bq_utils
-import common
-import validation.sql_wrangle
-from validation import achilles
-from test_util import FAKE_HPO_ID
 import gcs_utils
+import resources
 import test_util
+import validation.sql_wrangle
+from test_util import FAKE_HPO_ID
+from validation import achilles
 
 # This may change if we strip out unused analyses
 ACHILLES_LOOKUP_COUNT = 215
@@ -72,7 +71,7 @@ class AchillesTest(unittest.TestCase):
         test_util.delete_all_tables(bq_utils.get_dataset_id())
 
     def _load_dataset(self):
-        for cdm_table in common.CDM_TABLES:
+        for cdm_table in resources.CDM_TABLES:
             cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
             if os.path.exists(cdm_file_name):
                 test_util.write_cloud_file(self.hpo_bucket, cdm_file_name)

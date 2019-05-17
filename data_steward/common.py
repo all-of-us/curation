@@ -1,11 +1,3 @@
-import resources
-import os
-
-CDM_TABLES = resources.cdm_schemas().keys()
-CDM_FILES = [table + '.csv' for table in CDM_TABLES]
-ACHILLES_INDEX_FILES = resources.achilles_index_files()
-ALL_ACHILLES_INDEX_FILES = [name.split(resources.resource_path + os.sep)[1].strip() for name in ACHILLES_INDEX_FILES]
-DATASOURCES_JSON = os.path.join(resources.achilles_index_path, 'data/datasources.json')
 PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_mrn', 'participant_match']
 AOU_REQUIRED = ['care_site', 'condition_occurrence', 'death', 'device_exposure', 'drug_exposure',
                 'fact_relationship', 'location', 'measurement', 'note', 'observation', 'person',
@@ -21,15 +13,32 @@ PERSON_REPORT = 'person'
 DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
 ALL_REPORT_FILES = [report + '.json' for report in ALL_REPORTS]
-IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES
-VOCABULARY_TABLES = ['concept', 'concept_ancestor', 'concept_class', 'concept_relationship', 'concept_synonym',
-                     'domain', 'drug_strength', 'relationship', 'vocabulary']
+
+# Vocabulary
+CONCEPT = 'concept'
+CONCEPT_ANCESTOR = 'concept_ancestor'
+CONCEPT_CLASS = 'concept_class'
+CONCEPT_RELATIONSHIP = 'concept_relationship'
+CONCEPT_SYNONYM = 'concept_synonym'
+DOMAIN = 'domain'
+DRUG_STRENGTH = 'drug_strength'
+RELATIONSHIP = 'relationship'
+VOCABULARY = 'vocabulary'
+VOCABULARY_TABLES = [CONCEPT, CONCEPT_ANCESTOR, CONCEPT_CLASS, CONCEPT_RELATIONSHIP, CONCEPT_SYNONYM, DOMAIN,
+                     DRUG_STRENGTH, RELATIONSHIP, VOCABULARY]
+# Achilles
+ACHILLES_ANALYSIS = 'achilles_analysis'
+ACHILLES_RESULTS = 'achilles_results'
+ACHILLES_RESULTS_DIST = 'achilles_results_dist'
+ACHILLES_TABLES = [ACHILLES_ANALYSIS, ACHILLES_RESULTS, ACHILLES_RESULTS_DIST]
+ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
+ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
+ACHILLES_HEEL_TABLES = [ACHILLES_HEEL_RESULTS, ACHILLES_RESULTS_DERIVED]
 REQUIRED_TABLES = ['person']
 REQUIRED_FILES = [table + '.csv' for table in REQUIRED_TABLES]
 ACHILLES_EXPORT_PREFIX_STRING = "curation_report/data/"
 IGNORE_STRING_LIST = [ACHILLES_EXPORT_PREFIX_STRING]
 ACHILLES_EXPORT_DATASOURCES_JSON = ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json'
-VOCABULARY = 'vocabulary'
 # latest vocabulary dataset name in test and prod
 VOCABULARY_DATASET = 'vocabulary20190423'
 CLINICAL = 'clinical'
@@ -104,3 +113,16 @@ LATEST_RESULTS_JSON = 'latest_results.json'
 REPORT_FOR_ACHILLES = 'achilles'
 REPORT_FOR_RESULTS = 'results'
 LOG_YEAR = '2019'
+DELIMITER = '\t'
+LINE_TERMINATOR = '\n'
+TRANSFORM_FILES = 'transform_files'
+APPEND_VOCABULARY = 'append_vocabulary'
+APPEND_CONCEPTS = 'append_concepts'
+ADD_AOU_GENERAL = 'add_aou_general'
+ERRORS = 'errors'
+AOU_GEN_ID = 'AoU_General'
+AOU_GEN_NAME = 'AoU_General'
+AOU_GEN_VOCABULARY_CONCEPT_ID = '2000000000'
+AOU_GEN_VOCABULARY_REFERENCE = 'https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g'
+OMOP_VOCABULARY_CONCEPT_ID = '44819096'
+ERROR_APPENDING = 'Appending to {in_path} which already contains rows for ' + AOU_GEN_ID

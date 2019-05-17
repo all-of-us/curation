@@ -1,6 +1,7 @@
 import unittest
+
+import common
 import resources
-import vocabulary
 
 
 class ResourcesTest(unittest.TestCase):
@@ -29,12 +30,12 @@ class ResourcesTest(unittest.TestCase):
         self.assertListEqual([], result_internal_tables,
                              msg='Internal tables %s should not be in result of cdm_schemas()' % result_internal_tables)
 
-        achilles_tables = resources.ACHILLES_TABLES + resources.ACHILLES_HEEL_TABLES
+        achilles_tables = common.ACHILLES_TABLES + common.ACHILLES_HEEL_TABLES
         result_achilles_tables = [table_name for table_name in table_names if table_name in achilles_tables]
         self.assertListEqual([], result_achilles_tables,
                              msg='Achilles tables %s should not be in result of cdm_schemas()' % result_achilles_tables)
 
-        result_vocab_tables = [table_name for table_name in table_names if table_name in vocabulary.VOCABULARY_TABLES]
+        result_vocab_tables = [table_name for table_name in table_names if table_name in resources.VOCABULARY_TABLES]
         self.assertListEqual([], result_vocab_tables,
                              msg='Vocabulary tables %s should not be in result of cdm_schemas()' % result_vocab_tables)
 

@@ -1,10 +1,9 @@
+import logging
 import os
 
 import bq_utils
 import resources
 import sql_wrangle
-import logging
-import time
 
 ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
