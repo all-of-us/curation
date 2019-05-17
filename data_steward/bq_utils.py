@@ -113,7 +113,8 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
             'skipLeadingRows': 1,
             'allowQuotedNewlines': True,
             'writeDisposition': 'WRITE_TRUNCATE',
-            'allowJaggedRows': allow_jagged_rows
+            'allowJaggedRows': allow_jagged_rows,
+            'sourceFormat': 'CSV'
             }
     job_body = {'configuration': {
         'load': load

@@ -39,6 +39,7 @@ REQUIRED_FILES = [table + '.csv' for table in REQUIRED_TABLES]
 ACHILLES_EXPORT_PREFIX_STRING = "curation_report/data/"
 IGNORE_STRING_LIST = [ACHILLES_EXPORT_PREFIX_STRING]
 ACHILLES_EXPORT_DATASOURCES_JSON = ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json'
+
 # latest vocabulary dataset name in test and prod
 VOCABULARY_DATASET = 'vocabulary20190423'
 CLINICAL = 'clinical'
@@ -113,6 +114,7 @@ LATEST_RESULTS_JSON = 'latest_results.json'
 REPORT_FOR_ACHILLES = 'achilles'
 REPORT_FOR_RESULTS = 'results'
 LOG_YEAR = '2019'
+
 DELIMITER = '\t'
 LINE_TERMINATOR = '\n'
 TRANSFORM_FILES = 'transform_files'

@@ -51,6 +51,12 @@ inner join
 
 
 class AchillesTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
     def setUp(self):
         super(AchillesTest, self).setUp()
         self.testbed = testbed.Testbed()

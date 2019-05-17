@@ -47,6 +47,11 @@ padding: 5px;
 
 h1 {
 font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+padding-top: 40px;
+}
+
+h3 {
+font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
 }
 
 </style>

@@ -29,6 +29,12 @@ def first_or_none(l):
 
 
 class EhrUnionTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
     def setUp(self):
         super(EhrUnionTest, self).setUp()
         self.testbed = testbed.Testbed()
