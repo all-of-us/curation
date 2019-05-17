@@ -556,6 +556,16 @@ def create_dataset(
         overwrite_existing=None
     ):
     """
+    Creates a new dataset from the API.
+
+    :param  project_id:  name of the project to create the dataset in.  defaults
+        to the currently configured project if missing.
+    :param  dataset_id:  name to give the new dataset.  it is required.
+    :param  description:  dataset description.  it is required.
+    :param  friendly_name:  an user friendly name for the dataset.  optional.
+    :param  overwrite_existing:  Determine if the dataset should be overwritten
+        if it already exists.  defaults to true / overwrite.
+
     """
     if dataset_id is None:
         raise RuntimeError("Cannot create a dataset without a name")
@@ -590,6 +600,7 @@ def create_dataset(
     try:
         insert_result = insert_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
     except HttpError:
+        # dataset may exist.  try deleting if deleteContents is set and try again.
         rm_dataset = bq_service.datasets().delete(
             projectId=app_id,
             datasetId=dataset_id,
