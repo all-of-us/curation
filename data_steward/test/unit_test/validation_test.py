@@ -63,6 +63,17 @@ class ValidationTest(unittest.TestCase):
                        write_disposition='WRITE_TRUNCATE',
                        destination_dataset_id=self.bigquery_dataset_id)
 
+    # ignore the timestamp and folder tags from testing
+    @staticmethod
+    def _remove_timestamp_tags_from_results(result_file):
+        # convert to list to avoid using regex
+        result_list = result_file.split('\n')
+        remove_start_index = result_list.index('</h1>') + 4
+        # the folder tags span 3 indices starting immediately after h1 tag ends, timestamp tags span 3 indices after
+        output_result_list = result_list[:remove_start_index] + result_list[remove_start_index + 3:]
+        output_result_file = '\n'.join(output_result_list)
+        return output_result_file
+
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
         for cdm_table in common.SUBMISSION_FILES:
@@ -268,14 +279,14 @@ class ValidationTest(unittest.TestCase):
         test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'person.csv', ".\n .,.,.")
 
         with open(test_util.PERSON_ONLY_RESULTS_FILE, 'r') as f:
-            expected_result_file = f.read()
+            expected_result_file = self._remove_timestamp_tags_from_results(f.read())
 
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-            actual_result_file = StringIO.StringIO(actual_result).getvalue()
+            actual_result_file = self._remove_timestamp_tags_from_results(StringIO.StringIO(actual_result).getvalue())
             self.assertEqual(expected_result_file, actual_result_file)
 
     @mock.patch('api_util.check_cron')
@@ -284,12 +295,12 @@ class ValidationTest(unittest.TestCase):
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix)
         with open(test_util.FIVE_PERSON_RESULTS_FILE, 'r') as f:
-            expected_result = f.read()
+            expected_result = self._remove_timestamp_tags_from_results(f.read())
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-            actual_result_file = StringIO.StringIO(actual_result).getvalue()
+            actual_result_file = self._remove_timestamp_tags_from_results(StringIO.StringIO(actual_result).getvalue())
             self.assertEqual(expected_result, actual_result_file)
 
     @mock.patch('validation.main.run_export')

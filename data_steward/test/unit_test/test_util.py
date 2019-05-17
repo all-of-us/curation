@@ -149,9 +149,9 @@ def delete_all_tables(dataset_id):
     import bq_utils
 
     deleted = []
-    tables = bq_utils.list_tables(dataset_id)
-    for table in tables:
-        table_id = table['tableReference']['tableId']
+    table_infos = bq_utils.list_tables(dataset_id)
+    table_ids = [table['tableReference']['tableId'] for table in table_infos]
+    for table_id in table_ids:
         if table_id not in common.VOCABULARY_TABLES:
             bq_utils.delete_table(table_id, dataset_id)
             deleted.append(table_id)
