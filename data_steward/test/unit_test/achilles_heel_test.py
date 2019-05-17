@@ -20,6 +20,12 @@ BQ_TIMEOUT_RETRIES = 3
 
 
 class AchillesHeelTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
     def setUp(self):
         super(AchillesHeelTest, self).setUp()
         self.testbed = testbed.Testbed()

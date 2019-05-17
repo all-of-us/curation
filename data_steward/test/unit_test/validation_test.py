@@ -1,20 +1,21 @@
 """
 Unit test components of data_steward.validation.main
 """
+import StringIO
 import datetime
 import json
 import os
-import StringIO
 import unittest
 
-from google.appengine.ext import testbed
 import mock
+from google.appengine.ext import testbed
 
 import bq_utils
 import common
-import test.unit_test.test_util as test_util
+import common_sql
 import gcs_utils
 import resources
+import test.unit_test.test_util as test_util
 from validation import main
 
 
@@ -36,13 +37,42 @@ class ValidationTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.hpo_id = test_util.FAKE_HPO_ID
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
+        self.bigquery_dataset_id = bq_utils.get_dataset_id()
         self.folder_prefix = '2019-01-01/'
         self._empty_bucket()
+        test_util.delete_all_tables(self.bigquery_dataset_id)
+        self._create_drug_class_table()
 
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         for bucket_item in bucket_items:
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+
+    def _create_drug_class_table(self):
+        table_name = 'drug_class'
+        fields = [{"type": "integer", "name": "concept_id", "mode": "required"},
+                  {"type": "string", "name": "concept_name", "mode": "required"},
+                  {"type": "string", "name": "drug_class_name", "mode": "required"}]
+        bq_utils.create_table(table_id=table_name, fields=fields, drop_existing=True,
+                              dataset_id=self.bigquery_dataset_id)
+
+        bq_utils.query(q=common_sql.DRUG_CLASS_QUERY.format(dataset_id=self.bigquery_dataset_id),
+                       use_legacy_sql=False,
+                       destination_table_id='drug_class',
+                       retry_count=bq_utils.BQ_DEFAULT_RETRY_COUNT,
+                       write_disposition='WRITE_TRUNCATE',
+                       destination_dataset_id=self.bigquery_dataset_id)
+
+    # ignore the timestamp and folder tags from testing
+    @staticmethod
+    def _remove_timestamp_tags_from_results(result_file):
+        # convert to list to avoid using regex
+        result_list = result_file.split('\n')
+        remove_start_index = result_list.index('</h1>') + 4
+        # the folder tags span 3 indices starting immediately after h1 tag ends, timestamp tags span 3 indices after
+        output_result_list = result_list[:remove_start_index] + result_list[remove_start_index + 3:]
+        output_result_file = '\n'.join(output_result_list)
+        return output_result_file
 
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
@@ -61,7 +91,7 @@ class ValidationTest(unittest.TestCase):
         expected_warnings = []
         for file_name in bad_file_names:
             test_util.write_cloud_str(self.hpo_bucket, self.folder_prefix + file_name, ".")
-            expected_item = (file_name, main.UNKNOWN_FILE)
+            expected_item = (file_name, common.UNKNOWN_FILE)
             expected_warnings.append(expected_item)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)
@@ -249,14 +279,14 @@ class ValidationTest(unittest.TestCase):
         test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'person.csv', ".\n .,.,.")
 
         with open(test_util.PERSON_ONLY_RESULTS_FILE, 'r') as f:
-            expected_result_file = f.read()
+            expected_result_file = self._remove_timestamp_tags_from_results(f.read())
 
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-            actual_result_file = StringIO.StringIO(actual_result).getvalue()
+            actual_result_file = self._remove_timestamp_tags_from_results(StringIO.StringIO(actual_result).getvalue())
             self.assertEqual(expected_result_file, actual_result_file)
 
     @mock.patch('api_util.check_cron')
@@ -265,12 +295,12 @@ class ValidationTest(unittest.TestCase):
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix)
         with open(test_util.FIVE_PERSON_RESULTS_FILE, 'r') as f:
-            expected_result = f.read()
+            expected_result = self._remove_timestamp_tags_from_results(f.read())
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-            actual_result_file = StringIO.StringIO(actual_result).getvalue()
+            actual_result_file = self._remove_timestamp_tags_from_results(StringIO.StringIO(actual_result).getvalue())
             self.assertEqual(expected_result, actual_result_file)
 
     @mock.patch('validation.main.run_export')
@@ -449,4 +479,5 @@ class ValidationTest(unittest.TestCase):
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
         test_util.empty_bucket(bucket_nyc)
         test_util.empty_bucket(gcs_utils.get_drc_bucket())
+        test_util.delete_all_tables(self.bigquery_dataset_id)
         self.testbed.deactivate()

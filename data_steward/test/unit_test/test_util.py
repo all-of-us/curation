@@ -23,6 +23,7 @@ FIVE_PERSONS_CONDITION_OCCURRENCE_CSV = os.path.join(FIVE_PERSONS_PATH, 'conditi
 FIVE_PERSONS_PROCEDURE_OCCURRENCE_CSV = os.path.join(FIVE_PERSONS_PATH, 'procedure_occurrence.csv')
 FIVE_PERSONS_DRUG_EXPOSURE_CSV = os.path.join(FIVE_PERSONS_PATH, 'drug_exposure.csv')
 FIVE_PERSONS_MEASUREMENT_CSV = os.path.join(FIVE_PERSONS_PATH, 'measurement.csv')
+FIVE_PERSON_FACT_RELATIONSHIP_CSV = os.path.join(FIVE_PERSONS_PATH, 'fact_relationship.csv')
 FIVE_PERSONS_FILES = [FIVE_PERSONS_PERSON_CSV,
                       FIVE_PERSONS_VISIT_OCCURRENCE_CSV,
                       FIVE_PERSONS_CONDITION_OCCURRENCE_CSV,
@@ -148,9 +149,9 @@ def delete_all_tables(dataset_id):
     import bq_utils
 
     deleted = []
-    tables = bq_utils.list_tables(dataset_id)
-    for table in tables:
-        table_id = table['tableReference']['tableId']
+    table_infos = bq_utils.list_tables(dataset_id)
+    table_ids = [table['tableReference']['tableId'] for table in table_infos]
+    for table_id in table_ids:
         if table_id not in common.VOCABULARY_TABLES:
             bq_utils.delete_table(table_id, dataset_id)
             deleted.append(table_id)

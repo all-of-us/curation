@@ -15,7 +15,7 @@ import test_util
 # This may change if we strip out unused analyses
 ACHILLES_LOOKUP_COUNT = 215
 ACHILLES_ANALYSIS_COUNT = 134
-ACHILLES_RESULTS_COUNT = 2457
+ACHILLES_RESULTS_COUNT = 2497
 SOURCE_NAME_QUERY = """insert into synpuf_100.achilles_analysis (analysis_id, analysis_name) 
   values (0, 'Source name')"""
 TEMP_QUERY_1 = """INTO temp.tempresults
@@ -52,6 +52,12 @@ inner join
 
 
 class AchillesTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
     def setUp(self):
         super(AchillesTest, self).setUp()
         self.testbed = testbed.Testbed()

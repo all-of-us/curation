@@ -54,7 +54,7 @@ jobs:
           command: ~/curation/data_steward/ci/setup.sh
       # Dependencies
       - run:
-          command: pip install --upgrade pip
+          command: pip install --upgrade pip setuptools virtualenv
       - run:
           command: cd ~/curation/data_steward/ && pip install -t lib/ -r requirements.txt
       # Test

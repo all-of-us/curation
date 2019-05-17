@@ -2,6 +2,8 @@ import unittest
 import json
 import os
 from google.appengine.ext import testbed
+import moz_sql_parser
+import dpath
 
 import common
 import resources
@@ -11,10 +13,27 @@ import test_util
 from validation import ehr_union
 
 PITT_HPO_ID = 'pitt'
-CHS_HPO_ID = 'chs'
+NYC_HPO_ID = 'nyc'
+SUBQUERY_FAIL_MSG = '''
+Test {expr} in {table} subquery 
+ Expected: {expected}
+ Actual: {actual}
+
+{subquery}
+'''
+
+
+def first_or_none(l):
+    return next(iter(l or []), None)
 
 
 class EhrUnionTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
     def setUp(self):
         super(EhrUnionTest, self).setUp()
         self.testbed = testbed.Testbed()
@@ -25,12 +44,21 @@ class EhrUnionTest(unittest.TestCase):
         self.testbed.init_blobstore_stub()
         self.testbed.init_datastore_v3_stub()
         self.project_id = bq_utils.app_identity.get_application_id()
-        self.hpo_ids = [CHS_HPO_ID, PITT_HPO_ID]
+        self.hpo_ids = [NYC_HPO_ID, PITT_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         self._empty_hpo_buckets()
         test_util.delete_all_tables(self.input_dataset_id)
         test_util.delete_all_tables(self.output_dataset_id)
+
+        # TODO Generalize to work for all foreign key references
+        # Collect all primary key fields in CDM tables
+        mapped_fields = []
+        for table in ehr_union.tables_to_map():
+            field = table + '_id'
+            mapped_fields.append(field)
+        self.mapped_fields = mapped_fields
+        self.implemented_foreign_keys = [common.VISIT_OCCURRENCE_ID, common.CARE_SITE_ID, common.LOCATION_ID]
 
     def _empty_hpo_buckets(self):
         for hpo_id in self.hpo_ids:
@@ -51,11 +79,14 @@ class EhrUnionTest(unittest.TestCase):
         expected_tables = dict()
         running_jobs = []
         for cdm_table in common.CDM_TABLES:
-            cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
             output_table = ehr_union.output_table_for(cdm_table)
             expected_tables[output_table] = []
             for hpo_id in self.hpo_ids:
                 # upload csv into hpo bucket
+                if hpo_id == NYC_HPO_ID:
+                    cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
+                else:
+                    cdm_file_name = os.path.join(test_util.PITT_FIVE_PERSONS_PATH, cdm_table + '.csv')
                 bucket = gcs_utils.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_file_name):
                     test_util.write_cloud_file(bucket, cdm_file_name)
@@ -68,6 +99,11 @@ class EhrUnionTest(unittest.TestCase):
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
                 expected_tables[output_table] += list(csv_rows)
+        # ensure person to observation output is as expected
+        output_table_person = ehr_union.output_table_for(ehr_union.PERSON_TABLE)
+        output_table_observation = ehr_union.output_table_for(ehr_union.OBSERVATION_TABLE)
+        expected_tables[output_table_observation] += 4 * expected_tables[output_table_person]
+
         incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
         if len(incomplete_jobs) > 0:
             message = "Job id(s) %s failed to complete" % incomplete_jobs
@@ -100,7 +136,8 @@ class EhrUnionTest(unittest.TestCase):
 
         # output should be mapping tables and cdm tables
         output_tables_before = self._dataset_tables(self.output_dataset_id)
-        mapping_tables = [ehr_union.mapping_table_for(table) for table in ehr_union.tables_to_map()]
+        mapping_tables = [ehr_union.mapping_table_for(table) for table in
+                          ehr_union.tables_to_map() + [ehr_union.PERSON_TABLE]]
         output_cdm_tables = [ehr_union.output_table_for(table) for table in common.CDM_TABLES]
         expected_output = set(output_tables_before + mapping_tables + output_cdm_tables)
 
@@ -110,6 +147,30 @@ class EhrUnionTest(unittest.TestCase):
         # input dataset should be unchanged
         input_tables_after = set(self._dataset_tables(self.input_dataset_id))
         self.assertSetEqual(input_tables_before, input_tables_after)
+
+        # fact_relationship from pitt
+        hpo_unique_identifiers = ehr_union.get_hpo_offsets(self.hpo_ids)
+        pitt_offset = hpo_unique_identifiers[PITT_HPO_ID]
+        q = '''SELECT fact_id_1, fact_id_2 
+               FROM `{input_dataset}.{hpo_id}_fact_relationship`
+               where domain_concept_id_1 = 21 and domain_concept_id_2 = 21'''.format(
+            input_dataset=self.input_dataset_id,
+            hpo_id=PITT_HPO_ID)
+        response = bq_utils.query(q)
+        result = bq_utils.response2rows(response)
+
+        expected_fact_id_1 = result[0]["fact_id_1"] + pitt_offset
+        expected_fact_id_2 = result[0]["fact_id_2"] + pitt_offset
+
+        q = '''SELECT fr.fact_id_1, fr.fact_id_2 FROM `{dataset_id}.unioned_ehr_fact_relationship` fr
+            join `{dataset_id}._mapping_measurement` mm on fr.fact_id_1 = mm.measurement_id
+            and mm.src_hpo_id = "{hpo_id}"'''.format(dataset_id=self.output_dataset_id,
+                                                     hpo_id=PITT_HPO_ID)
+        response = bq_utils.query(q)
+        result = bq_utils.response2rows(response)
+        actual_fact_id_1, actual_fact_id_2 = result[0]["fact_id_1"], result[0]["fact_id_2"]
+        self.assertEqual(expected_fact_id_1, actual_fact_id_1)
+        self.assertEqual(expected_fact_id_2, actual_fact_id_2)
 
         # mapping tables
         tables_to_map = ehr_union.tables_to_map()
@@ -154,14 +215,14 @@ class EhrUnionTest(unittest.TestCase):
         self.assertSetEqual(expected_output, actual_output)
 
         # explicit check that output person_ids are same as input
-        chs_person_table_id = bq_utils.get_table_id(CHS_HPO_ID, 'person')
+        nyc_person_table_id = bq_utils.get_table_id(NYC_HPO_ID, 'person')
         pitt_person_table_id = bq_utils.get_table_id(PITT_HPO_ID, 'person')
         q = '''SELECT DISTINCT person_id FROM (
-           SELECT person_id FROM {dataset_id}.{chs_person_table_id}
+           SELECT person_id FROM {dataset_id}.{nyc_person_table_id}
            UNION ALL
            SELECT person_id FROM {dataset_id}.{pitt_person_table_id}
         ) ORDER BY person_id ASC'''.format(dataset_id=self.input_dataset_id,
-                                           chs_person_table_id=chs_person_table_id,
+                                           nyc_person_table_id=nyc_person_table_id,
                                            pitt_person_table_id=pitt_person_table_id)
         response = bq_utils.query(q)
         expected_rows = bq_utils.response2rows(response)
@@ -174,7 +235,7 @@ class EhrUnionTest(unittest.TestCase):
         self.assertListEqual(expected_rows, actual_rows)
 
     def test_subqueries(self):
-        hpo_ids = ['chs', 'pitt']
+        hpo_ids = ['nyc', 'pitt']
         project_id = bq_utils.app_identity.get_application_id()
         dataset_id = bq_utils.get_dataset_id()
         table = 'measurement'
@@ -196,20 +257,20 @@ class EhrUnionTest(unittest.TestCase):
         subquery = subqueries[0]
         self.assertTrue(pitt_table_id in subquery)
 
-        # After adding measurement table for chs, should generate subqueries for both
-        chs_table_id = self._create_hpo_table('chs', table, dataset_id)
+        # After adding measurement table for , should generate subqueries for both
+        nyc_table_id = self._create_hpo_table('nyc', table, dataset_id)
         expected_count = 2
         subqueries = ehr_union._mapping_subqueries(table, hpo_ids, dataset_id, project_id)
         actual_count = len(subqueries)
         self.assertEqual(expected_count, actual_count, mapping_msg % (expected_count, actual_count))
         self.assertTrue(any(sq for sq in subqueries if pitt_table_id in sq))
-        self.assertTrue(any(sq for sq in subqueries if chs_table_id in sq))
+        self.assertTrue(any(sq for sq in subqueries if nyc_table_id in sq))
 
         subqueries = ehr_union._union_subqueries(table, hpo_ids, dataset_id, self.output_dataset_id)
         actual_count = len(subqueries)
         self.assertEqual(expected_count, actual_count, union_msg % (expected_count, actual_count))
         self.assertTrue(any(sq for sq in subqueries if pitt_table_id in sq))
-        self.assertTrue(any(sq for sq in subqueries if chs_table_id in sq))
+        self.assertTrue(any(sq for sq in subqueries if nyc_table_id in sq))
 
     # TODO Figure out a good way to test query structure
     # One option may be for each query under test to generate an abstract syntax tree
@@ -218,7 +279,7 @@ class EhrUnionTest(unittest.TestCase):
 
     def test_mapping_query(self):
         table = 'measurement'
-        hpo_ids = ['chs', 'pitt']
+        hpo_ids = ['nyc', 'pitt']
         mapping_msg = 'Expected mapping subquery count %s but got %s for hpo_id %s'
         project_id = bq_utils.app_identity.get_application_id()
         dataset_id = bq_utils.get_dataset_id()
@@ -233,10 +294,10 @@ class EhrUnionTest(unittest.TestCase):
         expected_query = '''
             WITH all_measurement AS (
       
-                (SELECT 'chs_measurement' AS src_table_id,
+                (SELECT 'nyc_measurement' AS src_table_id,
                   measurement_id AS src_measurement_id,
-                  ROW_NUMBER() over() + 2000000000000000 as measurement_id
-                  FROM `{app_id}.{dataset_id}.chs_measurement`)
+                  measurement_id + 3000000000000000 as measurement_id
+                  FROM `{app_id}.{dataset_id}.nyc_measurement`)
                 
 
         UNION ALL
@@ -244,7 +305,7 @@ class EhrUnionTest(unittest.TestCase):
 
                 (SELECT 'pitt_measurement' AS src_table_id,
                   measurement_id AS src_measurement_id,
-                  ROW_NUMBER() over() + 3000000000000000 as measurement_id
+                  measurement_id + 4000000000000000 as measurement_id
                   FROM `{app_id}.{dataset_id}.pitt_measurement`)
                 
     )
@@ -258,19 +319,191 @@ class EhrUnionTest(unittest.TestCase):
         self.assertEqual(expected_query.strip(), query.strip(),
                          "Mapping query for \n {q} \n to is not as expected".format(q=query))
 
+    def convert_ehr_person_to_observation(self, person_row):
+        obs_rows = []
+        dob_row = {'observation_concept_id': common.DOB_CONCEPT_ID,
+                   'observation_source_value': None,
+                   'value_as_string': person_row['birth_datetime'],
+                   'person_id': person_row['person_id'],
+                   'observation_date': person_row['birth_date'],
+                   'value_as_concept_id': None}
+        gender_row = {'observation_concept_id': common.GENDER_CONCEPT_ID,
+                      'observation_source_value': person_row['gender_source_value'],
+                      'value_as_string': None,
+                      'person_id': person_row['person_id'],
+                      'observation_date': person_row['birth_date'],
+                      'value_as_concept_id': person_row['gender_concept_id']}
+        race_row = {'observation_concept_id': common.RACE_CONCEPT_ID,
+                    'observation_source_value': person_row['race_source_value'],
+                    'value_as_string': None,
+                    'person_id': person_row['person_id'],
+                    'observation_date': person_row['birth_date'],
+                    'value_as_concept_id': person_row['race_concept_id']}
+        ethnicity_row = {'observation_concept_id': common.ETHNICITY_CONCEPT_ID,
+                         'observation_source_value': person_row['ethnicity_source_value'],
+                         'value_as_string': None,
+                         'person_id': person_row['person_id'],
+                         'observation_date': person_row['birth_date'],
+                         'value_as_concept_id': person_row['ethnicity_concept_id']}
+        obs_rows.extend([dob_row, gender_row, race_row, ethnicity_row])
+        return obs_rows
+
+    def test_ehr_person_to_observation(self):
+        # ehr person table converts to observation records
+        self._load_datasets()
+
+        # perform ehr union
+        ehr_union.main(self.input_dataset_id, self.output_dataset_id, self.project_id, self.hpo_ids)
+
+        person_query = '''
+            SELECT 
+                person_id,
+                gender_concept_id,
+                gender_source_value,
+                race_concept_id,
+                race_source_value,
+                CAST(birth_datetime AS STRING) AS birth_datetime,
+                ethnicity_concept_id,
+                ethnicity_source_value,
+                EXTRACT(DATE FROM birth_datetime) AS birth_date
+            FROM {output_dataset_id}.unioned_ehr_person
+            '''.format(output_dataset_id=self.output_dataset_id)
+        person_response = bq_utils.query(person_query)
+        person_rows = bq_utils.response2rows(person_response)
+
+        # construct dicts of expected values
+        expected = []
+        for person_row in person_rows:
+            expected.extend(self.convert_ehr_person_to_observation(person_row))
+
+        # query for observation table records
+        query = '''
+            SELECT person_id,
+                    observation_concept_id,
+                    value_as_concept_id,
+                    value_as_string,
+                    observation_source_value,
+                    observation_date
+            FROM {output_dataset_id}.unioned_ehr_observation AS obs
+            WHERE obs.observation_concept_id IN ({gender_concept_id},{race_concept_id},{dob_concept_id},{ethnicity_concept_id})
+            '''
+
+        obs_query = query.format(output_dataset_id=self.output_dataset_id,
+                                 gender_concept_id=common.GENDER_CONCEPT_ID,
+                                 race_concept_id=common.RACE_CONCEPT_ID,
+                                 dob_concept_id=common.DOB_CONCEPT_ID,
+                                 ethnicity_concept_id=common.ETHNICITY_CONCEPT_ID)
+        obs_response = bq_utils.query(obs_query)
+        obs_rows = bq_utils.response2rows(obs_response)
+        actual = obs_rows
+
+        self.assertEqual(len(expected), len(actual))
+        self.assertItemsEqual(expected, actual)
+
+    def test_ehr_person_to_observation_counts(self):
+        self._load_datasets()
+
+        # perform ehr union
+        ehr_union.main(self.input_dataset_id, self.output_dataset_id, self.project_id, self.hpo_ids)
+
+        q_person = '''
+                    SELECT *
+                    FROM {output_dataset_id}.unioned_ehr_person AS p
+                    '''.format(output_dataset_id=self.output_dataset_id)
+        person_response = bq_utils.query(q_person)
+        person_rows = bq_utils.response2rows(person_response)
+        q_observation = '''
+                    SELECT *
+                    FROM {output_dataset_id}.unioned_ehr_observation
+                    WHERE observation_type_concept_id = 38000280
+                    '''.format(output_dataset_id=self.output_dataset_id)
+        # observation should contain 4 records per person of type EHR
+        expected = len(person_rows) * 4
+        observation_response = bq_utils.query(q_observation)
+        observation_rows = bq_utils.response2rows(observation_response)
+        actual = len(observation_rows)
+        self.assertEqual(actual, expected,
+                         'Expected %s EHR person records in observation but found %s' % (expected, actual))
+
     def _test_table_hpo_subquery(self):
         # person is a simple select, no ids should be mapped
         person = ehr_union.table_hpo_subquery(
-            'person', hpo_id=CHS_HPO_ID, input_dataset_id='input', output_dataset_id='output')
+            'person', hpo_id=NYC_HPO_ID, input_dataset_id='input', output_dataset_id='output')
 
         # _mapping_visit_occurrence(src_table_id, src_visit_occurrence_id, visit_occurrence_id)
         # visit_occurrence_id should be mapped
         visit_occurrence = ehr_union.table_hpo_subquery(
-            'visit_occurrence', hpo_id=CHS_HPO_ID, input_dataset_id='input', output_dataset_id='output')
+            'visit_occurrence', hpo_id=NYC_HPO_ID, input_dataset_id='input', output_dataset_id='output')
 
         # visit_occurrence_id and condition_occurrence_id should be mapped
         condition_occurrence = ehr_union.table_hpo_subquery(
-            'condition_occurrence', hpo_id=CHS_HPO_ID, input_dataset_id='input', output_dataset_id='output')
+            'condition_occurrence', hpo_id=NYC_HPO_ID, input_dataset_id='input', output_dataset_id='output')
+
+    def get_table_hpo_subquery_error(self, table, dataset_in, dataset_out):
+        subquery = ehr_union.table_hpo_subquery(table, NYC_HPO_ID, dataset_in, dataset_out)
+        stmt = moz_sql_parser.parse(subquery)
+
+        # Sanity check it is a select statement
+        if 'select' not in stmt:
+            return SUBQUERY_FAIL_MSG.format(expr='query type',
+                                            table=table,
+                                            expected='select',
+                                            actual=str(stmt),
+                                            subquery=subquery)
+
+        # Input table should be first in FROM expression
+        actual_from = first_or_none(dpath.util.values(stmt, 'from/0/value') or dpath.util.values(stmt, 'from'))
+        expected_from = dataset_in + '.' + bq_utils.get_table_id(NYC_HPO_ID, table)
+        if expected_from != actual_from:
+            return SUBQUERY_FAIL_MSG.format(expr='first object in FROM',
+                                            table=table,
+                                            expected=expected_from,
+                                            actual=actual_from,
+                                            subquery=subquery)
+
+        # Ensure all key fields (primary or foreign) yield joins with their associated mapping tables
+        # Note: ordering of joins in the subquery is assumed to be consistent with field order in the json file
+        fields = resources.fields_for(table)
+        id_field = table + '_id'
+        key_ind = 0
+        expected_join = None
+        actual_join = None
+        for field in fields:
+            if field['name'] in self.mapped_fields:
+                # key_ind += 1  # TODO use this increment when we generalize solution for all foreign keys
+                if field['name'] == id_field:
+                    # Primary key, mapping table associated with this one should be INNER joined
+                    key_ind += 1
+                    expr = 'inner join on primary key'
+                    actual_join = first_or_none(dpath.util.values(stmt, 'from/%s/join/value' % key_ind))
+                    expected_join = dataset_out + '.' + ehr_union.mapping_table_for(table)
+                elif field['name'] in self.implemented_foreign_keys:
+                    # Foreign key, mapping table associated with the referenced table should be LEFT joined
+                    key_ind += 1
+                    expr = 'left join on foreign key'
+                    actual_join = first_or_none(dpath.util.values(stmt, 'from/%s/left join/value' % key_ind))
+                    joined_table = field['name'].replace('_id', '')
+                    expected_join = dataset_out + '.' + ehr_union.mapping_table_for(joined_table)
+                if expected_join != actual_join:
+                    return SUBQUERY_FAIL_MSG.format(expr=expr,
+                                                    table=table,
+                                                    expected=expected_join,
+                                                    actual=actual_join,
+                                                    subquery=subquery)
+
+    def test_hpo_subquery(self):
+        input_dataset_id = 'input'
+        output_dataset_id = 'output'
+        subquery_fails = []
+
+        # Key fields should be populated using associated mapping tables
+        for table in common.CDM_TABLES:
+            subquery_fail = self.get_table_hpo_subquery_error(table, input_dataset_id, output_dataset_id)
+            if subquery_fail is not None:
+                subquery_fails.append(subquery_fail)
+
+        if len(subquery_fails) > 0:
+            self.fail('\n\n'.join(subquery_fails))
 
     def _test_table_union_query(self):
         measurement = ehr_union.table_union_query(
