@@ -1,0 +1,80 @@
+concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concept	concept_code	valid_start_date	valid_end_date	invalid_reason
+953291	Destruction of intraosseous basivertebral nerve, each additional vertebral body, including imaging guidance (e.g., fluoroscopy), lumbar/sacrum (list separately in addition to code for primary procedure)	Procedure	HCPCS	HCPCS	S	C9753	20190101	20991231
+953292	Destruction of intraosseous basivertebral nerve, first two vertebral bodies, including imaging guidance (e.g., fluoroscopy), lumbar/sacrum	Procedure	HCPCS	HCPCS	S	C9752	20190101	20991231	
+953295	Repair of nasal vestibular lateral wall stenosis with implant(s)	Procedure	HCPCS	HCPCS	S	C9749	20180401	20991231	
+953298	Iodine i-131 iobenguane, diagnostic, 1 millicurie	Device	HCPCS	HCPCS	S	C9407	20190101	20991231	
+953299	Instillation, hexaminolevulinate hydrochloride, 100 mg	Device	HCPCS	HCPCS	S	A9589	20190101	20991231	
+953300	Lutetium lu 177, dotatate, therapeutic, 1 millicurie	Device	HCPCS	HCPCS	S	A9513	20190101	20991231	
+953301	Patient had any additional spine procedures performed on the same date as the lumbar discectomy/laminotomy	Observation	HCPCS	HCPCS	S	M1071	20190101	20991231	
+953302	Patient screened for future fall risk	Observation	HCPCS	HCPCS	S	M1069	20190101	20991231	
+953303	Adults who are not ambulatory	Observation	HCPCS	HCPCS	S	M1068	20190101	20991231	
+953304	Hospice services for patient provided any time during the measurement period	Observation	HCPCS	HCPCS	S	M1067	20190101	20991231	
+953305	Shingrix vaccine not documented as administered, reason not given	Observation	HCPCS	HCPCS	S	M1066	20190101	20991231	
+953307	Shingrix vaccine documented as administered or previously received	Observation	HCPCS	HCPCS	S	M1064	20190101	20991231	
+953308	Patients receiving high doses of immunosuppressive therapy	Observation	HCPCS	HCPCS	S	M1063	20190101	20991231	
+953309	Patient pregnancy	Observation	HCPCS	HCPCS	S	M1061	20190101	20991231	
+953310	Patient died prior to the end of the performance period	Observation	HCPCS	HCPCS	S	M1060	20190101	20991231	
+953311	Patient was in hospice or receiving palliative care at any time during the performance period	Observation	HCPCS	HCPCS	S	M1059	20190101	20991231	
+953312	Patient was a permanent nursing home resident at any time during the performance period	Observation	HCPCS	HCPCS	S	M1058	20190101	20991231	
+953313	Aspirin or another antiplatelet therapy not used, reason not given	Observation	HCPCS	HCPCS	S	M1057	20190101	20991231	
+953315	Aspirin or another antiplatelet therapy used	Observation	HCPCS	HCPCS	S	M1055	20190101	20991231	
+953316	Patient had only urgent care visits during the performance period	Observation	HCPCS	HCPCS	S	M1054	20190101	20991231	
+953317	Leg pain was measured by the visual analog scale (vas) within three months preoperatively and at one year (9 to 15 months) postoperatively	Observation	HCPCS	HCPCS	S	M1053	20190101	20991231	
+953318	Leg pain was not measured by the visual analog scale (vas) within three months preoperatively and at one year (9 to 15 months) postoperatively	Observation	HCPCS	HCPCS	S	M1052	20190101	20991231	
+953319	Patient had cancer, fracture or infection related to the lumbar spine or patient had idiopathic or congenital scoliosis	Observation	HCPCS	HCPCS	S	M1051	20190101	20991231	
+953320	Functional status was measured by the oswestry disability index (odi version 2.1a) patient reported outcome tool within three months preoperatively and at three months (6 to 20 weeks) postoperatively	Observation	HCPCS	HCPCS	S	M1050	20190101	20991231	
+953321	Functional status measurement with score was not obtained utilizing the oswestry disability index (odi version 2.1a) patient reported outcome tool within three months preoperatively and at three months (6 to 20 weeks) postoperatively	Observation	HCPCS	HCPCS	S	M1049	20190101	20991231	
+953322	Functional status measurement with score was obtained utilizing the oswestry disability index (odi version 2.1a) patient reported outcome tool within three months preoperatively and at three months (6 to 20 weeks) postoperatively	Observation	HCPCS	HCPCS	S	M1048	20190101	20991231	
+953323	Functional status was measured by the oxford knee score (oks) patient reported outcome tool within three months preoperatively and at one year (9 to 15 months) postoperatively	Observation	HCPCS	HCPCS	S	M1047	20190101	20991231	
+953368	Plan of care for moderate to severe pain not documented on or before the date of the second visit with a clinician, reason not given	Observation	HCPCS	HCPCS	S	M1002	20190101	20991231	
+953324	Functional status measurement with score was not obtained utilizing the oxford knee score (oks) patient reported outcome tool within three months preoperatively and at one year (9 to 15 months) postoperatively	Observation	HCPCS	HCPCS	S	M1046	20190101	20991231	
+953325	Functional status measurement with score was obtained utilizing the oxford knee score (oks) patient reported outcome tool within three months preoperatively and at one year (9 to 15 months) postoperatively	Observation	HCPCS	HCPCS	S	M1045	20190101	20991231	
+953326	Functional status was measured by the oswestry disability index (odi version 2.1a) patient reported outcome tool within three months preoperatively and at one year (9 to 15 months) postoperatively	Observation	HCPCS	HCPCS	S	M1044	20190101	20991231	
+953327	Functional status measurement with score was not obtained utilizing the oswestry disability index (odi version 2.1a) patient reported outcome tool within three months preoperatively and at one year (9 to 15 months) postoperatively	Observation	HCPCS	HCPCS	S	M1043	20190101	20991231	
+953328	Functional status measurement with score was obtained utilizing the oswestry disability index (odi version 2.1a) patient reported outcome tool within three months preoperatively and at one year (9 to 15 months) postoperatively	Observation	HCPCS	HCPCS	S	M1042	20190101	20991231	
+953329	Patient had cancer, fracture or infection related to the lumbar spine or patient had idiopathic or congenital scoliosis	Observation	HCPCS	HCPCS	S	M1041	20190101	20991231	
+953330	Patients with a diagnosis of lumbar idiopathic or congenital scoliosis	Observation	HCPCS	HCPCS	S	M1040	20190101	20991231	
+953331	Patients with a diagnosis of lumbar spine region infection at the time of the procedure	Observation	HCPCS	HCPCS	S	M1039	20190101	20991231	
+953332	Patients with a diagnosis of lumbar spine region fracture at the time of the procedure	Observation	HCPCS	HCPCS	S	M1038	20190101	20991231	
+953333	Patients with a diagnosis of lumbar spine region cancer at the time of the procedure	Observation	HCPCS	HCPCS	S	M1037	20190101	20991231	
+953334	Adults who have not had at least 180 days of continuous pharmacotherapy with a medication prescribed for oud without a gap of more than seven days	Observation	HCPCS	HCPCS	S	M1036	20190101	20991231	
+953335	Adults who are deliberately phased out of medication assisted treatment (mat) prior to 180 days of continuous treatment	Observation	HCPCS	HCPCS	S	M1035	20190101	20991231	
+953336	Adults who have at least 180 days of continuous pharmacotherapy with a medication prescribed for oud without a gap of more than seven days	Observation	HCPCS	HCPCS	S	M1034	20190101	20991231	
+953337	Pharmacotherapy for oud initiated after june 30th of performance period	Observation	HCPCS	HCPCS	S	M1033	20190101	20991231	
+953338	Adults currently taking pharmacotherapy for oud	Observation	HCPCS	HCPCS	S	M1032	20190101	20991231	
+953339	Patients with no clinical indications for imaging of the head	Observation	HCPCS	HCPCS	S	M1031	20190101	20991231	
+953340	Patients with clinical indications for imaging of the head	Observation	HCPCS	HCPCS	S	M1030	20190101	20991231	
+953341	Imaging of the head (ct or mri) was not obtained, reason not given	Observation	HCPCS	HCPCS	S	M1029	20190101	20991231	
+953342	Documentation of patients with primary headache diagnosis and imaging other than ct or mri obtained	Observation	HCPCS	HCPCS	S	M1028	20190101	20991231	
+953343	Imaging of the head (ct or mri) was obtained	Observation	HCPCS	HCPCS	S	M1027	20190101	20991231	
+953344	Patients who were in hospice at any time during the performance period	Observation	HCPCS	HCPCS	S	M1026	20190101	20991231	
+953345	Patients who were in hospice at any time during the performance period	Observation	HCPCS	HCPCS	S	M1025	20190101	20991231	
+953347	Adolescent patients 12 to 17 years of age with major depression or dysthymia who reached remission at six months as demonstrated by a six month (+/-60 days) phq-9 or phq-9m score of less than five	Observation	HCPCS	HCPCS	S	M1023	20190101	20991231	
+953348	Patients who were in hospice at any time during the performance period	Observation	HCPCS	HCPCS	S	M1022	20190101	20991231	
+953349	Patient had only urgent care visits during the performance period	Observation	HCPCS	HCPCS	S	M1021	20190101	20991231	
+953351	Adolescent patients 12 to 17 years of age with major depression or dysthymia who reached remission at twelve months as demonstrated by a twelve month (+/-60 days) phq-9 or phq-9m score of less than 5	Observation	HCPCS	HCPCS	S	M1019	20190101	20991231	
+953352	Patients with an active diagnosis or history of cancer (except basal cell and squamous cell skin carcinoma), patients who are heavy tobacco smokers, lung cancer screening patients	Observation	HCPCS	HCPCS	S	M1018	20190101	20991231	
+953353	Patient admitted to palliative care services	Observation	HCPCS	HCPCS	S	M1017	20190101	20991231	
+953354	Female patients unable to bear children	Observation	HCPCS	HCPCS	S	M1016	20190101	20991231	
+953355	Patient treatment and final evaluation complete	Observation	HCPCS	HCPCS	S	M1015	20190101	20991231	
+953356	Patient treatment and final evaluation complete	Observation	HCPCS	HCPCS	S	M1014	20190101	20991231	
+953357	Patient treatment and final evaluation complete	Observation	HCPCS	HCPCS	S	M1013	20190101	20991231	
+953358	Patient treatment and final evaluation complete	Observation	HCPCS	HCPCS	S	M1012	20190101	20991231	
+953359	Patient treatment and final evaluation complete	Observation	HCPCS	HCPCS	S	M1011	20190101	20991231	
+953360	Patient treatment and final evaluation complete	Observation	HCPCS	HCPCS	S	M1010	20190101	20991231	
+953361	Patient treatment and final evaluation complete	Observation	HCPCS	HCPCS	S	M1009	20190101	20991231	
+953362	<50% of total number of a patient's outpatient ra encounters assessed	Observation	HCPCS	HCPCS	S	M1008	20190101	20991231	
+953363	>=50% of total number of a patient's outpatient ra encounters assessed	Observation	HCPCS	HCPCS	S	M1007	20190101	20991231	
+953364	Disease activity not assessed, reason not given	Observation	HCPCS	HCPCS	S	M1006	20190101	20991231	
+953365	Tb screening not performed or results not interpreted, reason not given	Observation	HCPCS	HCPCS	S	M1005	20190101	20991231	
+953366	Documentation of medical reason for not screening for tb or interpreting results (i.e., patient positive for tb and documentation of past treatment; patient who has recently completed a course of anti-tb therapy)	Observation	HCPCS	HCPCS	S	M1004	20190101	20991231	
+953367	Tb screening performed and results interpreted within twelve months prior to initiation of first-time biologic disease modifying anti-rheumatic drug therapy for ra	Observation	HCPCS	HCPCS	S	M1003	20190101	20991231	
+953369	Patient not screened for future fall risk, reason not given	Observation	HCPCS	HCPCS	S	M1070	20190101	20991231	
+953370	Plan of care to address moderate to severe pain documented on or before the date of the second visit with a clinician	Observation	HCPCS	HCPCS	S	M1001	20190101	20991231	
+953371	Pain screened as moderate to severe	Observation	HCPCS	HCPCS	S	M1000	20190101	20991231	
+953385	Outpatient occupational therapy services furnished in whole or in part by an occupational therapy assistant	Observation	HCPCS	HCPCS Modifier	S	CO	20190101	20991231	
+953386	Outpatient physical therapy services furnished in whole or in part by a physical therapist assistant	Observation	HCPCS	HCPCS Modifier	S	CQ	20190101	20991231	
+953387	Items and services furnished by a provider-based, off-campus emergency department	Observation	HCPCS	HCPCS Modifier	S	ER	20190101	20991231	
+953388	Telehealth services for diagnosis, evaluation, or treatment, of symptoms of an acute stroke	Observation	HCPCS	HCPCS Modifier	S	G0	20190101	20991231	
+953389	Prescribed amounts of stationary oxygen for daytime use while at rest and nighttime use differ and the average of the two amounts exceeds 4 liters per minute (lpm) and portable oxygen is prescribed	Observation	HCPCS	HCPCS Modifier	S	QB	20180401	20991231	
+953390	Remote in-home visit for the evaluation and management of an established patient for use only in a medicare-approved bundled payments for care improvement advanced (bpci advanced) model episode of care, which requires at least 2 of the following 3 key com	Procedure	HCPCS	HCPCS	S	G9984	20181001	20991231	

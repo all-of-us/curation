@@ -1,10 +1,10 @@
 """
 Unit test components of data_steward.validation.main
 """
-import StringIO
 import datetime
 import json
 import os
+import StringIO
 import unittest
 
 import mock
@@ -164,7 +164,7 @@ class ValidationTest(unittest.TestCase):
         self.assertSetEqual(set(r['results']), set(expected_results))
 
         # check tables exist and are clustered as expected
-        for table in common.CDM_TABLES + common.PII_TABLES:
+        for table in resources.CDM_TABLES + common.PII_TABLES:
             fields_file = os.path.join(resources.fields_path, table + '.json')
             table_id = bq_utils.get_table_id(test_util.FAKE_HPO_ID, table)
             table_info = bq_utils.get_table_info(table_id)
@@ -226,7 +226,7 @@ class ValidationTest(unittest.TestCase):
 
         main._upload_achilles_files(hpo_id=None, folder_prefix=folder_prefix, target_bucket=bucket_nyc)
         actual_bucket_files = set([item['name'] for item in gcs_utils.list_bucket(bucket_nyc)])
-        expected_bucket_files = set(['test-folder-fake/' + item for item in common.ALL_ACHILLES_INDEX_FILES])
+        expected_bucket_files = set(['test-folder-fake/' + item for item in resources.ALL_ACHILLES_INDEX_FILES])
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
     @mock.patch('api_util.check_cron')
@@ -242,7 +242,7 @@ class ValidationTest(unittest.TestCase):
             c.get(test_util.VALIDATE_HPO_FILES_URL)
 
         # check content of the bucket is correct
-        expected_bucket_items = exclude_file_list + [self.folder_prefix + item for item in common.IGNORE_LIST]
+        expected_bucket_items = exclude_file_list + [self.folder_prefix + item for item in resources.IGNORE_LIST]
         list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
         actual_bucket_items = [item['name'] for item in list_bucket_result]
         actual_bucket_items = [item for item in actual_bucket_items

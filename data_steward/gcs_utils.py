@@ -2,11 +2,12 @@
 Wraps Google Cloud Storage JSON API (adapted from https://goo.gl/dRKiYz)
 """
 
+import mimetypes
 import os
 from io import BytesIO
-import mimetypes
-from google.appengine.api import app_identity
+
 import googleapiclient.discovery
+from google.appengine.api import app_identity
 
 MIMETYPES = {'json': 'application/json',
              'woff': 'application/font-woff',

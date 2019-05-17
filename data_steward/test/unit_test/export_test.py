@@ -1,15 +1,15 @@
-import unittest
-import os
-import common
 import json
+import os
+import unittest
 
 from google.appengine.ext import testbed
 
-import gcs_utils
 import bq_utils
-from validation import export, main
-from test_util import FAKE_HPO_ID
+import common
+import gcs_utils
 import test_util
+from test_util import FAKE_HPO_ID
+from validation import export, main
 
 BQ_TIMEOUT_RETRIES = 3
 

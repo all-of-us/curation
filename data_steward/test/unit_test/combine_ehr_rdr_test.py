@@ -1,19 +1,19 @@
-import unittest
+import logging
 import os
+import sys
+import unittest
+
+from google.appengine.ext import testbed
+
+import bq_utils
 import common
 import gcs_utils
-import bq_utils
 import resources
 import test_util
-import logging
-import sys
-
-from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
-from tools.combine_ehr_rdr import mapping_query
 from tools.combine_ehr_rdr import DOMAIN_TABLES, EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY
-from google.appengine.ext import testbed
+from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
 from tools.combine_ehr_rdr import logger
-from validation.export import query_result_to_payload
+from tools.combine_ehr_rdr import mapping_query
 
 
 class CombineEhrRdrTest(unittest.TestCase):
@@ -46,7 +46,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         test_util.empty_bucket(bucket)
         job_ids = []
-        for table in common.CDM_TABLES:
+        for table in resources.CDM_TABLES:
             job_ids.append(CombineEhrRdrTest._upload_file_to_bucket(bucket, dataset_id, path, table))
             if mappings and table in DOMAIN_TABLES:
                 mapping_table = '_mapping_{table}'.format(table=table)
@@ -254,12 +254,12 @@ class CombineEhrRdrTest(unittest.TestCase):
         # Sanity check
         tables_before = bq_utils.list_tables(self.combined_dataset_id)
         table_names_before = [t['tableReference']['tableId'] for t in tables_before]
-        for table in common.CDM_TABLES:
+        for table in resources.CDM_TABLES:
             self.assertNotIn(table, table_names_before)
         create_cdm_tables()
         tables_after = bq_utils.list_tables(self.combined_dataset_id)
         table_names_after = [t['tableReference']['tableId'] for t in tables_after]
-        for table in common.CDM_TABLES:
+        for table in resources.CDM_TABLES:
             self.assertIn(table, table_names_after)
 
     def _fact_relationship_loaded(self):
