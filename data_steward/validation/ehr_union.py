@@ -494,7 +494,7 @@ def table_union_query(table_name, hpo_ids, input_dataset_id, output_dataset_id):
 
 
 def fact_table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
-    temp_query = table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
+    union_query = table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
 
     null_condition_query = '''
     SELECT domain_concept_id_1,
@@ -502,11 +502,11 @@ def fact_table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_
      domain_concept_id_2,
      fact_id_2,
      relationship_concept_id 
-        from ({temp_q})
+        from ({union_q})
     WHERE  fact_id_1 is NOT NULL and fact_id_2 is NOT NULL
-    '''.format(temp_q=temp_query)
+    '''
 
-    return null_condition_query
+    return null_condition_query.format(union_q=union_query)
 
 
 def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
