@@ -525,7 +525,7 @@ def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
         hpo_ids=hpo_ids,
         output_table=output_table))
 
-    if cdm_table == FACT_RELATIONSHIP:
+    if cdm_table == common.FACT_RELATIONSHIP:
         q = fact_table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
     else:
         q = table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
