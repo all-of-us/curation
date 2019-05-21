@@ -493,6 +493,22 @@ def table_union_query(table_name, hpo_ids, input_dataset_id, output_dataset_id):
     return UNION_ALL.join(subqueries)
 
 
+def fact_table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
+    union_query = table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
+
+    null_condition_query = '''
+    SELECT domain_concept_id_1,
+     fact_id_1,
+     domain_concept_id_2,
+     fact_id_2,
+     relationship_concept_id 
+        from ({union_q})
+    WHERE  fact_id_1 is NOT NULL and fact_id_2 is NOT NULL
+    '''
+
+    return null_condition_query.format(union_q=union_query)
+
+
 def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
     """
     Create and load a single domain table with union of all HPO domain tables
@@ -508,7 +524,12 @@ def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
         domain_table=cdm_table,
         hpo_ids=hpo_ids,
         output_table=output_table))
-    q = table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
+
+    if cdm_table == common.FACT_RELATIONSHIP:
+        q = fact_table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
+    else:
+        q = table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
+
     logging.debug('Query for union of {domain_table} tables from {hpo_ids} is {q}'.format(
         domain_table=cdm_table, hpo_ids=hpo_ids, q=q))
     query_result = query(q, output_table, output_dataset_id)
@@ -523,7 +544,8 @@ def get_person_to_observation_query(dataset_id):
             4013886 as observation_concept_id,
             38000280 as observation_type_concept_id,
             CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',
+                CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
                 ELSE birth_datetime
             END AS observation_datetime,
             race_concept_id as value_as_concept_id,
@@ -541,7 +563,8 @@ def get_person_to_observation_query(dataset_id):
             4271761 as observation_concept_id,
             38000280 as observation_type_concept_id,
             CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',
+                CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
                 ELSE birth_datetime
             END AS observation_datetime,
             ethnicity_concept_id as value_as_concept_id,
@@ -559,7 +582,8 @@ def get_person_to_observation_query(dataset_id):
             4135376 as observation_concept_id,
             38000280 as observation_type_concept_id,
             CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',
+                CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
                 ELSE birth_datetime
             END AS observation_datetime,
             gender_concept_id as value_as_concept_id,
@@ -577,7 +601,8 @@ def get_person_to_observation_query(dataset_id):
             4083587 as observation_concept_id,
             38000280 as observation_type_concept_id,
             CASE
-                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
+                WHEN birth_datetime IS NULL THEN TIMESTAMP(CONCAT(CAST(year_of_birth AS STRING),'-',
+                CAST(month_of_birth AS STRING),'-',CAST(day_of_birth AS STRING)))
                 ELSE birth_datetime
             END AS observation_datetime,
             NULL as value_as_concept_id,
