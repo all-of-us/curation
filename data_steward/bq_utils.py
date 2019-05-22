@@ -89,7 +89,12 @@ def get_table_info(table_id, dataset_id=None, project_id=None):
     return job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
-def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, write_disposition='WRITE_TRUNCATE',
+def load_csv(schema_path,
+             gcs_object_path,
+             project_id,
+             dataset_id,
+             table_id,
+             write_disposition='WRITE_TRUNCATE',
              allow_jagged_rows=False):
     """
     Load csv file from a bucket into a table in bigquery
@@ -114,11 +119,8 @@ def load_csv(schema_path, gcs_object_path, project_id, dataset_id, table_id, wri
             'writeDisposition': 'WRITE_TRUNCATE',
             'allowJaggedRows': allow_jagged_rows,
             'sourceFormat': 'CSV'
-            }
-    job_body = {'configuration': {
-        'load': load
-    }
-    }
+           }
+    job_body = {'configuration': {'load': load}}
     insert_job = bq_service.jobs().insert(projectId=project_id, body=job_body)
     insert_result = insert_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
     return insert_result
@@ -506,7 +508,8 @@ def _transform_row(row, schema):
     Apply the given schema to the given BigQuery data row. Adapted from https://goo.gl/dWszQJ.
 
     :param row: A single BigQuery row to transform
-    :param schema: The BigQuery table schema to apply to the row, specifically the list of field dicts.
+    :param schema: The BigQuery table schema to apply to the row, specifically
+        the list of field dicts.
     :returns: Row as a dict
     """
 
@@ -580,8 +583,10 @@ def create_dataset(
 
     if overwrite_existing is None:
         overwrite_existing = bq_consts.TRUE
-    else:
+    elif not overwrite_existing:
         overwrite_existing = bq_consts.FALSE
+    else:
+        overwrite_existing = bq_consts.TRUE
 
     bq_service = create_service()
 
@@ -599,16 +604,37 @@ def create_dataset(
     insert_dataset = bq_service.datasets().insert(projectId=app_id, body=job_body)
     try:
         insert_result = insert_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-    except HttpError:
-        # dataset may exist.  try deleting if deleteContents is set and try again.
-        rm_dataset = bq_service.datasets().delete(
-            projectId=app_id,
-            datasetId=dataset_id,
-            deleteContents=overwrite_existing
-        )
-        rm_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-        insert_result = insert_dataset.execute(
-            num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT
-        )
+        logging.info('Created dataset:\t%s.%s', app_id, dataset_id)
+    except HttpError as error:
+        # dataset exists.  try deleting if deleteContents is set and try again.
+        if error.resp.status == 409:
+            if overwrite_existing == bq_consts.TRUE:
+                rm_dataset = bq_service.datasets().delete(
+                    projectId=app_id,
+                    datasetId=dataset_id,
+                    deleteContents=overwrite_existing
+                )
+                rm_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+                insert_result = insert_dataset.execute(
+                    num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT
+                )
+                logging.info('Overwrote dataset %s.%s', app_id, dataset_id)
+            else:
+                logging.exception(
+                    'Trying to create a duplicate dataset without overwriting '
+                    'the existing dataset.  Cannot be done!\n\ncreate_dataset '
+                    'called with values:\n'
+                    'project_id:\t%s\n'
+                    'dataset_id:\t%s\n'
+                    'description:\t%s\n'
+                    'friendly_name:\t%s\n'
+                    'overwrite_existing:\t%s\n\n',
+                    project_id, dataset_id, description, friendly_name, overwrite_existing
+                )
+                raise
+        else:
+            logging.exception('Encountered an HttpError when trying to create '
+                              'dataset: %s.%s', app_id, dataset_id)
+            raise
 
     return insert_result

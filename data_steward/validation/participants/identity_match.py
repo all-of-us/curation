@@ -20,6 +20,7 @@ import bq_utils
 import gcs_utils
 import constants.bq_utils as bq_consts
 import constants.validation.participants.identity_match as consts
+import resources
 import validation.participants.normalizers as normalizer
 import validation.participants.readers as readers
 import validation.participants.writers as writers
@@ -532,6 +533,12 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
     Entry point for performing participant matching of PPI, EHR, and PII data.
 
     :param project: a string representing the project name
+    :param rdr_dataset:  the dataset created from the results given to us by
+        the rdr team
+    :param ehr_dataset:  the dataset containing the pii information for
+        comparisons
+    :param dest_dataset_id:  the desired identifier for the match values
+        destination dataset
 
     :return: results of the field comparison for each hpo
     """
@@ -558,10 +565,8 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
 
     hpo_sites = readers.get_hpo_site_names()
 
-    field_list = []
     #TODO:  create a proper config file to store this path
-    with open('resources/fields/identity_match.json') as json_file:
-        field_list = json.load(json_file)
+    field_list = resources.fields_for('identity_match')
 
     for site_name in hpo_sites:
         bq_utils.create_table(
