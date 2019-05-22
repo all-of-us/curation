@@ -123,6 +123,10 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
 
 
 def run_achilles_helper(hpo_id, folder_prefix, bucket):
+    """
+
+    This helper catches httperror 400 for rate limits
+    """
     success = False
     try:
         logging.info('Running achilles on %s', folder_prefix)
@@ -308,6 +312,7 @@ def process_hpo(hpo_id, force_run=False):
                                                                       common.ACHILLES_HEEL_RESULTS_VALIDATION,
                                                                       common.HEEL_ERROR_HEADERS)
         else:
+            # if achilles has failed, print a message stating it instead of heel errors
             heel_header_list = common.HEEL_ERROR_HEADERS
             heel_errors = [(common.NULL_MESSAGE, common.HEEL_ERROR_FAIL_MESSAGE, common.NULL_MESSAGE, common.NULL_MESSAGE)]
 
