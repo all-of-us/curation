@@ -7,7 +7,6 @@ Compares site PII data to values from the RDR, looking to identify discrepancies
 """
 # Python imports
 from datetime import datetime
-import json
 import logging
 import os
 import re
