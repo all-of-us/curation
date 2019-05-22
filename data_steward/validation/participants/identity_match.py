@@ -34,6 +34,7 @@ def _compare_address_lists(list_one, list_two):
     :param list_one: list of strings to check for existence in list_two
     :param list_two: list of strings to use for existence check of
         list_one parts
+
     :return: the count of items in list_one that are missing from list_two
     """
     diff = 0
@@ -57,7 +58,14 @@ def _compare_name_fields(
     This compares a site's name field values found in their uploaded PII
     tables with the values in the OMOP observation table.
 
-    :param hpo: string name of hop to search.
+    :param project:  project to search for the datasets
+    :param rdr_dataset:  contains datasets from the rdr group
+    :param pii_dataset:  dataset created from submitted hpo sites.  the pii tables
+    :param hpo: string identifier of hpo
+    :param concept_id:  integer value of concept id for concept in the rdr_dataset
+    :param pii_field:  string value of field name with data matching the
+        concept_id.  used to extract the correct values from the pii tables
+
     :return: a match_values dictionary.
     """
     match_values = {}
@@ -100,9 +108,14 @@ def _compare_email_addresses(
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
-    :param hpo:  hpo site name.  used to query the correct pii table.
-    :param email_addresses: dictionary of email addresses where person_id is
-        the key and email address is the value
+    :param project:  project to search for the datasets
+    :param rdr_dataset:  contains datasets from the rdr group
+    :param pii_dataset:  dataset created from submitted hpo sites.  the pii tables
+    :param hpo: string identifier of hpo
+    :param concept_id:  integer value of concept id for concept in the rdr_dataset
+    :param pii_field:  string value of field name with data matching the
+        concept_id.  used to extract the correct values from the pii tables
+
     :return: a match_value dictionary.
     """
     match_values = {}
@@ -145,9 +158,14 @@ def _compare_phone_numbers(
     """
     Compare the digit based phone numbers from PII and Observation tables.
 
-    :param hpo:  hpo site name
-    :param phone_numbers:  dictionary of rdr phone numbers where person_id is
-        the key and phone numbers are values
+    :param project:  project to search for the datasets
+    :param rdr_dataset:  contains datasets from the rdr group
+    :param pii_dataset:  dataset created from submitted hpo sites.  the pii tables
+    :param hpo: string identifier of hpo
+    :param concept_id:  integer value of concept id for concept in the rdr_dataset
+    :param pii_field:  string value of field name with data matching the
+        concept_id.  used to extract the correct values from the pii tables
+
     :return: A match_values dictionary.
     """
     match_values = {}
@@ -191,9 +209,17 @@ def _compare_cities(
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
-    :param hpo:  hpo site name.  used to query the correct pii table.
-    :param email_addresses: dictionary of email addresses where person_id is
-        the key and email address is the value
+    :param project:  project to search for the datasets
+    :param validation_dataset:  the auto generated match validation dataset
+        created in this module.  queried to get the location value to identify
+        a location field
+    :param rdr_dataset:  contains datasets from the rdr group
+    :param pii_dataset:  dataset created from submitted hpo sites.  the pii tables
+    :param hpo: string identifier of hpo
+    :param concept_id:  integer value of concept id for concept in the rdr_dataset
+    :param pii_field:  string value of field name with data matching the
+        concept_id.  used to extract the correct values from the pii tables
+
     :return: a match_value dictionary.
     """
     match_values = {}
@@ -238,9 +264,17 @@ def _compare_states(
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
-    :param hpo:  hpo site name.  used to query the correct pii table.
-    :param email_addresses: dictionary of email addresses where person_id is
-        the key and email address is the value
+    :param project:  project to search for the datasets
+    :param validation_dataset:  the auto generated match validation dataset
+        created in this module.  queried to get the location value to identify
+        a location field
+    :param rdr_dataset:  contains datasets from the rdr group
+    :param pii_dataset:  dataset created from submitted hpo sites.  the pii tables
+    :param hpo: string identifier of hpo
+    :param concept_id:  integer value of concept id for concept in the rdr_dataset
+    :param pii_field:  string value of field name with data matching the
+        concept_id.  used to extract the correct values from the pii tables
+
     :return: a match_value dictionary.
     """
     match_values = {}
@@ -285,9 +319,17 @@ def _compare_zip_codes(
     """
     Compare email addresses from hpo PII table and OMOP observation table.
 
-    :param hpo:  hpo site name.  used to query the correct pii table.
-    :param email_addresses: dictionary of email addresses where person_id is
-        the key and email address is the value
+    :param project:  project to search for the datasets
+    :param validation_dataset:  the auto generated match validation dataset
+        created in this module.  queried to get the location value to identify
+        a location field
+    :param rdr_dataset:  contains datasets from the rdr group
+    :param pii_dataset:  dataset created from submitted hpo sites.  the pii tables
+    :param hpo: string identifier of hpo
+    :param concept_id:  integer value of concept id for concept in the rdr_dataset
+    :param pii_field:  string value of field name with data matching the
+        concept_id.  used to extract the correct values from the pii tables
+
     :return: a match_value dictionary.
     """
     match_values = {}
@@ -338,6 +380,20 @@ def _compare_street_addresses(
     fields of an address.  Compares address one and address two as distinct
     fields and if they do not match, then combines the fields and compares as
     a single field.  Both are either set as a match or not match.
+
+    :param project:  project to search for the datasets
+    :param validation_dataset:  the auto generated match validation dataset
+        created in this module.  queried to get the location value to identify
+        a location field
+    :param rdr_dataset:  contains datasets from the rdr group
+    :param pii_dataset:  dataset created from submitted hpo sites.  the pii tables
+    :param hpo: string identifier of hpo
+    :param concept_id_one:  integer value of concept id for concept in the rdr_dataset
+    :param concept_id_two:  integer value of concept id for concept in the rdr_dataset
+    :param field_one:  string value of field name with data matching the
+        concept_id.  used to extract the correct values from the pii tables
+    :param field_two:  string value of field name with data matching the
+        concept_id.  used to extract the correct values from the pii tables
 
     :param hpo:  hpo site name used to download pii from the site's pii table
     :return: a match_values dictionary.
@@ -413,8 +469,8 @@ def _compare_street_addresses(
 def _compare_genders(
         project,
         validation_dataset,
-        ehr_dataset,
-        site,
+        pii_dataset,
+        hpo,
         concept_id_pii
     ):
     """
@@ -424,10 +480,13 @@ def _compare_genders(
     the calendar objects back to strings with the same format and compares
     these strings.
 
-    :param rdr_birthdates: dictionary of rdr birth datetimes where person_id is
-        the key and a birth datetime string is the value
-    :param ehr_birthdates: dictionary of birth datetimes where person_id is
-        the key and a birth datetime string is the value
+    :param project:  project to search for the datasets
+    :param validation_dataset:  the auto generated match validation dataset
+        created in this module.  queried to get the gender value
+    :param pii_dataset:  dataset created from submitted hpo sites.  the pii tables
+    :param hpo: string identifier of hpo
+    :param concept_id_pii:  integer value of concept id for concept in the rdr_dataset
+
     :return: updated match_values dictionary
     """
     match_values = {}
@@ -438,8 +497,8 @@ def _compare_genders(
 
     ehr_genders = readers.get_ehr_person_values(
         project,
-        ehr_dataset,
-        site + consts.EHR_PERSON_TABLE_SUFFIX,
+        pii_dataset,
+        hpo + consts.EHR_PERSON_TABLE_SUFFIX,
         consts.GENDER_FIELD
     )
 
@@ -464,7 +523,7 @@ def _compare_genders(
 def _compare_birth_dates(
         project,
         validation_dataset,
-        ehr_dataset,
+        pii_dataset,
         site,
         concept_id_pii
     ):
@@ -475,11 +534,13 @@ def _compare_birth_dates(
     the calendar objects back to strings with the same format and compares
     these strings.
 
-    :param person_id_set: set of person_ids gathered from PII tables.
-    :param rdr_birthdates: dictionary of rdr birth datetimes where person_id is
-        the key and a birth datetime string is the value
-    :param ehr_birthdates: dictionary of birth datetimes where person_id is
-        the key and a birth datetime string is the value
+    :param project:  project to search for the datasets
+    :param validation_dataset:  the auto generated match validation dataset
+        created in this module.  queried to get the gender value
+    :param pii_dataset:  dataset created from submitted hpo sites.  the pii tables
+    :param hpo: string identifier of hpo
+    :param concept_id_pii:  integer value of concept id for concept in the rdr_dataset
+
     :return: updated match_values dictionary
     """
     match_values = {}
@@ -490,7 +551,7 @@ def _compare_birth_dates(
 
     ehr_birthdates = readers.get_ehr_person_values(
         project,
-        ehr_dataset,
+        pii_dataset,
         site + consts.EHR_PERSON_TABLE_SUFFIX,
         consts.BIRTH_DATETIME_FIELD
     )
@@ -519,6 +580,17 @@ def _compare_birth_dates(
 
 
 def _get_date_string(dataset):
+    """
+    Helper function to return an 8 digit date string.
+
+    If the dataset parameter ends with an 8 digit string, that string is used
+    as the date in YYYYMMDD format.  If not, the current date is returned in
+    YYYYMMDD format.
+
+    :param dataset:  string representing a dataset name
+
+    :return:  an 8 digit string of the date to use
+    """
     date_string = dataset[-8:]
 
     if re.match(consts.DRC_DATE_REGEX, date_string):

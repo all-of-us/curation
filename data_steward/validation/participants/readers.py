@@ -78,8 +78,7 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
     :param project: The name of the project to query for ehr values
     :param dataset:  The name of the dataset to query for ehr values
     :param table_name:  The name of the table to query for ehr values
-    :param concept_id: the id of the concept to identify with ehr data
-    :param id_list:  list of person_id values to limit the result set to
+    :param column_name:  String name of the field to return from the table
 
     :return:  A dictionary with observation_source_concept_id as the key.
         The value is a dictionary of person_ids with the associated value
