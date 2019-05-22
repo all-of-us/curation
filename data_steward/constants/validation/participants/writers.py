@@ -1,9 +1,9 @@
 # DRC match responses
-MATCH = "Match"
-MISMATCH = "NoMatch"
-MISSING = "Missing"
-YES = "Yes"
-NO = "No"
+MATCH = "match"
+MISMATCH = "no_match"
+MISSING = "missing"
+YES = "yes"
+NO = "no"
 
 ################################################################################
 #  Participant Matching Validation Queries

@@ -15,9 +15,9 @@ OBS_PII_SEX = 1585845
 SEX_CONCEPT_IDS = {1585846: 'male', 1585847: 'female', 1585848: 'intersex'}
 
 # DRC match responses
-MATCH = "Match"
-MISMATCH = "NoMatch"
-MISSING = "Missing"
+MATCH = "match"
+MISMATCH = "no_match"
+MISSING = "missing"
 
 # Date format strings
 DATE = '%Y-%m-%d'
