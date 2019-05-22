@@ -54,7 +54,7 @@
         "description": "Algorithm Validation is for the sites’ “automated” matching approach: eg, first name, last name, and DOB all matched."
     },
     {
-        "type": "integer",
+        "type": "string",
         "name": "manual_validation",
         "mode": "nullable",
         "description": "Manual validation additionally tracks whether an individual manually reviewed the EHR-AoU linkage. The expectation is that every submitted participant would match either by algorithm or manually."

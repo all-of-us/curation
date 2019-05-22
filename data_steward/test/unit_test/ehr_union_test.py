@@ -2,9 +2,9 @@ import json
 import os
 import unittest
 
-from google.appengine.ext import testbed
-import moz_sql_parser
 import dpath
+import moz_sql_parser
+from google.appengine.ext import testbed
 
 import bq_utils
 import common
@@ -386,7 +386,8 @@ class EhrUnionTest(unittest.TestCase):
                     observation_source_value,
                     observation_date
             FROM {output_dataset_id}.unioned_ehr_observation AS obs
-            WHERE obs.observation_concept_id IN ({gender_concept_id},{race_concept_id},{dob_concept_id},{ethnicity_concept_id})
+            WHERE obs.observation_concept_id IN ({gender_concept_id},{race_concept_id},{dob_concept_id},
+            {ethnicity_concept_id})
             '''
 
         obs_query = query.format(output_dataset_id=self.output_dataset_id,
