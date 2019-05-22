@@ -131,8 +131,9 @@ def run_achilles_helper(hpo_id, folder_prefix, bucket):
         logging.info('Uploading achilles index files to `gs://%s/%s`.', bucket, folder_prefix)
         _upload_achilles_files(hpo_id, folder_prefix)
         success = True
-    except HttpError:
-        logging.info('Achilles exceeded rate limits: Table exceeded quota for table update operations.')
+    except HttpError as err:
+        if err.resp.status == 400:
+            logging.info('Achilles exceeded rate limits: Table exceeded quota for table update operations.')
     return success
 
 
@@ -291,9 +292,9 @@ def process_hpo(hpo_id, force_run=False):
         errors = validate_result['errors']
         warnings = validate_result['warnings']
 
-        achilles_success = False
         if not all_required_files_loaded(results):
             logging.info('Required files not loaded in %s. Skipping achilles.', folder_prefix)
+            achilles_success = True
         else:
             achilles_success = run_achilles_helper(hpo_id, folder_prefix, bucket)
             if not achilles_success:
@@ -307,7 +308,8 @@ def process_hpo(hpo_id, force_run=False):
                                                                       common.ACHILLES_HEEL_RESULTS_VALIDATION,
                                                                       common.HEEL_ERROR_HEADERS)
         else:
-            heel_errors, heel_header_list = [], common.HEEL_ERROR_HEADERS
+            heel_header_list = common.HEEL_ERROR_HEADERS
+            heel_errors = [(common.NULL_MESSAGE, common.HEEL_ERROR_FAIL_MESSAGE, common.NULL_MESSAGE, common.NULL_MESSAGE)]
 
         # Get Drug check counts into results.html
         drug_checks, drug_header_list = add_table_in_results_html(hpo_id,
