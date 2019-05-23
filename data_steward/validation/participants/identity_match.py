@@ -897,8 +897,8 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
 
 
 if __name__ == '__main__':
-    RDR_DATASET = 'lrwb_combined20190415'   # the combined dataset
-    PII_DATASET = 'lrwb_pii_tables'         # the ehr dataset
-    PROJECT = 'aou-res-curation-test'       # the project identifier
-    DEST_DATASET_ID = 'temp_dataset_id'     # desired name of the validation dataset
+    RDR_DATASET = ''   # the combined dataset
+    PII_DATASET = ''         # the ehr dataset
+    PROJECT = ''       # the project identifier
+    DEST_DATASET_ID = ''     # desired name of the validation dataset
     match_participants(PROJECT, RDR_DATASET, PII_DATASET, DEST_DATASET_ID)
