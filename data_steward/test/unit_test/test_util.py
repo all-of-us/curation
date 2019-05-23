@@ -82,6 +82,7 @@ PII_FILE_LOAD_RESULT_CSV = os.path.join(TEST_DATA_PATH, 'pii_file_load_result.cs
 
 PERSON_ONLY_RESULTS_FILE = os.path.join(TEST_DATA_PATH, 'person_only_results.html')
 FIVE_PERSON_RESULTS_FILE = os.path.join(TEST_DATA_PATH, 'five_person_results.html')
+FIVE_PERSON_RESULTS_ACHILLES_ERROR_FILE = os.path.join(TEST_DATA_PATH, 'five_person_results_achilles_error.html')
 
 TEST_VOCABULARY_PATH = os.path.join(TEST_DATA_PATH, 'vocabulary')
 TEST_VOCABULARY_CONCEPT_CSV = os.path.join(TEST_VOCABULARY_PATH, 'CONCEPT.csv')

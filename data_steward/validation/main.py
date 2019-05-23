@@ -124,8 +124,13 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
 
 def run_achilles_helper(hpo_id, folder_prefix, bucket):
     """
+    This helper catches HttpError 400 for rate limits until there is a fix for achilles to prevent it.
+    This function merely allows it to fail gracefully.
 
-    This helper catches httperror 400 for rate limits
+    :param hpo_id: ID of the HPO to run Achilles for.
+    :param folder_prefix: Relative base path.
+    :param bucket: Bucket to save report. If None, use bucket associated with hpo_id.
+    :return: success: Boolean identifying if Achilles ran successfully
     """
     success = False
     try:
