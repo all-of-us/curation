@@ -3,6 +3,7 @@ A module to serve as the entry point to the cleaners package.
 """
 # Python imports
 import logging
+import sys
 
 # Third party imports
 import googleapiclient
@@ -15,13 +16,19 @@ import bq_utils
 import constants.cleaners.combined as combined_consts
 import constants.cleaners.combined_deid as deid_consts
 
-# this config should be done in a separate module, but that can wait
-# until later.  Useful for debugging.
-#logging.basicConfig(
-#    filename='cleaner.log',
-#    level = logging.INFO
-#)
 LOGGER = logging.getLogger(__name__)
+
+def _add_console_logging(add_handler):
+    # this config should be done in a separate module, but that can wait
+    # until later.  Useful for debugging.
+    if add_handler:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        LOGGER.addHandler(handler)
+    elif LOGGER.handlers == []:
+        logging.basicConfig(filename='/tmp/cleaner.log')
 
 
 def _clean_dataset(project=None, dataset=None, statements=None):
@@ -110,4 +117,11 @@ def clean_all_cdr():
 
 
 if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', action='store_true', help=('Send logs to console'))
+    args = parser.parse_args()
+    _add_console_logging(args.s)
+
     clean_all_cdr()
