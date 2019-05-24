@@ -122,6 +122,30 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
     return results
 
 
+def run_achilles_helper(hpo_id, folder_prefix, bucket):
+    """
+    This helper catches HttpError 400 for rate limits until there is a fix for achilles to prevent it.
+    This function merely allows it to fail gracefully.
+
+    :param hpo_id: ID of the HPO to run Achilles for.
+    :param folder_prefix: Relative base path.
+    :param bucket: Bucket to save report. If None, use bucket associated with hpo_id.
+    :return: success: Boolean identifying if Achilles ran successfully
+    """
+    success = False
+    try:
+        logging.info('Running achilles on %s', folder_prefix)
+        run_achilles(hpo_id)
+        run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
+        logging.info('Uploading achilles index files to `gs://%s/%s`.', bucket, folder_prefix)
+        _upload_achilles_files(hpo_id, folder_prefix)
+        success = True
+    except HttpError as err:
+        if err.resp.status == 400:
+            logging.info('Achilles exceeded rate limits: Table exceeded quota for table update operations.')
+    return success
+
+
 def run_achilles(hpo_id=None):
     """checks for full results and run achilles/heel
 
@@ -279,18 +303,23 @@ def process_hpo(hpo_id, force_run=False):
 
         if not all_required_files_loaded(results):
             logging.info('Required files not loaded in %s. Skipping achilles.', folder_prefix)
+            achilles_success = True
         else:
-            logging.info('Running achilles on %s', folder_prefix)
-            run_achilles(hpo_id)
-            run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
-            logging.info('Uploading achilles index files to `gs://%s/%s`.', bucket, folder_prefix)
-            _upload_achilles_files(hpo_id, folder_prefix)
+            achilles_success = run_achilles_helper(hpo_id, folder_prefix, bucket)
+            if not achilles_success:
+                # retry
+                achilles_success = run_achilles_helper(hpo_id, folder_prefix, bucket)
 
         # Get heel errors into results.html
-        heel_errors, heel_header_list = add_table_in_results_html(hpo_id,
-                                                                  common_sql.HEEL_ERROR_QUERY_VALIDATION,
-                                                                  common.ACHILLES_HEEL_RESULTS_VALIDATION,
-                                                                  common.HEEL_ERROR_HEADERS)
+        if achilles_success:
+            heel_errors, heel_header_list = add_table_in_results_html(hpo_id,
+                                                                      common_sql.HEEL_ERROR_QUERY_VALIDATION,
+                                                                      common.ACHILLES_HEEL_RESULTS_VALIDATION,
+                                                                      common.HEEL_ERROR_HEADERS)
+        else:
+            # if achilles has failed, print a message stating it instead of heel errors
+            heel_header_list = common.HEEL_ERROR_HEADERS
+            heel_errors = [(common.NULL_MESSAGE, common.HEEL_ERROR_FAIL_MESSAGE, common.NULL_MESSAGE, common.NULL_MESSAGE)]
 
         # Get Drug check counts into results.html
         drug_checks, drug_header_list = add_table_in_results_html(hpo_id,
@@ -309,10 +338,13 @@ def process_hpo(hpo_id, force_run=False):
                                   results, errors, warnings,
                                   heel_errors, heel_header_list, drug_checks, drug_header_list)
 
-        logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
-                     bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT)
-
-        _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
+        if achilles_success:
+            logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
+                         bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT)
+            _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
+        else:
+            logging.info('Processing complete but achilles failed. '
+                         'Skipping upload of processed.txt to allow validation to re-run.')
 
 
 def get_hpo_name(hpo_id):

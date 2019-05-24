@@ -55,6 +55,8 @@ DRUG_CHECK_HEADERS = ['Counts by Drug class', 'Drug Class Concept Name',
 HEEL_ERROR_HEADERS = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
 
 # Validation Main Constant space
+HEEL_ERROR_FAIL_MESSAGE = 'There was an error while running Achilles. Please check back in a few hours.'
+NULL_MESSAGE = '-'
 ACHILLES_HEEL_RESULTS_VALIDATION = '_achilles_heel_results'
 DRUG_CHECK_TABLE_VALIDATION = '_drug_exposure'
 

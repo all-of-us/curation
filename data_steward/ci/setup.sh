@@ -23,7 +23,7 @@ bq mk --dataset --description "Test EHR dataset for ${USERNAME}" ${APPLICATION_I
 bq mk --dataset --description "Test EHR union dataset for ${USERNAME}" ${APPLICATION_ID}:${UNIONED_DATASET_ID}
 
 # Create vocabulary tables if they do not already exist
-VOCABULARY_DATASET="${APPLICATION_ID}:aou_full_vocabulary_2018_01_04"
+VOCABULARY_DATASET="${APPLICATION_ID}:vocabulary20190423"
 DEST_PREFIX="${APPLICATION_ID}:${BIGQUERY_DATASET_ID}"
 for t in $(bq ls ${VOCABULARY_DATASET} | grep TABLE | awk '{print $1}')
 do
