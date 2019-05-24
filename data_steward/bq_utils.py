@@ -55,7 +55,7 @@ def get_ehr_rdr_dataset_id():
 
 
 def create_service():
-    return build('bigquery', 'v2')
+    return build('bigquery', 'v2', cache={})
 
 
 def get_table_id(hpo_id, table_name):
