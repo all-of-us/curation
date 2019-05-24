@@ -406,8 +406,8 @@ class WritersTest(unittest.TestCase):
         expected_report_calls = [
             call(),
             call().write('person_id,first_name,last_name,birth_date,sex,address,phone_number,email,algorithm\n'),
-            call().write('1,Match,Match,Match,Match,Match,Match,Match,Match\n'),
-            call().write('2,Match,Match,NoMatch,Missing,NoMatch,Match,Match,Match\n'),
+            call().write('1,match,match,match,match,match,match,match,match\n'),
+            call().write('2,match,match,no_match,missing,no_match,match,match,match\n'),
             call().seek(0),
             call().close()
         ]
