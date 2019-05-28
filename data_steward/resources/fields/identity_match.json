@@ -1,0 +1,86 @@
+[
+    {
+        "type": "integer",
+        "name": "person_id",
+        "mode": "required",
+        "description": "The participant ID for this row"
+    },
+    {
+        "type": "string",
+        "name": "first_name",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "middle_name",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "last_name",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "phone_number",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "email",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "address_1",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "address_2",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "city",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "state",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "zip",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "birth_date",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "sex",
+        "mode": "nullable",
+        "description": "Identifies whether this field's EHR data matches the PPI data."
+    },
+    {
+        "type": "string",
+        "name": "algorithm",
+        "mode": "nullable",
+        "description": "Identifies whether this records fields were validated with an algorithm."
+    }
+]
