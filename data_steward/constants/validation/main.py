@@ -1,6 +1,25 @@
-# This File consists of all the SQL Queries across the modules
+# This File consists of all the constants and sql queries from validation/main
+TRUE_FLAG = 'true'
+FALSE_FLAG = 'false'
+UNION_ALL = '''
 
-# Used in validation/main/get_heel_errors_in_results_html()
+        UNION ALL
+
+'''
+HEEL_ERROR_FAIL_MESSAGE = 'There was an error while running Achilles. Please check back in a few hours.'
+NULL_MESSAGE = '-'
+ACHILLES_HEEL_RESULTS_VALIDATION = '_achilles_heel_results'
+DRUG_CHECK_TABLE_VALIDATION = '_drug_exposure'
+
+# Table Headers
+RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
+ERROR_FILE_HEADERS = ["File Name", "Message"]
+DRUG_CHECK_HEADERS = ['Counts by Drug class', 'Drug Class Concept Name',
+                      'Drug Class', 'Percentage', 'Drug Class Concept ID']
+HEEL_ERROR_HEADERS = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
+DUPLICATE_IDS_HEADERS = ['Table Name', 'Duplicated_id_count']
+
+# Used in get_heel_errors_in_results_html()
 HEEL_ERROR_QUERY_VALIDATION = '''
     SELECT 
         analysis_id AS Analysis_ID,
@@ -14,7 +33,7 @@ HEEL_ERROR_QUERY_VALIDATION = '''
         analysis_id
     '''
 
-# Used in Validation/main/get_drug_checks_in_results_html()
+# Used in get_drug_checks_in_results_html()
 DRUG_CHECKS_QUERY_VALIDATION = '''
     SELECT
         init.*,
@@ -49,7 +68,7 @@ DRUG_CHECKS_QUERY_VALIDATION = '''
         Drug_Class_Concept_ID
     '''
 
-# Used in validation_test/_create_drug_class_table()
+# Used in _create_drug_class_table()
 DRUG_CLASS_QUERY = '''
     SELECT
         concept_id,
@@ -81,3 +100,14 @@ DRUG_CLASS_QUERY = '''
             21601278,
             21601783) 
     '''
+
+DUPLICATE_IDS_QUERY = '''
+    SELECT
+        '{domain_table}' AS Table_name,
+    COUNT({domain_table}_id) AS Duplicated_id_count
+    FROM
+        `{app_id}.{dataset_id}.{hpo_id}_{domain_table}`
+    GROUP BY
+    {domain_table}_id
+    HAVING
+        COUNT({domain_table}_id) > 1'''

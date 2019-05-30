@@ -76,6 +76,7 @@ import logging
 from google.appengine.api.app_identity import app_identity
 
 import bq_utils
+import cdm
 import common
 import resources
 from tools.combine_ehr_rdr import OBSERVATION_TABLE, PERSON_TABLE
@@ -110,37 +111,6 @@ def output_table_for(table_id):
     :return: name of the table where results of the union will be stored
     """
     return 'unioned_ehr_' + table_id
-
-
-def has_primary_key(table):
-    """
-    Determines if a CDM table contains a numeric primary key field
-
-    :param table: name of a CDM table
-    :return: True if the CDM table contains a primary key field, False otherwise
-    """
-    assert (table in resources.CDM_TABLES)
-    fields = resources.fields_for(table)
-    id_field = table + '_id'
-    return any(field for field in fields if field['type'] == 'integer' and field['name'] == id_field)
-
-
-def tables_to_map():
-    """
-    Determine which CDM tables must have ids remapped
-
-    :return: the list of table names
-    """
-    result = []
-    for table in resources.CDM_TABLES:
-        if table != 'person' and has_primary_key(table):
-            result.append(table)
-    return result
-
-
-def _list_all_table_ids(dataset_id):
-    tables = bq_utils.list_tables(dataset_id)
-    return [table['tableReference']['tableId'] for table in tables]
 
 
 def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
@@ -313,7 +283,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
     """
     tables_to_ref = []
     for table in resources.CDM_TABLES:
-        if has_primary_key(table):
+        if bq_utils.has_primary_key(table):
             tables_to_ref.append(table)
 
     is_id_mapped = table_name in tables_to_ref
@@ -463,7 +433,7 @@ def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
     """
     result = []
     # Exclude subqueries that reference tables that are missing from source dataset
-    all_table_ids = _list_all_table_ids(input_dataset_id)
+    all_table_ids = bq_utils.list_all_table_ids(input_dataset_id)
     for hpo_id in hpo_ids:
         table_id = bq_utils.get_table_id(hpo_id, table_name)
         if table_id in all_table_ids:
@@ -726,7 +696,7 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
         bq_utils.create_standard_table(table, result_table, drop_existing=True, dataset_id=output_dataset_id)
 
     # Create mapping tables
-    for domain_table in tables_to_map():
+    for domain_table in cdm.tables_to_map():
         logging.info('Mapping {domain_table}...'.format(domain_table=domain_table))
         mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id, project_id)
 
