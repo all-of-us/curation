@@ -103,6 +103,7 @@ def load_csv(schema_path,
     :param project_id:
     :param dataset_id:
     :param table_id:
+    :param allow_jagged_rows:
     :return:
     """
     bq_service = create_service()
@@ -326,6 +327,7 @@ def query(q,
     :param retry_count: number of times to retry with randomized exponential backoff
     :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY (default)
     :param destination_dataset_id: dataset ID of destination table (EHR dataset by default)
+    :parm batch:
     :return: if destination_table_id is supplied then job info, otherwise job query response
              (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
     """
@@ -648,7 +650,8 @@ def has_primary_key(table):
     :param table: name of a CDM table
     :return: True if the CDM table contains a primary key field, False otherwise
     """
-    assert (table in resources.CDM_TABLES)
+    if table not in resources.CDM_TABLES:
+        raise AssertionError()
     fields = resources.fields_for(table)
     id_field = table + '_id'
     return any(field for field in fields if field['type'] == 'integer' and field['name'] == id_field)

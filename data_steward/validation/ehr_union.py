@@ -127,7 +127,7 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     hpo_unique_identifiers = get_hpo_offsets(hpo_ids)
 
     # Exclude subqueries that reference tables that are missing from source dataset
-    all_table_ids = _list_all_table_ids(dataset_id)
+    all_table_ids = bq_utils.list_all_table_ids(dataset_id)
     for hpo_id in hpo_ids:
         table_id = bq_utils.get_table_id(hpo_id, table_name)
         if table_id in all_table_ids:
