@@ -198,7 +198,7 @@ def mapping_query(domain_table):
     :return:
     """
 
-    return '''SELECT
+    return '''SELECT DISTINCT
           '{rdr_dataset_id}'  AS src_dataset_id,
           {domain_table}_id  AS src_{domain_table}_id,
           'rdr' as src_hpo_id,
@@ -207,7 +207,7 @@ def mapping_query(domain_table):
 
         UNION ALL
 
-        SELECT
+        SELECT DISTINCT
           '{ehr_dataset_id}'  AS src_dataset_id,
           t.{domain_table}_id AS src_{domain_table}_id,
           v.src_hpo_id AS src_hpo_id,

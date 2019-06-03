@@ -139,7 +139,7 @@ class CombineEhrRdrTest(unittest.TestCase):
     def test_mapping_query(self):
         table_name = 'visit_occurrence'
         q = mapping_query(table_name)
-        expected_query = '''SELECT
+        expected_query = '''SELECT DISTINCT
           '{rdr_dataset_id}'  AS src_dataset_id,
           {domain_table}_id  AS src_{domain_table}_id,
           'rdr' as src_hpo_id,
@@ -148,7 +148,7 @@ class CombineEhrRdrTest(unittest.TestCase):
 
         UNION ALL
 
-        SELECT
+        SELECT DISTINCT
           '{ehr_dataset_id}'  AS src_dataset_id,
           t.{domain_table}_id AS src_{domain_table}_id,
           v.src_hpo_id AS src_hpo_id,
