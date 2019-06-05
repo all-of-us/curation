@@ -85,6 +85,8 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
         of the concept_id.
         For example:
         {person_id_1:  "email_address", person_id_2: "email_address"}
+    :raises:  oauth2client.client.HttpAccessTokenRefreshError,
+              googleapiclient.errors.HttpError
     """
     query_string = consts.EHR_PERSON_VALUES.format(
         project=project,
@@ -137,6 +139,8 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
         {person_id_1:  "email_address", person_id_2: "email_address"}
         {person_id_1: "first_name", person_id_2: "first_name"}
         {person_id_1: "last_name", person_id_2: "last_name"}
+    :raises:  oauth2client.client.HttpAccessTokenRefreshError,
+              googleapiclient.errors.HttpError
     """
     query_string = consts.PPI_OBSERVATION_VALUES.format(
         project=project,
@@ -192,6 +196,8 @@ def get_pii_values(project, pii_dataset, hpo, table, field):
     :return:  A list of tuples with the first tuple element as the person_id
     and the second tuple element as the phone number.
     [(1, '5558675309'), (48, '5558004600'), (99, '5551002000')]
+    :raises:  oauth2client.client.HttpAccessTokenRefreshError,
+              googleapiclient.errors.HttpError
     """
     query_string = consts.PII_VALUES.format(
         project=project,
@@ -230,6 +236,8 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
         address_two, city, state, or zip.
 
     :return:  a list of [(person_id, value)] tuples.
+    :raises:  oauth2client.client.HttpAccessTokenRefreshError,
+              googleapiclient.errors.HttpError
     """
     location_ids = get_pii_values(
         project,

@@ -38,6 +38,7 @@ class IdentityMatchTest(unittest.TestCase):
             'city': 'Frog Pond',
             'state': 'AL',
             'zip': '05645-1112',
+            'sex':  'Female',
             'ehr_birthdate': '1990-01-01 00:00:00+00',
             'rdr_birthdate': '1990-01-01'
         }
@@ -197,7 +198,10 @@ class IdentityMatchTest(unittest.TestCase):
 
         # test
         id_match.match_participants(
-            self.project, self.rdr_dataset, self.pii_dataset, self.dest_dataset
+            self.project,
+            self.rdr_dataset,
+            self.pii_dataset,
+            self.dest_dataset
         )
 
         # post conditions
@@ -238,9 +242,19 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_merge_fields.call_count, num_sites)
         self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
         self.assertEqual(self.mock_change_nulls.call_count, num_sites)
+        self.assertEqual(self.mock_hpo_bucket.call_count, 0)
+        self.assertEqual(self.mock_drc_bucket.call_count, 0)
+        self.assertEqual(self.mock_validation_report.call_count, 0)
+
+    def test_write_results_to_site_buckets(self):
+        # pre conditions
+
+        # test
+        id_match.write_results_to_site_buckets(self.project, self.dest_dataset)
+
+        # post conditions
+        num_sites = len(self.site_list)
         self.assertEqual(self.mock_hpo_bucket.call_count, num_sites)
-        self.assertEqual(self.mock_drc_bucket.call_count, 1)
-        self.assertEqual(self.mock_validation_report.call_count, num_sites + 1)
 
         site_filename = os.path.join(
             consts.REPORT_DIRECTORY.format(date=self.date_string), consts.REPORT_TITLE
@@ -249,6 +263,43 @@ class IdentityMatchTest(unittest.TestCase):
         expected_report_calls = [
             call(self.project, self.dest_dataset, [self.site_list[0]], self.bucket_ids[0], site_filename),
             call(self.project, self.dest_dataset, [self.site_list[1]], self.bucket_ids[1], site_filename),
+        ]
+        self.assertEqual(self.mock_validation_report.mock_calls, expected_report_calls)
+
+    def test_write_results_to_site_buckets_None_dataset(self):
+        # pre conditions
+
+        # test
+        self.assertRaises(
+            RuntimeError,
+            id_match.write_results_to_site_buckets,
+            self.project,
+            None)
+
+    def test_write_results_to_drc_bucket(self):
+        # pre conditions
+
+        # test
+        id_match.write_results_to_drc_bucket(self.project, self.dest_dataset)
+
+        # post conditions
+        self.assertEqual(self.mock_drc_bucket.call_count, 1)
+
+        site_filename = os.path.join(
+            consts.REPORT_DIRECTORY.format(date=self.date_string), consts.REPORT_TITLE
+        )
+        drc_filename = os.path.join(self.dest_dataset, consts.REPORT_TITLE)
+        expected_report_calls = [
             call(self.project, self.dest_dataset, self.site_list, self.internal_bucket_id, drc_filename)
         ]
         self.assertEqual(self.mock_validation_report.mock_calls, expected_report_calls)
+
+    def test_write_results_to_drc_bucket_None_dataset(self):
+        # pre conditions
+
+        # test
+        self.assertRaises(
+            RuntimeError,
+            id_match.write_results_to_drc_bucket,
+            self.project,
+            None)
