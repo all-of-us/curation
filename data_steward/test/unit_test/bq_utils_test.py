@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import unittest
 
@@ -6,6 +7,7 @@ from google.appengine.ext import testbed
 
 import bq_utils
 import common
+import constants.bq_utils as bq_utils_consts
 import gcs_utils
 import resources
 import test_util
@@ -298,6 +300,31 @@ class BqUtilsTest(unittest.TestCase):
         self.assertIsNone(query_job_errors)
         actual_result = [int(row['f'][0]['v']) for row in query_results_response['rows']]
         self.assertListEqual(actual_result, expected_observation_ids)
+
+    @mock.patch('bq_utils.os.environ.get')
+    def test_get_validation_results_dataset_id_not_existing(self, mock_env_var):
+        # preconditions
+        mock_env_var.return_value = bq_utils_consts.BLANK
+
+        # test
+        result_id = bq_utils.get_validation_results_dataset_id()
+
+        # post conditions
+        date_string = datetime.now().strftime(bq_utils_consts.DATE_FORMAT)
+        expected = bq_utils_consts.VALIDATION_DATASET_FORMAT.format(date_string)
+        self.assertEqual(result_id, expected)
+
+    @mock.patch('bq_utils.os.environ.get')
+    def test_get_validation_results_dataset_id_existing(self, mock_env_var):
+        # preconditions
+        mock_env_var.return_value = 'dataset_foo'
+
+        # test
+        result_id = bq_utils.get_validation_results_dataset_id()
+
+        # post conditions
+        expected = 'dataset_foo'
+        self.assertEqual(result_id, expected)
 
     def tearDown(self):
         test_util.delete_all_tables(self.EHR_DATASET_ID)
