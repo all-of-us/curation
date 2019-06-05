@@ -3,7 +3,6 @@ A module to serve as the entry point to the cleaners package.
 """
 # Python imports
 import logging
-import sys
 
 # Third party imports
 import googleapiclient
