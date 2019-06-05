@@ -73,6 +73,23 @@ def get_combined_deid_dataset_id():
     return dataset_id
 
 
+def get_validation_results_dataset_id():
+    """
+    Get the Validation dataset id.
+
+    If the environment variable has not been set, default to the defined name,
+    set the environment variable, and return the dataset name.
+
+    :return:  A name for the validation dataset id.
+    """
+    dataset_id =  os.environ.get(bq_consts.MATCH_DATASET, bq_consts.BLANK)
+    if dataset_id == bq_consts.BLANK:
+        date_string = datetime.now().strftime(bq_consts.DATE_FORMAT)
+        dataset_id = bq_consts.VALIDATION_DATASET_FORMAT.format(date_string)
+        os.environ[bq_consts.MATCH_DATASET] = dataset_id
+    return dataset_id
+
+
 def create_service():
     return build('bigquery', 'v2', cache={})
 

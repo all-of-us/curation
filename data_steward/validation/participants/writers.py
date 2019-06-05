@@ -36,6 +36,8 @@ def append_to_result_table(
     :param field_name:  name of the field to insert values into
 
     :return: query results value
+    :raises:  oauth2client.client.HttpAccessTokenRefreshError,
+              googleapiclient.errors.HttpError
     """
     result_table = site + consts.VALIDATION_TABLE_SUFFIX
 
@@ -59,12 +61,7 @@ def append_to_result_table(
 
     LOGGER.debug("Inserting match values for site: %s\t\tfield: %s", site, field_name)
 
-    try:
-        results = bq_utils.query(query, batch=True)
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        LOGGER.exception("Encountered an excpetion when inserting records")
-        raise
+    results = bq_utils.query(query, batch=True)
 
     LOGGER.info("Inserted match values for site:  %s\t\tfield:  %s", site, field_name)
 
@@ -80,6 +77,9 @@ def remove_sparse_records(project, dataset, site):
     :param project: The project string identifier
     :param dataset: The validation dataset identifier
     :param site: The site to delete sparse validation results for
+
+    :raises:  oauth2client.client.HttpAccessTokenRefreshError,
+              googleapiclient.errors.HttpError
     """
     result_table = site + consts.VALIDATION_TABLE_SUFFIX
 
@@ -111,7 +111,9 @@ def remove_sparse_records(project, dataset, site):
         results = bq_utils.query(query, batch=True)
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
-        LOGGER.exception("Encountered an excpetion when removing sparse records")
+        LOGGER.exception(
+            "Encountered an excpetion when removing sparse records for:\t%s", site
+        )
         raise
 
     LOGGER.info("Removed sparse records from:  %s.%s.%s", project, dataset, result_table)
@@ -131,6 +133,9 @@ def merge_fields_into_single_record(project, dataset, site):
     :param project: The project string identifier
     :param dataset: The validation dataset identifier
     :param site: The site to merge validation results for
+
+    :raises:  oauth2client.client.HttpAccessTokenRefreshError,
+              googleapiclient.errors.HttpError
     """
     result_table = site + consts.VALIDATION_TABLE_SUFFIX
 
@@ -152,7 +157,9 @@ def merge_fields_into_single_record(project, dataset, site):
             results = bq_utils.query(query, batch=True)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Encountered an excpetion when merging records")
+            LOGGER.exception(
+                "Encountered an excpetion when merging records for:\t%s", site
+            )
             raise
 
     LOGGER.info("Unified sparse records for:  %s.%s.%s", project, dataset, result_table)
@@ -172,6 +179,9 @@ def change_nulls_to_missing_value(project, dataset, site):
     :param project: The project string identifier
     :param dataset: The validation dataset identifier
     :param site: The site to delete sparse validation results for
+
+    :raises:  oauth2client.client.HttpAccessTokenRefreshError,
+              googleapiclient.errors.HttpError
     """
     result_table = site + consts.VALIDATION_TABLE_SUFFIX
 
@@ -205,7 +215,9 @@ def change_nulls_to_missing_value(project, dataset, site):
         results = bq_utils.query(query, batch=True)
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
-        LOGGER.exception("Encountered an excpetion when filling null records")
+        LOGGER.exception(
+            "Encountered an excpetion when filling null records for:\t%s", site
+        )
         raise
 
     LOGGER.info(
@@ -284,6 +296,7 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     report_file.write(fields_str)
 
     # write to the report file
+    read_errors = 0
     for site in hpo_list:
         result_table = site + consts.VALIDATION_TABLE_SUFFIX
         query_string = consts.VALIDATION_RESULTS_VALUES.format(
@@ -299,7 +312,8 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
             LOGGER.exception("Encountered an excpetion when selecting site records")
             report_file.write("Unable to report id validation match records "
                               "for site:\t%s.\n", site)
-            break
+            read_errors += 1
+            continue
 
         row_results = bq_utils.large_response_to_rowlist(results)
         for item in row_results:
@@ -330,4 +344,4 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     report_file.close()
 
     LOGGER.debug("Wrote validation report csv:  %s", bucket + filename)
-    return report_result
+    return report_result, read_errors
