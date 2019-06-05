@@ -1222,10 +1222,16 @@ def match_participants(
     LOGGER.info("Finished creating validation dataset")
 
     if read_errors > 0:
-        LOGGER.error("Encountered %d read errors", read_errors)
+        LOGGER.error("Encountered %d read errors creating validation dataset:\t%s",
+                     read_errors,
+                     validation_dataset
+        )
 
     if write_errors > 0:
-        LOGGER.error("Encountered %d write errors", write_errors)
+        LOGGER.error("Encountered %d write errors creating validation dataset:\t%s",
+                     write_errors,
+                     validation_dataset
+        )
 
     return results, read_errors + write_errors
 
