@@ -15,20 +15,25 @@ import bq_utils
 #import constants.bq_utils as bq_consts
 import constants.cleaners.combined as combined_consts
 import constants.cleaners.combined_deid as deid_consts
+import constants.cleaners.ehr as ehr_consts
+import constants.cleaners.rdr as rdr_consts
+import constants.cleaners.unioned as unioned_consts
 
 LOGGER = logging.getLogger(__name__)
 
 def _add_console_logging(add_handler):
     # this config should be done in a separate module, but that can wait
     # until later.  Useful for debugging.
+    logging.basicConfig(level=logging.DEBUG,
+                        filename='/tmp/cleaner.log',
+                        filemode='a')
+
     if add_handler:
-        handler = logging.StreamHandler(sys.stdout)
+        handler = logging.StreamHandler()
         handler.setLevel(logging.INFO)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         LOGGER.addHandler(handler)
-    elif LOGGER.handlers == []:
-        logging.basicConfig(filename='/tmp/cleaner.log')
 
 
 def _clean_dataset(project=None, dataset=None, statements=None):
@@ -72,22 +77,36 @@ def _clean_dataset(project=None, dataset=None, statements=None):
                        project, dataset)
 
     if failures > 0:
+        print("Failed to apply %d clean rules for %s.%s",
+                       failures, project, dataset)
         LOGGER.warning("Failed to apply %d clean rules for %s.%s",
                        failures, project, dataset)
 
 
-def clean_rdr_dataset():
-    # stub:  to be implemented as needed
-    pass
+def clean_rdr_dataset(project=None, dataset=None):
+    if dataset is None or dataset == '' or dataset.isspace():
+        dataset = bq_utils.get_rdr_dataset_id()
+        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
+
+    LOGGER.info("Cleaning rdr_dataset")
+    _clean_dataset(project, dataset, rdr_consts.SQL_QUERIES)
 
 
-def clean_ehr_dataset():
-    # stub:  to be implemented as needed
-    pass
+def clean_ehr_dataset(project=None, dataset=None):
+    if dataset is None or dataset == '' or dataset.isspace():
+        dataset = bq_utils.get_dataset_id()
+        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
 
-def clean_unioned_ehr_dataset():
-    # stub:  to be implemented as needed
-    pass
+    LOGGER.info("Cleaning ehr_dataset")
+    _clean_dataset(project, dataset, ehr_consts.SQL_QUERIES)
+
+def clean_unioned_ehr_dataset(project=None, dataset=None):
+    if dataset is None or dataset == '' or dataset.isspace():
+        dataset = bq_utils.get_unioned_dataset_id()
+        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
+
+    LOGGER.info("Cleaning unioned_dataset")
+    _clean_dataset(project, dataset, unioned_consts.SQL_QUERIES)
 
 
 def clean_ehr_rdr_dataset(project=None, dataset=None):
@@ -101,7 +120,7 @@ def clean_ehr_rdr_dataset(project=None, dataset=None):
 
 def clean_ehr_rdr_unidentified_dataset(project=None, dataset=None):
     if dataset is None or dataset == '' or dataset.isspace():
-        dataset = bq_utils.get_dataset_id()
+        dataset = bq_utils.get_combined_deid_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
 
     LOGGER.info("Cleaning de-identified dataset")
