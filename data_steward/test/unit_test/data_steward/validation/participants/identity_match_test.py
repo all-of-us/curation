@@ -588,7 +588,11 @@ class IdentityMatchTest(unittest.TestCase):
         site_filename = os.path.join(
             consts.REPORT_DIRECTORY.format(date=self.date_string), consts.REPORT_TITLE
         )
-        drc_filename = os.path.join(self.dest_dataset, consts.REPORT_TITLE)
+        drc_filename = os.path.join(
+            self.dest_dataset,
+            consts.REPORT_DIRECTORY.format(date=self.date_string),
+            consts.REPORT_TITLE
+        )
         expected_report_calls = [
             call(self.project, self.dest_dataset, self.site_list, self.internal_bucket_id, drc_filename)
         ]
@@ -607,7 +611,11 @@ class IdentityMatchTest(unittest.TestCase):
         site_filename = os.path.join(
             consts.REPORT_DIRECTORY.format(date=self.date_string), consts.REPORT_TITLE
         )
-        drc_filename = os.path.join(self.dest_dataset, consts.REPORT_TITLE)
+        drc_filename = os.path.join(
+            self.dest_dataset,
+            consts.REPORT_DIRECTORY.format(date=self.date_string),
+            consts.REPORT_TITLE
+        )
         expected_report_calls = [
             call(self.project, self.dest_dataset, self.site_list, self.internal_bucket_id, drc_filename)
         ]
