@@ -85,8 +85,8 @@ def _compare_name_fields(
             pii_field
         )
     except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        exception = LOGGER.exception(
+            googleapiclient.errors.HttpError) as exception:
+        LOGGER.exception(
             "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
         )
         return match_values, exception
@@ -142,8 +142,8 @@ def _compare_email_addresses(
             pii_field
         )
     except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        exception = LOGGER.exception(
+            googleapiclient.errors.HttpError) as exception:
+        LOGGER.exception(
             "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
         )
         return match_values, exception
@@ -199,8 +199,8 @@ def _compare_phone_numbers(
             pii_field
         )
     except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        exception = LOGGER.exception(
+            googleapiclient.errors.HttpError) as exception:
+        LOGGER.exception(
             "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
         )
         return match_values, exception
@@ -230,7 +230,7 @@ def _compare_cities(
         pii_field
     ):
     """
-    Compare email addresses from hpo PII table and OMOP observation table.
+    Compare city information from hpo PII table and OMOP observation table.
 
     :param project:  project to search for the datasets
     :param validation_dataset:  the auto generated match validation dataset
@@ -261,8 +261,8 @@ def _compare_cities(
             pii_field
         )
     except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        exception = LOGGER.exception(
+            googleapiclient.errors.HttpError) as exception:
+        LOGGER.exception(
             "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
         )
         return match_values, exception
@@ -323,8 +323,8 @@ def _compare_states(
             pii_field
         )
     except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        exception = LOGGER.exception(
+            googleapiclient.errors.HttpError) as exception:
+        LOGGER.exception(
             "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
         )
         return match_values, exception
@@ -385,8 +385,8 @@ def _compare_zip_codes(
             pii_field
         )
     except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        exception = LOGGER.exception(
+            googleapiclient.errors.HttpError) as exception:
+        LOGGER.exception(
             "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
         )
         return match_values, exception
@@ -458,8 +458,8 @@ def _compare_street_addresses(
             project, rdr_dataset, pii_dataset, hpo, consts.PII_ADDRESS_TABLE, field_one
         )
     except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        exception = LOGGER.exception(
+            googleapiclient.errors.HttpError) as exception:
+        LOGGER.exception(
             "Unable to read PII for: %s\tdata field:\t%s", hpo, field_one
         )
         return address_one_match_values, address_two_match_values, exception
@@ -468,8 +468,8 @@ def _compare_street_addresses(
             project, rdr_dataset, pii_dataset, hpo, consts.PII_ADDRESS_TABLE, field_two
         )
     except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        exception = LOGGER.exception(
+            googleapiclient.errors.HttpError) as exception:
+        LOGGER.exception(
             "Unable to read PII for: %s\tdata field:\t%s", hpo, field_two
         )
         return address_one_match_values, address_two_match_values, exception
@@ -561,8 +561,8 @@ def _compare_genders(
             consts.GENDER_FIELD
         )
     except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        exception = LOGGER.exception(
+            googleapiclient.errors.HttpError) as exception:
+        LOGGER.exception(
             "Unable to read PII for: %s\tdata field:\t%s", hpo, consts.GENDER_FIELD
         )
         return match_values, exception
@@ -622,8 +622,8 @@ def _compare_birth_dates(
             consts.BIRTH_DATETIME_FIELD
         )
     except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-        exception = LOGGER.exception(
+            googleapiclient.errors.HttpError) as exception:
+        LOGGER.exception(
             "Unable to read PII for: %s\tdata field:\t%s", site, consts.BIRTH_DATETIME_FIELD
         )
         return match_values, exception
@@ -696,15 +696,15 @@ def write_results_to_site_buckets(project, validation_dataset=None):
             consts.REPORT_DIRECTORY.format(date=date_string),
             consts.REPORT_TITLE
         )
-        result, errors = writers.create_site_validation_report(
+        _, errors = writers.create_site_validation_report(
             project, validation_dataset, [site], bucket, filename
         )
 
-    if errors > 0:
-        LOGGER.error("Encountered %d read errors when writing %s site report",
-                     errors,
-                     site
-        )
+        if errors > 0:
+            LOGGER.error("Encountered %d read errors when writing %s site report",
+                         errors,
+                         site
+                        )
 
 
 def write_results_to_drc_bucket(project, validation_dataset=None):
@@ -727,22 +727,25 @@ def write_results_to_drc_bucket(project, validation_dataset=None):
     hpo_sites = readers.get_hpo_site_names()
     # generate aggregate site report
     bucket = gcs_utils.get_drc_bucket()
-    filename = os.path.join(validation_dataset, consts.REPORT_TITLE)
-    result, errors = writers.create_site_validation_report(
+    filename = os.path.join(validation_dataset,
+                            consts.REPORT_DIRECTORY.format(date_string),
+                            consts.REPORT_TITLE
+                           )
+    _, errors = writers.create_site_validation_report(
         project, validation_dataset, hpo_sites, bucket, filename
     )
 
     if errors > 0:
         LOGGER.error("Encountered %d read errors when writing drc report",
                      errors
-        )
+                    )
 
 
 def match_participants(
-    project,
-    rdr_dataset,
-    ehr_dataset,
-    dest_dataset_id):
+        project,
+        rdr_dataset,
+        ehr_dataset,
+        dest_dataset_id):
     """
     Entry point for performing participant matching of PPI, EHR, and PII data.
 
@@ -813,7 +816,7 @@ def match_participants(
             consts.FIRST_NAME_FIELD
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             try:
@@ -846,7 +849,7 @@ def match_participants(
             consts.LAST_NAME_FIELD
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             # write last name matches for hpo to table
@@ -880,7 +883,7 @@ def match_participants(
             consts.MIDDLE_NAME_FIELD
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             # write middle name matches for hpo to table
@@ -915,7 +918,7 @@ def match_participants(
             consts.ZIP_CODE_FIELD
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             # write zip codes matces for hpo to table
@@ -950,7 +953,7 @@ def match_participants(
             consts.CITY_FIELD
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             # write city matches for hpo to table
@@ -985,7 +988,7 @@ def match_participants(
             consts.STATE_FIELD
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             # write state matches for hpo to table
@@ -1022,7 +1025,7 @@ def match_participants(
             consts.ADDRESS_TWO_FIELD
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             # write street address matches for hpo to table
@@ -1073,7 +1076,7 @@ def match_participants(
             consts.EMAIL_FIELD
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             # write email matches for hpo to table
@@ -1107,7 +1110,7 @@ def match_participants(
             consts.PHONE_NUMBER_FIELD
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             # write phone number matches for hpo to table
@@ -1140,7 +1143,7 @@ def match_participants(
             consts.OBS_PII_SEX
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             # write birthday match for hpo to table
@@ -1173,7 +1176,7 @@ def match_participants(
             consts.OBS_PII_BIRTH_DATETIME
         )
 
-        if exc is None:
+        if exc is not None:
             read_errors += 1
         else:
             # write birthday match for hpo to table
@@ -1225,13 +1228,13 @@ def match_participants(
         LOGGER.error("Encountered %d read errors creating validation dataset:\t%s",
                      read_errors,
                      validation_dataset
-        )
+                    )
 
     if write_errors > 0:
         LOGGER.error("Encountered %d write errors creating validation dataset:\t%s",
                      write_errors,
                      validation_dataset
-        )
+                    )
 
     return results, read_errors + write_errors
 
