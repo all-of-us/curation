@@ -728,7 +728,7 @@ def write_results_to_drc_bucket(project, validation_dataset=None):
     # generate aggregate site report
     bucket = gcs_utils.get_drc_bucket()
     filename = os.path.join(validation_dataset,
-                            consts.REPORT_DIRECTORY.format(date_string),
+                            consts.REPORT_DIRECTORY.format(date=date_string),
                             consts.REPORT_TITLE
                            )
     _, errors = writers.create_site_validation_report(
