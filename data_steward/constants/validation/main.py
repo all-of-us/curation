@@ -1,6 +1,4 @@
 # This File consists of all the constants and sql queries from validation/main
-TRUE_FLAG = 'true'
-FALSE_FLAG = 'false'
 UNION_ALL = '''
 
         UNION ALL
@@ -8,8 +6,14 @@ UNION_ALL = '''
 '''
 HEEL_ERROR_FAIL_MESSAGE = 'There was an error while running Achilles. Please check back in a few hours.'
 NULL_MESSAGE = '-'
-ACHILLES_HEEL_RESULTS_VALIDATION = '_achilles_heel_results'
-DRUG_CHECK_TABLE_VALIDATION = '_drug_exposure'
+ACHILLES_HEEL_RESULTS_TABLE = 'achilles_heel_results'
+DRUG_CHECK_TABLE = 'drug_exposure'
+
+# results.html check mark codes and colors
+RESULT_FAIL_CODE = '&#x2718'
+RESULT_PASS_CODE = '&#x2714'
+RESULT_FAIL_COLOR = 'red'
+RESULT_PASS_COLOR = 'green'
 
 # Table Headers
 RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
@@ -17,7 +21,7 @@ ERROR_FILE_HEADERS = ["File Name", "Message"]
 DRUG_CHECK_HEADERS = ['Counts by Drug class', 'Drug Class Concept Name',
                       'Drug Class', 'Percentage', 'Drug Class Concept ID']
 HEEL_ERROR_HEADERS = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
-DUPLICATE_IDS_HEADERS = ['Table Name', 'Duplicated_id_count']
+DUPLICATE_IDS_HEADERS = ['Table Name', 'Duplicate ID Count']
 
 # Used in get_heel_errors_in_results_html()
 HEEL_ERROR_QUERY_VALIDATION = '''
@@ -101,13 +105,26 @@ DRUG_CLASS_QUERY = '''
             21601783) 
     '''
 
-DUPLICATE_IDS_QUERY = '''
-    SELECT
-        '{domain_table}' AS Table_name,
-    COUNT({domain_table}_id) AS Duplicated_id_count
+DUPLICATE_IDS_WRAPPER = '''
+    SELECT 
+        Table_Name,
+        Duplicate_ID_Count
+    FROM
+        ({union_of_subqueries})
+    WHERE Duplicate_ID_Count IS NOT NULL
+    '''
+
+DUPLICATE_IDS_SUBQUERY = '''
+    SELECT 
+        '{domain_table}' AS Table_Name,
+        SUM(Individual_Duplicate_ID_Count-1) as Duplicate_ID_Count
+    FROM
+    (SELECT
+        COUNT({domain_table}_id) AS Individual_Duplicate_ID_Count
     FROM
         `{app_id}.{dataset_id}.{hpo_id}_{domain_table}`
     GROUP BY
-    {domain_table}_id
+        {domain_table}_id
     HAVING
-        COUNT({domain_table}_id) > 1'''
+        COUNT({domain_table}_id) > 1)
+    '''
