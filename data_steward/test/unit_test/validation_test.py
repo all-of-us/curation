@@ -1,10 +1,10 @@
 """
 Unit test components of data_steward.validation.main
 """
+import StringIO
 import datetime
 import json
 import os
-import StringIO
 import unittest
 
 import mock
@@ -12,8 +12,8 @@ from google.appengine.ext import testbed
 
 import bq_utils
 import common
-import common_sql
 import constants.bq_utils as bq_consts
+import constants.validation.main as main_constants
 import gcs_utils
 import resources
 import test.unit_test.test_util as test_util
@@ -57,7 +57,7 @@ class ValidationTest(unittest.TestCase):
         bq_utils.create_table(table_id=table_name, fields=fields, drop_existing=True,
                               dataset_id=self.bigquery_dataset_id)
 
-        bq_utils.query(q=common_sql.DRUG_CLASS_QUERY.format(dataset_id=self.bigquery_dataset_id),
+        bq_utils.query(q=main_constants.DRUG_CLASS_QUERY.format(dataset_id=self.bigquery_dataset_id),
                        use_legacy_sql=False,
                        destination_table_id='drug_class',
                        retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,

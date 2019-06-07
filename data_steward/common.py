@@ -47,18 +47,6 @@ ACHILLES = 'achilles'
 CDM_COMPONENTS = [CLINICAL, VOCABULARY, ACHILLES]
 UNKNOWN_FILE = 'Unknown file'
 
-# Table headers
-RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
-ERROR_FILE_HEADERS = ["File Name", "Message"]
-DRUG_CHECK_HEADERS = ['Counts by Drug class', 'Drug Class Concept Name',
-                      'Drug Class', 'Percentage', 'Drug Class Concept ID']
-HEEL_ERROR_HEADERS = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
-
-# Validation Main Constant space
-HEEL_ERROR_FAIL_MESSAGE = 'There was an error while running Achilles. Please check back in a few hours.'
-NULL_MESSAGE = '-'
-ACHILLES_HEEL_RESULTS_VALIDATION = '_achilles_heel_results'
-DRUG_CHECK_TABLE_VALIDATION = '_drug_exposure'
 
 # ID Spaces
 #
@@ -89,7 +77,6 @@ GENDER_CONSTANT_FACTOR = 1 * CONCEPT_CONSTANT_FACTOR
 RACE_CONSTANT_FACTOR = 2 * CONCEPT_CONSTANT_FACTOR
 DOB_CONSTANT_FACTOR = 3 * CONCEPT_CONSTANT_FACTOR
 ETHNICITY_CONSTANT_FACTOR = 4 * CONCEPT_CONSTANT_FACTOR
-
 
 PARTICIPANT_DIR = 'participant/'
 IGNORE_DIRECTORIES = [PARTICIPANT_DIR]

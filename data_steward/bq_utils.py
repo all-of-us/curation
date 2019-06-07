@@ -6,7 +6,7 @@ import os
 import socket
 import time
 
-#Third party imports
+# Third party imports
 from google.appengine.api import app_identity
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -122,6 +122,7 @@ def load_csv(schema_path,
     :param project_id:
     :param dataset_id:
     :param table_id:
+    :param allow_jagged_rows:
     :return:
     """
     bq_service = create_service()
@@ -138,7 +139,7 @@ def load_csv(schema_path,
             'writeDisposition': 'WRITE_TRUNCATE',
             'allowJaggedRows': allow_jagged_rows,
             'sourceFormat': 'CSV'
-           }
+            }
     job_body = {'configuration': {'load': load}}
     insert_job = bq_service.jobs().insert(projectId=project_id, body=job_body)
     insert_result = insert_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
@@ -345,6 +346,7 @@ def query(q,
     :param retry_count: number of times to retry with randomized exponential backoff
     :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY (default)
     :param destination_dataset_id: dataset ID of destination table (EHR dataset by default)
+    :parm batch:
     :return: if destination_table_id is supplied then job info, otherwise job query response
              (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
     """
@@ -501,14 +503,15 @@ def large_response_to_rowlist(query_response):
 
     result_list = response2rows(query_response)
     while page_token:
-        next_grouping = bq_service.jobs()\
-            .getQueryResults(projectId=app_id, jobId=job_id, pageToken=page_token)\
+        next_grouping = bq_service.jobs() \
+            .getQueryResults(projectId=app_id, jobId=job_id, pageToken=page_token) \
             .execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
         page_token = next_grouping.get(bq_consts.PAGE_TOKEN)
         intermediate_rows = response2rows(next_grouping)
         result_list.extend(intermediate_rows)
 
     return result_list
+
 
 def response2rows(r):
     """
@@ -565,7 +568,7 @@ def _transform_row(row, schema):
     return log
 
 
-def _list_all_table_ids(dataset_id):
+def list_all_table_ids(dataset_id):
     tables = list_tables(dataset_id)
     return [table['tableReference']['tableId'] for table in tables]
 
@@ -576,7 +579,7 @@ def create_dataset(
         description=None,
         friendly_name=None,
         overwrite_existing=None
-    ):
+):
     """
     Creates a new dataset from the API.
 
@@ -657,3 +660,17 @@ def create_dataset(
             raise
 
     return insert_result
+
+
+def has_primary_key(table):
+    """
+    Determines if a CDM table contains a numeric primary key field
+
+    :param table: name of a CDM table
+    :return: True if the CDM table contains a primary key field, False otherwise
+    """
+    if table not in resources.CDM_TABLES:
+        raise AssertionError()
+    fields = resources.fields_for(table)
+    id_field = table + '_id'
+    return any(field for field in fields if field['type'] == 'integer' and field['name'] == id_field)

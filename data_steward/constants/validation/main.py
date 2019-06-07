@@ -1,6 +1,29 @@
-# This File consists of all the SQL Queries across the modules
+# This File consists of all the constants and sql queries from validation/main
+UNION_ALL = '''
 
-# Used in validation/main/get_heel_errors_in_results_html()
+        UNION ALL
+
+'''
+HEEL_ERROR_FAIL_MESSAGE = 'There was an error while running Achilles. Please check back in a few hours.'
+NULL_MESSAGE = '-'
+ACHILLES_HEEL_RESULTS_TABLE = 'achilles_heel_results'
+DRUG_CHECK_TABLE = 'drug_exposure'
+
+# results.html check mark codes and colors
+RESULT_FAIL_CODE = '&#x2718'
+RESULT_PASS_CODE = '&#x2714'
+RESULT_FAIL_COLOR = 'red'
+RESULT_PASS_COLOR = 'green'
+
+# Table Headers
+RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
+ERROR_FILE_HEADERS = ["File Name", "Message"]
+DRUG_CHECK_HEADERS = ['Counts by Drug class', 'Drug Class Concept Name',
+                      'Drug Class', 'Percentage', 'Drug Class Concept ID']
+HEEL_ERROR_HEADERS = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
+DUPLICATE_IDS_HEADERS = ['Table Name', 'Duplicate ID Count']
+
+# Used in get_heel_errors_in_results_html()
 HEEL_ERROR_QUERY_VALIDATION = '''
     SELECT 
         analysis_id AS Analysis_ID,
@@ -14,7 +37,7 @@ HEEL_ERROR_QUERY_VALIDATION = '''
         analysis_id
     '''
 
-# Used in Validation/main/get_drug_checks_in_results_html()
+# Used in get_drug_checks_in_results_html()
 DRUG_CHECKS_QUERY_VALIDATION = '''
     SELECT
         init.*,
@@ -49,7 +72,7 @@ DRUG_CHECKS_QUERY_VALIDATION = '''
         Drug_Class_Concept_ID
     '''
 
-# Used in validation_test/_create_drug_class_table()
+# Used in _create_drug_class_table()
 DRUG_CLASS_QUERY = '''
     SELECT
         concept_id,
@@ -80,4 +103,28 @@ DRUG_CLASS_QUERY = '''
             21604303,
             21601278,
             21601783) 
+    '''
+
+DUPLICATE_IDS_WRAPPER = '''
+    SELECT 
+        Table_Name,
+        Duplicate_ID_Count
+    FROM
+        ({union_of_subqueries})
+    WHERE Duplicate_ID_Count IS NOT NULL
+    '''
+
+DUPLICATE_IDS_SUBQUERY = '''
+    SELECT 
+        '{domain_table}' AS Table_Name,
+        SUM(Individual_Duplicate_ID_Count-1) as Duplicate_ID_Count
+    FROM
+    (SELECT
+        COUNT({domain_table}_id) AS Individual_Duplicate_ID_Count
+    FROM
+        `{app_id}.{dataset_id}.{hpo_id}_{domain_table}`
+    GROUP BY
+        {domain_table}_id
+    HAVING
+        COUNT({domain_table}_id) > 1)
     '''

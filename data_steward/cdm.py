@@ -12,6 +12,19 @@ import resources
 logger = logging.getLogger(__name__)
 
 
+def tables_to_map():
+    """
+    Determine which CDM tables must have ids remapped
+
+    :return: the list of table names
+    """
+    result = []
+    for table in resources.CDM_TABLES:
+        if table != 'person' and bq_utils.has_primary_key(table):
+            result.append(table)
+    return result
+
+
 def create_table(table, dataset_id):
     """
     Create OMOP table in the specified dataset

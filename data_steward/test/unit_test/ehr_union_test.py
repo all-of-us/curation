@@ -8,6 +8,7 @@ from google.appengine.ext import testbed
 
 import bq_utils
 import common
+import cdm
 import gcs_utils
 import resources
 import test_util
@@ -55,7 +56,7 @@ class EhrUnionTest(unittest.TestCase):
         # TODO Generalize to work for all foreign key references
         # Collect all primary key fields in CDM tables
         mapped_fields = []
-        for table in ehr_union.tables_to_map():
+        for table in cdm.tables_to_map():
             field = table + '_id'
             mapped_fields.append(field)
         self.mapped_fields = mapped_fields
@@ -138,7 +139,7 @@ class EhrUnionTest(unittest.TestCase):
         # output should be mapping tables and cdm tables
         output_tables_before = self._dataset_tables(self.output_dataset_id)
         mapping_tables = [ehr_union.mapping_table_for(table) for table in
-                          ehr_union.tables_to_map() + [ehr_union.PERSON_TABLE]]
+                          cdm.tables_to_map() + [ehr_union.PERSON_TABLE]]
         output_cdm_tables = [ehr_union.output_table_for(table) for table in resources.CDM_TABLES]
         expected_output = set(output_tables_before + mapping_tables + output_cdm_tables)
 
@@ -174,7 +175,7 @@ class EhrUnionTest(unittest.TestCase):
         self.assertEqual(expected_fact_id_2, actual_fact_id_2)
 
         # mapping tables
-        tables_to_map = ehr_union.tables_to_map()
+        tables_to_map = cdm.tables_to_map()
         for table_to_map in tables_to_map:
             mapping_table = ehr_union.mapping_table_for(table_to_map)
             expected_fields = {'src_table_id', 'src_%s_id' % table_to_map, '%s_id' % table_to_map, 'src_hpo_id'}
