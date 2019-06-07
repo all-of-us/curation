@@ -368,6 +368,7 @@ def add_table_in_results_html(hpo_id, query_string, table_id, headers, query_wra
     :param query_string: variable name of the query string stored in the constants
     :param table_id: name of the table running analysis on
     :param headers: expected headers
+    :param query_wrapper: wrapper over the unioned query if required
     :param is_subquery: binary flag(true/false) to indicate if parsing is needed or not.
     :return: returns list of contents(rows) and headers
     """
@@ -383,8 +384,8 @@ def add_table_in_results_html(hpo_id, query_string, table_id, headers, query_wra
 def get_query_result(hpo_id, query_string, table_id, query_wrapper, is_subquery, app_id=None, dataset_id=None):
     """
     :param hpo_id: the name of the hpo_id for which validation is being done
-    :param table_id: Name of the table running analysis on
     :param query_string: variable name of the query string stored in the constants
+    :param table_id: Name of the table running analysis on
     :param query_wrapper: wrapper over the unioned query if required
     :param is_subquery: binary flag(true/false) to indicate if parsing is needed or not.
     :param app_id: name of the big query application id
@@ -409,7 +410,7 @@ def get_query_result(hpo_id, query_string, table_id, query_wrapper, is_subquery,
                                                 domain_table=table)
                 sub_queries.append(sub_query)
         unioned_query = main_constants.UNION_ALL.join(sub_queries)
-        if query_wrapper is not None:
+        if unioned_query and query_wrapper is not None:
             query = query_wrapper.format(union_of_subqueries=unioned_query)
         else:
             query = unioned_query
