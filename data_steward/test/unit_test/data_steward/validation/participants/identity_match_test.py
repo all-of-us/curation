@@ -585,9 +585,6 @@ class IdentityMatchTest(unittest.TestCase):
         # post conditions
         self.assertEqual(self.mock_drc_bucket.call_count, 1)
 
-        site_filename = os.path.join(
-            consts.REPORT_DIRECTORY.format(date=self.date_string), consts.REPORT_TITLE
-        )
         drc_filename = os.path.join(
             self.dest_dataset,
             consts.REPORT_DIRECTORY.format(date=self.date_string),
@@ -608,9 +605,6 @@ class IdentityMatchTest(unittest.TestCase):
         # post conditions
         self.assertEqual(self.mock_drc_bucket.call_count, 1)
 
-        site_filename = os.path.join(
-            consts.REPORT_DIRECTORY.format(date=self.date_string), consts.REPORT_TITLE
-        )
         drc_filename = os.path.join(
             self.dest_dataset,
             consts.REPORT_DIRECTORY.format(date=self.date_string),
