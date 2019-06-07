@@ -802,7 +802,7 @@ def validate_pii():
     ehr_dataset = bq_utils.get_dataset_id()
     dest_dataset = bq_utils.get_validation_results_dataset_id()
     logging.info('Calling match_participants')
-    result, errors = matching.match_participants(project, combined_dataset, ehr_dataset, dest_dataset)
+    _, errors = matching.match_participants(project, combined_dataset, ehr_dataset, dest_dataset)
 
     if errors > 0:
         logging.error("Errors encountered in validation process")
