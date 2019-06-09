@@ -65,11 +65,11 @@ def clean_ehr_rdr_unidentified_dataset(project=None, dataset=None):
 
 
 def clean_all_cdr():
-    #clean_rdr_dataset()
-    clean_ehr_dataset('aou-res-curation-test', 'krishna_unioned')
-    #clean_unioned_ehr_dataset()
-    #clean_ehr_rdr_dataset()
-    #clean_ehr_rdr_unidentified_dataset()
+    clean_rdr_dataset()
+    clean_ehr_dataset()
+    clean_unioned_ehr_dataset()
+    clean_ehr_rdr_dataset()
+    clean_ehr_rdr_unidentified_dataset()
 
 
 if __name__ == '__main__':
