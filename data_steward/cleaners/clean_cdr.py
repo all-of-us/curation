@@ -9,6 +9,7 @@ from google.appengine.api import app_identity
 # Project imports
 import bq_utils
 import clean_cdr_engine as clean_engine
+import constants.cleaners.clean_cdr as clean_cdr_consts
 import id_deduplicate as id_dedup
 
 # import constants.bq_utils as bq_consts
@@ -136,12 +137,12 @@ def get_dataset_and_project_names():
     :return: A dictionary of dataset names and project name
     """
     project_and_dataset_names = dict()
-    project_and_dataset_names['ehr_dataset'] = bq_utils.get_dataset_id()
-    project_and_dataset_names['unioned_ehr_dataset'] = bq_utils.get_unioned_dataset_id()
-    project_and_dataset_names['rdr_dataset'] = bq_utils.get_rdr_dataset_id()
-    project_and_dataset_names['ehr_rdr_dataset'] = bq_utils.get_ehr_rdr_dataset_id()
-    project_and_dataset_names['ehr_rdr_de_identified_dataset'] = bq_utils.get_combined_deid_dataset_id()
-    project_and_dataset_names['project'] = app_identity.get_application_id()
+    project_and_dataset_names[clean_cdr_consts.EHR_DATASET] = bq_utils.get_dataset_id()
+    project_and_dataset_names[clean_cdr_consts.UNIONED_EHR_DATASET] = bq_utils.get_unioned_dataset_id()
+    project_and_dataset_names[clean_cdr_consts.RDR_DATASET] = bq_utils.get_rdr_dataset_id()
+    project_and_dataset_names[clean_cdr_consts.EHR_RDR_DATASET] = bq_utils.get_ehr_rdr_dataset_id()
+    project_and_dataset_names[clean_cdr_consts.EHR_RDR_DE_IDENTIFIED] = bq_utils.get_combined_deid_dataset_id()
+    project_and_dataset_names[clean_cdr_consts.PROJECT] = app_identity.get_application_id()
 
     return project_and_dataset_names
 
@@ -151,11 +152,12 @@ def clean_all_cdr():
     Runs cleaning rules on all the datasets
     """
     id_dict = get_dataset_and_project_names()
-    clean_rdr_dataset(id_dict['project'], id_dict['rdr_dataset'])
-    clean_ehr_dataset(id_dict['project'], id_dict['ehr_dataset'])
-    clean_unioned_ehr_dataset(id_dict['project'], id_dict['unioned_ehr_dataset'])
-    clean_ehr_rdr_dataset(id_dict['project'], id_dict['ehr_rdr_dataset'])
-    clean_ehr_rdr_de_identified_dataset(id_dict['project'], id_dict['ehr_rdr_de_identified_dataset'])
+    clean_ehr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.EHR_DATASET])
+    clean_unioned_ehr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.UNIONED_EHR_DATASET])
+    clean_rdr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.RDR_DATASET])
+    clean_ehr_rdr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.EHR_RDR_DATASET])
+    clean_ehr_rdr_de_identified_dataset(id_dict[clean_cdr_consts.PROJECT],
+                                        id_dict[clean_cdr_consts.EHR_RDR_DE_IDENTIFIED])
 
 
 if __name__ == '__main__':

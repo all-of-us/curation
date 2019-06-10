@@ -9,13 +9,14 @@ from google.appengine.api import app_identity
 import bq_utils
 
 LOGGER = logging.getLogger(__name__)
+FILENAME = '/tmp/cleaner.log'
 
 
 def add_console_logging(add_handler):
     # this config should be done in a separate module, but that can wait
     # until later.  Useful for debugging.
     logging.basicConfig(level=logging.DEBUG,
-                        filename='/tmp/cleaner.log',
+                        filename=FILENAME,
                         filemode='a')
 
     if add_handler:
