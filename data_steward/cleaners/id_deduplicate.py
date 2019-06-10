@@ -3,12 +3,12 @@ Rule: 4
 ID columns in each domain should be unique
 """
 
+# Project imports
 import bq_utils
 import cdm
-import clean_cdr_engine
 import resources
 
-rule_4_query = """
+ID_DE_DUP_QUERY = """
 select {columns}
 from (select m.*,
 ROW_NUMBER() OVER (PARTITION BY m.{domain_table}_id) AS row_num
@@ -17,7 +17,14 @@ where row_num = 1
 """
 
 
-def run_clean_rule_4(project_id, dataset_id):
+def get_id_deduplicate_queries(project_id, dataset_id):
+    """
+    This function gets the queries required to remove the duplicate id columns from a dataset
+    :param project_id: Project name
+    :param dataset_id: Name of the dataset where a rule should be applied
+    :return: a list of queries.
+    """
+    queries = []
     tables_with_primary_key = cdm.tables_to_map()
     for table in tables_with_primary_key:
         if 'unioned' in dataset_id:
@@ -29,16 +36,18 @@ def run_clean_rule_4(project_id, dataset_id):
             # Generate column expressions for select
             col_exprs = [field['name'] for field in fields]
             cols = ',\n        '.join(col_exprs)
-            query = rule_4_query.format(columns=cols,
-                                        project_id=project_id,
-                                        dataset_id=dataset_id,
-                                        domain_table=table,
-                                        table_name=table_name)
-            clean_cdr_engine.clean_dataset(project_id, dataset_id, query)
+            query = ID_DE_DUP_QUERY.format(columns=cols,
+                                           project_id=project_id,
+                                           dataset_id=dataset_id,
+                                           domain_table=table,
+                                           table_name=table_name)
+            queries.append(query)
+    return queries
 
 
 if __name__ == '__main__':
     import argparse
+    import clean_cdr_engine
 
     parser = argparse.ArgumentParser(
         description='Parse project_id and dataset_id',
@@ -49,4 +58,5 @@ if __name__ == '__main__':
                         help='Dataset where cleaning rules are to be applied')
     args = parser.parse_args()
     if args.dataset_id:
-        run_clean_rule_4(args.project_id, args.dataset_id)
+        query_list = get_id_deduplicate_queries(args.project_id, args.dataset_id)
+        clean_cdr_engine.clean_dataset(args.project_id, args.dataset_id, query_list)
