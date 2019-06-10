@@ -7,7 +7,6 @@ import bq_utils
 import cdm
 import clean_cdr_engine
 import resources
-import argparse
 
 rule_4_query = """
 select {columns}
@@ -35,10 +34,12 @@ def run_clean_rule_4(project_id, dataset_id):
                                         dataset_id=dataset_id,
                                         domain_table=table,
                                         table_name=table_name)
-            clean_cdr_engine.clean_dataset_2(project_id, dataset_id, query)
+            clean_cdr_engine.clean_dataset(project_id, dataset_id, query)
 
 
 if __name__ == '__main__':
+    import argparse
+
     parser = argparse.ArgumentParser(
         description='Parse project_id and dataset_id',
         formatter_class=argparse.RawDescriptionHelpFormatter)
