@@ -1,85 +1,85 @@
 """
 A module to serve as the entry point to the cleaners package.
 """
-# Python imports
+# python imports
 import logging
 
-# Third party imports
-import googleapiclient
 from google.appengine.api import app_identity
-import oauth2client
 
 # Project imports
 import bq_utils
-#import constants.bq_utils as bq_consts
-import constants.cleaners.combined as combined_consts
-import constants.cleaners.combined_deid as deid_consts
-import constants.cleaners.ehr as ehr_consts
-import constants.cleaners.rdr as rdr_consts
-import constants.cleaners.unioned as unioned_consts
+import clean_cdr_engine as clean_engine
+import constants.cleaners.clean_cdr as clean_cdr_consts
+import id_deduplicate as id_dedup
+
+# import constants.bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
 
-def _add_console_logging(add_handler):
-    # this config should be done in a separate module, but that can wait
-    # until later.  Useful for debugging.
-    logging.basicConfig(level=logging.DEBUG,
-                        filename='/tmp/cleaner.log',
-                        filemode='a')
 
-    if add_handler:
-        handler = logging.StreamHandler()
-        handler.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        LOGGER.addHandler(handler)
+def _gather_ehr_queries(project, dataset):
+    """
+    gathers all the queries required to clean ehr dataset
 
-
-def _clean_dataset(project=None, dataset=None, statements=None):
-    if project is None or project == '' or project.isspace():
-        project = app_identity.get_application_id()
-        LOGGER.debug('Project name not provided.  Using default.')
+    :param project: project name
+    :param dataset: ehr dataset name
+    :return: returns list of queries
+    """
+    query_list = []
+    query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
+    return query_list
 
 
-    if statements is None:
-        statements = []
+def _gather_rdr_queries(project, dataset):
+    """
+    gathers all the queries required to clean rdr dataset
 
-    failures = 0
-    successes = 0
-    for statement in statements:
-        full_query = statement.format(project=project, dataset=dataset)
+    :param project: project name
+    :param dataset: rdr dataset name
+    :return: returns list of queries
+    """
+    query_list = []
+    query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
+    return query_list
 
-        try:
-            results = bq_utils.query(full_query)
-        except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError):
-            LOGGER.exception("FAILED:  Clean rule not executed:\n%s", full_query)
-            failures += 1
-            continue
 
-        LOGGER.info("Executing query %s", full_query)
+def _gather_ehr_rdr_queries(project, dataset):
+    """
+    gathers all the queries required to clean ehr_rdr dataset
 
-        # wait for job to finish
-        query_job_id = results['jobReference']['jobId']
-        incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
-        if incomplete_jobs != []:
-            failures += 1
-            raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+    :param project: project name
+    :param dataset: ehr_rdr dataset name
+    :return: returns list of queries
+    """
+    query_list = []
+    query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
+    return query_list
 
-        successes += 1
 
-    if successes > 0:
-        LOGGER.info("Successfully applied %d clean rules for %s.%s",
-                    successes, project, dataset)
-    else:
-        LOGGER.warning("No clean rules successfully applied to %s.%s",
-                       project, dataset)
+def _gather_ehr_rdr_de_identified_queries(project, dataset):
+    """
+    gathers all the queries required to clean de_identified dataset
 
-    if failures > 0:
-        print("Failed to apply %d clean rules for %s.%s",
-                       failures, project, dataset)
-        LOGGER.warning("Failed to apply %d clean rules for %s.%s",
-                       failures, project, dataset)
+    :param project: project name
+    :param dataset: de_identified dataset name
+    :return: returns list of queries
+    """
+    query_list = []
+    query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
+    return query_list
+
+
+def _gather_unioned_ehr_queries(project, dataset):
+    """
+    gathers all the queries required to clean unioned_ehr dataset
+
+    :param project: project name
+    :param dataset: unioned_ehr dataset name
+    :return: returns list of queries
+    """
+    query_list = []
+    query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
+    return query_list
 
 
 def clean_rdr_dataset(project=None, dataset=None):
@@ -87,8 +87,10 @@ def clean_rdr_dataset(project=None, dataset=None):
         dataset = bq_utils.get_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
 
+    query_list = _gather_rdr_queries(project, dataset)
+
     LOGGER.info("Cleaning rdr_dataset")
-    _clean_dataset(project, dataset, rdr_consts.SQL_QUERIES)
+    clean_engine.clean_dataset(project, dataset, query_list)
 
 
 def clean_ehr_dataset(project=None, dataset=None):
@@ -96,16 +98,21 @@ def clean_ehr_dataset(project=None, dataset=None):
         dataset = bq_utils.get_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
 
+    query_list = _gather_ehr_queries(project, dataset)
+
     LOGGER.info("Cleaning ehr_dataset")
-    _clean_dataset(project, dataset, ehr_consts.SQL_QUERIES)
+    clean_engine.clean_dataset(project, dataset, query_list)
+
 
 def clean_unioned_ehr_dataset(project=None, dataset=None):
     if dataset is None or dataset == '' or dataset.isspace():
         dataset = bq_utils.get_unioned_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
 
+    query_list = _gather_unioned_ehr_queries(project, dataset)
+
     LOGGER.info("Cleaning unioned_dataset")
-    _clean_dataset(project, dataset, unioned_consts.SQL_QUERIES)
+    clean_engine.clean_dataset(project, dataset, query_list)
 
 
 def clean_ehr_rdr_dataset(project=None, dataset=None):
@@ -113,33 +120,58 @@ def clean_ehr_rdr_dataset(project=None, dataset=None):
         dataset = bq_utils.get_ehr_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
 
+    query_list = _gather_ehr_rdr_queries(project, dataset)
+
     LOGGER.info("Cleaning ehr_rdr_dataset")
-    _clean_dataset(project, dataset, combined_consts.SQL_QUERIES)
+    clean_engine.clean_dataset(project, dataset, query_list)
 
 
-def clean_ehr_rdr_unidentified_dataset(project=None, dataset=None):
+def clean_ehr_rdr_de_identified_dataset(project=None, dataset=None):
     if dataset is None or dataset == '' or dataset.isspace():
         dataset = bq_utils.get_combined_deid_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
 
+    query_list = _gather_ehr_rdr_de_identified_queries(project, dataset)
+
     LOGGER.info("Cleaning de-identified dataset")
-    _clean_dataset(project, dataset, deid_consts.SQL_QUERIES)
+    clean_engine.clean_dataset(project, dataset, query_list)
+
+
+def get_dataset_and_project_names():
+    """
+    :return: A dictionary of dataset names and project name
+
+    """
+    project_and_dataset_names = dict()
+    project_and_dataset_names[clean_cdr_consts.EHR_DATASET] = bq_utils.get_dataset_id()
+    project_and_dataset_names[clean_cdr_consts.UNIONED_EHR_DATASET] = bq_utils.get_unioned_dataset_id()
+    project_and_dataset_names[clean_cdr_consts.RDR_DATASET] = bq_utils.get_rdr_dataset_id()
+    project_and_dataset_names[clean_cdr_consts.EHR_RDR_DATASET] = bq_utils.get_ehr_rdr_dataset_id()
+    project_and_dataset_names[clean_cdr_consts.EHR_RDR_DE_IDENTIFIED] = bq_utils.get_combined_deid_dataset_id()
+    project_and_dataset_names[clean_cdr_consts.PROJECT] = app_identity.get_application_id()
+
+    return project_and_dataset_names
 
 
 def clean_all_cdr():
-    clean_rdr_dataset()
-    clean_ehr_dataset()
-    clean_unioned_ehr_dataset()
-    clean_ehr_rdr_dataset()
-    clean_ehr_rdr_unidentified_dataset()
+    """
+    Runs cleaning rules on all the datasets
+    """
+    id_dict = get_dataset_and_project_names()
+    clean_ehr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.EHR_DATASET])
+    clean_unioned_ehr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.UNIONED_EHR_DATASET])
+    clean_rdr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.RDR_DATASET])
+    clean_ehr_rdr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.EHR_RDR_DATASET])
+    clean_ehr_rdr_de_identified_dataset(id_dict[clean_cdr_consts.PROJECT],
+                                        id_dict[clean_cdr_consts.EHR_RDR_DE_IDENTIFIED])
 
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', action='store_true', help=('Send logs to console'))
+    parser.add_argument('-s', action='store_true', help='Send logs to console')
     args = parser.parse_args()
-    _add_console_logging(args.s)
+    clean_engine.add_console_logging(args.s)
 
     clean_all_cdr()
