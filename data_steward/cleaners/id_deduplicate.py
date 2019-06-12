@@ -20,6 +20,7 @@ where row_num = 1
 def get_id_deduplicate_queries(project_id, dataset_id):
     """
     This function gets the queries required to remove the duplicate id columns from a dataset
+
     :param project_id: Project name
     :param dataset_id: Name of the dataset where a rule should be applied
     :return: a list of queries.

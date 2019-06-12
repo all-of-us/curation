@@ -20,6 +20,7 @@ LOGGER = logging.getLogger(__name__)
 def _gather_ehr_queries(project, dataset):
     """
     gathers all the queries required to clean ehr dataset
+
     :param project: project name
     :param dataset: ehr dataset name
     :return: returns list of queries
@@ -32,6 +33,7 @@ def _gather_ehr_queries(project, dataset):
 def _gather_rdr_queries(project, dataset):
     """
     gathers all the queries required to clean rdr dataset
+
     :param project: project name
     :param dataset: rdr dataset name
     :return: returns list of queries
@@ -44,6 +46,7 @@ def _gather_rdr_queries(project, dataset):
 def _gather_ehr_rdr_queries(project, dataset):
     """
     gathers all the queries required to clean ehr_rdr dataset
+
     :param project: project name
     :param dataset: ehr_rdr dataset name
     :return: returns list of queries
@@ -56,6 +59,7 @@ def _gather_ehr_rdr_queries(project, dataset):
 def _gather_ehr_rdr_de_identified_queries(project, dataset):
     """
     gathers all the queries required to clean de_identified dataset
+
     :param project: project name
     :param dataset: de_identified dataset name
     :return: returns list of queries
@@ -68,6 +72,7 @@ def _gather_ehr_rdr_de_identified_queries(project, dataset):
 def _gather_unioned_ehr_queries(project, dataset):
     """
     gathers all the queries required to clean unioned_ehr dataset
+
     :param project: project name
     :param dataset: unioned_ehr dataset name
     :return: returns list of queries
@@ -135,6 +140,7 @@ def clean_ehr_rdr_de_identified_dataset(project=None, dataset=None):
 def get_dataset_and_project_names():
     """
     :return: A dictionary of dataset names and project name
+
     """
     project_and_dataset_names = dict()
     project_and_dataset_names[clean_cdr_consts.EHR_DATASET] = bq_utils.get_dataset_id()

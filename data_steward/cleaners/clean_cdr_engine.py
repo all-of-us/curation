@@ -13,8 +13,12 @@ FILENAME = '/tmp/cleaner.log'
 
 
 def add_console_logging(add_handler):
-    # this config should be done in a separate module, but that can wait
-    # until later.  Useful for debugging.
+    """
+
+    This config should be done in a separate module, but that can wait
+    until later.  Useful for debugging.
+
+    """
     logging.basicConfig(level=logging.DEBUG,
                         filename=FILENAME,
                         filemode='a')
