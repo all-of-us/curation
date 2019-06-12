@@ -450,7 +450,7 @@ class EhrUnionTest(unittest.TestCase):
         # moz-sql-parser doesn't support the ROW_NUMBER() OVER() a analytical function of sql we are removing
         # that statement from the returned query for the parser be able to parse out the query without erroring out.
 
-        subquery = re.sub(r",\s+ROW_NUMBER\(\) OVER \(PARTITION BY nm\..+_id\) AS row_num", " ", subquery)
+        subquery = re.sub(r",\s+ROW_NUMBER\(\) OVER \(PARTITION BY nm\..+?_id\) AS row_num", " ", subquery)
         stmt = moz_sql_parser.parse(subquery)
 
         # Sanity check it is a select statement
