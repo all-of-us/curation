@@ -7,6 +7,8 @@ import oauth2client
 from google.appengine.api import app_identity
 
 import bq_utils
+import constants.bq_utils as bq_consts
+import constants.cleaners.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 FILENAME = '/tmp/cleaner.log'
@@ -32,6 +34,13 @@ def add_console_logging(add_handler):
 
 
 def clean_dataset(project=None, dataset=None, statements=None):
+    """
+       Run the assigned cleaning rules.
+
+       :param project:  the project name
+       :param dataset:  the dataset to clean
+       :param statements:  a list of dictionary objects to run the query
+       """
     if project is None or project == '' or project.isspace():
         project = app_identity.get_application_id()
         LOGGER.debug('Project name not provided.  Using default.')
@@ -42,11 +51,27 @@ def clean_dataset(project=None, dataset=None, statements=None):
     failures = 0
     successes = 0
     for statement in statements:
-        rule_query = statement.format(project=project, dataset=dataset)
+        query = statement.get(cdr_consts.QUERY, '')
+        rule_query = query.format(project=project, dataset=dataset)
+
+        legacy_sql = statement.get(cdr_consts.LEGACY_SQL, False)
+        destination_table = statement.get(cdr_consts.DESTINATION_TABLE, None)
+        retry = statement.get(cdr_consts.RETRY_COUNT, bq_consts.BQ_DEFAULT_RETRY_COUNT)
+        disposition = statement.get(cdr_consts.DISPOSITION, bq_consts.WRITE_EMPTY)
+        destination_dataset = statement.get(cdr_consts.DESTINATION_DATASET, None)
+        batch = statement.get(cdr_consts.BATCH, None)
 
         try:
             LOGGER.info("Running query %s", rule_query)
-            results = bq_utils.query(rule_query)
+            results = bq_utils.query(rule_query,
+                                     use_legacy_sql=legacy_sql,
+                                     destination_table_id=destination_table,
+                                     retry_count=retry,
+                                     write_disposition=disposition,
+                                     destination_dataset_id=destination_dataset,
+                                     batch=batch
+                                     )
+
         except (oauth2client.client.HttpAccessTokenRefreshError, googleapiclient.errors.HttpError):
             LOGGER.exception("FAILED:  Clean rule not executed:\n%s", rule_query)
             failures += 1

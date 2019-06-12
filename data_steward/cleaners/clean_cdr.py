@@ -11,6 +11,7 @@ import bq_utils
 import clean_cdr_engine as clean_engine
 import constants.cleaners.clean_cdr as clean_cdr_consts
 import id_deduplicate as id_dedup
+import null_invalid_foreign_keys as null_foreign_key
 
 # import constants.bq_utils as bq_consts
 
@@ -26,7 +27,6 @@ def _gather_ehr_queries(project, dataset):
     :return: returns list of queries
     """
     query_list = []
-    query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
     return query_list
 
 
@@ -53,6 +53,7 @@ def _gather_ehr_rdr_queries(project, dataset):
     """
     query_list = []
     query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
+    query_list.extend(null_foreign_key.null_invalid_foreign_keys(project, dataset))
     return query_list
 
 
