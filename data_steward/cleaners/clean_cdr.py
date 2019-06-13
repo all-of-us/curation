@@ -1,22 +1,25 @@
 """
 A module to serve as the entry point to the cleaners package.
+
+It gathers the list of query strings to execute and sends them
+to the query engine.
 """
-# python imports
+# Python imports
 import logging
 
+# Third party imports
 from google.appengine.api import app_identity
 
 # Project imports
 import bq_utils
-import clean_cdr_engine as clean_engine
+import cleaners.clean_cdr_engine as clean_engine
+import cleaners.query_generators.clean_years as clean_years
+import cleaners.query_generators.id_deduplicate as id_dedup
+import cleaners.query_generators.negative_ages as neg_ages
+import cleaners.query_generators.null_invalid_foreign_keys as null_foreign_key
+import cleaners.query_generators.person_id_validator
 import constants.cleaners.clean_cdr as clean_cdr_consts
-import id_deduplicate as id_dedup
-import null_invalid_foreign_keys as null_foreign_key
-import clean_years
-import negative_ages as neg_ages
-import temporal_consistency as bad_end_dates
 
-# import constants.bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -80,6 +83,7 @@ def _gather_ehr_rdr_de_identified_queries(project, dataset):
     query_list.extend(clean_years.get_year_of_birth_queries(project, dataset))
     query_list.extend(neg_ages.get_negative_ages_queries(project, dataset))
     query_list.extend(bad_end_dates.get_bad_end_date_queries(project, dataset))
+    query_list.extend(person_id_validator.get_person_id_validation_queries(project, dataset))
     return query_list
 
 
@@ -100,6 +104,12 @@ def _gather_unioned_ehr_queries(project, dataset):
 
 
 def clean_rdr_dataset(project=None, dataset=None):
+    """
+    Run all clean rules defined for the rdr dataset.
+
+    :param project:  Name of the BigQuery project.
+    :param dataset:  Name of the dataset to clean
+    """
     if dataset is None or dataset == '' or dataset.isspace():
         dataset = bq_utils.get_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
@@ -111,6 +121,12 @@ def clean_rdr_dataset(project=None, dataset=None):
 
 
 def clean_ehr_dataset(project=None, dataset=None):
+    """
+    Run all clean rules defined for the ehr dataset.
+
+    :param project:  Name of the BigQuery project.
+    :param dataset:  Name of the dataset to clean
+    """
     if dataset is None or dataset == '' or dataset.isspace():
         dataset = bq_utils.get_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
@@ -122,6 +138,12 @@ def clean_ehr_dataset(project=None, dataset=None):
 
 
 def clean_unioned_ehr_dataset(project=None, dataset=None):
+    """
+    Run all clean rules defined for the unioned ehr dataset.
+
+    :param project:  Name of the BigQuery project.
+    :param dataset:  Name of the dataset to clean
+    """
     if dataset is None or dataset == '' or dataset.isspace():
         dataset = bq_utils.get_unioned_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
@@ -133,6 +155,12 @@ def clean_unioned_ehr_dataset(project=None, dataset=None):
 
 
 def clean_ehr_rdr_dataset(project=None, dataset=None):
+    """
+    Run all clean rules defined for the ehr and rdr dataset.
+
+    :param project:  Name of the BigQuery project.
+    :param dataset:  Name of the dataset to clean
+    """
     if dataset is None or dataset == '' or dataset.isspace():
         dataset = bq_utils.get_ehr_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
@@ -144,6 +172,12 @@ def clean_ehr_rdr_dataset(project=None, dataset=None):
 
 
 def clean_ehr_rdr_de_identified_dataset(project=None, dataset=None):
+    """
+    Run all clean rules defined for the deidentified ehr and rdr dataset.
+
+    :param project:  Name of the BigQuery project.
+    :param dataset:  Name of the dataset to clean
+    """
     if dataset is None or dataset == '' or dataset.isspace():
         dataset = bq_utils.get_combined_deid_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset)
@@ -156,8 +190,9 @@ def clean_ehr_rdr_de_identified_dataset(project=None, dataset=None):
 
 def get_dataset_and_project_names():
     """
-    :return: A dictionary of dataset names and project name
+    Get project and dataset names from environment variables.
 
+    :return: A dictionary of dataset names and project name
     """
     project_and_dataset_names = dict()
     project_and_dataset_names[clean_cdr_consts.EHR_DATASET] = bq_utils.get_dataset_id()
@@ -175,12 +210,15 @@ def clean_all_cdr():
     Runs cleaning rules on all the datasets
     """
     id_dict = get_dataset_and_project_names()
-    clean_ehr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.EHR_DATASET])
-    clean_unioned_ehr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.UNIONED_EHR_DATASET])
-    clean_rdr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.RDR_DATASET])
-    clean_ehr_rdr_dataset(id_dict[clean_cdr_consts.PROJECT], id_dict[clean_cdr_consts.EHR_RDR_DATASET])
-    clean_ehr_rdr_de_identified_dataset(id_dict[clean_cdr_consts.PROJECT],
-                                        id_dict[clean_cdr_consts.EHR_RDR_DE_IDENTIFIED])
+    project = id_dict[clean_cdr_consts.PROJECT]
+
+    clean_ehr_dataset(project, id_dict[clean_cdr_consts.EHR_DATASET])
+    clean_unioned_ehr_dataset(project, id_dict[clean_cdr_consts.UNIONED_EHR_DATASET])
+    clean_rdr_dataset(project, id_dict[clean_cdr_consts.RDR_DATASET])
+    clean_ehr_rdr_dataset(project, id_dict[clean_cdr_consts.EHR_RDR_DATASET])
+    clean_ehr_rdr_de_identified_dataset(
+        project, id_dict[clean_cdr_consts.EHR_RDR_DE_IDENTIFIED]
+    )
 
 
 if __name__ == '__main__':

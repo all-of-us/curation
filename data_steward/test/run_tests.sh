@@ -54,7 +54,7 @@ fi
 
 if [[ $substring ]];
 then
-   echo Excuting tests that match glob $substring
+   echo Executing tests that match glob $substring
 fi
 
 if [[ "$subset" == "all" || "$subset" == "unit" ]];

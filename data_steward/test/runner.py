@@ -27,6 +27,14 @@ import sys
 import unittest
 
 
+def print_unsuccessful(function, trace, msg_type):
+    print('\n======================================================================')
+    print('{}:  {}'.format(msg_type, function))
+    print('----------------------------------------------------------------------')
+    print(trace)
+    print('----------------------------------------------------------------------')
+
+
 def fixup_paths(path):
     """Adds GAE SDK path to system path and appends it to the google path
     if that already exists."""
@@ -69,7 +77,36 @@ def main(sdk_path, test_path, test_pattern):
 
     # Discover and run tests.
     suite = unittest.loader.TestLoader().discover(test_path, test_pattern)
-    return unittest.TextTestRunner(verbosity=2).run(suite)
+    all_results = []
+    for mod_tests in suite:
+        result = unittest.TextTestRunner(verbosity=2).run(mod_tests)
+        all_results.append(result)
+
+    run = 0
+    errors = []
+    failures = []
+    for item in all_results:
+        run += item.testsRun
+        errors.extend(item.errors)
+        failures.extend(item.failures)
+
+    print('\n\n\n**********************************************************************')
+    print('ALL TEST RESULTS')
+    print('**********************************************************************')
+    message = "Ran {} tests.  ".format(run)
+
+    if errors:
+        for err in errors:
+            print_unsuccessful(err[0], err[1], 'ERROR')
+        message += "{} error(s).  ".format(len(errors))
+
+    if failures:
+        for fail in failures:
+            print_unsuccessful(fail[0], fail[1], 'FAIL')
+        message += "{} failure(s).".format(len(failures))
+
+    print(message)
+    return not errors and not failures
 
 
 if __name__ == '__main__':
@@ -90,7 +127,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    result = main(args.sdk_path, args.test_path, args.test_pattern)
+    result_success = main(args.sdk_path, args.test_path, args.test_pattern)
 
-    if not result.wasSuccessful():
+    if not result_success:
         sys.exit(1)
