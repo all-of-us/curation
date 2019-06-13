@@ -33,3 +33,4 @@ FROM (
 ) AS counts
 """
 CONCEPT_ZERO_CLAUSE = "SUM(CASE WHEN {column_name}=0 THEN 1 ELSE 0 END)"
+UNION_ALL = '\nUNION ALL\n'

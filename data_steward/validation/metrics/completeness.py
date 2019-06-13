@@ -22,7 +22,7 @@ def get_cols(dataset_id):
     query = consts.COLUMNS_QUERY_FMT.format(dataset_id=dataset_id)
     query_response = bq_utils.query(query)
     cols = bq_utils.response2rows(query_response)
-    results = filter(is_domain_col, cols)
+    results = filter(is_omop_col, cols)
     return results
 
 
@@ -34,12 +34,12 @@ def create_completeness_query(dataset_id, columns):
             concept_zero_expr = consts.CONCEPT_ZERO_CLAUSE.format(**column)
         subquery = consts.COMPLETENESS_QUERY_FMT.format(dataset_id=dataset_id, concept_zero_expr=concept_zero_expr, **column)
         subqueries.append(subquery)
-    return '\nUNION ALL\n'.join(subqueries)
+    return consts.UNION_ALL.join(subqueries)
 
 
-def is_domain_col(col):
+def is_omop_col(col):
     """
-    True if col belongs to a domain table
+    True if col belongs to an OMOP table
 
     :param col: column summary
     :return: True if col belongs to a domain table, False otherwise
