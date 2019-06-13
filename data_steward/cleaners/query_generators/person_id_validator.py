@@ -15,7 +15,7 @@ MAPPED_VALIDATION_TABLES = [
     'procedure_occurrence',
     'observation',
     'device_exposure',
-    'specimen',
+    'specimen'
 ]
 
 UNMAPPED_VALIDATION_TABLES = [
@@ -56,11 +56,11 @@ def get_person_id_validation_queries(project=None, dataset=None):
 
     The non-consenting queries rely on the mapping tables.  When using the
     combined and unidentified dataset, the last portion of the dataset name is
-    removed to access these tables.  Any other dataset is expectedt to have
+    removed to access these tables.  Any other dataset is expectedt to have 
     these tables and uses the mapping tables from within the same dataset.
 
     :return:  A list of string queries that can be exexcuted to delete invalid
-        records for invalid persons
+        records for invalid persons    
     """
     query_list = []
 
@@ -91,17 +91,20 @@ def get_person_id_validation_queries(project=None, dataset=None):
 if __name__ == '__main__':
     import argparse
 
-    import cleaners.clean_cdr_engine
+    import data_steward.cleaners.clean_cdr_engine
 
-    PARSER = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
         description='Parse project_id and dataset_id',
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    PARSER.add_argument('project_id',
+    parser.add_argument('project_id',
                         help='Project associated with the input and output datasets')
-    PARSER.add_argument('dataset_id',
+    parser.add_argument('dataset_id',
                         help='Dataset where cleaning rules are to be applied')
-    ARGS = PARSER.parse_args()
+    args = parser.parse_args()
 
-    if ARGS.dataset_id:
-        Q_LIST = get_person_id_validation_queries(ARGS.project_id, ARGS.dataset_id)
-        clean_cdr_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, Q_LIST)
+    if args.dataset_id:
+        q_list = get_person_id_validation_queries(args.project_id, args.dataset_id)
+        #clean_cdr_engine.clean_dataset(args.project_id, args.dataset_id, query_list)
+        for query in q_list:
+            print query
+            print '\n'

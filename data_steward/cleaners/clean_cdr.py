@@ -80,7 +80,7 @@ def _gather_ehr_rdr_de_identified_queries(project, dataset):
     query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
     query_list.extend(clean_years.get_year_of_birth_queries(project, dataset))
     query_list.extend(neg_ages.get_negative_ages_queries(project, dataset))
-    query_list.extend(person_validator.get_person_id_validation_queries(project, dataset))
+    query_list.extend(person_id_validator.get_person_id_validation_queries(project, dataset))
     return query_list
 
 
