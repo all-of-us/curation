@@ -7,7 +7,7 @@ Run the person_id validation clean rule.
     Keep PPI records.
 """
 
-PERSON_ID_VALIDATION_TABLES = [
+MAPPED_VALIDATION_TABLES = [
     'visit_occurrence',
     'condition_occurrence',
     'drug_exposure',
@@ -15,9 +15,12 @@ PERSON_ID_VALIDATION_TABLES = [
     'procedure_occurrence',
     'observation',
     'device_exposure',
+    'specimen'
+]
+
+UNMAPPED_VALIDATION_TABLES = [
     # mapping tables do not exist for the following tables
     'death',
-    'specimen'
 ]
 
 # The below query translates to:
@@ -50,22 +53,38 @@ WHERE entry.person_id NOT IN (SELECT person_id FROM `{project}.{dataset}.person`
 def get_person_id_validation_queries(project=None, dataset=None):
     """
     Return query list of queries to ensure valid people are in the tables.
+
+    The non-consenting queries rely on the mapping tables.  When using the
+    combined and unidentified dataset, the last portion of the dataset name is
+    removed to access these tables.  Any other dataset is expectedt to have 
+    these tables and uses the mapping tables from within the same dataset.
+
+    :return:  A list of string queries that can be exexcuted to delete invalid
+        records for invalid persons    
     """
     query_list = []
 
+    if dataset.endswith('_deid'):
+        mapping_ds = dataset[0:-5]
+    else:
+        mapping_ds = dataset
+
+    # generate queries to remove EHR records of non-ehr consented persons
+    for table in MAPPED_VALIDATION_TABLES:
+        consent_query = NOT_CONSENTING_PERSON_IDS.format(
+            project=project, dataset=dataset, table=table, mapping_dataset=mapping_ds
+        )
+        query_list.append(consent_query)
+
+    all_tables = MAPPED_VALIDATION_TABLES
+    all_tables.extend(UNMAPPED_VALIDATION_TABLES)
+
     # generate queries to remove person_ids of people not in the person table
-    for table in PERSON_ID_VALIDATION_TABLES:
+    for table in all_tables:
         delete_query = DELETE_ORPHANED_PERSON_IDS.format(
             project=project, dataset=dataset, table=table
         )
         query_list.append(delete_query)
-
-    # generate queries to remove EHR records of non-ehr consented persons
-    for table in PERSON_ID_VALIDATION_TABLES[0:-2]:
-        consent_query = NOT_CONSENTING_PERSON_IDS.format(
-            project=project, dataset=dataset, table=table, mapping_dataset=dataset[0:-5]
-        )
-        query_list.append(consent_query)
 
     return query_list
 
