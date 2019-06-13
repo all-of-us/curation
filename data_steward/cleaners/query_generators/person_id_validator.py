@@ -91,7 +91,7 @@ def get_person_id_validation_queries(project=None, dataset=None):
 if __name__ == '__main__':
     import argparse
 
-    import data_steward.cleaners.clean_cdr_engine
+    import cleaners.clean_cdr_engine
 
     PARSER = argparse.ArgumentParser(
         description='Parse project_id and dataset_id',
