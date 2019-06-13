@@ -266,3 +266,89 @@ Sczm8YX8o9FouGDueLkJbtAzAqYciCEXC0umVBRZPmqqKHdtRs77MD9a+scJR0v8/2+kcQG2wxdk
 LMoVxIzaPloieLjAjafILpOoPpZxjoVGEwA4PEbu74gMH3+swzh8DuOZ94fhPzczACNxruFtcv9n
 5j4aX8PXZrSxRqOPJNd5vBfuHz3OeMYTR0DyT9BHmFQ/QScol/5n/I7UCfr/nk4I2gn6WOiEoJ2g
 j4VOCNoJ+ljo/wE/8skeHh1pOAAAAABJRU5ErkJggg==">
+<h1>
+    {{ hpo_name }} EHR Submission Results
+</h1>
+<h3>{{ folder }}</h3>
+<h3>{{ timestamp }}</h3>
+<table>
+    <caption>
+    Results
+    </caption>
+    <thead>
+    <tr>
+        <th>File Name</th>
+        <th>Found</th>
+        <th>Parsed</th>
+        <th>Loaded</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for result in results %}
+        <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<table>
+    <caption>Count of Duplicate IDs per Domain Table</caption>
+</table>
+<table>
+    <caption>Errors</caption>
+    <thead>
+        <tr>
+            <th>File Name</th>
+            <th>Message</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+<table>
+    <caption>Warnings</caption>
+    <thead>
+        <tr>
+            <th>File Name</th>
+            <th>Message</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+<table>
+    <caption>Heel Errors</caption>
+    <thead>
+        <tr>
+            <th>Record Count</th>
+            <th>Heel Error</th>
+            <th>Analysis ID</th>
+            <th>Rule ID</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+<table>
+    <caption>Drug Concept Mapping Percentages</caption>
+    <thead>
+        <tr>
+            <th>Percentage</th>
+            <th>Drug Class Concept Name</th>
+            <th>Counts by Drug Class</th>
+            <th>Drug Class</th>
+            <th>Drug Class Concept ID</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+</body>
+</html>

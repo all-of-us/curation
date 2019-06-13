@@ -25,7 +25,8 @@ achilles_index_path = os.path.join(resource_path, 'curation_report')
 AOU_GENERAL_PATH = os.path.join(resource_path, 'aou_general')
 AOU_GENERAL_CONCEPT_CSV_PATH = os.path.join(AOU_GENERAL_PATH, 'concept.csv')
 TEMPLATES_PATH = os.path.join(resource_path, 'templates')
-html_boilerplate_path = os.path.join(TEMPLATES_PATH, 'hpo_report.html')
+HPO_REPORT_HTML = 'hpo_report.html'
+html_boilerplate_path = os.path.join(TEMPLATES_PATH, HPO_REPORT_HTML)
 
 DATASOURCES_JSON = os.path.join(achilles_index_path, 'data/datasources.json')
 
