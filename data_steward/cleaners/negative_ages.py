@@ -17,7 +17,7 @@ date_fields = {'observation_period': 'observation_period_start_date',
                'drug_era': 'drug_era_start_date',
                'condition_era': 'condition_era_start_date',
                'measurement': 'measurement_date',
-               'device_exposure': 'device_exposure_date'}
+               'device_exposure': 'device_exposure_start_date'}
 
 person = 'person'
 MAX_AGE = 150
@@ -69,7 +69,7 @@ def get_negative_ages_queries(project_id, dataset_id):
     :return: a list of queries.
     """
     queries = []
-    for table in date_fields.keys():
+    for table in date_fields:
         if 'unioned' in dataset_id:
             table_name = 'unioned_ehr_{table}'.format(table=table)
             person_table_name = 'unioned_ehr_{table}'.format(table=person)
