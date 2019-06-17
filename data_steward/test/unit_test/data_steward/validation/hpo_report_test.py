@@ -1,9 +1,10 @@
 import unittest
+import os
 from data_steward.validation import hpo_report
 
 hpo_name = 'HPO'
 folder = '2019-06-01/'
-timestamp = 'Report timestamp: 2019-06-01 05:00:00'
+timestamp = '2019-06-01 05:00:00'
 duplicate_counts = []
 drug_checks = [(u'12.77%', u'OTHER ANALGESICS AND ANTIPYRETICS', 6, u'Pain NSAIDS', 21604303),
                (u'8.51%', u'OPIOIDS', 4, u'Opioids', 21604254),
@@ -34,6 +35,7 @@ results = [('care_site.csv', 0, 0, 0),
            ('pii_name.csv', 0, 0, 0),
            ('pii_phone_number.csv', 0, 0, 0)]
 errors = []
+warnings = []
 heel_errors = [(38, u'ERROR: 606 - Distribution of age by procedure_concept_id (count = 38); min value should not be negative', 606, 2),
                (36, u'ERROR: 406 - Distribution of age by condition_concept_id (count = 36); min value should not be negative', 406, 2),
                (32, u'ERROR: 706 - Distribution of age by drug_concept_id (count = 32); min value should not be negative', 706, 2),
@@ -64,13 +66,25 @@ class HpoReportTest(unittest.TestCase):
         #   'errors': [('visit_occurrence.csv', 'error message'), ]
         #   'warnings': [('procedure.csv', 'Unknown file'
 
+    def setUp(self):
+        self.render_output_path = 'test_render.html'
+        if os.path.exists(self.render_output_path):
+            os.remove(self.render_output_path)
 
     def test_render(self):
         r = hpo_report.render(hpo_name='Columbia',
+                              timestamp=timestamp,
                               folder='2019-06-01-v2',
-                              results=[],
-                              errors=[],
-                              warnings=[],
-                              heel_errors=[],
-                              drug_checks=[])
+                              results=results,
+                              errors=errors,
+                              warnings=warnings,
+                              duplicate_counts=duplicate_counts,
+                              heel_errors=heel_errors,
+                              drug_checks=drug_checks)
+        with open(self.render_output_path, 'wb') as out_fp:
+            out_fp.write(r)
         print r
+
+    def tearDown(self):
+        if os.path.exists(self.render_output_path):
+            os.remove(self.render_output_path)
