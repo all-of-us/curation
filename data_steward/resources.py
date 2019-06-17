@@ -96,6 +96,16 @@ def is_pii_table(table_id):
     return table_id.startswith('pii') or table_id.startswith('participant')
 
 
+def is_id_match(table_id):
+    """
+    Return True if specified table is a identity_match table
+
+    :param table_id:
+    :return:
+    """
+    return table_id.startswith('identity_')
+
+
 def cdm_schemas(include_achilles=False, include_vocabulary=False):
     """
     Get a dictionary mapping table_name -> schema
@@ -119,6 +129,8 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
             elif is_internal_table(table_name):
                 include_table = False
             elif is_pii_table(table_name):
+                include_table = False
+            elif is_id_match(table_name):
                 include_table = False
             if include_table:
                 result[table_name] = schema
