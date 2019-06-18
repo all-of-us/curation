@@ -509,6 +509,9 @@ class ValidationTest(unittest.TestCase):
                 raise AssertionError("Unexpected call in mock_copy calls:  {}"
                                      .format(call))
 
+    def test_add_table_in_results_html(self):
+        pass
+
     def tearDown(self):
         self._empty_bucket()
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')

@@ -630,7 +630,7 @@ def _transform_row(row, schema):
     return log
 
 
-def list_all_table_ids(dataset_id):
+def list_all_table_ids(dataset_id=None):
     tables = list_tables(dataset_id)
     return [table['tableReference']['tableId'] for table in tables]
 
