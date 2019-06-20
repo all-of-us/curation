@@ -18,6 +18,7 @@ import bq_utils
 import cdm
 import common
 import constants.validation.main as consts
+import constants.validation.hpo_report as report_consts
 import gcs_utils
 import resources
 import validation.achilles as achilles
@@ -298,54 +299,53 @@ def process_hpo(hpo_id, force_run=False):
     if folder_prefix is None:
         logging.info('No submissions to process in %s bucket %s', hpo_id, bucket)
     else:
-        validate_result = validate_submission(hpo_id, bucket, bucket_items, folder_prefix)
-        results = validate_result['results']
-        errors = validate_result['errors']
-        warnings = validate_result['warnings']
+        report_data = validate_submission(hpo_id, bucket, bucket_items, folder_prefix)
+        processed_datetime_str = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+        report_data[report_consts.PROCESSED_DATETIME_REPORT_KEY] = processed_datetime_str
 
-        if all_required_files_loaded(results):
-            logging.info('Running achilles on %s.', folder_prefix)
-            achilles_success = run_achilles_helper(hpo_id, folder_prefix, bucket)
-            heel_error_query = get_heel_error_query(hpo_id)
-            heel_error_rows = query_rows(heel_error_query)
-        else:
-            logging.info('Required files not loaded in %s. Skipping achilles.', folder_prefix)
-            achilles_success = False
-            heel_error_rows = consts.HEEL_ERROR_FAIL_ROWS
+        # TODO separate query generation, query execution, writing to GCS
+        report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
+        report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
 
-        # duplicate id counts
-        logging.info('Getting duplicate counts for %s...' % hpo_id)
-        duplicate_counts_query = get_duplicate_counts_query(hpo_id)
-        duplicate_counts_rows = query_rows(duplicate_counts_query)
+        try:
+            # TODO modify achilles to run successfully when tables are empty
+            # achilles queries will raise exceptions (e.g. division by zero) if files not present
+            if all_required_files_loaded(report_data['results']):
+                logging.info('Running achilles on %s.', folder_prefix)
+                run_achilles(hpo_id)
+                run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
+                logging.info('Uploading achilles index files to `gs://%s/%s`.', bucket, folder_prefix)
+                _upload_achilles_files(hpo_id, folder_prefix)
+                heel_error_query = get_heel_error_query(hpo_id)
+                report_data[report_consts.HEEL_ERRORS_REPORT_KEY] = query_rows(heel_error_query)
+            else:
+                logging.info('Required files not loaded in %s. Skipping achilles.', folder_prefix)
 
-        # drug class counts
-        logging.info('Getting drug class for %s...' % hpo_id)
-        drug_class_counts_query = get_drug_class_counts_query(hpo_id)
-        drug_class_counts_rows = query_rows(drug_class_counts_query)
+            # non-unique key metrics
+            logging.info('Getting non-unique key stats for %s...' % hpo_id)
+            nonunique_metrics_query = get_duplicate_counts_query(hpo_id)
+            report_data[report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY] = query_rows(nonunique_metrics_query)
 
-        now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+            # drug class metrics
+            logging.info('Getting drug class for %s...' % hpo_id)
+            drug_class_metrics_query = get_drug_class_counts_query(hpo_id)
+            report_data[report_consts.DRUG_CLASS_METRICS_REPORT_KEY] = query_rows(drug_class_metrics_query)
 
-        logging.info('Uploading report for hpo %s to %s' % (hpo_id, folder_prefix))
-        hpo_name = get_hpo_name(hpo_id)
-        results_folder = folder_prefix[:-1]
-        results_html = hpo_report.render(hpo_name=hpo_name,
-                                         folder=results_folder,
-                                         timestamp=now_datetime_string,
-                                         results=results,
-                                         errors=errors,
-                                         warnings=warnings,
-                                         duplicate_counts_rows=duplicate_counts_rows,
-                                         heel_error_rows=heel_error_rows,
-                                         drug_class_counts_rows=drug_class_counts_rows)
-        gcs_utils.upload_object(bucket, folder_prefix + common.RESULTS_HTML, results_html)
-
-        if achilles_success:
             logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
-                         bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT)
-            _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
-        else:
-            logging.info('Processing complete but achilles failed. '
-                         'Skipping upload of processed.txt to allow validation to re-run.')
+                         bucket, processed_datetime_str, folder_prefix + common.PROCESSED_TXT)
+            _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, processed_datetime_str)
+
+            report_data[report_consts.COMPLETE_REPORT_KEY] = True
+        except HttpError as err:
+            # cloud error occurred- log details for troubleshooting
+            logging.error('Failed to generate full report due to the following cloud error:\n\n%s' % err.content)
+            # re-raise error
+            raise err
+        finally:
+            # report all results collected (attempt even if cloud error occurred)
+            logging.info('Creating report for hpo %s to %s' % (hpo_id, folder_prefix))
+            results_html = hpo_report.render(**report_data)
+            _write_string_to_file(bucket, folder_prefix + common.RESULTS_HTML, results_html)
 
 
 def get_hpo_name(hpo_id):

@@ -1,0 +1,7 @@
+HPO_NAME_REPORT_KEY = 'hpo_name'
+FOLDER_REPORT_KEY = 'folder'
+HEEL_ERRORS_REPORT_KEY = 'heel_errors'
+NONUNIQUE_KEY_METRICS_REPORT_KEY = 'nonunique_key_metrics'
+DRUG_CLASS_METRICS_REPORT_KEY = 'drug_class_metrics'
+PROCESSED_DATETIME_REPORT_KEY = 'processed_datetime'
+COMPLETE_REPORT_KEY = 'is_complete'

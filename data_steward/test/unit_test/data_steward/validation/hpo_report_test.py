@@ -1,6 +1,7 @@
 import unittest
 import os
 from data_steward.validation import hpo_report
+import constants.validation.hpo_report as consts
 
 hpo_name = 'HPO'
 folder = '2019-06-01/'
@@ -72,17 +73,20 @@ class HpoReportTest(unittest.TestCase):
             os.remove(self.render_output_path)
 
     def test_render(self):
-        r = hpo_report.render(hpo_name='Columbia',
-                              timestamp=timestamp,
-                              folder='2019-06-01-v2',
-                              results=results,
-                              errors=errors,
-                              warnings=warnings,
-                              duplicate_counts=duplicate_counts,
-                              heel_errors=heel_errors,
-                              drug_checks=drug_checks)
+        report_data = dict()
+        report_data[consts.HPO_NAME_REPORT_KEY] = 'Columbia'
+        report_data[consts.NONUNIQUE_KEY_METRICS_REPORT_KEY] = duplicate_counts
+        report_data[consts.PROCESSED_DATETIME_REPORT_KEY] = timestamp
+        report_data[consts.FOLDER_REPORT_KEY] = '2019-06-01-v2'
+        report_data['results'] = results
+        report_data['errors'] = errors
+        report_data['warnings'] = warnings
+        report_data[consts.HEEL_ERRORS_REPORT_KEY] = heel_errors
+        report_data[consts.DRUG_CLASS_METRICS_REPORT_KEY] = drug_checks
+        r = hpo_report.render(**report_data)
         with open(self.render_output_path, 'wb') as out_fp:
             out_fp.write(r)
+
         print r
 
     def tearDown(self):
