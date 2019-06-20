@@ -227,16 +227,22 @@ j4VOCNoJ+ljo/wE/8skeHh1pOAAAAABJRU5ErkJggg==">
     EHR Data Submission Report for {{ hpo_name }}
 </h1>
     <p>This report is for the EHR data submission uploaded to the
-        directory <code>{{ folder }}</code> and is current as of {{ timestamp }}. Visit the
+        directory <b>{{ folder }}</b> and is current as of <b>{{ timestamp }}</b>. Visit the
         <a href="https://sites.google.com/view/ehrupload">EHR Operations Group Knowledge Repository</a> for more
         information on data submission and evaluation procedures.
     </p>
-{% if not report_complete %}
-    <div class="alert alert-warning">
-    This report may be incomplete because the submission is still being processed. Please check for an updated report
-        in a few hours.
+{% if submission_error is defined %}
+    <div class="alert alert-danger">
+        Validation failed for the following reason: {{ submission_error }}.
     </div>
 {%  endif %}
+{% if error_occurred %}
+<div class="alert alert-warning">
+This report may be incomplete because the submission is still being processed. Please check for an updated report
+    in a few hours.
+</div>
+{%  endif %}
+
 <h2><a name="file-summary">File Summary</a></h2>
 <table class="table table-sm table-fixed table-striped table-hover result">
     <thead class="thead-dark">

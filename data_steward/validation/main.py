@@ -301,12 +301,12 @@ def process_hpo(hpo_id, force_run=False):
     else:
         report_data = validate_submission(hpo_id, bucket, bucket_items, folder_prefix)
         processed_datetime_str = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-        report_data[report_consts.PROCESSED_DATETIME_REPORT_KEY] = processed_datetime_str
+        error_occurred = False
 
         # TODO separate query generation, query execution, writing to GCS
-        report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
         report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
-
+        report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
+        report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_datetime_str
         try:
             # TODO modify achilles to run successfully when tables are empty
             # achilles queries will raise exceptions (e.g. division by zero) if files not present
@@ -319,7 +319,8 @@ def process_hpo(hpo_id, force_run=False):
                 heel_error_query = get_heel_error_query(hpo_id)
                 report_data[report_consts.HEEL_ERRORS_REPORT_KEY] = query_rows(heel_error_query)
             else:
-                logging.info('Required files not loaded in %s. Skipping achilles.', folder_prefix)
+                report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY] = 'Required files are missing'
+                logging.info('Required files are missing in %s. Skipping achilles.', folder_prefix)
 
             # non-unique key metrics
             logging.info('Getting non-unique key stats for %s...' % hpo_id)
@@ -334,17 +335,18 @@ def process_hpo(hpo_id, force_run=False):
             logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
                          bucket, processed_datetime_str, folder_prefix + common.PROCESSED_TXT)
             _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, processed_datetime_str)
-
-            report_data[report_consts.COMPLETE_REPORT_KEY] = True
         except HttpError as err:
             # cloud error occurred- log details for troubleshooting
             logging.error('Failed to generate full report due to the following cloud error:\n\n%s' % err.content)
+            error_occurred = True
+
             # re-raise error
             raise err
         finally:
             # report all results collected (attempt even if cloud error occurred)
             logging.info('Creating report for hpo %s to %s' % (hpo_id, folder_prefix))
-            results_html = hpo_report.render(**report_data)
+            report_data[report_consts.ERROR_OCCURRED_REPORT_KEY] = error_occurred
+            results_html = hpo_report.render(report_data)
             _write_string_to_file(bucket, folder_prefix + common.RESULTS_HTML, results_html)
 
 
