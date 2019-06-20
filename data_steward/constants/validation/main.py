@@ -59,7 +59,7 @@ DRUG_CHECKS_QUERY_VALIDATION = '''
             `{project_id}.{dataset_id}.concept_ancestor` AS ancestor
         ON
             ancestor.descendant_concept_id = drug_exposure.drug_concept_id
-        JOIN 
+        RIGHT JOIN 
             `{project_id}.{dataset_id}.drug_class` AS concept_classes
         ON
             concept_classes.concept_id = ancestor.ancestor_concept_id
