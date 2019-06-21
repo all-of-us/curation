@@ -2,7 +2,7 @@
 
 dataset="test_rdr"
 result_bucket="drc_curation_internal_test"
-vocab_dataset="vocabulary20180104"
+vocab_dataset="vocabulary20190423"
 
 USAGE="
 Usage: run_achilles_report.sh
@@ -76,3 +76,5 @@ python run_achilles_and_export.py --bucket=${result_bucket} --folder=${dataset}
 
 unset PYTHONPATH
 deactivate
+
+rm -rf curation_env
