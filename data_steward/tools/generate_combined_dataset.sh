@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# This script automates the curation playbook (https://docs.google.com/document/d/1QnwUhJmrVc9JNt64goeRw-K7490gbaF7DsYhTTt9tUo/edit#heading=h.k24j7tgoprtn)
+# This Script automates the process of combining ehr and rdr datasets
 
 app_id="aou-res-curation-test"
 vocab_dataset="vocabulary20190423"

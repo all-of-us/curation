@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# This script automates the curation playbook (https://docs.google.com/document/d/1QnwUhJmrVc9JNt64goeRw-K7490gbaF7DsYhTTt9tUo/edit#heading=h.k24j7tgoprtn)
-# It assuming steps 1-3 are already done via a daily cron job. This script automates 4-7.
+# This Script automates the process of de-identification of the combined_dataset
 
 app_id="aou-res-curation-test"
 vocab_dataset="vocabulary20190423"
