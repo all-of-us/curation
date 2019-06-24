@@ -16,14 +16,14 @@ FOREIGN_KEYS_FIELDS = ['person_id', 'visit_occurrence_id',
                        'location_id', 'care_site_id', 'provider_id']
 
 INVALID_FOREIGN_KEY_QUERY = (
-    'SELECT {cols}'
+    'SELECT {cols} '
     'FROM {project}.{dataset_id}.{table_name} t '
     '{join_expr}'
 )
 
 LEFT_JOIN = (
-    'LEFT JOIN {dataset_id}.{table} {prefix}'
-    'ON t.{field} = {prefix}.{field}'
+    'LEFT JOIN {dataset_id}.{table} {prefix} '
+    'ON t.{field} = {prefix}.{field} '
 )
 
 
