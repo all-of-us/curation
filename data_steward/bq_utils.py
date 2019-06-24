@@ -113,7 +113,7 @@ def load_csv(schema_path,
              project_id,
              dataset_id,
              table_id,
-             write_disposition='WRITE_TRUNCATE',
+             write_disposition=bq_consts.WRITE_TRUNCATE,
              allow_jagged_rows=False):
     """
     Load csv file from a bucket into a table in bigquery
@@ -136,7 +136,7 @@ def load_csv(schema_path,
                 'tableId': table_id},
             'skipLeadingRows': 1,
             'allowQuotedNewlines': True,
-            'writeDisposition': 'WRITE_TRUNCATE',
+            'writeDisposition': bq_consts.WRITE_TRUNCATE,
             'allowJaggedRows': allow_jagged_rows,
             'sourceFormat': 'CSV'
             }
@@ -334,7 +334,7 @@ def query(q,
           use_legacy_sql=False,
           destination_table_id=None,
           retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
-          write_disposition='WRITE_EMPTY',
+          write_disposition=bq_consts.WRITE_EMPTY,
           destination_dataset_id=None,
           batch=None):
     """
