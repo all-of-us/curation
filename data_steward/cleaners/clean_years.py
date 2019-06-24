@@ -4,30 +4,30 @@ Using rule 18, 19 in Achilles Heel for reference
 """
 
 # Project imports
-import bq_utils
+import constants.cleaners.clean_cdr as cdr_consts
 import resources
 
 person = 'person'
 MIN_YEAR_OF_BIRTH = 1800
 MAX_YEAR_OF_BIRTH = 2019
 
-DELETE_YEAR_OF_BIRTH_TABLE_ROWS = '''
-    DELETE
-    FROM `{project_id}.{dataset_id}.{table}`
-    WHERE person_id
-    IN
-    (SELECT person_id
-    FROM `{project_id}.{dataset_id}.{person_table}` p
-    WHERE p.year_of_birth < {MIN_YEAR_OF_BIRTH}
-    OR p.year_of_birth > {MAX_YEAR_OF_BIRTH})
-    '''
+DELETE_YEAR_OF_BIRTH_TABLE_ROWS = (
+    'DELETE '
+    'FROM `{project_id}.{dataset_id}.{table}` '
+    'WHERE person_id '
+    'IN '
+    '(SELECT person_id '
+    'FROM `{project_id}.{dataset_id}.{person_table}` p '
+    'WHERE p.year_of_birth < {MIN_YEAR_OF_BIRTH} '
+    'OR p.year_of_birth > {MAX_YEAR_OF_BIRTH}) '
+)
 
-DELETE_YEAR_OF_BIRTH_PERSON_ROWS = '''
-    DELETE
-    FROM `{project_id}.{dataset_id}.{person_table}` p
-    WHERE p.year_of_birth < {MIN_YEAR_OF_BIRTH}
-    OR p.year_of_birth > {MAX_YEAR_OF_BIRTH})
-    '''
+DELETE_YEAR_OF_BIRTH_PERSON_ROWS = (
+    'DELETE '
+    'FROM `{project_id}.{dataset_id}.{person_table}` p '
+    'WHERE p.year_of_birth < {MIN_YEAR_OF_BIRTH} '
+    'OR p.year_of_birth > {MAX_YEAR_OF_BIRTH}) '
+)
 
 
 def has_person_id_key(table):
@@ -56,20 +56,21 @@ def get_year_of_birth_queries(project_id, dataset_id):
     queries = []
     for table in resources.CDM_TABLES:
         if has_person_id_key(table):
-            if bq_utils.table_exists(table, dataset_id):
-                query = DELETE_YEAR_OF_BIRTH_TABLE_ROWS.format(project_id=project_id,
-                                                               dataset_id=dataset_id,
-                                                               table=table,
-                                                               person_table=person,
-                                                               MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
-                                                               MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
-                queries.append(query)
-    query = DELETE_YEAR_OF_BIRTH_PERSON_ROWS.format(project_id=project_id,
-                                                    dataset_id=dataset_id,
-                                                    person_table=person,
-                                                    MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
-                                                    MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
-    queries.append(query)
+            query = dict()
+            query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_TABLE_ROWS.format(project_id=project_id,
+                                                                             dataset_id=dataset_id,
+                                                                             table=table,
+                                                                             person_table=person,
+                                                                             MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
+                                                                             MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
+            queries.append(query)
+    person_query = dict()
+    person_query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_PERSON_ROWS.format(project_id=project_id,
+                                                                      dataset_id=dataset_id,
+                                                                      person_table=person,
+                                                                      MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
+                                                                      MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
+    queries.append(person_query)
     return queries
 
 
