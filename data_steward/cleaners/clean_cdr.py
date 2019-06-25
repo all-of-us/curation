@@ -14,6 +14,7 @@ import id_deduplicate as id_dedup
 import null_invalid_foreign_keys as null_foreign_key
 import clean_years
 import negative_ages as neg_ages
+import temporal_consistency as bad_end_dates
 
 # import constants.bq_utils as bq_consts
 
@@ -45,6 +46,7 @@ def _gather_rdr_queries(project, dataset):
     query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
     query_list.extend(clean_years.get_year_of_birth_queries(project, dataset))
     query_list.extend(neg_ages.get_negative_ages_queries(project, dataset))
+    query_list.extend(bad_end_dates.get_bad_end_date_queries(project, dataset))
     return query_list
 
 
@@ -61,6 +63,7 @@ def _gather_ehr_rdr_queries(project, dataset):
     query_list.extend(null_foreign_key.null_invalid_foreign_keys(project, dataset))
     query_list.extend(clean_years.get_year_of_birth_queries(project, dataset))
     query_list.extend(neg_ages.get_negative_ages_queries(project, dataset))
+    query_list.extend(bad_end_dates.get_bad_end_date_queries(project, dataset))
     return query_list
 
 
@@ -76,6 +79,7 @@ def _gather_ehr_rdr_de_identified_queries(project, dataset):
     query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
     query_list.extend(clean_years.get_year_of_birth_queries(project, dataset))
     query_list.extend(neg_ages.get_negative_ages_queries(project, dataset))
+    query_list.extend(bad_end_dates.get_bad_end_date_queries(project, dataset))
     return query_list
 
 
@@ -91,6 +95,7 @@ def _gather_unioned_ehr_queries(project, dataset):
     query_list.extend(id_dedup.get_id_deduplicate_queries(project, dataset))
     query_list.extend(clean_years.get_year_of_birth_queries(project, dataset))
     query_list.extend(neg_ages.get_negative_ages_queries(project, dataset))
+    query_list.extend(bad_end_dates.get_bad_end_date_queries(project, dataset))
     return query_list
 
 
