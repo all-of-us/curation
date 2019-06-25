@@ -6,6 +6,7 @@ Also ensure ages are not beyond 150.
 
 # Project imports
 import bq_utils
+import constants.cleaners.clean_cdr as cdr_consts
 
 # tables to consider, along with their date/start date fields
 date_fields = {'observation_period': 'observation_period_start_date',
@@ -23,40 +24,40 @@ person = 'person'
 MAX_AGE = 150
 
 # negative age at recorded time in table
-NEGATIVE_AGES_QUERY = '''
-DELETE
-FROM `{project_id}.{dataset_id}.{table_name}`
-WHERE {table}_id IN
-(SELECT t.{table}_id
-FROM `{project_id}.{dataset_id}.{table_name}` t
-JOIN `{project_id}.{dataset_id}.{person_table_name}` p
-ON t.person_id = p.person_id
-WHERE t.{table_date} < DATE(p.birth_datetime))
-'''
+NEGATIVE_AGES_QUERY = (
+    'DELETE '
+    'FROM `{project_id}.{dataset_id}.{table_name}` '
+    'WHERE {table}_id IN '
+    '(SELECT t.{table}_id '
+    'FROM `{project_id}.{dataset_id}.{table_name}` t '
+    'JOIN `{project_id}.{dataset_id}.{person_table_name}` p '
+    'ON t.person_id = p.person_id '
+    'WHERE t.{table_date} < DATE(p.birth_datetime)) '
+)
 
 # age > MAX_AGE (=150) at recorded time in table
-MAX_AGE_QUERY = '''
-DELETE
-FROM `{project_id}.{dataset_id}.{table_name}`
-WHERE {table}_id IN
-(SELECT t.{table}_id
-FROM `{project_id}.{dataset_id}.{table_name}` t
-JOIN `{project_id}.{dataset_id}.{person_table_name}` p
-ON t.person_id = p.person_id
-WHERE EXTRACT(YEAR FROM t.{table_date}) - EXTRACT(YEAR FROM p.birth_datetime) > {MAX_AGE})
-'''
+MAX_AGE_QUERY = (
+    'DELETE '
+    'FROM `{project_id}.{dataset_id}.{table_name}` '
+    'WHERE {table}_id IN '
+    '(SELECT t.{table}_id '
+    'FROM `{project_id}.{dataset_id}.{table_name}` t '
+    'JOIN `{project_id}.{dataset_id}.{person_table_name}` p '
+    'ON t.person_id = p.person_id '
+    'WHERE EXTRACT(YEAR FROM t.{table_date}) - EXTRACT(YEAR FROM p.birth_datetime) > {MAX_AGE}) '
+)
 
 # negative age at death
-NEGATIVE_AGE_DEATH_QUERY = '''
-DELETE
-FROM `{project_id}.{dataset_id}.{table_name}`
-WHERE person_id IN
-(SELECT d.person_id
-FROM `{project_id}.{dataset_id}.{table_name}` d
-JOIN `{project_id}.{dataset_id}.{person_table_name}` p
-ON d.person_id = p.person_id
-WHERE d.death_date < DATE(p.birth_datetime))
-'''
+NEGATIVE_AGE_DEATH_QUERY = (
+    'DELETE '
+    'FROM `{project_id}.{dataset_id}.{table_name}` '
+    'WHERE person_id IN '
+    '(SELECT d.person_id '
+    'FROM `{project_id}.{dataset_id}.{table_name}` d '
+    'JOIN `{project_id}.{dataset_id}.{person_table_name}` p '
+    'ON d.person_id = p.person_id '
+    'WHERE d.death_date < DATE(p.birth_datetime)) '
+)
 
 
 def get_negative_ages_queries(project_id, dataset_id):
@@ -70,57 +71,58 @@ def get_negative_ages_queries(project_id, dataset_id):
     """
     queries = []
     for table in date_fields:
-        if 'unioned' in dataset_id:
-            table_name = 'unioned_ehr_{table}'.format(table=table)
-            person_table_name = 'unioned_ehr_{table}'.format(table=person)
-        else:
-            table_name = table
-            person_table_name = person
+        query_na = dict()
+        query_ma = dict()
+        table_name = table
+        person_table_name = person
         if bq_utils.table_exists(table_name, dataset_id):
-            query_na = NEGATIVE_AGES_QUERY.format(project_id=project_id,
-                                                  dataset_id=dataset_id,
-                                                  table_name=table_name,
-                                                  table=table,
-                                                  person_table_name=person_table_name,
-                                                  table_date=date_fields[table])
-            query_ma = MAX_AGE_QUERY.format(project_id=project_id,
-                                            dataset_id=dataset_id,
-                                            table_name=table_name,
-                                            table=table,
-                                            person_table_name=person_table_name,
-                                            table_date=date_fields[table],
-                                            MAX_AGE=MAX_AGE)
+            query_na[cdr_consts.QUERY] = NEGATIVE_AGES_QUERY.format(project_id=project_id,
+                                                                    dataset_id=dataset_id,
+                                                                    table_name=table_name,
+                                                                    table=table,
+                                                                    person_table_name=person_table_name,
+                                                                    table_date=date_fields[table])
+            query_ma[cdr_consts.QUERY] = MAX_AGE_QUERY.format(project_id=project_id,
+                                                              dataset_id=dataset_id,
+                                                              table_name=table_name,
+                                                              table=table,
+                                                              person_table_name=person_table_name,
+                                                              table_date=date_fields[table],
+                                                              MAX_AGE=MAX_AGE)
             queries.extend([query_na, query_ma])
 
     # query for death before birthdate
     table = 'death'
+    query = dict()
     if 'unioned' in dataset_id:
         table_name = 'unioned_ehr_{table}'.format(table=table)
         person_table_name = 'unioned_ehr_{table}'.format(table=person)
     else:
         table_name = table
         person_table_name = person
-    query = NEGATIVE_AGE_DEATH_QUERY.format(project_id=project_id,
-                                            dataset_id=dataset_id,
-                                            table_name=table_name,
-                                            person_table_name=person_table_name)
+    query[cdr_consts.QUERY] = NEGATIVE_AGE_DEATH_QUERY.format(project_id=project_id,
+                                                              dataset_id=dataset_id,
+                                                              table_name=table_name,
+                                                              person_table_name=person_table_name)
     queries.append(query)
     return queries
 
 
 if __name__ == '__main__':
     import argparse
-    import clean_cdr_engine
+    import clean_cdr_engine as clean_engine
 
     parser = argparse.ArgumentParser(description='Parse project_id and dataset_id',
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-p', '--project_id',
                         action='store', dest='project_id',
-                        help='Project associated with the input and output datasets')
+                        help='Project associated with the input and output datasets', required=True)
     parser.add_argument('-d', '--dataset_id',
                         action='store', dest='dataset_id',
-                        help='Dataset where cleaning rules are to be applied')
+                        help='Dataset where cleaning rules are to be applied', required=True)
+    parser.add_argument('-s', action='store_true', help='Send logs to console')
     args = parser.parse_args()
+    clean_engine.add_console_logging(args.s)
     if args.dataset_id:
         query_list = get_negative_ages_queries(args.project_id, args.dataset_id)
-        clean_cdr_engine.clean_dataset(args.project_id, args.dataset_id, query_list)
+        clean_engine.clean_dataset(args.project_id, args.dataset_id, query_list)
