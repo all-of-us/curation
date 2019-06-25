@@ -127,7 +127,7 @@ def get_bad_end_date_queries(project_id, dataset_id):
 
 if __name__ == '__main__':
     import argparse
-    import clean_cdr_engine
+    import clean_cdr_engine as clean_engine
 
     parser = argparse.ArgumentParser(description='Parse project_id and dataset_id',
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -139,8 +139,9 @@ if __name__ == '__main__':
                         action='store', dest='dataset_id',
                         help='Dataset where cleaning rules are to be applied',
                         required=True)
+    parser.add_argument('-s', action='store_true', help='Send logs to console')
     args = parser.parse_args()
+    clean_engine.add_console_logging(args.s)
     if args.dataset_id:
         query_list = get_bad_end_date_queries(args.project_id, args.dataset_id)
-        print(query_list)
-        clean_cdr_engine.clean_dataset(args.project_id, args.dataset_id, query_list)
+        clean_engine.clean_dataset(args.project_id, args.dataset_id, query_list)
