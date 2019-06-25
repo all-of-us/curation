@@ -260,29 +260,16 @@ class ValidationTest(unittest.TestCase):
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
     @mock.patch('api_util.check_cron')
-    def test_curation_report_ignored(self, mock_check_cron):
-        exclude_file_list = ["person.csv"]
-        exclude_file_list = [self.folder_prefix + item for item in exclude_file_list]
-        expected_result_items = []
-        for file_name in exclude_file_list:
-            test_util.write_cloud_str(self.hpo_bucket, file_name, ".")
-
-        main.app.testing = True
-        with main.app.test_client() as c:
-            c.get(test_util.VALIDATE_HPO_FILES_URL)
-
-        # check content of the bucket is correct
-        expected_bucket_items = exclude_file_list + [self.folder_prefix + item for item in resources.IGNORE_LIST]
-        list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
-        actual_bucket_items = [item['name'] for item in list_bucket_result]
-        actual_bucket_items = [item for item in actual_bucket_items
-                               if not main._is_string_excluded_file(item[len(self.folder_prefix):])]
-        self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
-
-        # check that the errors file is empty
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)
-        self.assertListEqual(expected_result_items, r['errors'])
+    def test_categorize_folder_items(self, mock_check_cron):
+        expected_cdm_files = ['person.csv']
+        expected_pii_files = ['pii_email.csv']
+        expected_unknown_files = ['random.csv']
+        ignored_files = ['curation_report/index.html']
+        folder_items = expected_cdm_files + expected_pii_files + expected_unknown_files + ignored_files
+        cdm_files, pii_files, unknown_files = main.categorize_folder_items(folder_items)
+        self.assertListEqual(expected_cdm_files, cdm_files)
+        self.assertListEqual(expected_pii_files, pii_files)
+        self.assertListEqual(expected_unknown_files, unknown_files)
 
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
@@ -510,6 +497,7 @@ class ValidationTest(unittest.TestCase):
                                      .format(call))
 
     def test_add_table_in_results_html(self):
+
         pass
 
     def tearDown(self):
