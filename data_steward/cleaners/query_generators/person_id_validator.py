@@ -7,6 +7,8 @@ Run the person_id validation clean rule.
     Keep PPI records.
 """
 
+import constants.bq_utils as bq_consts
+import constants.cleaners.clean_cdr as clean_consts
 import resources
 
 MAPPED_VALIDATION_TABLES = [
@@ -30,7 +32,7 @@ UNMAPPED_VALIDATION_TABLES = [
 # Find all mappings like ehr
 # Join the table with consented participants and join again with mappings
 NOT_CONSENTING_PERSON_IDS = (
-'WITH consented AS ( '
+    'WITH consented AS ( '
         'SELECT person_id '
         'FROM ( '
             'SELECT person_id, value_source_concept_id, observation_datetime, '
@@ -40,7 +42,7 @@ NOT_CONSENTING_PERSON_IDS = (
             'FROM `{project}.{dataset}.observation` '
             'WHERE observation_source_value = \'EHRConsentPII_ConsentPermission\')'
         'WHERE rn=1 AND value_source_concept_id = 1586100),'
-'unconsented AS ( '
+    'unconsented AS ( '
         'SELECT person_id '
         'FROM ( '
             'SELECT person_id, value_source_concept_id, observation_datetime, '
@@ -50,19 +52,19 @@ NOT_CONSENTING_PERSON_IDS = (
             'FROM `{project}.{dataset}.observation` '
             'WHERE observation_source_value = \'EHRConsentPII_ConsentPermission\')'
         'WHERE rn=1 AND value_source_concept_id != 1586100),'
-'ppi_mappings AS ( '
-    'SELECT {table}_id '
-    'FROM `{project}.{dataset}._mapping_{table}` '
-    'WHERE src_dataset_id not like \'%ehr%\') '
-# get all consented rows
-'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
-'RIGHT JOIN consented AS cons '
-'ON entry.person_id = cons.person_id '
-'UNION ALL '
-# get all unconsented non-ehr rows
-'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
-'RIGHT JOIN unconsented as cons on entry.person_id = cons.person_id '
-'JOIN ppi_mappings AS maps ON maps.{table}_id = entry.{table}_id '
+    'ppi_mappings AS ( '
+        'SELECT {table}_id '
+        'FROM `{project}.{dataset}._mapping_{table}` '
+        'WHERE src_dataset_id not like \'%ehr%\') '
+    # get all consented rows
+    'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
+    'RIGHT JOIN consented AS cons '
+    'ON entry.person_id = cons.person_id '
+    'UNION ALL '
+    # get all unconsented non-ehr rows
+    'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
+    'RIGHT JOIN unconsented as cons on entry.person_id = cons.person_id '
+    'JOIN ppi_mappings AS maps ON maps.{table}_id = entry.{table}_id '
 )
 
 # drop rows of person_ids not in the person table
@@ -97,16 +99,17 @@ def get_person_id_validation_queries(project=None, dataset=None):
         fields = ', '.join(field_names)
         consent_query = NOT_CONSENTING_PERSON_IDS.format(
             project=project,
-            dataset=dataset, table=table,
-            mapping_dataset=mapping_ds
+            dataset=dataset,
+            table=table,
+            mapping_dataset=mapping_ds,
             fields=fields,
         )
 
         query_dict = {
-            'query': consent_query,
-            'destination_table_id': table,
-            'destination_dataset_id': dataset,
-            'write_disposition': 'WRITE_TRUNCATE',
+            clean_consts.QUERY: consent_query,
+            clean_consts.DESTINATION_TABLE: table,
+            clean_consts.DESTINATION_DATASET: dataset,
+            clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
         }
         query_list.append(query_dict)
 
@@ -123,10 +126,10 @@ def get_person_id_validation_queries(project=None, dataset=None):
         )
 
         query_dict = {
-            'query': delete_query,
-            'destination_table_id': table,
-            'destination_dataset_id': dataset,
-            'write_disposition': 'WRITE_TRUNCATE',
+            clean_consts.QUERY: delete_query,
+            clean_consts.DESTINATION_TABLE: table,
+            clean_consts.DESTINATION_DATASET: dataset,
+            clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
         }
         query_list.append(query_dict)
 
