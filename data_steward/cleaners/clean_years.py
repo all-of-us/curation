@@ -3,6 +3,7 @@ Year of birth should not be in the future (as of writing this, 2019) or before 1
 Using rule 18, 19 in Achilles Heel for reference
 """
 
+import bq_utils
 # Project imports
 import constants.cleaners.clean_cdr as cdr_consts
 import resources
@@ -56,27 +57,28 @@ def get_year_of_birth_queries(project_id, dataset_id):
     queries = []
     for table in resources.CDM_TABLES:
         if has_person_id_key(table):
-            query = dict()
-            query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_TABLE_ROWS.format(project_id=project_id,
+            if bq_utils.table_exists(table, dataset_id):
+                query = dict()
+                query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_TABLE_ROWS.format(project_id=project_id,
+                                                                                 dataset_id=dataset_id,
+                                                                                 table=table,
+                                                                                 person_table=person,
+                                                                                 MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
+                                                                                 MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
+                queries.append(query)
+    person_query = dict()
+    person_query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_PERSON_ROWS.format(project_id=project_id,
                                                                              dataset_id=dataset_id,
-                                                                             table=table,
                                                                              person_table=person,
                                                                              MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
                                                                              MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
-            queries.append(query)
-    person_query = dict()
-    person_query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_PERSON_ROWS.format(project_id=project_id,
-                                                                      dataset_id=dataset_id,
-                                                                      person_table=person,
-                                                                      MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
-                                                                      MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
     queries.append(person_query)
     return queries
 
 
 if __name__ == '__main__':
     import argparse
-    import clean_cdr_engine
+    import clean_cdr_engine as clean_engine
 
     parser = argparse.ArgumentParser(description='Parse project_id and dataset_id',
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -86,7 +88,9 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dataset_id',
                         action='store', dest='dataset_id',
                         help='Dataset where cleaning rules are to be applied')
+    parser.add_argument('-s', action='store_true', help='Send logs to console')
     args = parser.parse_args()
+    clean_engine.add_console_logging(args.s)
     if args.dataset_id:
         query_list = get_year_of_birth_queries(args.project_id, args.dataset_id)
-        clean_cdr_engine.clean_dataset(args.project_id, args.dataset_id, query_list)
+        clean_engine.clean_dataset(args.project_id, args.dataset_id, query_list)
