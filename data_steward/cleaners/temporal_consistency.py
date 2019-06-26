@@ -13,6 +13,7 @@ End dates should not be prior to start dates in any table
 import bq_utils
 import constants.cleaners.clean_cdr as cdr_consts
 import constants.bq_utils as bq_consts
+import resources
 
 table_dates = {'condition_occurrence': ['condition_start_date', 'condition_end_date'],
                'drug_exposure': ['drug_exposure_start_date', 'drug_exposure_end_date'],
@@ -20,9 +21,10 @@ table_dates = {'condition_occurrence': ['condition_start_date', 'condition_end_d
 
 visit_occurrence = 'visit_occurrence'
 placeholder_date = '1900-01-01'
+end_date = 'end_date'
 
 NULL_BAD_END_DATES = (
-    'SELECT l.* '
+    'SELECT {cols} '
     'FROM `{project_id}.{dataset_id}.{table}` l '
     'LEFT JOIN (SELECT * '
     'FROM `{project_id}.{dataset_id}.{table}` '
@@ -104,9 +106,16 @@ def get_bad_end_date_queries(project_id, dataset_id):
     queries = []
     for table in table_dates:
         if bq_utils.table_exists(table, dataset_id):
+            fields = resources.fields_for(table)
+            # Generate column expressions for select
+            col_exprs = ['r.'+field['name'] if field['name'] == table_dates[table][1]
+                         else 'l.'+field['name']
+                         for field in fields]
+            cols = ', '.join(col_exprs)
             query = dict()
             query[cdr_consts.QUERY] = NULL_BAD_END_DATES.format(project_id=project_id,
                                                                 dataset_id=dataset_id,
+                                                                cols=cols,
                                                                 table=table,
                                                                 table_start_date=table_dates[table][0],
                                                                 table_end_date=table_dates[table][1])
