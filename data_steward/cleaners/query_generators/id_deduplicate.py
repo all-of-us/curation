@@ -51,6 +51,7 @@ def get_id_deduplicate_queries(project_id, dataset_id):
 
 if __name__ == '__main__':
     import args_parser as parser
+    import cleaners.clean_cdr_engine as clean_engine
 
     query_list = get_id_deduplicate_queries(parser.args.project_id, parser.args.dataset_id)
     parser.clean_engine.clean_dataset(parser.args.project_id, parser.args.dataset_id, query_list)
