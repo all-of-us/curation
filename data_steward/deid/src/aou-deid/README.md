@@ -1,4 +1,4 @@
-#AOU - De-identification Engine
+# AOU - De-identification Engine
 
 This engine will run de-identificataion rules againsts a given table, certain rules are applied to all tables (if possible)
 We have devided rules and application of the rules, in order to have granular visibility into what is happening (for the benefit of the testing team)
@@ -24,12 +24,13 @@ DESIGN:
 
     - The constraints:
     
-        1. There is a disturbing misuse of bigquery as a database (it's a warehouse). To grasp the grotesquery of this it's important to consider the difference between a database and a data warehouse.
-        That being said I will not lecture here about the lack of data integrity support and how it lends itself to uncontrollable information redundancies and proliferation which defies which doesn't help at all.
-        The point of a relational model/database is rapid information retrieval and thus an imperative to reduce redundancies via normalization.
+        1. Bigquery is designed to be used as a wharehouse not an RDBMS (misuse of technology).That being said 
+            a. it lends itself to uncontrollable information redundancies and proliferation which defies the purpose of an RDBMS.
+            b. The use of relational concepts such as foreign keys are pointless in addition to the fact that there is not referential integrity support in bigquery.
+            As a result thre is no mechanism that guarantees data-integrity.
     
 
-        2. There is much cluelessness around testing methods/techniques of databases like using/defining equivalence classes, orthogonal arrays...
+        2. The testing team does not use industry standard testing techniques like defining equivalence classes, orthogonal arrays...
         As such we have a method "simulate" that acts as a sampler to provide some visibility into what this engine has done given an attribute and the value space of the data.
         This is by no means a silver bullet and adds to data redundancies (alas) if falls in the wrong hands shit will hit the fan
    
@@ -53,7 +54,7 @@ NOTES:
 
 USAGE :
     
-    python aou.py --rules <path.json> --idataset <name> --private_key <file> --table <table.json> --action [submit,simulate|debug] [--parition] [--log <path>]
+    python aou.py --rules <path.json> --idataset <name> --private_key <file> --table <table.json> --action [submit,simulate|debug] [--cluster] [--log <path>]
 
     --rule  will point to the JSON file contianing rules
         --idataset  name of the input dataset (an output dataset with suffix _deid will be generated)
@@ -63,4 +64,4 @@ USAGE :
                         simulate    will generate simulation without creating an output table
                         submit      will create an output table
                         debug       will just print output without simulation or submit (runs alone)
-    
+        --cluster     This flag enables clustering on person_id 

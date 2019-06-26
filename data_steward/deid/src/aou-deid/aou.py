@@ -78,7 +78,7 @@ class aou (Press):
         self.credentials    = service_account.Credentials.from_service_account_file(args['private_key'])
         self.private_key = args['private_key']
         self.odataset  = self.idataset+'_deid'
-        self.partition = 'parition' in args    
+        self.partition = 'cluster' in args    
         self.priority = 'BATCH' if 'interactive' not in args else 'INTERACTIVE'
         if 'shift' in self.deid_rules :
             #
