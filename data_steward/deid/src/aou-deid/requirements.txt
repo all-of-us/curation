@@ -1,0 +1,11 @@
+google-api-core==1.9.0
+google-auth==1.6.3
+google-auth-oauthlib==0.3.0
+google-cloud-bigquery==1.11.2
+google-cloud-core==0.29.1
+google-resumable-media==0.3.2
+googleapis-common-protos==1.5.9
+numpy==1.16.3
+pandas==0.24.2
+pandas-gbq==0.10.0
+pydata-google-auth==0.1.3

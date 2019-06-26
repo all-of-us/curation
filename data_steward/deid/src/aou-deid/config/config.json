@@ -1,0 +1,94 @@
+[
+	{
+		"_id":"generalize",
+		"RACE":[
+			{
+				
+				"values":["WhatRaceEthnicity_AIAN"," WhatRaceEthnicity_NHPI"," WhatRaceEthnicity_MENA"," WhatRaceEthnicity_RaceEthnicityNoneOfThese"],
+				"into":"OTHER",
+				"qualifier":"IN"
+			
+			},
+			{
+				"apply":"COUNT",
+				"into":"MULTIRACIAL",
+				"on":["WhatRaceEthnicity_AIAN"," WhatRaceEthnicity_NHPI"," WhatRaceEthnicity_MENA"," WhatRaceEthnicity_RaceEthnicityNoneOfThese"],
+				"qualifier":"> 1"
+			}
+		],
+		"ETHNICITY":[{"apply":"REGEXP","values":["hispanic","latin"],"into":"NON HISPANIC", "qualifier":"IS FALSE"}],
+		"SEXUAL-ORIENTATION":[
+			{
+				"qualifier":"IN",
+				"values":["PMI_Skip"," PMI_PreferNotToAnswer"," SexualOrientation_Gay"," SexualOrientation_Lesbian"," SexualOrientation_Bisexual"," SexualOrientation_None"],
+				"into":"OTHER"
+				}
+		],
+		"SEX-AT-BIRTH":[
+			{
+				"qualifier":"IN",
+				"values":["PMI_Skip"," PMI_PreferNotToAnswer"," SexAtBirth_Intersex"," SexAtBirth_SexAtBirthNoneOfThese"],
+				"into":"OTHER"
+			}	
+		],
+		"GENDER":[
+			{
+				"qualifier":"IN",
+				"values":["PMI_Skip"," PMI_PreferNotToAnswer"," GenderIdentity_AdditionalOptions"," GenderIdentity_NonBinary"," GenderIdentity_Transgender"],
+				"into":"OTHER"
+			},
+			{
+				"apply":"COUNT",
+				"into":"OTHER",
+				"qualifier":"> 1"
+
+			}
+		],
+		"EDUCATION":[
+			{
+				"qualifier":"IN",
+				"values":["HighestGrade_NeverAttended"," HighestGrade_OneThroughFour"," HighestGrade_FiveThroughEight"," HighestGrade_NineThroughEleven"],
+				"into":"UNKNOWN"
+			}
+		],
+		"EMPLOYMENT":[
+			{
+				"qualifier":"IN",
+				"values":["EmploymentStatus_Retired"," EmploymentStatus_Student"," EmploymentStatus_UnableToWork"," EmploymentStatus_Homemaker"," EmploymentStatus_OutOfWorkOneOrMore"],
+				"into":"UNKNOWN"
+			}
+		]
+	},
+	{
+	"_id":"suppress",
+		"DEMOGRAPHICS-COLUMNS":[
+			{"values": ["year_of_birth","month_of_birth","day_of_birth","race_concept_id","ethnicity_concept_id","location_id","provider_id","care_site_id","person_source_value","gender_source_value","gender_source_concept_id","race_source_value","race_source_concept_id","ethnicity_source_value","ethnicity_source_concept_id","cause_concept_id","cause_source_value","cause_source_concept_id","provider_id","care_site_id","provider_id","provider_id","visit_detail_id","provider_id","visit_detail_id","provider_id","provider_id","visit_detail_id","value_source_value","value_as_string","provider_id","visit_detail_id"]}
+		],
+		"ROWS":[
+			{"qualifier":"IN", "values": ["ExtraConsent_EverReceivedUPMCCare","ExtraConsent_ScheduledWithPACares","ArizonaSitePairing_AZSitepairingLocation","CaliforniaSitePairing_CaliforniaUniversityCare","SouthCarolinaSitePairing_EauClaire","SouthCarolinaSitePairing_EauClaireAppointment","ColumbiaSitePairing_ColumbiaCare","NewYorkSitePairing_HRHCare","CHCSitePairing_CHCCareatLocation","MichiganSitePairing_LiveInFollowingAreas","EastSoutheastMichigan_CareAtHenryFord","IllinoisSitePairing_IllinoisInstitution","TennesseeSitePairing_CherokeeHealthPatient","TexasSitePairing_BaylorScott","NewEnglandSitePairing_CareReceived","MississippiSitePairing_JacksonHinds","MississippiSitePairing_JacksonHindsAppointment","PIIName_First","PIIName_Middle","PIIName_Last","PIIAddress_StreetAddress","PIIAddress_StreetAddress2","StreetAddress_PIICity","StreetAddress_PIIZIP","PIIContactInformation_Phone","ConsentPII_EmailAddress","ExtraConsent_Signature","ExtraConsent_CABoRSignature","SanDiegoSitePairing_SanDiegoBloodBank","SitePairing_CurrentlyReside","ResideAZSArizona_AZSArizonaSpecific","ResideAZCArizona_AZCArizonaSpecific","EHRConsentPII_Signature","EHRConsentPII_ILHIPPAWitnessSignature","TheBasics_CountryBornTextBox","RaceEthnicityNoneOfThese_RaceEthnicityFreeTextBox","AIAN_AIANSpecific","Asian_AsianSpecific","Black_BlackSpecific","MENA_MENASpecific","NHPI_NHPISpecific","White_WhiteSpecific","Hispanic_HispanicSpecific","WhatTribeAffiliation_FreeText","AIANNoneOfTheseDescribeMe_AIANFreeText","NoneOfTheseDescribeMe_AsianFreeText","BlackNoneOfTheseDescribeMe_BlackFreeText","MENANoneOfTheseDescribeMe_MENAFreeText","NHPINoneOfTheseDescribeMe_NHPIFreeText","WhiteNoneOfTheseDescribeMe_WhiteFreeText","Gender_CloserGenderDescription","SpecifiedGender_SpecifiedGenderTextBox","GenderIdentity_SexualityCloserDescription","SomethingElse_SexualitySomethingElseTextBox","LivingSituation_CurrentLiving","LivingSituation_LivingSituationFreeText","SecondaryContactInfo_PersonOneFirstName","SecondaryContactInfo_PersonOneMiddleInitial","SecondaryContactInfo_PersonOneLastName","SecondaryContactInfo_PersonOneAddressOne","SecondaryContactInfo_PersonOneAddressTwo","PersonOneAddress_PersonOneAddressCity","PersonOneAddress_PersonOneAddressZipCode","SecondaryContactInfo_PersonOneEmail","SecondaryContactInfo_PersonOneTelephone","SecondaryContactInfo_SecondContactsFirstName","SecondaryContactInfo_SecondContactsMiddleInitial","SecondaryContactInfo_SecondContactsLastName","SecondaryContactInfo_SecondContactsAddressOne","SecondaryContactInfo_SecondContactsAddressTwo","SecondContactsAddress_SecondContactCity","SecondContactsAddress_SecondContactZipCode","SecondaryContactInfo_SecondContactsEmail","SecondaryContactInfo_SecondContactsNumber","SocialSecurity_SocialSecurityNumber","Employment_EmploymentWorkAddress","EmploymentWorkAddress_AddressLineOne","EmploymentWorkAddress_AddressLineTwo","EmploymentWorkAddress_City","EmploymentWorkAddress_ZipCode","EmploymentWorkAddress_Country","HispanicNoneOfTheseDescribeMe_HispanicFreeText","SexAtBirthNoneOfThese_SexAtBirthTextBox","ActiveDuty_AvtiveDutyServeStatus","OtherSpecify_OtherDrugsTextBox","OrganTransplantDescription_OtherOrgan","OrganTransplantDescription_OtherTissue","PersonalMedicalHistory_AdditionalDiagnosis","HowOldWereYouHypertension_FreeTextBox","HowOldWereYouHighCholesterol_FreeTextBox","HowOldWereYouHeartAttack_FreeTextBox","HowOldWereYouCoronaryArtery_FreeTextBox","HowOldWereYouCongestiveHeartFailure_FreeTextBox","HowOldWereYouAtrialFibrillation_FreeTextBox","HowOldWereYouHeartValveDisease_FreeTextBox","HowOldWereYouStroke_FreeTextBox","HowOldWereYouTransientIschemicAttack_FreeTextBox","HowOldWereYouPulmonaryEmbolism_FreeTextBox","HowOldPeripheralVascularDisease_FreeTextBox","HowOldWereYouAnemia_FreeTextBox","HowOldWereYouSickleCellDisease_FreeTextBox","HowOldWereYouBleedingDisorder_FreeTextBox","HowOldWereYouAsthma_FreeTextBox","HowOldWereYouChronicLung_FreeTextBox","HowOldWereYouSleepApnea_FreeTextBox","HowOldWereYouBladderCancer_FreeTextBox","HowOldWereYouBloodCancer_FreeTextBox","HowOldWereYouBoneCancer_FreeTextBox","HowOldWereYouBrainCancer_FreeTextBox","HowOldWereYouBreastCancer_FreeTextBox","HowOldWereYouCervicalCancer_FreeTextBox","HowOldWereYouColonRectalCancer_FreeTextBox","HowOldWereYouEndocrineCancer_FreeTextBox","HowOldWereYouEndometrialCancer_FreeTextBox","HowOldWereYouEsophagealCancer_FreeTextBox","HowOldWereYouEyeCancer_FreeTextBox","HowOldWereYouHeadNeckCancer_FreeTextBox","HowOldWereYouKidneyCancer_FreeTextBox","HowOldWereYouLungCancer_FreeTextBox","HowOldWereYouPancreaticCancer_FreeTextBox","HowOldWereYouProstateCancer_FreeTextBox","HowOldWereYouSkinCancer_FreeTextBox","HowOldWereYouStomachCancer_FreeTextBox","HowOldWereYouThyroidCancer_FreeTextBox","HowOldWereYouOtherCancer_FreeTextBox","HowOldWereYouAcidReflux_FreeTextBox","HowOldWereYouBowelObstruction_FreeTextBox","HowOldWereYouColonPolyps_FreeTextBox","HowOldWereYouCrohnsDisease_FreeTextBox","HowOldWereYouDiverticulosis_FreeTextBox","HowOldWereYouGallStones_FreeTextBox","HowOldWereYouHemorrhoids_FreeTextBox","HowOldWereYouHernia_FreeTextBox","HowOldWereYouIrritableBowel_FreeTextBox","HowOldWereYouLiverCondition_FreeTextBox","HowOldWereYouPancreatitis_FreeTextBox","HowOldWereYouPepticUlcers_FreeTextBox","HowOldWereYouUlcerativeColitis_FreeTextBox","HowOldWereYouHyperthyroidism_FreeTextBox","HowOldWereYouHypothyroidism_FreeTextBox","HowOldWereYouOtherThyroid_FreeTextBox","HowOldWereYouType1Diabetes_FreeTextBox","HowOldWereYouType2Diabetes_FreeTextBox","HowOldWereYouPreDiabetes_FreeTextBox","HowOldWereYouOtherDiabetes_FreeTextBox","HowOldWereYouAcuteKidneyNoDialysis_FreeTextBox","HowOldWereYouKidneyWithDialysis_FreeTextBox","HowOldWereYouKidneyWithoutDialysis_FreeTextBox","HowOldWereYouKidneyStones_FreeTextBox","HowOldWereYouArthritis_FreeTextBox","HowOldWereYouCarpalTunnel_FreeTextBox","HowOldWereYouFibromyalgia_FreeTextBox","HowOldWereYouFracturedBrokenBone_FreeTextBox","HowOldWereYouGout_FreeTextBox","HowOldWereYouLupus_FreeTextBox","HowOldWereYouOsteoporosis_FreeTextBox","HowOldWereYouSpineMuscleBone_FreeTextBox","HowOldWereYouBlindness_FreeTextBox","HowOldWereYouCataracts_FreeTextBox","HowOldWereYouDryEyes_FreeTextBox","HowOldWereYouFarSightedness_FreeTextBox","HowOldWereYouGlaucoma_FreeTextBox","HowOldWereYouMacularDegeneration_FreeTextBox","HowOldWereYouNearSightedness_FreeTextBox","HowOldWereYouTinnitus_FreeTextBox","HowOldWereYouHearingLoss_FreeTextBox","HowOldWereYouChronicSinus_FreeTextBox","HowOldWereYouHepatitisC_FreeTextBox","HowOldWereYouHIVAIDS_FreeTextBox","HowOldWereYouUrinaryTract_FreeTextBox","HowOldWereYouTuberculosis_FreeTextBox","HowOldWereYouAmytrophicLateral_FreeTextBox","HowOldWereYouChronicFatigue_FreeTextBox","HowOldWereYouConcussion_FreeTextBox","HowOldWereYouDementia_FreeTextBox","HowOldWereYouEpilepsy_FreeTextBox","HowOldWereYouInsomnia_FreeTextBox","HowOldWereYouMemoryLoss_FreeTextBox","HowOldWereYouMigraine_FreeTextBox","HowOldWereYouMultipleSclerosis_FreeTextBox","HowOldWereYouMuscularDystrophy_FreeTextBox","HowOldWereYouNarcolepsy_FreeTextBox","HowOldWereYouNeuropathy_FreeTextBox","HowOldWereYouOtherHeadaches_FreeTextBox","HowOldWereYouParkinsonsDisease_FreeTextBox","HowOldWereYouRestlessLeg_FreeTextBox","HowOldWereYouSpinalCordInjury_FreeTextBox","HowOldWereYouTraumaBrainInjury_FreeTextBox","HowOldWereYouAlcoholOrDrug_FreeTextBox","HowOldWereYouAnxiety_FreeTextBox","HowOldWereYouADHD_FreeTextBox","HowOldWereYouBipolar_FreeTextBox","HowOldWereYouDepression_FreeTextBox","HowOldWereYouEatingDisorder_FreeTextBox","HowOldWereYouPersonalityDisorder_FreeTextBox","HowOldWereYouPTSD_FreeTextBox","HowOldWereYouSchizophrenia_FreeTextBox","HowOldWereYouSocialPhobia_FreeTextBox","HowOldWereYouAcne_FreeTextBox","HowOldWereYouAllergies_FreeTextBox","HowOldWereYouEnlargedProstate_FreeTextBox","HowOldWereYouSkinCondition_FreeTextBox","HowOldWereYouObesity_FreeTextBox","HowOldWereYouVitaminBDeficiency_FreeTextBox","HowOldWereYouVitaminDDeficiency_FreeTextBox","CancerCondition_OtherCancer","GrandparentDiagnosisHistory_WhichConditions","MotherDiagnosisHistory_WhichConditions","FatherDiagnosisHistory_WhichConditions","SiblingDiagnosisHistory_WhichConditions","DaughterDiagnosisHistory_WhichConditions","SonDiagnosisHistory_WhichConditions","MotherCancerCondition_OtherCancer","OtherCancer_MotherFreeTextBox","FatherCancerCondition_OtherCancer","OtherCancer_FatherFreeTextBox","SiblingCancerCondition_OtherCancer","OtherCancer_SiblingFreeTextBox","DaughterCancerCondition_OtherCancer","OtherCancer_DaughterFreeTextBox","SonCancerCondition_OtherCancer","OtherCancer_SonFreeTextBox","GrandparentCancerCondition_OtherCancer","OtherCancer_GrandparentFreeTextBox","notes","WesternMichiganSitePairing_SpectrumHealth","WesternMichiganSitePairing_SpectrumHealthSitePairi","OutsideTravel6Month_OutsideTravel6MonthWhereTravel","OutsideTravel6Month_OutsideTravel6MonthWhere","Language_SpokenWrittenLanguage","ConsentPII_HelpWithConsentSignature","OtherCondition_FatherFreeTextBox","OtherCondition_MotherFreeTextBox","OtherCondition_DaughterFreeTextBox","OtherHealthPlan_FreeText","OtherCondition_SiblingFreeTextBox","OtherDelayedMedicalCare_FreeText","OtherCondition_SonFreeTextBox","OtherCondition_GrandparentFreeTextBox","OtherThyroid_FreeTextBox","OtherInfectiousDisease_FreeTextBox","ConsentPII_VerifiedPrimaryPhoneNumber","OtherDiabetes_FreeTextBox","OtherCancer_FreeTextBox","OtherHearingEye_FreeTextBox","OtherBrainNervousSystem_FreeTextBox","OtherDiagnosis_FreeTextBox","OtherHeartorBloodCondition_FreeTextBox","OtherDigestiveCondition_FreeTextBox","OtherArthritis_FreeTextBox","OtherHormoneEndocrine_FreeTextBox","OtherRespiratory_FreeTextBox","OtherKidneyCondition_FreeTextBox","OtherMentalHealthSubstanceUse_FreeTextBox","OtherBoneJointMuscle_FreeTextBox","OtherInsuranceType_FreeText"]}			
+		],
+		"FILTERS":[
+			{"filter":"person_id IN (SELECT DISTINCT person_id FROM :idataset.deid_map)"}
+		],
+		"ICD-9":[
+			{"apply":"REGEXP", "values":["^E8[0-4"],"description":"rare accidents"},
+			{"apply":"REGEXP", "values":["^E8[0-4]"],"description":"rare accidents"},
+			{"apply":"REGEXP","values":["^E8[0-4].*","^E91[0,3].*","^E9([9,7,6,5]|28.0).*","^79[8,9].*","^V3.*","^(76[4-9]|77[0-9])\\\\.([0-9]){0,2}.*","^P[0-9]{2}\\\\.[0-9]{1}.*","^Z38.*","^R99.*","^Y3[5,6,7,8].*","^x52.*","^(W6[5-9]|W7[0-4][0-9]).*","^(X92[0-9]|Y0[1-9]).*","^V[0-9]{2}.*"]}
+		]
+	},
+	{"_id":"shift",
+        "day":"SELECT date_shift from :table where :key_field=:key_value ",
+        "date":"DATE_SUB( CAST(:FIELD AS DATE), INTERVAL (:SHIFT) DAY) AS :FIELD",
+        "datetime":"TIMESTAMP_SUB( CAST(:FIELD AS TIMESTAMP), INTERVAL (:SHIFT) DAY) AS :FIELD"
+        
+
+    },
+	{
+		"_id":"compute",
+		"id":"SELECT (reasearch_id FROM :idataset.deid_map WHERE deid_map.person_id = :value_field) as :FIELD",
+		"month":"EXTRACT (MONTH FROM :value_field) AS :FIELD",
+		"day":"EXTRACT (DAY FROM :value_field) AS :FIELD",
+		"year":"EXTRACT (YEAR FROM :value_field) AS :FIELD"
+	}
+
+]	
