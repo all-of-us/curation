@@ -1,5 +1,4 @@
-AOU - De-identification Engine
-Brad Malin, Weiyi Xia, Steve L. Nyemba
+#AOU - De-identification Engine
 
 This engine will run de-identificataion rules againsts a given table, certain rules are applied to all tables (if possible)
 We have devided rules and application of the rules, in order to have granular visibility into what is happening (for the benefit of the testing team)
@@ -34,24 +33,29 @@ DESIGN:
         As such we have a method "simulate" that acts as a sampler to provide some visibility into what this engine has done given an attribute and the value space of the data.
         This is by no means a silver bullet and adds to data redundancies (alas) if falls in the wrong hands shit will hit the fan
    
-    LIMITATIONS:
-        - The engine is not able to validate the rules without having to submit the job i.e it's only when the rubber hits the road that we know!
-        Also that's the point of submitting a job
-        - The engine can not simulate complex cases, it's intend is to help in providing information about basic scenarios, testers must do the rest.
-        - The engine does not resolve issues of consistency with data for instance : if a record has M,F on two fields for gender ... this issue is out of the scope of deid.
-        Because it relates to data-integrity.
+LIMITATIONS:
 
-    NOTES:
-        There is an undocumented featue enabled via a hack i.e Clustering a table. The API (SDK) does NOT provide a clean way to perform clustering a table.
-        The analysis of the Rest API and the source code provide a means to enable this. I should probably report/contribute this to the bigquery code base but ... time is a luxury I don't have.
+    - The engine is not able to validate the rules without having to submit the job i.e it's only when the rubber hits the road that we know!
+    Also that's the point of submitting a job
+    
+    - The engine can not simulate complex cases, it's intend is to help in providing information about basic scenarios, testers must do the rest.
+    
+    - The engine does not resolve issues of consistency with data for instance : if a record has M,F on two fields for gender ... this issue is out of the scope of deid.
+    Because it relates to data-integrity.
+
+NOTES:
+
+    There is an undocumented featue enabled via a hack i.e Clustering a table. The API (SDK) does NOT provide a clean way to perform clustering a table.
+    The analysis of the Rest API and the source code provide a means to enable this. I should probably report/contribute this to the bigquery code base but ... time is a luxury I don't have.
 
     In order to try to compensate for this I developed an approach to try to look for redundancies using regular expressions and other information available.
     While I think it's the right thing to do given the constraints, I also developped a means by which identifiers can be used provided the englightened leadership decides to do the right thing in a very remote future.
 
-    USAGE :
+USAGE :
     
-        python aou.py --rules <path.json> --idataset <name> --private_key <file> --table <table.json> --action [submit,simulate|debug] [--parition] [--log <path>]
-        --rule  will point to the JSON file contianing rules
+    python aou.py --rules <path.json> --idataset <name> --private_key <file> --table <table.json> --action [submit,simulate|debug] [--parition] [--log <path>]
+
+    --rule  will point to the JSON file contianing rules
         --idataset  name of the input dataset (an output dataset with suffix _deid will be generated)
         --table     path of that specify how rules are to be applied on a table
         --private_key   service account file location
