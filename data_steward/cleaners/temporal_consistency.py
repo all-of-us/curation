@@ -10,7 +10,6 @@ End dates should not be prior to start dates in any table
 """
 
 # Project imports
-import bq_utils
 import constants.bq_utils as bq_consts
 import constants.cleaners.clean_cdr as cdr_consts
 import resources
@@ -82,24 +81,23 @@ def get_bad_end_date_queries(project_id, dataset_id):
     """
     queries = []
     for table in table_dates:
-        if bq_utils.table_exists(table, dataset_id):
-            fields = resources.fields_for(table)
-            # Generate column expressions for select
-            col_exprs = ['r.'+field['name'] if field['name'] == table_dates[table][1]
-                         else 'l.'+field['name']
-                         for field in fields]
-            cols = ', '.join(col_exprs)
-            query = dict()
-            query[cdr_consts.QUERY] = NULL_BAD_END_DATES.format(project_id=project_id,
-                                                                dataset_id=dataset_id,
-                                                                cols=cols,
-                                                                table=table,
-                                                                table_start_date=table_dates[table][0],
-                                                                table_end_date=table_dates[table][1])
-            query[cdr_consts.DESTINATION_TABLE] = table
-            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-            query[cdr_consts.DESTINATION_DATASET] = dataset_id
-            queries.append(query)
+        fields = resources.fields_for(table)
+        # Generate column expressions for select
+        col_exprs = ['r.' + field['name'] if field['name'] == table_dates[table][1]
+                     else 'l.' + field['name']
+                     for field in fields]
+        cols = ', '.join(col_exprs)
+        query = dict()
+        query[cdr_consts.QUERY] = NULL_BAD_END_DATES.format(project_id=project_id,
+                                                            dataset_id=dataset_id,
+                                                            cols=cols,
+                                                            table=table,
+                                                            table_start_date=table_dates[table][0],
+                                                            table_end_date=table_dates[table][1])
+        query[cdr_consts.DESTINATION_TABLE] = table
+        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+        query[cdr_consts.DESTINATION_DATASET] = dataset_id
+        queries.append(query)
     query = dict()
     query[cdr_consts.QUERY] = POPULATE_VISIT_END_DATES.format(project_id=project_id,
                                                               dataset_id=dataset_id,

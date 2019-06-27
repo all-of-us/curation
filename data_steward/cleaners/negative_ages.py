@@ -75,31 +75,26 @@ def get_negative_ages_queries(project_id, dataset_id):
         query_ma = dict()
         table_name = table
         person_table_name = person
-        if bq_utils.table_exists(table_name, dataset_id):
-            query_na[cdr_consts.QUERY] = NEGATIVE_AGES_QUERY.format(project_id=project_id,
-                                                                    dataset_id=dataset_id,
-                                                                    table_name=table_name,
-                                                                    table=table,
-                                                                    person_table_name=person_table_name,
-                                                                    table_date=date_fields[table])
-            query_ma[cdr_consts.QUERY] = MAX_AGE_QUERY.format(project_id=project_id,
-                                                              dataset_id=dataset_id,
-                                                              table_name=table_name,
-                                                              table=table,
-                                                              person_table_name=person_table_name,
-                                                              table_date=date_fields[table],
-                                                              MAX_AGE=MAX_AGE)
-            queries.extend([query_na, query_ma])
+        query_na[cdr_consts.QUERY] = NEGATIVE_AGES_QUERY.format(project_id=project_id,
+                                                                dataset_id=dataset_id,
+                                                                table_name=table_name,
+                                                                table=table,
+                                                                person_table_name=person_table_name,
+                                                                table_date=date_fields[table])
+        query_ma[cdr_consts.QUERY] = MAX_AGE_QUERY.format(project_id=project_id,
+                                                          dataset_id=dataset_id,
+                                                          table_name=table_name,
+                                                          table=table,
+                                                          person_table_name=person_table_name,
+                                                          table_date=date_fields[table],
+                                                          MAX_AGE=MAX_AGE)
+        queries.extend([query_na, query_ma])
 
     # query for death before birthdate
     table = 'death'
     query = dict()
-    if 'unioned' in dataset_id:
-        table_name = 'unioned_ehr_{table}'.format(table=table)
-        person_table_name = 'unioned_ehr_{table}'.format(table=person)
-    else:
-        table_name = table
-        person_table_name = person
+    table_name = table
+    person_table_name = person
     query[cdr_consts.QUERY] = NEGATIVE_AGE_DEATH_QUERY.format(project_id=project_id,
                                                               dataset_id=dataset_id,
                                                               table_name=table_name,

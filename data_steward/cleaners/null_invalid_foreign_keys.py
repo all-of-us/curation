@@ -49,54 +49,53 @@ def null_invalid_foreign_keys(project_id, dataset_id):
     """
     queries_list = []
     for table in resources.CDM_TABLES:
-        if bq_utils.table_exists(table, dataset_id):
-            field_names = [field['name'] for field in resources.fields_for(table)]
-            foreign_keys_flags = []
-            fields_to_join = []
+        field_names = [field['name'] for field in resources.fields_for(table)]
+        foreign_keys_flags = []
+        fields_to_join = []
 
-            for field_name in field_names:
-                if field_name in FOREIGN_KEYS_FIELDS and field_name != table + '_id':
-                    fields_to_join.append(field_name)
-                    foreign_keys_flags.append(field_name)
+        for field_name in field_names:
+            if field_name in FOREIGN_KEYS_FIELDS and field_name != table + '_id':
+                fields_to_join.append(field_name)
+                foreign_keys_flags.append(field_name)
 
-            if fields_to_join:
-                col_exprs = []
-                for field in field_names:
-                    if field in fields_to_join:
-                        if field in foreign_keys_flags:
-                            col_expr = '{x}.'.format(x=field[:3]) + field
+        if fields_to_join:
+            col_exprs = []
+            for field in field_names:
+                if field in fields_to_join:
+                    if field in foreign_keys_flags:
+                        col_expr = '{x}.'.format(x=field[:3]) + field
+                else:
+                    col_expr = field
+                col_exprs.append(col_expr)
+            cols = ', '.join(col_exprs)
+
+            join_expression = []
+            for key in FOREIGN_KEYS_FIELDS:
+                if key in foreign_keys_flags:
+                    if key == 'person_id':
+                        table_alias = cdr_consts.PERSON_TABLE_NAME
                     else:
-                        col_expr = field
-                    col_exprs.append(col_expr)
-                cols = ', '.join(col_exprs)
+                        table_alias = _mapping_table_for('{x}'.format(x=key)[:-3])
+                    join_expression.append(
+                        LEFT_JOIN.format(dataset_id=dataset_id,
+                                         prefix=key[:3],
+                                         field=key,
+                                         table=table_alias
+                                         )
+                    )
 
-                join_expression = []
-                for key in FOREIGN_KEYS_FIELDS:
-                    if key in foreign_keys_flags:
-                        if key == 'person_id':
-                            table_alias = cdr_consts.PERSON_TABLE_NAME
-                        else:
-                            table_alias = _mapping_table_for('{x}'.format(x=key)[:-3])
-                        join_expression.append(
-                            LEFT_JOIN.format(dataset_id=dataset_id,
-                                             prefix=key[:3],
-                                             field=key,
-                                             table=table_alias
-                                             )
-                        )
-
-                full_join_expression = " ".join(join_expression)
-                query = dict()
-                query[cdr_consts.QUERY] = INVALID_FOREIGN_KEY_QUERY.format(cols=cols,
-                                                                           table_name=table,
-                                                                           dataset_id=dataset_id,
-                                                                           project=project_id,
-                                                                           join_expr=full_join_expression
-                                                                           )
-                query[cdr_consts.DESTINATION_TABLE] = table
-                query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-                query[cdr_consts.DESTINATION_DATASET] = dataset_id
-                queries_list.append(query)
+            full_join_expression = " ".join(join_expression)
+            query = dict()
+            query[cdr_consts.QUERY] = INVALID_FOREIGN_KEY_QUERY.format(cols=cols,
+                                                                       table_name=table,
+                                                                       dataset_id=dataset_id,
+                                                                       project=project_id,
+                                                                       join_expr=full_join_expression
+                                                                       )
+            query[cdr_consts.DESTINATION_TABLE] = table
+            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+            query[cdr_consts.DESTINATION_DATASET] = dataset_id
+            queries_list.append(query)
     return queries_list
 
 

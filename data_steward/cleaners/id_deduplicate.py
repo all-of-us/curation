@@ -30,23 +30,22 @@ def get_id_deduplicate_queries(project_id, dataset_id):
     queries = []
     tables_with_primary_key = cdm.tables_to_map()
     for table in tables_with_primary_key:
-        if bq_utils.table_exists(table, dataset_id):
-            table_name = table
-            fields = resources.fields_for(table)
-            # Generate column expressions for select
-            col_exprs = [field['name'] for field in fields]
-            cols = ', '.join(col_exprs)
-            query = dict()
-            query[cdr_consts.QUERY] = ID_DE_DUP_QUERY.format(columns=cols,
-                                                             project_id=project_id,
-                                                             dataset_id=dataset_id,
-                                                             domain_table=table,
-                                                             table_name=table_name)
+        table_name = table
+        fields = resources.fields_for(table)
+        # Generate column expressions for select
+        col_exprs = [field['name'] for field in fields]
+        cols = ', '.join(col_exprs)
+        query = dict()
+        query[cdr_consts.QUERY] = ID_DE_DUP_QUERY.format(columns=cols,
+                                                         project_id=project_id,
+                                                         dataset_id=dataset_id,
+                                                         domain_table=table,
+                                                         table_name=table_name)
 
-            query[cdr_consts.DESTINATION_TABLE] = table
-            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-            query[cdr_consts.DESTINATION_DATASET] = dataset_id
-            queries.append(query)
+        query[cdr_consts.DESTINATION_TABLE] = table
+        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+        query[cdr_consts.DESTINATION_DATASET] = dataset_id
+        queries.append(query)
     return queries
 
 

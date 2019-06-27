@@ -57,15 +57,14 @@ def get_year_of_birth_queries(project_id, dataset_id):
     queries = []
     for table in resources.CDM_TABLES:
         if has_person_id_key(table):
-            if bq_utils.table_exists(table, dataset_id):
-                query = dict()
-                query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_TABLE_ROWS.format(project_id=project_id,
-                                                                                 dataset_id=dataset_id,
-                                                                                 table=table,
-                                                                                 person_table=person,
-                                                                                 MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
-                                                                                 MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
-                queries.append(query)
+            query = dict()
+            query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_TABLE_ROWS.format(project_id=project_id,
+                                                                             dataset_id=dataset_id,
+                                                                             table=table,
+                                                                             person_table=person,
+                                                                             MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
+                                                                             MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
+            queries.append(query)
     person_query = dict()
     person_query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_PERSON_ROWS.format(project_id=project_id,
                                                                              dataset_id=dataset_id,
