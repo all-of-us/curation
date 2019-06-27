@@ -3,31 +3,31 @@ Year of birth should not be in the future (as of writing this, 2019) or before 1
 Using rule 18, 19 in Achilles Heel for reference
 """
 
-import bq_utils
 # Project imports
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+import constants.bq_utils as bq_consts
+import constants.cleaners.clean_cdr as cdr_consts
 import resources
 
 person = 'person'
 MIN_YEAR_OF_BIRTH = 1800
-MAX_YEAR_OF_BIRTH = 2019
+MAX_YEAR_OF_BIRTH = '(EXTRACT(YEAR FROM CURRENT_DATE()) - 17)'
 
-DELETE_YEAR_OF_BIRTH_TABLE_ROWS = (
-    'DELETE '
+KEEP_YEAR_OF_BIRTH_TABLE_ROWS = (
+    'SELECT * '
     'FROM `{project_id}.{dataset_id}.{table}` '
     'WHERE person_id '
     'IN '
     '(SELECT person_id '
     'FROM `{project_id}.{dataset_id}.{person_table}` p '
-    'WHERE p.year_of_birth < {MIN_YEAR_OF_BIRTH} '
-    'OR p.year_of_birth > {MAX_YEAR_OF_BIRTH}) '
+    'WHERE p.year_of_birth > {MIN_YEAR_OF_BIRTH} '
+    'AND p.year_of_birth < {MAX_YEAR_OF_BIRTH}) '
 )
 
-DELETE_YEAR_OF_BIRTH_PERSON_ROWS = (
-    'DELETE '
+KEEP_YEAR_OF_BIRTH_PERSON_ROWS = (
+    'SELECT * '
     'FROM `{project_id}.{dataset_id}.{person_table}` p '
-    'WHERE p.year_of_birth < {MIN_YEAR_OF_BIRTH} '
-    'OR p.year_of_birth > {MAX_YEAR_OF_BIRTH}) '
+    'WHERE p.year_of_birth > {MIN_YEAR_OF_BIRTH} '
+    'AND p.year_of_birth < {MAX_YEAR_OF_BIRTH} '
 )
 
 
@@ -58,28 +58,31 @@ def get_year_of_birth_queries(project_id, dataset_id):
     for table in resources.CDM_TABLES:
         if has_person_id_key(table):
             query = dict()
-            query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_TABLE_ROWS.format(project_id=project_id,
-                                                                             dataset_id=dataset_id,
-                                                                             table=table,
-                                                                             person_table=person,
-                                                                             MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
-                                                                             MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
+            query[cdr_consts.QUERY] = KEEP_YEAR_OF_BIRTH_TABLE_ROWS.format(project_id=project_id,
+                                                                           dataset_id=dataset_id,
+                                                                           table=table,
+                                                                           person_table=person,
+                                                                           MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
+                                                                           MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
+            query[cdr_consts.DESTINATION_TABLE] = table
+            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+            query[cdr_consts.DESTINATION_DATASET] = dataset_id
             queries.append(query)
     person_query = dict()
-    person_query[cdr_consts.QUERY] = DELETE_YEAR_OF_BIRTH_PERSON_ROWS.format(project_id=project_id,
-                                                                             dataset_id=dataset_id,
-                                                                             person_table=person,
-                                                                             MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
-                                                                             MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
+    person_query[cdr_consts.QUERY] = KEEP_YEAR_OF_BIRTH_PERSON_ROWS.format(project_id=project_id,
+                                                                           dataset_id=dataset_id,
+                                                                           person_table=person,
+                                                                           MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
+                                                                           MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
+    person_query[cdr_consts.DESTINATION_TABLE] = person
+    person_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+    person_query[cdr_consts.DESTINATION_DATASET] = dataset_id
     queries.append(person_query)
     return queries
 
 
 if __name__ == '__main__':
-    import cdr_cleaner.args_parser as parser
-    import cdr_cleaner.clean_cdr_engine as clean_engine
-
-    ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_year_of_birth_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    import args_parser as parser
+    if parser.args.dataset_id:
+        query_list = get_year_of_birth_queries(parser.args.project_id, parser.args.dataset_id)
+        parser.clean_engine.clean_dataset(parser.args.project_id, parser.args.dataset_id, query_list)
