@@ -142,7 +142,7 @@ def get_person_id_validation_queries(project=None, dataset=None):
 if __name__ == '__main__':
     import argparse
 
-    import cdr_cleaner.clean_cdr_engine
+    import cdr_cleaner.clean_cdr_engine as clean_engine
 
     PARSER = argparse.ArgumentParser(
         description='Parse project_id and dataset_id',
@@ -154,4 +154,4 @@ if __name__ == '__main__':
     ARGS = PARSER.parse_args()
 
     Q_LIST = get_person_id_validation_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_cdr_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, Q_LIST)
+    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, Q_LIST)
