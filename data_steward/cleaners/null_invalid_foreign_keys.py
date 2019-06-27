@@ -49,73 +49,58 @@ def null_invalid_foreign_keys(project_id, dataset_id):
     """
     queries_list = []
     for table in resources.CDM_TABLES:
-        if bq_utils.table_exists(table, dataset_id):
-            field_names = [field['name'] for field in resources.fields_for(table)]
-            foreign_keys_flags = []
-            fields_to_join = []
+        field_names = [field['name'] for field in resources.fields_for(table)]
+        foreign_keys_flags = []
+        fields_to_join = []
 
-            for field_name in field_names:
-                if field_name in FOREIGN_KEYS_FIELDS and field_name != table + '_id':
-                    fields_to_join.append(field_name)
-                    foreign_keys_flags.append(field_name)
+        for field_name in field_names:
+            if field_name in FOREIGN_KEYS_FIELDS and field_name != table + '_id':
+                fields_to_join.append(field_name)
+                foreign_keys_flags.append(field_name)
 
-            if fields_to_join:
-                col_exprs = []
-                for field in field_names:
-                    if field in fields_to_join:
-                        if field in foreign_keys_flags:
-                            col_expr = '{x}.'.format(x=field[:3]) + field
+        if fields_to_join:
+            col_exprs = []
+            for field in field_names:
+                if field in fields_to_join:
+                    if field in foreign_keys_flags:
+                        col_expr = '{x}.'.format(x=field[:3]) + field
+                else:
+                    col_expr = field
+                col_exprs.append(col_expr)
+            cols = ', '.join(col_exprs)
+
+            join_expression = []
+            for key in FOREIGN_KEYS_FIELDS:
+                if key in foreign_keys_flags:
+                    if key == 'person_id':
+                        table_alias = cdr_consts.PERSON_TABLE_NAME
                     else:
-                        col_expr = field
-                    col_exprs.append(col_expr)
-                cols = ', '.join(col_exprs)
+                        table_alias = _mapping_table_for('{x}'.format(x=key)[:-3])
+                    join_expression.append(
+                        LEFT_JOIN.format(dataset_id=dataset_id,
+                                         prefix=key[:3],
+                                         field=key,
+                                         table=table_alias
+                                         )
+                    )
 
-                join_expression = []
-                for key in FOREIGN_KEYS_FIELDS:
-                    if key in foreign_keys_flags:
-                        if key == 'person_id':
-                            table_alias = cdr_consts.PERSON_TABLE_NAME
-                        else:
-                            table_alias = _mapping_table_for('{x}'.format(x=key)[:-3])
-                        join_expression.append(
-                            LEFT_JOIN.format(dataset_id=dataset_id,
-                                             prefix=key[:3],
-                                             field=key,
-                                             table=table_alias
-                                             )
-                        )
-
-                full_join_expression = " ".join(join_expression)
-                query = dict()
-                query[cdr_consts.QUERY] = INVALID_FOREIGN_KEY_QUERY.format(cols=cols,
-                                                                           table_name=table,
-                                                                           dataset_id=dataset_id,
-                                                                           project=project_id,
-                                                                           join_expr=full_join_expression
-                                                                           )
-                query[cdr_consts.DESTINATION_TABLE] = table
-                query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-                query[cdr_consts.DESTINATION_DATASET] = dataset_id
-                queries_list.append(query)
+            full_join_expression = " ".join(join_expression)
+            query = dict()
+            query[cdr_consts.QUERY] = INVALID_FOREIGN_KEY_QUERY.format(cols=cols,
+                                                                       table_name=table,
+                                                                       dataset_id=dataset_id,
+                                                                       project=project_id,
+                                                                       join_expr=full_join_expression
+                                                                       )
+            query[cdr_consts.DESTINATION_TABLE] = table
+            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+            query[cdr_consts.DESTINATION_DATASET] = dataset_id
+            queries_list.append(query)
     return queries_list
 
 
 if __name__ == '__main__':
-    import argparse
-    import clean_cdr_engine as clean_engine
-
-    parser = argparse.ArgumentParser(
-        description='Parse project_id and dataset_id',
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-p', '--project_id',
-                        action='store', dest='project_id',
-                        help='Project associated with the input and output datasets')
-    parser.add_argument('-d', '--dataset_id',
-                        action='store', dest='dataset_id',
-                        help='Dataset where cleaning rules are to be applied')
-    parser.add_argument('-s', action='store_true', help='Send logs to console')
-    args = parser.parse_args()
-    clean_engine.add_console_logging(args.s)
-    if args.dataset_id:
-        query_list = null_invalid_foreign_keys(args.project_id, args.dataset_id)
-        clean_engine.clean_dataset(args.project_id, args.dataset_id, query_list)
+    import args_parser as parser
+    if parser.args.dataset_id:
+        query_list = null_invalid_foreign_keys(parser.args.project_id, parser.args.dataset_id)
+        parser.clean_engine.clean_dataset(parser.args.project_id, parser.args.dataset_id, query_list)
