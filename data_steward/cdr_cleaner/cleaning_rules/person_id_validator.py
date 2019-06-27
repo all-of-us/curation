@@ -140,18 +140,7 @@ def get_person_id_validation_queries(project=None, dataset=None):
     return query_list
 
 if __name__ == '__main__':
-    import argparse
+    import cdr_cleaner.args_parser as parser
 
-    import cdr_cleaner.clean_cdr_engine as clean_engine
-
-    PARSER = argparse.ArgumentParser(
-        description='Parse project_id and dataset_id',
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    PARSER.add_argument('-p', '--project_id', required=True,
-                        help='Project associated with the input and output datasets')
-    PARSER.add_argument('-d', '--dataset_id', required=True,
-                        help='Dataset where cleaning rules are to be applied')
-    ARGS = PARSER.parse_args()
-
-    Q_LIST = get_person_id_validation_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, Q_LIST)
+    Q_LIST = get_person_id_validation_queries(parser.args.project_id, parser.args.dataset_id)
+#    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, Q_LIST)

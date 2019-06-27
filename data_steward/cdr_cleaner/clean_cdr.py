@@ -18,6 +18,7 @@ import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
 import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
 import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
 import cdr_cleaner.cleaning_rules.person_id_validator as person_validator
+import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import constants.cdr_cleaner.clean_cdr as clean_cdr_consts
 
 
