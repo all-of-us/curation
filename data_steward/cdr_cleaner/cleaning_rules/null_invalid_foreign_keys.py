@@ -9,7 +9,7 @@ Valid means an existing foreign key exists in the table it references.
 
 import bq_utils
 import constants.bq_utils as bq_consts
-import constants.cleaners.clean_cdr as cdr_consts
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 # Project Imports
 import resources
 

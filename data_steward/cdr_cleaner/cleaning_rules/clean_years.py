@@ -5,7 +5,7 @@ Using rule 18, 19 in Achilles Heel for reference
 
 import bq_utils
 # Project imports
-import constants.cleaners.clean_cdr as cdr_consts
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
 
 person = 'person'

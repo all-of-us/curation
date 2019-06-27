@@ -6,8 +6,8 @@ import unittest
 
 # Project imports
 import constants.bq_utils as bq_consts
-import constants.cleaners.clean_cdr as clean_consts
-import cleaners.query_generators.person_id_validator as validator
+import constants.cdr_cleaner.clean_cdr as clean_consts
+import cdr_cleaner.cleaning_rules.person_id_validator as validator
 import resources
 
 
@@ -34,8 +34,8 @@ class PersonIDValidatorTest(unittest.TestCase):
         # post conditions
         self.assertEqual(len(results), ((len(self.all_tables) * 2) - 1))
 
-        non_consent = validator.NOT_CONSENTING_PERSON_IDS
-        orphan_records = validator.DELETE_ORPHANED_PERSON_IDS
+        existing_and_consenting = validator.EXISTING_AND_VALID_CONSENTING_RECORDS
+        existing_in_person_table = validator.SELECT_EXISTING_PERSON_IDS
 
         expected = []
         for table in self.mapped_tables:
@@ -44,7 +44,7 @@ class PersonIDValidatorTest(unittest.TestCase):
 
             expected.append(
                 {
-                    clean_consts.QUERY: non_consent.format(
+                    clean_consts.QUERY: existing_and_consenting.format(
                         project='foo', dataset='bar', mapping_dataset='bar', table=table, fields=fields
                     ),
                     clean_consts.DESTINATION_TABLE: table,
@@ -59,7 +59,7 @@ class PersonIDValidatorTest(unittest.TestCase):
 
             expected.append(
                 {
-                    clean_consts.QUERY: orphan_records.format(
+                    clean_consts.QUERY: existing_in_person_table.format(
                         project='foo', dataset='bar', table=table, fields=fields
                     ),
                     clean_consts.DESTINATION_TABLE: table,
@@ -79,8 +79,8 @@ class PersonIDValidatorTest(unittest.TestCase):
         # post conditions
         self.assertEqual(len(results), ((len(self.all_tables) * 2) - 1))
 
-        non_consent = validator.NOT_CONSENTING_PERSON_IDS
-        orphan_records = validator.DELETE_ORPHANED_PERSON_IDS
+        existing_and_consenting = validator.EXISTING_AND_VALID_CONSENTING_RECORDS
+        existing_in_person_table = validator.SELECT_EXISTING_PERSON_IDS
 
         expected = []
         for table in self.mapped_tables:
@@ -89,7 +89,7 @@ class PersonIDValidatorTest(unittest.TestCase):
 
             expected.append(
                 {
-                    clean_consts.QUERY: non_consent.format(
+                    clean_consts.QUERY: existing_and_consenting.format(
                         project='foo', dataset='bar_deid', mapping_dataset='bar', table=table, fields=fields
                     ),
                     clean_consts.DESTINATION_TABLE: table,
@@ -104,7 +104,7 @@ class PersonIDValidatorTest(unittest.TestCase):
 
             expected.append(
                 {
-                    clean_consts.QUERY: orphan_records.format(
+                    clean_consts.QUERY: existing_in_person_table.format(
                         project='foo', dataset='bar_deid', table=table, fields=fields
                     ),
                     clean_consts.DESTINATION_TABLE: table,

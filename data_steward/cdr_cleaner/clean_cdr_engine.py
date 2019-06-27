@@ -8,7 +8,7 @@ from google.appengine.api import app_identity
 
 import bq_utils
 import constants.bq_utils as bq_consts
-import constants.cleaners.clean_cdr as cdr_consts
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 FILENAME = '/tmp/cleaner.log'
