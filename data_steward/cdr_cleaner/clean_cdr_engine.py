@@ -8,7 +8,7 @@ from google.appengine.api import app_identity
 
 import bq_utils
 import constants.bq_utils as bq_consts
-import constants.cleaners.clean_cdr as cdr_consts
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 FILENAME = '/tmp/cleaner.log'
@@ -23,12 +23,13 @@ def add_console_logging(add_handler):
     """
     logging.basicConfig(level=logging.DEBUG,
                         filename=FILENAME,
-                        filemode='a')
+                        filemode='a',
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     if add_handler:
         handler = logging.StreamHandler()
         handler.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(levelname)s - %(name)s - %(message)s')
         handler.setFormatter(formatter)
         LOGGER.addHandler(handler)
 

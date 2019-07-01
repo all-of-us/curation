@@ -7,10 +7,10 @@ care_site_id, location_id, person_id, visit_occurrence_id)
 Valid means an existing foreign key exists in the table it references.
 """
 
+# Project Imports
 import bq_utils
 import constants.bq_utils as bq_consts
-import constants.cleaners.clean_cdr as cdr_consts
-# Project Imports
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
 
 FOREIGN_KEYS_FIELDS = ['person_id', 'visit_occurrence_id',
@@ -100,7 +100,10 @@ def null_invalid_foreign_keys(project_id, dataset_id):
 
 
 if __name__ == '__main__':
-    import args_parser as parser
-    if parser.args.dataset_id:
-        query_list = null_invalid_foreign_keys(parser.args.project_id, parser.args.dataset_id)
-        parser.clean_engine.clean_dataset(parser.args.project_id, parser.args.dataset_id, query_list)
+    import cdr_cleaner.args_parser as parser
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    ARGS = parser.parse_args()
+    clean_engine.add_console_logging(ARGS.console_log)
+    query_list = null_invalid_foreign_keys(ARGS.project_id, ARGS.dataset_id)
+    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
