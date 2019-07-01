@@ -5,7 +5,7 @@ Allowing for more flexibility, we choose Jan 1, 2017 as the program start date.
 
 # Project imports
 import constants.bq_utils as bq_consts
-import constants.cleaners.clean_cdr as cdr_consts
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 death = 'death'
 program_start_date = '2017-01-01'
@@ -42,7 +42,10 @@ def get_valid_death_date_queries(project_id, dataset_id):
 
 
 if __name__ == '__main__':
-    import args_parser as parser
-    if parser.args.dataset_id:
-        query_list = get_valid_death_date_queries(parser.args.project_id, parser.args.dataset_id)
-        parser.clean_engine.clean_dataset(parser.args.project_id, parser.args.dataset_id, query_list)
+    import cdr_cleaner.args_parser as parser
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    ARGS = parser.parse_args()
+    clean_engine.add_console_logging(ARGS.console_log)
+    query_list = get_valid_death_date_queries(ARGS.project_id, ARGS.dataset_id)
+    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
