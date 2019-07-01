@@ -6,10 +6,13 @@ Run the person_id validation clean rule.
 2.  The person_id is consenting.  If not consenting, remove EHR records.
     Keep PPI records.
 """
+import logging
 
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as clean_consts
 import resources
+
+LOGGER = logging.getLogger(__name__)
 
 MAPPED_VALIDATION_TABLES = [
     'visit_occurrence',
@@ -122,7 +125,7 @@ def get_person_id_validation_queries(project=None, dataset=None):
 
     # generate queries to remove person_ids of people not in the person table
     for table in all_tables:
-        field_names = [field['name'] for field in resources.fields_for(table)]
+        field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
         fields = ', '.join(field_names)
 
         delete_query = SELECT_EXISTING_PERSON_IDS.format(
@@ -141,6 +144,9 @@ def get_person_id_validation_queries(project=None, dataset=None):
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
+    import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    Q_LIST = get_person_id_validation_queries(parser.args.project_id, parser.args.dataset_id)
+    ARGS = parser.parse_args()
+    clean_engine.add_console_logging(ARGS.console_log)
+    Q_LIST = get_person_id_validation_queries(ARGS.project_id, ARGS.dataset_id)
 #    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, Q_LIST)

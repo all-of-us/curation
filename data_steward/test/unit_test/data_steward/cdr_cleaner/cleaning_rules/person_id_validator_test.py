@@ -54,7 +54,7 @@ class PersonIDValidatorTest(unittest.TestCase):
             )
 
         for table in self.all_tables:
-            field_names = [field['name'] for field in resources.fields_for(table)]
+            field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
             fields = ', '.join(field_names)
 
             expected.append(
@@ -99,7 +99,7 @@ class PersonIDValidatorTest(unittest.TestCase):
             )
 
         for table in self.all_tables:
-            field_names = [field['name'] for field in resources.fields_for(table)]
+            field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
             fields = ', '.join(field_names)
 
             expected.append(
