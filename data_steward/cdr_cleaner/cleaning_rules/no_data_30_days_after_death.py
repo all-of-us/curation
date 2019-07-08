@@ -27,23 +27,23 @@ TEMPORAL_TABLES_WITH_NO_END_DATES = {'person': 'birth',
 
 REMOVE_DEATH_DATE_QUERY_WITH_END_DATES = (
     "SELECT * "
-    "FROM `{dataset}.{table_name}` "
+    "FROM `{project}.{dataset}.{table_name}` "
     "WHERE {table_name}_id NOT IN ("
     "  SELECT ma.{table_name}_id "
-    "  FROM `{dataset}.{table_name}` ma"
-    "  JOIN `{dataset}.death` d"
+    "  FROM `{project}.{dataset}.{table_name}` ma"
+    "  JOIN `{project}.{dataset}.death` d"
     "  ON ma.person_id = d.person_id"
     "  WHERE (date_diff(ma.{start_date},d.death_date, DAY) > 30"
-    "  and date_diff({end_date}, d.death_date, DAY) > 30))"
+    "  OR date_diff({end_date}, d.death_date, DAY) > 30))"
 )
 
 REMOVE_DEATH_DATE_QUERY = (
     "SELECT * "
-    "FROM `{project_id}.{dataset}.{table_name}` "
+    "FROM `{project}.{dataset}.{table_name}` "
     "WHERE {table_name}_id NOT IN ("
     "  SELECT ma.{table_name}_id "
-    "  FROM `{dataset}.{table_name}` ma"
-    "  JOIN `{dataset}.death` d"
+    "  FROM `{project}.{dataset}.{table_name}` ma"
+    "  JOIN `{project}.{dataset}.death` d"
     "  ON ma.person_id = d.person_id"
     "  WHERE (date_diff({date_column}, death_date, DAY) > 30))"
 )
@@ -63,7 +63,7 @@ def no_data_30_days_after_death(project_id, dataset_id):
             date_column = 'DATE({person_table_column}_datetime)'.format(
                 person_table_column=TEMPORAL_TABLES_WITH_NO_END_DATES[table])
             query = dict()
-            query[cdr_consts.QUERY] = REMOVE_DEATH_DATE_QUERY.format(project_id=project_id,
+            query[cdr_consts.QUERY] = REMOVE_DEATH_DATE_QUERY.format(project=project_id,
                                                                      dataset=dataset_id,
                                                                      table_name=table,
                                                                      date_column=date_column)
@@ -75,7 +75,7 @@ def no_data_30_days_after_death(project_id, dataset_id):
         else:
             query = dict()
             date_column = '{table_column}_date'.format(table_column=TEMPORAL_TABLES_WITH_NO_END_DATES[table])
-            query[cdr_consts.QUERY] = REMOVE_DEATH_DATE_QUERY.format(project_id=project_id,
+            query[cdr_consts.QUERY] = REMOVE_DEATH_DATE_QUERY.format(project=project_id,
                                                                      dataset=dataset_id,
                                                                      table_name=table,
                                                                      date_column=date_column)
@@ -89,7 +89,7 @@ def no_data_30_days_after_death(project_id, dataset_id):
         query = dict()
         start_date = '{table_column}_start_date'.format(table_column=TEMPORAL_TABLES_WITH_END_DATES[table])
         end_date = '{table_column}_end_date'.format(table_column=TEMPORAL_TABLES_WITH_END_DATES[table])
-        query[cdr_consts.QUERY] = REMOVE_DEATH_DATE_QUERY_WITH_END_DATES.format(project_id=project_id,
+        query[cdr_consts.QUERY] = REMOVE_DEATH_DATE_QUERY_WITH_END_DATES.format(project=project_id,
                                                                                 dataset=dataset_id,
                                                                                 table_name=table,
                                                                                 start_date=start_date,
