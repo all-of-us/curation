@@ -12,7 +12,10 @@ from google.appengine.api import app_identity
 
 # Project imports
 import bq_utils
+import constants.cdr_cleaner.clean_cdr as clean_cdr_consts
 import cdr_cleaner.clean_cdr_engine as clean_engine
+
+# cleaning rule imports
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
 import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
@@ -21,7 +24,7 @@ import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
 import cdr_cleaner.cleaning_rules.person_id_validator as person_validator
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
-import constants.cdr_cleaner.clean_cdr as clean_cdr_consts
+import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 
 
 LOGGER = logging.getLogger(__name__)
@@ -72,6 +75,7 @@ def _gather_ehr_rdr_queries(project_id, dataset_id):
     query_list.extend(bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
     query_list.extend(no_data_30days_after_death.no_data_30_days_after_death(project_id, dataset_id))
     query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
+    query_list.extend(drug_refills_supply.get_days_supply_refills_queries(project_id, dataset_id))
     return query_list
 
 
@@ -90,6 +94,7 @@ def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id):
     query_list.extend(bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
     query_list.extend(person_validator.get_person_id_validation_queries(project_id, dataset_id))
     query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
+    query_list.extend(drug_refills_supply.get_days_supply_refills_queries(project_id, dataset_id))
     return query_list
 
 
@@ -107,6 +112,7 @@ def _gather_unioned_ehr_queries(project_id, dataset_id):
     query_list.extend(neg_ages.get_negative_ages_queries(project_id, dataset_id))
     query_list.extend(bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
     query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
+    query_list.extend(drug_refills_supply.get_days_supply_refills_queries(project_id, dataset_id))
     return query_list
 
 

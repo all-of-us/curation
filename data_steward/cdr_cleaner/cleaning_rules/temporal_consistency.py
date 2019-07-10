@@ -11,14 +11,15 @@ End dates should not be prior to start dates in any table
 
 # Project imports
 import constants.bq_utils as bq_consts
-import constants.cleaners.clean_cdr as cdr_consts
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
+import common
 
-table_dates = {'condition_occurrence': ['condition_start_date', 'condition_end_date'],
-               'drug_exposure': ['drug_exposure_start_date', 'drug_exposure_end_date'],
-               'device_exposure': ['device_exposure_start_date', 'device_exposure_start_date']}
+table_dates = {common.CONDITION_OCCURRENCE: ['condition_start_date', 'condition_end_date'],
+               common.DRUG_EXPOSURE: ['drug_exposure_start_date', 'drug_exposure_end_date'],
+               common.DEVICE_EXPOSURE: ['device_exposure_start_date', 'device_exposure_start_date']}
 
-visit_occurrence = 'visit_occurrence'
+visit_occurrence = common.VISIT_OCCURRENCE
 placeholder_date = '1900-01-01'
 end_date = 'end_date'
 
