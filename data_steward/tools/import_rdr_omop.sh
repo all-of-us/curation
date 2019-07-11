@@ -6,7 +6,6 @@
 
 USAGE="tools/import_rdr_omop.sh
     --project <PROJECT where rdr files are dropped>
-    --account <ACCOUNT >
     --directory <DIRECTORY>
     --data_set <DATA SET>
     --key_file <path to key file>
@@ -14,7 +13,6 @@ USAGE="tools/import_rdr_omop.sh
 
 while true; do
   case "$1" in
-    --account) ACCOUNT=$2; shift 2;;
     --project) PROJECT=$2; shift 2;;
     --directory) DIRECTORY=$2; shift 2;;
     --data_set) DATA_SET=$2; shift 2;;
@@ -25,8 +23,8 @@ while true; do
   esac
 done
 
-if [[ -z "${ACCOUNT}" ]] || [[ -z "${PROJECT}" ]] || [[ -z "${DIRECTORY}" ]] \
-  || [[ -z "${DATA_SET}" ]] || [[ -z "${KEY_FILE}" ]] || [[ -z "${APP_ID}" ]]
+if  [[ -z "${PROJECT}" ]] || [[ -z "${DIRECTORY}" ]] || [[ -z "${DATA_SET}" ]] \
+   || [[ -z "${KEY_FILE}" ]] || [[ -z "${APP_ID}" ]]
 then
   echo "Usage: $USAGE"
   exit 1
@@ -38,7 +36,6 @@ export APPLICATION_ID="${APP_ID}"
 today=$(date '+%Y%m%d')
 
 #---------Create curation virtual environment----------
-set -e
 # create a new environment in directory curation_env
 virtualenv  -p $(which python2.7) curation_env
 
@@ -60,7 +57,6 @@ do
   filename=$(basename ${file})
   table_name="${filename%.*}"
   echo "Importing ${DATA_SET}.${table_name}..."
-  bq rm -f ${DATA_SET}.${table_name}
   CLUSTERING_ARGS=
   if grep -q person_id resources/fields/${table_name}.json
   then
