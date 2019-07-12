@@ -297,7 +297,7 @@ class deid (Rules):
                     #
                     #-- This will prevent accidental type changes,
                     # from STRING to INTEGER and INTEGER to STRING
-                    value = ("'' AS " + name) if name.endswith('_value') else ('NULL AS ' + name)
+                    value = ("FORMAT('%i', NULL) AS " + name) if name.endswith('_value') else ('NULL AS ' + name)
                     out.append({"name":name,"apply":value,"label":label})
                     self.log(module='suppression',label=label.split('.')[1],type='columns')
                 else:
@@ -312,7 +312,7 @@ class deid (Rules):
                             if name in rule['values'] :
                                 #-- This will prevent accidental type changes,
                                 # from STRING to INTEGER and INTEGER to STRING
-                                value = ("'' AS " + name) if name.endswith('_value') else ('NULL AS ' + name)
+                                value = ("FORMAT('%i', NULL) AS " + name) if name.endswith('_value') else ('NULL AS ' + name)
                                 out.append({"name":name,"apply":(value),"label":label})
             self.log(module='suppress',label=label.split('.')[1],on=fields,type='columns')
 
