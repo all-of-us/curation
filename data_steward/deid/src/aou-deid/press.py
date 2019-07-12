@@ -10,7 +10,7 @@ import os
 
 class Press:
     """
-    This class 
+    This class
     """
     def __init__(self,**args):
         """
@@ -41,13 +41,13 @@ class Press:
             self.deid_rules['suppress'] = {'FILTERS':[]}
         if 'FILTERS' not in self.deid_rules['suppress'] :
             self.deid_rules['suppress']['FILTERS'] = []
-        self.logpath = 'logs' if 'logs' not in args else args['logs']        
+        self.logpath = 'logs' if 'logs' not in args else args['logs']
         self.action = [term.strip() for term in args['action'].split(',')] if 'action' in args else ['submit']
 
-       
+
     def meta(self,df):
         return pd.DataFrame( {"names":list(df.dtypes.to_dict().keys()), "types":list(df.dtypes.to_dict().values())})
-        
+
     def initialize(self,**args):
         #
         # Let us update and see if the default filters apply at all
@@ -55,7 +55,7 @@ class Press:
         columns = self.get(limit=1).columns.tolist()
         for row in self.deid_rules['suppress']['FILTERS'] :
             if set(columns) & set(row['filter'].split(' ')):
-                dfilters.append(row) 
+                dfilters.append(row)
         self.deid_rules['suppress']['FILTERS'] = dfilters
         pass
     def get(self,**args):
@@ -65,17 +65,17 @@ class Press:
         return None
     def do(self):
         """
-        This function actually runs deid and using both rule specifications and application of the rules        
+        This function actually runs deid and using both rule specifications and application of the rules
         """
         self.update_rules()
         d = deid()
         d.cache = self.deid_rules
-        
+
         # _info = [item for item in self.info['generalize'] if self.tablename in item['table'] ]
         # _info = {"generalize":_info}
         # _info['compute'] = [ {"rules":"@compute.id","fields":["research_id"],"table":"person","key_field":"person_id","value_field":"person_id"}]
         _info = self.info
-        
+
         p = d.apply(_info,self.store)
         is_meta = np.sum([ 1*('on' in _item) for _item in p]) != 0
         self.log(module='do',action='table-type',table=self.get_tablename(),is_meta=is_meta)
@@ -90,8 +90,8 @@ class Press:
             meta_cols  = [col for col in p if 'on' in col]
             _map = {}
             for col in meta_cols :
-                if col['on'] not in _map :                     
-                    _map[col['on']] = []                
+                if col['on'] not in _map :
+                    _map[col['on']] = []
                 _map[col['on']] += [col]
             filter = []
             CONJUNCTION = ' AND ' if self.deid_rules['suppress']['FILTERS'] else ' WHERE '
@@ -100,29 +100,29 @@ class Press:
                 # if _item['on'] not in filter :
                     # filter += [_item['on'].replace(' IN ','NOT IN')]
                 filter += [filter_id]
-                
+
                 # _sql = self.to_sql([_item]+ relational_cols ) + CONJUNCTION +_item['on']
                 _sql = self.to_sql(_item +relational_cols) + CONJUNCTION +filter_id
-                
+
                 sql += [ _sql]
                 # self.deid_rules['suppress']['FILTERS'] = self.deid_rules['suppress']['FILTERS'][:-1]
             #-- end of loop
             if ' AND ' in CONJUNCTION :
                 _rsql = self.to_sql(relational_cols) + ' AND ' + ' AND '.join(filter).replace(' IN ',' NOT IN ')
             else:
-                
+
                 _rsql = self.to_sql(relational_cols) + ' WHERE ' + ' '.join(filter).replace(' IN ',' NOT IN ')
-            
+
             #
             # @TODO: filters may need to be adjusted (add a conditional statement)
             #
-            
+
             # _rsql = _rsql +" AND "+ " AND ".join(filter).replace(' IN ',' NOT IN ')
             sql += [_rsql]
             sql = "\nUNION ALL\n".join(sql)
 
         # fields = self.get(limit  = 1).columns.tolist()
-        
+
         if 'debug' in self.action :
             self.debug(p)
         else:
@@ -132,8 +132,8 @@ class Press:
                 #
                 # Make this threaded if there is a submit action that is associated with it
                 self.simulate(p)
-        
-        
+
+
         pass
 
     def get_tablename(self):
@@ -142,17 +142,18 @@ class Press:
         TABLE_NAME = self.idataset+"."+self.tablename
         for row in info :
             print()
-            print (row['label'], not row['apply'])
+            print(row['label'], not row['apply'])
             print()
 
     def log (self,**args):
-            print (args)                
+            print (args)
+
     def simulate(self,info):
         """
         This function is not essential, but will attempt to log the various transformations on every field.
         This is because the testing team is incapable of applying adequate testing techniques and defining appropriate equivalence classes.
         :info   payload of that has all the transformations applied to a given table as follows
-                [{apply,label,name}] where 
+                [{apply,label,name}] where
                     - apply is the SQL to be applied
                     - label is the flag for the operation (generalize, suppress, compute, shift)
                     - name  is the attribute name that on which the rule gets applied
@@ -172,7 +173,7 @@ class Press:
                 counts [ labels[0].strip()]  = 0
             counts [ labels[0].strip()]  += 1
             if 'suppress' in labels or item['name'] == 'person_id' or dirty_date == True:
-                            
+
                 continue
             field = item['name']
             alias = 'original_' + field
@@ -183,29 +184,29 @@ class Press:
                 for row in FILTERS :
                     SQL += [row['filter']]
                     if FILTERS.index(row) < len(FILTERS) -1 :
-                        
+
                         SQL += ['AND']
             if 'on' in item :
                 #
                 # This applies to meta tables
-                
-                filters += [item['on']] #.replace(' IN ',' NOT IN ')]                
+
+                filters += [item['on']] #.replace(' IN ',' NOT IN ')]
                 SQL += ['AND' , item['on']] if FILTERS else ['WHERE ',item['on']]
             if 'shift' in labels:
                 df = self.get(sql = " ".join(SQL).replace(':idataset',self.idataset),limit=5)
             else:
                 df = self.get(sql = " ".join(SQL).replace(':idataset',self.idataset))
-            if df.shape[0] == 0 :    
-                self.log(module="simulate",table=TABLE_NAME,attribute=field,type=item['label'],status='no data-found')            
+            if df.shape[0] == 0 :
+                self.log(module="simulate",table=TABLE_NAME,attribute=field,type=item['label'],status='no data-found')
                 # print '\n\t'.join(SQL).replace(':idataset',self.idataset)
-                continue 
+                continue
             if 'shift' in item['label'] and df.shape[0] > 0 :
                 dirty= True
             df.columns = ['original','transformed']
             df['attribute'] = field
             df['task'] = item['label'].upper().replace('.', ' ')
-            out = out.append(df)            
-        #-- Let's evaluate row suppression here 
+            out = out.append(df)
+        #-- Let's evaluate row suppression here
         #
         out.index = range(out.shape[0])
         rdf = pd.DataFrame()
@@ -217,12 +218,12 @@ class Press:
 
             r = self.get(sql = " ".join(SQL).replace(":idataset",self.idataset))
             TABLE_NAME = self.idataset+"."+self.tablename
-            
+
             # df['attribute'] = ' * '
             rdf = pd.DataFrame({"operation":["row-suppression"],"count":r.transformed.tolist() })
 
         #
-        # We 
+        # We
         now = datetime.now()
         flag = "-".join(np.array([now.year,now.month,now.day,now.hour]).astype(str).tolist())
         for folder in [self.logpath, os.sep.join([self.logpath,self.idataset]),os.sep.join([self.logpath,self.idataset,flag]) ] :
@@ -238,7 +239,7 @@ class Press:
             _df = _map[path]
             _df.to_csv(path,encoding='utf-8')
         self.log(module='simulation',table=TABLE_NAME,status='completed',value=root)
-        
+
         # self.post(sample=out,stats={"counts"count,"row_suppression":rdf})
         #
         # Let's make sure this goes to a variety of formats
@@ -250,36 +251,36 @@ class Press:
         """
         :info   payload with information of the process to be performed
         """
-        
+
         TABLE_NAME = self.get_tablename()
-        fields = self.get(limit  = 1).columns.tolist()
+        fields = self.get(limit=1).columns.tolist()
         columns = list(fields)
         jobs = {}
-        SQL  = []
+        SQL = []
         p = {}
         self.log(module='to_sql',action='generating-sql',table=TABLE_NAME,fields=fields)
-        for id in ['generalize','suppress','shift','compute'] :
+        for id in ['generalize','suppress','shift','compute']:
             for row in info :
-                
+
                 name = row['name']
 
-                if id not in row['label'] or name not in fields:                    
-                    
+                if id not in row['label'] or name not in fields:
+
                     continue
-                
+
                 # p[name] = row['apply']
                 index = fields.index(name)
                 fields[index] = row['apply']
-        
+
         # other_fields = list( set(fields) - set(p.keys()) )
-        
+
         # SQL = ['SELECT', ",".join(p.values() + other_fields),'FROM ',TABLE_NAME]
         SQL = ['SELECT', ",".join(fields),'FROM ',TABLE_NAME]
-        
+
         if 'suppress' in self.deid_rules and 'FILTERS' in self.deid_rules['suppress']:
             FILTERS = self.deid_rules['suppress']['FILTERS']
-            if FILTERS : 
-                SQL += ['WHERE'] 
+            if FILTERS :
+                SQL += ['WHERE']
             for row in FILTERS :
                 if not (set(columns) & set(row['filter'].split(' '))) :
                     continue
@@ -288,7 +289,7 @@ class Press:
                     SQL += ['AND']
         # SQL = ['SELECT ',','.join(fields),'FROM (','\n'.join(SQL),')']
         return '\t'.join(SQL).replace(":idataset",self.idataset)
-  
+
 
 
     def to_pandas(rules,info):

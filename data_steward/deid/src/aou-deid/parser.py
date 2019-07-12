@@ -14,10 +14,12 @@ class Parse:
     """
     @staticmethod
     def init(id,row,cache):
-        if 'rules' in row :
-            _id,_key = row['rules'].replace('@','').split('.')
-        else:
+        try:
+            row_rules = row.get('rules', '')
+            _id, _key = row_rules.replace('@', '').split('.')
+        except ValueError:
             _id,_key = None,None
+
         label = ".".join([_id,_key]) if _key is not None else id
         
         if _id and _key  and _id in cache and _key in cache[_id]:
@@ -27,7 +29,7 @@ class Parse:
             p =  {'label':label}
         for key in row :
             p[key] = row[key] if key not in p else p[key]
-        
+
         return p    
         
         
