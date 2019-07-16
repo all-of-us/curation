@@ -466,6 +466,29 @@ def load_fact_relationship():
     query(q, 'fact_relationship')
 
 
+def person_query(table_name):
+    """
+    Maps location and care_Site id in person table
+
+    :return: query
+    """
+    ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+    columns, join_expression = join_expression_generator(table_name, ehr_rdr_dataset_id)
+    mapped_person_query = (' select {cols}\n'
+                           ' from {dataset}.{table}\n'
+                           ' {join_expr}').format(cols=columns,
+                                                  dataset=ehr_rdr_dataset_id,
+                                                  table=table_name,
+                                                  join_expr=join_expression)
+    return mapped_person_query
+
+
+def load_mapped_person():
+    q = person_query(PERSON_TABLE)
+    logger.debug('Query for Person table is {q}'.format(q=q))
+    query(q, 'person', write_disposition='WRITE_TRUNCATE')
+
+
 def main():
     logger.info('EHR + RDR combine started')
     logger.info('Verifying all CDM tables in EHR and RDR datasets...')
@@ -489,6 +512,8 @@ def main():
         load(domain_table)
     logger.info('Loading fact_relationship...')
     load_fact_relationship()
+    logger.info('Loading foreign key Mapped Person table...')
+    load_mapped_person()
     logger.info('EHR + RDR combine completed')
 
 
