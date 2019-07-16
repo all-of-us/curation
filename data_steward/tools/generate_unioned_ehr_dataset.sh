@@ -94,8 +94,19 @@ echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source
 echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_"
 ./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_
 
+echo "removing tables copies unintentionally"
+bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_condition_occurrence
+bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_device_exposure
+bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_drug_exposure
+bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_fact_relationship
+bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_measurement
+bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_note
+bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_observation
+bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_procedure_occurrence
+bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_specimen
+bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_visit_occurrence
+
 unset PYTHONPATH
 deactivate
 
-rm -rf curation_env
 
