@@ -65,7 +65,7 @@ source set_path.sh
 
 #--------------------------------------------------------
 #Combine RDR and Unioned EHR data (step 6 in playbook)
-cdr="${today}"
+cdr="combined${today}"
 tag=$(git describe --abbrev=0 --tags)
 version=${tag}
 
