@@ -49,6 +49,7 @@ import logging
 import bq_utils
 import common
 import resources
+import cdm
 
 logger = logging.getLogger(__name__)
 
@@ -59,10 +60,9 @@ PERSON_TABLE = 'person'
 OBSERVATION_TABLE = 'observation'
 VISIT_OCCURRENCE = 'visit_occurrence'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
-RDR_TABLES_TO_COPY = ['person', 'location', 'care_site']
+RDR_TABLES_TO_COPY = ['person']
 EHR_TABLES_TO_COPY = ['death']
-DOMAIN_TABLES = ['visit_occurrence', 'condition_occurrence', 'drug_exposure', 'measurement', 'procedure_occurrence',
-                 'observation', 'device_exposure']
+DOMAIN_TABLES = list(set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY))
 TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES
 
 
