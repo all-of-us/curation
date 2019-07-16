@@ -47,9 +47,9 @@ TODO
 import logging
 
 import bq_utils
+import cdm
 import common
 import resources
-import cdm
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +57,27 @@ SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
 EHR_CONSENT_TABLE_ID = '_ehr_consent'
 PERSON_TABLE = 'person'
+PERSON_ID = 'person_id'
 OBSERVATION_TABLE = 'observation'
-VISIT_OCCURRENCE = 'visit_occurrence'
-VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
+FOREIGN_KEYS_FIELDS = ['visit_occurrence_id', 'location_id', 'care_site_id', 'provider_id']
 RDR_TABLES_TO_COPY = ['person']
 EHR_TABLES_TO_COPY = ['death']
 DOMAIN_TABLES = list(set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY))
 TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES
+
+LEFT_JOIN = (' LEFT JOIN'
+             ' ('
+             ' SELECT *'
+             ' FROM ('
+             ' SELECT'
+             ' *,'
+             ' row_number() OVER (PARTITION BY {prefix}.{field}, {prefix}.src_hpo_id ) '
+             ' AS row_num'
+             ' FROM {dataset_id}.{table} {prefix}'
+             ' )'
+             ' WHERE row_num = 1'
+             ' ) {prefix}  ON t.{field} = {prefix}.src_{field}'
+             ' AND m.src_dataset_id = {prefix}.src_dataset_id')
 
 
 def query(q, dst_table_id, write_disposition='WRITE_APPEND'):
@@ -252,6 +266,51 @@ def mapping(domain_table):
             'Excluding table {table_id} from mapping query because it does not exist'.format(table_id=domain_table))
 
 
+def join_expression_generator(domain_table, ehr_rdr_dataset_id):
+    field_names = [field['name'] for field in resources.fields_for(domain_table)]
+    foreign_keys_flags = []
+    fields_to_join = []
+    primary_key = []
+    full_join_expression = ''
+    cols = ''
+
+    for field_name in field_names:
+        if field_name == domain_table + '_id' and field_name != PERSON_ID:
+            primary_key.append(field_name)
+        if field_name in FOREIGN_KEYS_FIELDS and field_name != domain_table + '_id':
+            fields_to_join.append(field_name)
+            foreign_keys_flags.append(field_name)
+
+    if fields_to_join:
+        col_exprs = []
+        for field in field_names:
+            if field in primary_key:
+                col_expr = 'm.' + field
+            if field in fields_to_join:
+                if field in foreign_keys_flags:
+                    col_expr = '{x}.'.format(x=field[:3]) + field
+            else:
+                col_expr = field
+            col_exprs.append(col_expr)
+        cols = ', '.join(col_exprs)
+
+        join_expression = []
+        for key in FOREIGN_KEYS_FIELDS:
+            if key in foreign_keys_flags:
+                table_alias = mapping_table_for('{x}'.format(x=key)[:-3])
+            join_expression.append(
+                LEFT_JOIN.format(dataset_id=ehr_rdr_dataset_id,
+                                 prefix=key[:3],
+                                 field=key,
+                                 table=table_alias
+                                 )
+            )
+
+        full_join_expression = " ".join(join_expression)
+
+    return cols, full_join_expression
+
+
 def load_query(domain_table):
     """
     Returns query used to load a domain table
@@ -263,101 +322,59 @@ def load_query(domain_table):
     ehr_dataset_id = bq_utils.get_dataset_id()
     ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
     mapping_table = mapping_table_for(domain_table)
-    has_visit_occurrence_id = False
-    id_col = '{domain_table}_id'.format(domain_table=domain_table)
-    fields = resources.fields_for(domain_table)
+    cols, join_expression = join_expression_generator(domain_table, ehr_rdr_dataset_id)
 
-    # Generate column expressions for select, ensuring that
-    #  1) we get the record IDs from the mapping table and
-    #  2) if there is a reference to `visit_occurrence` we get `visit_occurrence_id` from the mapping visit table
-    col_exprs = []
-    for field in fields:
-        field_name = field['name']
-        if field_name == id_col:
-            # Use mapping for record ID column
-            # m is an alias that should resolve to the associated mapping table
-            col_expr = 'm.{field_name} '.format(field_name=field_name)
-        elif field_name == VISIT_OCCURRENCE_ID:
-            # Replace with mapped visit_occurrence_id
-            # mv is an alias that should resolve to the mapping visit table
-            # Note: This is only reached when domain_table != visit_occurrence
-            col_expr = 'mv.' + VISIT_OCCURRENCE_ID
-            has_visit_occurrence_id = True
-        else:
-            col_expr = field_name
-        col_exprs.append(col_expr)
-    cols = ',\n  '.join(col_exprs)
-
-    visit_join_expr = ''
-    if has_visit_occurrence_id:
-        # Include a join to mapping visit table
-        # Note: Using left join in order to keep records that aren't mapped to visits
-        mv = mapping_table_for(VISIT_OCCURRENCE)
-        visit_join_expr = '''
-        LEFT JOIN
-        (
-            SELECT *
-            FROM (
-              SELECT
-                  *,
-                  row_number() OVER (PARTITION BY mv.visit_occurrence_id, mv.src_hpo_id ) AS row_num
-              FROM {ehr_rdr_dataset_id}.{mapping_visit_occurrence} mv
-            )
-            WHERE row_num = 1
-        ) mv  ON t.visit_occurrence_id = mv.src_visit_occurrence_id
-         AND m.src_dataset_id = mv.src_dataset_id'''.format(ehr_rdr_dataset_id=ehr_rdr_dataset_id,
-                                                            mapping_visit_occurrence=mv)
-
-    return '''
-    SELECT {cols}
-    FROM {rdr_dataset_id}.{domain_table} t
-    JOIN
-    (
-        SELECT *
-        FROM (
-          SELECT
-              *,
-              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id ) AS row_num
-          FROM {ehr_rdr_dataset_id}.{mapping_table} as m
-        )
-        WHERE row_num = 1
-    ) m        ON t.{domain_table}_id = m.src_{domain_table}_id {visit_join_expr}
-    WHERE m.src_dataset_id = '{rdr_dataset_id}'
-
-    UNION ALL
-
-    SELECT {cols}
-    FROM
-    (
-        SELECT *
-        FROM (
-          SELECT
-              *,
-              row_number() OVER (PARTITION BY m.{domain_table}_id) AS row_num
-          FROM {ehr_dataset_id}.{domain_table} as m
-        )
-        WHERE row_num = 1
-    ) t
-    JOIN
-    (
-        SELECT *
-        FROM (
-          SELECT
-              *,
-              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id) AS row_num
-          FROM {ehr_rdr_dataset_id}.{mapping_table} as m
-        )
-        WHERE row_num = 1
-    ) m
-        ON t.{domain_table}_id = m.src_{domain_table}_id {visit_join_expr}
-    WHERE m.src_dataset_id = '{ehr_dataset_id}'
-    '''.format(cols=cols,
-               domain_table=domain_table,
-               rdr_dataset_id=rdr_dataset_id,
-               ehr_dataset_id=ehr_dataset_id,
-               mapping_table=mapping_table,
-               visit_join_expr=visit_join_expr,
-               ehr_rdr_dataset_id=ehr_rdr_dataset_id)
+    return ('    SELECT {cols}'
+            '    FROM {rdr_dataset_id}.{domain_table} t'
+            '    JOIN'
+            '    ('
+            '        SELECT *'
+            '        FROM ('
+            '          SELECT'
+            '              *,'
+            '              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id ) AS row_num'
+            '          FROM {ehr_rdr_dataset_id}.{mapping_table} as m'
+            '        )'
+            '        WHERE row_num = 1'
+            '    ) m        ON t.{domain_table}_id = m.src_{domain_table}_id'
+            '       {join_expr}'
+            '    WHERE m.src_dataset_id = \'{rdr_dataset_id}\''
+            ''
+            '    UNION ALL'
+            ''
+            '    SELECT {cols}'
+            '    FROM'
+            '    ('
+            '        SELECT *'
+            '        FROM ('
+            '          SELECT'
+            '              *,'
+            '              row_number() OVER (PARTITION BY m.{domain_table}_id) AS row_num'
+            '          FROM {ehr_dataset_id}.{domain_table} as m'
+            '        )'
+            '        WHERE row_num = 1'
+            '    ) t'
+            '    JOIN'
+            '    ('
+            '        SELECT *'
+            '        FROM ('
+            '          SELECT'
+            '              *,'
+            '              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id) AS row_num'
+            '          FROM {ehr_rdr_dataset_id}.{mapping_table} as m'
+            '        )'
+            '        WHERE row_num = 1'
+            '    ) m'
+            '        ON t.{domain_table}_id = m.src_{domain_table}_id '
+            '       {join_expr}'
+            '    WHERE m.src_dataset_id = \'{ehr_dataset_id}\''
+            '    ').format(cols=cols,
+                           domain_table=domain_table,
+                           rdr_dataset_id=rdr_dataset_id,
+                           ehr_dataset_id=ehr_dataset_id,
+                           mapping_table=mapping_table,
+                           join_expr=join_expression,
+                           ehr_rdr_dataset_id=ehr_rdr_dataset_id)
 
 
 def load(domain_table):
