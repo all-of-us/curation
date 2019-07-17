@@ -184,7 +184,7 @@ def mapping_query(domain_table):
     :return:
     """
 
-    if combine_consts.PERSON_ID in resources.fields_for(domain_table):
+    if combine_consts.PERSON_ID in [field['name'] for field in resources.fields_for(domain_table)]:
         return ('SELECT DISTINCT'
                 ' \'{rdr_dataset_id}\'  AS src_dataset_id,'
                 '  {domain_table}_id  AS src_{domain_table}_id,'
@@ -205,7 +205,7 @@ def mapping_query(domain_table):
                 '  (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c'
                 '  WHERE t.person_id = c.person_id)').format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
                                                              ehr_dataset_id=bq_utils.get_dataset_id(),
-                                                             ehr_rdr_dataset_id=bq_utils.get_ehr_1rdr_dataset_id(),
+                                                             ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
                                                              domain_table=domain_table,
                                                              mapping_constant=common.RDR_ID_CONSTANT,
                                                              ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID)

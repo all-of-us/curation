@@ -139,28 +139,30 @@ class CombineEhrRdrTest(unittest.TestCase):
     def test_mapping_query(self):
         table_name = 'visit_occurrence'
         q = mapping_query(table_name)
-        expected_query = '''SELECT DISTINCT
-          '{rdr_dataset_id}'  AS src_dataset_id,
-          {domain_table}_id  AS src_{domain_table}_id,
-          'rdr' as src_hpo_id,
-          {domain_table}_id + {mapping_constant}  AS {domain_table}_id
-        FROM {rdr_dataset_id}.{domain_table}
-
-        UNION ALL
-
-        SELECT DISTINCT
-          '{ehr_dataset_id}'  AS src_dataset_id,
-          t.{domain_table}_id AS src_{domain_table}_id,
-          v.src_hpo_id AS src_hpo_id,
-          t.{domain_table}_id  AS {domain_table}_id
-        FROM {ehr_dataset_id}.{domain_table} t
-        JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id
-        WHERE EXISTS
-           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c
-            WHERE t.person_id = c.person_id)
-    '''.format(rdr_dataset_id=self.rdr_dataset_id, domain_table=table_name, ehr_dataset_id=self.ehr_dataset_id,
-               ehr_consent_table_id=EHR_CONSENT_TABLE_ID, ehr_rdr_dataset_id=self.combined_dataset_id,
-               mapping_constant=common.RDR_ID_CONSTANT)
+        expected_query = ('SELECT DISTINCT'
+                ' \'{rdr_dataset_id}\'  AS src_dataset_id,'
+                '  {domain_table}_id  AS src_{domain_table}_id,'
+                '  \'rdr\' as src_hpo_id,'
+                '  {domain_table}_id + {mapping_constant}  AS {domain_table}_id'
+                '  FROM {rdr_dataset_id}.{domain_table}'
+                ''
+                '  UNION ALL'
+                ''
+                '  SELECT DISTINCT'
+                '  \'{ehr_dataset_id}\'  AS src_dataset_id,'
+                '  t.{domain_table}_id AS src_{domain_table}_id,'
+                '  v.src_hpo_id AS src_hpo_id,'
+                '  t.{domain_table}_id  AS {domain_table}_id'
+                '  FROM {ehr_dataset_id}.{domain_table} t'
+                '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id'
+                '  WHERE EXISTS'
+                '  (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c'
+                '  WHERE t.person_id = c.person_id)').format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+                                                             ehr_dataset_id=bq_utils.get_dataset_id(),
+                                                             ehr_rdr_dataset_id=self.combined_dataset_id,
+                                                             domain_table=table_name,
+                                                             mapping_constant=common.RDR_ID_CONSTANT,
+                                                             ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
 
         self.assertEqual(expected_query, q, "Mapping query for \n {q} \n to is not as expected".format(q=q))
 
