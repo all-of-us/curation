@@ -291,14 +291,24 @@ def join_expression_generator(domain_table, ehr_rdr_dataset_id):
 
     for key in combine_consts.FOREIGN_KEYS_FIELDS:
         if key in fields_to_join:
-            table_alias = mapping_table_for('{x}'.format(x=key)[:-3])
-            join_expression.append(
-                combine_consts.LEFT_JOIN.format(dataset_id=ehr_rdr_dataset_id,
-                                                prefix=key[:3],
-                                                field=key,
-                                                table=table_alias
-                                                )
-            )
+            if domain_table == combine_consts.PERSON_TABLE:
+                table_alias = mapping_table_for('{x}'.format(x=key)[:-3])
+                join_expression.append(
+                    combine_consts.LEFT_JOIN_PERSON.format(dataset_id=ehr_rdr_dataset_id,
+                                                           prefix=key[:3],
+                                                           field=key,
+                                                           table=table_alias
+                                                           )
+                )
+            else:
+                table_alias = mapping_table_for('{x}'.format(x=key)[:-3])
+                join_expression.append(
+                    combine_consts.LEFT_JOIN.format(dataset_id=ehr_rdr_dataset_id,
+                                                    prefix=key[:3],
+                                                    field=key,
+                                                    table=table_alias
+                                                    )
+                )
     full_join_expression = " ".join(join_expression)
     return cols, full_join_expression
 

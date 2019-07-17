@@ -24,3 +24,17 @@ LEFT_JOIN = (' LEFT JOIN'
              ' WHERE row_num = 1'
              ' ) {prefix}  ON t.{field} = {prefix}.src_{field}'
              ' AND m.src_dataset_id = {prefix}.src_dataset_id')
+
+LEFT_JOIN_PERSON = (' LEFT JOIN'
+                    ' ('
+                    ' SELECT *'
+                    ' FROM ('
+                    ' SELECT'
+                    ' *,'
+                    ' row_number() OVER (PARTITION BY {prefix}.{field}, {prefix}.src_hpo_id ) '
+                    ' AS row_num'
+                    ' FROM {dataset_id}.{table} {prefix}'
+                    ' )'
+                    ' WHERE row_num = 1'
+                    ' ) {prefix}  ON t.{field} = {prefix}.src_{field}'
+                    )
