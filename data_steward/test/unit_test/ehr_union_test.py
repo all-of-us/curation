@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import unittest
 
 import dpath
@@ -7,8 +8,8 @@ import moz_sql_parser
 from google.appengine.ext import testbed
 
 import bq_utils
-import common
 import cdm
+import constants.validation.ehr_union as eu_constants
 import gcs_utils
 import resources
 import test_util
@@ -60,7 +61,8 @@ class EhrUnionTest(unittest.TestCase):
             field = table + '_id'
             mapped_fields.append(field)
         self.mapped_fields = mapped_fields
-        self.implemented_foreign_keys = [common.VISIT_OCCURRENCE_ID, common.CARE_SITE_ID, common.LOCATION_ID]
+        self.implemented_foreign_keys = [eu_constants.VISIT_OCCURRENCE_ID, eu_constants.CARE_SITE_ID,
+                                         eu_constants.LOCATION_ID]
 
     def _empty_hpo_buckets(self):
         for hpo_id in self.hpo_ids:
@@ -311,7 +313,7 @@ class EhrUnionTest(unittest.TestCase):
                   FROM `{app_id}.{dataset_id}.pitt_measurement`)
                 
     )
-    SELECT 
+    SELECT DISTINCT
         src_table_id,
         src_measurement_id,
         measurement_id,
@@ -323,25 +325,25 @@ class EhrUnionTest(unittest.TestCase):
 
     def convert_ehr_person_to_observation(self, person_row):
         obs_rows = []
-        dob_row = {'observation_concept_id': common.DOB_CONCEPT_ID,
+        dob_row = {'observation_concept_id': eu_constants.DOB_CONCEPT_ID,
                    'observation_source_value': None,
                    'value_as_string': person_row['birth_datetime'],
                    'person_id': person_row['person_id'],
                    'observation_date': person_row['birth_date'],
                    'value_as_concept_id': None}
-        gender_row = {'observation_concept_id': common.GENDER_CONCEPT_ID,
+        gender_row = {'observation_concept_id': eu_constants.GENDER_CONCEPT_ID,
                       'observation_source_value': person_row['gender_source_value'],
                       'value_as_string': None,
                       'person_id': person_row['person_id'],
                       'observation_date': person_row['birth_date'],
                       'value_as_concept_id': person_row['gender_concept_id']}
-        race_row = {'observation_concept_id': common.RACE_CONCEPT_ID,
+        race_row = {'observation_concept_id': eu_constants.RACE_CONCEPT_ID,
                     'observation_source_value': person_row['race_source_value'],
                     'value_as_string': None,
                     'person_id': person_row['person_id'],
                     'observation_date': person_row['birth_date'],
                     'value_as_concept_id': person_row['race_concept_id']}
-        ethnicity_row = {'observation_concept_id': common.ETHNICITY_CONCEPT_ID,
+        ethnicity_row = {'observation_concept_id': eu_constants.ETHNICITY_CONCEPT_ID,
                          'observation_source_value': person_row['ethnicity_source_value'],
                          'value_as_string': None,
                          'person_id': person_row['person_id'],
@@ -392,10 +394,10 @@ class EhrUnionTest(unittest.TestCase):
             '''
 
         obs_query = query.format(output_dataset_id=self.output_dataset_id,
-                                 gender_concept_id=common.GENDER_CONCEPT_ID,
-                                 race_concept_id=common.RACE_CONCEPT_ID,
-                                 dob_concept_id=common.DOB_CONCEPT_ID,
-                                 ethnicity_concept_id=common.ETHNICITY_CONCEPT_ID)
+                                 gender_concept_id=eu_constants.GENDER_CONCEPT_ID,
+                                 race_concept_id=eu_constants.RACE_CONCEPT_ID,
+                                 dob_concept_id=eu_constants.DOB_CONCEPT_ID,
+                                 ethnicity_concept_id=eu_constants.ETHNICITY_CONCEPT_ID)
         obs_response = bq_utils.query(obs_query)
         obs_rows = bq_utils.response2rows(obs_response)
         actual = obs_rows
@@ -444,6 +446,11 @@ class EhrUnionTest(unittest.TestCase):
 
     def get_table_hpo_subquery_error(self, table, dataset_in, dataset_out):
         subquery = ehr_union.table_hpo_subquery(table, NYC_HPO_ID, dataset_in, dataset_out)
+
+        # moz-sql-parser doesn't support the ROW_NUMBER() OVER() a analytical function of sql we are removing
+        # that statement from the returned query for the parser be able to parse out the query without erroring out.
+
+        subquery = re.sub(r",\s+ROW_NUMBER\(\) OVER \(PARTITION BY nm\..+?_id\) AS row_num", " ", subquery)
         stmt = moz_sql_parser.parse(subquery)
 
         # Sanity check it is a select statement
@@ -455,7 +462,8 @@ class EhrUnionTest(unittest.TestCase):
                                             subquery=subquery)
 
         # Input table should be first in FROM expression
-        actual_from = first_or_none(dpath.util.values(stmt, 'from/0/value') or dpath.util.values(stmt, 'from'))
+        actual_from = first_or_none(
+            dpath.util.values(stmt, 'from/0/value/from/value') or dpath.util.values(stmt, 'from'))
         expected_from = dataset_in + '.' + bq_utils.get_table_id(NYC_HPO_ID, table)
         if expected_from != actual_from:
             return SUBQUERY_FAIL_MSG.format(expr='first object in FROM',
@@ -501,27 +509,14 @@ class EhrUnionTest(unittest.TestCase):
 
         # Key fields should be populated using associated mapping tables
         for table in resources.CDM_TABLES:
-            subquery_fail = self.get_table_hpo_subquery_error(table, input_dataset_id, output_dataset_id)
-            if subquery_fail is not None:
-                subquery_fails.append(subquery_fail)
+            # This condition is to exempt person table from table hpo sub query
+            if table != eu_constants.PERSON:
+                subquery_fail = self.get_table_hpo_subquery_error(table, input_dataset_id, output_dataset_id)
+                if subquery_fail is not None:
+                    subquery_fails.append(subquery_fail)
 
         if len(subquery_fails) > 0:
             self.fail('\n\n'.join(subquery_fails))
-
-    def _test_table_union_query(self):
-        measurement = ehr_union.table_union_query(
-            'measurement', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
-        # person is a simple union without has no mapping
-        person = ehr_union.table_union_query(
-            'person', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
-        visit_occurrence = ehr_union.table_union_query(
-            'visit_occurrence', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
-        death = ehr_union.table_union_query(
-            'death', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
-        care_site = ehr_union.table_union_query(
-            'care_site', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
-        location = ehr_union.table_union_query(
-            'location', self.hpo_ids, self.input_dataset_id, self.output_dataset_id)
 
     def tearDown(self):
         self._empty_hpo_buckets()

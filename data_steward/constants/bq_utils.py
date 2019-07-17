@@ -18,6 +18,11 @@ BATCH = 'BATCH'
 INTERACTIVE = 'INTERACTIVE'
 PRIORITY_TAG = 'priority'
 
+# API Dataset job body values
+WRITE_TRUNCATE = 'WRITE_TRUNCATE'
+WRITE_EMPTY = 'WRITE_EMPTY'
+WRITE_APPEND = 'WRITE_APPEND'
+
 # Query response fields
 PAGE_TOKEN = 'pageToken'
 JOB_REFERENCE = 'jobReference'
