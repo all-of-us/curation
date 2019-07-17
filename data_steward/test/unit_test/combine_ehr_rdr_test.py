@@ -15,6 +15,37 @@ from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_tab
 from tools.combine_ehr_rdr import logger
 from tools.combine_ehr_rdr import mapping_query
 
+EXPECTED_MAPPING_QUERY = ('SELECT DISTINCT'
+                          ' \'{rdr_dataset_id}\'  AS src_dataset_id,'
+                          '  {domain_table}_id  AS src_{domain_table}_id,'
+                          '  \'rdr\' as src_hpo_id,'
+                          '  {domain_table}_id + {mapping_constant}  AS {domain_table}_id'
+                          '  FROM {rdr_dataset_id}.{domain_table}'
+                          ''
+                          '  UNION ALL'
+                          ''
+                          '  SELECT DISTINCT'
+                          '  \'{ehr_dataset_id}\'  AS src_dataset_id,'
+                          '  t.{domain_table}_id AS src_{domain_table}_id,'
+                          '  v.src_hpo_id AS src_hpo_id,'
+                          '  t.{domain_table}_id  AS {domain_table}_id'
+                          '  FROM {ehr_dataset_id}.{domain_table} t'
+                          '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{'
+                          'domain_table}_id'
+                          '  WHERE EXISTS'
+                          '  (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c'
+                          '  WHERE t.person_id = c.person_id)')
+
+UNCONSENTED_EHR_COUNTS_QUERY = ('  select \'{domain_table}\' as table_id, count(1) as n from (SELECT DISTINCT'
+                                '  v.src_hpo_id AS src_hpo_id,'
+                                '  t.{domain_table}_id  AS {domain_table}_id'
+                                '  FROM {ehr_dataset_id}.{domain_table} t'
+                                '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{'
+                                'domain_table}_id'
+                                '  WHERE NOT EXISTS'
+                                '  (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c'
+                                '  WHERE t.person_id = c.person_id))')
+
 
 class CombineEhrRdrTest(unittest.TestCase):
 
@@ -139,31 +170,12 @@ class CombineEhrRdrTest(unittest.TestCase):
     def test_mapping_query(self):
         table_name = 'visit_occurrence'
         q = mapping_query(table_name)
-        expected_query = ('SELECT DISTINCT'
-                          ' \'{rdr_dataset_id}\'  AS src_dataset_id,'
-                          '  {domain_table}_id  AS src_{domain_table}_id,'
-                          '  \'rdr\' as src_hpo_id,'
-                          '  {domain_table}_id + {mapping_constant}  AS {domain_table}_id'
-                          '  FROM {rdr_dataset_id}.{domain_table}'
-                          ''
-                          '  UNION ALL'
-                          ''
-                          '  SELECT DISTINCT'
-                          '  \'{ehr_dataset_id}\'  AS src_dataset_id,'
-                          '  t.{domain_table}_id AS src_{domain_table}_id,'
-                          '  v.src_hpo_id AS src_hpo_id,'
-                          '  t.{domain_table}_id  AS {domain_table}_id'
-                          '  FROM {ehr_dataset_id}.{domain_table} t'
-                          '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{'
-                          'domain_table}_id'
-                          '  WHERE EXISTS'
-                          '  (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c'
-                          '  WHERE t.person_id = c.person_id)').format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-                                                                       ehr_dataset_id=bq_utils.get_dataset_id(),
-                                                                       ehr_rdr_dataset_id=self.combined_dataset_id,
-                                                                       domain_table=table_name,
-                                                                       mapping_constant=common.RDR_ID_CONSTANT,
-                                                                       ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+        expected_query = EXPECTED_MAPPING_QUERY.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+                                                       ehr_dataset_id=bq_utils.get_dataset_id(),
+                                                       ehr_rdr_dataset_id=self.combined_dataset_id,
+                                                       domain_table=table_name,
+                                                       mapping_constant=common.RDR_ID_CONSTANT,
+                                                       ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
 
         self.assertEqual(expected_query, q, "Mapping query for \n {q} \n to is not as expected".format(q=q))
 
@@ -198,18 +210,11 @@ class CombineEhrRdrTest(unittest.TestCase):
                               'EHR-only person_id `{ehr_person_id}` found in combined when it should be excluded')
 
     def get_unconsented_ehr_records_count(self, table_name):
-        q = ('  select \'{domain_table}\' as table_id, count(1) as n from (SELECT DISTINCT'
-             '  v.src_hpo_id AS src_hpo_id,'
-             '  t.{domain_table}_id  AS {domain_table}_id'
-             '  FROM {ehr_dataset_id}.{domain_table} t'
-             '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id'
-             '  WHERE NOT EXISTS'
-             '  (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c'
-             '  WHERE t.person_id = c.person_id))').format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-                                                           ehr_dataset_id=bq_utils.get_dataset_id(),
-                                                           ehr_rdr_dataset_id=self.combined_dataset_id,
-                                                           domain_table=table_name,
-                                                           ehr_consent_table_id='_ehr_consent')
+        q = UNCONSENTED_EHR_COUNTS_QUERY.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+                                                ehr_dataset_id=bq_utils.get_dataset_id(),
+                                                ehr_rdr_dataset_id=self.combined_dataset_id,
+                                                domain_table=table_name,
+                                                ehr_consent_table_id='_ehr_consent')
         response = bq_utils.query(q)
         rows = bq_utils.response2rows(response)
         return rows[0]['n']
