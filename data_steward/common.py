@@ -1,3 +1,5 @@
+from constants.validation.participants.identity_match import REPORT_DIRECTORY_REGEX
+
 PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_mrn', 'participant_match']
 AOU_REQUIRED = ['care_site', 'condition_occurrence', 'death', 'device_exposure', 'drug_exposure',
                 'fact_relationship', 'location', 'measurement', 'note', 'observation', 'person',
@@ -79,7 +81,8 @@ DOB_CONSTANT_FACTOR = 3 * CONCEPT_CONSTANT_FACTOR
 ETHNICITY_CONSTANT_FACTOR = 4 * CONCEPT_CONSTANT_FACTOR
 
 PARTICIPANT_DIR = 'participant/'
-IGNORE_DIRECTORIES = [PARTICIPANT_DIR]
+DRC_REPORTS_DIR = REPORT_DIRECTORY_REGEX
+IGNORE_DIRECTORIES = [PARTICIPANT_DIR, DRC_REPORTS_DIR]
 MEASUREMENT_DOMAIN_CONCEPT_ID = 21
 OBSERVATION_DOMAIN_CONCEPT_ID = 27
 PERSON_DOMAIN_CONCEPT_ID = 56

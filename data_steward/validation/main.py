@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import os
+import re
 import StringIO
 
 # Third party imports
@@ -556,7 +557,8 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
 
     :param bucket: string bucket name to look into
     :param bucket_items: list of unicode string items in the bucket
-    :param force_process: if True return most recently updated directory, even if it has already been processed.
+    :param force_process: if True return most recently updated directory, even
+        if it has already been processed.
     :returns: a directory prefix string of the form "<directory_name>/" if
         the directory has not been processed, it is not an ignored directory,
         and force_process is False.  a directory prefix string of the form
@@ -574,10 +576,12 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
     for folder_name in all_folder_list:
         # DC-343  special temporary case where we have to deal with a possible
         # directory dumped into the bucket by 'ehr sync' process from RDR
-        if folder_name.lower() in common.IGNORE_DIRECTORIES:
-            logging.info("Skipping %s directory.  It is not a submission "
-                         "directory.", folder_name)
-            continue
+        for exp in common.IGNORE_DIRECTORIES:
+            compiled_exp = re.compile(exp)
+            if compiled_exp.match(folder_name.lower()):
+                logging.info("Skipping %s directory.  It is not a submission "
+                             "directory.", folder_name)
+                continue
 
         # this is not in a try/except block because this follows a bucket read which is in a try/except
         folder_bucket_items = [item for item in bucket_items if item['name'].startswith(folder_name)]

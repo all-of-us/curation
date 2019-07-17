@@ -53,5 +53,6 @@ BIRTH_DATETIME_FIELD = 'birth_datetime'
 
 REPORT_TITLE = 'id-validation.csv'
 REPORT_DIRECTORY = 'drc-validations-{date}'
+REPORT_DIRECTORY_REGEX = 'drc-validations-\d{8}'
 
 DESTINATION_DATASET_DESCRIPTION = '{version} {rdr_dataset} + {ehr_dataset}'
