@@ -243,7 +243,6 @@ class deid (Rules):
 
                     if rules.index(rule) % 2 == 0 or rules.index(rule) % 3:
                         cond += [SYNTAX['ELSE']]
-                    pass
 
 
             #
@@ -264,18 +263,17 @@ class deid (Rules):
         return out
 
 
-        pass
-    def suppress(self,**args):
+    def suppress(self, **args):
         """
         We should be able to suppress the columns and/or rows provided specification
         NOTE: Non-sensical specs aren't handled for instance
 
         """
 
-        rules = args['rules'] if 'rules' in args else {}
+        rules = args.get('rules', {})
 
         label  = args['label']
-        fields = args['fields'] if 'fields' in args else []
+        fields = args.get('fields', [])
 
         store_id = args['store']
         APPLY_FN = self.store_syntax[store_id]['apply'] if 'apply' in self.store_syntax[store_id] else {}
@@ -289,8 +287,8 @@ class deid (Rules):
             #
             # This applies on a relational table's columns, it is simple we just nullify the fields
             #
-            for name in fields :
-                if not rules :
+            for name in fields:
+                if not rules:
                     #
                     # This scenario, we know the fields upfront and don't have a rule for them
                     # We just need them removed (simple/basic case)
@@ -306,10 +304,9 @@ class deid (Rules):
                     # This will apply to all tables that are passed through this engine
                     #
 
-                    for rule in rules :
-                        if 'apply' not in rules :
-
-                            if name in rule['values'] :
+                    for rule in rules:
+                        if 'apply' not in rules:
+                            if name in rule['values']:
                                 #-- This will prevent accidental type changes,
                                 # from STRING to INTEGER and INTEGER to STRING
                                 value = ("FORMAT('%i', NULL) AS " + name) if name.endswith('_value') else ('NULL AS ' + name)
@@ -322,19 +319,16 @@ class deid (Rules):
             #   - filter    as the key field to match the filter
             #   - The values of the filter are provided by the rule
             #
-            # self.log(module='suppress',label=label.split('.')[1],on='*',type='rows')
 
-            for rule in rules :
-                qualifier = args['qualifier'] if 'qualifier' in args else ''
+            for rule in rules:
+                qualifier = args.get('qualifier', '')
                 APPLY= {'IN':'NOT IN','=':'<>','NOT IN':'IN','<>':'=','':'IS FALSE','TRUE':'IS FALSE'}
 
-                if 'apply' in rule and rule['apply'] in APPLY_FN :
-
-
+                if 'apply' in rule and rule['apply'] in APPLY_FN:
                     TEMPLATE = self.store_syntax[store_id]['apply'][rule['apply']]
                     key_field  = args['filter'] if 'filter' in args else args['on']
                     expression = TEMPLATE.replace(':VAR',"|".join(rule['values']) ).replace(':FN',rule['apply']).replace(':FIELD', key_field)
-                    self.cache['suppress']['FILTERS'].append({"filter": expression +' '+ qualifier,"label":label})
+                    self.cache['suppress']['FILTERS'].append({"filter": expression + ' ' + qualifier, "label": label})
                 elif 'on' in args:
                     #
                     # If we have no application of a function, we will assume an expression of type <attribute> IN <list>
@@ -344,8 +338,6 @@ class deid (Rules):
                     expression   = " ".join([args['on'],qualifier,"('"+ "','".join(rule['values'])+"')"])
                     # print expression
                     self.cache['suppress']['FILTERS'].append({"filter": expression ,"label":label})
-                    # out.append({"filter": expression +' '+ APPLY[qualifier],"label":label})
-                    # self.cache['suppress']['FILTERS'].append({"filter": expression +' '+ APPLY[qualifier],"label":label})
 
 
         return out
@@ -367,8 +359,6 @@ class deid (Rules):
 
         SHIFT_CONFIG = self.cache['shift']
         COND_SYNTAX = self.store_syntax[store_id]['cond_syntax']
-        # SHIFT_DAYS = 'SELECT shift FROM :idataset.deid_map map_user WHERE map_user.person_id = :table.person_id'
-        # SHIFT_DAYS = SHIFT_DAYS.replace(":idataset",self.idataset).replace(":table",self.tablename)
         out = []
 
         if 'fields' in args :
@@ -394,7 +384,6 @@ class deid (Rules):
             #
             # we are dealing with a meta table here
             #
-            pass
         return out
 
     def compute(self,**args):

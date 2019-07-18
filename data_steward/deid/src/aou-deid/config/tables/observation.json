@@ -46,7 +46,8 @@
     ],
     "suppress":[
         {"rules":"@suppress.ROWS",
-         "on":"observation_source_value"}
+         "on":"observation_source_value"},
+        {"rules": "@suppress.ROWS", "fields": ["observation_concept_id"], "values": {"apply": " = 4013886"}}
 
     ],
     "shift":[
