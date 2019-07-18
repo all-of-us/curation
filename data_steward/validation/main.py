@@ -576,12 +576,16 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
     for folder_name in all_folder_list:
         # DC-343  special temporary case where we have to deal with a possible
         # directory dumped into the bucket by 'ehr sync' process from RDR
+        ignore_folder = False
         for exp in common.IGNORE_DIRECTORIES:
             compiled_exp = re.compile(exp)
             if compiled_exp.match(folder_name.lower()):
                 logging.info("Skipping %s directory.  It is not a submission "
                              "directory.", folder_name)
-                continue
+                ignore_folder = True
+
+        if ignore_folder:
+            continue
 
         # this is not in a try/except block because this follows a bucket read which is in a try/except
         folder_bucket_items = [item for item in bucket_items if item['name'].startswith(folder_name)]
