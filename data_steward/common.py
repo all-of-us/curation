@@ -1,3 +1,6 @@
+from constants.bq_utils import VALIDATION_DATASET_REGEX
+from constants.validation.participants.identity_match import REPORT_DIRECTORY_REGEX
+
 PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_mrn', 'participant_match']
 AOU_REQUIRED = ['care_site', 'condition_occurrence', 'death', 'device_exposure', 'drug_exposure',
                 'fact_relationship', 'location', 'measurement', 'note', 'observation', 'person',
@@ -64,7 +67,11 @@ ID_CONSTANT_FACTOR = 1000000000000000
 RDR_ID_CONSTANT = ID_CONSTANT_FACTOR
 
 PARTICIPANT_DIR = 'participant/'
-IGNORE_DIRECTORIES = [PARTICIPANT_DIR]
+IGNORE_DIRECTORIES = [
+    PARTICIPANT_DIR,
+    REPORT_DIRECTORY_REGEX,
+    VALIDATION_DATASET_REGEX,
+]
 
 OBSERVATION_TO_MEASUREMENT_CONCEPT_ID = 581410
 MEASUREMENT_TO_OBSERVATION_CONCEPT_ID = 581411

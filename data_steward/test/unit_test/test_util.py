@@ -1,9 +1,9 @@
 import os
 
 import common
+import constants.validation.main as main
 import gcs_utils
 import resources
-from validation import main
 
 FAKE_HPO_ID = 'fake'
 VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID

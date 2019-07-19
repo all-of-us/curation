@@ -48,7 +48,7 @@ def hpo_gcs_path(hpo_id):
 
 
 def create_service():
-    return googleapiclient.discovery.build('storage', 'v1')
+    return googleapiclient.discovery.build('storage', 'v1', cache={})
 
 
 def list_bucket_dir(gcs_path):

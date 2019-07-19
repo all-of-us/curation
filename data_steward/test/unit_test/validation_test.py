@@ -5,6 +5,7 @@ import StringIO
 import datetime
 import json
 import os
+import re
 import unittest
 
 import mock
@@ -18,6 +19,7 @@ import gcs_utils
 import resources
 import test.unit_test.test_util as test_util
 from validation import main
+import constants.validation.participants.identity_match as id_match_consts
 
 
 class ValidationTest(unittest.TestCase):
@@ -176,20 +178,48 @@ class ValidationTest(unittest.TestCase):
                     self.table_has_clustering(table_info)
 
     def test_folder_list(self):
-        folder_prefix_1 = '2018-03-22-v1/'
-        folder_prefix_2 = '2018-03-22-v2/'
-        folder_prefix_3 = '2018-03-22-v3/'
-        file_list = [folder_prefix_1 + 'person.csv',
-                     folder_prefix_2 + 'blah.csv',
-                     folder_prefix_3 + 'visit_occurrence.csv',
-                     'person.csv']
+        fmt = '%Y-%m-%dT%H:%M:%S.%fZ'
+        now = datetime.datetime.now()
+        t0 = (now - datetime.timedelta(days=3)).strftime(fmt)
+        t1 = (now - datetime.timedelta(days=2)).strftime(fmt)
+        t2 = (now - datetime.timedelta(days=1)).strftime(fmt)
+        t3 = (now - datetime.timedelta(hours=1)).strftime(fmt)
+        expected = 't2/'
+        bucket_items = [{'name': 't0/person.csv',
+                         'updated': t0,
+                         'timeCreated': t0},
+                        {'name': 't1/person.csv',
+                         'updated': t1,
+                         'timeCreated': t1},
+                        {'name': '%sperson.csv' % expected,
+                         'updated': t2,
+                         'timeCreated': t2}]
 
-        for filename in file_list:
-            test_util.write_cloud_str(self.hpo_bucket, filename, ".\n .")
+        # mock bypasses api call and says no folders were processed
+        with mock.patch('validation.main._validation_done') as mock_validation_done:
+            mock_validation_done.return_value = False
 
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        folder_prefix = main._get_submission_folder(self.hpo_bucket, bucket_items)
-        self.assertEqual(folder_prefix, folder_prefix_3)
+            # should be bucket_item with latest timestamp
+            submission_folder = main._get_submission_folder(self.hpo_bucket, bucket_items)
+            self.assertEqual(submission_folder, expected)
+
+            # report dir should be ignored despite being more recent than t2
+            report_dir = id_match_consts.REPORT_DIRECTORY.format(date=now.strftime('%Y%m%d'))
+            # sanity check
+            compiled_exp = re.compile(id_match_consts.REPORT_DIRECTORY_REGEX)
+            assert (compiled_exp.match(report_dir))
+            report_item = {'name': '%s/id-validation.csv' % report_dir,
+                           'updated': t3,
+                           'timeCreated': t3}
+            submission_folder = main._get_submission_folder(self.hpo_bucket, bucket_items + [report_item])
+            self.assertEqual(submission_folder, 't2/')
+
+            # participant dir should be ignored despite being more recent than t2
+            partipant_item = {'name': '%s/person.csv' % common.PARTICIPANT_DIR,
+                              'updated': t3,
+                              'timeCreated': t3}
+            submission_folder = main._get_submission_folder(self.hpo_bucket, bucket_items + [partipant_item])
+            self.assertEqual(submission_folder, 't2/')
 
     def test_check_processed(self):
         test_util.write_cloud_str(self.hpo_bucket, self.folder_prefix + 'person.csv', '\n')

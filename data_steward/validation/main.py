@@ -1,31 +1,35 @@
 #!/usr/bin/env python
-import StringIO
+# Python imports
 import datetime
 import json
 import logging
 import os
+import re
+import StringIO
 
+# Third party imports
 from flask import Flask
 from google.appengine.api.app_identity import app_identity
 from googleapiclient.errors import HttpError
 
+# Project imports
 import api_util
 import bq_utils
 import cdm
 import common
-import constants.validation.main as main_constants
+import constants.validation.main as consts
 import gcs_utils
 import resources
 import validation.achilles as achilles
 import validation.achilles_heel as achilles_heel
 import validation.ehr_union as ehr_union
 import validation.export as export
+import validation.participants.identity_match as matching
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
 
-PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
 
@@ -307,29 +311,29 @@ def process_hpo(hpo_id, force_run=False):
         # Get heel errors into results.html
         if achilles_success:
             heel_errors, heel_header_list = add_table_in_results_html(hpo_id,
-                                                                      main_constants.HEEL_ERROR_QUERY_VALIDATION,
-                                                                      main_constants.ACHILLES_HEEL_RESULTS_TABLE,
-                                                                      main_constants.HEEL_ERROR_HEADERS)
+                                                                      consts.HEEL_ERROR_QUERY_VALIDATION,
+                                                                      consts.ACHILLES_HEEL_RESULTS_TABLE,
+                                                                      consts.HEEL_ERROR_HEADERS)
         else:
             # if achilles has failed, print a message stating it instead of heel errors
-            heel_header_list = main_constants.HEEL_ERROR_HEADERS
+            heel_header_list = consts.HEEL_ERROR_HEADERS
             heel_errors = [
-                (main_constants.NULL_MESSAGE, main_constants.HEEL_ERROR_FAIL_MESSAGE, main_constants.NULL_MESSAGE,
-                 main_constants.NULL_MESSAGE)]
+                (consts.NULL_MESSAGE, consts.HEEL_ERROR_FAIL_MESSAGE, consts.NULL_MESSAGE,
+                 consts.NULL_MESSAGE)]
 
         # Get Duplicate id counts per table into results.html
         duplicate_counts, duplicate_header_list = add_table_in_results_html(hpo_id,
-                                                                            main_constants.DUPLICATE_IDS_SUBQUERY,
+                                                                            consts.DUPLICATE_IDS_SUBQUERY,
                                                                             None,
-                                                                            main_constants.DUPLICATE_IDS_HEADERS,
-                                                                            query_wrapper=main_constants.DUPLICATE_IDS_WRAPPER,
+                                                                            consts.DUPLICATE_IDS_HEADERS,
+                                                                            query_wrapper=consts.DUPLICATE_IDS_WRAPPER,
                                                                             is_subquery=True)
 
         # Get Drug check counts into results.html
         drug_checks, drug_header_list = add_table_in_results_html(hpo_id,
-                                                                  main_constants.DRUG_CHECKS_QUERY_VALIDATION,
-                                                                  main_constants.DRUG_CHECK_TABLE,
-                                                                  main_constants.DRUG_CHECK_HEADERS)
+                                                                  consts.DRUG_CHECKS_QUERY_VALIDATION,
+                                                                  consts.DRUG_CHECK_TABLE,
+                                                                  consts.DRUG_CHECK_HEADERS)
 
         now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
 
@@ -409,7 +413,7 @@ def get_query_result(hpo_id, query_string, table_id, query_wrapper, is_subquery,
                                                 dataset_id=dataset_id,
                                                 domain_table=table)
                 sub_queries.append(sub_query)
-        unioned_query = main_constants.UNION_ALL.join(sub_queries)
+        unioned_query = consts.UNION_ALL.join(sub_queries)
         if unioned_query and query_wrapper is not None:
             query = query_wrapper.format(union_of_subqueries=unioned_query)
         else:
@@ -553,7 +557,8 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
 
     :param bucket: string bucket name to look into
     :param bucket_items: list of unicode string items in the bucket
-    :param force_process: if True return most recently updated directory, even if it has already been processed.
+    :param force_process: if True return most recently updated directory, even
+        if it has already been processed.
     :returns: a directory prefix string of the form "<directory_name>/" if
         the directory has not been processed, it is not an ignored directory,
         and force_process is False.  a directory prefix string of the form
@@ -571,9 +576,15 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
     for folder_name in all_folder_list:
         # DC-343  special temporary case where we have to deal with a possible
         # directory dumped into the bucket by 'ehr sync' process from RDR
-        if folder_name.lower() in common.IGNORE_DIRECTORIES:
-            logging.info("Skipping %s directory.  It is not a submission "
-                         "directory.", folder_name)
+        ignore_folder = False
+        for exp in common.IGNORE_DIRECTORIES:
+            compiled_exp = re.compile(exp)
+            if compiled_exp.match(folder_name.lower()):
+                logging.info("Skipping %s directory.  It is not a submission "
+                             "directory.", folder_name)
+                ignore_folder = True
+
+        if ignore_folder:
             continue
 
         # this is not in a try/except block because this follows a bucket read which is in a try/except
@@ -675,14 +686,14 @@ def _save_results_html_in_gcs(hpo_name, bucket, file_name, folder_prefix, timest
     html_report_list.append('\n')
     html_report_list.append(html_tag_wrapper(timestamp, 'h3', 'align="right"'))
     html_report_list.append('\n')
-    html_report_list.append(create_html_table(main_constants.RESULT_FILE_HEADERS, results, "Results"))
+    html_report_list.append(create_html_table(consts.RESULT_FILE_HEADERS, results, "Results"))
     html_report_list.append('\n')
     html_report_list.append(create_html_table(duplicate_ids_header, duplicate_ids,
                                               "Count of Duplicate IDs per Domain Table"))
     html_report_list.append('\n')
-    html_report_list.append(create_html_table(main_constants.ERROR_FILE_HEADERS, errors, "Errors"))
+    html_report_list.append(create_html_table(consts.ERROR_FILE_HEADERS, errors, "Errors"))
     html_report_list.append('\n')
-    html_report_list.append(create_html_table(main_constants.ERROR_FILE_HEADERS, warnings, "Warnings"))
+    html_report_list.append(create_html_table(consts.ERROR_FILE_HEADERS, warnings, "Warnings"))
     html_report_list.append('\n')
     html_report_list.append(create_html_table(heel_error_header, heel_errors, "Heel Errors"))
     html_report_list.append('\n')
@@ -734,15 +745,15 @@ def create_html_row(row_items, item_tag, row_tag, headers=None):
     checkbox_style = 'style="text-align:center; font-size:150%; font-weight:bold; color:{0};"'
     message = "BigQuery generated the following message while processing the files: " + "<br/>"
     for index, row_item in enumerate(row_items):
-        if row_item == 1 and headers == main_constants.RESULT_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(main_constants.RESULT_PASS_CODE,
+        if row_item == 1 and headers == consts.RESULT_FILE_HEADERS:
+            row_item_list.append(html_tag_wrapper(consts.RESULT_PASS_CODE,
                                                   item_tag,
-                                                  checkbox_style.format(main_constants.RESULT_PASS_COLOR)))
-        elif row_item == 0 and headers == main_constants.RESULT_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(main_constants.RESULT_FAIL_CODE,
+                                                  checkbox_style.format(consts.RESULT_PASS_COLOR)))
+        elif row_item == 0 and headers == consts.RESULT_FILE_HEADERS:
+            row_item_list.append(html_tag_wrapper(consts.RESULT_FAIL_CODE,
                                                   item_tag,
-                                                  checkbox_style.format(main_constants.RESULT_FAIL_COLOR)))
-        elif index == 1 and headers == main_constants.ERROR_FILE_HEADERS:
+                                                  checkbox_style.format(consts.RESULT_FAIL_COLOR)))
+        elif index == 1 and headers == consts.ERROR_FILE_HEADERS:
             row_item_list.append(html_tag_wrapper(message + row_item.replace(' || ', '<br/>'), item_tag))
         else:
             row_item_list.append(html_tag_wrapper(row_item, item_tag))
@@ -792,32 +803,85 @@ def union_ehr():
     return 'merge-and-achilles-done'
 
 
+@api_util.auth_required_cron
+def validate_pii():
+    project = bq_utils.app_identity.get_application_id()
+    combined_dataset = bq_utils.get_ehr_rdr_dataset_id()
+    ehr_dataset = bq_utils.get_dataset_id()
+    dest_dataset = bq_utils.get_validation_results_dataset_id()
+    logging.info('Calling match_participants')
+    _, errors = matching.match_participants(project, combined_dataset, ehr_dataset, dest_dataset)
+
+    if errors > 0:
+        logging.error("Errors encountered in validation process")
+
+    return consts.VALIDATION_SUCCESS
+
+
+@api_util.auth_required_cron
+def write_drc_pii_validation_file():
+    project = bq_utils.app_identity.get_application_id()
+    validation_dataset = bq_utils.get_validation_results_dataset_id()
+    logging.info('Calling write_results_to_drc_bucket')
+    matching.write_results_to_drc_bucket(project, validation_dataset)
+
+    return consts.DRC_VALIDATION_REPORT_SUCCESS
+
+
+@api_util.auth_required_cron
+def write_sites_pii_validation_files():
+    project = bq_utils.app_identity.get_application_id()
+    validation_dataset = bq_utils.get_validation_results_dataset_id()
+    logging.info('Calling write_results_to_site_buckets')
+    matching.write_results_to_site_buckets(project, validation_dataset)
+
+    return consts.SITES_VALIDATION_REPORT_SUCCESS
+
+
 app.add_url_rule(
-    PREFIX + 'ValidateAllHpoFiles',
+    consts.PREFIX + 'ValidateAllHpoFiles',
     endpoint='validate_all_hpos',
     view_func=validate_all_hpos,
     methods=['GET'])
 
 app.add_url_rule(
-    PREFIX + 'ValidateHpoFiles/<string:hpo_id>',
+    consts.PREFIX + 'ValidateHpoFiles/<string:hpo_id>',
     endpoint='validate_hpo_files',
     view_func=validate_hpo_files,
     methods=['GET'])
 
 app.add_url_rule(
-    PREFIX + 'UploadAchillesFiles/<string:hpo_id>',
+    consts.PREFIX + 'UploadAchillesFiles/<string:hpo_id>',
     endpoint='upload_achilles_files',
     view_func=upload_achilles_files,
     methods=['GET'])
 
 app.add_url_rule(
-    PREFIX + 'CopyFiles/<string:hpo_id>',
+    consts.PREFIX + 'CopyFiles/<string:hpo_id>',
     endpoint='copy_files',
     view_func=copy_files,
     methods=['GET'])
 
 app.add_url_rule(
-    PREFIX + 'UnionEHR',
+    consts.PREFIX + 'UnionEHR',
     endpoint='union_ehr',
     view_func=union_ehr,
+    methods=['GET'])
+
+app.add_url_rule(
+    consts.PREFIX + consts.WRITE_DRC_VALIDATION_FILE,
+    endpoint='write_drc_pii_validation_file',
+    view_func=write_drc_pii_validation_file,
+    methods=['GET'])
+
+app.add_url_rule(
+    consts.PREFIX + consts.WRITE_SITE_VALIDATION_FILES,
+    endpoint='write_sites_pii_validation_files',
+    view_func=write_sites_pii_validation_files,
+    methods=['GET'])
+
+app.add_url_rule(
+    consts.PREFIX + consts.PARTICIPANT_VALIDATION,
+    endpoint='validate_pii',
+    view_func=validate_pii,
     methods=['GET'])
