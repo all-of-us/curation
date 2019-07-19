@@ -20,6 +20,8 @@
 import numpy as np
 import pandas as pd
 from parser import Parse
+import logging 
+import json
 
 class Rules :
     COMPUTE={
@@ -50,6 +52,7 @@ class Rules :
             }
         }
         self.cache['compute'] = Rules.COMPUTE
+        #--
         
     def set(self,key, id, **args) :
         if key not in ['generalize','suppress','compute','shift'] :
@@ -128,10 +131,9 @@ class deid (Rules):
                 payload['args'] += [p]    
              
         return payload
-    def aggregate(self,sql,**args):
-        pass
     def log (self,**args):
-        print (args)        
+        # print (args)      
+        logging.info(json.dumps(args))  
     def generalize(self,**args):
         """
         This function will apply generalization given a set of rules provided. the rules apply to both meta tables and relational tables
@@ -378,7 +380,7 @@ class deid (Rules):
                     result['apply'] = ' '.join(['CAST(',result['apply'].replace(suffix,''),'AS STRING ) ',suffix])
                 out.append(result)                
                 
-                break
+                # break
         else:
             
             key_fields = args['key_field']
@@ -411,7 +413,6 @@ class deid (Rules):
         if 'table' in args :
             statement = statement.replace(':table',args['table'])
         out .append({"apply":statement, "name":fields[0],"label":label})
-
         # for name in fields :
         #     if 'from' not in args :
         #         statement = args['rules'].replace(':FIELD',name)

@@ -7,6 +7,7 @@ import json
 from rules import deid
 from datetime import datetime
 import os
+import logging
 
 class Press:
     """
@@ -41,9 +42,18 @@ class Press:
             self.deid_rules['suppress'] = {'FILTERS':[]}
         if 'FILTERS' not in self.deid_rules['suppress'] :
             self.deid_rules['suppress']['FILTERS'] = []
+            2
         self.logpath = 'logs' if 'logs' not in args else args['logs']        
         self.action = [term.strip() for term in args['action'].split(',')] if 'action' in args else ['submit']
-
+        
+        #
+        #--
+        if os.path.exists(self.logpath) == False :
+            os.mkdir(self.logpath)
+        name = datetime.now().strftime('deid-%Y-%m-%d.log')
+        filename = os.sep.join([self.logpath,name])
+        logging.basicConfig(filename=filename,level=logging.INFO,format='%(message)s')            
+        
        
     def meta(self,df):
         return pd.DataFrame( {"names":list(df.dtypes.to_dict().keys()), "types":list(df.dtypes.to_dict().values())})
@@ -77,8 +87,9 @@ class Press:
         _info = self.info
         
         p = d.apply(_info,self.store)
+        
         is_meta = np.sum([ 1*('on' in _item) for _item in p]) != 0
-        self.log(module='do',action='table-type',table=self.get_tablename(),is_meta=is_meta)
+        self.log(module='do',action='table-type',table=self.get_tablename(),is_meta= int(is_meta))
         if not is_meta :
             sql = self.to_sql(p)
             _rsql = None
@@ -146,7 +157,8 @@ class Press:
             print()
 
     def log (self,**args):
-            print (args)                
+            # print (args)       
+            logging.info(json.dumps(args) )
     def simulate(self,info):
         """
         This function is not essential, but will attempt to log the various transformations on every field.
