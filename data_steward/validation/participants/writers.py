@@ -39,6 +39,10 @@ def append_to_result_table(
     :raises:  oauth2client.client.HttpAccessTokenRefreshError,
               googleapiclient.errors.HttpError
     """
+    if not match_values:
+        LOGGER.info("No values to insert for site: %s\t\tfield: %s", site, field_name)
+        return None
+
     result_table = site + consts.VALIDATION_TABLE_SUFFIX
 
     # create initial values list for insertion
