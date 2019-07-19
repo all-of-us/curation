@@ -21,6 +21,7 @@ echo "# Validate All HPOs" >> ${CRON_YAML}
 echo "- description: validate all hpos" >> ${CRON_YAML}
 echo "  url: /data_steward/v1/ValidateAllHpoFiles" >> ${CRON_YAML}
 echo "  schedule: every 3 hours" >> ${CRON_YAML}
+echo "  timezone: America/New_York" >> ${CRON_YAML}
 
 ### EHR Union
 echo "" >> ${CRON_YAML}
@@ -28,6 +29,7 @@ echo "# EHR Union" >> ${CRON_YAML}
 echo "- description: ehr union" >> ${CRON_YAML}
 echo "  url: /data_steward/v1/UnionEHR" >> ${CRON_YAML}
 echo "  schedule: every 24 hours" >> ${CRON_YAML}
+echo "  timezone: America/New_York" >> ${CRON_YAML}
 
 ### Archive
 # Archive the contents of sites' buckets
@@ -37,9 +39,10 @@ for i in "${SITES_ARR[@]}"
 do
   temp="${i%\"}"
   temp="${temp#\"}"
-  echo "- description: copy hpo $temp files">> ${CRON_YAML}
-  echo "  url: /data_steward/v1/CopyFiles/$temp">> ${CRON_YAML}
-  echo "  schedule: every 24 hours">> ${CRON_YAML}
+  echo "- description: copy hpo $temp files" >> ${CRON_YAML}
+  echo "  url: /data_steward/v1/CopyFiles/$temp" >> ${CRON_YAML}
+  echo "  schedule: every 24 hours" >> ${CRON_YAML}
+  echo "  timezone: America/New_York" >> ${CRON_YAML}
 done
 
 ### Force Run
@@ -58,9 +61,10 @@ for i in "${SITES_ARR[@]}"
 do
   temp="${i%\"}"
   temp="${temp#\"}"
-  echo "- description: validate hpo $temp">> ${CRON_YAML}
-  echo "  url: /data_steward/v1/ValidateHpoFiles/$temp">> ${CRON_YAML}
-  echo "  schedule: ${YESTERDAY_SCHEDULE}">> ${CRON_YAML}
+  echo "- description: validate hpo $temp" >> ${CRON_YAML}
+  echo "  url: /data_steward/v1/ValidateHpoFiles/$temp" >> ${CRON_YAML}
+  echo "  schedule: ${YESTERDAY_SCHEDULE}" >> ${CRON_YAML}
+  echo "  timezone: America/New_York" >> ${CRON_YAML}
 done
 
 ## Participant Matching
@@ -69,6 +73,7 @@ echo "# Participant Matching" >> ${CRON_YAML}
 echo "- description: compare submissions vs ppi" >> ${CRON_YAML}
 echo "  url: /data_steward/v1/ParticipantValidation/" >> ${CRON_YAML}
 echo "  schedule: every 3 hours" >> ${CRON_YAML}
+echo "  timezone: America/New_York" >> ${CRON_YAML}
 
 ## Participant Matching Site Files
 echo "" >> ${CRON_YAML}
@@ -76,6 +81,7 @@ echo "# Participant Matching Site Files" >> ${CRON_YAML}
 echo "- description: store results of participant matching in site buckets" >> ${CRON_YAML}
 echo "  url: /data_steward/v1/ParticipantValidation/SiteFiles" >> ${CRON_YAML}
 echo "  schedule: every 3 hours" >> ${CRON_YAML}
+echo "  timezone: America/New_York" >> ${CRON_YAML}
 
 ## Participant Matching DRC File
 echo "" >> ${CRON_YAML}
@@ -83,3 +89,4 @@ echo "# Participant Matching DRC File" >> ${CRON_YAML}
 echo "- description: store results of participant matching in DRC bucket" >> ${CRON_YAML}
 echo "  url: /data_steward/v1/ParticipantValidation/DRCFile" >> ${CRON_YAML}
 echo "  schedule: every 3 hours" >> ${CRON_YAML}
+echo "  timezone: America/New_York" >> ${CRON_YAML}
