@@ -37,10 +37,6 @@ DRUG_ERA = 'drug_era'
 CONDITION_ERA = 'condition_era'
 
 
-PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_mrn', 'participant_match']
-AOU_REQUIRED = ['care_site', 'condition_occurrence', 'death', 'device_exposure', 'drug_exposure',
-                'fact_relationship', 'location', 'measurement', 'note', 'observation', 'person',
-                'procedure_occurrence', 'provider', 'specimen', 'visit_occurrence']
 AOU_REQUIRED_FILES = [table + '.csv' for table in AOU_REQUIRED]
 PII_FILES = [table + '.csv' for table in PII_TABLES]
 SUBMISSION_FILES = AOU_REQUIRED_FILES + PII_FILES

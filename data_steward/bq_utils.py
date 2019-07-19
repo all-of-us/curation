@@ -1,10 +1,10 @@
 # Python imports
-from datetime import datetime
 import json
 import logging
 import os
 import socket
 import time
+from datetime import datetime
 
 # Third party imports
 from google.appengine.api import app_identity
@@ -64,8 +64,8 @@ def get_combined_deid_dataset_id():
 
     :return:  A name for the combined unidentified dataset id.
     """
-    dataset_id =  os.environ.get(bq_consts.COMBINED_UNIDENTIFIED_DATASET,
-                                 bq_consts.BLANK)
+    dataset_id = os.environ.get(bq_consts.COMBINED_UNIDENTIFIED_DATASET,
+                                bq_consts.BLANK)
     if dataset_id == bq_consts.BLANK:
         date_string = datetime.now().strftime(bq_consts.DATE_FORMAT)
         dataset_id = bq_consts.COMBINED_UNIDENTIFIED_DATASET_FORMAT.format(date_string)
@@ -82,7 +82,7 @@ def get_validation_results_dataset_id():
 
     :return:  A name for the validation dataset id.
     """
-    dataset_id =  os.environ.get(bq_consts.MATCH_DATASET, bq_consts.BLANK)
+    dataset_id = os.environ.get(bq_consts.MATCH_DATASET, bq_consts.BLANK)
     if dataset_id == bq_consts.BLANK:
         date_string = datetime.now().strftime(bq_consts.DATE_FORMAT)
         dataset_id = bq_consts.VALIDATION_DATASET_FORMAT.format(date_string)
