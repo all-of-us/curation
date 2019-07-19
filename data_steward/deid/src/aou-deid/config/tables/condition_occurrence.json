@@ -1,0 +1,14 @@
+{
+    "compute":[
+        {"rules":"@compute.id",
+         "fields":["person_id"],
+         "table":":idataset.deid_map as map_user",
+         "key_field":"map_user.person_id",
+         "value_field":"condition_occurrence.person_id"}],
+    "shift":[
+        {"rules":"@shift.date", 
+         "fields":["condition_start_date", "condition_end_date"]},
+        {"rules":"@shift.datetime", 
+         "fields":["condition_start_datetime", "condition_end_datetime"]}
+    ]
+}

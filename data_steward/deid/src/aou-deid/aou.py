@@ -139,16 +139,30 @@ class aou (Press):
         """
         df = self.get(limit=1)
         columns = df.columns.tolist()
-        
+        r = []        
         if 'suppress' not in self.info:
-            self.info['suppress'] = [{"rules": "@suppress.DEMOGRAPHICS-COLUMNS","table":self.get_tablename(), "fields":df.columns.tolist()}]
-        else:
-            for rule in self.info['suppress'] :
-                if rule['rules'].endswith('DEMOGRAPHICS-COLUMNS') :
-                    rule['table'] = self.get_tablename()
-                    rule['fields'] = columns
+            self.info['suppress'] = []
+            # self.log(module='update-rules',subject='suppress', object=self.get_tablename(),values=df.columns.tolist())
+        #
+        # Relational attributes that require suppression are inventoried this allows automatic suppression
+        # It's done to make the engine more usable (by minimizing the needs for configuration)
+        #
+        rem_cols = True
+        for rule in self.info['suppress'] :
+            if rule['rules'].endswith('DEMOGRAPHICS-COLUMNS') :
+                rem_cols = False
+                rule['table'] = self.get_tablename()
+                rule['fields'] = columns
+        if rem_cols :
+            self.info['suppress'] += [{"rules": "@suppress.DEMOGRAPHICS-COLUMNS","table":self.get_tablename(), "fields":df.columns.tolist()}]
                     
         date_columns = [name for name in columns if set(['date','time','datetime']) & set(name.split('_'))]
+        #
+        # shifting date attributes can be automatically done for relational fields by looking at the field name of the data-type
+        # @TODO: consider looking at the field name, changes might happen all of a sudden
+        #
+        
+        
         
         if date_columns :
             date = {}
@@ -166,14 +180,32 @@ class aou (Press):
                     
                     date['fields'].append(name)
                     date['rules'] = '@shift.date'
-
+            _toshift = []
             if date and datetime :
                 _toshift = [date,datetime]
             elif date or datetime:
                 _toshift = [date] if date else [datetime] 
-            self.info['shift'] = _toshift if 'shift' not in self.info else self.info['shift'] + _toshift
+            if 'shift' not in self.info :
+                self.info['shift'] = []
+            if _toshift :
+                self.log(module='update-rules',subject=self.get_tablename(),object='shift',fields=_toshift)
+                self.info['shift'] += _toshift
+            
+            # self.info['shift'] = _toshift if 'shift' not in self.info else self.info['shift'] + _toshift
             # print self.info['shift']
+        #
+        # let's check for the person_id
+        has_compute_id = False
+        if 'compute' not in self.info :
+            self.info['compute'] = []
 
+        else:
+            index = [self.info['compute'].index(rule) for rule in self.info['compute'] if '@compute.id' in rule] 
+            has_compute_id = False if index else True
+        if not has_compute_id and 'person_id' in columns:
+            # self.info['compute'] += [{"rules":"@compute.id","fields":["person_id"],"table":":idataset.deid_map as map_user","key_field":"map_user.person_id","value_field":":table.person_id"}]
+            self.info['compute'] += [{"rules":"@compute.id","fields":["person_id"],"table":":idataset.deid_map as map_user","key_field":"map_user.person_id","value_field":self.tablename+".person_id"}]
+            
 
         
         
@@ -193,7 +225,7 @@ class aou (Press):
             df = pd.read_gbq(sql,credentials=self.credentials,dialect='standard')
             return df
         except Exception,e:
-            print e
+            self.log(module='get',action='error',value=e.message)
             pass
         return pd.DataFrame()
     def submit(self,sql):
