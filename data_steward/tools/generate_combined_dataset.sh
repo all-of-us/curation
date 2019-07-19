@@ -89,5 +89,3 @@ python tools/combine_ehr_rdr.py
 
 unset PYTHOPATH
 deactivate
-
-rm -rf curation_env

@@ -119,5 +119,3 @@ python deid.py --i_dataset ${cdr_id} --table care_site --o_dataset ${cdr_deid} -
 
 #Close virtual environment and remove
 deactivate
-
-rm -rf deid_env

@@ -60,7 +60,7 @@ source set_path.sh
 #------------------------------------------------------
 
 echo "-------------------------->Take a Snapshot of EHR Dataset (step 4)"
-ehr_snap_dataset="ehr_${today}"
+ehr_snap_dataset="ehr${today}"
 echo "ehr_snap_dataset --> $ehr_snap_dataset"
 
 bq mk --dataset --description "snapshot of EHR dataset ${ehr_dataset}" ${app_id}:${ehr_snap_dataset}
@@ -71,5 +71,3 @@ echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source
 
 deactivate
 unset PYTHONPATH
-
-rm -rf curation_env
