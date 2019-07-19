@@ -305,6 +305,7 @@ def fact_relationship_query():
     return combine_consts.FACT_RELATIONSHIP_QUERY.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
                                                          combined_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
                                                          mapping_measurement=mapping_table_for('measurement'),
+                                                         ehr_dataset=bq_utils.get_dataset_id(),
                                                          mapping_observation=mapping_table_for('observation'),
                                                          measurement_domain_concept_id=common.
                                                          MEASUREMENT_DOMAIN_CONCEPT_ID,

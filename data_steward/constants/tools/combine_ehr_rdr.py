@@ -179,4 +179,7 @@ FACT_RELATIONSHIP_QUERY = ('\n'
                            '      ON m2.src_measurement_id = fr.fact_id_2 AND fr.domain_concept_id_2={measurement_domain_concept_id}'
                            '    LEFT JOIN {combined_dataset_id}.{mapping_observation} o2'
                            '      ON o2.src_observation_id = fr.fact_id_2 AND fr.domain_concept_id_2={observation_domain_concept_id}'
-                           '    ')
+                           '    '
+                           ' UNION ALL '
+                           '    '
+                           ' SELECT * from {ehr_dataset}.fact_relationship')
