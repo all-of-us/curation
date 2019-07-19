@@ -56,6 +56,9 @@ DESIGN:
         --idataset  name of the input dataset (an output dataset with suffix _deid will be generated)
         --table     path of that specify how rules are to be applied on a table
         --private_key   service account file location
+        --pipeline      specifies operations and the order in which operations are to be undertaken. Operations should be comma separated
+                        By default the pipeline is generalize,suppress,shift,compute
+        --age-limit     This parameter is optional and sets the age limit by default it will apply 89 years
         --action        what to do:
                         simulate    will generate simulation without creating an output table
                         submit      will create an output table
@@ -80,6 +83,7 @@ class aou (Press):
         self.odataset  = self.idataset+'_deid'
         self.partition = 'cluster' in args    
         self.priority = 'BATCH' if 'interactive' not in args else 'INTERACTIVE'
+        
         if 'shift' in self.deid_rules :
             #
             # Minor updates that are the result of a limitation as to how rules are specified.
@@ -93,7 +97,7 @@ class aou (Press):
         MILLION = 1000000
         MAP_TABLENAME = self.idataset+".deid_map"
         sql = " ".join(["SELECT DISTINCT person_id, EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth as age FROM ",self.idataset+".person","ORDER BY 2"])
-        personTable = self.get(sql= sql)
+        personTable = self.get(sql= sql)        
         self.log(module='initialize',subject=self.get_tablename(),action='patient-count',value=personTable.shape[0])
         mapTable = pd.DataFrame()
         if personTable.shape[0] > 0:
@@ -149,7 +153,7 @@ class aou (Press):
         #
         rem_cols = True
         for rule in self.info['suppress'] :
-            if rule['rules'].endswith('DEMOGRAPHICS-COLUMNS') :
+            if 'rules' in rule and rule['rules'].endswith('DEMOGRAPHICS-COLUMNS') :
                 rem_cols = False
                 rule['table'] = self.get_tablename()
                 rule['fields'] = columns
@@ -260,9 +264,9 @@ class aou (Press):
         if  not os.path.exists(os.sep.join([self.logpath,self.idataset])) :
             os.mkdir(os.sep.join([self.logpath,self.idataset]))
 
-        f = open(os.sep.join([self.logpath,self.idataset,self.tablename+".sql"]),'w')
-        f.write(sql)
-        f.close()
+        #f = open(os.sep.join([self.logpath,self.idataset,self.tablename+".sql"]),'w')
+        #f.write(sql)
+        #f.close()
         
         r = client.query(sql,location='US',job_config=job)
         if r.errors is None and r.state == 'DONE' :
@@ -316,9 +320,14 @@ if __name__ == '__main__' :
     p = ['idataset','private_key','rules','input-folder']
     # params = {"rules_path":"data/config.json","info_path":"data/observation.json","idataset":"combined20181016","table":"observation"}
     # params["private_key"] = '/home/steve/dev/google-cloud-sdk/accounts/curation-test.json'
-    SYS_ARGS = Parser.sys_args()    
+    SYS_ARGS = Parser.sys_args()  
+    if 'pipeline' not in SYS_ARGS :
+        SYS_ARGS['pipeline'] = 'generalize,suppress,shift,compute' 
+    
+    SYS_ARGS['pipeline'] = [term.strip() for term in SYS_ARGS['pipeline'].split(',')]  
+    AGE_LIMIT = int(SYS_ARGS['age-limit']) if 'age-limit' in SYS_ARGS else 89
     handle = aou(**SYS_ARGS)
-    if handle.initialize(age_limit=50,max_day_shift=365) :
+    if handle.initialize(age_limit=AGE_LIMIT,max_day_shift=365) :
         handle.do()
     else:
         print ("Unable to initialize process ")
