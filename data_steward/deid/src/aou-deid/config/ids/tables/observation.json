@@ -1,0 +1,56 @@
+{
+    "generalize":[
+        {
+            "rules":"@generalize.RACE","fields":["value_source_concept_id"],
+             "table":":idataset.observation my_table",
+             "key_field":"my_table.person_id",
+             "key_row":"my_table.value_source_concept_id",
+             "value_field":"observation.person_id",
+             "on":"observation_source_concept_id IN (1586140)"},
+         
+                 
+        {
+            "rules":"@generalize.SEXUAL-ORIENTATION",
+             "fields":["value_source_concept_id"],
+             "on":"observation_source_concept_id IN (1585899)"
+        },
+        
+         {
+             "rules":"@generalize.SEX-AT-BIRTH",
+             "fields":["value_source_concept_id"],
+             "on":"observation_source_concept_id IN (1585845)"
+         },
+        {
+            "rules":"@generalize.GENDER",
+            "fields":["value_source_concept_id"],
+            "table":":idataset.observation find_gender",
+            "key_field":"find_gender.person_id",
+            "value_field":"observation.person_id",
+            "on":"observation_source_concept_id IN (1585838)"},
+        {
+            "rules":"@generalize.EDUCATION",
+            "fields":["value_source_concept_id"],
+            "on":"observation_source_concept_id IN (1585940)"
+        
+        },
+         {
+            "rules":"@generalize.EMPLOYMENT",
+            "fields":["value_source_concept_id"],
+            "on":"observation_source_concept_id IN (1585955,40771090)"
+         }
+    ],
+    "suppress":[
+        {"rules":"@suppress.ROWS", "on":"observation_source_value"},
+        {"on":"observation_concept_id in (4013886, 4271761, 4135376)"}
+
+    ],
+    "shift":[
+        {"rules":"@shift.datetime",
+         "fields":["value_source_value"],
+         "on":"observation_source_value IN ('ExtraConsent_TodaysDate')"},
+        {"rules":"@shift.date",
+         "fields":["observation_date"]},
+        {"rules":"@shift.datetime",
+         "fields":["observation_datetime"]}
+    ]
+}

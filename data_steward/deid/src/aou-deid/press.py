@@ -17,8 +17,10 @@ class Press:
         """
         :rules_path  to the rule configuration file
         :info_path   path to the configuration of how the rules get applied
+        :pipeline   operations and associated sequence in which they should be performed
         """
         self.deid_rules = json.loads((open (args['rules'])).read())
+        self.pipeline = args['pipeline']
         if os.path.exists(args['table']) :
             self.info = json.loads((open (args['table'])).read())
         else:
@@ -50,6 +52,8 @@ class Press:
         #--
         if os.path.exists(self.logpath) == False :
             os.mkdir(self.logpath)
+        if os.path.exists(self.logpath+os.sep+self.idataset) == False :
+            os.mkdir(self.logpath+os.sep+self.idataset) 
         name = datetime.now().strftime('deid-%Y-%m-%d.log')
         filename = os.sep.join([self.logpath,name])
         logging.basicConfig(filename=filename,level=logging.INFO,format='%(message)s')            
@@ -78,8 +82,9 @@ class Press:
         This function actually runs deid and using both rule specifications and application of the rules
         """
         self.update_rules()
-        d = deid()
-        d.cache = self.deid_rules
+        d = deid(pipeline = self.pipeline,rules=self.deid_rules,parent=self)
+        # d.cache = self.deid_rules
+        # d.deid_rules = d.cache 
 
         # _info = [item for item in self.info['generalize'] if self.tablename in item['table'] ]
         # _info = {"generalize":_info}
@@ -87,10 +92,10 @@ class Press:
         _info = self.info
 
         p = d.apply(_info,self.store)
-        
         is_meta = np.sum([ 1*('on' in _item) for _item in p]) != 0
         self.log(module='do',action='table-type',table=self.get_tablename(),is_meta= int(is_meta))
         if not is_meta :
+            
             sql = self.to_sql(p)
             _rsql = None
         else:
@@ -107,23 +112,26 @@ class Press:
             filter = []
             CONJUNCTION = ' AND ' if self.deid_rules['suppress']['FILTERS'] else ' WHERE '
             for filter_id in _map :
+
                 _item = _map[filter_id]
                 # if _item['on'] not in filter :
                     # filter += [_item['on'].replace(' IN ','NOT IN')]
                 filter += [filter_id]
 
                 # _sql = self.to_sql([_item]+ relational_cols ) + CONJUNCTION +_item['on']
-                _sql = self.to_sql(_item +relational_cols) + CONJUNCTION +filter_id
+                # _sql = self.to_sql(_item +relational_cols) + CONJUNCTION +filter_id
+                
+                _sql = self.to_sql(_item +relational_cols)  + ' AND ' +filter_id
+                
 
                 sql += [ _sql]
                 # self.deid_rules['suppress']['FILTERS'] = self.deid_rules['suppress']['FILTERS'][:-1]
             #-- end of loop
-            if ' AND ' in CONJUNCTION :
-                _rsql = self.to_sql(relational_cols) + ' AND ' + ' AND '.join(filter).replace(' IN ',' NOT IN ')
-            else:
-
-                _rsql = self.to_sql(relational_cols) + ' WHERE ' + ' '.join(filter).replace(' IN ',' NOT IN ')
-
+            # if ' AND ' in CONJUNCTION :
+            #     _rsql = self.to_sql(relational_cols) + ' AND ' + ' AND '.join(filter).replace(' IN ',' NOT IN ')
+            # else:
+            #     _rsql = self.to_sql(relational_cols) + ' WHERE ' + ' '.join(filter).replace(' IN ',' NOT IN ')
+            _rsql = self.to_sql(relational_cols) + ' AND ' + ' AND '.join(filter).replace(' IN ',' NOT IN ')
             #
             # @TODO: filters may need to be adjusted (add a conditional statement)
             #
@@ -137,15 +145,18 @@ class Press:
         if 'debug' in self.action :
             self.debug(p)
         else:
+
+            f = open(os.sep.join([self.logpath,self.idataset,self.tablename+".sql"]),'w')
+            f.write(sql)
+            f.close()
+            
+
             if 'submit' in self.action :
                 self.submit(sql)
             if 'simulate' in self.action:
                 #
                 # Make this threaded if there is a submit action that is associated with it
                 self.simulate(p)
-
-
-        pass
 
     def get_tablename(self):
         return self.idataset+"."+self.tablename if self.idataset else self.tablename
@@ -179,7 +190,11 @@ class Press:
         dirty_date = False
         filters = []
         for item in info :
+            
             labels = item['label'].split('.')
+            if not (set(labels) & set(self.pipeline)) :
+                self.log(module='simulate',table=TABLE_NAME,action='skip',value=labels)
+                continue
             if labels[0] not in counts :
                 counts [ labels[0].strip()]  = 0
             counts [ labels[0].strip()]  += 1
@@ -221,6 +236,7 @@ class Press:
         #
         out.index = range(out.shape[0])
         rdf = pd.DataFrame()
+        
         if FILTERS :
             filters += [item['filter'] for item in FILTERS if 'filter' in item]
             original_sql        = ' (SELECT COUNT(*) as original FROM :table) AS ORIGINAL_TABLE ,'.replace(':table',TABLE_NAME)
@@ -270,18 +286,21 @@ class Press:
         SQL = []
         p = {}
         self.log(module='to_sql',action='generating-sql',table=TABLE_NAME,fields=fields)
-        for id in ['generalize','suppress','shift','compute']:
+        #
+        # @NOTE:
+        #   If we are dealing with a meta-table we should 
+        for id in self.pipeline : #['generalize','suppress','shift','compute']:
             for row in info :
-
                 name = row['name']
 
                 if id not in row['label'] or name not in fields:
-
+                    
                     continue
-
                 # p[name] = row['apply']
                 index = fields.index(name)
                 fields[index] = row['apply']
+                self.log(module='to_sql',field=name,sql=row['apply'])
+                # print (row['on'])
 
         # other_fields = list( set(fields) - set(p.keys()) )
 
