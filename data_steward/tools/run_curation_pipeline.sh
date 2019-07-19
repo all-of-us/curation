@@ -58,7 +58,7 @@ echo "current_dir --> ${current_dir}"
 #---------------------------------------------------------
 # Step 1 create EHR snapshot
 echo "-------------------------->Take a Snapshot of EHR Dataset (step 1)"
-ehr_snap_dataset="ehr_${today}"
+ehr_snap_dataset="ehr${today}"
 echo "ehr_snap_dataset --> $ehr_snap_dataset"
 ./create_ehr_snapshot.sh --key_file ${key_file} --app_id ${app_id} --ehr_dataset ${ehr_dataset}
 

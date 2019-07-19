@@ -77,4 +77,3 @@ python run_achilles_and_export.py --bucket=${result_bucket} --folder=${dataset}
 unset PYTHONPATH
 deactivate
 
-rm -rf curation_env
