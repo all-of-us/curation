@@ -1,10 +1,42 @@
 from constants.bq_utils import VALIDATION_DATASET_REGEX
 from constants.validation.participants.identity_match import REPORT_DIRECTORY_REGEX
 
-PII_TABLES = ['pii_name', 'pii_email', 'pii_phone_number', 'pii_address', 'pii_mrn', 'participant_match']
-AOU_REQUIRED = ['care_site', 'condition_occurrence', 'death', 'device_exposure', 'drug_exposure',
-                'fact_relationship', 'location', 'measurement', 'note', 'observation', 'person',
-                'procedure_occurrence', 'provider', 'specimen', 'visit_occurrence']
+
+# AOU required PII tables
+PII_NAME = 'pii_name'
+PII_EMAIL = 'pii_email'
+PII_PHONE_NUMBER = 'pii_phone_number'
+PII_ADDRESS = 'pii_address'
+PII_MRN = 'pii_mrn'
+PARTICIPANT_MATCH = 'participant_match'
+PII_TABLES = [PII_NAME, PII_EMAIL, PII_PHONE_NUMBER, PII_ADDRESS, PII_MRN, PARTICIPANT_MATCH]
+
+# AOU required CDM tables
+CARE_SITE = 'care_site'
+CONDITION_OCCURRENCE = 'condition_occurrence'
+DEATH = 'death'
+DEVICE_EXPOSURE = 'device_exposure'
+DRUG_EXPOSURE = 'drug_exposure'
+FACT_RELATIONSHIP = 'fact_relationship'
+LOCATION = 'location'
+MEASUREMENT = 'measurement'
+NOTE = 'note'
+OBSERVATION = 'observation'
+PERSON = 'person'
+PROCEDURE_OCCURRENCE = 'procedure_occurrence'
+PROVIDER = 'provider'
+SPECIMEN = 'specimen'
+VISIT_OCCURRENCE = 'visit_occurrence'
+AOU_REQUIRED = [CARE_SITE, CONDITION_OCCURRENCE, DEATH, DEVICE_EXPOSURE, DRUG_EXPOSURE,
+                FACT_RELATIONSHIP, LOCATION, MEASUREMENT, NOTE, OBSERVATION, PERSON,
+                PROCEDURE_OCCURRENCE, PROVIDER, SPECIMEN, VISIT_OCCURRENCE]
+
+# other CDM tables
+OBSERVATION_PERIOD = 'observation_period'
+DRUG_ERA = 'drug_era'
+CONDITION_ERA = 'condition_era'
+
+
 AOU_REQUIRED_FILES = [table + '.csv' for table in AOU_REQUIRED]
 PII_FILES = [table + '.csv' for table in PII_TABLES]
 SUBMISSION_FILES = AOU_REQUIRED_FILES + PII_FILES
@@ -34,11 +66,14 @@ ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
 ACHILLES_RESULTS_DIST = 'achilles_results_dist'
 ACHILLES_TABLES = [ACHILLES_ANALYSIS, ACHILLES_RESULTS, ACHILLES_RESULTS_DIST]
+
 ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
 ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
 ACHILLES_HEEL_TABLES = [ACHILLES_HEEL_RESULTS, ACHILLES_RESULTS_DERIVED]
+
 REQUIRED_TABLES = ['person']
 REQUIRED_FILES = [table + '.csv' for table in REQUIRED_TABLES]
+
 ACHILLES_EXPORT_PREFIX_STRING = "curation_report/data/"
 IGNORE_STRING_LIST = [ACHILLES_EXPORT_PREFIX_STRING]
 ACHILLES_EXPORT_DATASOURCES_JSON = ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json'

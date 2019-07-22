@@ -5,10 +5,11 @@ Using rule 18, 19 in Achilles Heel for reference
 
 # Project imports
 import constants.bq_utils as bq_consts
-import constants.cleaners.clean_cdr as cdr_consts
+import constants.cdr_cleaner.clean_cdr as cdr_consts
+import common
 import resources
 
-person = 'person'
+person = common.PERSON
 MIN_YEAR_OF_BIRTH = 1800
 MAX_YEAR_OF_BIRTH = '(EXTRACT(YEAR FROM CURRENT_DATE()) - 17)'
 
@@ -82,7 +83,10 @@ def get_year_of_birth_queries(project_id, dataset_id):
 
 
 if __name__ == '__main__':
-    import args_parser as parser
-    if parser.args.dataset_id:
-        query_list = get_year_of_birth_queries(parser.args.project_id, parser.args.dataset_id)
-        parser.clean_engine.clean_dataset(parser.args.project_id, parser.args.dataset_id, query_list)
+    import cdr_cleaner.args_parser as parser
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    ARGS = parser.parse_args()
+    clean_engine.add_console_logging(ARGS.console_log)
+    query_list = get_year_of_birth_queries(ARGS.project_id, ARGS.dataset_id)
+    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)

@@ -6,8 +6,9 @@ Allowing for more flexibility, we choose Jan 1, 2017 as the program start date.
 # Project imports
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+import common
 
-death = 'death'
+death = common.DEATH
 program_start_date = '2017-01-01'
 current_date = 'CURRENT_DATE()'
 
