@@ -48,22 +48,10 @@ import logging
 
 import bq_utils
 import common
+import constants.tools.combine_ehr_rdr as combine_consts
 import resources
 
 logger = logging.getLogger(__name__)
-
-SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
-CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
-EHR_CONSENT_TABLE_ID = '_ehr_consent'
-PERSON_TABLE = 'person'
-OBSERVATION_TABLE = 'observation'
-VISIT_OCCURRENCE = 'visit_occurrence'
-VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
-RDR_TABLES_TO_COPY = ['person', 'location', 'care_site']
-EHR_TABLES_TO_COPY = ['death']
-DOMAIN_TABLES = ['visit_occurrence', 'condition_occurrence', 'drug_exposure', 'measurement', 'procedure_occurrence',
-                 'observation', 'device_exposure']
-TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES
 
 
 def query(q, dst_table_id, write_disposition='WRITE_APPEND'):
@@ -90,23 +78,10 @@ def ehr_consent_query():
     """
     # Consenting are strictly those whose *most recent* (based on observation_datetime) consent record is YES
     # If the most recent record is NO or NULL, they are NOT consenting
-    return '''
-    WITH ordered_response AS
-     (SELECT
-        person_id,
-        value_source_concept_id,
-        observation_datetime,
-        ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY observation_datetime DESC, value_source_concept_id ASC) AS rn
-      FROM {dataset_id}.observation
-      WHERE observation_source_value = '{source_value_ehr_consent}')
-
-     SELECT person_id
-     FROM ordered_response
-     WHERE rn = 1
-       AND value_source_concept_id = {concept_id_consent_permission_yes}
-    '''.format(dataset_id=bq_utils.get_rdr_dataset_id(),
-               source_value_ehr_consent=SOURCE_VALUE_EHR_CONSENT,
-               concept_id_consent_permission_yes=CONCEPT_ID_CONSENT_PERMISSION_YES)
+    return combine_consts.EHR_CONSENT_QUERY.format(dataset_id=bq_utils.get_rdr_dataset_id(),
+                                                   source_value_ehr_consent=combine_consts.SOURCE_VALUE_EHR_CONSENT,
+                                                   concept_id_consent_permission_yes=combine_consts.
+                                                   CONCEPT_ID_CONSENT_PERMISSION_YES)
 
 
 def assert_tables_in(dataset_id):
@@ -116,7 +91,7 @@ def assert_tables_in(dataset_id):
     """
     tables = bq_utils.list_dataset_contents(dataset_id)
     logger.debug('Dataset {dataset_id} has tables: {tables}'.format(dataset_id=dataset_id, tables=tables))
-    for table in TABLES_TO_PROCESS:
+    for table in combine_consts.TABLES_TO_PROCESS:
         if table not in tables:
             raise RuntimeError(
                 'Dataset {dataset} is missing table {table}. Aborting.'.format(dataset=dataset_id, table=table))
@@ -151,8 +126,9 @@ def ehr_consent():
     :return:
     """
     q = ehr_consent_query()
-    logger.debug('Query for {ehr_consent_table_id} is {q}'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID, q=q))
-    query(q, EHR_CONSENT_TABLE_ID)
+    logger.debug(
+        'Query for {ehr_consent_table_id} is {q}'.format(ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID, q=q))
+    query(q, combine_consts.EHR_CONSENT_TABLE_ID)
 
 
 def copy_rdr_table(table):
@@ -161,7 +137,7 @@ def copy_rdr_table(table):
 
     Note: Overwrites if a table already exists
     """
-    q = '''SELECT * FROM {rdr_dataset_id}.{table}'''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(), table=table)
+    q = combine_consts.COPY_RDR_QUERY.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(), table=table)
     logger.debug('Query for {table} is `{q}`'.format(table=table, q=q))
     query(q, table)
 
@@ -177,15 +153,10 @@ def copy_ehr_table(table):
     if 'person_id' not in field_names:
         raise RuntimeError('Cannot copy EHR table {table}. It is missing columns needed for consent filter'.format(
             table=table))
-    q = '''
-      SELECT * FROM {ehr_dataset_id}.{table} t
-      WHERE EXISTS
-           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c
-            WHERE t.person_id = c.person_id)
-    '''.format(ehr_dataset_id=bq_utils.get_dataset_id(),
-               table=table,
-               ehr_consent_table_id=EHR_CONSENT_TABLE_ID,
-               ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id())
+    q = combine_consts.COPY_EHR_QUERY.format(ehr_dataset_id=bq_utils.get_dataset_id(),
+                                             table=table,
+                                             ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID,
+                                             ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id())
     logger.debug('Query for {table} is `{q}`'.format(table=table, q=q))
     query(q, table)
 
@@ -198,31 +169,20 @@ def mapping_query(domain_table):
     :return:
     """
 
-    return '''SELECT DISTINCT
-          '{rdr_dataset_id}'  AS src_dataset_id,
-          {domain_table}_id  AS src_{domain_table}_id,
-          'rdr' as src_hpo_id,
-          {domain_table}_id + {mapping_constant}  AS {domain_table}_id
-        FROM {rdr_dataset_id}.{domain_table}
-
-        UNION ALL
-
-        SELECT DISTINCT
-          '{ehr_dataset_id}'  AS src_dataset_id,
-          t.{domain_table}_id AS src_{domain_table}_id,
-          v.src_hpo_id AS src_hpo_id,
-          t.{domain_table}_id  AS {domain_table}_id
-        FROM {ehr_dataset_id}.{domain_table} t
-        JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{domain_table}_id
-        WHERE EXISTS
-           (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c
-            WHERE t.person_id = c.person_id)
-    '''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-               ehr_dataset_id=bq_utils.get_dataset_id(),
-               ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
-               domain_table=domain_table,
-               mapping_constant=common.RDR_ID_CONSTANT,
-               ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+    if combine_consts.PERSON_ID in [field['name'] for field in resources.fields_for(domain_table)]:
+        return combine_consts.MAPPING_QUERY_WITH_PERSON_CHECK.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+                                                                     ehr_dataset_id=bq_utils.get_dataset_id(),
+                                                                     ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                                                                     domain_table=domain_table,
+                                                                     mapping_constant=common.RDR_ID_CONSTANT,
+                                                                     ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID)
+    else:
+        return combine_consts.MAPPING_QUERY_WITHOUT_PERSON_CHECK.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+                                                                        ehr_dataset_id=bq_utils.get_dataset_id(),
+                                                                        ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                                                                        domain_table=domain_table,
+                                                                        mapping_constant=common.RDR_ID_CONSTANT
+                                                                        )
 
 
 def mapping_table_for(domain_table):
@@ -242,7 +202,7 @@ def mapping(domain_table):
     :param domain_table:
     :return:
     """
-    if domain_table in DOMAIN_TABLES:
+    if domain_table in combine_consts.DOMAIN_TABLES:
         q = mapping_query(domain_table)
         mapping_table = mapping_table_for(domain_table)
         logger.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
@@ -250,6 +210,58 @@ def mapping(domain_table):
     else:
         logging.info(
             'Excluding table {table_id} from mapping query because it does not exist'.format(table_id=domain_table))
+
+
+def join_expression_generator(domain_table, ehr_rdr_dataset_id):
+    """
+    adds table aliases as references to columns and generates join expression
+
+    :param domain_table: Name of the cdm table
+    :param ehr_rdr_dataset_id: name of the datqset where the tables are present
+    :return: returns cols and join expression strings.
+    """
+    field_names = [field['name'] for field in resources.fields_for(domain_table)]
+    fields_to_join = []
+    primary_key = []
+    join_expression = []
+    col_exprs = []
+    cols = ''
+    for field_name in field_names:
+        if field_name == domain_table + '_id' and field_name != 'person_id':
+            primary_key.append(field_name)
+        elif field_name in combine_consts.FOREIGN_KEYS_FIELDS:
+            fields_to_join.append(field_name)
+        if field_name in fields_to_join:
+            col_expr = '{x}.'.format(x=field_name[:3]) + field_name
+        elif field_name in primary_key:
+            col_expr = 'm.' + field_name
+        else:
+            col_expr = field_name
+        col_exprs.append(col_expr)
+        cols = ', '.join(col_exprs)
+
+    for key in combine_consts.FOREIGN_KEYS_FIELDS:
+        if key in fields_to_join:
+            if domain_table == combine_consts.PERSON_TABLE:
+                table_alias = mapping_table_for('{x}'.format(x=key)[:-3])
+                join_expression.append(
+                    combine_consts.LEFT_JOIN_PERSON.format(dataset_id=ehr_rdr_dataset_id,
+                                                           prefix=key[:3],
+                                                           field=key,
+                                                           table=table_alias
+                                                           )
+                )
+            else:
+                table_alias = mapping_table_for('{x}'.format(x=key)[:-3])
+                join_expression.append(
+                    combine_consts.LEFT_JOIN.format(dataset_id=ehr_rdr_dataset_id,
+                                                    prefix=key[:3],
+                                                    field=key,
+                                                    table=table_alias
+                                                    )
+                )
+    full_join_expression = " ".join(join_expression)
+    return cols, full_join_expression
 
 
 def load_query(domain_table):
@@ -263,101 +275,15 @@ def load_query(domain_table):
     ehr_dataset_id = bq_utils.get_dataset_id()
     ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
     mapping_table = mapping_table_for(domain_table)
-    has_visit_occurrence_id = False
-    id_col = '{domain_table}_id'.format(domain_table=domain_table)
-    fields = resources.fields_for(domain_table)
+    cols, join_expression = join_expression_generator(domain_table, ehr_rdr_dataset_id)
 
-    # Generate column expressions for select, ensuring that
-    #  1) we get the record IDs from the mapping table and
-    #  2) if there is a reference to `visit_occurrence` we get `visit_occurrence_id` from the mapping visit table
-    col_exprs = []
-    for field in fields:
-        field_name = field['name']
-        if field_name == id_col:
-            # Use mapping for record ID column
-            # m is an alias that should resolve to the associated mapping table
-            col_expr = 'm.{field_name} '.format(field_name=field_name)
-        elif field_name == VISIT_OCCURRENCE_ID:
-            # Replace with mapped visit_occurrence_id
-            # mv is an alias that should resolve to the mapping visit table
-            # Note: This is only reached when domain_table != visit_occurrence
-            col_expr = 'mv.' + VISIT_OCCURRENCE_ID
-            has_visit_occurrence_id = True
-        else:
-            col_expr = field_name
-        col_exprs.append(col_expr)
-    cols = ',\n  '.join(col_exprs)
-
-    visit_join_expr = ''
-    if has_visit_occurrence_id:
-        # Include a join to mapping visit table
-        # Note: Using left join in order to keep records that aren't mapped to visits
-        mv = mapping_table_for(VISIT_OCCURRENCE)
-        visit_join_expr = '''
-        LEFT JOIN
-        (
-            SELECT *
-            FROM (
-              SELECT
-                  *,
-                  row_number() OVER (PARTITION BY mv.visit_occurrence_id, mv.src_hpo_id ) AS row_num
-              FROM {ehr_rdr_dataset_id}.{mapping_visit_occurrence} mv
-            )
-            WHERE row_num = 1
-        ) mv  ON t.visit_occurrence_id = mv.src_visit_occurrence_id
-         AND m.src_dataset_id = mv.src_dataset_id'''.format(ehr_rdr_dataset_id=ehr_rdr_dataset_id,
-                                                            mapping_visit_occurrence=mv)
-
-    return '''
-    SELECT {cols}
-    FROM {rdr_dataset_id}.{domain_table} t
-    JOIN
-    (
-        SELECT *
-        FROM (
-          SELECT
-              *,
-              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id ) AS row_num
-          FROM {ehr_rdr_dataset_id}.{mapping_table} as m
-        )
-        WHERE row_num = 1
-    ) m        ON t.{domain_table}_id = m.src_{domain_table}_id {visit_join_expr}
-    WHERE m.src_dataset_id = '{rdr_dataset_id}'
-
-    UNION ALL
-
-    SELECT {cols}
-    FROM
-    (
-        SELECT *
-        FROM (
-          SELECT
-              *,
-              row_number() OVER (PARTITION BY m.{domain_table}_id) AS row_num
-          FROM {ehr_dataset_id}.{domain_table} as m
-        )
-        WHERE row_num = 1
-    ) t
-    JOIN
-    (
-        SELECT *
-        FROM (
-          SELECT
-              *,
-              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id) AS row_num
-          FROM {ehr_rdr_dataset_id}.{mapping_table} as m
-        )
-        WHERE row_num = 1
-    ) m
-        ON t.{domain_table}_id = m.src_{domain_table}_id {visit_join_expr}
-    WHERE m.src_dataset_id = '{ehr_dataset_id}'
-    '''.format(cols=cols,
-               domain_table=domain_table,
-               rdr_dataset_id=rdr_dataset_id,
-               ehr_dataset_id=ehr_dataset_id,
-               mapping_table=mapping_table,
-               visit_join_expr=visit_join_expr,
-               ehr_rdr_dataset_id=ehr_rdr_dataset_id)
+    return combine_consts.LOAD_QUERY.format(cols=cols,
+                                            domain_table=domain_table,
+                                            rdr_dataset_id=rdr_dataset_id,
+                                            ehr_dataset_id=ehr_dataset_id,
+                                            mapping_table=mapping_table,
+                                            join_expr=join_expression,
+                                            ehr_rdr_dataset_id=ehr_rdr_dataset_id)
 
 
 def load(domain_table):
@@ -376,38 +302,15 @@ def fact_relationship_query():
     Load fact_relationship, using mapped IDs based on domain concept in fact 1 and fact 2
     :return:
     """
-    return '''
-    SELECT
-      fr.domain_concept_id_1 AS domain_concept_id_1,
-      CASE
-          WHEN domain_concept_id_1 = {measurement_domain_concept_id}
-            THEN m1.measurement_id
-          WHEN domain_concept_id_1 = {observation_domain_concept_id}
-            THEN o1.observation_id
-      END AS fact_id_1,
-      fr.domain_concept_id_2,
-      CASE
-          WHEN domain_concept_id_2 = {measurement_domain_concept_id}
-            THEN m2.measurement_id
-          WHEN domain_concept_id_2 = {observation_domain_concept_id}
-            THEN o2.observation_id
-      END AS fact_id_2,
-      fr.relationship_concept_id AS relationship_concept_id
-    FROM {rdr_dataset_id}.fact_relationship fr
-      LEFT JOIN {combined_dataset_id}.{mapping_measurement} m1
-        ON m1.src_measurement_id = fr.fact_id_1 AND fr.domain_concept_id_1={measurement_domain_concept_id}
-      LEFT JOIN {combined_dataset_id}.{mapping_observation} o1
-        ON o1.src_observation_id = fr.fact_id_1 AND fr.domain_concept_id_1={observation_domain_concept_id}
-      LEFT JOIN {combined_dataset_id}.{mapping_measurement} m2
-        ON m2.src_measurement_id = fr.fact_id_2 AND fr.domain_concept_id_2={measurement_domain_concept_id}
-      LEFT JOIN {combined_dataset_id}.{mapping_observation} o2
-        ON o2.src_observation_id = fr.fact_id_2 AND fr.domain_concept_id_2={observation_domain_concept_id}
-    '''.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-               combined_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
-               mapping_measurement=mapping_table_for('measurement'),
-               mapping_observation=mapping_table_for('observation'),
-               measurement_domain_concept_id=common.MEASUREMENT_DOMAIN_CONCEPT_ID,
-               observation_domain_concept_id=common.OBSERVATION_DOMAIN_CONCEPT_ID)
+    return combine_consts.FACT_RELATIONSHIP_QUERY.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+                                                         combined_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                                                         mapping_measurement=mapping_table_for('measurement'),
+                                                         ehr_dataset=bq_utils.get_dataset_id(),
+                                                         mapping_observation=mapping_table_for('observation'),
+                                                         measurement_domain_concept_id=common.
+                                                         MEASUREMENT_DOMAIN_CONCEPT_ID,
+                                                         observation_domain_concept_id=common.
+                                                         OBSERVATION_DOMAIN_CONCEPT_ID)
 
 
 def load_fact_relationship():
@@ -419,6 +322,26 @@ def load_fact_relationship():
     query(q, 'fact_relationship')
 
 
+def person_query(table_name):
+    """
+    Maps location and care_Site id in person table
+
+    :return: query
+    """
+    ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+    columns, join_expression = join_expression_generator(table_name, ehr_rdr_dataset_id)
+    return combine_consts.MAPPED_PERSON_QUERY.format(cols=columns,
+                                                     dataset=ehr_rdr_dataset_id,
+                                                     table=table_name,
+                                                     join_expr=join_expression)
+
+
+def load_mapped_person():
+    q = person_query(combine_consts.PERSON_TABLE)
+    logger.debug('Query for Person table is {q}'.format(q=q))
+    query(q, 'person', write_disposition='WRITE_TRUNCATE')
+
+
 def main():
     logger.info('EHR + RDR combine started')
     logger.info('Verifying all CDM tables in EHR and RDR datasets...')
@@ -426,22 +349,24 @@ def main():
     logger.info('Creating destination CDM tables...')
     create_cdm_tables()
     ehr_consent()
-    for table in RDR_TABLES_TO_COPY:
+    for table in combine_consts.RDR_TABLES_TO_COPY:
         logger.info('Copying {table} table from RDR...'.format(table=table))
         copy_rdr_table(table)
-    logger.info('Translating {table} table from EHR...'.format(table=PERSON_TABLE))
-    for table in EHR_TABLES_TO_COPY:
+    logger.info('Translating {table} table from EHR...'.format(table=combine_consts.PERSON_TABLE))
+    for table in combine_consts.EHR_TABLES_TO_COPY:
         logger.info('Copying {table} table from EHR...'.format(table=table))
         copy_ehr_table(table)
-    logger.info('Loading {ehr_consent_table_id}...'.format(ehr_consent_table_id=EHR_CONSENT_TABLE_ID))
-    for domain_table in DOMAIN_TABLES:
+    logger.info('Loading {ehr_consent_table_id}...'.format(ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID))
+    for domain_table in combine_consts.DOMAIN_TABLES:
         logger.info('Mapping {domain_table}...'.format(domain_table=domain_table))
         mapping(domain_table)
-    for domain_table in DOMAIN_TABLES:
+    for domain_table in combine_consts.DOMAIN_TABLES:
         logger.info('Loading {domain_table}...'.format(domain_table=domain_table))
         load(domain_table)
     logger.info('Loading fact_relationship...')
     load_fact_relationship()
+    logger.info('Loading foreign key Mapped Person table...')
+    load_mapped_person()
     logger.info('EHR + RDR combine completed')
 
 

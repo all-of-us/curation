@@ -80,7 +80,7 @@ import cdm
 import common
 import constants.validation.ehr_union as eu_constants
 import resources
-from tools.combine_ehr_rdr import OBSERVATION_TABLE, PERSON_TABLE
+from constants.tools.combine_ehr_rdr import PERSON_TABLE, OBSERVATION_TABLE
 
 UNION_ALL = '''
 

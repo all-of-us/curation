@@ -1,0 +1,26 @@
+[
+    {
+        "type": "integer",
+        "name": "payer_plan_period_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "string",
+        "name": "src_dataset_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "src_payer_plan_period_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "string",
+        "name": "src_hpo_id",
+        "mode": "nullable",
+        "description": ""
+    }
+]

@@ -1,5 +1,8 @@
 import os
 
+import requests
+
+import bq_utils
 import common
 import constants.validation.main as main
 import gcs_utils
@@ -151,7 +154,6 @@ def delete_all_tables(dataset_id):
     :param dataset_id: ID of the dataset with the tables to delete
     :return: list of deleted tables
     """
-    import bq_utils
 
     deleted = []
     table_infos = bq_utils.list_tables(dataset_id)
@@ -161,9 +163,6 @@ def delete_all_tables(dataset_id):
             bq_utils.delete_table(table_id, dataset_id)
             deleted.append(table_id)
     return deleted
-
-
-import requests
 
 
 def download_file_from_google_drive(id, destination):
@@ -333,6 +332,16 @@ def table_count_query(dataset_id, table_id, where=''):
       '''.format(dataset_id=dataset_id, table_id=table_id, where=where)
 
 
+def get_table_count_query(dataset_id, table_ids, where):
+    queries = []
+    for table_id in table_ids:
+        if table_id == '_ehr_consent' or 'person_id' in resources.fields_for(table_id):
+            queries.append(table_count_query(dataset_id, table_id, where))
+        else:
+            queries.append(table_count_query(dataset_id, table_id, where=''))
+    return queries
+
+
 def get_table_counts(dataset_id, table_ids=None, where=''):
     """
     Evaluate counts for tables in a dataset
@@ -346,7 +355,7 @@ def get_table_counts(dataset_id, table_ids=None, where=''):
     if table_ids is None:
         tables = get_table_summary(dataset_id)
         table_ids = set(t['table_id'] for t in tables)
-    count_subqueries = [table_count_query(dataset_id, table_id, where) for table_id in table_ids]
+    count_subqueries = get_table_count_query(dataset_id, table_ids, where)
     count_query = '\nUNION ALL\n'.join(count_subqueries)
     response = bq_utils.query(count_query)
     rows = bq_utils.response2rows(response)
