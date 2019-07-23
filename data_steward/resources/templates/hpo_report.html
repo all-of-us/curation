@@ -368,6 +368,36 @@ This report may be incomplete because the submission is still being processed. P
 </div>
 {% endif %}
 
+<h2><a name="completeness">Data Completeness</a></h2>
+{% if completeness %}
+<table class="table table-striped table-hover">
+    <thead class="thead-dark">
+        <tr>
+            <th>Table</th>
+            <th>Row Count</th>
+            <th>Column Name</th>
+            <th>Null Count</th>
+            <th>Concept Zero Count</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for (omop_table_name, table_row_count, column_name, null_count, concept_zero_count) in completeness %}
+        <tr>
+            <td>{{ omop_table_name }}</td>
+            <td>{{ table_row_count }}</td>
+            <td>{{ column_name }}</td>
+            <td>{{ null_count }}</td>
+            <td>{{ concept_zero_count }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" role="alert">
+  Completeness statistics are not (yet) available for this submission.
+</div>
+{% endif %}
+
 <h2><a name="drug_checks">Drug Concept Mapping Percentages</a></h2>
 {% if drug_class_metrics %}
 <table class="table table-striped table-hover">
@@ -392,6 +422,10 @@ This report may be incomplete because the submission is still being processed. P
     {% endfor %}
     </tbody>
 </table>
+{% else %}
+<div class="alert alert-info" role="alert">
+  Drug concept mapping statistics are not (yet) available for this submission.
+</div>
 {% endif %}
 </main>
 </body>

@@ -1,6 +1,7 @@
 HPO_ID = 'hpo_id'
 COLUMN_NAME = 'column_name'
 TABLE_NAME = 'table_name'
+OMOP_TABLE_NAME = 'omop_table_name'
 PROJECT_ID = 'project_id'
 APPLICATION_ID = 'APPLICATION_ID'
 GOOGLE_APPLICATION_CREDENTIALS = 'GOOGLE_APPLICATION_CREDENTIALS'
@@ -24,7 +25,8 @@ SELECT *,
   ELSE 1 - (null_count + concept_zero_count)/(table_row_count)
  END as percent_populated 
 FROM (
- SELECT '{table_name}' AS table_name, 
+ SELECT '{table_name}' AS table_name,
+  '{omop_table_name}' AS omop_table_name, 
   {table_row_count} AS table_row_count,
   '{column_name}' AS column_name,
   {table_row_count} - count({column_name}) as null_count,

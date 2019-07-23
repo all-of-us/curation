@@ -91,6 +91,9 @@ TEST_VOCABULARY_PATH = os.path.join(TEST_DATA_PATH, 'vocabulary')
 TEST_VOCABULARY_CONCEPT_CSV = os.path.join(TEST_VOCABULARY_PATH, 'CONCEPT.csv')
 TEST_VOCABULARY_VOCABULARY_CSV = os.path.join(TEST_VOCABULARY_PATH, 'VOCABULARY.csv')
 
+TEST_DATA_METRICS_PATH = os.path.join(TEST_DATA_PATH, 'metrics')
+TEST_NYC_CU_COLS_CSV = os.path.join(TEST_DATA_METRICS_PATH, 'nyc_cu_cols.csv')
+
 
 def _create_five_persons_success_result():
     """

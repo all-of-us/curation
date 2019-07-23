@@ -1,9 +1,12 @@
+import re
 import unittest
 
 from mock import patch
 
 import bq_utils
 import constants.validation.metrics.completeness as consts
+import resources
+import test_util
 from validation.metrics import completeness
 
 
@@ -13,6 +16,11 @@ class CompletenessTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+
+    def setUp(self):
+        self.hpo_id = 'nyc_cu'
+        self.dataset_id = bq_utils.get_dataset_id()
+
 
     def test_is_omop_col(self):
         col = dict()
@@ -67,3 +75,33 @@ class CompletenessTest(unittest.TestCase):
         expected_result = consts.UNION_ALL.join([expected_q1, expected_q2])
         actual_result = completeness.create_completeness_query(dataset_id, [col1, col2])
         self.assertEqual(expected_result, actual_result)
+
+    def test_get_standard_table_name(self):
+        device_cost = 'device_cost'
+        t = completeness.get_standard_table_name(device_cost)
+        # e.g. shouldn't match 'cost'
+        self.assertEqual(device_cost, t)
+        t = completeness.get_standard_table_name(self.hpo_id + '_' + device_cost)
+        self.assertEqual(device_cost, t)
+
+    @staticmethod
+    def get_nyc_cu_cols():
+        result = []
+        cols = resources._csv_to_list(test_util.TEST_NYC_CU_COLS_CSV)
+        for col in cols:
+            omop_table_name = completeness.get_standard_table_name(col[consts.TABLE_NAME])
+            if omop_table_name:
+                col[consts.OMOP_TABLE_NAME] = omop_table_name
+                result.append(col)
+        return result
+
+    def test_hpo_query(self):
+        with patch('validation.metrics.completeness.get_cols') as mock_get_cols:
+            nyc_cu_cols = self.get_nyc_cu_cols()
+            mock_get_cols.return_value = self.get_nyc_cu_cols()
+            query = completeness.get_hpo_completeness_query(self.hpo_id)
+            # For now checking for expected column expressions
+            # TODO find more robust way to test output
+            for nyc_cu_col in nyc_cu_cols:
+                column_exp = "'%s' AS column_name" % nyc_cu_col[consts.COLUMN_NAME]
+                self.assertTrue(column_exp in query)

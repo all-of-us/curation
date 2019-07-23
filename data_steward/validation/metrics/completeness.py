@@ -17,12 +17,18 @@ def get_cols(dataset_id):
     Retrieves summary of all domain table columns in a specified dataset
 
     :param dataset_id: identifies the dataset
-    :return: list of dict with keys table_name, column_name, row_count
+    :return: list of dict with keys table_name, omop_table_name, column_name, row_count
     """
     query = consts.COLUMNS_QUERY_FMT.format(dataset_id=dataset_id)
     query_response = bq_utils.query(query)
     cols = bq_utils.response2rows(query_response)
-    results = filter(is_omop_col, cols)
+    results = []
+    # Only yield columns associated with OMOP tables and populate omop_table_name
+    for col in cols:
+        omop_table_name = get_standard_table_name(col[consts.TABLE_NAME])
+        if omop_table_name:
+            col[consts.OMOP_TABLE_NAME] = omop_table_name
+            results.append(col)
     return results
 
 
@@ -61,6 +67,22 @@ def is_hpo_col(hpo_id, col):
     return col[consts.TABLE_NAME].startswith(hpo_id)
 
 
+def get_standard_table_name(table_name):
+    """
+    Get the name of the CDM table associated with a column (whether hpo-specific or not)
+
+    :param table_name: table
+    :return: string name of the associated CDM table or None otherwise
+    """
+    for cdm_table in sorted(resources.CDM_TABLES, key=len, reverse=True):
+        # skip system tables
+        if table_name.startswith('_'):
+            continue
+        if table_name.endswith(cdm_table):
+            return cdm_table
+    return None
+
+
 def column_completeness(dataset_id, columns):
     """
     Determines completeness metrics for a list of columns in a dataset
@@ -73,6 +95,15 @@ def column_completeness(dataset_id, columns):
     query_response = bq_utils.query(query)
     results = bq_utils.response2rows(query_response)
     return results
+
+
+def get_hpo_completeness_query(hpo_id, dataset_id=None):
+    if dataset_id is None:
+        dataset_id = bq_utils.get_dataset_id()
+    cols = get_cols(dataset_id)
+    hpo_cols = filter(lambda col: is_hpo_col(hpo_id, col), cols)
+    query = create_completeness_query(dataset_id, hpo_cols)
+    return query
 
 
 def hpo_completeness(dataset_id, hpo_id):
@@ -118,7 +149,7 @@ if __name__ == '__main__':
             results[hpo_id] = hpo_results
         return results
 
-    parser = argparse.ArgumentParser(description=hpo_completeness.__doc__)
+    parser = argparse.ArgumentParser(description='Generate completeness metrics for OMOP dataset of specified HPO')
     parser.add_argument('--credentials',
                         required=True,
                         help='Path to GCP credentials file')

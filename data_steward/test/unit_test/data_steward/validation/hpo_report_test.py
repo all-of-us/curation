@@ -59,6 +59,9 @@ class HpoReportTest(unittest.TestCase):
            ('pii_mrn.csv', 0, 0, 0),
            ('pii_name.csv', 0, 0, 0),
            ('pii_phone_number.csv', 0, 0, 0)]
+        self.completess = [
+
+        ]
         self.drug_class_metrics = [
             (u'12.77%', u'OTHER ANALGESICS AND ANTIPYRETICS', 6, u'Pain NSAIDS', 21604303),
             (u'8.51%', u'OPIOIDS', 4, u'Opioids', 21604254),
@@ -141,6 +144,7 @@ class HpoReportTest(unittest.TestCase):
         report_data[consts.ERRORS_REPORT_KEY] = [('visit_occurrence.csv', 'Fake error')]
         render_output = hpo_report.render(report_data)
         self.save_render_output(render_output)
+        print 'test'
 
 
     def tearDown(self):

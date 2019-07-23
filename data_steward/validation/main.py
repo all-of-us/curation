@@ -23,6 +23,7 @@ import gcs_utils
 import resources
 import validation.achilles as achilles
 import validation.achilles_heel as achilles_heel
+import validation.metrics.completeness as completeness
 import validation.ehr_union as ehr_union
 import validation.export as export
 import validation.participants.identity_match as matching
@@ -335,8 +336,14 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         drug_class_metrics_query = get_drug_class_counts_query(hpo_id)
         report_data[report_consts.DRUG_CLASS_METRICS_REPORT_KEY] = query_rows(drug_class_metrics_query)
 
+        # completeness
+        logging.info('Getting completeness stats for %s...' % hpo_id)
+        completeness_query = completeness.get_hpo_completeness_query(hpo_id)
+        report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(completeness_query)
+
         logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.', bucket, folder_prefix + common.PROCESSED_TXT)
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, processed_datetime_str)
+
     except HttpError as err:
         # cloud error occurred- log details for troubleshooting
         logging.error('Failed to generate full report due to the following cloud error:\n\n%s' % err.content)
