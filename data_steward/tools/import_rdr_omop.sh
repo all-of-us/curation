@@ -32,6 +32,7 @@ fi
 
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 export APPLICATION_ID="${APP_ID}"
+export BIGQUERY_DATASET_ID="${DATA_SET}"
 
 today=$(date '+%Y%m%d')
 
@@ -69,6 +70,9 @@ do
   fi
   bq load --replace --allow_quoted_newlines ${JAGGED_ROWS}${CLUSTERING_ARGS}--skip_leading_rows=1 ${DATA_SET}.${table_name} $file resources/fields/${table_name}.json
 done
+
+echo "Fixing the PMI_Skip and the PPI_Vocabulary using command - fix_rdr_data.py -p ${APP_ID} -d ${DATA_SET}"
+python fix_rdr_data.py -p ${APP_ID} -d ${DATA_SET}
 
 echo "Done."
 
