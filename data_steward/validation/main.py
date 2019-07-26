@@ -306,7 +306,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
     error_occurred = False
 
     # TODO separate query generation, query execution, writing to GCS
-    gcs_path = 'gs://%s/%s' % bucket, folder_prefix
+    gcs_path = 'gs://%s/%s' % (bucket, folder_prefix)
     report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
     report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
     report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_datetime_str
