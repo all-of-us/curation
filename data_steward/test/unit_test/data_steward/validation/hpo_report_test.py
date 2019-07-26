@@ -1,6 +1,6 @@
 import unittest
 import os
-from data_steward.validation import hpo_report
+from validation import hpo_report
 import constants.validation.hpo_report as consts
 
 
@@ -59,9 +59,27 @@ class HpoReportTest(unittest.TestCase):
            ('pii_mrn.csv', 0, 0, 0),
            ('pii_name.csv', 0, 0, 0),
            ('pii_phone_number.csv', 0, 0, 0)]
-        self.completess = [
-
-        ]
+        self.completeness = [
+            {"omop_table_name": "device_exposure", "table_row_count": 4395, "null_count": 0, "percent_populated": 1.0,
+             "table_name": "nyc_cu_device_exposure", "column_name": "device_type_concept_id", "concept_zero_count": 0},
+            {"omop_table_name": "drug_exposure", "table_row_count": 1260521, "null_count": 0, "percent_populated": 1.0,
+             "table_name": "nyc_cu_drug_exposure", "column_name": "person_id", "concept_zero_count": 0},
+            {"omop_table_name": "observation", "table_row_count": 301047, "null_count": 301047,
+             "percent_populated": 0.0, "table_name": "nyc_cu_observation", "column_name": "unit_concept_id",
+             "concept_zero_count": 0},
+            {"omop_table_name": "death", "table_row_count": 19, "null_count": 0, "percent_populated": 1.0,
+             "table_name": "nyc_cu_death", "column_name": "death_date", "concept_zero_count": 0},
+            {"omop_table_name": "drug_exposure", "table_row_count": 1260521, "null_count": 1260521,
+             "percent_populated": 0.0, "table_name": "nyc_cu_drug_exposure", "column_name": "verbatim_end_date",
+             "concept_zero_count": 0},
+            {"omop_table_name": "provider", "table_row_count": 0, "null_count": 0, "percent_populated": None,
+             "table_name": "nyc_cu_provider", "column_name": "specialty_source_value", "concept_zero_count": 0},
+            {"omop_table_name": "device_cost", "table_row_count": 0, "null_count": 0, "percent_populated": None,
+             "table_name": "nyc_cu_device_cost", "column_name": "paid_by_coordination_benefits",
+             "concept_zero_count": 0},
+            {"omop_table_name": "location", "table_row_count": 6784, "null_count": 0, "percent_populated": 1.0,
+             "table_name": "nyc_cu_location", "column_name": "location_id", "concept_zero_count": 0}
+            ]
         self.drug_class_metrics = [
             (u'12.77%', u'OTHER ANALGESICS AND ANTIPYRETICS', 6, u'Pain NSAIDS', 21604303),
             (u'8.51%', u'OPIOIDS', 4, u'Opioids', 21604254),
@@ -122,7 +140,8 @@ class HpoReportTest(unittest.TestCase):
             consts.WARNINGS_REPORT_KEY: [],
             consts.NONUNIQUE_KEY_METRICS_REPORT_KEY: [],
             consts.DRUG_CLASS_METRICS_REPORT_KEY: self.drug_class_metrics,
-            consts.HEEL_ERRORS_REPORT_KEY: self.heel_errors
+            consts.HEEL_ERRORS_REPORT_KEY: self.heel_errors,
+            consts.COMPLETENESS_REPORT_KEY: self.completeness
         }
         # report ok
         render_output = hpo_report.render(report_data)
@@ -144,8 +163,7 @@ class HpoReportTest(unittest.TestCase):
         report_data[consts.ERRORS_REPORT_KEY] = [('visit_occurrence.csv', 'Fake error')]
         render_output = hpo_report.render(report_data)
         self.save_render_output(render_output)
-        print 'test'
-
+        self.assert_report_data_in_output(report_data, render_output)
 
     def tearDown(self):
         if os.path.exists(self.render_output_path):

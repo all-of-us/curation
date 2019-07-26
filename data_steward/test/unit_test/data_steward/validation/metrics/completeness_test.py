@@ -21,7 +21,6 @@ class CompletenessTest(unittest.TestCase):
         self.hpo_id = 'nyc_cu'
         self.dataset_id = bq_utils.get_dataset_id()
 
-
     def test_is_omop_col(self):
         col = dict()
         col[consts.TABLE_NAME] = 'condition_occurrence'

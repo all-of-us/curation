@@ -374,20 +374,20 @@ This report may be incomplete because the submission is still being processed. P
     <thead class="thead-dark">
         <tr>
             <th>Table</th>
-            <th>Row Count</th>
             <th>Column Name</th>
+            <th>Row Count</th>
             <th>Null Count</th>
             <th>Concept Zero Count</th>
         </tr>
     </thead>
     <tbody>
-    {% for (omop_table_name, table_row_count, column_name, null_count, concept_zero_count) in completeness %}
+    {% for row in completeness %}
         <tr>
-            <td>{{ omop_table_name }}</td>
-            <td>{{ table_row_count }}</td>
-            <td>{{ column_name }}</td>
-            <td>{{ null_count }}</td>
-            <td>{{ concept_zero_count }}</td>
+            <td>{{ row['omop_table_name'] }}</td>
+            <td>{{ row['column_name'] }}</td>
+            <td>{{ row['table_row_count'] }}</td>
+            <td>{{ row['null_count'] }}</td>
+            <td>{{ row['concept_zero_count'] }}</td>
         </tr>
     {% endfor %}
     </tbody>
