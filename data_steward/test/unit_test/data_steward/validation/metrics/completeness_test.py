@@ -51,23 +51,28 @@ class CompletenessTest(unittest.TestCase):
     def test_create_completeness_query(self):
         dataset_id = 'some_dataset_id'
         table_name = 'hpo1_condition_occurrence'
+        omop_table_name = 'condition_occurrence',
         table_row_count = 100
         col1_name = 'condition_occurrence_id'
         col2_name = 'condition_concept_id'
         col1 = dict(table_name=table_name,
+                    omop_table_name=omop_table_name,
                     table_row_count=table_row_count,
                     column_name=col1_name)
         col2 = dict(table_name=table_name,
+                    omop_table_name=omop_table_name,
                     table_row_count=table_row_count,
                     column_name=col2_name)
         expected_q1 = consts.COMPLETENESS_QUERY_FMT.format(dataset_id=dataset_id,
                                                            table_name=table_name,
+                                                           omop_table_name=omop_table_name,
                                                            table_row_count=table_row_count,
                                                            column_name=col1_name,
                                                            concept_zero_expr='0')
         col2_concept_zero = consts.CONCEPT_ZERO_CLAUSE.format(column_name=col2_name)
         expected_q2 = consts.COMPLETENESS_QUERY_FMT.format(dataset_id=dataset_id,
                                                            table_name=table_name,
+                                                           omop_table_name=omop_table_name,
                                                            table_row_count=table_row_count,
                                                            column_name=col2_name,
                                                            concept_zero_expr=col2_concept_zero)
