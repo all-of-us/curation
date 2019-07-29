@@ -63,20 +63,21 @@ class CompletenessTest(unittest.TestCase):
                     omop_table_name=omop_table_name,
                     table_row_count=table_row_count,
                     column_name=col2_name)
-        expected_q1 = consts.COMPLETENESS_QUERY_FMT.format(dataset_id=dataset_id,
-                                                           table_name=table_name,
-                                                           omop_table_name=omop_table_name,
-                                                           table_row_count=table_row_count,
-                                                           column_name=col1_name,
-                                                           concept_zero_expr='0')
+        expected_q1 = consts.COMPLETENESS_SUBQUERY_FMT.format(dataset_id=dataset_id,
+                                                              table_name=table_name,
+                                                              omop_table_name=omop_table_name,
+                                                              table_row_count=table_row_count,
+                                                              column_name=col1_name,
+                                                              concept_zero_expr='0')
         col2_concept_zero = consts.CONCEPT_ZERO_CLAUSE.format(column_name=col2_name)
-        expected_q2 = consts.COMPLETENESS_QUERY_FMT.format(dataset_id=dataset_id,
-                                                           table_name=table_name,
-                                                           omop_table_name=omop_table_name,
-                                                           table_row_count=table_row_count,
-                                                           column_name=col2_name,
-                                                           concept_zero_expr=col2_concept_zero)
-        expected_result = consts.UNION_ALL.join([expected_q1, expected_q2])
+        expected_q2 = consts.COMPLETENESS_SUBQUERY_FMT.format(dataset_id=dataset_id,
+                                                              table_name=table_name,
+                                                              omop_table_name=omop_table_name,
+                                                              table_row_count=table_row_count,
+                                                              column_name=col2_name,
+                                                              concept_zero_expr=col2_concept_zero)
+        union_all_subqueries = consts.UNION_ALL.join([expected_q1, expected_q2])
+        expected_result = consts.COMPLETENESS_QUERY_FMT.format(union_all_subqueries=union_all_subqueries)
         actual_result = completeness.create_completeness_query(dataset_id, [col1, col2])
         self.assertEqual(expected_result, actual_result)
 

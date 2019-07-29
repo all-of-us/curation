@@ -257,7 +257,11 @@ This report may be incomplete because the submission is still being processed. P
     </thead>
     <tbody>
     {% set symbol = {0: "&cross;", 1: "&check;"} %}
-    {% for (file_name, found, parsed, loaded) in results %}
+    {% for row in results %}
+        {% set file_name = row["file_name"] %}
+        {% set found = row["found"] %}
+        {% set parsed = row["parsed"] %}
+        {% set loaded = row["loaded"] %}
         <tr>
             <th scope="col" class="w-auto">{{ file_name }}</th>
             <td class="symbol result-{{ found }} w-25">{{ symbol[found] }}</td>
@@ -278,10 +282,10 @@ This report may be incomplete because the submission is still being processed. P
         </tr>
     </thead>
     <tbody>
-    {% for file_name, message in errors %}
+    {% for row in errors %}
         <tr>
-            <td>{{ file_name }}</td>
-            <td>{{ message }}</td>
+            <td>{{ row["file_name"] }}</td>
+            <td>{{ row["message"] }}</td>
         </tr>
     {% endfor %}
     </tbody>
@@ -302,10 +306,10 @@ This report may be incomplete because the submission is still being processed. P
         </tr>
     </thead>
     <tbody>
-    {% for (file_name, message) in warnings %}
+    {% for row in warnings %}
         <tr>
-            <td>{{ file_name }}</td>
-            <td>{{ message }}</td>
+            <td>{{ row["file_name"] }}</td>
+            <td>{{ row["message"] }}</td>
         </tr>
     {% endfor %}
     </tbody>
@@ -326,10 +330,10 @@ This report may be incomplete because the submission is still being processed. P
     </tr>
     </thead>
     <tbody>
-    {% for (table_name, count) in nonunique_key_metrics %}
+    {% for row in nonunique_key_metrics %}
         <tr>
-            <td>{{ table_name }}</td>
-            <td>{{ count }}</td>
+            <td>{{ row["table_name"] }}</td>
+            <td>{{ row["count"] }}</td>
         </tr>
     {% endfor %}
     </tbody>
@@ -352,12 +356,12 @@ This report may be incomplete because the submission is still being processed. P
         </tr>
     </thead>
     <tbody>
-    {% for (record_count, heel_error, analysis_id, rule_id) in heel_errors %}
+    {% for row in heel_errors %}
         <tr>
-            <td>{{ analysis_id }}</td>
-            <td>{{ rule_id }}</td>
-            <td>{{ heel_error }}</td>
-            <td>{{ record_count }}</td>
+            <td>{{ row["analysis_id"] }}</td>
+            <td>{{ row["rule_id"] }}</td>
+            <td>{{ row["heel_error"] }}</td>
+            <td>{{ row["record_count"] }}</td>
         </tr>
     {% endfor %}
     </tbody>
@@ -411,13 +415,13 @@ This report may be incomplete because the submission is still being processed. P
         </tr>
     </thead>
     <tbody>
-    {% for (percentage, concept_name, count, drug_class, concept_id) in drug_class_metrics %}
+    {% for row in drug_class_metrics %}
         <tr>
-            <td>{{ percentage }}</td>
-            <td>{{ concept_name }}</td>
-            <td>{{ count }}</td>
-            <td>{{ drug_class }}</td>
-            <td>{{ concept_id }}</td>
+            <td>{{ row["percentage"] }}</td>
+            <td>{{ row["concept_name"] }}</td>
+            <td>{{ row["count"] }}</td>
+            <td>{{ row["drug_class"] }}</td>
+            <td>{{ row["concept_id"] }}</td>
         </tr>
     {% endfor %}
     </tbody>

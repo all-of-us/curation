@@ -38,9 +38,11 @@ def create_completeness_query(dataset_id, columns):
         concept_zero_expr = "0"
         if column[consts.COLUMN_NAME].endswith('concept_id'):
             concept_zero_expr = consts.CONCEPT_ZERO_CLAUSE.format(**column)
-        subquery = consts.COMPLETENESS_QUERY_FMT.format(dataset_id=dataset_id, concept_zero_expr=concept_zero_expr, **column)
+        subquery = consts.COMPLETENESS_SUBQUERY_FMT.format(dataset_id=dataset_id, concept_zero_expr=concept_zero_expr, **column)
         subqueries.append(subquery)
-    return consts.UNION_ALL.join(subqueries)
+    union_all_subqueries = consts.UNION_ALL.join(subqueries)
+    result = consts.COMPLETENESS_QUERY_FMT.format(union_all_subqueries=union_all_subqueries)
+    return result
 
 
 def is_omop_col(col):

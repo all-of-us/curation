@@ -18,8 +18,8 @@ FROM {dataset_id}.INFORMATION_SCHEMA.COLUMNS c
   AND c.IS_HIDDEN = 'NO'
  ORDER BY table_name, c.ORDINAL_POSITION
 """
-COMPLETENESS_QUERY_FMT = """
-SELECT *,
+COMPLETENESS_SUBQUERY_FMT = """
+(SELECT *,
  CASE 
   WHEN table_row_count=0 THEN NULL 
   ELSE 1 - (null_count + concept_zero_count)/(table_row_count)
@@ -32,7 +32,8 @@ FROM (
   {table_row_count} - count({column_name}) as null_count,
   {concept_zero_expr} AS concept_zero_count
  FROM {dataset_id}.{table_name}
-) AS counts
+) AS counts)
 """
-CONCEPT_ZERO_CLAUSE = "SUM(CASE WHEN {column_name}=0 THEN 1 ELSE 0 END)"
+CONCEPT_ZERO_CLAUSE = 'SUM(CASE WHEN {column_name}=0 THEN 1 ELSE 0 END)'
 UNION_ALL = '\nUNION ALL\n'
+COMPLETENESS_QUERY_FMT = '{{union_all_subqueries}} ORDER BY omop_table_name'

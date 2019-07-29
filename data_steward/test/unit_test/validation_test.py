@@ -8,12 +8,14 @@ import os
 import re
 import unittest
 
+import googleapiclient.errors
 import mock
 from google.appengine.ext import testbed
 
 import bq_utils
 import common
 import constants.bq_utils as bq_consts
+import constants.validation.hpo_report as report_consts
 import constants.validation.main as main_constants
 import gcs_utils
 import resources
@@ -496,9 +498,61 @@ class ValidationTest(unittest.TestCase):
                 raise AssertionError("Unexpected call in mock_copy calls:  {}"
                                      .format(call))
 
-    def test_add_table_in_results_html(self):
+    def test_generate_metrics(self):
+        summary = {
+            report_consts.RESULTS_REPORT_KEY:
+                [{'file_name': 'person.csv',
+                  'found': 1,
+                  'parsed': 1,
+                  'loaded': 1}],
+            report_consts.ERRORS_REPORT_KEY: [],
+            report_consts.WARNINGS_REPORT_KEY: []
+        }
 
-        pass
+        def get_hpo_name(hpo_id):
+            return 'Fake HPO'
+
+        def all_required_files_loaded(results):
+            return False
+
+        def query_rows(q):
+            return []
+
+        def query_rows_error(q):
+            raise googleapiclient.errors.HttpError(500, 'bar', 'baz')
+
+        def _write_string_to_file(bucket, filename, content):
+            return True
+
+        def get_duplicate_counts_query(hpo_id):
+            return ''
+
+        with mock.patch.multiple('validation.main',
+                                 get_hpo_name=get_hpo_name,
+                                 all_required_files_loaded=all_required_files_loaded,
+                                 query_rows=query_rows,
+                                 get_duplicate_counts_query=get_duplicate_counts_query,
+                                 _write_string_to_file=_write_string_to_file):
+            result = main.generate_metrics(self.hpo_id, self.hpo_bucket, self.folder_prefix, summary)
+            self.assertIn(report_consts.RESULTS_REPORT_KEY, result)
+            self.assertIn(report_consts.WARNINGS_REPORT_KEY, result)
+            self.assertIn(report_consts.ERRORS_REPORT_KEY, result)
+            self.assertNotIn(report_consts.HEEL_ERRORS_REPORT_KEY, result)
+            self.assertIn(report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY, result)
+            self.assertIn(report_consts.COMPLETENESS_REPORT_KEY, result)
+            self.assertIn(report_consts.DRUG_CLASS_METRICS_REPORT_KEY, result)
+
+        # if error occurs (e.g. limit reached) error flag is set
+        with mock.patch.multiple('validation.main',
+                                 get_hpo_name=get_hpo_name,
+                                 all_required_files_loaded=all_required_files_loaded,
+                                 query_rows=query_rows_error,
+                                 get_duplicate_counts_query=get_duplicate_counts_query,
+                                 _write_string_to_file=_write_string_to_file):
+            with self.assertRaises(googleapiclient.errors.HttpError) as cm:
+                result = main.generate_metrics(self.hpo_id, self.hpo_bucket, self.folder_prefix, summary)
+                error_occurred = result.get(report_consts.ERROR_OCCURRED_REPORT_KEY)
+                self.assertEqual(error_occurred, True)
 
     def tearDown(self):
         self._empty_bucket()
