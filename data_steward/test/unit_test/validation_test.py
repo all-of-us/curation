@@ -41,6 +41,14 @@ class ValidationTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.hpo_id = test_util.FAKE_HPO_ID
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
+        mock_get_hpo_name = mock.patch(
+            'validation.main.get_hpo_name'
+        )
+
+        self.mock_get_hpo_name = mock_get_hpo_name.start()
+        self.mock_get_hpo_name.return_value = 'Fake HPO'
+        self.addCleanup(mock_get_hpo_name.stop)
+
         self.bigquery_dataset_id = bq_utils.get_dataset_id()
         self.folder_prefix = '2019-01-01/'
         self._empty_bucket()
@@ -509,9 +517,6 @@ class ValidationTest(unittest.TestCase):
             report_consts.WARNINGS_REPORT_KEY: []
         }
 
-        def get_hpo_name(hpo_id):
-            return 'Fake HPO'
-
         def all_required_files_loaded(results):
             return False
 
@@ -528,7 +533,6 @@ class ValidationTest(unittest.TestCase):
             return ''
 
         with mock.patch.multiple('validation.main',
-                                 get_hpo_name=get_hpo_name,
                                  all_required_files_loaded=all_required_files_loaded,
                                  query_rows=query_rows,
                                  get_duplicate_counts_query=get_duplicate_counts_query,
@@ -544,7 +548,6 @@ class ValidationTest(unittest.TestCase):
 
         # if error occurs (e.g. limit reached) error flag is set
         with mock.patch.multiple('validation.main',
-                                 get_hpo_name=get_hpo_name,
                                  all_required_files_loaded=all_required_files_loaded,
                                  query_rows=query_rows_error,
                                  get_duplicate_counts_query=get_duplicate_counts_query,
