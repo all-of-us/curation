@@ -352,6 +352,11 @@ class ValidationTest(unittest.TestCase):
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
     @mock.patch('gcs_utils.upload_object')
+    @mock.patch('validation.main.all_required_files_loaded')
+    @mock.patch('validation.main.query_rows')
+    @mock.patch('validation.main.get_duplicate_counts_query')
+    @mock.patch('validation.main._write_string_to_file')
+    @mock.patch('validation.main.get_hpo_name')
     @mock.patch('validation.main.validate_submission')
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
@@ -360,6 +365,11 @@ class ValidationTest(unittest.TestCase):
             mock_hpo_bucket,
             mock_bucket_list,
             mock_validation,
+            mock_get_hpo_name,
+            mock_write_string_to_file,
+            mock_get_duplicate_counts_query,
+            mock_query_rows,
+            mock_all_required_files_loaded,
             mock_upload,
             mock_run_achilles,
             mock_export):
@@ -376,6 +386,7 @@ class ValidationTest(unittest.TestCase):
         :param mock_hpo_bucket: mock the hpo bucket name.
         :param mock_bucket_list: mocks the list of items in the hpo bucket.
         :param mock_validation: mock performing validation
+        :param mock_validation: mock generate metrics
         :param mock_upload: mock uploading to a bucket
         :param mock_run_achilles: mock running the achilles reports
         :param mock_export: mock exporting the files
@@ -383,6 +394,11 @@ class ValidationTest(unittest.TestCase):
 
         # pre-conditions
         mock_hpo_bucket.return_value = 'noob'
+        mock_all_required_files_loaded.return_value = True
+        mock_query_rows.return_value = []
+        mock_get_duplicate_counts_query.return_value = ''
+        mock_get_hpo_name.return_value = 'noob'
+        mock_write_string_to_file.return_value = ''
         yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
         yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         moment = datetime.datetime.now()
@@ -400,7 +416,6 @@ class ValidationTest(unittest.TestCase):
             'results': [('SUBMISSION/measurement.csv', 1, 1, 1)],
             'errors': [],
             'warnings': []}
-        mock_export.return_value = '{"success":  "true"}'
 
         # test
         main.process_hpo('noob', force_run=True)
