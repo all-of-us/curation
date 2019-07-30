@@ -316,6 +316,20 @@ class ValidationTest(unittest.TestCase):
             actual_result_file = self._remove_timestamp_tags_from_results(StringIO.StringIO(actual_result).getvalue())
             self.assertEqual(expected_result_file, actual_result_file)
 
+    @mock.patch('resources.hpo_csv')
+    @mock.patch('validation.main.process_hpo')
+    @mock.patch('logging.error')
+    @mock.patch('api_util.check_cron')
+    def test_validate_all_hpos_exception(self, check_cron, mock_logging_error, mock_process_hpo, mock_hpo_csv):
+        mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
+        mock_process_hpo.side_effect = googleapiclient.errors.HttpError('fake http error', 'fake http error')
+        with main.app.test_client() as c:
+            c.get(main_constants.PREFIX + 'ValidateAllHpoFiles')
+        expected_calls = [
+            mock.call('Failed to process hpo_id `fake` due to the following HTTP error: fake http error')
+        ]
+        self.assertListEqual(expected_calls, mock_logging_error.mock_calls)
+
     @mock.patch('api_util.check_cron')
     def test_html_report_five_person(self, mock_check_cron):
         folder_prefix = '2019-01-01/'

@@ -202,7 +202,15 @@ def validate_hpo_files(hpo_id):
     """
     validation end point for individual hpo_ids
     """
-    process_hpo(hpo_id, force_run=True)
+    try:
+        process_hpo(hpo_id, force_run=True)
+    except BucketDoesNotExistError as bucket_error:
+        bucket = bucket_error.bucket
+        logging.warn('Bucket `%s` configured for hpo_id `%s` does not exist',
+                     bucket, hpo_id)
+    except HttpError as http_error:
+        message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (hpo_id, http_error.content)
+        logging.error(message)
     return 'validation done!'
 
 
@@ -213,12 +221,7 @@ def validate_all_hpos():
     """
     for item in resources.hpo_csv():
         hpo_id = item['hpo_id']
-        try:
-            process_hpo(hpo_id)
-        except BucketDoesNotExistError as bucket_error:
-            bucket = bucket_error.bucket
-            logging.warn('Bucket `%s` configured for hpo_id `%s` does not exist',
-                         bucket, hpo_id)
+        process_hpo(hpo_id)
     return 'validation done!'
 
 
