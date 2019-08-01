@@ -501,6 +501,28 @@ def list_dataset_contents(dataset_id):
     return all_tables
 
 
+def list_datasets(project_id):
+    """
+    List the datasets in the specified project
+
+    :param project_id: identifies the project
+    :return:
+    """
+    service = create_service()
+    req = service.datasets().list(projectId=project_id)
+    all_datasets = []
+    while req:
+        resp = req.execute()
+        items = [item['id'].split(':')[-1] for item in resp.get('datasets', [])]
+        all_datasets.extend(items or [])
+        req = service.datasets().list_next(req, resp)
+    return all_datasets
+
+
+def get_dataset_id(dataset_obj):
+    return dataset_obj['id'].split(':')[-1]
+
+
 def large_response_to_rowlist(query_response):
     """
     Convert a query response to a list of dictionary objects
