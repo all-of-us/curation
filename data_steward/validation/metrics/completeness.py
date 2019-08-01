@@ -127,6 +127,8 @@ if __name__ == '__main__':
     import json
     import os
 
+    JSON_INDENT = 4
+
     def get_creds(creds_path):
         with open(creds_path, 'rb') as creds_fp:
             return json.load(creds_fp)
@@ -160,4 +162,5 @@ if __name__ == '__main__':
                         help='Identifies the dataset containing the OMOP tables to report on')
     parser.add_argument('hpo_id', nargs='?', help='Identifies an HPO site to report on; all sites by default')
     ARGS = parser.parse_args()
-    print run_with_args(ARGS.credentials, ARGS.dataset_id, ARGS.hpo_id)
+    completeness_rows = run_with_args(ARGS.credentials, ARGS.dataset_id, ARGS.hpo_id)
+    print json.dumps(completeness_rows, indent=JSON_INDENT, sort_keys=True)
