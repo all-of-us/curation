@@ -353,18 +353,16 @@ class ValidationTest(unittest.TestCase):
         self.assertListEqual(expected_warnings, actual_result.get('warnings'))
 
     @mock.patch('resources.hpo_csv')
-    @mock.patch('validation.main.process_hpo')
+    @mock.patch('validation.main.list_bucket')
     @mock.patch('logging.error')
     @mock.patch('api_util.check_cron')
-    def test_validate_all_hpos_exception(self, check_cron, mock_logging_error, mock_process_hpo, mock_hpo_csv):
+    def test_validate_all_hpos_exception(self, check_cron, mock_logging_error, mock_list_bucket, mock_hpo_csv):
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
-        mock_process_hpo.side_effect = googleapiclient.errors.HttpError('fake http error', 'fake http error')
+        mock_list_bucket.side_effect = googleapiclient.errors.HttpError('fake http error', 'fake http error')
         with main.app.test_client() as c:
             c.get(main_constants.PREFIX + 'ValidateAllHpoFiles')
-        expected_calls = [
-            mock.call('Failed to process hpo_id `fake` due to the following HTTP error: fake http error')
-        ]
-        self.assertListEqual(expected_calls, mock_logging_error.mock_calls)
+        expected_call = mock.call('Failed to process hpo_id `fake` due to the following HTTP error: fake http error')
+        self.assertIn(expected_call, mock_logging_error.mock_calls)
 
     @mock.patch('api_util.check_cron')
     def _test_html_report_five_person(self, mock_check_cron):

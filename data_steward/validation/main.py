@@ -202,22 +202,14 @@ def validate_hpo_files(hpo_id):
     """
     validation end point for individual hpo_ids
     """
-    try:
-        process_hpo(hpo_id, force_run=True)
-    except BucketDoesNotExistError as bucket_error:
-        bucket = bucket_error.bucket
-        logging.warn('Bucket `%s` configured for hpo_id `%s` does not exist',
-                     bucket, hpo_id)
-    except HttpError as http_error:
-        message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (hpo_id, http_error.content)
-        logging.error(message)
+    process_hpo(hpo_id, force_run=True)
     return 'validation done!'
 
 
 @api_util.auth_required_cron
 def validate_all_hpos():
     """
-    validation end point for individual hpo_ids
+    validation end point for all hpo_ids
     """
     for item in resources.hpo_csv():
         hpo_id = item['hpo_id']
@@ -375,15 +367,23 @@ def process_hpo(hpo_id, force_run=False):
     InternalValidationError:
       Raised when an internal error is encountered during validation
     """
-    logging.info('Processing hpo_id %s', hpo_id)
-    bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    bucket_items = list_bucket(bucket)
-    folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
-    if folder_prefix is None:
-        logging.info('No submissions to process in %s bucket %s', hpo_id, bucket)
-    else:
-        summary = validate_submission(hpo_id, bucket, bucket_items, folder_prefix)
-        generate_metrics(hpo_id, bucket, folder_prefix, summary)
+    try:
+        logging.info('Processing hpo_id %s', hpo_id)
+        bucket = gcs_utils.get_hpo_bucket(hpo_id)
+        bucket_items = list_bucket(bucket)
+        folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
+        if folder_prefix is None:
+            logging.info('No submissions to process in %s bucket %s', hpo_id, bucket)
+        else:
+            summary = validate_submission(hpo_id, bucket, bucket_items, folder_prefix)
+            generate_metrics(hpo_id, bucket, folder_prefix, summary)
+    except BucketDoesNotExistError as bucket_error:
+        bucket = bucket_error.bucket
+        logging.warn('Bucket `%s` configured for hpo_id `%s` does not exist',
+                     bucket, hpo_id)
+    except HttpError as http_error:
+        message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (hpo_id, http_error.content)
+        logging.error(message)
 
 
 def get_hpo_name(hpo_id):
