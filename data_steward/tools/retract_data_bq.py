@@ -8,6 +8,7 @@ import logging
 # Project imports
 import common
 import bq_utils
+from validation import ehr_union
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction logger')
@@ -94,13 +95,28 @@ def get_table_id(table):
         return table + '_id'
 
 
-def mapping_table_for(table):
-    return '_mapping_' + table
+def list_existing_tables(project_id, dataset_id):
+    existing_tables = []
+    all_table_objs = bq_utils.list_tables(project_id=project_id, dataset_id=dataset_id)
+    for table_obj in all_table_objs:
+        table_id = bq_utils.get_table_id_from_obj(table_obj)
+        existing_tables.append(table_id)
+    return existing_tables
 
 
-def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pids):
+def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
+    """
+    Get list of queries to remove all records in all tables associated with supplied ids
+
+    :param project_id: identifies associated project
+    :param dataset_id: identifies associated dataset
+    :param hpo_id: identifies the HPO site
+    :param pids: list of ids
+    :return: list of dict with keys query, dataset, table
+    """
     logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
-    existing_tables = set(list_dataset_contents(project_id, dataset_id))
+    pids = int_list_to_bq(ids)
+    existing_tables = list_existing_tables(project_id, dataset_id)
     site_queries = []
     unioned_mapping_queries = []
     unioned_mapping_legacy_queries = []
@@ -119,7 +135,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pids):
 
         q_unioned_mapping = dict()
         q_unioned_mapping[DEST_DATASET] = dataset_id
-        q_unioned_mapping[DEST_TABLE] = mapping_table_for(table)
+        q_unioned_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
         if q_unioned_mapping[DEST_TABLE] in existing_tables:
             q_unioned_mapping[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                                             project=project_id,
@@ -132,7 +148,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pids):
 
         q_unioned_mapping_legacy = dict()
         q_unioned_mapping_legacy[DEST_DATASET] = dataset_id
-        q_unioned_mapping_legacy[DEST_TABLE] = UNIONED_EHR + mapping_table_for(table)
+        q_unioned_mapping_legacy[DEST_TABLE] = UNIONED_EHR + ehr_union.mapping_table_for(table)
         if q_unioned_mapping_legacy[DEST_TABLE] in existing_tables:
             q_unioned_mapping_legacy[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                                             project=project_id,
@@ -154,6 +170,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pids):
                                             pids=pids)
             unioned_queries.append(q_unioned)
 
+    # Remove fact_relationship records referencing retracted person_ids
     q_site_fact_relationship = dict()
     q_site_fact_relationship[DEST_DATASET] = dataset_id
     q_site_fact_relationship[DEST_TABLE] = get_site_table(hpo_id, common.FACT_RELATIONSHIP)
@@ -182,15 +199,17 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pids):
     return all_ehr_queries
 
 
-def queries_to_retract_from_unioned_dataset(project_id, dataset_id, pids):
+def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
+    # TODO include person for ehr and exclude after combine
     logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
-    existing_tables = set(list_dataset_contents(project_id, dataset_id))
+    pids = int_list_to_bq(ids)
+    existing_tables = list_existing_tables(project_id, dataset_id)
     unioned_mapping_queries = []
     unioned_queries = []
     for table in TABLES_WITH_PID:
         q_unioned_mapping = dict()
         q_unioned_mapping[DEST_DATASET] = dataset_id
-        q_unioned_mapping[DEST_TABLE] = mapping_table_for(table)
+        q_unioned_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
         if q_unioned_mapping[DEST_TABLE] in existing_tables:
             q_unioned_mapping[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                                             project=project_id,
@@ -228,15 +247,16 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, pids):
     return all_unioned_queries
 
 
-def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, pids):
+def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, ids):
+    pids = int_list_to_bq(ids)
     logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
-    existing_tables = set(list_dataset_contents(project_id, dataset_id))
+    existing_tables = list_existing_tables(project_id, dataset_id)
     combined_mapping_queries = []
     combined_queries = []
     for table in TABLES_WITH_PID:
         q_combined_mapping = dict()
         q_combined_mapping[DEST_DATASET] = dataset_id
-        q_combined_mapping[DEST_TABLE] = mapping_table_for(table)
+        q_combined_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
         if q_combined_mapping[DEST_TABLE] in existing_tables:
             q_combined_mapping[QUERY] = RETRACT_MAPPING_DATA_COMBINED_QUERY.format(
                                             project=project_id,
@@ -299,27 +319,57 @@ def retraction_query_runner(queries):
         logger.debug("%d queries failed" % failures)
 
 
+def is_deid_dataset(dataset_id):
+    return bool(re.match(DEID_REGEX, dataset_id))
+
+
+def is_combined_dataset(dataset_id):
+    if is_deid_dataset(dataset_id):
+        return False
+    return bool(re.match(COMBINED_REGEX, dataset_id))
+
+
+def is_unioned_dataset(dataset_id):
+    return bool(re.match(UNIONED_REGEX, dataset_id))
+
+
+def is_ehr_dataset(dataset_id):
+    return bool(re.match(EHR_REGEX, dataset_id)) or dataset_id == bq_utils.get_dataset_id()
+
+
+def int_list_to_bq(l):
+    str_l = map(str, l)
+    return "(%s)" % ', '.join(str_l)
+
+
 def run_retraction(project_id, pids, deid_flag, hpo_id):
-    datasets = list_project_contents(project_id)
-    logger.debug('Found datasets to retract from: %s' % ', '.join(datasets))
+    dataset_objs = bq_utils.list_datasets(project_id)
+    dataset_ids = []
+    for dataset_obj in dataset_objs:
+        dataset = bq_utils.get_dataset_id_from_obj(dataset_obj)
+        dataset_ids.append(dataset)
+    logger.debug('Found datasets to retract from: %s' % ', '.join(dataset_ids))
     deid_datasets = []
     combined_datasets = []
     unioned_datasets = []
     ehr_datasets = []
-    release_datasets = []
-    for dataset in datasets:
-        if re.match(DEID_REGEX, dataset):
+    for dataset in dataset_ids:
+        if is_deid_dataset(dataset):
             deid_datasets.append(dataset)
-        elif re.match(COMBINED_REGEX, dataset):
+        elif is_combined_dataset(dataset):
             combined_datasets.append(dataset)
-        elif re.match(UNIONED_REGEX, dataset):
+        elif is_unioned_dataset(dataset):
             unioned_datasets.append(dataset)
-        elif re.match(EHR_REGEX, dataset) or dataset == bq_utils.get_dataset_id():
+        elif is_ehr_dataset(dataset):
             ehr_datasets.append(dataset)
-        elif re.match(RELEASE_REGEX, dataset):
-            release_datasets.append(dataset)
 
-    if not deid_flag:
+    if deid_flag:
+        logger.debug('Retracting from DEID datasets: %s' % ', '.join(deid_datasets))
+        for dataset in deid_datasets:
+            deid_queries = queries_to_retract_from_combined_or_deid_dataset(project_id, dataset, pids)
+            retraction_query_runner(deid_queries)
+        logger.debug('Finished retracting from DEID datasets')
+    else:
         logger.debug('Retracting from EHR datasets: %s' % ', '.join(ehr_datasets))
         for dataset in ehr_datasets:
             ehr_queries = queries_to_retract_from_ehr_dataset(project_id, dataset, hpo_id, pids)
@@ -337,47 +387,38 @@ def run_retraction(project_id, pids, deid_flag, hpo_id):
             combined_queries = queries_to_retract_from_combined_or_deid_dataset(project_id, dataset, pids)
             retraction_query_runner(combined_queries)
         logger.debug('Finished retracting from COMBINED datasets')
-    else:
-        logger.debug('Retracting from DEID datasets: %s' % ', '.join(deid_datasets))
-        for dataset in deid_datasets:
-            deid_queries = queries_to_retract_from_combined_or_deid_dataset(project_id, dataset, pids)
-            retraction_query_runner(deid_queries)
-        logger.debug('Finished retracting from DEID datasets')
 
 
-def list_dataset_contents(project_id, dataset_id):
-    service = bq_utils.create_service()
-    req = service.tables().list(projectId=project_id, datasetId=dataset_id)
-    all_tables = []
-    while req:
-        resp = req.execute()
-        items = [item['id'].split('.')[-1] for item in resp.get('tables', [])]
-        all_tables.extend(items or [])
-        req = service.tables().list_next(req, resp)
-    return all_tables
+def to_int(val, default=None):
+    """
+    Convert numeric string value to int and return default value if invalid int
 
-
-def list_project_contents(project_id):
-    service = bq_utils.create_service()
-    req = service.datasets().list(projectId=project_id)
-    all_datasets = []
-    while req:
-        resp = req.execute()
-        items = [item['id'].split(':')[-1] for item in resp.get('datasets', [])]
-        all_datasets.extend(items or [])
-        req = service.datasets().list_next(req, resp)
-    return all_datasets
+    :param val: the numeric string value
+    :param default: the default value
+    :return: int if conversion successful, None otherwise
+    """
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
 
 
 def extract_pids_from_file(pid_file_name):
+    """
+    Read specified text file and return list of person_id
+
+    :param pid_file_name: name of the file
+    :return: list of int (person_id)
+    """
     pids_to_retract = []
     with open(pid_file_name) as f:
         for line in f:
-            pid = line.strip()
-            if pid != '':
+            pid = to_int(line.strip())
+            if pid is None:
+                logger.warning('Found invalid person_id "%s", skipping.' % line)
+            else:
                 pids_to_retract.append(pid)
-    pids_for_bq = '(' + ', '.join(pids_to_retract) + ')'
-    return pids_for_bq
+    return pids_to_retract
 
 
 if __name__ == '__main__':
@@ -392,7 +433,7 @@ if __name__ == '__main__':
                         required=True)
     parser.add_argument('-f', '--pid_file',
                         action='store', dest='pid_file',
-                        help='File containing the pids in the same directory (tools)',
+                        help='Text file containing the pids on separate lines',
                         required=True)
     parser.add_argument('-r', '--research_id', dest='deid_flag', action='store_true',
                         help='Indicates pids supplied are research ids')

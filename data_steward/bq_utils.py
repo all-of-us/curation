@@ -461,7 +461,7 @@ def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=
     return create_table(table_id, fields, drop_existing, dataset_id)
 
 
-def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS):
+def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS, project_id=None):
     """
     List all the tables in the dataset
 
@@ -475,7 +475,10 @@ def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS):
           print table['id']
     """
     bq_service = create_service()
-    app_id = app_identity.get_application_id()
+    if project_id is None:
+        app_id = app_identity.get_application_id()
+    else:
+        app_id = project_id
     if dataset_id is None:
         dataset_id = get_dataset_id()
     results = []
@@ -486,6 +489,10 @@ def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS):
         results.extend(tables or [])
         request = bq_service.tables().list_next(request, response)
     return results
+
+
+def get_table_id_from_obj(table_obj):
+    return table_obj['id'].split('.')[-1]
 
 
 def list_dataset_contents(dataset_id):
@@ -519,7 +526,7 @@ def list_datasets(project_id):
     return all_datasets
 
 
-def get_dataset_id(dataset_obj):
+def get_dataset_id_from_obj(dataset_obj):
     return dataset_obj['id'].split(':')[-1]
 
 
