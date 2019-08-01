@@ -300,21 +300,57 @@ class ValidationTest(unittest.TestCase):
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
+    @mock.patch('bq_utils.create_standard_table')
+    @mock.patch('validation.main.perform_validation_on_file')
     @mock.patch('api_util.check_cron')
-    def test_html_report_person_only(self, mock_check_cron):
+    def test_validate_submission(self,
+                                 mock_check_cron,
+                                 mock_perform_validation_on_file,
+                                 mock_create_standard_table):
+        """
+        Checks the return value of validate_submission
+
+        :param mock_check_cron:
+        :param mock_perform_validation_on_file:
+        :param mock_create_standard_table:
+        :return:
+        """
         folder_prefix = '2019-01-01/'
-        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'person.csv', ".\n .,.,.")
+        bucket_items = [{'name': folder_prefix + 'person.csv'},
+                        {'name': folder_prefix + 'invalid_file.csv'}]
 
-        with open(test_util.PERSON_ONLY_RESULTS_FILE, 'r') as f:
-            expected_result_file = self._remove_timestamp_tags_from_results(f.read())
+        perform_validation_on_file_returns = dict()
+        expected_results = []
+        expected_errors = []
+        expected_warnings = [('invalid_file.csv', 'Unknown file')]
+        for file_name in sorted(resources.CDM_FILES) + sorted(common.PII_FILES):
+            result = []
+            errors = []
+            found = 0
+            parsed = 0
+            loaded = 0
+            if file_name == 'person.csv':
+                found = 1
+                parsed = 1
+                loaded = 1
+            elif file_name == 'visit_occurrence.csv':
+                found = 1
+                error = (file_name, 'Fake parsing error')
+                errors.append(error)
+            result.append((file_name, found, parsed, loaded))
+            perform_validation_on_file_returns[file_name] = result, errors
+            expected_results += result
+            expected_errors += errors
 
-        main.app.testing = True
-        with main.app.test_client() as c:
-            c.get(test_util.VALIDATE_HPO_FILES_URL)
+        def perform_validation_on_file(cdm_file_name, found_cdm_files, hpo_id, folder_prefix, bucket):
+            return perform_validation_on_file_returns.get(cdm_file_name)
 
-            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-            actual_result_file = self._remove_timestamp_tags_from_results(StringIO.StringIO(actual_result).getvalue())
-            self.assertEqual(expected_result_file, actual_result_file)
+        mock_perform_validation_on_file.side_effect = perform_validation_on_file
+
+        actual_result = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, folder_prefix)
+        self.assertListEqual(expected_results, actual_result.get('results'))
+        self.assertListEqual(expected_errors, actual_result.get('errors'))
+        self.assertListEqual(expected_warnings, actual_result.get('warnings'))
 
     @mock.patch('resources.hpo_csv')
     @mock.patch('validation.main.process_hpo')
@@ -331,7 +367,9 @@ class ValidationTest(unittest.TestCase):
         self.assertListEqual(expected_calls, mock_logging_error.mock_calls)
 
     @mock.patch('api_util.check_cron')
-    def test_html_report_five_person(self, mock_check_cron):
+    def _test_html_report_five_person(self, mock_check_cron):
+        # Not sure this test is still relevant (see hpo_report module and tests)
+        # TODO refactor or remove this test
         folder_prefix = '2019-01-01/'
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix)
