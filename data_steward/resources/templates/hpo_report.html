@@ -379,9 +379,10 @@ This report may be incomplete because the submission is still being processed. P
         <tr>
             <th>Table</th>
             <th>Column Name</th>
-            <th>Row Count</th>
             <th>Null Count</th>
             <th>Concept Zero Count</th>
+            <th>Total Row Count</th>
+            <th>Percent Populated</th>
         </tr>
     </thead>
     <tbody>
@@ -389,9 +390,10 @@ This report may be incomplete because the submission is still being processed. P
         <tr>
             <td>{{ row['omop_table_name'] }}</td>
             <td>{{ row['column_name'] }}</td>
-            <td>{{ row['table_row_count'] }}</td>
             <td>{{ row['null_count'] }}</td>
             <td>{{ row['concept_zero_count'] }}</td>
+            <td>{{ row['table_row_count'] }}</td>
+            <td>{{ "{0:0.2f}".format(row["percent_populated"] * 100) }}</td>
         </tr>
     {% endfor %}
     </tbody>
