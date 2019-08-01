@@ -36,4 +36,4 @@ FROM (
 """
 CONCEPT_ZERO_CLAUSE = 'SUM(CASE WHEN {column_name}=0 THEN 1 ELSE 0 END)'
 UNION_ALL = '\nUNION ALL\n'
-COMPLETENESS_QUERY_FMT = '{{union_all_subqueries}} ORDER BY omop_table_name'
+COMPLETENESS_QUERY_FMT = '{union_all_subqueries} ORDER BY omop_table_name'
