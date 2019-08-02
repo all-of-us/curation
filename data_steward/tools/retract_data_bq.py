@@ -29,8 +29,9 @@ WRITE_TRUNCATE = 'WRITE_TRUNCATE'
 PERSON_DOMAIN = 56
 
 NON_PID_TABLES = [common.CARE_SITE, common.LOCATION, common.FACT_RELATIONSHIP, common.PROVIDER]
+# person from RDR should not be removed, but person from EHR must be
 NON_EHR_TABLES = [common.PERSON]
-TABLES_WITH_PID = set(common.PII_TABLES + common.AOU_REQUIRED) - set(NON_PID_TABLES + NON_EHR_TABLES)
+TABLES_FOR_RETRACTION = set(common.PII_TABLES + common.AOU_REQUIRED) - set(NON_PID_TABLES + NON_EHR_TABLES)
 
 RETRACT_DATA_SITE_QUERY = (
     ' SELECT *'
@@ -111,7 +112,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
     :param project_id: identifies associated project
     :param dataset_id: identifies associated dataset
     :param hpo_id: identifies the HPO site
-    :param pids: list of ids
+    :param ids: list of ids
     :return: list of dict with keys query, dataset, table
     """
     logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
@@ -121,7 +122,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
     unioned_mapping_queries = []
     unioned_mapping_legacy_queries = []
     unioned_queries = []
-    for table in TABLES_WITH_PID:
+    for table in TABLES_FOR_RETRACTION:
         q_site = dict()
         q_site[DEST_DATASET] = dataset_id
         q_site[DEST_TABLE] = get_site_table(hpo_id, table)
@@ -133,31 +134,33 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
                                             pids=pids)
             site_queries.append(q_site)
 
-        q_unioned_mapping = dict()
-        q_unioned_mapping[DEST_DATASET] = dataset_id
-        q_unioned_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
-        if q_unioned_mapping[DEST_TABLE] in existing_tables:
-            q_unioned_mapping[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
-                                            project=project_id,
-                                            dataset=q_unioned_mapping[DEST_DATASET],
-                                            mapping_table=q_unioned_mapping[DEST_TABLE],
-                                            table_id=get_table_id(table),
-                                            table=UNIONED_EHR + table,
-                                            pids=pids)
-            unioned_mapping_queries.append(q_unioned_mapping)
+        # death does not have mapping table
+        if table is not common.DEATH:
+            q_unioned_mapping = dict()
+            q_unioned_mapping[DEST_DATASET] = dataset_id
+            q_unioned_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
+            if q_unioned_mapping[DEST_TABLE] in existing_tables:
+                q_unioned_mapping[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
+                                                project=project_id,
+                                                dataset=q_unioned_mapping[DEST_DATASET],
+                                                mapping_table=q_unioned_mapping[DEST_TABLE],
+                                                table_id=get_table_id(table),
+                                                table=UNIONED_EHR + table,
+                                                pids=pids)
+                unioned_mapping_queries.append(q_unioned_mapping)
 
-        q_unioned_mapping_legacy = dict()
-        q_unioned_mapping_legacy[DEST_DATASET] = dataset_id
-        q_unioned_mapping_legacy[DEST_TABLE] = UNIONED_EHR + ehr_union.mapping_table_for(table)
-        if q_unioned_mapping_legacy[DEST_TABLE] in existing_tables:
-            q_unioned_mapping_legacy[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
-                                            project=project_id,
-                                            dataset=q_unioned_mapping_legacy[DEST_DATASET],
-                                            mapping_table=q_unioned_mapping_legacy[DEST_TABLE],
-                                            table_id=get_table_id(table),
-                                            table=UNIONED_EHR + table,
-                                            pids=pids)
-            unioned_mapping_legacy_queries.append(q_unioned_mapping_legacy)
+            q_unioned_mapping_legacy = dict()
+            q_unioned_mapping_legacy[DEST_DATASET] = dataset_id
+            q_unioned_mapping_legacy[DEST_TABLE] = UNIONED_EHR + ehr_union.mapping_table_for(table)
+            if q_unioned_mapping_legacy[DEST_TABLE] in existing_tables:
+                q_unioned_mapping_legacy[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
+                                                project=project_id,
+                                                dataset=q_unioned_mapping_legacy[DEST_DATASET],
+                                                mapping_table=q_unioned_mapping_legacy[DEST_TABLE],
+                                                table_id=get_table_id(table),
+                                                table=UNIONED_EHR + table,
+                                                pids=pids)
+                unioned_mapping_legacy_queries.append(q_unioned_mapping_legacy)
 
         q_unioned = dict()
         q_unioned[DEST_DATASET] = dataset_id
@@ -169,6 +172,29 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
                                             table=q_unioned[DEST_TABLE],
                                             pids=pids)
             unioned_queries.append(q_unioned)
+
+    # Remove from person table
+    q_site_person = dict()
+    q_site_person[DEST_DATASET] = dataset_id
+    q_site_person[DEST_TABLE] = get_site_table(hpo_id, common.PERSON)
+    if q_site_person[DEST_TABLE] in existing_tables:
+        q_site_person[QUERY] = RETRACT_DATA_SITE_QUERY.format(
+                                            project=project_id,
+                                            dataset=q_site_person[DEST_DATASET],
+                                            table=q_site_person[DEST_TABLE],
+                                            pids=pids)
+        site_queries.append(q_site_person)
+
+    q_unioned_person = dict()
+    q_unioned_person[DEST_DATASET] = dataset_id
+    q_unioned_person[DEST_TABLE] = UNIONED_EHR + common.PERSON
+    if q_unioned_person[DEST_TABLE] in existing_tables:
+        q_unioned_person[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
+                                            project=project_id,
+                                            dataset=q_unioned_person[DEST_DATASET],
+                                            table=q_unioned_person[DEST_TABLE],
+                                            pids=pids)
+        unioned_queries.append(q_unioned_person)
 
     # Remove fact_relationship records referencing retracted person_ids
     q_site_fact_relationship = dict()
@@ -200,25 +226,33 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
 
 
 def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
-    # TODO include person for ehr and exclude after combine
+    """
+    Get list of queries to remove all records in all tables associated with supplied ids
+
+    :param project_id: identifies associated project
+    :param dataset_id: identifies associated dataset
+    :param ids: list of ids
+    :return: list of dict with keys query, dataset, table
+    """
     logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
     pids = int_list_to_bq(ids)
     existing_tables = list_existing_tables(project_id, dataset_id)
     unioned_mapping_queries = []
     unioned_queries = []
-    for table in TABLES_WITH_PID:
-        q_unioned_mapping = dict()
-        q_unioned_mapping[DEST_DATASET] = dataset_id
-        q_unioned_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
-        if q_unioned_mapping[DEST_TABLE] in existing_tables:
-            q_unioned_mapping[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
-                                            project=project_id,
-                                            dataset=q_unioned_mapping[DEST_DATASET],
-                                            mapping_table=q_unioned_mapping[DEST_TABLE],
-                                            table_id=get_table_id(table),
-                                            table=table,
-                                            pids=pids)
-            unioned_mapping_queries.append(q_unioned_mapping)
+    for table in TABLES_FOR_RETRACTION:
+        if table is not common.DEATH:
+            q_unioned_mapping = dict()
+            q_unioned_mapping[DEST_DATASET] = dataset_id
+            q_unioned_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
+            if q_unioned_mapping[DEST_TABLE] in existing_tables:
+                q_unioned_mapping[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
+                                                project=project_id,
+                                                dataset=q_unioned_mapping[DEST_DATASET],
+                                                mapping_table=q_unioned_mapping[DEST_TABLE],
+                                                table_id=get_table_id(table),
+                                                table=table,
+                                                pids=pids)
+                unioned_mapping_queries.append(q_unioned_mapping)
 
         q_unioned = dict()
         q_unioned[DEST_DATASET] = dataset_id
@@ -230,6 +264,18 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
                                             table=q_unioned[DEST_TABLE],
                                             pids=pids)
             unioned_queries.append(q_unioned)
+
+    # retract from person
+    q_unioned_person = dict()
+    q_unioned_person[DEST_DATASET] = dataset_id
+    q_unioned_person[DEST_TABLE] = common.PERSON
+    if q_unioned_person[DEST_TABLE] in existing_tables:
+        q_unioned_person[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
+                                            project=project_id,
+                                            dataset=q_unioned_person[DEST_DATASET],
+                                            table=q_unioned_person[DEST_TABLE],
+                                            pids=pids)
+        unioned_queries.append(q_unioned_person)
 
     q_unioned_fact_relationship = dict()
     q_unioned_fact_relationship[DEST_DATASET] = dataset_id
@@ -248,40 +294,59 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
 
 
 def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, ids):
+    """
+    Get list of queries to remove all records in all tables associated with supplied ids
+
+    :param project_id: identifies associated project
+    :param dataset_id: identifies associated dataset
+    :param ids: list of ids
+    :return: list of dict with keys query, dataset, table
+    """
     pids = int_list_to_bq(ids)
     logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
     existing_tables = list_existing_tables(project_id, dataset_id)
     combined_mapping_queries = []
     combined_queries = []
-    for table in TABLES_WITH_PID:
-        q_combined_mapping = dict()
-        q_combined_mapping[DEST_DATASET] = dataset_id
-        q_combined_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
-        if q_combined_mapping[DEST_TABLE] in existing_tables:
-            q_combined_mapping[QUERY] = RETRACT_MAPPING_DATA_COMBINED_QUERY.format(
-                                            project=project_id,
-                                            dataset=q_combined_mapping[DEST_DATASET],
-                                            mapping_table=q_combined_mapping[DEST_TABLE],
-                                            table_id=get_table_id(table),
-                                            table=table,
-                                            pids=pids,
-                                            CONSTANT_FACTOR=common.RDR_ID_CONSTANT
-                                            + common.ID_CONSTANT_FACTOR)
-            combined_mapping_queries.append(q_combined_mapping)
+    for table in TABLES_FOR_RETRACTION:
+        if table is not common.DEATH:
+            q_combined_mapping = dict()
+            q_combined_mapping[DEST_DATASET] = dataset_id
+            q_combined_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
+            if q_combined_mapping[DEST_TABLE] in existing_tables:
+                q_combined_mapping[QUERY] = RETRACT_MAPPING_DATA_COMBINED_QUERY.format(
+                                                project=project_id,
+                                                dataset=q_combined_mapping[DEST_DATASET],
+                                                mapping_table=q_combined_mapping[DEST_TABLE],
+                                                table_id=get_table_id(table),
+                                                table=table,
+                                                pids=pids,
+                                                CONSTANT_FACTOR=common.RDR_ID_CONSTANT
+                                                + common.ID_CONSTANT_FACTOR)
+                combined_mapping_queries.append(q_combined_mapping)
 
         q_combined = dict()
         q_combined[DEST_DATASET] = dataset_id
         q_combined[DEST_TABLE] = table
         if q_combined[DEST_TABLE] in existing_tables:
             q_combined[QUERY] = RETRACT_DATA_COMBINED_QUERY.format(
-                                            project=project_id,
-                                            dataset=q_combined[DEST_DATASET],
-                                            table=q_combined[DEST_TABLE],
-                                            pids=pids,
-                                            table_id=get_table_id(table),
-                                            CONSTANT_FACTOR=common.RDR_ID_CONSTANT
-                                            + common.ID_CONSTANT_FACTOR)
+                                                project=project_id,
+                                                dataset=q_combined[DEST_DATASET],
+                                                table=q_combined[DEST_TABLE],
+                                                pids=pids,
+                                                table_id=get_table_id(table),
+                                                CONSTANT_FACTOR=common.RDR_ID_CONSTANT
+                                                + common.ID_CONSTANT_FACTOR)
             combined_queries.append(q_combined)
+
+
+    # fix death query to exclude constant
+    for q in combined_queries:
+        if q[DEST_TABLE] is common.DEATH:
+            q[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
+                                                project=project_id,
+                                                dataset=q[DEST_DATASET],
+                                                table=q[DEST_TABLE],
+                                                pids=pids)
 
     q_combined_fact_relationship = dict()
     q_combined_fact_relationship[DEST_DATASET] = dataset_id
