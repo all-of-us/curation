@@ -216,7 +216,6 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
                                                     table_id=get_table_id(table),
                                                     table=UNIONED_EHR + table,
                                                     pids=pids)
-                q_unioned_mapping[DELETE_FLAG]
                 unioned_mapping_queries.append(q_unioned_mapping)
 
             q_unioned_mapping_legacy = dict()
@@ -582,7 +581,7 @@ def retraction_query_runner(queries):
                                 batch=True)
         query_job_id = job_results['jobReference']['jobId']
         query_job_ids.append(query_job_id)
-    
+
     incomplete_jobs = bq_utils.wait_on_jobs(query_job_ids)
     if incomplete_jobs:
         logger.debug('Failed on {count} job ids {ids}'.format(count=len(incomplete_jobs),

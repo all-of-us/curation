@@ -14,6 +14,18 @@ from tools import retract_data_bq
 from validation import ehr_union
 
 
+TABLE_ROWS_QUERY = (
+    ' SELECT * '
+    ' FROM {dataset_id}.__TABLES__ '
+)
+
+EXPECTED_ROWS_QUERY = (
+    ' SELECT * '
+    ' FROM {dataset_id}.{table_id} '
+    ' WHERE person_id '
+    ' IN {pids} ')
+
+
 class RetractDataBqTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -175,12 +187,10 @@ class RetractDataBqTest(unittest.TestCase):
             cdm_table = cdm_file_name.split('.')[0]
             hpo_table = bq_utils.get_table_id(self.hpo_id, cdm_table)
             # store query for checking number of rows to delete
-            row_count_queries[hpo_table] = ('SELECT * '
-                                            'FROM %s.%s '
-                                            'WHERE person_id '
-                                            'IN %s ') % (self.ehr_dataset_id,
-                                                         hpo_table,
-                                                         retract_data_bq.int_list_to_bq(self.person_ids))
+            row_count_queries[hpo_table] = EXPECTED_ROWS_QUERY.format(dataset_id=self.ehr_dataset_id,
+                                                                      table_id=hpo_table,
+                                                                      pids=retract_data_bq.int_list_to_bq(
+                                                                                self.person_ids))
             retract_data_bq.logger.debug('Preparing to load table %s.%s' % (self.ehr_dataset_id,
                                                                             hpo_table))
             with open(cdm_file, 'rb') as f:
@@ -200,8 +210,8 @@ class RetractDataBqTest(unittest.TestCase):
             result = bq_utils.query(row_count_queries[table])
             expected_row_count[table] = retract_data_bq.to_int(result['totalRows'])
 
-        # separate check to find numeber of actual deleted rows
-        q = ' SELECT * FROM %s.__TABLES__ ' % self.ehr_dataset_id
+        # separate check to find number of actual deleted rows
+        q = TABLE_ROWS_QUERY.format(dataset_id=self.ehr_dataset_id)
         q_result = bq_utils.query(q)
         result = bq_utils.response2rows(q_result)
         row_count_before_retraction = {}
