@@ -163,7 +163,7 @@ def load_csv(schema_path,
     return insert_result
 
 
-def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix=""):
+def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix="", dataset_id=None):
     """
     Load CDM file from a bucket into a table in bigquery
     :param hpo_id: ID for the HPO site
@@ -174,7 +174,8 @@ def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix=""):
         raise ValueError('{} is not a valid table to load'.format(cdm_table_name))
 
     app_id = app_identity.get_application_id()
-    dataset_id = get_dataset_id()
+    if dataset_id is None:
+        dataset_id = get_dataset_id()
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     fields_filename = os.path.join(resources.fields_path, cdm_table_name + '.json')
     gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix, cdm_table_name)
@@ -376,23 +377,22 @@ def query(q,
         if destination_dataset_id is None:
             destination_dataset_id = get_dataset_id()
         job_body = {
-            'configuration':
-                {
-                    'query': {
-                        'query': q,
-                        'useLegacySql': use_legacy_sql,
-                        'defaultDataset': {
-                            'projectId': app_id,
-                            'datasetId': get_dataset_id()
-                        },
-                        'destinationTable': {
-                            'projectId': app_id,
-                            'datasetId': destination_dataset_id,
-                            'tableId': destination_table_id
-                        },
-                        'writeDisposition': write_disposition
-                    }
+            'configuration': {
+                'query': {
+                    'query': q,
+                    'useLegacySql': use_legacy_sql,
+                    'defaultDataset': {
+                        'projectId': app_id,
+                        'datasetId': get_dataset_id()
+                    },
+                    'destinationTable': {
+                        'projectId': app_id,
+                        'datasetId': destination_dataset_id,
+                        'tableId': destination_table_id
+                    },
+                    'writeDisposition': write_disposition
                 }
+            }
         }
         return bq_service.jobs().insert(projectId=app_id, body=job_body).execute(num_retries=retry_count)
     else:
@@ -520,7 +520,7 @@ def list_datasets(project_id):
     all_datasets = []
     while req:
         resp = req.execute()
-        items = [item['id'].split(':')[-1] for item in resp.get('datasets', [])]
+        items = [item for item in resp.get('datasets', [])]
         all_datasets.extend(items or [])
         req = service.datasets().list_next(req, resp)
     return all_datasets
