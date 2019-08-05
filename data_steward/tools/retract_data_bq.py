@@ -6,9 +6,12 @@ import logging
 # Third party imports
 
 # Project imports
+import constants.validation.main as consts
 import common
 import bq_utils
 from validation import ehr_union
+from validation import main
+import api_util
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction logger')
@@ -613,7 +616,7 @@ def int_list_to_bq(l):
     return "(%s)" % ', '.join(str_l)
 
 
-def run_retraction(project_id, pids, deid_flag, hpo_id):
+def run_retraction(project_id, pids, hpo_id, deid_flag=False):
     dataset_objs = bq_utils.list_datasets(project_id)
     dataset_ids = []
     for dataset_obj in dataset_objs:
@@ -707,6 +710,30 @@ def extract_pids_from_file(pid_file_name):
     return pids_to_retract
 
 
+@api_util.auth_required_cron
+def run_retraction_cron():
+    project_id = bq_utils.app_identity.get_application_id()
+    hpo_id = bq_utils.get_retraction_hpo_id()
+    person_ids_file = bq_utils.get_retraction_person_ids_file_name()
+    research_ids_file = bq_utils.get_retraction_research_ids_file_name()
+    person_ids = extract_pids_from_file(person_ids_file)
+    research_ids = extract_pids_from_file(research_ids_file)
+    logger.debug('Running retraction on research_ids')
+    run_retraction(project_id, research_ids, hpo_id, deid_flag=True)
+    logger.debug('Completed retraction on research_ids')
+    logger.debug('Running retraction on person_ids')
+    run_retraction(project_id, person_ids, hpo_id, deid_flag=False)
+    logger.debug('Completed retraction on person_ids')
+    return 'retraction-complete'
+
+
+main.app.add_url_rule(
+    consts.PREFIX + 'RetractPids',
+    endpoint='run_retraction_cron',
+    view_func=run_retraction_cron,
+    methods=['GET'])
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-p', '--project_id',
@@ -727,6 +754,6 @@ if __name__ == '__main__':
 
     pids = extract_pids_from_file(args.pid_file)
     logger.debug('Found the following pids to retract: %s' % pids)
-    run_retraction(args.project_id, pids, args.deid_flag, args.hpo_id)
+    run_retraction(args.project_id, pids, args.hpo_id, args.deid_flag)
     logger.debug('Retraction complete')
 
