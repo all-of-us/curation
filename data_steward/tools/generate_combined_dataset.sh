@@ -65,7 +65,7 @@ source set_path.sh
 
 #--------------------------------------------------------
 #Combine RDR and Unioned EHR data (step 6 in playbook)
-cdr="combined${today}"
+cdr="combined${today}_base"
 tag=$(git describe --abbrev=0 --tags)
 version=${tag}
 
@@ -74,7 +74,7 @@ export UNIONED_DATASET_ID="${unioned_ehr_dataset}"
 export EHR_RDR_DATASET_ID="${cdr}"
 export BIGQUERY_DATASET_ID="${unioned_ehr_dataset}"
 
-bq mk --dataset --description "${version} combine_ehr_rdr ${rdr_dataset} + ${unioned_ehr_dataset}" ${app_id}:${cdr}
+bq mk --dataset --description "${version} combine_ehr_rdr base version  ${rdr_dataset} + ${unioned_ehr_dataset}" ${app_id}:${cdr}
 
 #Create the clinical tables for unioned EHR data set
 cd ..
