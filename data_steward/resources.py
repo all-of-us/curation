@@ -29,6 +29,11 @@ html_boilerplate_path = os.path.join(resource_path, 'html_boilerplate.txt')
 
 DATASOURCES_JSON = os.path.join(achilles_index_path, 'data/datasources.json')
 
+domain_mappings_path = os.path.join(resource_path, 'domain_mappings')
+table_mappings_path = os.path.join(domain_mappings_path, 'table_mappings.csv')
+field_mappings_path = os.path.join(domain_mappings_path, 'field_mappings.csv')
+value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
+
 
 @cachetools.cached(cache={})
 def _csv_to_list(csv_path):
@@ -54,6 +59,18 @@ def _csv_file_to_list(csv_file):
         item = dict(zip(field_names, csv_line))
         items.append(item)
     return items
+
+
+def table_mappings_csv():
+    return _csv_to_list(table_mappings_path)
+
+
+def field_mappings_csv():
+    return _csv_to_list(field_mappings_path)
+
+
+def value_mappings_csv():
+    return _csv_to_list(value_mappings_path)
 
 
 def cdm_csv():
