@@ -1,0 +1,32 @@
+[
+    {
+        "type": "string",
+        "name": "src_table",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "string",
+        "name": "dest_table",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "src_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "dest_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "bool",
+        "name": "is_rerouted",
+        "mode": "nullable",
+        "description": ""
+    }
+]
