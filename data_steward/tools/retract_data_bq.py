@@ -617,6 +617,15 @@ def int_list_to_bq(l):
 
 
 def run_retraction(project_id, pids, hpo_id, deid_flag=False):
+    """
+    Main function to perform retraction
+
+    :param project_id: project to retract from
+    :param pids: person/research ids
+    :param hpo_id: hpo_id of the site to retract from
+    :param deid_flag: Flag to indicate whether the supplied pids are person_ids or research_ids
+    :return:
+    """
     dataset_objs = bq_utils.list_datasets(project_id)
     dataset_ids = []
     for dataset_obj in dataset_objs:
