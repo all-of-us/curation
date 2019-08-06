@@ -220,7 +220,7 @@ class RetractDataBqTest(unittest.TestCase):
         deid_flag = False
 
         # perform retraction
-        retract_data_bq.run_retraction(self.test_project_id, self.person_ids, deid_flag, self.hpo_id)
+        retract_data_bq.run_retraction(self.test_project_id, self.person_ids, self.hpo_id, deid_flag)
 
         # find actual deleted rows
         q_result = bq_utils.query(q)
