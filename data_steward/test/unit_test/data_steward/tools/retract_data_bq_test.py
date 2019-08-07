@@ -229,4 +229,3 @@ class RetractDataBqTest(unittest.TestCase):
 
     def tearDown(self):
         test_util.delete_all_tables(self.bq_dataset_id)
-        pass
