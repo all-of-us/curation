@@ -55,6 +55,18 @@ def get_ehr_rdr_dataset_id():
     return os.environ.get('EHR_RDR_DATASET_ID')
 
 
+def get_retraction_hpo_id():
+    return os.environ.get('RETRACTION_HPO_ID')
+
+
+def get_retraction_person_ids_file_name():
+    return os.environ.get('RETRACTION_PERSON_IDS_FILE_NAME')
+
+
+def get_retraction_research_ids_file_name():
+    return os.environ.get('RETRACTION_RESEARCH_IDS_FILE_NAME')
+
+
 def get_combined_deid_dataset_id():
     """
     Get the combined unidentified dataset id.
@@ -163,7 +175,7 @@ def load_csv(schema_path,
     return insert_result
 
 
-def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix=""):
+def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix="", dataset_id=None):
     """
     Load CDM file from a bucket into a table in bigquery
     :param hpo_id: ID for the HPO site
@@ -174,7 +186,8 @@ def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix=""):
         raise ValueError('{} is not a valid table to load'.format(cdm_table_name))
 
     app_id = app_identity.get_application_id()
-    dataset_id = get_dataset_id()
+    if dataset_id is None:
+        dataset_id = get_dataset_id()
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
     fields_filename = os.path.join(resources.fields_path, cdm_table_name + '.json')
     gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix, cdm_table_name)
@@ -376,23 +389,22 @@ def query(q,
         if destination_dataset_id is None:
             destination_dataset_id = get_dataset_id()
         job_body = {
-            'configuration':
-                {
-                    'query': {
-                        'query': q,
-                        'useLegacySql': use_legacy_sql,
-                        'defaultDataset': {
-                            'projectId': app_id,
-                            'datasetId': get_dataset_id()
-                        },
-                        'destinationTable': {
-                            'projectId': app_id,
-                            'datasetId': destination_dataset_id,
-                            'tableId': destination_table_id
-                        },
-                        'writeDisposition': write_disposition
-                    }
+            'configuration': {
+                'query': {
+                    'query': q,
+                    'useLegacySql': use_legacy_sql,
+                    'defaultDataset': {
+                        'projectId': app_id,
+                        'datasetId': get_dataset_id()
+                    },
+                    'destinationTable': {
+                        'projectId': app_id,
+                        'datasetId': destination_dataset_id,
+                        'tableId': destination_table_id
+                    },
+                    'writeDisposition': write_disposition
                 }
+            }
         }
         return bq_service.jobs().insert(projectId=app_id, body=job_body).execute(num_retries=retry_count)
     else:
@@ -461,7 +473,7 @@ def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=
     return create_table(table_id, fields, drop_existing, dataset_id)
 
 
-def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS):
+def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS, project_id=None):
     """
     List all the tables in the dataset
 
@@ -475,7 +487,10 @@ def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS):
           print table['id']
     """
     bq_service = create_service()
-    app_id = app_identity.get_application_id()
+    if project_id is None:
+        app_id = app_identity.get_application_id()
+    else:
+        app_id = project_id
     if dataset_id is None:
         dataset_id = get_dataset_id()
     results = []
@@ -486,6 +501,10 @@ def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS):
         results.extend(tables or [])
         request = bq_service.tables().list_next(request, response)
     return results
+
+
+def get_table_id_from_obj(table_obj):
+    return table_obj['id'].split('.')[-1]
 
 
 def list_dataset_contents(dataset_id):
@@ -499,6 +518,28 @@ def list_dataset_contents(dataset_id):
         all_tables.extend(items or [])
         req = service.tables().list_next(req, resp)
     return all_tables
+
+
+def list_datasets(project_id):
+    """
+    List the datasets in the specified project
+
+    :param project_id: identifies the project
+    :return:
+    """
+    service = create_service()
+    req = service.datasets().list(projectId=project_id)
+    all_datasets = []
+    while req:
+        resp = req.execute()
+        items = [item for item in resp.get('datasets', [])]
+        all_datasets.extend(items or [])
+        req = service.datasets().list_next(req, resp)
+    return all_datasets
+
+
+def get_dataset_id_from_obj(dataset_obj):
+    return dataset_obj['id'].split(':')[-1]
 
 
 def large_response_to_rowlist(query_response):
