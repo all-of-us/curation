@@ -7,7 +7,6 @@ import logging
 # Third party imports
 
 # Project imports
-import constants.validation.main as consts
 import common
 import bq_utils
 import resources
@@ -395,17 +394,17 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
         q_unioned[DELETE_FLAG] = delete_flag
         if q_unioned[DEST_TABLE] in existing_tables:
             if q_unioned[DELETE_FLAG]:
-                q_unioned[QUERY] = SELECT_RETRACT_DATA_UNIONED_QUERY.format(
-                                                project=project_id,
-                                                dataset=q_unioned[DEST_DATASET],
-                                                table=q_unioned[DEST_TABLE],
-                                                pids=pids)
+                q_unioned[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
+                                                    project=project_id,
+                                                    dataset=q_unioned[DEST_DATASET],
+                                                    table=q_unioned[DEST_TABLE],
+                                                    pids=pids)
             else:
                 q_unioned[QUERY] = SELECT_RETRACT_DATA_UNIONED_QUERY.format(
-                                                project=project_id,
-                                                dataset=q_unioned[DEST_DATASET],
-                                                table=q_unioned[DEST_TABLE],
-                                                pids=pids)
+                                                    project=project_id,
+                                                    dataset=q_unioned[DEST_DATASET],
+                                                    table=q_unioned[DEST_TABLE],
+                                                    pids=pids)
             unioned_queries.append(q_unioned)
 
     # retract from person
@@ -416,16 +415,16 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
     if q_unioned_person[DEST_TABLE] in existing_tables:
         if q_unioned_person[DELETE_FLAG]:
             q_unioned_person[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
-                                                project=project_id,
-                                                dataset=q_unioned_person[DEST_DATASET],
-                                                table=q_unioned_person[DEST_TABLE],
-                                                pids=pids)
+                                                    project=project_id,
+                                                    dataset=q_unioned_person[DEST_DATASET],
+                                                    table=q_unioned_person[DEST_TABLE],
+                                                    pids=pids)
         else:
             q_unioned_person[QUERY] = SELECT_RETRACT_DATA_UNIONED_QUERY.format(
-                                                project=project_id,
-                                                dataset=q_unioned_person[DEST_DATASET],
-                                                table=q_unioned_person[DEST_TABLE],
-                                                pids=pids)
+                                                    project=project_id,
+                                                    dataset=q_unioned_person[DEST_DATASET],
+                                                    table=q_unioned_person[DEST_TABLE],
+                                                    pids=pids)
         unioned_queries.append(q_unioned_person)
 
     q_unioned_fact_relationship = dict()
