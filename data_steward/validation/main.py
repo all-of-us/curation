@@ -26,6 +26,7 @@ import validation.ehr_union as ehr_union
 import validation.export as export
 import validation.participants.identity_match as matching
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from tools import retract_data_bq
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
@@ -804,6 +805,23 @@ def union_ehr():
 
 
 @api_util.auth_required_cron
+def run_retraction_cron():
+    project_id = bq_utils.app_identity.get_application_id()
+    hpo_id = bq_utils.get_retraction_hpo_id()
+    person_ids_file = bq_utils.get_retraction_person_ids_file_name()
+    research_ids_file = bq_utils.get_retraction_research_ids_file_name()
+    person_ids = retract_data_bq.extract_pids_from_file(person_ids_file)
+    research_ids = retract_data_bq.extract_pids_from_file(research_ids_file)
+    logging.info('Running retraction on research_ids')
+    retract_data_bq.run_retraction(project_id, research_ids, hpo_id, deid_flag=True)
+    logging.info('Completed retraction on research_ids')
+    logging.info('Running retraction on person_ids')
+    retract_data_bq.run_retraction(project_id, person_ids, hpo_id, deid_flag=False)
+    logging.info('Completed retraction on person_ids')
+    return 'retraction-complete'
+
+
+@api_util.auth_required_cron
 def validate_pii():
     project = bq_utils.app_identity.get_application_id()
     combined_dataset = bq_utils.get_ehr_rdr_dataset_id()
@@ -884,4 +902,10 @@ app.add_url_rule(
     consts.PREFIX + consts.PARTICIPANT_VALIDATION,
     endpoint='validate_pii',
     view_func=validate_pii,
+    methods=['GET'])
+
+app.add_url_rule(
+    consts.PREFIX + 'RetractPids',
+    endpoint='run_retraction_cron',
+    view_func=run_retraction_cron,
     methods=['GET'])
