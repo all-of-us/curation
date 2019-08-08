@@ -53,8 +53,10 @@ done
 # In order to display them on the cron page, we set jobs to run annually starting in 364 days.
 # For example if today's date is 1/1/2020 then YESTERDAY_SCHEDULE evaluates to "31 of December"
 # and it is set to run for the first time on December 31, 2020
-YESTERDAY_SCHEDULE=$(date -d "yesterday 13:00" '+%e of %B 00:00')
-YESTERDAY_SCHEDULE="${YESTERDAY_SCHEDULE,,}" # lowercase
+YESTERDAY_SCHEDULE=$(date -v-1d '+%e of %B 13:00')
+# YESTERDAY_SCHEDULE_LOWER="${YESTERDAY_SCHEDULE,,}" # lowercase
+# bash3 friendly lowercase
+YESTERDAY_SCHEDULE_LOWER=$(echo ${YESTERDAY_SCHEDULE} | tr '[:upper:]' '[:lower:]')
 echo "" >> ${CRON_YAML}
 echo "# Force Run" >> ${CRON_YAML}
 for i in "${SITES_ARR[@]}"
@@ -63,7 +65,7 @@ do
   temp="${temp#\"}"
   echo "- description: validate hpo $temp" >> ${CRON_YAML}
   echo "  url: /data_steward/v1/ValidateHpoFiles/$temp" >> ${CRON_YAML}
-  echo "  schedule: ${YESTERDAY_SCHEDULE}" >> ${CRON_YAML}
+  echo "  schedule: ${YESTERDAY_SCHEDULE_LOWER}" >> ${CRON_YAML}
   echo "  timezone: America/New_York" >> ${CRON_YAML}
 done
 
@@ -89,4 +91,12 @@ echo "# Participant Matching DRC File" >> ${CRON_YAML}
 echo "- description: store results of participant matching in DRC bucket" >> ${CRON_YAML}
 echo "  url: /data_steward/v1/ParticipantValidation/DRCFile" >> ${CRON_YAML}
 echo "  schedule: every 3 hours" >> ${CRON_YAML}
+echo "  timezone: America/New_York" >> ${CRON_YAML}
+
+## Retract Participant Data
+echo "" >> ${CRON_YAML}
+echo "# Data Retraction" >> ${CRON_YAML}
+echo "- description: retract data for specified person_ids" >> ${CRON_YAML}
+echo "  url: /data_steward/v1/RetractPids" >> ${CRON_YAML}
+echo "  schedule: ${YESTERDAY_SCHEDULE_LOWER}" >> ${CRON_YAML}
 echo "  timezone: America/New_York" >> ${CRON_YAML}

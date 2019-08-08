@@ -1,5 +1,6 @@
 # Python imports
 import argparse
+import os
 import re
 import logging
 
@@ -9,9 +10,8 @@ import logging
 import constants.validation.main as consts
 import common
 import bq_utils
+import resources
 from validation import ehr_union
-from validation import main
-import api_util
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction logger')
@@ -709,7 +709,8 @@ def extract_pids_from_file(pid_file_name):
     :return: list of int (person_id)
     """
     pids_to_retract = []
-    with open(pid_file_name) as f:
+    pid_file_path = os.path.join(resources.tools_path, pid_file_name)
+    with open(pid_file_path) as f:
         for line in f:
             pid = to_int(line.strip())
             if pid is None:
@@ -717,30 +718,6 @@ def extract_pids_from_file(pid_file_name):
             else:
                 pids_to_retract.append(pid)
     return pids_to_retract
-
-
-@api_util.auth_required_cron
-def run_retraction_cron():
-    project_id = bq_utils.app_identity.get_application_id()
-    hpo_id = bq_utils.get_retraction_hpo_id()
-    person_ids_file = bq_utils.get_retraction_person_ids_file_name()
-    research_ids_file = bq_utils.get_retraction_research_ids_file_name()
-    person_ids = extract_pids_from_file(person_ids_file)
-    research_ids = extract_pids_from_file(research_ids_file)
-    logger.debug('Running retraction on research_ids')
-    run_retraction(project_id, research_ids, hpo_id, deid_flag=True)
-    logger.debug('Completed retraction on research_ids')
-    logger.debug('Running retraction on person_ids')
-    run_retraction(project_id, person_ids, hpo_id, deid_flag=False)
-    logger.debug('Completed retraction on person_ids')
-    return 'retraction-complete'
-
-
-main.app.add_url_rule(
-    consts.PREFIX + 'RetractPids',
-    endpoint='run_retraction_cron',
-    view_func=run_retraction_cron,
-    methods=['GET'])
 
 
 if __name__ == '__main__':
