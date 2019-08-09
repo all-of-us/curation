@@ -47,23 +47,36 @@ def transform_bq_list(uploads):
 
 
 def read_text(p):
-    with open(p, 'r') as fp:
-        return fp.read()
+    try:
+        with open(p, 'r') as fp:
+            return fp.read()
+    except IOError as err:
+        print(err)
 
 
 def write_text(p, t):
-    with open(p, 'w') as fp:
-        fp.write(t)
+    try:
+        with open(p, 'w') as fp:
+            fp.write(t)
+    except IOError as err:
+        print(err)
 
 
 def write_json(pth, obj):
-    with open(pth, 'w') as fp:
-        json.dump(obj, fp, indent=4)
+    try:
+        with open(pth, 'w') as fp:
+            json.dump(obj, fp, indent=4)
+    except Exception as err:
+        print(err)
 
 
 def update_source_name(rpt):
     pth = 'curation_report/data/%s/person.json' % rpt['hpo_id']
-    txt = read_text(pth).replace('my_source', rpt['hpo_id'])
+    try:
+        txt = read_text(pth).replace('my_source', rpt['hpo_id'])
+    except Exception as err:
+        txt = err
+
     print('Updating source name in %s...' % pth)
     write_text(pth, txt)
 
