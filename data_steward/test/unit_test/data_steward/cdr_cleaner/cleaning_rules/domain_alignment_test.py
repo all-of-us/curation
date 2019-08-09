@@ -76,25 +76,29 @@ class DomainAlignmentTest(unittest.TestCase):
         mock_resolve_field_mappings.assert_any_call(self.condition_table,
                                                     self.condition_table)
 
-        expected_query = domain_alignment.REROUTE_DOMAIN_RECORD_QUERY.format(project_id=self.project_id,
-                                                                             dataset_id=self.dataset_id,
-                                                                             src_table=self.condition_table,
-                                                                             dest_table=self.condition_table,
-                                                                             src_domain_id_field=self.condition_occurrence_id,
-                                                                             dest_domain_id_field=self.condition_occurrence_id,
-                                                                             _mapping_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
-                                                                             field_mapping_expr=self.condition_condition_alias
-                                                                             )
+        expected_query = domain_alignment. \
+            REROUTE_DOMAIN_RECORD_QUERY. \
+            format(project_id=self.project_id,
+                   dataset_id=self.dataset_id,
+                   src_table=self.condition_table,
+                   dest_table=self.condition_table,
+                   src_domain_id_field=self.condition_occurrence_id,
+                   dest_domain_id_field=self.condition_occurrence_id,
+                   _mapping_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
+                   field_mapping_expr=self.condition_condition_alias
+                   )
         expected_query += domain_alignment.UNION_ALL
-        expected_query += domain_alignment.REROUTE_DOMAIN_RECORD_QUERY.format(project_id=self.project_id,
-                                                                              dataset_id=self.dataset_id,
-                                                                              src_table=self.procedure_table,
-                                                                              dest_table=self.condition_table,
-                                                                              src_domain_id_field=self.procedure_occurrence_id,
-                                                                              dest_domain_id_field=self.condition_occurrence_id,
-                                                                              _mapping_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
-                                                                              field_mapping_expr=self.condition_procedure_alias
-                                                                              )
+        expected_query += domain_alignment. \
+            REROUTE_DOMAIN_RECORD_QUERY. \
+            format(project_id=self.project_id,
+                   dataset_id=self.dataset_id,
+                   src_table=self.procedure_table,
+                   dest_table=self.condition_table,
+                   src_domain_id_field=self.procedure_occurrence_id,
+                   dest_domain_id_field=self.condition_occurrence_id,
+                   _mapping_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
+                   field_mapping_expr=self.condition_procedure_alias
+                   )
 
         self.assertEqual(re.sub(self.chars_to_replace, self.single_space, actual_query),
                          re.sub(self.chars_to_replace, self.single_space, expected_query))

@@ -30,6 +30,7 @@ html_boilerplate_path = os.path.join(resource_path, 'html_boilerplate.txt')
 DATASOURCES_JSON = os.path.join(achilles_index_path, 'data/datasources.json')
 
 domain_mappings_path = os.path.join(resource_path, 'domain_mappings')
+field_mappings_replaced_path = os.path.join(domain_mappings_path, 'field_mappings_replaced.csv')
 table_mappings_path = os.path.join(domain_mappings_path, 'table_mappings.csv')
 field_mappings_path = os.path.join(domain_mappings_path, 'field_mappings.csv')
 value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')

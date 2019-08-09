@@ -51,6 +51,10 @@ def get_rdr_dataset_id():
     return os.environ.get('RDR_DATASET_ID')
 
 
+def get_ehr_rdr_snapshot_dataset_id():
+    return os.environ.get('EHR_RDR_SNAPSHOT')
+
+
 def get_ehr_rdr_dataset_id():
     return os.environ.get('EHR_RDR_DATASET_ID')
 

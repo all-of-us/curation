@@ -38,6 +38,8 @@ ATTRIBUTE_MAPPING_TEMPLATE = '{src_table},{dest_table},{src_field},{dest_field},
 
 CDM_TABLE_SCHEMAS = resources.cdm_schemas(False, False)
 
+FIELD_MAPPING_HEADER = 'src_table,dest_table,src_field,dest_field,translation\n'
+
 
 def generate_field_mappings(_src_table, _dest_table, src_table_fields, dest_table_fields):
     """
@@ -213,22 +215,26 @@ def get_domain_fields(_domain_table):
 
 if __name__ == '__main__':
 
-    field_dict = create_domain_field_dict()
-    for src_table in DOMAIN_TABLE_NAMES:
-        for dest_table in DOMAIN_TABLE_NAMES:
-            if src_table == dest_table or exist_domain_mappings(src_table, dest_table):
-                field_mappings = generate_field_mappings(src_table, dest_table, field_dict[src_table],
-                                                         field_dict[dest_table])
-                for dest_field, src_field in field_mappings.iteritems():
-                    translation = 1 if TYPE_CONCEPT_SUFFIX in src_field \
-                                       and TYPE_CONCEPT_SUFFIX in dest_field \
-                                       and src_table != dest_table else 0
+    with open(resources.field_mappings_replaced_path, 'w') as fr:
+        fr.write(FIELD_MAPPING_HEADER)
+        field_dict = create_domain_field_dict()
+        for src_table in DOMAIN_TABLE_NAMES:
+            for dest_table in DOMAIN_TABLE_NAMES:
+                if src_table == dest_table or exist_domain_mappings(src_table, dest_table):
+                    field_mappings = generate_field_mappings(src_table, dest_table, field_dict[src_table],
+                                                             field_dict[dest_table])
+                    for dest_field, src_field in field_mappings.iteritems():
+                        translation = 1 if TYPE_CONCEPT_SUFFIX in src_field \
+                                           and TYPE_CONCEPT_SUFFIX in dest_field \
+                                           and src_table != dest_table else 0
 
-                    field_mapping = ATTRIBUTE_MAPPING_TEMPLATE.format(
-                        src_table=src_table,
-                        dest_table=dest_table,
-                        src_field=src_field,
-                        dest_field=dest_field,
-                        translation=translation)
+                        field_mapping = ATTRIBUTE_MAPPING_TEMPLATE.format(
+                            src_table=src_table,
+                            dest_table=dest_table,
+                            src_field=src_field,
+                            dest_field=dest_field,
+                            translation=translation)
+                        fr.write(field_mapping)
+                        fr.write('\n')
+        fr.close()
 
-                    print field_mapping
