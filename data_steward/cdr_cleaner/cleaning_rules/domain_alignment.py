@@ -74,10 +74,12 @@ REROUTE_DOMAIN_RECORD_QUERY = (
     'SELECT '
     'm.dest_id AS {dest_domain_id_field}, '
     '{field_mapping_expr} '
-    'FROM `{project_id}.{dataset_id}.{src_table}` AS s  '
+    'FROM `{project_id}.{dataset_id}.{src_table}` AS s '
     'JOIN `{project_id}.{dataset_id}._mapping_domain_alignment` AS m '
-    '    ON s.{src_domain_id_field} = m.src_id '
-    '      AND m.is_rerouted = True '
+    'ON s.{src_domain_id_field} = m.src_id '
+    'AND m.src_table = \'{src_table}\' '
+    'AND m.dest_table = \'{dest_table}\' '
+    'AND m.is_rerouted = True '
 )
 
 SELECT_DOMAIN_RECORD_QUERY = (
