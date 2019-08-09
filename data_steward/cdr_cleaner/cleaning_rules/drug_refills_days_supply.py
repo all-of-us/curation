@@ -14,7 +14,8 @@ drug_exposure = common.DRUG_EXPOSURE
 MAX_DAYS_SUPPLY_AND_REFILLS_QUERY = (
     'SELECT * '
     'FROM `{project_id}.{dataset_id}.drug_exposure` '
-    'WHERE days_supply <= {MAX_DAYS_SUPPLY} AND REFILLS <= {MAX_REFILLS} '
+    'WHERE ((days_supply <= {MAX_DAYS_SUPPLY} or days_supply is null) '
+    '       AND (REFILLS <= {MAX_REFILLS} or REFILLS IS NULL))'
 )
 
 
