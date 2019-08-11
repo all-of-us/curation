@@ -11,55 +11,53 @@ from validation import main as val
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction from buckets logger')
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
-# TODO Accommodate should new PII or CDM files be added
-PID_IN_COL1 = [common.PERSON] + common.PII_TABLES
+PID_IN_COL1 = [common.PERSON, common.DEATH] + common.PII_TABLES
 PID_IN_COL2 = [common.VISIT_OCCURRENCE, common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE, common.MEASUREMENT,
                common.PROCEDURE_OCCURRENCE, common.OBSERVATION, common.DEVICE_EXPOSURE, common.SPECIMEN, common.NOTE]
 
 
-def run_retraction(pids, bucket, folder, force_flag):
+def run_retraction(pids, bucket, hpo_id, site_bucket, folder, force_flag):
     """
     Retract from a folder/folders in a GCS bucket all records associated with a pid
 
     :param pids: person_ids to retract
     :param bucket: bucket containing records to retract
-    :param folder: folder in the bucket; if unspecified, retract from all folders
+    :param hpo_id: hpo_id of the site to run retraction on
+    :param site_bucket: bucket name associated with the site
+    :param folder: the site's submission folder; if unspecified, retract from all folders
     :param force_flag: if False then prompt for each file
     :return: metadata for each object updated in order to retract as a list of lists
     """
     logger.debug('Retracting from bucket %s' % bucket)
-    bucket_items = val.list_bucket(bucket)
+    full_bucket_path = bucket+'/'+hpo_id+'/'+site_bucket
+    folder_prefixes = gcs_utils.list_bucket_prefixes(full_bucket_path)
 
-    if folder is not None:
-        if folder[-1] != '/':
-            folder = folder + '/'
-
-    # Get list of folders in the bucket
-    folder_list = set([item['name'].split('/')[0] + '/' 
-                       for item in bucket_items 
-                       if len(item['name'].split('/')) > 1])
     result_dict = {}
-
     if folder is None:
-        to_process_folder_list = list(folder_list)
+        to_process_folder_list = folder_prefixes
     else:
-        if folder in folder_list:
-            to_process_folder_list = [folder]
+        folder_path = full_bucket_path+'/'+folder if folder[-1] == '/' else full_bucket_path+'/'+folder+'/'
+
+        if folder_path in folder_prefixes:
+            to_process_folder_list = [folder_path]
         else:
-            logger.debug('Folder %s does not exist in bucket %s. Exiting' % (folder, bucket))
+            logger.debug('Folder %s does not exist in %s. Exiting' % (folder, full_bucket_path))
             return result_dict
 
     logger.debug("Retracting data from the following folders:")
-    for folder_item in to_process_folder_list:
-        logger.debug(folder_item)
+    for folder_prefix in to_process_folder_list:
+        logger.debug(folder_prefix)
 
     for folder_prefix in to_process_folder_list:
         logger.debug('Processing gs://%s/%s' % (bucket, folder_prefix))
         # separate cdm from the unknown (unexpected) files
+        bucket_items = gcs_utils.list_bucket_dir(bucket+'/'+folder_prefix[:-1])
         found_files = []
-        folder_items = [item['name'].split('/')[1] for item in bucket_items if item['name'].startswith(folder_prefix)]
+        folder_items = [item['name'].split('/')[-1]
+                        for item in bucket_items
+                        if item['name'].startswith(folder_prefix)]
         for item in folder_items:
             # Only retract from CDM or PII files
             if val._is_cdm_file(item) or val._is_pii_file(item):
@@ -74,8 +72,10 @@ def run_retraction(pids, bucket, folder, force_flag):
         if response == "Y":
             folder_upload_output = retract(pids, bucket, found_files, folder_prefix, force_flag)
             result_dict[folder_prefix] = folder_upload_output
+            logger.debug("Retraction successful for folder %s/%s " % (bucket, folder_prefix))
         elif response.lower() == "n":
             logger.debug("Skipping folder %s" % folder_prefix)
+    logger.debug("Retraction from GCS complete")
     return result_dict
 
 
@@ -95,7 +95,8 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
         table_name = file_name.split(".")[0]
         lines_removed = 0
         if force_flag:
-            logger.debug("force retracting rows for person_ids %s from path %s/%s%s" % (pids, bucket, folder_prefix, file_name))
+            logger.debug("Attempting to force retract for person_ids %s in path %s/%s%s"
+                         % (pids, bucket, folder_prefix, file_name))
             response = "Y"
         else:
             # Make sure user types Y to proceed
@@ -109,21 +110,26 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
             input_contents = input_file_string.split('\n')
             modified_flag = False
 
+            logger.debug("Checking for person_ids %s in path %s/%s%s"
+                         % (pids, bucket, folder_prefix, file_name))
+
             # Check if file has person_id in first or second column
             for input_line in input_contents:
                 if input_line != '':
                     if (table_name in PID_IN_COL1 and get_integer(input_line.split(",")[0]) in pids) or \
                             (table_name in PID_IN_COL2 and get_integer(input_line.split(",")[1]) in pids):
                         lines_removed += 1
+                        modified_flag = True
                     else:
                         retracted_file_string.write(input_line + '\n')
-                        modified_flag = True
+
             # Write result back to bucket
             if modified_flag:
                 logger.debug("Retracted %d rows from %s/%s%s" % (lines_removed, bucket, folder_prefix, file_name))
                 logger.debug("Overwriting file %s/%s%s" % (bucket, folder_prefix, file_name))
                 upload_result = gcs_utils.upload_object(bucket, folder_prefix + file_name, retracted_file_string)
                 result_list.append(upload_result)
+                logger.debug("Retraction successful for file %s/%s%s " % (bucket, folder_prefix, file_name))
             else:
                 logger.debug("Skipping file %s/%s%s since pids %s not found" % (bucket, folder_prefix, file_name, pids))
         elif response.lower() == "n":
@@ -152,13 +158,21 @@ def get_integer(num_str):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-p', '--pid_file',
+    parser.add_argument('-i', '--pid_file',
                         action='store', dest='pid_file',
                         help='Text file containing the pids on separate lines',
                         required=True)
     parser.add_argument('-b', '--bucket',
                         action='store', dest='bucket',
                         help='Identifies the bucket to retract data from',
+                        required=True)
+    parser.add_argument('-s', '--hpo_id',
+                        action='store', dest='hpo_id',
+                        help='Identifies the site to retract data from',
+                        required=True)
+    parser.add_argument('-a', '--hpo_bucket',
+                        action='store', dest='hpo_bucket',
+                        help='Identifies the site bucket to retract data from',
                         required=True)
     parser.add_argument('-p', '--folder_path',
                         action='store', dest='folder_path',
@@ -169,4 +183,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     pids = retract_data_bq.extract_pids_from_file(args.pid_file)
     # result is mainly for debugging file uploads
-    result = run_retraction(pids, args.bucket, args.folder_path, args.force_flag)
+    result = run_retraction(pids, args.bucket, args.hpo_id, args.hpo_bucket, args.folder_path, args.force_flag)
