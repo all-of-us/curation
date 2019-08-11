@@ -54,10 +54,10 @@ class DomainAlignmentTest(unittest.TestCase):
     @mock.patch('cdr_cleaner.cleaning_rules.domain_alignment.resolve_field_mappings')
     @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_domain_id_field')
     @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.exist_domain_mappings')
-    def test_parse_redirect_domain_query(self,
-                                         mock_exist_domain_mappings,
-                                         mock_get_domain_id_field,
-                                         mock_resolve_field_mappings):
+    def test_parse_reroute_domain_query(self,
+                                        mock_exist_domain_mappings,
+                                        mock_get_domain_id_field,
+                                        mock_resolve_field_mappings):
         mock_exist_domain_mappings.side_effect = [True]
         mock_resolve_field_mappings.side_effect = [self.condition_condition_alias,
                                                    self.condition_procedure_alias]
