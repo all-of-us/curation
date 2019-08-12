@@ -36,9 +36,9 @@ class WritersTest(unittest.TestCase):
 
         # post conditions
         expected_insert_values = (
-            "(1, '" + consts.MATCH + "', '"+ consts.YES + "'), "
-            "(2, '" + consts.MISMATCH + "', '"+ consts.YES + "'), "
-            "(3, '" + consts.MISSING + "', '"+ consts.YES + "')"
+            "(1,'" + consts.MATCH + "','"+ consts.YES + "'),"
+            "(2,'" + consts.MISMATCH + "','"+ consts.YES + "'),"
+            "(3,'" + consts.MISSING + "','"+ consts.YES + "')"
         )
 
         self.assertEqual(mock_query.call_count, 1)
@@ -78,9 +78,9 @@ class WritersTest(unittest.TestCase):
 
         # post conditions
         expected_insert_values = (
-            "(1, '" + consts.MATCH + "', '"+ consts.YES + "'), "
-            "(2, '" + consts.MISMATCH + "', '"+ consts.YES + "'), "
-            "(3, '" + consts.MISSING + "', '"+ consts.YES + "')"
+            "(1,'" + consts.MATCH + "','"+ consts.YES + "'),"
+            "(2,'" + consts.MISMATCH + "','"+ consts.YES + "'),"
+            "(3,'" + consts.MISSING + "','"+ consts.YES + "')"
         )
 
         self.assertEqual(mock_query.call_count, 1)
@@ -108,27 +108,23 @@ class WritersTest(unittest.TestCase):
         writer.remove_sparse_records(self.project, self.dataset, self.site)
 
         # post conditions
-        expected_merge = consts.MERGE_DELETE_SPARSE_RECORDS.format(
+        expected_merge = consts.SELECT_FULL_RECORDS.format(
             project=self.project,
             dataset=self.dataset,
             table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-            field_one=consts.VALIDATION_FIELDS[0],
-            field_two=consts.VALIDATION_FIELDS[1],
-            field_three=consts.VALIDATION_FIELDS[2],
-            field_four=consts.VALIDATION_FIELDS[3],
-            field_five=consts.VALIDATION_FIELDS[4],
-            field_six=consts.VALIDATION_FIELDS[5],
-            field_seven=consts.VALIDATION_FIELDS[6],
-            field_eight=consts.VALIDATION_FIELDS[7],
-            field_nine=consts.VALIDATION_FIELDS[8],
-            field_ten=consts.VALIDATION_FIELDS[9],
-            field_eleven=consts.VALIDATION_FIELDS[10],
-            field_twelve=consts.VALIDATION_FIELDS[11]
+            field_one=consts.FIRST_NAME_FIELD,
+            field_two=consts.LAST_NAME_FIELD
         )
 
         self.assertEqual(mock_query.call_count, 1)
         self.assertEqual(
-            mock_query.assert_called_with(expected_merge, batch=True),
+            mock_query.assert_called_with(
+                expected_merge,
+                batch=True,
+                destination_table_id=self.site + consts.VALIDATION_TABLE_SUFFIX,
+                destination_dataset_id=self.dataset,
+                write_disposition=consts.WRITE_TRUNCATE
+            ),
             None
         )
 
@@ -144,27 +140,23 @@ class WritersTest(unittest.TestCase):
         )
 
         # post conditions
-        expected_merge = consts.MERGE_DELETE_SPARSE_RECORDS.format(
+        expected_merge = consts.SELECT_FULL_RECORDS.format(
             project=self.project,
             dataset=self.dataset,
             table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-            field_one=consts.VALIDATION_FIELDS[0],
-            field_two=consts.VALIDATION_FIELDS[1],
-            field_three=consts.VALIDATION_FIELDS[2],
-            field_four=consts.VALIDATION_FIELDS[3],
-            field_five=consts.VALIDATION_FIELDS[4],
-            field_six=consts.VALIDATION_FIELDS[5],
-            field_seven=consts.VALIDATION_FIELDS[6],
-            field_eight=consts.VALIDATION_FIELDS[7],
-            field_nine=consts.VALIDATION_FIELDS[8],
-            field_ten=consts.VALIDATION_FIELDS[9],
-            field_eleven=consts.VALIDATION_FIELDS[10],
-            field_twelve=consts.VALIDATION_FIELDS[11]
+            field_one=consts.FIRST_NAME_FIELD,
+            field_two=consts.LAST_NAME_FIELD
         )
 
         self.assertEqual(mock_query.call_count, 1)
         self.assertEqual(
-            mock_query.assert_called_with(expected_merge, batch=True),
+            mock_query.assert_called_with(
+                expected_merge,
+                batch=True,
+                destination_table_id=self.site + consts.VALIDATION_TABLE_SUFFIX,
+                destination_dataset_id=self.dataset,
+                write_disposition=consts.WRITE_TRUNCATE
+            ),
             None
         )
 
@@ -220,7 +212,7 @@ class WritersTest(unittest.TestCase):
         writer.change_nulls_to_missing_value(self.project, self.dataset, self.site)
 
         # post conditions
-        expected_merge = consts.MERGE_SET_MISSING_FIELDS.format(
+        expected_merge = consts.SELECT_SET_MISSING_VALUE.format(
             project=self.project,
             dataset=self.dataset,
             table=self.site + consts.VALIDATION_TABLE_SUFFIX,
@@ -236,12 +228,20 @@ class WritersTest(unittest.TestCase):
             field_ten=consts.VALIDATION_FIELDS[9],
             field_eleven=consts.VALIDATION_FIELDS[10],
             field_twelve=consts.VALIDATION_FIELDS[11],
-            value=consts.MISSING
+            value=consts.MISSING,
+            person_id=consts.PERSON_ID_FIELD,
+            algorithm=consts.ALGORITHM_FIELD
         )
 
         self.assertEqual(mock_query.call_count, 1)
         self.assertEqual(
-            mock_query.assert_called_with(expected_merge, batch=True),
+            mock_query.assert_called_with(
+                expected_merge,
+                batch=True,
+                destination_table_id=self.site + consts.VALIDATION_TABLE_SUFFIX,
+                destination_dataset_id=self.dataset,
+                write_disposition=consts.WRITE_TRUNCATE
+            ),
             None
         )
 
@@ -257,7 +257,7 @@ class WritersTest(unittest.TestCase):
         )
 
         # post conditions
-        expected_merge = consts.MERGE_SET_MISSING_FIELDS.format(
+        expected_merge = consts.SELECT_SET_MISSING_VALUE.format(
             project=self.project,
             dataset=self.dataset,
             table=self.site + consts.VALIDATION_TABLE_SUFFIX,
@@ -273,12 +273,20 @@ class WritersTest(unittest.TestCase):
             field_ten=consts.VALIDATION_FIELDS[9],
             field_eleven=consts.VALIDATION_FIELDS[10],
             field_twelve=consts.VALIDATION_FIELDS[11],
-            value=consts.MISSING
+            value=consts.MISSING,
+            person_id=consts.PERSON_ID_FIELD,
+            algorithm=consts.ALGORITHM_FIELD
         )
 
         self.assertEqual(mock_query.call_count, 1)
         self.assertEqual(
-            mock_query.assert_called_with(expected_merge, batch=True),
+            mock_query.assert_called_with(
+                expected_merge,
+                batch=True,
+                destination_table_id=self.site + consts.VALIDATION_TABLE_SUFFIX,
+                destination_dataset_id=self.dataset,
+                write_disposition=consts.WRITE_TRUNCATE
+            ),
             None
         )
 

@@ -29,6 +29,8 @@ def append_to_result_table(
     """
     Append items in match_values to the table generated from site name.
 
+    Attempts to limit the insert query to less than 1MB.
+
     :param site:  string identifier for the hpo site.
     :param match_values:  dictionary of person_ids and match values for a field
     :param project:  the project BigQuery project name
@@ -45,27 +47,48 @@ def append_to_result_table(
 
     result_table = site + consts.VALIDATION_TABLE_SUFFIX
 
+    # ensure this remains less than 1MB
+    max_values_str_length = 900000
+    max_value_str_length = 50
+    tuples_in_query = max_values_str_length / max_value_str_length
     # create initial values list for insertion
     values_list = []
     for key, value in match_values.iteritems():
-        value_str = '(' + str(key) + ', \'' + value + '\', \'' + consts.YES + '\')'
+        value_str = '(' + str(key) + ',\'' + value + '\',\'' + consts.YES + '\')'
         values_list.append(value_str)
-
-    values_str = ', '.join(values_list)
-
-    query = consts.INSERT_MATCH_VALUES.format(
-        project=project,
-        dataset=dataset,
-        table=result_table,
-        field=field_name,
-        values=values_str,
-        id_field=consts.PERSON_ID_FIELD,
-        algorithm_field=consts.ALGORITHM_FIELD
-    )
 
     LOGGER.debug("Inserting match values for site: %s\t\tfield: %s", site, field_name)
 
-    results = bq_utils.query(query, batch=True)
+    beginning = 0
+    ending = tuples_in_query if tuples_in_query < len(values_list) else len(values_list)
+    while ending <= len(values_list) and beginning < ending:
+        values_str = ','.join(values_list[beginning:ending])
+
+        # increment the steps
+        beginning += tuples_in_query
+        ending += tuples_in_query
+
+        if ending > len(values_list):
+            ending = len(values_list)
+
+        query = consts.INSERT_MATCH_VALUES.format(
+            project=project,
+            dataset=dataset,
+            table=result_table,
+            field=field_name,
+            values=values_str,
+            id_field=consts.PERSON_ID_FIELD,
+            algorithm_field=consts.ALGORITHM_FIELD
+        )
+
+        try:
+            results = bq_utils.query(query, batch=True)
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Encountered an exception when inserting records for:\t%s", site
+            )
+            raise
 
     LOGGER.info("Inserted match values for site:  %s\t\tfield:  %s", site, field_name)
 
@@ -93,30 +116,26 @@ def remove_sparse_records(project, dataset, site):
                  result_table
                 )
 
-    query = consts.MERGE_DELETE_SPARSE_RECORDS.format(
+    query = consts.SELECT_FULL_RECORDS.format(
         project=project,
         dataset=dataset,
         table=result_table,
-        field_one=consts.VALIDATION_FIELDS[0],
-        field_two=consts.VALIDATION_FIELDS[1],
-        field_three=consts.VALIDATION_FIELDS[2],
-        field_four=consts.VALIDATION_FIELDS[3],
-        field_five=consts.VALIDATION_FIELDS[4],
-        field_six=consts.VALIDATION_FIELDS[5],
-        field_seven=consts.VALIDATION_FIELDS[6],
-        field_eight=consts.VALIDATION_FIELDS[7],
-        field_nine=consts.VALIDATION_FIELDS[8],
-        field_ten=consts.VALIDATION_FIELDS[9],
-        field_eleven=consts.VALIDATION_FIELDS[10],
-        field_twelve=consts.VALIDATION_FIELDS[11]
+        field_one=consts.FIRST_NAME_FIELD,
+        field_two=consts.LAST_NAME_FIELD
     )
 
     try:
-        results = bq_utils.query(query, batch=True)
+        results = bq_utils.query(
+            query,
+            destination_table_id=result_table,
+            destination_dataset_id=dataset,
+            write_disposition=consts.WRITE_TRUNCATE,
+            batch=True
+        )
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
         LOGGER.exception(
-            "Encountered an excpetion when removing sparse records for:\t%s", site
+            "Encountered an exception when removing sparse records for:\t%s", site
         )
         raise
 
@@ -162,7 +181,7 @@ def merge_fields_into_single_record(project, dataset, site):
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
             LOGGER.exception(
-                "Encountered an excpetion when merging records for:\t%s", site
+                "Encountered an exception when merging records for:\t%s", site
             )
             raise
 
@@ -196,7 +215,7 @@ def change_nulls_to_missing_value(project, dataset, site):
                  result_table
                 )
 
-    query = consts.MERGE_SET_MISSING_FIELDS.format(
+    query = consts.SELECT_SET_MISSING_VALUE.format(
         project=project,
         dataset=dataset,
         table=result_table,
@@ -212,20 +231,28 @@ def change_nulls_to_missing_value(project, dataset, site):
         field_ten=consts.VALIDATION_FIELDS[9],
         field_eleven=consts.VALIDATION_FIELDS[10],
         field_twelve=consts.VALIDATION_FIELDS[11],
-        value=consts.MISSING
+        value=consts.MISSING,
+        person_id=consts.PERSON_ID_FIELD,
+        algorithm=consts.ALGORITHM_FIELD
     )
 
     try:
-        results = bq_utils.query(query, batch=True)
+        results = bq_utils.query(
+            query,
+            destination_table_id=result_table,
+            destination_dataset_id=dataset,
+            write_disposition=consts.WRITE_TRUNCATE,
+            batch=True
+        )
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
         LOGGER.exception(
-            "Encountered an excpetion when filling null records for:\t%s", site
+            "Encountered an exception when filling null records for:\t%s", site
         )
         raise
 
     LOGGER.info(
-        "Set null fields to %s in %s.%s.%s",
+        "Successfully set null fields to %s in %s.%s.%s",
         consts.MISSING,
         project,
         dataset,
@@ -313,7 +340,7 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
             results = bq_utils.query(query_string, batch=True)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Encountered an excpetion when selecting site records")
+            LOGGER.exception("Encountered an exception when selecting site records")
             report_file.write("Unable to report id validation match records "
                               "for site:\t%s.\n", site)
             read_errors += 1
