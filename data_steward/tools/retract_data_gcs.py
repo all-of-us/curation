@@ -48,7 +48,7 @@ def run_retraction(pids, bucket, hpo_id, site_bucket, folder, force_flag):
 
     logger.debug("Retracting data from the following folders:")
     for folder_prefix in to_process_folder_list:
-        logger.debug(folder_prefix)
+        logger.debug(bucket+'/'+folder_prefix)
 
     for folder_prefix in to_process_folder_list:
         logger.debug('Processing gs://%s/%s' % (bucket, folder_prefix))
@@ -151,7 +151,7 @@ def get_integer(num_str):
         num = int(ast.literal_eval(str(num_str)))
         if isinstance(num, int):
             return num
-    except ValueError:
+    except (SyntaxError, TypeError, ValueError):
         return None
 
 
@@ -174,8 +174,8 @@ if __name__ == '__main__':
                         action='store', dest='hpo_bucket',
                         help='Identifies the site bucket to retract data from',
                         required=True)
-    parser.add_argument('-p', '--folder_path',
-                        action='store', dest='folder_path',
+    parser.add_argument('-n', '--folder_name',
+                        action='store', dest='folder_name',
                         help='Path of the folder to retract from')
     parser.add_argument('-f', '--force_flag', dest='force_flag', action='store_true',
                         help='Indicates pids must be force retracted')
@@ -183,4 +183,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     pids = retract_data_bq.extract_pids_from_file(args.pid_file)
     # result is mainly for debugging file uploads
-    result = run_retraction(pids, args.bucket, args.hpo_id, args.hpo_bucket, args.folder_path, args.force_flag)
+    result = run_retraction(pids, args.bucket, args.hpo_id, args.hpo_bucket, args.folder_name, args.force_flag)
