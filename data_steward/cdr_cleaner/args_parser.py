@@ -9,7 +9,7 @@ REQUIRED = 'required'
 
 
 def parse_args():
-    return parse_args()
+    return default_parse_args()
 
 
 def default_parse_args(additional_arguments=None):
