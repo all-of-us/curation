@@ -50,18 +50,20 @@ class Parse:
         # if 'on' in row :
         
         return p
+
     @staticmethod
     def suppress(row,cache):
         """
         setup suppression rules to be applied the the given 'row' i.e entry
         """
         return Parse.init('suppress',row,cache)
+
     @staticmethod
     def compute(row,cache):
         return Parse.init('compute',row,cache)
 
     @staticmethod
-    def sys_args() :
+    def sys_args():
         SYS_ARGS = {}
         if len(sys.argv) > 1:
             
