@@ -34,12 +34,12 @@ class Rules :
         self.store_syntax = {
 
             "sqlite":{
-                "apply":{"REGEXP":"LOWER(:FIELD) REGEXP LOWER(':VAR')","COUNT":"SELECT COUNT(DISTINCT :FIELD) FROM :TABLE WHERE :KEY=:VALUE"},
+                "apply":{"REGEXP":"LOWER(:FIELD) REGEXP LOWER(':VAR')","COUNT":"SELECT COUNT(:FIELD) FROM :TABLE WHERE :KEY=:VALUE"},
                 "cond_syntax":{"IF":"CASE WHEN","OPEN":"", "THEN":"THEN","ELSE":"ELSE","CLOSE":"END"},
                 "random":"random() % 365 "
             },
             "bigquery":{
-                "apply":{"REGEXP":"REGEXP_CONTAINS (LOWER(:FIELD), LOWER(':VAR'))","COUNT":"SELECT COUNT (DISTINCT :KEY) FROM :TABLE WHERE :KEY=:VALUE"},
+                "apply":{"REGEXP":"REGEXP_CONTAINS (LOWER(:FIELD), LOWER(':VAR'))","COUNT":"SELECT COUNT (:KEY) FROM :TABLE WHERE :KEY=:VALUE"},
                 "cond_syntax":{"IF":"IF","OPEN":"(","THEN":",","ELSE":",","CLOSE":")"},
                 "random":"CAST( (RAND() * 364) + 1 AS INT64)"
             },
@@ -57,7 +57,7 @@ class Rules :
         #--
         
     def set(self,key, id, **args) :
-        if key not in ['generalize','suppress','compute','shift'] :
+        if key not in self.pipeline: #['generalize','suppress','compute','shift'] :
             raise (key + " is Unknown, [suppress,generalize,compute,shift] are allowed")
         if key not in self.cache :
             self.cache[key] = {}
@@ -168,6 +168,7 @@ class deid (Rules):
             cond = []
             for rule in rules :
                 qualifier = rule['qualifier'] if 'qualifier' in rule else ''
+                
                 if 'apply' in rule :
                     #
                     # This will call a built-in SQL function (non-aggregate)'
@@ -196,13 +197,19 @@ class deid (Rules):
                             regex = regex.replace(':TABLE',args['table']).replace(':KEY',args['key_field']).replace(':VALUE',args['value_field'])
                             # regex = regex.replace(':TABLE',args['table']).replace(':KEY',args['key_field']).replace(':VALUE',args['value_field'])
                             
-                            if 'on' in rule and 'key_row' in args :
-                                
+                            if 'on' in rule : #and 'key_row' in args :
+                                key_row = args['key_row'] if 'key_row' in args else name
+                                key_row = key_row.replace(':name',name)
                                 if 'qualifier' in rule :                                    
-                                    regex += ' AND '+args['key_row'] +  " IN ('"+"','".join(rule['on'])+"')"
+                                    # regex += ' AND ' +args['key_row']  +   " IN ('"+"','".join(rule['on'])+"')"
+                                    regex += ' AND ' +key_row  +   " IN ('"+"','".join(rule['on'])+"')"
+                                    
                                 else:
-                                    regex += ' WHERE '+args['key_row'] +  " IN ('"+"','".join(rule['on'])+"')"
+                                    # regex += ' WHERE '+args['key_row'] +  " IN ('"+"','".join(rule['on'])+"')"
+                                    regex += ' WHERE '+key_row +  " IN ('"+"','".join(rule['on'])+"')"
                                 
+                            if 'on' in args :
+                                regex += ' AND ' + args['on']
                             regex = ' '.join(['(',regex,')',qualifier])
                         else:
                             regex = ' '.join([regex,qualifier])
@@ -237,6 +244,8 @@ class deid (Rules):
                     #   - IF <filter> IN <values>, THEN <generalized-value> else <attribute>
                     self.log(module='generalize',label=label.split('.')[1],on=name,type='inline')
                     key_field = args['key_field'] if 'key_field' in args else name
+                    if 'on' in args and 'key_field' in args :
+                        key_field += ' AND '+args['on']
                     filter = args['filter'] if 'filter' in args else name
                     qualifier = rule['qualifier']
                     _into = rule['into'] if 'into' not in args else args['into']
