@@ -193,8 +193,6 @@ class deid (Rules):
                             # We are dealing with an aggregate expression. At this point it is important to know what we are counting
                             # count(:field) from :table [where filter]
                             #
-                            
-                            
                             regex = regex.replace(':TABLE',args['table']).replace(':KEY',args['key_field']).replace(':VALUE',args['value_field'])
                             # regex = regex.replace(':TABLE',args['table']).replace(':KEY',args['key_field']).replace(':VALUE',args['value_field'])
                             
@@ -217,7 +215,7 @@ class deid (Rules):
                     # _into = "".join(["'",rule['into'],"'"])       
                     _into = rule['into'] if 'into' not in args else args['into']
                     
-                    if type(_into) == str :                         
+                    if not isinstance(_into,(int,long)):                         
                         _into = "'"+_into+"'"                    
                     else:
                         _into = str(_into)
@@ -241,21 +239,27 @@ class deid (Rules):
                     key_field = args['key_field'] if 'key_field' in args else name
                     filter = args['filter'] if 'filter' in args else name
                     qualifier = rule['qualifier']
-                    if not type(rule['values']) == str :
+                    _into = rule['into'] if 'into' not in args else args['into']
+                    # if not type(rule['values']) == str :
+                    
+                    if isinstance(_into,(int,long))  :
+                        _into = str(_into)
                         values = [str(value) for value in rule['values']]
                         values = '(' + ','.join(values)+')'
                     else:
-                        values = "('" + "','".join(rule['values']) +"')"                    
+                        _into = "'"+_into+"'"
+                        values = "('" + "','".join(rule['values']) +"')"   
+                                     
                     
                         
                     statement = " ".join([key_field,qualifier, values])
-                    _into = rule['into'] if 'into' not in args else args['into']
+                    
                     # common = set("0123456789.") & set(_into)
                     regex = " ".join([filter,qualifier,values])
-                    if type(_into) == str :
-                        _into = "'"+_into+"'"
-                    else:
-                        _into = str(_into)
+                    # if type(_into) == str :
+                    #     _into = "'"+_into+"'"
+                    # else:
+                    #     _into = str(_into)
                     cond += [ " ".join([SYNTAX['IF'],SYNTAX['OPEN'],regex,SYNTAX['THEN'],_into]) ]
                     # cond += [ " ".join([SYNTAX['IF'],regex])+SYNTAX['OPEN'],SYNTAX['THEN'],_into]
                     
@@ -493,7 +497,7 @@ class deid (Rules):
                     if tmp :
                         for _item in tmp :
                             if _item :
-                                if type(_item) == dict :
+                                if isinstance(_item,dict):
                                     out.append(_item)
                                 else:
                                     out += _item

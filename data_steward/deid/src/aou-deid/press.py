@@ -123,7 +123,6 @@ class Press:
                 
                 _sql = self.to_sql(_item +relational_cols)  + ' AND ' +filter_id
                 
-
                 sql += [ _sql]
                 # self.deid_rules['suppress']['FILTERS'] = self.deid_rules['suppress']['FILTERS'][:-1]
             #-- end of loop
@@ -317,7 +316,7 @@ class Press:
                 SQL += [row['filter']]
                 if FILTERS.index(row) < len(FILTERS) - 1 :
                     SQL += ['AND']
-        # SQL = ['SELECT ',','.join(fields),'FROM (','\n'.join(SQL),')']
+        
         return '\t'.join(SQL).replace(":idataset",self.idataset)
 
 
