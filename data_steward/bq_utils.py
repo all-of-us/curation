@@ -13,7 +13,6 @@ from googleapiclient.errors import HttpError
 
 # Project imports
 import common
-import constants.bq_utils as bq_consts
 import gcs_utils
 import resources
 from constants import bq_utils as bq_consts
@@ -762,8 +761,9 @@ def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
     # Copy the table content from the current dataset to the snapshot dataset
     copy_table_job_ids = []
     for table_id in list_all_table_ids(dataset_id):
-        q = ('SELECT * FROM `{project_id}.{dataset_id}.{table_id}` ').format(project_id=project_id,
-                                                                             dataset_id=dataset_id, table_id=table_id)
+        select_all_query = ('SELECT * FROM `{project_id}.{dataset_id}.{table_id}` ')
+        q = select_all_query.format(project_id=project_id,
+                                    dataset_id=dataset_id, table_id=table_id)
         results = query(q, use_legacy_sql=False, destination_table_id=table_id,
                         destination_dataset_id=snapshot_dataset_id, batch=True)
         copy_table_job_ids.append(results['jobReference']['jobId'])
