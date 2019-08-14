@@ -13,7 +13,8 @@ jobs:
 
     docker:
       - image: circleci/build-image:ubuntu-14.04-XXL-upstart-1189-5614f37
-        command: /sbin/init
+        # This command is commented out due to failure in docker image initialisation.
+        # command: /sbin/init
     steps:
       # Machine Setup
 
