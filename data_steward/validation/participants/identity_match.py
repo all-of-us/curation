@@ -792,6 +792,7 @@ def match_participants(
 
     #TODO:  create a proper config file to store this path
     field_list = resources.fields_for('identity_match')
+    field_names = [field.get('name', '') for field in field_list]
 
     for site_name in hpo_sites:
         bq_utils.create_table(
@@ -825,7 +826,8 @@ def match_participants(
                     match_values,
                     project,
                     validation_dataset,
-                    consts.FIRST_NAME_FIELD
+                    consts.FIRST_NAME_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -859,7 +861,8 @@ def match_participants(
                     match_values,
                     project,
                     validation_dataset,
-                    consts.LAST_NAME_FIELD
+                    consts.LAST_NAME_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -893,7 +896,8 @@ def match_participants(
                     match_values,
                     project,
                     validation_dataset,
-                    consts.MIDDLE_NAME_FIELD
+                    consts.MIDDLE_NAME_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -928,7 +932,8 @@ def match_participants(
                     match_values,
                     project,
                     validation_dataset,
-                    consts.ZIP_CODE_FIELD
+                    consts.ZIP_CODE_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -963,7 +968,8 @@ def match_participants(
                     match_values,
                     project,
                     validation_dataset,
-                    consts.CITY_FIELD
+                    consts.CITY_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -998,7 +1004,8 @@ def match_participants(
                     match_values,
                     project,
                     validation_dataset,
-                    consts.STATE_FIELD
+                    consts.STATE_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -1035,7 +1042,8 @@ def match_participants(
                     address_one_matches,
                     project,
                     validation_dataset,
-                    consts.ADDRESS_ONE_FIELD
+                    consts.ADDRESS_ONE_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -1052,7 +1060,8 @@ def match_participants(
                     address_two_matches,
                     project,
                     validation_dataset,
-                    consts.ADDRESS_TWO_FIELD
+                    consts.ADDRESS_TWO_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -1086,7 +1095,8 @@ def match_participants(
                     match_values,
                     project,
                     validation_dataset,
-                    consts.EMAIL_FIELD
+                    consts.EMAIL_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -1120,7 +1130,8 @@ def match_participants(
                     match_values,
                     project,
                     validation_dataset,
-                    consts.PHONE_NUMBER_FIELD
+                    consts.PHONE_NUMBER_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -1146,14 +1157,15 @@ def match_participants(
         if exc is not None:
             read_errors += 1
         else:
-            # write birthday match for hpo to table
+            # write match for hpo to table
             try:
                 writers.append_to_result_table(
                     site,
                     match_values,
                     project,
                     validation_dataset,
-                    consts.SEX_FIELD
+                    consts.SEX_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):
@@ -1179,14 +1191,15 @@ def match_participants(
         if exc is not None:
             read_errors += 1
         else:
-            # write birthday match for hpo to table
+            # write match for hpo to table
             try:
                 writers.append_to_result_table(
                     site,
                     match_values,
                     project,
                     validation_dataset,
-                    consts.BIRTH_DATE_FIELD
+                    consts.BIRTH_DATE_FIELD,
+                    field_names
                 )
             except (oauth2client.client.HttpAccessTokenRefreshError,
                     googleapiclient.errors.HttpError):

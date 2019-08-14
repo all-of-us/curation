@@ -4,7 +4,9 @@
 A module to write participant identity matching table data.
 """
 # Python imports
+from copy import copy
 import logging
+import os
 import StringIO
 
 # Third party imports
@@ -15,6 +17,7 @@ import oauth2client
 import bq_utils
 import constants.validation.participants.writers as consts
 import gcs_utils
+from resources import fields_path
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +27,8 @@ def append_to_result_table(
         match_values,
         project,
         dataset,
-        field_name
+        field_name,
+        field_list
     ):
     """
     Append items in match_values to the table generated from site name.
@@ -36,6 +40,7 @@ def append_to_result_table(
     :param project:  the project BigQuery project name
     :param dataset:  name of the dataset containing the table to append to
     :param field_name:  name of the field to insert values into
+    :param field_list: ordered list of expected fields
 
     :return: query results value
     :raises:  oauth2client.client.HttpAccessTokenRefreshError,
@@ -46,53 +51,88 @@ def append_to_result_table(
         return None
 
     result_table = site + consts.VALIDATION_TABLE_SUFFIX
+    bucket = gcs_utils.get_drc_bucket()
+    path = dataset + '/intermediate_results/' + site + '_' + field_name + '.csv'
 
-    # ensure this remains less than 1MB
-    max_values_str_length = 900000
-    max_value_str_length = 50
-    tuples_in_query = max_values_str_length / max_value_str_length
-    # create initial values list for insertion
-    values_list = []
-    for key, value in match_values.iteritems():
-        value_str = '(' + str(key) + ',\'' + value + '\',\'' + consts.YES + '\')'
-        values_list.append(value_str)
+    field_index = None
+    id_index = None
+    alg_index = None
+    for index, field in enumerate(field_list):
+        if field == field_name:
+            field_index = index
+        elif field == consts.PERSON_ID_FIELD:
+            id_index = index
+        elif field == consts.ALGORITHM_FIELD:
+            alg_index = index
 
-    LOGGER.debug("Inserting match values for site: %s\t\tfield: %s", site, field_name)
+    if field_index is None or id_index is None or alg_index is None:
+        raise RuntimeError("The field %s values were not written for site %s."
+                           "person_id index: %d\nalg_index: %d\nfield_index: %d",
+                           field_name, site, id_index, alg_index, field_index)
 
-    beginning = 0
-    ending = tuples_in_query if tuples_in_query < len(values_list) else len(values_list)
-    while ending <= len(values_list) and beginning < ending:
-        values_str = ','.join(values_list[beginning:ending])
+    results = StringIO.StringIO()
+    field_list_str = ','.join(field_list) + '\n'
+    results.write(field_list_str)
 
-        # increment the steps
-        beginning += tuples_in_query
-        ending += tuples_in_query
+    LOGGER.debug("Generating csv values to write to storage for field: %s\t\tsite: %s",
+                 field_name, site)
 
-        if ending > len(values_list):
-            ending = len(values_list)
+    str_list = [''] * len(field_list)
+    for dict_index, dict_value in enumerate(match_values.iteritems()):
+        key = str(dict_value[0])
+        value = str(dict_value[1])
 
-        query = consts.INSERT_MATCH_VALUES.format(
-            project=project,
-            dataset=dataset,
-            table=result_table,
-            field=field_name,
-            values=values_str,
-            id_field=consts.PERSON_ID_FIELD,
-            algorithm_field=consts.ALGORITHM_FIELD
+        alpha = copy(str_list)
+        alpha[field_index] = value
+        alpha[id_index] = key
+        alpha[alg_index] = consts.YES
+        val_str = ','.join(alpha)
+        results.write(val_str + '\n')
+
+    LOGGER.info("Writing csv file to cloud storage for field: %s\t\tsite: %s",
+                field_name, site)
+
+    # write results
+    results.seek(0)
+    response = gcs_utils.upload_object(bucket, path, results)
+    results.close()
+
+    LOGGER.info("Wrote %d items to cloud storage for site: %s",
+                len(match_values), site)
+
+    # wait on results to be written
+
+    schema_path = os.path.join(fields_path, 'identity_match.json')
+
+    LOGGER.info("Beginning load of identity match values from csv into BigQuery "
+                "for site: %s\t\tfield: %s",
+                site, field_name)
+    try:
+        # load csv file into bigquery
+        results = bq_utils.load_csv(schema_path,
+                                    'gs://' + bucket + '/' + path,
+                                    project,
+                                    dataset,
+                                    result_table,
+                                    write_disposition=consts.WRITE_APPEND)
+
+        # ensure the load job finishes
+        query_job_id = results['jobReference']['jobId']
+        incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
+        if incomplete_jobs != []:
+            raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+
+    except (oauth2client.client.HttpAccessTokenRefreshError,
+            googleapiclient.errors.HttpError):
+        LOGGER.exception(
+            "Encountered an exception when loading records from csv for site: %s", site
         )
+        raise
 
-        try:
-            results = bq_utils.query(query, batch=True)
-        except (oauth2client.client.HttpAccessTokenRefreshError,
-                googleapiclient.errors.HttpError):
-            LOGGER.exception(
-                "Encountered an exception when inserting records for:\t%s", site
-            )
-            raise
-
-    LOGGER.info("Inserted match values for site:  %s\t\tfield:  %s", site, field_name)
+    LOGGER.info("Loaded match values for site: %s\t\tfield: %s", site, field_name)
 
     return results
+
 
 def remove_sparse_records(project, dataset, site):
     """
@@ -120,8 +160,18 @@ def remove_sparse_records(project, dataset, site):
         project=project,
         dataset=dataset,
         table=result_table,
-        field_one=consts.FIRST_NAME_FIELD,
-        field_two=consts.LAST_NAME_FIELD
+        field_one=consts.VALIDATION_FIELDS[0],
+        field_two=consts.VALIDATION_FIELDS[1],
+        field_three=consts.VALIDATION_FIELDS[2],
+        field_four=consts.VALIDATION_FIELDS[3],
+        field_five=consts.VALIDATION_FIELDS[4],
+        field_six=consts.VALIDATION_FIELDS[5],
+        field_seven=consts.VALIDATION_FIELDS[6],
+        field_eight=consts.VALIDATION_FIELDS[7],
+        field_nine=consts.VALIDATION_FIELDS[8],
+        field_ten=consts.VALIDATION_FIELDS[9],
+        field_eleven=consts.VALIDATION_FIELDS[10],
+        field_twelve=consts.VALIDATION_FIELDS[11]
     )
 
     try:
@@ -314,6 +364,9 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     :param bucket:  The bucket to write the csv to.
     :param filename:  The file name to give the csv report.
     """
+    if not isinstance(hpo_list, list):
+        hpo_list = [hpo_list]
+
     fields = [consts.PERSON_ID_FIELD, consts.FIRST_NAME_FIELD,
               consts.LAST_NAME_FIELD, consts.BIRTH_DATE_FIELD, consts.SEX_FIELD,
               consts.ADDRESS_MATCH_FIELD, consts.PHONE_NUMBER_FIELD,

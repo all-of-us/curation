@@ -1,4 +1,4 @@
-from constants.bq_utils import (WRITE_TRUNCATE)
+from constants.bq_utils import (WRITE_APPEND, WRITE_TRUNCATE)
 from constants.validation.participants.identity_match import (MATCH, MISMATCH, MISSING)
 
 # DRC match responses
@@ -29,11 +29,58 @@ MERGE_UNIFY_SITE_RECORDS = (
 # Relies on a first and last name existing
 SELECT_FULL_RECORDS = (
     'SELECT * FROM `{project}.{dataset}.{table}` '
-    'WHERE ('
-    '{field_one} IS NOT NULL AND {field_two} IS NOT NULL'
-    ')'
+    'WHERE NOT '
+    '({field_two} IS NULL AND {field_three} IS NULL AND '
+    '{field_four} IS NULL AND {field_five} IS NULL AND {field_six} IS NULL AND '
+    '{field_seven} IS NULL AND {field_eight} IS NULL AND {field_nine} IS NULL AND '
+    '{field_ten} IS NULL AND {field_eleven} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_three} IS NULL AND '
+    '{field_four} IS NULL AND {field_five} IS NULL AND {field_six} IS NULL AND '
+    '{field_seven} IS NULL AND {field_eight} IS NULL AND {field_nine} IS NULL AND '
+    '{field_ten} IS NULL AND {field_eleven} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_two} IS NULL AND '
+    '{field_four} IS NULL AND {field_five} IS NULL AND {field_six} IS NULL AND '
+    '{field_seven} IS NULL AND {field_eight} IS NULL AND {field_nine} IS NULL AND '
+    '{field_ten} IS NULL AND {field_eleven} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_two} IS NULL AND '
+    '{field_three} IS NULL AND {field_five} IS NULL AND {field_six} IS NULL AND '
+    '{field_seven} IS NULL AND {field_eight} IS NULL AND {field_nine} IS NULL AND '
+    '{field_ten} IS NULL AND {field_eleven} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_two} IS NULL AND '
+    '{field_three} IS NULL AND {field_four} IS NULL AND {field_six} IS NULL AND '
+    '{field_seven} IS NULL AND {field_eight} IS NULL AND {field_nine} IS NULL AND '
+    '{field_ten} IS NULL AND {field_eleven} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_two} IS NULL AND '
+    '{field_three} IS NULL AND {field_four} IS NULL AND {field_five} IS NULL AND '
+    '{field_seven} IS NULL AND {field_eight} IS NULL AND {field_nine} IS NULL AND '
+    '{field_ten} IS NULL AND {field_eleven} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_two} IS NULL AND '
+    '{field_three} IS NULL AND {field_four} IS NULL AND {field_five} IS NULL AND '
+    '{field_six} IS NULL AND {field_eight} IS NULL AND {field_nine} IS NULL AND '
+    '{field_ten} IS NULL AND {field_eleven} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_two} IS NULL AND '
+    '{field_three} IS NULL AND {field_four} IS NULL AND {field_five} IS NULL AND '
+    '{field_six} IS NULL AND {field_seven} IS NULL AND {field_nine} IS NULL AND '
+    '{field_ten} IS NULL AND {field_eleven} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_two} IS NULL AND '
+    '{field_three} IS NULL AND {field_four} IS NULL AND {field_five} IS NULL AND '
+    '{field_six} IS NULL AND {field_seven} IS NULL AND {field_eight} IS NULL AND '
+    '{field_ten} IS NULL AND {field_eleven} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_two} IS NULL AND '
+    '{field_three} IS NULL AND {field_four} IS NULL AND {field_five} IS NULL AND '
+    '{field_six} IS NULL AND {field_seven} IS NULL AND {field_eight} IS NULL AND '
+    '{field_nine} IS NULL AND {field_eleven} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_two} IS NULL AND '
+    '{field_three} IS NULL AND {field_four} IS NULL AND {field_five} IS NULL AND '
+    '{field_six} IS NULL AND {field_seven} IS NULL AND {field_eight} IS NULL AND '
+    '{field_nine} IS NULL AND {field_ten} IS NULL AND {field_twelve} IS NULL) AND NOT '
+    '({field_one} IS NULL AND {field_two} IS NULL AND '
+    '{field_three} IS NULL AND {field_four} IS NULL AND {field_five} IS NULL AND '
+    '{field_six} IS NULL AND {field_seven} IS NULL AND {field_eight} IS NULL AND '
+    '{field_nine} IS NULL AND {field_ten} IS NULL AND {field_eleven} IS NULL) '
 )
 
+# Sets null values to the missing identifier
 SELECT_SET_MISSING_VALUE = (
     'SELECT '
     '{person_id}, {algorithm}, '
