@@ -12,7 +12,6 @@
 			{
 				"apply":"COUNT",
 				"into":"MULTIRACIAL",
-				"on":["WhatRaceEthnicity_AIAN","WhatRaceEthnicity_NHPI","WhatRaceEthnicity_MENA","WhatRaceEthnicity_RaceEthnicityNoneOfThese"],
 				"qualifier":"> 1"
 			}
 		],
@@ -36,12 +35,6 @@
 				"qualifier":"IN",
 				"values":["PMI_Skip","PMI_PreferNotToAnswer","GenderIdentity_AdditionalOptions","GenderIdentity_NonBinary","GenderIdentity_Transgender"],
 				"into":"OTHER"
-			},
-			{
-				"apply":"COUNT",
-				"into":"OTHER",
-				"qualifier":"> 1"
-
 			}
 		],
 		"EDUCATION":[

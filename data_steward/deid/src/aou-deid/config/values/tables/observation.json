@@ -1,51 +1,41 @@
 {
     "generalize":[
-        {"rules":"@generalize.RACE",
-         "fields":["value_source_value"],
-         "table":":idataset.observation my_table",
-         "key_field":"my_table.person_id",
-         "key_row":"my_table.value_as_string",
-         "value_field":"observation.person_id",
-         "on":"observation_source_value IN ('Race_WhatRaceEthnicity')"},
-        
-         {"rules":"@generalize.EMPLOYMENT",
-         "fields":["value_source_value"],
-         "table":":idataset.observation my_table",
-         "key_field":"my_table.person_id",
-         "value_field":"observation.person_id",
+        {
+            "rules":"@generalize.RACE",
+            "fields":["value_source_value","value_as_string"],
+            "table":":idataset.observation find_race",
+            "key_field":"find_race.person_id",
+            "key_row":"find_race.value_as_string",
+            "value_field":"observation.person_id",
+            "on":"observation_source_value IN ('Race_WhatRaceEthnicity')"},
+
+        {
+            "rules":"@generalize.EMPLOYMENT","fields":["value_source_value","value_as_string"],
          "on":"observation_source_value IN ('Employment_EmploymentStatus')"},
         
-         {"rules":"@generalize.SEXUAL-ORIENTATION",
-         "fields":["value_source_value"],
-         "table":":idataset.observation my_table",
-         "key_field":"my_table.person_id",
-         "value_field":"observation.person_id",
-         "on":"observation_source_value IN ('TheBasics_SexualOrientation')"},
-        {"rules":"@generalize.SEX-AT-BIRTH",
-         "fields":["value_source_value"],
-         "table":":idataset.observation my_table",
-         "key_field":"my_table.person_id",
-         "value_field":"observation.person_id",
-         "on":"observation_source_value IN ('BiologicalSexAtBirth_SexAtBirth')"},
-        {"rules":"@generalize.GENDER",
-         "fields":["value_source_value"],
-         "table":":idataset.observation my_table",
-         "key_field":"my_table.person_id",
-         "value_field":"observation.person_id",
-         "on":"observation_source_value IN ('Gender_GenderIdentity')"},
+         {
+            "rules":"@generalize.SEXUAL-ORIENTATION","fields":["value_source_value","value_as_string"],
+             "on":"observation_source_value IN ('TheBasics_SexualOrientation')"},
         
-         {"rules":"@generalize.EDUCATION",
-         "fields":["value_source_value"],
-         "table":":idataset.observation my_table",
-         "key_field":"my_table.person_id",
-         "value_field":"observation.person_id",
-         "on":"observation_source_value IN ('EducationLevel_HighestGrade')"}
-
+        {
+            "rules":"@generalize.SEX-AT-BIRTH","fields":["value_source_value","value_as_string"],
+            "on":"observation_source_value IN ('BiologicalSexAtBirth_SexAtBirth')"
+        },
+        {
+            "rules":"@generalize.GENDER","fields":["value_source_value","value_as_string"],
+         "on":"observation_source_value IN ('Gender_GenderIdentity')"},
+        {
+            "rules":"@generalize.EDUCATION","fields":["value_source_value"],
+            "on":"observation_source_value IN ('EducationLevel_HighestGrade')"
+        }
+        
     ],
     "suppress":[
         {"rules":"@suppress.ROWS",
-         "on":"observation_source_value"}
-        
+         "on":"observation_source_value"},
+         {   "comment":"removing ethnic groups, alternative race and fields (data has redundancies)",
+            "on":"observation_concept_id in (4013886, 4271761, 4135376)"}
+
 
     ],
     "shift":[
