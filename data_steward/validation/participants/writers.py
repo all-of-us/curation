@@ -6,6 +6,7 @@ A module to write participant identity matching table data.
 # Python imports
 import logging
 import StringIO
+import os
 
 # Third party imports
 import googleapiclient
@@ -14,9 +15,13 @@ import oauth2client
 # Project imports
 import bq_utils
 import constants.validation.participants.writers as consts
+import constants.validation.participants.identity_match as id_match_consts
 import gcs_utils
+import resources
 
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
 
 
 def append_to_result_table(
@@ -275,6 +280,78 @@ def get_address_match(address_values):
     areas_match = _get_match_rank([city, state, zip_code])
 
     return _get_match_rank([streets_match, areas_match])
+
+
+def load_site_validation_report(project, validation_dataset, site_match_values_dict, site, bucket, file_path, file_name):
+    """
+    Write the validation csv from the site validation table.
+
+    :param project:  The project name
+    :param validation_dataset: dataset containing validation tables
+    :param all_match_values_dict: dict containing all values
+    :param site:  Site to create a csv for
+    :param bucket:  The bucket to write the csv to.
+    :param file_path:  The file path for the csv report.
+    :param file_name:  The file name to give the csv report.
+    """
+    fields = [consts.PERSON_ID_FIELD, consts.FIRST_NAME_FIELD,
+              consts.LAST_NAME_FIELD, consts.BIRTH_DATE_FIELD, consts.SEX_FIELD,
+              consts.ADDRESS_MATCH_FIELD, consts.PHONE_NUMBER_FIELD,
+              consts.EMAIL_FIELD, consts.ALGORITHM_FIELD]
+
+    fields_str = ','.join(fields) + '\n'
+
+    file_path = file_path + '/' if file_path[-1] != '/' else file_path
+
+    reports = []
+    # write to the report file
+    # sets up a file stream to write to the bucket
+    report_file = StringIO.StringIO()
+    report_file.write(fields_str)
+    result_table = site + consts.VALIDATION_TABLE_SUFFIX
+
+    for person_id, item in site_match_values_dict.iteritems():
+        address_values = [
+            item.get(consts.ADDRESS_ONE_FIELD),
+            item.get(consts.ADDRESS_TWO_FIELD),
+            item.get(consts.CITY_FIELD),
+            item.get(consts.STATE_FIELD),
+            item.get(consts.ZIP_CODE_FIELD)
+        ]
+        values = [
+            str(item.get(consts.PERSON_ID_FIELD)),
+            item.get(consts.FIRST_NAME_FIELD),
+            item.get(consts.LAST_NAME_FIELD),
+            item.get(consts.BIRTH_DATE_FIELD),
+            item.get(consts.SEX_FIELD),
+            get_address_match(address_values),
+            item.get(consts.PHONE_NUMBER_FIELD),
+            item.get(consts.EMAIL_FIELD),
+            item.get(consts.ALGORITHM_FIELD)
+        ]
+        values_str = ','.join(values) + '\n'
+        report_file.write(values_str)
+
+    # reset the stream and write to the bucket
+    full_path = file_path + site + '_' + file_name
+    LOGGER.debug("Writing validation report csv to %s", bucket+'/'+full_path)
+    report_result = gcs_utils.upload_object(bucket, full_path, report_file)
+    reports.append(report_result)
+
+    LOGGER.debug("Wrote validation report csv:  %s", bucket+'/'+full_path)
+
+    fields_filename = os.path.join(resources.fields_path, id_match_consts.VALIDATION_TABLE_SUFFIX[1:] + '.json')
+    gcs_object_path = 'gs://%s/%s%s' % (bucket, file_path, site + '_' + file_name)
+    bq_dataset = bq_utils.get_dataset_id()
+    LOGGER.debug("Loading validation report to %s", validation_dataset+'.'+result_table)
+    load_result = bq_utils.load_csv(fields_filename, gcs_object_path, project, validation_dataset, result_table)
+    reports.append(load_result)
+    LOGGER.debug("Load validation report to %s complete", validation_dataset+'.'+result_table)
+    load_result = bq_utils.load_csv(fields_filename, gcs_object_path, project, bq_dataset, result_table)
+    reports.append(load_result)
+    LOGGER.debug("Load validation report to %s complete", bq_dataset+'.'+result_table)
+
+    return reports
 
 
 def create_site_validation_report(project, dataset, hpo_list, bucket, filename):

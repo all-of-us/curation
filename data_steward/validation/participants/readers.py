@@ -108,11 +108,6 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
         exists = result_dict.get(person_id)
         if exists is None:
             result_dict[person_id] = value
-        else:
-            if exists == value:
-                pass
-            else:
-                LOGGER.error("Trying to reset value for person_id\t%s.")
 
     return result_dict
 
@@ -162,11 +157,11 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
         exists = result_dict.get(person_id)
         if exists is None:
             result_dict[person_id] = value
-        else:
-            if exists == value:
-                pass
-            else:
-                LOGGER.error("Trying to reset value for person_id\t%s.")
+        # else:
+        #     if exists == value:
+        #         pass
+            # else:
+            #     LOGGER.error("Trying to reset value for person_id\t%s.")
 
     return result_dict
 
@@ -252,7 +247,6 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
     for location_id in location_ids:
         location_id_list.append(location_id[1])
         location_id_dict[int(location_id[1])] = location_id[0]
-
 
     location_id_str = ', '.join(location_id_list)
     query_string = consts.PII_LOCATION_VALUES.format(

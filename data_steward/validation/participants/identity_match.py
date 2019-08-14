@@ -21,12 +21,15 @@ import bq_utils
 import gcs_utils
 import constants.bq_utils as bq_consts
 import constants.validation.participants.identity_match as consts
+import constants.validation.participants.writers as writer_consts
 import resources
 import validation.participants.normalizers as normalizer
 import validation.participants.readers as readers
 import validation.participants.writers as writers
 
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 LOGGER = logging.getLogger(__name__)
+# LOGGER.setLevel(logging.DEBUG)
 
 
 def _compare_address_lists(list_one, list_two):
@@ -572,12 +575,11 @@ def _compare_genders(
         rdr_gender = pii_genders.get(person_id, '')
         ehr_gender = consts.SEX_CONCEPT_IDS.get(ehr_gender, '')
 
-        rdr_gender = rdr_gender.lower()
-        ehr_gender = ehr_gender.lower()
-
         if rdr_gender is None or ehr_gender is None:
             match_str = consts.MISSING
         else:
+            rdr_gender = rdr_gender.lower()
+            ehr_gender = ehr_gender.lower()
             match_str = consts.MATCH if rdr_gender == ehr_gender else consts.MISMATCH
 
         match_values[person_id] = match_str
@@ -707,6 +709,33 @@ def write_results_to_site_buckets(project, validation_dataset=None):
                         )
 
 
+def convert_all_match_list_to_dict(match_values_list):
+    """
+
+    :param match_values_list:
+    :return:
+    """
+    match_values_dict = {}
+    for person_id, match_list in match_values_list.iteritems():
+        match_values_dict[person_id] = {}
+        match_values_dict[person_id][consts.PERSON_FIELD] = person_id
+        match_values_dict[person_id][consts.SITE_FIELD] = match_list[0]
+        match_values_dict[person_id][consts.FIRST_NAME_FIELD] = match_list[2]
+        match_values_dict[person_id][consts.LAST_NAME_FIELD] = match_list[3]
+        match_values_dict[person_id][consts.MIDDLE_NAME_FIELD] = match_list[4]
+        match_values_dict[person_id][consts.ZIP_CODE_FIELD] = match_list[5]
+        match_values_dict[person_id][consts.CITY_FIELD] = match_list[6]
+        match_values_dict[person_id][consts.STATE_FIELD] = match_list[7]
+        match_values_dict[person_id][consts.ADDRESS_ONE_FIELD] = match_list[8]
+        match_values_dict[person_id][consts.ADDRESS_TWO_FIELD] = match_list[9]
+        match_values_dict[person_id][consts.EMAIL_FIELD] = match_list[10]
+        match_values_dict[person_id][consts.PHONE_NUMBER_FIELD] = match_list[11]
+        match_values_dict[person_id][consts.SEX_FIELD] = match_list[12]
+        match_values_dict[person_id][consts.BIRTH_DATE_FIELD] = match_list[13]
+        match_values_dict[person_id][consts.ALGORITHM_FIELD] = match_list[14]
+    return match_values_dict
+
+
 def write_results_to_drc_bucket(project, validation_dataset=None):
     """
     Write the results of participant matching to the drc bucket.
@@ -790,16 +819,8 @@ def match_participants(
 
     hpo_sites = readers.get_hpo_site_names()
 
-    #TODO:  create a proper config file to store this path
+    # TODO:  create a proper config file to store this path
     field_list = resources.fields_for('identity_match')
-
-    for site_name in hpo_sites:
-        bq_utils.create_table(
-            site_name + consts.VALIDATION_TABLE_SUFFIX,
-            field_list,
-            drop_existing=True,
-            dataset_id=validation_dataset
-        )
 
     read_errors = 0
     write_errors = 0
@@ -807,6 +828,18 @@ def match_participants(
 
     # validate first names
     for site in hpo_sites:
+        LOGGER.info('Creating site table for %s', site)
+        bq_utils.create_table(
+            site + consts.VALIDATION_TABLE_SUFFIX,
+            field_list,
+            drop_existing=True,
+            dataset_id=validation_dataset
+        )
+        LOGGER.info('Site table created for %s', site)
+        all_match_value_headers = []
+        site_match_values = {}
+        all_match_value_headers.append(consts.FIRST_NAME_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         match_values, exc = _compare_name_fields(
             project,
             validation_dataset,
@@ -819,27 +852,16 @@ def match_participants(
         if exc is not None:
             read_errors += 1
         else:
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.FIRST_NAME_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.FIRST_NAME_FIELD
-                )
-                write_errors += 1
+            for person_id in match_values:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id]
+                else:
+                    site_match_values[person_id].append(match_values[person_id])
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
-    LOGGER.info('Validated first names')
-
-    # validate last names
-    for site in hpo_sites:
+        # validate last names
+        all_match_value_headers.append(consts.LAST_NAME_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         match_values, exc = _compare_name_fields(
             project,
             validation_dataset,
@@ -853,27 +875,25 @@ def match_participants(
             read_errors += 1
         else:
             # write last name matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.LAST_NAME_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.LAST_NAME_FIELD
-                )
-                write_errors += 1
+            for person_id in match_values:
+                if person_id not in site_match_values:
+                    # assuming every person_id is only associated with one site
+                    # TODO raise fatal error otherwise
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers) - 1)]
+                else:
+                    site_match_values[person_id].append(match_values[person_id])
+            # len should be 4
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
-    LOGGER.info('Validated last names')
-
-    # validate middle names
-    for site in hpo_sites:
+        # validate middle names
+        all_match_value_headers.append(consts.MIDDLE_NAME_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         match_values, exc = _compare_name_fields(
             project,
             validation_dataset,
@@ -887,27 +907,23 @@ def match_participants(
             read_errors += 1
         else:
             # write middle name matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.MIDDLE_NAME_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.MIDDLE_NAME_FIELD
-                )
-                write_errors += 1
+            for person_id in match_values:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers)-1)]
+                else:
+                    site_match_values[person_id].append(match_values[person_id])
+            # len should be 5
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
-    LOGGER.info('Validated middle names')
-
-    # validate zip codes
-    for site in hpo_sites:
+        # validate zip codes
+        all_match_value_headers.append(consts.ZIP_CODE_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         match_values, exc = _compare_zip_codes(
             project,
             validation_dataset,
@@ -922,27 +938,23 @@ def match_participants(
             read_errors += 1
         else:
             # write zip codes matces for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.ZIP_CODE_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.ZIP_CODE_FIELD
-                )
-                write_errors += 1
+            for person_id in match_values:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers) - 1)]
+                else:
+                    site_match_values[person_id].append(match_values[person_id])
+            # len should be 6
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
-    LOGGER.info('Validated zip codes')
-
-    # validate city
-    for site in hpo_sites:
+        # validate city
+        all_match_value_headers.append(consts.CITY_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         match_values, exc = _compare_cities(
             project,
             validation_dataset,
@@ -957,27 +969,23 @@ def match_participants(
             read_errors += 1
         else:
             # write city matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.CITY_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.CITY_FIELD
-                )
-                write_errors += 1
+            for person_id in match_values:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers) - 1)]
+                else:
+                    site_match_values[person_id].append(match_values[person_id])
+            # len should be 7
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
-    LOGGER.info('Validated city names')
-
-    # validate state
-    for site in hpo_sites:
+        # validate state
+        all_match_value_headers.append(consts.STATE_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         match_values, exc = _compare_states(
             project,
             validation_dataset,
@@ -992,27 +1000,24 @@ def match_participants(
             read_errors += 1
         else:
             # write state matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.STATE_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.STATE_FIELD
-                )
-                write_errors += 1
+            for person_id in match_values:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers) - 1)]
+                else:
+                    site_match_values[person_id].append(match_values[person_id])
+            # len should be 8
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
-    LOGGER.info('Validated states')
-
-    # validate street addresses
-    for site in hpo_sites:
+        # validate street addresses
+        all_match_value_headers.append(consts.ADDRESS_ONE_FIELD)
+        all_match_value_headers.append(consts.ADDRESS_TWO_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         address_one_matches, address_two_matches, exc = _compare_street_addresses(
             project,
             validation_dataset,
@@ -1029,44 +1034,36 @@ def match_participants(
             read_errors += 1
         else:
             # write street address matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    address_one_matches,
-                    project,
-                    validation_dataset,
-                    consts.ADDRESS_ONE_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.ADDRESS_ONE_FIELD
-                )
-                write_errors += 1
+            for person_id in address_one_matches:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers) - 1)]
+                else:
+                    site_match_values[person_id].append(address_one_matches[person_id])
+            # len should be 9
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
 
-            try:
-                writers.append_to_result_table(
-                    site,
-                    address_two_matches,
-                    project,
-                    validation_dataset,
-                    consts.ADDRESS_TWO_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.ADDRESS_TWO_FIELD
-                )
-                write_errors += 1
+            for person_id in address_two_matches:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers) - 1)]
+                else:
+                    site_match_values[person_id].append(address_two_matches[person_id])
+            # len should be 10
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
-    LOGGER.info('Validated street addresses')
-
-    # validate email addresses
-    for site in hpo_sites:
+        # validate email addresses
+        all_match_value_headers.append(consts.EMAIL_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         match_values, exc = _compare_email_addresses(
             project,
             validation_dataset,
@@ -1080,27 +1077,23 @@ def match_participants(
             read_errors += 1
         else:
             # write email matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.EMAIL_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.EMAIL_FIELD
-                )
-                write_errors += 1
+            for person_id in match_values:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers) - 1)]
+                else:
+                    site_match_values[person_id].append(match_values[person_id])
+            # len should be 11
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
-    LOGGER.info('Validated email addresses')
-
-    # validate phone numbers
-    for site in hpo_sites:
+        # validate phone numbers
+        all_match_value_headers.append(consts.PHONE_NUMBER_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         match_values, exc = _compare_phone_numbers(
             project,
             validation_dataset,
@@ -1114,27 +1107,23 @@ def match_participants(
             read_errors += 1
         else:
             # write phone number matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.PHONE_NUMBER_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.PHONE_NUMBER_FIELD
-                )
-                write_errors += 1
+            for person_id in match_values:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers) - 1)]
+                else:
+                    site_match_values[person_id].append(match_values[person_id])
+            # len should be 12
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
-    LOGGER.info('Validated phone numbers')
-
-    # validate genders
-    for site in hpo_sites:
+        # validate genders
+        all_match_value_headers.append(consts.SEX_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         match_values, exc = _compare_genders(
             project,
             validation_dataset,
@@ -1147,27 +1136,23 @@ def match_participants(
             read_errors += 1
         else:
             # write birthday match for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.SEX_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.SEX_FIELD
-                )
-                write_errors += 1
+            for person_id in match_values:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers) - 1)]
+                else:
+                    site_match_values[person_id].append(match_values[person_id])
+            # len should be 13
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
-    LOGGER.info('Validated genders')
-
-    # validate birth dates
-    for site in hpo_sites:
+        # validate birth dates
+        all_match_value_headers.append(consts.BIRTH_DATE_FIELD)
+        LOGGER.info('Processing site: %s for field %s', site, all_match_value_headers[-1])
         match_values, exc = _compare_birth_dates(
             project,
             validation_dataset,
@@ -1180,64 +1165,46 @@ def match_participants(
             read_errors += 1
         else:
             # write birthday match for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.BIRTH_DATE_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.BIRTH_DATE_FIELD
-                )
-                write_errors += 1
+            for person_id in match_values:
+                if person_id not in site_match_values:
+                    site_match_values[person_id] = [site, person_id] + \
+                                                  [consts.MISSING
+                                                   for _
+                                                   in range(len(all_match_value_headers) - 1)]
+                else:
+                    site_match_values[person_id].append(match_values[person_id])
+            # len should be 14
+            for person_id in site_match_values:
+                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                    site_match_values[person_id].append(consts.MISSING)
+            for person_id in site_match_values:
+                site_match_values[person_id].append(writer_consts.YES)
+        LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
+        site_match_values_dict = convert_all_match_list_to_dict(site_match_values)
 
-    LOGGER.info('Validated birth dates')
+        # generate aggregate site report
+        bucket = gcs_utils.get_drc_bucket()
+        file_path = os.path.join(validation_dataset,
+                                 consts.REPORT_DIRECTORY.format(date=date_string))
+        file_name = consts.REPORT_TITLE
+        reports = writers.load_site_validation_report(
+            project, validation_dataset, site_match_values_dict, site, bucket, file_path, file_name
+        )
+        results[site] = reports
 
-    # generate single clean record for each participant at each site
-    for site in hpo_sites:
-        try:
-            writers.merge_fields_into_single_record(project, validation_dataset, site)
-            LOGGER.info('Merged participant match records')
-        except (oauth2client.client.HttpAccessTokenRefreshError,
-                googleapiclient.errors.HttpError):
-            write_errors += 1
-
-        try:
-            writers.remove_sparse_records(project, validation_dataset, site)
-            LOGGER.info('Removed sparse participant match records')
-        except (oauth2client.client.HttpAccessTokenRefreshError,
-                googleapiclient.errors.HttpError):
-            write_errors += 1
-
-        try:
-            writers.change_nulls_to_missing_value(project, validation_dataset, site)
-            LOGGER.info('Changed nulls to missing values in participant match records')
-        except (oauth2client.client.HttpAccessTokenRefreshError,
-                googleapiclient.errors.HttpError):
-            write_errors += 1
-
-    LOGGER.info("Finished creating validation dataset")
+    LOGGER.info("Finished creating validation tables")
 
     if read_errors > 0:
         LOGGER.error("Encountered %d read errors creating validation dataset:\t%s",
                      read_errors,
-                     validation_dataset
-                    )
+                     validation_dataset)
 
     if write_errors > 0:
         LOGGER.error("Encountered %d write errors creating validation dataset:\t%s",
                      write_errors,
-                     validation_dataset
-                    )
+                     validation_dataset)
 
     return results, read_errors + write_errors
-
 
 
 if __name__ == '__main__':
