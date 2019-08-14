@@ -42,12 +42,6 @@ class WritersTest(unittest.TestCase):
         )
 
         # post conditions
-        expected_insert_values = (
-            "(1,'" + consts.MATCH + "','"+ consts.YES + "'),"
-            "(2,'" + consts.MISMATCH + "','"+ consts.YES + "'),"
-            "(3,'" + consts.MISSING + "','"+ consts.YES + "')"
-        )
-
         self.assertEqual(mock_upload.call_count, 1)
         self.assertEqual(mock_load_csv.call_count, 1)
         self.assertEqual(mock_wait.call_count, 1)
@@ -98,12 +92,6 @@ class WritersTest(unittest.TestCase):
         )
 
         # post conditions
-        expected_insert_values = (
-            "(1,'" + consts.MATCH + "','"+ consts.YES + "'),"
-            "(2,'" + consts.MISMATCH + "','"+ consts.YES + "'),"
-            "(3,'" + consts.MISSING + "','"+ consts.YES + "')"
-        )
-
         self.assertEqual(mock_load_csv.call_count, 1)
         self.assertEqual(mock_upload.call_count, 1)
         self.assertEqual(mock_bucket.call_count, 1)

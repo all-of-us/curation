@@ -78,13 +78,10 @@ def append_to_result_table(
                  field_name, site)
 
     str_list = [''] * len(field_list)
-    for dict_index, dict_value in enumerate(match_values.iteritems()):
-        key = str(dict_value[0])
-        value = str(dict_value[1])
-
+    for key, value in match_values.iteritems():
         alpha = copy(str_list)
         alpha[field_index] = value
-        alpha[id_index] = key
+        alpha[id_index] = str(key)
         alpha[alg_index] = consts.YES
         val_str = ','.join(alpha)
         results.write(val_str + '\n')
@@ -94,7 +91,7 @@ def append_to_result_table(
 
     # write results
     results.seek(0)
-    response = gcs_utils.upload_object(bucket, path, results)
+    gcs_utils.upload_object(bucket, path, results)
     results.close()
 
     LOGGER.info("Wrote %d items to cloud storage for site: %s",

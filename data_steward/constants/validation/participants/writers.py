@@ -1,6 +1,11 @@
 from constants.bq_utils import (WRITE_APPEND, WRITE_TRUNCATE)
 from constants.validation.participants.identity_match import (MATCH, MISMATCH, MISSING)
 
+WRITE_APPEND = WRITE_APPEND
+WRITE_TRUNCATE = WRITE_TRUNCATE
+MATCH = MATCH
+MISMATCH = MISMATCH
+MISSING = MISSING
 # DRC match responses
 YES = "yes"
 NO = "no"
