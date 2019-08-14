@@ -2,53 +2,64 @@
 	{
 		"_id":"generalize",
 		"RACE":[
-			{
-
+			{				
 				"values":["WhatRaceEthnicity_AIAN","WhatRaceEthnicity_NHPI","WhatRaceEthnicity_MENA","WhatRaceEthnicity_RaceEthnicityNoneOfThese"],
-				"into":"OTHER",
+				"into":"WhatRaceEthnicity_GeneralizedAnotherRace",
 				"qualifier":"IN"
 
 			},
 			{
 				"apply":"COUNT",
 				"into":"MULTIRACIAL",
-				"qualifier":"> 1"
+				"qualifier":"> 1",
+				"on":["WhatRaceEthnicity_Asian","WhatRaceEthnicity_Black","WhatRaceEthnicity_White"]
 			}
 		],
 		"ETHNICITY":[{"apply":"REGEXP","values":["hispanic","latin"],"into":"NON HISPANIC", "qualifier":"IS FALSE"}],
 		"SEXUAL-ORIENTATION":[
 			{
 				"qualifier":"IN",
-				"values":["PMI_Skip","PMI_PreferNotToAnswer","SexualOrientation_Gay","SexualOrientation_Lesbian","SexualOrientation_Bisexual","SexualOrientation_None"],
-				"into":"OTHER"
+				"values":["SexualOrientation_Gay","PMI_PreferNotToAnswer","PMI_Skip","SexualOrientation_Bisexual","SexualOrientation_None","SexualOrientation_Lesbian"],				
+				"into":"SexualOrientation_GeneralizedSomethingElse"
 				}
 		],
 		"SEX-AT-BIRTH":[
 			{
 				"qualifier":"IN",
-				"values":["PMI_Skip","PMI_PreferNotToAnswer","SexAtBirth_Intersex","SexAtBirth_SexAtBirthNoneOfThese"],
-				"into":"OTHER"
+				"values":["SexAtBirth_SexAtBirthNoneOfThese","PMI_Skip","SexAtBirth_Intersex","PMI_PreferNotToAnswer"],				
+				"into":"SexAtBirth_GeneralizedNeither"
 			}
 		],
 		"GENDER":[
 			{
 				"qualifier":"IN",
-				"values":["PMI_Skip","PMI_PreferNotToAnswer","GenderIdentity_AdditionalOptions","GenderIdentity_NonBinary","GenderIdentity_Transgender"],
-				"into":"OTHER"
+				"values":["GenderIdentity_AdditionalOptions","GenderIdentity_NonBinary","GenderIdentity_Transgender","GenderIdentity_AdditionalOptions","GenderIdentity_NonBinary","GenderIdentity_Transgender"],				
+				"into":"GenderIdentity_GeneralizedSomethingElse"
 			}
 		],
 		"EDUCATION":[
 			{
 				"qualifier":"IN",
-				"values":["HighestGrade_NeverAttended","HighestGrade_OneThroughFour","HighestGrade_FiveThroughEight","HighestGrade_NineThroughEleven"],
-				"into":"UNKNOWN"
+				"values":["HighestGrade_OneThroughFour", "HighestGrade_FiveThroughEight","HighestGrade_NineThroughEleven","HighestGrade_NeverAttended"],				
+				"into":"HighestGrade_GeneralizedNoHighSchoolDegree"
+			},
+			{
+				"qualifier":"IN",
+				"values":["HighestGrade_CollegeGraduate","HighestGrade_AdvancedDegree"],
+				"into":"HighestGrade_GeneralizedCollegeAndAbove"
+
 			}
 		],
 		"EMPLOYMENT":[
 			{
 				"qualifier":"IN",
-				"values":["EmploymentStatus_Retired","EmploymentStatus_Student","EmploymentStatus_UnableToWork","EmploymentStatus_Homemaker","EmploymentStatus_OutOfWorkOneOrMore"],
-				"into":"UNKNOWN"
+				"values":["EmploymentStatus_OutOfWorkLessThanOne","EmploymentStatus_OutOfWorkOneOrMore","EmploymentStatus_Homemaker","EmploymentStatus_UnableToWork","EmploymentStatus_Student","EmploymentStatus_Retired"],
+				"into":"EmploymentStatus_GeneralizedNotEmployed"
+			},
+			{
+				"qualifier":"IN",
+				"into":"EmploymentStatus_GeneralizedEmpolyed",
+				"values":["EmploymentStatus_SelfEmployed","EmploymentStatus_EmployedForWages"]
 			}
 		]
 	},

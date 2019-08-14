@@ -5,9 +5,9 @@
             "fields":["value_source_value","value_as_string"],
             "table":":idataset.observation find_race",
             "key_field":"find_race.person_id",
-            "key_row":"find_race.value_as_string",
+            "key_row":"find_race.:name",
             "value_field":"observation.person_id",
-            "on":"observation_source_value IN ('Race_WhatRaceEthnicity')"},
+            "on":"observation_source_value IN ('Race_WhatRaceEthnicity') "},
 
         {
             "rules":"@generalize.EMPLOYMENT","fields":["value_source_value","value_as_string"],
