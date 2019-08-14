@@ -1,0 +1,68 @@
+[
+  {
+    "type": "integer",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The source domain_table id"
+  },
+  {
+    "type": "integer",
+    "name": "dest_id",
+    "mode": "nullable",
+    "description": "updated domain_table_id "
+  },
+  {
+    "type": "string",
+    "name": "domain_table",
+    "mode": "nullable",
+    "description": "Name of the domain_table"
+  },
+  {
+    "type": "integer",
+    "name": "concept_id",
+    "mode": "nullable",
+    "description": "concept_id in the domain_table"
+  },
+  {
+    "type": "integer",
+    "name": "src_concept_id",
+    "mode": "nullable",
+    "description": "source_concept_id in the domain_table"
+  },
+  {
+    "type": "integer",
+    "name": "new_concept_id",
+    "mode": "nullable",
+    "description": "updated concept_id"
+  },
+  {
+    "type": "integer",
+    "name": "new_src_concept_id",
+    "mode": "nullable",
+    "description": "updated_source_concept_id"
+  },
+  {
+    "type": "bool",
+    "name": "lookup_concept_id",
+    "mode": "nullable",
+    "description": "indicates if standard_concept_id is populated by concept_id lookup in concept_relationship"
+  },
+  {
+    "type": "bool",
+    "name": "lookup_src_concept_id",
+    "mode": "nullable",
+    "description": "indicates if standard_concept_id is populated by source_concept_id lookup in concept_relationship"
+  },
+  {
+    "type": "bool",
+    "name": "is_src_concept_id_replaced",
+    "mode": "nullable",
+    "description": "indicates if the source_concept_id is replaced with concept_id"
+  },
+  {
+    "type": "string",
+    "name": "action",
+    "mode": "nullable",
+    "description": "action taken in replacing concept_ids"
+  }
+]

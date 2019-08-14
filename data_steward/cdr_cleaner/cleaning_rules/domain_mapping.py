@@ -114,31 +114,3 @@ def get_value_mappings(src_table, dest_table, src_field, dest_field):
             value_mappings[t[DEST_VALUE]] = t[SRC_VALUE]
 
     return value_mappings
-
-
-def get_domain_id_field(domain_table):
-    """
-    A helper function to create the id field
-    :param domain_table: the cdm domain table
-    :return: the id field
-    """
-    return domain_table + '_id'
-
-
-def get_domain_concept_id(domain_table):
-    """
-    A helper function to create the domain_concept_id field
-    :param domain_table: the cdm domain table
-    :return: the domain_concept_id
-    """
-    return domain_table.split('_')[0] + '_concept_id'
-
-
-def get_domain(domain_table):
-    """
-    A helper function to get the domain for the corresponding cdm domain table
-    :param domain_table: the cdm domain table
-    :return: the domains
-    """
-    domain = domain_table.split('_')[0].capitalize()
-    return domain
