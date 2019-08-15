@@ -885,10 +885,10 @@ def match_participants(
                                                    in range(len(all_match_value_headers) - 1)]
                 else:
                     site_match_values[person_id].append(match_values[person_id])
-            # len should be 4
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
+        # len should be 4
+        for person_id in site_match_values:
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
         LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
         # validate middle names
@@ -915,10 +915,10 @@ def match_participants(
                                                    in range(len(all_match_value_headers)-1)]
                 else:
                     site_match_values[person_id].append(match_values[person_id])
-            # len should be 5
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
+        # len should be 5
+        for person_id in site_match_values:
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
         LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
         # validate zip codes
@@ -946,10 +946,10 @@ def match_participants(
                                                    in range(len(all_match_value_headers) - 1)]
                 else:
                     site_match_values[person_id].append(match_values[person_id])
-            # len should be 6
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
+        # len should be 6
+        for person_id in site_match_values:
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
         LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
         # validate city
@@ -977,10 +977,10 @@ def match_participants(
                                                    in range(len(all_match_value_headers) - 1)]
                 else:
                     site_match_values[person_id].append(match_values[person_id])
-            # len should be 7
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
+        # len should be 7
+        for person_id in site_match_values:
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
         LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
         # validate state
@@ -1008,10 +1008,10 @@ def match_participants(
                                                    in range(len(all_match_value_headers) - 1)]
                 else:
                     site_match_values[person_id].append(match_values[person_id])
-            # len should be 8
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
+        # len should be 8
+        for person_id in site_match_values:
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
         LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
         # validate street addresses
@@ -1042,10 +1042,6 @@ def match_participants(
                                                    in range(len(all_match_value_headers) - 1)]
                 else:
                     site_match_values[person_id].append(address_one_matches[person_id])
-            # len should be 9
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
 
             for person_id in address_two_matches:
                 if person_id not in site_match_values:
@@ -1055,10 +1051,12 @@ def match_participants(
                                                    in range(len(all_match_value_headers) - 1)]
                 else:
                     site_match_values[person_id].append(address_two_matches[person_id])
-            # len should be 10
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
+        # len should be 10
+        for person_id in site_match_values:
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
         LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
         # validate email addresses
@@ -1085,10 +1083,10 @@ def match_participants(
                                                    in range(len(all_match_value_headers) - 1)]
                 else:
                     site_match_values[person_id].append(match_values[person_id])
-            # len should be 11
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
+        # len should be 11
+        for person_id in site_match_values:
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
         LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
         # validate phone numbers
@@ -1115,10 +1113,10 @@ def match_participants(
                                                    in range(len(all_match_value_headers) - 1)]
                 else:
                     site_match_values[person_id].append(match_values[person_id])
-            # len should be 12
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
+        # len should be 12
+        for person_id in site_match_values:
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
         LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
         # validate genders
@@ -1144,10 +1142,10 @@ def match_participants(
                                                    in range(len(all_match_value_headers) - 1)]
                 else:
                     site_match_values[person_id].append(match_values[person_id])
-            # len should be 13
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
+        # len should be 13
+        for person_id in site_match_values:
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
         LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
 
         # validate birth dates
@@ -1173,12 +1171,12 @@ def match_participants(
                                                    in range(len(all_match_value_headers) - 1)]
                 else:
                     site_match_values[person_id].append(match_values[person_id])
-            # len should be 14
-            for person_id in site_match_values:
-                if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
-                    site_match_values[person_id].append(consts.MISSING)
-            for person_id in site_match_values:
-                site_match_values[person_id].append(writer_consts.YES)
+        # len should be 14
+        for person_id in site_match_values:
+            if len(site_match_values[person_id]) < len(all_match_value_headers) + 2:
+                site_match_values[person_id].append(consts.MISSING)
+            # len should be 15
+            site_match_values[person_id].append(writer_consts.YES)
         LOGGER.info('Validated site: %s for field %s', site, all_match_value_headers[-1])
         site_match_values_dict = convert_all_match_list_to_dict(site_match_values)
 

@@ -288,7 +288,7 @@ def load_site_validation_report(project, validation_dataset, site_match_values_d
 
     :param project:  The project name
     :param validation_dataset: dataset containing validation tables
-    :param all_match_values_dict: dict containing all values
+    :param site_match_values_dict: dict containing all values
     :param site:  Site to create a csv for
     :param bucket:  The bucket to write the csv to.
     :param file_path:  The file path for the csv report.
@@ -310,7 +310,7 @@ def load_site_validation_report(project, validation_dataset, site_match_values_d
     report_file.write(fields_str)
     result_table = site + consts.VALIDATION_TABLE_SUFFIX
 
-    for person_id, item in site_match_values_dict.iteritems():
+    for _, item in site_match_values_dict.iteritems():
         address_values = [
             item.get(consts.ADDRESS_ONE_FIELD),
             item.get(consts.ADDRESS_TWO_FIELD),
