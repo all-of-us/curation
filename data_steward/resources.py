@@ -89,7 +89,7 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
         file_path = os.path.join(fields_path, f)
         with open(file_path, 'r') as fp:
             file_name = os.path.basename(f)
-            table_name, _ = file_name.split('.')
+            table_name = file_name.split('.')[0]
             schema = json.load(fp)
             include_table = True
             if table_name in vocabulary.VOCABULARY_TABLES and not include_vocabulary:

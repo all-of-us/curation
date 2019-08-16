@@ -71,24 +71,19 @@ class Press:
             if set(columns) & set(row['filter'].split(' ')):
                 dfilters.append(row)
         self.deid_rules['suppress']['FILTERS'] = dfilters
-        pass
-    def get(self,**args):
+
+    def get(self, **args):
         """
         This function will execute an SQL statement and return the meta data for a given table
         """
         return None
+
     def do(self):
         """
         This function actually runs deid and using both rule specifications and application of the rules
         """
         self.update_rules()
         d = deid(pipeline = self.pipeline,rules=self.deid_rules,parent=self)
-        # d.cache = self.deid_rules
-        # d.deid_rules = d.cache 
-
-        # _info = [item for item in self.info['generalize'] if self.tablename in item['table'] ]
-        # _info = {"generalize":_info}
-        # _info['compute'] = [ {"rules":"@compute.id","fields":["research_id"],"table":"person","key_field":"person_id","value_field":"person_id"}]
         _info = self.info
 
         p = d.apply(_info,self.store)
@@ -111,46 +106,34 @@ class Press:
                 _map[col['on']] += [col]
             filter = []
             CONJUNCTION = ' AND ' if self.deid_rules['suppress']['FILTERS'] else ' WHERE '
-            for filter_id in _map :
+            for filter_id in _map:
 
                 _item = _map[filter_id]
-                # if _item['on'] not in filter :
-                    # filter += [_item['on'].replace(' IN ','NOT IN')]
                 filter += [filter_id]
 
-                # _sql = self.to_sql([_item]+ relational_cols ) + CONJUNCTION +_item['on']
-                # _sql = self.to_sql(_item +relational_cols) + CONJUNCTION +filter_id
-                
-                _sql = self.to_sql(_item +relational_cols)  + ' AND ' +filter_id
+                _sql = self.to_sql(_item +relational_cols)  + ' AND ' + filter_id
                 
                 sql += [ _sql]
-                # self.deid_rules['suppress']['FILTERS'] = self.deid_rules['suppress']['FILTERS'][:-1]
-            #-- end of loop
-            # if ' AND ' in CONJUNCTION :
-            #     _rsql = self.to_sql(relational_cols) + ' AND ' + ' AND '.join(filter).replace(' IN ',' NOT IN ')
-            # else:
-            #     _rsql = self.to_sql(relational_cols) + ' WHERE ' + ' '.join(filter).replace(' IN ',' NOT IN ')
+
             _rsql = self.to_sql(relational_cols) + ' AND ' + ' AND '.join(filter).replace(' IN ',' NOT IN ')
+            _rsql = _rsql.replace(' exists ', ' NOT EXISTS ')
+            _rsql = _rsql.replace(' not NOT ', ' NOT ')
             #
             # @TODO: filters may need to be adjusted (add a conditional statement)
             #
 
-            # _rsql = _rsql +" AND "+ " AND ".join(filter).replace(' IN ',' NOT IN ')
             sql += [_rsql]
             sql = "\nUNION ALL\n".join(sql)
+            sql = sql.replace(':idataset', self.idataset)
 
-        # fields = self.get(limit  = 1).columns.tolist()
-
-        if 'debug' in self.action :
+        if 'debug' in self.action:
             self.debug(p)
         else:
+            sql_filepath = os.path.join(self.logpath, self.idataset, self.tablename + '.sql')
+            with open(sql_filepath, 'w') as sql_file:
+                sql_file.write(sql)
 
-            f = open(os.sep.join([self.logpath,self.idataset,self.tablename+".sql"]),'w')
-            f.write(sql)
-            f.close()
-            
-
-            if 'submit' in self.action :
+            if 'submit' in self.action:
                 self.submit(sql)
             if 'simulate' in self.action:
                 #
@@ -158,10 +141,11 @@ class Press:
                 self.simulate(p)
 
     def get_tablename(self):
-        return self.idataset+"."+self.tablename if self.idataset else self.tablename
+        return self.idataset + "." + self.tablename if self.idataset else self.tablename
+
     def debug(self,info):
-        TABLE_NAME = self.idataset+"."+self.tablename
-        for row in info :
+        TABLE_NAME = self.idataset + "." + self.tablename
+        for row in info:
             print()
             print(row['label'], not row['apply'])
             print()
@@ -293,31 +277,28 @@ class Press:
                 name = row['name']
 
                 if id not in row['label'] or name not in fields:
-                    
                     continue
-                # p[name] = row['apply']
+
                 index = fields.index(name)
                 fields[index] = row['apply']
                 self.log(module='to_sql',field=name,sql=row['apply'])
-                # print (row['on'])
 
-        # other_fields = list( set(fields) - set(p.keys()) )
 
-        # SQL = ['SELECT', ",".join(p.values() + other_fields),'FROM ',TABLE_NAME]
-        SQL = ['SELECT', ",".join(fields),'FROM ',TABLE_NAME]
+        SQL = ['SELECT', ",".join(fields), 'FROM ', TABLE_NAME]
 
         if 'suppress' in self.deid_rules and 'FILTERS' in self.deid_rules['suppress']:
             FILTERS = self.deid_rules['suppress']['FILTERS']
-            if FILTERS :
+            if FILTERS:
                 SQL += ['WHERE']
-            for row in FILTERS :
-                if not (set(columns) & set(row['filter'].split(' '))) :
+            for row in FILTERS:
+                if not (set(columns) & set(row['filter'].split(' '))):
                     continue
+
                 SQL += [row['filter']]
-                if FILTERS.index(row) < len(FILTERS) - 1 :
+                if FILTERS.index(row) < len(FILTERS) - 1:
                     SQL += ['AND']
         
-        return '\t'.join(SQL).replace(":idataset",self.idataset)
+        return '\t'.join(SQL).replace(":idataset", self.idataset)
 
 
 
