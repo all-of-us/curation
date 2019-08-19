@@ -25,6 +25,7 @@ import validation.achilles_heel as achilles_heel
 import validation.ehr_union as ehr_union
 import validation.export as export
 import validation.participants.identity_match as matching
+import cdr_cleaner.key_rotation as key_rotation
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from tools import retract_data_bq
 
@@ -856,6 +857,15 @@ def write_sites_pii_validation_files():
     return consts.SITES_VALIDATION_REPORT_SUCCESS
 
 
+@api_util.auth_required_cron
+def remove_expired_keys():
+
+    project = bq_utils.app_identity.get_application_id()
+    key_rotation.delete_keys_for_project(project)
+
+    return 'remove-expired-keys-complete'
+
+
 app.add_url_rule(
     consts.PREFIX + 'ValidateAllHpoFiles',
     endpoint='validate_all_hpos',
@@ -908,4 +918,10 @@ app.add_url_rule(
     consts.PREFIX + 'RetractPids',
     endpoint='run_retraction_cron',
     view_func=run_retraction_cron,
+    methods=['GET'])
+
+app.add_url_rule(
+    consts.PREFIX + 'ServiceAccountKeyRotation',
+    endpoint='remove_expired_keys',
+    view_func=remove_expired_keys,
     methods=['GET'])
