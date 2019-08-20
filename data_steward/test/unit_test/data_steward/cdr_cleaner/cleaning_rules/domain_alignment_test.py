@@ -196,16 +196,20 @@ class DomainAlignmentTest(unittest.TestCase):
         expected_query = domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(project_id=self.project_id,
                                                                                      dataset_id=self.dataset_id,
                                                                                      src_table=self.condition_table,
-                                                                                     src_id=self.condition_occurrence_id,
-                                                                                     src_domain_id_field=self.condition_occurrence_id)
+                                                                                     src_id=self.
+                                                                                     condition_occurrence_id,
+                                                                                     src_domain_id_field=self.
+                                                                                     condition_occurrence_id)
 
         expected_query += domain_alignment.UNION_ALL
 
         expected_query += domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(project_id=self.project_id,
                                                                                       dataset_id=self.dataset_id,
                                                                                       src_table=self.procedure_table,
-                                                                                      src_id=self.procedure_occurrence_id,
-                                                                                      src_domain_id_field=self.procedure_occurrence_id)
+                                                                                      src_id=self.
+                                                                                      procedure_occurrence_id,
+                                                                                      src_domain_id_field=self.
+                                                                                      procedure_occurrence_id)
 
         actual_query = domain_alignment.parse_domain_mapping_query_for_excluded_records(self.project_id,
                                                                                         self.dataset_id)

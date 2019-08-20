@@ -185,9 +185,9 @@ def get_mapping_table_update_queries(project_id, dataset_id):
 def parse_src_concept_id_update_query(project_id, dataset_id, table_name):
     """
 
-    This function goes into list of fields of particular table and find out the fields which match a specified conditions,
-    if found they will be added to a dictionary along with the field which needs to be joined on and this dictionare is
-    used to update the columns for query select statement and returns the updated query.
+    This function goes into list of fields of particular table and find out the fields which match a specified
+    conditions, if found they will be added to a dictionary along with the field which needs to be joined on and this
+    dictionary is used to update the columns for query select statement and returns the updated query.
 
     :param project_id: the project_id in which the query is run
     :param dataset_id: the dataset_id in which the query is run
@@ -270,7 +270,7 @@ def parse_src_concept_id_logging_query(project_id, dataset_id, domain_table):
     :param domain_table: name of the domain_table for which a query needs to be generated.
     :return:
     """
-    dom_concept_id = resources.get_domain_source_concept_id(domain_table)
+    dom_concept_id = resources.get_domain_concept_id(domain_table)
     dom_src_concept_id = resources.get_domain_source_concept_id(domain_table)
 
     return SRC_CONCEPT_ID_MAPPING_QUERY.format(table_name=domain_table,
