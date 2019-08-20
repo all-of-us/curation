@@ -1,5 +1,5 @@
 from datetime import datetime
-from google.oauth2 import service_account
+from oauth2client.client import GoogleCredentials
 import googleapiclient.discovery
 import logging
 import os
@@ -8,9 +8,7 @@ LOGGER = logging.getLogger(__name__)
 
 KEY_VALID_LENGTH = 180
 
-credentials = service_account.Credentials.from_service_account_file(
-    filename=os.environ['GOOGLE_APPLICATION_CREDENTIALS'],
-    scopes=['https://www.googleapis.com/auth/cloud-platform'])
+credentials = GoogleCredentials.get_application_default()
 
 service = googleapiclient.discovery.build(
     'iam', 'v1', credentials=credentials)
@@ -42,11 +40,12 @@ def is_key_expired(_key):
     return delta.days > KEY_VALID_LENGTH
 
 
-def delete_key(full_key_name):
+def delete_key(_key):
     """Deletes a service account key."""
+    full_key_name = _key['id']
     try:
         service.projects().serviceAccounts().keys().delete(name=full_key_name).execute()
-        LOGGER.info('{key} is deleted'.format(full_key_name))
+        LOGGER.info('{full_key_name} is deleted'.format(full_key_name=full_key_name))
     except (
             googleapiclient.errors.HttpError):
         LOGGER.exception(
@@ -65,7 +64,3 @@ def delete_keys_for_project(project_id):
         for key in list_key_for_service_account(_service_account['email']):
             if is_key_expired(key):
                 delete_key(key)
-
-
-if __name__ == '__main__':
-    pass
