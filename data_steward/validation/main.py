@@ -26,7 +26,7 @@ import validation.ehr_union as ehr_union
 import validation.export as export
 import validation.participants.identity_match as matching
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
-from tools import retract_data_bq
+from tools import retract_data_bq, retract_data_gcs
 
 UNKNOWN_FILE = 'Unknown file'
 BQ_LOAD_RETRY_COUNT = 7
@@ -818,6 +818,11 @@ def run_retraction_cron():
     logging.info('Running retraction on person_ids')
     retract_data_bq.run_retraction(project_id, person_ids, hpo_id, deid_flag=False)
     logging.info('Completed retraction on person_ids')
+    bucket = gcs_utils.get_drc_bucket()
+    hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+    logging.info('Running retraction from bucket folders')
+    retract_data_gcs.run_retraction(person_ids, bucket, hpo_id, hpo_bucket, folder=None, force_flag=True)
+    logging.info('Completed retraction from bucket folders')
     return 'retraction-complete'
 
 
