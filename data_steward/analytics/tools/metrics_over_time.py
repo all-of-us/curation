@@ -437,7 +437,7 @@ def generate_hpo_id_col(dataframes):
     in_all_sheets = [row for row in in_all_sheets if isinstance(row, str)]
 
     # determining rows in some (but not all) of the dataframes
-    for df_num, df in enumerate(dataframes):
+    for _, df in enumerate(dataframes):
         hpo_id_col_sheet = df[hpo_col_name].values
         selective = set(in_all_sheets) ^ set(hpo_id_col_sheet)
         for row in selective:
