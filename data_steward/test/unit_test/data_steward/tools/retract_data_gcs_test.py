@@ -1,6 +1,5 @@
 import unittest
 
-import mock
 from google.appengine.ext import testbed
 
 import gcs_utils
