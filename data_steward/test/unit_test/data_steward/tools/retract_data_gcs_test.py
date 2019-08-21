@@ -62,13 +62,12 @@ class RetractDataGcsTest(unittest.TestCase):
             test_util.write_cloud_file(self.bucket, file_path, prefix=folder_prefix_1)
             test_util.write_cloud_file(self.bucket, file_path, prefix=folder_prefix_2)
 
-        with mock.patch('__builtin__.raw_input', return_value='Y') as _raw_input:
-            retract_result = rd.run_retraction(self.skip_pids,
-                                               self.bucket,
-                                               self.hpo_id,
-                                               self.site_bucket,
-                                               folder=None,
-                                               force_flag=True)
+        retract_result = rd.run_retraction(self.skip_pids,
+                                           self.bucket,
+                                           self.hpo_id,
+                                           self.site_bucket,
+                                           folder=None,
+                                           force_flag=True)
 
         total_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
@@ -113,13 +112,12 @@ class RetractDataGcsTest(unittest.TestCase):
             test_util.write_cloud_file(self.bucket, file_path, prefix=folder_prefix_1)
             test_util.write_cloud_file(self.bucket, file_path, prefix=folder_prefix_2)
 
-        with mock.patch('__builtin__.raw_input', return_value='Y') as _raw_input:
-            retract_result = rd.run_retraction(self.pids,
-                                               self.bucket,
-                                               self.hpo_id,
-                                               self.site_bucket,
-                                               folder=None,
-                                               force_flag=True)
+        retract_result = rd.run_retraction(self.pids,
+                                           self.bucket,
+                                           self.hpo_id,
+                                           self.site_bucket,
+                                           folder=None,
+                                           force_flag=True)
 
         total_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:

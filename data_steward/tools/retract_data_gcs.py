@@ -6,8 +6,8 @@ import logging
 
 import common
 import gcs_utils
+import resources
 import retract_data_bq
-from validation import main as val
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction from buckets logger')
@@ -47,8 +47,7 @@ def run_retraction(pids, bucket, hpo_id, site_bucket, folder, force_flag):
             return result_dict
 
     logger.debug("Retracting data from the following folders:")
-    for folder_prefix in to_process_folder_list:
-        logger.debug(bucket+'/'+folder_prefix)
+    logger.debug([bucket+'/'+folder_prefix for folder_prefix in to_process_folder_list])
 
     for folder_prefix in to_process_folder_list:
         logger.debug('Processing gs://%s/%s' % (bucket, folder_prefix))
@@ -60,15 +59,20 @@ def run_retraction(pids, bucket, hpo_id, site_bucket, folder, force_flag):
                         if item['name'].startswith(folder_prefix)]
         for item in folder_items:
             # Only retract from CDM or PII files
-            if val._is_cdm_file(item) or val._is_pii_file(item):
+            item = item.lower()
+            if item in resources.CDM_FILES or item in common.PII_FILES:
                 found_files.append(item)
 
         logger.debug('Found the following files to retract data from:')
-        for file_name in found_files:
-            logger.debug(bucket + '/' + folder_prefix + file_name)
+        logger.debug([bucket + '/' + folder_prefix + file_name for file_name in found_files])
 
         logger.debug("Proceed?")
-        response = get_response()
+        if force_flag:
+            logger.debug("Attempting to force retract for folder %s in bucket %s" % (folder_prefix, bucket))
+            response = "Y"
+        else:
+            # Make sure user types Y to proceed
+            response = get_response()
         if response == "Y":
             folder_upload_output = retract(pids, bucket, found_files, folder_prefix, force_flag)
             result_dict[folder_prefix] = folder_upload_output
