@@ -572,12 +572,11 @@ def _compare_genders(
         rdr_gender = pii_genders.get(person_id, '')
         ehr_gender = consts.SEX_CONCEPT_IDS.get(ehr_gender, '')
 
-        rdr_gender = rdr_gender.lower()
-        ehr_gender = ehr_gender.lower()
-
         if rdr_gender is None or ehr_gender is None:
             match_str = consts.MISSING
         else:
+            rdr_gender = rdr_gender.lower()
+            ehr_gender = ehr_gender.lower()
             match_str = consts.MATCH if rdr_gender == ehr_gender else consts.MISMATCH
 
         match_values[person_id] = match_str

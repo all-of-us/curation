@@ -112,7 +112,7 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
             if exists == value:
                 pass
             else:
-                LOGGER.error("Trying to reset value for person_id\t%s.")
+                LOGGER.error("Trying to reset value for person_id\t%s.", person_id)
 
     return result_dict
 
@@ -166,7 +166,7 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
             if exists == value:
                 pass
             else:
-                LOGGER.error("Trying to reset value for person_id\t%s.")
+                LOGGER.error("Trying to reset value for person_id\t%s.", person_id)
 
     return result_dict
 
