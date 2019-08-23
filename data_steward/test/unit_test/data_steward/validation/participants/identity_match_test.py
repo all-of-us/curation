@@ -26,8 +26,20 @@ class IdentityMatchTest(unittest.TestCase):
         self.dest_dataset = 'baz{}'.format(self.date_string)
         self.pii_dataset = 'foo{}'.format(self.date_string)
         self.rdr_dataset = 'bar{}'.format(self.date_string)
-        self.site_list = ['bogus-site', 'awesome-site']
-        self.bucket_ids = ['aou-bogus', 'aou-awesome']
+        self.site_list = ['bogus-site', 'awesome-site', 'awesome-2']
+        self.bucket_ids = ['aou-bogus', 'aou-awesome', 'aou-awe2']
+        self.dataset_contents = [
+            'awesome-2' + consts.PII_NAME_TABLE,
+            'awesome-2' + consts.PII_EMAIL_TABLE,
+            'awesome-2' + consts.PII_PHONE_TABLE,
+            'awesome-2' + consts.PII_ADDRESS_TABLE,
+            'awesome-2' + consts.EHR_PERSON_TABLE_SUFFIX,
+            'awesome-site' + consts.PII_NAME_TABLE,
+            'awesome-site' + consts.PII_EMAIL_TABLE,
+            'awesome-site' + consts.PII_PHONE_TABLE,
+            'awesome-site' + consts.PII_ADDRESS_TABLE,
+            'awesome-site' + consts.EHR_PERSON_TABLE_SUFFIX,
+        ]
         self.internal_bucket_id = 'fantastic-internal'
         self.pid = 8888
         self.participant_info = {
@@ -46,6 +58,13 @@ class IdentityMatchTest(unittest.TestCase):
             'ehr_birthdate': '1990-01-01 00:00:00+00',
             'rdr_birthdate': '1990-01-01'
         }
+
+        mock_list_ehr_tables = patch(
+            'validation.participants.identity_match.bq_utils.list_dataset_contents'
+        )
+        self.mock_ehr_tables = mock_list_ehr_tables.start()
+        self.mock_ehr_tables.return_value = self.dataset_contents
+        self.addCleanup(mock_list_ehr_tables.stop)
 
         mock_dest_dataset_patcher = patch(
             'validation.participants.identity_match.bq_utils.create_dataset'
@@ -241,11 +260,11 @@ class IdentityMatchTest(unittest.TestCase):
         num_sites = len(self.site_list)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
-        self.assertEqual(self.mock_ehr_person.call_count, num_sites * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, num_sites * 12)
-        self.assertEqual(self.mock_pii_values.call_count, num_sites * 5)
-        self.assertEqual(self.mock_table_append.call_count, num_sites * 12)
-        self.assertEqual(self.mock_location_pii.call_count, num_sites * 5)
+        self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
+        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 5)
         self.assertEqual(self.mock_merge_fields.call_count, num_sites)
         self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
         self.assertEqual(self.mock_change_nulls.call_count, num_sites)
@@ -295,11 +314,11 @@ class IdentityMatchTest(unittest.TestCase):
         num_sites = len(self.site_list)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
-        self.assertEqual(self.mock_ehr_person.call_count, num_sites * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, num_sites * 12)
-        self.assertEqual(self.mock_pii_values.call_count, num_sites * 5)
-        self.assertEqual(self.mock_table_append.call_count, num_sites * 10)
-        self.assertEqual(self.mock_location_pii.call_count, num_sites * 5)
+        self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
+        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 10)
+        self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 5)
         self.assertEqual(self.mock_merge_fields.call_count, num_sites)
         self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
         self.assertEqual(self.mock_change_nulls.call_count, num_sites)
@@ -351,11 +370,11 @@ class IdentityMatchTest(unittest.TestCase):
         num_sites = len(self.site_list)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
-        self.assertEqual(self.mock_ehr_person.call_count, num_sites * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, num_sites * 12)
-        self.assertEqual(self.mock_pii_values.call_count, num_sites * 5)
-        self.assertEqual(self.mock_table_append.call_count, num_sites * 12)
-        self.assertEqual(self.mock_location_pii.call_count, num_sites * 5)
+        self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
+        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 5)
         self.assertEqual(self.mock_merge_fields.call_count, num_sites)
         self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
         self.assertEqual(self.mock_change_nulls.call_count, num_sites)
@@ -405,11 +424,11 @@ class IdentityMatchTest(unittest.TestCase):
         num_sites = len(self.site_list)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
-        self.assertEqual(self.mock_ehr_person.call_count, num_sites * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, num_sites * 12)
-        self.assertEqual(self.mock_pii_values.call_count, num_sites * 5)
-        self.assertEqual(self.mock_table_append.call_count, num_sites * 12)
-        self.assertEqual(self.mock_location_pii.call_count, num_sites * 5)
+        self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
+        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 5)
         self.assertEqual(self.mock_merge_fields.call_count, num_sites)
         self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
         self.assertEqual(self.mock_change_nulls.call_count, num_sites)
@@ -459,11 +478,11 @@ class IdentityMatchTest(unittest.TestCase):
         num_sites = len(self.site_list)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
-        self.assertEqual(self.mock_ehr_person.call_count, num_sites * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, num_sites * 12)
-        self.assertEqual(self.mock_pii_values.call_count, num_sites * 5)
-        self.assertEqual(self.mock_table_append.call_count, num_sites * 7)
-        self.assertEqual(self.mock_location_pii.call_count, num_sites * 4)
+        self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
+        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 7)
+        self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 4)
         self.assertEqual(self.mock_merge_fields.call_count, num_sites)
         self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
         self.assertEqual(self.mock_change_nulls.call_count, num_sites)
@@ -513,11 +532,11 @@ class IdentityMatchTest(unittest.TestCase):
         num_sites = len(self.site_list)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
-        self.assertEqual(self.mock_ehr_person.call_count, num_sites * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, num_sites * 12)
-        self.assertEqual(self.mock_pii_values.call_count, num_sites * 5)
-        self.assertEqual(self.mock_table_append.call_count, num_sites * 7)
-        self.assertEqual(self.mock_location_pii.call_count, num_sites * 5)
+        self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
+        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 7)
+        self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 5)
         self.assertEqual(self.mock_merge_fields.call_count, num_sites)
         self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
         self.assertEqual(self.mock_change_nulls.call_count, num_sites)
@@ -542,6 +561,7 @@ class IdentityMatchTest(unittest.TestCase):
         expected_report_calls = [
             call(self.project, self.dest_dataset, [self.site_list[0]], self.bucket_ids[0], site_filename),
             call(self.project, self.dest_dataset, [self.site_list[1]], self.bucket_ids[1], site_filename),
+            call(self.project, self.dest_dataset, [self.site_list[2]], self.bucket_ids[2], site_filename),
         ]
         self.assertEqual(self.mock_validation_report.mock_calls, expected_report_calls)
 
@@ -563,6 +583,7 @@ class IdentityMatchTest(unittest.TestCase):
         expected_report_calls = [
             call(self.project, self.dest_dataset, [self.site_list[0]], self.bucket_ids[0], site_filename),
             call(self.project, self.dest_dataset, [self.site_list[1]], self.bucket_ids[1], site_filename),
+            call(self.project, self.dest_dataset, [self.site_list[2]], self.bucket_ids[2], site_filename),
         ]
         self.assertEqual(self.mock_validation_report.mock_calls, expected_report_calls)
 

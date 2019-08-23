@@ -51,7 +51,7 @@ class ReadersTest(unittest.TestCase):
                     project='project-foo',
                     dataset='rdr-foo',
                     table=consts.OBSERVATION_TABLE,
-                    pii_list=', '.join(consts.PII_CODES_LIST)
+                    pii_list=','.join(consts.PII_CODES_LIST)
                 ),
                 destination_dataset_id='destination-bar',
                 destination_table_id=consts.ID_MATCH_TABLE,
