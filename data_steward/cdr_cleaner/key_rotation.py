@@ -2,7 +2,6 @@ from datetime import datetime
 from oauth2client.client import GoogleCredentials
 import googleapiclient.discovery
 import logging
-import os
 
 LOGGER = logging.getLogger(__name__)
 
