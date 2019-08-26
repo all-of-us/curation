@@ -1,8 +1,48 @@
+"""
+## Purpose
+Given a CDM dataset, ensure the "primary" concept fields (e.g. condition_occurrence.condition_concept_id) contain
+standard concept_ids (based on vocabulary in same dataset) in the tables in DOMAIN_TABLE_NAMES.
+
+## Overview
+For all primary concept fields in domain tables being processed we do the following:
+If the concept id is 0, set it to the source concept id.
+If the associated concept.standard_concept='S', keep it.
+Otherwise, replace it with the concept having 'Maps to' relationship in concept_relationship.
+If a standard concept mapping to the field cannot be found, find a standard concept associated with the source concept.
+If a standard concept cannot be found to either, we keep the original concept
+
+## Steps
+As a cleaning rule, this module generates a list of queries to be run, but there are three main steps:
+ 1) Create an intermediate table _logging_standard_concept_id_replacement which describes, for each row in each domain
+    table, what action is to be taken.
+ 2) Update the domain tables
+ 3) Update the mapping tables
+
+## One to Many Standard Concepts
+Some concepts map to multiple standard concepts. In these cases, we create multiple rows in the domain table.
+For example, we may have condition_occurrence records whose condition_concept_id is
+
+  19934 "Person boarding or alighting a pedal cycle injured in collision with fixed or stationary object"
+
+which maps to the three standard concepts:
+
+  4053428 "Accident while boarding or alighting from motor vehicle on road"
+  438921 "Collision between pedal cycle and fixed object"
+  433099 "Victim, cyclist in vehicular AND/OR traffic accident"
+
+In this case we remove the original row and add three records having the three standard concept ids above. New ids
+are generated for these records, and, during the last step, the mapping tables are updated.
+
+TODO account for "non-primary" concept fields
+TODO when the time comes, include care_site, death, note, provider, specimen
+"""
+
 import bq_utils
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
 from validation.ehr_union import mapping_table_for
+
 
 DOMAIN_TABLE_NAMES = [
     'condition_occurrence',
@@ -132,11 +172,10 @@ UPDATE_MAPPING_TABLES_QUERY = (
 def parse_mapping_table_update_query(project_id, dataset_id, table_name, mapping_table_name):
     """
 
-    This function goes into list of fields of particular table and find out the fields which match a specified conditions,
-    if found they will be updated as and added to the query select statement
+    Fill in mapping tables query so it either gets dest_id from the logging table or the domain table
 
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
+    :param project_id: identifies the project containing the dataset
+    :param dataset_id: identifies the dataset containing the OMOP data
     :param table_name: name of the domain table for which the query needs to be parsed
     :param mapping_table_name: name of the mapping_table for which the query needs to be parsed
     :return:
@@ -160,12 +199,10 @@ def parse_mapping_table_update_query(project_id, dataset_id, table_name, mapping
 
 def get_mapping_table_update_queries(project_id, dataset_id):
     """
+    Generates a list of query dicts for adding newly generated rows to corresponding mapping_tables
 
-    This function generates a list of query dicts for adding newly generated domain_table_ids to corresponding
-    mapping_tables.
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
+    :param project_id: identifies the project containing the dataset
+    :param dataset_id: identifies the dataset containing the OMOP data
     :return: list of query dicts for updating mapping_tables
     """
     queries = []
@@ -184,14 +221,11 @@ def get_mapping_table_update_queries(project_id, dataset_id):
 
 def parse_src_concept_id_update_query(project_id, dataset_id, table_name):
     """
+    Fill in template query used to generate updated domain table
 
-    This function goes into list of fields of particular table and find out the fields which match a specified
-    conditions, if found they will be added to a dictionary along with the field which needs to be joined on and this
-    dictionary is used to update the columns for query select statement and returns the updated query.
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :param table_name: Name of a domain table
+    :param project_id: identifies the project containing the dataset
+    :param dataset_id: identifies the dataset containing the OMOP data
+    :param table_name: name of a domain table
     :return: parsed src_concept_id_update query
     """
     fields = [field['name'] for field in resources.fields_for(table_name)]
@@ -220,11 +254,10 @@ def parse_src_concept_id_update_query(project_id, dataset_id, table_name):
 
 def get_src_concept_id_update_queries(project_id, dataset_id):
     """
+    Generates a list of query dicts for replacing the standard concept ids in domain tables
 
-    This function generates a list of query dicts for replacing the standard concept ids in domain tables.
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
+    :param project_id: identifies the project containing the dataset
+    :param dataset_id: identifies the dataset containing the OMOP data
     :return: a list of query dicts for updating the standard_concept_ids
     """
 
@@ -243,11 +276,10 @@ def get_src_concept_id_update_queries(project_id, dataset_id):
 
 def parse_duplicate_id_update_query(project_id, dataset_id, domain_table):
     """
-
     Generates a domain_table specific duplicate_id_update_query
 
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
+    :param project_id: identifies the project containing the dataset
+    :param dataset_id: identifies the dataset containing the OMOP data
     :param domain_table: name of the domain_table for which a query needs to be generated.
     :return: a domain_table specific update query
     """
@@ -262,11 +294,10 @@ def parse_duplicate_id_update_query(project_id, dataset_id, domain_table):
 
 def parse_src_concept_id_logging_query(project_id, dataset_id, domain_table):
     """
+    Generates a query for each domain table for _logging_standard_concept_id_replacement
 
-    This function generates a query for each domain for _mapping_standard_concept_id
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
+    :param project_id: identifies the project containing the dataset
+    :param dataset_id: identifies the dataset containing the OMOP data
     :param domain_table: name of the domain_table for which a query needs to be generated.
     :return:
     """
@@ -282,14 +313,13 @@ def parse_src_concept_id_logging_query(project_id, dataset_id, domain_table):
 
 def get_src_concept_id_logging_queries(project_id, dataset_id):
     """
-    This function generates a list of query dicts for creating concept_id mappings in
-    _logging_standard_concept_id_replacement.
+    Creates logging table and generates a list of query dicts for populating it
 
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :return: a list of query dicts tto gather logging records
+    :param project_id: identifies the project containing the dataset
+    :param dataset_id: identifies the dataset containing the OMOP data
+    :return: a list of query dicts to gather logging records
     """
-    # Create _mapping_domain_alignment
+    # Create _logging_standard_concept_id_replacement
     bq_utils.create_standard_table(SRC_CONCEPT_ID_TABLE_NAME,
                                    SRC_CONCEPT_ID_TABLE_NAME,
                                    drop_existing=True,
@@ -306,6 +336,7 @@ def get_src_concept_id_logging_queries(project_id, dataset_id):
         query[cdr_consts.DESTINATION_DATASET] = dataset_id
         queries.append(query)
 
+    # For new rows added as a result of one-to-many standard concepts, we give newly generated rows new ids
     for domain_table in DOMAIN_TABLE_NAMES:
         query = dict()
         query[cdr_consts.QUERY] = parse_duplicate_id_update_query(project_id,
@@ -320,8 +351,8 @@ def get_src_concept_id_logging_queries(project_id, dataset_id):
 def replace_standard_id_in_domain_tables(project_id, dataset_id):
     """
 
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
+    :param project_id: identifies the project containing the dataset
+    :param dataset_id: identifies the dataset containing the OMOP data
     :return: a list of query dicts for replacing standard_concept_ids in domain_tables
     """
     queries_list = []
