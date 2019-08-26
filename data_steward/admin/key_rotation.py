@@ -63,3 +63,11 @@ def delete_keys_for_project(project_id):
         for key in list_key_for_service_account(_service_account['email']):
             if is_key_expired(key):
                 delete_key(key)
+
+
+if __name__ == '__main__':
+    for account in list_service_accounts('aou-res-curation-test'):
+        print(account['email'])
+        for key in list_key_for_service_account(account['email']):
+            print (key)
+        print('\n')

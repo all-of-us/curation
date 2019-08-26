@@ -25,7 +25,7 @@ import validation.achilles_heel as achilles_heel
 import validation.ehr_union as ehr_union
 import validation.export as export
 import validation.participants.identity_match as matching
-import cdr_cleaner.key_rotation as key_rotation
+import admin.key_rotation as key_rotation
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from tools import retract_data_bq
 
