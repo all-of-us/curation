@@ -1,4 +1,5 @@
 concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concept	concept_code	valid_start_date	valid_end_date	invalid_reason
+2000000000	AoU_General	Metadata	Vocabulary	Vocabulary		AOU generated	2017-05-17	2099-12-31	
 2000000001	Another single race	Observation	AoU_General	Answer	S	WhatRaceEthnicity_GeneralizedAnotherRace	2017-05-17	2099-12-31	
 2000000002	Not man or woman or unspecified	Observation	AoU_General	Answer	S	GenderIdentity_GeneralizedNeither	2017-05-17	2099-12-31	
 2000000003	Not straight or unspecified	Observation	AoU_General	Answer	S	SexualOrientation_GeneralizedNotStraight	2017-05-17	2099-12-31	
