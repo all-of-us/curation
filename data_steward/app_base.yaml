@@ -28,3 +28,8 @@ handlers:
     script: validation.main.app
     login: admin
     secure: always
+
+  - url: /.*
+    script: admin.admin_cron_jobs.app
+    login: admin
+    secure: always
