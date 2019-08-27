@@ -44,11 +44,6 @@ class KeyRotationTest(unittest.TestCase):
             'keys': [{'name': 'key-1', 'validBeforeTime': 'beforeTime-1', 'validAfterTime': 'afterTime-1'},
                      {'name': 'key-2', 'validBeforeTime': 'beforeTime-2', 'validAfterTime': 'afterTime-2'}]}
 
-        expected_values = [{'id': 'key-1', 'validBeforeTime': 'beforeTime-1', 'validAfterTime': 'afterTime-1',
-                            'email': 'test-email@test.com'},
-                           {'id': 'key-2', 'validBeforeTime': 'beforeTime-2', 'validAfterTime': 'afterTime-2',
-                            'email': 'test-email@test.com'}]
-
         mock_service_account_key_list = mock_iam_service.return_value.projects.return_value. \
             serviceAccounts.return_value.keys.return_value.list
 
@@ -58,7 +53,7 @@ class KeyRotationTest(unittest.TestCase):
 
         mock_service_account_key_list.assert_called_once_with(name='projects/-/serviceAccounts/' + self.email)
 
-        self.assertItemsEqual(expected_values, actual_values)
+        self.assertItemsEqual(keys['keys'], actual_values)
 
     @mock.patch('datetime.date')
     def test_is_key_expired(self, mock_date):
@@ -71,7 +66,7 @@ class KeyRotationTest(unittest.TestCase):
     @mock.patch('admin.key_rotation.LOGGER')
     @mock.patch('admin.key_rotation.get_iam_service')
     def test_delete_key(self, mock_iam_service, mock_logger):
-        key = {'id': 'key-1'}
+        key = {'name': 'key-1'}
         mock_service_account_key_delete = mock_iam_service.return_value.projects.return_value. \
             serviceAccounts.return_value.keys.return_value.delete
         mock_service_account_key_delete.return_value.execute.side_effect = [dict(), HttpError(mock.Mock(status=404),

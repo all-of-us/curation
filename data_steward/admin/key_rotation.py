@@ -31,15 +31,14 @@ def list_service_accounts(project_id):
 def list_keys_for_service_account(service_account_email):
     """
     List the keys associated with a service account
-
     :param service_account_email identifies the service account
+    :return: a list of key objects
     """
 
     service_keys_per_account = get_iam_service().projects().serviceAccounts().keys().list(
         name='projects/-/serviceAccounts/' + service_account_email).execute()
 
-    return [{'id': _key['name'], 'validAfterTime': _key['validAfterTime'], 'validBeforeTime': _key['validBeforeTime'],
-             'email': service_account_email} for _key in service_keys_per_account['keys']]
+    return service_keys_per_account['keys']
 
 
 def is_key_expired(_key):
@@ -61,7 +60,7 @@ def delete_key(_key):
 
     :param _key: service account key object
     """
-    full_key_name = _key['id']
+    full_key_name = _key['name']
     try:
         get_iam_service().projects().serviceAccounts().keys().delete(name=full_key_name).execute()
         LOGGER.info('{full_key_name} is deleted'.format(full_key_name=full_key_name))
