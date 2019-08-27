@@ -24,12 +24,12 @@ handlers:
     login: admin
     secure: always
 
-  - url: /.*
-    script: validation.main.app
+  - url: /admin/.*
+    script: admin.admin_api.app
     login: admin
     secure: always
 
   - url: /.*
-    script: admin.admin_cron_jobs.app
+    script: validation.main.app
     login: admin
     secure: always

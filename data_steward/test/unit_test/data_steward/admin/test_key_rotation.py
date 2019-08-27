@@ -39,7 +39,7 @@ class KeyRotationTest(unittest.TestCase):
         self.assertItemsEqual(expected_accounts['accounts'], actual_accounts)
 
     @mock.patch('admin.key_rotation.get_iam_service')
-    def test_list_key_for_service_account(self, mock_iam_service):
+    def test_list_keys_for_service_account(self, mock_iam_service):
         keys = {
             'keys': [{'name': 'key-1', 'validBeforeTime': 'beforeTime-1', 'validAfterTime': 'afterTime-1'},
                      {'name': 'key-2', 'validBeforeTime': 'beforeTime-2', 'validAfterTime': 'afterTime-2'}]}
@@ -54,7 +54,7 @@ class KeyRotationTest(unittest.TestCase):
 
         mock_service_account_key_list.return_value.execute.return_value = keys
 
-        actual_values = key_rotation.list_key_for_service_account(self.email)
+        actual_values = key_rotation.list_keys_for_service_account(self.email)
 
         mock_service_account_key_list.assert_called_once_with(name='projects/-/serviceAccounts/' + self.email)
 
@@ -85,28 +85,28 @@ class KeyRotationTest(unittest.TestCase):
 
     @mock.patch('admin.key_rotation.delete_key')
     @mock.patch('admin.key_rotation.is_key_expired')
-    @mock.patch('admin.key_rotation.list_key_for_service_account')
+    @mock.patch('admin.key_rotation.list_keys_for_service_account')
     @mock.patch('admin.key_rotation.list_service_accounts')
     def test_delete_keys_for_project(self, mock_list_service_accounts,
-                                     mock_list_key_for_service_account,
+                                     mock_list_keys_for_service_account,
                                      mock_is_key_expired,
                                      mock_delete_key):
         mock_list_service_accounts.return_value = [{'email': 'test-email@test.com'},
                                                    {'email': 'test-2-email@test.com'}]
-        mock_list_key_for_service_account.side_effect = [[{'id': 'key-1'},
+        mock_list_keys_for_service_account.side_effect = [[{'id': 'key-1'},
                                                           {'id': 'key-2'}],
                                                          [{'id': 'key-3'},
                                                           {'id': 'key-4'}]]
 
         mock_is_key_expired.side_effect = [True, False, True, False]
 
-        key_rotation.delete_keys_for_project(self.project_id)
+        key_rotation.delete_expired_keys(self.project_id)
 
         mock_list_service_accounts.assert_called_once_with(self.project_id)
 
-        mock_list_key_for_service_account.assert_any_call('test-email@test.com')
+        mock_list_keys_for_service_account.assert_any_call('test-email@test.com')
 
-        mock_list_key_for_service_account.assert_any_call('test-2-email@test.com')
+        mock_list_keys_for_service_account.assert_any_call('test-2-email@test.com')
 
         mock_is_key_expired.assert_any_call({'id': 'key-1'})
         mock_is_key_expired.assert_any_call({'id': 'key-2'})
