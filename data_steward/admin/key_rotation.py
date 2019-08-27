@@ -1,22 +1,23 @@
 from datetime import datetime
 from oauth2client.client import GoogleCredentials
-import googleapiclient.discovery
+from googleapiclient.errors import HttpError
+import googleapiclient.discovery as discovery
 import logging
 
 LOGGER = logging.getLogger(__name__)
 
 KEY_VALID_LENGTH = 180
 
-credentials = GoogleCredentials.get_application_default()
 
-service = googleapiclient.discovery.build(
-    'iam', 'v1', credentials=credentials)
+def get_iam_service():
+    credentials = GoogleCredentials.get_application_default()
+    return discovery.build('iam', 'v1', credentials=credentials)
 
 
 def list_service_accounts(project_id):
     """Lists all service accounts for the current project."""
 
-    service_accounts_per_project_id = service.projects().serviceAccounts().list(
+    service_accounts_per_project_id = get_iam_service().projects().serviceAccounts().list(
         name='projects/' + project_id).execute()
 
     return service_accounts_per_project_id['accounts']
@@ -25,7 +26,7 @@ def list_service_accounts(project_id):
 def list_key_for_service_account(service_account_email):
     """Lists all service accounts for the current project."""
 
-    service_keys_per_account = service.projects().serviceAccounts().keys().list(
+    service_keys_per_account = get_iam_service().projects().serviceAccounts().keys().list(
         name='projects/-/serviceAccounts/' + service_account_email).execute()
 
     return [{'id': _key['name'], 'validAfterTime': _key['validAfterTime'], 'validBeforeTime': _key['validBeforeTime'],
@@ -43,10 +44,10 @@ def delete_key(_key):
     """Deletes a service account key."""
     full_key_name = _key['id']
     try:
-        service.projects().serviceAccounts().keys().delete(name=full_key_name).execute()
+        get_iam_service().projects().serviceAccounts().keys().delete(name=full_key_name).execute()
         LOGGER.info('{full_key_name} is deleted'.format(full_key_name=full_key_name))
     except (
-            googleapiclient.errors.HttpError):
+            HttpError):
         LOGGER.exception(
             "Unable to delete the key:\t%s",
             full_key_name
@@ -67,7 +68,8 @@ def delete_keys_for_project(project_id):
 
 if __name__ == '__main__':
     for account in list_service_accounts('aou-res-curation-test'):
-        print(account['email'])
         for key in list_key_for_service_account(account['email']):
-            print (key)
-        print('\n')
+            is_key_expired(key)
+            break
+        break
+        # print('\n')
