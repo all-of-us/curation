@@ -4,38 +4,39 @@ DC - 399
 De-id for registered tier removes all free text fields. We are re-populating those fields with the concept_code
 value for the concept_id where possible to improve the clarity/readability of the resource.
 
-list of free text source_value fields which will be re-populated with concept_code.
+list of free text source_value fields which will be re-populated with concept_code using concept_ids from the columns
+mentioned below.
 
-visit_occurrence - [visit_source_value,
-                    admitting_source_value,
-                    discharge_to_source_value]
-device_exposure - [device_source_value]
-measurement - [measurement_source_value,
-               unit_source_value,
-               value_source_value]
-death - [cause_source_value]
-procedure_occurrence - [procedure_source_value,
-                        qualifier_source_value]
-provider - [specialty_source_value,
-            gender_source_value]
-specimen - [specimen_source_value,
-            unit_source_value,
-            anatomic_site_source_value,
-            disease_status_source_value]
-condition_occurrence - [condition_source_value,
-        `               condition_status_source_value]
-care_site - [place_of_service_source_value]
-procedure_cost - [revenue_code_source_value]
-observation - [value_as_string,
-               observation_source_value,
-               unit_source_value,
-               qualifier_source_value,
-               value_source_value]
-person - [gender_source_value,
-          race_source_value,
-          ethnicity_source_value]
-drug_exposure - [drug_source_value,
-                 route_source_value]
+visit_occurrence - [visit_source_value : visit_source_concept_id,
+                    admitting_source_value : admitting_source_concept_id,
+                    discharge_to_source_value : discharge_to_concept_id]
+device_exposure - [device_source_value : device_source_concept_id]
+measurement - [measurement_source_value : measurement_source_concept_id,
+               unit_source_value : unit_concept_id,
+               value_source_value : value_as_concept_id]
+death - [cause_source_value : cause_source_concept_id]
+procedure_occurrence - [procedure_source_value : procedure_source_concept_id,
+                        qualifier_source_value : modifier_concept_id]
+provider - [specialty_source_value : specialty_source_concept_id,
+            gender_source_value : gender_source_concept_id]
+specimen - [specimen_source_value : specimen_concept_id,
+            unit_source_value : unit_concept_id ,
+            anatomic_site_source_value : anatomic_site_concept_id,
+            disease_status_source_value : disease_status_concept_id]
+condition_occurrence - [condition_source_value : condition_source_concept_id,
+        `               condition_status_source_value : condition_status_concept_id]
+care_site - [place_of_service_source_value : place_of_service_concept_id]
+procedure_cost - [revenue_code_source_value : revenue_code_concept_id]
+observation - [value_as_string : value_as_concept_id,
+               observation_source_value : observation_source_concept_id,
+               unit_source_value : unit_concept_id,
+               qualifier_source_value : qualifier_concept_id,
+               value_source_value : value_source_concept_id]
+person - [gender_source_value : gender_source_concept_id,
+          race_source_value : race_source_concept_id,
+          ethnicity_source_value : ethnicity_source_concept_id]
+drug_exposure - [drug_source_value : drug_source_concept_id,
+                 route_source_value : route_concept_id]
 
 Following listed fields are the ones which are not being re-populated at this point of time because no corresponding
 concept_id field is available
@@ -47,9 +48,9 @@ drug_exposure : dose_unit_source_value
 note : note_source_value
 """
 
-import resources
-import constants.cdr_cleaner.clean_cdr as cdr_consts
 import constants.bq_utils as bq_consts
+import constants.cdr_cleaner.clean_cdr as cdr_consts
+import resources
 
 LEFT_JOIN = (
     'LEFT JOIN `{project}.{dataset}.concept` as {prefix} '
@@ -78,35 +79,30 @@ def get_fields_dict(table_name, fields):
     for field in fields:
         prefix_counter += 1
         # Check if the field is _source_value field and has corresponding _source_concept_id field
-        # using string comprehension to remove value from source_value to source_concept_id
         if '_source_value' in field and field[:-5] + 'concept_id' in fields:
             fields_to_replace[field] = {'name': field, 'join_field': field[:-5] + 'concept_id',
-                                        'prefix': field[:3] + '_{prefix}'.format(prefix=prefix_counter)}
+                                        'prefix': field[:3] + '_{counter}'.format(counter=prefix_counter)}
         # Check if the field is _source_value field and has corresponding _concept_id field
         # if _source_concept_id is not available
-        # using string comprehension to remove value from source_value to source_concept_id
         elif '_source_value' in field and field[:-12] + 'concept_id' in fields:
             fields_to_replace[field] = {'name': field, 'join_field': field[:-12] + 'concept_id',
-                                        'prefix': field[:3] + '_{prefix}'.format(prefix=prefix_counter)}
-        # Check if the field is _source_value field and has corresponding _concept_id field
-        # if _source_concept_id is not available
-        # using string comprehension to remove value from source_value to source_concept_id
+                                        'prefix': field[:3] + '_{counter}'.format(counter=prefix_counter)}
+        # if _concept_id is not available
+        # Check if the field is _source_value field and has corresponding _as_concept_id field
         elif '_source_value' in field and field[:-12] + 'as_concept_id' in fields:
             fields_to_replace[field] = {'name': field, 'join_field': field[:-12] + 'as_concept_id',
-                                        'prefix': field[:3] + '_{prefix}'.format(prefix=prefix_counter)}
+                                        'prefix': field[:3] + '_{counter}'.format(counter=prefix_counter)}
         # Check if the field is value_as_string and has corresponding value_as_concept_id field
-        # using string comprehension to remove string from value_as_string and replace with value_as_concept_id
         elif '_as_string' in field and field[:-6] + 'concept_id' in fields:
             fields_to_replace[field] = {'name': field, 'join_field': field[:-6] + 'concept_id',
-                                        'prefix': field[:3] + '_{prefix}'.format(prefix=prefix_counter)}
+                                        'prefix': field[:3] + '_{counter}'.format(counter=prefix_counter)}
         # if the table is procedure_occurrence check if the field is qualifier_Source_value if so.
         # it doesn't have qualifier_concept_id field or qualifier_source_concept_id field in this vocabulary version
         # it is fixed in the later versions. In the mean time we will be using modifier_concept_id
         # as the corresponding id_field
         elif table_name == cdr_consts.PROCEDURE_OCCURRENCE and field == cdr_consts.QUALIFIER_SOURCE_VALUE:
             fields_to_replace[field] = {'name': field, 'join_field': 'modifier_concept_id',
-                                        'prefix': field[:3] + '_{prefix}'.format(prefix=prefix_counter)}
-
+                                        'prefix': field[:3] + '_{counter}'.format(counter=prefix_counter)}
     return fields_to_replace
 
 
@@ -123,8 +119,8 @@ def get_modified_columns(fields, fields_to_replace):
     col_exprs = []
     for field in fields:
         if field in fields_to_replace:
-            col_expr = '{x}.concept_code as {y}'.format(x=fields_to_replace[field]['prefix'],
-                                                        y=fields_to_replace[field]['name'])
+            col_expr = '{prefix}.concept_code as {name}'.format(prefix=fields_to_replace[field]['prefix'],
+                                                                name=fields_to_replace[field]['name'])
         else:
             col_expr = field
         col_exprs.append(col_expr)
