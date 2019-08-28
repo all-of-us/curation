@@ -15,7 +15,6 @@ class RetractDataGcsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        super(RetractDataGcsTest, self).setUp()
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_app_identity_stub()
@@ -28,6 +27,8 @@ class RetractDataGcsTest(unittest.TestCase):
         self.site_bucket = 'test_bucket'
         self.folder_1 = '2019-01-01-v1/'
         self.folder_2 = '2019-02-02-v2/'
+        self.folder_prefix_1 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_1
+        self.folder_prefix_2 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_2
         self.pids = [17, 20]
         self.skip_pids = [10, 25]
         self._empty_bucket()
@@ -38,8 +39,8 @@ class RetractDataGcsTest(unittest.TestCase):
             gcs_utils.delete_object(self.bucket, bucket_item['name'])
 
     def test_integration_five_person_data_retraction_skip(self):
-        folder_prefix_1 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_1
-        folder_prefix_2 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_2
+        self.folder_prefix_1 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_1
+        self.folder_prefix_2 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_2
         lines_to_remove = {}
         total_lines_prior = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
@@ -58,8 +59,8 @@ class RetractDataGcsTest(unittest.TestCase):
                         total_lines_prior[file_name] += 1
 
             # write file to cloud for testing
-            test_util.write_cloud_file(self.bucket, file_path, prefix=folder_prefix_1)
-            test_util.write_cloud_file(self.bucket, file_path, prefix=folder_prefix_2)
+            test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_1)
+            test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_2)
 
         retract_result = rd.run_retraction(self.skip_pids,
                                            self.bucket,
@@ -71,7 +72,7 @@ class RetractDataGcsTest(unittest.TestCase):
         total_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
             file_name = file_path.split('/')[-1]
-            actual_result_contents = test_util.read_cloud_file(self.bucket, folder_prefix_1 + file_name)
+            actual_result_contents = test_util.read_cloud_file(self.bucket, self.folder_prefix_1 + file_name)
             # convert to list and remove last list item since it is a newline
             total_lines_post[file_name] = len(actual_result_contents.split('\n')[:-1])
 
@@ -85,11 +86,9 @@ class RetractDataGcsTest(unittest.TestCase):
         for key, val in lines_to_remove.items():
             if val == 0:
                 del lines_to_remove[key]
-        self.assertEqual(len(retract_result[folder_prefix_1]), len(lines_to_remove.keys()))
+        self.assertEqual(len(retract_result[self.folder_prefix_1]), len(lines_to_remove.keys()))
 
     def test_integration_five_person_data_retraction(self):
-        folder_prefix_1 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_1
-        folder_prefix_2 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_2
         lines_to_remove = {}
         total_lines_prior = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
@@ -108,8 +107,8 @@ class RetractDataGcsTest(unittest.TestCase):
                         total_lines_prior[file_name] += 1
 
             # write file to cloud for testing
-            test_util.write_cloud_file(self.bucket, file_path, prefix=folder_prefix_1)
-            test_util.write_cloud_file(self.bucket, file_path, prefix=folder_prefix_2)
+            test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_1)
+            test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_2)
 
         retract_result = rd.run_retraction(self.pids,
                                            self.bucket,
@@ -121,7 +120,7 @@ class RetractDataGcsTest(unittest.TestCase):
         total_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
             file_name = file_path.split('/')[-1]
-            actual_result_contents = test_util.read_cloud_file(self.bucket, folder_prefix_1 + file_name)
+            actual_result_contents = test_util.read_cloud_file(self.bucket, self.folder_prefix_1 + file_name)
             # convert to list and remove last list item since it is a newline
             total_lines_post[file_name] = len(actual_result_contents.split('\n')[:-1])
 
@@ -132,7 +131,7 @@ class RetractDataGcsTest(unittest.TestCase):
                 self.assertEqual(total_lines_prior[key], total_lines_post[key])
 
         # metadata for each updated file is returned
-        self.assertEqual(len(retract_result[folder_prefix_1]), len(lines_to_remove.keys()))
+        self.assertEqual(len(retract_result[self.folder_prefix_1]), len(lines_to_remove.keys()))
 
     def tearDown(self):
         self._empty_bucket()

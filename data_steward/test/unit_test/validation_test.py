@@ -30,7 +30,6 @@ class ValidationTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        super(ValidationTest, self).setUp()
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_app_identity_stub()

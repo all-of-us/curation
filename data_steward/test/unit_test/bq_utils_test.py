@@ -22,10 +22,15 @@ PERSON = 'person'
 
 
 class BqUtilsTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
     EHR_DATASET_ID = bq_utils.get_dataset_id()
 
     def setUp(self):
-        super(BqUtilsTest, self).setUp()
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_app_identity_stub()

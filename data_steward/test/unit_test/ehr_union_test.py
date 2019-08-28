@@ -39,7 +39,6 @@ class EhrUnionTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        super(EhrUnionTest, self).setUp()
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_app_identity_stub()
