@@ -24,6 +24,11 @@ handlers:
     login: admin
     secure: always
 
+  - url: /admin/.*
+    script: admin.admin_api.app
+    login: admin
+    secure: always
+
   - url: /.*
     script: validation.main.app
     login: admin

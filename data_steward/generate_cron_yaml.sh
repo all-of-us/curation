@@ -100,3 +100,11 @@ echo "- description: retract data for specified person_ids" >> ${CRON_YAML}
 echo "  url: /data_steward/v1/RetractPids" >> ${CRON_YAML}
 echo "  schedule: ${YESTERDAY_SCHEDULE_LOWER}" >> ${CRON_YAML}
 echo "  timezone: America/New_York" >> ${CRON_YAML}
+
+## Delete expired service account keys
+echo "" >> ${CRON_YAML}
+echo "# Service Account Key Rotation" >> ${CRON_YAML}
+echo "- description: Remove expired service account keys daily" >> ${CRON_YAML}
+echo "  url: /admin/v1/RemoveExpiredServiceAccountKeys" >> ${CRON_YAML}
+echo "  schedule: every 24 hours" >> ${CRON_YAML}
+echo "  timezone: America/New_York" >> ${CRON_YAML}
