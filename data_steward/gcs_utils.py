@@ -108,8 +108,8 @@ def list_bucket(bucket):
 def list_bucket_prefixes(gcs_path):
     """
     Get metadata for each object within the given GCS path
-    :param gcs_path: full GCS path (e.g. `/<bucket_name>/path/to/person.csv`)
-    :return: list of metadata objects
+    :param gcs_path: GCS path upto folder (e.g. `/<bucket_name>/path/`)
+    :return: list of prefixes (e.g. [`/<bucket_name>/path/a/`, `/<bucket_name>/path/b/`, `/<bucket_name>/path/c/`]
     """
     service = create_service()
     gcs_path_parts = gcs_path.split('/')
