@@ -4,8 +4,6 @@
 # It assuming steps 1-3 are already done via a daily cron job. This script automates 4-7.
 
 ehr_dataset="auto_pipeline_input"
-app_id="aou-res-curation-test"
-vocab_dataset="vocabulary20190423"
 rdr_dataset="test_rdr"
 result_bucket="drc_curation_internal_test"
 
@@ -13,9 +11,9 @@ USAGE="
 Usage: run_curation_pipeline.sh
   --key_file <path to key file>
   --app_id <application id>
+  --vocab_dataset <vocab dataset>
   --deid_config <path to deid config json file>
   [--ehr_dataset <EHR dataset: default is ${ehr_dataset}>]
-  [--vocab_dataset <vocab dataset: default is ${vocab_dataset}>]
   [--rdr_dataset <RDR dataset: default is ${rdr_dataset}>]
   [--result_bucket <Internal bucket: default is ${result_bucket}>]
 "
@@ -35,8 +33,7 @@ while true; do
 done
 
 
-
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${deid_config}" ]]
+if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${deid_config}" ]]
 then
   echo "Specify the key file location, application ID and deid config file. $USAGE"
   exit 1
