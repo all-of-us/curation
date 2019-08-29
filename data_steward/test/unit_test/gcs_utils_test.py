@@ -8,8 +8,13 @@ from test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 
 
 class GcsUtilsTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
     def setUp(self):
-        super(GcsUtilsTest, self).setUp()
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_app_identity_stub()

@@ -43,7 +43,6 @@ import datetime
 import math
 import os
 import sys
-import xlsxwriter
 import pandas as pd
 
 
@@ -192,12 +191,12 @@ def get_comprehensive_tables(dataframes, analytics_type):
     #  different error reports; right now a 'hacky' fix because
     #  of report naming inconsistencies
 
-    for number, sheet in enumerate(dataframes):  # for each date
+    for _, sheet in enumerate(dataframes):  # for each date
         data_info = sheet.iloc[1, :]  # just to get the columns
         column_names = data_info.keys()
 
         if analytics_type in rate_focused_inputs:
-            for col_label, val in data_info.iteritems():
+            for col_label, _ in data_info.iteritems():
                 if col_label[-5:] != '_rate' and \
                    col_label[-7:] != '_rate_y':
                     undocumented_cols.append(col_label)
@@ -451,7 +450,7 @@ def generate_hpo_id_col(dataframes):
     hpo_col_name = 'src_hpo_id'
     selective_rows, total_hpo_id_columns = [], []
 
-    for df_num, df in enumerate(dataframes):
+    for _, df in enumerate(dataframes):
         hpo_id_col_sheet = df[hpo_col_name].values
         total_hpo_id_columns.append(hpo_id_col_sheet)
 
@@ -466,7 +465,7 @@ def generate_hpo_id_col(dataframes):
     in_all_sheets = [row for row in in_all_sheets if isinstance(row, str)]
 
     # determining rows in some (but not all) of the dataframes
-    for df_num, df in enumerate(dataframes):
+    for _, df in enumerate(dataframes):
         hpo_id_col_sheet = df[hpo_col_name].values
         selective = set(in_all_sheets) ^ set(hpo_id_col_sheet)
         for row in selective:
@@ -708,7 +707,7 @@ def generate_table_dfs(sorted_names, sorted_tables,
     total_dfs = []
     num_tables = len(sorted_tables)
 
-    for new_sheet in range(num_tables):
+    for _ in range(num_tables):
         new_df = pd.DataFrame({'hpo_ids': sorted_names})
         total_dfs.append(new_df)
 
@@ -880,7 +879,7 @@ def generate_hpo_contribution(file_names, contribution_type):
         date = file_names[number][:-num_chars_to_chop]
         total_per_sheet = {}
 
-        for table_num, table_type in enumerate(valid_cols):  # for each table
+        for _, table_type in enumerate(valid_cols):  # for each table
             rows_for_table = []
 
             for hpo in hpo_id_col:  # follows alphabetical order
@@ -916,11 +915,9 @@ def generate_hpo_contribution(file_names, contribution_type):
     return hpo_contributions_by_date, valid_cols
 
 
-"""
-This part of the script deals with making sheets where the
-    a. SITES are SHEETS
-    b. TABLES are ROWS
-"""
+# This part of the script deals with making sheets where the
+#     a. SITES are SHEETS
+#     b. TABLES are ROWS
 
 
 def generate_site_dfs(sorted_names, sorted_tables,
@@ -973,7 +970,7 @@ def generate_site_dfs(sorted_names, sorted_tables,
     tables_only, hpo_names_only = sorted_tables[:-1], sorted_names[:-1]
 
     # df generation for each HPO and 'total'
-    for new_sheet in range(len(hpo_names_only)):
+    for _ in range(len(hpo_names_only)):
         new_df = pd.DataFrame({'table_type': sorted_tables})
         total_dfs.append(new_df)
 

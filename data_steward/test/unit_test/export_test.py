@@ -15,9 +15,11 @@ BQ_TIMEOUT_RETRIES = 3
 
 
 class ExportTest(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
         cls.testbed = testbed.Testbed()
         cls.testbed.activate()
         cls.testbed.init_app_identity_stub()

@@ -5,8 +5,11 @@ import resources
 
 
 class ResourcesTest(unittest.TestCase):
-    def setUp(self):
-        super(ResourcesTest, self).setUp()
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
 
     def test_cdm_csv(self):
         cdm_data_rows = resources.cdm_csv()
