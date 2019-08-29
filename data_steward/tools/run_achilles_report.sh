@@ -2,15 +2,14 @@
 
 dataset="test_rdr"
 result_bucket="drc_curation_internal_test"
-vocab_dataset="vocabulary20190423"
 
 USAGE="
 Usage: run_achilles_report.sh
   --key_file <path to key file>
   --app_id <application id>
+  --vocab_dataset <vocab dataset>
   [--dataset <Dataset ID: default is ${dataset}>]
   [--result_bucket <Internal bucket: default is ${result_bucket}>]
-  [--vocab_dataset <vocab dataset: default is ${vocab_dataset}>]
 "
 
 while true; do
@@ -25,9 +24,9 @@ while true; do
   esac
 done
 
-if [ -z "${key_file}" ] || [ -z "${app_id}" ]
+if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]]
 then
-  echo "Specify the key file location and application ID. $USAGE"
+  echo "$USAGE"
   exit 1
 fi
 
