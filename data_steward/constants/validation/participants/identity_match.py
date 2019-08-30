@@ -36,6 +36,7 @@ EHR_PERSON_TABLE_SUFFIX = '_person'
 VALIDATION_TABLE_SUFFIX = '_identity_match'
 
 # Field names
+PERSON_ID_FIELD = 'person_id'
 FIRST_NAME_FIELD = 'first_name'
 MIDDLE_NAME_FIELD = 'middle_name'
 LAST_NAME_FIELD = 'last_name'
@@ -50,6 +51,13 @@ ADDRESS_TWO_FIELD = 'address_2'
 BIRTH_DATE_FIELD = 'birth_date'
 GENDER_FIELD = 'gender_concept_id'
 BIRTH_DATETIME_FIELD = 'birth_datetime'
+
+VALIDATION_FIELDS = [
+    FIRST_NAME_FIELD, MIDDLE_NAME_FIELD, LAST_NAME_FIELD,
+    EMAIL_FIELD, PHONE_NUMBER_FIELD, ZIP_CODE_FIELD, STATE_FIELD,
+    CITY_FIELD, ADDRESS_ONE_FIELD, ADDRESS_TWO_FIELD,
+    BIRTH_DATE_FIELD, SEX_FIELD
+]
 
 REPORT_TITLE = 'id-validation.csv'
 REPORT_DIRECTORY = 'drc-validations-{date}'

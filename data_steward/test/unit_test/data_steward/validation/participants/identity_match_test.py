@@ -100,8 +100,8 @@ class IdentityMatchTest(unittest.TestCase):
         self.mock_ehr_person = mock_ehr_person_values_patcher.start()
         self.mock_ehr_person.side_effect = [
             {self.pid: 'Female'},
-            {self.pid: 'female'},
             {self.pid: self.participant_info.get('ehr_birthdate')},
+            {self.pid: 'female'},
             {self.pid: self.participant_info.get('ehr_birthdate')},
         ]
         self.addCleanup(mock_ehr_person_values_patcher.stop)
@@ -112,28 +112,26 @@ class IdentityMatchTest(unittest.TestCase):
         self.mock_rdr_values = mock_rdr_match_values_patcher.start()
         self.mock_rdr_values.side_effect = [
             {self.pid: self.participant_info.get('first')},
-            {self.pid: self.participant_info.get('first')},
             {self.pid: self.participant_info.get('last')},
-            {self.pid: self.participant_info.get('last')},
-            {self.pid: self.participant_info.get('middle')},
-            {self.pid: self.participant_info.get('middle')},
-            {self.pid: self.participant_info.get('zip')},
             {self.pid: self.participant_info.get('zip')},
             {self.pid: self.participant_info.get('city')},
-            {self.pid: self.participant_info.get('city')},
-            {self.pid: self.participant_info.get('state')},
             {self.pid: self.participant_info.get('state')},
             {self.pid: self.participant_info.get('street-one')},
             {self.pid: self.participant_info.get('street-two')},
-            {self.pid: self.participant_info.get('street-one')},
-            {self.pid: self.participant_info.get('street-two')},
             {self.pid: self.participant_info.get('email')},
-            {self.pid: self.participant_info.get('email')},
-            {self.pid: self.participant_info.get('phone')},
             {self.pid: self.participant_info.get('phone')},
             {self.pid: 'Female'},
-            {self.pid: 'male'},
             {self.pid: self.participant_info.get('rdr_birthdate')},
+            {self.pid: self.participant_info.get('first')},
+            {self.pid: self.participant_info.get('last')},
+            {self.pid: self.participant_info.get('zip')},
+            {self.pid: self.participant_info.get('city')},
+            {self.pid: self.participant_info.get('state')},
+            {self.pid: self.participant_info.get('street-one')},
+            {self.pid: self.participant_info.get('street-two')},
+            {self.pid: self.participant_info.get('email')},
+            {self.pid: self.participant_info.get('phone')},
+            {self.pid: 'male'},
             {self.pid: self.participant_info.get('rdr_birthdate')},
         ]
         self.addCleanup(mock_rdr_match_values_patcher.stop)
@@ -144,23 +142,21 @@ class IdentityMatchTest(unittest.TestCase):
         self.mock_pii_values = mock_pii_values_patcher.start()
         self.mock_pii_values.side_effect = [
             [(self.pid, self.participant_info.get('first'))],
-            [(self.pid, self.participant_info.get('first'))],
             [(self.pid, self.participant_info.get('last'))],
-            [(self.pid, self.participant_info.get('last'))],
-            [(self.pid, self.participant_info.get('middle'))],
-            [(self.pid, self.participant_info.get('middle'))],
-            [(self.pid, self.participant_info.get('email'))],
             [(self.pid, self.participant_info.get('email'))],
             [(self.pid, self.participant_info.get('phone'))],
+            [(self.pid, self.participant_info.get('first'))],
+            [(self.pid, self.participant_info.get('last'))],
+            [(self.pid, self.participant_info.get('email'))],
             [(self.pid, self.participant_info.get('phone'))],
         ]
         self.addCleanup(mock_pii_values_patcher.stop)
 
-        mock_append_to_result_table = patch(
-            'validation.participants.identity_match.writers.append_to_result_table'
+        mock_write_to_result_table = patch(
+            'validation.participants.identity_match.writers.write_to_result_table'
         )
-        self.mock_table_append = mock_append_to_result_table.start()
-        self.addCleanup(mock_append_to_result_table.stop)
+        self.mock_table_write = mock_write_to_result_table.start()
+        self.addCleanup(mock_write_to_result_table.stop)
 
         mock_location_pii_patcher = patch(
             'validation.participants.identity_match.readers.get_location_pii'
@@ -168,35 +164,17 @@ class IdentityMatchTest(unittest.TestCase):
         self.mock_location_pii = mock_location_pii_patcher.start()
         self.mock_location_pii.side_effect = [
             [(self.pid, self.participant_info.get('zip'))],
-            [(self.pid, self.participant_info.get('zip'))],
             [(self.pid, self.participant_info.get('city'))],
-            [(self.pid, self.participant_info.get('city'))],
-            [(self.pid, self.participant_info.get('state'))],
             [(self.pid, self.participant_info.get('state'))],
             [(self.pid, self.participant_info.get('street-one'))],
             [(self.pid, self.participant_info.get('street-two'))],
+            [(self.pid, self.participant_info.get('zip'))],
+            [(self.pid, self.participant_info.get('city'))],
+            [(self.pid, self.participant_info.get('state'))],
             [(self.pid, self.participant_info.get('street-one'))],
             [(self.pid, self.participant_info.get('street-two'))],
         ]
         self.addCleanup(mock_location_pii_patcher.stop)
-
-        mock_merge_fields_patcher = patch(
-            'validation.participants.identity_match.writers.merge_fields_into_single_record'
-        )
-        self.mock_merge_fields = mock_merge_fields_patcher.start()
-        self.addCleanup(mock_merge_fields_patcher.stop)
-
-        mock_remove_sparse_records_patcher = patch(
-            'validation.participants.identity_match.writers.remove_sparse_records'
-        )
-        self.mock_remove_sparse_records = mock_remove_sparse_records_patcher.start()
-        self.addCleanup(mock_remove_sparse_records_patcher.stop)
-
-        mock_change_nulls_patcher = patch(
-            'validation.participants.identity_match.writers.change_nulls_to_missing_value'
-        )
-        self.mock_change_nulls = mock_change_nulls_patcher.start()
-        self.addCleanup(mock_change_nulls_patcher.stop)
 
         mock_hpo_bucket_patcher = patch(
             'validation.participants.identity_match.gcs_utils.get_hpo_bucket'
@@ -261,13 +239,10 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
         self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
-        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 11)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 4)
+        self.assertEqual(self.mock_table_write.call_count, num_sites)
         self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_merge_fields.call_count, num_sites)
-        self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
-        self.assertEqual(self.mock_change_nulls.call_count, num_sites)
         self.assertEqual(self.mock_hpo_bucket.call_count, 0)
         self.assertEqual(self.mock_drc_bucket.call_count, 0)
         self.assertEqual(self.mock_validation_report.call_count, 0)
@@ -315,76 +290,17 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
         self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
-        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 10)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 11)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 4)
+        self.assertEqual(self.mock_table_write.call_count, num_sites)
         self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_merge_fields.call_count, num_sites)
-        self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
-        self.assertEqual(self.mock_change_nulls.call_count, num_sites)
-        self.assertEqual(self.mock_hpo_bucket.call_count, 0)
-        self.assertEqual(self.mock_drc_bucket.call_count, 0)
-        self.assertEqual(self.mock_validation_report.call_count, 0)
-
-    def test_match_participants_same_participant_simulate_merge_errors(self):
-        # pre conditions
-        self.mock_merge_fields.side_effect = googleapiclient.errors.HttpError(500, 'bar', 'baz')
-        self.mock_remove_sparse_records.side_effect = googleapiclient.errors.HttpError(500, 'r', '')
-        self.mock_change_nulls.side_effect = googleapiclient.errors.HttpError(500, 'bar', 'baz')
-
-        # test
-        id_match.match_participants(
-            self.project,
-            self.rdr_dataset,
-            self.pii_dataset,
-            self.dest_dataset
-        )
-
-        # post conditions
-        self.assertEqual(self.mock_dest_dataset.call_count, 1)
-        self.assertEqual(
-            self.mock_dest_dataset.assert_called_with(
-                dataset_id=self.dest_dataset,
-                description=consts.DESTINATION_DATASET_DESCRIPTION.format(
-                    version='', rdr_dataset=self.rdr_dataset, ehr_dataset=self.pii_dataset
-                ),
-                overwrite_existing=True
-            ),
-            None
-        )
-
-        self.assertEqual(self.mock_match_tables.call_count, 1)
-        self.assertEqual(
-            self.mock_match_tables.assert_called_with(
-                self.project, self.rdr_dataset, self.dest_dataset
-            ),
-            None
-        )
-
-        self.assertEqual(self.mock_site_names.call_count, 1)
-        self.assertEqual(
-            self.mock_site_names.assert_called_once_with(),
-            None
-        )
-
-        num_sites = len(self.site_list)
-        self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
-
-        self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
-        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 12)
-        self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_merge_fields.call_count, num_sites)
-        self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
-        self.assertEqual(self.mock_change_nulls.call_count, num_sites)
         self.assertEqual(self.mock_hpo_bucket.call_count, 0)
         self.assertEqual(self.mock_drc_bucket.call_count, 0)
         self.assertEqual(self.mock_validation_report.call_count, 0)
 
     def test_match_participants_same_participant_simulate_write_errors(self):
         # pre conditions
-        self.mock_table_append.side_effect = googleapiclient.errors.HttpError(500, 'bar', 'baz')
+        self.mock_table_write.side_effect = googleapiclient.errors.HttpError(500, 'bar', 'baz')
 
         # test
         id_match.match_participants(
@@ -425,13 +341,10 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
         self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
-        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 12)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 11)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 4)
+        self.assertEqual(self.mock_table_write.call_count, num_sites)
         self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_merge_fields.call_count, num_sites)
-        self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
-        self.assertEqual(self.mock_change_nulls.call_count, num_sites)
         self.assertEqual(self.mock_hpo_bucket.call_count, 0)
         self.assertEqual(self.mock_drc_bucket.call_count, 0)
         self.assertEqual(self.mock_validation_report.call_count, 0)
@@ -479,13 +392,10 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
         self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
-        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 7)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 11)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 4)
+        self.assertEqual(self.mock_table_write.call_count, num_sites)
         self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 4)
-        self.assertEqual(self.mock_merge_fields.call_count, num_sites)
-        self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
-        self.assertEqual(self.mock_change_nulls.call_count, num_sites)
         self.assertEqual(self.mock_hpo_bucket.call_count, 0)
         self.assertEqual(self.mock_drc_bucket.call_count, 0)
         self.assertEqual(self.mock_validation_report.call_count, 0)
@@ -533,13 +443,10 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
         self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
-        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 12)
-        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_table_append.call_count, (num_sites - 1) * 7)
+        self.assertEqual(self.mock_rdr_values.call_count, (num_sites - 1) * 11)
+        self.assertEqual(self.mock_pii_values.call_count, (num_sites - 1) * 4)
+        self.assertEqual(self.mock_table_write.call_count, num_sites)
         self.assertEqual(self.mock_location_pii.call_count, (num_sites - 1) * 5)
-        self.assertEqual(self.mock_merge_fields.call_count, num_sites)
-        self.assertEqual(self.mock_remove_sparse_records.call_count, num_sites)
-        self.assertEqual(self.mock_change_nulls.call_count, num_sites)
         self.assertEqual(self.mock_hpo_bucket.call_count, 0)
         self.assertEqual(self.mock_drc_bucket.call_count, 0)
         self.assertEqual(self.mock_validation_report.call_count, 0)
@@ -557,7 +464,6 @@ class IdentityMatchTest(unittest.TestCase):
         site_filename = os.path.join(
             consts.REPORT_DIRECTORY.format(date=self.date_string), consts.REPORT_TITLE
         )
-        drc_filename = os.path.join(self.dest_dataset, consts.REPORT_TITLE)
         expected_report_calls = [
             call(self.project, self.dest_dataset, [self.site_list[0]], self.bucket_ids[0], site_filename),
             call(self.project, self.dest_dataset, [self.site_list[1]], self.bucket_ids[1], site_filename),
@@ -579,7 +485,6 @@ class IdentityMatchTest(unittest.TestCase):
         site_filename = os.path.join(
             consts.REPORT_DIRECTORY.format(date=self.date_string), consts.REPORT_TITLE
         )
-        drc_filename = os.path.join(self.dest_dataset, consts.REPORT_TITLE)
         expected_report_calls = [
             call(self.project, self.dest_dataset, [self.site_list[0]], self.bucket_ids[0], site_filename),
             call(self.project, self.dest_dataset, [self.site_list[1]], self.bucket_ids[1], site_filename),
