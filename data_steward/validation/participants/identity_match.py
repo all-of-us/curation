@@ -1098,7 +1098,7 @@ def match_participants(
 
         LOGGER.info('Wrote validation results for site: %s', site)
 
-    LOGGER.info("Finished creating validation dataset")
+    LOGGER.info("FINISHED: Validation dataset created:  %s", validation_dataset)
 
     if read_errors > 0:
         LOGGER.error("Encountered %d read errors creating validation dataset:\t%s",
