@@ -1,65 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
+{% include "bootstrap_style.html" %}
 <style>
-#dataframe {
-font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
-border-collapse: collapse;
-width: 100%;
-}
-
-table.center {
-margin-left: auto;
-margin-right: auto;
-margin-top: 64px;
-}
-
-#dataframe td, #dataframe th {
-border: 1px solid #ddd;
-padding: 8px;
-}
-
-#dataframe tr:nth-child(even){background-color: #f2f2f2;}
-
-#dataframe tr:hover {background-color: #ddd;}
-
-#dataframe th {
-padding-top: 12px;
-padding-bottom: 12px;
-text-align: center;
-background-color: #85C1E9;
-color: white;
-}
-
-img {
-position: absolute;
-left: 0;
-top: 0;
-padding:10px;
-}
-
-caption {
-font-size: 20px;
-text-align: left;
-font-weight: 200;
-padding: 5px;
-}
-
-h1 {
-font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
-padding-top: 40px;
-}
-
-h3 {
-font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
-}
-
+    table.result td.symbol { font-size: 1.5em; }
+    td.result-0 { color: #dc3545; }
+    td.result-1 { color: #28a745; }
 </style>
-<title>EHR Submission Results</title>
+<title>EHR Data Submission Report for {{ hpo_name }}</title>
 </head>
 
 <body>
-<img src="data:image/png;base64,
+<nav class="navbar">
+  <a class="navbar-brand" href="#">
+    <img src="data:image/png;base64,
 iVBORw0KGgoAAAANSUhEUgAAAJoAAAAwCAYAAADpeGOfAAAMSmlDQ1BJQ0MgUHJvZmlsZQAAeJyV
 VwdYU8kWnltSSWiBCEgJvYlSpEsJoUUQkCrYCEkgocSQEETsyrIKrl1EQF3RVREXd3UFZK2oa2MR
 7K7lgYqKsi4WbKi8SQFd93vvfe9839z758w5/ymZe+8MADo1PKk0F9UFIE9SIIuPCGFNSU1jkboB
@@ -266,3 +220,219 @@ Sczm8YX8o9FouGDueLkJbtAzAqYciCEXC0umVBRZPmqqKHdtRs77MD9a+scJR0v8/2+kcQG2wxdk
 LMoVxIzaPloieLjAjafILpOoPpZxjoVGEwA4PEbu74gMH3+swzh8DuOZ94fhPzczACNxruFtcv9n
 5j4aX8PXZrSxRqOPJNd5vBfuHz3OeMYTR0DyT9BHmFQ/QScol/5n/I7UCfr/nk4I2gn6WOiEoJ2g
 j4VOCNoJ+ljo/wE/8skeHh1pOAAAAABJRU5ErkJggg==">
+  </a>
+</nav>
+<main class="container">
+<h1>
+    EHR Data Submission Report for {{ hpo_name }}
+</h1>
+    <p>This report is for the EHR data submission uploaded to the
+        directory <b>{{ folder }}</b> and is current as of <b>{{ timestamp }}</b>. Visit the
+        <a href="https://sites.google.com/view/ehrupload">EHR Operations Group Knowledge Repository</a> for more
+        information on data submission and evaluation procedures.
+    </p>
+{% if submission_error is defined %}
+    <div class="alert alert-danger">
+        Validation failed for the following reason: {{ submission_error }}.
+    </div>
+{%  endif %}
+{% if error_occurred %}
+<div class="alert alert-warning">
+This report may be incomplete because the submission is still being processed. Please check for an updated report
+    in a few hours.
+</div>
+{%  endif %}
+
+<h2><a name="file-summary">File Summary</a></h2>
+<table class="table table-sm table-fixed table-striped table-hover result">
+    <thead class="thead-dark">
+    <tr>
+        <th class="align-top">File Name</th>
+        <th class="align-top">Found <p class="small">File was found. Note: file names are spelling- and case-sensitive.</p></th>
+        <th class="align-top">Parsed <p class="small">Format is as described in
+            <a href="https://sites.google.com/view/ehrupload/sops/transferring-data-to-the-drc">Transferring Data to the
+                DRC</a></p></th>
+        <th class="align-top">Loaded <p class="small">Records conform to OMOP and were loaded successfully</p></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% set symbol = {0: "&cross;", 1: "&check;"} %}
+    {% for row in results %}
+        {% set file_name = row["file_name"] %}
+        {% set found = row["found"] %}
+        {% set parsed = row["parsed"] %}
+        {% set loaded = row["loaded"] %}
+        <tr>
+            <th scope="col" class="w-auto">{{ file_name }}</th>
+            <td class="symbol result-{{ found }} w-25">{{ symbol[found] }}</td>
+            <td class="symbol result-{{ parsed }} w-25">{{ symbol[parsed] }}</td>
+            <td class="symbol result-{{ loaded }} w-25">{{ symbol[loaded] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<h3><a name="errors">Errors</a></h3>
+{% if errors %}
+<table class="table table-striped table-hover">
+    <thead class="thead-dark">
+        <tr>
+            <th>File Name</th>
+            <th>Message</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in errors %}
+        <tr>
+            <td>{{ row["file_name"] }}</td>
+            <td>{{ row["message"] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" role="alert">
+  No errors detected
+</div>
+{% endif %}
+
+<h3><a name="warnings">Warnings</a></h3>
+{% if warnings %}
+<table class="table table-striped table-hover">
+    <thead class="thead-dark">
+        <tr>
+            <th>File Name</th>
+            <th>Message</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in warnings %}
+        <tr>
+            <td>{{ row["file_name"] }}</td>
+            <td>{{ row["message"] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+    <div class="alert alert-info" role="alert">
+    No warnings detected
+    </div>
+{% endif %}
+
+<h2><a name="nonunique_keys">Non-unique Table Keys</a></h2>
+{% if nonunique_key_metrics %}
+<table class="table table-striped table-hover">
+    <thead class="thead-dark">
+    <tr>
+        <th>Table Name</th>
+        <th>Duplicate ID Count</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for row in nonunique_key_metrics %}
+        <tr>
+            <td>{{ row["table_name"] }}</td>
+            <td>{{ row["count"] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" role="alert">
+  No non-unique table keys detected
+</div>
+{% endif %}
+
+<h2><a name="heel_errors">Achilles Heel Errors</a></h2>
+{% if heel_errors %}
+<table class="table table-striped table-hover">
+    <thead class="thead-dark">
+        <tr>
+            <th>Analysis ID</th>
+            <th>Rule ID</th>
+            <th>Error</th>
+            <th>Record Count</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in heel_errors %}
+        <tr>
+            <td>{{ row["analysis_id"] }}</td>
+            <td>{{ row["rule_id"] }}</td>
+            <td>{{ row["heel_error"] }}</td>
+            <td>{{ row["record_count"] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" role="alert">
+  No Achilles Heel errors detected
+</div>
+{% endif %}
+
+<h2><a name="completeness">Data Completeness</a></h2>
+{% if completeness %}
+<table class="table table-striped table-hover">
+    <thead class="thead-dark">
+        <tr>
+            <th>Table</th>
+            <th>Column Name</th>
+            <th>Null Count</th>
+            <th>Concept Zero Count</th>
+            <th>Total Row Count</th>
+            <th>Percent Populated</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in completeness %}
+        <tr>
+            <td>{{ row['omop_table_name'] }}</td>
+            <td>{{ row['column_name'] }}</td>
+            <td>{{ row['null_count'] }}</td>
+            <td>{{ row['concept_zero_count'] }}</td>
+            <td>{{ row['table_row_count'] }}</td>
+            <td>{{ "{0:0.2f}".format(row["percent_populated"] * 100) }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" role="alert">
+  Completeness statistics are not (yet) available for this submission.
+</div>
+{% endif %}
+
+<h2><a name="drug_checks">Drug Concept Mapping Percentages</a></h2>
+{% if drug_class_metrics %}
+<table class="table table-striped table-hover">
+    <thead class="thead-dark">
+        <tr>
+            <th>Percentage</th>
+            <th>Drug Class Concept Name</th>
+            <th>Counts by Drug Class</th>
+            <th>Drug Class</th>
+            <th>Drug Class Concept ID</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in drug_class_metrics %}
+        <tr>
+            <td>{{ row["percentage"] }}</td>
+            <td>{{ row["concept_name"] }}</td>
+            <td>{{ row["count"] }}</td>
+            <td>{{ row["drug_class"] }}</td>
+            <td>{{ row["concept_id"] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" role="alert">
+  Drug concept mapping statistics are not (yet) available for this submission.
+</div>
+{% endif %}
+</main>
+</body>
+</html>

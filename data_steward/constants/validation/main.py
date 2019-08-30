@@ -30,12 +30,13 @@ HEEL_ERROR_QUERY_VALIDATION = '''
         achilles_heel_warning AS Heel_Error,
         rule_id AS Rule_ID,
         record_count AS Record_Count
-    FROM `{application}.{dataset}.{table_id}`
+    FROM `{project_id}.{dataset_id}.{table_id}`
     WHERE achilles_heel_warning LIKE 'ERROR:%'
     ORDER BY 
         record_count DESC, 
         analysis_id
     '''
+HEEL_ERROR_FAIL_ROWS = [(NULL_MESSAGE, HEEL_ERROR_FAIL_MESSAGE, NULL_MESSAGE, NULL_MESSAGE)]
 
 # Used in get_drug_checks_in_results_html()
 DRUG_CHECKS_QUERY_VALIDATION = '''
@@ -45,7 +46,7 @@ DRUG_CHECKS_QUERY_VALIDATION = '''
             SELECT
                 COUNT(*)
             FROM
-                `{application}.{dataset}.{table_id}`)*100, 2) AS STRING), '%') AS Percentage
+                `{project_id}.{dataset_id}.{table_id}`)*100, 2) AS STRING), '%') AS Percentage
     FROM (
         SELECT
             concept_classes.concept_id AS Drug_Class_Concept_ID,
@@ -53,13 +54,13 @@ DRUG_CHECKS_QUERY_VALIDATION = '''
             concept_classes.concept_name AS Drug_Class_Concept_Name,
             COUNT(drug_exposure.drug_exposure_id) AS Counts_by_Drug_class
         FROM
-            `{application}.{dataset}.{table_id}` AS drug_exposure
+            `{project_id}.{dataset_id}.{table_id}` AS drug_exposure
         JOIN
-            `{application}.{dataset}.concept_ancestor` AS ancestor
+            `{project_id}.{dataset_id}.concept_ancestor` AS ancestor
         ON
             ancestor.descendant_concept_id = drug_exposure.drug_concept_id
-        JOIN 
-            `{application}.{dataset}.drug_class` AS concept_classes
+        RIGHT JOIN 
+            `{project_id}.{dataset_id}.drug_class` AS concept_classes
         ON
             concept_classes.concept_id = ancestor.ancestor_concept_id
         AND ancestor.min_levels_of_separation != 0
@@ -116,17 +117,17 @@ DUPLICATE_IDS_WRAPPER = '''
 
 DUPLICATE_IDS_SUBQUERY = '''
     SELECT 
-        '{domain_table}' AS Table_Name,
+        '{table_name}' AS Table_Name,
         SUM(Individual_Duplicate_ID_Count-1) as Duplicate_ID_Count
     FROM
     (SELECT
-        COUNT({domain_table}_id) AS Individual_Duplicate_ID_Count
+        COUNT({table_name}_id) AS Individual_Duplicate_ID_Count
     FROM
-        `{app_id}.{dataset_id}.{hpo_id}_{domain_table}`
+        `{project_id}.{dataset_id}.{table_id}`
     GROUP BY
-        {domain_table}_id
+        {table_name}_id
     HAVING
-        COUNT({domain_table}_id) > 1)
+        COUNT({table_name}_id) > 1)
     '''
 
 PREFIX = '/data_steward/v1/'
@@ -140,3 +141,9 @@ WRITE_SITE_VALIDATION_FILES = PARTICIPANT_VALIDATION + 'SiteFiles'
 VALIDATION_SUCCESS = 'participant-validation-done'
 DRC_VALIDATION_REPORT_SUCCESS = 'drc-participant-validation-report-written'
 SITES_VALIDATION_REPORT_SUCCESS = 'sites-participant-validation-reports-written'
+
+CONTENT_TYPE = 'content-type'
+APPLICATION_JSON = 'application/json'
+ERROR = 'error'
+ERRORS = 'errors'
+REASON = 'reason'

@@ -8,12 +8,14 @@ import os
 import re
 import unittest
 
+import googleapiclient.errors
 import mock
 from google.appengine.ext import testbed
 
 import bq_utils
 import common
 import constants.bq_utils as bq_consts
+import constants.validation.hpo_report as report_consts
 import constants.validation.main as main_constants
 import gcs_utils
 import resources
@@ -39,6 +41,14 @@ class ValidationTest(unittest.TestCase):
         self.testbed.init_datastore_v3_stub()
         self.hpo_id = test_util.FAKE_HPO_ID
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
+        mock_get_hpo_name = mock.patch(
+            'validation.main.get_hpo_name'
+        )
+
+        self.mock_get_hpo_name = mock_get_hpo_name.start()
+        self.mock_get_hpo_name.return_value = 'Fake HPO'
+        self.addCleanup(mock_get_hpo_name.stop)
+
         self.bigquery_dataset_id = bq_utils.get_dataset_id()
         self.folder_prefix = '2019-01-01/'
         self._empty_bucket()
@@ -260,29 +270,16 @@ class ValidationTest(unittest.TestCase):
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
     @mock.patch('api_util.check_cron')
-    def test_curation_report_ignored(self, mock_check_cron):
-        exclude_file_list = ["person.csv"]
-        exclude_file_list = [self.folder_prefix + item for item in exclude_file_list]
-        expected_result_items = []
-        for file_name in exclude_file_list:
-            test_util.write_cloud_str(self.hpo_bucket, file_name, ".")
-
-        main.app.testing = True
-        with main.app.test_client() as c:
-            c.get(test_util.VALIDATE_HPO_FILES_URL)
-
-        # check content of the bucket is correct
-        expected_bucket_items = exclude_file_list + [self.folder_prefix + item for item in resources.IGNORE_LIST]
-        list_bucket_result = gcs_utils.list_bucket(self.hpo_bucket)
-        actual_bucket_items = [item['name'] for item in list_bucket_result]
-        actual_bucket_items = [item for item in actual_bucket_items
-                               if not main._is_string_excluded_file(item[len(self.folder_prefix):])]
-        self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
-
-        # check that the errors file is empty
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)
-        self.assertListEqual(expected_result_items, r['errors'])
+    def test_categorize_folder_items(self, mock_check_cron):
+        expected_cdm_files = ['person.csv']
+        expected_pii_files = ['pii_email.csv']
+        expected_unknown_files = ['random.csv']
+        ignored_files = ['curation_report/index.html']
+        folder_items = expected_cdm_files + expected_pii_files + expected_unknown_files + ignored_files
+        cdm_files, pii_files, unknown_files = main.categorize_folder_items(folder_items)
+        self.assertListEqual(expected_cdm_files, cdm_files)
+        self.assertListEqual(expected_pii_files, pii_files)
+        self.assertListEqual(expected_unknown_files, unknown_files)
 
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
@@ -303,24 +300,74 @@ class ValidationTest(unittest.TestCase):
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
+    @mock.patch('bq_utils.create_standard_table')
+    @mock.patch('validation.main.perform_validation_on_file')
     @mock.patch('api_util.check_cron')
-    def test_html_report_person_only(self, mock_check_cron):
+    def test_validate_submission(self,
+                                 mock_check_cron,
+                                 mock_perform_validation_on_file,
+                                 mock_create_standard_table):
+        """
+        Checks the return value of validate_submission
+
+        :param mock_check_cron:
+        :param mock_perform_validation_on_file:
+        :param mock_create_standard_table:
+        :return:
+        """
         folder_prefix = '2019-01-01/'
-        test_util.write_cloud_str(self.hpo_bucket, folder_prefix + 'person.csv', ".\n .,.,.")
+        bucket_items = [{'name': folder_prefix + 'person.csv'},
+                        {'name': folder_prefix + 'invalid_file.csv'}]
 
-        with open(test_util.PERSON_ONLY_RESULTS_FILE, 'r') as f:
-            expected_result_file = self._remove_timestamp_tags_from_results(f.read())
+        perform_validation_on_file_returns = dict()
+        expected_results = []
+        expected_errors = []
+        expected_warnings = [('invalid_file.csv', 'Unknown file')]
+        for file_name in sorted(resources.CDM_FILES) + sorted(common.PII_FILES):
+            result = []
+            errors = []
+            found = 0
+            parsed = 0
+            loaded = 0
+            if file_name == 'person.csv':
+                found = 1
+                parsed = 1
+                loaded = 1
+            elif file_name == 'visit_occurrence.csv':
+                found = 1
+                error = (file_name, 'Fake parsing error')
+                errors.append(error)
+            result.append((file_name, found, parsed, loaded))
+            perform_validation_on_file_returns[file_name] = result, errors
+            expected_results += result
+            expected_errors += errors
 
-        main.app.testing = True
+        def perform_validation_on_file(cdm_file_name, found_cdm_files, hpo_id, folder_prefix, bucket):
+            return perform_validation_on_file_returns.get(cdm_file_name)
+
+        mock_perform_validation_on_file.side_effect = perform_validation_on_file
+
+        actual_result = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, folder_prefix)
+        self.assertListEqual(expected_results, actual_result.get('results'))
+        self.assertListEqual(expected_errors, actual_result.get('errors'))
+        self.assertListEqual(expected_warnings, actual_result.get('warnings'))
+
+    @mock.patch('resources.hpo_csv')
+    @mock.patch('validation.main.list_bucket')
+    @mock.patch('logging.error')
+    @mock.patch('api_util.check_cron')
+    def test_validate_all_hpos_exception(self, check_cron, mock_logging_error, mock_list_bucket, mock_hpo_csv):
+        mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
+        mock_list_bucket.side_effect = googleapiclient.errors.HttpError('fake http error', 'fake http error')
         with main.app.test_client() as c:
-            c.get(test_util.VALIDATE_HPO_FILES_URL)
-
-            actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-            actual_result_file = self._remove_timestamp_tags_from_results(StringIO.StringIO(actual_result).getvalue())
-            self.assertEqual(expected_result_file, actual_result_file)
+            c.get(main_constants.PREFIX + 'ValidateAllHpoFiles')
+        expected_call = mock.call('Failed to process hpo_id `fake` due to the following HTTP error: fake http error')
+        self.assertIn(expected_call, mock_logging_error.mock_calls)
 
     @mock.patch('api_util.check_cron')
-    def test_html_report_five_person(self, mock_check_cron):
+    def _test_html_report_five_person(self, mock_check_cron):
+        # Not sure this test is still relevant (see hpo_report module and tests)
+        # TODO refactor or remove this test
         folder_prefix = '2019-01-01/'
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=folder_prefix)
@@ -341,6 +388,11 @@ class ValidationTest(unittest.TestCase):
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
     @mock.patch('gcs_utils.upload_object')
+    @mock.patch('validation.main.all_required_files_loaded')
+    @mock.patch('validation.main.query_rows')
+    @mock.patch('validation.main.get_duplicate_counts_query')
+    @mock.patch('validation.main._write_string_to_file')
+    @mock.patch('validation.main.get_hpo_name')
     @mock.patch('validation.main.validate_submission')
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
@@ -349,6 +401,11 @@ class ValidationTest(unittest.TestCase):
             mock_hpo_bucket,
             mock_bucket_list,
             mock_validation,
+            mock_get_hpo_name,
+            mock_write_string_to_file,
+            mock_get_duplicate_counts_query,
+            mock_query_rows,
+            mock_all_required_files_loaded,
             mock_upload,
             mock_run_achilles,
             mock_export):
@@ -365,6 +422,7 @@ class ValidationTest(unittest.TestCase):
         :param mock_hpo_bucket: mock the hpo bucket name.
         :param mock_bucket_list: mocks the list of items in the hpo bucket.
         :param mock_validation: mock performing validation
+        :param mock_validation: mock generate metrics
         :param mock_upload: mock uploading to a bucket
         :param mock_run_achilles: mock running the achilles reports
         :param mock_export: mock exporting the files
@@ -372,6 +430,11 @@ class ValidationTest(unittest.TestCase):
 
         # pre-conditions
         mock_hpo_bucket.return_value = 'noob'
+        mock_all_required_files_loaded.return_value = True
+        mock_query_rows.return_value = []
+        mock_get_duplicate_counts_query.return_value = ''
+        mock_get_hpo_name.return_value = 'noob'
+        mock_write_string_to_file.return_value = ''
         yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
         yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         moment = datetime.datetime.now()
@@ -389,7 +452,6 @@ class ValidationTest(unittest.TestCase):
             'results': [('SUBMISSION/measurement.csv', 1, 1, 1)],
             'errors': [],
             'warnings': []}
-        mock_export.return_value = '{"success":  "true"}'
 
         # test
         main.process_hpo('noob', force_run=True)
@@ -508,6 +570,57 @@ class ValidationTest(unittest.TestCase):
             else:
                 raise AssertionError("Unexpected call in mock_copy calls:  {}"
                                      .format(call))
+
+    def test_generate_metrics(self):
+        summary = {
+            report_consts.RESULTS_REPORT_KEY:
+                [{'file_name': 'person.csv',
+                  'found': 1,
+                  'parsed': 1,
+                  'loaded': 1}],
+            report_consts.ERRORS_REPORT_KEY: [],
+            report_consts.WARNINGS_REPORT_KEY: []
+        }
+
+        def all_required_files_loaded(results):
+            return False
+
+        def query_rows(q):
+            return []
+
+        def query_rows_error(q):
+            raise googleapiclient.errors.HttpError(500, 'bar', 'baz')
+
+        def _write_string_to_file(bucket, filename, content):
+            return True
+
+        def get_duplicate_counts_query(hpo_id):
+            return ''
+
+        with mock.patch.multiple('validation.main',
+                                 all_required_files_loaded=all_required_files_loaded,
+                                 query_rows=query_rows,
+                                 get_duplicate_counts_query=get_duplicate_counts_query,
+                                 _write_string_to_file=_write_string_to_file):
+            result = main.generate_metrics(self.hpo_id, self.hpo_bucket, self.folder_prefix, summary)
+            self.assertIn(report_consts.RESULTS_REPORT_KEY, result)
+            self.assertIn(report_consts.WARNINGS_REPORT_KEY, result)
+            self.assertIn(report_consts.ERRORS_REPORT_KEY, result)
+            self.assertNotIn(report_consts.HEEL_ERRORS_REPORT_KEY, result)
+            self.assertIn(report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY, result)
+            self.assertIn(report_consts.COMPLETENESS_REPORT_KEY, result)
+            self.assertIn(report_consts.DRUG_CLASS_METRICS_REPORT_KEY, result)
+
+        # if error occurs (e.g. limit reached) error flag is set
+        with mock.patch.multiple('validation.main',
+                                 all_required_files_loaded=all_required_files_loaded,
+                                 query_rows=query_rows_error,
+                                 get_duplicate_counts_query=get_duplicate_counts_query,
+                                 _write_string_to_file=_write_string_to_file):
+            with self.assertRaises(googleapiclient.errors.HttpError) as cm:
+                result = main.generate_metrics(self.hpo_id, self.hpo_bucket, self.folder_prefix, summary)
+                error_occurred = result.get(report_consts.ERROR_OCCURRED_REPORT_KEY)
+                self.assertEqual(error_occurred, True)
 
     def tearDown(self):
         self._empty_bucket()

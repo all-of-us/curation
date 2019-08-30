@@ -18,19 +18,20 @@ import bq_utils
 import cdm
 import common
 import constants.validation.main as consts
+import constants.validation.hpo_report as report_consts
 import gcs_utils
 import resources
 import validation.achilles as achilles
 import validation.achilles_heel as achilles_heel
+import validation.metrics.completeness as completeness
 import validation.ehr_union as ehr_union
 import validation.export as export
 import validation.participants.identity_match as matching
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from validation import hpo_report
 from tools import retract_data_bq, retract_data_gcs
 
-UNKNOWN_FILE = 'Unknown file'
-BQ_LOAD_RETRY_COUNT = 7
-
+PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
 
@@ -141,7 +142,11 @@ def run_achilles_helper(hpo_id, folder_prefix, bucket):
         success = True
     except HttpError as err:
         if err.resp.status == 400:
-            logging.info('Achilles exceeded rate limits: Table exceeded quota for table update operations.')
+            reason = err.content
+            if err.resp.get(consts.CONTENT_TYPE, '').startswith(consts.APPLICATION_JSON):
+                err_content = json.loads(err.content)
+                reason = err_content.get(consts.ERROR).get(consts.ERRORS)[0].get(consts.REASON)
+            logging.info('Achilles failed. Reason: %s' % reason)
     return success
 
 
@@ -182,7 +187,7 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
         if hpo_id is None:
             raise RuntimeError('either hpo_id or target_bucket must be specified')
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
-
+    logging.info('Uploading achilles index files to `gs://%s/%s`...', bucket, folder_prefix)
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.debug('Uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
         bucket_file_name = filename.split(resources.resource_path + os.sep)[1].strip().replace('\\', '/')
@@ -204,16 +209,11 @@ def validate_hpo_files(hpo_id):
 @api_util.auth_required_cron
 def validate_all_hpos():
     """
-    validation end point for individual hpo_ids
+    validation end point for all hpo_ids
     """
     for item in resources.hpo_csv():
         hpo_id = item['hpo_id']
-        try:
-            process_hpo(hpo_id)
-        except BucketDoesNotExistError as bucket_error:
-            bucket = bucket_error.bucket
-            logging.warn('Bucket `%s` configured for hpo_id `%s` does not exist',
-                         bucket, hpo_id)
+        process_hpo(hpo_id)
     return 'validation done!'
 
 
@@ -228,15 +228,16 @@ def list_bucket(bucket):
         raise
 
 
-def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
-    logging.info('Validating %s submission in gs://%s/%s',
-                 hpo_id, bucket, folder_prefix)
-    # separate cdm from the unknown (unexpected) files
+def categorize_folder_items(folder_items):
+    """
+    Categorize submission items into three lists: CDM, PII, UNKNOWN
+
+    :param folder_items: list of filenames in a submission folder (name of folder excluded)
+    :return: a tuple with three separate lists - (cdm files, pii files, unknown files)
+    """
     found_cdm_files = []
     unknown_files = []
     found_pii_files = []
-    folder_items = [item['name'][len(folder_prefix):] \
-                    for item in bucket_items if item['name'].startswith(folder_prefix)]
     for item in folder_items:
         if _is_cdm_file(item):
             found_cdm_files.append(item)
@@ -245,6 +246,27 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
         else:
             if not (_is_known_file(item) or _is_string_excluded_file(item)):
                 unknown_files.append(item)
+    return found_cdm_files, found_pii_files, unknown_files
+
+
+def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
+    """
+    Load submission in BigQuery and summarize outcome
+
+    :param hpo_id:
+    :param bucket:
+    :param bucket_items:
+    :param folder_prefix:
+    :return: a dict with keys results, errors, warnings
+      results is list of tuples (file_name, found, parsed, loaded)
+      errors and warnings are both lists of tuples (file_name, message)
+    """
+    logging.info('Validating %s submission in gs://%s/%s',
+                 hpo_id, bucket, folder_prefix)
+    # separate cdm from the unknown (unexpected) files
+    folder_items = [item['name'][len(folder_prefix):] \
+                    for item in bucket_items if item['name'].startswith(folder_prefix)]
+    found_cdm_files, found_pii_files, unknown_files = categorize_folder_items(folder_items)
 
     errors = []
     results = []
@@ -275,6 +297,78 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
     return dict(results=results, errors=errors, warnings=warnings)
 
 
+def generate_metrics(hpo_id, bucket, folder_prefix, summary):
+    """
+    Generate metrics regarding a submission
+
+    :param hpo_id: identifies the HPO site
+    :param bucket: name of the bucket with the submission
+    :param folder_prefix: folder containing the submission
+    :param summary: file summary from validation
+     {results: [(file_name, found, parsed, loaded)],
+      errors: [(file_name, message)],
+      warnings: [(file_name, message)]}
+    :return:
+    """
+    report_data = summary.copy()
+    processed_datetime_str = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+    error_occurred = False
+
+    # TODO separate query generation, query execution, writing to GCS
+    gcs_path = 'gs://%s/%s' % (bucket, folder_prefix)
+    report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
+    report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
+    report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_datetime_str
+    results = report_data['results']
+    try:
+        # TODO modify achilles to run successfully when tables are empty
+        # achilles queries will raise exceptions (e.g. division by zero) if files not present
+        if all_required_files_loaded(results):
+            logging.info('Running achilles on %s.', folder_prefix)
+            run_achilles(hpo_id)
+            run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
+            logging.info('Uploading achilles index files to `%s`.', gcs_path)
+            _upload_achilles_files(hpo_id, folder_prefix)
+            heel_error_query = get_heel_error_query(hpo_id)
+            report_data[report_consts.HEEL_ERRORS_REPORT_KEY] = query_rows(heel_error_query)
+        else:
+            report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY] = 'Required files are missing'
+            logging.info('Required files are missing in %s. Skipping achilles.', gcs_path)
+
+        # non-unique key metrics
+        logging.info('Getting non-unique key stats for %s...' % hpo_id)
+        nonunique_metrics_query = get_duplicate_counts_query(hpo_id)
+        report_data[report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY] = query_rows(nonunique_metrics_query)
+
+        # drug class metrics
+        logging.info('Getting drug class for %s...' % hpo_id)
+        drug_class_metrics_query = get_drug_class_counts_query(hpo_id)
+        report_data[report_consts.DRUG_CLASS_METRICS_REPORT_KEY] = query_rows(drug_class_metrics_query)
+
+        # completeness
+        logging.info('Getting completeness stats for %s...' % hpo_id)
+        completeness_query = completeness.get_hpo_completeness_query(hpo_id)
+        report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(completeness_query)
+
+        logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
+                     processed_datetime_str, bucket, folder_prefix + common.PROCESSED_TXT)
+        _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, processed_datetime_str)
+
+    except HttpError as err:
+        # cloud error occurred- log details for troubleshooting
+        logging.error('Failed to generate full report due to the following cloud error:\n\n%s' % err.content)
+        error_occurred = True
+
+        # re-raise error
+        raise err
+    finally:
+        # report all results collected (attempt even if cloud error occurred)
+        report_data[report_consts.ERROR_OCCURRED_REPORT_KEY] = error_occurred
+        results_html = hpo_report.render(report_data)
+        _write_string_to_file(bucket, folder_prefix + common.RESULTS_HTML, results_html)
+    return report_data
+
+
 def process_hpo(hpo_id, force_run=False):
     """
     runs validation for a single hpo_id
@@ -288,168 +382,98 @@ def process_hpo(hpo_id, force_run=False):
     InternalValidationError:
       Raised when an internal error is encountered during validation
     """
-    logging.info('Processing hpo_id %s', hpo_id)
-    bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    bucket_items = list_bucket(bucket)
-    folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
-    if folder_prefix is None:
-        logging.info('No submissions to process in %s bucket %s', hpo_id, bucket)
-    else:
-        validate_result = validate_submission(hpo_id, bucket, bucket_items, folder_prefix)
-        results = validate_result['results']
-        errors = validate_result['errors']
-        warnings = validate_result['warnings']
-
-        if not all_required_files_loaded(results):
-            logging.info('Required files not loaded in %s. Skipping achilles.', folder_prefix)
-            achilles_success = True
+    try:
+        logging.info('Processing hpo_id %s', hpo_id)
+        bucket = gcs_utils.get_hpo_bucket(hpo_id)
+        bucket_items = list_bucket(bucket)
+        folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
+        if folder_prefix is None:
+            logging.info('No submissions to process in %s bucket %s', hpo_id, bucket)
         else:
-            achilles_success = run_achilles_helper(hpo_id, folder_prefix, bucket)
-            if not achilles_success:
-                # retry
-                achilles_success = run_achilles_helper(hpo_id, folder_prefix, bucket)
-
-        # Get heel errors into results.html
-        if achilles_success:
-            heel_errors, heel_header_list = add_table_in_results_html(hpo_id,
-                                                                      consts.HEEL_ERROR_QUERY_VALIDATION,
-                                                                      consts.ACHILLES_HEEL_RESULTS_TABLE,
-                                                                      consts.HEEL_ERROR_HEADERS)
-        else:
-            # if achilles has failed, print a message stating it instead of heel errors
-            heel_header_list = consts.HEEL_ERROR_HEADERS
-            heel_errors = [
-                (consts.NULL_MESSAGE, consts.HEEL_ERROR_FAIL_MESSAGE, consts.NULL_MESSAGE,
-                 consts.NULL_MESSAGE)]
-
-        # Get Duplicate id counts per table into results.html
-        duplicate_counts, duplicate_header_list = add_table_in_results_html(hpo_id,
-                                                                            consts.DUPLICATE_IDS_SUBQUERY,
-                                                                            None,
-                                                                            consts.DUPLICATE_IDS_HEADERS,
-                                                                            query_wrapper=consts.DUPLICATE_IDS_WRAPPER,
-                                                                            is_subquery=True)
-
-        # Get Drug check counts into results.html
-        drug_checks, drug_header_list = add_table_in_results_html(hpo_id,
-                                                                  consts.DRUG_CHECKS_QUERY_VALIDATION,
-                                                                  consts.DRUG_CHECK_TABLE,
-                                                                  consts.DRUG_CHECK_HEADERS)
-
-        now_datetime_string = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-
-        hpo_name = get_hpo_name(hpo_id)
-        results_html_folder_prefix = "Folder: " + folder_prefix[:-1]
-        results_html_timestamp = "Report timestamp: " + now_datetime_string.replace('T', ' ')
-
-        _save_results_html_in_gcs(hpo_name, bucket, folder_prefix + common.RESULTS_HTML,
-                                  results_html_folder_prefix, results_html_timestamp,
-                                  results, duplicate_counts, duplicate_header_list, errors, warnings,
-                                  heel_errors, heel_header_list, drug_checks, drug_header_list)
-
-        if achilles_success:
-            logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
-                         bucket, now_datetime_string, folder_prefix + common.PROCESSED_TXT)
-            _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, now_datetime_string)
-        else:
-            logging.info('Processing complete but achilles failed. '
-                         'Skipping upload of processed.txt to allow validation to re-run.')
+            summary = validate_submission(hpo_id, bucket, bucket_items, folder_prefix)
+            generate_metrics(hpo_id, bucket, folder_prefix, summary)
+    except BucketDoesNotExistError as bucket_error:
+        bucket = bucket_error.bucket
+        logging.warn('Bucket `%s` configured for hpo_id `%s` does not exist',
+                     bucket, hpo_id)
+    except HttpError as http_error:
+        message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (hpo_id, http_error.content)
+        logging.error(message)
 
 
 def get_hpo_name(hpo_id):
-    hpo_name = "HPO"
     hpo_list_of_dicts = resources.hpo_csv()
     for hpo_dict in hpo_list_of_dicts:
         if hpo_dict['hpo_id'].lower() == hpo_id.lower():
-            hpo_name = hpo_dict['name']
-            return hpo_name
-    return hpo_name
+            return hpo_dict['name']
+    raise ValueError('%s is not a valid hpo_id' % hpo_id)
 
 
-def add_table_in_results_html(hpo_id, query_string, table_id, headers, query_wrapper=None, is_subquery=False):
+def render_query(query_str, **kwargs):
+    project_id = app_identity.get_application_id()
+    dataset_id = bq_utils.get_dataset_id()
+    return query_str.format(project_id=project_id, dataset_id=dataset_id, **kwargs)
+
+
+def query_rows(query):
+    response = bq_utils.query(query)
+    return bq_utils.response2rows(response)
+
+
+def get_heel_error_query(hpo_id):
     """
-    Adds a new table in results.html file
-    :param hpo_id: the name of the hpo_id for which validation is being done
-    :param query_string: variable name of the query string stored in the constants
-    :param table_id: name of the table running analysis on
-    :param headers: expected headers
-    :param query_wrapper: wrapper over the unioned query if required
-    :param is_subquery: binary flag(true/false) to indicate if parsing is needed or not.
-    :return: returns list of contents(rows) and headers
+    Query to retrieve errors in Achilles Heel for an HPO site
+
+    :param hpo_id: identifies the HPO site
+    :return: the query
     """
-    query_result = get_query_result(hpo_id, query_string, table_id, query_wrapper, is_subquery)
-    row_list = _convert_query_result_to_row_list(query_result)
-    if not query_result:
-        header_list = headers
-    else:
-        header_list = _get_query_result_header(query_result)
-    return row_list, header_list
+    table_id = bq_utils.get_table_id(hpo_id, consts.ACHILLES_HEEL_RESULTS_TABLE)
+    return render_query(consts.HEEL_ERROR_QUERY_VALIDATION,
+                        table_id=table_id)
 
 
-def get_query_result(hpo_id, query_string, table_id, query_wrapper, is_subquery, app_id=None, dataset_id=None):
+def get_duplicate_counts_query(hpo_id):
     """
-    :param hpo_id: the name of the hpo_id for which validation is being done
-    :param query_string: variable name of the query string stored in the constants
-    :param table_id: Name of the table running analysis on
-    :param query_wrapper: wrapper over the unioned query if required
-    :param is_subquery: binary flag(true/false) to indicate if parsing is needed or not.
-    :param app_id: name of the big query application id
-    :param dataset_id: name of the big query dataset id
-    :return: returns dictionary of rows
+    Query to retrieve count of duplicate primary keys in domain tables for an HPO site
+
+    :param hpo_id: identifies the HPO site
+    :return: the query
     """
-    if app_id is None:
-        app_id = app_identity.get_application_id()
-    if dataset_id is None:
-        dataset_id = bq_utils.get_dataset_id()
-    query = None
-    result = None
-    if is_subquery:
-        sub_queries = []
-        for table in cdm.tables_to_map():
-            hpo_table = '{hpo_id}_{table_name}'.format(hpo_id=hpo_id,
-                                                       table_name=table)
-            if bq_utils.table_exists(hpo_table):
-                sub_query = query_string.format(hpo_id=hpo_id,
-                                                app_id=app_id,
-                                                dataset_id=dataset_id,
-                                                domain_table=table)
-                sub_queries.append(sub_query)
-        unioned_query = consts.UNION_ALL.join(sub_queries)
-        if unioned_query and query_wrapper is not None:
-            query = query_wrapper.format(union_of_subqueries=unioned_query)
-        else:
-            query = unioned_query
-    else:
-        table_name = '{hpo_name}_{results_table}'.format(hpo_name=hpo_id,
-                                                         results_table=table_id)
-        if bq_utils.table_exists(table_name):
-            query = query_string.format(application=app_id,
-                                        dataset=dataset_id,
-                                        table_id=table_name)
-    if query:
-        # Found achilles_heel_results table(s), run the query
-        response = bq_utils.query(query)
-        result = bq_utils.response2rows(response)
-    if result is None:
-        result = []
-    return result
+    sub_queries = []
+    all_table_ids = bq_utils.list_all_table_ids()
+    for table_name in cdm.tables_to_map():
+        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        if table_id in all_table_ids:
+            sub_query = render_query(consts.DUPLICATE_IDS_SUBQUERY, table_name=table_name, table_id=table_id)
+            sub_queries.append(sub_query)
+    unioned_query = consts.UNION_ALL.join(sub_queries)
+    return consts.DUPLICATE_IDS_WRAPPER.format(union_of_subqueries=unioned_query)
 
 
-def _convert_query_result_to_row_list(list_of_dicts):
-    row_list = list()
-    for dict_item in list_of_dicts:
-        dict_values = tuple(dict_item.values())
-        row_list.append(dict_values)
-    return row_list
+def get_drug_class_counts_query(hpo_id):
+    """
+    Query to retrieve counts of drug classes in an HPO site's drug_exposure table
 
-
-def _get_query_result_header(list_of_dicts):
-    header_list = list(list_of_dicts[0].keys())
-    header_list = [header.replace('_', ' ') for header in header_list]
-    return header_list
+    :param hpo_id: identifies the HPO site
+    :return: the query
+    """
+    table_id = bq_utils.get_table_id(hpo_id, consts.DRUG_CHECK_TABLE)
+    return render_query(consts.DRUG_CHECKS_QUERY_VALIDATION, table_id=table_id)
 
 
 def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefix, bucket):
+    """
+    Attempts to load a csv file into BigQuery
+
+    :param file_name: name of the file to validate
+    :param found_file_names: files found in the submission folder
+    :param hpo_id: identifies the hpo site
+    :param folder_prefix: directory containing the submission
+    :param bucket: bucket containing the submission
+    :return: tuple (results, errors) where
+     results is list of tuples (file_name, found, parsed, loaded)
+     errors is list of tuples (file_name, message)
+    """
     errors = []
     results = []
     logging.info('Validating file `%s`', file_name)
@@ -658,116 +682,6 @@ def copy_files(hpo_id):
                               destination_object_id=prefix + item_name)
 
     return '{"copy-status": "done"}'
-
-
-def _save_results_html_in_gcs(hpo_name, bucket, file_name, folder_prefix, timestamp,
-                              results, duplicate_ids, duplicate_ids_header, errors, warnings,
-                              heel_errors, heel_error_header,
-                              drug_checks, drug_check_header):
-    """
-    Save the validation results in GCS
-    :param hpo_id: name of the hpo_id
-    :param bucket: bucket to save to
-    :param file_name: name of the file (object) to save to in GCS
-    :param results: list of tuples (<cdm_file_name>, <found>, <loaded>, <parsed>)
-    :param errors: list of tuples (<cdm_file_name>, <message>)
-    :param warnings: list of tuples (<cdm_file_name>, <message>)
-    :return:
-    """
-    results_heading = '{hpo_name}<br>EHR Submission Results'.format(hpo_name=hpo_name)
-    html_report_list = []
-    with open(resources.html_boilerplate_path) as f:
-        for line in f:
-            html_report_list.append(line)
-
-    html_report_list.append('\n')
-    html_report_list.append(html_tag_wrapper(results_heading, 'h1', 'align="center"'))
-    html_report_list.append('\n')
-    html_report_list.append(html_tag_wrapper(folder_prefix, 'h3', 'align="right"'))
-    html_report_list.append('\n')
-    html_report_list.append(html_tag_wrapper(timestamp, 'h3', 'align="right"'))
-    html_report_list.append('\n')
-    html_report_list.append(create_html_table(consts.RESULT_FILE_HEADERS, results, "Results"))
-    html_report_list.append('\n')
-    html_report_list.append(create_html_table(duplicate_ids_header, duplicate_ids,
-                                              "Count of Duplicate IDs per Domain Table"))
-    html_report_list.append('\n')
-    html_report_list.append(create_html_table(consts.ERROR_FILE_HEADERS, errors, "Errors"))
-    html_report_list.append('\n')
-    html_report_list.append(create_html_table(consts.ERROR_FILE_HEADERS, warnings, "Warnings"))
-    html_report_list.append('\n')
-    html_report_list.append(create_html_table(heel_error_header, heel_errors, "Heel Errors"))
-    html_report_list.append('\n')
-    html_report_list.append(create_html_table(drug_check_header, drug_checks, "Drug Concept Mapping Percentages"))
-    html_report_list.append('\n')
-    html_report_list.append('</body>\n')
-    html_report_list.append('</html>\n')
-
-    f = StringIO.StringIO()
-    for line in html_report_list:
-        f.write(line)
-    f.seek(0)
-    result = gcs_utils.upload_object(bucket, file_name, f)
-    f.close()
-    return result
-
-
-def create_html_table(headers, table, table_name):
-    """
-    Creates a html table
-    :param headers: headers for the table
-    :param table: row list of the table contents
-    :param table_name: name of the table in the html file
-    :return: table string in html format
-    """
-    html_report_list = []
-    table_config = 'id="dataframe" style="width:80%" class="center"'
-    html_report_list.append(html_tag_wrapper(table_name, 'caption'))
-    table_header_row = create_html_row(headers, 'th', 'tr')
-    html_report_list.append(html_tag_wrapper(table_header_row, 'thead'))
-    results_rows = []
-    for item in table:
-        results_rows.append(create_html_row(item, 'td', 'tr', headers))
-    table_body_rows = '\n'.join(results_rows)
-    html_report_list.append(html_tag_wrapper(table_body_rows, 'tbody'))
-    return html_tag_wrapper('\n'.join(html_report_list), 'table', table_config)
-
-
-def create_html_row(row_items, item_tag, row_tag, headers=None):
-    """
-    Creates a html row based on conditions for formatting (if necessary) else applies default formatting
-    :param row_items: the element in the row
-    :param item_tag: tag for the row item
-    :param row_tag: tag for the entire row
-    :param headers: table headers
-    :return:
-    """
-    row_item_list = []
-    checkbox_style = 'style="text-align:center; font-size:150%; font-weight:bold; color:{0};"'
-    message = "BigQuery generated the following message while processing the files: " + "<br/>"
-    for index, row_item in enumerate(row_items):
-        if row_item == 1 and headers == consts.RESULT_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(consts.RESULT_PASS_CODE,
-                                                  item_tag,
-                                                  checkbox_style.format(consts.RESULT_PASS_COLOR)))
-        elif row_item == 0 and headers == consts.RESULT_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(consts.RESULT_FAIL_CODE,
-                                                  item_tag,
-                                                  checkbox_style.format(consts.RESULT_FAIL_COLOR)))
-        elif index == 1 and headers == consts.ERROR_FILE_HEADERS:
-            row_item_list.append(html_tag_wrapper(message + row_item.replace(' || ', '<br/>'), item_tag))
-        else:
-            row_item_list.append(html_tag_wrapper(row_item, item_tag))
-    row_item_string = '\n'.join(row_item_list)
-    row_item_string = html_tag_wrapper(row_item_string, row_tag)
-    return row_item_string
-
-
-def html_tag_wrapper(text, tag, message=''):
-    if message == '':
-        return '<%(tag)s>\n%(text)s\n</%(tag)s>' % locals()
-
-    return '<%(tag)s %(message)s>\n%(text)s\n</%(tag)s>' % locals()
 
 
 def _write_string_to_file(bucket, name, string):
