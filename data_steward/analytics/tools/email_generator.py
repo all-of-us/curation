@@ -1,5 +1,5 @@
 """
-This program should generate an e-mail from a properly-formatted Excel
+This program generates an e-mail from a properly-formatted Excel
 file. The e-mail should contain information regarding data quality
 for the various AoU HPO sites.
 
