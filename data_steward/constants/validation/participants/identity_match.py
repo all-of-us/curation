@@ -59,8 +59,10 @@ VALIDATION_FIELDS = [
     BIRTH_DATE_FIELD, SEX_FIELD
 ]
 
+# Report names and directories
 REPORT_TITLE = 'id-validation.csv'
 REPORT_DIRECTORY = 'drc-validations-{date}'
 REPORT_DIRECTORY_REGEX = 'drc-validations-\d{8}'
 
+# Validation dataset name
 DESTINATION_DATASET_DESCRIPTION = '{version} {rdr_dataset} + {ehr_dataset}'
