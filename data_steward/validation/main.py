@@ -250,6 +250,17 @@ def categorize_folder_items(folder_items):
 
 
 def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
+    """
+    Load submission in BigQuery and summarize outcome
+
+    :param hpo_id:
+    :param bucket:
+    :param bucket_items:
+    :param folder_prefix:
+    :return: a dict with keys results, errors, warnings
+      results is list of tuples (file_name, found, parsed, loaded)
+      errors and warnings are both lists of tuples (file_name, message)
+    """
     logging.info('Validating %s submission in gs://%s/%s',
                  hpo_id, bucket, folder_prefix)
     # separate cdm from the unknown (unexpected) files
@@ -294,6 +305,9 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
     :param bucket: name of the bucket with the submission
     :param folder_prefix: folder containing the submission
     :param summary: file summary from validation
+     {results: [(file_name, found, parsed, loaded)],
+      errors: [(file_name, message)],
+      warnings: [(file_name, message)]}
     :return:
     """
     report_data = summary.copy()
@@ -447,6 +461,18 @@ def get_drug_class_counts_query(hpo_id):
 
 
 def perform_validation_on_file(file_name, found_file_names, hpo_id, folder_prefix, bucket):
+    """
+    Attempts to load a csv file into BigQuery
+
+    :param file_name: name of the file to validate
+    :param found_file_names: files found in the submission folder
+    :param hpo_id: identifies the hpo site
+    :param folder_prefix: directory containing the submission
+    :param bucket: bucket containing the submission
+    :return: tuple (results, errors) where
+     results is list of tuples (file_name, found, parsed, loaded)
+     errors is list of tuples (file_name, message)
+    """
     errors = []
     results = []
     logging.info('Validating file `%s`', file_name)
