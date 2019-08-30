@@ -1,1 +1,1 @@
-All of the issues regarding duplicate rows, 'end dates' that precede 'start dates', and data that follows a patient's death date have been resolved. Thank you for your timely response. We will be in touch if we find any further data quality issues.
+All of the issues regarding duplicate rows, 'end dates' that precede 'start dates', and data that follows a patient's death date have been resolved in your most recent submission.
