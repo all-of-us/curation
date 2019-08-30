@@ -20,9 +20,6 @@ class VocabularyTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    def setUp(self):
-        super(VocabularyTest, self).setUp()
-
     @staticmethod
     def do_transform_file(input_text):
         in_fp = StringIO.StringIO(input_text)

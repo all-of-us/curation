@@ -105,6 +105,28 @@ def list_bucket(bucket):
     return all_objects
 
 
+def list_bucket_prefixes(gcs_path):
+    """
+    Get metadata for each object within the given GCS path
+    :param gcs_path: GCS path upto folder (e.g. `/<bucket_name>/path/`)
+    :return: list of prefixes (e.g. [`/<bucket_name>/path/a/`, `/<bucket_name>/path/b/`, `/<bucket_name>/path/c/`]
+    """
+    service = create_service()
+    gcs_path_parts = gcs_path.split('/')
+    if len(gcs_path_parts) < 2:
+        raise ValueError('%s is not a valid GCS path' % gcs_path)
+    bucket = gcs_path_parts[0]
+    prefix = '/'.join(gcs_path_parts[1:]) + '/'
+    req = service.objects().list(bucket=bucket, prefix=prefix, delimiter='/')
+
+    all_objects = []
+    while req:
+        resp = req.execute(num_retries=GCS_DEFAULT_RETRY_COUNT)
+        all_objects.extend(resp.get('prefixes', []))
+        req = service.objects().list_next(req, resp)
+    return all_objects
+
+
 def get_object(bucket, name):
     """
     Download object from a bucket

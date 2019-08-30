@@ -1,7 +1,9 @@
-import bq_utils
 import argparse
 import logging
+
 from google.appengine.api.app_identity import app_identity
+
+import bq_utils
 import constants.bq_utils as bq_consts
 
 OBSERVATION_TABLE_NAME = 'observation'
@@ -120,43 +122,36 @@ PMI_SKIP_FIX_QUERY = \
      '  obs.person_id = ques.person_id'
      '  AND obs.observation_concept_id = ques.observation_concept_id')
 
-UPDATE_PPI_QUERY = \
-    ('UPDATE'
-     '   `{project}.{dataset}.observation` a'
-     ' SET '
-     '   a.value_as_concept_id = b.concept_id'
-     ' FROM ( '
-     '   SELECT'
-     '     *'
-     '   FROM ('
-     '     SELECT'
-     '       c2.concept_name,'
-     '       c2.concept_id,'
-     '       o.*,'
-     '       RANK() OVER (PARTITION BY o.observation_id, o.value_source_concept_id ORDER BY c2.concept_id ASC) AS rank'
-     '     FROM'
-     '       `{project}.{dataset}.observation` o  '
-     '     JOIN'
-     '       `{project}.{vocabulary}.concept` c'
-     '     ON'
-     '       o.value_source_concept_id = c.concept_id '
-     '     JOIN'
-     '       `{project}.{vocabulary}.concept_relationship` cr'
-     '     ON'
-     '       c.concept_id = cr.concept_id_1'
-     '       AND cr.relationship_id = \'Maps to value\'  '
-     '     JOIN'
-     '       `{project}.{vocabulary}.concept` c2'
-     '     ON'
-     '       c2.concept_id = cr.concept_id_2'
-     '     WHERE'
-     '       o.observation_concept_id = o.value_as_concept_id'
-     '       AND o.observation_concept_id<>0    '
-     '       ) AS x'
-     '   WHERE'
-     '     rank=1 ) AS b'
-     '  WHERE  '
-     '   a.observation_id = b.observation_id')
+UPDATE_PPI_QUERY = (
+    'UPDATE '
+    '  `{project}.{dataset}.observation` a '
+    'SET '
+    '  a.value_as_concept_id = b.concept_id '
+    'FROM ( '
+    '  SELECT '
+    '    * '
+    '  FROM ( '
+    '    SELECT '
+    '      c2.concept_name, '
+    '      c2.concept_id, '
+    '      o.*, '
+    '      RANK() OVER (PARTITION BY o.observation_id, o.value_source_concept_id ORDER BY c2.concept_id ASC) AS rank '
+    '    FROM '
+    '      `{project}.{dataset}.observation` o '
+    '    JOIN '
+    '      `{project}.{ehr_dataset}.concept_relationship` cr '
+    '    ON '
+    '      o.value_source_concept_id = cr.concept_id_1 '
+    '      AND cr.relationship_id = \'Maps to value\' '
+    '    JOIN '
+    '      `{project}.{ehr_dataset}.concept` c2 '
+    '    ON '
+    '      c2.concept_id = cr.concept_id_2 ) AS x '
+    '  WHERE '
+    '    rank=1 ) AS b '
+    'WHERE '
+    '  a.observation_id = b.observation_id'
+)
 
 
 def run_pmi_fix(project_id, dataset_id):
@@ -189,7 +184,7 @@ def run_ppi_vocab_update(project_id, dataset_id):
     if project_id is None:
         project_id = app_identity.get_application_id()
 
-    q = UPDATE_PPI_QUERY.format(project=project_id, dataset=dataset_id, vocabulary=VOCABULARY_DATASET)
+    q = UPDATE_PPI_QUERY.format(project=project_id, dataset=dataset_id, ehr_dataset=bq_utils.get_dataset_id())
     logging.debug('Query for PMI_Skip fix is {q}'.format(q=q))
     bq_utils.query(q=q)
 

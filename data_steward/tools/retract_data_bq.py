@@ -729,7 +729,7 @@ if __name__ == '__main__':
                         action='store', dest='hpo_id',
                         help='Identifies the site to retract data from',
                         required=True)
-    parser.add_argument('-f', '--pid_file',
+    parser.add_argument('-i', '--pid_file',
                         action='store', dest='pid_file',
                         help='Text file containing the pids on separate lines',
                         required=True)

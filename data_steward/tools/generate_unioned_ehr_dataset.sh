@@ -1,33 +1,31 @@
 #!/usr/bin/env bash
 
-# TThis Script automates the process of generating the unioned_ehr dataset
-
-app_id="aou-res-curation-test"
-vocab_dataset="vocabulary20190423"
+# Generate unioned_ehr dataset
+# Loads vocabulary from specified dataset and unioned EHR tables from specified dataset
 
 USAGE="
 Usage: generate_unioned_ehr_dataset.sh
   --key_file <path to key file>
   --app_id <application id>
-  --ehr_snap_dataset <EHR dataset: default is ${ehr_snap_dataset}>
-  [--vocab_dataset <vocab dataset: default is ${vocab_dataset}>]
+  --vocab_dataset <vocab dataset>
+  --ehr_snap_dataset <EHR dataset>
 "
 
 echo
 while true; do
   case "$1" in
-    --app_id) app_id=$2; shift 2;;
-    --ehr_snap_dataset) ehr_snap_dataset=$2; shift 2;;
-    --vocab_dataset) vocab_dataset=$2; shift 2;;
     --key_file) key_file=$2; shift 2;;
+    --app_id) app_id=$2; shift 2;;
+    --vocab_dataset) vocab_dataset=$2; shift 2;;
+    --ehr_snap_dataset) ehr_snap_dataset=$2; shift 2;;
     -- ) shift; break ;;
     * ) break ;;
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]]
+if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]]  || [[ -z "${ehr_snap_dataset}" ]]
 then
-  echo "Specify the key file location and application ID. $USAGE"
+  echo "$USAGE"
   exit 1
 fi
 

@@ -2,17 +2,15 @@
 
 # This Script automates the process of de-identification of the combined_dataset
 
-app_id="aou-res-curation-test"
-vocab_dataset="vocabulary20190423"
 result_bucket="drc_curation_internal_test"
 
 USAGE="
 Usage: run_deid.sh
   --key_file <path to key file>
   --app_id <application id>
+  --vocab_dataset <vocab dataset>
   --deid_config <path to deid config json file>
   [--cdr_id <EHR dataset: default empty>]
-  [--vocab_dataset <vocab dataset: default is ${vocab_dataset}>]
 "
 
 while true; do
@@ -27,7 +25,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${deid_config}" ]]
+if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${deid_config}" ]]
 then
   echo "Specify the key file location, application ID and deid config file. $USAGE"
   exit 1

@@ -27,7 +27,6 @@ class AchillesHeelTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        super(AchillesHeelTest, self).setUp()
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_app_identity_stub()

@@ -2,16 +2,14 @@
 
 # This Script automates the process of combining ehr and rdr datasets
 
-app_id="aou-res-curation-test"
-vocab_dataset="vocabulary20190423"
 rdr_dataset="test_rdr"
 
 USAGE="
 Usage: generate_combined_dataset.sh
   --key_file <path to key file>
   --app_id <application id>
+  --vocab_dataset <vocab dataset>
   --unioned_ehr_dataset <unioned dataset>
-  [--vocab_dataset <vocab dataset: default is ${vocab_dataset}>]
   [--rdr_dataset <RDR dataset: default is ${rdr_dataset}>]
 "
 
@@ -27,9 +25,9 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]]
+if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]]  || [[ -z "${unioned_ehr_dataset}" ]]
 then
-  echo "Specify the key file location and application ID. $USAGE"
+  echo "$USAGE"
   exit 1
 fi
 

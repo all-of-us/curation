@@ -26,7 +26,11 @@ import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
 import cdr_cleaner.cleaning_rules.person_id_validator as person_validator
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
+import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
+import cdr_cleaner.cleaning_rules.domain_alignment as domain_mapping
+import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
 import constants.cdr_cleaner.clean_cdr as clean_cdr_consts
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -98,6 +102,7 @@ def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id):
     query_list.extend(person_validator.get_person_id_validation_queries(project_id, dataset_id))
     query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
     query_list.extend(drug_refills_supply.get_days_supply_refills_queries(project_id, dataset_id))
+    query_list.extend(fill_source_value.get_fill_freetext_source_value_fields_queries(project_id, dataset_id))
     return query_list
 
 

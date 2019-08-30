@@ -1,0 +1,3 @@
+Dear [EHR site],
+
+My name is Noah Engel and I am a Data Analyst at Columbia University Medical Center with the All of Us precision medicine initiative. We reviewed your file submission after we shared data quality feedback in our last e-mail.

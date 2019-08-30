@@ -35,6 +35,8 @@ export APPLICATION_ID="${APP_ID}"
 export BIGQUERY_DATASET_ID="${DATA_SET}"
 
 today=$(date '+%Y%m%d')
+export BACKUP_DATASET="${DATA_SET}_backup"
+
 
 #---------Create curation virtual environment----------
 # create a new environment in directory curation_env
@@ -70,6 +72,9 @@ do
   fi
   bq load --replace --allow_quoted_newlines ${JAGGED_ROWS}${CLUSTERING_ARGS}--skip_leading_rows=1 ${DATA_SET}.${table_name} $file resources/fields/${table_name}.json
 done
+
+echo "Creating a RDR back-up"
+./table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${DATA_SET} --target_dataset ${BACKUP_DATASET}
 
 echo "Fixing the PMI_Skip and the PPI_Vocabulary using command - fix_rdr_data.py -p ${APP_ID} -d ${DATA_SET}"
 python fix_rdr_data.py -p ${APP_ID} -d ${DATA_SET}
