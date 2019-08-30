@@ -2,6 +2,7 @@ HPO_ID = 'hpo_id'
 COLUMN_NAME = 'column_name'
 TABLE_NAME = 'table_name'
 OMOP_TABLE_NAME = 'omop_table_name'
+TABLE_ROW_COUNT = 'table_row_count'
 PROJECT_ID = 'project_id'
 APPLICATION_ID = 'APPLICATION_ID'
 GOOGLE_APPLICATION_CREDENTIALS = 'GOOGLE_APPLICATION_CREDENTIALS'
@@ -14,7 +15,7 @@ SELECT table_name,
  t.row_count as table_row_count 
 FROM {dataset_id}.INFORMATION_SCHEMA.COLUMNS c
  JOIN {dataset_id}.__TABLES__ t on c.table_name = t.table_id
-  WHERE t. table_id NOT LIKE '\\\\_%' 
+  WHERE t.table_id NOT LIKE '\\\\_%' 
   AND c.IS_HIDDEN = 'NO'
  ORDER BY table_name, c.ORDINAL_POSITION
 """

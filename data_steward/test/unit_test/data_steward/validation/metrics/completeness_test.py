@@ -1,4 +1,3 @@
-import re
 import unittest
 
 from mock import patch
@@ -43,10 +42,35 @@ class CompletenessTest(unittest.TestCase):
 
     @patch('validation.participants.writers.bq_utils.query')
     def test_get_cols(self, mock_query):
+        cols = [
+                {
+                    'column_name': 'condition_start_datetime',
+                    'concept_zero_count': 0,
+                    'null_count': 0,
+                    'omop_table_name': 'condition_occurrence',
+                    'percent_populated': 1.0,
+                    'table_name': 'nyc_cu_condition_occurrence',
+                    'table_row_count': 2105898
+                },
+                {
+                    'column_name': 'visit_occurrence_id',
+                    'concept_zero_count': 0,
+                    'null_count': None,
+                    'omop_table_name': 'condition_occurrence',
+                    'percent_populated': None,
+                    'table_name': 'nyc_cu_condition_occurrence',
+                    'table_row_count': 0
+                }
+            ]
         dataset_id = 'some_dataset_id'
         completeness.get_cols(dataset_id)
         self.assertEqual(mock_query.call_count, 1)
         mock_query.assert_called_with(consts.COLUMNS_QUERY_FMT.format(dataset_id=dataset_id))
+        with patch('validation.participants.writers.bq_utils.response2rows') as mock_response2rows:
+            mock_response2rows.return_value = cols
+            expected_result = [cols[0]]
+            actual_result = completeness.get_cols(dataset_id)
+            self.assertListEqual(expected_result, actual_result)
 
     def test_create_completeness_query(self):
         dataset_id = 'some_dataset_id'

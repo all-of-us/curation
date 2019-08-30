@@ -28,7 +28,8 @@ def get_cols(dataset_id):
         omop_table_name = get_standard_table_name(col[consts.TABLE_NAME])
         if omop_table_name:
             col[consts.OMOP_TABLE_NAME] = omop_table_name
-            results.append(col)
+            if col[consts.TABLE_ROW_COUNT] > 0:
+                results.append(col)
     return results
 
 
@@ -100,6 +101,13 @@ def column_completeness(dataset_id, columns):
 
 
 def get_hpo_completeness_query(hpo_id, dataset_id=None):
+    """
+    Get the query used to compute completeness for tables in an HPO submission
+
+    :param hpo_id:
+    :param dataset_id:
+    :return:
+    """
     if dataset_id is None:
         dataset_id = bq_utils.get_dataset_id()
     cols = get_cols(dataset_id)
@@ -154,10 +162,12 @@ if __name__ == '__main__':
         return results
 
     parser = argparse.ArgumentParser(description='Generate completeness metrics for OMOP dataset of specified HPO')
-    parser.add_argument('--credentials',
+    parser.add_argument('-c',
+                        '--credentials',
                         required=True,
                         help='Path to GCP credentials file')
-    parser.add_argument('--dataset_id',
+    parser.add_argument('-d',
+                        '--dataset_id',
                         required=True,
                         help='Identifies the dataset containing the OMOP tables to report on')
     parser.add_argument('hpo_id', nargs='?', help='Identifies an HPO site to report on; all sites by default')
