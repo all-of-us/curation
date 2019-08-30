@@ -1,7 +1,6 @@
 from collections import OrderedDict
 from domain_mapping import DOMAIN_TABLE_NAMES
-from domain_mapping import get_domain
-from domain_mapping import get_domain_id_field
+from resources import get_domain_id_field, get_domain
 from domain_mapping import get_field_mappings
 from domain_mapping import exist_domain_mappings
 from domain_mapping import NULL_VALUE

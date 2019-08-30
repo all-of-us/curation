@@ -12,11 +12,13 @@ from google.appengine.api import app_identity
 
 # Project imports
 import bq_utils
-import constants.cdr_cleaner.clean_cdr as clean_cdr_consts
 import cdr_cleaner.clean_cdr_engine as clean_engine
 
 # cleaning rule imports
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
+import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
+import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
+import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_concept_ids
 import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
 import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
 import cdr_cleaner.cleaning_rules.no_data_30_days_after_death as no_data_30days_after_death
@@ -27,6 +29,7 @@ import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_mapping
 import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
+import constants.cdr_cleaner.clean_cdr as clean_cdr_consts
 
 
 LOGGER = logging.getLogger(__name__)
@@ -61,7 +64,7 @@ def _gather_rdr_queries(project_id, dataset_id):
     return query_list
 
 
-def _gather_ehr_rdr_queries(project_id, dataset_id, ehr_rdr_snapshot):
+def _gather_ehr_rdr_queries(project_id, dataset_id):
     """
     gathers all the queries required to clean ehr_rdr dataset
 
@@ -70,8 +73,8 @@ def _gather_ehr_rdr_queries(project_id, dataset_id, ehr_rdr_snapshot):
     :return: returns list of queries
     """
     query_list = []
-    query_list.extend(domain_mapping.get_domain_mapping_queries(project_id, dataset_id))
-    query_list.extend(domain_mapping.get_reroute_domain_queries(project_id, dataset_id, ehr_rdr_snapshot))
+    query_list.extend(replace_standard_concept_ids.replace_standard_id_in_domain_tables(project_id, dataset_id))
+    query_list.extend(domain_alignment.domain_alignment(project_id, dataset_id))
     query_list.extend(id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
     query_list.extend(null_foreign_key.null_invalid_foreign_keys(project_id, dataset_id))
     query_list.extend(clean_years.get_year_of_birth_queries(project_id, dataset_id))
@@ -172,22 +175,18 @@ def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
     clean_engine.clean_dataset(project_id, dataset_id, query_list)
 
 
-def clean_ehr_rdr_dataset(project_id=None, dataset_id=None, ehr_rdr_snapshot=None):
+def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
     """
     Run all clean rules defined for the ehr and rdr dataset.
 
     :param project_id:  Name of the BigQuery project.
     :param dataset_id:  Name of the dataset to clean
-    :param ehr_rdr_snapshot: name of the snapshot dataset to be created at domain mapping stage.
     """
     if dataset_id is None or dataset_id == '' or dataset_id.isspace():
         dataset_id = bq_utils.get_ehr_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    if ehr_rdr_snapshot is None:
-        ehr_rdr_snapshot = bq_utils.get_ehr_rdr_snapshot_dataset_id()
-
-    query_list = _gather_ehr_rdr_queries(project_id, dataset_id, ehr_rdr_snapshot)
+    query_list = _gather_ehr_rdr_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning ehr_rdr_dataset")
     clean_engine.clean_dataset(project_id, dataset_id, query_list)

@@ -175,3 +175,40 @@ ACHILLES_INDEX_FILES = achilles_index_files()
 CDM_FILES = map(lambda t: t + '.csv', CDM_TABLES)
 ALL_ACHILLES_INDEX_FILES = [name.split(resource_path + os.sep)[1].strip() for name in ACHILLES_INDEX_FILES]
 IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES
+
+
+def get_domain_id_field(domain_table):
+    """
+    A helper function to create the id field
+    :param domain_table: the cdm domain table
+    :return: the id field
+    """
+    return domain_table + '_id'
+
+
+def get_domain_concept_id(domain_table):
+    """
+    A helper function to create the domain_concept_id field
+    :param domain_table: the cdm domain table
+    :return: the domain_concept_id
+    """
+    return domain_table.split('_')[0] + '_concept_id'
+
+
+def get_domain_source_concept_id(domain_table):
+    """
+    A helper function to create the domain_source_concept_id field
+    :param domain_table: the cdm domain table
+    :return: the domain_source_concept_id
+    """
+    return domain_table.split('_')[0] + '_source_concept_id'
+
+
+def get_domain(domain_table):
+    """
+    A helper function to get the domain for the corresponding cdm domain table
+    :param domain_table: the cdm domain table
+    :return: the domains
+    """
+    domain = domain_table.split('_')[0].capitalize()
+    return domain

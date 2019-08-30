@@ -52,7 +52,7 @@ class DomainAlignmentTest(unittest.TestCase):
         self.mock_domain_table_names_patcher.stop()
 
     @mock.patch('cdr_cleaner.cleaning_rules.domain_alignment.resolve_field_mappings')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_domain_id_field')
+    @mock.patch('resources.get_domain_id_field')
     @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.exist_domain_mappings')
     def test_parse_reroute_domain_query(self,
                                         mock_exist_domain_mappings,
@@ -84,7 +84,7 @@ class DomainAlignmentTest(unittest.TestCase):
                    dest_table=self.condition_table,
                    src_domain_id_field=self.condition_occurrence_id,
                    dest_domain_id_field=self.condition_occurrence_id,
-                   _mapping_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
+                   _logging_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
                    field_mapping_expr=self.condition_condition_alias
                    )
         expected_query += domain_alignment.UNION_ALL
@@ -96,16 +96,16 @@ class DomainAlignmentTest(unittest.TestCase):
                    dest_table=self.condition_table,
                    src_domain_id_field=self.procedure_occurrence_id,
                    dest_domain_id_field=self.condition_occurrence_id,
-                   _mapping_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
+                   _logging_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
                    field_mapping_expr=self.condition_procedure_alias
                    )
 
         self.assertEqual(re.sub(self.chars_to_replace, self.single_space, actual_query),
                          re.sub(self.chars_to_replace, self.single_space, expected_query))
 
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_domain')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_domain_id_field')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_domain_concept_id')
+    @mock.patch('resources.get_domain')
+    @mock.patch('resources.get_domain_id_field')
+    @mock.patch('resources.get_domain_concept_id')
     def test_parse_mapping_id_query_for_same_domains(self,
                                                      mock_get_domain_concept_id,
                                                      mock_get_domain_id_field,
@@ -145,9 +145,9 @@ class DomainAlignmentTest(unittest.TestCase):
 
     @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_rerouting_criteria')
     @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.exist_domain_mappings')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_domain_concept_id')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_domain_id_field')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_domain')
+    @mock.patch('resources.get_domain_concept_id')
+    @mock.patch('resources.get_domain_id_field')
+    @mock.patch('resources.get_domain')
     def test_parse_domain_mapping_query_cross_domain(self,
                                                      mock_get_domain,
                                                      mock_get_domain_id_field,
@@ -189,23 +189,27 @@ class DomainAlignmentTest(unittest.TestCase):
         self.assertEqual(re.sub(self.chars_to_replace, self.single_space, actual_query),
                          re.sub(self.chars_to_replace, self.single_space, expected_query))
 
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_domain_id_field')
+    @mock.patch('resources.get_domain_id_field')
     def test_parse_domain_mapping_query_for_excluded_records(self, mock_get_domain_id_field):
         mock_get_domain_id_field.side_effect = [self.condition_occurrence_id, self.procedure_occurrence_id]
 
         expected_query = domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(project_id=self.project_id,
                                                                                      dataset_id=self.dataset_id,
                                                                                      src_table=self.condition_table,
-                                                                                     src_id=self.condition_occurrence_id,
-                                                                                     src_domain_id_field=self.condition_occurrence_id)
+                                                                                     src_id=self.
+                                                                                     condition_occurrence_id,
+                                                                                     src_domain_id_field=self.
+                                                                                     condition_occurrence_id)
 
         expected_query += domain_alignment.UNION_ALL
 
         expected_query += domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(project_id=self.project_id,
                                                                                       dataset_id=self.dataset_id,
                                                                                       src_table=self.procedure_table,
-                                                                                      src_id=self.procedure_occurrence_id,
-                                                                                      src_domain_id_field=self.procedure_occurrence_id)
+                                                                                      src_id=self.
+                                                                                      procedure_occurrence_id,
+                                                                                      src_domain_id_field=self.
+                                                                                      procedure_occurrence_id)
 
         actual_query = domain_alignment.parse_domain_mapping_query_for_excluded_records(self.project_id,
                                                                                         self.dataset_id)
@@ -332,70 +336,8 @@ class DomainAlignmentTest(unittest.TestCase):
         mock_parse_domain_mapping_query_for_excluded_records.assert_called_once_with(self.project_id, self.dataset_id)
 
     @mock.patch('cdr_cleaner.cleaning_rules.domain_alignment.parse_reroute_domain_query')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_alignment.bq_utils.wait_on_jobs')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_alignment.bq_utils.query')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_alignment.bq_utils.create_table')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_alignment.bq_utils.get_table_info')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_alignment.bq_utils.list_all_table_ids')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_alignment.bq_utils.create_dataset')
     def test_get_reroute_domain_queries(self,
-                                        mock_create_dataset,
-                                        mock_list_all_table_ids,
-                                        mock_get_table_info,
-                                        mock_create_table,
-                                        mock_query,
-                                        mock_wait_on_jobs,
                                         mock_parse_reroute_domain_query):
-        mock_create_dataset.return_value = {
-            bq_consts.DATASET_REF: {bq_consts.DATASET_ID: self.snapshot_dataset_id}
-        }
-
-        mock_list_all_table_ids.side_effect = [[self.condition_table, self.procedure_table],
-                                               [self.condition_table, self.procedure_table]]
-
-        condition_schema = {
-            'schema': {
-                'fields': [
-                    {"type": "integer", "name": "condition_occurrence_id", "mode": "required"},
-                    {"type": "integer", "name": "person_id", "mode": "required"},
-                    {"type": "integer", "name": "condition_concept_id", "mode": "required"},
-                    {"type": "date", "name": "condition_start_date", "mode": "required"},
-                    {"type": "timestamp", "name": "condition_start_datetime", "mode": "required"},
-                    {"type": "date", "name": "condition_end_date", "mode": "required"},
-                    {"type": "timestamp", "name": "condition_end_datetime", "mode": "required"},
-                    {"type": "string", "name": "condition_source_value", "mode": "required"}
-                ]
-            }
-        }
-
-        procedure_schema = {
-            'schema': {
-                'fields': [
-                    {"type": "integer", "name": "procedure_occurrence_id", "mode": "required"},
-                    {"type": "integer", "name": "person_id", "mode": "required"},
-                    {"type": "integer", "name": "procedure_concept_id", "mode": "required"},
-                    {"type": "date", "name": "procedure_date", "mode": "required"},
-                    {"type": "timestamp", "name": "procedure_datetime", "mode": "required"},
-                    {"type": "integer", "name": "modifier_concept_id", "mode": "required"},
-                    {"type": "string", "name": "procedure_source_value", "mode": "required"}
-                ]
-            }
-        }
-
-        mock_get_table_info.side_effect = [condition_schema, procedure_schema]
-
-        mock_query.side_effect = [{
-            'jobReference': {
-                'jobId': 1
-            }
-        }, {
-            'jobReference': {
-                'jobId': 2
-            }
-        }]
-
-        mock_wait_on_jobs.__iter__.return_value = []
-
         reroute_domain_query_condition = 'SELECT reroute_domain_query_condition'
         reroute_domain_query_procedure = 'SELECT reroute_domain_query_procedure'
 
@@ -418,35 +360,6 @@ class DomainAlignmentTest(unittest.TestCase):
             }]
 
         actual_queries = domain_alignment.get_reroute_domain_queries(self.project_id,
-                                                                     self.dataset_id,
-                                                                     self.snapshot_dataset_id)
+                                                                     self.dataset_id)
 
         self.assertItemsEqual(expected_queries, actual_queries)
-
-        mock_create_dataset.assert_called()
-
-        mock_create_table.assert_any_call(self.condition_table,
-                                          condition_schema['schema']['fields'],
-                                          drop_existing=True,
-                                          dataset_id=self.snapshot_dataset_id)
-
-        mock_create_table.assert_any_call(self.procedure_table,
-                                          procedure_schema['schema']['fields'],
-                                          drop_existing=True,
-                                          dataset_id=self.snapshot_dataset_id)
-
-        mock_query.assert_any_call(domain_alignment.SELECT_DOMAIN_RECORD_QUERY.format(project_id=self.project_id,
-                                                                                      dataset_id=self.dataset_id,
-                                                                                      table_id=self.condition_table),
-                                   use_legacy_sql=False,
-                                   destination_table_id=self.condition_table,
-                                   destination_dataset_id=self.snapshot_dataset_id,
-                                   batch=True)
-
-        mock_query.assert_any_call(domain_alignment.SELECT_DOMAIN_RECORD_QUERY.format(project_id=self.project_id,
-                                                                                      dataset_id=self.dataset_id,
-                                                                                      table_id=self.procedure_table),
-                                   use_legacy_sql=False,
-                                   destination_table_id=self.procedure_table,
-                                   destination_dataset_id=self.snapshot_dataset_id,
-                                   batch=True)

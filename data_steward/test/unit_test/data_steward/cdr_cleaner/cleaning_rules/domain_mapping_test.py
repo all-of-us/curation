@@ -1,6 +1,8 @@
 import unittest
 
 from mock import patch
+
+import resources
 from cdr_cleaner.cleaning_rules.domain_mapping import SRC_TABLE
 from cdr_cleaner.cleaning_rules.domain_mapping import DEST_TABLE
 from cdr_cleaner.cleaning_rules.domain_mapping import SRC_FIELD
@@ -119,16 +121,16 @@ class DomainMappingTest(unittest.TestCase):
         self.mock_value_mappings_csv_patcher.stop()
 
     def test_get_domain_id_field(self):
-        self.assertEqual(domain_mapping.get_domain_id_field(self.condition_table), self.condition_occurrence_id)
-        self.assertEqual(domain_mapping.get_domain_id_field(self.procedure_table), self.procedure_occurrence_id)
+        self.assertEqual(resources.get_domain_id_field(self.condition_table), self.condition_occurrence_id)
+        self.assertEqual(resources.get_domain_id_field(self.procedure_table), self.procedure_occurrence_id)
 
     def test_get_domain_concept_id(self):
-        self.assertEqual(domain_mapping.get_domain_concept_id(self.condition_table), self.condition_concept_id)
-        self.assertEqual(domain_mapping.get_domain_concept_id(self.procedure_table), self.procedure_concept_id)
+        self.assertEqual(resources.get_domain_concept_id(self.condition_table), self.condition_concept_id)
+        self.assertEqual(resources.get_domain_concept_id(self.procedure_table), self.procedure_concept_id)
 
     def test_get_domain(self):
-        self.assertEqual(domain_mapping.get_domain(self.condition_table), self.condition)
-        self.assertEqual(domain_mapping.get_domain(self.procedure_table), self.procedure)
+        self.assertEqual(resources.get_domain(self.condition_table), self.condition)
+        self.assertEqual(resources.get_domain(self.procedure_table), self.procedure)
 
     def test_exist_domain_mappings(self):
         self.assertTrue(domain_mapping.exist_domain_mappings(self.condition_table, self.procedure_table))
