@@ -350,7 +350,8 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         completeness_query = completeness.get_hpo_completeness_query(hpo_id)
         report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(completeness_query)
 
-        logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.', bucket, folder_prefix + common.PROCESSED_TXT)
+        logging.info('Processing complete. Saving timestamp %s to `gs://%s/%s`.',
+                     processed_datetime_str, bucket, folder_prefix + common.PROCESSED_TXT)
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT, processed_datetime_str)
 
     except HttpError as err:
