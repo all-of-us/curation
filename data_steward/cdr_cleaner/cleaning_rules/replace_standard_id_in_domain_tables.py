@@ -103,7 +103,7 @@ SRC_CONCEPT_ID_MAPPING_QUERY = (
     '  scr.concept_id_1 = sc.concept_id '
     '  AND scr.relationship_id = \'Maps to\' '
     'WHERE '
-    '  dc.standard_concept IS NULL'
+    '  dc.standard_concept IS NULL or dc.standard_concept = \'C\' '
 )
 
 DUPLICATE_ID_UPDATE_QUERY = (
