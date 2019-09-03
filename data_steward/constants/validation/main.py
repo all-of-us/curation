@@ -26,10 +26,10 @@ DUPLICATE_IDS_HEADERS = ['Table Name', 'Duplicate ID Count']
 # Used in get_heel_errors_in_results_html()
 HEEL_ERROR_QUERY_VALIDATION = '''
     SELECT 
-        analysis_id AS Analysis_ID,
-        achilles_heel_warning AS Heel_Error,
-        rule_id AS Rule_ID,
-        record_count AS Record_Count
+        analysis_id AS analysis_id,
+        achilles_heel_warning AS heel_error,
+        rule_id AS rule_id,
+        record_count AS record_count
     FROM `{project_id}.{dataset_id}.{table_id}`
     WHERE achilles_heel_warning LIKE 'ERROR:%'
     ORDER BY 
@@ -42,17 +42,17 @@ HEEL_ERROR_FAIL_ROWS = [(NULL_MESSAGE, HEEL_ERROR_FAIL_MESSAGE, NULL_MESSAGE, NU
 DRUG_CHECKS_QUERY_VALIDATION = '''
     SELECT
         init.*,
-        CONCAT(CAST(ROUND(init.Counts_by_Drug_class/(
+        CONCAT(CAST(ROUND(init.count/(
             SELECT
                 COUNT(*)
             FROM
-                `{project_id}.{dataset_id}.{table_id}`)*100, 2) AS STRING), '%') AS Percentage
+                `{project_id}.{dataset_id}.{table_id}`)*100, 2) AS STRING), '%') AS percentage
     FROM (
         SELECT
-            concept_classes.concept_id AS Drug_Class_Concept_ID,
-            concept_classes.drug_class_name AS Drug_Class,
-            concept_classes.concept_name AS Drug_Class_Concept_Name,
-            COUNT(drug_exposure.drug_exposure_id) AS Counts_by_Drug_class
+            concept_classes.concept_id AS concept_id,
+            concept_classes.drug_class_name AS drug_class,
+            concept_classes.concept_name AS concept_name,
+            COUNT(drug_exposure.drug_exposure_id) AS count
         FROM
             `{project_id}.{dataset_id}.{table_id}` AS drug_exposure
         JOIN
@@ -69,8 +69,8 @@ DRUG_CHECKS_QUERY_VALIDATION = '''
             concept_classes.concept_name,
             concept_classes.drug_class_name) AS init
     ORDER BY
-        Counts_by_Drug_class DESC,
-        Drug_Class_Concept_ID
+        count DESC,
+        concept_id
     '''
 
 # Used in _create_drug_class_table()
@@ -108,17 +108,17 @@ DRUG_CLASS_QUERY = '''
 
 DUPLICATE_IDS_WRAPPER = '''
     SELECT 
-        Table_Name,
-        Duplicate_ID_Count
+        table_name,
+        count
     FROM
         ({union_of_subqueries})
-    WHERE Duplicate_ID_Count IS NOT NULL
+    WHERE count IS NOT NULL
     '''
 
 DUPLICATE_IDS_SUBQUERY = '''
     SELECT 
-        '{table_name}' AS Table_Name,
-        SUM(Individual_Duplicate_ID_Count-1) as Duplicate_ID_Count
+        '{table_name}' AS table_name,
+        SUM(Individual_Duplicate_ID_Count-1) as count
     FROM
     (SELECT
         COUNT({table_name}_id) AS Individual_Duplicate_ID_Count

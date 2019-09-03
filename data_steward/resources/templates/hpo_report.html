@@ -257,11 +257,7 @@ This report may be incomplete because the submission is still being processed. P
     </thead>
     <tbody>
     {% set symbol = {0: "&cross;", 1: "&check;"} %}
-    {% for row in results %}
-        {% set file_name = row["file_name"] %}
-        {% set found = row["found"] %}
-        {% set parsed = row["parsed"] %}
-        {% set loaded = row["loaded"] %}
+    {% for (file_name, found, parsed, loaded) in results %}
         <tr>
             <th scope="col" class="w-auto">{{ file_name }}</th>
             <td class="symbol result-{{ found }} w-25">{{ symbol[found] }}</td>
@@ -282,10 +278,10 @@ This report may be incomplete because the submission is still being processed. P
         </tr>
     </thead>
     <tbody>
-    {% for row in errors %}
+    {% for (file_name, message) in errors %}
         <tr>
-            <td>{{ row["file_name"] }}</td>
-            <td>{{ row["message"] }}</td>
+            <td>{{ file_name }}</td>
+            <td>{{ message }}</td>
         </tr>
     {% endfor %}
     </tbody>
@@ -306,10 +302,10 @@ This report may be incomplete because the submission is still being processed. P
         </tr>
     </thead>
     <tbody>
-    {% for row in warnings %}
+    {% for (file_name, message) in warnings %}
         <tr>
-            <td>{{ row["file_name"] }}</td>
-            <td>{{ row["message"] }}</td>
+            <td>{{ file_name }}</td>
+            <td>{{ message }}</td>
         </tr>
     {% endfor %}
     </tbody>
