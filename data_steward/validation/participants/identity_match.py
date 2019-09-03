@@ -885,6 +885,8 @@ def match_participants(
             )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.FIRST_NAME_FIELD, site)
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values, consts.FIRST_NAME_FIELD)
@@ -904,6 +906,8 @@ def match_participants(
             )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.LAST_NAME_FIELD, site)
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values, consts.LAST_NAME_FIELD)
@@ -923,6 +927,8 @@ def match_participants(
 #            )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.MIDDLE_NAME_FIELD, site)
             read_errors += 1
         else:
             # write middle name matches for hpo to table
@@ -944,6 +950,8 @@ def match_participants(
             )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.ZIP_CODE_FIELD, site)
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values, consts.ZIP_CODE_FIELD)
@@ -964,6 +972,8 @@ def match_participants(
             )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.CITY_FIELD, site)
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values, consts.ZIP_CODE_FIELD)
@@ -984,6 +994,8 @@ def match_participants(
             )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.STATE_FIELD, site)
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values, consts.STATE_FIELD)
@@ -1008,6 +1020,8 @@ def match_participants(
             )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for fields: %s, %s at site: %s",
+                             consts.ADDRESS_ONE_FIELD, consts.ADDRESS_TWO_FIELD, site)
             read_errors += 1
         else:
             results = _add_matches_to_results(results, address_one_matches, consts.ADDRESS_ONE_FIELD)
@@ -1028,6 +1042,8 @@ def match_participants(
             )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.EMAIL_FIELD, site)
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values, consts.EMAIL_FIELD)
@@ -1047,6 +1063,8 @@ def match_participants(
             )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.PHONE_NUMBER_FIELD, site)
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values, consts.PHONE_NUMBER_FIELD)
@@ -1065,6 +1083,8 @@ def match_participants(
             )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.SEX_FIELD, site)
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values, consts.SEX_FIELD)
@@ -1083,6 +1103,8 @@ def match_participants(
             )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.BIRTH_DATETIME_FIELD, site)
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values, consts.BIRTH_DATE_FIELD)
@@ -1094,6 +1116,7 @@ def match_participants(
             writers.write_to_result_table(project, validation_dataset, site, results)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
+            LOGGER.exception('Did not write site information to validation dataset:  %s', site)
             write_errors += 1
 
         LOGGER.info('Wrote validation results for site: %s', site)
