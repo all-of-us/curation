@@ -47,7 +47,7 @@ def create_match_values_table(project, rdr_dataset, destination_dataset):
         project=project,
         dataset=rdr_dataset,
         table=consts.OBSERVATION_TABLE,
-        pii_list=', '.join(consts.PII_CODES_LIST)
+        pii_list=','.join(consts.PII_CODES_LIST)
     )
 
     LOGGER.debug("Participant validation ran the query\n%s", query_string)
@@ -112,7 +112,7 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
             if exists == value:
                 pass
             else:
-                LOGGER.error("Trying to reset value for person_id\t%s.")
+                LOGGER.warning("Trying to reset value for person_id\t%s.", person_id)
 
     return result_dict
 
@@ -166,7 +166,7 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
             if exists == value:
                 pass
             else:
-                LOGGER.error("Trying to reset value for person_id\t%s.")
+                LOGGER.warning("Trying to reset value for person_id\t%s.", person_id)
 
     return result_dict
 
@@ -253,6 +253,9 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
         location_id_list.append(location_id[1])
         location_id_dict[int(location_id[1])] = location_id[0]
 
+    if not location_id_list:
+        LOGGER.info("No location information found for site:\t%s", hpo)
+        return []
 
     location_id_str = ', '.join(location_id_list)
     query_string = consts.PII_LOCATION_VALUES.format(

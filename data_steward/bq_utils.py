@@ -155,6 +155,8 @@ def load_csv(schema_path,
     :param project_id:
     :param dataset_id:
     :param table_id:
+    :param write_disposition:  tell BQ how to handle existing tables.
+        options are TRUNCATE, APPEND, and EMPTY.  default is TRUNCATE.
     :param allow_jagged_rows:
     :return:
     """
@@ -169,7 +171,7 @@ def load_csv(schema_path,
                 'tableId': table_id},
             'skipLeadingRows': 1,
             'allowQuotedNewlines': True,
-            'writeDisposition': bq_consts.WRITE_TRUNCATE,
+            'writeDisposition': write_disposition,
             'allowJaggedRows': allow_jagged_rows,
             'sourceFormat': 'CSV'
             }
@@ -380,7 +382,8 @@ def query(q,
     :param retry_count: number of times to retry with randomized exponential backoff
     :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY (default)
     :param destination_dataset_id: dataset ID of destination table (EHR dataset by default)
-    :parm batch:
+    :param batch: whether the query should be run in INTERACTIVE or BATCH mode.
+        Defaults to INTERACTIVE.
     :return: if destination_table_id is supplied then job info, otherwise job query response
              (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
     """

@@ -52,7 +52,8 @@ def _compare_name_fields(
         pii_dataset,
         hpo,
         concept_id,
-        pii_field
+        pii_field,
+        pii_tables
     ):
     """
     For an hpo, compare all first, middle, and last name fields to omop settings.
@@ -71,39 +72,43 @@ def _compare_name_fields(
     :return: a match_values dictionary.
     """
     match_values = {}
+    table_name = hpo + consts.PII_NAME_TABLE
 
-    rdr_names = readers.get_rdr_match_values(
-        project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
-    )
-
-    try:
-        pii_names = readers.get_pii_values(
-            project,
-            pii_dataset,
-            hpo,
-            consts.PII_NAME_TABLE,
-            pii_field
+    if table_name in pii_tables:
+        rdr_names = readers.get_rdr_match_values(
+            project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
         )
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exception:
-        LOGGER.exception(
-            "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
-        )
-        return match_values, exception
 
-    for person_id, pii_name in pii_names:
-        rdr_name = rdr_names.get(person_id)
+        try:
+            pii_names = readers.get_pii_values(
+                project,
+                pii_dataset,
+                hpo,
+                consts.PII_NAME_TABLE,
+                pii_field
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
+            )
+            raise
 
-        if rdr_name is None or pii_name is None:
-            match_str = consts.MISSING
-        else:
-            pii_name = normalizer.normalize_name(pii_name)
-            rdr_name = normalizer.normalize_name(rdr_name)
-            match_str = consts.MATCH if rdr_name == pii_name else consts.MISMATCH
+        for person_id, pii_name in pii_names:
+            rdr_name = rdr_names.get(person_id)
 
-        match_values[person_id] = match_str
+            if rdr_name is None or pii_name is None:
+                match_str = consts.MISSING
+            else:
+                pii_name = normalizer.normalize_name(pii_name)
+                rdr_name = normalizer.normalize_name(rdr_name)
+                match_str = consts.MATCH if rdr_name == pii_name else consts.MISMATCH
 
-    return match_values, None
+            match_values[person_id] = match_str
+    else:
+        raise RuntimeError('Table {} doesnt exist.'.format(table_name))
+
+    return match_values
 
 
 def _compare_email_addresses(
@@ -112,7 +117,8 @@ def _compare_email_addresses(
         pii_dataset,
         hpo,
         concept_id,
-        pii_field
+        pii_field,
+        pii_tables
     ):
     """
     Compare email addresses from hpo PII table and OMOP observation table.
@@ -128,39 +134,43 @@ def _compare_email_addresses(
     :return: a match_value dictionary.
     """
     match_values = {}
+    table_name = hpo + consts.PII_EMAIL_TABLE
 
-    email_addresses = readers.get_rdr_match_values(
-        project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
-    )
-
-    try:
-        pii_emails = readers.get_pii_values(
-            project,
-            pii_dataset,
-            hpo,
-            consts.PII_EMAIL_TABLE,
-            pii_field
+    if table_name in pii_tables:
+        email_addresses = readers.get_rdr_match_values(
+            project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
         )
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exception:
-        LOGGER.exception(
-            "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
-        )
-        return match_values, exception
 
-    for person_id, pii_email in pii_emails:
-        rdr_email = email_addresses.get(person_id)
+        try:
+            pii_emails = readers.get_pii_values(
+                project,
+                pii_dataset,
+                hpo,
+                consts.PII_EMAIL_TABLE,
+                pii_field
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
+            )
+            raise
 
-        if rdr_email is None or pii_email is None:
-            match_str = consts.MISSING
-        else:
-            rdr_email = normalizer.normalize_email(rdr_email)
-            pii_email = normalizer.normalize_email(pii_email)
-            match_str = consts.MATCH if rdr_email == pii_email else consts.MISMATCH
+        for person_id, pii_email in pii_emails:
+            rdr_email = email_addresses.get(person_id)
 
-        match_values[person_id] = match_str
+            if rdr_email is None or pii_email is None:
+                match_str = consts.MISSING
+            else:
+                rdr_email = normalizer.normalize_email(rdr_email)
+                pii_email = normalizer.normalize_email(pii_email)
+                match_str = consts.MATCH if rdr_email == pii_email else consts.MISMATCH
 
-    return match_values, None
+            match_values[person_id] = match_str
+    else:
+        raise RuntimeError('Table {} doesnt exist.'.format(table_name))
+
+    return match_values
 
 
 def _compare_phone_numbers(
@@ -169,7 +179,8 @@ def _compare_phone_numbers(
         pii_dataset,
         hpo,
         concept_id,
-        pii_field
+        pii_field,
+        pii_tables
     ):
     """
     Compare the digit based phone numbers from PII and Observation tables.
@@ -185,39 +196,43 @@ def _compare_phone_numbers(
     :return: A match_values dictionary.
     """
     match_values = {}
+    table_name = hpo + consts.PII_PHONE_TABLE
 
-    phone_numbers = readers.get_rdr_match_values(
-        project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
-    )
-
-    try:
-        pii_phone_numbers = readers.get_pii_values(
-            project,
-            pii_dataset,
-            hpo,
-            consts.PII_PHONE_TABLE,
-            pii_field
+    if table_name in pii_tables:
+        phone_numbers = readers.get_rdr_match_values(
+            project, rdr_dataset, consts.ID_MATCH_TABLE, concept_id
         )
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exception:
-        LOGGER.exception(
-            "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
-        )
-        return match_values, exception
 
-    for person_id, pii_number in pii_phone_numbers:
-        rdr_phone = phone_numbers.get(person_id)
+        try:
+            pii_phone_numbers = readers.get_pii_values(
+                project,
+                pii_dataset,
+                hpo,
+                consts.PII_PHONE_TABLE,
+                pii_field
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
+            )
+            raise
 
-        if rdr_phone is None or pii_number is None:
-            match_str = consts.MISSING
-        else:
-            rdr_phone = normalizer.normalize_phone(rdr_phone)
-            pii_number = normalizer.normalize_phone(pii_number)
-            match_str = consts.MATCH if rdr_phone == pii_number else consts.MISMATCH
+        for person_id, pii_number in pii_phone_numbers:
+            rdr_phone = phone_numbers.get(person_id)
 
-        match_values[person_id] = match_str
+            if rdr_phone is None or pii_number is None:
+                match_str = consts.MISSING
+            else:
+                rdr_phone = normalizer.normalize_phone(rdr_phone)
+                pii_number = normalizer.normalize_phone(pii_number)
+                match_str = consts.MATCH if rdr_phone == pii_number else consts.MISMATCH
 
-    return match_values, None
+            match_values[person_id] = match_str
+    else:
+        raise RuntimeError('Table {} doesnt exist.'.format(table_name))
+
+    return match_values
 
 
 def _compare_cities(
@@ -227,7 +242,8 @@ def _compare_cities(
         pii_dataset,
         hpo,
         concept_id,
-        pii_field
+        pii_field,
+        pii_tables
     ):
     """
     Compare city information from hpo PII table and OMOP observation table.
@@ -246,40 +262,44 @@ def _compare_cities(
     :return: a match_value dictionary.
     """
     match_values = {}
+    table_name = hpo + consts.PII_ADDRESS_TABLE
 
-    cities = readers.get_rdr_match_values(
-        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id
-    )
-
-    try:
-        pii_cities = readers.get_location_pii(
-            project,
-            rdr_dataset,
-            pii_dataset,
-            hpo,
-            consts.PII_ADDRESS_TABLE,
-            pii_field
+    if table_name in pii_tables:
+        cities = readers.get_rdr_match_values(
+            project, validation_dataset, consts.ID_MATCH_TABLE, concept_id
         )
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exception:
-        LOGGER.exception(
-            "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
-        )
-        return match_values, exception
 
-    for person_id, pii_city in pii_cities:
-        rdr_city = cities.get(person_id)
+        try:
+            pii_cities = readers.get_location_pii(
+                project,
+                rdr_dataset,
+                pii_dataset,
+                hpo,
+                consts.PII_ADDRESS_TABLE,
+                pii_field
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
+            )
+            raise
 
-        if rdr_city is None or pii_city is None:
-            match_str = consts.MISSING
-        else:
-            rdr_city = normalizer.normalize_city_name(rdr_city)
-            pii_city = normalizer.normalize_city_name(pii_city)
-            match_str = consts.MATCH if rdr_city == pii_city else consts.MISMATCH
+        for person_id, pii_city in pii_cities:
+            rdr_city = cities.get(person_id)
 
-        match_values[person_id] = match_str
+            if rdr_city is None or pii_city is None:
+                match_str = consts.MISSING
+            else:
+                rdr_city = normalizer.normalize_city_name(rdr_city)
+                pii_city = normalizer.normalize_city_name(pii_city)
+                match_str = consts.MATCH if rdr_city == pii_city else consts.MISMATCH
 
-    return match_values, None
+            match_values[person_id] = match_str
+    else:
+        raise RuntimeError('Table {} doesnt exist.'.format(table_name))
+
+    return match_values
 
 
 def _compare_states(
@@ -289,10 +309,11 @@ def _compare_states(
         pii_dataset,
         hpo,
         concept_id,
-        pii_field
+        pii_field,
+        pii_tables
     ):
     """
-    Compare email addresses from hpo PII table and OMOP observation table.
+    Compare state addresses from hpo PII table and OMOP observation table.
 
     :param project:  project to search for the datasets
     :param validation_dataset:  the auto generated match validation dataset
@@ -308,40 +329,44 @@ def _compare_states(
     :return: a match_value dictionary.
     """
     match_values = {}
+    table_name = hpo + consts.PII_ADDRESS_TABLE
 
-    states = readers.get_rdr_match_values(
-        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id
-    )
-
-    try:
-        pii_states = readers.get_location_pii(
-            project,
-            rdr_dataset,
-            pii_dataset,
-            hpo,
-            consts.PII_ADDRESS_TABLE,
-            pii_field
+    if table_name in pii_tables:
+        states = readers.get_rdr_match_values(
+            project, validation_dataset, consts.ID_MATCH_TABLE, concept_id
         )
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exception:
-        LOGGER.exception(
-            "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
-        )
-        return match_values, exception
 
-    for person_id, pii_state in pii_states:
-        rdr_state = states.get(person_id)
+        try:
+            pii_states = readers.get_location_pii(
+                project,
+                rdr_dataset,
+                pii_dataset,
+                hpo,
+                consts.PII_ADDRESS_TABLE,
+                pii_field
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
+            )
+            raise
 
-        if rdr_state is None or pii_state is None:
-            match_str = consts.MISSING
-        else:
-            rdr_state = normalizer.normalize_state(rdr_state)
-            pii_state = normalizer.normalize_state(pii_state)
-            match_str = consts.MATCH if rdr_state == pii_state else consts.MISMATCH
+        for person_id, pii_state in pii_states:
+            rdr_state = states.get(person_id)
 
-        match_values[person_id] = match_str
+            if rdr_state is None or pii_state is None:
+                match_str = consts.MISSING
+            else:
+                rdr_state = normalizer.normalize_state(rdr_state)
+                pii_state = normalizer.normalize_state(pii_state)
+                match_str = consts.MATCH if rdr_state == pii_state else consts.MISMATCH
 
-    return match_values, None
+            match_values[person_id] = match_str
+    else:
+        raise RuntimeError('Table {} doesnt exist.'.format(table_name))
+
+    return match_values
 
 
 def _compare_zip_codes(
@@ -351,10 +376,11 @@ def _compare_zip_codes(
         pii_dataset,
         hpo,
         concept_id,
-        pii_field
+        pii_field,
+        pii_tables
     ):
     """
-    Compare email addresses from hpo PII table and OMOP observation table.
+    Compare zip codes from hpo PII table and OMOP observation table.
 
     :param project:  project to search for the datasets
     :param validation_dataset:  the auto generated match validation dataset
@@ -370,40 +396,44 @@ def _compare_zip_codes(
     :return: a match_value dictionary.
     """
     match_values = {}
+    table_name = hpo + consts.PII_ADDRESS_TABLE
 
-    zip_codes = readers.get_rdr_match_values(
-        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id
-    )
-
-    try:
-        pii_zip_codes = readers.get_location_pii(
-            project,
-            rdr_dataset,
-            pii_dataset,
-            hpo,
-            consts.PII_ADDRESS_TABLE,
-            pii_field
+    if table_name in pii_tables:
+        zip_codes = readers.get_rdr_match_values(
+            project, validation_dataset, consts.ID_MATCH_TABLE, concept_id
         )
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exception:
-        LOGGER.exception(
-            "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
-        )
-        return match_values, exception
 
-    for person_id, pii_zip_code in pii_zip_codes:
-        rdr_zip = zip_codes.get(person_id)
+        try:
+            pii_zip_codes = readers.get_location_pii(
+                project,
+                rdr_dataset,
+                pii_dataset,
+                hpo,
+                consts.PII_ADDRESS_TABLE,
+                pii_field
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Unable to read PII for: %s\tdata field:\t%s", hpo, pii_field
+            )
+            raise
 
-        if rdr_zip is None or pii_zip_code is None:
-            match_str = consts.MISSING
-        else:
-            rdr_zip = normalizer.normalize_zip(rdr_zip)
-            pii_zip = normalizer.normalize_zip(pii_zip_code)
-            match_str = consts.MATCH if rdr_zip == pii_zip else consts.MISMATCH
+        for person_id, pii_zip_code in pii_zip_codes:
+            rdr_zip = zip_codes.get(person_id)
 
-        match_values[person_id] = match_str
+            if rdr_zip is None or pii_zip_code is None:
+                match_str = consts.MISSING
+            else:
+                rdr_zip = normalizer.normalize_zip(rdr_zip)
+                pii_zip = normalizer.normalize_zip(pii_zip_code)
+                match_str = consts.MATCH if rdr_zip == pii_zip else consts.MISMATCH
 
-    return match_values, None
+            match_values[person_id] = match_str
+    else:
+        raise RuntimeError('Table {} doesnt exist.'.format(table_name))
+
+    return match_values
 
 
 def _compare_street_addresses(
@@ -415,7 +445,8 @@ def _compare_street_addresses(
         concept_id_one,
         concept_id_two,
         field_one,
-        field_two
+        field_two,
+        pii_tables
     ):
     """
     Compare the components of the standard address field.
@@ -444,84 +475,88 @@ def _compare_street_addresses(
     """
     address_one_match_values = {}
     address_two_match_values = {}
+    table_name = hpo + consts.PII_ADDRESS_TABLE
 
-    rdr_address_ones = readers.get_rdr_match_values(
-        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_one
-    )
-
-    rdr_address_twos = readers.get_rdr_match_values(
-        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_two
-    )
-
-    try:
-        pii_street_ones = readers.get_location_pii(
-            project, rdr_dataset, pii_dataset, hpo, consts.PII_ADDRESS_TABLE, field_one
+    if table_name in pii_tables:
+        rdr_address_ones = readers.get_rdr_match_values(
+            project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_one
         )
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exception:
-        LOGGER.exception(
-            "Unable to read PII for: %s\tdata field:\t%s", hpo, field_one
+
+        rdr_address_twos = readers.get_rdr_match_values(
+            project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_two
         )
-        return address_one_match_values, address_two_match_values, exception
-    try:
-        pii_street_twos = readers.get_location_pii(
-            project, rdr_dataset, pii_dataset, hpo, consts.PII_ADDRESS_TABLE, field_two
-        )
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exception:
-        LOGGER.exception(
-            "Unable to read PII for: %s\tdata field:\t%s", hpo, field_two
-        )
-        return address_one_match_values, address_two_match_values, exception
 
-    pii_street_addresses = {}
-    for person_id, street in pii_street_ones:
-        pii_street_addresses[person_id] = [person_id, street]
+        try:
+            pii_street_ones = readers.get_location_pii(
+                project, rdr_dataset, pii_dataset, hpo, consts.PII_ADDRESS_TABLE, field_one
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Unable to read PII for: %s\tdata field:\t%s", hpo, field_one
+            )
+            raise
+        try:
+            pii_street_twos = readers.get_location_pii(
+                project, rdr_dataset, pii_dataset, hpo, consts.PII_ADDRESS_TABLE, field_two
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Unable to read PII for: %s\tdata field:\t%s", hpo, field_two
+            )
+            raise
 
-    for person_id, street in pii_street_twos:
-        current_value = pii_street_addresses.get(person_id, [])
+        pii_street_addresses = {}
+        for person_id, street in pii_street_ones:
+            pii_street_addresses[person_id] = [person_id, street]
 
-        if current_value == []:
-            current_value = [person_id, '', street]
-        else:
-            current_value.append(street)
+        for person_id, street in pii_street_twos:
+            current_value = pii_street_addresses.get(person_id, [])
 
-        pii_street_addresses[person_id] = current_value
-
-    for person_id, addresses in pii_street_addresses.iteritems():
-
-        pii_addr_one = addresses[1]
-        pii_addr_two = addresses[2]
-
-        rdr_addr_one = normalizer.normalize_street(rdr_address_ones.get(person_id))
-        pii_addr_one = normalizer.normalize_street(pii_addr_one)
-        rdr_addr_two = normalizer.normalize_street(rdr_address_twos.get(person_id))
-        pii_addr_two = normalizer.normalize_street(pii_addr_two)
-
-        # easy case, fields 1 and 2 from both sources match exactly
-        if rdr_addr_one == pii_addr_one and rdr_addr_two == pii_addr_two:
-            address_one_match_values[person_id] = consts.MATCH
-            address_two_match_values[person_id] = consts.MATCH
-        else:
-            # convert two fields to one field and store as a list of strings
-            full_rdr_street = rdr_addr_one + ' ' + rdr_addr_two
-            full_pii_street = pii_addr_one + ' ' + pii_addr_two
-            full_rdr_street_list = full_rdr_street.split()
-            full_pii_street_list = full_pii_street.split()
-
-            # check top see if each item in one list is in the other list  and
-            # set match results from that
-            missing_rdr = _compare_address_lists(full_rdr_street_list, full_pii_street_list)
-            missing_pii = _compare_address_lists(full_pii_street_list, full_rdr_street_list)
-
-            if (missing_rdr + missing_pii) > 0:
-                address_one_match_values[person_id] = consts.MISMATCH
-                address_two_match_values[person_id] = consts.MISMATCH
+            if current_value == []:
+                current_value = [person_id, '', street]
             else:
+                current_value.append(street)
+
+            pii_street_addresses[person_id] = current_value
+
+        for person_id, addresses in pii_street_addresses.iteritems():
+
+            pii_addr_one = addresses[1]
+            pii_addr_two = addresses[2]
+
+            rdr_addr_one = normalizer.normalize_street(rdr_address_ones.get(person_id))
+            pii_addr_one = normalizer.normalize_street(pii_addr_one)
+            rdr_addr_two = normalizer.normalize_street(rdr_address_twos.get(person_id))
+            pii_addr_two = normalizer.normalize_street(pii_addr_two)
+
+            # easy case, fields 1 and 2 from both sources match exactly
+            if rdr_addr_one == pii_addr_one and rdr_addr_two == pii_addr_two:
                 address_one_match_values[person_id] = consts.MATCH
                 address_two_match_values[person_id] = consts.MATCH
+            else:
+                # convert two fields to one field and store as a list of strings
+                full_rdr_street = rdr_addr_one + ' ' + rdr_addr_two
+                full_pii_street = pii_addr_one + ' ' + pii_addr_two
+                full_rdr_street_list = full_rdr_street.split()
+                full_pii_street_list = full_pii_street.split()
 
-    return address_one_match_values, address_two_match_values, None
+                # check top see if each item in one list is in the other list  and
+                # set match results from that
+                missing_rdr = _compare_address_lists(full_rdr_street_list, full_pii_street_list)
+                missing_pii = _compare_address_lists(full_pii_street_list, full_rdr_street_list)
+
+                if (missing_rdr + missing_pii) > 0:
+                    address_one_match_values[person_id] = consts.MISMATCH
+                    address_two_match_values[person_id] = consts.MISMATCH
+                else:
+                    address_one_match_values[person_id] = consts.MATCH
+                    address_two_match_values[person_id] = consts.MATCH
+    else:
+        raise RuntimeError('Table {} doesnt exist.'.format(table_name))
+
+    return address_one_match_values, address_two_match_values
 
 
 def _compare_genders(
@@ -529,7 +564,8 @@ def _compare_genders(
         validation_dataset,
         pii_dataset,
         hpo,
-        concept_id_pii
+        concept_id_pii,
+        pii_tables
     ):
     """
     Compare genders for people.
@@ -548,41 +584,44 @@ def _compare_genders(
     :return: updated match_values dictionary
     """
     match_values = {}
+    table_name = hpo + consts.EHR_PERSON_TABLE_SUFFIX
 
-    pii_genders = readers.get_rdr_match_values(
-        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_pii
-    )
-
-    try:
-        ehr_genders = readers.get_ehr_person_values(
-            project,
-            pii_dataset,
-            hpo + consts.EHR_PERSON_TABLE_SUFFIX,
-            consts.GENDER_FIELD
+    if table_name in pii_tables:
+        pii_genders = readers.get_rdr_match_values(
+            project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_pii
         )
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exception:
-        LOGGER.exception(
-            "Unable to read PII for: %s\tdata field:\t%s", hpo, consts.GENDER_FIELD
-        )
-        return match_values, exception
 
-    # compare gender from ppi info to ehr info and record results.
-    for person_id, ehr_gender in ehr_genders.iteritems():
-        rdr_gender = pii_genders.get(person_id, '')
-        ehr_gender = consts.SEX_CONCEPT_IDS.get(ehr_gender, '')
+        try:
+            ehr_genders = readers.get_ehr_person_values(
+                project,
+                pii_dataset,
+                table_name,
+                consts.GENDER_FIELD
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Unable to read PII for: %s\tdata field:\t%s", hpo, consts.GENDER_FIELD
+            )
+            raise
 
-        rdr_gender = rdr_gender.lower()
-        ehr_gender = ehr_gender.lower()
+        # compare gender from ppi info to ehr info and record results.
+        for person_id, ehr_gender in ehr_genders.iteritems():
+            rdr_gender = pii_genders.get(person_id, '')
+            ehr_gender = consts.SEX_CONCEPT_IDS.get(ehr_gender, '')
 
-        if rdr_gender is None or ehr_gender is None:
-            match_str = consts.MISSING
-        else:
-            match_str = consts.MATCH if rdr_gender == ehr_gender else consts.MISMATCH
+            if rdr_gender is None or ehr_gender is None:
+                match_str = consts.MISSING
+            else:
+                rdr_gender = rdr_gender.lower()
+                ehr_gender = ehr_gender.lower()
+                match_str = consts.MATCH if rdr_gender == ehr_gender else consts.MISMATCH
 
-        match_values[person_id] = match_str
+            match_values[person_id] = match_str
+    else:
+        raise RuntimeError('Table {} doesnt exist.'.format(table_name))
 
-    return match_values, None
+    return match_values
 
 
 def _compare_birth_dates(
@@ -590,7 +629,8 @@ def _compare_birth_dates(
         validation_dataset,
         pii_dataset,
         site,
-        concept_id_pii
+        concept_id_pii,
+        pii_tables
     ):
     """
     Compare birth dates for people.
@@ -609,46 +649,50 @@ def _compare_birth_dates(
     :return: updated match_values dictionary
     """
     match_values = {}
+    table_name = site + consts.EHR_PERSON_TABLE_SUFFIX
 
-    pii_birthdates = readers.get_rdr_match_values(
-        project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_pii
-    )
-
-    try:
-        ehr_birthdates = readers.get_ehr_person_values(
-            project,
-            pii_dataset,
-            site + consts.EHR_PERSON_TABLE_SUFFIX,
-            consts.BIRTH_DATETIME_FIELD
+    if table_name in pii_tables:
+        pii_birthdates = readers.get_rdr_match_values(
+            project, validation_dataset, consts.ID_MATCH_TABLE, concept_id_pii
         )
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exception:
-        LOGGER.exception(
-            "Unable to read PII for: %s\tdata field:\t%s", site, consts.BIRTH_DATETIME_FIELD
-        )
-        return match_values, exception
 
-    # compare birth_datetime from ppi info to ehr info and record results.
-    for person_id, ehr_birthdate in ehr_birthdates.iteritems():
-        rdr_birthdate = pii_birthdates.get(person_id)
-        ehr_birthdate = ehr_birthdates.get(person_id)
+        try:
+            ehr_birthdates = readers.get_ehr_person_values(
+                project,
+                pii_dataset,
+                table_name,
+                consts.BIRTH_DATETIME_FIELD
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception(
+                "Unable to read PII for: %s\tdata field:\t%s", site, consts.BIRTH_DATETIME_FIELD
+            )
+            raise
 
-        if rdr_birthdate is None or ehr_birthdate is None:
-            match_values[person_id] = consts.MISSING
-        elif isinstance(rdr_birthdate, str) and isinstance(ehr_birthdate, str):
-            # convert values to datetime objects
-            rdr_date = parse(rdr_birthdate)
-            ehr_date = parse(ehr_birthdate)
-            # convert datetime objects to Year/month/day strings and compare
-            rdr_string = rdr_date.strftime(consts.DATE)
-            ehr_string = ehr_date.strftime(consts.DATE)
+        # compare birth_datetime from ppi info to ehr info and record results.
+        for person_id, ehr_birthdate in ehr_birthdates.iteritems():
+            rdr_birthdate = pii_birthdates.get(person_id)
+            ehr_birthdate = ehr_birthdates.get(person_id)
 
-            match_str = consts.MATCH if rdr_string == ehr_string else consts.MISMATCH
-            match_values[person_id] = match_str
-        else:
-            match_values[person_id] = consts.MISMATCH
+            if rdr_birthdate is None or ehr_birthdate is None:
+                match_values[person_id] = consts.MISSING
+            elif isinstance(rdr_birthdate, str) and isinstance(ehr_birthdate, str):
+                # convert values to datetime objects
+                rdr_date = parse(rdr_birthdate)
+                ehr_date = parse(ehr_birthdate)
+                # convert datetime objects to Year/month/day strings and compare
+                rdr_string = rdr_date.strftime(consts.DATE)
+                ehr_string = ehr_date.strftime(consts.DATE)
 
-    return match_values, None
+                match_str = consts.MATCH if rdr_string == ehr_string else consts.MISMATCH
+                match_values[person_id] = match_str
+            else:
+                match_values[person_id] = consts.MISMATCH
+    else:
+        raise RuntimeError('Table {} doesnt exist.'.format(table_name))
+
+    return match_values
 
 
 def _get_date_string(dataset):
@@ -741,6 +785,23 @@ def write_results_to_drc_bucket(project, validation_dataset=None):
                     )
 
 
+def _add_matches_to_results(results, matches, field):
+    for key, value in matches.iteritems():
+        individual = results.get(key)
+
+        if individual is None:
+            initialization_dict = {}
+            # add in missing data to dictionary
+            for field_item in consts.VALIDATION_FIELDS:
+                initialization_dict[field_item] = consts.MISSING
+            individual = initialization_dict
+
+        individual[field] = value
+        results[key] = individual
+
+    return results
+
+
 def match_participants(
         project,
         rdr_dataset,
@@ -765,6 +826,8 @@ def match_participants(
                 'ehr_dataset:\t%s\n'
                 'dest_dataset_id:\t%s\n',
                 project, rdr_dataset, ehr_dataset, dest_dataset_id)
+
+    ehr_tables = bq_utils.list_dataset_contents(ehr_dataset)
 
     date_string = _get_date_string(rdr_dataset)
 
@@ -803,426 +866,262 @@ def match_participants(
 
     read_errors = 0
     write_errors = 0
-    results = {}
 
     # validate first names
     for site in hpo_sites:
-        match_values, exc = _compare_name_fields(
-            project,
-            validation_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_NAME_FIRST,
-            consts.FIRST_NAME_FIELD
-        )
+        LOGGER.info('Beginning identity validation for site: %s', site)
+        results = {}
 
-        if exc is not None:
+        try:
+            match_values = None
+            match_values = _compare_name_fields(
+                project,
+                validation_dataset,
+                ehr_dataset,
+                site,
+                consts.OBS_PII_NAME_FIRST,
+                consts.FIRST_NAME_FIELD,
+                ehr_tables
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.FIRST_NAME_FIELD, site)
             read_errors += 1
         else:
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.FIRST_NAME_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.FIRST_NAME_FIELD
-                )
-                write_errors += 1
+            results = _add_matches_to_results(results, match_values, consts.FIRST_NAME_FIELD)
+            LOGGER.info('Validated first names for: %s', site)
 
-    LOGGER.info('Validated first names')
-
-    # validate last names
-    for site in hpo_sites:
-        match_values, exc = _compare_name_fields(
-            project,
-            validation_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_NAME_LAST,
-            consts.LAST_NAME_FIELD
-        )
-
-        if exc is not None:
+        # validate last names
+        try:
+            match_values = None
+            match_values = _compare_name_fields(
+                project,
+                validation_dataset,
+                ehr_dataset,
+                site,
+                consts.OBS_PII_NAME_LAST,
+                consts.LAST_NAME_FIELD,
+                ehr_tables
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.LAST_NAME_FIELD, site)
             read_errors += 1
         else:
-            # write last name matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.LAST_NAME_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.LAST_NAME_FIELD
-                )
-                write_errors += 1
+            results = _add_matches_to_results(results, match_values, consts.LAST_NAME_FIELD)
+            LOGGER.info('Validated last names for: %s', site)
 
-    LOGGER.info('Validated last names')
-
-    # validate middle names
-    for site in hpo_sites:
-        match_values, exc = _compare_name_fields(
-            project,
-            validation_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_NAME_MIDDLE,
-            consts.MIDDLE_NAME_FIELD
-        )
-
-        if exc is not None:
+        # validate middle names
+        try:
+            match_values = None
+#            match_values = _compare_name_fields(
+#                project,
+#                validation_dataset,
+#                ehr_dataset,
+#                site,
+#                consts.OBS_PII_NAME_MIDDLE,
+#                consts.MIDDLE_NAME_FIELD,
+#                ehr_tables
+#            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.MIDDLE_NAME_FIELD, site)
             read_errors += 1
         else:
             # write middle name matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.MIDDLE_NAME_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.MIDDLE_NAME_FIELD
-                )
-                write_errors += 1
+#            results = _add_matches_to_results(results, match_values, consts.MIDDLE_NAME_FIELD)
+            LOGGER.info('Not validating middle names')
 
-    LOGGER.info('Validated middle names')
-
-    # validate zip codes
-    for site in hpo_sites:
-        match_values, exc = _compare_zip_codes(
-            project,
-            validation_dataset,
-            rdr_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_STREET_ADDRESS_ZIP,
-            consts.ZIP_CODE_FIELD
-        )
-
-        if exc is not None:
-            read_errors += 1
-        else:
-            # write zip codes matces for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.ZIP_CODE_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.ZIP_CODE_FIELD
-                )
-                write_errors += 1
-
-    LOGGER.info('Validated zip codes')
-
-    # validate city
-    for site in hpo_sites:
-        match_values, exc = _compare_cities(
-            project,
-            validation_dataset,
-            rdr_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_STREET_ADDRESS_CITY,
-            consts.CITY_FIELD
-        )
-
-        if exc is not None:
-            read_errors += 1
-        else:
-            # write city matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.CITY_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.CITY_FIELD
-                )
-                write_errors += 1
-
-    LOGGER.info('Validated city names')
-
-    # validate state
-    for site in hpo_sites:
-        match_values, exc = _compare_states(
-            project,
-            validation_dataset,
-            rdr_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_STREET_ADDRESS_STATE,
-            consts.STATE_FIELD
-        )
-
-        if exc is not None:
-            read_errors += 1
-        else:
-            # write state matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.STATE_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.STATE_FIELD
-                )
-                write_errors += 1
-
-    LOGGER.info('Validated states')
-
-    # validate street addresses
-    for site in hpo_sites:
-        address_one_matches, address_two_matches, exc = _compare_street_addresses(
-            project,
-            validation_dataset,
-            rdr_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_STREET_ADDRESS_ONE,
-            consts.OBS_PII_STREET_ADDRESS_TWO,
-            consts.ADDRESS_ONE_FIELD,
-            consts.ADDRESS_TWO_FIELD
-        )
-
-        if exc is not None:
-            read_errors += 1
-        else:
-            # write street address matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    address_one_matches,
-                    project,
-                    validation_dataset,
-                    consts.ADDRESS_ONE_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.ADDRESS_ONE_FIELD
-                )
-                write_errors += 1
-
-            try:
-                writers.append_to_result_table(
-                    site,
-                    address_two_matches,
-                    project,
-                    validation_dataset,
-                    consts.ADDRESS_TWO_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.ADDRESS_TWO_FIELD
-                )
-                write_errors += 1
-
-    LOGGER.info('Validated street addresses')
-
-    # validate email addresses
-    for site in hpo_sites:
-        match_values, exc = _compare_email_addresses(
-            project,
-            validation_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_EMAIL_ADDRESS,
-            consts.EMAIL_FIELD
-        )
-
-        if exc is not None:
-            read_errors += 1
-        else:
-            # write email matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.EMAIL_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.EMAIL_FIELD
-                )
-                write_errors += 1
-
-    LOGGER.info('Validated email addresses')
-
-    # validate phone numbers
-    for site in hpo_sites:
-        match_values, exc = _compare_phone_numbers(
-            project,
-            validation_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_PHONE,
-            consts.PHONE_NUMBER_FIELD
-        )
-
-        if exc is not None:
-            read_errors += 1
-        else:
-            # write phone number matches for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.PHONE_NUMBER_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.PHONE_NUMBER_FIELD
-                )
-                write_errors += 1
-
-    LOGGER.info('Validated phone numbers')
-
-    # validate genders
-    for site in hpo_sites:
-        match_values, exc = _compare_genders(
-            project,
-            validation_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_SEX
-        )
-
-        if exc is not None:
-            read_errors += 1
-        else:
-            # write birthday match for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.SEX_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.SEX_FIELD
-                )
-                write_errors += 1
-
-    LOGGER.info('Validated genders')
-
-    # validate birth dates
-    for site in hpo_sites:
-        match_values, exc = _compare_birth_dates(
-            project,
-            validation_dataset,
-            ehr_dataset,
-            site,
-            consts.OBS_PII_BIRTH_DATETIME
-        )
-
-        if exc is not None:
-            read_errors += 1
-        else:
-            # write birthday match for hpo to table
-            try:
-                writers.append_to_result_table(
-                    site,
-                    match_values,
-                    project,
-                    validation_dataset,
-                    consts.BIRTH_DATE_FIELD
-                )
-            except (oauth2client.client.HttpAccessTokenRefreshError,
-                    googleapiclient.errors.HttpError):
-                LOGGER.exception(
-                    "Unable to insert records in table:\t%s\tfor field: %s",
-                    site,
-                    consts.BIRTH_DATE_FIELD
-                )
-                write_errors += 1
-
-    LOGGER.info('Validated birth dates')
-
-    # generate single clean record for each participant at each site
-    for site in hpo_sites:
+        # validate zip codes
         try:
-            writers.merge_fields_into_single_record(project, validation_dataset, site)
-            LOGGER.info('Merged participant match records')
+            match_values = None
+            match_values = _compare_zip_codes(
+                project,
+                validation_dataset,
+                rdr_dataset,
+                ehr_dataset,
+                site,
+                consts.OBS_PII_STREET_ADDRESS_ZIP,
+                consts.ZIP_CODE_FIELD,
+                ehr_tables
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.ZIP_CODE_FIELD, site)
+            read_errors += 1
+        else:
+            results = _add_matches_to_results(results, match_values, consts.ZIP_CODE_FIELD)
+            LOGGER.info('Validated zip codes for: %s', site)
+
+        # validate city
+        try:
+            match_values = None
+            match_values = _compare_cities(
+                project,
+                validation_dataset,
+                rdr_dataset,
+                ehr_dataset,
+                site,
+                consts.OBS_PII_STREET_ADDRESS_CITY,
+                consts.CITY_FIELD,
+                ehr_tables
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.CITY_FIELD, site)
+            read_errors += 1
+        else:
+            results = _add_matches_to_results(results, match_values, consts.ZIP_CODE_FIELD)
+            LOGGER.info('Validated city names for: %s', site)
+
+        # validate state
+        try:
+            match_values = None
+            match_values = _compare_states(
+                project,
+                validation_dataset,
+                rdr_dataset,
+                ehr_dataset,
+                site,
+                consts.OBS_PII_STREET_ADDRESS_STATE,
+                consts.STATE_FIELD,
+                ehr_tables
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.STATE_FIELD, site)
+            read_errors += 1
+        else:
+            results = _add_matches_to_results(results, match_values, consts.STATE_FIELD)
+            LOGGER.info('Validated states for: %s', site)
+
+        # validate street addresses
+        try:
+            address_one_matches = None
+            address_two_matches = None
+            match_values = None
+            address_one_matches, address_two_matches = _compare_street_addresses(
+                project,
+                validation_dataset,
+                rdr_dataset,
+                ehr_dataset,
+                site,
+                consts.OBS_PII_STREET_ADDRESS_ONE,
+                consts.OBS_PII_STREET_ADDRESS_TWO,
+                consts.ADDRESS_ONE_FIELD,
+                consts.ADDRESS_TWO_FIELD,
+                ehr_tables
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for fields: %s, %s at site: %s",
+                             consts.ADDRESS_ONE_FIELD, consts.ADDRESS_TWO_FIELD, site)
+            read_errors += 1
+        else:
+            results = _add_matches_to_results(results, address_one_matches, consts.ADDRESS_ONE_FIELD)
+            results = _add_matches_to_results(results, address_two_matches, consts.ADDRESS_TWO_FIELD)
+            LOGGER.info('Validated street addresses for: %s', site)
+
+        # validate email addresses
+        try:
+            match_values = None
+            match_values = _compare_email_addresses(
+                project,
+                validation_dataset,
+                ehr_dataset,
+                site,
+                consts.OBS_PII_EMAIL_ADDRESS,
+                consts.EMAIL_FIELD,
+                ehr_tables
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.EMAIL_FIELD, site)
+            read_errors += 1
+        else:
+            results = _add_matches_to_results(results, match_values, consts.EMAIL_FIELD)
+            LOGGER.info('Validated email addresses for: %s', site)
+
+        # validate phone numbers
+        try:
+            match_values = None
+            match_values = _compare_phone_numbers(
+                project,
+                validation_dataset,
+                ehr_dataset,
+                site,
+                consts.OBS_PII_PHONE,
+                consts.PHONE_NUMBER_FIELD,
+                ehr_tables
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.PHONE_NUMBER_FIELD, site)
+            read_errors += 1
+        else:
+            results = _add_matches_to_results(results, match_values, consts.PHONE_NUMBER_FIELD)
+            LOGGER.info('Validated phone numbers for: %s', site)
+
+        # validate genders
+        try:
+            match_values = None
+            match_values = _compare_genders(
+                project,
+                validation_dataset,
+                ehr_dataset,
+                site,
+                consts.OBS_PII_SEX,
+                ehr_tables
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.SEX_FIELD, site)
+            read_errors += 1
+        else:
+            results = _add_matches_to_results(results, match_values, consts.SEX_FIELD)
+            LOGGER.info('Validated genders for: %s', site)
+
+        # validate birth dates
+        try:
+            match_values = None
+            match_values = _compare_birth_dates(
+                project,
+                validation_dataset,
+                ehr_dataset,
+                site,
+                consts.OBS_PII_BIRTH_DATETIME,
+                ehr_tables
+            )
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, RuntimeError):
+            LOGGER.exception("Could not read data for field: %s at site: %s",
+                             consts.BIRTH_DATETIME_FIELD, site)
+            read_errors += 1
+        else:
+            results = _add_matches_to_results(results, match_values, consts.BIRTH_DATE_FIELD)
+            LOGGER.info('Validated birth dates for: %s', site)
+
+        LOGGER.info('Writing results to BQ table')
+        # write dictionary to a table
+        try:
+            writers.write_to_result_table(project, validation_dataset, site, results)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
+            LOGGER.exception('Did not write site information to validation dataset:  %s', site)
             write_errors += 1
 
-        try:
-            writers.remove_sparse_records(project, validation_dataset, site)
-            LOGGER.info('Removed sparse participant match records')
-        except (oauth2client.client.HttpAccessTokenRefreshError,
-                googleapiclient.errors.HttpError):
-            write_errors += 1
+        LOGGER.info('Wrote validation results for site: %s', site)
 
-        try:
-            writers.change_nulls_to_missing_value(project, validation_dataset, site)
-            LOGGER.info('Changed nulls to missing values in participant match records')
-        except (oauth2client.client.HttpAccessTokenRefreshError,
-                googleapiclient.errors.HttpError):
-            write_errors += 1
-
-    LOGGER.info("Finished creating validation dataset")
+    LOGGER.info("FINISHED: Validation dataset created:  %s", validation_dataset)
 
     if read_errors > 0:
         LOGGER.error("Encountered %d read errors creating validation dataset:\t%s",
@@ -1236,7 +1135,7 @@ def match_participants(
                      validation_dataset
                     )
 
-    return results, read_errors + write_errors
+    return read_errors + write_errors
 
 
 

@@ -23,262 +23,100 @@ class WritersTest(unittest.TestCase):
         self.dataset = 'bar'
         self.site = 'rho'
 
-    @patch('validation.participants.writers.bq_utils.query')
-    def test_append_to_result_table(self, mock_query):
+    @patch('validation.participants.writers.gcs_utils.get_drc_bucket')
+    @patch('validation.participants.writers.bq_utils.wait_on_jobs')
+    @patch('validation.participants.writers.gcs_utils.upload_object')
+    @patch('validation.participants.writers.bq_utils.load_csv')
+    def test_write_to_result_table(self, mock_load_csv, mock_upload, mock_wait, mock_bucket):
         # pre-conditions
-        matches = {1: consts.MATCH, 2: consts.MISMATCH, 3: consts.MISSING}
-        field = 'alpha'
+        bucket_name = 'mock_bucket'
+        mock_wait.return_value = []
+        mock_bucket.return_value = bucket_name
+
+        match = {}
+        for field in consts.VALIDATION_FIELDS:
+            match[field] = consts.MATCH
+
+        matches = {1: match}
 
         # test
-        writer.append_to_result_table(
-            self.site, matches, self.project, self.dataset, field
+        writer.write_to_result_table(
+            self.project, self.dataset, self.site, matches
         )
 
         # post conditions
-        expected_insert_values = (
-            "(1, '" + consts.MATCH + "', '"+ consts.YES + "'), "
-            "(2, '" + consts.MISMATCH + "', '"+ consts.YES + "'), "
-            "(3, '" + consts.MISSING + "', '"+ consts.YES + "')"
-        )
+        self.assertEqual(mock_upload.call_count, 1)
+        self.assertEqual(mock_load_csv.call_count, 1)
+        self.assertEqual(mock_wait.call_count, 1)
 
-        self.assertEqual(mock_query.call_count, 1)
+        upload_path = self.dataset + '/intermediate_results/' + self.site + '.csv'
         self.assertEqual(
-            mock_query.assert_called_with(
-                consts.INSERT_MATCH_VALUES.format(
-                    project=self.project,
-                    dataset=self.dataset,
-                    table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-                    field=field,
-                    values=expected_insert_values,
-                    id_field=consts.PERSON_ID_FIELD,
-                    algorithm_field=consts.ALGORITHM_FIELD
-                ),
-                batch=True
+            mock_upload.assert_called_with(
+                bucket_name, upload_path, ANY
             ),
             None
         )
 
-    @patch('validation.participants.writers.bq_utils.query')
-    def test_append_to_result_table_error(self, mock_query):
+        self.assertEqual(
+            mock_load_csv.assert_called_with(
+                ANY,
+                'gs://' + bucket_name +'/' + upload_path,
+                self.project,
+                self.dataset,
+                self.site + consts.VALIDATION_TABLE_SUFFIX,
+                write_disposition=consts.WRITE_TRUNCATE
+            ),
+            None
+        )
+
+
+    @patch('validation.participants.writers.gcs_utils.get_drc_bucket')
+    @patch('validation.participants.writers.gcs_utils.upload_object')
+    @patch('validation.participants.writers.bq_utils.load_csv')
+    def test_write_to_result_table_error(self, mock_load_csv, mock_upload, mock_bucket):
         # pre-conditions
-        mock_query.side_effect = oauth2client.client.HttpAccessTokenRefreshError()
-        matches = {1: consts.MATCH, 2: consts.MISMATCH, 3: consts.MISSING}
-        field = 'alpha'
+        bucket_name = 'mock_bucket'
+        mock_bucket.return_value = bucket_name
+        mock_load_csv.side_effect = oauth2client.client.HttpAccessTokenRefreshError()
+
+        match = {}
+        for field in consts.VALIDATION_FIELDS:
+            match[field] = consts.MATCH
+
+        matches = {1: match}
 
         # test
         self.assertRaises(
             oauth2client.client.HttpAccessTokenRefreshError,
-            writer.append_to_result_table,
-            self.site,
-            matches,
+            writer.write_to_result_table,
             self.project,
             self.dataset,
-            field
+            self.site,
+            matches
         )
 
         # post conditions
-        expected_insert_values = (
-            "(1, '" + consts.MATCH + "', '"+ consts.YES + "'), "
-            "(2, '" + consts.MISMATCH + "', '"+ consts.YES + "'), "
-            "(3, '" + consts.MISSING + "', '"+ consts.YES + "')"
-        )
+        self.assertEqual(mock_load_csv.call_count, 1)
+        self.assertEqual(mock_upload.call_count, 1)
+        self.assertEqual(mock_bucket.call_count, 1)
 
-        self.assertEqual(mock_query.call_count, 1)
+        upload_path = self.dataset + '/intermediate_results/' + self.site + '.csv'
         self.assertEqual(
-            mock_query.assert_called_with(
-                consts.INSERT_MATCH_VALUES.format(
-                    project=self.project,
-                    dataset=self.dataset,
-                    table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-                    field=field,
-                    values=expected_insert_values,
-                    id_field=consts.PERSON_ID_FIELD,
-                    algorithm_field=consts.ALGORITHM_FIELD
-                ),
-                batch=True
+            mock_upload.assert_called_with(
+                bucket_name, upload_path, ANY
             ),
             None
         )
 
-    @patch('validation.participants.writers.bq_utils.query')
-    def test_remove_sparse_records(self, mock_query):
-        # preconditions
-
-        # test
-        writer.remove_sparse_records(self.project, self.dataset, self.site)
-
-        # post conditions
-        expected_merge = consts.MERGE_DELETE_SPARSE_RECORDS.format(
-            project=self.project,
-            dataset=self.dataset,
-            table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-            field_one=consts.VALIDATION_FIELDS[0],
-            field_two=consts.VALIDATION_FIELDS[1],
-            field_three=consts.VALIDATION_FIELDS[2],
-            field_four=consts.VALIDATION_FIELDS[3],
-            field_five=consts.VALIDATION_FIELDS[4],
-            field_six=consts.VALIDATION_FIELDS[5],
-            field_seven=consts.VALIDATION_FIELDS[6],
-            field_eight=consts.VALIDATION_FIELDS[7],
-            field_nine=consts.VALIDATION_FIELDS[8],
-            field_ten=consts.VALIDATION_FIELDS[9],
-            field_eleven=consts.VALIDATION_FIELDS[10],
-            field_twelve=consts.VALIDATION_FIELDS[11]
-        )
-
-        self.assertEqual(mock_query.call_count, 1)
         self.assertEqual(
-            mock_query.assert_called_with(expected_merge, batch=True),
-            None
-        )
-
-    @patch('validation.participants.writers.bq_utils.query')
-    def test_remove_sparse_records_with_errors(self, mock_query):
-        # preconditions
-        mock_query.side_effect = oauth2client.client.HttpAccessTokenRefreshError()
-
-        # test
-        self.assertRaises(
-            oauth2client.client.HttpAccessTokenRefreshError,
-            writer.remove_sparse_records, self.project, self.dataset, self.site
-        )
-
-        # post conditions
-        expected_merge = consts.MERGE_DELETE_SPARSE_RECORDS.format(
-            project=self.project,
-            dataset=self.dataset,
-            table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-            field_one=consts.VALIDATION_FIELDS[0],
-            field_two=consts.VALIDATION_FIELDS[1],
-            field_three=consts.VALIDATION_FIELDS[2],
-            field_four=consts.VALIDATION_FIELDS[3],
-            field_five=consts.VALIDATION_FIELDS[4],
-            field_six=consts.VALIDATION_FIELDS[5],
-            field_seven=consts.VALIDATION_FIELDS[6],
-            field_eight=consts.VALIDATION_FIELDS[7],
-            field_nine=consts.VALIDATION_FIELDS[8],
-            field_ten=consts.VALIDATION_FIELDS[9],
-            field_eleven=consts.VALIDATION_FIELDS[10],
-            field_twelve=consts.VALIDATION_FIELDS[11]
-        )
-
-        self.assertEqual(mock_query.call_count, 1)
-        self.assertEqual(
-            mock_query.assert_called_with(expected_merge, batch=True),
-            None
-        )
-
-    @patch('validation.participants.writers.bq_utils.query')
-    def test_merge_fields_into_single_record(self, mock_query):
-        # test
-        writer.merge_fields_into_single_record(self.project, self.dataset, self.site)
-
-        # post conditions
-        expected_merge = consts.MERGE_UNIFY_SITE_RECORDS.format(
-            project=self.project,
-            dataset=self.dataset,
-            table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-            field=consts.VALIDATION_FIELDS[11]
-        )
-
-        self.assertEqual(mock_query.call_count, 12)
-        self.assertEqual(
-            mock_query.assert_called_with(expected_merge, batch=True),
-            None
-        )
-
-    @patch('validation.participants.writers.bq_utils.query')
-    def test_merge_fields_into_single_record_with_errors(self, mock_query):
-        # preconditions
-        mock_query.side_effect = oauth2client.client.HttpAccessTokenRefreshError()
-
-        # test
-        self.assertRaises(
-            oauth2client.client.HttpAccessTokenRefreshError,
-            writer.merge_fields_into_single_record, self.project, self.dataset, self.site
-        )
-
-        # post conditions
-        expected_merge = consts.MERGE_UNIFY_SITE_RECORDS.format(
-            project=self.project,
-            dataset=self.dataset,
-            table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-            field=consts.VALIDATION_FIELDS[0]
-        )
-
-        self.assertEqual(mock_query.call_count, 1)
-        self.assertEqual(
-            mock_query.assert_called_with(expected_merge, batch=True),
-            None
-        )
-
-    @patch('validation.participants.writers.bq_utils.query')
-    def test_change_nulls_to_missing_value(self, mock_query):
-        # preconditions
-
-        # test
-        writer.change_nulls_to_missing_value(self.project, self.dataset, self.site)
-
-        # post conditions
-        expected_merge = consts.MERGE_SET_MISSING_FIELDS.format(
-            project=self.project,
-            dataset=self.dataset,
-            table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-            field_one=consts.VALIDATION_FIELDS[0],
-            field_two=consts.VALIDATION_FIELDS[1],
-            field_three=consts.VALIDATION_FIELDS[2],
-            field_four=consts.VALIDATION_FIELDS[3],
-            field_five=consts.VALIDATION_FIELDS[4],
-            field_six=consts.VALIDATION_FIELDS[5],
-            field_seven=consts.VALIDATION_FIELDS[6],
-            field_eight=consts.VALIDATION_FIELDS[7],
-            field_nine=consts.VALIDATION_FIELDS[8],
-            field_ten=consts.VALIDATION_FIELDS[9],
-            field_eleven=consts.VALIDATION_FIELDS[10],
-            field_twelve=consts.VALIDATION_FIELDS[11],
-            value=consts.MISSING
-        )
-
-        self.assertEqual(mock_query.call_count, 1)
-        self.assertEqual(
-            mock_query.assert_called_with(expected_merge, batch=True),
-            None
-        )
-
-    @patch('validation.participants.writers.bq_utils.query')
-    def test_change_nulls_to_missing_value_with_errors(self, mock_query):
-        # preconditions
-        mock_query.side_effect = oauth2client.client.HttpAccessTokenRefreshError()
-
-        # test
-        self.assertRaises(
-            oauth2client.client.HttpAccessTokenRefreshError,
-            writer.change_nulls_to_missing_value, self.project, self.dataset, self.site
-        )
-
-        # post conditions
-        expected_merge = consts.MERGE_SET_MISSING_FIELDS.format(
-            project=self.project,
-            dataset=self.dataset,
-            table=self.site + consts.VALIDATION_TABLE_SUFFIX,
-            field_one=consts.VALIDATION_FIELDS[0],
-            field_two=consts.VALIDATION_FIELDS[1],
-            field_three=consts.VALIDATION_FIELDS[2],
-            field_four=consts.VALIDATION_FIELDS[3],
-            field_five=consts.VALIDATION_FIELDS[4],
-            field_six=consts.VALIDATION_FIELDS[5],
-            field_seven=consts.VALIDATION_FIELDS[6],
-            field_eight=consts.VALIDATION_FIELDS[7],
-            field_nine=consts.VALIDATION_FIELDS[8],
-            field_ten=consts.VALIDATION_FIELDS[9],
-            field_eleven=consts.VALIDATION_FIELDS[10],
-            field_twelve=consts.VALIDATION_FIELDS[11],
-            value=consts.MISSING
-        )
-
-        self.assertEqual(mock_query.call_count, 1)
-        self.assertEqual(
-            mock_query.assert_called_with(expected_merge, batch=True),
+            mock_load_csv.assert_called_with(
+                ANY,
+                'gs://' + bucket_name +'/' + upload_path,
+                self.project,
+                self.dataset,
+                self.site + consts.VALIDATION_TABLE_SUFFIX,
+                write_disposition=consts.WRITE_TRUNCATE
+            ),
             None
         )
 
@@ -458,7 +296,7 @@ class WritersTest(unittest.TestCase):
         expected_report_calls = [
             call(),
             call().write('person_id,first_name,last_name,birth_date,sex,address,phone_number,email,algorithm\n'),
-            call().write("Unable to report id validation match records for site:\t%s.\n", self.site),
+            call().write("Unable to report id validation match records for site:\t{}.\n".format(self.site)),
             call().seek(0),
             call().close()
         ]
