@@ -197,11 +197,11 @@ def main(project_id, dataset_id):
     :return:
     """
 
-    logging.info('Applying PMI_Skip fix')
-    run_pmi_fix(project_id, dataset_id)
-
     logging.info('Applying PPi Vocabulary update')
     run_ppi_vocab_update(project_id, dataset_id)
+
+    logging.info('Applying PMI_Skip fix')
+    run_pmi_fix(project_id, dataset_id)
 
 
 if __name__ == '__main__':
