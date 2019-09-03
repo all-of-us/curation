@@ -28,17 +28,17 @@ done
 
 bq mk --dataset ${TARGET_DATASET}
 
-if [ -z "${TARGET_PREFIX}" ]
+if [[ -z "${TARGET_PREFIX}" ]]
 then
   TARGET_PREFIX=""
 fi
 
-if [ -z "${SOURCE_PREFIX}" ]
+if [[ -z "${SOURCE_PREFIX}" ]]
 then
   SOURCE_PREFIX=""
 fi
 
-if [ -z "${SOURCE_DATASET}" ] || [ -z "${TARGET_DATASET}" ]
+if [[ -z "${SOURCE_DATASET}" ]] || [[ -z "${TARGET_DATASET}" ]]
 then
   echo "Usage: $USAGE"
   exit 1
@@ -57,6 +57,6 @@ for t in $(bq ls -n 2000 ${SOURCE_DATASET} |
            ( [[ "${SOURCE_PREFIX}" ]] && grep ${SOURCE_PREFIX} || cat ))
 do
   TARGET_TABLE=${t//${SOURCE_PREFIX}/} #replace all occurrences, use ${parameter//pattern/replacement_string}
-  CP_CMD="bq cp -f ${SOURCE_DATASET}.${t} ${TARGET_DATASET}.${TARGET_PREFIX}${TARGET_TABLE}"
+  CP_CMD="bq cp --sync=false -f ${SOURCE_DATASET}.${t} ${TARGET_DATASET}.${TARGET_PREFIX}${TARGET_TABLE}"
   echo $(${CP_CMD})
 done
