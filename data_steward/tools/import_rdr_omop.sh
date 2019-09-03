@@ -7,7 +7,7 @@
 USAGE="tools/import_rdr_omop.sh
     --project <PROJECT where rdr files are dropped>
     --directory <DIRECTORY>
-    --data_set <DATA SET>
+    --dataset <DATA SET>
     --key_file <path to key file>
     --app_id <application id>"
 
@@ -15,7 +15,7 @@ while true; do
   case "$1" in
     --project) PROJECT=$2; shift 2;;
     --directory) DIRECTORY=$2; shift 2;;
-    --data_set) DATA_SET=$2; shift 2;;
+    --dataset) DATASET=$2; shift 2;;
     --key_file) KEY_FILE=$2; shift 2;;
     --app_id) APP_ID=$2; shift 2;;
     -- ) shift; break ;;
@@ -23,7 +23,7 @@ while true; do
   esac
 done
 
-if  [[ -z "${PROJECT}" ]] || [[ -z "${DIRECTORY}" ]] || [[ -z "${DATA_SET}" ]] \
+if  [[ -z "${PROJECT}" ]] || [[ -z "${DIRECTORY}" ]] || [[ -z "${DATASET}" ]] \
    || [[ -z "${KEY_FILE}" ]] || [[ -z "${APP_ID}" ]]
 then
   echo "Usage: $USAGE"
@@ -32,10 +32,10 @@ fi
 
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 export APPLICATION_ID="${APP_ID}"
-export BIGQUERY_DATASET_ID="${DATA_SET}"
+export BIGQUERY_DATASET_ID="${DATASET}"
 
 today=$(date '+%Y%m%d')
-export BACKUP_DATASET="${DATA_SET}_backup"
+export BACKUP_DATASET="${DATASET}_backup"
 
 
 #---------Create curation virtual environment----------
@@ -50,16 +50,16 @@ pip install -t lib -r requirements.txt
 
 source tools/set_path.sh
 
-bq mk -f --description "RDR DUMP loaded from ${DIRECTORY} on ${today}" ${DATA_SET}
+bq mk -f --description "RDR DUMP loaded from ${DIRECTORY} on ${today}" ${DATASET}
 
-echo "python cdm.py ${DATA_SET}"
-python cdm.py ${DATA_SET}
+echo "python cdm.py ${DATASET}"
+python cdm.py ${DATASET}
 
 for file in $(gsutil ls gs://${PROJECT}-cdm/${DIRECTORY})
 do
   filename=$(basename ${file})
   table_name="${filename%.*}"
-  echo "Importing ${DATA_SET}.${table_name}..."
+  echo "Importing ${DATASET}.${table_name}..."
   CLUSTERING_ARGS=
   if grep -q person_id resources/fields/${table_name}.json
   then
@@ -70,14 +70,14 @@ do
   then
     JAGGED_ROWS="--allow_jagged_rows "
   fi
-  bq load --replace --allow_quoted_newlines ${JAGGED_ROWS}${CLUSTERING_ARGS}--skip_leading_rows=1 ${DATA_SET}.${table_name} $file resources/fields/${table_name}.json
+  bq load --replace --allow_quoted_newlines ${JAGGED_ROWS}${CLUSTERING_ARGS}--skip_leading_rows=1 ${DATASET}.${table_name} $file resources/fields/${table_name}.json
 done
 
 echo "Creating a RDR back-up"
-./table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${DATA_SET} --target_dataset ${BACKUP_DATASET}
+./table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${DATASET} --target_dataset ${BACKUP_DATASET}
 
-echo "Fixing the PMI_Skip and the PPI_Vocabulary using command - fix_rdr_data.py -p ${APP_ID} -d ${DATA_SET}"
-python fix_rdr_data.py -p ${APP_ID} -d ${DATA_SET}
+echo "Fixing the PMI_Skip and the PPI_Vocabulary using command - fix_rdr_data.py -p ${APP_ID} -d ${DATASET}"
+python fix_rdr_data.py -p ${APP_ID} -d ${DATASET}
 
 echo "Done."
 
