@@ -15,23 +15,13 @@ SENDER_ADDRESS = 'curation-eng-alert@{project}.appspotmail.com'.format(project=a
 NOTIFICATION_ADDRESS = os.environ.get('NOTIFICATION_ADDRESS')
 SUBJECT = 'Project {project}: Service account key notices'.format(project=app_identity.get_application_id())
 
-BODY_HEADER_EXPIRED_KEY_TEMPLATE = '''
-# Expired keys deleted
+BODY_HEADER_EXPIRED_KEY_TEMPLATE = '# Expired keys deleted\n'
 
-'''
+BODY_HEADER_EXPIRING_KEY_TEMPLATE = '\n# Keys expiring soon\n'
 
-BODY_HEADER_EXPIRING_KEY_TEMPLATE = '''
-# Keys expiring soon
-
-'''
-
-BODY_TEMPLATE = '''
-
-service_account_email={service_account_email}
-key_name={key_name}
-created_at={create_at}
-
-'''
+BODY_TEMPLATE = ('service_account_email={service_account_email}\n'
+                 'key_name={key_name}\n'
+                 'created_at={created_at}\n')
 
 PREFIX = '/admin/v1/'
 REMOVE_EXPIRED_KEYS_RULE = PREFIX + 'RemoveExpiredServiceAccountKeys'
@@ -39,21 +29,29 @@ REMOVE_EXPIRED_KEYS_RULE = PREFIX + 'RemoveExpiredServiceAccountKeys'
 app = Flask(__name__)
 
 
-def assemble_email_body(keys, delete_action):
+def email_body(_expired_keys, _expiring_keys):
     """
-    This assemble an email body using the keys
-    :param keys:
-    :param delete_action:
+    This creates an email body for _expired_keys and _expiring_keys
+    :param _expired_keys:
+    :param _expiring_keys:
     :return: the email body
     """
-    email_body = ''
-    if len(keys) != 0:
-        email_body = BODY_HEADER_EXPIRED_KEY_TEMPLATE if delete_action else BODY_HEADER_EXPIRING_KEY_TEMPLATE
-        for _key in keys:
-            email_body += BODY_TEMPLATE.format(service_account_email=_key['service_account_email'],
-                                               key_name=_key['key_name'],
-                                               created_at=_key['created_at'])
-    return email_body
+    _email_body = ''
+
+    if len(_expired_keys) != 0:
+        _email_body += BODY_HEADER_EXPIRED_KEY_TEMPLATE
+        for _key in _expired_keys:
+            _email_body += BODY_TEMPLATE.format(service_account_email=_key['service_account_email'],
+                                                key_name=_key['key_name'],
+                                                created_at=_key['created_at'])
+
+    if len(_expiring_keys) != 0:
+        _email_body += BODY_HEADER_EXPIRING_KEY_TEMPLATE
+        for _key in _expiring_keys:
+            _email_body += BODY_TEMPLATE.format(service_account_email=_key['service_account_email'],
+                                                key_name=_key['key_name'],
+                                                created_at=_key['created_at'])
+    return _email_body
 
 
 @api_util.auth_required_cron
@@ -72,18 +70,15 @@ def remove_expired_keys():
 
         if len(expired_keys) != 0 and len(expired_keys) != 0:
 
-            email_body = assemble_email_body(expired_keys, True)
-            email_body += assemble_email_body(expiring_keys, False)
-
             try:
                 mail.send_mail(sender=SENDER_ADDRESS,
                                to=NOTIFICATION_ADDRESS,
                                subject=SUBJECT,
-                               body=email_body)
+                               body=email_body(expired_keys, expiring_keys))
             except (
                     HttpError):
                 LOGGER.exception(
-                    "Failed to send to ${notification_address}"
+                    "Failed to send to {notification_address}".format(notification_address=NOTIFICATION_ADDRESS)
                 )
     else:
         LOGGER.exception(
