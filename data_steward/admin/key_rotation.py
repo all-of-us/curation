@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from oauth2client.client import GoogleCredentials
 from googleapiclient.errors import HttpError
 import googleapiclient.discovery as discovery
@@ -7,7 +7,8 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 KEY_EXPIRE_DAYS = 180
-KEY_EXPIRING_DAY_THRESHOLD = 170
+KEY_EXPIRE_ALERT_DAYS = 7
+GCP_DTM_FMT = '%Y-%m-%dT%H:%M:%SZ'
 
 
 def get_iam_service():
@@ -42,6 +43,21 @@ def list_keys_for_service_account(service_account_email):
     return service_keys_per_account['keys']
 
 
+def is_key_expired_after_period(_key, days=KEY_EXPIRE_ALERT_DAYS):
+    """
+    Determine if a key will be expired after a specified number of days
+
+    :param _key: service account key object
+    :param days: number of days
+    :return: True if the key is expiring soon based, False otherwise
+    """
+    now_dtm = datetime.now()
+    create_dtm = datetime.strptime(_key['validAfterTime'], GCP_DTM_FMT)
+    expire_dtm = create_dtm + timedelta(days=KEY_EXPIRE_DAYS)
+    future_dtm = now_dtm + timedelta(days=days)
+    return future_dtm > expire_dtm
+
+
 def is_key_expired(_key):
     """
     Determine if a key exceeds expiration period
@@ -49,24 +65,7 @@ def is_key_expired(_key):
     :param _key: service account key object
     :return: True if the key exceeds the expiration period, False otherwise
     """
-
-    today_date = datetime.today().date()
-    created_date = datetime.strptime(_key['validAfterTime'], '%Y-%m-%dT%H:%M:%SZ').date()
-    delta = today_date - created_date
-    return delta.days > KEY_EXPIRE_DAYS
-
-
-def is_key_expiring(_key):
-    """
-    Determine if a key is expiring soon based on the global field KEY_EXPIRING_DAY_THRESHOLD
-
-    :param _key: service account key object
-    :return: True if the key is expiring soon based, False otherwise
-    """
-    today_date = datetime.today().date()
-    created_date = datetime.strptime(_key['validAfterTime'], '%Y-%m-%dT%H:%M:%SZ').date()
-    delta = today_date - created_date
-    return KEY_EXPIRING_DAY_THRESHOLD <= delta.days <= KEY_EXPIRE_DAYS
+    return is_key_expired_after_period(_key, 0)
 
 
 def delete_key(_key):
@@ -117,7 +116,7 @@ def get_expiring_keys(project_id):
     _expiring_keys = []
     for _service_account in list_service_accounts(project_id):
         for _key in list_keys_for_service_account(_service_account['email']):
-            if is_key_expiring(_key):
+            if is_key_expired_after_period(_key):
                 _expiring_keys.append({'service_account_email': _service_account['email'],
                                        'key_name': _key['name'],
                                        'created_at': _key['validAfterTime']})
