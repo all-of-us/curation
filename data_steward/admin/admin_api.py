@@ -68,7 +68,7 @@ def remove_expired_keys():
 
     if NOTIFICATION_ADDRESS is not None:
 
-        if len(expired_keys) != 0 and len(expired_keys) != 0:
+        if len(expired_keys) != 0 or len(expired_keys) != 0:
 
             try:
                 mail.send_mail(sender=SENDER_ADDRESS,
