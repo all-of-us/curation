@@ -29,29 +29,29 @@ REMOVE_EXPIRED_KEYS_RULE = PREFIX + 'RemoveExpiredServiceAccountKeys'
 app = Flask(__name__)
 
 
-def email_body(_expired_keys, _expiring_keys):
+def email_body(expired_keys, expiring_keys):
     """
     This creates an email body for _expired_keys and _expiring_keys
-    :param _expired_keys:
-    :param _expiring_keys:
+    :param expired_keys:
+    :param expiring_keys:
     :return: the email body
     """
-    _email_body = ''
+    result = ''
 
-    if len(_expired_keys) != 0:
-        _email_body += BODY_HEADER_EXPIRED_KEY_TEMPLATE
-        for _key in _expired_keys:
-            _email_body += BODY_TEMPLATE.format(service_account_email=_key['service_account_email'],
-                                                key_name=_key['key_name'],
-                                                created_at=_key['created_at'])
+    if len(expired_keys) != 0:
+        result += BODY_HEADER_EXPIRED_KEY_TEMPLATE
+        for expired_key in expired_keys:
+            result += BODY_TEMPLATE.format(service_account_email=expired_key['service_account_email'],
+                                           key_name=expired_key['key_name'],
+                                           created_at=expired_key['created_at'])
 
-    if len(_expiring_keys) != 0:
-        _email_body += BODY_HEADER_EXPIRING_KEY_TEMPLATE
-        for _key in _expiring_keys:
-            _email_body += BODY_TEMPLATE.format(service_account_email=_key['service_account_email'],
-                                                key_name=_key['key_name'],
-                                                created_at=_key['created_at'])
-    return _email_body
+    if len(expiring_keys) != 0:
+        result += BODY_HEADER_EXPIRING_KEY_TEMPLATE
+        for expiring_key in expiring_keys:
+            result += BODY_TEMPLATE.format(service_account_email=expiring_key['service_account_email'],
+                                           key_name=expiring_key['key_name'],
+                                           created_at=expiring_key['created_at'])
+    return result
 
 
 @api_util.auth_required_cron
