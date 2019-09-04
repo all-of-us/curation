@@ -22,7 +22,7 @@ def _get_utf8_string(value):
         result = value.encode('utf-8', 'ignore')
     except AttributeError:
         if value is None:
-            LOGGER.debug("Value '%s' can not be utf-8 encoded", value)
+            pass
         elif isinstance(value, int):
             result = str(value)
 
@@ -109,10 +109,7 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
         if exists is None:
             result_dict[person_id] = value
         else:
-            if exists == value:
-                pass
-            else:
-                LOGGER.warning("Trying to reset value for person_id\t%s.", person_id)
+            pass
 
     return result_dict
 
@@ -163,10 +160,7 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
         if exists is None:
             result_dict[person_id] = value
         else:
-            if exists == value:
-                pass
-            else:
-                LOGGER.warning("Trying to reset value for person_id\t%s.", person_id)
+            pass
 
     return result_dict
 
@@ -221,6 +215,7 @@ def get_pii_values(project, pii_dataset, hpo, table, field):
         result_list.append((person_id, value))
 
     return result_list
+
 
 def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
     """

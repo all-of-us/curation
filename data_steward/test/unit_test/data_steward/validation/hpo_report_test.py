@@ -368,14 +368,14 @@ class HpoReportTest(unittest.TestCase):
         self.assertTrue(report_data[consts.HPO_NAME_REPORT_KEY] in render_output)
         self.assertTrue(report_data[consts.FOLDER_REPORT_KEY]in render_output)
         self.assertTrue(report_data[consts.TIMESTAMP_REPORT_KEY] in render_output)
-        for d in report_data.get(consts.RESULTS_REPORT_KEY, []):
-            self.assertIn(d['file_name'], render_output)
-        for d in report_data.get(consts.ERRORS_REPORT_KEY, []):
-            self.assertIn(d['file_name'], render_output)
-            self.assertIn(d['message'], render_output)
-        for d in report_data.get(consts.WARNINGS_REPORT_KEY, []):
-            self.assertIn(d['file_name'], render_output)
-            self.assertIn(d['message'], render_output)
+        for (file_name, found, parsed, loaded) in report_data.get(consts.RESULTS_REPORT_KEY, []):
+            self.assertIn(file_name, render_output)
+        for (file_name, message) in report_data.get(consts.ERRORS_REPORT_KEY, []):
+            self.assertIn(file_name, render_output)
+            self.assertIn(message, render_output)
+        for (file_name, message) in report_data.get(consts.WARNINGS_REPORT_KEY, []):
+            self.assertIn(file_name, render_output)
+            self.assertIn(message, render_output)
         for d in report_data.get(consts.NONUNIQUE_KEY_METRICS_REPORT_KEY, []):
             self.assertIn(d['table_name'], render_output)
         for d in report_data.get(consts.HEEL_ERRORS_REPORT_KEY, []):
