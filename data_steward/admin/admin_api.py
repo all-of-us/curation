@@ -4,7 +4,6 @@ import os
 from flask import Flask
 from google.appengine.api import app_identity
 from google.appengine.api import mail
-from googleapiclient.errors import HttpError
 
 import api_util
 import key_rotation
@@ -69,17 +68,10 @@ def remove_expired_keys():
     if NOTIFICATION_ADDRESS is not None:
 
         if len(expired_keys) != 0 or len(expired_keys) != 0:
-
-            try:
-                mail.send_mail(sender=SENDER_ADDRESS,
-                               to=NOTIFICATION_ADDRESS,
-                               subject=SUBJECT,
-                               body=email_body(expired_keys, expiring_keys))
-            except (
-                    HttpError):
-                LOGGER.exception(
-                    "Failed to send to {notification_address}".format(notification_address=NOTIFICATION_ADDRESS)
-                )
+            mail.send_mail(sender=SENDER_ADDRESS,
+                           to=NOTIFICATION_ADDRESS,
+                           subject=SUBJECT,
+                           body=email_body(expired_keys, expiring_keys))
     else:
         LOGGER.exception(
             "The notification address is None"

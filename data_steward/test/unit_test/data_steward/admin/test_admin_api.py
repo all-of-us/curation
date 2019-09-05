@@ -2,7 +2,6 @@ import mock
 import unittest
 
 from admin import admin_api
-from googleapiclient.errors import HttpError
 
 
 class AdminApiTest(unittest.TestCase):
@@ -14,63 +13,92 @@ class AdminApiTest(unittest.TestCase):
 
     def setUp(self):
         super(AdminApiTest, self).setUp()
+        self.maxDiff = None
+        self.expired_key = {'service_account_email': 'expired-email-address',
+                            'key_name': 'expired-key-name',
+                            'created_at': 'expired-key-created-at'}
+        self.expiring_key = {'service_account_email': 'expiring-email-address',
+                             'key_name': 'expiring-key-name',
+                             'created_at': 'expiring-key-created-at'}
+        self.expired_keys = [self.expired_key]
+        self.expiring_keys = [self.expiring_key]
 
     def test_email_body(self):
-        expired_keys = [{'service_account_email': 'expired-email-address', 'key_name': 'expired-key-name',
-                         'created_at': 'expired-key-created-at'}]
-        expiring_keys = [{'service_account_email': 'expiring-email-address', 'key_name': 'expiring-key-name',
-                          'created_at': 'expiring-key-created-at'}]
+        expired_section = '{header}{details}'.format(header=admin_api.BODY_HEADER_EXPIRED_KEY_TEMPLATE,
+                                                     details=admin_api.BODY_TEMPLATE.format(**self.expired_key))
+        expiring_section = '{header}{details}'.format(header=admin_api.BODY_HEADER_EXPIRING_KEY_TEMPLATE,
+                                                      details=admin_api.BODY_TEMPLATE.format(**self.expiring_key))
+        actual = admin_api.email_body(self.expired_keys, [])
+        self.assertEqual(actual, expired_section)
+        actual = admin_api.email_body([], self.expiring_keys)
+        self.assertEqual(actual, expiring_section)
+        actual = admin_api.email_body(self.expired_keys, self.expiring_keys)
+        self.assertEqual(actual, expired_section + expiring_section)
 
-        actual_email_body = admin_api.email_body(expired_keys, expiring_keys)
-
-        expected_email_body = ('# Expired keys deleted\n'
-                               'service_account_email=expired-email-address\n'
-                               'key_name=expired-key-name\n'
-                               'created_at=expired-key-created-at\n'
-                               '\n'
-                               '# Keys expiring soon\n'
-                               'service_account_email=expiring-email-address\n'
-                               'key_name=expiring-key-name\n'
-                               'created_at=expiring-key-created-at\n')
-
-        self.assertEqual(expected_email_body, actual_email_body)
-
-    @mock.patch('admin.admin_api.LOGGER')
-    @mock.patch('admin.admin_api.SUBJECT')
-    @mock.patch('admin.admin_api.NOTIFICATION_ADDRESS')
-    @mock.patch('admin.admin_api.SENDER_ADDRESS')
-    @mock.patch('admin.admin_api.email_body')
-    @mock.patch('admin.admin_api.mail.send_mail')
     @mock.patch('admin.key_rotation.get_expiring_keys')
     @mock.patch('admin.key_rotation.delete_expired_keys')
     @mock.patch('api_util.check_cron')
     def test_rm_expired_keys_endpoint_callable(self,
                                                mock_check_cron,
                                                mock_delete_expired_keys,
-                                               mock_get_expiring_keys,
-                                               mock_send_mail,
-                                               mock_email_body,
-                                               mock_sender_address,
-                                               mock_notification_address,
-                                               mock_subject,
-                                               mock_logger):
+                                               mock_get_expiring_keys,):
         admin_api.app.testing = True
         with admin_api.app.test_client() as c:
-            mock_delete_expired_keys.return_value = [{'key_name': 'expired-key'}]
-            mock_get_expiring_keys.return_value = [{'key_name': 'expiring-key'}]
-            mock_email_body.return_value = 'Test email body'
-
             c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
             self.assertTrue(mock_delete_expired_keys.called)
             self.assertTrue(mock_get_expiring_keys.called)
 
-            mock_send_mail.assert_called_once_with(sender=mock_sender_address,
-                                                   to=mock_notification_address,
-                                                   subject=mock_subject,
-                                                   body='Test email body')
+    @mock.patch('admin.admin_api.NOTIFICATION_ADDRESS')
+    @mock.patch('admin.admin_api.mail.send_mail')
+    @mock.patch('admin.key_rotation.get_expiring_keys')
+    @mock.patch('admin.key_rotation.delete_expired_keys')
+    @mock.patch('api_util.check_cron')
+    def test_rm_expired_keys_notification(self,
+                                          mock_check_cron,
+                                          mock_delete_expired_keys,
+                                          mock_get_expiring_keys,
+                                          mock_send_mail,
+                                          mock_notification_address):
+        """
 
-            mock_send_mail.side_effect = [HttpError(mock.Mock(status=404), 'not found')]
+        """
+        mock_delete_expired_keys.side_effect = [self.expired_keys, self.expired_keys, []]
+        mock_get_expiring_keys.side_effect = [self.expiring_keys, [], self.expiring_keys]
+        full_body = admin_api.email_body(self.expired_keys, self.expiring_keys)
+        expired_section = admin_api.email_body(self.expired_keys, [])
+        expiring_section = admin_api.email_body([], self.expiring_keys)
+
+        admin_api.app.testing = True
+        with admin_api.app.test_client() as c:
             c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
+            c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
+            c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
+            send_mail_args = dict(sender=admin_api.SENDER_ADDRESS,
+                                  to=mock_notification_address,
+                                  subject=admin_api.SUBJECT)
+            self.assertListEqual(mock_send_mail.call_args_list,
+                                 [mock.call(body=full_body, **send_mail_args),
+                                  mock.call(body=expired_section, **send_mail_args),
+                                  mock.call(body=expiring_section, **send_mail_args)])
 
-            mock_logger.info.aasert_called_with(
-                'Failed to send to {notification_address}'.format(notification_address=mock_notification_address))
+    @mock.patch('admin.admin_api.NOTIFICATION_ADDRESS')
+    @mock.patch('admin.admin_api.mail.send_mail')
+    @mock.patch('admin.key_rotation.get_expiring_keys')
+    @mock.patch('admin.key_rotation.delete_expired_keys')
+    @mock.patch('api_util.check_cron')
+    def test_mail_errors_raised(self,
+                                mock_check_cron,
+                                mock_delete_expired_keys,
+                                mock_get_expiring_keys,
+                                mock_send_mail,
+                                mock_notification_address):
+        """
+        Exceptions while sending mail should be raised
+        """
+        mock_delete_expired_keys.return_value = self.expired_keys
+        mock_get_expiring_keys.return_value = self.expiring_keys
+        mock_send_mail.side_effect = admin_api.mail.InvalidEmailError()
+        admin_api.app.testing = True
+        with admin_api.app.test_client() as c:
+            with self.assertRaises(admin_api.mail.InvalidEmailError):
+                c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
