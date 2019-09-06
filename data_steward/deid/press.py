@@ -44,21 +44,21 @@ class Press:
             self.deid_rules['suppress'] = {'FILTERS':[]}
         if 'FILTERS' not in self.deid_rules['suppress'] :
             self.deid_rules['suppress']['FILTERS'] = []
-            2
-        self.logpath = 'logs' if 'logs' not in args else args['logs']        
+
+        self.logpath = 'logs' if 'logs' not in args else args['logs']
         self.action = [term.strip() for term in args['action'].split(',')] if 'action' in args else ['submit']
-        
+
         #
         #--
         if os.path.exists(self.logpath) == False :
             os.mkdir(self.logpath)
         if os.path.exists(self.logpath+os.sep+self.idataset) == False :
-            os.mkdir(self.logpath+os.sep+self.idataset) 
+            os.mkdir(self.logpath+os.sep+self.idataset)
         name = datetime.now().strftime('deid-%Y-%m-%d.log')
         filename = os.sep.join([self.logpath,name])
-        logging.basicConfig(filename=filename,level=logging.INFO,format='%(message)s')            
-        
-       
+        logging.basicConfig(filename=filename,level=logging.INFO,format='%(message)s')
+
+
     def meta(self,df):
         return pd.DataFrame( {"names":list(df.dtypes.to_dict().keys()), "types":list(df.dtypes.to_dict().values())})
 
@@ -83,14 +83,14 @@ class Press:
         This function actually runs deid and using both rule specifications and application of the rules
         """
         self.update_rules()
-        d = deid(pipeline = self.pipeline,rules=self.deid_rules,parent=self)
+        d = deid(pipeline=self.pipeline, rules=self.deid_rules, parent=self)
         _info = self.info
 
-        p = d.apply(_info,self.store)
+        p = d.apply(_info, self.store)
+
         is_meta = np.sum([ 1*('on' in _item) for _item in p]) != 0
-        self.log(module='do',action='table-type',table=self.get_tablename(),is_meta= int(is_meta))
-        if not is_meta :
-            
+        self.log(module='do', action='table-type', table=self.get_tablename(), is_meta=int(is_meta))
+        if not is_meta:
             sql = self.to_sql(p)
             _rsql = None
         else:
@@ -112,7 +112,7 @@ class Press:
                 filter += [filter_id]
 
                 _sql = self.to_sql(_item +relational_cols)  + ' AND ' + filter_id
-                
+
                 sql += [ _sql]
 
             _rsql = self.to_sql(relational_cols) + ' AND ' + ' AND '.join(filter).replace(' IN ',' NOT IN ')
@@ -135,6 +135,7 @@ class Press:
 
             if 'submit' in self.action:
                 self.submit(sql)
+
             if 'simulate' in self.action:
                 #
                 # Make this threaded if there is a submit action that is associated with it
@@ -151,9 +152,8 @@ class Press:
             print()
 
     def log (self,**args):
-            # print (args)       
+            # print (args)
             logging.info(json.dumps(args) )
-
     def simulate(self,info):
         """
         This function is not essential, but will attempt to log the various transformations on every field.
@@ -174,7 +174,7 @@ class Press:
         dirty_date = False
         filters = []
         for item in info :
-            
+
             labels = item['label'].split('.')
             if not (set(labels) & set(self.pipeline)) :
                 self.log(module='simulate',table=TABLE_NAME,action='skip',value=labels)
@@ -220,8 +220,7 @@ class Press:
         #
         out.index = range(out.shape[0])
         rdf = pd.DataFrame()
-        
-        if FILTERS :
+        if FILTERS:
             filters += [item['filter'] for item in FILTERS if 'filter' in item]
             original_sql        = ' (SELECT COUNT(*) as original FROM :table) AS ORIGINAL_TABLE ,'.replace(':table',TABLE_NAME)
             transformed_sql     = '(SELECT COUNT(*) AS transformed FROM :table WHERE :filter) AS TRANSF_TABLE'.replace(':table',TABLE_NAME).replace(':filter'," OR ".join(filters))
@@ -272,7 +271,7 @@ class Press:
         self.log(module='to_sql',action='generating-sql',table=TABLE_NAME,fields=fields)
         #
         # @NOTE:
-        #   If we are dealing with a meta-table we should 
+        #   If we are dealing with a meta-table we should
         for id in self.pipeline : #['generalize','suppress','shift','compute']:
             for row in info :
                 name = row['name']
@@ -298,7 +297,7 @@ class Press:
                 SQL += [row['filter']]
                 if FILTERS.index(row) < len(FILTERS) - 1:
                     SQL += ['AND']
-        
+
         return '\t'.join(SQL).replace(":idataset", self.idataset)
 
 

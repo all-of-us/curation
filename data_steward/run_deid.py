@@ -49,7 +49,7 @@ def get_known_tables(field_path):
     return known_tables
 
 
-def get_output_tables(input_dataset, known_tables, skip_tables):
+def get_output_tables(input_dataset, known_tables, skip_tables, only_tables):
     """
     Get list of output tables deid should produce.
 
@@ -65,6 +65,8 @@ def get_output_tables(input_dataset, known_tables, skip_tables):
     :return: a list of table names to execute deid over.
     """
     tables = bq_utils.list_dataset_contents(input_dataset)
+    skip_tables = [table.strip() for table in skip_tables.split(',')]
+    only_tables = [table.strip() for table in only_tables.split(',')]
 
     allowed_tables = []
     for table in tables:
@@ -80,7 +82,9 @@ def get_output_tables(input_dataset, known_tables, skip_tables):
         if table in skip_tables:
             continue
 
-        allowed_tables.append(table)
+        if only_tables == [''] or table in only_tables:
+            allowed_tables.append(table)
+
     return allowed_tables
 
 
@@ -126,10 +130,14 @@ def parse_args(raw_args=None):
                               '(runs alone)')
                        )
     parser.add_argument('-s', '--skip-tables', dest='skip_tables', action='store',
-                        required=False,
+                        required=False, default='',
                         help=('A comma separated list of table to skip.  Useful '
                               'to avoid de-identifying a table that has already '
                               'undergone deid.')
+                       )
+    parser.add_argument('--tables', dest='tables', action='store', required=False, default='',
+                        help=('A comma separated list of specific tables to execute '
+                              'deid on.  Defaults to all tables.')
                        )
     parser.add_argument('--interactive', dest='interactive_mode', action='store_true',
                         required=False,
@@ -150,9 +158,8 @@ def main(raw_args=None):
     args = parse_args(raw_args)
     known_tables = get_known_tables(fields_path)
     configured_tables = get_known_tables('deid/config/ids/tables')
-    tables = get_output_tables(args.input_dataset, known_tables, args.skip_tables)
+    tables = get_output_tables(args.input_dataset, known_tables, args.skip_tables, args.tables)
 
-    tables = ['cohort', 'drug_exposure']
     exceptions = []
     successes = []
     for table in tables:
@@ -173,6 +180,10 @@ def main(raw_args=None):
         if args.interactive_mode:
             parameter_list.append('--interactive')
 
+        field_names = [field.get('name') for field in fields_for(table)]
+        if 'person_id' in field_names:
+            parameter_list.append('--cluster')
+
         LOGGER.info('Executing deid with:\n\tpython deid/aou.py %s', ' '.join(parameter_list))
 
         try:
@@ -184,7 +195,7 @@ def main(raw_args=None):
             LOGGER.info('Successfully executed deid on table: %s', table)
             successes.append(table)
 
-    copy_suppressed_table_schemas(known_tables, args.input_dataset + '_deid')
+    copy_suppressed_table_schemas(tables, args.input_dataset + '_deid')
 
     LOGGER.info('Deid has finished.  Successfully executed on tables:  %s',
                 '\n'.join(successes))

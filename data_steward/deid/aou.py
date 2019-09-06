@@ -74,6 +74,7 @@ from google.oauth2 import service_account
 import numpy as np
 import pandas as pd
 
+import bq_utils
 from parser import parse_args
 from press import Press
 
@@ -256,16 +257,18 @@ class AOU(Press):
         if not found:
             dataset = bq.Dataset(client.dataset(self.odataset))
             client.create_dataset(dataset)
+
+        # create the output table
+        bq_utils.create_standard_table(self.tablename, self.tablename, drop_existing=True, dataset_id=self.odataset)
+
         job = bq.QueryJobConfig()
         job.destination = client.dataset(self.odataset).table(self.tablename)
         job.use_query_cache = True
         job.allow_large_results = True
         if self.partition:
-            job._properties['load']['timePartitioning'] = {'type': 'DAY', 'field': 'person_id'}
+            job._properties['timePartitioning'] = {'type': 'DAY'}
+            job._properties['clustering'] = {'field': 'person_id'}
 
-        job.time_partitioning = bq.table.TimePartitioning(type_=bq.table.TimePartitioningType.DAY)
-        job.priority = 'BATCH'
-        job.priority = 'INTERACTIVE'
         job.priority = self.priority
         job.dry_run = True
         self.log(module='submit-job',
@@ -283,10 +286,6 @@ class AOU(Press):
         r = client.query(sql, location='US', job_config=job)
         if r.errors is None and r.state == 'DONE':
             job.dry_run = False
-            #
-            # NOTE: This is a hack that enables table clustering (hope it works)
-            # The hack is based on an analysis of the source code of bigquery
-            #
 
             r = client.query(sql, location='US', job_config=job)
             self.log(module='submit',
@@ -297,7 +296,7 @@ class AOU(Press):
                      value=r.job_id,
                      object='bigquery')
             self.wait(client, r.job_id)
-            self.finalize(client)
+#            self.finalize(client)
             #
             # At this point we must try to partition the table
         else:
@@ -329,9 +328,17 @@ class AOU(Press):
         table = client.get_table(client.dataset(i_dataset + '_deid').table(i_table))
         fields = [field.name for field in table.schema]
 
-        newfields = [bq.SchemaField(name=field.name,
-                                    field_type=field.field_type,
-                                    description=field.description) for field in ischema if field.name in fields]
+        newfields = []
+        for field in ischema:
+            if field.name in fields:
+                temp_field = bq.SchemaField(
+                    name=field.name,
+                    field_type=field.field_type,
+                    description=field.description,
+                    mode=field.mode
+                )
+                newfields.append(temp_field)
+
         table.schema = newfields
         client.update_table(table, ['schema'])
 
