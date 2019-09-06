@@ -111,6 +111,19 @@ class AchillesHeelTest(unittest.TestCase):
             self.assertIn(analysis_id, notifications)
         # self.assertEqual(ACHILLES_HEEL_RESULTS_NOTIFICATION_COUNT, int(result['rows'][0]['f'][0]['v']))
 
+    def test_qualify_tables(self):
+        r = validation.sql_wrangle.qualify_tables('temp.some_table', hpo_id='fake')
+        self.assertEqual(r, 'fake_temp_some_table')
+
+        r = validation.sql_wrangle.qualify_tables('synpuf_100.achilles_results', hpo_id='fake')
+        self.assertEqual(r, 'fake_achilles_results')
+
+        r = validation.sql_wrangle.qualify_tables('temp.some_table', hpo_id='pitt_temple')
+        self.assertEqual(r, 'pitt_temple_temp_some_table')
+
+        r = validation.sql_wrangle.qualify_tables('synpuf_100.achilles_results', hpo_id='pitt_temple')
+        self.assertEqual(r, 'pitt_temple_achilles_results')
+
     def tearDown(self):
         test_util.delete_all_tables(bq_utils.get_dataset_id())
         test_util.empty_bucket(self.hpo_bucket)

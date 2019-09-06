@@ -64,7 +64,7 @@ def qualify_tables(command, hpo_id=None):
     else:
         table_prefix = hpo_id + '_'
     command = command.replace(PREFIX_PLACEHOLDER, table_prefix)
-    command = re.sub('(temp.[^\s])', temp_repl, command)
+    command = re.sub('(temp\.[^\s])', temp_repl, command)
     return command
 
 
