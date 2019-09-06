@@ -55,13 +55,39 @@ class KeyRotationTest(unittest.TestCase):
 
         self.assertItemsEqual(keys['keys'], actual_values)
 
-    @mock.patch('datetime.date')
-    def test_is_key_expired(self, mock_date):
-        mock_date.return_value.today.return_value = datetime.date(2019, 8, 1)
-        expired_key = {'validAfterTime': '2019-01-1T22:11:10Z'}
-        valid_key = {'validAfterTime': '2019-06-1T22:11:10Z'}
+    def test_is_key_expired(self):
+        today = datetime.datetime.now()
+
+        yesterday = today - datetime.timedelta(days=1)
+        ok_key = {'validAfterTime': yesterday.strftime(key_rotation.GCP_DTM_FMT)}
+        self.assertFalse(key_rotation.is_key_expired(ok_key))
+
+        beyond_expire = today - datetime.timedelta(days=key_rotation.KEY_EXPIRE_DAYS + 14)
+        expired_key = {'validAfterTime': beyond_expire.strftime(key_rotation.GCP_DTM_FMT)}
         self.assertTrue(key_rotation.is_key_expired(expired_key))
-        self.assertFalse(key_rotation.is_key_expired(valid_key))
+
+        at_expire = today - datetime.timedelta(days=key_rotation.KEY_EXPIRE_DAYS)
+        expired_key = {'validAfterTime': at_expire.strftime(key_rotation.GCP_DTM_FMT)}
+        self.assertTrue(key_rotation.is_key_expired(expired_key))
+
+    def test_is_key_expiring(self):
+        today = datetime.datetime.now()
+
+        yesterday = today - datetime.timedelta(days=1)
+        ok_key = {'validAfterTime':  yesterday.strftime(key_rotation.GCP_DTM_FMT)}
+        self.assertFalse(key_rotation.is_key_expired_after_period(ok_key))
+
+        in_alert = today - datetime.timedelta(days=key_rotation.KEY_EXPIRE_DAYS - key_rotation.KEY_EXPIRE_ALERT_DAYS + 1)
+        expiring_key = {'validAfterTime': in_alert.strftime(key_rotation.GCP_DTM_FMT)}
+        self.assertTrue(key_rotation.is_key_expired_after_period(expiring_key))
+
+        at_alert = today - datetime.timedelta(days=key_rotation.KEY_EXPIRE_DAYS - key_rotation.KEY_EXPIRE_ALERT_DAYS)
+        expiring_key = {'validAfterTime': at_alert.strftime(key_rotation.GCP_DTM_FMT)}
+        self.assertTrue(key_rotation.is_key_expired_after_period(expiring_key))
+
+        beyond_expire = today - datetime.timedelta(days=key_rotation.KEY_EXPIRE_DAYS)
+        expired_key = {'validAfterTime': beyond_expire.strftime(key_rotation.GCP_DTM_FMT)}
+        self.assertTrue(key_rotation.is_key_expired_after_period(expired_key))
 
     @mock.patch('admin.key_rotation.LOGGER')
     @mock.patch('admin.key_rotation.get_iam_service')
@@ -88,14 +114,14 @@ class KeyRotationTest(unittest.TestCase):
                                      mock_delete_key):
         mock_list_service_accounts.return_value = [{'email': 'test-email@test.com'},
                                                    {'email': 'test-2-email@test.com'}]
-        mock_list_keys_for_service_account.side_effect = [[{'id': 'key-1'},
-                                                          {'id': 'key-2'}],
-                                                         [{'id': 'key-3'},
-                                                          {'id': 'key-4'}]]
+        mock_list_keys_for_service_account.side_effect = [[{'name': 'key-1', 'validAfterTime': 'expired-date-1'},
+                                                           {'name': 'key-2', 'validAfterTime': 'valid-date-1'}],
+                                                          [{'name': 'key-3', 'validAfterTime': 'expired-date-2'},
+                                                           {'name': 'key-4', 'validAfterTime': 'valid-date-2'}]]
 
         mock_is_key_expired.side_effect = [True, False, True, False]
 
-        key_rotation.delete_expired_keys(self.project_id)
+        actual_deleted_keys = key_rotation.delete_expired_keys(self.project_id)
 
         mock_list_service_accounts.assert_called_once_with(self.project_id)
 
@@ -103,10 +129,50 @@ class KeyRotationTest(unittest.TestCase):
 
         mock_list_keys_for_service_account.assert_any_call('test-2-email@test.com')
 
-        mock_is_key_expired.assert_any_call({'id': 'key-1'})
-        mock_is_key_expired.assert_any_call({'id': 'key-2'})
-        mock_is_key_expired.assert_any_call({'id': 'key-3'})
-        mock_is_key_expired.assert_any_call({'id': 'key-4'})
+        mock_is_key_expired.assert_any_call({'name': 'key-1', 'validAfterTime': 'expired-date-1'})
+        mock_is_key_expired.assert_any_call({'name': 'key-2', 'validAfterTime': 'valid-date-1'})
+        mock_is_key_expired.assert_any_call({'name': 'key-3', 'validAfterTime': 'expired-date-2'})
+        mock_is_key_expired.assert_any_call({'name': 'key-4', 'validAfterTime': 'valid-date-2'})
 
-        mock_delete_key.assert_any_call({'id': 'key-1'})
-        mock_delete_key.assert_any_call({'id': 'key-3'})
+        mock_delete_key.assert_any_call({'name': 'key-1', 'validAfterTime': 'expired-date-1'})
+        mock_delete_key.assert_any_call({'name': 'key-3', 'validAfterTime': 'expired-date-2'})
+
+        expected_deleted_keys = [
+            {'service_account_email': 'test-email@test.com', 'key_name': 'key-1', 'created_at': 'expired-date-1'},
+            {'service_account_email': 'test-2-email@test.com', 'key_name': 'key-3', 'created_at': 'expired-date-2'}]
+
+        self.assertItemsEqual(expected_deleted_keys, actual_deleted_keys)
+
+    @mock.patch('admin.key_rotation.is_key_expired_after_period')
+    @mock.patch('admin.key_rotation.list_keys_for_service_account')
+    @mock.patch('admin.key_rotation.list_service_accounts')
+    def test_get_expiring_keys_for_project(self, mock_list_service_accounts,
+                                           mock_list_keys_for_service_account,
+                                           mock_is_key_expired_after_period):
+        mock_list_service_accounts.return_value = [{'email': 'test-email@test.com'},
+                                                   {'email': 'test-2-email@test.com'}]
+        mock_list_keys_for_service_account.side_effect = [[{'name': 'key-1', 'validAfterTime': 'expiring-date-1'},
+                                                           {'name': 'key-2', 'validAfterTime': 'valid-date-1'}],
+                                                          [{'name': 'key-3', 'validAfterTime': 'expiring-date-2'},
+                                                           {'name': 'key-4', 'validAfterTime': 'valid-date-2'}]]
+
+        mock_is_key_expired_after_period.side_effect = [True, False, True, False]
+
+        actual_expiring_keys = key_rotation.get_expiring_keys(self.project_id)
+
+        mock_list_service_accounts.assert_called_once_with(self.project_id)
+
+        mock_list_keys_for_service_account.assert_any_call('test-email@test.com')
+
+        mock_list_keys_for_service_account.assert_any_call('test-2-email@test.com')
+
+        mock_is_key_expired_after_period.assert_any_call({'name': 'key-1', 'validAfterTime': 'expiring-date-1'})
+        mock_is_key_expired_after_period.assert_any_call({'name': 'key-2', 'validAfterTime': 'valid-date-1'})
+        mock_is_key_expired_after_period.assert_any_call({'name': 'key-3', 'validAfterTime': 'expiring-date-2'})
+        mock_is_key_expired_after_period.assert_any_call({'name': 'key-4', 'validAfterTime': 'valid-date-2'})
+
+        expected_expiring_keys = [
+            {'service_account_email': 'test-email@test.com', 'key_name': 'key-1', 'created_at': 'expiring-date-1'},
+            {'service_account_email': 'test-2-email@test.com', 'key_name': 'key-3', 'created_at': 'expiring-date-2'}]
+
+        self.assertItemsEqual(expected_expiring_keys, actual_expiring_keys)
