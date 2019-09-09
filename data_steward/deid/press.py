@@ -1,73 +1,81 @@
 """
     This class applies rules and meta data to yield a certain outpout
 """
+from datetime import datetime
+import json
+import logging
+import os
+
 import pandas as pd
 import numpy as np
-import json
-from rules import deid
-from datetime import datetime
-import os
-import logging
 
-class Press:
-    """
-    This class
-    """
-    def __init__(self,**args):
+from rules import deid
+
+class Press(object):
+
+    def __init__(self, **args):
         """
         :rules_path  to the rule configuration file
         :info_path   path to the configuration of how the rules get applied
         :pipeline   operations and associated sequence in which they should be performed
         """
-        self.deid_rules = json.loads((open (args['rules'])).read())
+        self.deid_rules = json.loads((open(args['rules'])).read())
         self.pipeline = args['pipeline']
-        if os.path.exists(args['table']) :
-            self.info = json.loads((open (args['table'])).read())
-        else:
-            #
+        try:
+            self.info = json.loads((open(args['table'])).read())
+        except StandardError:
             # In case a table name is not provided, we will apply default rules on he table
             #   I.e physical field suppression and row filter
             #   Date Shifting
             self.info = {}
-        if type(self.deid_rules) == list :
+
+        if isinstance(self.deid_rules, list):
             cache = {}
-            for row in self.deid_rules :
+            for row in self.deid_rules:
                 _id = row['_id']
                 cache[_id] = row
             self.deid_rules = cache
-        self.idataset       = args['idataset']
-        self.tablename      = args['table']
-        if os.sep in self.tablename :
-            self.tablename = self.tablename.split(os.sep)[-1].replace('.json','').strip()
+
+        self.idataset = args['idataset']
+        self.tablename = args['table']
+
+        self.tablename = os.path.basename(self.tablename).split('.json')[0].strip()
+
         self.store = 'sqlite' if 'store' not in args else args['store']
-        if 'suppress' not in self.deid_rules :
-            self.deid_rules['suppress'] = {'FILTERS':[]}
-        if 'FILTERS' not in self.deid_rules['suppress'] :
+
+        if 'suppress' not in self.deid_rules:
+            self.deid_rules['suppress'] = {'FILTERS': []}
+
+        if 'FILTERS' not in self.deid_rules['suppress']:
             self.deid_rules['suppress']['FILTERS'] = []
 
-        self.logpath = 'logs' if 'logs' not in args else args['logs']
-        self.action = [term.strip() for term in args['action'].split(',')] if 'action' in args else ['submit']
+        self.logpath = args.get('logs', 'logs')
+        self.action = [term.strip()
+                       for term in args['action'].split(',')] if 'action' in args else ['submit']
 
-        #
-        #--
-        if os.path.exists(self.logpath) == False :
-            os.mkdir(self.logpath)
-        if os.path.exists(self.logpath+os.sep+self.idataset) == False :
-            os.mkdir(self.logpath+os.sep+self.idataset)
+        output_log_path = os.path.join(self.logpath, self.idataset)
+        try:
+            os.makedirs(output_log_path)
+        except OSError:
+            # directory already exists.  move on.
+            pass
+
         name = datetime.now().strftime('deid-%Y-%m-%d.log')
-        filename = os.sep.join([self.logpath,name])
-        logging.basicConfig(filename=filename,level=logging.INFO,format='%(message)s')
+        filename = os.path.join(self.logpath, name)
+        logging.basicConfig(filename=filename, level=logging.INFO, format='%(message)s')
 
 
-    def meta(self,df):
-        return pd.DataFrame( {"names":list(df.dtypes.to_dict().keys()), "types":list(df.dtypes.to_dict().values())})
+    def meta(self, data_frame):
+        return pd.DataFrame(
+            {"names": list(data_frame.dtypes.to_dict().keys()), "types": list(data_frame.dtypes.to_dict().values())}
+        )
 
-    def initialize(self,**args):
+    def initialize(self, **args):
         #
         # Let us update and see if the default filters apply at all
         dfilters = []
         columns = self.get(limit=1).columns.tolist()
-        for row in self.deid_rules['suppress']['FILTERS'] :
+        for row in self.deid_rules['suppress']['FILTERS']:
             if set(columns) & set(row['filter'].split(' ')):
                 dfilters.append(row)
         self.deid_rules['suppress']['FILTERS'] = dfilters
@@ -77,6 +85,18 @@ class Press:
         This function will execute an SQL statement and return the meta data for a given table
         """
         return None
+
+    def submit(self, sql):
+        """
+        Should be overridden by subclasses.
+        """
+        raise NotImplementedError()
+
+    def update_rules(self):
+        """
+        Should be overridden by subclasses.
+        """
+        raise NotImplementedError()
 
     def do(self):
         """
@@ -88,7 +108,7 @@ class Press:
 
         p = d.apply(_info, self.store)
 
-        is_meta = np.sum([ 1*('on' in _item) for _item in p]) != 0
+        is_meta = np.sum([1*('on' in _item) for _item in p]) != 0
         self.log(module='do', action='table-type', table=self.get_tablename(), is_meta=int(is_meta))
         if not is_meta:
             sql = self.to_sql(p)
@@ -97,32 +117,31 @@ class Press:
             #
             # Processing meta tables
             sql = []
-            relational_cols   = [col for col in p if 'on' not in col]
-            meta_cols  = [col for col in p if 'on' in col]
+            relational_cols = [col for col in p if 'on' not in col]
+            meta_cols = [col for col in p if 'on' in col]
             _map = {}
-            for col in meta_cols :
-                if col['on'] not in _map :
+            for col in meta_cols:
+                if col['on'] not in _map:
                     _map[col['on']] = []
                 _map[col['on']] += [col]
-            filter = []
-            CONJUNCTION = ' AND ' if self.deid_rules['suppress']['FILTERS'] else ' WHERE '
+            fillter = []
             for filter_id in _map:
 
                 _item = _map[filter_id]
-                filter += [filter_id]
+                fillter.append(filter_id)
 
                 _sql = self.to_sql(_item +relational_cols)  + ' AND ' + filter_id
 
-                sql += [ _sql]
+                sql.append(_sql)
 
-            _rsql = self.to_sql(relational_cols) + ' AND ' + ' AND '.join(filter).replace(' IN ',' NOT IN ')
+            _rsql = self.to_sql(relational_cols) + ' AND ' + ' AND '.join(fillter).replace(' IN ', ' NOT IN ')
             _rsql = _rsql.replace(' exists ', ' NOT EXISTS ')
             _rsql = _rsql.replace(' not NOT ', ' NOT ')
             #
             # @TODO: filters may need to be adjusted (add a conditional statement)
             #
 
-            sql += [_rsql]
+            sql.append(_rsql)
             sql = "\nUNION ALL\n".join(sql)
             sql = sql.replace(':idataset', self.idataset)
 
@@ -144,164 +163,161 @@ class Press:
     def get_tablename(self):
         return self.idataset + "." + self.tablename if self.idataset else self.tablename
 
-    def debug(self,info):
-        TABLE_NAME = self.idataset + "." + self.tablename
+    def debug(self, info):
         for row in info:
             print()
             print(row['label'], not row['apply'])
             print()
 
-    def log (self,**args):
-            # print (args)
-            logging.info(json.dumps(args) )
-    def simulate(self,info):
+    def log(self, **args):
+        logging.info(json.dumps(args))
+
+    def simulate(self, info):
         """
-        This function is not essential, but will attempt to log the various transformations on every field.
-        This is because the testing team is incapable of applying adequate testing techniques and defining appropriate equivalence classes.
+        This function will attempt to log the various transformations on every field.
+
+        This will simulate and provide output on possible transformations.
         :info   payload of that has all the transformations applied to a given table as follows
-                [{apply,label,name}] where
+                [{apply, label, name}] where
                     - apply is the SQL to be applied
                     - label is the flag for the operation (generalize, suppress, compute, shift)
-                    - name  is the attribute name that on which the rule gets applied
+                    - name  is the attribute name on which the rule gets applied
         """
-        TABLE_NAME = self.idataset+"."+self.tablename
-        # if 'suppress' in self.deid_rules and 'FILTERS' in self.deid_rules['suppress']:
-        FILTERS = self.deid_rules['suppress']['FILTERS']
-        # el?se:
-            # FITLERS = []
+        table_name = self.idataset + "." + self.tablename
+        suppression_filters = self.deid_rules['suppress']['FILTERS']
         out = pd.DataFrame()
         counts = {}
         dirty_date = False
         filters = []
-        for item in info :
 
+        for item in info:
             labels = item['label'].split('.')
-            if not (set(labels) & set(self.pipeline)) :
-                self.log(module='simulate',table=TABLE_NAME,action='skip',value=labels)
-                continue
-            if labels[0] not in counts :
-                counts [ labels[0].strip()]  = 0
-            counts [ labels[0].strip()]  += 1
-            if 'suppress' in labels or item['name'] == 'person_id' or dirty_date == True:
 
+            if not (set(labels) & set(self.pipeline)):
+                self.log(module='simulate', table=table_name, action='skip', value=labels)
                 continue
+
+            if labels[0] not in counts:
+                counts[labels[0].strip()] = 0
+
+            counts[labels[0].strip()] += 1
+
+            if 'suppress' in labels or item['name'] == 'person_id' or dirty_date:
+                continue
+
             field = item['name']
             alias = 'original_' + field
-            SQL = ["SELECT DISTINCT ",field,'AS ',alias,",",item['apply'], " FROM ",TABLE_NAME]
-            if FILTERS :
-                SQL += ['WHERE']
+            sql_list = ["SELECT DISTINCT ", field, 'AS ', alias, ",", item['apply'], " FROM ", table_name]
 
-                for row in FILTERS :
-                    SQL += [row['filter']]
-                    if FILTERS.index(row) < len(FILTERS) -1 :
+            if suppression_filters:
+                sql_list.append('WHERE')
 
-                        SQL += ['AND']
-            if 'on' in item :
-                #
+                for row in suppression_filters:
+                    sql_list.append(row['filter'])
+
+                    if suppression_filters.index(row) < len(suppression_filters) -1:
+                        sql_list.append('AND')
+
+            if 'on' in item:
                 # This applies to meta tables
+                filters.append(item['on'])
+                if suppression_filters:
+                    sql_list.extend(['AND', item['on']])
+                else:
+                    sql_list.extend(['WHERE ', item['on']])
 
-                filters += [item['on']] #.replace(' IN ',' NOT IN ')]
-                SQL += ['AND' , item['on']] if FILTERS else ['WHERE ',item['on']]
             if 'shift' in labels:
-                df = self.get(sql = " ".join(SQL).replace(':idataset',self.idataset),limit=5)
+                data_frame = self.get(sql=" ".join(sql_list).replace(':idataset', self.idataset), limit=5)
             else:
-                df = self.get(sql = " ".join(SQL).replace(':idataset',self.idataset))
-            if df.shape[0] == 0 :
-                self.log(module="simulate",table=TABLE_NAME,attribute=field,type=item['label'],status='no data-found')
-                # print '\n\t'.join(SQL).replace(':idataset',self.idataset)
+                data_frame = self.get(sql=" ".join(sql_list).replace(':idataset', self.idataset))
+
+            if data_frame.shape[0] == 0:
+                self.log(module="simulate", table=table_name, attribute=field, type=item['label'], status='no data-found')
                 continue
-            if 'shift' in item['label'] and df.shape[0] > 0 :
-                dirty= True
-            df.columns = ['original','transformed']
-            df['attribute'] = field
-            df['task'] = item['label'].upper().replace('.', ' ')
-            out = out.append(df)
+
+            data_frame.columns = ['original', 'transformed']
+            data_frame['attribute'] = field
+            data_frame['task'] = item['label'].upper().replace('.', ' ')
+            out = out.append(data_frame)
         #-- Let's evaluate row suppression here
         #
         out.index = range(out.shape[0])
         rdf = pd.DataFrame()
-        if FILTERS:
-            filters += [item['filter'] for item in FILTERS if 'filter' in item]
-            original_sql        = ' (SELECT COUNT(*) as original FROM :table) AS ORIGINAL_TABLE ,'.replace(':table',TABLE_NAME)
-            transformed_sql     = '(SELECT COUNT(*) AS transformed FROM :table WHERE :filter) AS TRANSF_TABLE'.replace(':table',TABLE_NAME).replace(':filter'," OR ".join(filters))
-            SQL = ['SELECT * FROM ',original_sql,transformed_sql]
+        if suppression_filters:
+            filters += [item['filter'] for item in suppression_filters if 'filter' in item]
+            original_sql = ' (SELECT COUNT(*) as original FROM :table) AS ORIGINAL_TABLE ,'
+            original_sql = original_sql.replace(':table', table_name)
+            transformed_sql = '(SELECT COUNT(*) AS transformed FROM :table WHERE :filter) AS TRANSF_TABLE'
+            transformed_sql = transformed_sql.replace(':table', table_name)
+            transformed_sql = transformed_sql.replace(':filter', " OR ".join(filters))
+            sql_list = ['SELECT * FROM ', original_sql, transformed_sql]
 
-            r = self.get(sql = " ".join(SQL).replace(":idataset",self.idataset))
-            TABLE_NAME = self.idataset+"."+self.tablename
+            r = self.get(sql=" ".join(sql_list).replace(":idataset", self.idataset))
+            table_name = self.idataset + "." + self.tablename
 
-            # df['attribute'] = ' * '
-            rdf = pd.DataFrame({"operation":["row-suppression"],"count":r.transformed.tolist() })
+            rdf = pd.DataFrame({"operation": ["row-suppression"], "count": r.transformed.tolist()})
 
-        #
-        # We
         now = datetime.now()
-        flag = "-".join(np.array([now.year,now.month,now.day,now.hour]).astype(str).tolist())
-        for folder in [self.logpath, os.sep.join([self.logpath,self.idataset]),os.sep.join([self.logpath,self.idataset,flag]) ] :
-            if not os.path.exists(folder) :
-                os.mkdir(folder)
-        root = os.sep.join([self.logpath,self.idataset,flag])
-        stats = pd.DataFrame({"operation":counts.keys(),"count":counts.values()})
+        flag = "-".join(np.array([now.year, now.month, now.day, now.hour]).astype(str).tolist())
+
+        root = os.path.join(self.logpath, self.idataset, flag)
+        try:
+            os.makedirs(root)
+        except OSError:
+            # directory already exists.  move on.
+            pass
+
+        stats = pd.DataFrame({"operation": counts.keys(), "count": counts.values()})
         stats = stats.append(rdf)
         stats.index = range(stats.shape[0])
         stats.reset_index()
-        _map = {os.sep.join([root,'samples-'+self.tablename+'.csv']):out, os.sep.join([root,'stats-'+self.tablename+'.csv']):stats}
-        for path in _map :
-            _df = _map[path]
-            _df.to_csv(path,encoding='utf-8')
-        self.log(module='simulation',table=TABLE_NAME,status='completed',value=root)
 
-        # self.post(sample=out,stats={"counts"count,"row_suppression":rdf})
-        #
-        # Let's make sure this goes to a variety of formats
-        # html,pdf, json, csv ...
-        #
-        # print out
+        _map = {os.path.join(root, 'samples-' + self.tablename + '.csv'): out,
+                os.path.join(root, 'stats-' + self.tablename + '.csv'): stats}
+        for path in _map:
+            _data_frame = _map[path]
+            _data_frame.to_csv(path, encoding='utf-8')
 
-    def to_sql (self,info) :
+        self.log(module='simulation', table=table_name, status='completed', value=root)
+
+    def to_sql(self, info):
         """
         :info   payload with information of the process to be performed
         """
-
-        TABLE_NAME = self.get_tablename()
+        table_name = self.get_tablename()
         fields = self.get(limit=1).columns.tolist()
         columns = list(fields)
-        jobs = {}
-        SQL = []
-        p = {}
-        self.log(module='to_sql',action='generating-sql',table=TABLE_NAME,fields=fields)
+        sql_list = []
+        self.log(module='to_sql', action='generating-sql', table=table_name, fields=fields)
         #
         # @NOTE:
         #   If we are dealing with a meta-table we should
-        for id in self.pipeline : #['generalize','suppress','shift','compute']:
-            for row in info :
+        for rule_id in self.pipeline: #['generalize', 'suppress', 'shift', 'compute']:
+            for row in info:
                 name = row['name']
 
-                if id not in row['label'] or name not in fields:
+                if rule_id not in row['label'] or name not in fields:
                     continue
 
                 index = fields.index(name)
                 fields[index] = row['apply']
-                self.log(module='to_sql',field=name,sql=row['apply'])
+                self.log(module='to_sql', field=name, sql=row['apply'])
 
-
-        SQL = ['SELECT', ",".join(fields), 'FROM ', TABLE_NAME]
+        sql_list = ['SELECT', ",".join(fields), 'FROM ', table_name]
 
         if 'suppress' in self.deid_rules and 'FILTERS' in self.deid_rules['suppress']:
-            FILTERS = self.deid_rules['suppress']['FILTERS']
-            if FILTERS:
-                SQL += ['WHERE']
-            for row in FILTERS:
+            suppression_filters = self.deid_rules['suppress']['FILTERS']
+            if suppression_filters:
+                sql_list.append('WHERE')
+            for row in suppression_filters:
                 if not (set(columns) & set(row['filter'].split(' '))):
                     continue
 
-                SQL += [row['filter']]
-                if FILTERS.index(row) < len(FILTERS) - 1:
-                    SQL += ['AND']
+                sql_list.append(row['filter'])
+                if suppression_filters.index(row) < len(suppression_filters) - 1:
+                    sql_list.append('AND')
 
-        return '\t'.join(SQL).replace(":idataset", self.idataset)
+        return '\t'.join(sql_list).replace(":idataset", self.idataset)
 
-
-
-    def to_pandas(rules,info):
+    def to_pandas(self, rules, info):
         pass
-
