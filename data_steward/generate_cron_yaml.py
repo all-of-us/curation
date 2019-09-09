@@ -6,6 +6,8 @@ import datetime
 
 CRON_DATE_FMT = '%-d of %B 00:00'
 CRON_YAML_PATH = os.path.join(resources.base_path, 'cron.yaml')
+# TODO add flag to force run all sites with 20 min diff, while excluding
+# some sites using "latest site upload times" or using the archived folders for them
 
 
 def get_yesterday_expr():
@@ -26,6 +28,7 @@ def render():
     """
     j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(resources.TEMPLATES_PATH))
     tpl = j2_env.get_template(resources.CRON_TPL_YAML)
+    # TODO obtain cron urls from validation.main/app_base.yaml instead of through template
     hpos = resources.hpo_csv()
     yesterday = get_yesterday_expr()
     result = tpl.render(hpos=hpos, yesterday=yesterday)
