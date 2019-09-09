@@ -1,0 +1,59 @@
+cron:
+
+# Validate All HPOs
+- description: validate all hpos
+  url: /data_steward/v1/ValidateAllHpoFiles
+  schedule: every 3 hours
+  timezone: America/New_York
+
+# EHR Union
+- description: ehr union
+  url: /data_steward/v1/UnionEHR
+  schedule: every 24 hours
+  timezone: America/New_York
+
+# Archive
+{% for hpo in hpos %}
+- description: copy hpo {{ hpo['hpo_id'] }} files
+  url: /data_steward/v1/CopyFiles/{{ hpo['hpo_id'] }}
+  schedule: every 24 hours
+  timezone: America/New_York
+{% endfor %}
+
+# Force Run
+{% for hpo in hpos %}
+- description: validate hpo {{ hpo['hpo_id'] }}
+  url: /data_steward/v1/ValidateHpoFiles/{{ hpo['hpo_id'] }}
+  schedule: {{ yesterday }}
+  timezone: America/New_York
+{% endfor %}
+
+# Participant Matching
+- description: compare submissions vs ppi
+  url: /data_steward/v1/ParticipantValidation/
+  schedule: {{ yesterday }}
+  timezone: America/New_York
+
+# Participant Matching Site Files
+- description: store results of participant matching in site buckets
+  url: /data_steward/v1/ParticipantValidation/SiteFiles
+  schedule: {{ yesterday }}
+  timezone: America/New_York
+
+# Participant Matching DRC File
+- description: store results of participant matching in DRC bucket
+  url: /data_steward/v1/ParticipantValidation/DRCFile
+  schedule: {{ yesterday }}
+  timezone: America/New_York
+
+# Data Retraction
+- description: retract data for specified person_ids
+  url: /data_steward/v1/RetractPids
+  schedule: {{ yesterday }}
+  timezone: America/New_York
+
+# Service Account Key Rotation
+- description: Remove expired service account keys daily
+  url: /admin/v1/RemoveExpiredServiceAccountKeys
+  schedule: every 24 hours
+  timezone: America/New_York
