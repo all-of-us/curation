@@ -6,7 +6,6 @@ import unittest
 
 import dpath
 import moz_sql_parser
-from google.appengine.ext import testbed
 
 import bq_utils
 import cdm
@@ -14,7 +13,7 @@ import constants.tools.combine_ehr_rdr
 import constants.validation.ehr_union as eu_constants
 import gcs_utils
 import resources
-import test_util
+from test.unit_test import test_util
 from validation import ehr_union
 
 PITT_HPO_ID = 'pitt'
@@ -41,13 +40,7 @@ class EhrUnionTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_urlfetch_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_datastore_v3_stub()
+
         self.project_id = bq_utils.app_identity.get_application_id()
         self.hpo_ids = [NYC_HPO_ID, PITT_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
@@ -524,4 +517,3 @@ class EhrUnionTest(unittest.TestCase):
         self._empty_hpo_buckets()
         test_util.delete_all_tables(self.input_dataset_id)
         test_util.delete_all_tables(self.output_dataset_id)
-        self.testbed.deactivate()
