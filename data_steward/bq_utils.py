@@ -278,7 +278,7 @@ def table_exists(table_id, dataset_id=None):
             datasetId=dataset_id,
             tableId=table_id).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
         return True
-    except HttpError, err:
+    except HttpError as err:
         if err.resp.status != 404:
             raise
         return False
