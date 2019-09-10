@@ -1,3 +1,4 @@
+from __future__ import print_function
 import unittest
 
 import tools.consolidated_reports.get_all_achilles_reports as achilles_report
