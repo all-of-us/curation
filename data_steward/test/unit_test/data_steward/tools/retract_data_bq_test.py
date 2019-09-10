@@ -168,10 +168,21 @@ class RetractDataBqTest(unittest.TestCase):
         expected_dest_tables = set(existing_table_ids) - set(ignored_tables)
         self.assertSetEqual(expected_dest_tables, actual_dest_tables)
 
+    @mock.patch('tools.retract_data_bq.is_deid_dataset')
+    @mock.patch('tools.retract_data_bq.is_combined_dataset')
+    @mock.patch('tools.retract_data_bq.is_unioned_dataset')
     @mock.patch('tools.retract_data_bq.is_ehr_dataset')
     @mock.patch('bq_utils.list_datasets')
-    def test_integration_queries_to_retract_from_fake_dataset(self, mock_list_datasets, mock_is_ehr_dataset):
+    def test_integration_queries_to_retract_from_fake_dataset(self,
+                                                              mock_list_datasets,
+                                                              mock_is_ehr_dataset,
+                                                              mock_is_unioned_dataset,
+                                                              mock_is_combined_dataset,
+                                                              mock_is_deid_dataset):
         mock_list_datasets.return_value = [{'id': self.project_id+':'+self.bq_dataset_id}]
+        mock_is_deid_dataset.return_value = False
+        mock_is_combined_dataset.return_value = False
+        mock_is_unioned_dataset.return_value = False
         mock_is_ehr_dataset.return_value = True
 
         job_ids = []
