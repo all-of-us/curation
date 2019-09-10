@@ -1,12 +1,12 @@
 from __future__ import print_function
 import unittest
 
-import test_util
 from mock import patch
 
 import bq_utils
 import constants.validation.metrics.completeness as consts
 import resources
+from test.unit_test import test_util
 from validation.metrics import completeness
 
 
