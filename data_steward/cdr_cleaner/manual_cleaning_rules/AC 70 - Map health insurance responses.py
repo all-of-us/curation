@@ -15,6 +15,7 @@
 
 
 # Load Libraries
+from __future__ import print_function
 from termcolor import colored
 import pandas as pd
 
@@ -56,8 +57,8 @@ obs_pids_notin_list = tuple(obs_pids_notin_list)
 obs_pids_in_list = [int(x) for x in AC70_pids['pid'] if x in obs_overwrite['person_id']]
 
 
-print(colored("This shows that none of person_ids in [AC70_pids] \n are in the observation table "
-              "with observation_source_concept_id = 1384450 table).They are not in the hcau table either.", 'green'))
+print((colored("This shows that none of person_ids in [AC70_pids] \n are in the observation table "
+              "with observation_source_concept_id = 1384450 table).They are not in the hcau table either.", 'green')))
 
 
 # # THESE ARE THE TWO QUERIES THAT WILL UPDATE THE FIELDS TO HCAU FIELDS-
