@@ -3,13 +3,11 @@ import json
 import os
 import unittest
 
-from google.appengine.ext import testbed
-
 import bq_utils
 import common
 import gcs_utils
-import test_util
-from test_util import FAKE_HPO_ID
+from test.unit_test import test_util
+from test.unit_test.test_util import FAKE_HPO_ID
 from validation import export, main
 
 BQ_TIMEOUT_RETRIES = 3

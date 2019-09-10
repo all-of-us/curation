@@ -7,9 +7,9 @@ from google.appengine.ext import testbed
 import bq_utils
 import gcs_utils
 import resources
-import test_util
+from test.unit_test import test_util
 import validation.sql_wrangle
-from test_util import FAKE_HPO_ID
+from test.unit_test.test_util import FAKE_HPO_ID
 from validation import achilles
 
 # This may change if we strip out unused analyses
