@@ -39,6 +39,7 @@ FIXME:
    parsing through files
 """
 
+from __future__ import print_function
 import datetime
 import math
 import os
@@ -138,8 +139,8 @@ def load_files(user_choice, file_names):
             sheet = pd.read_excel(file_name, sheet_name=user_choice)
 
             if sheet.empty:
-                print("WARNING: No {} sheet found in dataframe {}".format(
-                    user_choice, file_name))
+                print(("WARNING: No {} sheet found in dataframe {}".format(
+                    user_choice, file_name)))
                 del file_names[num_files_indexed]
                 num_files_indexed -= 1  # skip over the date
             else:
@@ -148,10 +149,10 @@ def load_files(user_choice, file_names):
             num_files_indexed += 1
 
         except FileNotFoundError:
-            print("{} not found in the current directory: {}. Please "
+            print(("{} not found in the current directory: {}. Please "
                   "ensure that the file names are consistent between "
                   "the Python script and the file name in your current "
-                  "directory. ".format(file_names[num_files_indexed], cwd))
+                  "directory. ".format(file_names[num_files_indexed], cwd)))
             sys.exit(0)
 
     return sheets
