@@ -1,8 +1,5 @@
 """
-Removes fake, ghost, withdrawn, and test participants from observation table the CDR
-
-TODO Get the pids of duplicate participants(AC-69)
-     Get the pids of fake, ghost and withdrawn participants(AC-68) from the team drive before running this script.
+Remove observation records associated with a provided list of person_ids
 """
 import csv
 
@@ -11,43 +8,55 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 OBSERVATION = 'observation'
 
-DELETE_OBSERVATION_RECORDS = (
+SELECT_OBSERVATION_RECORDS_EXCLUDE_PIDS = (
     'select * '
     'FROM `{project_id}.{dataset_id}.observation` '
     'where person_id not in ({records}) '
 )
 
 
-def extract_pids_from_csv(filepath):
+def read_pids_csv(filepath):
     """
-    takes path to csv file which contains pids as input, extracts pids from csv and adds to list of pids.
-    returns the string generated from joining the ids in the list.
+    Extract pids from csv file
+
     :param filepath: Path to the file containing the pids
-    :return: string
+    :return: list of int
     """
     pids = []
     with open(filepath, 'rb') as f:
         reader = csv.reader(f)
         reader.next()
         for row in reader:
-            pids.append(row[0])
-    pids = ', '.join(pids)
+            pid = int(row[0])
+            pids.append(pid)
     return pids
 
 
-def get_delete_ghost_fake_participants_query(project_id, dataset_id, pids):
+def pids2sql(pids):
     """
-    gets the query for deleting the ghost, fake and withdrawn participants from the CDR.
+    Convert list of pids to SQL sequence expression
+
+    :param pids: list of person_id
+    :return: str representation of SQL expression
+    """
+    str_pids = map(str, pids)
+    return ', '.join(str_pids)
+
+
+def get_exclude_pids_query(project_id, dataset_id, pids):
+    """
+    Get query to wipe observation records associated with person_ids
+
     :param project_id: identifies the project containing the dataset
     :param dataset_id: identifies the dataset containing the OMOP data
-    :param pids: pids of ghost, fake, test and withdrawn participants extracted from a external file
-    :return:
+    :param pids: list of person_ids
+    :return: a query dict representing the query to run
     """
     query = dict()
-    query[cdr_consts.QUERY] = DELETE_OBSERVATION_RECORDS.format(project_id=project_id,
-                                                                dataset_id=dataset_id,
-                                                                records=pids,
-                                                                )
+    pids_sql = pids2sql(pids)
+    query[cdr_consts.QUERY] = SELECT_OBSERVATION_RECORDS_EXCLUDE_PIDS.format(project_id=project_id,
+                                                                             dataset_id=dataset_id,
+                                                                             records=pids_sql)
     query[cdr_consts.DESTINATION_TABLE] = OBSERVATION
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -55,33 +64,35 @@ def get_delete_ghost_fake_participants_query(project_id, dataset_id, pids):
     return query
 
 
-def main(project_id, dataset_id, fake_ghost_ids):
+def main(project_id, dataset_id, file_path):
     """
-    takes in the file path and gets the person ids. gets queries to delete the records with the pids collected
-    from the external file.
+    Get list of queries to remove observation records associated with pids in a specified file
+
     :param project_id: identifies the project containing the dataset
     :param dataset_id: identifies the dataset containing the OMOP data
-    :param fake_ghost_ids: path to csv file containing pids of ghost, fake, test and withdrawn participants
-    :return: a list of query dict to remove the fake, ghost, test participants
+    :param file_path: path to csv file containing pids
+    :return: a list of query dict
     """
     queries = []
-    fake_ghost_ids = extract_pids_from_csv(fake_ghost_ids)
-    queries.append(get_delete_ghost_fake_participants_query(project_id, dataset_id, fake_ghost_ids))
+    file_path = read_pids_csv(file_path)
+    query_dict = get_exclude_pids_query(project_id, dataset_id, file_path)
+    queries.append(query_dict)
     return queries
 
 
 def parse_args():
     """
-    this function expands the default argument list defined in cdr_cleaner.args_parser
+    Add file_path to the default cdr_cleaner.args_parser argument list
+
     :return: an expanded argument list object
     """
     import cdr_cleaner.args_parser as parser
-
-    additional_argument_1 = {parser.SHORT_ARGUMENT: '-file_path',
-                             parser.LONG_ARGUMENT: '--fake_ghost_ids',
+    help_text = 'path to csv file (with header row) containing pids whose observation records are to be removed'
+    additional_argument_1 = {parser.SHORT_ARGUMENT: '-f',
+                             parser.LONG_ARGUMENT: '--file_path',
                              parser.ACTION: 'store',
-                             parser.DEST: 'fake_ghost_ids',
-                             parser.HELP: 'path to csv file containing fake, ghost and withdrawn participants',
+                             parser.DEST: 'file_path',
+                             parser.HELP: help_text,
                              parser.REQUIRED: True}
 
     args = parser.default_parse_args([additional_argument_1])
@@ -94,5 +105,5 @@ if __name__ == '__main__':
     ARGS = parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = main(ARGS.project_id, ARGS.dataset_id, ARGS.fake_ghost_ids)
+    query_list = main(ARGS.project_id, ARGS.dataset_id, ARGS.file_path)
     clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
