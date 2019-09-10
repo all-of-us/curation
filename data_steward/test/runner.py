@@ -21,6 +21,7 @@ Example invocation:
   $ python runner.py ~/google-cloud-sdk
 """
 
+from __future__ import print_function
 import argparse
 import os
 import sys
@@ -73,7 +74,7 @@ def main(sdk_path, test_path, test_pattern):
         import appengine_config
         (appengine_config)
     except ImportError:
-        print 'Note: unable to import appengine_config.'
+        print('Note: unable to import appengine_config.')
 
     # Discover and run tests.
     suite = unittest.loader.TestLoader().discover(test_path, test_pattern)

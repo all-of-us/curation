@@ -8,6 +8,7 @@ Assumptions
 2. Script also stored with introduction.txt, great_job.txt, and contact_list.py
 Code was developed with respect to PEP8 standards
 """
+from __future__ import print_function
 import os
 import pandas as pd
 from contact_list import recipient_dict

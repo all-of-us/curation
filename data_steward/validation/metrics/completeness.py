@@ -1,3 +1,4 @@
+from __future__ import print_function
 import bq_utils
 import resources
 import constants.validation.metrics.completeness as consts
@@ -173,4 +174,4 @@ if __name__ == '__main__':
     parser.add_argument('hpo_id', nargs='?', help='Identifies an HPO site to report on; all sites by default')
     ARGS = parser.parse_args()
     completeness_rows = run_with_args(ARGS.credentials, ARGS.dataset_id, ARGS.hpo_id)
-    print json.dumps(completeness_rows, indent=JSON_INDENT, sort_keys=True)
+    print(json.dumps(completeness_rows, indent=JSON_INDENT, sort_keys=True))

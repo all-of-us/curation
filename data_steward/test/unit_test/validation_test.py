@@ -1,6 +1,7 @@
 """
 Unit test components of data_steward.validation.main
 """
+from __future__ import print_function
 import StringIO
 import datetime
 import json

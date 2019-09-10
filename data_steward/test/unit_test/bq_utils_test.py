@@ -9,7 +9,7 @@ from google.appengine.ext import testbed
 
 import bq_utils
 import common
-from google.appengine.api import app_identity
+import app_identity
 import constants.bq_utils as bq_utils_consts
 import gcs_utils
 import resources
@@ -389,7 +389,7 @@ class BqUtilsTest(unittest.TestCase):
         expected.sort(key=lambda row: row['integer_field'])
         actual.sort(key=lambda row: row['integer_field'])
         for i, _ in enumerate(expected):
-            self.assertItemsEqual(expected[i], actual[i])
+            self.assertCountEqual(expected[i], actual[i])
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
