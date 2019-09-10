@@ -1,3 +1,4 @@
+from __future__ import print_function
 import json
 import os
 
@@ -61,7 +62,7 @@ def write_json(pth, obj):
 def update_source_name(rpt):
     pth = 'curation_report/data/%s/person.json' % rpt['hpo_id']
     txt = read_text(pth).replace('my_source', rpt['hpo_id'])
-    print 'Updating source name in %s...' % pth
+    print('Updating source name in %s...' % pth)
     write_text(pth, txt)
 
 
@@ -75,7 +76,7 @@ def update_datasources(rpts):
         datasource = datasource_for(rpt)
         datasources.append(datasource)
     obj = {'datasources': datasources}
-    print 'Saving datasources to %s...' % DATASOURCES_PATH
+    print('Saving datasources to %s...' % DATASOURCES_PATH)
     write_json(DATASOURCES_PATH, obj)
 
 
@@ -92,12 +93,12 @@ def download_report(s):
 
     if os.path.exists('%s/curation_report/data/%s' % (cdir, s['hpo_id'])):
         cmd = 'gsutil -m cp -r %s ./curation_report/data/' % (s['report_path'])
-        print 'Downloading %s rpt with cmd: `%s`...' % (s['hpo_id'], cmd)
+        print('Downloading %s rpt with cmd: `%s`...' % (s['hpo_id'], cmd))
         os.system(cmd)
     else:
         os.mkdir('%s/curation_report/data/%s' % (cdir, s['hpo_id']))
         cmd = 'gsutil -m cp -r %s ./curation_report/data/' % (s['report_path'])
-        print 'Downloading %s rpt with cmd: `%s`...' % (s['hpo_id'], cmd)
+        print('Downloading %s rpt with cmd: `%s`...' % (s['hpo_id'], cmd))
         os.system(cmd)
 
 
@@ -105,7 +106,7 @@ def main():
     bq_list = query_reports.get_most_recent()
     reports = transform_bq_list(bq_list)
     for report in reports:
-        print 'processing report: \n %s\n...' % json.dumps(report, indent=4)
+        print('processing report: \n %s\n...' % json.dumps(report, indent=4))
         download_report(report)
         update_source_name(report)
     update_datasources(reports)

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import csv
 import json
 import urllib2
@@ -22,15 +23,15 @@ for f in listdir('../resources/fields'):
     table_name = f[0:f.index('.')]
     description_map = table_map.get(table_name)
     if not description_map:
-        print "No descriptions found for %s; skipping." % table_name
+        print("No descriptions found for %s; skipping." % table_name)
         continue
-    print "Updating descriptions for %s..." % table_name
+    print("Updating descriptions for %s..." % table_name)
     with open('../resources/fields/%s' % f) as json_file:
         schema_json = json.load(json_file, object_pairs_hook=OrderedDict)
         for column in schema_json:
             description = description_map.get(column['name'])
             if not description:
-                print "No description found for column %s, skipping." % column['name']
+                print("No description found for column %s, skipping." % column['name'])
             else:
                 column['description'] = description
     with open('../resources/fields/%s' % f, 'w') as json_file:
