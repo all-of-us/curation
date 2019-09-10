@@ -39,29 +39,29 @@ UNMAPPED_VALIDATION_TABLES = [
 # non-ehr mappings mappings
 EXISTING_AND_VALID_CONSENTING_RECORDS = (
     'WITH consented AS ( '
-        'SELECT person_id '
-        'FROM ( '
-            'SELECT person_id, value_source_concept_id, observation_datetime, '
-            'ROW_NUMBER() OVER( '
-                'PARTITION BY person_id ORDER BY observation_datetime DESC, '
-                'value_source_concept_id ASC) AS rn '
-            'FROM `{project}.{dataset}.observation` '
-            'WHERE observation_source_value = \'EHRConsentPII_ConsentPermission\')'
-        'WHERE rn=1 AND value_source_concept_id = 1586100),'
+    'SELECT person_id '
+    'FROM ( '
+    'SELECT person_id, value_source_concept_id, observation_datetime, '
+    'ROW_NUMBER() OVER( '
+    'PARTITION BY person_id ORDER BY observation_datetime DESC, '
+    'value_source_concept_id ASC) AS rn '
+    'FROM `{project}.{dataset}.observation` '
+    'WHERE observation_source_value = \'EHRConsentPII_ConsentPermission\')'
+    'WHERE rn=1 AND value_source_concept_id = 1586100),'
     'unconsented AS ( '
-        'SELECT person_id '
-        'FROM ( '
-            'SELECT person_id, value_source_concept_id, observation_datetime, '
-            'ROW_NUMBER() OVER( '
-                'PARTITION BY person_id ORDER BY observation_datetime DESC, '
-                'value_source_concept_id ASC) AS rn '
-            'FROM `{project}.{dataset}.observation` '
-            'WHERE observation_source_value = \'EHRConsentPII_ConsentPermission\')'
-        'WHERE rn=1 AND value_source_concept_id != 1586100),'
+    'SELECT person_id '
+    'FROM ( '
+    'SELECT person_id, value_source_concept_id, observation_datetime, '
+    'ROW_NUMBER() OVER( '
+    'PARTITION BY person_id ORDER BY observation_datetime DESC, '
+    'value_source_concept_id ASC) AS rn '
+    'FROM `{project}.{dataset}.observation` '
+    'WHERE observation_source_value = \'EHRConsentPII_ConsentPermission\')'
+    'WHERE rn=1 AND value_source_concept_id != 1586100),'
     'ppi_mappings AS ( '
-        'SELECT {table}_id '
-        'FROM `{project}.{dataset}._mapping_{table}` '
-        'WHERE src_dataset_id not like \'%ehr%\') '
+    'SELECT {table}_id '
+    'FROM `{project}.{dataset}._mapping_{table}` '
+    'WHERE src_dataset_id not like \'%ehr%\') '
     # get all consented rows
     'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
     'JOIN consented AS cons '
@@ -79,6 +79,7 @@ SELECT_EXISTING_PERSON_IDS = (
     'JOIN `{project}.{dataset}.person` AS person '
     'ON entry.person_id = person.person_id'
 )
+
 
 def get_person_id_validation_queries(project=None, dataset=None):
     """
@@ -142,6 +143,7 @@ def get_person_id_validation_queries(project=None, dataset=None):
 
     return query_list
 
+
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
@@ -149,4 +151,4 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
     Q_LIST = get_person_id_validation_queries(ARGS.project_id, ARGS.dataset_id)
-#    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, Q_LIST)
+    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, Q_LIST)
