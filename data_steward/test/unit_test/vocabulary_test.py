@@ -7,7 +7,7 @@ import unittest
 
 import mock
 
-import test_util
+from test.unit_test import test_util
 from common import DELIMITER, LINE_TERMINATOR
 from resources import AOU_GENERAL_CONCEPT_CSV_PATH
 from vocabulary import _transform_csv, format_date_str, get_aou_general_vocabulary_row, \

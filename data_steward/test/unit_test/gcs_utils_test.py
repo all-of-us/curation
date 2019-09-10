@@ -1,11 +1,10 @@
 from __future__ import print_function
 import unittest
 
-from google.appengine.ext import testbed
 from googleapiclient.errors import HttpError
 
 import gcs_utils
-from test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
+from test.unit_test.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 
 
 class GcsUtilsTest(unittest.TestCase):
@@ -16,13 +15,6 @@ class GcsUtilsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_urlfetch_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.gcs_path = '/'.join([self.hpo_bucket, 'dummy'])
         self._empty_bucket()
@@ -70,4 +62,3 @@ class GcsUtilsTest(unittest.TestCase):
 
     def tearDown(self):
         self._empty_bucket()
-        self.testbed.deactivate()
