@@ -19,7 +19,7 @@ HPO_CSV_LINE_FMT = '"{hpo_id}","{hpo_name}"\n'
 
 DEFAULT_DISPLAY_ORDER = """
 SELECT MAX(Display_Order) + 1 AS display_order FROM {hpo_site_id_mappings_table_id}
-""".format(hpo_site_id_mappings_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID)
+"""
 
 SHIFT_HPO_SITE_DISPLAY_ORDER = """
 UPDATE {hpo_site_id_mappings_table_id}
@@ -45,7 +45,8 @@ def find_hpo(hpo_id, hpo_name):
 
 
 def get_last_display_order():
-    query_response = bq_utils.query(DEFAULT_DISPLAY_ORDER.format(dataset_id=LOOKUP_TABLES_DATASET_ID))
+    q = DEFAULT_DISPLAY_ORDER.format(hpo_site_id_mappings_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID)
+    query_response = bq_utils.query(q)
     rows = bq_utils.response2rows(query_response)
     row = rows[0]
     result = row['display_order']
@@ -85,7 +86,7 @@ def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
     :param display_order: site's display order in dashboard; if unset, site appears last
     :return:
     """
-    if type(display_order) is not int:
+    if not isinstance(display_order, int):
         display_order = get_last_display_order()
     else:
         shift_display_orders(display_order)
@@ -118,7 +119,7 @@ def bucket_access_configured(bucket_name):
     try:
         gcs_utils.list_bucket(bucket_name)
         return True
-    except HttpError as e:
+    except HttpError:
         raise
 
 
