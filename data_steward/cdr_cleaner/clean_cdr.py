@@ -29,6 +29,7 @@ import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_mapping
 import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
+import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import constants.cdr_cleaner.clean_cdr as clean_cdr_consts
 
 
@@ -83,6 +84,7 @@ def _gather_ehr_rdr_queries(project_id, dataset_id):
     query_list.extend(no_data_30days_after_death.no_data_30_days_after_death(project_id, dataset_id))
     query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
     query_list.extend(drug_refills_supply.get_days_supply_refills_queries(project_id, dataset_id))
+    query_list.extend(populate_routes.get_route_mapping_queries(project_id, dataset_id))
     return query_list
 
 
@@ -103,6 +105,7 @@ def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id):
     query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
     query_list.extend(drug_refills_supply.get_days_supply_refills_queries(project_id, dataset_id))
     query_list.extend(fill_source_value.get_fill_freetext_source_value_fields_queries(project_id, dataset_id))
+    query_list.extend(populate_routes.get_route_mapping_queries(project_id, dataset_id))
     return query_list
 
 
@@ -121,6 +124,7 @@ def _gather_unioned_ehr_queries(project_id, dataset_id):
     query_list.extend(bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
     query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
     query_list.extend(drug_refills_supply.get_days_supply_refills_queries(project_id, dataset_id))
+    query_list.extend(populate_routes.get_route_mapping_queries(project_id, dataset_id))
     return query_list
 
 
