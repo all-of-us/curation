@@ -31,6 +31,7 @@ def first_or_none(l):
     return next(iter(l or []), None)
 
 
+@unittest.skipIf(os.getenv('ALL_TESTS') == 'False', 'Skipping EhrUnionTest cases')
 class EhrUnionTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
