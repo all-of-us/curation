@@ -1,9 +1,10 @@
-from googleapiclient.errors import HttpError
 import logging
 
+from googleapiclient.errors import HttpError
+
 import bq_utils
-import gcs_utils
 import cli_util
+import gcs_utils
 import resources
 
 DESCRIPTION = """
@@ -37,6 +38,12 @@ SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
 
 
 def find_hpo(hpo_id, hpo_name):
+    """
+    Finds if the HPO  are already available in hpo.csv
+    :param hpo_id: hpo identifier
+    :param hpo_name: HPO name
+    :return:
+    """
     hpos = resources.hpo_csv()
     for hpo in hpos:
         if hpo['hpo_id'] == hpo_id or hpo['name'] == hpo_name:
@@ -45,6 +52,10 @@ def find_hpo(hpo_id, hpo_name):
 
 
 def get_last_display_order():
+    """
+    gets the display order from hpo_site_id_mappings table
+    :return:
+    """
     q = DEFAULT_DISPLAY_ORDER.format(hpo_site_id_mappings_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID)
     query_response = bq_utils.query(q)
     rows = bq_utils.response2rows(query_response)
@@ -54,6 +65,11 @@ def get_last_display_order():
 
 
 def shift_display_orders(at_display_order):
+    """
+    shift the display order in hpo_site_id_mappings_table when a new HPO is to be added.
+    :param at_display_order: index where the display order
+    :return:
+    """
     q = SHIFT_HPO_SITE_DISPLAY_ORDER.format(display_order=at_display_order,
                                             hpo_site_id_mappings_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
     logging.debug('Shifting lookup with the following query:\n %s\n...' % q)
@@ -62,16 +78,32 @@ def shift_display_orders(at_display_order):
 
 
 def add_hpo_mapping(hpo_id, hpo_name, org_id, display_order):
+    """
+    adds hpo_id, hpo_name, org_id, display_order to the hpo_site_id_mappings table
+    :param hpo_id: hpo_ identifier
+    :param hpo_name: name of the hpo
+    :param org_id: hpo organization identifier
+    :param display_order: index number in which hpo should be added in table
+    :return:
+    """
     q = ADD_HPO_SITE_ID_MAPPING.format(hpo_id=hpo_id, hpo_name=hpo_name, org_id=org_id, display_order=display_order)
     logging.debug('Adding mapping lookup with the following query:\n %s\n...' % q)
-    query_response = bq_utils.query(q, destination_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID, write_disposition='WRITE_APPEND')
+    query_response = bq_utils.query(q, destination_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID,
+                                    write_disposition='WRITE_APPEND')
     return query_response
 
 
 def add_hpo_bucket(hpo_id, bucket_name):
+    """
+    adds hpo bucket name in hpo_bucket_name table.
+    :param hpo_id: hpo identifier
+    :param bucket_name: bucket name assigned to hpo
+    :return:
+    """
     q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id, bucket_name=bucket_name)
     logging.debug('Adding bucket lookup with the following query:\n %s\n...' % q)
-    query_response = bq_utils.query(q, destination_table_id=HPO_ID_BUCKET_NAME_TABLE_ID, write_disposition='WRITE_APPEND')
+    query_response = bq_utils.query(q, destination_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
+                                    write_disposition='WRITE_APPEND')
     return query_response
 
 
@@ -124,6 +156,15 @@ def bucket_access_configured(bucket_name):
 
 
 def main(hpo_id, org_id, hpo_name, bucket_name, display_order):
+    """
+    adds HPO name and details in to hpo_csv and adds HPO to the lookup tables in bigquery
+    :param hpo_id: HPO identifier
+    :param org_id: HPO organisation identifier
+    :param hpo_name: name of the HPO
+    :param bucket_name: bucket name assigned to HPO
+    :param display_order: index where new HPO should be added
+    :return:
+    """
     if bucket_access_configured(bucket_name):
         logging.info('Accessing bucket %s successful. Proceeding to add site...' % bucket_name)
         add_hpo_csv(hpo_id, hpo_name)
