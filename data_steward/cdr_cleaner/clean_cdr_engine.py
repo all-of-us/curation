@@ -29,7 +29,7 @@ def add_console_logging(add_handler):
     if add_handler:
         handler = logging.StreamHandler()
         handler.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(levelname)s - %(name)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
         handler.setFormatter(formatter)
         LOGGER.addHandler(handler)
 
@@ -70,8 +70,7 @@ def clean_dataset(project=None, dataset=None, statements=None):
                                      retry_count=retry,
                                      write_disposition=disposition,
                                      destination_dataset_id=destination_dataset,
-                                     batch=batch
-                                     )
+                                     batch=batch)
 
         except (oauth2client.client.HttpAccessTokenRefreshError, googleapiclient.errors.HttpError):
             LOGGER.exception("FAILED:  Clean rule not executed:\n%s", rule_query)
@@ -86,6 +85,11 @@ def clean_dataset(project=None, dataset=None, statements=None):
         if incomplete_jobs != []:
             failures += 1
             raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+
+        if destination_table is not None:
+            updated_rows = results.get("totalRows")
+            if updated_rows is not None:
+                LOGGER.info("Query returned %d rows for %s.%s", updated_rows, destination_dataset, destination_table)
 
         successes += 1
 
