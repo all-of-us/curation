@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import numpy as np
 
-from rules import deid
+from rules import Deid
 
 class Press(object):
 
@@ -103,7 +103,7 @@ class Press(object):
         This function actually runs deid and using both rule specifications and application of the rules
         """
         self.update_rules()
-        d = deid(pipeline=self.pipeline, rules=self.deid_rules, parent=self)
+        d = Deid(pipeline=self.pipeline, rules=self.deid_rules, parent=self)
         _info = self.info
 
         p = d.apply(_info, self.store)

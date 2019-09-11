@@ -1,8 +1,6 @@
-import json
-
 from pymongo import MongoClient
 
-from rules import deid
+from rules import Deid
 
 table = [{"name":"id"},
          {"name":"dob"},
@@ -19,9 +17,9 @@ for row in r:
     row_id = row['_id']
     del row['_id']
     cache[row_id] = row
-    
-drules = deid()
-drules.cache = cache 
+
+drules = Deid()
+drules.cache = cache
 
 info = {
     "compute":[{"rules": "@compute.year", "fields": ["dob"]},

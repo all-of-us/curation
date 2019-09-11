@@ -22,7 +22,6 @@ DESIGN:
         -value_field    value associated with a key_field
         -on             suggests a meta table and will have filter condition when generalization or a field name for row based suppression
 
-
    Overall there are rules that suggest what needs to happen on values, and there
     is a file specifying how to apply the rule on a given table.
 
