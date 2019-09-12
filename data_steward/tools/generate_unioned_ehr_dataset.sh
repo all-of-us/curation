@@ -14,17 +14,31 @@ Usage: generate_unioned_ehr_dataset.sh
 echo
 while true; do
   case "$1" in
-    --key_file) key_file=$2; shift 2;;
-    --app_id) app_id=$2; shift 2;;
-    --vocab_dataset) vocab_dataset=$2; shift 2;;
-    --ehr_snap_dataset) ehr_snap_dataset=$2; shift 2;;
-    -- ) shift; break ;;
-    * ) break ;;
+  --key_file)
+    key_file=$2
+    shift 2
+    ;;
+  --app_id)
+    app_id=$2
+    shift 2
+    ;;
+  --vocab_dataset)
+    vocab_dataset=$2
+    shift 2
+    ;;
+  --ehr_snap_dataset)
+    ehr_snap_dataset=$2
+    shift 2
+    ;;
+  --)
+    shift
+    break
+    ;;
+  *) break ;;
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]]  || [[ -z "${ehr_snap_dataset}" ]]
-then
+if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snap_dataset}" ]]; then
   echo "$USAGE"
   exit 1
 fi
@@ -45,11 +59,10 @@ export APPLICATION_ID="${app_id}"
 gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
-
 #---------Create curation virtual environment----------
 set -e
 # create a new environment in directory curation_env
-virtualenv  -p $(which python2.7) curation_env
+virtualenv -p $(which python2.7) curation_env
 
 # activate it
 source curation_env/bin/activate
@@ -80,17 +93,17 @@ echo "python cdm.py --component vocabulary $unioned_ehr_dataset"
 python ../cdm.py --component vocabulary ${unioned_ehr_dataset}
 
 echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${unioned_ehr_dataset}"
-./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${unioned_ehr_dataset}
+./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${unioned_ehr_dataset} --sync false
 
 #----------------------------------------------------------------------
 # Step 4 copy unioned ehr clinical tables tables
 echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset}"
-./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset}
+./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset} --sync false
 
 #----------------------------------------------------------------------
 # Step 5 copy mapping tables tables
 echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_"
-./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_
+./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_ --sync false
 
 echo "removing tables copies unintentionally"
 bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_condition_occurrence
@@ -106,5 +119,3 @@ bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_visit_occurrence
 
 unset PYTHONPATH
 deactivate
-
-
