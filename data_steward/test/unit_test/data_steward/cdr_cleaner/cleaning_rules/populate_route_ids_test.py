@@ -22,10 +22,10 @@ class PopulateRouteIdsTest(unittest.TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
-        self.route_mappings_list = [{'drug_concept_id': '46719734', 'route_concept_id': '85738921'},
-                                    {'drug_concept_id': '86340', 'route_concept_id': '52315'},
-                                    {'drug_concept_id': '19082168', 'route_concept_id': '4132161'},
-                                    {'drug_concept_id': '19126918', 'route_concept_id': '45956874',
+        self.route_mappings_list = [{'dose_form_concept_id': '46719734', 'route_concept_id': '85738921'},
+                                    {'dose_form_concept_id': '86340', 'route_concept_id': '52315'},
+                                    {'dose_form_concept_id': '19082168', 'route_concept_id': '4132161'},
+                                    {'dose_form_concept_id': '19126918', 'route_concept_id': '45956874',
                                      'route_name': 'Inhalation'}]
         self.route_mappings_string = ("(46719734, 85738921), "
                                       "(86340, 52315), "
@@ -40,7 +40,7 @@ class PopulateRouteIdsTest(unittest.TestCase):
             "de.route_source_value, de.dose_unit_source_value"
         )
         self.drug_exposure_prefix = "de"
-        self.route_mappings_prefix = "rm"
+        self.route_mapping_prefix = "rm"
 
     def test_get_mapping_list(self):
         actual = populate_route_ids.get_mapping_list(self.route_mappings_list)
@@ -53,9 +53,9 @@ class PopulateRouteIdsTest(unittest.TestCase):
         route_mappings_csv = os.path.join(resources.resource_path, populate_route_ids.ROUTES_TABLE_ID + ".csv")
         expected = resources._csv_to_list(route_mappings_csv)
         for result_dict in expected:
-            result_dict['drug_concept_id'] = rdg.get_integer(result_dict['drug_concept_id'])
+            result_dict['dose_form_concept_id'] = rdg.get_integer(result_dict['dose_form_concept_id'])
             result_dict['route_concept_id'] = rdg.get_integer(result_dict['route_concept_id'])
-            result_dict.pop('drug_concept_name')
+            result_dict.pop('dose_form_concept_name')
             result_dict.pop('route_name')
 
         populate_route_ids.create_route_mappings_table(self.project_id)
@@ -71,20 +71,27 @@ class PopulateRouteIdsTest(unittest.TestCase):
         expected = self.cols
         actual, drug_prefix, route_prefix = populate_route_ids.get_cols_and_prefixes()
         self.assertEqual(drug_prefix, self.drug_exposure_prefix)
-        self.assertEqual(route_prefix, self.route_mappings_prefix)
+        self.assertEqual(route_prefix, self.route_mapping_prefix)
         self.assertEqual(actual, expected)
 
     def test_integration_get_route_mapping_queries(self):
         queries = populate_route_ids.get_route_mapping_queries(self.project_id, self.dataset_id)
-        expected_query = populate_route_ids.FILL_ROUTE_ID_QUERY.format(
-                                                                dataset_id=self.dataset_id,
+        drugs_from_dose_form_query = populate_route_ids.GET_DRUGS_FROM_DOSE_FORM.format(
                                                                 project_id=self.project_id,
-                                                                drug_exposure_table=common.DRUG_EXPOSURE,
                                                                 route_mapping_dataset=self.dataset_id,
                                                                 route_mapping_table=populate_route_ids.ROUTES_TABLE_ID,
-                                                                cols=self.cols,
-                                                                drug_exposure_prefix=self.drug_exposure_prefix,
-                                                                route_mapping_prefix=self.route_mappings_prefix)
+                                                                route_mapping_prefix=self.route_mapping_prefix,
+                                                                vocabulary_dataset=common.VOCABULARY_DATASET)
+        expected_query = populate_route_ids.FILL_ROUTE_ID_QUERY.format(
+                                                            dataset_id=self.dataset_id,
+                                                            project_id=self.project_id,
+                                                            drug_exposure_table=common.DRUG_EXPOSURE,
+                                                            drug_table_query=drugs_from_dose_form_query,
+                                                            route_mapping_dataset=self.dataset_id,
+                                                            route_mapping_table=populate_route_ids.ROUTES_TABLE_ID,
+                                                            cols=self.cols,
+                                                            drug_exposure_prefix=self.drug_exposure_prefix,
+                                                            route_mapping_prefix=self.route_mapping_prefix)
         self.assertEqual(queries[0][cdr_consts.QUERY], expected_query)
         self.assertEqual(queries[0][cdr_consts.DESTINATION_DATASET], self.dataset_id)
         self.assertEqual(queries[0][cdr_consts.DESTINATION_TABLE], common.DRUG_EXPOSURE)

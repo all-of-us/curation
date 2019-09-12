@@ -20,9 +20,9 @@ ROUTES_TABLE_ID = "route_mappings"
 ROUTE_FIELDS = [
     {
         "type": "integer",
-        "name": "drug_concept_id",
+        "name": "dose_form_concept_id",
         "mode": "required",
-        "description": "The drug_concept_id of the drug."
+        "description": "The dose_form_concept_id of the dose form."
     },
     {
         "type": "integer",
@@ -32,17 +32,50 @@ ROUTE_FIELDS = [
     }
 ]
 
-INSERT_ROUTES_QUERY = (
-    "INSERT INTO `{project_id}.{dataset_id}.{routes_table_id}` (drug_concept_id, route_concept_id) "
-    "VALUES{mapping_list}"
-)
+INSERT_ROUTES_QUERY = """
+    INSERT INTO `{project_id}.{dataset_id}.{routes_table_id}` (dose_form_concept_id, route_concept_id)
+    VALUES{mapping_list}
+"""
 
-FILL_ROUTE_ID_QUERY = (
-    "SELECT {cols} "
-    "FROM `{project_id}.{dataset_id}.{drug_exposure_table}` {drug_exposure_prefix} "
-    "LEFT JOIN `{project_id}.{route_mapping_dataset}.{route_mapping_table}` {route_mapping_prefix} "
-    "ON {drug_exposure_prefix}.drug_concept_id = {route_mapping_prefix}.drug_concept_id "
-)
+# If a drug maps to multiple dose forms, this can potentially create duplicate records in drug_exposure table
+# We include only those drugs that map to different dose forms which in turn map to the same route
+# We exclude drugs that map to different dose forms which in turn map to the different routes
+# However, even with the following checks it is to be noted that there is potential
+# for spurious duplicate records with different route_concept_ids to be created at this step and they must be removed
+GET_DRUGS_FROM_DOSE_FORM = """
+    SELECT drug_concept_id, route_concept_id
+    FROM
+    (SELECT
+      cr.concept_id_2 AS drug_concept_id,
+      MAX(rm.route_concept_id) AS route_concept_id 
+    FROM `{project_id}.{route_mapping_dataset}.{route_mapping_table}` {route_mapping_prefix} 
+    JOIN `{vocabulary_dataset}.concept_relationship` cr 
+    ON cr.concept_id_1 = {route_mapping_prefix}.dose_form_concept_id 
+    WHERE cr.relationship_id = 'RxNorm dose form of' 
+    GROUP BY drug_concept_id 
+    HAVING COUNT(drug_concept_id) = 1 
+    UNION ALL 
+    SELECT 
+      cr.concept_id_2 AS drug_concept_id, 
+      CASE WHEN MAX({route_mapping_prefix}.route_concept_id) = MIN({route_mapping_prefix}.route_concept_id) 
+           THEN MAX({route_mapping_prefix}.route_concept_id) 
+           ELSE NULL 
+      END AS route_concept_id 
+    FROM `{project_id}.{route_mapping_dataset}.{route_mapping_table}` {route_mapping_prefix} 
+    JOIN `{vocabulary_dataset}.concept_relationship` cr 
+    ON cr.concept_id_1 = {route_mapping_prefix}.dose_form_concept_id 
+    WHERE cr.relationship_id = 'RxNorm dose form of' 
+    GROUP BY drug_concept_id 
+    HAVING COUNT(drug_concept_id) > 1 )
+    WHERE route_concept_id IS NOT NULL
+"""
+
+FILL_ROUTE_ID_QUERY = """
+    SELECT {cols} 
+    FROM `{project_id}.{dataset_id}.{drug_exposure_table}` {drug_exposure_prefix} 
+    LEFT JOIN ({drug_table_query}) {route_mapping_prefix} 
+    ON {drug_exposure_prefix}.drug_concept_id = {route_mapping_prefix}.drug_concept_id 
+"""
 
 
 def get_mapping_list(route_mappings_list):
@@ -51,11 +84,11 @@ def get_mapping_list(route_mappings_list):
 
     :param route_mappings_list:
     :return: formatted list suitable for insert in BQ:
-            (drug_concept_id1, route_concept_id1), (drug_concept_id1, route_concept_id1)
+            (dose_form_concept_id1, route_concept_id1), (dose_form_concept_id1, route_concept_id1)
     """
     mapping_list = []
     for route_mapping_dict in route_mappings_list:
-        mapping_list.append((rdg.get_integer(route_mapping_dict["drug_concept_id"]),
+        mapping_list.append((rdg.get_integer(route_mapping_dict["dose_form_concept_id"]),
                              rdg.get_integer(route_mapping_dict["route_concept_id"])))
     formatted_mapping_list = str(mapping_list).strip('[]')
     return formatted_mapping_list
@@ -128,9 +161,15 @@ def get_route_mapping_queries(project_id, dataset_id, route_mapping_dataset_id=N
     table = common.DRUG_EXPOSURE
     cols, drug_exposure_prefix, route_mapping_prefix = get_cols_and_prefixes()
     query = dict()
+    drugs_from_dose_form_query = GET_DRUGS_FROM_DOSE_FORM.format(project_id=project_id,
+                                                                 route_mapping_dataset=route_mapping_dataset_id,
+                                                                 route_mapping_table=ROUTES_TABLE_ID,
+                                                                 route_mapping_prefix=route_mapping_prefix,
+                                                                 vocabulary_dataset=common.VOCABULARY_DATASET)
     query[cdr_consts.QUERY] = FILL_ROUTE_ID_QUERY.format(dataset_id=dataset_id,
                                                          project_id=project_id,
                                                          drug_exposure_table=table,
+                                                         drug_table_query=drugs_from_dose_form_query,
                                                          route_mapping_dataset=route_mapping_dataset_id,
                                                          route_mapping_table=ROUTES_TABLE_ID,
                                                          cols=cols,
