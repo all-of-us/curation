@@ -41,7 +41,7 @@ FILL_ROUTE_ID_QUERY = (
     "SELECT {cols} "
     "FROM `{project_id}.{dataset_id}.{drug_exposure_table}` {drug_exposure_prefix} "
     "LEFT JOIN `{project_id}.{route_mapping_dataset}.{route_mapping_table}` {route_mapping_prefix} "
-    "ON {drug_exposure_prefix}.drug_concept_id = {route_mapping_prefix}.route_concept_id "
+    "ON {drug_exposure_prefix}.drug_concept_id = {route_mapping_prefix}.drug_concept_id "
 )
 
 
@@ -99,8 +99,13 @@ def get_cols_and_prefixes():
     route_field = "route_concept_id"
     drug_exposure_prefix = "de"
     route_mapping_prefix = "rm"
-    col_exprs = [route_mapping_prefix+'.'+field["name"] if field["name"] == route_field
-                 else drug_exposure_prefix+'.'+field["name"] for field in fields]
+    col_exprs = []
+    for field in fields:
+        # by default we set to prefix for drug exposure
+        col_expr = drug_exposure_prefix + '.' + field["name"]
+        if field["name"] == route_field:
+            col_expr = route_mapping_prefix + '.' + field["name"]
+        col_exprs.append(col_expr)
     cols = ', '.join(col_exprs)
     return cols, drug_exposure_prefix, route_mapping_prefix
 
