@@ -22,9 +22,6 @@ jobs:
       - checkout
       # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
       - run: mkdir -p $CIRCLE_ARTIFACTS
-      - run:
-          working_directory: ~/curation
-          command: if [[ ! -z $CIRCLE_PR_NUMBER ]] ; then echo "THIS IS A PULL REQUEST" ; else echo "THIS IS A COMMIT ONLY" ; fi
       # This is based on our 1.0 configuration file or project settings
       - run:
           working_directory: ~/curation
@@ -61,7 +58,8 @@ jobs:
       # Test
       #   This would typically be a build job when using workflows, possibly combined with build
       - run:
-          command: ~/curation/data_steward/test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/
+          working_directory: ~/curation
+          command: t=$(git log -1 --pretty=%B) ; if [[ "$t" == *"fast tests"* ]] ; then export ALL_TESTS="False" ; else export ALL_TESTS="True" ; fi ; ~/curation/data_steward/test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/
           no_output_timeout: 3000s
       # Save test results
       #    - store_test_results:

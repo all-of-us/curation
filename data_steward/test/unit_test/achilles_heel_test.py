@@ -19,6 +19,7 @@ ACHILLES_RESULTS_DERIVED_COUNT = 282
 BQ_TIMEOUT_RETRIES = 3
 
 
+@unittest.skipIf(os.getenv('ALL_TESTS') == 'False', 'Skipping AchillesHeelTest cases')
 class AchillesHeelTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
