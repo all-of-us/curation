@@ -111,23 +111,26 @@ def get_cols_and_prefixes():
     return cols, drug_exposure_prefix, route_mapping_prefix
 
 
-def get_route_mapping_queries(project_id, dataset_id):
+def get_route_mapping_queries(project_id, dataset_id, route_mapping_dataset_id=None):
     """
     Generates queries to populate route_concept_ids correctly
 
-    :param project_id:
-    :param dataset_id:
+    :param project_id: the project containing the dataset
+    :param dataset_id: dataset containing the OMOP clinical data
+    :param route_mapping_dataset_id: dataset containing the drug-route lookup table
     :return:
     """
     queries = []
-    result = create_route_mappings_table(project_id)
+    if route_mapping_dataset_id is None:
+        route_mapping_dataset_id = bq_utils.get_dataset_id()
+    result = create_route_mappings_table(project_id, route_mapping_dataset_id)
     table = common.DRUG_EXPOSURE
     cols, drug_exposure_prefix, route_mapping_prefix = get_cols_and_prefixes()
     query = dict()
     query[cdr_consts.QUERY] = FILL_ROUTE_ID_QUERY.format(dataset_id=dataset_id,
                                                          project_id=project_id,
                                                          drug_exposure_table=table,
-                                                         route_mapping_dataset=bq_utils.get_dataset_id(),
+                                                         route_mapping_dataset=route_mapping_dataset_id,
                                                          route_mapping_table=ROUTES_TABLE_ID,
                                                          cols=cols,
                                                          drug_exposure_prefix=drug_exposure_prefix,
