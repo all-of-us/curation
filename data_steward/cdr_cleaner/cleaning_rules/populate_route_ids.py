@@ -69,15 +69,9 @@ def create_route_mappings_table(project_id, dataset_id=None):
     :param dataset_id: BQ dataset_id
     :return:
     """
-    result = []
-
     if dataset_id is None:
         # Using table created in bq_dataset instead of re-creating in every dataset
         dataset_id = bq_utils.get_dataset_id()
-
-    if bq_utils.table_exists(ROUTES_TABLE_ID, dataset_id):
-        LOGGER.info("Route mapping table exists at %s.%s, skipping creation", dataset_id, ROUTES_TABLE_ID)
-        return result
 
     LOGGER.info("Creating %s.%s", dataset_id, ROUTES_TABLE_ID)
 
