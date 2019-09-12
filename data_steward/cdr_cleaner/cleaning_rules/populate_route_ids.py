@@ -104,7 +104,9 @@ def get_cols_and_prefixes():
         # by default we set to prefix for drug exposure
         col_expr = drug_exposure_prefix + '.' + field["name"]
         if field["name"] == route_field:
-            col_expr = route_mapping_prefix + '.' + field["name"]
+            # COALESCE(rm.route_concept_id, de.route_concept_id)
+            col_expr = "COALESCE(%s, %s) AS route_concept_id" % (route_mapping_prefix + '.' + field["name"],
+                                                                 drug_exposure_prefix + '.' + field["name"])
         col_exprs.append(col_expr)
     cols = ', '.join(col_exprs)
     return cols, drug_exposure_prefix, route_mapping_prefix
