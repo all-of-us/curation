@@ -670,8 +670,6 @@
 
 c.NotebookApp.contents_manager_class = 'jupytext.TextFileContentsManager'
 
-import os
-from subprocess import check_call
 
 def post_save(model, os_path, contents_manager):
     pass

@@ -22,10 +22,11 @@
 #     version: 2.7.16
 # ---
 
+import warnings
+
 # +
 # %matplotlib inline
 import google.datalab.bigquery as bq
-import warnings
 
 warnings.filterwarnings('ignore')
 # -

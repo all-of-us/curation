@@ -22,12 +22,10 @@
 #     version: 2.7.12
 # ---
 
-# %matplotlib inline
-from google.datalab import storage
-
 # +
 import yaml
-import os
+# %matplotlib inline
+from google.datalab import storage
 
 with open ('env.yaml') as f:
     app_env = yaml.safe_load(f)
