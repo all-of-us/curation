@@ -1,6 +1,8 @@
 import os
+import time
 import unittest
 
+import mock
 from google.appengine.api.app_identity import app_identity
 
 import bq_utils
@@ -47,10 +49,10 @@ class PopulateRouteIdsTest(unittest.TestCase):
         expected = self.route_mappings_string
         self.assertEqual(actual, expected)
 
-    def test_integration_create_route_mappings_table(self):
-        if bq_utils.table_exists(populate_route_ids.ROUTES_TABLE_ID, dataset_id=self.dataset_id):
-            bq_utils.delete_table(populate_route_ids.ROUTES_TABLE_ID, dataset_id=self.dataset_id)
-        route_mappings_csv = os.path.join(resources.resource_path, populate_route_ids.ROUTES_TABLE_ID + ".csv")
+    def test_integration_create_dose_form_route_mappings_table(self):
+        if bq_utils.table_exists(populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID, dataset_id=self.dataset_id):
+            bq_utils.delete_table(populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID, dataset_id=self.dataset_id)
+        route_mappings_csv = os.path.join(resources.resource_path, populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID + ".csv")
         expected = resources._csv_to_list(route_mappings_csv)
         for result_dict in expected:
             result_dict['dose_form_concept_id'] = rdg.get_integer(result_dict['dose_form_concept_id'])
@@ -58,14 +60,37 @@ class PopulateRouteIdsTest(unittest.TestCase):
             result_dict.pop('dose_form_concept_name')
             result_dict.pop('route_name')
 
-        populate_route_ids.create_route_mappings_table(self.project_id)
+        populate_route_ids.create_dose_form_route_mappings_table(self.project_id)
         query = ("SELECT * "
-                 "FROM `{project_id}.{dataset_id}.{table_id}`").format(project_id=self.project_id,
-                                                                       dataset_id=self.dataset_id,
-                                                                       table_id=populate_route_ids.ROUTES_TABLE_ID)
+                 "FROM `{project_id}.{dataset_id}.{table_id}`").format(
+                                                                project_id=self.project_id,
+                                                                dataset_id=self.dataset_id,
+                                                                table_id=populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID)
         result = bq_utils.query(query)
         actual = bq_utils.response2rows(result)
         self.assertItemsEqual(actual, expected)
+
+    def _test_integration_create_drug_route_mappings_table(self):
+        if bq_utils.table_exists(populate_route_ids.DRUG_ROUTES_TABLE_ID, dataset_id=self.dataset_id):
+            bq_utils.delete_table(populate_route_ids.DRUG_ROUTES_TABLE_ID, dataset_id=self.dataset_id)
+
+        if not bq_utils.table_exists(populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID, dataset_id=self.dataset_id):
+            populate_route_ids.create_dose_form_route_mappings_table(self.project_id, self.dataset_id)
+
+        populate_route_ids.create_drug_route_mappings_table(self.project_id,
+                                                            self.dataset_id,
+                                                            populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID,
+                                                            self.route_mapping_prefix)
+        time.sleep(10)
+        query = ("SELECT COUNT(*) AS n "
+                 "FROM `{project_id}.{dataset_id}.{table_id}`").format(
+                                                                project_id=self.project_id,
+                                                                dataset_id=self.dataset_id,
+                                                                table_id=populate_route_ids.DRUG_ROUTES_TABLE_ID)
+
+        result = bq_utils.query(query)
+        actual = bq_utils.response2rows(result)
+        self.assertGreater(actual[0]["n"], 0)
 
     def test_get_cols_and_prefixes(self):
         expected = self.cols
@@ -74,24 +99,24 @@ class PopulateRouteIdsTest(unittest.TestCase):
         self.assertEqual(route_prefix, self.route_mapping_prefix)
         self.assertEqual(actual, expected)
 
-    def test_integration_get_route_mapping_queries(self):
-        queries = populate_route_ids.get_route_mapping_queries(self.project_id, self.dataset_id)
-        drugs_from_dose_form_query = populate_route_ids.GET_DRUGS_FROM_DOSE_FORM.format(
-                                                                project_id=self.project_id,
-                                                                route_mapping_dataset=self.dataset_id,
-                                                                route_mapping_table=populate_route_ids.ROUTES_TABLE_ID,
-                                                                route_mapping_prefix=self.route_mapping_prefix,
-                                                                vocabulary_dataset=common.VOCABULARY_DATASET)
+    @mock.patch('cdr_cleaner.cleaning_rules.populate_route_ids.create_drug_route_mappings_table')
+    @mock.patch('cdr_cleaner.cleaning_rules.populate_route_ids.create_dose_form_route_mappings_table')
+    def test_integration_get_route_mapping_queries(self,
+                                                   mock_create_dose_form_route_mappings_table,
+                                                   mock_create_drug_route_mappings_table):
+        result = []
+        mock_create_drug_route_mappings_table.return_value = (result, populate_route_ids.DRUG_ROUTES_TABLE_ID)
+        mock_create_dose_form_route_mappings_table.return_value = (result, populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID)
         expected_query = populate_route_ids.FILL_ROUTE_ID_QUERY.format(
-                                                            dataset_id=self.dataset_id,
-                                                            project_id=self.project_id,
-                                                            drug_exposure_table=common.DRUG_EXPOSURE,
-                                                            drug_table_query=drugs_from_dose_form_query,
-                                                            route_mapping_dataset=self.dataset_id,
-                                                            route_mapping_table=populate_route_ids.ROUTES_TABLE_ID,
-                                                            cols=self.cols,
-                                                            drug_exposure_prefix=self.drug_exposure_prefix,
-                                                            route_mapping_prefix=self.route_mapping_prefix)
+                                                    project_id=self.project_id,
+                                                    dataset_id=self.dataset_id,
+                                                    drug_exposure_table=common.DRUG_EXPOSURE,
+                                                    route_mapping_dataset_id=self.dataset_id,
+                                                    drug_route_mapping_table=populate_route_ids.DRUG_ROUTES_TABLE_ID,
+                                                    cols=self.cols,
+                                                    drug_exposure_prefix=self.drug_exposure_prefix,
+                                                    route_mapping_prefix=self.route_mapping_prefix)
+        queries = populate_route_ids.get_route_mapping_queries(self.project_id, self.dataset_id)
         self.assertEqual(queries[0][cdr_consts.QUERY], expected_query)
         self.assertEqual(queries[0][cdr_consts.DESTINATION_DATASET], self.dataset_id)
         self.assertEqual(queries[0][cdr_consts.DESTINATION_TABLE], common.DRUG_EXPOSURE)
