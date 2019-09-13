@@ -55,27 +55,28 @@ def row_counts(dataset_ids):
 
 # # RDR data volume over time
 
-rdr_datasets = ['rdr20190506', 'rdr20190714', 'rdr20190901']
+rdr_datasets = ['', '', '']
 rdr_df = row_counts(rdr_datasets)
-rdr_df = pd.pivot_table(rdr_df, values='row_count', index=['table_id'], columns='dataset_id')
+rdr_df.pivot(index='table_id', columns='dataset_id', values='row_count')
 rdr_df.to_csv('rdr.csv')
 
 # # EHR data volume over time
 
-dataset_ids = ['unioned_ehr20190510', 'unioned_ehr20190802', 'unioned_ehr20190912']
+dataset_ids = ['', '', '']
 unioned_df = row_counts(dataset_ids)
-unioned_df = pd.pivot_table(unioned_df, values='row_count', index=['table_id'], columns='dataset_id')
+unioned_df.pivot(index='table_id', columns='dataset_id', values='row_count')
 unioned_df.to_csv('unioned.csv')
 
 # ## Combined data volume over time
 
-dataset_ids = ['combined20190802_clean', 'combined20190912']
+dataset_ids = ['', '']
 combined_df = row_counts(dataset_ids)
-combined_df = pd.pivot_table(combined_df, values='row_count', index=['table_id'], columns='dataset_id')
+combined_df.pivot(index='table_id', columns='dataset_id', values='row_count')
 combined_df.to_csv('combined.csv')
 
 # # Characterization of EHR data
 
+dataset_id = ''
 q = """
 SELECT 
   (2018 - r.year_of_birth) AS age,
@@ -83,7 +84,7 @@ SELECT
   rc.concept_name AS race,
   ec.concept_name AS ethnicity,
   CASE WHEN e.person_id IS NULL THEN 'no' ELSE 'yes' END AS has_ehr_data
-FROM rdr20181113.person r
+FROM {dataset}.person r
   LEFT JOIN `unioned_ehr20181114.person` e 
     ON r.person_id = e.person_id
 JOIN `vocabulary20180104.concept` gc 
@@ -93,7 +94,7 @@ JOIN `vocabulary20180104.concept` rc
 JOIN `vocabulary20180104.concept` ec
   ON r.ethnicity_concept_id = ec.concept_id
 ORDER BY age, gender, race
-"""
+""".format(dataset=dataset_id)
 df = bq.Query(q).execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
 
 # ## Presence of EHR data by race
@@ -116,13 +117,14 @@ g = sns.factorplot('ethnicity', data=f, kind='count', order=f.ethnicity.value_co
 # # Characterization of CDR data
 # The following statistics describe the candidate CDR dataset `combined20181114`. This dataset is formed by combining the unioned EHR data submitted by HPOs with the PPI data we receive from the RDR.
 
+dataset_id = ''
 q = bq.Query('''
 SELECT 
   (2018 - p.year_of_birth) AS age,
   gc.concept_name AS gender,
   rc.concept_name AS race,
   ec.concept_name AS ethnicity
-FROM `combined20181114.person` p
+FROM `{dataset}.person` p
 JOIN `vocabulary20180104.concept` gc 
   ON p.gender_concept_id = gc.concept_id
 JOIN `vocabulary20180104.concept` rc
@@ -130,7 +132,7 @@ JOIN `vocabulary20180104.concept` rc
 JOIN `vocabulary20180104.concept` ec
   ON p.ethnicity_concept_id = ec.concept_id
 ORDER BY age, gender, race
-''')
+''').formar(dataset=dataset_id)
 df = q.execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
 
 # ## Distribution of participant age stratified by gender
@@ -176,12 +178,12 @@ def gender_by_race(dataset_id):
 
 # ## RDR
 
-gender_by_race('rdr20181113')
+gender_by_race('')
 
 # ## EHR
 
-gender_by_race('unioned_ehr20181114')
+gender_by_race('')
 
 # ## CDR
 
-gender_by_race('combined20181114')
+gender_by_race('')

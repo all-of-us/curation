@@ -19,24 +19,27 @@
 #     name: python
 #     nbconvert_exporter: python
 #     pygments_lexer: ipython2
-#     version: 2.7.14
+#     version: 2.7.16
 # ---
 
 # %matplotlib inline
 import google.datalab.bigquery as bq
-import matplotlib.pyplot as plt
 
+bigquery_dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
+print(bigquery_dataset_id)
 
 # ## Tables with Duplicate IDs
 
 # +
+
 # get list of all hpo_ids
 hpo_ids = bq.Query("""
 SELECT REPLACE(table_id, '_person', '') AS hpo_id
-FROM `aou-res-curation-prod.prod_drc_dataset.__TABLES__`
+FROM `{bq_dataset_id}.__TABLES__`
 WHERE table_id LIKE '%person' 
 AND table_id NOT LIKE '%unioned_ehr_%'
-""").execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result().hpo_id.tolist()
+""").format(bq_dataset_id=bigquery_dataset_id).execute(
+    output_options=bq.QueryOutput.dataframe(use_cache=False)).result().hpo_id.tolist()
 
 domains = ['care_site', 'condition_occurrence', 'device_cost', 'device_exposure', 'drug_exposure', 'location', 'measurement', 'note', 'observation', 'person', 'procedure_occurrence', 'provider', 'specimen', 'visit_occurrence']
 
@@ -51,13 +54,13 @@ SELECT
 FROM prod_drc_dataset.__TABLES__ T
 LEFT JOIN
 (select distinct '{h}_{d}' as table_name, count(*) as num_dups
-from `aou-res-curation-prod.prod_drc_dataset.{h}_{d}` 
+from `{bq_dataset_id}.{h}_{d}` 
 group by {d}_id
 having count(*) > 1
 order by num_dups desc
 LIMIT 1)
  ON TRUE
-WHERE T.table_id = '{h}_{d}'"""
+WHERE T.table_id = '{h}_{d}'""".format(bq_dataset_id=bigquery_dataset_id)
 df = pd.core.frame.DataFrame([])
 # i = 0 
 for hpo_id in hpo_ids:

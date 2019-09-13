@@ -20,7 +20,7 @@
 #     name: python
 #     nbconvert_exporter: python
 #     pygments_lexer: ipython2
-#     version: 2.7.13
+#     version: 2.7.16
 # ---
 
 # # EHR Operations
@@ -28,9 +28,10 @@
 # +
 # %load_ext google.datalab.kernel
 
-import google.datalab.bigquery as bq
-import os
 import datetime
+import os
+
+import google.datalab.bigquery as bq
 
 now = datetime.datetime.now()
 end_suffix = now.strftime('%m%d')
@@ -44,6 +45,7 @@ print 'EHR_DATASET_ID=%s' % EHR_DATASET_ID
 # ## Most Recent Bucket Uploads
 # _Based on `storage.objects.create` log events of objects named `person.csv` archived in BigQuery_
 
+rdr_project_name = ''
 bq.Query('''
 SELECT
   h.hpo_id AS hpo_id,
@@ -55,7 +57,7 @@ SELECT
 FROM
   `lookup_tables.hpo_id_bucket_name` h
   JOIN `lookup_tables.hpo_site_id_mappings` m ON h.hpo_id = m.HPO_ID
-  LEFT JOIN `all-of-us-rdr-prod.GcsBucketLogging.cloudaudit_googleapis_com_data_access_{year}*` l
+  LEFT JOIN `{rdr_ project}.GcsBucketLogging.cloudaudit_googleapis_com_data_access_{year}*` l
    ON l.resource.labels.bucket_name = h.bucket_name
 WHERE
   _TABLE_SUFFIX BETWEEN '0801' AND '{end_suffix}'
@@ -70,7 +72,8 @@ GROUP BY
   resource.labels.bucket_name,
   protopayload_auditlog.authenticationInfo.principalEmail
 ORDER BY MAX(timestamp) ASC
-'''.format(year=now.year, end_suffix=end_suffix)).execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
+'''.format(year=now.year, rdr_project=rdr_project_name, end_suffix=end_suffix)).execute(
+    output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
 
 # ## EHR Site Submission Counts
 
