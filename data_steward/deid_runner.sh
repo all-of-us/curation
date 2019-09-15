@@ -42,13 +42,14 @@ current_dir=$(pwd)
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
 echo "cdr_id --> ${cdr_id}"
+echo "currend Dir --> ${current_dir}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export APPLICATION_ID="${app_id}"
 
 #set application environment (ie dev, test, prod)
-gcloud auth activate-service-account --key-file=${key_file}
-gcloud config set project ${app_id}
+gcloud auth activate-service-account --key-file="${key_file}"
+gcloud config set project "${app_id}"
 
 #------Create de-id virtual environment----------
 set -e
@@ -67,7 +68,6 @@ pip install -r deid/requirements.txt
 cp -R "${GAE_SDK_ROOT}"/google/appengine ../venv/lib/python2.7/site-packages/google/
 cp -R "${GAE_SDK_ROOT}"/google/net ../venv/lib/python2.7/site-packages/google/
 
-#python run_deid.py --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive
 PYTHONPATH=$PYTHONPATH:./:./lib python run_deid.py --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive |& tee -a deid_output.txt
 
 # deavtivate the virtual environment
