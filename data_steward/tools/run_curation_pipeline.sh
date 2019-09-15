@@ -20,21 +20,43 @@ Usage: run_curation_pipeline.sh
 
 while true; do
   case "$1" in
-    --app_id) app_id=$2; shift 2;;
-    --ehr_dataset) ehr_dataset=$2; shift 2;;
-    --vocab_dataset) vocab_dataset=$2; shift 2;;
-    --key_file) key_file=$2; shift 2;;
-    --rdr_dataset) rdr_dataset=$2; shift 2;;
-    --result_bucket) result_bucket=$2; shift 2;;
-    --deid_config) deid_config=$2; shift 2;;
-    -- ) shift; break ;;
-    * ) break ;;
+  --app_id)
+    app_id=$2
+    shift 2
+    ;;
+  --ehr_dataset)
+    ehr_dataset=$2
+    shift 2
+    ;;
+  --vocab_dataset)
+    vocab_dataset=$2
+    shift 2
+    ;;
+  --key_file)
+    key_file=$2
+    shift 2
+    ;;
+  --rdr_dataset)
+    rdr_dataset=$2
+    shift 2
+    ;;
+  --result_bucket)
+    result_bucket=$2
+    shift 2
+    ;;
+  --deid_config)
+    deid_config=$2
+    shift 2
+    ;;
+  --)
+    shift
+    break
+    ;;
+  *) break ;;
   esac
 done
 
-
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${deid_config}" ]]
-then
+if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${deid_config}" ]]; then
   echo "Specify the key file location, application ID and deid config file. $USAGE"
   exit 1
 fi
@@ -88,11 +110,13 @@ export BUCKET_NAME_NYC="test-bucket"
 echo "-------------------------->Run de identification on the identified CDR"
 cdr_deid="${cdr}_deid"
 echo "cdr_deid --> ${cdr_deid}"
-./run_deid.sh --key_file ${key_file} --app_id ${app_id} --deid_config ${deid_config} --cdr_id ${cdr} --vocab_dataset ${vocab_dataset}
+cd ..
+./deid_runner.sh --key_file ${key_file} --app_id ${app_id} --cdr_id ${cdr}
+
+cd tools || exit
 
 #-------------------------------------------------------
 # Step 6 Run achilles on de-identified dataset
 echo "-------------------------->Run achilles on identified CDR"
 echo "cdr_deid --> ${cdr_deid}"
 ./run_achilles_report.sh --dataset ${cdr_deid} --key_file ${key_file} --app_id ${app_id} --result_bucket ${result_bucket}
-
