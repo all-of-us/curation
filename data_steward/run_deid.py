@@ -15,6 +15,9 @@ import deid.aou as aou
 
 
 LOGGER = logging.getLogger(__name__)
+DEID_TABLES = ['person', 'observation', 'visit_occurrence', 'condition_occurrence',
+               'drug_exposure', 'procedure_occurrence', 'device_exposure', 'death',
+               'measurement', 'location', 'care_site', 'specimen', 'observation_period']
 SUPPRESSED_TABLES = ['note', 'note_nlp']
 
 def add_console_logging(add_handler):
@@ -82,7 +85,7 @@ def get_output_tables(input_dataset, known_tables, skip_tables, only_tables):
         if table in skip_tables:
             continue
 
-        if only_tables == [''] or table in only_tables:
+        if (only_tables == [''] or table in only_tables) and table in DEID_TABLES:
             allowed_tables.append(table)
 
     return allowed_tables
