@@ -4,39 +4,21 @@
 #     text_representation:
 #       extension: .py
 #       format_name: light
-#       format_version: '1.3'
-#       jupytext_version: 0.8.3
+#       format_version: '1.4'
+#       jupytext_version: 1.2.3
 #   kernelspec:
 #     display_name: Python 2
 #     language: python
 #     name: python2
-#   language_info:
-#     codemirror_mode:
-#       name: ipython
-#       version: 2
-#     file_extension: .py
-#     mimetype: text/x-python
-#     name: python
-#     nbconvert_exporter: python
-#     pygments_lexer: ipython2
-#     version: 2.7.16
 # ---
 
 import warnings
-
-# +
-# %matplotlib inline
+import parameters
 import google.datalab.bigquery as bq
-
 warnings.filterwarnings('ignore')
-# -
+dataset = parameters.EHR_DATASET_ID
 
-dataset=''
 
-# def row_counts(dataset_ids):
-# sq = "SELECT '{dataset_id}' dataset_id, table_id, row_count FROM {dataset_id}.__TABLES__"
-# sqs = map(lambda d: sq.format(dataset_id=d), dataset_ids)
-# iq = "\nUNION ALL\n".join(sqs)
 def get_hpo_ids():
     query = "SELECT distinct hpo_id FROM lookup_tables.hpo_site_id_mappings where hpo_id<>''"
     df = bq.Query(query).execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
@@ -44,12 +26,11 @@ def get_hpo_ids():
 
 
 def get_hpo_table_columns(hpo_id):
-    '''
-    This function returns all the table names with all their column names for a given hpo_id. Also, the table row count
-    is retrieved as well.
+    """
+    Get column names and row counts for all tables associated with an HPO
     :param hpo_id: hpo site id
     :return: dataframe with table name, column name and table row count
-    '''
+    """
     query = """SELECT table_name, column_name, t.row_count as table_row_count, '{hpo_id}' as hpo_id 
                FROM {dataset}.INFORMATION_SCHEMA.COLUMNS c
                JOIN {dataset}.__TABLES__ t on c.table_name=t.table_id
@@ -96,10 +77,6 @@ def create_hpo_completeness_query(table_columns, hpo_id):
                    FROM {dataset}.{table_name} 
         ) as x 
     """
-    # queries = [query_with_concept_id.format(table_name=row['table_name'], column_name=row['column_name'],
-    #                         table_row_count=row['table_row_count']) if row['column_name'].endswith('concept_id')
-    #                    else query_with_concept_id.format(table_name=row['table_name'], column_name=row['column_name'],
-    #                         table_row_count=row['table_row_count']) for i, row in table_columns.iteritems()]
     queries = []
     for i, row in table_columns.iterrows():
         if row['column_name']=='_PARTITIONTIME':
@@ -127,12 +104,7 @@ def create_hpo_completeness_query(table_columns, hpo_id):
 hpo_ids = get_hpo_ids()
 for i, hpo_id in hpo_ids.iteritems():
     table_columns = get_hpo_table_columns(hpo_id)
-
     query = create_hpo_completeness_query(table_columns, hpo_id)
-    if query == "":
-        continue
-#     print(query)
-#     break
     try:
         df = bq.Query(query).execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
         df.to_csv("{hpo_id}_omop_tables_coverage.csv".format(hpo_id=hpo_id), sep=',', encoding='utf-8')

@@ -1,42 +1,32 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:light
 #     text_representation:
 #       extension: .py
 #       format_name: light
-#       format_version: '1.3'
-#       jupytext_version: 0.8.3
+#       format_version: '1.4'
+#       jupytext_version: 1.2.3
 #   kernelspec:
 #     display_name: Python 2
 #     language: python
 #     name: python2
-#   language_info:
-#     codemirror_mode:
-#       name: ipython
-#       version: 2
-#     file_extension: .py
-#     mimetype: text/x-python
-#     name: python
-#     nbconvert_exporter: python
-#     pygments_lexer: ipython2
-#     version: 2.7.16
 # ---
 
 # # EHR Operations
 
 # +
-# %load_ext google.datalab.kernel
-
 import datetime
-import os
-
+import parameters
 import google.datalab.bigquery as bq
 
+UPLOADED_SINCE_DAYS = 30
+
 now = datetime.datetime.now()
-end_suffix = now.strftime('%m%d')
-RDR_DATASET_ID = os.environ.get('RDR_DATASET_ID')
-EHR_DATASET_ID = os.environ.get('EHR_DATASET_ID')
+month_ago = now - datetime.timedelta(days=UPLOADED_SINCE_DAYS)
+end_suffix = month_ago.strftime('%Y%m%d')
+RDR_DATASET_ID = parameters.RDR_DATASET_ID
+EHR_DATASET_ID = parameters.EHR_DATASET_ID
+RDR_PROJECT_ID = parameters.RDR_PROJECT_ID
 # -
 
 print 'RDR_DATASET_ID=%s' % RDR_DATASET_ID
@@ -45,9 +35,8 @@ print 'EHR_DATASET_ID=%s' % EHR_DATASET_ID
 # ## Most Recent Bucket Uploads
 # _Based on `storage.objects.create` log events of objects named `person.csv` archived in BigQuery_
 
-rdr_project_name = ''
-bq.Query('''
-SELECT
+# +
+query = """SELECT
   h.hpo_id AS hpo_id,
   m.Site_Name AS site_name,
   protopayload_auditlog.authenticationInfo.principalEmail AS email,
@@ -57,12 +46,12 @@ SELECT
 FROM
   `lookup_tables.hpo_id_bucket_name` h
   JOIN `lookup_tables.hpo_site_id_mappings` m ON h.hpo_id = m.HPO_ID
-  LEFT JOIN `{rdr_ project}.GcsBucketLogging.cloudaudit_googleapis_com_data_access_{year}*` l
+  LEFT JOIN `{rdr_project}.GcsBucketLogging.cloudaudit_googleapis_com_data_access_*` l
    ON l.resource.labels.bucket_name = h.bucket_name
 WHERE
-  _TABLE_SUFFIX BETWEEN '0801' AND '{end_suffix}'
+  _TABLE_SUFFIX >= '{end_suffix}'
   AND protopayload_auditlog.authenticationInfo.principalEmail IS NOT NULL
-  AND protopayload_auditlog.authenticationInfo.principalEmail <> 'aou-res-curation-prod@appspot.gserviceaccount.com'
+  AND ENDS_WITH(protopayload_auditlog.authenticationInfo.principalEmail, 'pmi-ops.org')
   AND protopayload_auditlog.methodName = 'storage.objects.create'
   AND resource.labels.bucket_name LIKE 'aou%'
   AND protopayload_auditlog.resourceName LIKE '%person.csv'
@@ -71,9 +60,10 @@ GROUP BY
   m.Site_Name,
   resource.labels.bucket_name,
   protopayload_auditlog.authenticationInfo.principalEmail
-ORDER BY MAX(timestamp) ASC
-'''.format(year=now.year, rdr_project=rdr_project_name, end_suffix=end_suffix)).execute(
-    output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
+ORDER BY MAX(timestamp) ASC""".format(rdr_project=RDR_PROJECT_ID, end_suffix=end_suffix)
+
+bq.Query(query).execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
+# -
 
 # ## EHR Site Submission Counts
 
@@ -98,7 +88,7 @@ hpo_ids = bq.Query("""
 SELECT REPLACE(table_id, '_person', '') AS hpo_id
 FROM `{EHR_DATASET_ID}.__TABLES__`
 WHERE table_id LIKE '%person' 
-AND table_id NOT LIKE '%unioned_ehr_%'
+AND table_id NOT LIKE '%unioned_ehr_%' AND table_id NOT LIKE '\\\_%'
 """.format(EHR_DATASET_ID=EHR_DATASET_ID)).execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result().hpo_id.tolist()
 
 # # Person

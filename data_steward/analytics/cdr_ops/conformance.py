@@ -4,35 +4,31 @@
 #     text_representation:
 #       extension: .py
 #       format_name: light
-#       format_version: '1.3'
-#       jupytext_version: 0.8.3
+#       format_version: '1.4'
+#       jupytext_version: 1.2.3
 #   kernelspec:
 #     display_name: Python 2
 #     language: python
 #     name: python2
-#   language_info:
-#     codemirror_mode:
-#       name: ipython
-#       version: 2
-#     file_extension: .py
-#     mimetype: text/x-python
-#     name: python
-#     nbconvert_exporter: python
-#     pygments_lexer: ipython2
-#     version: 2.7.12
 # ---
+
+# # Conformance
+# Low level checks on HPO site submissions based on bucket contents
+#
+# _Note: This requires extra configuration for bucket names_
 
 # +
 import yaml
 # %matplotlib inline
 from google.datalab import storage
+import parameters
 
 with open ('env.yaml') as f:
     app_env = yaml.safe_load(f)
 
 OUTPUT_DIR = 'output'
 KEY_PREFIX = 'BUCKET_NAME_'
-DRC_BUCKET_NAME = app_env['DRC_BUCKET_NAME']
+DRC_BUCKET_NAME = parameters.DRC_BUCKET_NAME
 
 bucket_keys = [key for key in app_env.keys() if key.startswith(KEY_PREFIX) and not app_env[key].startswith('test') and not app_env[key] == DRC_BUCKET_NAME]
 
