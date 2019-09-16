@@ -19,6 +19,9 @@ DEID_TABLES = ['person', 'observation', 'visit_occurrence', 'condition_occurrenc
                'drug_exposure', 'procedure_occurrence', 'device_exposure', 'death',
                'measurement', 'location', 'care_site', 'specimen', 'observation_period']
 SUPPRESSED_TABLES = ['note', 'note_nlp']
+VOCABULARY_TABLES = ['concept', 'vocabulary', 'domain', 'concept_class', 'concept_relationship',
+                     'relationship', 'concept_synonym', 'concept_ancestor', 'source_to_concept_map',
+                     'drug_strength']
 
 def add_console_logging(add_handler):
     """
@@ -109,6 +112,11 @@ def copy_suppressed_table_schemas(known_tables, dest_dataset):
                 dataset_id=dest_dataset
             )
 
+
+def copy_vocabulary_tables(input_dataset, dest_dataset):
+    for table in VOCABULARY_TABLES:
+        if bq_utils.table_exists(table, dataset_id=input_dataset):
+            pass
 
 def parse_args(raw_args=None):
     """

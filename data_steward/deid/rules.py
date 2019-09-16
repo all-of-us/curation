@@ -24,6 +24,7 @@ import logging
 import numpy as np
 
 from parser import Parse
+from resources import fields_for
 
 class Rules(object):
     def __init__(self, **args):
@@ -66,7 +67,7 @@ class Rules(object):
     def get(self, key, rule_id):
         return self.cache[key][rule_id]
 
-    def validate(self, rule_id, entry):
+    def validate(self, rule_id, entry, tablename):
         """
         Validating if a the application of a rule relative to a table is valid
         """
@@ -110,10 +111,10 @@ class Deid(Rules):
     def __init__(self, **args):
         Rules.__init__(self, **args)
 
-    def validate(self, rule_id, entry):
+    def validate(self, rule_id, entry, tablename):
         payload = None
 
-        if Rules.validate(self, rule_id, entry):
+        if Rules.validate(self, rule_id, entry, tablename):
 
             payload = {}
             payload = {"args": []}
@@ -122,8 +123,7 @@ class Deid(Rules):
 
                 #
                 # @TODO: Ensure that an error is thrown if the rule associated is not found
-
-                p = getattr(Parse, rule_id)(row, self.cache)
+                p = getattr(Parse, rule_id)(row, self.cache, tablename)
                 payload['args'] += [p]
 
 
@@ -283,21 +283,36 @@ class Deid(Rules):
         apply_fn = self.store_syntax[store_id]['apply'] if 'apply' in self.store_syntax[store_id] else {}
         out = []
 
+        tablename = args.get('tablename').split('.')[1]
+        field_definitions = {}
+        for field_def in fields_for(tablename):
+            field_definitions[field_def.get('name')] = field_def
+
         if fields and 'on' not in args:
             #
             # This applies on a relational table's columns, it is simple we just nullify the fields
             #
             for name in fields:
+                field_definition = field_definitions.get(name)
+                field_type = field_definition.get('type').lower()
+                field_mode = field_definition.get('mode').lower()
+
                 if not rules:
                     #
                     # This scenario, we know the fields upfront and don't have a rule for them
                     # We just need them removed (simple/basic case)
                     #
                     #-- This will prevent accidental type changes
-                    if name.endswith('_value') or name.endswith('_string'):
-                        value = "FORMAT('%i', NULL) AS " + name
-                    else:
-                        value = 'NULL AS ' + name
+                    if field_type == 'string':
+                        if field_mode == 'nullable':
+                            value = "FORMAT('%i', NULL) AS " + name
+                        else:
+                            value = "'' AS " + name
+                    elif field_type == 'integer':
+                        if field_mode == 'nullable':
+                            value = 'NULL AS ' + name
+                        else:
+                            value = "0 AS " + name
 
                     out.append({"name": name, "apply": value, "label": label})
                     self.log(module='suppression', label=label.split('.')[1], type='columns')
@@ -311,10 +326,16 @@ class Deid(Rules):
                         if 'apply' not in rules:
                             if name in rule['values']:
                                 #-- This will prevent accidental type changes
-                                if name.endswith('_value') or name.endswith('_string'):
-                                    value = "FORMAT('%i', NULL) AS " + name
-                                else:
-                                    value = 'NULL AS ' + name
+                                if field_type == 'string':
+                                    if field_mode == 'nullable':
+                                        value = "FORMAT('%i', NULL) AS " + name
+                                    else:
+                                        value = "'' AS " + name
+                                elif field_type == 'integer':
+                                    if field_mode == 'nullable':
+                                        value = 'NULL AS ' + name
+                                    else:
+                                        value = "0 AS " + name
                                 out.append({"name": name, "apply": (value), "label": label})
             self.log(module='suppress', label=label.split('.')[1], on=fields, type='columns')
 
@@ -446,7 +467,7 @@ class Deid(Rules):
         out .append({"apply": statement, "name": fields[0], "label": label})
         return out
 
-    def apply(self, info, store_id='sqlite'):
+    def apply(self, info, store_id='sqlite', tablename=None):
         """
         :info    is a specification of a table and the rules associated
         """
@@ -457,7 +478,7 @@ class Deid(Rules):
         for rule_id in self.pipeline: #['generalize', 'compute', 'suppress', 'shift'] :
 
             if rule_id in info:
-                r = self.validate(rule_id, info[rule_id])
+                r = self.validate(rule_id, info[rule_id], tablename)
 
                 if r:
                     r = dict(r, **{'ismeta': ismeta})
