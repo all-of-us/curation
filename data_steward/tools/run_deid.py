@@ -22,7 +22,6 @@ VOCABULARY_TABLES = ['concept', 'vocabulary', 'domain', 'concept_class', 'concep
                      'relationship', 'concept_synonym', 'concept_ancestor', 'source_to_concept_map',
                      'drug_strength']
 
-
 def add_console_logging(add_handler):
     """
     This config should be done in a separate module, but that can wait
