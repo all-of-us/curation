@@ -1,44 +1,41 @@
 #!/usr/bin/env bash
 
-APP_ID='aou-res-curation-test'
-KEY_FILE=''
-RDR_DATASET='rdr20181113'
-EHR_DATASET='ehr20181114'
-
-USAGE="start.sh --key_file <Path to service account key> [--app_id <Application ID. Defaults to ${APP_ID}.>]"
+USAGE="start.sh --key_file <Path to service account key>"
 
 while true; do
   case "$1" in
     --key_file) KEY_FILE=$2; shift 2;;
     --app_id) APP_ID=$2; shift 2;;
-    --rdr_dataset) RDR_DATASET_ID=$2; shift 2;;
-    --ehr_dataset) EHR_DATASET_ID=$2; shift 2;;
     -- ) shift; break ;;
     * ) break ;;
   esac
 done
-if [ -z "${KEY_FILE}" ]
+
+if [[ -z "${KEY_FILE}" ]]
 then
   echo "Specify key file location. Usage: $USAGE"
   exit 1
 fi
 
-BIN_PATH='notebooks_env/bin'
-if test -d notebooks_env/Scripts
+VENV_NAME='cdr_ops_env'
+VENV_PATH="${HOME}/${VENV_NAME}"
+
+BIN_PATH="${VENV_PATH}/bin"
+if test -d "${VENV_PATH}/Scripts"
 then
-    BIN_PATH='notebooks_env/Scripts'
+    # Windows
+    BIN_PATH="${VENV_PATH}/Scripts"
 fi
 
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
-export APPLICATION_ID="${APP_ID}"
-export PROJECT_ID="${APP_ID}"
-export RDR_DATASET_ID="${RDR_DATASET}"
-export EHR_DATASET_ID="${EHR_DATASET}"
-gcloud config set project "${APP_ID}"
-pybin="$(which python2.7 | which python)"
+PROJECT_ID=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
 
-virtualenv -p ${pybin} notebooks_env
-${BIN_PATH}/pip install -U pip
-source ${BIN_PATH}/activate
-pip install -r requirements.txt
-jupyter notebook --config=jupyter_notebook_config.py
+gcloud config set project "${PROJECT_ID}"
+
+python -m virtualenv ${VENV_PATH}
+
+source "${BIN_PATH}/activate"
+
+python -m pip install -U pip
+python -m pip install -U -r requirements.txt
+jupyter notebook
