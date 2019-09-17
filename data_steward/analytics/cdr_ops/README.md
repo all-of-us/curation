@@ -3,14 +3,12 @@
 Collaboration-ready Jupyter environment for CDR operations
  
 Jupyter notebooks allow analysts to do reporting, visualization and analytics with relative ease, but they typically 
-sacrifice many of the benefits of software engineering practices. This environment provides the best of both worlds.
+sacrifice many of the benefits of software engineering practices. The environment in this component allows Jupyter
+notebooks to represented by plain Python `.py` scripts. This provides the following benefits: 
 
-The `.ipynb` file format enables the responsive development workflow and cell-based layout of components we write but 
-it also limits their reusability. scripts be used both like Jupyter notebooks or regular modules in Python.
-This means we get the best of both worlds.
- * Notebooks are version controlled
- * You may edit scripts using your favorite IDE
- * Modules imported into other scripts    
+ * Easy version control (with git)
+ * Edit in Jupyter or in your favorite IDE 
+ * Notebooks can be used like any other Python module (e.g. imported into other scripts)
 
 ## Requirements
 
