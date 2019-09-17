@@ -9,6 +9,8 @@ import resources
 import re
 
 NAME_FIELD = 'name'
+FIELD_MODE = 'mode'
+FIELD_REQUIRED = 'required'
 TYPE_CONCEPT_SUFFIX = '_type_concept_id'
 DOMAIN_COMMON_FIELDS = 'common_fields'
 DOMAIN_SPECIFIC_FIELDS = 'specific_fields'
@@ -212,6 +214,20 @@ def get_domain_fields(_domain_table):
     return [field[NAME_FIELD] for field in fields if field[NAME_FIELD] != id_field]
 
 
+def is_field_required(_domain_table, field_name):
+    """
+    The function checks if the field is nullable
+    :param _domain_table: the name of the domain table
+    :param field_name:  the name of the field
+    :return:
+    """
+    fields = CDM_TABLE_SCHEMAS[_domain_table]
+    for field in fields:
+        if field[NAME_FIELD] == field_name:
+            return field[FIELD_MODE] == FIELD_REQUIRED
+    return False
+
+
 if __name__ == '__main__':
 
     with open(resources.field_mappings_replaced_path, 'w') as fr:
@@ -236,4 +252,3 @@ if __name__ == '__main__':
                         fr.write(field_mapping)
                         fr.write('\n')
         fr.close()
-

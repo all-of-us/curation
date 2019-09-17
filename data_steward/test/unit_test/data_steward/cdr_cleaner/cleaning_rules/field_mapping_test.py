@@ -22,6 +22,7 @@ class FieldMappingTest(unittest.TestCase):
         self.procedure_table = 'procedure_occurrence'
         self.condition_occurrence_id = 'condition_occurrence_id'
         self.procedure_occurrence_id = 'procedure_occurrence_id'
+        self.condition_end_date = 'condition_end_date'
         self.domain_tables = [self.condition_table, self.procedure_table]
         self.procedure = 'Procedure'
         self.condition = 'Condition'
@@ -31,7 +32,7 @@ class FieldMappingTest(unittest.TestCase):
             {"type": "integer", "name": "condition_concept_id", "mode": "required"},
             {"type": "date", "name": "condition_start_date", "mode": "required"},
             {"type": "timestamp", "name": "condition_start_datetime", "mode": "required"},
-            {"type": "date", "name": "condition_end_date", "mode": "required"},
+            {"type": "date", "name": "condition_end_date", "mode": "nullable"},
             {"type": "timestamp", "name": "condition_end_datetime", "mode": "required"},
             {"type": "string", "name": "condition_source_value", "mode": "required"}
         ]
@@ -208,3 +209,8 @@ class FieldMappingTest(unittest.TestCase):
             self.assertEqual(fields, self.condition_occurrence_fields)
             self.assertEqual(field_mapping.get_domain_fields(self.procedure_table),
                              self.procedure_occurrence_fields)
+
+    def test_is_field_nullable(self):
+        with patch.dict('cdr_cleaner.cleaning_rules.field_mapping.CDM_TABLE_SCHEMAS', self.cdm_schemas):
+            self.assertTrue(field_mapping.is_field_required(self.condition_table, self.condition_occurrence_id))
+            self.assertFalse(field_mapping.is_field_required(self.condition_table, self.condition_end_date))

@@ -217,6 +217,32 @@ class DomainAlignmentTest(unittest.TestCase):
         self.assertEqual(re.sub(self.chars_to_replace, self.single_space, actual_query),
                          re.sub(self.chars_to_replace, self.single_space, expected_query))
 
+    @mock.patch('cdr_cleaner.cleaning_rules.field_mapping.is_field_required')
+    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_value_mappings')
+    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.value_requires_translation')
+    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_field_mappings')
+    def test_resolve_field_mappings_value_requires_translation(self, mock_get_field_mappings,
+                                                               mock_value_requires_translation,
+                                                               mock_get_value_mappings,
+                                                               mock_is_field_required):
+        get_field_mappings_return_value = OrderedDict()
+        get_field_mappings_return_value[self.procedure_concept_id] = self.condition_concept_id
+        get_field_mappings_return_value[self.procedure_type_concept_id] = self.condition_type_concept_id
+
+        mock_get_field_mappings.return_value = get_field_mappings_return_value
+        mock_value_requires_translation.side_effect = [True, True]
+        mock_is_field_required.side_effect = [False, True]
+        mock_get_value_mappings.return_value = dict()
+
+        expected = ',\n\t'.join([domain_alignment.NULL_AS_DEST_FIELD.format(
+            dest_field=self.procedure_concept_id), domain_alignment.ZERO_AS_DEST_FIELD.format(
+            dest_field=self.procedure_type_concept_id)])
+
+        actual = domain_alignment.resolve_field_mappings(self.condition_table, self.procedure_table)
+
+        self.assertEqual(re.sub(self.chars_to_replace, self.single_space, expected),
+                         re.sub(self.chars_to_replace, self.single_space, actual))
+
     @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_value_mappings')
     @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.value_requires_translation')
     @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_field_mappings')
