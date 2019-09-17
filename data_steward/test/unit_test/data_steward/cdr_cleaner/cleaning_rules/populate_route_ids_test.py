@@ -28,10 +28,12 @@ class PopulateRouteIdsTest(unittest.TestCase):
                                     {'dose_form_concept_id': '19082168', 'route_concept_id': '4132161'},
                                     {'dose_form_concept_id': '19126918', 'route_concept_id': '45956874',
                                      'route_name': 'Inhalation'}]
-        self.route_mappings_string = ("(46719734, 85738921), "
-                                      "(86340, 52315), "
-                                      "(19082168, 4132161), "
-                                      "(19126918, 45956874)")
+        route_mappings = [(46719734, 85738921),
+                               (86340, 52315),
+                               (19082168, 4132161),
+                               (19126918, 45956874)]
+        route_mapping_exprs = map(lambda pair: '(%s, %s)' % pair, route_mappings)
+        self.route_mappings_string = ', '.join(route_mapping_exprs)
         self.col_exprs = [
             'de.drug_exposure_id',
             'de.person_id',
@@ -63,7 +65,7 @@ class PopulateRouteIdsTest(unittest.TestCase):
     def test_get_mapping_list(self):
         actual = populate_route_ids.get_mapping_list(self.route_mappings_list)
         expected = self.route_mappings_string
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     @mock.patch('bq_utils.create_table')
     @mock.patch('bq_utils.query')

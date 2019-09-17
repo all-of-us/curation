@@ -9,7 +9,6 @@ import logging
 import bq_utils
 import common
 import resources
-from tools import retract_data_gcs as rdg
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
@@ -50,7 +49,7 @@ DRUG_ROUTE_FIELDS = [
 
 INSERT_ROUTES_QUERY = """
 INSERT INTO `{project_id}.{dataset_id}.{routes_table_id}` (dose_form_concept_id, route_concept_id)
-VALUES{mapping_list}
+VALUES {mapping_list}
 """
 
 # If a drug maps to multiple dose forms, this can potentially create duplicate records in drug_exposure table
@@ -117,11 +116,11 @@ def get_mapping_list(route_mappings_list):
     :return: formatted list suitable for insert in BQ:
             (dose_form_concept_id1, route_concept_id1), (dose_form_concept_id1, route_concept_id1)
     """
-    mapping_list = []
+    pair_exprs = []
     for route_mapping_dict in route_mappings_list:
-        mapping_list.append((rdg.get_integer(route_mapping_dict["dose_form_concept_id"]),
-                             rdg.get_integer(route_mapping_dict["route_concept_id"])))
-    formatted_mapping_list = str(mapping_list).strip('[]')
+        pair_expr = '({dose_form_concept_id}, {route_concept_id})'.format(**route_mapping_dict)
+        pair_exprs.append(pair_expr)
+    formatted_mapping_list = ', '.join(pair_exprs)
     return formatted_mapping_list
 
 
