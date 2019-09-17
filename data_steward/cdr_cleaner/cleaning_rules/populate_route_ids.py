@@ -105,6 +105,9 @@ LEFT JOIN `{project_id}.{route_mapping_dataset_id}.{drug_route_mapping_table}` {
 ON {drug_exposure_prefix}.drug_concept_id = {route_mapping_prefix}.drug_concept_id
 """
 
+DRUG_EXPOSURE_ALIAS = "de"
+ROUTE_MAPPING_ALIAS = "rm"
+
 
 def get_mapping_list(route_mappings_list):
     """
@@ -150,7 +153,7 @@ def create_dose_form_route_mappings_table(project_id, dataset_id=None):
                                                     mapping_list=get_mapping_list(dose_form_route_mappings_list))
     result = bq_utils.query(dose_form_routes_populate_query)
     LOGGER.info("Created %s.%s", dataset_id, dose_form_routes_table_id)
-    return result, dose_form_routes_table_id
+    return result
 
 
 def create_drug_route_mappings_table(project_id, route_mapping_dataset_id, dose_form_routes_table_id,
@@ -169,8 +172,6 @@ def create_drug_route_mappings_table(project_id, route_mapping_dataset_id, dose_
         # Using table created in bq_dataset instead of re-creating in every dataset
         route_mapping_dataset_id = bq_utils.get_dataset_id()
 
-    drug_route_table_id = DRUG_ROUTES_TABLE_ID
-
     LOGGER.info("Creating %s.%s", route_mapping_dataset_id, DRUG_ROUTES_TABLE_ID)
 
     # create empty table
@@ -186,37 +187,34 @@ def create_drug_route_mappings_table(project_id, route_mapping_dataset_id, dose_
     result = bq_utils.query(q=drug_routes_populate_query,
                             write_disposition='WRITE_TRUNCATE',
                             destination_dataset_id=route_mapping_dataset_id,
-                            destination_table_id=drug_route_table_id,
+                            destination_table_id=DRUG_ROUTES_TABLE_ID,
                             batch=True)
     incomplete_jobs = bq_utils.wait_on_jobs([result['jobReference']['jobId']])
     if incomplete_jobs:
         LOGGER.debug('Failed job id {id}'.format(id=incomplete_jobs[0]))
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
-    LOGGER.info("Created %s.%s", route_mapping_dataset_id, drug_route_table_id)
-    return result, drug_route_table_id
+    LOGGER.info("Created %s.%s", route_mapping_dataset_id, DRUG_ROUTES_TABLE_ID)
+    return result
 
 
-def get_cols_and_prefixes():
+def get_col_exprs():
     """
-    Generates the column string and table prefixes for selecting columns from appropriate tables
+    Get the expressions used to populate drug_exposure
 
-    :return: Tuple of strings (column_string, table_prefix_1, table_prefix_2)
+    :return: List of strings
     """
     fields = resources.fields_for(common.DRUG_EXPOSURE)
     route_field = "route_concept_id"
-    drug_exposure_prefix = "de"
-    route_mapping_prefix = "rm"
     col_exprs = []
     for field in fields:
         # by default we set to prefix for drug exposure
-        col_expr = drug_exposure_prefix + '.' + field["name"]
+        col_expr = DRUG_EXPOSURE_ALIAS + '.' + field["name"]
         if field["name"] == route_field:
             # COALESCE(rm.route_concept_id, de.route_concept_id)
-            col_expr = "COALESCE(%s, %s) AS route_concept_id" % (route_mapping_prefix + '.' + field["name"],
-                                                                 drug_exposure_prefix + '.' + field["name"])
+            col_expr = "COALESCE(%s, %s) AS route_concept_id" % (ROUTE_MAPPING_ALIAS + '.' + field["name"],
+                                                                 DRUG_EXPOSURE_ALIAS + '.' + field["name"])
         col_exprs.append(col_expr)
-    cols = ', '.join(col_exprs)
-    return cols, drug_exposure_prefix, route_mapping_prefix
+    return col_exprs
 
 
 def get_route_mapping_queries(project_id, dataset_id, route_mapping_dataset_id=None):
@@ -231,23 +229,23 @@ def get_route_mapping_queries(project_id, dataset_id, route_mapping_dataset_id=N
     queries = []
     if route_mapping_dataset_id is None:
         route_mapping_dataset_id = bq_utils.get_dataset_id()
-    result, dose_form_table_id = create_dose_form_route_mappings_table(project_id, route_mapping_dataset_id)
+    result = create_dose_form_route_mappings_table(project_id, route_mapping_dataset_id)
     table = common.DRUG_EXPOSURE
-    cols, drug_exposure_prefix, route_mapping_prefix = get_cols_and_prefixes()
-    result, drug_route_table_id = create_drug_route_mappings_table(
-                                                        project_id,
-                                                        route_mapping_dataset_id,
-                                                        dose_form_table_id,
-                                                        route_mapping_prefix)
+    col_exprs = get_col_exprs()
+    result = create_drug_route_mappings_table(project_id,
+                                              route_mapping_dataset_id,
+                                              DOSE_FORM_ROUTES_TABLE_ID,
+                                              ROUTE_MAPPING_ALIAS)
+    cols = ', '.join(col_exprs)
     query = dict()
     query[cdr_consts.QUERY] = FILL_ROUTE_ID_QUERY.format(project_id=project_id,
                                                          dataset_id=dataset_id,
                                                          drug_exposure_table=table,
                                                          route_mapping_dataset_id=route_mapping_dataset_id,
-                                                         drug_route_mapping_table=drug_route_table_id,
+                                                         drug_route_mapping_table=DRUG_ROUTES_TABLE_ID,
                                                          cols=cols,
-                                                         drug_exposure_prefix=drug_exposure_prefix,
-                                                         route_mapping_prefix=route_mapping_prefix)
+                                                         drug_exposure_prefix=DRUG_EXPOSURE_ALIAS,
+                                                         route_mapping_prefix=ROUTE_MAPPING_ALIAS)
     query[cdr_consts.DESTINATION_TABLE] = table
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
