@@ -106,7 +106,7 @@ class Press(object):
         d = Deid(pipeline=self.pipeline, rules=self.deid_rules, parent=self)
         _info = self.info
 
-        p = d.apply(_info, self.store)
+        p = d.apply(_info, self.store, self.get_tablename())
 
         is_meta = np.sum([1*('on' in _item) for _item in p]) != 0
         self.log(module='do', action='table-type', table=self.get_tablename(), is_meta=int(is_meta))

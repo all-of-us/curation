@@ -245,8 +245,6 @@ class AOU(Press):
         return pd.DataFrame()
 
     def submit(self, sql):
-        """
-        """
         table_name = self.get_tablename()
         client = bq.Client.from_service_account_json(self.private_key)
         #
@@ -258,7 +256,9 @@ class AOU(Press):
             client.create_dataset(dataset)
 
         # create the output table
-        bq_utils.create_standard_table(self.tablename, self.tablename, drop_existing=True, dataset_id=self.odataset)
+        bq_utils.create_standard_table(
+            self.tablename, self.tablename, drop_existing=True, dataset_id=self.odataset
+        )
 
         job = bq.QueryJobConfig()
         job.destination = client.dataset(self.odataset).table(self.tablename)
@@ -295,7 +295,7 @@ class AOU(Press):
                      value=r.job_id,
                      object='bigquery')
             self.wait(client, r.job_id)
-#            self.finalize(client)
+            #self.finalize(client)
             #
             # At this point we must try to partition the table
         else:

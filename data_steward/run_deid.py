@@ -15,7 +15,13 @@ import deid.aou as aou
 
 
 LOGGER = logging.getLogger(__name__)
+DEID_TABLES = ['person', 'observation', 'visit_occurrence', 'condition_occurrence',
+               'drug_exposure', 'procedure_occurrence', 'device_exposure', 'death',
+               'measurement', 'location', 'care_site', 'specimen', 'observation_period']
 SUPPRESSED_TABLES = ['note', 'note_nlp']
+VOCABULARY_TABLES = ['concept', 'vocabulary', 'domain', 'concept_class', 'concept_relationship',
+                     'relationship', 'concept_synonym', 'concept_ancestor', 'source_to_concept_map',
+                     'drug_strength']
 
 def add_console_logging(add_handler):
     """
@@ -82,7 +88,7 @@ def get_output_tables(input_dataset, known_tables, skip_tables, only_tables):
         if table in skip_tables:
             continue
 
-        if only_tables == [''] or table in only_tables:
+        if (only_tables == [''] or table in only_tables) and table in DEID_TABLES:
             allowed_tables.append(table)
 
     return allowed_tables
@@ -106,6 +112,11 @@ def copy_suppressed_table_schemas(known_tables, dest_dataset):
                 dataset_id=dest_dataset
             )
 
+
+def copy_vocabulary_tables(input_dataset, dest_dataset):
+    for table in VOCABULARY_TABLES:
+        if bq_utils.table_exists(table, dataset_id=input_dataset):
+            pass
 
 def parse_args(raw_args=None):
     """

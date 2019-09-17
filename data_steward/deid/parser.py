@@ -18,7 +18,7 @@ class Parse(object):
     Having rules in a canonical form makes it easy for an engine to apply them in batch
     """
     @staticmethod
-    def init(rule_id, row, cache):
+    def init(rule_id, row, cache, tablename):
         try:
             row_rules = row.get('rules', '')
             _id, _key = row_rules.replace('@', '').split('.')
@@ -35,33 +35,34 @@ class Parse(object):
         for key in row:
             p[key] = row[key] if key not in p else p[key]
 
+        p['tablename'] = tablename
         return p
 
 
 
     @staticmethod
-    def shift(row, cache):
-        return Parse.init('shift', row, cache)
+    def shift(row, cache, tablename):
+        return Parse.init('shift', row, cache, tablename)
 
     @staticmethod
-    def generalize(row, cache):
+    def generalize(row, cache, tablename):
         """
         parsing generalization and translating the features into a canonical form of stors
         """
-        p = Parse.init('generalize', row, cache)
+        p = Parse.init('generalize', row, cache, tablename)
 
         return p
 
     @staticmethod
-    def suppress(row, cache):
+    def suppress(row, cache, tablename):
         """
         setup suppression rules to be applied the the given 'row' i.e entry
         """
-        return Parse.init('suppress', row, cache)
+        return Parse.init('suppress', row, cache, tablename)
 
     @staticmethod
-    def compute(row, cache):
-        return Parse.init('compute', row, cache)
+    def compute(row, cache, tablename):
+        return Parse.init('compute', row, cache, tablename)
 
 
 # This is the pythonic way to parse system arguments
