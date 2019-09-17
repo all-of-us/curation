@@ -42,6 +42,22 @@ DRC_BUCKET_NAME = 'drc_bucket_name'
 RDR_PROJECT_ID = 'rdr_project_id'
 ```
 
+## Defaults
+
+The `defaults` notebook module automatically determines the latest available rdr, unioned, combined, and deid dataset_ids.
+
+```python
+from defaults import DEFAULT_DATASETS
+
+LATEST_DATASETS_MESSAGE = '''
+The most recent datasets are listed below
+rdr: {latest.rdr}
+unioned: {latest.unioned}
+combined: {latest.combined}
+deid: {latest.deid}
+'''.format(latest=DEFAULT_DATASETS.latest))
+``` 
+
 ## Contributing
 
 Just add and edit Python (.py) scripts in Jupyter. They will be converted to notebook (.ipynb) files and rendered in Jupyter on the fly. 
