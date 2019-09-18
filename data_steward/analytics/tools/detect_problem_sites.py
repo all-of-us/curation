@@ -58,6 +58,7 @@ in a particular area if even ONE of the tables is stagnant
 
 import pandas as pd
 import xlrd
+from io import open
 
 
 def get_metric_files_and_tabs():

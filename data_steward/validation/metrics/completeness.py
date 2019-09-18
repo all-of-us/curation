@@ -2,6 +2,7 @@ from __future__ import print_function
 import bq_utils
 import resources
 import constants.validation.metrics.completeness as consts
+from io import open
 
 
 def get_hpo_ids():

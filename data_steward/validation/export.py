@@ -3,6 +3,7 @@ from glob import glob
 
 import bq_utils
 import resources
+from io import open
 
 EXPORT_PATH = os.path.join(resources.resource_path, 'export')
 RESULTS_SCHEMA_PLACEHOLDER = '@results_database_schema.'

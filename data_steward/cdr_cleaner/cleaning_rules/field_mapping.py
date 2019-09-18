@@ -7,6 +7,7 @@ from domain_mapping import NULL_VALUE
 import domain_mapping
 import resources
 import re
+from io import open
 
 NAME_FIELD = 'name'
 FIELD_MODE = 'mode'
