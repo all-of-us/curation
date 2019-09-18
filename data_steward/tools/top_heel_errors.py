@@ -12,6 +12,7 @@ from google.appengine.api.app_identity import app_identity
 import bq_utils
 import common
 import resources
+from io import open
 
 HPO_ID_LIST = [item['hpo_id'] for item in resources.hpo_csv()]
 JSON = 'json'

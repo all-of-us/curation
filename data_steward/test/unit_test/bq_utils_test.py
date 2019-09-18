@@ -18,6 +18,7 @@ from test.unit_test.test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
 from test.unit_test.test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_CSV
 from test.unit_test.test_util import PITT_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_OBSERVATION_CSV
 from validation.achilles import ACHILLES_TABLES
+from io import open
 
 
 class BqUtilsTest(unittest.TestCase):

@@ -4,6 +4,7 @@ import json
 import urllib2
 from collections import OrderedDict
 from os import listdir
+from io import open
 
 CDM_CSV_URL = "https://raw.githubusercontent.com/OHDSI/CommonDataModel/master/OMOP_CDM_v5_3.csv"
 

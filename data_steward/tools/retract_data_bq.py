@@ -9,6 +9,7 @@ import logging
 import common
 import bq_utils
 from validation import ehr_union
+from io import open
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction logger')
