@@ -216,8 +216,8 @@ def read_cloud_file(bucket, name):
 
 
 def write_cloud_str(bucket, name, contents_str):
-    import StringIO
-    fp = StringIO.StringIO(contents_str)
+    from io import StringIO
+    fp = StringIO(contents_str)
     return write_cloud_fp(bucket, name, fp)
 
 

@@ -1,5 +1,5 @@
 from __future__ import print_function
-import StringIO
+from io import StringIO
 import os
 import shutil
 import tempfile
@@ -24,8 +24,8 @@ class VocabularyTest(unittest.TestCase):
 
     @staticmethod
     def do_transform_file(input_text):
-        in_fp = StringIO.StringIO(input_text)
-        out_fp = StringIO.StringIO()
+        in_fp = StringIO(input_text)
+        out_fp = StringIO()
         _transform_csv(in_fp, out_fp)
         return out_fp.getvalue()
 

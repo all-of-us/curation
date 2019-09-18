@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import StringIO
+from io import StringIO
 import argparse
 import logging
 
@@ -123,7 +123,7 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
             response = get_response()
         if response == "Y":
             # Output and input file content initialization
-            retracted_file_string = StringIO.StringIO()
+            retracted_file_string = StringIO()
             input_file_string = gcs_utils.get_object(bucket, folder_prefix + file_name)
             input_file_lines = input_file_string.split('\n')
             input_header = input_file_lines[0]
