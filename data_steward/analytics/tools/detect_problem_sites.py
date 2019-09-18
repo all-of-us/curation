@@ -229,7 +229,7 @@ def find_stagnant_hpos(problem_hpos, files, num_reports,
             num_cols = len(df.columns)
             col_idxs = list(range(0, num_cols))
             earliest_col = num_cols - num_reports
-            cols_to_investigate = col_idxs[num_cols-1: earliest_col - 1: -1]
+            cols_to_investigate = col_idxs[num_cols - 1: earliest_col - 1: -1]
 
             for report_col in cols_to_investigate:
                 col_name = df.columns[report_col]
@@ -277,11 +277,11 @@ text_file = open("output.txt", "w")
 for site, problem_metrics in stagnant_problem_hpos.items():
     problems = ""
     for num, metric_type in enumerate(problem_metrics):
-        problems += "{}. {}\n".format(num+1, metric_type)
+        problems += "{}. {}\n".format(num + 1, metric_type)
 
     end_message = "{} has issues that have not been improved upon " \
                   "in {} reports in the following:\n".format(
-                    site, num_reports_before_stagnant) + problems \
+        site, num_reports_before_stagnant) + problems \
                   + "\n"
 
     text_file.write(end_message)
