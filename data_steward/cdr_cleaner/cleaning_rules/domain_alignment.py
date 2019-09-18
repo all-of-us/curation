@@ -7,6 +7,7 @@ import bq_utils
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import domain_mapping
+import field_mapping
 import resources
 from domain_mapping import EMPTY_STRING
 from domain_mapping import METADATA_DOMAIN
@@ -84,10 +85,6 @@ REROUTE_DOMAIN_RECORD_QUERY = (
     'AND m.is_rerouted = True '
 )
 
-SELECT_DOMAIN_RECORD_QUERY = (
-    ' '
-)
-
 CASE_STATEMENT = (
     ' CASE {src_field} '
     ' {statements} '
@@ -100,6 +97,8 @@ WHEN_STATEMENT = 'WHEN {src_value} THEN {dest_value}'
 SRC_FIELD_AS_DEST_FIELD = '{src_field} AS {dest_field}'
 
 NULL_AS_DEST_FIELD = 'NULL AS {dest_field}'
+
+ZERO_AS_DEST_FIELD = '0 AS {dest_field}'
 
 
 def parse_domain_mapping_query_cross_domain(project_id, dataset_id, dest_table):
@@ -276,7 +275,10 @@ def resolve_field_mappings(src_table, dest_table):
             value_mappings = domain_mapping.get_value_mappings(src_table, dest_table, src_field, dest_field)
 
             if len(value_mappings) == 0:
-                case_statements = NULL_AS_DEST_FIELD.format(dest_field=dest_field)
+                if field_mapping.is_field_required(dest_table, dest_field):
+                    case_statements = ZERO_AS_DEST_FIELD.format(dest_field=dest_field)
+                else:
+                    case_statements = NULL_AS_DEST_FIELD.format(dest_field=dest_field)
             else:
                 case_statements = '\n\t\t'.join(
                     [WHEN_STATEMENT.format(src_value=s, dest_value=d) for d, s in
@@ -382,7 +384,6 @@ def parse_args():
 
 
 if __name__ == '__main__':
-
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parse_args()
