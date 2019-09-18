@@ -5,7 +5,7 @@
 # Does gcloud auth using the result.
 
 echo $GCLOUD_CREDENTIALS | \
-     openssl enc -d -aes-256-cbc -base64 -A -k $GCLOUD_CREDENTIALS_KEY \
+     openssl enc -d -aes-256-cbc -base64 -A -md md5 -k $GCLOUD_CREDENTIALS_KEY \
      > $1
 
 gcloud auth activate-service-account --key-file $1
