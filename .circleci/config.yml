@@ -12,15 +12,14 @@ jobs:
       GOOGLE_APPLICATION_CREDENTIALS: /home/ubuntu/gcloud-credentials-key.json
 
     docker:
-      - image: google/cloud-sdk
+      - image: circleci/python:3.7.4
         # This command is commented out due to failure in docker image initialisation.
         # command: /sbin/init
     steps:
       # Machine Setup
-      - run: echo "Running as user $(whoami)..."
-
       # `checkout` checks out your code to your working directory.
       - checkout
+      - run: sudo apt install software-properties-common
       # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
       - run: mkdir -p $CIRCLE_ARTIFACTS
       # This is based on our 1.0 configuration file or project settings
@@ -30,6 +29,15 @@ jobs:
       - run:
           working_directory: ~/curation
           command: cat $HOME/.circlerc
+      - run:
+          working_directory: ~/curation
+          command: echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+      - run:
+          working_directory: ~/curation
+          command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+      - run:
+          working_directory: ~/curation
+          command: sudo apt-get update && sudo apt-get install dpkg && sudo apt-get install google-cloud-sdk
       - run:
           working_directory: ~/curation
           command: chmod 700 ~/curation/data_steward/ci/activate_creds.sh && chmod 700 ~/curation/data_steward/ci/setup.sh && chmod 700 ~/curation/data_steward/ci/create_bucket.sh
