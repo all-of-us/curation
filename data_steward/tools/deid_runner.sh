@@ -52,6 +52,9 @@ gcloud config set project "${APP_ID}"
 cdr_deid="${cdr_id}_deid"
 cdr_deid_clean="${cdr_deid}_clean"
 
+# change directory to data_steward
+cd ..
+
 #------Create de-id virtual environment----------
 set -e
 
@@ -81,9 +84,8 @@ cp -R "${GAE_SDK_NET}" "${VENV_LIB_GOOGLE}"
 export BIGQUERY_DATASET_ID="${cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DIR}"
 
-# Get Git version tag
-tag=$(git describe --abbrev=0 --tags)
-version=${tag}
+# Version is the most recent tag accessible from the current branch
+version=$(git describe --abbrev=0 --tags)
 
 # create empty de-id dataset
 bq mk --dataset --description "${version} deidentified base version of ${cdr_id}" "${APP_ID}":"${cdr_deid}"
@@ -96,7 +98,7 @@ python "${DIR}/cdm.py" --component vocabulary "${cdr_deid}"
 "${DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${cdr_deid}"
 
 # apply deidentification on combined dataset
-python "${DIR}/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive |& tee -a deid_output.txt
+python "${DIR}/tools/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive |& tee -a deid_output.txt
 
 # create empty de-id_clean dataset to apply cleaning rules
 bq mk --dataset --description "${version} deidentified clean version of ${cdr_id}" "${APP_ID}":"${cdr_deid_clean}"

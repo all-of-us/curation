@@ -110,7 +110,6 @@ export BUCKET_NAME_NYC="test-bucket"
 echo "-------------------------->Run de identification on the identified CDR"
 cdr_deid="${cdr}_deid"
 echo "cdr_deid --> ${cdr_deid}"
-cd ..
 ./deid_runner.sh --key_file ${key_file} --app_id ${app_id} --cdr_id ${cdr}
 
 cd tools || exit
