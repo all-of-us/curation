@@ -1,6 +1,7 @@
 import re
 
 import bq_utils
+from io import open
 
 COMMAND_SEP = ';'
 PREFIX_PLACEHOLDER = 'synpuf_100.'
