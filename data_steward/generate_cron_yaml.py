@@ -3,6 +3,7 @@ import os
 
 import resources
 import datetime
+from io import open
 
 CRON_DATE_FMT = '%-d of %B 00:00'
 CRON_YAML_PATH = os.path.join(resources.base_path, 'cron.yaml')

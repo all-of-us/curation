@@ -15,6 +15,7 @@ from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_
 from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
 from tools.combine_ehr_rdr import logger
 from tools.combine_ehr_rdr import mapping_query
+from io import open
 
 EXPECTED_MAPPING_QUERY = ('SELECT DISTINCT'
                           ' \'{rdr_dataset_id}\'  AS src_dataset_id,'

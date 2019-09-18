@@ -7,6 +7,7 @@ import os
 import cachetools
 
 from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML
+from io import open
 
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 

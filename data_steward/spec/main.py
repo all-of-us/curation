@@ -25,6 +25,7 @@ import api_util
 import gcs_utils
 import resources
 from common import RESULT_CSV, LOG_JSON
+from io import open
 
 PREFIX = '/tasks/'
 SITE_ROOT = os.path.dirname(os.path.abspath(__file__))

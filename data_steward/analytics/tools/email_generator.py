@@ -14,6 +14,7 @@ import os
 
 import pandas as pd
 from contact_list import recipient_dict
+from io import open
 
 cwd = os.getcwd()
 excel_file_name = cwd + "\\august_26_2019.xlsx"  # change for each email date

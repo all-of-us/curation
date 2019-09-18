@@ -6,6 +6,7 @@ from google.appengine.ext import testbed
 import gcs_utils
 from test.unit_test import test_util
 from tools import retract_data_gcs as rd
+from io import open
 
 
 class RetractDataGcsTest(unittest.TestCase):
