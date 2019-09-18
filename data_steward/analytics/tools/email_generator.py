@@ -9,8 +9,9 @@ Assumptions
 2. Script also stored with introduction.txt, great_job.txt, and contact_list.py
 Code was developed with respect to PEP8 standards
 """
-import pandas as pd
 import os
+
+import pandas as pd
 from contact_list import recipient_dict
 
 cwd = os.getcwd()
@@ -33,6 +34,7 @@ hpo_id = hpo_id.lower()  # case sensitivity
 while hpo_id not in recipient_dict:
     print("HPO ID not found.")
     hpo_id = input(prompt)
+
 
 # now we have the excel files and the appropriate HPO site
 
@@ -148,6 +150,7 @@ for sheet_info in [duplicate_err_dict,
     if sheet_info:
         num_prob_sheets += 1
 
+
 # NOTE: I had trouble with character conversion when I wrote my
 # messages directly in Pycharm text files. I recommend writing
 # notes in other software environments (e.g. NotePad) and
@@ -211,8 +214,8 @@ else:
 
     if duplicate_err_dict:  # there are problems with the error dict
         duplicates_err = str(starting_number) + \
-            ". There are row duplicates in the " \
-            "following table(s):"
+                         ". There are row duplicates in the " \
+                         "following table(s):"
         duplicates_err = print_error_info(duplicate_err_dict,
                                           duplicates_err, percent=False)
         starting_number += 1  # increment for future texts if applicable
@@ -220,8 +223,8 @@ else:
 
     if end_before_begin_dict:
         end_before_err = str(starting_number) + \
-            ". There are end dates before the start dates in the " \
-            "following table(s):"
+                         ". There are end dates before the start dates in the " \
+                         "following table(s):"
         end_before_err = print_error_info(end_before_begin_dict,
                                           end_before_err, percent=True)
         starting_number += 1
@@ -229,16 +232,16 @@ else:
 
     if concept_dict:
         concept_err = str(starting_number) + \
-                               ". The concept success rates for some of " \
-                               "the tables is below 100%. This affects the " \
-                               "following table(s):"
+                      ". The concept success rates for some of " \
+                      "the tables is below 100%. This affects the " \
+                      "following table(s):"
         concept_err = print_error_info(concept_dict,
                                        concept_err,
                                        percent=True)
         print(concept_err + "\n")
 
 github_link = 'https://github.com/all-of-us/curation/' \
-                  'tree/develop/data_steward/analytics'
+              'tree/develop/data_steward/analytics'
 
 sign_off = "Please aim to fix the issue(s) (if applicable) " \
            "from this emails and continue to routinely upload " \

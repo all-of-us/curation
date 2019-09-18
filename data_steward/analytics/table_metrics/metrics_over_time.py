@@ -43,6 +43,7 @@ import datetime
 import math
 import os
 import sys
+
 import pandas as pd
 
 
@@ -63,13 +64,13 @@ def get_user_analysis_choice():
         be considered a desirable or undesirable characteristic
     """
     analysis_type_prompt = "\nWhat kind of analysis over time report " \
-        "would you like to generate for each site?\n\n" \
-        "A. Duplicates\n" \
-        "B. Amount of data following death dates\n" \
-        "C. Amount of data with end dates preceding start dates\n" \
-        "D. Success Rate for Source Tables\n" \
-        "E. Success Rate for Concept Tables\n\n" \
-        "Please specify your choice by typing the corresponding letter."
+                           "would you like to generate for each site?\n\n" \
+                           "A. Duplicates\n" \
+                           "B. Amount of data following death dates\n" \
+                           "C. Amount of data with end dates preceding start dates\n" \
+                           "D. Success Rate for Source Tables\n" \
+                           "E. Success Rate for Concept Tables\n\n" \
+                           "Please specify your choice by typing the corresponding letter."
 
     user_command = input(analysis_type_prompt).lower()
 
@@ -198,7 +199,7 @@ def get_comprehensive_tables(dataframes, analytics_type):
         if analytics_type in rate_focused_inputs:
             for col_label, _ in data_info.iteritems():
                 if col_label[-5:] != '_rate' and \
-                   col_label[-7:] != '_rate_y':
+                        col_label[-7:] != '_rate_y':
                     undocumented_cols.append(col_label)
 
         final_tables = [x for x in column_names if x not in
@@ -268,11 +269,11 @@ def get_info(sheet, row_num, percentage, sheet_name,
                     if number < 0:  # just in case
                         raise ValueError("Negative number detected in sheet "
                                          "{} for column {}".format(
-                                             sheet_name, col_label))
+                            sheet_name, col_label))
                     elif percentage and number > 100:
                         raise ValueError("Percentage value > 100 detected in "
                                          "sheet {} for column {}".format(
-                                            sheet_name, col_label))
+                            sheet_name, col_label))
                     elif percentage and target_low:  # proportion w/ errors
                         err_dictionary[col_label] = round(100 - number, 1)
                     elif percentage and not target_low:  # effective
@@ -336,7 +337,7 @@ def find_hpo_row(sheet, hpo, sheet_name, selective_rows,
     if row_num == 9999:  # just in case
         raise NameError("{} not found in the {} sheet "
                         "from {}".format(
-                            hpo, analytics_type, sheet_name))
+            hpo, analytics_type, sheet_name))
 
     return row_num
 
@@ -826,10 +827,10 @@ def get_valid_columns(dataframes, contribution_type, row_sheet_name):
     for df in dataframes:
         for column in df:
             if contribution_type == 'total' and len(column) > 9 and \
-             column[-9:] == 'total_row':
+                    column[-9:] == 'total_row':
                 valid_cols.append(column)
             elif contribution_type == 'valid' and len(column) > 16 and \
-             column[-16:] == 'well_defined_row':
+                    column[-16:] == 'well_defined_row':
                 valid_cols.append(column)
 
     valid_cols = list(dict.fromkeys(valid_cols))
@@ -1119,9 +1120,9 @@ def generate_aggregate_data_completeness_sheet(
             site_valids = hpo_errors_by_date[date][table_valid]
 
             site_totals = [x if isinstance(x, float) and not
-                math.isnan(x) else 0 for x in site_totals]
+            math.isnan(x) else 0 for x in site_totals]
             site_valids = [x if isinstance(x, float) and not
-                math.isnan(x) else 0 for x in site_valids]
+            math.isnan(x) else 0 for x in site_valids]
 
             site_total_for_table = sum(site_totals)
             total_rows += site_total_for_table
@@ -1474,7 +1475,7 @@ def understand_sheet_output_type(sorted_tables, sorted_names):
                     "displayed as rows. This will also include 1-3 " \
                     "table(s) with statistics on the aggregate data " \
                     "for each table type on each date.".format(
-                        len(sorted_tables), len(sorted_names))
+        len(sorted_tables), len(sorted_names))
 
     user_input = input(output_prompt).lower()
     output_choice_dict = {'a': 'table_sheets',
@@ -1525,7 +1526,6 @@ ordered_dates, sorted_names, sorted_tables = sort_names_and_tables(
 # adding new aggregate metrics for each date; sum or average of HPO sites
 site_and_date_info = add_aggregate_info(
     site_and_date_info, percent_bool, hpo_id_col)
-
 
 # understanding which variable will distinguish new sheets
 user_output_choice = understand_sheet_output_type(sorted_tables,

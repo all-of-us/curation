@@ -20,10 +20,11 @@ and formatted properly
 same tabs
 """
 
+import datetime
+import os
+
 import pandas as pd
 import xlrd
-import os
-import datetime
 
 
 def load_files(metrics, tab_names):
@@ -166,7 +167,7 @@ def output_to_excel_files(delta_dfs_dict, tab_names):
         tabs_to_iterate = tab_names[num_iterated]
 
         file_name = metric_name + \
-            "_weekly_changes_hpo_sheets.xlsx"
+                    "_weekly_changes_hpo_sheets.xlsx"
 
         writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
 
