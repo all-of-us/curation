@@ -6,7 +6,7 @@ A module to write participant identity matching table data.
 # Python imports
 import logging
 import os
-import StringIO
+from io import StringIO
 
 # Third party imports
 import googleapiclient
@@ -53,7 +53,7 @@ def write_to_result_table(
     field_list.extend(consts.VALIDATION_FIELDS)
     field_list.append(consts.ALGORITHM_FIELD)
 
-    results = StringIO.StringIO()
+    results = StringIO()
     field_list_str = ','.join(field_list) + '\n'
     results.write(field_list_str)
 
@@ -176,7 +176,7 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     fields_str = ','.join(fields) + '\n'
 
     # sets up a file stream to write to the bucket
-    report_file = StringIO.StringIO()
+    report_file = StringIO()
     report_file.write(fields_str)
 
     # write to the report file

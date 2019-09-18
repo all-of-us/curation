@@ -2,7 +2,7 @@
 Unit test components of data_steward.validation.main
 """
 from __future__ import print_function
-import StringIO
+from io import StringIO
 import datetime
 import json
 import os
@@ -385,7 +385,7 @@ class ValidationTest(unittest.TestCase):
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
             actual_result = test_util.read_cloud_file(self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-            actual_result_file = self._remove_timestamp_tags_from_results(StringIO.StringIO(actual_result).getvalue())
+            actual_result_file = self._remove_timestamp_tags_from_results(StringIO(actual_result).getvalue())
             self.assertIn(actual_result_file, expected_results)
 
     @mock.patch('validation.main.run_export')
