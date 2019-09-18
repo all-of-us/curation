@@ -49,17 +49,17 @@ export UNIONED_DATASET_ID="${DATASET_PREFIX}_unioned"
 # See https://www.compose.com/articles/experience-with-circleci/#dontcommitcredentials
 if [ -n "CIRCLECI" ]
 then
-  echo "export APPLICATION_ID=${APPLICATION_ID}" >> $HOME/.circlerc
-  echo "export USERNAME=${USERNAME}" >> $HOME/.circlerc
-  echo "export DRC_BUCKET_NAME=${DRC_BUCKET_NAME}" >> $HOME/.circlerc
-  echo "export BUCKET_NAME_FAKE=${BUCKET_NAME_FAKE}" >> $HOME/.circlerc
-  echo "export BUCKET_NAME_NYC=${BUCKET_NAME_NYC}" >> $HOME/.circlerc
-  echo "export BUCKET_NAME_PITT=${BUCKET_NAME_PITT}" >> $HOME/.circlerc
-  echo "export BUCKET_NAME_CHS=${BUCKET_NAME_CHS}" >> $HOME/.circlerc
-  echo "export BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID}" >> $HOME/.circlerc
-  echo "export RDR_DATASET_ID=${RDR_DATASET_ID}" >> $HOME/.circlerc
-  echo "export EHR_RDR_DATASET_ID=${EHR_RDR_DATASET_ID}" >> $HOME/.circlerc
-  echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >> $HOME/.circlerc
-  echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >> $HOME/.circlerc
-  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/data_steward/ci" >> $HOME/.circlerc
+  echo "export APPLICATION_ID=${APPLICATION_ID}" >> $BASH_ENV
+  echo "export USERNAME=${USERNAME}" >> $BASH_ENV
+  echo "export DRC_BUCKET_NAME=${DRC_BUCKET_NAME}" >> $BASH_ENV
+  echo "export BUCKET_NAME_FAKE=${BUCKET_NAME_FAKE}" >> $BASH_ENV
+  echo "export BUCKET_NAME_NYC=${BUCKET_NAME_NYC}" >> $BASH_ENV
+  echo "export BUCKET_NAME_PITT=${BUCKET_NAME_PITT}" >> $BASH_ENV
+  echo "export BUCKET_NAME_CHS=${BUCKET_NAME_CHS}" >> $BASH_ENV
+  echo "export BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID}" >> $BASH_ENV
+  echo "export RDR_DATASET_ID=${RDR_DATASET_ID}" >> $BASH_ENV
+  echo "export EHR_RDR_DATASET_ID=${EHR_RDR_DATASET_ID}" >> $BASH_ENV
+  echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >> $BASH_ENV
+  echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >> $BASH_ENV
+  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >> $BASH_ENV
 fi
