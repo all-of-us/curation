@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import re
-import StringIO
+from io import StringIO
 
 # Third party imports
 from flask import Flask
@@ -80,7 +80,7 @@ def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
 
     datasource = dict(name=hpo_id, folder=hpo_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
-    datasources_fp = StringIO.StringIO(json.dumps(datasources))
+    datasources_fp = StringIO(json.dumps(datasources))
     result = gcs_utils.upload_object(target_bucket,
                                      folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON,
                                      datasources_fp)
@@ -115,7 +115,7 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
         sql_path = os.path.join(export.EXPORT_PATH, export_name)
         result = export.export_from_path(sql_path, hpo_id)
         content = json.dumps(result)
-        fp = StringIO.StringIO(content)
+        fp = StringIO(content)
         result = gcs_utils.upload_object(target_bucket, reports_prefix + export_name + '.json', fp)
         results.append(result)
     result = save_datasources_json(hpo_id=hpo_id, folder_prefix=folder_prefix, target_bucket=target_bucket)
@@ -693,7 +693,7 @@ def _write_string_to_file(bucket, name, string):
     :param cdm_file_results: list of tuples (<cdm_file_name>, <found>)
     :return:
     """
-    f = StringIO.StringIO()
+    f = StringIO()
     f.write(string)
     f.seek(0)
     result = gcs_utils.upload_object(bucket, name, f)
