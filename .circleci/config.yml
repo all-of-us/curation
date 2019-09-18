@@ -49,16 +49,14 @@ jobs:
           command: ~/curation/data_steward/ci/setup.sh
       # Dependencies
       - run:
-          name:  Install pip and virtualenv
-          command: pip install --upgrade pip setuptools virtualenv
-      - run:
-          name:  Install requirements
-          command: cd ~/curation/data_steward/ && pip install -r requirements.txt
+          name:  Create virtual environment
+          command: python3 -m venv ~/curation_env && source ~/curation_env/bin/activate && pip install -r requirements.txt
       # Test
       #   This would typically be a build job when using workflows, possibly combined with build
       - run:
           name:  Run unit tests
           working_directory: ~/curation
+            command: t=$(git log -1 --pretty=%B) ; if [[ "$t" == *"fast tests"* ]] ; then export ALL_TESTS="False" ; else export ALL_TESTS="True" ; fi ; source ~/curation_env/bin/activate && ~/curation/data_steward/test/run_tests.sh
           command: |
             t=$(git log -1 --pretty=%B)
             if [[ "$t" == *"fast tests"* ]] ; then export ALL_TESTS="False" ; else export ALL_TESTS="True" ; fi
