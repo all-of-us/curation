@@ -30,6 +30,7 @@ import validation.participants.identity_match as matching
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from validation import hpo_report
 from tools import retract_data_bq, retract_data_gcs
+from io import open
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)

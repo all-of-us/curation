@@ -15,6 +15,7 @@ import gcs_utils
 import resources
 from test.unit_test import test_util
 from validation import ehr_union
+from io import open
 
 PITT_HPO_ID = 'pitt'
 NYC_HPO_ID = 'nyc'

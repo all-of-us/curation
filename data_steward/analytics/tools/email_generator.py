@@ -12,6 +12,7 @@ from __future__ import print_function
 import os
 import pandas as pd
 from contact_list import recipient_dict
+from io import open
 
 
 def determine_row(sheet, site_hpo_id):
