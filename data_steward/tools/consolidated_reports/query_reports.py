@@ -6,6 +6,7 @@ from google.appengine.api.app_identity import app_identity
 import bq_utils
 import common
 import gcs_utils
+from io import open
 
 LATEST_REPORTS_QUERY = (
     'SELECT'

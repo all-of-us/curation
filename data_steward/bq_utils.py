@@ -16,6 +16,7 @@ import common
 import gcs_utils
 import resources
 from constants import bq_utils as bq_consts
+from io import open
 
 socket.setdefaulttimeout(bq_consts.SOCKET_TIMEOUT)
 

@@ -23,6 +23,7 @@ import resources
 import test.unit_test.test_util as test_util
 from validation import main
 import constants.validation.participants.identity_match as id_match_consts
+from io import open
 
 
 @unittest.skipIf(os.getenv('ALL_TESTS') == 'False', 'Skipping ValidationTest cases')
