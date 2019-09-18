@@ -50,7 +50,7 @@ gcloud auth activate-service-account --key-file="${key_file}"
 gcloud config set project "${APP_ID}"
 
 cdr_deid="${cdr_id}_deid"
-cdr_deid_base="${cdr_deid}_base"
+cdr_deid_clean="${cdr_deid}_clean"
 
 #------Create de-id virtual environment----------
 set -e
@@ -65,7 +65,7 @@ GAE_SDK_APPENGINE="${GAE_SDK_ROOT}/google/appengine"
 GAE_SDK_NET="${GAE_SDK_ROOT}/google/net"
 VENV_DIR="${DIR}/deid_venv"
 
-virtualenv --python=$(which python) ${VENV_DIR}
+virtualenv --python=$(which python) "${VENV_DIR}"
 
 source ${VENV_DIR}/bin/activate
 
@@ -86,7 +86,7 @@ tag=$(git describe --abbrev=0 --tags)
 version=${tag}
 
 # create empty de-id dataset
-bq mk --dataset --description "${version} deid version of ${cdr_id}" "${APP_ID}":"${cdr_deid}"
+bq mk --dataset --description "${version} deidentified base version of ${cdr_id}" "${APP_ID}":"${cdr_deid}"
 
 # create the clinical tables
 python "${DIR}/cdm.py" "${cdr_deid}"
@@ -95,13 +95,14 @@ python "${DIR}/cdm.py" "${cdr_deid}"
 python "${DIR}/cdm.py" --component vocabulary "${cdr_deid}"
 "${DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${cdr_deid}"
 
+# apply deidentification on combined dataset
 python "${DIR}/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive |& tee -a deid_output.txt
 
-# create empty de-id_base dataset
-bq mk --dataset --description "${version} deid_base version of ${cdr_id}" "${APP_ID}":"${cdr_deid_base}"
+# create empty de-id_clean dataset to apply cleaning rules
+bq mk --dataset --description "${version} deidentified clean version of ${cdr_id}" "${APP_ID}":"${cdr_deid_clean}"
 
-# copy de_id database to a base version
-"${DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_base}"
+# copy de_id dataset to a clean version
+"${DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_clean}"
 
 # deactivate virtual environment
 deactivate
