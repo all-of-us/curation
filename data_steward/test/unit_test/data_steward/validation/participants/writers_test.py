@@ -168,7 +168,7 @@ class WritersTest(unittest.TestCase):
     @patch('validation.participants.writers.gcs_utils.upload_object')
     @patch('validation.participants.writers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.writers.bq_utils.query')
-    @patch('validation.participants.writers.StringIO.StringIO')
+    @patch('validation.participants.writers.StringIO')
     def test_create_site_validation_report(
             self,
             mock_report_file,
@@ -254,7 +254,7 @@ class WritersTest(unittest.TestCase):
 
     @patch('validation.participants.writers.gcs_utils.upload_object')
     @patch('validation.participants.writers.bq_utils.query')
-    @patch('validation.participants.writers.StringIO.StringIO')
+    @patch('validation.participants.writers.StringIO')
     def test_create_site_validation_report_with_errors(
             self,
             mock_report_file,
