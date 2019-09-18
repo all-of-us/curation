@@ -10,8 +10,8 @@ from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PRO
 
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
-# spec/_data/*
-data_path = os.path.join(base_path, 'spec', '_data')
+# data/*
+data_path = os.path.join(base_path, 'data')
 hpo_csv_path = os.path.join(data_path, 'hpo.csv')
 
 # tools/*
