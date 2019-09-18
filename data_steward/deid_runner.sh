@@ -32,7 +32,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${cdr_id}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${vocab_dataset}" ]]; then
   echo "Specify the key file location and input dataset name application id and vocab dataset name. $USAGE"
   exit 1
 fi
