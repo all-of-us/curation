@@ -9,10 +9,9 @@ jobs:
     environment:
       CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
       GOOGLE_APPLICATION_CREDENTIALS: /home/ubuntu/gcloud-credentials-key.json
-      PYTHONPATH: /usr/lib/google-cloud-sdk/platform/google_appengine/:~/curation/data_steward:~/curation/data_steward/lib
 
     docker:
-      - image: circleci/build-image:ubuntu-14.04-XXL-upstart-1189-5614f37
+      - image: google/cloud-sdk
         # This command is commented out due to failure in docker image initialisation.
         # command: /sbin/init
     steps:
@@ -31,18 +30,6 @@ jobs:
           command: cat $HOME/.circlerc
       - run:
           working_directory: ~/curation
-          command: echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-      - run:
-          working_directory: ~/curation
-          command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-      - run:
-          working_directory: ~/curation
-          command: sudo apt-get update && sudo apt-get install dpkg && sudo apt-get install google-cloud-sdk
-      - run:
-          working_directory: ~/curation
-          command: sudo apt-get install google-cloud-sdk-app-engine-python
-      - run:
-          working_directory: ~/curation
           command: chmod 700 ~/curation/data_steward/ci/activate_creds.sh && chmod 700 ~/curation/data_steward/ci/setup.sh && chmod 700 ~/curation/data_steward/ci/create_bucket.sh
       - run:
           working_directory: ~/curation
@@ -55,8 +42,8 @@ jobs:
           name:  Install pip and virtualenv
           command: pip install --upgrade pip setuptools virtualenv
       - run:
-          name:  Install requirements to lib directory
-          command: cd ~/curation/data_steward/ && pip install -t lib/ -r requirements.txt
+          name:  Install requirements
+          command: cd ~/curation/data_steward/ && pip install -r requirements.txt
       # Test
       #   This would typically be a build job when using workflows, possibly combined with build
       - run:
@@ -65,7 +52,7 @@ jobs:
           command: |
             t=$(git log -1 --pretty=%B)
             if [[ "$t" == *"fast tests"* ]] ; then export ALL_TESTS="False" ; else export ALL_TESTS="True" ; fi
-             ~/curation/data_steward/test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/
+             ~/curation/data_steward/test/run_tests.sh
           no_output_timeout: 3000s
       # Save test results
       #    - store_test_results:
