@@ -41,7 +41,7 @@ echo "key_file --> ${key_file}"
 echo "cdr_id --> ${cdr_id}"
 echo "vocab_dataset --> ${vocab_dataset}"
 
-APP_ID=$(cat ${key_file} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
+APP_ID=$(cat "${key_file}" | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export APPLICATION_ID="${APP_ID}"
 
@@ -50,12 +50,13 @@ gcloud auth activate-service-account --key-file="${key_file}"
 gcloud config set project "${APP_ID}"
 
 cdr_deid="${cdr_id}_deid"
+cdr_deid_base="${cdr_deid}_base"
 
 #------Create de-id virtual environment----------
 set -e
 
 # create a new environment in directory deid_env
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 DEID_DIR="${DIR}/deid"
 GCLOUD_PATH=$(which gcloud)
 CLOUDSDK_ROOT_DIR=${GCLOUD_PATH%/bin/gcloud}
@@ -74,22 +75,33 @@ pip install -r "${DEID_DIR}/requirements.txt"
 
 VENV_LIB_GOOGLE="$(python -c "import google as _; print(_.__path__[-1])")"
 
-cp -R ${GAE_SDK_APPENGINE} ${VENV_LIB_GOOGLE}
-cp -R ${GAE_SDK_NET} ${VENV_LIB_GOOGLE}
+cp -R "${GAE_SDK_APPENGINE}" "${VENV_LIB_GOOGLE}"
+cp -R "${GAE_SDK_NET}" "${VENV_LIB_GOOGLE}"
 
 export BIGQUERY_DATASET_ID="${cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DIR}"
 
+# Get Git version tag
+tag=$(git describe --abbrev=0 --tags)
+version=${tag}
+
 # create empty de-id dataset
-bq mk --dataset --description "${version} deid ${cdr}" ${APP_ID}:${cdr_deid}
+bq mk --dataset --description "${version} deid version of ${cdr_id}" "${APP_ID}":"${cdr_deid}"
 
 # create the clinical tables
-python "${DIR}/cdm.py" ${cdr_deid}
+python "${DIR}/cdm.py" "${cdr_deid}"
 
 # copy OMOP vocabulary
-python "${DIR}/cdm.py" --component vocabulary ${cdr_deid}
-${DIR}/tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${vocab_dataset} --target_dataset ${cdr_deid}
+python "${DIR}/cdm.py" --component vocabulary "${cdr_deid}"
+"${DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${cdr_deid}"
 
 python "${DIR}/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive |& tee -a deid_output.txt
 
+# create empty de-id_base dataset
+bq mk --dataset --description "${version} deid_base version of ${cdr_id}" "${APP_ID}":"${cdr_deid_base}"
+
+# copy de_id database to a base version
+"${DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_base}"
+
+# deactivate virtual environment
 deactivate
