@@ -10,9 +10,11 @@ Code was developed with respect to PEP8 standards
 """
 from __future__ import print_function
 import os
-import pandas as pd
-from contact_list import recipient_dict
 from io import open
+
+import pandas as pd
+
+from contact_list import recipient_dict
 
 
 def determine_row(sheet, site_hpo_id):
@@ -69,7 +71,7 @@ def get_info(sheet, row_num, percentage, succ_rate):
     data_info = sheet.iloc[row_num, :]  # series, row labels and values
     err_dictionary = {}
 
-    for col_label, number in data_info.iteritems():
+    for col_label, number in data_info.items():
         if succ_rate:
             if len(col_label) > 12:
                 if col_label[-12:] == 'success_rate':

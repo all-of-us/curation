@@ -102,7 +102,7 @@ def create_hpo_completeness_query(table_columns, hpo_id):
 # Output the data completeness for the omop tables
 # All the data is written to a file per site.
 hpo_ids = get_hpo_ids()
-for i, hpo_id in hpo_ids.iteritems():
+for i, hpo_id in hpo_ids.items():
     table_columns = get_hpo_table_columns(hpo_id)
     query = create_hpo_completeness_query(table_columns, hpo_id)
     try:

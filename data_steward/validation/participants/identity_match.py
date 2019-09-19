@@ -521,7 +521,7 @@ def _compare_street_addresses(
 
             pii_street_addresses[person_id] = current_value
 
-        for person_id, addresses in pii_street_addresses.iteritems():
+        for person_id, addresses in pii_street_addresses.items():
 
             pii_addr_one = addresses[1]
             pii_addr_two = addresses[2]
@@ -606,7 +606,7 @@ def _compare_genders(
             raise
 
         # compare gender from ppi info to ehr info and record results.
-        for person_id, ehr_gender in ehr_genders.iteritems():
+        for person_id, ehr_gender in ehr_genders.items():
             rdr_gender = pii_genders.get(person_id, '')
             ehr_gender = consts.SEX_CONCEPT_IDS.get(ehr_gender, '')
 
@@ -671,7 +671,7 @@ def _compare_birth_dates(
             raise
 
         # compare birth_datetime from ppi info to ehr info and record results.
-        for person_id, ehr_birthdate in ehr_birthdates.iteritems():
+        for person_id, ehr_birthdate in ehr_birthdates.items():
             rdr_birthdate = pii_birthdates.get(person_id)
             ehr_birthdate = ehr_birthdates.get(person_id)
 
@@ -786,7 +786,7 @@ def write_results_to_drc_bucket(project, validation_dataset=None):
 
 
 def _add_matches_to_results(results, matches, field):
-    for key, value in matches.iteritems():
+    for key, value in matches.items():
         individual = results.get(key)
 
         if individual is None:
