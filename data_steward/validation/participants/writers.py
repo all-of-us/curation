@@ -59,7 +59,7 @@ def write_to_result_table(
 
     LOGGER.debug("Generating csv values to write to storage for site: %s", site)
 
-    for person_key, person_values in match_values.iteritems():
+    for person_key, person_values in match_values.items():
         str_list = [str(person_key)]
         for field in consts.VALIDATION_FIELDS:
             value = str(person_values.get(field, consts.MISSING))

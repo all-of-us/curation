@@ -270,7 +270,7 @@ def resolve_field_mappings(src_table, dest_table):
 
     field_mappings = domain_mapping.get_field_mappings(src_table, dest_table)
 
-    for dest_field, src_field in field_mappings.iteritems():
+    for dest_field, src_field in field_mappings.items():
         if domain_mapping.value_requires_translation(src_table, dest_table, src_field, dest_field):
             value_mappings = domain_mapping.get_value_mappings(src_table, dest_table, src_field, dest_field)
 
@@ -282,7 +282,7 @@ def resolve_field_mappings(src_table, dest_table):
             else:
                 case_statements = '\n\t\t'.join(
                     [WHEN_STATEMENT.format(src_value=s, dest_value=d) for d, s in
-                     value_mappings.iteritems()])
+                     value_mappings.items()])
 
                 case_statements = CASE_STATEMENT.format(src_field=src_field,
                                                         dest_field=dest_field,
