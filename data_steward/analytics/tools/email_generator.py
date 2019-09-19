@@ -90,7 +90,7 @@ def get_info(sheet, row_num, percentage, succ_rate):
     data_info = sheet.iloc[row_num, :]  # series, row labels and values
     err_dictionary = {}
 
-    for col_label, number in data_info.iteritems():
+    for col_label, number in data_info.items():
         if succ_rate:
             if len(col_label) > 12:
                 if col_label[-12:] == 'success_rate':
@@ -128,7 +128,7 @@ duplicate_err_dict = get_info(duplicates, row_idx_dups, percentage=False,
 hpo_full_name = 9999  # should be reset
 row_info = duplicates.iloc[row_idx_dups, :]  # series, row labels and values
 
-for col_name, val in row_info.iteritems():
+for col_name, val in row_info.items():
     if col_name == 'HPO':
         hpo_full_name = val
 
