@@ -39,7 +39,9 @@ class Rules(object):
             },
             "bigquery": {
                 "apply": {"REGEXP": "REGEXP_CONTAINS (LOWER(:FIELD), LOWER(':VAR'))",
-                          "COUNT": "SELECT COUNT (:KEY) FROM :TABLE WHERE :KEY=:VALUE"},
+                          "COUNT": "SELECT COUNT (:KEY) FROM :DATASET.:TABLE AS :ALIAS WHERE :KEY=:VALUE",
+                          "COUNT-DISTINCT": ("SELECT COUNT (DISTINCT :ALIAS.:DISTINCT_FIELD) "
+                                             "FROM :DATASET.:TABLE AS :ALIAS WHERE :KEY=:VALUE")},
                 "cond_syntax": {"IF": "IF", "OPEN": "(", "THEN": ",", "ELSE": ",", "CLOSE": ")"},
                 "random": "CAST( (RAND() * 364) + 1 AS INT64)"
             },
@@ -150,20 +152,20 @@ class Deid(Rules):
         rules = args['rules']
 
 
-        store_id = args['store'] if 'store' in args else 'sqlite'
+        store_id = args.get('store', 'sqlite')
         syntax = self.store_syntax[store_id]['cond_syntax']
         out = []
         label = args['label']
         for name in fields:
             cond = []
             for rule in rules:
-                qualifier = rule['qualifier'] if 'qualifier' in rule else ''
+                qualifier = rule.get('qualifier', '')
 
                 if 'apply' in rule:
                     #
                     # This will call a built-in SQL function (non-aggregate)'
                     # qualifier = rule['qualifier'] if 'qualifier' in rule else ''
-                    fillter = args['filter'] if 'filter' in args else name
+                    fillter = args.get('filter', name)
                     self.log(module='generalize', label=label.split('.')[1], on=name, type=rule['apply'])
 
                     if 'apply' not in self.store_syntax[store_id]:
@@ -175,14 +177,17 @@ class Deid(Rules):
                         if ':VAR' in template:
                             regex = regex.replace(":VAR", "|".join(rule['values']))
 
-                        if rule['apply'] in ['COUNT', 'AVG', 'SUM']:
+                        if rule['apply'] in ['COUNT', 'COUNT-DISTINCT', 'AVG', 'SUM']:
                             #
                             # Dealing with an aggregate expression. It is important to know what we are counting
                             # count(:field) from :table [where filter]
                             #
-                            regex = regex.replace(':TABLE', args['table'])
-                            regex = regex.replace(':KEY', args['key_field'])
-                            regex = regex.replace(':VALUE', args['value_field'])
+                            regex = regex.replace(':TABLE', args.get('table', 'table NOT SET'))
+                            regex = regex.replace(':KEY', args.get('key_field', 'key_field NOT SET'))
+                            regex = regex.replace(':VALUE', args.get('value_field', 'value_field NOT SET'))
+                            regex = regex.replace(':DATASET', args.get('dataset', 'dataset NOT SET'))
+                            regex = regex.replace(':ALIAS', args.get('alias', 'alias NOT SET'))
+                            regex = regex.replace(':DISTINCT_FIELD', rule.get('distinct', 'distinct NOT SET'))
 
                             if 'on' in rule:
                                 key_row = args['key_row'] if 'key_row' in args else name
@@ -205,7 +210,10 @@ class Deid(Rules):
                                     regex += conjunction + val_list
 
                             if 'on' in args:
-                                regex += ' AND ' + args['on']
+                                conditional = args.get('on')
+                                alias = args.get('alias', 'alias NOT SET')
+                                conditional = conditional.replace(':join_tablename', alias)
+                                regex += ' AND ' + conditional
 
                             regex = ' '.join(['(', regex, ')', qualifier])
                         else:
@@ -233,12 +241,12 @@ class Deid(Rules):
                     #   - An if or else type of generalization given a list of values or function
                     #   - IF <filter> IN <values>, THEN <generalized-value> else <attribute>
                     self.log(module='generalize', label=label.split('.')[1], on=name, type='inline')
-                    key_field = args['key_field'] if 'key_field' in args else name
+                    key_field = args.get('key_field', name)
 
                     if 'on' in args and 'key_field' in args:
-                        key_field += ' AND '+args['on']
+                        key_field += ' AND '+ args['on']
 
-                    fillter = args['filter'] if 'filter' in args else name
+                    fillter = args.get('filter', name)
                     qualifier = rule['qualifier']
                     _into = rule['into'] if 'into' not in args else args['into']
 
@@ -265,6 +273,7 @@ class Deid(Rules):
             result = {"name": name, "apply": " ".join(cond), "label": label}
             if 'on' in args:
                 result['on'] = args['on']
+
             out.append(result)
         #
         # This will return the fields that need generalization as specified.
