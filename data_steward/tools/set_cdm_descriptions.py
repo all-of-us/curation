@@ -1,14 +1,14 @@
 from __future__ import print_function
 import csv
 import json
-import urllib2
+from urllib import request
 from collections import OrderedDict
 from os import listdir
 from io import open
 
 CDM_CSV_URL = "https://raw.githubusercontent.com/OHDSI/CommonDataModel/master/OMOP_CDM_v5_3.csv"
 
-response = urllib2.urlopen(CDM_CSV_URL)
+response = request.urlopen(CDM_CSV_URL)
 reader = csv.DictReader(response)
 table_map = {}
 for row in reader:
