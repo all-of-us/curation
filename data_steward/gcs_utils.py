@@ -7,7 +7,6 @@ import os
 from io import BytesIO
 
 import googleapiclient.discovery
-from google.appengine.api import app_identity
 
 MIMETYPES = {'json': 'application/json',
              'woff': 'application/font-woff',
@@ -18,8 +17,6 @@ GCS_DEFAULT_RETRY_COUNT = 5
 
 def get_drc_bucket():
     result = os.environ.get('DRC_BUCKET_NAME')
-    if result is None:
-        result = app_identity.get_default_gcs_bucket_name()
     return result
 
 
