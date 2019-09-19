@@ -28,7 +28,7 @@ class GcsUtilsTest(unittest.TestCase):
     def test_upload_object(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         self.assertEqual(len(bucket_items), 0)
-        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'r') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         self.assertEqual(len(bucket_items), 1)
@@ -36,16 +36,16 @@ class GcsUtilsTest(unittest.TestCase):
         self.assertEqual(bucket_item['name'], 'person.csv')
 
     def test_get_object(self):
-        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'r') as fp:
             expected = fp.read()
-        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'r') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         result = gcs_utils.get_object(self.hpo_bucket, 'person.csv')
         self.assertEqual(expected, result)
 
     def test_get_metadata_on_existing_file(self):
         expected_file_name = 'person.csv'
-        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'r') as fp:
             gcs_utils.upload_object(self.hpo_bucket, expected_file_name, fp)
         metadata = gcs_utils.get_metadata(self.hpo_bucket, expected_file_name)
         self.assertIsNotNone(metadata)

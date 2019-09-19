@@ -71,7 +71,7 @@ class VocabularyTest(unittest.TestCase):
 
         try:
             append_vocabulary(in_path, out_path)
-            with open(in_path, 'rb') as in_fp, open(out_path, 'rb') as out_fp:
+            with open(in_path, 'r') as in_fp, open(out_path, 'r') as out_fp:
                 # same content as input
                 for in_row in in_fp:
                     out_row = out_fp.readline()
@@ -97,12 +97,12 @@ class VocabularyTest(unittest.TestCase):
 
         try:
             append_concepts(in_path, out_path)
-            with open(in_path, 'rb') as in_fp, open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as add_fp:
+            with open(in_path, 'r') as in_fp, open(AOU_GENERAL_CONCEPT_CSV_PATH, 'r') as add_fp:
                 # Note: Test files are small so memory usage here is acceptable
                 original_lines = in_fp.readlines()
                 all_lines = add_fp.readlines()
                 expected_lines = original_lines + all_lines[1:]
-                with open(out_path, 'rb') as out_fp:
+                with open(out_path, 'r') as out_fp:
                     actual_lines = out_fp.readlines()
                     self.assertSequenceEqual(actual_lines, expected_lines)
 
