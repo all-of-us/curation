@@ -55,7 +55,7 @@ def _csv_file_to_list(csv_file):
     """
     items = []
     reader = csv.reader(csv_file)
-    field_names = reader.next()
+    field_names = next(reader)
     for csv_line in reader:
         item = dict(zip(field_names, csv_line))
         items.append(item)
