@@ -3,32 +3,33 @@ import constants.bq_utils as bq_consts
 
 OBSERVATION_TABLE = 'observation'
 
-REMOVE_DUPLICATE_TEMPLATE = (
-    'SELECT\n'
-    '  o.*\n'
-    'FROM\n'
-    '  `{project_id}.{dataset_id}.observation` AS o\n'
-    'JOIN \n'
-    '(\n'
-    '  SELECT\n'
-    '    observation_id\n'
-    '  FROM (\n'
-    '    SELECT\n'
-    '      DENSE_RANK() OVER(PARTITION BY person_id, \n'
-    '        observation_source_concept_id, \n'
-    '        observation_source_value, \n'
-    '        value_source_concept_id, \n'
-    '        CAST(value_as_number AS STRING)\n'
-    '      ORDER BY\n'
-    '        observation_datetime DESC,\n'
-    '        observation_id DESC) AS rank_order,\n'
-    '      observation_id\n'
-    '    FROM\n'
-    '      `{project_id}.{dataset_id}.observation` ) o\n'
-    '  WHERE\n'
-    '    o.rank_order = 1\n'
-    ') unique \n'
-    'ON o.observation_id = unique.observation_id')
+REMOVE_DUPLICATE_TEMPLATE = """
+SELECT
+  o.*
+FROM
+  `{project_id}.{dataset_id}.observation` AS o
+JOIN 
+(
+  SELECT
+    observation_id
+  FROM (
+    SELECT
+      DENSE_RANK() OVER(PARTITION BY person_id, 
+        observation_source_concept_id, 
+        observation_source_value, 
+        value_source_concept_id, 
+        CAST(value_as_number AS STRING)
+      ORDER BY
+        observation_datetime DESC,
+        observation_id DESC) AS rank_order,
+      observation_id
+    FROM
+      `{project_id}.{dataset_id}.observation` ) o
+  WHERE
+    o.rank_order = 1
+) unique_observation_ids 
+ON o.observation_id = unique_observation_ids.observation_id
+"""
 
 
 def get_remove_duplicate_queries(project_id, dataset_id):
