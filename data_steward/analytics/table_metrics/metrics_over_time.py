@@ -198,7 +198,7 @@ def get_comprehensive_tables(dataframes, analytics_type):
         column_names = data_info.keys()
 
         if analytics_type in rate_focused_inputs:
-            for col_label, _ in data_info.iteritems():
+            for col_label, _ in data_info.items():
                 if col_label[-5:] != '_rate' and \
                         col_label[-7:] != '_rate_y':
                     undocumented_cols.append(col_label)
@@ -257,7 +257,7 @@ def get_info(sheet, row_num, percentage, sheet_name,
 
     err_dictionary = {}
 
-    for col_label, number in data_info.iteritems():
+    for col_label, number in data_info.items():
         if col_label in mandatory_tables:
             if number is None or number == 'No Data':  # row does not exist
                 err_dictionary[col_label] = float('NaN')

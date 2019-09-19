@@ -14,7 +14,7 @@ class objectChangePage(webapp2.RequestHandler):
 
 
     def post(self): 
-        logging.debug( '%s\n\n%s', '\n'.join(['%s: %s' % x for x in self.request.headers.iteritems()]), self.request.body)
+        logging.debug( '%s\n\n%s', '\n'.join(['%s: %s' % x for x in self.request.headers.items()]), self.request.body)
         
         if 'X-Goog-Resource-State' in self.request.headers:
             resource_state = self.request.headers['X-Goog-Resource-State']
