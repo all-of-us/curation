@@ -52,28 +52,26 @@ gcloud config set project "${APP_ID}"
 cdr_deid="${cdr_id}_deid"
 cdr_deid_clean="${cdr_deid}_clean"
 
-# change directory to data_steward
-cd ..
-
 #------Create de-id virtual environment----------
 set -e
 
 # create a new environment in directory deid_env
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-DEID_DIR="${DIR}/deid"
+TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+DATA_STEWARD_DIR="$(cd ${TOOLS_DIR} && cd .. && pwd )"
+DEID_DIR="${DATA_STEWARD_DIR}/deid"
 GCLOUD_PATH=$(which gcloud)
 CLOUDSDK_ROOT_DIR=${GCLOUD_PATH%/bin/gcloud}
 GAE_SDK_ROOT="${CLOUDSDK_ROOT_DIR}/platform/google_appengine"
 GAE_SDK_APPENGINE="${GAE_SDK_ROOT}/google/appengine"
 GAE_SDK_NET="${GAE_SDK_ROOT}/google/net"
-VENV_DIR="${DIR}/deid_venv"
+VENV_DIR="${DATA_STEWARD_DIR}/deid_venv"
 
 virtualenv --python=$(which python) "${VENV_DIR}"
 
 source ${VENV_DIR}/bin/activate
 
 # install the requirements in the virtualenv
-pip install -r "${DIR}/requirements.txt"
+pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 pip install -r "${DEID_DIR}/requirements.txt"
 
 VENV_LIB_GOOGLE="$(python -c "import google as _; print(_.__path__[-1])")"
@@ -82,7 +80,7 @@ cp -R "${GAE_SDK_APPENGINE}" "${VENV_LIB_GOOGLE}"
 cp -R "${GAE_SDK_NET}" "${VENV_LIB_GOOGLE}"
 
 export BIGQUERY_DATASET_ID="${cdr_deid}"
-export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DIR}"
+export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
 
 # Version is the most recent tag accessible from the current branch
 version=$(git describe --abbrev=0 --tags)
@@ -91,20 +89,20 @@ version=$(git describe --abbrev=0 --tags)
 bq mk --dataset --description "${version} deidentified base version of ${cdr_id}" "${APP_ID}":"${cdr_deid}"
 
 # create the clinical tables
-python "${DIR}/cdm.py" "${cdr_deid}"
+python "${DATA_STEWARD_DIR}/cdm.py" "${cdr_deid}"
 
 # copy OMOP vocabulary
-python "${DIR}/cdm.py" --component vocabulary "${cdr_deid}"
-"${DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${cdr_deid}"
+python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${cdr_deid}"
+"${DATA_STEWARD_DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${cdr_deid}"
 
 # apply deidentification on combined dataset
-python "${DIR}/tools/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive |& tee -a deid_output.txt
+python "${DATA_STEWARD_DIR}/tools/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive |& tee -a deid_output.txt
 
 # create empty de-id_clean dataset to apply cleaning rules
 bq mk --dataset --description "${version} deidentified clean version of ${cdr_id}" "${APP_ID}":"${cdr_deid_clean}"
 
 # copy de_id dataset to a clean version
-"${DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_clean}"
+"${DATA_STEWARD_DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_clean}"
 
 # deactivate virtual environment
 deactivate
