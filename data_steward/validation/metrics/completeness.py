@@ -140,7 +140,7 @@ if __name__ == '__main__':
     JSON_INDENT = 4
 
     def get_creds(creds_path):
-        with open(creds_path, 'rb') as creds_fp:
+        with open(creds_path, 'r') as creds_fp:
             return json.load(creds_fp)
 
     def run_with_args(credentials, dataset_id, hpo_id):

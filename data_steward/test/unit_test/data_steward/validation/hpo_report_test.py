@@ -387,7 +387,7 @@ class HpoReportTest(unittest.TestCase):
             self.assertIn(d['drug_class'], render_output)
 
     def save_render_output(self, render_output):
-        with open(self.render_output_path, 'wb') as out_fp:
+        with open(self.render_output_path, 'w') as out_fp:
             out_fp.write(render_output)
 
     def test_render(self):

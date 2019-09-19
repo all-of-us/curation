@@ -90,7 +90,7 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
 
     def test_load_cdm_csv(self):
-        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'r') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
@@ -108,7 +108,7 @@ class BqUtilsTest(unittest.TestCase):
             bq_utils.load_cdm_csv(FAKE_HPO_ID, 'not_a_cdm_table')
 
     def test_query_result(self):
-        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'r') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
 
@@ -123,12 +123,12 @@ class BqUtilsTest(unittest.TestCase):
 
     def test_merge_with_good_data(self):
         running_jobs = []
-        with open(NYC_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+        with open(NYC_FIVE_PERSONS_PERSON_CSV, 'r') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'person.csv', fp)
         result = bq_utils.load_cdm_csv('nyc', 'person')
         running_jobs.append(result['jobReference']['jobId'])
 
-        with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+        with open(PITT_FIVE_PERSONS_PERSON_CSV, 'r') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
         result = bq_utils.load_cdm_csv('pitt', 'person')
         running_jobs.append(result['jobReference']['jobId'])
@@ -180,12 +180,12 @@ class BqUtilsTest(unittest.TestCase):
 
     def test_merge_with_unmatched_schema(self):
         running_jobs = []
-        with open(NYC_FIVE_PERSONS_MEASUREMENT_CSV, 'rb') as fp:
+        with open(NYC_FIVE_PERSONS_MEASUREMENT_CSV, 'r') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'measurement.csv', fp)
         result = bq_utils.load_cdm_csv('nyc', 'measurement')
         running_jobs.append(result['jobReference']['jobId'])
 
-        with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+        with open(PITT_FIVE_PERSONS_PERSON_CSV, 'r') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
         result = bq_utils.load_cdm_csv('pitt', 'person')
         running_jobs.append(result['jobReference']['jobId'])
@@ -292,7 +292,7 @@ class BqUtilsTest(unittest.TestCase):
             table_id=table_id)
         expected_observation_ids = [int(row['observation_id'])
                                     for row in resources._csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)]
-        with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'rb') as fp:
+        with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'r') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket(hpo_id), 'observation.csv', fp)
         result = bq_utils.load_cdm_csv(hpo_id, 'observation')
         job_id = result['jobReference']['jobId']
