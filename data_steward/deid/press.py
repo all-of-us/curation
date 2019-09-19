@@ -130,7 +130,7 @@ class Press(object):
                 _item = _map[filter_id]
                 fillter.append(filter_id)
 
-                _sql = self.to_sql(_item +relational_cols)  + ' AND ' + filter_id
+                _sql = self.to_sql(_item + relational_cols)  + ' AND ' + filter_id
 
                 sql.append(_sql)
 
@@ -144,6 +144,7 @@ class Press(object):
             sql.append(_rsql)
             sql = "\nUNION ALL\n".join(sql)
             sql = sql.replace(':idataset', self.idataset)
+            sql = sql.replace(':join_tablename', self.tablename)
 
         if 'debug' in self.action:
             self.debug(p)
