@@ -218,7 +218,7 @@ class AOU(Press):
                     "fields": ["person_id"],
                     "table": ":idataset.deid_map as map_user",
                     "key_field": "map_user.person_id",
-                    "value_field": self.tablename+".person_id"
+                    "value_field": self.tablename + ".person_id"
                 }
             ]
 
