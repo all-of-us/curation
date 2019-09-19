@@ -68,7 +68,7 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(tpe, 'DAY')
 
     def test_load_csv(self):
-        from google.appengine.api import app_identity
+        import app_identity
 
         app_id = app_identity.get_application_id()
         table_name = 'achilles_analysis'
