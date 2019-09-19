@@ -1,7 +1,7 @@
 from __future__ import print_function
 import unittest
 import datetime
-from mock import mock
+import mock
 from admin import key_rotation
 from googleapiclient.errors import HttpError
 

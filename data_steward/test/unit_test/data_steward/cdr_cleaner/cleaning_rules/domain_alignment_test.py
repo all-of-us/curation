@@ -1,7 +1,8 @@
 from __future__ import print_function
 import unittest
 
-from mock import patch, mock
+import mock
+from mock import patch
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 from cdr_cleaner.cleaning_rules.domain_alignment import WHEN_STATEMENT
 from cdr_cleaner.cleaning_rules.domain_alignment import CASE_STATEMENT
