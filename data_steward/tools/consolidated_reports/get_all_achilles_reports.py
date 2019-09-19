@@ -5,7 +5,7 @@ import os
 
 import common
 import gcs_utils
-import query_reports
+import tools.consolidated_reports.query_reports as query_reports
 from io import open
 
 DRC_BUCKET_PATH = 'gs://%s/' % gcs_utils.get_drc_bucket()
