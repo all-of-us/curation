@@ -73,7 +73,7 @@ TODO
 import argparse
 import logging
 
-from google.appengine.api.app_identity import app_identity
+import app_identity
 
 import bq_utils
 import cdm

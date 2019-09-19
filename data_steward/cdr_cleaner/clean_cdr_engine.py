@@ -4,7 +4,7 @@ import logging
 
 import googleapiclient
 import oauth2client
-from google.appengine.api import app_identity
+import app_identity
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 
 import bq_utils

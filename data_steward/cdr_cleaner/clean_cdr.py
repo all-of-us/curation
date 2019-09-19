@@ -8,7 +8,7 @@ to the query engine.
 import logging
 
 # Third party imports
-from google.appengine.api import app_identity
+import app_identity
 
 import sandbox
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
