@@ -184,7 +184,7 @@ def update_model(old_model, new_model):
       new_model_dict: A json object containing the new values.
     """
 
-    for k, v in new_model.to_dict().iteritems():
+    for k, v in new_model.to_dict().items():
         if type(getattr(type(new_model), k)) != ndb.ComputedProperty and v is not None:
             setattr(old_model, k, v)
 
