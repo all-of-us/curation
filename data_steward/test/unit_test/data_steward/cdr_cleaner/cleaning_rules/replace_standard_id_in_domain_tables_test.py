@@ -1,7 +1,8 @@
 from __future__ import print_function
 import unittest
 
-from mock import mock, patch
+import mock
+from mock import patch
 
 import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_id
 import constants.bq_utils as bq_consts
