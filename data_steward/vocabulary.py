@@ -72,7 +72,7 @@ def transform_file(file_path, out_dir):
     except OSError:
         logging.debug("Error directory:\t%s\t already exists", err_dir)
 
-    with open(file_path, 'rb') as in_fp, open(out_file_name, 'wb') as out_fp, open(err_file_name, 'wb') as err_fp:
+    with open(file_path, 'r') as in_fp, open(out_file_name, 'w') as out_fp, open(err_file_name, 'w') as err_fp:
         _transform_csv(in_fp, out_fp, err_fp)
 
 
@@ -101,9 +101,9 @@ def get_aou_general_vocabulary_row():
 
 
 def append_concepts(in_path, out_path):
-    with open(out_path, 'wb') as out_fp:
+    with open(out_path, 'w') as out_fp:
         # copy original rows line by line for memory efficiency
-        with open(in_path, 'rb') as in_fp:
+        with open(in_path, 'r') as in_fp:
             for row in in_fp:
                 if AOU_GEN_ID in row:
                     # skip it so it is appended below
@@ -112,7 +112,7 @@ def append_concepts(in_path, out_path):
                     out_fp.write(row)
 
         # append new rows
-        with open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as aou_gen_fp:
+        with open(AOU_GENERAL_CONCEPT_CSV_PATH, 'r') as aou_gen_fp:
             # Sending the first five lines of the file because tab delimiters
             # are causing trouble with the Sniffer and has_header method
             five_lines = ''
@@ -130,9 +130,9 @@ def append_concepts(in_path, out_path):
 
 def append_vocabulary(in_path, out_path):
     new_row = get_aou_general_vocabulary_row()
-    with open(out_path, 'wb') as out_fp:
+    with open(out_path, 'w') as out_fp:
         # copy original rows line by line for memory efficiency
-        with open(in_path, 'rb') as in_fp:
+        with open(in_path, 'r') as in_fp:
             for row in in_fp:
                 if AOU_GEN_ID in row:
                     # skip it so it is appended below
