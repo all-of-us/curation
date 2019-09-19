@@ -3,16 +3,15 @@ Deid runner.
 
 A central script to execute deid for each table needing de-identification.
 """
-from argparse import ArgumentParser
 import logging
 import os
+from argparse import ArgumentParser
 
 import google
 
 import bq_utils
-from resources import fields_for, fields_path
 import deid.aou as aou
-
+from resources import fields_for, fields_path
 
 LOGGER = logging.getLogger(__name__)
 DEID_TABLES = ['person', 'observation', 'visit_occurrence', 'condition_occurrence',
@@ -22,6 +21,7 @@ SUPPRESSED_TABLES = ['note', 'note_nlp']
 VOCABULARY_TABLES = ['concept', 'vocabulary', 'domain', 'concept_class', 'concept_relationship',
                      'relationship', 'concept_synonym', 'concept_ancestor', 'source_to_concept_map',
                      'drug_strength']
+
 
 def add_console_logging(add_handler):
     """
@@ -139,22 +139,22 @@ def parse_args(raw_args=None):
                               'output table\nsubmit: create an output table\n'
                               'debug: print output without simulation or submit '
                               '(runs alone)')
-                       )
+                        )
     parser.add_argument('-s', '--skip-tables', dest='skip_tables', action='store',
                         required=False, default='',
                         help=('A comma separated list of table to skip.  Useful '
                               'to avoid de-identifying a table that has already '
                               'undergone deid.')
-                       )
+                        )
     parser.add_argument('--tables', dest='tables', action='store', required=False, default='',
                         help=('A comma separated list of specific tables to execute '
                               'deid on.  Defaults to all tables.')
-                       )
+                        )
     parser.add_argument('--interactive', dest='interactive_mode', action='store_true',
                         required=False,
                         help=('Execute queries in INTERACTIVE mode.  Defaults to '
                               'execute queries in BATCH mode.')
-                       )
+                        )
     parser.add_argument('--version', action='version', version='deid-02')
     return parser.parse_args(raw_args)
 
