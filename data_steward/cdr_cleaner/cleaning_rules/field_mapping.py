@@ -239,7 +239,7 @@ if __name__ == '__main__':
                 if src_table == dest_table or exist_domain_mappings(src_table, dest_table):
                     field_mappings = generate_field_mappings(src_table, dest_table, field_dict[src_table],
                                                              field_dict[dest_table])
-                    for dest_field, src_field in field_mappings.iteritems():
+                    for dest_field, src_field in field_mappings.items():
                         translation = 1 if TYPE_CONCEPT_SUFFIX in src_field \
                                            and TYPE_CONCEPT_SUFFIX in dest_field \
                                            and src_table != dest_table else 0
