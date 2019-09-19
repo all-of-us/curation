@@ -10,15 +10,12 @@ from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PRO
 
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
-# data/*
-data_path = os.path.join(base_path, 'data')
-hpo_csv_path = os.path.join(data_path, 'hpo.csv')
-
 # tools/*
 tools_path = os.path.join(base_path, 'tools')
 
 # resources/*
 resource_path = os.path.join(base_path, 'resources')
+hpo_csv_path = os.path.join(resource_path, 'hpo.csv')
 fields_path = os.path.join(resource_path, 'fields')
 cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
 achilles_index_path = os.path.join(resource_path, 'curation_report')
