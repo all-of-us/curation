@@ -1,7 +1,8 @@
 from __future__ import print_function
 import unittest
 
-from mock import patch, mock
+import mock
+from mock import patch
 
 from cdr_cleaner.cleaning_rules.domain_alignment import NULL_VALUE
 from cdr_cleaner.cleaning_rules.field_mapping import DOMAIN_DATE_FIELDS
