@@ -9,7 +9,7 @@ from io import StringIO
 
 # Third party imports
 from flask import Flask
-from google.appengine.api.app_identity import app_identity
+import app_identity
 from googleapiclient.errors import HttpError
 
 # Project imports

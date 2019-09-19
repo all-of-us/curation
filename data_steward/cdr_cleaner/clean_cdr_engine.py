@@ -4,7 +4,7 @@ import logging
 
 import googleapiclient
 import oauth2client
-from google.appengine.api import app_identity
+import app_identity
 
 import bq_utils
 import constants.bq_utils as bq_consts

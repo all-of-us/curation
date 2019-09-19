@@ -7,7 +7,7 @@ import json
 import os
 from functools import partial
 
-from google.appengine.api.app_identity import app_identity
+import app_identity
 
 import bq_utils
 import common
