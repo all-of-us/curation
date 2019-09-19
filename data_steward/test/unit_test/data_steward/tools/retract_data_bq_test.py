@@ -3,7 +3,7 @@ import os
 import unittest
 import mock
 
-from google.appengine.api import app_identity
+import app_identity
 
 import bq_utils
 import cdm

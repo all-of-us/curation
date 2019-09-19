@@ -233,7 +233,7 @@ def write_cloud_fp(bucket, name, fp):
 
 def populate_achilles(hpo_bucket, hpo_id=FAKE_HPO_ID, include_heel=True):
     from validation import achilles, achilles_heel
-    from google.appengine.api import app_identity
+    import app_identity
     import bq_utils
 
     app_id = app_identity.get_application_id()

@@ -4,7 +4,7 @@ import datetime
 import logging
 import string
 
-from google.appengine.api import app_identity
+import app_identity
 from google.appengine.api import oauth
 from google.appengine.ext import ndb
 

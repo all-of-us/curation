@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 
 # Third party imports
-from google.appengine.api import app_identity
+import app_identity
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
