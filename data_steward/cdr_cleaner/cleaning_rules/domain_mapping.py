@@ -71,7 +71,7 @@ def get_field_mappings(src_table, dest_table):
     for t in field_mappings_csv:
         if t[SRC_TABLE] == src_table and t[DEST_TABLE] == dest_table:
             field_mappings[t[DEST_FIELD]] = t[SRC_FIELD]
-    return OrderedDict(sorted(field_mappings.iteritems()))
+    return OrderedDict(sorted(field_mappings.items()))
 
 
 def value_requires_translation(src_table, dest_table, src_field, dest_field):
