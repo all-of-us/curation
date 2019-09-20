@@ -1,15 +1,20 @@
 {
     "generalize":[
         {
-            "rules":"@generalize.RACE",
-             "fields":["value_source_concept_id", "value_as_concept_id"],
-             "dataset":":idataset",
-             "table":"observation",
-             "alias":"my_table",
-             "key_field":"my_table.person_id",
-             "key_row":"my_table.value_source_concept_id",
-             "value_field":"observation.person_id",
-             "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1586140)) "
+            "rules": "@generalize.RACE",
+            "fields": ["value_source_concept_id", "value_as_concept_id"],
+            "dataset": ":idataset",
+            "table": "observation",
+            "alias": "my_table",
+            "key_field": "my_table.person_id",
+            "key_row": "my_table.value_source_concept_id",
+            "value_field": "observation.person_id",
+            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1586140)) "
+        },
+        {
+            "rules": "@generalize.STATE",
+            "fields": ["value_source_concept_id", "value_as_concept_id"],
+            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1585249)) "
         },
         {
             "rules":"@generalize.SEXUAL-ORIENTATION",
@@ -25,8 +30,11 @@
         {
             "rules":"@generalize.GENDER",
             "fields":["value_source_concept_id", "value_as_concept_id"],
-            "table":":idataset.observation find_gender",
+            "dataset": ":idataset",
+            "table": "observation",
+            "alias": "find_gender",
             "key_field":"find_gender.person_id",
+            "key_row": "find_gender.value_source_concept_id",
             "value_field":"observation.person_id",
             "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1585838)) "
         },

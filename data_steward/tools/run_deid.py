@@ -17,11 +17,12 @@ LOGGER = logging.getLogger(__name__)
 DEID_TABLES = ['person', 'observation', 'visit_occurrence', 'condition_occurrence',
                'drug_exposure', 'procedure_occurrence', 'device_exposure', 'death',
                'measurement', 'location', 'care_site', 'specimen', 'observation_period']
-SUPPRESSED_TABLES = ['note', 'note_nlp']
+# these tables will be suppressed.  This means an empty table with the same schema will
+# exist.  It overrides the DEID_TABLES list
+SUPPRESSED_TABLES = ['note', 'note_nlp', 'location']
 VOCABULARY_TABLES = ['concept', 'vocabulary', 'domain', 'concept_class', 'concept_relationship',
                      'relationship', 'concept_synonym', 'concept_ancestor', 'source_to_concept_map',
                      'drug_strength']
-
 
 def add_console_logging(add_handler):
     """
@@ -206,7 +207,7 @@ def main(raw_args=None):
             LOGGER.info('Successfully executed deid on table: %s', table)
             successes.append(table)
 
-    copy_suppressed_table_schemas(tables, args.input_dataset + '_deid')
+    copy_suppressed_table_schemas(known_tables, args.input_dataset + '_deid')
 
     LOGGER.info('Deid has finished.  Successfully executed on tables:  %s',
                 '\n'.join(successes))

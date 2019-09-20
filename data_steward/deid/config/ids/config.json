@@ -4,7 +4,7 @@
 		"RACE":[
 			{
                 "comment":"generalizing minorities into a group",
-				"values":[1586141, 1586144, 1586145, 1586148],
+				"values":[1586141, 1586144, 1586145],
 				"into":2000000001,
 				"qualifier":"IN"
 
@@ -15,9 +15,17 @@
 				"into":2000000008,
 				"qualifier":"> 1",
                 "distinct": "value_source_concept_id",
-				"on": "value_source_concept_id = 1586141 or value_source_concept_id = 1586142 or value_source_concept_id = 1586143 or value_source_concept_id = 1586144 or value_source_concept_id = 1586145 or value_source_concept_id = 1586146 or value_source_concept_id = 1586147 or value_source_concept_id = 1586148"
+				"on": "value_source_concept_id = 1586141 or value_source_concept_id = 1586142 or value_source_concept_id = 1586143 or value_source_concept_id = 1586144 or value_source_concept_id = 1586145 or value_source_concept_id = 1586146 or value_source_concept_id = 1586147"
 			}
 		],
+        "STATE": [
+            {
+                "comment": "generalize states with a low number of participants",
+                "qualifier": "IN",
+                "values": [1585299, 1585284, 1585315, 1585274, 1585271, 1585304, 1585263, 1585306, 1585270, 1585313, 1585275, 1585409, 1585411, 1585300],
+                "into": 2000000011
+            }
+        ],
 		"SEXUAL-ORIENTATION":[
 			{
                 "comment": "generalize any answer that is not straight",
@@ -58,6 +66,14 @@
 				"qualifier":"IN",
 				"values":[903096, 903079, 1585843, 1585841,1585842],
 				"into": 2000000002
+			},
+			{
+				"comment":"multi gender generalization rule, the values the count is limited to is provided by the 'on' key",
+                "apply":"COUNT-DISTINCT",
+				"into":2000000002,
+				"qualifier":"> 1",
+                "distinct": "value_source_concept_id",
+				"on": "value_source_concept_id = 1585839 or value_source_concept_id = 1585840 or value_source_concept_id = 1585841 or value_source_concept_id = 1585842 or value_source_concept_id = 1585843"
 			}
 		],
 		"EDUCATION":[
