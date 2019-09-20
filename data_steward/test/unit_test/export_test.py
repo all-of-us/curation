@@ -20,13 +20,6 @@ class ExportTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        cls.testbed = testbed.Testbed()
-        cls.testbed.activate()
-        cls.testbed.init_app_identity_stub()
-        cls.testbed.init_memcache_stub()
-        cls.testbed.init_urlfetch_stub()
-        cls.testbed.init_blobstore_stub()
-        cls.testbed.init_datastore_v3_stub()
         fake_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
@@ -148,4 +141,3 @@ class ExportTest(unittest.TestCase):
     def tearDownClass(cls):
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
-        cls.testbed.deactivate()

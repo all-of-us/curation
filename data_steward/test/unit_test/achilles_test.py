@@ -2,8 +2,6 @@ from __future__ import print_function
 import os
 import unittest
 
-from google.appengine.ext import testbed
-
 import bq_utils
 import gcs_utils
 import resources
@@ -60,13 +58,6 @@ class AchillesTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_urlfetch_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         test_util.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
@@ -133,4 +124,3 @@ class AchillesTest(unittest.TestCase):
     def tearDown(self):
         test_util.delete_all_tables(bq_utils.get_dataset_id())
         test_util.empty_bucket(self.hpo_bucket)
-        self.testbed.deactivate()
