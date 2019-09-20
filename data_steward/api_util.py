@@ -5,8 +5,6 @@ import logging
 import string
 
 import app_identity
-from google.appengine.api import oauth
-from google.appengine.ext import ndb
 
 from flask import request
 from werkzeug.exceptions import BadRequest, Forbidden, Unauthorized
