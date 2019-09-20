@@ -14,9 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""App Engine local test runner example.
-This program handles properly importing the App Engine SDK so that test modules
-can use google.appengine.* APIs and the Google App Engine testbed.
+"""Local test runner
+
 Example invocation:
   $ python runner.py ~/google-cloud-sdk
 """
