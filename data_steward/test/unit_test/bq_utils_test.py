@@ -6,7 +6,6 @@ import unittest
 from datetime import datetime
 
 import mock
-from google.appengine.ext import testbed
 
 import bq_utils
 import common
@@ -30,13 +29,6 @@ class BqUtilsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_urlfetch_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
         self.dataset_id = bq_utils.get_dataset_id()
@@ -396,4 +388,3 @@ class BqUtilsTest(unittest.TestCase):
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
         self._empty_bucket()
-        self.testbed.deactivate()

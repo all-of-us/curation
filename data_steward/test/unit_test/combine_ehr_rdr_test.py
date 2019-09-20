@@ -4,8 +4,6 @@ import os
 import sys
 import unittest
 
-from google.appengine.ext import testbed
-
 import bq_utils
 import common
 import gcs_utils
@@ -60,13 +58,6 @@ class CombineEhrRdrTest(unittest.TestCase):
         logger.level = logging.INFO
         stream_handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(stream_handler)
-        cls.testbed = testbed.Testbed()
-        cls.testbed.activate()
-        cls.testbed.init_app_identity_stub()
-        cls.testbed.init_memcache_stub()
-        cls.testbed.init_urlfetch_stub()
-        cls.testbed.init_blobstore_stub()
-        cls.testbed.init_datastore_v3_stub()
         ehr_dataset_id = bq_utils.get_dataset_id()
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
@@ -315,5 +306,4 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        cls.testbed.deactivate()
         logger.handlers = []
