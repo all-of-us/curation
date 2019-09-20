@@ -1,14 +1,13 @@
 from __future__ import print_function
 import unittest
+from io import open
 
 import mock
-from google.appengine.ext import testbed
 
 import bq_utils
 import gcs_utils
 from test.unit_test import test_util
 from tools import retract_data_gcs as rd
-from io import open
 
 
 class RetractDataGcsTest(unittest.TestCase):
@@ -19,13 +18,6 @@ class RetractDataGcsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_urlfetch_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_datastore_v3_stub()
         self.hpo_id = test_util.FAKE_HPO_ID
         self.bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
         self.site_bucket = 'test_bucket'
@@ -167,4 +159,3 @@ class RetractDataGcsTest(unittest.TestCase):
     def tearDown(self):
         self._empty_bucket()
         test_util.empty_bucket(self.bucket)
-        self.testbed.deactivate()
