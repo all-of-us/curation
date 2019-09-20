@@ -65,6 +65,16 @@ class BqUtilsTest(unittest.TestCase):
         tpe = time_partitioning.get('type')
         self.assertEqual(tpe, 'DAY')
 
+    def _table_has_clustering(self, table_info):
+        clustering = table_info.get('clustering')
+        self.assertIsNotNone(clustering)
+        fields = clustering.get('fields')
+        self.assertSetEqual(set(fields), {'person_id'})
+        time_partitioning = table_info.get('timePartitioning')
+        self.assertIsNotNone(time_partitioning)
+        tpe = time_partitioning.get('type')
+        self.assertEqual(tpe, 'DAY')
+
     def test_load_csv(self):
         from google.appengine.api import app_identity
 
