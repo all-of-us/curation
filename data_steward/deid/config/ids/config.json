@@ -18,6 +18,14 @@
 				"on": "value_source_concept_id = 1586141 or value_source_concept_id = 1586142 or value_source_concept_id = 1586143 or value_source_concept_id = 1586144 or value_source_concept_id = 1586145 or value_source_concept_id = 1586146 or value_source_concept_id = 1586147"
 			}
 		],
+        "STATE": [
+            {
+                "comment": "generalize states with a low number of participants",
+                "qualifier": "IN",
+                "values": [1585299, 1585284, 1585315, 1585274, 1585271, 1585304, 1585263, 1585306, 1585270, 1585313, 1585275, 1585409, 1585411, 1585300],
+                "into": 2000000011
+            }
+        ],
 		"SEXUAL-ORIENTATION":[
 			{
                 "comment": "generalize any answer that is not straight",
