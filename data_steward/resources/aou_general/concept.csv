@@ -8,7 +8,6 @@ concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concep
 2000000006	College graduate or advanced degree	Observation	AoU_General	Answer	S	HighestGrade_GeneralizedCollegeAndAbove	2017-05-17	2099-12-31	
 2000000007	Less than a high school degree or equivalent	Observation	AoU_General	Answer	S	HighestGrade_GeneralizedNoHighSchoolDegree	2017-05-17	2099-12-31	
 2000000008	More than one race	Observation	AoU_General	Answer	S	WhatRaceEthnicity_GeneralizedMultipleRaces	2017-05-17	2099-12-31	
-2000000009	Neither or unspecified	Observation	AoU_General	Answer	S	SexAtBirth_GeneralizedNeither	2017-05-17	2099-12-31	
-2000000009	Neither or unspecified	Observation	AoU_General	Answer	S	SexAtBirth_GeneralizedNeither	2017-05-17	2099-12-31	
+2000000009	Neither or unspecified	Observation	AoU_General	Answer	S	SexAtBirth_GeneralizedNeither	2017-05-17	2099-12-31
 2000000010	Response removed due to invalid value	Observation	AoU_General	Answer	S	AoUDRC_ResponseRemoval	017-05-17	2099-12-31	
 2000000011	State Information Suppressed for Privacy	Observation	AoU_General	Answer	S	AoUDRC_GeneralizedState	2017-05-17	2099-12-31
