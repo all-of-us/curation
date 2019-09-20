@@ -2,7 +2,6 @@ from __future__ import print_function
 import os
 import unittest
 
-from google.appengine.ext import testbed
 
 import bq_utils
 import common
@@ -57,13 +56,6 @@ class TopHeelErrorsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_urlfetch_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_datastore_v3_stub()
         self.app_id = os.environ.get('APPLICATION_ID')
         self.dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
         self.bucket = os.environ.get('DRC_BUCKET_NAME')
@@ -116,4 +108,3 @@ class TopHeelErrorsTest(unittest.TestCase):
     def tearDown(self):
         test_util.empty_bucket(self.bucket)
         test_util.delete_all_tables(self.dataset_id)
-        self.testbed.deactivate()

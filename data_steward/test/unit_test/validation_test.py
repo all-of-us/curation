@@ -11,7 +11,6 @@ import unittest
 
 import googleapiclient.errors
 import mock
-from google.appengine.ext import testbed
 
 import bq_utils
 import common
@@ -35,13 +34,6 @@ class ValidationTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_urlfetch_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_datastore_v3_stub()
         self.hpo_id = test_util.FAKE_HPO_ID
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
         mock_get_hpo_name = mock.patch(
@@ -631,4 +623,3 @@ class ValidationTest(unittest.TestCase):
         test_util.empty_bucket(bucket_nyc)
         test_util.empty_bucket(gcs_utils.get_drc_bucket())
         test_util.delete_all_tables(self.bigquery_dataset_id)
-        self.testbed.deactivate()
