@@ -8,7 +8,6 @@ jobs:
     # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
     environment:
       - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      - GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcloud-credentials-key.json
 
     docker:
       - image: circleci/python:3.7.4
@@ -34,9 +33,9 @@ jobs:
       - run:
           command: chmod 700 ./ci/activate_creds.sh && chmod 700 ./ci/setup.sh && chmod 700 ./ci/create_bucket.sh
       - run:
-          command: ./ci/activate_creds.sh ~/gcloud-credentials-key.json
-#      - run:
-#          command: ./ci/setup.sh
+          command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
+      - run:
+          command: echo "export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json" >> ${BASH_ENV}
       # Dependencies
       - run:
           name: Add virtual environment activation to bash startup
