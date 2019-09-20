@@ -8,7 +8,7 @@ jobs:
     # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
     environment:
       - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      - GOOGLE_APPLICATION_CREDENTIALS: /home/ubuntu/gcloud-credentials-key.json
+      - GOOGLE_APPLICATION_CREDENTIALS: ~/gcloud-credentials-key.json
 
     docker:
       - image: circleci/python:3.7.4
