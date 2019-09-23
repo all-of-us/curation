@@ -1,4 +1,3 @@
-from __future__ import print_function
 import json
 import os
 import re
@@ -9,8 +8,8 @@ import moz_sql_parser
 
 import bq_utils
 import cdm
-import constants.tools.combine_ehr_rdr
-import constants.validation.ehr_union as eu_constants
+from constants.tools import combine_ehr_rdr
+from constants.validation import ehr_union as eu_constants
 import gcs_utils
 import resources
 from test.unit_test import test_util

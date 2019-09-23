@@ -1,4 +1,3 @@
-from __future__ import print_function
 import unittest
 
 from googleapiclient.errors import HttpError

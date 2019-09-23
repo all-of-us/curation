@@ -1,13 +1,12 @@
 # Python imports
-from __future__ import print_function
 import unittest
 
 # Third party imports
 from mock import patch
 
 # Project imports
-import constants.validation.participants.readers as consts
-import validation.participants.readers as reader
+from constants.validation.participants import readers as consts
+from validation.participants import readers as reader
 
 
 class ReadersTest(unittest.TestCase):

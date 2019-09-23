@@ -1,7 +1,6 @@
-from __future__ import print_function
 import unittest
 
-import validation.participants.normalizers as normalizer
+from validation.participants import normalizers as normalizer
 
 
 class NormalizersTest(unittest.TestCase):
