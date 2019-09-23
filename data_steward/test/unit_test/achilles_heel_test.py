@@ -5,7 +5,7 @@ import bq_utils
 import gcs_utils
 import resources
 from test.unit_test import test_util
-import validation.sql_wrangle
+from validation import sql_wrangle
 from test.unit_test.test_util import FAKE_HPO_ID
 from validation import achilles_heel
 
@@ -49,12 +49,12 @@ class AchillesHeelTest(unittest.TestCase):
 
         achilles_heel.create_tables(FAKE_HPO_ID, True)
         achilles_heel.run_heel(hpo_id=FAKE_HPO_ID)
-        cmd = validation.sql_wrangle.qualify_tables(
-            'SELECT COUNT(1) FROM %sachilles_heel_results' % validation.sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
+        cmd = sql_wrangle.qualify_tables(
+            'SELECT COUNT(1) FROM %sachilles_heel_results' % sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         self.assertEqual(ACHILLES_HEEL_RESULTS_COUNT, int(result['rows'][0]['f'][0]['v']))
-        cmd = validation.sql_wrangle.qualify_tables(
-            'SELECT COUNT(1) FROM %sachilles_results_derived' % validation.sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
+        cmd = sql_wrangle.qualify_tables(
+            'SELECT COUNT(1) FROM %sachilles_results_derived' % sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         self.assertEqual(ACHILLES_RESULTS_DERIVED_COUNT, int(result['rows'][0]['f'][0]['v']))
 
@@ -62,10 +62,10 @@ class AchillesHeelTest(unittest.TestCase):
         errors = [2, 4, 5, 101, 200, 206, 207, 209, 400, 405, 406, 409, 411, 413, 500, 505, 506, 509,
                   600, 605, 606, 609, 613, 700, 705, 706, 709, 711, 713, 715, 716, 717, 800, 805, 806,
                   809, 813, 814, 906, 1006, 1609, 1805]
-        cmd = validation.sql_wrangle.qualify_tables(
+        cmd = sql_wrangle.qualify_tables(
             """SELECT analysis_id FROM {prefix}achilles_heel_results
             WHERE achilles_heel_warning like 'ERROR:%'
-            GROUP BY analysis_id""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
+            GROUP BY analysis_id""".format(prefix=sql_wrangle.PREFIX_PLACEHOLDER),
             FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         # self.assertIsNone(result.get('analysis_id', None))
@@ -77,10 +77,10 @@ class AchillesHeelTest(unittest.TestCase):
         warnings = [4, 5, 7, 8, 9, 200, 210, 302, 400, 402, 412, 420,
                     500, 511, 512, 513, 514, 515,
                     602, 612, 620, 702, 712, 720, 802, 812, 820]
-        cmd = validation.sql_wrangle.qualify_tables(
+        cmd = sql_wrangle.qualify_tables(
             """SELECT analysis_id FROM {prefix}achilles_heel_results
             WHERE achilles_heel_warning like 'WARNING:%'
-            GROUP BY analysis_id""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
+            GROUP BY analysis_id""".format(prefix=sql_wrangle.PREFIX_PLACEHOLDER),
             FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         # self.assertIsNone(result.get('analysis_id', None))
@@ -91,10 +91,10 @@ class AchillesHeelTest(unittest.TestCase):
 
         notifications = [101, 103, 105, 114, 115, 118, 208, 301, 410, 610,
                          710, 810, 900, 907, 1000, 1800, 1807]
-        cmd = validation.sql_wrangle.qualify_tables(
+        cmd = sql_wrangle.qualify_tables(
             """SELECT analysis_id FROM {prefix}achilles_heel_results
             WHERE achilles_heel_warning like 'NOTIFICATION:%' and analysis_id is not null
-            GROUP BY analysis_id""".format(prefix=validation.sql_wrangle.PREFIX_PLACEHOLDER),
+            GROUP BY analysis_id""".format(prefix=sql_wrangle.PREFIX_PLACEHOLDER),
             FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         self.assertIsNone(result.get('analysis_id', None))
@@ -104,16 +104,16 @@ class AchillesHeelTest(unittest.TestCase):
         # self.assertEqual(ACHILLES_HEEL_RESULTS_NOTIFICATION_COUNT, int(result['rows'][0]['f'][0]['v']))
 
     def test_qualify_tables(self):
-        r = validation.sql_wrangle.qualify_tables('temp.some_table', hpo_id='fake')
+        r = sql_wrangle.qualify_tables('temp.some_table', hpo_id='fake')
         self.assertEqual(r, 'fake_temp_some_table')
 
-        r = validation.sql_wrangle.qualify_tables('synpuf_100.achilles_results', hpo_id='fake')
+        r = sql_wrangle.qualify_tables('synpuf_100.achilles_results', hpo_id='fake')
         self.assertEqual(r, 'fake_achilles_results')
 
-        r = validation.sql_wrangle.qualify_tables('temp.some_table', hpo_id='pitt_temple')
+        r = sql_wrangle.qualify_tables('temp.some_table', hpo_id='pitt_temple')
         self.assertEqual(r, 'pitt_temple_temp_some_table')
 
-        r = validation.sql_wrangle.qualify_tables('synpuf_100.achilles_results', hpo_id='pitt_temple')
+        r = sql_wrangle.qualify_tables('synpuf_100.achilles_results', hpo_id='pitt_temple')
         self.assertEqual(r, 'pitt_temple_achilles_results')
 
     def tearDown(self):
