@@ -1,6 +1,6 @@
 #!/bin/bash
 # generates app.yaml from app_base.yaml and environment name ($1)
-hpos=( $(cut -d ',' -f1 ./spec/_data/hpo.csv) )
+hpos=( $(cut -d ',' -f1 ./resources/hpo.csv) )
 hpos=("${hpos[@]:1}")
 
 if [ -z "$1" ]
