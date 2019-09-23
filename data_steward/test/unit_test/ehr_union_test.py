@@ -99,8 +99,8 @@ class EhrUnionTest(unittest.TestCase):
                 running_jobs.append(result['jobReference']['jobId'])
                 expected_tables[output_table] += list(csv_rows)
         # ensure person to observation output is as expected
-        output_table_person = ehr_union.output_table_for(constants.tools.combine_ehr_rdr.PERSON_TABLE)
-        output_table_observation = ehr_union.output_table_for(constants.tools.combine_ehr_rdr.OBSERVATION_TABLE)
+        output_table_person = ehr_union.output_table_for(combine_ehr_rdr.PERSON_TABLE)
+        output_table_observation = ehr_union.output_table_for(combine_ehr_rdr.OBSERVATION_TABLE)
         expected_tables[output_table_observation] += 4 * expected_tables[output_table_person]
 
         incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
@@ -136,7 +136,7 @@ class EhrUnionTest(unittest.TestCase):
         # output should be mapping tables and cdm tables
         output_tables_before = self._dataset_tables(self.output_dataset_id)
         mapping_tables = [ehr_union.mapping_table_for(table) for table in
-                          cdm.tables_to_map() + [constants.tools.combine_ehr_rdr.PERSON_TABLE]]
+                          cdm.tables_to_map() + [combine_ehr_rdr.PERSON_TABLE]]
         output_cdm_tables = [ehr_union.output_table_for(table) for table in resources.CDM_TABLES]
         expected_output = set(output_tables_before + mapping_tables + output_cdm_tables)
 
