@@ -5,7 +5,7 @@ import bq_utils
 import gcs_utils
 import resources
 from test.unit_test import test_util
-import validation.sql_wrangle
+from validation import sql_wrangle
 from test.unit_test.test_util import FAKE_HPO_ID
 from validation import achilles
 
@@ -77,13 +77,13 @@ class AchillesTest(unittest.TestCase):
 --NOT APPLICABLE IN CDMV5
 --insert into fake_ACHILLES_analysis (analysis_id, analysis_name, stratum_1_name)
 --	values (1300, 'Number of organizations by place of service', 'place_of_service_concept_id')"""
-        self.assertFalse(validation.sql_wrangle.is_active_command(commented_command))
+        self.assertFalse(sql_wrangle.is_active_command(commented_command))
 
     def test_load_analyses(self):
         achilles.create_tables(FAKE_HPO_ID, True)
         achilles.load_analyses(FAKE_HPO_ID)
-        cmd = validation.sql_wrangle.qualify_tables(
-            'SELECT DISTINCT(analysis_id) FROM %sachilles_analysis' % validation.sql_wrangle.PREFIX_PLACEHOLDER,
+        cmd = sql_wrangle.qualify_tables(
+            'SELECT DISTINCT(analysis_id) FROM %sachilles_analysis' % sql_wrangle.PREFIX_PLACEHOLDER,
             FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         self.assertEqual(ACHILLES_LOOKUP_COUNT, int(result['totalRows']))
@@ -94,14 +94,14 @@ class AchillesTest(unittest.TestCase):
         self.assertEqual(len(commands), ACHILLES_ANALYSIS_COUNT)
 
     def test_temp_table(self):
-        self.assertTrue(validation.sql_wrangle.is_to_temp_table(TEMP_QUERY_1))
-        self.assertTrue(validation.sql_wrangle.is_to_temp_table(TEMP_QUERY_2))
-        self.assertFalse(validation.sql_wrangle.is_to_temp_table(SOURCE_NAME_QUERY))
-        self.assertEqual(validation.sql_wrangle.get_temp_table_name(TEMP_QUERY_1), 'temp.tempresults')
-        self.assertEqual(validation.sql_wrangle.get_temp_table_name(TEMP_QUERY_2), 'temp.rawdata_1006')
-        self.assertTrue(validation.sql_wrangle.get_temp_table_query(TEMP_QUERY_1).startswith('WITH rawdata'))
+        self.assertTrue(sql_wrangle.is_to_temp_table(TEMP_QUERY_1))
+        self.assertTrue(sql_wrangle.is_to_temp_table(TEMP_QUERY_2))
+        self.assertFalse(sql_wrangle.is_to_temp_table(SOURCE_NAME_QUERY))
+        self.assertEqual(sql_wrangle.get_temp_table_name(TEMP_QUERY_1), 'temp.tempresults')
+        self.assertEqual(sql_wrangle.get_temp_table_name(TEMP_QUERY_2), 'temp.rawdata_1006')
+        self.assertTrue(sql_wrangle.get_temp_table_query(TEMP_QUERY_1).startswith('WITH rawdata'))
         self.assertTrue(
-            validation.sql_wrangle.get_temp_table_query(TEMP_QUERY_2).startswith('SELECT ce.condition_concept_id'))
+            sql_wrangle.get_temp_table_query(TEMP_QUERY_2).startswith('SELECT ce.condition_concept_id'))
 
     def test_run_analyses(self):
         # Long-running test
@@ -109,15 +109,15 @@ class AchillesTest(unittest.TestCase):
         achilles.create_tables(FAKE_HPO_ID, True)
         achilles.load_analyses(FAKE_HPO_ID)
         achilles.run_analyses(hpo_id=FAKE_HPO_ID)
-        cmd = validation.sql_wrangle.qualify_tables(
-            'SELECT COUNT(1) FROM %sachilles_results' % validation.sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
+        cmd = sql_wrangle.qualify_tables(
+            'SELECT COUNT(1) FROM %sachilles_results' % sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         self.assertEqual(int(result['rows'][0]['f'][0]['v']), ACHILLES_RESULTS_COUNT)
 
     def test_parse_temp(self):
         commands = achilles._get_run_analysis_commands(FAKE_HPO_ID)
         for command in commands:
-            is_temp = validation.sql_wrangle.is_to_temp_table(command)
+            is_temp = sql_wrangle.is_to_temp_table(command)
             self.assertFalse(is_temp)
 
     def tearDown(self):
