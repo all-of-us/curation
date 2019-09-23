@@ -4,14 +4,12 @@ import unittest
 import mock
 from mock import patch
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
-from cdr_cleaner.cleaning_rules.domain_alignment import WHEN_STATEMENT
-from cdr_cleaner.cleaning_rules.domain_alignment import CASE_STATEMENT
-from cdr_cleaner.cleaning_rules.domain_alignment import SRC_FIELD_AS_DEST_FIELD
-from cdr_cleaner.cleaning_rules.domain_alignment import DOMAIN_ALIGNMENT_TABLE_NAME
+from cdr_cleaner.cleaning_rules.domain_alignment import WHEN_STATEMENT, DOMAIN_ALIGNMENT_TABLE_NAME,\
+    CASE_STATEMENT, SRC_FIELD_AS_DEST_FIELD
 from collections import OrderedDict
 import re
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 
 class DomainAlignmentTest(unittest.TestCase):

@@ -3,15 +3,16 @@ Deid runner.
 
 A central script to execute deid for each table needing de-identification.
 """
+from argparse import ArgumentParser
 import logging
 import os
-from argparse import ArgumentParser
 
 import google
 
 import bq_utils
-import deid.aou as aou
 from resources import fields_for, fields_path
+import deid.aou as aou
+
 
 LOGGER = logging.getLogger(__name__)
 DEID_TABLES = ['person', 'observation', 'visit_occurrence', 'condition_occurrence',

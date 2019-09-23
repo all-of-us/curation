@@ -4,7 +4,7 @@ import re
 
 import bq_utils
 import resources
-from validation import sql_wrangle
+import validation.sql_wrangle
 from io import open
 
 ACHILLES_HEEL_RESULTS = 'achilles_heel_results'

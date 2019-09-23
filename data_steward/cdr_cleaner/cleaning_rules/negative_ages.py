@@ -6,8 +6,8 @@ Also ensure ages are not beyond 150.
 
 # Project imports
 import common
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 # tables to consider, along with their date/start date fields
 date_fields = {common.OBSERVATION_PERIOD: 'observation_period_start_date',

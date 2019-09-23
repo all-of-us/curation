@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 
-from rules import Deid
+from deid.rules import Deid
 
 table = [{"name":"id"},
          {"name":"dob"},
@@ -27,4 +27,4 @@ info = {
                 "fields":["id"],
                 "from": {"table": "seed", "field": "alt_id", "key_field": "id", "key_value": "sample.id"}}],
 }
-print drules.apply(info)
+print(drules.apply(info))

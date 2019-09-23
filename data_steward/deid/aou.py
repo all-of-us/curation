@@ -84,8 +84,8 @@ import pandas as pd
 
 import bq_utils
 import constants.bq_utils as bq_consts
-from parser import parse_args
-from press import Press
+from deid.parser import parse_args
+from deid.press import Press
 
 
 def milliseconds_since_epoch():

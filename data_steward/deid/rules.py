@@ -23,7 +23,7 @@ import logging
 
 import numpy as np
 
-from parser import Parse
+from deid.parser import Parse
 from resources import fields_for
 
 class Rules(object):

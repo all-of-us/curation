@@ -19,12 +19,12 @@ import oauth2client
 # Project imports
 import bq_utils
 import gcs_utils
-import constants.bq_utils as bq_consts
-import constants.validation.participants.identity_match as consts
+from constants import bq_utils as bq_consts
+from constants.validation.participants import identity_match as consts
 import resources
-import validation.participants.normalizers as normalizer
-import validation.participants.readers as readers
-import validation.participants.writers as writers
+from validation.participants import normalizers as normalizer
+from validation.participants import readers as readers
+from validation.participants import writers as writers
 
 LOGGER = logging.getLogger(__name__)
 

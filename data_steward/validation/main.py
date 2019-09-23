@@ -17,16 +17,16 @@ import api_util
 import bq_utils
 import cdm
 import common
-import constants.validation.main as consts
-import constants.validation.hpo_report as report_consts
+from constants.validation import main as consts
+from constants.validation import hpo_report as report_consts
 import gcs_utils
 import resources
-import validation.achilles as achilles
-import validation.achilles_heel as achilles_heel
-import validation.metrics.completeness as completeness
-import validation.ehr_union as ehr_union
-import validation.export as export
-import validation.participants.identity_match as matching
+from validation import achilles as achilles
+from validation import achilles_heel as achilles_heel
+from validation.metrics import completeness as completeness
+from validation import ehr_union as ehr_union
+from validation import export as export
+from validation.participants import identity_match as matching
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from validation import hpo_report
 from tools import retract_data_bq, retract_data_gcs
