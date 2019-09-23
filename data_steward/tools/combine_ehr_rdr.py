@@ -48,7 +48,7 @@ import logging
 
 import bq_utils
 import common
-import constants.tools.combine_ehr_rdr as combine_consts
+from constants.tools import combine_ehr_rdr as combine_consts
 import resources
 
 logger = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ import logging
 import app_identity
 
 import bq_utils
-import constants.bq_utils as bq_consts
+from constants import bq_utils as bq_consts
 
 OBSERVATION_TABLE_NAME = 'observation'
 VOCABULARY_DATASET = 'vocabulary20190423'

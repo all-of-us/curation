@@ -9,7 +9,7 @@ import logging
 # Third party imports
 
 # Project imports
-import constants.validation.participants.normalizers as consts
+from constants.validation.participants import normalizers as consts
 
 LOGGER = logging.getLogger(__name__)
 

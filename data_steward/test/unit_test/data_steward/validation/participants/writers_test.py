@@ -1,5 +1,4 @@
 # Python imports
-from __future__ import print_function
 import unittest
 
 # Third party imports
@@ -7,8 +6,8 @@ from mock import ANY, call, patch
 import oauth2client
 
 # Project imports
-import constants.validation.participants.writers as consts
-import validation.participants.writers as writer
+from constants.validation.participants import writers as consts
+from validation.participants import writers as writer
 
 
 class WritersTest(unittest.TestCase):

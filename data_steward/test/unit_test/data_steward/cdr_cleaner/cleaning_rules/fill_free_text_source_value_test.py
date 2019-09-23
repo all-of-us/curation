@@ -1,10 +1,9 @@
-from __future__ import print_function
 import re
 import unittest
 
 import mock
 
-import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_free_text
+from cdr_cleaner.cleaning_rules import fill_free_text_source_value as fill_free_text
 
 
 class FillFreeTextSourceValueTest(unittest.TestCase):

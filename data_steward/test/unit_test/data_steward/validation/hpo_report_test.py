@@ -1,8 +1,7 @@
-from __future__ import print_function
 import unittest
 import os
 from validation import hpo_report
-import constants.validation.hpo_report as consts
+from constants.validation import hpo_report as consts
 from io import open
 
 

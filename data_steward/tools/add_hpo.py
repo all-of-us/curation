@@ -3,7 +3,7 @@ import logging
 from googleapiclient.errors import HttpError
 
 import bq_utils
-import cli_util
+from tools import cli_util
 import gcs_utils
 import resources
 

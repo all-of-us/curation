@@ -4,7 +4,7 @@ import json
 import os
 
 import gcs_utils
-import query_reports
+from tools.consolidated_reports import query_reports
 
 DRC_BUCKET_PATH = 'gs://%s/' % gcs_utils.get_drc_bucket()
 

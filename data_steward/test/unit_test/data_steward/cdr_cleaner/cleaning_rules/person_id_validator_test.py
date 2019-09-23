@@ -1,14 +1,13 @@
 # Python imports
-from __future__ import print_function
 import copy
 import unittest
 
 # Third party imports
 
 # Project imports
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as clean_consts
-import cdr_cleaner.cleaning_rules.person_id_validator as validator
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as clean_consts
+from cdr_cleaner.cleaning_rules import person_id_validator as validator
 import resources
 
 

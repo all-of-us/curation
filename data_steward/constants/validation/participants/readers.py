@@ -1,4 +1,4 @@
-import constants.validation.participants.identity_match as id_match
+from constants.validation.participants import identity_match as id_match
 
 # Select observation table attributes to validate
 PPI_OBSERVATION_VALUES = (

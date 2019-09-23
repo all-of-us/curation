@@ -6,11 +6,9 @@ import logging
 import bq_utils
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import domain_mapping
-import field_mapping
+from cdr_cleaner.cleaning_rules import domain_mapping, field_mapping
 import resources
-from domain_mapping import EMPTY_STRING
-from domain_mapping import METADATA_DOMAIN
+from cdr_cleaner.cleaning_rules.domain_mapping import EMPTY_STRING, METADATA_DOMAIN
 from resources import get_domain_id_field
 
 LOGGER = logging.getLogger(__name__)
