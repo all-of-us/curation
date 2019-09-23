@@ -4,9 +4,9 @@ import unittest
 import mock
 from mock import patch
 
-import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_id
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from cdr_cleaner.cleaning_rules import replace_standard_id_in_domain_tables as replace_standard_id
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import SRC_CONCEPT_ID_TABLE_NAME, \
     SRC_CONCEPT_ID_MAPPING_QUERY, \
     SRC_CONCEPT_ID_UPDATE_QUERY, \

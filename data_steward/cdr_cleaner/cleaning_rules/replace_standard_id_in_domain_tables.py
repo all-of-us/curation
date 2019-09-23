@@ -38,8 +38,8 @@ TODO when the time comes, include care_site, death, note, provider, specimen
 """
 
 import bq_utils
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 from validation.ehr_union import mapping_table_for
 

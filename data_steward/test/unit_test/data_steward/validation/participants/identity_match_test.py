@@ -8,9 +8,9 @@ import googleapiclient
 from mock import call, patch
 
 # Project imports
-import constants.bq_utils as bq_consts
-import constants.validation.participants.identity_match as consts
-import validation.participants.identity_match as id_match
+from constants import bq_utils as bq_consts
+from constants.validation.participants import identity_match as consts
+from validation.participants import identity_match as id_match
 
 
 class IdentityMatchTest(unittest.TestCase):

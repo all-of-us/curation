@@ -48,8 +48,8 @@ drug_exposure : dose_unit_source_value
 note : note_source_value
 """
 
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 
 LEFT_JOIN = (

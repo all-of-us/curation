@@ -7,7 +7,7 @@ import logging
 import common
 import gcs_utils
 import resources
-import retract_data_bq
+from tools import retract_data_bq
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction from buckets logger')

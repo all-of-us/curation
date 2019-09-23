@@ -4,7 +4,7 @@ import requests
 
 import bq_utils
 import common
-import constants.validation.main as main
+from constants.validation import main as main
 import gcs_utils
 import resources
 from io import open
