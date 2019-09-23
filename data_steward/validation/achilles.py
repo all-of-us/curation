@@ -3,7 +3,7 @@ import os
 
 import bq_utils
 import resources
-import validation.sql_wrangle
+from validation import sql_wrangle
 
 ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
