@@ -4,8 +4,8 @@ If there is a death_date listed for a person_id, ensure that no temporal fields
 30 days after the death_date.
 """
 
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 # add table names as keys and temporal representations as values into a dictionary
 TEMPORAL_TABLES_WITH_END_DATES = {'visit_occurrence': 'visit',

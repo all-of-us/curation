@@ -3,7 +3,7 @@ Remove observation records associated with a provided list of person_ids
 """
 import csv
 
-import constants.bq_utils as bq_consts
+from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 OBSERVATION = 'observation'

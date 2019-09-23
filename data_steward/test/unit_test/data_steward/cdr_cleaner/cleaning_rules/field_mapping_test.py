@@ -1,14 +1,12 @@
-from __future__ import print_function
 import unittest
 
 import mock
 from mock import patch
 
 from cdr_cleaner.cleaning_rules.domain_alignment import NULL_VALUE
-from cdr_cleaner.cleaning_rules.field_mapping import DOMAIN_DATE_FIELDS
-from cdr_cleaner.cleaning_rules.field_mapping import DOMAIN_SPECIFIC_FIELDS
-from cdr_cleaner.cleaning_rules.field_mapping import DOMAIN_COMMON_FIELDS
-import cdr_cleaner.cleaning_rules.field_mapping as field_mapping
+from cdr_cleaner.cleaning_rules.field_mapping import DOMAIN_DATE_FIELDS, DOMAIN_SPECIFIC_FIELDS, \
+    DOMAIN_COMMON_FIELDS
+from cdr_cleaner.cleaning_rules import field_mapping as field_mapping
 
 
 class FieldMappingTest(unittest.TestCase):

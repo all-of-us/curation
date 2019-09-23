@@ -4,21 +4,21 @@ import os
 import time
 import unittest
 from datetime import datetime
+from io import open
 
 import mock
 
 import bq_utils
 import common
 import app_identity
-import constants.bq_utils as bq_utils_consts
+from constants import bq_utils as bq_utils_consts
 import gcs_utils
 import resources
 from test.unit_test import test_util
-from test.unit_test.test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV
-from test.unit_test.test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_CSV
-from test.unit_test.test_util import PITT_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_OBSERVATION_CSV
+from test.unit_test.test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, \
+    NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_PERSON_CSV, \
+    PITT_FIVE_PERSONS_OBSERVATION_CSV
 from validation.achilles import ACHILLES_TABLES
-from io import open
 
 
 class BqUtilsTest(unittest.TestCase):

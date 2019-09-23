@@ -89,8 +89,8 @@ import pandas as pd
 # Project imports
 import bq_utils
 import constants.bq_utils as bq_consts
-from parser import parse_args
-from press import Press
+from deid.parser import parse_args
+from deid.press import Press
 
 
 LOGGER = logging.getLogger(__name__)

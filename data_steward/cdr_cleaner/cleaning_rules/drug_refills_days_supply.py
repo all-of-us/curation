@@ -4,8 +4,8 @@ Ensure rug refills < 10 and days_supply < 180
 
 # Project imports
 import common
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 MAX_DAYS_SUPPLY = 180
 MAX_REFILLS = 10
