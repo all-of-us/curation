@@ -4,8 +4,8 @@ Allowing for more flexibility, we choose Jan 1, 2017 as the program start date.
 """
 
 # Project imports
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 import common
 
 death = common.DEATH

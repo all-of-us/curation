@@ -8,8 +8,8 @@ import app_identity
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 
 import bq_utils
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 FILENAME = '/tmp/cleaner.log'

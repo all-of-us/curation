@@ -5,8 +5,8 @@ ID columns in each domain should be unique
 
 # Project imports
 import cdm
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 
 ID_DE_DUP_QUERY = (

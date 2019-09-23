@@ -25,7 +25,7 @@ import logging
 import numpy as np
 
 # Project imports
-from parser import Parse
+from deid.parser import Parse
 from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)

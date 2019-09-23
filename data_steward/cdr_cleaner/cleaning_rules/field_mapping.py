@@ -1,10 +1,8 @@
 from collections import OrderedDict
-from domain_mapping import DOMAIN_TABLE_NAMES
+from cdr_cleaner.cleaning_rules.domain_mapping import DOMAIN_TABLE_NAMES, get_field_mappings,\
+    exist_domain_mappings, NULL_VALUE
 from resources import get_domain_id_field, get_domain
-from domain_mapping import get_field_mappings
-from domain_mapping import exist_domain_mappings
-from domain_mapping import NULL_VALUE
-import domain_mapping
+from cdr_cleaner.cleaning_rules import domain_mapping
 import resources
 import re
 from io import open

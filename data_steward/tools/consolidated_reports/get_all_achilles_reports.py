@@ -1,11 +1,9 @@
-from __future__ import print_function
-
 import json
 import os
 
 import common
 import gcs_utils
-import tools.consolidated_reports.query_reports as query_reports
+from tools.consolidated_reports import query_reports as query_reports
 from io import open
 
 DRC_BUCKET_PATH = 'gs://%s/' % gcs_utils.get_drc_bucket()

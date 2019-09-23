@@ -1,7 +1,7 @@
 """
     This class applies rules and meta data to yield a certain outpout
 """
-# Project imports
+# Python imports
 import codecs
 from datetime import datetime
 import json

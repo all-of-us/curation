@@ -6,7 +6,7 @@ import app_identity
 from google.appengine.api import mail
 
 import api_util
-import key_rotation
+from admin import key_rotation
 
 LOGGER = logging.getLogger(__name__)
 

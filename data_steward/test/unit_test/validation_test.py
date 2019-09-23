@@ -8,19 +8,20 @@ import json
 import os
 import re
 import unittest
+from io import open
 
 import googleapiclient.errors
 import mock
 
 import bq_utils
 import common
-import constants.bq_utils as bq_consts
-import constants.validation.hpo_report as report_consts
-import constants.validation.main as main_constants
-import constants.validation.participants.identity_match as id_match_consts
+from constants import bq_utils as bq_consts
+from constants.validation import hpo_report as report_consts
+from constants.validation import main as main_constants
+from constants.validation.participants import identity_match as id_match_consts
 import gcs_utils
 import resources
-import test.unit_test.test_util as test_util
+from test.unit_test import test_util as test_util
 from validation import main
 
 

@@ -7,7 +7,7 @@ import app_identity
 
 import bq_utils
 import common
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 from cdr_cleaner.cleaning_rules import populate_route_ids
 
