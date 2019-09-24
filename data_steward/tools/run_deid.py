@@ -24,6 +24,7 @@ VOCABULARY_TABLES = ['concept', 'vocabulary', 'domain', 'concept_class', 'concep
                      'relationship', 'concept_synonym', 'concept_ancestor', 'source_to_concept_map',
                      'drug_strength']
 
+
 def add_console_logging(add_handler):
     """
     This config should be done in a separate module, but that can wait
@@ -119,6 +120,7 @@ def copy_vocabulary_tables(input_dataset, dest_dataset):
         if bq_utils.table_exists(table, dataset_id=input_dataset):
             pass
 
+
 def parse_args(raw_args=None):
     """
     Parse command line arguments.
@@ -169,7 +171,7 @@ def main(raw_args=None):
     add_console_logging(False)
     args = parse_args(raw_args)
     known_tables = get_known_tables(fields_path)
-    configured_tables = get_known_tables('deid/config/ids/tables')
+    configured_tables = get_known_tables('../deid/config/ids/tables')
     tables = get_output_tables(args.input_dataset, known_tables, args.skip_tables, args.tables)
 
     exceptions = []
@@ -177,12 +179,12 @@ def main(raw_args=None):
     for table in tables:
         tablepath = None
         if table in configured_tables:
-            tablepath = 'deid/config/ids/tables/' + table + '.json'
+            tablepath = '../deid/config/ids/tables/' + table + '.json'
         else:
             tablepath = table
 
         parameter_list = [
-            '--rules', 'deid/config/ids/config.json',
+            '--rules', '../deid/config/ids/config.json',
             '--private_key', args.private_key,
             '--table', tablepath,
             '--action', args.action,
