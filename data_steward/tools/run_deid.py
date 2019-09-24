@@ -24,6 +24,7 @@ VOCABULARY_TABLES = ['concept', 'vocabulary', 'domain', 'concept_class', 'concep
                      'relationship', 'concept_synonym', 'concept_ancestor', 'source_to_concept_map',
                      'drug_strength']
 
+
 def add_console_logging(add_handler):
     """
     This config should be done in a separate module, but that can wait
@@ -118,6 +119,7 @@ def copy_vocabulary_tables(input_dataset, dest_dataset):
     for table in VOCABULARY_TABLES:
         if bq_utils.table_exists(table, dataset_id=input_dataset):
             pass
+
 
 def parse_args(raw_args=None):
     """
