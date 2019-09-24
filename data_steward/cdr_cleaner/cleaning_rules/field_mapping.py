@@ -176,7 +176,8 @@ def create_domain_field_dict():
         domain = get_domain(domain_table)
         domain_id_field = get_domain_id_field(domain_table)
 
-        for field_name in get_domain_fields(domain_table):
+        for field_name in [field_name for field_name in get_domain_fields(domain_table) if
+                           field_name != domain_id_field]:
 
             # Added a special check for drug_exposure because the drug_exposure columns don't follow the same pattern
             # E.g. drug_exposure_start_time doesn't follow the pattern {domain}_start_datetime
@@ -211,7 +212,7 @@ def get_domain_fields(_domain_table):
     """
     id_field = get_domain_id_field(_domain_table)
     fields = CDM_TABLE_SCHEMAS[_domain_table]
-    return [field[NAME_FIELD] for field in fields if field[NAME_FIELD] != id_field]
+    return [field[NAME_FIELD] for field in fields]
 
 
 def is_field_required(_domain_table, field_name):

@@ -23,39 +23,53 @@ DATE_FIELD_KEY_WORD = 'date'
 
 REMOVE_RECORDS_WITH_WRONG_DATE_FIELD_TEMPLATE = '''
 SELECT
-    *
+    {col_expr}
 FROM `{project_id}.{dataset_id}.{table_id}`
 WHERE {where_clause}
 '''
 
-WHERE_CLAUSE_REQUIRED_FIELD = '''
-(EXTRACT(YEAR FROM {date_field_name}) > {year_threshold} AND CAST({date_field_name} AS DATE) <= current_date())
-'''
+WHERE_CLAUSE_REQUIRED_FIELD = (
+    '(EXTRACT(YEAR FROM {date_field_name}) > {year_threshold} AND CAST({date_field_name} AS DATE) <= current_date())'
+)
 
-WHERE_CLAUSE_NULLABLE_FIELD = '''
-IF({date_field_name} IS NULL, TRUE, EXTRACT(YEAR FROM {date_field_name}) >= {year_threshold} AND CAST({date_field_name} AS DATE) <= current_date())
-'''
+NULLABLE_DATE_FIELD_EXPRESSION = (
+    'IF(EXTRACT(YEAR FROM {date_field_name}) <= {year_threshold} OR CAST({date_field_name} AS DATE) > current_date(), NULL, {date_field_name}) AS {date_field_name}'
+)
 
 AND = ' AND '
 
 
-def generate_where_clause(table_id, date_field_name, year_threshold):
+def get_date_fields(table_id):
     """
-    This function generates a where clause for the date field based on the given year threshold
-    :param table_id: the table id
-    :param date_field_name: the date field
-    :param year_threshold: the year threshold for the date field
+    The function retrieves a list of date related fields for the given table
+    :param table_id:
     :return:
     """
+    return [field for field in field_mapping.get_domain_fields(table_id) if DATE_FIELD_KEY_WORD in field]
 
-    if field_mapping.is_field_required(table_id, date_field_name):
-        where_clause = WHERE_CLAUSE_REQUIRED_FIELD.format(date_field_name=date_field_name,
-                                                          year_threshold=year_threshold)
-    else:
-        where_clause = WHERE_CLAUSE_NULLABLE_FIELD.format(date_field_name=date_field_name,
-                                                          year_threshold=year_threshold)
 
-    return where_clause
+def generate_field_expr(table_id, year_threshold):
+    """
+    This function generates the select statements for the table. For the nullable date fields, it sets the value to NULL
+    if the nullable date field fails the threshold criteria
+    :param table_id:
+    :param year_threshold:
+    :return:
+    """
+    col_expression_list = []
+
+    nullable_date_field_names = [field for field in get_date_fields(table_id) if
+                                 not field_mapping.is_field_required(table_id, field)]
+
+    for field_name in field_mapping.get_domain_fields(table_id):
+
+        if field_name in nullable_date_field_names:
+            col_expression_list.append(
+                NULLABLE_DATE_FIELD_EXPRESSION.format(date_field_name=field_name, year_threshold=year_threshold))
+        else:
+            col_expression_list.append(field_name)
+
+    return ','.join(col_expression_list)
 
 
 def parse_remove_records_with_wrong_date_query(project_id, dataset_id, table_id, year_threshold):
@@ -67,20 +81,25 @@ def parse_remove_records_with_wrong_date_query(project_id, dataset_id, table_id,
     :param year_threshold: the year threshold for removing the records
     :return: a query that keep the records qualifying for the year threshold
     """
-    date_field_names = [field for field in field_mapping.get_domain_fields(table_id) if DATE_FIELD_KEY_WORD in field]
 
+    required_date_field_names = [field for field in get_date_fields(table_id) if
+                                 field_mapping.is_field_required(table_id, field)]
     where_clause = ''
 
-    for date_field_name in date_field_names:
+    for date_field_name in required_date_field_names:
 
         if where_clause != '':
             where_clause += AND
 
-        where_clause += generate_where_clause(table_id, date_field_name, year_threshold)
+        where_clause += WHERE_CLAUSE_REQUIRED_FIELD.format(date_field_name=date_field_name,
+                                                           year_threshold=year_threshold)
+
+    col_expr = generate_field_expr(table_id, year_threshold)
 
     return REMOVE_RECORDS_WITH_WRONG_DATE_FIELD_TEMPLATE.format(project_id=project_id,
                                                                 dataset_id=dataset_id,
                                                                 table_id=table_id,
+                                                                col_expr=col_expr,
                                                                 where_clause=where_clause)
 
 

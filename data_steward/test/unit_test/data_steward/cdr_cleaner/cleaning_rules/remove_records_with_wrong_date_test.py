@@ -4,6 +4,8 @@ from mock import mock
 from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import OBSERVATION_TABLE
 from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import DEFAULT_YEAR_THRESHOLD
 from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import OBSERVATION_DEFAULT_YEAR_THRESHOLD
+from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import NULLABLE_DATE_FIELD_EXPRESSION
+from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import WHERE_CLAUSE_REQUIRED_FIELD
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -21,62 +23,77 @@ class RemoveRecordsWithWrongDateTest(unittest.TestCase):
         self.project_id = 'project_id'
         self.dataset_id = 'dataset_id'
         self.condition_occurrence = 'condition_occurrence'
+        self.condition_concept_id = 'condition_concept_id'
         self.condition_start_date = 'condition_start_date'
+        self.condition_start_datetime = 'condition_start_datetime'
+        self.condition_end_datetime = 'condition_end_datetime'
         self.condition_end_date = 'condition_end_date'
         self.year_threshold = 1980
         self.condition_start_date_where_clause = '(condition_start_date where clause)'
         self.condition_end_date_where_clause = '(condition_end_date where clause)'
         self.observation_query = 'SELECT * FROM observation'
         self.condition_query = 'SELECT * FROM condition'
+        self.condition_field_names = ['condition_concept_id', 'condition_start_date', 'condition_start_datetime',
+                                      'condition_end_date', 'condition_end_datetime']
+        self.condition_date_field_names = ['condition_start_date', 'condition_start_datetime',
+                                           'condition_end_date', 'condition_end_datetime']
+        self.col_expression = 'col_expression'
+
+    @mock.patch('cdr_cleaner.cleaning_rules.field_mapping.get_domain_fields')
+    def test_get_date_fields(self, mock_get_domain_fields):
+        mock_get_domain_fields.side_effect = [self.condition_field_names]
+        actual = remove_records_with_wrong_date.get_date_fields(self.condition_occurrence)
+        self.assertItemsEqual(self.condition_date_field_names, actual)
 
     @mock.patch('cdr_cleaner.cleaning_rules.field_mapping.is_field_required')
-    def test_generate_where_clause(self, mock_is_field_required):
-        mock_is_field_required.side_effect = [True, False]
-
-        actual_where_clause = remove_records_with_wrong_date.generate_where_clause(self.condition_occurrence,
-                                                                                   self.condition_start_date,
-                                                                                   self.year_threshold)
-        expected_where_clause = remove_records_with_wrong_date.WHERE_CLAUSE_REQUIRED_FIELD.format(
-            date_field_name=self.condition_start_date,
-            year_threshold=self.year_threshold)
-
-        self.assertEqual(expected_where_clause, actual_where_clause)
-
-        actual_where_clause = remove_records_with_wrong_date.generate_where_clause(self.condition_occurrence,
-                                                                                   self.condition_end_date,
-                                                                                   self.year_threshold)
-
-        expected_where_clause = remove_records_with_wrong_date.WHERE_CLAUSE_NULLABLE_FIELD.format(
-            date_field_name=self.condition_end_date,
-            year_threshold=self.year_threshold)
-
-        self.assertEqual(expected_where_clause, actual_where_clause)
-
-        args, _ = mock_is_field_required.call_args_list[0]
-        self.assertEqual((self.condition_occurrence, self.condition_start_date), args)
-
-        args, _ = mock_is_field_required.call_args_list[1]
-        self.assertEqual((self.condition_occurrence, self.condition_end_date), args)
-
-        self.assertEqual(2, mock_is_field_required.call_count)
-
-    @mock.patch('cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.generate_where_clause')
     @mock.patch('cdr_cleaner.cleaning_rules.field_mapping.get_domain_fields')
-    def test_parse_remove_records_with_wrong_date_query(self, mock_get_domain_fields, mock_generate_where_clause):
-        mock_get_domain_fields.return_value = [self.condition_start_date, self.condition_end_date]
-        mock_generate_where_clause.side_effect = [self.condition_start_date_where_clause,
-                                                  self.condition_end_date_where_clause]
+    def test_generate_field_expr(self, mock_get_domain_fields, mock_is_field_required):
+        mock_get_domain_fields.side_effect = [self.condition_field_names, self.condition_field_names]
+        mock_is_field_required.side_effect = [True, True, False, False]
+
+        actual = remove_records_with_wrong_date.generate_field_expr(self.condition_occurrence, self.year_threshold)
+
+        condition_end_date_col_expr = NULLABLE_DATE_FIELD_EXPRESSION.format(date_field_name=self.condition_end_date,
+                                                                            year_threshold=self.year_threshold)
+        condition_end_datetime_col_expr = NULLABLE_DATE_FIELD_EXPRESSION.format(
+            date_field_name=self.condition_end_datetime,
+            year_threshold=self.year_threshold)
+        expected_col_expr_list = [self.condition_concept_id, self.condition_start_date, self.condition_start_datetime,
+                                  condition_end_date_col_expr, condition_end_datetime_col_expr]
+
+        self.assertEqual(','.join(expected_col_expr_list), actual)
+
+    @mock.patch('cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.generate_field_expr')
+    @mock.patch('cdr_cleaner.cleaning_rules.field_mapping.is_field_required')
+    @mock.patch('cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_date_fields')
+    def test_parse_remove_records_with_wrong_date_query(self,
+                                                        mock_get_date_fields,
+                                                        mock_is_field_required,
+                                                        mock_generate_field_expr):
+
+        mock_get_date_fields.side_effect = [self.condition_date_field_names]
+        mock_is_field_required.side_effect = [True, True, False, False]
+        mock_generate_field_expr.side_effect = [self.col_expression]
 
         actual = remove_records_with_wrong_date.parse_remove_records_with_wrong_date_query(self.project_id,
                                                                                            self.dataset_id,
                                                                                            self.condition_occurrence,
                                                                                            self.year_threshold)
 
+        condition_start_date_where_clause = WHERE_CLAUSE_REQUIRED_FIELD.format(
+            date_field_name=self.condition_start_date,
+            year_threshold=self.year_threshold)
+
+        condition_start_datetime_where_clause = WHERE_CLAUSE_REQUIRED_FIELD.format(
+            date_field_name=self.condition_start_datetime,
+            year_threshold=self.year_threshold)
+
         expected = remove_records_with_wrong_date.REMOVE_RECORDS_WITH_WRONG_DATE_FIELD_TEMPLATE.format(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             table_id=self.condition_occurrence,
-            where_clause=self.condition_start_date_where_clause + remove_records_with_wrong_date.AND + self.condition_end_date_where_clause)
+            col_expr=self.col_expression,
+            where_clause=condition_start_date_where_clause + remove_records_with_wrong_date.AND + condition_start_datetime_where_clause)
 
         self.assertEqual(expected, actual)
 
