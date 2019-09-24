@@ -46,18 +46,6 @@
 				"qualifier":"IN",
 				"values":[903096, 903079, 1585848, 1585849],
 				"into":2000000009
-			},
-            {
-                "comment": "generalizing female responses",
-                "qualifier": "IN",
-                "values": [1585847],
-                "into": 45878463
-            },
-            {
-                "comment": "generalizing male responses",
-                "qualifier": "IN",
-                "values": [1585846],
-                "into": 45880669
             }
 		],
 		"GENDER":[
