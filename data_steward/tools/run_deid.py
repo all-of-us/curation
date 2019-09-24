@@ -169,7 +169,7 @@ def main(raw_args=None):
     add_console_logging(False)
     args = parse_args(raw_args)
     known_tables = get_known_tables(fields_path)
-    configured_tables = get_known_tables('deid/config/ids/tables')
+    configured_tables = get_known_tables('../deid/config/ids/tables')
     tables = get_output_tables(args.input_dataset, known_tables, args.skip_tables, args.tables)
 
     exceptions = []
@@ -177,12 +177,12 @@ def main(raw_args=None):
     for table in tables:
         tablepath = None
         if table in configured_tables:
-            tablepath = 'deid/config/ids/tables/' + table + '.json'
+            tablepath = '../deid/config/ids/tables/' + table + '.json'
         else:
             tablepath = table
 
         parameter_list = [
-            '--rules', 'deid/config/ids/config.json',
+            '--rules', '../deid/config/ids/config.json',
             '--private_key', args.private_key,
             '--table', tablepath,
             '--action', args.action,
