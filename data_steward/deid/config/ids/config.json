@@ -32,12 +32,6 @@
 				"qualifier":"IN",
 				"values":[903096, 903079, 1585901, 1585902, 1585903, 1585904],
 				"into":2000000003
-			},
-            {
-                "comment": "generalize straight values to same concept id",
-                "qualifier": "IN",
-                "values": [1585900],
-                "into": 4069091
             }
 		],
 		"SEX-AT-BIRTH":[
