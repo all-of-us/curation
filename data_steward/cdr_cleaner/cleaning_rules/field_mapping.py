@@ -206,11 +206,10 @@ def create_domain_field_dict():
 
 def get_domain_fields(_domain_table):
     """
-    This function retrieves all field names of a CDM table except for the id column such as condition_occurrence_id
+    This function retrieves all field names of a CDM table
     :param _domain_table:
     :return:
     """
-    id_field = get_domain_id_field(_domain_table)
     fields = CDM_TABLE_SCHEMAS[_domain_table]
     return [field[NAME_FIELD] for field in fields]
 

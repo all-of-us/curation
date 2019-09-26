@@ -105,8 +105,8 @@ def parse_remove_records_with_wrong_date_query(project_id, dataset_id, table_id,
 
 def get_remove_records_with_wrong_date_queries(project_id,
                                                dataset_id,
-                                               year_threshold,
-                                               observation_year_threshold):
+                                               year_threshold=DEFAULT_YEAR_THRESHOLD,
+                                               observation_year_threshold=OBSERVATION_DEFAULT_YEAR_THRESHOLD):
     """
     This function generates a list of query dicts for removing the records with wrong date in the corresponding destination table.
     :param project_id: the project_id in which the query is run
