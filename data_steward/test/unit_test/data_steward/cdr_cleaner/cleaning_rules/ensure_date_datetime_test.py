@@ -203,7 +203,7 @@ class EnsureDateDatetime(unittest.TestCase):
             self.assertEqual(actual, expected)
 
     def test_fix_datetime_queries(self):
-        actual = eddc.get_remove_records_with_wrong_datetime_queries(self.project_id, self.dataset_id)
+        actual = eddc.get_fix_incorrect_datetime_to_date_queries(self.project_id, self.dataset_id)
         expected = []
         for table in eddc.TABLE_DATES:
             query = dict()

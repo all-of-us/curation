@@ -57,7 +57,7 @@ def get_cols(table_id):
     return cols
 
 
-def get_remove_records_with_wrong_datetime_queries(project_id, dataset_id):
+def get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id):
     """
     This function generates a list of query dicts for ensuring the dates and datetimes are consistent
 
@@ -86,5 +86,5 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_remove_records_with_wrong_datetime_queries(ARGS.project_id, ARGS.dataset_id)
+    query_list = get_fix_incorrect_datetime_to_date_queries(ARGS.project_id, ARGS.dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
