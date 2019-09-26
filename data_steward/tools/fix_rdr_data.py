@@ -25,7 +25,7 @@ PMI_SKIP_FIX_QUERY = \
      '  value_as_number,'
      '  value_as_string,'
      '  coalesce(obs.value_as_concept_id,'
-     '    0) AS value_as_concept_id,'
+     '    903096) AS value_as_concept_id,'
      '  coalesce(obs.qualifier_concept_id,'
      '    0) AS qualifier_concept_id,'
      '  coalesce(obs.unit_concept_id,'
