@@ -28,7 +28,8 @@ class EnsureDateDatetime(unittest.TestCase):
                       'cause_concept_id',
                       'cause_source_value',
                       'cause_source_concept_id'),
-            'observation': (u'person_id',
+            'observation': (u'observation_id',
+                            'person_id',
                             'observation_concept_id',
                             'observation_date',
                             ' CASE WHEN EXTRACT(DATE FROM observation_datetime) = observation_date '
@@ -48,7 +49,8 @@ class EnsureDateDatetime(unittest.TestCase):
                             'value_source_concept_id',
                             'value_source_value',
                             'questionnaire_response_id'),
-            'procedure_occurrence': (u'person_id',
+            'procedure_occurrence': (u'procedure_occurrence_id',
+                                     'person_id',
                                      'procedure_concept_id',
                                      'procedure_date',
                                      ' CASE WHEN EXTRACT(DATE FROM procedure_datetime) = procedure_date '
@@ -62,7 +64,8 @@ class EnsureDateDatetime(unittest.TestCase):
                                      'procedure_source_value',
                                      'procedure_source_concept_id',
                                      'qualifier_source_value'),
-            'observation_period': (u'person_id',
+            'observation_period': (u'observation_period_id',
+                                   'person_id',
                                    'observation_period_start_date',
                                    'observation_period_end_date',
                                    'period_type_concept_id',
@@ -72,7 +75,8 @@ class EnsureDateDatetime(unittest.TestCase):
                                    ' CASE WHEN EXTRACT(DATE FROM observation_period_end_datetime)'
                                    ' = observation_period_end_date THEN observation_period_end_datetime '
                                    'ELSE NULL END AS observation_period_end_datetime'),
-            'specimen': (u'person_id',
+            'specimen': (u'specimen_id',
+                         'person_id',
                          'specimen_concept_id',
                          'specimen_type_concept_id',
                          'specimen_date',
@@ -87,7 +91,8 @@ class EnsureDateDatetime(unittest.TestCase):
                          'unit_source_value',
                          'anatomic_site_source_value',
                          'disease_status_source_value'),
-            'visit_occurrence': (u'person_id',
+            'visit_occurrence': (u'visit_occurrence_id',
+                                 'person_id',
                                  'visit_concept_id',
                                  'visit_start_date',
                                  ' CASE WHEN EXTRACT(DATE FROM visit_start_datetime) = visit_start_date '
@@ -105,7 +110,8 @@ class EnsureDateDatetime(unittest.TestCase):
                                  'discharge_to_concept_id',
                                  'discharge_to_source_value',
                                  'preceding_visit_occurrence_id'),
-            'condition_occurrence': (u'person_id',
+            'condition_occurrence': (u'condition_occurrence_id',
+                                     'person_id',
                                      'condition_concept_id',
                                      'condition_start_date',
                                      ' CASE WHEN EXTRACT(DATE FROM condition_start_datetime) = condition_start_date '
@@ -123,7 +129,8 @@ class EnsureDateDatetime(unittest.TestCase):
                                      'condition_source_concept_id',
                                      'condition_status_source_value',
                                      'condition_status_concept_id'),
-            'device_exposure': (u'person_id',
+            'device_exposure': (u'device_exposure_id',
+                                'person_id',
                                 'device_concept_id',
                                 'device_exposure_start_date',
                                 ' CASE WHEN EXTRACT(DATE FROM device_exposure_start_datetime)'
@@ -142,7 +149,8 @@ class EnsureDateDatetime(unittest.TestCase):
                                 'visit_occurrence_id',
                                 'device_source_value',
                                 'device_source_concept_id'),
-            'measurement': (u'person_id',
+            'measurement': (u'measurement_id',
+                            'person_id',
                             'measurement_concept_id',
                             'measurement_date',
                             ' CASE WHEN EXTRACT(DATE FROM measurement_datetime) = measurement_date '
@@ -160,7 +168,8 @@ class EnsureDateDatetime(unittest.TestCase):
                             'measurement_source_concept_id',
                             'unit_source_value',
                             'value_source_value'),
-            'drug_exposure': (u'person_id',
+            'drug_exposure': (u'drug_exposure_id',
+                              'person_id',
                               'drug_concept_id',
                               'drug_exposure_start_date',
                               ' CASE WHEN EXTRACT(DATE FROM drug_exposure_start_datetime) = drug_exposure_start_date '
