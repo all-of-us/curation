@@ -197,11 +197,10 @@ class EnsureDateDatetime(unittest.TestCase):
         }
 
     def test_get_cols(self):
-        actual = dict()
         for table in eddc.TABLE_DATES:
-            actual[table] = eddc.get_cols(table)
-        expected = self.cols
-        self.assertItemsEqual(actual, expected)
+            actual = eddc.get_cols(table)
+            expected = ', '.join(self.cols[table])
+            self.assertEqual(actual, expected)
 
     def test_fix_datetime_queries(self):
         actual = eddc.get_remove_records_with_wrong_datetime_queries(self.project_id, self.dataset_id)
