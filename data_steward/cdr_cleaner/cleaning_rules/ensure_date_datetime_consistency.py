@@ -28,6 +28,12 @@ FROM `{project_id}.{dataset_id}.{table_id}`
 
 
 def get_cols(table_id):
+    """
+    Generates the fields to choose along with case statements to generate datetime
+
+    :param table_id: table for which the fields
+    :return:
+    """
     table_fields = field_mapping.get_domain_fields(table_id)
     col_exprs = []
     for field in table_fields:
