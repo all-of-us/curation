@@ -275,6 +275,20 @@ class Deid(Rules):
                 result['on'] = args['on']
 
             out.append(result)
+
+            # allows to generalize one field off another field's values
+            # essentially, it copies the generalized value of one field to another
+            if 'copy_to' in args:
+                copy_to = args.get('copy_to')
+                if not isinstance(copy_to, list):
+                    copy_to = [copy_to]
+
+                for copy_field in copy_to:
+                    cond[-1] = copy_field
+                    copy_result = {"name": copy_field, "apply": " ".join(cond), "label": label}
+                    if 'on' in args:
+                        copy_result['on'] = args['on']
+                    out.append(copy_result)
         #
         # This will return the fields that need generalization as specified.
         #
