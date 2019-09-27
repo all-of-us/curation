@@ -15,8 +15,10 @@
 # +
 # %matplotlib inline
 import warnings
+
 import google.datalab.bigquery as bq
 import seaborn as sns
+
 from defaults import DEFAULT_DATASETS
 
 warnings.filterwarnings('ignore')
@@ -45,23 +47,25 @@ def row_counts(dataset_ids):
     g.set_xticklabels(rotation=45, ha='right')
     return df
 
+
 # # RDR data volume over time
 
+
 rdr_df = row_counts(DEFAULT_DATASETS.trend.rdr)
-rdr_df.pivot(index='table_id', columns='dataset_id', values='row_count')
-rdr_df.to_csv('%s.csv' % DEFAULT_DATASETS.trend.rdr)
+rdr_df = rdr_df.pivot(index='table_id', columns='dataset_id', values='row_count')
+rdr_df.to_csv('%s.csv' % 'rdr_diff')
 
 # # EHR data volume over time
 
 unioned_df = row_counts(DEFAULT_DATASETS.trend.unioned)
-unioned_df.pivot(index='table_id', columns='dataset_id', values='row_count')
-rdr_df.to_csv('%s.csv' % DEFAULT_DATASETS.trend.unioned)
+unioned_df = unioned_df.pivot(index='table_id', columns='dataset_id', values='row_count')
+unioned_df.to_csv('%s.csv' % 'unioned_diff')
 
 # ## Combined data volume over time
 
 combined_df = row_counts(DEFAULT_DATASETS.trend.combined)
-combined_df.pivot(index='table_id', columns='dataset_id', values='row_count')
-rdr_df.to_csv('%s.csv' % DEFAULT_DATASETS.trend.combined)
+combined_df = combined_df.pivot(index='table_id', columns='dataset_id', values='row_count')
+combined_df.to_csv('%s.csv' % 'combined_diff')
 
 # # Characterization of EHR data
 
@@ -94,7 +98,8 @@ df['has_ehr_data'] = df['has_ehr_data'].astype('category')
 
 # exclude anomalous records where age<18 or age>100
 f = df[(df.age > 17) & (df.age < 100)]
-g = sns.factorplot('race', data=f, aspect=4, size=3.25, kind='count', order=f.race.value_counts().index, hue='has_ehr_data')
+g = sns.factorplot('race', data=f, aspect=4, size=3.25, kind='count', order=f.race.value_counts().index,
+                   hue='has_ehr_data')
 g.set_xticklabels(rotation=45, ha='right')
 # -
 
@@ -130,7 +135,7 @@ df['gender'] = df['gender'].astype('category')
 
 # exclude anomalous records where age<18 or age>100
 f = df[(df.age > 17) & (df.age < 100)]
-g = sns.factorplot('age', data=f, aspect=4, size=3.25, kind='count', hue='gender', order=range(15,100))
+g = sns.factorplot('age', data=f, aspect=4, size=3.25, kind='count', hue='gender', order=range(15, 100))
 g.set_xticklabels(step=5)
 # -
 
@@ -138,6 +143,7 @@ g.set_xticklabels(step=5)
 
 g = sns.factorplot(x='race', data=f, aspect=5, size=2.5, kind='count', order=f.race.value_counts().index)
 g.set_xticklabels(rotation=45, ha='right')
+
 
 # # Gender By Race
 
@@ -162,6 +168,7 @@ def gender_by_race(dataset_id):
     g.set_xticklabels([])
     g.set_axis_labels('', '')
     g.add_legend()
+
 
 # ## RDR
 
