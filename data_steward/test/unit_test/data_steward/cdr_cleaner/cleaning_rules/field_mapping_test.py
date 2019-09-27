@@ -51,14 +51,16 @@ class FieldMappingTest(unittest.TestCase):
             self.procedure_table: self.procedure_schema
         }
 
-        self.condition_occurrence_fields = ['person_id',
+        self.condition_occurrence_fields = ['condition_occurrence_id',
+                                            'person_id',
                                             'condition_concept_id',
                                             'condition_start_date',
                                             'condition_start_datetime',
                                             'condition_end_date',
                                             'condition_end_datetime',
                                             'condition_source_value']
-        self.procedure_occurrence_fields = ['person_id',
+        self.procedure_occurrence_fields = ['procedure_occurrence_id',
+                                            'person_id',
                                             'procedure_concept_id',
                                             'procedure_date',
                                             'procedure_datetime',
@@ -201,10 +203,8 @@ class FieldMappingTest(unittest.TestCase):
 
         self.assertDictEqual(actual, expected)
 
-    @mock.patch('cdr_cleaner.cleaning_rules.field_mapping.get_domain_id_field')
-    def test_get_domain_fields(self, mock_get_domain_id_field):
+    def test_get_domain_fields(self):
         with patch.dict('cdr_cleaner.cleaning_rules.field_mapping.CDM_TABLE_SCHEMAS', self.cdm_schemas):
-            mock_get_domain_id_field.side_effect = [self.condition_occurrence_id, self.procedure_occurrence_id]
             fields = field_mapping.get_domain_fields(self.condition_table)
             self.assertEqual(fields, self.condition_occurrence_fields)
             self.assertEqual(field_mapping.get_domain_fields(self.procedure_table),
