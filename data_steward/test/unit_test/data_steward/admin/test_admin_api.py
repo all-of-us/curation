@@ -76,7 +76,7 @@ class AdminApiTest(unittest.TestCase):
             send_mail_args = dict(sender=admin_api.SENDER_ADDRESS,
                                   to=mock_notification_address,
                                   subject=admin_api.SUBJECT)
-            self.assertListEqual(mock_send_mail.call_args_list,
+            self.assertCountEqual(mock_send_mail.call_args_list,
                                  [mock.call(body=full_body, **send_mail_args),
                                   mock.call(body=expired_section, **send_mail_args),
                                   mock.call(body=expiring_section, **send_mail_args)])

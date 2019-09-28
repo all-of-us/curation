@@ -30,16 +30,16 @@ class ResourcesTest(unittest.TestCase):
         table_names = schemas.keys()
 
         result_internal_tables = list(filter(resources.is_internal_table, table_names))
-        self.assertListEqual([], result_internal_tables,
+        self.assertCountEqual([], result_internal_tables,
                              msg='Internal tables %s should not be in result of cdm_schemas()' % result_internal_tables)
 
         achilles_tables = common.ACHILLES_TABLES + common.ACHILLES_HEEL_TABLES
         result_achilles_tables = [table_name for table_name in table_names if table_name in achilles_tables]
-        self.assertListEqual([], result_achilles_tables,
+        self.assertCountEqual([], result_achilles_tables,
                              msg='Achilles tables %s should not be in result of cdm_schemas()' % result_achilles_tables)
 
         result_vocab_tables = [table_name for table_name in table_names if table_name in resources.VOCABULARY_TABLES]
-        self.assertListEqual([], result_vocab_tables,
+        self.assertCountEqual([], result_vocab_tables,
                              msg='Vocabulary tables %s should not be in result of cdm_schemas()' % result_vocab_tables)
 
     def tearDown(self):

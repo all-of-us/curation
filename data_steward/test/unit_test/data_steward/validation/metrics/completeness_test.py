@@ -70,7 +70,7 @@ class CompletenessTest(unittest.TestCase):
             mock_response2rows.return_value = cols
             expected_result = [cols[0]]
             actual_result = completeness.get_cols(dataset_id)
-            self.assertListEqual(expected_result, actual_result)
+            self.assertCountEqual(expected_result, actual_result)
 
     def test_create_completeness_query(self):
         dataset_id = 'some_dataset_id'
