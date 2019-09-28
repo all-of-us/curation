@@ -102,7 +102,7 @@ class ValidationTest(unittest.TestCase):
             expected_warnings.append(expected_item)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, self.folder_prefix)
-        self.assertListEqual(expected_warnings, r['warnings'])
+        self.assertCountEqual(expected_warnings, r['warnings'])
 
     def test_retention_checks_list_submitted_bucket_items(self):
         outside_retention = datetime.datetime.today() - datetime.timedelta(days=29)
@@ -113,7 +113,7 @@ class ValidationTest(unittest.TestCase):
         # if the file expires within a day it should not be returned
         actual_result = main.list_submitted_bucket_items(bucket_items)
         expected_result = []
-        self.assertListEqual(expected_result, actual_result)
+        self.assertCountEqual(expected_result, actual_result)
 
         # if the file within retention period it should be returned
         within_retention = datetime.datetime.today() - datetime.timedelta(days=25)
@@ -124,24 +124,24 @@ class ValidationTest(unittest.TestCase):
         bucket_items.append(item_2)
         expected_result = [item_2]
         actual_result = main.list_submitted_bucket_items(bucket_items)
-        self.assertListEqual(expected_result, actual_result)
+        self.assertCountEqual(expected_result, actual_result)
 
         actual_result = main.list_submitted_bucket_items([])
-        self.assertListEqual([], actual_result)
+        self.assertCountEqual([], actual_result)
 
         unknown_item = {'name': '2018-09-01/nyc_cu_person.csv',
                         'timeCreated': within_retention_str,
                         'updated': within_retention_str}
         bucket_items = [unknown_item]
         actual_result = main.list_submitted_bucket_items(bucket_items)
-        self.assertListEqual(actual_result, bucket_items)
+        self.assertCountEqual(actual_result, bucket_items)
 
         ignored_item = dict(name='2018-09-01/' + common.RESULTS_HTML,
                             timeCreated=within_retention_str,
                             updated=within_retention_str)
         bucket_items = [ignored_item]
         actual_result = main.list_submitted_bucket_items(bucket_items)
-        self.assertListEqual([], actual_result)
+        self.assertCountEqual([], actual_result)
 
     def table_has_clustering(self, table_info):
         clustering = table_info.get('clustering')
@@ -272,9 +272,9 @@ class ValidationTest(unittest.TestCase):
         ignored_files = ['curation_report/index.html']
         folder_items = expected_cdm_files + expected_pii_files + expected_unknown_files + ignored_files
         cdm_files, pii_files, unknown_files = main.categorize_folder_items(folder_items)
-        self.assertListEqual(expected_cdm_files, cdm_files)
-        self.assertListEqual(expected_pii_files, pii_files)
-        self.assertListEqual(expected_unknown_files, unknown_files)
+        self.assertCountEqual(expected_cdm_files, cdm_files)
+        self.assertCountEqual(expected_pii_files, pii_files)
+        self.assertCountEqual(expected_unknown_files, unknown_files)
 
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
@@ -343,9 +343,9 @@ class ValidationTest(unittest.TestCase):
         mock_perform_validation_on_file.side_effect = perform_validation_on_file
 
         actual_result = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, folder_prefix)
-        self.assertListEqual(expected_results, actual_result.get('results'))
-        self.assertListEqual(expected_errors, actual_result.get('errors'))
-        self.assertListEqual(expected_warnings, actual_result.get('warnings'))
+        self.assertCountEqual(expected_results, actual_result.get('results'))
+        self.assertCountEqual(expected_errors, actual_result.get('errors'))
+        self.assertCountEqual(expected_warnings, actual_result.get('warnings'))
 
     @mock.patch('resources.hpo_csv')
     @mock.patch('validation.main.list_bucket')
