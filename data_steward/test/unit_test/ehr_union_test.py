@@ -231,7 +231,7 @@ class EhrUnionTest(unittest.TestCase):
                ORDER BY person_id ASC'''.format(dataset_id=self.output_dataset_id, table_id=person_table_id)
         response = bq_utils.query(q)
         actual_rows = bq_utils.response2rows(response)
-        self.assertListEqual(expected_rows, actual_rows)
+        self.assertCountEqual(expected_rows, actual_rows)
 
     def test_subqueries(self):
         hpo_ids = ['nyc', 'pitt']
