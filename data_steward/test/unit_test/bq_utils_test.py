@@ -194,7 +194,7 @@ class BqUtilsTest(unittest.TestCase):
         self.assertIsNone(merged_query_job_result.get('errors', None))
         actual_result = [int(row['f'][0]['v']) for row in merged_query_job_result['rows']]
         actual_result.sort()
-        self.assertListEqual(expected_result, actual_result)
+        self.assertCountEqual(expected_result, actual_result)
 
     def test_merge_bad_table_names(self):
         table_ids = ['nyc_person_foo', 'pitt_person_foo']
@@ -336,7 +336,7 @@ class BqUtilsTest(unittest.TestCase):
         query_job_errors = query_results_response.get('errors')
         self.assertIsNone(query_job_errors)
         actual_result = [int(row['f'][0]['v']) for row in query_results_response['rows']]
-        self.assertListEqual(actual_result, expected_observation_ids)
+        self.assertCountEqual(actual_result, expected_observation_ids)
 
     @mock.patch('bq_utils.os.environ.get')
     def test_get_validation_results_dataset_id_not_existing(self, mock_env_var):
