@@ -85,7 +85,7 @@ python clean_cdr.py -s 2>&1 | tee cleaning_rules_log.txt
 cd ../tools/
 
 # Create a snapshot dataset with the result
-python create_snapshot_dataset_with_schemas.py -p "${app_id}" -d "${dataset}" -n "${snapshot_dataset}"
+python snapshot_by_query.py -p "${app_id}" -d "${dataset}" -n "${snapshot_dataset}"
 
 unset PYTHOPATH
 deactivate

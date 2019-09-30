@@ -29,6 +29,18 @@ def create_empty_cdm_tables(snapshot_dataset_id):
     cdm.create_vocabulary_tables(snapshot_dataset_id)
 
 
+def get_copy_table_query(project_id, dataset_id, table_id):
+    try:
+        fields = resources.fields_for(table_id)
+        field_names = [field['name'] for field in fields]
+        col_expr = ', '.join(field_names)
+    except (OSError, IOError) as e:
+        # default to select *
+        col_expr = '*'
+    select_all_query = 'SELECT {col_expr} FROM `{project_id}.{dataset_id}.{table_id}`'
+    return select_all_query.format(col_expr=col_expr, project_id=project_id, dataset_id=dataset_id, table_id=table_id)
+
+
 def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     lists the tables in the dataset and copies each table to a new dataset.
@@ -37,12 +49,9 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
     :param snapshot_dataset_id:
     :return:
     """
-
     copy_table_job_ids = []
     for table_id in list_all_table_ids(dataset_id):
-        select_all_query = ('SELECT * FROM `{project_id}.{dataset_id}.{table_id}` ')
-        q = select_all_query.format(project_id=project_id,
-                                    dataset_id=dataset_id, table_id=table_id)
+        q = get_copy_table_query(project_id, dataset_id, table_id)
         results = query(q, use_legacy_sql=False, destination_table_id=table_id,
                         destination_dataset_id=snapshot_dataset_id, batch=True)
         copy_table_job_ids.append(results['jobReference']['jobId'])
