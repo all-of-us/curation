@@ -14,8 +14,9 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-DOSE_FORM_ROUTES_TABLE_ID = "dose_form_route_mappings"
-DRUG_ROUTES_TABLE_ID = "drug_route_mappings"
+DOSE_FORM_ROUTES_FILE = "dose_form_route_mappings"
+DOSE_FORM_ROUTES_TABLE_ID = "_logging_dose_form_route_mappings"
+DRUG_ROUTES_TABLE_ID = "_logging_drug_route_mappings"
 
 DOSE_FORM_ROUTE_FIELDS = [
     {
@@ -126,11 +127,11 @@ def get_mapping_list(route_mappings_list):
 
 def create_dose_form_route_mappings_table(project_id, dataset_id=None):
     """
-    Creates "dose_form_route_mappings" table with only id columns from resources/dose_form_route_mappings.csv
+    Creates "_logging_dose_form_route_mappings" table with only id columns from resources/dose_form_route_mappings.csv
 
     :param project_id:
     :param dataset_id: BQ dataset_id
-    :return: upload metadata and created dose_form_route_table_id
+    :return: upload metadata for created table
     """
     if dataset_id is None:
         # Using table created in bq_dataset instead of re-creating in every dataset
@@ -143,7 +144,7 @@ def create_dose_form_route_mappings_table(project_id, dataset_id=None):
     # create empty table
     bq_utils.create_table(DOSE_FORM_ROUTES_TABLE_ID, DOSE_FORM_ROUTE_FIELDS, drop_existing=True, dataset_id=dataset_id)
 
-    dose_form_route_mappings_csv = os.path.join(resources.resource_path, DOSE_FORM_ROUTES_TABLE_ID + ".csv")
+    dose_form_route_mappings_csv = os.path.join(resources.resource_path, DOSE_FORM_ROUTES_FILE + ".csv")
     dose_form_route_mappings_list = resources._csv_to_list(dose_form_route_mappings_csv)
     dose_form_routes_populate_query = INSERT_ROUTES_QUERY.format(
                                                     dataset_id=dataset_id,
