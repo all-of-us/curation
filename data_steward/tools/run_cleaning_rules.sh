@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 USAGE="
 Usage: run_cleaning_rules.sh
   --key_file <path to key file>
@@ -43,7 +45,6 @@ if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]]
 fi
 
 today=$(date '+%Y%m%d')
-current_dir=$(pwd)
 
 echo "today --> ${today}"
 echo "dataset --> ${dataset}"

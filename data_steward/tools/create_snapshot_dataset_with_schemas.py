@@ -7,10 +7,10 @@ from bq_utils import *
 def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     Create the empty tables in the new snapshot dataset
-    :param project_id: 
-    :param dataset_id: 
-    :param snapshot_dataset_id: 
-    :return: 
+    :param project_id:
+    :param dataset_id:
+    :param snapshot_dataset_id:
+    :return:
     """
     create_dataset(
         project_id=project_id,
@@ -22,8 +22,8 @@ def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
 def create_empty_cdm_tables(snapshot_dataset_id):
     """
     Copy the table content from the current dataset to the snapshot dataset
-    :param snapshot_dataset_id: 
-    :return: 
+    :param snapshot_dataset_id:
+    :return:
     """
     cdm.create_all_tables(snapshot_dataset_id)
     cdm.create_vocabulary_tables(snapshot_dataset_id)
@@ -53,10 +53,10 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
 
 def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
-    :param project_id: 
-    :param dataset_id: 
-    :param snapshot_dataset_id: 
-    :return: 
+    :param project_id:
+    :param dataset_id:
+    :param snapshot_dataset_id:
+    :return:
     """
     create_empty_dataset(project_id, dataset_id, snapshot_dataset_id)
 
