@@ -23,7 +23,11 @@ Run the following command to get started:
 start.sh --key_file /path/to/service-account-key.json
 ```
 
-This creates a virtual environment located in `${HOME}/cdr_ops_env` and starts Jupyter notebook.
+This creates a virtual environment located in `${HOME}/cdr_ops_env` and starts Jupyter notebook. The following
+directories have notebooks we use:
+
+ * `data_steward/analytics/cdr_ops`
+ * `data_steward/cdr_cleaner/manual_cleaning_rules`
 
 ## Parameters
 
@@ -53,7 +57,7 @@ rdr: {latest.rdr}
 unioned: {latest.unioned}
 combined: {latest.combined}
 deid: {latest.deid}
-'''.format(latest=DEFAULT_DATASETS.latest))
+'''.format(latest=DEFAULT_DATASETS.latest)
 ``` 
 
 ## Contributing
