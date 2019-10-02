@@ -1,200 +1,123 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 # # REQUIREMENTS
-# 
-# Remove data for questions participants should not have received (based on improper branching logic)
-# 
-# Data for child questions should only occur for those participants who should have received
-# the questions based on the skip and branching logic of the PPI survey.
-# For the identified PIDs for each question, drop the row.
+#
+# Remove data for questions participants should not have received (based on improper branching logic). For some questions responses should only appear depending on how their parent question was answered. A bug in the PTSC causes some responses to appear for such child questions where they should not. The solution is to remove these responses.
+#
+# This notebook accepts a set of CSV files where:
+# 1. column headers indicate the observation_source_value of observation rows to delete
+# 1. cells represent person_id of observation rows to delete
+#
+# For example, if person_id 123456789 appears in the column with heading "Insurance_InsuranceType," this will remove all rows in the observation table having person_id 123456789 and observation_source_value "Insurance_InsuranceType".
 
-# ## Set up
-
-
-from termcolor import colored
 import pandas as pd
+import os
+from bq import query
 
 
-PROJECT_ID = ''
-DATASET_ID = ''
+PROJECT_ID = os.environ.get('APPLICATION_ID')
+SANDBOX_DATASET_ID = '' # dataset where intermediary tables are stored
+TARGET_DATASET_ID = ''  # dataset where records must be deleted
+COMBINED = ''           # dataset containing the deid_map table
+DEID = 'deid' in TARGET_DATASET_ID                # if True map research IDs to participant IDs
+
+# +
+OBS_COUNT_FMT = """SELECT COUNT(1) n FROM `{PROJECT_ID}.{TARGET_DATASET_ID}.observation` 
+WHERE observation_source_value = '{OBSERVATION_SOURCE_VALUE}'
+AND person_id IN ({PERSON_IDS})
+"""
+
+DEID_OBS_COUNT_FMT = """SELECT COUNT(1) n FROM `{PROJECT_ID}.{TARGET_DATASET_ID}.observation` o
+JOIN `{PROJECT_ID}.{COMBINED}.deid_map` d ON o.person_id = d.research_id
+WHERE observation_source_value = '{OBSERVATION_SOURCE_VALUE}'
+AND d.person_id IN ({PERSON_IDS})
+"""
+
+OBS_QUERY_FMT = """SELECT o.* FROM `{PROJECT_ID}.{TARGET_DATASET_ID}.observation` o
+WHERE o.observation_source_value = '{OBSERVATION_SOURCE_VALUE}'
+AND d.person_id IN ({PERSON_IDS})
+"""
+
+DEID_OBS_QUERY_FMT = """SELECT o.* FROM `{PROJECT_ID}.{TARGET_DATASET_ID}.observation` o
+JOIN `{PROJECT_ID}.{COMBINED}.deid_map` d ON o.person_id = d.research_id
+WHERE observation_source_value = '{OBSERVATION_SOURCE_VALUE}'
+AND d.person_id IN ({PERSON_IDS})
+"""
+
+def csv_file_updates(csv_file):
+    """
+    Summarize the deletes associated with a CSV file
+    
+    :param csv_file: path to a file where each column is a list of pids and the header is an observation_source_value
+    :return: dictionary with keys file_name, observation_source_value, num_pids, num_rows, q
+    """
+    
+    if not os.path.exists(csv_file):
+        raise IOError('File "%s" not found' % csv_file)
+    obs_count_fmt = OBS_COUNT_FMT
+    obs_query_fmt = OBS_QUERY_FMT
+    if DEID:
+        obs_count_fmt = DEID_OBS_COUNT_FMT
+        obs_query_fmt = DEID_OBS_QUERY_FMT
+    file_name = os.path.basename(csv_file)
+    csv_df = pd.read_csv(csv_file)
+    cols = list(csv_df.columns.to_native_types())
+    results = list()
+    for col in cols:
+        person_ids = csv_df[col].dropna().apply(str).to_list()
+        q = obs_count_fmt.format(PROJECT_ID=PROJECT_ID, 
+                                 TARGET_DATASET_ID=TARGET_DATASET_ID, 
+                                 COMBINED=COMBINED,
+                                 OBSERVATION_SOURCE_VALUE=col,
+                                 PERSON_IDS=', '.join(person_ids))
+        num_rows_result = query(q)
+        q = obs_query_fmt.format(PROJECT_ID=PROJECT_ID, 
+                                 TARGET_DATASET_ID=TARGET_DATASET_ID, 
+                                 COMBINED=COMBINED,
+                                 OBSERVATION_SOURCE_VALUE=col,
+                                 PERSON_IDS=', '.join(person_ids))
+        num_rows = num_rows_result.iloc[0]['n']
+        result = dict(file_name=file_name,
+                      observation_source_value=col, 
+                      q=q, 
+                      num_pids=len(person_ids), 
+                      num_rows=num_rows)
+        results.append(result)
+    return results
+
+def updates_from_csv_files(csv_files):
+    all_updates = list()
+    for csv_file in csv_files:
+        updates = csv_file_updates(csv_file)
+        all_updates += updates
+    return all_updates
 
 
-# ## Load the PIDs with data to be removed 
-# 
-# This is a list of pids identified by the team who received child questions that they should not have
-# received based on their answers to the parent questions.
+# -
+
+def print_updates(updates):
+    for update in updates:
+        print(update['file_name'])
+        print(update['observation_source_value'])
+        print('Number of person_ids in CSV file : %s' % update['num_pids'])
+        print('Number of rows that would be removed from %s.observation: %s' % (TARGET_DATASET_ID, update['num_rows']))
 
 
-pids_rem_lifestyle = pd.read_csv("AC67_rem_lifestyle.csv")  # pids for lifestyle questions
-pids_rem_overallh = pd.read_csv("AC67 _rem_overallh.csv") # pids for overall health questions
-pids_rem_personalmed = pd.read_csv("AC67 _rem_personalmed.csv") # pids for personam medical history questions
-pids_rem_hcau = pd.read_csv("AC67 _rem_hcau.csv") # pids for hcau- insurance questions
+def temp_table_query(updates):
+    """
+    Get the query used to generate a temp table to store records to be deleted
+    """
+    subqueries = []
+    for update in updates:
+        subquery = ' (' + update['q'] + ') '
+        subqueries.append(subquery)
+    union_all_query = '\nUNION ALL\n'.join(subqueries)
+    return union_all_query
 
 
-# # ```HCAU``` QUESTIONS
-# The SQL query below will delete from the observation table all the records for the person_ids in
-# ```pids_remv_hcau``` related to these child HCAU questions
-
-pids_remv_hcau = pids_rem_hcau.iloc[:, 0].dropna().tolist() \
-                 + pids_rem_hcau.iloc[:, 1].dropna().tolist()
-
-pids_remv_hcau = [int(x) for x in pids_remv_hcau]
-
-pids_remv_hcau = tuple(pids_remv_hcau)
-
-
-# query to find the correct observation_source_concept_ids
-pd.read_gbq('''
-
-SELECT DISTINCT observation_source_concept_id, concept_name, concept_code
-
-FROM `{PROJECT_ID}.{DATASET_ID}.observation` o
-INNER JOIN `{PROJECT_ID}.{DATASET_ID}.concept` c ON o.observation_source_concept_id = c.concept_id
-WHERE concept_code LIKE '%Insurance_InsuranceType%' #hcau
-OR concept_code LIKE 'HealthInsurance_InsuranceTypeUpdate'#hcau
-'''.format(PROJECT_ID=PROJECT_ID, DATASET_ID=DATASET_ID), dialect="standard")
-
-
-# # QUERY TO REMOVE RECORDS FOR THESE PIDS RECORDS
-
-pd.read_gbq('''
-
-DELETE 
- FROM `{PROJECT_ID}.{DATASET_ID}.observation` 
- WHERE person_id IN {pids}
-    AND (observation_source_concept_id = 43528428 #hcau
-    OR observation_source_concept_id = 1384450) #hcau
-#ORDER BY concept_code
-'''.format(PROJECT_ID=PROJECT_ID, DATASET_ID=DATASET_ID, pids=pids_remv_hcau), dialect="standard")
-
-
-# # ```PERSONAL MEDICAL HISTORY``` QUESTIONS¶
-
-pids_remv_personalmed = pids_rem_personalmed.iloc[:, 0].dropna().tolist() \
-                        + pids_rem_personalmed.iloc[:, 1].dropna().tolist() \
-                        + pids_rem_personalmed.iloc[:, 2].dropna().tolist()
-
-pids_remv_personalmed = [int(x) for x in pids_remv_personalmed]
-
-# pids_remv_hcau = na.omit(c(pids_rem_hcau[,1], pids_rem_hcau[,2]))
-pids_remv_personalmed= tuple(pids_remv_personalmed)
-
-
-# query to find the correct observation_source_concept_ids
-pd.read_gbq('''
-
-SELECT DISTINCT observation_source_concept_id, concept_name, concept_code
-
-FROM `{PROJECT_ID}.{DATASET_ID}.observation` o
-INNER JOIN `{PROJECT_ID}.{DATASET_ID}.concept` c ON o.observation_source_concept_id = c.concept_id
-WHERE concept_code LIKE 'NervousSystem_DementiaCurrently'#personal medical hist
-OR concept_code LIKE 'NervousSystem_HowOldWereYouDementia'#personal medical hist  ### COULD NOT FIND QUESTION IN CDR
-OR concept_code LIKE 'NervousSystem_RxMedsforDementia'#personal medical hist
-'''.format(PROJECT_ID=PROJECT_ID, DATASET_ID=DATASET_ID), dialect="standard")
-
-
-# # QUERY TO REMOVE RECORDS FOR THESE PIDS RECORDS
-
-pd.read_gbq('''
-
-DELETE 
- FROM `{PROJECT_ID}.{DATASET_ID}.observation` 
- WHERE person_id IN {pids}
- AND (observation_source_concept_id = 43530367 #NervousSystem_DementiaCurrently
-     # OR observation_source_concept_id = ??? #NervousSystem_HowOldWereYouDementia ### COULD NOT FIND tTHIS QUESTION IN CDR
-      OR observation_source_concept_id = 43528852) #NervousSystem_RxMedsforDementia
-'''.format(PROJECT_ID=PROJECT_ID, DATASET_ID=DATASET_ID, pids=pids_remv_personalmed), dialect="standard")
-
-
-# # REMOVE THESE PIDS FOR THESE ```overall health``` QUESTIONS¶
-
-pids_remv_overallh = pids_rem_overallh.iloc[:, 0].dropna().tolist() \
-                     + pids_rem_overallh.iloc[:, 1].dropna().tolist() \
-                     + pids_rem_overallh.iloc[:, 2].dropna().tolist() \
-                     + pids_rem_overallh.iloc[:, 3].dropna().tolist()
-
-pids_remv_overallh = [int(x) for x in pids_remv_personalmed]
-
-pids_remv_overallh = tuple(pids_remv_overallh)
-
-
-# query to find the correct observation_source_concept_ids
-pd.read_gbq('''
-
-SELECT DISTINCT observation_source_concept_id, concept_name, concept_code
-
-FROM `{PROJECT_ID}.{DATASET_ID}.observation` o
-INNER JOIN `{PROJECT_ID}.{DATASET_ID}.concept` c ON o.observation_source_concept_id = c.concept_id
-WHERE (concept_code LIKE 'Pregnancy_1PregnancyStatus'#overall health
-OR c.concept_code LIKE 'YesNone_MenstrualStoppedReason'#overall health
-OR c.concept_code LIKE 'OverallHealth_HysterectomyHistory'#overall health
-OR c.concept_code LIKE 'OverallHealth_OvaryRemovalHistory')#overall health
-'''.format(PROJECT_ID=PROJECT_ID, DATASET_ID=DATASET_ID), dialect="standard")
-
-
-# # QUERY TO REMOVE RECORDS FOR THESE PIDS RECORDS
-
-pd.read_gbq('''
-
-DELETE 
- FROM `{PROJECT_ID}.{DATASET_ID}.observation` 
- WHERE person_id IN {pids}
- AND (observation_source_concept_id = 1585811 # Pregnancy_1PregnancyStatus
-    OR observation_source_concept_id = 1585789 #YesNone_MenstrualStoppedReason
-    OR observation_source_concept_id = 1585791 #OverallHealth_HysterectomyHistory
-    OR observation_source_concept_id = 1585796) #OverallHealth_OvaryRemovalHistory
-'''.format(PROJECT_ID=PROJECT_ID, DATASET_ID=DATASET_ID, pids=pids_remv_overallh), dialect="standard")
-
-
-# # ```LIFESTYLE``` QUESTIONS¶
-
-pids_remv_lifestyle = pids_rem_lifestyle.iloc[:, 0].dropna().tolist() \
-                      + pids_rem_lifestyle.iloc[:, 1].dropna().tolist() \
-                      + pids_rem_lifestyle.iloc[:, 2].dropna().tolist() \
-                      + pids_rem_lifestyle.iloc[:, 3].dropna().tolist() \
-                      + pids_rem_lifestyle.iloc[:, 4].dropna().tolist() \
-                      + pids_rem_lifestyle.iloc[:, 5].dropna().tolist() \
-                      + pids_rem_lifestyle.iloc[:, 6].dropna().tolist()
-
-pids_remv_lifestyle = [int(x) for x in pids_remv_lifestyle]
-
-pids_remv_lifestyle = tuple(pids_remv_lifestyle)
-
-
-# query to find the correct observation_source_concept_ids
-pd.read_gbq('''
-
-SELECT DISTINCT observation_source_concept_id, concept_name, concept_code
-
-FROM `{PROJECT_ID}.{DATASET_ID}.observation` o
-INNER JOIN `{PROJECT_ID}.{DATASET_ID}.concept` c ON o.observation_source_concept_id = c.concept_id
-WHERE 
-(concept_code LIKE 'Smoking_DailySmokeStartingAge'#Lifestyle
-OR concept_code LIKE 'AttemptQuitSmoking_CompletelyQuitAge'#Lifestyle
-OR concept_code LIKE 'Smoking_NumberOfYears'#Lifestyle
-OR concept_code LIKE 'Smoking_CurrentDailyCigaretteNumber'#Lifestyle
-OR concept_code LIKE 'Smoking_AverageDailyCigaretteNumber'#Lifestyle
-OR concept_code LIKE 'Alcohol_AverageDailyDrinkCount'#Lifestyle
-OR concept_code LIKE 'Alcohol_6orMoreDrinksOccurence')#Lifestyle
-'''.format(PROJECT_ID=PROJECT_ID, DATASET_ID=DATASET_ID), dialect="standard")
-
-
-# # QUERY TO REMOVE RECORDS FOR THESE PIDS RECORDS
-
-pd.read_gbq('''
-
-DELETE 
- FROM `{PROJECT_ID}.{DATASET_ID}.observation` 
- WHERE person_id IN {pids}
- AND (observation_source_concept_id = 1585864 #Smoking_DailySmokeStartingAge
-        OR observation_source_concept_id = 1585870 #AttemptQuitSmoking_CompletelyQuitAge
-        OR observation_source_concept_id = 1585873 #Smoking_NumberOfYears'#Lifestyle
-        OR observation_source_concept_id = 1586159 #Smoking_CurrentDailyCigaretteNumber
-        OR observation_source_concept_id = 1586162 #Smoking_AverageDailyCigaretteNumber
-        OR observation_source_concept_id = 1586207 #Alcohol_AverageDailyDrinkCount
-        OR observation_source_concept_id = 1586213) #Alcohol_6orMoreDrinksOccurence
-'''.format(PROJECT_ID=PROJECT_ID, DATASET_ID=DATASET_ID, pids=pids_remv_lifestyle), dialect="standard")
-
-
-all_pids = pids_remv_lifestyle + pids_remv_hcau + pids_remv_overallh + pids_remv_personalmed
+# TODO use spreadsheets as external data sources in queries
+csv_files = ['AC67-REMOVE DATA-CHILD QUESTIONS-PERSONAL MEDICAL.csv',
+            'AC67-REMOVE DATA-CHILD QUESTIONS-OVERALL HEALTH.csv',
+            'AC67-REMOVE DATA-CHILD QUESTIONS-LIFESTYLE.csv',
+            'AC67-REMOVE DATA-CHILD QUESTIONS-HCAU.csv']
+updates = updates_from_csv_files(csv_files)
