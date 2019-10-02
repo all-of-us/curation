@@ -16,8 +16,11 @@ then
   echo "Usage: $USAGE"
   exit 1
 fi
-
+NOTEBOOKS_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+BASE_DIR="$( cd "${NOTEBOOKS_DIR}" && cd .. && pwd )"
+export PYTHONPATH="${PYTHONPATH}:${NOTEBOOKS_DIR}"
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
+
 export APPLICATION_ID=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
 ACCOUNT=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["client_email"]);')
 
