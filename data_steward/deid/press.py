@@ -319,6 +319,3 @@ class Press(object):
                     sql_list.append('AND')
 
         return '\t'.join(sql_list).replace(":idataset", self.idataset)
-
-    def to_pandas(self, rules, info):
-        pass

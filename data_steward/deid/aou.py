@@ -23,6 +23,14 @@ DESIGN:
         -key_field      attribute to be used as a filter that can be specified by value_field or values
         -value_field    value associated with a key_field
         -on             suggests a meta table and will have filter condition when generalization or a field name for row based suppression
+        -copy_to        defined for generalizations.  uses the values associated with one field
+                        to update another field.  to the user, it acts like a "copy new value to this field too" rule
+        -dataset        defined for generalizations using aggregating rules.  helps develop the sub-query used
+                        by the aggregate.  ':idataset' is default.  uses the dataset name
+        -alias          defined for generalizations using aggregating rules.  allows a sub-query to
+                        construct a temporary table named by this field
+        -key_row        defined for generlizations using aggregating rules.  allows a sub-query to
+                        define which field to use for joins
 
 
     Overall there are rules that suggest what needs to happen on values, and there
@@ -64,6 +72,7 @@ DESIGN:
                         submit      will create an output table
                         debug       will just print output without simulation or submit (runs alone)
 """
+from datetime import datetime
 import json
 import os
 import time
@@ -76,6 +85,16 @@ import pandas as pd
 import bq_utils
 from parser import parse_args
 from press import Press
+
+
+def milliseconds_since_epoch():
+    """
+    Helper method to get the number of milliseconds from the epoch to now
+
+    :return:  an integer number of milliseconds
+    """
+    return int((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
+
 
 class AOU(Press):
     def __init__(self, **args):
@@ -106,7 +125,10 @@ class AOU(Press):
                "FROM {idataset}.person ORDER BY 2"
                .format(idataset=self.idataset))
         person_table = self.get(sql=sql)
-        self.log(module='initialize', subject=self.get_tablename(), action='patient-count', value=person_table.shape[0])
+        self.log(module='initialize',
+                 subject=self.get_tablename(),
+                 action='patient-count',
+                 value=person_table.shape[0])
         map_table = pd.DataFrame()
         if person_table.shape[0] > 0:
             person_table = person_table[person_table.age < age_limit]
@@ -119,14 +141,29 @@ class AOU(Press):
                 #
                 pass
             else:
+                # create the deid_map table.  set upper and lower bounds of the research_id array
                 records = person_table.shape[0]
                 lower_bound = million
-                upper_bound = lower_bound + (10*records)
+                upper_bound = lower_bound + (10 * records)
                 map_table = pd.DataFrame({"person_id": person_table['person_id'].tolist()})
-                map_table['research_id'] = np.random.choice(np.arange(lower_bound, upper_bound), records, replace=False)
-                map_table['shift'] = np.random.choice(np.arange(1, max_day_shift), records)
 
-                # write this to bigquery
+                # generate random research_ids
+                research_id_array = np.random.choice(np.arange(lower_bound, upper_bound), records, replace=False)
+
+                # throw in some extra, non-deterministic shuffling
+                for _ in range(milliseconds_since_epoch() % 5):
+                    np.random.shuffle(research_id_array)
+                map_table['research_id'] = research_id_array
+
+                # generate date shift values
+                shift_array = np.random.choice(np.arange(1, max_day_shift), records)
+
+                # throw in some extra, non-deterministic shuffling
+                for _ in range(milliseconds_since_epoch() % 5):
+                    np.random.shuffle(shift_array)
+                map_table['shift'] = shift_array
+
+                # write this to bigquery.
                 map_table.to_gbq(map_tablename, credentials=self.credentials, if_exists='fail')
         else:
             print ("Unable to initialize Deid.  "
@@ -138,7 +175,10 @@ class AOU(Press):
         #   - how many people are not mapped
         #   - was the table created or not
         #
-        self.log(module='initialize', subject=self.get_tablename(), action='mapped-patients', value=map_table.shape[0])
+        self.log(module='initialize',
+                 subject=self.get_tablename(),
+                 action='mapped-patients',
+                 value=map_table.shape[0])
         return person_table.shape[0] > 0 or map_table.shape[0] > 0
 
     def update_rules(self):
@@ -174,14 +214,14 @@ class AOU(Press):
         #
         if date_columns:
             date = {}
-            datetime = {}
+            datetime_field = {}
 
             for name in date_columns:
                 if 'datetime' in name or 'time' in name:
-                    if 'fields' not in datetime:
-                        datetime['fields'] = []
-                    datetime['fields'].append(name)
-                    datetime['rules'] = '@shift.datetime'
+                    if 'fields' not in datetime_field:
+                        datetime_field['fields'] = []
+                    datetime_field['fields'].append(name)
+                    datetime_field['rules'] = '@shift.datetime'
                 elif 'date' in name:
                     if 'fields' not in date:
                         date['fields'] = []
@@ -190,10 +230,10 @@ class AOU(Press):
                     date['rules'] = '@shift.date'
             _toshift = []
 
-            if date and datetime:
-                _toshift = [date, datetime]
-            elif date or datetime:
-                _toshift = [date] if date else [datetime]
+            if date and datetime_field:
+                _toshift = [date, datetime_field]
+            elif date or datetime_field:
+                _toshift = [date] if date else [datetime_field]
 
             if 'shift' not in self.info:
                 self.info['shift'] = []
