@@ -61,12 +61,10 @@ class GeneralizeConceptIdsTest(unittest.TestCase):
         expected = []
         query_woman = dict()
         query_woman[cdr_consts.QUERY] = self.query_woman_to_generalized
-        query_woman[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         query_woman[cdr_consts.BATCH] = True
 
         query_man = dict()
         query_man[cdr_consts.QUERY] = self.query_man_to_generalized
-        query_man[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         query_man[cdr_consts.BATCH] = True
 
         expected.append(query_woman)
