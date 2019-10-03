@@ -1,15 +1,15 @@
 import unittest
-import cdr_cleaner.cleaning_rules.generalize_concept_ids as generalize_concept_ids
+import cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts as generalize_concept_ids
 from mock import mock
-from cdr_cleaner.cleaning_rules.generalize_concept_ids import WOMAN_CONCEPT_ID
-from cdr_cleaner.cleaning_rules.generalize_concept_ids import MAN_CONCEPT_ID
-from cdr_cleaner.cleaning_rules.generalize_concept_ids import SEX_AT_BIRTH_MALE_CONCEPT_ID
-from cdr_cleaner.cleaning_rules.generalize_concept_ids import SEX_AT_BIRTH_FEMALE_CONCEPT_ID
-from cdr_cleaner.cleaning_rules.generalize_concept_ids import GENERALIZE_GENDER_CONCEPT_ID
+from cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts import WOMAN_CONCEPT_ID
+from cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts import MAN_CONCEPT_ID
+from cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts import SEX_AT_BIRTH_MALE_CONCEPT_ID
+from cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts import SEX_AT_BIRTH_FEMALE_CONCEPT_ID
+from cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts import GENERALIZE_GENDER_CONCEPT_ID
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 
-class GeneralizeConceptIdsTest(unittest.TestCase):
+class GeneralizeSexGenderConceptsTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -48,9 +48,9 @@ class GeneralizeConceptIdsTest(unittest.TestCase):
         self.assertItemsEqual(expected, generalize_birth_female_gender_identity_man_query)
 
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.generalize_concept_ids.parse_query_for_updating_man_to_generalized_concept_id')
+        'cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts.parse_query_for_updating_man_to_generalized_concept_id')
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.generalize_concept_ids.parse_query_for_updating_woman_to_generalized_concept_id')
+        'cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts.parse_query_for_updating_woman_to_generalized_concept_id')
     def test_get_generalized_concept_id_queries(self, mock_parse_query_for_updating_woman_to_generalized_concept_id,
                                                 mock_parse_query_for_updating_man_to_generalized_concept_id):
         mock_parse_query_for_updating_woman_to_generalized_concept_id.side_effect = [self.query_woman_to_generalized]
