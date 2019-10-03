@@ -194,7 +194,10 @@
                     "OtherDiagnosis_FreeTextBox","OtherHeartorBloodCondition_FreeTextBox","OtherDigestiveCondition_FreeTextBox",
                     "OtherArthritis_FreeTextBox","OtherHormoneEndocrine_FreeTextBox","OtherRespiratory_FreeTextBox",
                     "OtherKidneyCondition_FreeTextBox","OtherMentalHealthSubstanceUse_FreeTextBox","OtherBoneJointMuscle_FreeTextBox",
-                    "OtherInsuranceType_FreeText"
+                    "OtherInsuranceType_FreeText","ExtraConsent_PresentlyRegisteredPatient","EHRConsentPII_HelpWithConsentSignature",
+                    "SecondaryContactInfo_PersonOneRelationship","PersonOneAddress_PersonOneAddressState","SocialSecurity_PreferNotToAnswer",
+                    "SecondaryContactInfo_PersonOnePreferNotToAnswer","SecondaryContactInfo_PersonTwoPreferNotToAnswer","SecondaryContactInfo_SecondContactsRelationship",
+                    "SecondContactsAddress_SecondContactState","EmploymentWorkAddress_State"
                 ]
             }
 		],
