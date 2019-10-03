@@ -1,6 +1,4 @@
-import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import common
 
 GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE = '''
 UPDATE
