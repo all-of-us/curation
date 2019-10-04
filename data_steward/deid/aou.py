@@ -130,6 +130,8 @@ class AOU(Press):
                  action='patient-count',
                  value=person_table.shape[0])
         map_table = pd.DataFrame()
+
+        self.map_questionnaire_response_ids(million)
         if person_table.shape[0] > 0:
             person_table = person_table[person_table.age < age_limit]
             map_table = self.get(sql="SELECT * FROM " + map_tablename)
@@ -180,6 +182,54 @@ class AOU(Press):
                  action='mapped-patients',
                  value=map_table.shape[0])
         return person_table.shape[0] > 0 or map_table.shape[0] > 0
+
+
+    def map_questionnaire_response_ids(self, lower_bound):
+        map_tablename = self.idataset + ".deid_questionnaire_response_map"
+        sql = ("SELECT DISTINCT o.questionnaire_response_id "
+               "FROM {idataset}.observation as o "
+               "WHERE o.questionnaire_response_id IS NOT NULL "
+               "ORDER BY 1"
+               .format(idataset=self.idataset))
+        observation_table = self.get(sql=sql)
+        self.log(module='initialize',
+                 subject=self.get_tablename(),
+                 action='questionnaire-response-id-count',
+                 value=observation_table.shape[0])
+        map_table = pd.DataFrame()
+
+        if observation_table.shape[0] > 0:
+            map_table = self.get(sql="SELECT * FROM " + map_tablename)
+            if map_table.shape[0] > 0 and map_table.shape[0] == observation_table.shape[0]:
+                #
+                # There is nothing to be done here
+                # @TODO: This weak post-condition is not enough nor consistent
+                #   - consider using a set operation
+                #
+                pass
+            else:
+                # create the deid_map table.  set upper and lower bounds of the research_id array
+                records = observation_table.shape[0]
+                upper_bound = lower_bound + (10 * records)
+                qr_id_list = observation_table['questionnaire_response_id'].tolist()
+                map_table = pd.DataFrame({"questionnaire_response_id": qr_id_list})
+
+                # generate random research_questionnaire_response_ids
+                research_id_array = np.random.choice(np.arange(lower_bound, upper_bound), records, replace=False)
+
+                # throw in some extra, non-deterministic shuffling
+                for _ in range(milliseconds_since_epoch() % 5):
+                    np.random.shuffle(research_id_array)
+                map_table['research_response_id'] = research_id_array
+
+                # write this to bigquery.
+                map_table.to_gbq(map_tablename, credentials=self.credentials, if_exists='fail')
+        else:
+            self.log(module="initialize",
+                     subject=self.get_tablename(),
+                     action="questionnaire_response_id_count",
+                     value="No questionnaire_response_ids found.")
+
 
     def update_rules(self):
         """
@@ -335,9 +385,6 @@ class AOU(Press):
                      value=r.job_id,
                      object='bigquery')
             self.wait(client, r.job_id)
-            #self.finalize(client)
-            #
-            # At this point we must try to partition the table
         else:
             self.log(module='submit',
                      subject=self.get_tablename(),
@@ -360,26 +407,6 @@ class AOU(Press):
                 time.sleep(5)
 
         self.log(module='wait', action='awake', status=status)
-
-    def finalize(self, client):
-        i_dataset, i_table = self.get_tablename().split('.')
-        ischema = client.get_table(client.dataset(i_dataset).table(i_table)).schema
-        table = client.get_table(client.dataset(i_dataset + '_deid').table(i_table))
-        fields = [field.name for field in table.schema]
-
-        newfields = []
-        for field in ischema:
-            if field.name in fields:
-                temp_field = bq.SchemaField(
-                    name=field.name,
-                    field_type=field.field_type,
-                    description=field.description,
-                    mode=field.mode
-                )
-                newfields.append(temp_field)
-
-        table.schema = newfields
-        client.update_table(table, ['schema'])
 
 
 def main(raw_args=None):
