@@ -87,7 +87,7 @@ def get_mapping_table_ids(project_id, mapping_dataset_id):
 def generate_site_mappings():
     """
     Generates the mapping table for the site names and the masked names
-    :return:
+    :return: returns dict with key: hpo_id, value: rand int
     """
     hpo_list = resources.hpo_csv()
     rand_list = random.sample(range(100, 999), len(hpo_list))
@@ -100,8 +100,7 @@ def generate_site_mappings():
 def get_hpo_and_rdr_mappings():
     """
     generates list of lists containing the hpo_id and the identifier
-    :param
-    :return:
+    :return: list of lists (eg. [[hpo_id_1, id_1], [hpo_id_2, id_2], ...)
     """
     site_mapping_dict = generate_site_mappings()
     mappings_list = []

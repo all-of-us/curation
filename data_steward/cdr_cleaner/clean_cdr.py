@@ -30,6 +30,7 @@ import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_val
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 import cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency as fix_datetimes
+import cdr_cleaner.cleaning_rules.generate_ext_tables as ext_tables
 import constants.cdr_cleaner.clean_cdr as clean_cdr_consts
 
 
@@ -111,6 +112,7 @@ def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id):
     query_list.extend(populate_routes.get_route_mapping_queries(project_id, dataset_id))
     query_list.extend(fix_datetimes.get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id))
     query_list.extend(remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries(project_id, dataset_id))
+    query_list.extend(ext_tables.get_generate_ext_table_queries(project_id, dataset_id))
     return query_list
 
 
