@@ -112,7 +112,7 @@ def get_hpo_completeness_query(hpo_id, dataset_id=None):
     if dataset_id is None:
         dataset_id = bq_utils.get_dataset_id()
     cols = get_cols(dataset_id)
-    hpo_cols = filter(lambda col: is_hpo_col(hpo_id, col), cols)
+    hpo_cols = [col for col in cols if is_hpo_col(hpo_id, col)]
     query = create_completeness_query(dataset_id, hpo_cols)
     return query
 
@@ -126,7 +126,7 @@ def hpo_completeness(dataset_id, hpo_id):
     :return: list of dict with table_name, column_name, total_rows, num_nonnulls_zeros, non_populated_rows
     """
     cols = get_cols(dataset_id)
-    hpo_cols = filter(lambda col: is_hpo_col(hpo_id, col), cols)
+    hpo_cols = [col for col in cols if is_hpo_col(hpo_id, col)]
     results = column_completeness(dataset_id, hpo_cols)
     return results
 
@@ -157,7 +157,7 @@ if __name__ == '__main__':
 
         results = dict()
         for hpo_id in hpo_ids:
-            hpo_cols = filter(lambda col: is_hpo_col(hpo_id, col), cols)
+            hpo_cols = [col for col in cols if is_hpo_col(hpo_id, col)]
             hpo_results = column_completeness(dataset_id, hpo_cols)
             results[hpo_id] = hpo_results
         return results

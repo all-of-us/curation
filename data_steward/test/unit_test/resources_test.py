@@ -29,7 +29,7 @@ class ResourcesTest(unittest.TestCase):
         schemas = resources.cdm_schemas()
         table_names = schemas.keys()
 
-        result_internal_tables = list(filter(resources.is_internal_table, table_names))
+        result_internal_tables = [table_name for table_name in table_names if resources.is_internal_table(table_name)]
         self.assertCountEqual([], result_internal_tables,
                              msg='Internal tables %s should not be in result of cdm_schemas()' % result_internal_tables)
 
