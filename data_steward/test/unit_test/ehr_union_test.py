@@ -398,7 +398,7 @@ class EhrUnionTest(unittest.TestCase):
         actual = obs_rows
 
         self.assertEqual(len(expected), len(actual))
-        self.assertItemsEqual(expected, actual)
+        self.assertCountEqual(expected, actual)
 
     def test_ehr_person_to_observation_counts(self):
         self._load_datasets()
