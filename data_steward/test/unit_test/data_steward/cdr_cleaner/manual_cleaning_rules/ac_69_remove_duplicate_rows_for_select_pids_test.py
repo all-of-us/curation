@@ -27,4 +27,4 @@ class AcRemoveDuplicateRowsForSelectPidsTest(unittest.TestCase):
 
         actual = ac69.get_remove_duplicate_queries(self.project_id, self.dataset_id)
 
-        self.assertItemsEqual(expected, actual)
+        self.assertCountEqual(expected, actual)

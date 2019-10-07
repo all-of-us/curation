@@ -126,7 +126,7 @@ class FieldMappingTest(unittest.TestCase):
         condition_field_mappings = domain_field_dict[self.condition_table]
         self.assertEqual(len(condition_field_mappings), 3)
         self.assertDictContainsSubset(self.condition_common_fields, condition_field_mappings[DOMAIN_COMMON_FIELDS])
-        self.assertItemsEqual(condition_field_mappings[DOMAIN_DATE_FIELDS],
+        self.assertCountEqual(condition_field_mappings[DOMAIN_DATE_FIELDS],
                               self.condition_date_fields)
         self.assertTrue(len(condition_field_mappings[DOMAIN_SPECIFIC_FIELDS]) == 0)
 
@@ -134,7 +134,7 @@ class FieldMappingTest(unittest.TestCase):
         procedure_field_mappings = domain_field_dict[self.procedure_table]
         self.assertEqual(len(procedure_field_mappings), 3)
         self.assertDictContainsSubset(self.procedure_common_fields, procedure_field_mappings[DOMAIN_COMMON_FIELDS])
-        self.assertItemsEqual(procedure_field_mappings[DOMAIN_DATE_FIELDS],
+        self.assertCountEqual(procedure_field_mappings[DOMAIN_DATE_FIELDS],
                               self.procedure_date_fields)
         self.assertTrue(len(procedure_field_mappings[DOMAIN_SPECIFIC_FIELDS]) == 1)
 

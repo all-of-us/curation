@@ -235,7 +235,7 @@ class CombineEhrRdrTest(unittest.TestCase):
             actual_table_info = bq_utils.get_table_info(expected_mapping_table, self.combined_dataset_id)
             actual_fields = actual_table_info.get('schema', dict()).get('fields', [])
             actual_fields_norm = map(test_util.normalize_field_payload, actual_fields)
-            self.assertItemsEqual(expected_fields, actual_fields_norm)
+            self.assertCountEqual(expected_fields, actual_fields_norm)
 
             # Count should be sum of EHR and RDR
             # (except for tables like observation where extra records are created for demographics)
