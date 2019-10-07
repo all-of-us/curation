@@ -4,7 +4,7 @@ import mock
 from google.appengine.api import app_identity
 
 import bq_utils
-import cdr_cleaner.cleaning_rules.generate_ext_tables as gen_ext
+import tools.generate_ext_tables as gen_ext
 import common
 import resources
 import constants.bq_utils as bq_consts
@@ -132,8 +132,8 @@ class GenerateExtTablesTest(unittest.TestCase):
         self.assertEquals(expected, num_rows_affected)
 
     @mock.patch('bq_utils.create_table')
-    @mock.patch('cdr_cleaner.cleaning_rules.generate_ext_tables.create_and_populate_source_mapping_table')
-    @mock.patch('cdr_cleaner.cleaning_rules.generate_ext_tables.get_mapping_table_ids')
+    @mock.patch('tools.generate_ext_tables.create_and_populate_source_mapping_table')
+    @mock.patch('tools.generate_ext_tables.get_mapping_table_ids')
     def test_generate_ext_table_queries(self, mock_mapping_tables,
                                         mock_create_and_populate_mapping_table,
                                         mock_create_table):
