@@ -53,7 +53,7 @@ def _extract_sql_queries(heel_dml_path):
 
 def _get_heel_commands(hpo_id):
     raw_commands = _extract_sql_queries(ACHILLES_HEEL_DML)
-    commands = map(lambda cmd: sql_wrangle.qualify_tables(cmd, hpo_id), raw_commands)
+    commands = [sql_wrangle.qualify_tables(cmd, hpo_id) for cmd in raw_commands]
     for command in commands:
         yield command
 
