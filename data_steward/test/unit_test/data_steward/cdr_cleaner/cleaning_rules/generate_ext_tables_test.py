@@ -144,6 +144,7 @@ class GenerateExtTablesTest(unittest.TestCase):
                 query = dict()
                 query[cdr_consts.QUERY] = gen_ext.REPLACE_SRC_QUERY.format(project_id=self.project_id,
                                                                            dataset_id=self.dataset_id,
+                                                                           combined_dataset_id=self.dataset_id,
                                                                            mapping_table_id=gen_ext.MAPPING_PREFIX
                                                                                             +cdm_table,
                                                                            site_mappings_table_id=gen_ext.SITE_TABLE_ID,
@@ -152,7 +153,7 @@ class GenerateExtTablesTest(unittest.TestCase):
                 query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
                 query[cdr_consts.DISPOSITION] = bq_consts.WRITE_EMPTY
                 expected.append(query)
-        actual = gen_ext.get_generate_ext_table_queries(self.project_id, self.dataset_id)
+        actual = gen_ext.get_generate_ext_table_queries(self.project_id, self.dataset_id, self.dataset_id)
         self.assertItemsEqual(expected, actual)
 
     def TearDown(self):
