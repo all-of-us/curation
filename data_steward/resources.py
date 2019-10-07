@@ -172,7 +172,7 @@ def hash_dir(in_dir):
 
 CDM_TABLES = cdm_schemas().keys()
 ACHILLES_INDEX_FILES = achilles_index_files()
-CDM_FILES = map(lambda t: t + '.csv', CDM_TABLES)
+CDM_FILES = [table + '.csv' for table in CDM_TABLES]
 ALL_ACHILLES_INDEX_FILES = [name.split(resource_path + os.sep)[1].strip() for name in ACHILLES_INDEX_FILES]
 IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES
 

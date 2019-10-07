@@ -115,7 +115,7 @@ def construct_query(app_id, dataset_id, all_hpo=False):
     if all_hpo:
         # Fetch and union results from all <hpo_id>_achilles_heel_results tables
         subqueries = get_hpo_subqueries(app_id, dataset_id, all_table_ids)
-        enclosed = map(lambda s: '(%s)' % s, subqueries)
+        enclosed = ['(%s)' % s for s in subqueries]
         query = UNION_ALL.join(enclosed)
     else:
         # Fetch from achilles_heel_results table
