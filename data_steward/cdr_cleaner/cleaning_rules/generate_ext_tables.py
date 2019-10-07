@@ -92,8 +92,8 @@ def generate_site_mappings():
     hpo_list = resources.hpo_csv()
     rand_list = random.sample(range(100, 999), len(hpo_list))
     mapping_dict = dict()
-    for i in range(len(hpo_list)):
-        mapping_dict[hpo_list[i]["hpo_id"]] = rand_list[i]
+    for i, hpo_dict in enumerate(hpo_list):
+        mapping_dict[hpo_dict["hpo_id"]] = rand_list[i]
     return mapping_dict
 
 
