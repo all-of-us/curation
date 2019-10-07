@@ -157,7 +157,7 @@ def get_generate_ext_table_queries(project_id, deid_dataset_id, combined_dataset
     Generate the queries for generating the ext tables
     :param project_id: project_id containing the dataset to generate ext tables in
     :param deid_dataset_id: deid_dataset_id to generate ext tables in
-    :param combined_dataset_id: deid_dataset_id to use the mapping tables from (if different from deid_dataset_id)
+    :param combined_dataset_id: combined_dataset_id to use the mapping tables from
     :return: list of query dicts
     """
     queries = []
