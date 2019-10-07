@@ -41,10 +41,12 @@ def get_commands(sql_path):
     :param sql_path:
     :return:
     """
+    commands = []
     with open(sql_path, 'r') as f:
         text = f.read()
         commands = text.split(COMMAND_SEP)
-        return filter(is_active_command, commands)
+    commands = [command for command in commands if is_active_command(command)]
+    return commands
 
 
 def qualify_tables(command, hpo_id=None):
