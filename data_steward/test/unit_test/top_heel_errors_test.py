@@ -90,7 +90,7 @@ class TopHeelErrorsTest(unittest.TestCase):
         expected_results = comparison_view(errors)
         dataset_errors = top_heel_errors(self.app_id, self.dataset_id)
         actual_results = comparison_view(dataset_errors)
-        self.assertItemsEqual(actual_results, expected_results)
+        self.assertCountEqual(actual_results, expected_results)
 
     def test_top_heel_errors_all_hpo(self):
         expected_results = []
@@ -102,7 +102,7 @@ class TopHeelErrorsTest(unittest.TestCase):
             expected_results += comparison_view(errors)
         dataset_errors = top_heel_errors(self.app_id, self.dataset_id, all_hpo=True)
         actual_results = comparison_view(dataset_errors)
-        self.assertItemsEqual(actual_results, expected_results)
+        self.assertCountEqual(actual_results, expected_results)
 
     def tearDown(self):
         test_util.empty_bucket(self.bucket)

@@ -36,4 +36,4 @@ class PPIDropDuplicateResponsesTest(unittest.TestCase):
                                                                                           self.dataset_id,
                                                                                           self.sandbox_dataset_id)
 
-        self.assertItemsEqual(expected, actual)
+        self.assertCountEqual(expected, actual)
