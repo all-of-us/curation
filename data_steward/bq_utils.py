@@ -295,7 +295,7 @@ def wait_on_jobs(job_ids, retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT, max_poll
     for i in range(retry_count):
         logging.debug('Waiting %s seconds for completion of job(s): %s' % (poll_interval, _job_ids))
         time.sleep(poll_interval)
-        _job_ids = filter(lambda s: not job_status_done(s), _job_ids)
+        _job_ids = [job_id for job_id in _job_ids if not job_status_done(job_id)]
         if len(_job_ids) == 0:
             return []
         if poll_interval < max_poll_interval:

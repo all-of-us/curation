@@ -32,7 +32,7 @@ def top_n_errors(rs):
     :param rs: list of achilles_heel_results records
     :return: top N errors from `rs` with highest record count
     """
-    errors = filter(is_error, rs)
+    errors = [r for r in rs if is_error(r)]
     sorted_errors = sorted(errors, key=sort_key, reverse=True)
     return sorted_errors[:RESULT_LIMIT]
 
