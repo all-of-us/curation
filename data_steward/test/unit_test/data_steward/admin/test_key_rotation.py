@@ -36,7 +36,7 @@ class KeyRotationTest(unittest.TestCase):
 
         mock_service_account_list.assert_called_once_with(name='projects/' + self.project_id)
 
-        self.assertItemsEqual(expected_accounts['accounts'], actual_accounts)
+        self.assertCountEqual(expected_accounts['accounts'], actual_accounts)
 
     @mock.patch('admin.key_rotation.get_iam_service')
     def test_list_keys_for_service_account(self, mock_iam_service):
@@ -53,7 +53,7 @@ class KeyRotationTest(unittest.TestCase):
 
         mock_service_account_key_list.assert_called_once_with(name='projects/-/serviceAccounts/' + self.email)
 
-        self.assertItemsEqual(keys['keys'], actual_values)
+        self.assertCountEqual(keys['keys'], actual_values)
 
     def test_is_key_expired(self):
         today = datetime.datetime.now()
@@ -141,7 +141,7 @@ class KeyRotationTest(unittest.TestCase):
             {'service_account_email': 'test-email@test.com', 'key_name': 'key-1', 'created_at': 'expired-date-1'},
             {'service_account_email': 'test-2-email@test.com', 'key_name': 'key-3', 'created_at': 'expired-date-2'}]
 
-        self.assertItemsEqual(expected_deleted_keys, actual_deleted_keys)
+        self.assertCountEqual(expected_deleted_keys, actual_deleted_keys)
 
     @mock.patch('admin.key_rotation.is_key_expired_after_period')
     @mock.patch('admin.key_rotation.list_keys_for_service_account')
@@ -175,4 +175,4 @@ class KeyRotationTest(unittest.TestCase):
             {'service_account_email': 'test-email@test.com', 'key_name': 'key-1', 'created_at': 'expiring-date-1'},
             {'service_account_email': 'test-2-email@test.com', 'key_name': 'key-3', 'created_at': 'expiring-date-2'}]
 
-        self.assertItemsEqual(expected_expiring_keys, actual_expiring_keys)
+        self.assertCountEqual(expected_expiring_keys, actual_expiring_keys)

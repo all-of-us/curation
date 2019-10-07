@@ -25,4 +25,4 @@ class PPIDropDuplicateResponsesTest(unittest.TestCase):
         actual = ppi_drop.get_remove_duplicate_set_of_responses_to_same_questions_queries(self.project_id,
                                                                                           self.dataset_id)
 
-        self.assertItemsEqual(expected, actual)
+        self.assertCountEqual(expected, actual)

@@ -137,7 +137,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
                                                                                 self.dataset_id)
 
         # Test the content of the expected and actual queries
-        self.assertItemsEqual(expected_queries, actual_queries)
+        self.assertCountEqual(expected_queries, actual_queries)
 
         mock_create_standard_table.assert_called_once_with(SRC_CONCEPT_ID_TABLE_NAME,
                                                            SRC_CONCEPT_ID_TABLE_NAME,
@@ -169,7 +169,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
                                                                               self.dataset_id,
                                                                               self.condition_table)
 
-        self.assertItemsEqual(expected_query, actual_query)
+        self.assertCountEqual(expected_query, actual_query)
 
     @mock.patch('cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.parse_src_concept_id_update_query')
     def test_get_src_concept_id_update_queries(self,
@@ -186,7 +186,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
 
         actual_query = replace_standard_id.get_src_concept_id_update_queries(self.project_id, self.dataset_id)
 
-        self.assertItemsEqual(actual_query, expected_query)
+        self.assertCountEqual(actual_query, expected_query)
 
     @mock.patch('resources.get_domain_source_concept_id')
     @mock.patch('resources.get_domain_concept_id')
@@ -244,7 +244,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
 
         actual_query = replace_standard_id.get_mapping_table_update_queries(self.project_id, self.dataset_id)
 
-        self.assertItemsEqual(actual_query, expected_query)
+        self.assertCountEqual(actual_query, expected_query)
 
     @mock.patch('resources.fields_for')
     def test_parse_mapping_table_update_query(self,

@@ -346,7 +346,7 @@ class DomainAlignmentTest(unittest.TestCase):
         actual_queries = domain_alignment.get_domain_mapping_queries(self.project_id, self.dataset_id)
 
         # Test the content of the expected and actual queries
-        self.assertItemsEqual(expected_queries, actual_queries)
+        self.assertCountEqual(expected_queries, actual_queries)
 
         mock_create_standard_table.assert_called_once_with(DOMAIN_ALIGNMENT_TABLE_NAME,
                                                            DOMAIN_ALIGNMENT_TABLE_NAME,
@@ -388,4 +388,4 @@ class DomainAlignmentTest(unittest.TestCase):
         actual_queries = domain_alignment.get_reroute_domain_queries(self.project_id,
                                                                      self.dataset_id)
 
-        self.assertItemsEqual(expected_queries, actual_queries)
+        self.assertCountEqual(expected_queries, actual_queries)
