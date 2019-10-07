@@ -83,6 +83,7 @@ import numpy as np
 import pandas as pd
 
 import bq_utils
+import constants.bq_utils as bq_consts
 from parser import parse_args
 from press import Press
 
@@ -131,7 +132,10 @@ class AOU(Press):
                  value=person_table.shape[0])
         map_table = pd.DataFrame()
 
-        self.map_questionnaire_response_ids(million)
+        # only need to create this mapping table if an observation table exists
+        if self.get_tablename().lower() == 'observation':
+            self.map_questionnaire_response_ids(million)
+
         if person_table.shape[0] > 0:
             person_table = person_table[person_table.age < age_limit]
             map_table = self.get(sql="SELECT * FROM " + map_tablename)
@@ -298,8 +302,9 @@ class AOU(Press):
         if 'compute' not in self.info:
             self.info['compute'] = []
         else:
-            index = [self.info['compute'].index(rule) for rule in self.info['compute'] if '@compute.id' in rule]
-            has_compute_id = False if index else True
+            for rule_dict in self.info.get('compute', {}):
+                if '@compute.id' in rule_dict.get('rules'):
+                    has_compute_id = True
 
         if not has_compute_id and 'person_id' in columns:
             self.info['compute'] += [
@@ -334,7 +339,7 @@ class AOU(Press):
 
         return pd.DataFrame()
 
-    def submit(self, sql):
+    def submit(self, sql, create):
         table_name = self.get_tablename()
         client = bq.Client.from_service_account_json(self.private_key)
         #
@@ -346,20 +351,30 @@ class AOU(Press):
             client.create_dataset(dataset)
 
         # create the output table
-        bq_utils.create_standard_table(
-            self.tablename, self.tablename, drop_existing=True, dataset_id=self.odataset
-        )
+        if create:
+            self.log(module='submit', subject=self.get_tablename(),
+                     action='creating new table')
+            bq_utils.create_standard_table(
+                self.tablename, self.tablename, drop_existing=True, dataset_id=self.odataset
+            )
+            write_disposition = bq_consts.WRITE_EMPTY
+        else:
+            write_disposition = bq_consts.WRITE_APPEND
+            self.log(module='submit', subject=self.get_tablename(),
+                     action='not creating new table')
 
         job = bq.QueryJobConfig()
         job.destination = client.dataset(self.odataset).table(self.tablename)
         job.use_query_cache = True
         job.allow_large_results = True
+        job.write_disposition = write_disposition
         if self.partition:
             job._properties['timePartitioning'] = {'type': 'DAY'}
             job._properties['clustering'] = {'field': 'person_id'}
 
         job.priority = self.priority
         job.dry_run = True
+
         self.log(module='submit-job',
                  subject=self.get_tablename(),
                  action='dry-run',

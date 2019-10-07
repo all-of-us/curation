@@ -12,11 +12,11 @@
         {
             "rules":"@generalize.EMPLOYMENT","fields":["value_source_value","value_as_string"],
          "on":"observation_source_value IN ('Employment_EmploymentStatus')"},
-        
+
          {
             "rules":"@generalize.SEXUAL-ORIENTATION","fields":["value_source_value","value_as_string"],
              "on":"observation_source_value IN ('TheBasics_SexualOrientation')"},
-        
+
         {
             "rules":"@generalize.SEX-AT-BIRTH","fields":["value_source_value","value_as_string"],
             "on":"observation_source_value IN ('BiologicalSexAtBirth_SexAtBirth')"
@@ -28,7 +28,7 @@
             "rules":"@generalize.EDUCATION","fields":["value_source_value"],
             "on":"observation_source_value IN ('EducationLevel_HighestGrade')"
         }
-        
+
     ],
     "suppress":[
         {"rules":"@suppress.ROWS",

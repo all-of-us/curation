@@ -1,6 +1,7 @@
 """
     This class applies rules and meta data to yield a certain outpout
 """
+import codecs
 from datetime import datetime
 import json
 import logging
@@ -19,10 +20,13 @@ class Press(object):
         :info_path   path to the configuration of how the rules get applied
         :pipeline   operations and associated sequence in which they should be performed
         """
-        self.deid_rules = json.loads((open(args['rules'])).read())
+        with codecs.open(args['rules'], 'r', encoding='utf-8') as config:
+            self.deid_rules = json.loads(config.read(), encoding='utf-8')
+
         self.pipeline = args['pipeline']
         try:
-            self.info = json.loads((open(args['table'])).read())
+            with codecs.open(args['table'], 'r', encoding='utf-8') as config:
+                self.info = json.loads(config.read(), encoding='utf-8')
         except StandardError:
             # In case a table name is not provided, we will apply default rules on he table
             #   I.e physical field suppression and row filter
@@ -142,19 +146,23 @@ class Press(object):
             #
 
             sql.append(_rsql)
-            sql = "\nUNION ALL\n".join(sql)
-            sql = sql.replace(':idataset', self.idataset)
-            sql = sql.replace(':join_tablename', self.tablename)
+
+            for index, segment in enumerate(sql):
+                formatted = segment.replace(':idataset', self.idataset)
+                sql[index] = formatted.replace(':join_tablename', self.tablename)
 
         if 'debug' in self.action:
             self.debug(p)
         else:
+            # write SQL to file
             sql_filepath = os.path.join(self.logpath, self.idataset, self.tablename + '.sql')
             with open(sql_filepath, 'w') as sql_file:
-                sql_file.write(sql)
+                final_sql = "\n\nAppend these results to previous results\n\n".join(sql)
+                sql_file.write(final_sql)
 
             if 'submit' in self.action:
-                self.submit(sql)
+                for index, statement in enumerate(sql):
+                    self.submit(statement, not index)
 
             if 'simulate' in self.action:
                 #
