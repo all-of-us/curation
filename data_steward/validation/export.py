@@ -105,7 +105,7 @@ def query_result_to_payload(qr):
         field = fields[i]
         key = field['name'].upper()
         tpe = field['type'].upper()
-        values = map(lambda r: convert_value(r['f'][i]['v'], tpe), rows)
+        values = [convert_value(r['f'][i]['v'], tpe) for r in rows]
         # according to AchillesWeb rjson serializes dataframes with 1 row as single element properties
         # see https://github.com/OHDSI/AchillesWeb/blob/master/js/app/common.js#L134
         result[key] = values[0] if len(values) == 1 else values
