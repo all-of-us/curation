@@ -15,7 +15,7 @@ END_OF_IMPORTING_LOOKUP_MARKER = 'end of importing values into analysis lookup'
 
 def _get_load_analysis_commands(hpo_id):
     raw_commands = sql_wrangle.get_commands(ACHILLES_DML_SQL_PATH)
-    commands = map(lambda cmd: sql_wrangle.qualify_tables(cmd, hpo_id), raw_commands)
+    commands = [sql_wrangle.qualify_tables(cmd, hpo_id) for cmd in raw_commands]
     for command in commands:
         if END_OF_IMPORTING_LOOKUP_MARKER in command.lower():
             break
@@ -24,7 +24,7 @@ def _get_load_analysis_commands(hpo_id):
 
 def _get_run_analysis_commands(hpo_id):
     raw_commands = sql_wrangle.get_commands(ACHILLES_DML_SQL_PATH)
-    commands = map(lambda cmd: sql_wrangle.qualify_tables(cmd, hpo_id), raw_commands)
+    commands = [sql_wrangle.qualify_tables(cmd, hpo_id) for cmd in raw_commands]
     i = 0
     for command in commands:
         if END_OF_IMPORTING_LOOKUP_MARKER in command.lower():

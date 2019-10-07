@@ -29,7 +29,7 @@ sns.set()
 
 def row_counts(dataset_ids):
     sq = "SELECT '{dataset_id}' dataset_id, table_id, row_count FROM {dataset_id}.__TABLES__"
-    sqs = map(lambda d: sq.format(dataset_id=d), dataset_ids)
+    sqs = [sq.format(dataset_id=d) for d in dataset_ids]
     iq = "\nUNION ALL\n".join(sqs)
     q = """ 
     SELECT dataset_id, table_id, row_count 

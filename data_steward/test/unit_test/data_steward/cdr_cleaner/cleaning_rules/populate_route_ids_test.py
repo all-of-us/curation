@@ -32,7 +32,7 @@ class PopulateRouteIdsTest(unittest.TestCase):
                                (86340, 52315),
                                (19082168, 4132161),
                                (19126918, 45956874)]
-        route_mapping_exprs = map(lambda pair: '(%s, %s)' % pair, route_mappings)
+        route_mapping_exprs = ['(%s, %s)' % pair for pair in route_mappings]
         self.route_mappings_string = ', '.join(route_mapping_exprs)
         self.col_exprs = [
             'de.drug_exposure_id',
