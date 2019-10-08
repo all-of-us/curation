@@ -8,7 +8,7 @@
 				"into":2000000008,
 				"qualifier":"> 1",
                 "distinct": "value_source_concept_id",
-				"on": "value_source_concept_id = 1586141 or value_source_concept_id = 1586142 or value_source_concept_id = 1586143 or value_source_concept_id = 1586144 or value_source_concept_id = 1586145 or value_source_concept_id = 1586146 or value_source_concept_id = 1586147"
+				"on": "value_source_concept_id = 1586141 or value_source_concept_id = 1586142 or value_source_concept_id = 1586143 or value_source_concept_id = 1586144 or value_source_concept_id = 1586145 or value_source_concept_id = 1586146"
 			},
 			{
                 "comment":"generalizing minorities into a group",
