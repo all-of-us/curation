@@ -8,7 +8,9 @@ we can't use questionnaire_response_id alone because a larger questionnaire_resp
 a later time therefore we need to create ranks (lowest rank = most recent responses) based on observation_date_time.
 However, we also need to add questionnaire_response_id for assigning unique ranks to different sets of responses
 because there are cases where the multiple sets of responses for the same question were submitted at exactly the same
-timestamp but with different answers. """
+timestamp but with different answers. In addition, we also need to check whether one of the duplicate responses is
+PMI_Skip because there are cases where the most recent response is a skip and the legitimate response was submitted
+earlier, we want to keep the actual response instead of PMI_Skip regardless of the timestamps of those responses."""
 
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -28,7 +30,7 @@ WHERE
               PARTITION BY person_id, 
               observation_source_concept_id, 
               observation_source_value 
-              ORDER BY max_observation_datetime DESC, questionnaire_response_id DESC) AS rank_order
+              ORDER BY is_pmi_skip ASC, max_observation_datetime DESC, questionnaire_response_id DESC) AS rank_order
       FROM (
         SELECT
           observation_id,
@@ -36,6 +38,7 @@ WHERE
           observation_source_concept_id,
           observation_source_value,
           questionnaire_response_id,
+          IF (value_source_value = 'PMI_Skip', 1, 0) AS is_pmi_skip,
           MAX(observation_datetime) OVER(
               PARTITION BY person_id, 
               observation_source_concept_id, 
