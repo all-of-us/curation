@@ -1,14 +1,14 @@
 """In PPI surveys, the purpose of questionnaire_response_id is to group all responses from the same survey together.
 Some PPI questions allowed participants to provide multiple answers, which be will connected via the same
-questionnaire_response_id. However, a participant may submit the responses multiple times to the same questions,
+questionnaire_response_id. However, a participant may submit the responses multiple times for the same questions,
 therefore creating duplicates. We need to use the combination of person_id, observation_source_concept_id,
 observation_source_value, and questionnaire_response_id to identify multiple sets of responses. We only want to keep
-the most recent set of responses and remove previous set of responses. When identifying the most recent responses,
+the most recent set of responses and remove previous sets of responses. When identifying the most recent responses,
 we can't use questionnaire_response_id alone because a larger questionnaire_response_id doesn't mean it's created at
-a later time therefore we need to create ranks based on observation_date_time. However, we also need to add
-questionnaire_response_id for assigning unique ranks to different sets of answers because there are cases where the
-multiple sets of responses for the same question were submitted at exactly the same time stamp with different
-answers. """
+a later time therefore we need to create ranks (lowest rank = most recent responses) based on observation_date_time.
+However, we also need to add questionnaire_response_id for assigning unique ranks to different sets of responses
+because there are cases where the multiple sets of responses for the same question were submitted at exactly the same
+timestamp but with different answers. """
 
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
