@@ -41,8 +41,10 @@ class Rules(object):
                 "apply": {"REGEXP": "REGEXP_CONTAINS (LOWER(:FIELD), LOWER(':VAR'))",
                           "COUNT": "SELECT COUNT (:KEY) FROM :DATASET.:TABLE AS :ALIAS WHERE :KEY=:VALUE",
                           "COUNT-DISTINCT": ("SELECT COUNT (DISTINCT :ALIAS.:DISTINCT_FIELD) "
-                                             "FROM :DATASET.:TABLE AS :ALIAS WHERE :KEY=:VALUE")},
+                                             "FROM :DATASET.:TABLE AS :ALIAS WHERE :KEY=:VALUE"),
+                          "SQL":  ":SQL_STATEMENT"},
                 "cond_syntax": {"IF": "IF", "OPEN": "(", "THEN": ",", "ELSE": ",", "CLOSE": ")"},
+                "case_syntax": {"CASE": "CASE", "WHEN": "WHEN", "OPEN": "(", "CLOSE": ")", "THEN": "THEN", "ELSE": "ELSE", "END": "END"},
                 "random": "CAST( (RAND() * 364) + 1 AS INT64)"
             },
             "postgresql": {
@@ -216,23 +218,35 @@ class Deid(Rules):
                                 regex += ' AND ' + conditional
 
                             regex = ' '.join(['(', regex, ')', qualifier])
+                        elif rule['apply'] in ['SQL']:
+                            statement = rule.get('statement', ['statement NOT SET'])
+                            statement = ' '.join(statement)
+                            statement = statement.replace(':table', args.get('table', 'table_NOT_SET'))
+                            regex = regex.replace(':SQL_STATEMENT', statement)
+
+                            regex = ' '.join([regex])
+
                         else:
                             regex = ' '.join([regex, qualifier])
                         #
                         # Is there a filter associated with the aggregate function or not
                         #
-                    _into = rule['into'] if 'into' not in args else args['into']
+                    if 'into' in rule or 'into' in args:
+                        _into = rule['into'] if 'into' not in args else args['into']
 
-                    if not isinstance(_into, (int, long)):
-                        _into = "'" + _into + "'"
-                    else:
-                        _into = str(_into)
+                        if not isinstance(_into, (int, long)):
+                            _into = "'" + _into + "'"
+                        else:
+                            _into = str(_into)
 
-                    regex = "".join(regex)
-                    cond += [" ".join([syntax['IF'], syntax['OPEN'], regex, syntax['THEN'], _into])]
+                        regex = "".join(regex)
+                        cond += [" ".join([syntax['IF'], syntax['OPEN'], regex, syntax['THEN'], _into])]
 
-                    if rules.index(rule) % 2 == 0 or rules.index(rule) % 3:
-                        cond += [syntax['ELSE']]
+                        if rules.index(rule) % 2 == 0 or rules.index(rule) % 3:
+                            cond += [syntax['ELSE']]
+                    elif 'SQL' in rule['apply']:
+                        cond += [regex]
+                        print cond
 
                 else:
                     #
@@ -266,9 +280,11 @@ class Deid(Rules):
 
             #
             # Let's build the syntax here to make it sound for any persistence storage
-            cond += [name]
-            cond_counts = sum([1 for xchar in cond if syntax['IF'] in xchar])
-            cond += np.repeat(syntax['CLOSE'], cond_counts).tolist()
+            if 'SQL' not in rule.get('apply', []):
+                cond += [name]
+                cond_counts = sum([1 for xchar in cond if syntax['IF'] in xchar])
+                cond += np.repeat(syntax['CLOSE'], cond_counts).tolist()
+
             cond += ['AS', name]
             result = {"name": name, "apply": " ".join(cond), "label": label}
             if 'on' in args:

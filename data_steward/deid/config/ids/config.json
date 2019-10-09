@@ -1,14 +1,32 @@
 [
 	{
 		"_id":"generalize",
-		"RACE":[
+        "RACE": [
+            {
+                "comment": "trying to force a case statement in this rule only",
+                "apply": "SQL",
+                "statement": [
+                    "case ",
+                    "when ",
+                    "(select count(obs.person_id) ",
+                    "from :idataset.:table as obs ",
+                    "where obs.person_id = :table.person_id and obs.value_source_concept_id IN (1586141, 1586142, 1586143, 1586144, 1586145, 1586146) ",
+                    "group by obs.person_id ",
+                    ") > 1 and value_source_concept_id <> 1586147 then 2000000008 ",
+                    "when value_source_concept_id IN (1586141, 1586144, 1586145) then 2000000001 ",
+                    "else value_source_concept_id ",
+                    "end "
+                ]
+            }
+        ],
+		"RACE_USING_IF_ELSE":[
 			{
 				"comment":"multi racial generalization rule, the values the count is limited to is provided by the 'on' key",
                 "apply":"COUNT-DISTINCT",
 				"into":2000000008,
 				"qualifier":"> 1",
                 "distinct": "value_source_concept_id",
-				"on": "value_source_concept_id = 1586141 or value_source_concept_id = 1586142 or value_source_concept_id = 1586143 or value_source_concept_id = 1586144 or value_source_concept_id = 1586145 or value_source_concept_id = 1586146 or value_source_concept_id = 1586147"
+				"on": "value_source_concept_id = 1586141 or value_source_concept_id = 1586142 or value_source_concept_id = 1586143 or value_source_concept_id = 1586144 or value_source_concept_id = 1586145 or value_source_concept_id = 1586146"
 			},
 			{
                 "comment":"generalizing minorities into a group",
