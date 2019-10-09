@@ -172,7 +172,8 @@ def load_csv(schema_path,
     """
     bq_service = create_service()
 
-    fields = json.load(open(schema_path, 'r'))
+    with open(schema_path, 'r') as schema_file:
+        fields = json.load(schema_file)
     load = {'sourceUris': [gcs_object_path],
             bq_consts.SCHEMA: {bq_consts.FIELDS: fields},
             'destinationTable': {
@@ -486,7 +487,8 @@ def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=
     :return: table reference object
     """
     fields_filename = os.path.join(resources.fields_path, table_name + '.json')
-    fields = json.load(open(fields_filename, 'r'))
+    with open(fields_filename, 'r') as fields_file:
+        fields = json.load(fields_file)
     return create_table(table_id, fields, drop_existing, dataset_id)
 
 

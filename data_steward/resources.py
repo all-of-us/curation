@@ -44,7 +44,8 @@ def csv_to_list(csv_path):
     :return:
     """
     with open(csv_path, mode='r') as csv_file:
-        return _csv_file_to_list(csv_file)
+        list_of_dicts = _csv_file_to_list(csv_file)
+    return list_of_dicts
 
 
 def _csv_file_to_list(csv_file):
@@ -94,7 +95,8 @@ def achilles_index_files():
 def fields_for(table):
     json_path = os.path.join(fields_path, table + '.json')
     with open(json_path, 'r') as fp:
-        return json.load(fp)
+        fields = json.load(fp)
+    return fields
 
 
 def is_internal_table(table_id):
@@ -166,7 +168,8 @@ def hash_dir(in_dir):
     hash_obj = hashlib.sha256()
     for file_name in file_names:
         file_path = os.path.join(in_dir, file_name)
-        hash_obj.update(open(file_path, 'rb').read())
+        with open(file_path, 'rb') as fp:
+            hash_obj.update(fp.read())
     return hash_obj.hexdigest()
 
 
