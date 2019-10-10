@@ -8,7 +8,7 @@ VOCABULARY_DATASET_RE = re.compile(r'^vocabulary\d{8}$')
 RDR_DATASET_RE = re.compile(r'^rdr\d{8}$')
 UNIONED_DATASET_RE = re.compile(r'^unioned_ehr\d{8}$')
 COMBINED_DATASET_RE = re.compile(r'^combined\d{8}$')
-DEID_DATASET_RE = re.compile(r'^combined\d{8}_deid$')
+DEID_DATASET_RE = re.compile(r'^combined\d{8}.*_deid$')
 TREND_N = 3
 
 
