@@ -13,25 +13,22 @@ from google.appengine.api import app_identity
 # Project imports
 import bq_utils
 import cdr_cleaner.clean_cdr_engine as clean_engine
-
 # cleaning rule imports
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
-import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_concept_ids
+import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
+import cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency as fix_datetimes
+import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
 import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
 import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
 import cdr_cleaner.cleaning_rules.no_data_30_days_after_death as no_data_30days_after_death
 import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
-import cdr_cleaner.cleaning_rules.person_id_validator as person_validator
-import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
-import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
-import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
-import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
-import cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency as fix_datetimes
+import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_concept_ids
+import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
+import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import constants.cdr_cleaner.clean_cdr as clean_cdr_consts
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -87,6 +84,7 @@ def _gather_ehr_rdr_queries(project_id, dataset_id):
     query_list.extend(populate_routes.get_route_mapping_queries(project_id, dataset_id))
     query_list.extend(fix_datetimes.get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id))
     query_list.extend(remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries(project_id, dataset_id))
+    # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     query_list.extend(null_foreign_key.null_invalid_foreign_keys(project_id, dataset_id))
     return query_list
 
@@ -101,16 +99,10 @@ def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id):
     """
     query_list = []
     query_list.extend(id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
-    query_list.extend(clean_years.get_year_of_birth_queries(project_id, dataset_id))
     query_list.extend(neg_ages.get_negative_ages_queries(project_id, dataset_id))
     query_list.extend(bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
-    query_list.extend(person_validator.get_person_id_validation_queries(project_id, dataset_id))
     query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
-    query_list.extend(drug_refills_supply.get_days_supply_refills_queries(project_id, dataset_id))
     query_list.extend(fill_source_value.get_fill_freetext_source_value_fields_queries(project_id, dataset_id))
-    query_list.extend(populate_routes.get_route_mapping_queries(project_id, dataset_id))
-    query_list.extend(fix_datetimes.get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id))
-    query_list.extend(remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries(project_id, dataset_id))
     return query_list
 
 
