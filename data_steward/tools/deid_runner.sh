@@ -95,11 +95,11 @@ python "${DATA_STEWARD_DIR}/cdm.py" "${cdr_deid}"
 python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${cdr_deid}"
 "${DATA_STEWARD_DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${cdr_deid}"
 
+# apply deidentification on combined dataset
+python "${DATA_STEWARD_DIR}/tools/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive | tee -a deid_output.txt
+
 # generate ext tables in deid dataset
 python "${DATA_STEWARD_DIR}/tools/generate_ext_tables.py" -p "${APP_ID}" -d "${cdr_deid}" -c "${cdr_id}" -s
-
-# apply deidentification on combined dataset
-python "${DATA_STEWARD_DIR}/tools/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive |& tee -a deid_output.txt
 
 # create empty de-id_clean dataset to apply cleaning rules
 bq mk --dataset --description "${version} deidentified clean version of ${cdr_id}" "${APP_ID}":"${cdr_deid_clean}"
