@@ -56,7 +56,7 @@ class RetractDataBqTest(unittest.TestCase):
         self.person_research_ids = [(1, 6890173), (2, 858761), (1234567, 4589763)]
         self.tables_to_retract_unioned = retract_data_bq.TABLES_FOR_RETRACTION | {common.FACT_RELATIONSHIP, common.PERSON}
         self.tables_to_retract_combined = retract_data_bq.TABLES_FOR_RETRACTION | {common.FACT_RELATIONSHIP}
-        self.all_tables = resources.CDM_TABLES
+        self.all_tables = list(resources.CDM_TABLES)
 
     def test_is_combined_dataset(self):
         self.assertTrue(retract_data_bq.is_combined_dataset('combined20190801'))
