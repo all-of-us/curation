@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
+# + {}
 from defaults import DEFAULT_DATASETS
-
-# +
 import bq
 import pandas as pd
+import render
 
 pd.set_option('display.max_colwidth', -1)
 RDR = DEFAULT_DATASETS.latest.rdr
 DEID = DEFAULT_DATASETS.latest.deid
 VOCAB = DEFAULT_DATASETS.latest.vocabulary
 # -
+
+print("""RDR = {RDR}
+DEID = {DEID}
+VOCAB = {VOCAB}""".format(RDR=RDR, DEID=DEID, VOCAB=VOCAB))
 
 # For the race question (`observation_concept_id=1586140`) a generalization rule is applied such that responses with multiple selected races are replaced by a response containing `2000000008` "More than one population".
 #
@@ -18,15 +22,6 @@ VOCAB = DEFAULT_DATASETS.latest.vocabulary
 # * otherwise we replace the other selection with `2000000001` "Another single population"
 #
 # In the case where there are **more than two** races selected, including `1586147` "Hispanic" we replace all other selected races with `2000000008` "More than one population".
-
-from IPython.display import display, HTML
-def display_dataframe(df):
-    if len(df) == 0:
-        html = HTML('<div class="alert alert-info">There are no records in the dataframe.</div>')
-    else:
-        html = HTML(df.to_html())
-    display(html)
-
 
 # # Counts for all race combo responses
 
@@ -49,15 +44,16 @@ GROUP BY selected_races
 ORDER BY selected_count, selected_races
 """
 
-# ## In latest rdr dataset
+render.md('## In dataset `{RDR}`'.format(RDR=RDR))
 
 q = MULTIRACIAL_DIST_QUERY.format(DATASET=RDR, VOCAB=VOCAB)
 multi_race_count_df = bq.query(q)
-display_dataframe(multi_race_count_df)
+render.dataframe(multi_race_count_df)
 
-# ## Deid dataset
+render.md('## In dataset `{DEID}`'.format(DEID=DEID))
+
 # Generalization during the privacy methodology should limit the populations represented in the deidentified dataset to those who selected 1 or 2 races only. Where 2 races are selected, Hispanic must be one of them.
 
 q = MULTIRACIAL_DIST_QUERY.format(DATASET=DEID, VOCAB=VOCAB)
 multi_race_count_df = bq.query(q)
-display_dataframe(multi_race_count_df)
+render.dataframe(multi_race_count_df)
