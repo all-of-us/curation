@@ -29,12 +29,18 @@ echo "Activating service account ${ACCOUNT} for application ID ${APPLICATION_ID}
 gcloud auth activate-service-account ${ACCOUNT} --key-file=${KEY_FILE}
 gcloud config set project "${APPLICATION_ID}"
 
+PYTHON_CMD='python2.7'
 VENV_NAME='cdr_ops_env'
 VENV_PATH="${HOME}/${VENV_NAME}"
-WHICH_PYTHON=$(which python)
-PYTHON_VERSION=$(${WHICH_PYTHON} --version 2>&1)
 
-echo "Creating a ${PYTHON_VERSION} virtual environment in ${VENV_PATH}..."
+echo "Creating virtual environment in ${VENV_PATH}..."
+
+if ! type ${PYTHON_CMD} > /dev/null;
+then
+  PYTHON_CMD=$(which python)
+  PYTHON_VERSION=$(${PYTHON_CMD} --version 2>&1)
+  echo "Command ${PYTHON_CMD} was not found. Attempting to use system default (${PYTHON_VERSION}) which may NOT work..."
+fi
 
 BIN_PATH="${VENV_PATH}/bin"
 if test -d "${VENV_PATH}/Scripts"
@@ -43,9 +49,9 @@ then
     BIN_PATH="${VENV_PATH}/Scripts"
 fi
 
-virtualenv --python=$(which python) ${VENV_PATH}
+virtualenv --python=${PYTHON_CMD} ${VENV_PATH}
 source "${BIN_PATH}/activate"
 echo "Which python: $(which python)"
 python -m pip install -U pip
-python -m pip install -U -r requirements.txt
-jupyter notebook
+python -m pip install -U -r "${NOTEBOOKS_DIR}/requirements.txt"
+jupyter notebook --notebook-dir=${BASE_DIR}
