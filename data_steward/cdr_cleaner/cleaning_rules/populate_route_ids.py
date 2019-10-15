@@ -3,14 +3,14 @@ Using the drug_concept_id, one can infer the values to populate the route concep
 pseudoephedrine hydrochloride 7.5 MG Chewable Tablet (OMOP: 43012486) would have route as oral
 This cleaning rule populates null and wrong route_concept_ids based on the drug_concept_id
 """
-import os
 import logging
+import os
 
 import bq_utils
 import common
-import resources
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+import resources
 
 LOGGER = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ def create_dose_form_route_mappings_table(project_id, dataset_id=None):
     bq_utils.create_table(DOSE_FORM_ROUTES_TABLE_ID, DOSE_FORM_ROUTE_FIELDS, drop_existing=True, dataset_id=dataset_id)
 
     dose_form_route_mappings_csv = os.path.join(resources.resource_path, DOSE_FORM_ROUTES_FILE + ".csv")
-    dose_form_route_mappings_list = resources._csv_to_list(dose_form_route_mappings_csv)
+    dose_form_route_mappings_list = resources.csv_to_list(dose_form_route_mappings_csv)
     dose_form_routes_populate_query = INSERT_ROUTES_QUERY.format(
                                                     dataset_id=dataset_id,
                                                     project_id=project_id,
