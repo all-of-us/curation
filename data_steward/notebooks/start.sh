@@ -18,7 +18,7 @@ then
 fi
 NOTEBOOKS_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 BASE_DIR="$( cd "${NOTEBOOKS_DIR}" && cd .. && pwd )"
-export PYTHONPATH="${PYTHONPATH}:${NOTEBOOKS_DIR}"
+export PYTHONPATH="${PYTHONPATH}:${NOTEBOOKS_DIR}:${BASE_DIR}"
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 
 export APPLICATION_ID=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
@@ -54,4 +54,6 @@ source "${BIN_PATH}/activate"
 echo "Which python: $(which python)"
 python -m pip install -U pip
 python -m pip install -U -r "${NOTEBOOKS_DIR}/requirements.txt"
+jupyter nbextension enable --py --sys-prefix qgrid
+jupyter nbextension enable --py --sys-prefix widgetsnbextension
 jupyter notebook --notebook-dir=${BASE_DIR}
