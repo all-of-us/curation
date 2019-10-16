@@ -163,6 +163,49 @@ JOIN `{VOCAB}.concept` AS u2
 ORDER BY after.measurement_concept_id, after.unit_concept_id
 """
 
+UNIT_DISTRIBUTION_QUERY = """
+SELECT
+  m2.measurement_concept_id, m2.unit_concept_id, m2.bin, COUNT(*) AS bin_freq
+FROM
+(
+  SELECT
+    measurement_concept_id,
+    unit_concept_id,
+    value_as_number,
+    first_quartile_value_as_number,
+    third_quartile_value_as_number,
+    CASE
+      WHEN value_as_number < first_quartile_value_as_number THEN 1
+      WHEN value_as_number > third_quartile_value_as_number THEN 10
+      WHEN third_quartile_value_as_number - first_quartile_value_as_number = 0 THEN -1
+      ELSE CAST(TRUNC((value_as_number -first_quartile_value_as_number) * 8 / (third_quartile_value_as_number - first_quartile_value_as_number) + 2) AS INT64)
+    END AS bin
+  FROM
+  (
+    SELECT
+      m.measurement_concept_id,
+      m.unit_concept_id,
+      value_as_number,
+      percentile_cont(value_as_number,.05) over (partition by m.measurement_concept_id, m.unit_concept_id) AS first_quartile_value_as_number,
+      percentile_cont(value_as_number,.95) over (partition by m.measurement_concept_id, m.unit_concept_id) AS third_quartile_value_as_number
+    FROM
+      `{DATASET}.{TABLE}` AS m
+    JOIN
+      (
+      SELECT
+        DISTINCT measurement_concept_id,
+        {UNIT_CONCEPT_ID_COLUMN}
+      FROM
+        `{DATASET}.{UNIT_MAPPING}`) AS u
+    ON m.measurement_concept_id = u.measurement_concept_id
+      AND m.unit_concept_id = u.{UNIT_CONCEPT_ID_COLUMN}
+    WHERE m.value_as_number IS NOT NULL
+  ) m1
+) m2
+GROUP BY m2.measurement_concept_id, m2.unit_concept_id, m2.bin
+ORDER BY m2.measurement_concept_id, m2.unit_concept_id, m2.bin
+"""
+
 # Check the number of records associated with the units before and after the unit transformation. Theoretically the number of records units should be same as before after the unit transformation.
 
 unit_conversion_count_query = UNIT_CONVERSION_COUNT_TEMPLATE.format(
@@ -186,5 +229,28 @@ unit_conversion_stats_query = UNIT_CONVERSION_STATS_TEMPLATE.format(
                             VOCAB=VOCAB)
 unit_conversion_stats = bq.query(unit_conversion_stats_query)
 render.dataframe(unit_conversion_stats)
+
+# +
+before_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
+                            DATASET=DATASET_AFTER_CONVERSION, 
+                            TABLE=TABLE_AFTER_CONVERSION,
+                            UNIT_MAPPING=UNIT_MAPPING,
+                            UNIT_CONCEPT_ID_COLUMN='unit_concept_id')
+
+
+before_unit_conversion_dist = bq.query(before_unit_conversion_dist_query)
+render.dataframe(before_unit_conversion_dist)
+
+# +
+after_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
+                            DATASET=DATASET_AFTER_CONVERSION, 
+                            TABLE=TABLE_AFTER_CONVERSION,
+                            UNIT_MAPPING=UNIT_MAPPING,
+                            UNIT_CONCEPT_ID_COLUMN='set_unit_concept_id')
+
+
+after_unit_conversion_dist = bq.query(after_unit_conversion_dist_query)
+render.dataframe(after_unit_conversion_dist)
+# -
 
 
