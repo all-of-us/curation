@@ -45,7 +45,7 @@ SELECT
 END
   AS value_as_number,
   value_as_concept_id,
-  set_unit_concept_id AS unit_concept_id,
+  COALESCE(set_unit_concept_id, unit_concept_id) AS unit_concept_id,
   CASE transform_value_as_number
     WHEN "(1/x)" THEN 1/range_low
     WHEN "(x-32)*(5/9)" THEN (range_low-32)*(5/9)
