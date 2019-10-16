@@ -10,11 +10,13 @@ VOCAB = DEFAULT_DATASETS.latest.vocabulary
 print("""DATASET_BEFORE_CONVERSION = {DATASET_BEFORE_CONVERSION}
 DATASET_AFTER_CONVERSION = {DATASET_AFTER_CONVERSION}
 TABLE_BEFORE_CONVERSION = {TABLE_BEFORE_CONVERSION}
-TABLE_AFTER_CONVERSION = {TABLE_AFTER_CONVERSION}""".format(
+TABLE_AFTER_CONVERSION = {TABLE_AFTER_CONVERSION}
+UNIT_MAPPING = {UNIT_MAPPING}""".format(
     DATASET_BEFORE_CONVERSION=DATASET_BEFORE_CONVERSION,
     DATASET_AFTER_CONVERSION=DATASET_AFTER_CONVERSION,
     TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION, 
-    TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION))
+    TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
+    UNIT_MAPPING=UNIT_MAPPING))
 
 # # Query for counting the number of units converted
 
@@ -173,7 +175,7 @@ unit_conversion_count_query = UNIT_CONVERSION_COUNT_TEMPLATE.format(
 unit_conversion_count = bq.query(unit_conversion_count_query)
 render.dataframe(unit_conversion_count)
 
-# Compute the first, median and third quartile before and after the unit transformation
+# Compute the first, median and third quartiles before and after the unit transformation
 
 unit_conversion_stats_query = UNIT_CONVERSION_STATS_TEMPLATE.format(
                             DATASET_BEFORE_CONVERSION=DATASET_BEFORE_CONVERSION, 
