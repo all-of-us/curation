@@ -8,7 +8,7 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 UNIT_MAPPING_FILE = 'unit_mapping'
-MEASUREMENT = 'measurement_test'
+MEASUREMENT = 'measurement'
 UNIT_MAPPING_TABLE = 'unit_mapping'
 
 INSERT_UNITS_QUERY = """
