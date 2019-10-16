@@ -142,7 +142,7 @@ def create_unit_standards_table(project_id, dataset_id, table_name):
                           dataset_id=dataset_id)
 
     unit_mappings_csv = os.path.join(resources.resource_path, UNIT_MAPPING_FILE + ".csv")
-    unit_mappings_list = resources.csv_to_list(unit_mappings_csv)
+    unit_mappings_list = resources._csv_to_list(unit_mappings_csv)
     unit_mappings_populate_query = INSERT_UNITS_QUERY.format(
         dataset_id=dataset_id,
         project_id=project_id,
