@@ -155,10 +155,9 @@ def create_unit_standards_table(project_id, dataset_id, table_name):
 
 def get_unit_normalization_query(project_id, dataset_id):
     """
-    
-    :param project_id: 
-    :param dataset_id: 
-    :return: 
+    :param project_id:
+    :param dataset_id:
+    :return:
     """
     queries = []
 
