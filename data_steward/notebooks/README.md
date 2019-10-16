@@ -42,6 +42,7 @@ COMBINED_DATASET_ID = 'combined_dataset_id'
 DEID_DATASET_ID = 'deid_dataset_id'
 DRC_BUCKET_NAME = 'drc_bucket_name'
 RDR_PROJECT_ID = 'rdr_project_id'
+SANDBOX = 'sandbox_dataset_id'
 ```
 
 ## Defaults
