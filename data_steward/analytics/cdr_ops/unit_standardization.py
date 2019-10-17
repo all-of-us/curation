@@ -167,8 +167,10 @@ ORDER BY after.measurement_concept_id, after.unit_concept_id
 
 UNIT_DISTRIBUTION_QUERY = """
 SELECT
-  m3.measurement_concept_id,
-  m3.unit_concept_id,
+  CAST(m3.measurement_concept_id AS STRING) AS measurement_concept_id,
+  CAST(m3.unit_concept_id AS STRING) AS unit_concept_id,
+  m3.measurement_concept_name,
+  m3.unit_concept_name,
   CAST(m3.bin AS INT64) AS bin,
   m3.bin_width,
   m3.bin_centroid,
@@ -184,7 +186,9 @@ FROM (
   FROM (
     SELECT
       measurement_concept_id,
+      measurement_concept_name,
       unit_concept_id,
+      unit_concept_name,
       value_as_number,
       first_quartile_value_as_number,
       third_quartile_value_as_number,
@@ -200,7 +204,10 @@ FROM (
     FROM (
       SELECT
         m.measurement_concept_id,
+        mea.concept_name AS measurement_concept_name,
         m.unit_concept_id,
+        u.concept_name AS unit_concept_name,
+        um.transform_value_as_number,
         value_as_number,
         percentile_cont(value_as_number,
           .01) OVER (PARTITION BY m.measurement_concept_id, m.unit_concept_id) AS first_quartile_value_as_number,
@@ -211,17 +218,24 @@ FROM (
       JOIN (
         SELECT
           DISTINCT measurement_concept_id,
+          transform_value_as_number,
           {UNIT_CONCEPT_ID_COLUMN}
         FROM
-          `{DATASET}.{UNIT_MAPPING}`) AS u
-      ON
-        m.measurement_concept_id = u.measurement_concept_id
-        AND m.unit_concept_id = u.{UNIT_CONCEPT_ID_COLUMN}
+          `{DATASET}.{UNIT_MAPPING}`) AS um
+          ON
+            m.measurement_concept_id = um.measurement_concept_id
+            AND m.unit_concept_id = um.{UNIT_CONCEPT_ID_COLUMN}
+      JOIN {VOCAB}.concept AS mea
+          ON m.measurement_concept_id = mea.concept_id
+      JOIN {VOCAB}.concept AS u
+          ON m.unit_concept_id = u.concept_id
       WHERE
         m.value_as_number IS NOT NULL ) m1 ) m2 ) m3
 GROUP BY
   m3.measurement_concept_id,
+  m3.measurement_concept_name,
   m3.unit_concept_id,
+  m3.unit_concept_name,
   m3.bin,
   m3.bin_width,
   m3.bin_centroid,
@@ -261,6 +275,7 @@ render.dataframe(unit_conversion_stats)
 before_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
                             DATASET=DATASET_BEFORE_CONVERSION, 
                             TABLE=TABLE_BEFORE_CONVERSION,
+                            VOCAB=VOCAB,
                             UNIT_MAPPING=UNIT_MAPPING,
                             UNIT_CONCEPT_ID_COLUMN='unit_concept_id')
 
@@ -272,6 +287,7 @@ render.dataframe(before_unit_conversion_dist)
 after_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
                             DATASET=DATASET_AFTER_CONVERSION, 
                             TABLE=TABLE_AFTER_CONVERSION,
+                            VOCAB=VOCAB,
                             UNIT_MAPPING=UNIT_MAPPING,
                             UNIT_CONCEPT_ID_COLUMN='set_unit_concept_id')
 
@@ -306,39 +322,50 @@ def get_sub_dataframe(df, measurement_concept_id, unit_concept_id):
         & (df['unit_concept_id'] == unit_concept_id)
     return df[indexes]
 
+def get_measurement_concept_dict(df):
+    return dict(zip(df.measurement_concept_id, df.measurement_concept_name))
+
+def get_unit_concept_id_dict(df):
+    return dict(zip(df.unit_concept_id, df.unit_concept_name))
+
+def get_transformation_dict(df):
+    return dict(zip(df.unit_concept_id, df.unit_concept_name))
+
 
 # +
+plt.rcParams['figure.figsize'] = [18, 12]
+
 measurement_concept_ids = get_measurement_concept_ids(before_unit_conversion_dist)
+measurement_concept_dict = get_measurement_concept_dict(before_unit_conversion_dist)
+before_unit_dict = get_unit_concept_id_dict(before_unit_conversion_dist)
+after_unit_dict = get_unit_concept_id_dict(after_unit_conversion_dist)
 
 for measurement_concept_id in measurement_concept_ids[0:10]:
     units_before = get_unit_concept_ids(before_unit_conversion_dist, measurement_concept_id)
     units_after = get_unit_concept_ids(after_unit_conversion_dist, measurement_concept_id)
     for unit_after in units_after:
 
-        fig, axs = plt.subplots(len(units_before), 2, sharex=True, sharey=True)
-        fig.suptitle('Measurement {}, standard unit {}'.format(measurement_concept_id, unit_after))
+        fig, axs = plt.subplots(len(units_before), 2, sharex=False, sharey=False)
+        measurement_concept_name = measurement_concept_dict[measurement_concept_id]
+        unit_concept_after = after_unit_dict[unit_after]
+        fig.suptitle('Measurement {}, standard unit {}'.format(measurement_concept_name, unit_concept_after))
         counter = 0
         sub_df_after = get_sub_dataframe(after_unit_conversion_dist, measurement_concept_id, unit_after)
 
         for unit_before in units_before:
             sub_df_before = get_sub_dataframe(before_unit_conversion_dist, measurement_concept_id, unit_before)
+            unit_before_name = before_unit_dict[unit_before]
             if len(units_before) == 1:
                 init_histogram(axs[0], sub_df_before)
-                axs[0].set_title('before unit {}'.format(unit_before))
+                axs[0].set_title('before unit {}'.format(unit_before_name))
 
                 init_histogram(axs[1], sub_df_after)
-                axs[1].set_title('after unit {}'.format(unit_after))
+                axs[1].set_title('after unit {}'.format(unit_after_name))
             else:
                 init_histogram(axs[counter][0], sub_df_before)
-                axs[counter][0].set_title('before unit {}'.format(unit_before))
+                axs[counter][0].set_title('before unit {}'.format(unit_before_name))
 
                 init_histogram(axs[counter][1], sub_df_after)
-                axs[counter][1].set_title('after unit {}'.format(unit_after))
+                axs[counter][1].set_title('after unit {}'.format(unit_after_name))
 
             counter += 1
-# -
-
-plt.rcParams['figure.figsize'] = [18, 18]
-#_, axs = plt.subplots(1, 1, squeeze=False)
-
-
