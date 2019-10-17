@@ -1,8 +1,10 @@
 from defaults import DEFAULT_DATASETS
+from parameters import *
 import bq
 import pandas as pd
 import render
-from parameters import *
+import matplotlib.pyplot as plt
+import numpy as np
 
 pd.set_option('display.max_colwidth', -1)
 VOCAB = DEFAULT_DATASETS.latest.vocabulary
@@ -165,45 +167,70 @@ ORDER BY after.measurement_concept_id, after.unit_concept_id
 
 UNIT_DISTRIBUTION_QUERY = """
 SELECT
-  m2.measurement_concept_id, m2.unit_concept_id, m2.bin, COUNT(*) AS bin_freq
-FROM
-(
+  m3.measurement_concept_id,
+  m3.unit_concept_id,
+  CAST(m3.bin AS INT64) AS bin,
+  m3.bin_width,
+  m3.bin_centroid,
+  m3.bin_lower_bound,
+  m3.bin_upper_bound,
+  COUNT(*) AS bin_count
+FROM (
   SELECT
-    measurement_concept_id,
-    unit_concept_id,
-    value_as_number,
-    first_quartile_value_as_number,
-    third_quartile_value_as_number,
-    CASE
-      WHEN value_as_number < first_quartile_value_as_number THEN 1
-      WHEN value_as_number > third_quartile_value_as_number THEN 10
-      WHEN third_quartile_value_as_number - first_quartile_value_as_number = 0 THEN -1
-      ELSE CAST(TRUNC((value_as_number -first_quartile_value_as_number) * 8 / (third_quartile_value_as_number - first_quartile_value_as_number) + 2) AS INT64)
-    END AS bin
-  FROM
-  (
+    m2.*,
+    (m2.bin - 2) * m2.bin_width + m2.first_quartile_value_as_number AS bin_lower_bound,
+    (m2.bin - 1) * m2.bin_width + m2.first_quartile_value_as_number AS bin_upper_bound,
+    ((m2.bin - 2) * m2.bin_width + (m2.bin - 1) * m2.bin_width) / 2 + m2.first_quartile_value_as_number AS bin_centroid
+  FROM (
     SELECT
-      m.measurement_concept_id,
-      m.unit_concept_id,
+      measurement_concept_id,
+      unit_concept_id,
       value_as_number,
-      percentile_cont(value_as_number,.05) over (partition by m.measurement_concept_id, m.unit_concept_id) AS first_quartile_value_as_number,
-      percentile_cont(value_as_number,.95) over (partition by m.measurement_concept_id, m.unit_concept_id) AS third_quartile_value_as_number
-    FROM
-      `{DATASET}.{TABLE}` AS m
-    JOIN
-      (
+      first_quartile_value_as_number,
+      third_quartile_value_as_number,
+      (third_quartile_value_as_number - first_quartile_value_as_number) / 18 AS bin_width,
+      CASE
+        WHEN value_as_number < first_quartile_value_as_number THEN 1
+        WHEN value_as_number > third_quartile_value_as_number THEN 20
+        WHEN third_quartile_value_as_number - first_quartile_value_as_number = 0 THEN NULL
+      ELSE
+      CAST(TRUNC((value_as_number -first_quartile_value_as_number) * 18 / (third_quartile_value_as_number - first_quartile_value_as_number) + 2) AS INT64)
+    END
+      AS bin
+    FROM (
       SELECT
-        DISTINCT measurement_concept_id,
-        {UNIT_CONCEPT_ID_COLUMN}
+        m.measurement_concept_id,
+        m.unit_concept_id,
+        value_as_number,
+        percentile_cont(value_as_number,
+          .01) OVER (PARTITION BY m.measurement_concept_id, m.unit_concept_id) AS first_quartile_value_as_number,
+        percentile_cont(value_as_number,
+          .99) OVER (PARTITION BY m.measurement_concept_id, m.unit_concept_id) AS third_quartile_value_as_number
       FROM
-        `{DATASET}.{UNIT_MAPPING}`) AS u
-    ON m.measurement_concept_id = u.measurement_concept_id
-      AND m.unit_concept_id = u.{UNIT_CONCEPT_ID_COLUMN}
-    WHERE m.value_as_number IS NOT NULL
-  ) m1
-) m2
-GROUP BY m2.measurement_concept_id, m2.unit_concept_id, m2.bin
-ORDER BY m2.measurement_concept_id, m2.unit_concept_id, m2.bin
+        `{DATASET}.{TABLE}` AS m
+      JOIN (
+        SELECT
+          DISTINCT measurement_concept_id,
+          {UNIT_CONCEPT_ID_COLUMN}
+        FROM
+          `{DATASET}.{UNIT_MAPPING}`) AS u
+      ON
+        m.measurement_concept_id = u.measurement_concept_id
+        AND m.unit_concept_id = u.{UNIT_CONCEPT_ID_COLUMN}
+      WHERE
+        m.value_as_number IS NOT NULL ) m1 ) m2 ) m3
+GROUP BY
+  m3.measurement_concept_id,
+  m3.unit_concept_id,
+  m3.bin,
+  m3.bin_width,
+  m3.bin_centroid,
+  m3.bin_lower_bound,
+  m3.bin_upper_bound
+ORDER BY
+  m3.measurement_concept_id,
+  m3.unit_concept_id,
+  m3.bin
 """
 
 # Check the number of records associated with the units before and after the unit transformation. Theoretically the number of records units should be same as before after the unit transformation.
@@ -232,8 +259,8 @@ render.dataframe(unit_conversion_stats)
 
 # +
 before_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
-                            DATASET=DATASET_AFTER_CONVERSION, 
-                            TABLE=TABLE_AFTER_CONVERSION,
+                            DATASET=DATASET_BEFORE_CONVERSION, 
+                            TABLE=TABLE_BEFORE_CONVERSION,
                             UNIT_MAPPING=UNIT_MAPPING,
                             UNIT_CONCEPT_ID_COLUMN='unit_concept_id')
 
@@ -251,6 +278,67 @@ after_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
 
 after_unit_conversion_dist = bq.query(after_unit_conversion_dist_query)
 render.dataframe(after_unit_conversion_dist)
+# + {}
+def init_histogram(axis, sub_dataframe):
+    centroids = sub_dataframe['bin_centroid']
+    bins = len(sub_dataframe)
+    weights = sub_dataframe['bin_count']
+    min_bin = sub_dataframe['bin_lower_bound'].min()
+    max_bin = sub_dataframe['bin_upper_bound'].max()
+    counts_, bins_, _ = axis.hist(centroids, bins=bins,
+                             weights=weights, range=(min_bin, max_bin))
+    
+def get_measurement_concept_ids(df):
+    return df['measurement_concept_id'].unique()
+
+
+def get_unit_concept_ids(df, measurement_concept_id=None):
+    
+    unit_concept_ids = []
+    if measurement_concept_id is None:
+        unit_concept_ids = df['unit_concept_id'].unique()
+    else:
+        unit_concept_ids = df.loc[df['measurement_concept_id'] == measurement_concept_id, 'unit_concept_id'].unique()
+    return unit_concept_ids
+
+def get_sub_dataframe(df, measurement_concept_id, unit_concept_id):
+    indexes = (df['measurement_concept_id'] == measurement_concept_id) \
+        & (df['unit_concept_id'] == unit_concept_id)
+    return df[indexes]
+
+
+# +
+measurement_concept_ids = get_measurement_concept_ids(before_unit_conversion_dist)
+
+for measurement_concept_id in measurement_concept_ids[0:10]:
+    units_before = get_unit_concept_ids(before_unit_conversion_dist, measurement_concept_id)
+    units_after = get_unit_concept_ids(after_unit_conversion_dist, measurement_concept_id)
+    for unit_after in units_after:
+
+        fig, axs = plt.subplots(len(units_before), 2, sharex=True, sharey=True)
+        fig.suptitle('Measurement {}, standard unit {}'.format(measurement_concept_id, unit_after))
+        counter = 0
+        sub_df_after = get_sub_dataframe(after_unit_conversion_dist, measurement_concept_id, unit_after)
+
+        for unit_before in units_before:
+            sub_df_before = get_sub_dataframe(before_unit_conversion_dist, measurement_concept_id, unit_before)
+            if len(units_before) == 1:
+                init_histogram(axs[0], sub_df_before)
+                axs[0].set_title('before unit {}'.format(unit_before))
+
+                init_histogram(axs[1], sub_df_after)
+                axs[1].set_title('after unit {}'.format(unit_after))
+            else:
+                init_histogram(axs[counter][0], sub_df_before)
+                axs[counter][0].set_title('before unit {}'.format(unit_before))
+
+                init_histogram(axs[counter][1], sub_df_after)
+                axs[counter][1].set_title('after unit {}'.format(unit_after))
+
+            counter += 1
 # -
+
+plt.rcParams['figure.figsize'] = [18, 18]
+#_, axs = plt.subplots(1, 1, squeeze=False)
 
 
