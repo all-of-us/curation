@@ -59,7 +59,7 @@ while true; do
   esac
 done
 
-bq mk --dataset ${TARGET_DATASET}
+bq mk --dataset ${TARGET_APPLICATION_ID}:${TARGET_DATASET}
 
 if [[ -z "${TARGET_PREFIX}" ]]; then
   TARGET_PREFIX=""
