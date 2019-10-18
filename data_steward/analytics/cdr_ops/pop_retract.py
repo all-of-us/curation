@@ -65,41 +65,26 @@ def get_tables_with_person_id(input_dataset):
     return list(person_tables_df.table_name.get_values())
 
 person_tables = get_tables_with_person_id(INPUT_DATASET)
+# -
 
-# +
 # Construct query to get row counts and number of rows to be deleted for any table
-ROW_COUNT_QUERY = """
-(
-SELECT '{TABLE}' AS table_name, 
- COUNT(1) AS rows_to_delete,
- (SELECT row_count FROM {INPUT_DATASET}.__TABLES__ WHERE table_id = '{TABLE}') AS total_rows
-FROM `{INPUT_DATASET}.{TABLE}` t
-WHERE EXISTS (SELECT 1 FROM `{ID_TABLE}` WHERE person_id = t.person_id)
-)
-"""
-DEID_ROW_COUNT_QUERY = """
-(
-SELECT '{TABLE}' AS table_name, 
- COUNT(1) AS rows_to_delete,
- (SELECT row_count FROM {INPUT_DATASET}.__TABLES__ WHERE table_id = '{TABLE}') AS total_rows
-FROM `{INPUT_DATASET}.{TABLE}` t
-WHERE EXISTS (SELECT 1 FROM `{ID_TABLE}` WHERE research_id = t.person_id)
-)
-"""
-row_count_queries = []
-for person_table in person_tables:
-    QUERY = DEID_ROW_COUNT_QUERY if IS_INPUT_DATASET_DEID else ROW_COUNT_QUERY
-    row_count_query = ROW_COUNT_QUERY.format(INPUT_DATASET=INPUT_DATASET, 
-                                             TABLE=person_table, 
-                                             ID_TABLE=ID_TABLE)
-    row_count_queries.append(row_count_query)
-union_query = ' UNION ALL '.join(row_count_queries)
-
-# For each table with a person_id column verify the expected and actual row counts are equal
-CTE_QUERY = """
+CTE_TPL = """
 WITH delete_row_counts AS (
- {UNION_QUERY}
-) 
+ {% for table in TABLES %}
+   (
+     SELECT '{{ table }}' AS table_name, 
+     COUNT(1) AS rows_to_delete,
+     (SELECT row_count FROM {{ INPUT_DATASET }}.__TABLES__ WHERE table_id = '{{ table }}') AS total_rows
+     FROM `{{ INPUT_DATASET }}.{{ table }}` t
+     WHERE EXISTS (
+      SELECT 1 FROM `{{ ID_TABLE }}` 
+      WHERE {{ 'research_id' if IS_INPUT_DATASET_DEID else 'person_id' }} = t.person_id)
+   ) 
+   {% if not loop.last %}
+   UNION ALL
+   {% endif %}  
+ {% endfor %}
+)
 SELECT 
  d.table_name, 
  d.total_rows                                    AS input_row_count,
@@ -108,9 +93,15 @@ SELECT
  t.row_count                                     AS actual_output_row_count,
  t.row_count = (d.total_rows - d.rows_to_delete) AS pass
 FROM delete_row_counts d
-JOIN {OUTPUT_DATASET}.__TABLES__ t
+JOIN {{ OUTPUT_DATASET }}.__TABLES__ t
  ON d.table_name = t.table_id
 """
-q = CTE_QUERY.format(OUTPUT_DATASET=OUTPUT_DATASET, UNION_QUERY=union_query)
-row_counts_df = bq.query(q)
+j = JinjaSql(param_style='pyformat')
+data = {'OUTPUT_DATASET': OUTPUT_DATASET, 
+        'INPUT_DATASET': INPUT_DATASET, 
+        'ID_TABLE': ID_TABLE, 
+        'TABLES': person_tables,
+        'IS_INPUT_DATASET_DEID': IS_INPUT_DATASET_DEID}
+query, bind_params = j.prepare_query(CTE_TPL, data)
+row_counts_df = bq.query(query % bind_params)
 render.dataframe(row_counts_df)
