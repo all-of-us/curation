@@ -170,7 +170,7 @@ class ValidationTest(unittest.TestCase):
         self.assertSetEqual(set(r['results']), set(expected_results))
 
         # check tables exist and are clustered as expected
-        for table in list(resources.CDM_TABLES) + common.PII_TABLES:
+        for table in resources.CDM_TABLES + common.PII_TABLES:
             fields_file = os.path.join(resources.fields_path, table + '.json')
             table_id = bq_utils.get_table_id(test_util.FAKE_HPO_ID, table)
             table_info = bq_utils.get_table_info(table_id)
