@@ -12,6 +12,26 @@ DEID_DATASET_RE = re.compile(r'^combined\d{8}.*_deid(?:_clean)$')
 TREND_N = 3
 
 
+def is_vocabulary_dataset(dataset_id):
+    return re.match(VOCABULARY_DATASET_RE, dataset_id) is not None
+
+
+def is_rdr_dataset(dataset_id):
+    return re.match(RDR_DATASET_RE, dataset_id) is not None
+
+
+def is_unioned_dataset(dataset_id):
+    return re.match(UNIONED_DATASET_RE, dataset_id) is not None
+
+
+def is_combined_dataset(dataset_id):
+    return re.match(COMBINED_DATASET_RE, dataset_id) is not None
+
+
+def is_deid_dataset(dataset_id):
+    return re.match(DEID_DATASET_RE, dataset_id) is not None
+
+
 def _datasets():
     DefaultDatasets = collections.namedtuple('DefaultDatasets', 'latest trend')
     dataset_list = list(bq.Datasets())
@@ -24,15 +44,15 @@ def _datasets():
 
     for dataset in dataset_list:
         dataset_id = dataset.name.dataset_id
-        if re.match(VOCABULARY_DATASET_RE, dataset_id):
+        if is_vocabulary_dataset(dataset_id):
             vocabulary.append(dataset_id)
-        elif re.match(RDR_DATASET_RE, dataset_id):
+        elif is_rdr_dataset(dataset_id):
             rdr.append(dataset_id)
-        elif re.match(UNIONED_DATASET_RE, dataset_id):
+        elif is_unioned_dataset(dataset_id):
             unioned.append(dataset_id)
-        elif re.match(COMBINED_DATASET_RE, dataset_id):
+        elif is_combined_dataset(dataset_id):
             combined.append(dataset_id)
-        elif re.match(DEID_DATASET_RE, dataset_id):
+        elif is_deid_dataset(dataset_id):
             deid.append(dataset_id)
 
     LatestDatasets = collections.namedtuple('LatestDatasets', 'vocabulary rdr unioned combined deid')
