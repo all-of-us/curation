@@ -156,22 +156,22 @@ UPDATE_PPI_QUERY = (
     '  a.observation_id = b.observation_id'
 )
 
-REMOVE_ADDITIONAL_RESPONSES_OTHER_THAN_NOT = (
-    'DELETE '
-    'FROM '
-    '  `{project}.{dataset}.observation` '
-    'WHERE '
-    '  person_id IN ( '
-    '  SELECT '
-    '    person_id '
-    '  FROM '
-    '    `{project}.{dataset}.observation` '
-    '  WHERE '
-    '    observation_concept_id = 1586140 '
-    '    AND value_source_concept_id = 1586148) '
-    '  AND (observation_concept_id = 1586140 '
-    '    AND value_source_concept_id != 1586148) '
-)
+REMOVE_ADDITIONAL_RESPONSES_OTHER_THAN_NOT = """
+DELETE
+FROM
+  `{project}.{dataset}.observation`
+WHERE
+  person_id IN (
+  SELECT
+    person_id
+  FROM
+    `{project}.{dataset}.observation`
+  WHERE
+    observation_concept_id = 1586140
+    AND value_source_concept_id = 1586148)
+  AND (observation_concept_id = 1586140
+    AND value_source_concept_id != 1586148)
+"""
 
 
 def run_pmi_fix(project_id, dataset_id):
@@ -218,8 +218,6 @@ def remove_additional_responses(project_id, dataset_id):
     :param dataset_id: Name of the dataset where the queries should be run
     :return:
     """
-    if project_id is None:
-        project_id = app_identity.get_application_id()
 
     q = REMOVE_ADDITIONAL_RESPONSES_OTHER_THAN_NOT.format(project=project_id,
                                                           dataset=dataset_id)
@@ -241,7 +239,7 @@ def main(project_id, dataset_id):
     logging.info('Applying PMI_Skip fix')
     run_pmi_fix(project_id, dataset_id)
 
-    logging.info('Applying PMI_Skip fix')
+    logging.info('Applying Removing additional responses for sex/gender fix')
     remove_additional_responses(project_id, dataset_id)
 
 
