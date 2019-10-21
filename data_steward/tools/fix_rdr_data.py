@@ -156,6 +156,23 @@ UPDATE_PPI_QUERY = (
     '  a.observation_id = b.observation_id'
 )
 
+REMOVE_ADDITIONAL_RESPONSES_OTHER_THAN_NOT = (
+    'DELETE '
+    'FROM '
+    '  `{project}.{dataset}.observation` '
+    'WHERE '
+    '  person_id IN ( '
+    '  SELECT '
+    '    person_id '
+    '  FROM '
+    '    `{project}.{dataset}.observation` '
+    '  WHERE '
+    '    observation_concept_id = 1586140 '
+    '    AND value_source_concept_id = 1586148) '
+    '  AND (observation_concept_id = 1586140 '
+    '    AND value_source_concept_id != 1586148) '
+)
+
 
 def run_pmi_fix(project_id, dataset_id):
     """
@@ -192,6 +209,24 @@ def run_ppi_vocab_update(project_id, dataset_id):
     bq_utils.query(q=q)
 
 
+def remove_additional_responses(project_id, dataset_id):
+    """
+    identifies all participants who have a value_source_concept_id = 1586148.
+    For these participants, drops any additional rows for this observation_source_concept_id
+    (i.e. all participants should have ONLY one row and that row should have value_source_concept_id = 1586148)
+    :param project_id: Name of the project
+    :param dataset_id: Name of the dataset where the queries should be run
+    :return:
+    """
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+
+    q = REMOVE_ADDITIONAL_RESPONSES_OTHER_THAN_NOT.format(project=project_id,
+                                                          dataset=dataset_id)
+    logging.debug('Query for removing_additional_responses is {q}'.format(q=q))
+    bq_utils.query(q=q)
+
+
 def main(project_id, dataset_id):
     """
 
@@ -205,6 +240,9 @@ def main(project_id, dataset_id):
 
     logging.info('Applying PMI_Skip fix')
     run_pmi_fix(project_id, dataset_id)
+
+    logging.info('Applying PMI_Skip fix')
+    remove_additional_responses(project_id, dataset_id)
 
 
 if __name__ == '__main__':
