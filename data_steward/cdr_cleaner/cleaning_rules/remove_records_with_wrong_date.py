@@ -1,4 +1,4 @@
-import field_mapping
+from cdr_cleaner.cleaning_rules import field_mapping
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
