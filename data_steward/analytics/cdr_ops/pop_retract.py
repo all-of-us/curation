@@ -1,7 +1,9 @@
 # +
+from jinja2 import Template
+import pandas as pd
+
 import bq
 from defaults import DEFAULT_DATASETS, is_deid_dataset
-import pandas as pd
 from parameters import SANDBOX
 import render
 
@@ -68,7 +70,7 @@ person_tables = get_tables_with_person_id(INPUT_DATASET)
 # -
 
 # Construct query to get row counts and number of rows to be deleted for any table
-CTE_TPL = """
+ROW_COUNTS_QUERY_TPL = """
 WITH delete_row_counts AS (
  {% for table in TABLES %}
    (
@@ -96,12 +98,10 @@ FROM delete_row_counts d
 JOIN {{ OUTPUT_DATASET }}.__TABLES__ t
  ON d.table_name = t.table_id
 """
-j = JinjaSql(param_style='pyformat')
-data = {'OUTPUT_DATASET': OUTPUT_DATASET, 
-        'INPUT_DATASET': INPUT_DATASET, 
-        'ID_TABLE': ID_TABLE, 
-        'TABLES': person_tables,
-        'IS_INPUT_DATASET_DEID': IS_INPUT_DATASET_DEID}
-query, bind_params = j.prepare_query(CTE_TPL, data)
-row_counts_df = bq.query(query % bind_params)
+query = Template(ROW_COUNTS_QUERY_TPL).render(OUTPUT_DATASET=OUTPUT_DATASET,
+                                              INPUT_DATASET=INPUT_DATASET,
+                                              ID_TABLE=ID_TABLE,
+                                              TABLES=person_tables,
+                                              IS_INPUT_DATASET_DEID=IS_INPUT_DATASET_DEID)
+row_counts_df = bq.query(query)
 render.dataframe(row_counts_df)
