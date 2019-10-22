@@ -250,7 +250,7 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_match_participants_same_participant_simulate_ehr_read_errors(self):
         # pre conditions
-        self.mock_ehr_person.side_effect = googleapiclient.errors.HttpError(500, 'bar', 'baz')
+        self.mock_ehr_person.side_effect = googleapiclient.errors.HttpError(500, b'bar', b'baz')
 
         # test
         id_match.match_participants(
@@ -301,7 +301,7 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_match_participants_same_participant_simulate_write_errors(self):
         # pre conditions
-        self.mock_table_write.side_effect = googleapiclient.errors.HttpError(500, 'bar', 'baz')
+        self.mock_table_write.side_effect = googleapiclient.errors.HttpError(500, b'bar', b'baz')
 
         # test
         id_match.match_participants(
@@ -352,7 +352,7 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_match_participants_same_participant_simulate_location_pii_read_errors(self):
         # pre conditions
-        self.mock_location_pii.side_effect = googleapiclient.errors.HttpError(500, 'bar', 'baz')
+        self.mock_location_pii.side_effect = googleapiclient.errors.HttpError(500, b'bar', b'baz')
 
         # test
         id_match.match_participants(
@@ -403,7 +403,7 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_match_participants_same_participant_simulate_pii_read_errors(self):
         # pre conditions
-        self.mock_pii_values.side_effect = googleapiclient.errors.HttpError(500, 'bar', 'baz')
+        self.mock_pii_values.side_effect = googleapiclient.errors.HttpError(500, b'bar', b'baz')
 
         # test
         id_match.match_participants(

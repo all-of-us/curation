@@ -18,13 +18,12 @@ LOGGER = logging.getLogger(__name__)
 
 def _get_utf8_string(value):
     result = None
-    try:
-        result = value.encode('utf-8', 'ignore')
-    except AttributeError:
-        if value is None:
-            pass
-        elif isinstance(value, int):
-            result = str(value)
+    if isinstance(type(value), bytes):
+        result = value.decode('utf-8', 'ignore')
+    elif value is None:
+        pass
+    else:
+        result = str(value)
 
     return result
 
