@@ -33,7 +33,7 @@ class GeneralizeSexGenderConceptsTest(unittest.TestCase):
                                                                                        biological_sex_birth_concept_id=SEX_AT_BIRTH_MALE_CONCEPT_ID,
                                                                                        generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
 
-        self.assertItemsEqual(expected, generalize_birth_male_gender_identity_woman_query)
+        self.assertCountEqual(expected, generalize_birth_male_gender_identity_woman_query)
 
     def test_parse_query_for_updating_man_to_generalized_concept_id(self):
         generalize_birth_female_gender_identity_man_query = generalize_concept_ids.parse_query_for_updating_man_to_generalized_concept_id(
@@ -45,7 +45,7 @@ class GeneralizeSexGenderConceptsTest(unittest.TestCase):
                                                                                        biological_sex_birth_concept_id=SEX_AT_BIRTH_FEMALE_CONCEPT_ID,
                                                                                        generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
 
-        self.assertItemsEqual(expected, generalize_birth_female_gender_identity_man_query)
+        self.assertCountEqual(expected, generalize_birth_female_gender_identity_man_query)
 
     @mock.patch(
         'cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts.parse_query_for_updating_man_to_generalized_concept_id')
@@ -70,4 +70,4 @@ class GeneralizeSexGenderConceptsTest(unittest.TestCase):
         expected.append(query_woman)
         expected.append(query_man)
 
-        self.assertItemsEqual(expected, actual)
+        self.assertCountEqual(expected, actual)
