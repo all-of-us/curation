@@ -120,15 +120,15 @@ class ReadersTest(unittest.TestCase):
         mock_response.return_value = [
             {
                 consts.PERSON_ID_FIELD: 1,
-                column_name: 'saLLy',
+                column_name: u'saLLy',
             },
             {
                 consts.PERSON_ID_FIELD: 2,
-                column_name: 'Rudy'
+                column_name: u'Rudy'
             },
             {
                 consts.PERSON_ID_FIELD: 3,
-                column_name: 'MaTiLdA'
+                column_name: u'MaTiLdA'
             },
         ]
 
