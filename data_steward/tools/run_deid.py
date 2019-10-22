@@ -214,7 +214,7 @@ def main(raw_args=None):
     LOGGER.info('Deid has finished.  Successfully executed on tables:  %s',
                 '\n'.join(successes))
     for exc in exceptions:
-        LOGGER.info("Deid encountered exceptions when processing table: %s"
+        LOGGER.error("Deid encountered exceptions when processing table: %s"
                     ".  Fix problems and re-run deid for table if needed.",
                     exc)
 

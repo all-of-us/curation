@@ -246,7 +246,6 @@ class Deid(Rules):
                             cond += [syntax['ELSE']]
                     elif 'SQL' in rule['apply']:
                         cond += [regex]
-                        print cond
 
                 else:
                     #
@@ -384,7 +383,15 @@ class Deid(Rules):
             #   - filter    as the key field to match the filter
             #   - The values of the filter are provided by the rule
             #
-            apply_qualifier = {'IN': 'NOT IN', '=': '<>', 'NOT IN': 'IN', '<>': '=', '': 'IS FALSE', 'TRUE': 'IS FALSE'}
+            apply_qualifier = {
+                'IN': 'NOT IN',
+                '=': '<>',
+                'NOT IN': 'IN',
+                '<>': '=',
+                '': 'IS FALSE',
+                'TRUE': 'IS FALSE'
+            }
+
             if not rules:
                 #
                 # A row suppression rule has been provided in the form of an SQL filter
@@ -392,24 +399,48 @@ class Deid(Rules):
                 # The qualifier needs to be flipped ...
                 #
                 on = args['on']
-                if 'not exists ' in on:
-                    fillter = on.replace('not exists ', 'exists ')
-                elif 'exists ' in on:
-                    fillter = on.replace('exists ', 'not exists ')
-                elif ' in ' in on or ' IN ' in args:
-                    fillter = on.replace(' IN ', ' NOT IN ').replace(' in ', ' NOT IN ')
-                elif ' not in ' in on or ' NOT IN ' in args:
-                    fillter = on.replace(' NOT IN ', ' IN ').replace(' not in ', ' IN ')
-                elif ' = ' in on:
-                    fillter = on.replace(' = ', ' <> ')
-                elif ' <> ' in on:
-                    fillter = on.replace(' <> ', ' = ')
-                elif ' not like ' in on:
-                    # order is important between 'not like' and 'like' comparisons.
-                    # 'not like' must come first
-                    fillter = on.replace(' not like ', ' like ')
-                elif ' like ' in on:
-                    fillter = on.replace(' like ', ' not like ')
+
+                if isinstance(on, dict):
+                    fillter_values = "'" + "','".join(on.get('values')) + "'"
+                    fillter = ' '.join(
+                        [args.get('qualifier'),
+                        '(',
+                        on.get('condition'),
+                        "(",
+                        fillter_values,
+                        "))"]
+                    )
+                    on = fillter
+
+                # don't lower the actual 'on' argument.  it may have undesirable
+                # side effects.
+                on_lower = on.lower()
+
+                # order is important between 'not <operator>' and '<operator>' comparisons.
+                # 'not <operator>' must come first
+                if 'not exists ' in on_lower:
+                    fillter = on.replace('NOT EXISTS ', 'EXISTS ')
+                    fillter = fillter.replace('not exists ', 'EXISTS ')
+                elif 'exists ' in on_lower:
+                    fillter = on.replace('EXISTS ', 'NOT EXISTS ')
+                    fillter = fillter.replace('exists ', 'NOT EXISTS ')
+                elif ' not in ' in on_lower:
+                    fillter = on.replace(' NOT IN ', ' IN ')
+                    fillter = fillter.replace(' not in ', ' IN ')
+                elif ' in ' in on_lower:
+                    fillter = on.replace(' IN ', ' NOT IN ')
+                    fillter = fillter.replace(' in ', ' NOT IN ')
+                elif '<>' in on_lower or '!=' in on_lower:
+                    fillter = on.replace('<>', '=')
+                    fillter = fillter.replace('!=', '=')
+                elif '=' in on_lower:
+                    fillter = on.replace('=', '<>')
+                elif ' not like ' in on_lower:
+                    fillter = on.replace(' NOT LIKE ', ' LIKE ')
+                    fillter = fillter.replace(' not like ', ' LIKE ')
+                elif ' like ' in on_lower:
+                    fillter = on.replace(' LIKE ', ' NOT LIKE ')
+                    fillter = fillter.replace(' like ', ' NOT LIKE ')
 
                 fillter = {"filter": fillter, "label": "suppress.ROWS"}
                 found = [1 * (fillter == row) for row in self.cache['suppress']['FILTERS']]
@@ -494,16 +525,19 @@ class Deid(Rules):
         """
         fields = args['fields'] if 'fields' in args else [args['key_field']]
         value_field = args['value_field']
-        # r = {'label':args['label']}
         label = args['label']
         out = []
 
-        statement = args['rules'].replace(':FIELD', fields[0]).replace(':value_field', value_field)
+        rule_str = ' '.join(args.get('rules', []))
+        statement = rule_str.replace(':FIELD', fields[0]).replace(':value_field', value_field)
+
         if 'key_field' in args:
             statement = statement.replace(':key_field', args['key_field'])
+
         if 'table' in args:
             statement = statement.replace(':table', args['table'])
-        out .append({"apply": statement, "name": fields[0], "label": label})
+
+        out.append({"apply": statement, "name": fields[0], "label": label})
         return out
 
     def apply(self, info, store_id='sqlite', tablename=None):

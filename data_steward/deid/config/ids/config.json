@@ -1,6 +1,6 @@
 [
-	{
-		"_id":"generalize",
+    {
+        "_id":"generalize",
         "RACE": [
             {
                 "comment": "trying to force a case statement in this rule only",
@@ -19,23 +19,23 @@
                 ]
             }
         ],
-		"RACE_USING_IF_ELSE":[
-			{
-				"comment":"multi racial generalization rule, the values the count is limited to is provided by the 'on' key",
+        "RACE_USING_IF_ELSE":[
+            {
+                "comment":"multi racial generalization rule, the values the count is limited to is provided by the 'on' key",
                 "apply":"COUNT-DISTINCT",
-				"into":2000000008,
-				"qualifier":"> 1",
+                "into":2000000008,
+                "qualifier":"> 1",
                 "distinct": "value_source_concept_id",
-				"on": "value_source_concept_id = 1586141 or value_source_concept_id = 1586142 or value_source_concept_id = 1586143 or value_source_concept_id = 1586144 or value_source_concept_id = 1586145 or value_source_concept_id = 1586146"
-			},
-			{
+                "on": "value_source_concept_id = 1586141 or value_source_concept_id = 1586142 or value_source_concept_id = 1586143 or value_source_concept_id = 1586144 or value_source_concept_id = 1586145 or value_source_concept_id = 1586146"
+            },
+            {
                 "comment":"generalizing minorities into a group",
-				"values":[1586141, 1586144, 1586145],
-				"into":2000000001,
-				"qualifier":"IN"
+                "values":[1586141, 1586144, 1586145],
+                "into":2000000001,
+                "qualifier":"IN"
 
-			}
-		],
+            }
+        ],
         "STATE": [
             {
                 "comment": "generalize states with a low number of participants",
@@ -44,72 +44,72 @@
                 "into": 2000000011
             }
         ],
-		"SEXUAL-ORIENTATION":[
-			{
+        "SEXUAL-ORIENTATION":[
+            {
                 "comment": "generalize any answer that is not straight",
-				"qualifier":"IN",
-				"values":[903096, 903079, 1585901, 1585902, 1585903, 1585904],
-				"into":2000000003
+                "qualifier":"IN",
+                "values":[903096, 903079, 1585901, 1585902, 1585903, 1585904],
+                "into":2000000003
             }
-		],
-		"SEX-AT-BIRTH":[
-			{
+        ],
+        "SEX-AT-BIRTH":[
+            {
                 "comment": "generalizing not male and not female responses",
-				"qualifier":"IN",
-				"values":[903096, 903079, 1585848, 1585849],
-				"into":2000000009
+                "qualifier":"IN",
+                "values":[903096, 903079, 1585848, 1585849],
+                "into":2000000009
             }
-		],
-		"GENDER":[
-			{
-				"comment":"multi gender generalization rule, the values the count is limited to is provided by the 'on' key",
+        ],
+        "GENDER":[
+            {
+                "comment":"multi gender generalization rule, the values the count is limited to is provided by the 'on' key",
                 "apply":"COUNT-DISTINCT",
-				"into":2000000002,
-				"qualifier":"> 1",
+                "into":2000000002,
+                "qualifier":"> 1",
                 "distinct": "value_source_concept_id",
-				"on": "value_source_concept_id = 1585839 or value_source_concept_id = 1585840 or value_source_concept_id = 1585841 or value_source_concept_id = 1585842 or value_source_concept_id = 1585843"
-			},
-			{
+                "on": "value_source_concept_id = 1585839 or value_source_concept_id = 1585840 or value_source_concept_id = 1585841 or value_source_concept_id = 1585842 or value_source_concept_id = 1585843"
+            },
+            {
                 "comment":"values that are not male or female will be generalized into other",
-				"qualifier":"IN",
-				"values":[903096, 903079, 1585843, 1585841,1585842],
-				"into": 2000000002
-			}
-		],
-		"EDUCATION":[
+                "qualifier":"IN",
+                "values":[903096, 903079, 1585843, 1585841,1585842],
+                "into": 2000000002
+            }
+        ],
+        "EDUCATION":[
             {
                 "comment":"generalizing to no highschool degree",
-				"qualifier": "IN",
-				"values": [1585941, 1585942, 1585943, 1585944],
-				"into": 2000000007
-			},
-			{
+                "qualifier": "IN",
+                "values": [1585941, 1585942, 1585943, 1585944],
+                "into": 2000000007
+            },
+            {
                 "comment":"generalizing to above highschool degree",
-				"into": 2000000006,
-				"values":[1585947, 1585948],
-				"qualifier":"IN"
-			}
-		],
-		"EMPLOYMENT":[
-			{
+                "into": 2000000006,
+                "values":[1585947, 1585948],
+                "qualifier":"IN"
+            }
+        ],
+        "EMPLOYMENT":[
+            {
                 "comment":"this will generalize values to unemployed or not employed",
-				"qualifier":"IN",
-				"values":[1585955, 1585956, 1585957, 1585958, 1585959, 1585960],
-				"into":2000000005
-			},
+                "qualifier":"IN",
+                "values":[1585955, 1585956, 1585957, 1585958, 1585959, 1585960],
+                "into":2000000005
+            },
             {
                 "comment":"generalizing to currently employed",
                 "qualifier":"IN",
                 "values":[1585953, 1585954],
                 "into":2000000004
             }
-		]
+        ]
 
-	},
-	{
-	"_id":"suppress",
-		"DEMOGRAPHICS-COLUMNS":[
-			{
+    },
+    {
+    "_id":"suppress",
+        "DEMOGRAPHICS-COLUMNS":[
+            {
                 "comment":"list of columns to be suppressed regardless of the table",
                 "values": [
                     "year_of_birth","month_of_birth","day_of_birth",
@@ -122,8 +122,8 @@
                 ]
             }
         ],
-		"ROWS":[
-			{
+        "ROWS":[
+            {
                 "comment":"remove all rows that match the following criteria. Implementation is different",
                 "qualifier":"IN",
                 "values": [
@@ -218,14 +218,14 @@
                     "SecondContactsAddress_SecondContactState","EmploymentWorkAddress_State"
                 ]
             }
-		],
-		"FILTERS":[
-			{"filter":"person_id IN (SELECT DISTINCT person_id FROM :idataset.deid_map)"}
-		],
-		"ICD-9":[
-			{"apply":"REGEXP", "values":["^E8[0-4"],"description":"rare accidents"},
-			{"apply":"REGEXP", "values":["^E8[0-4]"],"description":"rare accidents"},
-			{
+        ],
+        "FILTERS":[
+            {"filter":"person_id IN (SELECT DISTINCT person_id FROM :idataset.deid_map)"}
+        ],
+        "ICD-9":[
+            {"apply":"REGEXP", "values":["^E8[0-4"],"description":"rare accidents"},
+            {"apply":"REGEXP", "values":["^E8[0-4]"],"description":"rare accidents"},
+            {
                 "apply":"REGEXP",
                 "values":[
                     "^E8[0-4].*","^E91[0,3].*","^E9([9,7,6,5]|28.0).*",
@@ -235,20 +235,29 @@
                     "^(X92[0-9]|Y0[1-9]).*","^V[0-9]{2}.*"
                 ]
             }
-		]
-	},
-	{"_id":"shift",
+        ]
+    },
+    {"_id":"shift",
         "day":"SELECT date_shift from :table where :key_field=:key_value ",
         "date":"DATE_SUB( CAST(:FIELD AS DATE), INTERVAL (:SHIFT) DAY) AS :FIELD",
         "datetime":"TIMESTAMP_SUB( CAST(:FIELD AS TIMESTAMP), INTERVAL (:SHIFT) DAY) AS :FIELD"
 
 
     },
-	{
-		"_id":"compute",
-		"id":"(SELECT research_id FROM :idataset.deid_map WHERE deid_map.person_id = :value_field) as :FIELD",
-		"month":"EXTRACT (MONTH FROM :value_field) AS :FIELD",
-		"day":"EXTRACT (DAY FROM :value_field) AS :FIELD",
-		"year":"EXTRACT (YEAR FROM :value_field) AS :FIELD"
-	}
+    {
+        "_id": "compute",
+        "id": ["(SELECT research_id FROM :idataset.deid_map WHERE deid_map.person_id = :value_field) as :FIELD"],
+        "response_id": [
+            "(SELECT ",
+            "CASE WHEN :value_field IS NULL THEN NULL ",
+            "ELSE (",
+                "SELECT dqrm.research_response_id ",
+                "FROM :idataset.deid_questionnaire_response_map AS dqrm ",
+                "WHERE dqrm.questionnaire_response_id = :value_field) ",
+            "END ) AS :FIELD"
+        ],
+        "month": ["EXTRACT (MONTH FROM :value_field) AS :FIELD"],
+        "day": ["EXTRACT (DAY FROM :value_field) AS :FIELD"],
+        "year": ["EXTRACT (YEAR FROM :value_field) AS :FIELD"]
+    }
 ]
