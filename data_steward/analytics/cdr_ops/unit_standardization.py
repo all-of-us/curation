@@ -1,5 +1,5 @@
 from defaults import DEFAULT_DATASETS
-from parameters import *
+from parameters import SANDBOX
 import bq
 import pandas as pd
 import render
@@ -9,13 +9,13 @@ import json
 pd.set_option('display.max_colwidth', -1)
 VOCAB = DEFAULT_DATASETS.latest.vocabulary
 
-print("""DATASET_BEFORE_CONVERSION = {DATASET_BEFORE_CONVERSION}
-DATASET_AFTER_CONVERSION = {DATASET_AFTER_CONVERSION}
-TABLE_BEFORE_CONVERSION = {TABLE_BEFORE_CONVERSION}
+# Fully qualified tables
+TABLE_BEFORE_CONVERSION = '' # e.g. deid.measurement
+TABLE_AFTER_CONVERSION = ''  # e.g. deid_clean.measurement
+UNIT_MAPPING = '{SANDBOX}.unit_mapping'.format(SANDBOX=SANDBOX)
+print("""TABLE_BEFORE_CONVERSION = {TABLE_BEFORE_CONVERSION}
 TABLE_AFTER_CONVERSION = {TABLE_AFTER_CONVERSION}
 UNIT_MAPPING = {UNIT_MAPPING}""".format(
-    DATASET_BEFORE_CONVERSION=DATASET_BEFORE_CONVERSION,
-    DATASET_AFTER_CONVERSION=DATASET_AFTER_CONVERSION,
     TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION, 
     TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
     UNIT_MAPPING=UNIT_MAPPING))
@@ -36,13 +36,13 @@ FROM (
     unit_concept_id,
     COUNT(*) AS mea_count
   FROM
-    `{DATASET_BEFORE_CONVERSION}.{TABLE_BEFORE_CONVERSION}` AS m
+    `{TABLE_BEFORE_CONVERSION}` AS m
   JOIN (
     SELECT DISTINCT 
       measurement_concept_id,
       unit_concept_id
     FROM
-      `{DATASET_BEFORE_CONVERSION}.{UNIT_MAPPING}`) AS u
+      `{UNIT_MAPPING}`) AS u
   USING
     (measurement_concept_id,
       unit_concept_id)
@@ -50,7 +50,7 @@ FROM (
     measurement_concept_id,
     unit_concept_id ) before
 JOIN
-  `{DATASET_BEFORE_CONVERSION}.{UNIT_MAPPING}` AS um
+  `{UNIT_MAPPING}` AS um
 ON
   before.measurement_concept_id = um.measurement_concept_id
   AND before.unit_concept_id = um.unit_concept_id
@@ -60,13 +60,13 @@ JOIN (
     m.unit_concept_id,
     COUNT(*) AS mea_count
   FROM
-    `{DATASET_AFTER_CONVERSION}.{TABLE_AFTER_CONVERSION}` AS m
+    `{TABLE_AFTER_CONVERSION}` AS m
   JOIN (
     SELECT DISTINCT 
       measurement_concept_id,
       set_unit_concept_id
     FROM
-      `{DATASET_BEFORE_CONVERSION}.{UNIT_MAPPING}`) AS u
+      `{UNIT_MAPPING}`) AS u
   ON
     m.measurement_concept_id = u.measurement_concept_id
     AND m.unit_concept_id = u.set_unit_concept_id
@@ -119,18 +119,18 @@ FROM
     percentile_cont(value_as_number,.5) over (partition by measurement_concept_id, unit_concept_id) AS median_value_as_number,
     percentile_cont(value_as_number,.75) over (partition by measurement_concept_id, unit_concept_id) AS third_quartile_value_as_number
   FROM
-    `{DATASET_BEFORE_CONVERSION}.{TABLE_BEFORE_CONVERSION}` AS m
+    `{TABLE_BEFORE_CONVERSION}` AS m
   JOIN
     (
     SELECT
       DISTINCT measurement_concept_id,
       unit_concept_id
     FROM
-      `{DATASET_BEFORE_CONVERSION}.{UNIT_MAPPING}`) AS u
+      `{UNIT_MAPPING}`) AS u
   USING
     (measurement_concept_id, unit_concept_id)
     
-) before JOIN `{DATASET_BEFORE_CONVERSION}.{UNIT_MAPPING}` AS um
+) before JOIN `{UNIT_MAPPING}` AS um
   ON before.measurement_concept_id = um.measurement_concept_id
       AND before.unit_concept_id = um.unit_concept_id
 JOIN (
@@ -143,14 +143,14 @@ JOIN (
     percentile_cont(value_as_number,.5) over (partition by m.measurement_concept_id, m.unit_concept_id) AS median_value_as_number,
     percentile_cont(value_as_number,.75) over (partition by m.measurement_concept_id, m.unit_concept_id) AS third_quartile_value_as_number
   FROM
-    `{DATASET_AFTER_CONVERSION}.{TABLE_AFTER_CONVERSION}` AS m
+    `{TABLE_AFTER_CONVERSION}` AS m
   JOIN
     (
     SELECT
       DISTINCT measurement_concept_id,
       set_unit_concept_id
     FROM
-      `{DATASET_BEFORE_CONVERSION}.{UNIT_MAPPING}`) AS u
+      `{UNIT_MAPPING}`) AS u
     ON m.measurement_concept_id = u.measurement_concept_id 
       AND m.unit_concept_id  = u.set_unit_concept_id 
 ) after
@@ -214,14 +214,14 @@ FROM (
         percentile_cont(value_as_number,
           .99) OVER (PARTITION BY m.measurement_concept_id, m.unit_concept_id) AS third_quartile_value_as_number
       FROM
-        `{DATASET}.{TABLE}` AS m
+        `{TABLE}` AS m
       JOIN (
         SELECT
           DISTINCT measurement_concept_id,
           transform_value_as_number,
           {UNIT_CONCEPT_ID_COLUMN}
         FROM
-          `{DATASET}.{UNIT_MAPPING}`) AS um
+          `{UNIT_MAPPING}`) AS um
           ON
             m.measurement_concept_id = um.measurement_concept_id
             AND m.unit_concept_id = um.{UNIT_CONCEPT_ID_COLUMN}
@@ -251,8 +251,6 @@ ORDER BY
 # Check the number of records associated with the units before and after the unit transformation. Theoretically the number of records units should be same as before after the unit transformation.
 
 unit_conversion_count_query = UNIT_CONVERSION_COUNT_TEMPLATE.format(
-                            DATASET_BEFORE_CONVERSION=DATASET_BEFORE_CONVERSION, 
-                            DATASET_AFTER_CONVERSION=DATASET_AFTER_CONVERSION, 
                             TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION,
                             TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
                             UNIT_MAPPING=UNIT_MAPPING,
@@ -263,18 +261,16 @@ render.dataframe(unit_conversion_count)
 # Compute the first, median and third quartiles before and after the unit transformation
 
 unit_conversion_stats_query = UNIT_CONVERSION_STATS_TEMPLATE.format(
-                            DATASET_BEFORE_CONVERSION=DATASET_BEFORE_CONVERSION, 
-                            DATASET_AFTER_CONVERSION=DATASET_AFTER_CONVERSION, 
                             TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION,
                             TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
                             UNIT_MAPPING=UNIT_MAPPING,
                             VOCAB=VOCAB)
 unit_conversion_stats = bq.query(unit_conversion_stats_query)
+unit_conversion_stats.measurement_concept_id = unit_conversion_stats.measurement_concept_id.apply(str)
 render.dataframe(unit_conversion_stats)
 
 # +
 before_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
-                            DATASET=DATASET_BEFORE_CONVERSION, 
                             TABLE=TABLE_BEFORE_CONVERSION,
                             VOCAB=VOCAB,
                             UNIT_MAPPING=UNIT_MAPPING,
@@ -286,7 +282,6 @@ render.dataframe(before_unit_conversion_dist)
 
 # +
 after_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
-                            DATASET=DATASET_AFTER_CONVERSION, 
                             TABLE=TABLE_AFTER_CONVERSION,
                             VOCAB=VOCAB,
                             UNIT_MAPPING=UNIT_MAPPING,
@@ -478,5 +473,3 @@ for measurement_concept_id in measurement_concept_ids[0:20]:
                   before_unit_dict,
                   after_unit_dict,
                   False, False)
-
-
