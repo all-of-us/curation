@@ -1,8 +1,7 @@
 import unittest
-
 import mock
-from google.appengine.api import app_identity
 
+import app_identity
 import bq_utils
 import tools.generate_ext_tables as gen_ext
 import common
