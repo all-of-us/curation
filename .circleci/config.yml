@@ -36,6 +36,8 @@ jobs:
           command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
       - run:
           command: echo "export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json" >> ${BASH_ENV}
+      - run:
+          command: ./ci/setup.sh
       # Dependencies
       - run: python3 -m venv ~/curation_env && echo "source ~/curation_env/bin/activate" >> $BASH_ENV
       - run: pip install --upgrade pip setuptools && pip install -r requirements.txt
