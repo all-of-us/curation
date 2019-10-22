@@ -1,7 +1,6 @@
 import unittest
 
-from google.appengine.api.app_identity import app_identity
-
+import app_identity
 import bq_utils
 from cdr_cleaner.cleaning_rules import ensure_date_datetime_consistency as eddc
 import constants.cdr_cleaner.clean_cdr as cdr_consts
