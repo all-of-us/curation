@@ -44,14 +44,14 @@ class GenerateExtTablesTest(unittest.TestCase):
         table = common.OBSERVATION
         expected = self.obs_fields
         actual = gen_ext.get_table_fields(table)
-        self.assertItemsEqual(expected, actual)
+        self.assertCountEqual(expected, actual)
 
     def test_get_cdm_table_id(self):
         observation_table_id = common.OBSERVATION
         expected = observation_table_id
         mapping_observation = gen_ext.MAPPING_PREFIX + observation_table_id
         actual = gen_ext.get_cdm_table_from_mapping(mapping_observation)
-        self.assertItemsEqual(expected, actual)
+        self.assertCountEqual(expected, actual)
 
     def test_site_mapping_dict(self):
         mapping_dict = gen_ext.generate_site_mappings()
@@ -110,7 +110,7 @@ class GenerateExtTablesTest(unittest.TestCase):
                 query[cdr_consts.DISPOSITION] = bq_consts.WRITE_EMPTY
                 expected.append(query)
         actual = gen_ext.get_generate_ext_table_queries(self.project_id, self.dataset_id, self.dataset_id)
-        self.assertItemsEqual(expected, actual)
+        self.assertCountEqual(expected, actual)
 
     def TearDown(self):
         bq_utils.delete_table(gen_ext.SITE_TABLE_ID, self.bq_dataset_id)

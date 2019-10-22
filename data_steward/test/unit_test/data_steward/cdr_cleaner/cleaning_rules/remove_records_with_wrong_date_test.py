@@ -43,7 +43,7 @@ class RemoveRecordsWithWrongDateTest(unittest.TestCase):
     def test_get_date_fields(self, mock_get_domain_fields):
         mock_get_domain_fields.side_effect = [self.condition_field_names]
         actual = remove_records_with_wrong_date.get_date_fields(self.condition_occurrence)
-        self.assertItemsEqual(self.condition_date_field_names, actual)
+        self.assertCountEqual(self.condition_date_field_names, actual)
 
     @mock.patch('cdr_cleaner.cleaning_rules.field_mapping.is_field_required')
     @mock.patch('cdr_cleaner.cleaning_rules.field_mapping.get_domain_fields')
@@ -128,7 +128,7 @@ class RemoveRecordsWithWrongDateTest(unittest.TestCase):
         query[cdr_consts.BATCH] = True
         expected_queries.append(query)
 
-        self.assertItemsEqual(expected_queries, actual)
+        self.assertCountEqual(expected_queries, actual)
 
         args, _ = mock_parse_remove_records_with_wrong_date_query.call_args_list[0]
         self.assertEqual((self.project_id, self.dataset_id, OBSERVATION_TABLE, OBSERVATION_DEFAULT_YEAR_THRESHOLD),
