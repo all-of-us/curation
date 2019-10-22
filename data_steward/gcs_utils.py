@@ -129,7 +129,7 @@ def get_object(bucket, name):
     Download object from a bucket
     :param bucket: the bucket containing the file
     :param name: name of the file to download
-    :return: file contents (as text)
+    :return: file contents
     """
     service = create_service()
     req = service.objects().get_media(bucket=bucket, object=name)

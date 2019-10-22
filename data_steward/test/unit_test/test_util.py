@@ -223,7 +223,7 @@ def write_cloud_str(bucket, name, contents_str):
 
 def write_cloud_file(bucket, f, prefix=""):
     name = os.path.basename(f)
-    with open(f, 'r') as fp:
+    with open(f, 'rb') as fp:
         return write_cloud_fp(bucket, prefix + name, fp)
 
 
