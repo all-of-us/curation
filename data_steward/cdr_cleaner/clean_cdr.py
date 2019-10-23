@@ -14,6 +14,7 @@ from google.appengine.api import app_identity
 import bq_utils
 import cdr_cleaner.clean_cdr_engine as clean_engine
 import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
+import cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters as ppi_numeric_fields
 # cleaning rule imports
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
@@ -59,6 +60,7 @@ def _gather_rdr_queries(project_id, dataset_id):
     query_list = []
     query_list.extend(maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries(project_id, dataset_id))
     query_list.extend(back_fill_pmi_skip.get_run_pmi_fix_queries(project_id, dataset_id))
+    query_list.extend(ppi_numeric_fields.get_clean_ppi_num_fields_using_parameters_queries(project_id, dataset_id))
     return query_list
 
 
