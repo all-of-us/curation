@@ -96,8 +96,9 @@ echo "Creating a RDR back-up"
 
 #set BIGQUERY_DATASET_ID variable to dataset name where the vocabulary exists
 export BIGQUERY_DATASET_ID="${VOCAB_DATASET}"
+export RDR_DATASET_ID="${DATASET}"
 echo "Fixing the PMI_Skip and the PPI_Vocabulary using command - fix_rdr_data.py -p ${APP_ID} -d ${DATASET}"
-python tools/fix_rdr_data.py -p ${APP_ID} -d ${DATASET}
+python cdr_cleaner/clean_cdr.py -d rdr -s
 
 echo "Done."
 
