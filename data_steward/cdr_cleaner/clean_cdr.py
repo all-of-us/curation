@@ -15,7 +15,6 @@ import bq_utils
 import cdr_cleaner.clean_cdr_engine as clean_engine
 import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
 import cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters as ppi_numeric_fields
-# cleaning rule imports
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
@@ -27,6 +26,7 @@ import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
 import cdr_cleaner.cleaning_rules.no_data_30_days_after_death as no_data_30days_after_death
 import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
+import cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers as remove_multiple_race_answers
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_concept_ids
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
@@ -61,6 +61,8 @@ def _gather_rdr_queries(project_id, dataset_id):
     query_list.extend(maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries(project_id, dataset_id))
     query_list.extend(back_fill_pmi_skip.get_run_pmi_fix_queries(project_id, dataset_id))
     query_list.extend(ppi_numeric_fields.get_clean_ppi_num_fields_using_parameters_queries(project_id, dataset_id))
+    query_list.extend(
+        remove_multiple_race_answers.get_remove_multiple_race_ethnicity_answers_queries(project_id, dataset_id))
     return query_list
 
 
