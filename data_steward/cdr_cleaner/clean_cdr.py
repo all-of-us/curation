@@ -247,8 +247,8 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-d', '--dataset',
-                        required=True, dest='dataset',
+    parser.add_argument('-d', '--data_stage',
+                        required=True, dest='data_stage',
                         action='store',
                         choices=clean_cdr_consts.DATASET_CHOICES,
                         help='Specify the dataset')
