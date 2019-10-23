@@ -102,7 +102,8 @@ WHERE
 
 def get_clean_ppi_num_fields_using_parameters_queries(project_id, dataset_id):
     """
-    runs the query which updates the ppi vocabulary in observation table
+    runs the query which updates the ppi numeric fields in observation table based on the 
+    upper and lower bounds specified.
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
     :return:
