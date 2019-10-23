@@ -134,7 +134,11 @@ def clean_rdr_dataset(project_id=None, dataset_id=None):
     :param project_id:  Name of the BigQuery project.
     :param dataset_id:  Name of the dataset to clean
     """
-    if dataset_id is None or dataset_id == '' or dataset_id.isspace():
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+
+    if dataset_id is None:
         dataset_id = bq_utils.get_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
@@ -151,7 +155,11 @@ def clean_ehr_dataset(project_id=None, dataset_id=None):
     :param project_id:  Name of the BigQuery project.
     :param dataset_id:  Name of the dataset to clean
     """
-    if dataset_id is None or dataset_id == '' or dataset_id.isspace():
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+
+    if dataset_id is None:
         dataset_id = bq_utils.get_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
@@ -168,7 +176,11 @@ def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
     :param project_id:  Name of the BigQuery project.
     :param dataset_id:  Name of the dataset to clean
     """
-    if dataset_id is None or dataset_id == '' or dataset_id.isspace():
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+
+    if dataset_id is None:
         dataset_id = bq_utils.get_unioned_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
@@ -185,7 +197,11 @@ def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
     :param project_id:  Name of the BigQuery project.
     :param dataset_id:  Name of the dataset to clean
     """
-    if dataset_id is None or dataset_id == '' or dataset_id.isspace():
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+
+    if dataset_id is None:
         dataset_id = bq_utils.get_ehr_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
@@ -202,7 +218,11 @@ def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
     :param project_id:  Name of the BigQuery project.
     :param dataset_id:  Name of the dataset to clean
     """
-    if dataset_id is None or dataset_id == '' or dataset_id.isspace():
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+
+    if dataset_id is None:
         dataset_id = bq_utils.get_combined_deid_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
@@ -212,45 +232,40 @@ def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
     clean_engine.clean_dataset(project_id, dataset_id, query_list)
 
 
-def get_dataset_and_project_names():
-    """
-    Get project and dataset names from environment variables.
-
-    :return: A dictionary of dataset names and project name
-    """
-    project_and_dataset_names = dict()
-    project_and_dataset_names[clean_cdr_consts.EHR_DATASET] = bq_utils.get_dataset_id()
-    project_and_dataset_names[clean_cdr_consts.UNIONED_EHR_DATASET] = bq_utils.get_unioned_dataset_id()
-    project_and_dataset_names[clean_cdr_consts.RDR_DATASET] = bq_utils.get_rdr_dataset_id()
-    project_and_dataset_names[clean_cdr_consts.EHR_RDR_DATASET] = bq_utils.get_ehr_rdr_dataset_id()
-    project_and_dataset_names[clean_cdr_consts.EHR_RDR_DE_IDENTIFIED] = bq_utils.get_combined_deid_dataset_id()
-    project_and_dataset_names[clean_cdr_consts.PROJECT] = app_identity.get_application_id()
-
-    return project_and_dataset_names
-
-
 def clean_all_cdr():
     """
     Runs cleaning rules on all the datasets
     """
-    id_dict = get_dataset_and_project_names()
-    project = id_dict[clean_cdr_consts.PROJECT]
-
-    clean_ehr_dataset(project, id_dict[clean_cdr_consts.EHR_DATASET])
-    clean_unioned_ehr_dataset(project, id_dict[clean_cdr_consts.UNIONED_EHR_DATASET])
-    clean_rdr_dataset(project, id_dict[clean_cdr_consts.RDR_DATASET])
-    clean_ehr_rdr_dataset(project, id_dict[clean_cdr_consts.EHR_RDR_DATASET])
-    clean_ehr_rdr_de_identified_dataset(
-        project, id_dict[clean_cdr_consts.EHR_RDR_DE_IDENTIFIED]
-    )
+    clean_ehr_dataset()
+    clean_unioned_ehr_dataset()
+    clean_rdr_dataset()
+    clean_ehr_rdr_dataset()
+    clean_ehr_rdr_de_identified_dataset()
 
 
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-s', action='store_true', help='Send logs to console')
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-d', '--dataset',
+                        required=True, dest='dataset',
+                        action='store',
+                        choices=clean_cdr_consts.DATASET_CHOICES,
+                        help='Specify the dataset')
+    parser.add_argument('-s',
+                        action='store_true',
+                        help='Send logs to console')
     args = parser.parse_args()
     clean_engine.add_console_logging(args.s)
-
-    clean_all_cdr()
+    if args.dataset == clean_cdr_consts.EHR:
+        clean_ehr_dataset()
+    elif args.dataset == clean_cdr_consts.UNIONED:
+        clean_unioned_ehr_dataset()
+    elif args.dataset == clean_cdr_consts.RDR:
+        clean_rdr_dataset()
+    elif args.dataset == clean_cdr_consts.COMBINED:
+        clean_ehr_rdr_dataset()
+    elif args.dataset == clean_cdr_consts.DEID:
+        clean_ehr_rdr_de_identified_dataset()
+    else:
+        raise EnvironmentError('Dataset selection should be from [ehr, unioned, rdr, combined, deid]')
