@@ -156,9 +156,6 @@ WHERE
 """
 
 
-
-
-
 def run_ppi_vocab_update(project_id, dataset_id):
     """
     runs the query which updates the ppi vocabulary in observation table
@@ -224,9 +221,6 @@ def main(project_id, dataset_id):
 
     logging.info('Applying PPi Vocabulary update')
     run_ppi_vocab_update(project_id, dataset_id)
-
-    logging.info('Applying PMI_Skip fix')
-    run_pmi_fix(project_id, dataset_id)
 
     logging.info('Applying clean ppi numeric value ranges fix')
     clean_ppi_numeric_fields_using_parameters(project_id, dataset_id)
