@@ -1,0 +1,62 @@
+import bq_utils
+import constants.cdr_cleaner.clean_cdr as cdr_consts
+
+UPDATE_PPI_QUERY = """
+UPDATE 
+      `{project}.{dataset}.observation` a 
+    SET 
+      a.value_as_concept_id = b.concept_id 
+    FROM ( 
+      SELECT 
+        * 
+      FROM ( 
+        SELECT 
+          c2.concept_name, 
+          c2.concept_id, 
+          o.*, 
+          RANK() OVER (PARTITION BY o.observation_id, o.value_source_concept_id ORDER BY c2.concept_id ASC) AS rank 
+        FROM 
+          `{project}.{dataset}.observation` o 
+        JOIN 
+          `{project}.{ehr_dataset}.concept_relationship` cr 
+        ON 
+          o.value_source_concept_id = cr.concept_id_1 
+          AND cr.relationship_id = 'Maps to value' 
+        JOIN 
+          `{project}.{ehr_dataset}.concept` c2 
+        ON 
+          c2.concept_id = cr.concept_id_2 ) AS x 
+      WHERE 
+        rank=1 ) AS b 
+    WHERE 
+      a.observation_id = b.observation_id
+"""
+
+
+def get_maps_to_value_ppi_vocab_update_queries(project_id, dataset_id):
+    """
+    runs the query which updates the ppi vocabulary in observation table
+
+    :param project_id: Name of the project
+    :param dataset_id: Name of the dataset where the queries should be run
+    :return:
+    """
+    queries_list = []
+
+    query = dict()
+    query[cdr_consts.QUERY] = UPDATE_PPI_QUERY.format(dataset=dataset_id,
+                                                      project=project_id,
+                                                      ehr_dataset=bq_utils.get_dataset_id())
+    queries_list.append(query)
+
+    return queries_list
+
+
+if __name__ == '__main__':
+    import cdr_cleaner.args_parser as parser
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    ARGS = parser.parse_args()
+    clean_engine.add_console_logging(ARGS.console_log)
+    query_list = get_maps_to_value_ppi_vocab_update_queries(ARGS.project_id, ARGS.dataset_id)
+    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)

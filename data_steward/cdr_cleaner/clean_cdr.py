@@ -21,6 +21,7 @@ import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_suppl
 import cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency as fix_datetimes
 import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
 import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
+import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
 import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
 import cdr_cleaner.cleaning_rules.no_data_30_days_after_death as no_data_30days_after_death
 import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
@@ -56,6 +57,7 @@ def _gather_rdr_queries(project_id, dataset_id):
     :return: returns list of queries
     """
     query_list = []
+    query_list.extend(maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries(project_id, dataset_id))
     query_list.extend(back_fill_pmi_skip.get_run_pmi_fix_queries(project_id, dataset_id))
     return query_list
 
