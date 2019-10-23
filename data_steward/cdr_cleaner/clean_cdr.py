@@ -13,6 +13,7 @@ from google.appengine.api import app_identity
 # Project imports
 import bq_utils
 import cdr_cleaner.clean_cdr_engine as clean_engine
+import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
 # cleaning rule imports
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
@@ -55,11 +56,7 @@ def _gather_rdr_queries(project_id, dataset_id):
     :return: returns list of queries
     """
     query_list = []
-    query_list.extend(id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
-    query_list.extend(clean_years.get_year_of_birth_queries(project_id, dataset_id))
-    query_list.extend(neg_ages.get_negative_ages_queries(project_id, dataset_id))
-    query_list.extend(bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
-    query_list.extend(fix_datetimes.get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id))
+    query_list.extend(back_fill_pmi_skip.get_run_pmi_fix_queries(project_id, dataset_id))
     return query_list
 
 
