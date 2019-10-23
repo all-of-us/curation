@@ -75,11 +75,12 @@ class RetractDataGcsTest(unittest.TestCase):
             else:
                 self.assertEqual(total_lines_prior[key], total_lines_post[key])
 
+        lines_to_keep = dict()
         # metadata for each updated file is returned
         for key, val in lines_to_remove.items():
-            if val == 0:
-                del lines_to_remove[key]
-        self.assertEqual(len(retract_result[self.folder_prefix_1]), len(lines_to_remove.keys()))
+            if val != 0:
+                lines_to_keep[key] = val
+        self.assertEqual(len(retract_result[self.folder_prefix_1]), len(lines_to_keep))
 
     def test_integration_five_person_data_retraction(self):
         lines_to_remove = {}
