@@ -1,9 +1,9 @@
-EHR_DATASET = 'ehr_dataset'
-UNIONED_EHR_DATASET = 'unioned_ehr_dataset'
-RDR_DATASET = 'rdr_dataset'
-EHR_RDR_DATASET = 'ehr_rdr_dataset'
-EHR_RDR_DE_IDENTIFIED = 'ehr_rdr_de_identified_dataset'
-PROJECT = 'project'
+EHR = 'ehr'
+UNIONED = 'unioned'
+RDR = 'rdr'
+COMBINED = 'combined'
+DEID = 'deid'
+DATASET_CHOICES = [EHR, UNIONED, RDR, COMBINED, DEID]
 
 PERSON_TABLE_NAME = 'person'
 
