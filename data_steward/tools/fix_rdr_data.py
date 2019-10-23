@@ -5,40 +5,6 @@ from google.appengine.api.app_identity import app_identity
 
 import bq_utils
 
-OBSERVATION_TABLE_NAME = 'observation'
-VOCABULARY_DATASET = 'vocabulary20190423'
-
-UPDATE_PPI_QUERY = """
-UPDATE 
-      `{project}.{dataset}.observation` a 
-    SET 
-      a.value_as_concept_id = b.concept_id 
-    FROM ( 
-      SELECT 
-        * 
-      FROM ( 
-        SELECT 
-          c2.concept_name, 
-          c2.concept_id, 
-          o.*, 
-          RANK() OVER (PARTITION BY o.observation_id, o.value_source_concept_id ORDER BY c2.concept_id ASC) AS rank 
-        FROM 
-          `{project}.{dataset}.observation` o 
-        JOIN 
-          `{project}.{ehr_dataset}.concept_relationship` cr 
-        ON 
-          o.value_source_concept_id = cr.concept_id_1 
-          AND cr.relationship_id = 'Maps to value' 
-        JOIN 
-          `{project}.{ehr_dataset}.concept` c2 
-        ON 
-          c2.concept_id = cr.concept_id_2 ) AS x 
-      WHERE 
-        rank=1 ) AS b 
-    WHERE 
-      a.observation_id = b.observation_id
-"""
-
 CLEAN_PPI_NUMERIC_FIELDS = """
 UPDATE
   {project}.{dataset}.observation u1
@@ -156,20 +122,6 @@ WHERE
 """
 
 
-def run_ppi_vocab_update(project_id, dataset_id):
-    """
-    runs the query which updates the ppi vocabulary in observation table
-
-    :param project_id: Name of the project
-    :param dataset_id: Name of the dataset where the queries should be run
-    :return:
-    """
-    if project_id is None:
-        project_id = app_identity.get_application_id()
-
-    q = UPDATE_PPI_QUERY.format(project=project_id, dataset=dataset_id, ehr_dataset=bq_utils.get_dataset_id())
-    logging.debug('Query for PMI_Skip fix is {q}'.format(q=q))
-    bq_utils.query(q=q)
 
 
 def clean_ppi_numeric_fields_using_parameters(project_id, dataset_id):
@@ -218,9 +170,6 @@ def main(project_id, dataset_id):
     :param dataset_id: Name of the dataset where the queries should be run
     :return:
     """
-
-    logging.info('Applying PPi Vocabulary update')
-    run_ppi_vocab_update(project_id, dataset_id)
 
     logging.info('Applying clean ppi numeric value ranges fix')
     clean_ppi_numeric_fields_using_parameters(project_id, dataset_id)
