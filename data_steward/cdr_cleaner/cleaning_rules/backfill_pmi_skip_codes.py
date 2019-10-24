@@ -1,5 +1,3 @@
-import logging
-
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
@@ -135,8 +133,6 @@ def get_run_pmi_fix_queries(project_id, dataset_id):
     :return:
     """
     queries_list = []
-
-    logging.debug('Query for PMI_Skip fix is {q}'.format(q=q))
 
     query = dict()
     query[cdr_consts.QUERY] = PMI_SKIP_FIX_QUERY.format(dataset=dataset_id,
