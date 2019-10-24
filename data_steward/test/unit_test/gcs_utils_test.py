@@ -35,7 +35,7 @@ class GcsUtilsTest(unittest.TestCase):
         self.assertEqual(bucket_item['name'], 'person.csv')
 
     def test_get_object(self):
-        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
+        with open(FIVE_PERSONS_PERSON_CSV, 'r') as fp:
             expected = fp.read()
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
