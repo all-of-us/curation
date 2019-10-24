@@ -74,30 +74,30 @@ source tools/set_path.sh
 bq mk -f --description "RDR DUMP loaded from ${DIRECTORY} on ${today}" ${DATASET}
 
 echo "python cdm.py ${DATASET}"
-python cdm.py ${DATASET}
+python cdm.py "${DATASET}"
 
-for file in $(gsutil ls gs://${PROJECT}-cdm/${DIRECTORY}); do
-  filename=$(basename ${file})
+for file in $(gsutil ls gs://"${PROJECT}"-cdm/"${DIRECTORY}"); do
+  filename=$(basename "${file}")
   table_name="${filename%.*}"
   echo "Importing ${DATASET}.${table_name}..."
   CLUSTERING_ARGS=
-  if grep -q person_id resources/fields/${table_name}.json; then
+  if grep -q person_id resources/fields/"${table_name}".json; then
     CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id "
   fi
   JAGGED_ROWS=
   if [[ "${filename}" == "observation_period.csv" ]]; then
     JAGGED_ROWS="--allow_jagged_rows "
   fi
-  bq load --replace --allow_quoted_newlines ${JAGGED_ROWS}${CLUSTERING_ARGS}--skip_leading_rows=1 ${DATASET}.${table_name} $file resources/fields/${table_name}.json
+  bq load --replace --allow_quoted_newlines "${JAGGED_ROWS}""${CLUSTERING_ARGS}"--skip_leading_rows=1 "${DATASET}"."${table_name}" "$file" resources/fields/"${table_name}".json
 done
 
 echo "Creating a RDR back-up"
-./tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${DATASET} --target_dataset ${BACKUP_DATASET}
+./tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${DATASET}" --target_dataset "${BACKUP_DATASET}"
 
 #set BIGQUERY_DATASET_ID variable to dataset name where the vocabulary exists
 export BIGQUERY_DATASET_ID="${VOCAB_DATASET}"
 export RDR_DATASET_ID="${DATASET}"
-echo "Fixing the PMI_Skip and the PPI_Vocabulary using command - fix_rdr_data.py -p ${APP_ID} -d ${DATASET}"
+echo "Fixing the RDR data using command - cdr_cleaner/clean_cdr.py -d rdr -s"
 python cdr_cleaner/clean_cdr.py -d rdr -s
 
 echo "Done."
