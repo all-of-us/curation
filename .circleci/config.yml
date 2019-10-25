@@ -21,9 +21,6 @@ jobs:
       - run: sudo apt install software-properties-common
       # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
       - run: mkdir -p $CIRCLE_ARTIFACTS
-      # This is based on our 1.0 configuration file or project settings
-      - run:
-          command: ./init_env.sh
       - run:
           command: echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
       - run:
@@ -36,6 +33,8 @@ jobs:
           command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
       - run:
           command: echo "export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json" >> ${BASH_ENV}
+      - run:
+          command: ./init_env.sh
       - run:
           command: ./ci/setup.sh
       # Dependencies
