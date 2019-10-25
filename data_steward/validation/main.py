@@ -398,7 +398,8 @@ def process_hpo(hpo_id, force_run=False):
         logging.warning('Bucket `%s` configured for hpo_id `%s` does not exist',
                      bucket, hpo_id)
     except HttpError as http_error:
-        message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (hpo_id, http_error.content)
+        message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (hpo_id,
+                                                                                         http_error.content.decode())
         logging.error(message)
 
 
