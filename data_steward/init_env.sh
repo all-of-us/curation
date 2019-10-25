@@ -7,8 +7,11 @@ then
     CONFIG=$1
 fi
 
+export KEY_FILE=${HOME}/gcloud-credentials-key.json
+export APPLICATION_ID=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
+export GOOGLE_CLOUD_PROJECT=${APPLICATION_ID}
+
 # Require username in GH_USERNAME or CIRCLE_USERNAME
-export APPLICATION_ID="aou-res-curation-$CONFIG"
 export USERNAME=$(echo "${GH_USERNAME:-${CIRCLE_USERNAME:-}}" | tr '[:upper:]' '[:lower:]')
 
 if [ -z "${USERNAME}" ]
@@ -50,6 +53,7 @@ export UNIONED_DATASET_ID="${DATASET_PREFIX}_unioned"
 if [ -n "CIRCLECI" ]
 then
   echo "export APPLICATION_ID=${APPLICATION_ID}" >> $BASH_ENV
+  echo "export GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" >> $BASH_ENV
   echo "export USERNAME=${USERNAME}" >> $BASH_ENV
   echo "export DRC_BUCKET_NAME=${DRC_BUCKET_NAME}" >> $BASH_ENV
   echo "export BUCKET_NAME_FAKE=${BUCKET_NAME_FAKE}" >> $BASH_ENV
