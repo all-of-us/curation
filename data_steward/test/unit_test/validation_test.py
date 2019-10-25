@@ -353,7 +353,7 @@ class ValidationTest(unittest.TestCase):
     @mock.patch('api_util.check_cron')
     def test_validate_all_hpos_exception(self, check_cron, mock_logging_error, mock_list_bucket, mock_hpo_csv):
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
-        mock_list_bucket.side_effect = googleapiclient.errors.HttpError('fake http error', 'fake http error')
+        mock_list_bucket.side_effect = googleapiclient.errors.HttpError('fake http error', b'fake http error')
         with main.app.test_client() as c:
             c.get(main_constants.PREFIX + 'ValidateAllHpoFiles')
         expected_call = mock.call('Failed to process hpo_id `fake` due to the following HTTP error: fake http error')
@@ -584,7 +584,7 @@ class ValidationTest(unittest.TestCase):
             return []
 
         def query_rows_error(q):
-            raise googleapiclient.errors.HttpError(500, 'bar', 'baz')
+            raise googleapiclient.errors.HttpError(500, b'bar', 'baz')
 
         def _write_string_to_file(bucket, filename, content):
             return True
