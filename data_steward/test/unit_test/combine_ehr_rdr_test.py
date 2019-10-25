@@ -87,7 +87,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         schema = os.path.join(resources.fields_path, table + '.json')
         f = os.path.join(path, filename)
         if os.path.exists(os.path.join(path, filename)):
-            with open(f, 'r') as fp:
+            with open(f, 'rb') as fp:
                 gcs_utils.upload_object(bucket, filename, fp)
         else:
             test_util.write_cloud_str(bucket, filename, '\n')
@@ -247,7 +247,7 @@ class CombineEhrRdrTest(unittest.TestCase):
             expected_count = actual_count if t in expected_diffs \
                 else (ehr_counts[t] - unconsented_ehr_records) + rdr_counts[t]
             expected_counts[expected_mapping_table] = expected_count
-        self.assertDictContainsSubset(expected=expected_counts, actual=combined_counts)
+        self.assertDictContainsSubset(expected_counts, combined_counts)
 
     def _all_rdr_records_included(self):
         """

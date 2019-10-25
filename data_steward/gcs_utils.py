@@ -124,12 +124,13 @@ def list_bucket_prefixes(gcs_path):
     return all_objects
 
 
-def get_object(bucket, name):
+def get_object(bucket, name, as_text=True):
     """
     Download object from a bucket
     :param bucket: the bucket containing the file
     :param name: name of the file to download
-    :return: file contents (as text)
+    :param as_text: True if result should be decoded as text (default) otherwise bytes are returned
+    :return: file contents
     """
     service = create_service()
     req = service.objects().get_media(bucket=bucket, object=name)
@@ -138,9 +139,11 @@ def get_object(bucket, name):
     done = False
     while not done:
         status, done = downloader.next_chunk()
-    result = out_file.getvalue()
+    result_bytes = out_file.getvalue()
     out_file.close()
-    return result
+    if as_text:
+        return result_bytes.decode()
+    return result_bytes
 
 
 def upload_object(bucket, name, fp):
