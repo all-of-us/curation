@@ -1,11 +1,13 @@
 import os
 
-GAE_APPLICATION = 'GAE_APPLICATION'
+GOOGLE_CLOUD_PROJECT = 'GOOGLE_CLOUD_PROJECT'
 
 
 def get_application_id():
     """
-    Get the ID of the app engine application
+    Get the associated Google Cloud Project ID
+
     :return:
     """
-    return os.environ.get(GAE_APPLICATION)
+    # NOTE: Google interchangeably refers to this identifier as application_id or project_id
+    return os.environ.get(GOOGLE_CLOUD_PROJECT)
