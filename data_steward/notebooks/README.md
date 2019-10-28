@@ -29,9 +29,9 @@ directories have notebooks we use:
  * `data_steward/analytics/cdr_ops`
  * `data_steward/cdr_cleaner/manual_cleaning_rules`
 
-## Parameters
+## Parameters (optional)
 
-Create `parameters.py` for notebooks which require special parameters to run. The file must **not** be committed to the repository.
+To avoid having to manually provide dataset_id parameters for multiple notebooks, you may create `notebooks/parameters.py` and reference them in your notebooks. This file must **not** be committed to the repository.
 
 ```python
 # parameters.py
