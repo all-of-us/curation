@@ -209,4 +209,4 @@ if __name__ == '__main__':
     ARGS = parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
     query_list = get_generate_ext_table_queries(ARGS.project_id, ARGS.dataset_id, ARGS.combined_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

@@ -366,32 +366,12 @@ def domain_alignment(project_id, dataset_id):
     return queries_list
 
 
-def parse_args():
-    """
-    This function expands the default argument list defined in cdr_cleaner.args_parser
-    :return: an expanded argument list object
-    """
-    import cdr_cleaner.args_parser as parser
-
-    additional_argument = {parser.SHORT_ARGUMENT: '-n',
-                           parser.LONG_ARGUMENT: '--snapshot_dataset_id',
-                           parser.ACTION: 'store',
-                           parser.DEST: 'snapshot_dataset_id',
-                           parser.HELP: 'Create a snapshot of the dataset',
-                           parser.REQUIRED: True}
-    args = parser.default_parse_args([additional_argument])
-    return args
-
-
 if __name__ == '__main__':
+    import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parse_args()
-
+    ARGS = parser.parse_args()
     # Uncomment this line if testing locally
-    # from bq_utils import create_snapshot_dataset
-    # create_snapshot_dataset(ARGS.project_id, ARGS.dataset_id, ARGS.snapshot_dataset_id)
-
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = domain_alignment(ARGS.project_id, ARGS.snapshot_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.snapshot_dataset_id, query_list)
+    query_list = domain_alignment(ARGS.project_id, ARGS.dataset_id)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

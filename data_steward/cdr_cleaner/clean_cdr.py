@@ -10,6 +10,8 @@ import logging
 # Third party imports
 from google.appengine.api import app_identity
 
+import sandbox
+from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
 import bq_utils
 import cdr_cleaner.clean_cdr_engine as clean_engine
@@ -145,10 +147,12 @@ def clean_rdr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
+    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+
     query_list = _gather_rdr_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning rdr_dataset")
-    clean_engine.clean_dataset(project_id, dataset_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list, stage.RDR)
 
 
 def clean_ehr_dataset(project_id=None, dataset_id=None):
@@ -166,10 +170,12 @@ def clean_ehr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
+    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+
     query_list = _gather_ehr_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning ehr_dataset")
-    clean_engine.clean_dataset(project_id, dataset_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list, stage.EHR)
 
 
 def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
@@ -187,10 +193,12 @@ def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_unioned_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    query_list = _gather_unioned_ehr_queries(project_id, dataset_id)
+    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+
+    query_list = _gather_unioned_ehr_queries(project_id, dataset_id, stage.UNIONED)
 
     LOGGER.info("Cleaning unioned_dataset")
-    clean_engine.clean_dataset(project_id, dataset_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list)
 
 
 def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
@@ -208,10 +216,12 @@ def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_ehr_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
+    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+
     query_list = _gather_ehr_rdr_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning ehr_rdr_dataset")
-    clean_engine.clean_dataset(project_id, dataset_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list, stage.COMBINED)
 
 
 def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
@@ -229,10 +239,12 @@ def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_combined_deid_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
+    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+
     query_list = _gather_ehr_rdr_de_identified_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning de-identified dataset")
-    clean_engine.clean_dataset(project_id, dataset_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list, stage.DEID)
 
 
 def clean_all_cdr():
@@ -253,22 +265,23 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--data_stage',
                         required=True, dest='data_stage',
                         action='store',
-                        choices=clean_cdr_consts.DATASET_CHOICES,
+                        type=stage,
+                        choices=list([s for s in stage if s is not stage.UNSPECIFIED]),
                         help='Specify the dataset')
     parser.add_argument('-s',
                         action='store_true',
                         help='Send logs to console')
     args = parser.parse_args()
     clean_engine.add_console_logging(args.s)
-    if args.data_stage == clean_cdr_consts.EHR:
+    if args.data_stage == stage.EHR:
         clean_ehr_dataset()
-    elif args.data_stage == clean_cdr_consts.UNIONED:
+    elif args.data_stage == stage.UNIONED:
         clean_unioned_ehr_dataset()
-    elif args.data_stage == clean_cdr_consts.RDR:
+    elif args.data_stage == stage.RDR:
         clean_rdr_dataset()
-    elif args.data_stage == clean_cdr_consts.COMBINED:
+    elif args.data_stage == stage.COMBINED:
         clean_ehr_rdr_dataset()
-    elif args.data_stage == clean_cdr_consts.DEID:
+    elif args.data_stage == stage.DEID:
         clean_ehr_rdr_de_identified_dataset()
     else:
         raise EnvironmentError('Dataset selection should be from [ehr, unioned, rdr, combined, deid]')
