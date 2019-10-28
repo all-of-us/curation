@@ -261,8 +261,8 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--data_stage',
                         required=True, dest='data_stage',
                         action='store',
-                        choices=list([s for s in stage]),
-                        default=stage.UNSPECIFIED,
+                        type=stage,
+                        choices=list([s for s in stage if s is not stage.UNSPECIFIED]),
                         help='Specify the dataset')
     parser.add_argument('-s',
                         action='store_true',

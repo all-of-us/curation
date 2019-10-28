@@ -35,13 +35,13 @@ def add_console_logging(add_handler):
         LOGGER.addHandler(handler)
 
 
-def clean_dataset(project=None, statements=None, dataStage=stage.UNSPECIFIED):
+def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
     """
        Run the assigned cleaning rules.
 
        :param project:  the project name
        :param statements:  a list of dictionary objects to run the query
-       :param dataStage:  an enum to indicate what stage of the cleaning this is
+       :param data_stage:  an enum to indicate what stage of the cleaning this is
        """
     if project is None or project == '' or project.isspace():
         project = app_identity.get_application_id()
@@ -94,12 +94,12 @@ def clean_dataset(project=None, statements=None, dataStage=stage.UNSPECIFIED):
 
     if successes > 0:
         LOGGER.info("Successfully applied %d clean rules for %s.%s",
-                    successes, project, dataStage)
+                    successes, project, data_stage)
     else:
         LOGGER.warning("No clean rules successfully applied to %s.%s",
-                       project, dataStage)
+                       project, data_stage)
 
     if failures > 0:
-        print("Failed to apply {} clean rules for {}.{}".format(failures, project, dataStage))
+        print("Failed to apply {} clean rules for {}.{}".format(failures, project, data_stage))
         LOGGER.warning("Failed to apply %d clean rules for %s.%s",
-                       failures, project, dataStage)
+                       failures, project, data_stage)
