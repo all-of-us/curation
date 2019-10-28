@@ -261,22 +261,23 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--data_stage',
                         required=True, dest='data_stage',
                         action='store',
-                        choices=clean_cdr_consts.DATASET_CHOICES,
+                        choices=list([s for s in stage]),
+                        default=stage.UNSPECIFIED,
                         help='Specify the dataset')
     parser.add_argument('-s',
                         action='store_true',
                         help='Send logs to console')
     args = parser.parse_args()
     clean_engine.add_console_logging(args.s)
-    if args.data_stage == clean_cdr_consts.EHR:
+    if args.data_stage == stage.EHR:
         clean_ehr_dataset()
-    elif args.data_stage == clean_cdr_consts.UNIONED:
+    elif args.data_stage == stage.UNIONED:
         clean_unioned_ehr_dataset()
-    elif args.data_stage == clean_cdr_consts.RDR:
+    elif args.data_stage == stage.RDR:
         clean_rdr_dataset()
-    elif args.data_stage == clean_cdr_consts.COMBINED:
+    elif args.data_stage == stage.COMBINED:
         clean_ehr_rdr_dataset()
-    elif args.data_stage == clean_cdr_consts.DEID:
+    elif args.data_stage == stage.DEID:
         clean_ehr_rdr_de_identified_dataset()
     else:
         raise EnvironmentError('Dataset selection should be from [ehr, unioned, rdr, combined, deid]')
