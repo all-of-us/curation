@@ -21,7 +21,8 @@ def default_parse_args(additional_arguments=None):
                                 argument[LONG_ARGUMENT],
                                 dest=argument[DEST],
                                 action=argument[ACTION],
-                                help=argument[HELP])
+                                help=argument[HELP],
+                                required=argument[REQUIRED])
 
     return parser.parse_args()
 
