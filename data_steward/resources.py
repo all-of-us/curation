@@ -34,6 +34,8 @@ table_mappings_path = os.path.join(domain_mappings_path, 'table_mappings.csv')
 field_mappings_path = os.path.join(domain_mappings_path, 'field_mappings.csv')
 value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
 
+SANDBOX_SUFFIX = 'sandbox'
+
 
 @cachetools.cached(cache={})
 def _csv_to_list(csv_path):
@@ -211,3 +213,12 @@ def get_domain(domain_table):
     """
     domain = domain_table.split('_')[0].capitalize()
     return domain
+
+
+def get_sandbox_dataset_id(dataset_id):
+    """
+    A helper function to create the sandbox dataset_id
+    :param dataset_id: any dataset_id
+    :return:
+    """
+    return '{dataset_id}_{sandbox_suffix}'.format(dataset_id=dataset_id, sandbox_suffix=SANDBOX_SUFFIX)
