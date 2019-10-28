@@ -88,7 +88,7 @@ class TopHeelErrorsTest(unittest.TestCase):
         load_results = bq_utils.load_csv(schema_path, gcs_path, self.app_id, self.dataset_id, table_id)
         job_id = load_results['jobReference']['jobId']
         bq_utils.wait_on_jobs([job_id])
-        return resources._csv_to_list(test_file_path)
+        return resources.csv_to_list(test_file_path)
 
     def test_top_heel_errors_no_hpo_prefix(self):
         rows = self.load_test_data()

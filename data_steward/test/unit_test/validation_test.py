@@ -17,11 +17,11 @@ import common
 import constants.bq_utils as bq_consts
 import constants.validation.hpo_report as report_consts
 import constants.validation.main as main_constants
+import constants.validation.participants.identity_match as id_match_consts
 import gcs_utils
 import resources
 import test.unit_test.test_util as test_util
 from validation import main
-import constants.validation.participants.identity_match as id_match_consts
 
 
 @unittest.skipIf(os.getenv('ALL_TESTS') == 'False', 'Skipping ValidationTest cases')
@@ -290,7 +290,7 @@ class ValidationTest(unittest.TestCase):
         test_util.write_cloud_file(self.hpo_bucket, test_util.PII_NAME_FILE, prefix=self.folder_prefix)
         test_util.write_cloud_file(self.hpo_bucket, test_util.PII_MRN_BAD_PERSON_ID_FILE, prefix=self.folder_prefix)
 
-        rs = resources._csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
+        rs = resources.csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
         expected_results = [(r['file_name'], int(r['found']), int(r['parsed']), int(r['loaded'])) for r in rs]
         for f in common.SUBMISSION_FILES:
             if f not in test_file_names:

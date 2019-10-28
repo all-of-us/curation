@@ -1,6 +1,6 @@
-from datetime import datetime
 import os
 import unittest
+from datetime import datetime
 
 import mock
 from google.appengine.ext import testbed
@@ -133,9 +133,9 @@ class BqUtilsTest(unittest.TestCase):
 
         nyc_person_ids = [int(row['person_id'])
                           for row in
-                          resources._csv_to_list(NYC_FIVE_PERSONS_PERSON_CSV)]
+                          resources.csv_to_list(NYC_FIVE_PERSONS_PERSON_CSV)]
         pitt_person_ids = [int(row['person_id'])
-                           for row in resources._csv_to_list(
+                           for row in resources.csv_to_list(
                 PITT_FIVE_PERSONS_PERSON_CSV
             )]
         expected_result = nyc_person_ids + pitt_person_ids
@@ -289,7 +289,7 @@ class BqUtilsTest(unittest.TestCase):
             dataset_id=dataset_id,
             table_id=table_id)
         expected_observation_ids = [int(row['observation_id'])
-                                    for row in resources._csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)]
+                                    for row in resources.csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)]
         with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'rb') as fp:
             gcs_utils.upload_object(gcs_utils.get_hpo_bucket(hpo_id), 'observation.csv', fp)
         result = bq_utils.load_cdm_csv(hpo_id, 'observation')

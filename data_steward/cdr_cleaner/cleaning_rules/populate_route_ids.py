@@ -145,7 +145,7 @@ def create_dose_form_route_mappings_table(project_id, dataset_id=None):
     bq_utils.create_table(DOSE_FORM_ROUTES_TABLE_ID, DOSE_FORM_ROUTE_FIELDS, drop_existing=True, dataset_id=dataset_id)
 
     dose_form_route_mappings_csv = os.path.join(resources.resource_path, DOSE_FORM_ROUTES_FILE + ".csv")
-    dose_form_route_mappings_list = resources._csv_to_list(dose_form_route_mappings_csv)
+    dose_form_route_mappings_list = resources.csv_to_list(dose_form_route_mappings_csv)
     dose_form_routes_populate_query = INSERT_ROUTES_QUERY.format(
                                                     dataset_id=dataset_id,
                                                     project_id=project_id,

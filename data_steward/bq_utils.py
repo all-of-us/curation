@@ -727,6 +727,48 @@ def create_dataset(
     return insert_result
 
 
+def load_table_from_csv(project_id, dataset_id, table_name):
+    fields_filename = os.path.join(resources.fields_path, table_name + '.json')
+    fields = json.load(open(fields_filename, 'r'))
+    field_names = ', '.join([field['name'] for field in fields])
+
+    col_exprs = []
+    for field in fields:
+        if field['type'] == 'string':
+            col_expr = '\"{' + '{field_name}'.format(field_name=field['name']) + '}\"'
+        else:
+            col_expr = '{' + '{field_name}'.format(field_name=field['name']) + '}'
+        col_exprs.append(col_expr)
+    cols = '({cols})'.format(cols=', '.join(col_exprs))
+
+    insert_query = """
+    INSERT INTO `{project_id}.{dataset_id}.{table_id}`
+     {columns}
+    VALUES {mapping_list}
+    """
+
+    table_csv = os.path.join(resources.resource_path, table_name + ".csv")
+    table_list = resources.csv_to_list(table_csv)
+
+    pair_exprs = []
+    for mapping_dict in table_list:
+        pair_expr = cols.format(**mapping_dict)
+        pair_exprs.append(pair_expr)
+    formatted_mapping_list = ', '.join(pair_exprs)
+
+    create_table(table_id=table_name,
+                 fields=fields,
+                 drop_existing=True,
+                 dataset_id='{dataset}'.format(dataset=dataset_id))
+    table_populate_query = insert_query.format(dataset_id=dataset_id,
+                                               project_id=project_id,
+                                               table_id=table_name,
+                                               columns='({x})'.format(x=field_names),
+                                               mapping_list=formatted_mapping_list)
+    result = query(table_populate_query)
+    return result
+
+
 def has_primary_key(table):
     """
     Determines if a CDM table contains a numeric primary key field

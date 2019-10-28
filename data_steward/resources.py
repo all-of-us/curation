@@ -36,7 +36,7 @@ value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
 
 
 @cachetools.cached(cache={})
-def _csv_to_list(csv_path):
+def csv_to_list(csv_path):
     """
     Yield a list of `dict` from a CSV file
     :param csv_path: absolute path to a well-formed CSV file
@@ -62,24 +62,24 @@ def _csv_file_to_list(csv_file):
 
 
 def table_mappings_csv():
-    return _csv_to_list(table_mappings_path)
+    return csv_to_list(table_mappings_path)
 
 
 def field_mappings_csv():
-    return _csv_to_list(field_mappings_path)
+    return csv_to_list(field_mappings_path)
 
 
 def value_mappings_csv():
-    return _csv_to_list(value_mappings_path)
+    return csv_to_list(value_mappings_path)
 
 
 def cdm_csv():
-    return _csv_to_list(cdm_csv_path)
+    return csv_to_list(cdm_csv_path)
 
 
 def hpo_csv():
     # TODO get this from file; currently limited for pre- alpha release
-    return _csv_to_list(hpo_csv_path)
+    return csv_to_list(hpo_csv_path)
 
 
 def achilles_index_files():
