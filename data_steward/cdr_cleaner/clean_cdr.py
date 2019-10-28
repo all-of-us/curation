@@ -145,6 +145,8 @@ def clean_rdr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
+    bq_utils.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+
     query_list = _gather_rdr_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning rdr_dataset")
