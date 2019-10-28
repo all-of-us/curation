@@ -15,6 +15,7 @@ earlier, we want to keep the actual response instead of PMI_Skip regardless of t
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import constants.bq_utils as bq_consts
 import argparse
+import sandbox
 
 CLEANING_RULE_NAME = 'remove_multiple_responses'
 
@@ -87,17 +88,6 @@ def get_delete_statement(project_id, dataset_id):
                                             duplicate_id_query=duplicate_id_query)
 
 
-def create_sandbox_table_name(dataset_id, cleaning_rule_name):
-    """
-    creates the sandbox table name
-    :param dataset_id: Dataset id to which the cleaning rule is applied
-    :param cleaning_rule_name: Name of the cleaning rule
-    :return: the table name in the sandbox
-    """
-    sandbox_table_name = dataset_id + '_' + cleaning_rule_name
-    return sandbox_table_name
-
-
 def get_remove_duplicate_set_of_responses_to_same_questions_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     Generate the delete_query that remove the duplicate sets of responses to the same questions.
@@ -112,7 +102,7 @@ def get_remove_duplicate_set_of_responses_to_same_questions_queries(project_id, 
 
     select_query = dict()
     select_query[cdr_consts.QUERY] = get_select_statement(project_id, dataset_id)
-    select_query[cdr_consts.DESTINATION_TABLE] = create_sandbox_table_name(dataset_id, CLEANING_RULE_NAME)
+    select_query[cdr_consts.DESTINATION_TABLE] = sandbox.create_sandbox_table_name(dataset_id, CLEANING_RULE_NAME)
     select_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     select_query[cdr_consts.DESTINATION_DATASET] = sandbox_dataset_id
     queries.append(select_query)
@@ -148,4 +138,4 @@ if __name__ == '__main__':
     query_list = get_remove_duplicate_set_of_responses_to_same_questions_queries(ARGS.project_id,
                                                                                  ARGS.dataset_id,
                                                                                  ARGS.sandbox_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)
