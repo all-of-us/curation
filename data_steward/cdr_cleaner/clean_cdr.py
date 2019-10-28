@@ -9,6 +9,8 @@ import logging
 
 # Third party imports
 from google.appengine.api import app_identity
+
+import sandbox
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
 import bq_utils
@@ -145,7 +147,7 @@ def clean_rdr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    bq_utils.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
     query_list = _gather_rdr_queries(project_id, dataset_id)
 
@@ -168,7 +170,7 @@ def clean_ehr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    bq_utils.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
     query_list = _gather_ehr_queries(project_id, dataset_id)
 
@@ -191,7 +193,7 @@ def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_unioned_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    bq_utils.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
     query_list = _gather_unioned_ehr_queries(project_id, dataset_id, stage.UNIONED)
 
@@ -214,7 +216,7 @@ def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_ehr_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    bq_utils.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
     query_list = _gather_ehr_rdr_queries(project_id, dataset_id)
 
@@ -237,7 +239,7 @@ def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_combined_deid_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    bq_utils.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
     query_list = _gather_ehr_rdr_de_identified_queries(project_id, dataset_id)
 

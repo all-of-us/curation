@@ -773,18 +773,3 @@ def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
     incomplete_jobs = wait_on_jobs(copy_table_job_ids)
     if len(incomplete_jobs) > 0:
         raise BigQueryJobWaitError(incomplete_jobs)
-
-
-def create_sandbox_dataset(project_id, dataset_id):
-    """
-    A helper function create a sandbox dataset if the sandbox dataset doesn't exist
-    :param project_id: project_id
-    :param dataset_id: any dataset_id
-    :return:
-    """
-    sandbox_dataset_id = resources.get_sandbox_dataset_id(dataset_id)
-    friendly_name = 'Sandbox for {dataset_id}'.format(dataset_id=dataset_id)
-    return create_dataset(project_id=project_id,
-                          dataset_id=sandbox_dataset_id,
-                          friendly_name=friendly_name,
-                          overwrite_existing=bq_consts.FALSE)
