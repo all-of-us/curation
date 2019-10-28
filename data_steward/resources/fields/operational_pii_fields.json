@@ -1,0 +1,17 @@
+[
+  {
+    "type": "string",
+    "name": "observation_source_value",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "total_count",
+    "mode": "nullable"
+  },
+  {
+    "type": "bool",
+    "name": "drop_value",
+    "mode": "nullable"
+  }
+]
