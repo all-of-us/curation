@@ -36,7 +36,7 @@ NON_EHR_TABLES = [common.PERSON]
 TABLES_FOR_RETRACTION = set(common.PII_TABLES + common.AOU_REQUIRED) - set(NON_PID_TABLES + NON_EHR_TABLES)
 
 
-DELETE_RETRACT_DATA_SITE_QUERY = """
+RETRACT_DATA_SITE_QUERY = """
 DELETE
 FROM `{project}.{dataset}.{table}`
 WHERE person_id IN (
@@ -46,7 +46,7 @@ WHERE person_id IN (
 )
 """
 
-DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY = """
+RETRACT_MAPPING_DATA_UNIONED_QUERY = """
 DELETE
 FROM `{project}.{dataset}.{mapping_table}`
 WHERE {table_id} IN (
@@ -61,7 +61,7 @@ WHERE {table_id} IN (
 )
 """
 
-DELETE_RETRACT_DATA_UNIONED_QUERY = """
+RETRACT_DATA_UNIONED_QUERY = """
 DELETE
 FROM `{project}.{dataset}.{table}`
 WHERE person_id IN (
@@ -71,7 +71,7 @@ WHERE person_id IN (
 )
 """
 
-DELETE_RETRACT_MAPPING_DATA_COMBINED_QUERY = """
+RETRACT_MAPPING_DATA_COMBINED_QUERY = """
 DELETE
 FROM `{project}.{dataset}.{mapping_table}`
 WHERE {table_id} IN (
@@ -86,7 +86,7 @@ WHERE {table_id} IN (
 )
 """
 
-DELETE_RETRACT_DATA_COMBINED_QUERY = """
+RETRACT_DATA_COMBINED_QUERY = """
 DELETE
 FROM `{project}.{dataset}.{table}`
 WHERE person_id IN (
@@ -97,7 +97,7 @@ WHERE person_id IN (
 AND {table_id} >= {CONSTANT_FACTOR}
 """
 
-DELETE_RETRACT_DATA_FACT_RELATIONSHIP = """
+RETRACT_DATA_FACT_RELATIONSHIP = """
 DELETE
 FROM `{project}.{dataset}.{table}`
 WHERE (
@@ -163,7 +163,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pid_tabl
         q_site[DEST_DATASET] = dataset_id
         q_site[DEST_TABLE] = get_site_table(hpo_id, table)
         if q_site[DEST_TABLE] in existing_tables:
-            q_site[QUERY] = DELETE_RETRACT_DATA_SITE_QUERY.format(
+            q_site[QUERY] = RETRACT_DATA_SITE_QUERY.format(
                                                 project=project_id,
                                                 dataset=q_site[DEST_DATASET],
                                                 table=q_site[DEST_TABLE],
@@ -176,7 +176,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pid_tabl
             q_unioned_mapping[DEST_DATASET] = dataset_id
             q_unioned_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
             if q_unioned_mapping[DEST_TABLE] in existing_tables:
-                q_unioned_mapping[QUERY] = DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
+                q_unioned_mapping[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_unioned_mapping[DEST_DATASET],
                                                     mapping_table=q_unioned_mapping[DEST_TABLE],
@@ -189,7 +189,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pid_tabl
             q_unioned_mapping_legacy[DEST_DATASET] = dataset_id
             q_unioned_mapping_legacy[DEST_TABLE] = UNIONED_EHR + ehr_union.mapping_table_for(table)
             if q_unioned_mapping_legacy[DEST_TABLE] in existing_tables:
-                q_unioned_mapping_legacy[QUERY] = DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
+                q_unioned_mapping_legacy[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_unioned_mapping_legacy[DEST_DATASET],
                                                     mapping_table=q_unioned_mapping_legacy[DEST_TABLE],
@@ -202,7 +202,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pid_tabl
         q_unioned[DEST_DATASET] = dataset_id
         q_unioned[DEST_TABLE] = UNIONED_EHR + table
         if q_unioned[DEST_TABLE] in existing_tables:
-            q_unioned[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
+            q_unioned[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
                                                 project=project_id,
                                                 dataset=q_unioned[DEST_DATASET],
                                                 table=q_unioned[DEST_TABLE],
@@ -214,7 +214,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pid_tabl
     q_site_person[DEST_DATASET] = dataset_id
     q_site_person[DEST_TABLE] = get_site_table(hpo_id, common.PERSON)
     if q_site_person[DEST_TABLE] in existing_tables:
-        q_site_person[QUERY] = DELETE_RETRACT_DATA_SITE_QUERY.format(
+        q_site_person[QUERY] = RETRACT_DATA_SITE_QUERY.format(
                                                 project=project_id,
                                                 dataset=q_site_person[DEST_DATASET],
                                                 table=q_site_person[DEST_TABLE],
@@ -225,7 +225,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pid_tabl
     q_unioned_person[DEST_DATASET] = dataset_id
     q_unioned_person[DEST_TABLE] = UNIONED_EHR + common.PERSON
     if q_unioned_person[DEST_TABLE] in existing_tables:
-        q_unioned_person[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
+        q_unioned_person[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
                                                 project=project_id,
                                                 dataset=q_unioned_person[DEST_DATASET],
                                                 table=q_unioned_person[DEST_TABLE],
@@ -237,7 +237,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pid_tabl
     q_site_fact_relationship[DEST_DATASET] = dataset_id
     q_site_fact_relationship[DEST_TABLE] = get_site_table(hpo_id, common.FACT_RELATIONSHIP)
     if q_site_fact_relationship[DEST_TABLE] in existing_tables:
-        q_site_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
+        q_site_fact_relationship[QUERY] = RETRACT_DATA_FACT_RELATIONSHIP.format(
                                                     project=project_id,
                                                     dataset=q_site_fact_relationship[DEST_DATASET],
                                                     table=q_site_fact_relationship[DEST_TABLE],
@@ -249,7 +249,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, pid_tabl
     q_unioned_fact_relationship[DEST_DATASET] = dataset_id
     q_unioned_fact_relationship[DEST_TABLE] = UNIONED_EHR + common.FACT_RELATIONSHIP
     if q_unioned_fact_relationship[DEST_TABLE] in existing_tables:
-        q_unioned_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
+        q_unioned_fact_relationship[QUERY] = RETRACT_DATA_FACT_RELATIONSHIP.format(
                                                     project=project_id,
                                                     dataset=q_unioned_fact_relationship[DEST_DATASET],
                                                     table=q_unioned_fact_relationship[DEST_TABLE],
@@ -279,7 +279,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, pid_table_id
             q_unioned_mapping[DEST_DATASET] = dataset_id
             q_unioned_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
             if q_unioned_mapping[DEST_TABLE] in existing_tables:
-                q_unioned_mapping[QUERY] = DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
+                q_unioned_mapping[QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_unioned_mapping[DEST_DATASET],
                                                     mapping_table=q_unioned_mapping[DEST_TABLE],
@@ -292,7 +292,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, pid_table_id
         q_unioned[DEST_DATASET] = dataset_id
         q_unioned[DEST_TABLE] = table
         if q_unioned[DEST_TABLE] in existing_tables:
-            q_unioned[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
+            q_unioned[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_unioned[DEST_DATASET],
                                                     table=q_unioned[DEST_TABLE],
@@ -304,7 +304,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, pid_table_id
     q_unioned_person[DEST_DATASET] = dataset_id
     q_unioned_person[DEST_TABLE] = common.PERSON
     if q_unioned_person[DEST_TABLE] in existing_tables:
-        q_unioned_person[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
+        q_unioned_person[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_unioned_person[DEST_DATASET],
                                                     table=q_unioned_person[DEST_TABLE],
@@ -315,7 +315,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, pid_table_id
     q_unioned_fact_relationship[DEST_DATASET] = dataset_id
     q_unioned_fact_relationship[DEST_TABLE] = common.FACT_RELATIONSHIP
     if q_unioned_fact_relationship[DEST_TABLE] in existing_tables:
-        q_unioned_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
+        q_unioned_fact_relationship[QUERY] = RETRACT_DATA_FACT_RELATIONSHIP.format(
                                                     project=project_id,
                                                     dataset=q_unioned_fact_relationship[DEST_DATASET],
                                                     table=q_unioned_fact_relationship[DEST_TABLE],
@@ -345,7 +345,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, pid
             q_combined_mapping[DEST_DATASET] = dataset_id
             q_combined_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
             if q_combined_mapping[DEST_TABLE] in existing_tables:
-                q_combined_mapping[QUERY] = DELETE_RETRACT_MAPPING_DATA_COMBINED_QUERY.format(
+                q_combined_mapping[QUERY] = RETRACT_MAPPING_DATA_COMBINED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_combined_mapping[DEST_DATASET],
                                                     mapping_table=q_combined_mapping[DEST_TABLE],
@@ -360,7 +360,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, pid
         q_combined[DEST_DATASET] = dataset_id
         q_combined[DEST_TABLE] = table
         if q_combined[DEST_TABLE] in existing_tables:
-            q_combined[QUERY] = DELETE_RETRACT_DATA_COMBINED_QUERY.format(
+            q_combined[QUERY] = RETRACT_DATA_COMBINED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_combined[DEST_DATASET],
                                                     table=q_combined[DEST_TABLE],
@@ -373,7 +373,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, pid
     # fix death query to exclude constant
     for q in combined_queries:
         if q[DEST_TABLE] is common.DEATH:
-            q[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
+            q[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q[DEST_DATASET],
                                                     table=q[DEST_TABLE],
@@ -383,7 +383,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, pid
     q_combined_fact_relationship[DEST_DATASET] = dataset_id
     q_combined_fact_relationship[DEST_TABLE] = common.FACT_RELATIONSHIP
     if q_combined_fact_relationship[DEST_TABLE] in existing_tables:
-        q_combined_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
+        q_combined_fact_relationship[QUERY] = RETRACT_DATA_FACT_RELATIONSHIP.format(
                                                     project=project_id,
                                                     dataset=q_combined_fact_relationship[DEST_DATASET],
                                                     table=q_combined_fact_relationship[DEST_TABLE],
