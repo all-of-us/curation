@@ -27,9 +27,7 @@ QUERY = 'QUERY'
 DEST_TABLE = 'DEST_TABLE'
 DEST_DATASET = 'DEST_DATASET'
 WRITE_TRUNCATE = 'WRITE_TRUNCATE'
-DELETE_FLAG = 'DELETE_FLAG'
 
-THRESHOLD_FOR_DML = 50
 PERSON_DOMAIN = 56
 
 NON_PID_TABLES = [common.CARE_SITE, common.LOCATION, common.FACT_RELATIONSHIP, common.PROVIDER]
@@ -37,25 +35,11 @@ NON_PID_TABLES = [common.CARE_SITE, common.LOCATION, common.FACT_RELATIONSHIP, c
 NON_EHR_TABLES = [common.PERSON]
 TABLES_FOR_RETRACTION = set(common.PII_TABLES + common.AOU_REQUIRED) - set(NON_PID_TABLES + NON_EHR_TABLES)
 
-SELECT_RETRACT_DATA_SITE_QUERY = (
-    ' SELECT *'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE person_id NOT IN {pids}'
-)
 
 DELETE_RETRACT_DATA_SITE_QUERY = (
     ' DELETE'
     ' FROM `{project}.{dataset}.{table}`'
     ' WHERE person_id IN {pids}'
-)
-
-SELECT_RETRACT_MAPPING_DATA_UNIONED_QUERY = (
-    ' SELECT *'
-    ' FROM `{project}.{dataset}.{mapping_table}`'
-    ' WHERE {table_id} NOT IN'
-    ' (SELECT {table_id}'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE person_id IN {pids})'
 )
 
 DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY = (
@@ -67,26 +51,10 @@ DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY = (
     ' WHERE person_id IN {pids})'
 )
 
-SELECT_RETRACT_DATA_UNIONED_QUERY = (
-    ' SELECT *'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE person_id NOT IN {pids}'
-)
-
 DELETE_RETRACT_DATA_UNIONED_QUERY = (
     ' DELETE'
     ' FROM `{project}.{dataset}.{table}`'
     ' WHERE person_id IN {pids}'
-)
-
-SELECT_RETRACT_MAPPING_DATA_COMBINED_QUERY = (
-    ' SELECT *'
-    ' FROM `{project}.{dataset}.{mapping_table}`'
-    ' WHERE {table_id} NOT IN'
-    ' (SELECT {table_id}'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE person_id IN {pids}'
-    ' AND {table_id} >= {CONSTANT_FACTOR})'
 )
 
 DELETE_RETRACT_MAPPING_DATA_COMBINED_QUERY = (
@@ -99,31 +67,11 @@ DELETE_RETRACT_MAPPING_DATA_COMBINED_QUERY = (
     ' AND {table_id} >= {CONSTANT_FACTOR})'
 )
 
-SELECT_RETRACT_DATA_COMBINED_QUERY = (
-    ' SELECT *'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE person_id NOT IN {pids}'
-    ' AND {table_id} >= {CONSTANT_FACTOR}'
-    ' UNION ALL'
-    ' SELECT *'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE {table_id} < {CONSTANT_FACTOR}'
-)
-
 DELETE_RETRACT_DATA_COMBINED_QUERY = (
     ' DELETE'
     ' FROM `{project}.{dataset}.{table}`'
     ' WHERE person_id IN {pids}'
     ' AND {table_id} >= {CONSTANT_FACTOR}'
-)
-
-SELECT_RETRACT_DATA_FACT_RELATIONSHIP = (
-    ' SELECT *'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE NOT ((domain_concept_id_1 = {PERSON_DOMAIN}'
-    ' AND fact_id_1 IN {pids})'
-    ' OR (domain_concept_id_2 = {PERSON_DOMAIN}'
-    ' AND fact_id_2 IN {pids}))'
 )
 
 DELETE_RETRACT_DATA_FACT_RELATIONSHIP = (
@@ -166,8 +114,6 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
     :param ids: list of ids
     :return: list of dict with keys query, dataset, table, delete_flag
     """
-    # If fewer pids, use DELETE statements instead of SELECT
-    delete_flag = bool(len(ids) < THRESHOLD_FOR_DML)
     logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
     pids = int_list_to_bq(ids)
     existing_tables = list_existing_tables(project_id, dataset_id)
@@ -179,16 +125,8 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
         q_site = dict()
         q_site[DEST_DATASET] = dataset_id
         q_site[DEST_TABLE] = get_site_table(hpo_id, table)
-        q_site[DELETE_FLAG] = delete_flag
         if q_site[DEST_TABLE] in existing_tables:
-            if q_site[DELETE_FLAG]:
-                q_site[QUERY] = DELETE_RETRACT_DATA_SITE_QUERY.format(
-                                                project=project_id,
-                                                dataset=q_site[DEST_DATASET],
-                                                table=q_site[DEST_TABLE],
-                                                pids=pids)
-            else:
-                q_site[QUERY] = SELECT_RETRACT_DATA_SITE_QUERY.format(
+            q_site[QUERY] = DELETE_RETRACT_DATA_SITE_QUERY.format(
                                                 project=project_id,
                                                 dataset=q_site[DEST_DATASET],
                                                 table=q_site[DEST_TABLE],
@@ -200,18 +138,8 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
             q_unioned_mapping = dict()
             q_unioned_mapping[DEST_DATASET] = dataset_id
             q_unioned_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
-            q_unioned_mapping[DELETE_FLAG] = delete_flag
             if q_unioned_mapping[DEST_TABLE] in existing_tables:
-                if q_unioned_mapping[DELETE_FLAG]:
-                    q_unioned_mapping[QUERY] = DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
-                                                    project=project_id,
-                                                    dataset=q_unioned_mapping[DEST_DATASET],
-                                                    mapping_table=q_unioned_mapping[DEST_TABLE],
-                                                    table_id=get_table_id(table),
-                                                    table=UNIONED_EHR + table,
-                                                    pids=pids)
-                else:
-                    q_unioned_mapping[QUERY] = SELECT_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
+                q_unioned_mapping[QUERY] = DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_unioned_mapping[DEST_DATASET],
                                                     mapping_table=q_unioned_mapping[DEST_TABLE],
@@ -223,18 +151,8 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
             q_unioned_mapping_legacy = dict()
             q_unioned_mapping_legacy[DEST_DATASET] = dataset_id
             q_unioned_mapping_legacy[DEST_TABLE] = UNIONED_EHR + ehr_union.mapping_table_for(table)
-            q_unioned_mapping_legacy[DELETE_FLAG] = delete_flag
             if q_unioned_mapping_legacy[DEST_TABLE] in existing_tables:
-                if q_unioned_mapping_legacy[DELETE_FLAG]:
-                    q_unioned_mapping_legacy[QUERY] = DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
-                                                    project=project_id,
-                                                    dataset=q_unioned_mapping_legacy[DEST_DATASET],
-                                                    mapping_table=q_unioned_mapping_legacy[DEST_TABLE],
-                                                    table_id=get_table_id(table),
-                                                    table=UNIONED_EHR + table,
-                                                    pids=pids)
-                else:
-                    q_unioned_mapping_legacy[QUERY] = SELECT_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
+                q_unioned_mapping_legacy[QUERY] = DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_unioned_mapping_legacy[DEST_DATASET],
                                                     mapping_table=q_unioned_mapping_legacy[DEST_TABLE],
@@ -246,16 +164,8 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
         q_unioned = dict()
         q_unioned[DEST_DATASET] = dataset_id
         q_unioned[DEST_TABLE] = UNIONED_EHR + table
-        q_unioned[DELETE_FLAG] = delete_flag
         if q_unioned[DEST_TABLE] in existing_tables:
-            if q_unioned[DELETE_FLAG]:
-                q_unioned[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
-                                                project=project_id,
-                                                dataset=q_unioned[DEST_DATASET],
-                                                table=q_unioned[DEST_TABLE],
-                                                pids=pids)
-            else:
-                q_unioned[QUERY] = SELECT_RETRACT_DATA_UNIONED_QUERY.format(
+            q_unioned[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
                                                 project=project_id,
                                                 dataset=q_unioned[DEST_DATASET],
                                                 table=q_unioned[DEST_TABLE],
@@ -266,16 +176,8 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
     q_site_person = dict()
     q_site_person[DEST_DATASET] = dataset_id
     q_site_person[DEST_TABLE] = get_site_table(hpo_id, common.PERSON)
-    q_site_person[DELETE_FLAG] = delete_flag
     if q_site_person[DEST_TABLE] in existing_tables:
-        if q_site_person[DELETE_FLAG]:
-            q_site_person[QUERY] = DELETE_RETRACT_DATA_SITE_QUERY.format(
-                                                project=project_id,
-                                                dataset=q_site_person[DEST_DATASET],
-                                                table=q_site_person[DEST_TABLE],
-                                                pids=pids)
-        else:
-            q_site_person[QUERY] = SELECT_RETRACT_DATA_SITE_QUERY.format(
+        q_site_person[QUERY] = DELETE_RETRACT_DATA_SITE_QUERY.format(
                                                 project=project_id,
                                                 dataset=q_site_person[DEST_DATASET],
                                                 table=q_site_person[DEST_TABLE],
@@ -285,16 +187,8 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
     q_unioned_person = dict()
     q_unioned_person[DEST_DATASET] = dataset_id
     q_unioned_person[DEST_TABLE] = UNIONED_EHR + common.PERSON
-    q_unioned_person[DELETE_FLAG] = delete_flag
     if q_unioned_person[DEST_TABLE] in existing_tables:
-        if q_unioned_person[DELETE_FLAG]:
-            q_unioned_person[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
-                                                project=project_id,
-                                                dataset=q_unioned_person[DEST_DATASET],
-                                                table=q_unioned_person[DEST_TABLE],
-                                                pids=pids)
-        else:
-            q_unioned_person[QUERY] = SELECT_RETRACT_DATA_UNIONED_QUERY.format(
+        q_unioned_person[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
                                                 project=project_id,
                                                 dataset=q_unioned_person[DEST_DATASET],
                                                 table=q_unioned_person[DEST_TABLE],
@@ -305,17 +199,8 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
     q_site_fact_relationship = dict()
     q_site_fact_relationship[DEST_DATASET] = dataset_id
     q_site_fact_relationship[DEST_TABLE] = get_site_table(hpo_id, common.FACT_RELATIONSHIP)
-    q_site_fact_relationship[DELETE_FLAG] = delete_flag
     if q_site_fact_relationship[DEST_TABLE] in existing_tables:
-        if q_site_fact_relationship[DELETE_FLAG]:
-            q_site_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
-                                                    project=project_id,
-                                                    dataset=q_site_fact_relationship[DEST_DATASET],
-                                                    table=q_site_fact_relationship[DEST_TABLE],
-                                                    PERSON_DOMAIN=PERSON_DOMAIN,
-                                                    pids=pids)
-        else:
-            q_site_fact_relationship[QUERY] = SELECT_RETRACT_DATA_FACT_RELATIONSHIP.format(
+        q_site_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
                                                     project=project_id,
                                                     dataset=q_site_fact_relationship[DEST_DATASET],
                                                     table=q_site_fact_relationship[DEST_TABLE],
@@ -326,17 +211,8 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, hpo_id, ids):
     q_unioned_fact_relationship = dict()
     q_unioned_fact_relationship[DEST_DATASET] = dataset_id
     q_unioned_fact_relationship[DEST_TABLE] = UNIONED_EHR + common.FACT_RELATIONSHIP
-    q_unioned_fact_relationship[DELETE_FLAG] = delete_flag
     if q_unioned_fact_relationship[DEST_TABLE] in existing_tables:
-        if q_unioned_fact_relationship[DELETE_FLAG]:
-            q_unioned_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
-                                                    project=project_id,
-                                                    dataset=q_unioned_fact_relationship[DEST_DATASET],
-                                                    table=q_unioned_fact_relationship[DEST_TABLE],
-                                                    PERSON_DOMAIN=PERSON_DOMAIN,
-                                                    pids=pids)
-        else:
-            q_unioned_fact_relationship[QUERY] = SELECT_RETRACT_DATA_FACT_RELATIONSHIP.format(
+        q_unioned_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
                                                     project=project_id,
                                                     dataset=q_unioned_fact_relationship[DEST_DATASET],
                                                     table=q_unioned_fact_relationship[DEST_TABLE],
@@ -356,8 +232,6 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
     :param ids: list of ids
     :return: list of dict with keys query, dataset, table
     """
-    # If fewer pids, use DELETE statements instead of SELECT
-    delete_flag = bool(len(ids) < THRESHOLD_FOR_DML)
     logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
     pids = int_list_to_bq(ids)
     existing_tables = list_existing_tables(project_id, dataset_id)
@@ -368,18 +242,8 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
             q_unioned_mapping = dict()
             q_unioned_mapping[DEST_DATASET] = dataset_id
             q_unioned_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
-            q_unioned_mapping[DELETE_FLAG] = delete_flag
             if q_unioned_mapping[DEST_TABLE] in existing_tables:
-                if q_unioned_mapping[DELETE_FLAG]:
-                    q_unioned_mapping[QUERY] = DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
-                                                    project=project_id,
-                                                    dataset=q_unioned_mapping[DEST_DATASET],
-                                                    mapping_table=q_unioned_mapping[DEST_TABLE],
-                                                    table_id=get_table_id(table),
-                                                    table=table,
-                                                    pids=pids)
-                else:
-                    q_unioned_mapping[QUERY] = SELECT_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
+                q_unioned_mapping[QUERY] = DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_unioned_mapping[DEST_DATASET],
                                                     mapping_table=q_unioned_mapping[DEST_TABLE],
@@ -391,16 +255,8 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
         q_unioned = dict()
         q_unioned[DEST_DATASET] = dataset_id
         q_unioned[DEST_TABLE] = table
-        q_unioned[DELETE_FLAG] = delete_flag
         if q_unioned[DEST_TABLE] in existing_tables:
-            if q_unioned[DELETE_FLAG]:
-                q_unioned[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
-                                                    project=project_id,
-                                                    dataset=q_unioned[DEST_DATASET],
-                                                    table=q_unioned[DEST_TABLE],
-                                                    pids=pids)
-            else:
-                q_unioned[QUERY] = SELECT_RETRACT_DATA_UNIONED_QUERY.format(
+            q_unioned[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_unioned[DEST_DATASET],
                                                     table=q_unioned[DEST_TABLE],
@@ -411,16 +267,8 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
     q_unioned_person = dict()
     q_unioned_person[DEST_DATASET] = dataset_id
     q_unioned_person[DEST_TABLE] = common.PERSON
-    q_unioned_person[DELETE_FLAG] = delete_flag
     if q_unioned_person[DEST_TABLE] in existing_tables:
-        if q_unioned_person[DELETE_FLAG]:
-            q_unioned_person[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
-                                                    project=project_id,
-                                                    dataset=q_unioned_person[DEST_DATASET],
-                                                    table=q_unioned_person[DEST_TABLE],
-                                                    pids=pids)
-        else:
-            q_unioned_person[QUERY] = SELECT_RETRACT_DATA_UNIONED_QUERY.format(
+        q_unioned_person[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_unioned_person[DEST_DATASET],
                                                     table=q_unioned_person[DEST_TABLE],
@@ -430,17 +278,8 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, ids):
     q_unioned_fact_relationship = dict()
     q_unioned_fact_relationship[DEST_DATASET] = dataset_id
     q_unioned_fact_relationship[DEST_TABLE] = common.FACT_RELATIONSHIP
-    q_unioned_fact_relationship[DELETE_FLAG] = delete_flag
     if q_unioned_fact_relationship[DEST_TABLE] in existing_tables:
-        if q_unioned_fact_relationship[DELETE_FLAG]:
-            q_unioned_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
-                                                    project=project_id,
-                                                    dataset=q_unioned_fact_relationship[DEST_DATASET],
-                                                    table=q_unioned_fact_relationship[DEST_TABLE],
-                                                    PERSON_DOMAIN=PERSON_DOMAIN,
-                                                    pids=pids)
-        else:
-            q_unioned_fact_relationship[QUERY] = SELECT_RETRACT_DATA_FACT_RELATIONSHIP.format(
+        q_unioned_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
                                                     project=project_id,
                                                     dataset=q_unioned_fact_relationship[DEST_DATASET],
                                                     table=q_unioned_fact_relationship[DEST_TABLE],
@@ -460,8 +299,6 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, ids
     :param ids: list of ids
     :return: list of dict with keys query, dataset, table
     """
-    # If fewer pids, use DELETE statements instead of SELECT
-    delete_flag = bool(len(ids) < THRESHOLD_FOR_DML)
     pids = int_list_to_bq(ids)
     logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
     existing_tables = list_existing_tables(project_id, dataset_id)
@@ -472,20 +309,8 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, ids
             q_combined_mapping = dict()
             q_combined_mapping[DEST_DATASET] = dataset_id
             q_combined_mapping[DEST_TABLE] = ehr_union.mapping_table_for(table)
-            q_combined_mapping[DELETE_FLAG] = delete_flag
             if q_combined_mapping[DEST_TABLE] in existing_tables:
-                if q_combined_mapping[DELETE_FLAG]:
-                    q_combined_mapping[QUERY] = DELETE_RETRACT_MAPPING_DATA_COMBINED_QUERY.format(
-                                                    project=project_id,
-                                                    dataset=q_combined_mapping[DEST_DATASET],
-                                                    mapping_table=q_combined_mapping[DEST_TABLE],
-                                                    table_id=get_table_id(table),
-                                                    table=table,
-                                                    pids=pids,
-                                                    CONSTANT_FACTOR=common.RDR_ID_CONSTANT
-                                                    + common.ID_CONSTANT_FACTOR)
-                else:
-                    q_combined_mapping[QUERY] = SELECT_RETRACT_MAPPING_DATA_COMBINED_QUERY.format(
+                q_combined_mapping[QUERY] = DELETE_RETRACT_MAPPING_DATA_COMBINED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_combined_mapping[DEST_DATASET],
                                                     mapping_table=q_combined_mapping[DEST_TABLE],
@@ -499,19 +324,8 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, ids
         q_combined = dict()
         q_combined[DEST_DATASET] = dataset_id
         q_combined[DEST_TABLE] = table
-        q_combined[DELETE_FLAG] = delete_flag
         if q_combined[DEST_TABLE] in existing_tables:
-            if q_combined[DELETE_FLAG]:
-                q_combined[QUERY] = DELETE_RETRACT_DATA_COMBINED_QUERY.format(
-                                                    project=project_id,
-                                                    dataset=q_combined[DEST_DATASET],
-                                                    table=q_combined[DEST_TABLE],
-                                                    pids=pids,
-                                                    table_id=get_table_id(table),
-                                                    CONSTANT_FACTOR=common.RDR_ID_CONSTANT
-                                                    + common.ID_CONSTANT_FACTOR)
-            else:
-                q_combined[QUERY] = SELECT_RETRACT_DATA_COMBINED_QUERY.format(
+            q_combined[QUERY] = DELETE_RETRACT_DATA_COMBINED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q_combined[DEST_DATASET],
                                                     table=q_combined[DEST_TABLE],
@@ -524,14 +338,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, ids
     # fix death query to exclude constant
     for q in combined_queries:
         if q[DEST_TABLE] is common.DEATH:
-            if q[DELETE_FLAG]:
-                q[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
-                                                    project=project_id,
-                                                    dataset=q[DEST_DATASET],
-                                                    table=q[DEST_TABLE],
-                                                    pids=pids)
-            else:
-                q[QUERY] = SELECT_RETRACT_DATA_UNIONED_QUERY.format(
+            q[QUERY] = DELETE_RETRACT_DATA_UNIONED_QUERY.format(
                                                     project=project_id,
                                                     dataset=q[DEST_DATASET],
                                                     table=q[DEST_TABLE],
@@ -540,17 +347,8 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id, ids
     q_combined_fact_relationship = dict()
     q_combined_fact_relationship[DEST_DATASET] = dataset_id
     q_combined_fact_relationship[DEST_TABLE] = common.FACT_RELATIONSHIP
-    q_combined_fact_relationship[DELETE_FLAG] = delete_flag
     if q_combined_fact_relationship[DEST_TABLE] in existing_tables:
-        if q_combined_fact_relationship[DELETE_FLAG]:
-            q_combined_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
-                                                    project=project_id,
-                                                    dataset=q_combined_fact_relationship[DEST_DATASET],
-                                                    table=q_combined_fact_relationship[DEST_TABLE],
-                                                    PERSON_DOMAIN=PERSON_DOMAIN,
-                                                    pids=pids)
-        else:
-            q_combined_fact_relationship[QUERY] = SELECT_RETRACT_DATA_FACT_RELATIONSHIP.format(
+        q_combined_fact_relationship[QUERY] = DELETE_RETRACT_DATA_FACT_RELATIONSHIP.format(
                                                     project=project_id,
                                                     dataset=q_combined_fact_relationship[DEST_DATASET],
                                                     table=q_combined_fact_relationship[DEST_TABLE],
@@ -566,21 +364,13 @@ def retraction_query_runner(queries):
     for query_dict in queries:
         logger.debug('Retracting from %s.%s using query %s'
                      % (query_dict[DEST_DATASET], query_dict[DEST_TABLE], query_dict[QUERY]))
-        if query_dict[DELETE_FLAG]:
-            job_results = bq_utils.query(
-                                q=query_dict[QUERY],
-                                batch=True)
-            rows_affected = job_results['numDmlAffectedRows']
-            logger.debug('%s rows deleted from %s.%s' % (rows_affected,
-                                                         query_dict[DEST_DATASET],
-                                                         query_dict[DEST_TABLE]))
-        else:
-            job_results = bq_utils.query(
-                                q=query_dict[QUERY],
-                                destination_table_id=query_dict[DEST_TABLE],
-                                write_disposition=WRITE_TRUNCATE,
-                                destination_dataset_id=query_dict[DEST_DATASET],
-                                batch=True)
+        job_results = bq_utils.query(
+                            q=query_dict[QUERY],
+                            batch=True)
+        rows_affected = job_results['numDmlAffectedRows']
+        logger.debug('%s rows deleted from %s.%s' % (rows_affected,
+                                                     query_dict[DEST_DATASET],
+                                                     query_dict[DEST_TABLE]))
         query_job_id = job_results['jobReference']['jobId']
         query_job_ids.append(query_job_id)
 
