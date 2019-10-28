@@ -148,7 +148,7 @@ def clean_rdr_dataset(project_id=None, dataset_id=None):
     query_list = _gather_rdr_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning rdr_dataset")
-    clean_engine.clean_dataset(project_id, dataset_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list)
 
 
 def clean_ehr_dataset(project_id=None, dataset_id=None):
@@ -169,7 +169,7 @@ def clean_ehr_dataset(project_id=None, dataset_id=None):
     query_list = _gather_ehr_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning ehr_dataset")
-    clean_engine.clean_dataset(project_id, dataset_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list, DataStage.EHR)
 
 
 def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
@@ -190,7 +190,7 @@ def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
     query_list = _gather_unioned_ehr_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning unioned_dataset")
-    clean_engine.clean_dataset(project_id, dataset_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list)
 
 
 def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
@@ -211,7 +211,7 @@ def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
     query_list = _gather_ehr_rdr_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning ehr_rdr_dataset")
-    clean_engine.clean_dataset(project_id, dataset_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list)
 
 
 def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
@@ -232,7 +232,7 @@ def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
     query_list = _gather_ehr_rdr_de_identified_queries(project_id, dataset_id)
 
     LOGGER.info("Cleaning de-identified dataset")
-    clean_engine.clean_dataset(project_id, dataset_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list)
 
 
 def clean_all_cdr():

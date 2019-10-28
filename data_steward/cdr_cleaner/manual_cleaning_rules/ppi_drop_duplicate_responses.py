@@ -80,4 +80,4 @@ if __name__ == '__main__':
 
     clean_engine.add_console_logging(ARGS.console_log)
     query_list = get_remove_duplicate_set_of_responses_to_same_questions_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

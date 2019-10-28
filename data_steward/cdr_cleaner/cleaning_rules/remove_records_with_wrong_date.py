@@ -182,4 +182,4 @@ if __name__ == '__main__':
                                                             ARGS.dataset_id,
                                                             ARGS.year_threshold,
                                                             ARGS.observation_year_threshold)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

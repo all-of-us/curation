@@ -187,4 +187,4 @@ if __name__ == '__main__':
 
     create_unit_mapping_table(ARGS.project_id, ARGS.dataset_id)
     query_list = get_unit_normalization_query(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

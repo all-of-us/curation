@@ -5,6 +5,7 @@ import logging
 import googleapiclient
 import oauth2client
 from google.appengine.api import app_identity
+from constants.cdr_cleaner.clean_cdr import DataStage as stage
 
 import bq_utils
 import constants.bq_utils as bq_consts
@@ -34,13 +35,13 @@ def add_console_logging(add_handler):
         LOGGER.addHandler(handler)
 
 
-def clean_dataset(project=None, dataset=None, statements=None):
+def clean_dataset(project=None, statements=None, dataStage=stage.UNSPECIFIED):
     """
        Run the assigned cleaning rules.
 
        :param project:  the project name
-       :param dataset:  the dataset to clean
        :param statements:  a list of dictionary objects to run the query
+       :param dataStage:  an enum to indicate what stage of the cleaning this is
        """
     if project is None or project == '' or project.isspace():
         project = app_identity.get_application_id()
@@ -52,9 +53,7 @@ def clean_dataset(project=None, dataset=None, statements=None):
     failures = 0
     successes = 0
     for statement in statements:
-        query = statement.get(cdr_consts.QUERY, '')
-        rule_query = query.format(project=project, dataset=dataset)
-
+        rule_query = statement.get(cdr_consts.QUERY, '')
         legacy_sql = statement.get(cdr_consts.LEGACY_SQL, False)
         destination_table = statement.get(cdr_consts.DESTINATION_TABLE, None)
         retry = statement.get(cdr_consts.RETRY_COUNT, bq_consts.BQ_DEFAULT_RETRY_COUNT)
@@ -95,12 +94,12 @@ def clean_dataset(project=None, dataset=None, statements=None):
 
     if successes > 0:
         LOGGER.info("Successfully applied %d clean rules for %s.%s",
-                    successes, project, dataset)
+                    successes, project, dataStage)
     else:
         LOGGER.warning("No clean rules successfully applied to %s.%s",
-                       project, dataset)
+                       project, dataStage)
 
     if failures > 0:
-        print("Failed to apply {} clean rules for {}.{}".format(failures, project, dataset))
+        print("Failed to apply {} clean rules for {}.{}".format(failures, project, dataStage))
         LOGGER.warning("Failed to apply %d clean rules for %s.%s",
-                       failures, project, dataset)
+                       failures, project, dataStage)

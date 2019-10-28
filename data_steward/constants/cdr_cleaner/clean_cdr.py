@@ -1,3 +1,5 @@
+from enum import Enum, unique
+
 EHR = 'ehr'
 UNIONED = 'unioned'
 RDR = 'rdr'
@@ -17,3 +19,13 @@ DESTINATION_DATASET = 'destination_dataset_id'
 BATCH = 'batch'
 PROCEDURE_OCCURRENCE = 'procedure_occurrence'
 QUALIFIER_SOURCE_VALUE = 'qualifier_source_value'
+
+
+@unique
+class DataStage(Enum):
+    UNSPECIFIED = 0
+    EHR = 1
+    RDR = 2
+    UNIONED = 3
+    COMBINED = 4
+    DEID = 5
