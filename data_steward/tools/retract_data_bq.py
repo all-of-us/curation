@@ -36,52 +36,53 @@ NON_EHR_TABLES = [common.PERSON]
 TABLES_FOR_RETRACTION = set(common.PII_TABLES + common.AOU_REQUIRED) - set(NON_PID_TABLES + NON_EHR_TABLES)
 
 
-DELETE_RETRACT_DATA_SITE_QUERY = (
-    ' DELETE'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE person_id IN {pids}'
-)
+DELETE_RETRACT_DATA_SITE_QUERY = """
+DELETE
+FROM `{project}.{dataset}.{table}`
+WHERE person_id IN {pids}
+"""
 
-DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY = (
-    ' DELETE'
-    ' FROM `{project}.{dataset}.{mapping_table}`'
-    ' WHERE {table_id} IN'
-    ' (SELECT {table_id}'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE person_id IN {pids})'
-)
+DELETE_RETRACT_MAPPING_DATA_UNIONED_QUERY = """
+DELETE
+FROM `{project}.{dataset}.{mapping_table}`
+WHERE {table_id} IN
+(SELECT 
+    {table_id}
+    FROM `{project}.{dataset}.{table}`
+    WHERE person_id IN {pids})
+"""
 
-DELETE_RETRACT_DATA_UNIONED_QUERY = (
-    ' DELETE'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE person_id IN {pids}'
-)
+DELETE_RETRACT_DATA_UNIONED_QUERY = """
+DELETE
+FROM `{project}.{dataset}.{table}`
+WHERE person_id IN {pids}
+"""
 
-DELETE_RETRACT_MAPPING_DATA_COMBINED_QUERY = (
-    ' DELETE'
-    ' FROM `{project}.{dataset}.{mapping_table}`'
-    ' WHERE {table_id} IN'
-    ' (SELECT {table_id}'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE person_id IN {pids}'
-    ' AND {table_id} >= {CONSTANT_FACTOR})'
-)
+DELETE_RETRACT_MAPPING_DATA_COMBINED_QUERY = """
+DELETE
+FROM `{project}.{dataset}.{mapping_table}`
+WHERE {table_id} IN
+(SELECT {table_id}
+FROM `{project}.{dataset}.{table}`
+WHERE person_id IN {pids}
+AND {table_id} >= {CONSTANT_FACTOR})
+"""
 
-DELETE_RETRACT_DATA_COMBINED_QUERY = (
-    ' DELETE'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE person_id IN {pids}'
-    ' AND {table_id} >= {CONSTANT_FACTOR}'
-)
+DELETE_RETRACT_DATA_COMBINED_QUERY = """
+DELETE
+FROM `{project}.{dataset}.{table}`
+WHERE person_id IN {pids}
+AND {table_id} >= {CONSTANT_FACTOR}
+"""
 
-DELETE_RETRACT_DATA_FACT_RELATIONSHIP = (
-    ' DELETE'
-    ' FROM `{project}.{dataset}.{table}`'
-    ' WHERE ((domain_concept_id_1 = {PERSON_DOMAIN}'
-    ' AND fact_id_1 IN {pids})'
-    ' OR (domain_concept_id_2 = {PERSON_DOMAIN}'
-    ' AND fact_id_2 IN {pids}))'
-)
+DELETE_RETRACT_DATA_FACT_RELATIONSHIP = """
+DELETE
+FROM `{project}.{dataset}.{table}`
+WHERE ((domain_concept_id_1 = {PERSON_DOMAIN}
+AND fact_id_1 IN {pids})
+OR (domain_concept_id_2 = {PERSON_DOMAIN}
+AND fact_id_2 IN {pids}))
+"""
 
 
 def get_site_table(hpo_id, table):
