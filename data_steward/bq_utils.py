@@ -727,14 +727,16 @@ def create_dataset(
     return insert_result
 
 
-def load_table_from_csv(project_id, dataset_id, table_name):
-    fields_filename = os.path.join(resources.fields_path, table_name + '.json')
-    fields = json.load(open(fields_filename, 'r'))
+def load_table_from_csv(project_id, dataset_id, table_name, fields=None):
+    if fields is None:
+        fields_filename = os.path.join(resources.fields_path, table_name + '.json')
+        fields = json.load(open(fields_filename, 'r'))
+
     field_names = ', '.join([field['name'] for field in fields])
 
     col_exprs = []
     for field in fields:
-        if field['type'] == 'string':
+        if field['type'] == 'string' or field['type'] == 'date' or field['type'] == 'timestamp':
             col_expr = '\"{' + '{field_name}'.format(field_name=field['name']) + '}\"'
         else:
             col_expr = '{' + '{field_name}'.format(field_name=field['name']) + '}'
