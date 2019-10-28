@@ -1,14 +1,20 @@
 """
 Goals
 ------
-Program should generate a report (Excel File) that shows
+Program should generate a report (Excel file) that shows
 how data quality metrics for each HPO site change over time.
+
 Data quality metrics include:
-    1. the number of duplicates per table
-    2. number of 'start dates' that precede 'end dates'
-    3. number of records that are >30 days after a patient's death date
-    4. source table success rates
-    5. concept table success rates
+   1. the number of duplicates per table
+   2. number of 'start dates' that precede 'end dates'
+   3. number of records that are >30 days after a patient's death date
+   4. source table success rates
+   5. concept table success rates
+   6. population of the 'unit' field in the measurement table
+       - only for *selected* measurements
+   7. population of the 'route' field in the drug exposure table
+   8. proportion of expected ingredients observed
+   9. proportion of expected measurements observed
 
 ASSUMPTIONS
 -----------
@@ -19,8 +25,9 @@ directory
 file names of the .xlsx files in the current working directory.
 
 3. All sheets are saved as month_date_year.xlsx
-    - year should be four digits
-    - this name is used to determine the date
+   - month should be fully spelled (august rather than aug)
+   - year should be four digits
+   - this name is used to determine the date
 
 4. The sheet names for all of the generated reports are consistent
 
@@ -30,21 +37,21 @@ be excluded when generating initial dataframes. These aggregate
 statistics can then be generated more effectively down the line
 with an appropriate 'weighting'.
 
-6. Assumes that all of the columns from the 'source' tab of the
-analytics reports will always have the same names.
+6. Assumed certain naming conventions in the sheets
+   a. consistency in the column names in the 'source' tab
+   b. total/valid rows are logged in the 'source' tab as
+      (first word of the table type)_total_row or
+      (first word of the table type)_well_defined_row
+      ex: drug_total_row
 
-FIXME:
--------------------------------------------------------
-1. tons of naming inconsistencies; does not allow effective
-   parsing through files
 """
 
 import datetime
 import math
 import os
 import sys
-
 import pandas as pd
+import numpy as np
 
 
 def get_user_analysis_choice():
@@ -63,14 +70,21 @@ def get_user_analysis_choice():
     target_low (bool): determines whether the number displayed should
         be considered a desirable or undesirable characteristic
     """
-    analysis_type_prompt = "\nWhat kind of analysis over time report " \
-                           "would you like to generate for each site?\n\n" \
-                           "A. Duplicates\n" \
-                           "B. Amount of data following death dates\n" \
-                           "C. Amount of data with end dates preceding start dates\n" \
-                           "D. Success Rate for Source Tables\n" \
-                           "E. Success Rate for Concept Tables\n\n" \
-                           "Please specify your choice by typing the corresponding letter."
+
+    analysis_type_prompt = \
+        "\nWhat kind of analysis over time report would you like " \
+        "to generate for each site?\n\n" \
+        "A. Duplicates\n" \
+        "B. Amount of data following death dates\n" \
+        "C. Amount of data with end dates preceding start dates\n" \
+        "D. Success rate for source tables\n" \
+        "E. Success rate for concept tables\n" \
+        "F. Population of the 'unit' field in the measurement table (" \
+        "only for specified measurements)\n" \
+        "G. Population of the 'route' field in the drug exposure table\n" \
+        "H. Percentage of expected drug ingredients observed\n" \
+        "I. Percentage of expected measurements observed\n\n" \
+        "Please specify your choice by typing the corresponding letter."
 
     user_command = input(analysis_type_prompt).lower()
 
@@ -79,7 +93,11 @@ def get_user_analysis_choice():
         'b': 'data_after_death',
         'c': 'end_before_begin',
         'd': 'source',
-        'e': 'concept'}
+        'e': 'concept',
+        'f': 'unit_integration',
+        'g': 'drug_routes',
+        'h': 'drug_concept_integration',
+        'i': 'integration_measurement_concept'}
 
     while user_command not in choice_dict.keys():
         print("\nInvalid choice. Please specify a letter that corresponds "
@@ -92,7 +110,12 @@ def get_user_analysis_choice():
         'data_after_death': True,
         'end_before_begin': True,
         'source': True,
-        'concept': True}
+        'concept': True,
+        'unit_integration': True,
+        'drug_routes': True,
+        'drug_concept_integration': True,
+        'integration_measurement_concept': True
+    }
 
     # dictionary indicates if the target is to minimize or maximize number
     target_low = {
@@ -100,7 +123,12 @@ def get_user_analysis_choice():
         'data_after_death': True,
         'end_before_begin': True,
         'source': False,  # table success rates
-        'concept': False}
+        'concept': False,
+        'unit_integration': False,
+        'drug_routes': False,
+        'drug_concept_integration': False,
+        'integration_measurement_concept': False
+    }
 
     analytics_type = choice_dict[user_command]
     percent_bool = percentage_dict[analytics_type]
@@ -116,6 +144,9 @@ def load_files(user_choice, file_names):
 
     'Relevant sheet' is defined by previous user input.
 
+    This function is also designed so it skips over instances where
+    the user's input only exists in some of the defined sheets.
+
     :parameter
     user_choice (string): represents the sheet from the analysis reports
         whose metrics will be compared over time
@@ -127,23 +158,37 @@ def load_files(user_choice, file_names):
     :returns
     sheets (list): list of pandas dataframes. each dataframe contains
         info about data quality for all of the sites for a date.
+
+    NOTE: I recognize that the same 'skip sheet' protocol is implemented
+    twice but - since it was only implemented twice - I do not believe
+    it warrants its own separate function.
     """
     num_files_indexed = 0
+    cwd = os.getcwd()
     sheets = []
 
     while num_files_indexed < len(file_names):
-        try:
+        try:  # looking for the file
             file_name = file_names[num_files_indexed]
 
-            sheet = pd.read_excel(file_name, sheet_name=user_choice)
+            try:  # looking for the sheet
+                sheet = pd.read_excel(file_name, sheet_name=user_choice)
 
-            if sheet.empty:
-                print("WARNING: No {} sheet found in dataframe {}".format(
-                    user_choice, file_name))
+                if sheet.empty:
+                    print("WARNING: No data found in the {} sheet "
+                          "in dataframe {}".format(
+                           user_choice, file_name))
+                    del file_names[num_files_indexed]
+                    num_files_indexed -= 1  # skip over the date
+                else:
+                    sheets.append(sheet)
+            except Exception as ex:  # sheet not in specified excel file
+                print("WARNING: No {} sheet found in dataframe {}. "
+                      "This is a(n) {}.".format(
+                        user_choice, file_name, type(ex).__name__))
+
                 del file_names[num_files_indexed]
                 num_files_indexed -= 1  # skip over the date
-            else:
-                sheets.append(sheet)
 
             num_files_indexed += 1
 
@@ -177,25 +222,21 @@ def get_comprehensive_tables(dataframes, analytics_type):
         column labels of the Excel analytics files.
     """
 
-    # FIXME: this is a hacky way to bypass columns we are less
-    #  interested in. Could be improved. Still want to prevent
-    #  hard-coding in tables that 'should' be there.
-
-    # FIXME: We need to think about how to ensure we might only
-    #  be interested in getting tables that have the total row
-    #  count displayed on the source or concept sheets
     undocumented_cols = ['Unnamed: 0', 'src_hpo_id', 'HPO',
-                         'total', 'device_exposure']
+                         'total', 'device_exposure',
+                         'unit_well_defined_row', 'unit_total_row']
+
     rate_focused_inputs = ['source', 'concept']
+    final_tables = []
 
-    # FIXME: Need consistent way to document the rates between
-    #  different error reports; right now a 'hacky' fix because
-    #  of report naming inconsistencies
-
-    for _, sheet in enumerate(dataframes):  # for each date
-        data_info = sheet.iloc[1, :]  # just to get the columns
+    for sheet in dataframes:  # for each date
+        data_info = sheet.iloc[1, :]  # just the columns
         column_names = data_info.keys()
 
+        # NOTE: older Excel outputs had naming inconsistencies
+        # this was a quick fix
+
+        # get all of the columns; ensure the columns are only logged once
         if analytics_type in rate_focused_inputs:
             for col_label, _ in data_info.iteritems():
                 if col_label[-5:] != '_rate' and \
@@ -211,7 +252,7 @@ def get_comprehensive_tables(dataframes, analytics_type):
 
 
 def get_info(sheet, row_num, percentage, sheet_name,
-             mandatory_tables):
+             mandatory_tables, target_low):
     """
     Function is used to create a dictionary that contains
     the number of flawed records for a particular site.
@@ -231,24 +272,23 @@ def get_info(sheet, row_num, percentage, sheet_name,
     sheet_name (str): name for the sheet for use in the error
         message
 
-    analytics_type (str): the data quality metric the user wants to
-        investigate
-
     mandatory_tables (lst): contains the tables that should be
         documented for every table and at every date.
+
+        target_low (bool): determines whether the number displayed
+        should be considered a positive or negative metric
 
     :return:
     err_dictionary (dictionary): key:value pairs represent the
         column name:number that represents the quality of the data
+        for a particular HPO
 
-    NOTE: This function was modified from the e-mail generator. This
-    function, however, logs ALL of the information in the returned
-    error dictionary. This includes 0 values if the data is wholly
+    NOTE: This function includes 0 values if the data is wholly
     complete.
     """
     if row_num is not None:
-        data_info = sheet.iloc[row_num, :]  # series, row labels and values
-    else:  # row in future sheets but not current sheet
+        data_info = sheet.iloc[row_num, :]  # series, column labels and values
+    else:  # HPO in future sheets but not current sheet
         data_info = sheet.iloc[1, :]  # just to get the columns
         column_names = data_info.keys()
         null_list = [None] * len(column_names)
@@ -258,22 +298,28 @@ def get_info(sheet, row_num, percentage, sheet_name,
 
     for col_label, number in data_info.iteritems():
         if col_label in mandatory_tables:
-            if number is None or number == 'No Data':  # row does not exist
+
+            # data for table for site does not exist
+            if number is None or number == 'No Data':
                 err_dictionary[col_label] = float('NaN')
+
             else:
                 try:
                     number = float(number)
                 except ValueError:
                     pass
                 else:
-                    if number < 0:  # just in case
-                        raise ValueError("Negative number detected in sheet "
-                                         "{} for column {}".format(
-                            sheet_name, col_label))
-                    elif percentage and number > 100:
-                        raise ValueError("Percentage value > 100 detected in "
-                                         "sheet {} for column {}".format(
-                            sheet_name, col_label))
+                    # to detect potential problems in excel file generator
+                    if number < 0:
+                        raise ValueError(
+                            "Negative number detected in sheet {} for column "
+                            "{}".format(sheet_name, col_label))
+                    elif percentage and number > 100:  # just in case
+                        raise ValueError(
+                            "Percentage value > 100 detected in sheet {} for "
+                            "column {}".format(sheet_name, col_label))
+
+                    # actual info to be logged if sensible data
                     elif percentage and target_low:  # proportion w/ errors
                         err_dictionary[col_label] = round(100 - number, 1)
                     elif percentage and not target_low:  # effective
@@ -283,7 +329,8 @@ def get_info(sheet, row_num, percentage, sheet_name,
         else:
             pass  # do nothing; do not want to document the column
 
-    # adding all the tables; maintaining consistency for versatility
+    # adding all the tables for the HPO; maintaining consistency across all
+    # HPOs for consistency and versatility
     for table in mandatory_tables:
         if table not in err_dictionary.keys():
             err_dictionary[table] = float('NaN')
@@ -291,8 +338,7 @@ def get_info(sheet, row_num, percentage, sheet_name,
     return err_dictionary
 
 
-def find_hpo_row(sheet, hpo, sheet_name, selective_rows,
-                 analytics_type):
+def find_hpo_row(sheet, hpo):
     """
     Finds the row index of a particular HPO site within
     a larger sheet.
@@ -304,16 +350,6 @@ def find_hpo_row(sheet, hpo, sheet_name, selective_rows,
     hpo (string): represents the HPO site whose row in
         the particular sheet needs to be determined
 
-    sheet_name (string): name of the file from which the
-        particular sheet of user_command type was extracted
-
-    selective_rows (list): list of rows (potentially HPO sites)
-        that are in some (but not all) of the sheets used in the
-        analysis report
-
-    analytics_type (str): the data quality metric the user wants to
-        investigate
-
     :return:
     row_num (int): row number where the HPO site of question
         lies within the sheet. returns none if the row is not
@@ -322,28 +358,20 @@ def find_hpo_row(sheet, hpo, sheet_name, selective_rows,
     hpo_column_name = 'src_hpo_id'
     sheet_hpo_col = sheet[hpo_column_name]
 
-    row_num = 9999
+    row_num = 99999
 
     for idx, site_id in enumerate(sheet_hpo_col):
-
-        row_not_in_sheet = ((hpo in selective_rows) and
-                            (hpo not in sheet_hpo_col))
-
         if hpo == site_id:
             row_num = idx
-        elif row_not_in_sheet:
-            return None
 
-    if row_num == 9999:  # just in case
-        raise NameError("{} not found in the {} sheet "
-                        "from {}".format(
-            hpo, analytics_type, sheet_name))
+    if row_num == 99999:  # was never found; no data available
+        return None
 
     return row_num
 
 
-def iterate_sheets(dataframes, hpo_id_list, selective_rows,
-                   percent, analytics_type, file_names):
+def iterate_sheets(dataframes, hpo_id_list, percent,
+                   analytics_type, target_low, file_names):
     """
     Function iterates through all of the sheets and ultimately
     generates a series of dictionaries that contain all of the
@@ -358,10 +386,6 @@ def iterate_sheets(dataframes, hpo_id_list, selective_rows,
 
     hpo_id_list (list): HPO site IDs to iterate through on
         each sheet. organized alphabetically
-
-    selective_rows (list): list of rows (potentially HPO
-        sites) that are in some (but not all) of the sheets
-        used in the analysis report
 
     percent (boolean): used to determine whether or not the
         number is a simple record count (e.g. duplicates)
@@ -396,9 +420,10 @@ def iterate_sheets(dataframes, hpo_id_list, selective_rows,
     mandatory_tables (lst): contains the tables that should be
         documented for every table and at every date.
     """
-
     dates_and_info = {}  # key:value will be date:dict
 
+    # ensure all of the relevant tables from all of the sheets
+    # are logged
     mandatory_tables = get_comprehensive_tables(
         dataframes, analytics_type)
 
@@ -411,15 +436,14 @@ def iterate_sheets(dataframes, hpo_id_list, selective_rows,
 
         for hpo in hpo_id_list:  # for each HPO
             hpo_row_idx = find_hpo_row(
-                sheet, hpo, sheet_name,
-                selective_rows, analytics_type)
+                sheet, hpo)
 
-            if hpo == 'aggregate counts':  # will be added later
+            if hpo == 'aggregate counts':  # will calculate later
                 pass
             else:
                 err_dict_for_hpo = get_info(
                     sheet, hpo_row_idx, percent,
-                    sheet_name, mandatory_tables)
+                    sheet_name, mandatory_tables, target_low)
 
                 errors_for_date[hpo] = err_dict_for_hpo
 
@@ -429,29 +453,39 @@ def iterate_sheets(dataframes, hpo_id_list, selective_rows,
     return dates_and_info, mandatory_tables
 
 
-def generate_hpo_id_col(dataframes):
+def generate_hpo_id_col(file_names):
     """
-    Function is used to distinguish between row labels that
-    are in all of the data analysis outputs versus row labels
+    Function is used to distinguish between HPOs that
+    are in all of the data analysis outputs versus HPOs
     that are only in some of the data analysis outputs.
 
+    This function ensures all of the HPOs are logged
+    for all of the dates and improves consistency.
+
     :param
-    dataframes (list): list of dataframes that were loaded
-        from the analytics files in the path
+    file_names (list): list of the user-specified Excel files that are
+        in the current directory. Files are analytics reports to be
+        scanned.
 
     :return:
     hpo_id_col (list): list of the strings that should go
         into an HPO ID column. for use in generating subsequent
         dataframes.
 
-    selective_rows (list): list of the strings that are in
-        the HPO ID columns for some but not all of the sheets.
-        useful down the line when detecting an HPO's row.
+    NOTE: This function's efficiency could be improved by simply
+     iterating through all of the hpo_col_names and adding HPOs
+     to a growing list so long as the HPO is not already in the
+     list. I chose this approach, however, because the distinction
+     between 'selective' and 'intersection' used to have a purpose
+     in the script.
     """
+
+    # use concept sheet; always has all of the HPO IDs
+    dataframes = load_files('concept', file_names)
     hpo_col_name = 'src_hpo_id'
     selective_rows, total_hpo_id_columns = [], []
 
-    for _, df in enumerate(dataframes):
+    for df in dataframes:
         hpo_id_col_sheet = df[hpo_col_name].values
         total_hpo_id_columns.append(hpo_id_col_sheet)
 
@@ -466,7 +500,7 @@ def generate_hpo_id_col(dataframes):
     in_all_sheets = [row for row in in_all_sheets if isinstance(row, str)]
 
     # determining rows in some (but not all) of the dataframes
-    for _, df in enumerate(dataframes):
+    for df_num, df in enumerate(dataframes):
         hpo_id_col_sheet = df[hpo_col_name].values
         selective = set(in_all_sheets) ^ set(hpo_id_col_sheet)
         for row in selective:
@@ -480,7 +514,7 @@ def generate_hpo_id_col(dataframes):
     hpo_id_col = [x for x in hpo_id_col if x not in bad_rows]
     hpo_id_col = sorted(hpo_id_col)
 
-    return hpo_id_col, selective_rows
+    return hpo_id_col
 
 
 def sort_names_and_tables(site_and_date_info, mandatory_tables):
@@ -505,8 +539,9 @@ def sort_names_and_tables(site_and_date_info, mandatory_tables):
         alphabetical order (with the addition of 'aggregate
         info')
 
-    sorted_tables (lits): names of all the table types
-        in alphabetical order
+    mandatory_tables (lst): contains the tables that should be
+        documented for every table and at every date. This
+        information is now sorted.
     """
     ordered_dates_dt = []
 
@@ -520,7 +555,8 @@ def sort_names_and_tables(site_and_date_info, mandatory_tables):
     ordered_dates_str = [x.strftime('%B_%d_%Y').lower() for x
                          in ordered_dates_dt]
 
-    # earlier code ensured all sheets have same rows - can just take first
+    # earlier code ensured all sheets from diff dates
+    # have same rows - can just take first
     all_rows = site_and_date_info[ordered_dates_str[0]]
     sorted_names = sorted(all_rows.keys())
     sorted_names.append('aggregate_info')
@@ -564,7 +600,8 @@ def add_aggregate_info(site_and_date_info, percentage, sorted_names):
     """
     for date in site_and_date_info.keys():
         date_report = site_and_date_info[date]
-        date_metric = 0
+        date_metric, num_iterated = 0, 0
+
         for site in sorted_names:
             table_metrics = date_report[site]
             date_metric, num_iterated = 0, 0
@@ -575,7 +612,11 @@ def add_aggregate_info(site_and_date_info, percentage, sorted_names):
                     date_metric += stat
                     num_iterated += 1
 
-        if percentage and num_iterated > 0:  # not really used
+        # NOTE: 'AGGREGATE INFO' SHOULD NOT BE USED FOR
+        # THE PERCENTAGE METRIC. THIS IS BECAUSE THE
+        # FIRST 'AGGREGATE INFO' DOES NOT WEIGHT SITES
+        # BY THEIR RELATIVE CONTRIBUTIONS (BY # OF ROWS).
+        if percentage and num_iterated > 0:
             date_metric = date_metric / num_iterated
         elif percentage and num_iterated == 0:
             date_metric = float('NaN')
@@ -585,8 +626,235 @@ def add_aggregate_info(site_and_date_info, percentage, sorted_names):
     return site_and_date_info
 
 
+def get_row_totals(dataframes, contribution_type):
+    """
+    Function is used to determine the number of a particular
+    'row' type for each site at a particular date. For example,
+    this function can show the total number of rows for site
+    X on date Y.
+
+    The two types of 'row types' available are:
+        a. total number of rows
+        b. number of 'valid / well defined' rows
+
+    This function is particularly useful when 'weighting' sites
+    for use in the aggregate statistic.
+
+    :param
+    dataframes (lst): list of pandas dataframes loaded from the Excel
+        files generated from the analysis reports
+
+    contribution_type (str): string representing the types of columns to
+        look at for the dataframe. either can represent the 'total' row
+        metrics or the 'error' metrics for a particular column.
+
+    :return:
+    valid_cols (lst): list of the columns that are consistent across all
+        of the sheets and relevant to the HPO weighting report needed
+    """
+    valid_cols = []
+
+    for df in dataframes:
+        for column in df:
+
+            # looking at the 'total' number of rows for sites
+            if contribution_type == 'total' and len(column) > 9 and \
+                    column[-9:] == 'total_row':
+                valid_cols.append(column)
+
+            # looking at the 'valid' number of rows for sites
+            elif contribution_type == 'valid' and len(column) > 16 and \
+                    column[-16:] == 'well_defined_row':
+                valid_cols.append(column)
+
+    valid_cols = list(dict.fromkeys(valid_cols))
+    valid_cols.sort()
+
+    return valid_cols
+
+
+def load_total_row_sheet(file_names, sheet_name):
+    """
+    Function loads the sheets that contain information regarding the
+    total number of rows for each site for each table type. This loads
+    the corresponding sheets for all of the analytics reports in the
+    current directory.
+
+    :param
+    file_names (list): list of the user-specified Excel files that are
+        in the current directory. Files are analytics reports to be
+        scanned.
+
+    sheet_name (str): label for the sheet with the information
+        containing the number of rows
+
+    :return:
+    dataframes (list): list of Pandas dataframes that contain the
+        information regarding the total number of rows
+
+    hpo_id_col (list): list of the strings that should go
+        into an HPO ID column. for use in generating subsequent
+        dataframes.
+    """
+
+    num_files = len(file_names)
+    dataframes = []
+
+    for file_num in range(num_files):
+        sheet = pd.read_excel(file_names[file_num], sheet_name)
+        dataframes.append(sheet)
+
+    hpo_id_col = generate_hpo_id_col(file_names)
+
+    return dataframes, hpo_id_col
+
+
+def generate_hpo_contribution(file_names, contribution_type):
+    """
+    Function is used to determine the 'contribution' for
+    each of the HPO sites. This is useful in determining
+    the 'weight' each site should be given when generating
+    aggregate statistics with respect to data quality.
+
+    :param
+    file_names (list): list of the user-specified Excel files that are
+        in the current directory. Files are analytics reports to be
+        scanned.
+
+    contribution_type (str): string representing the types of columns to
+        look at for the dataframe. either can represent the 'total' row
+        metrics or the 'success' metrics for a particular column.
+
+    :return:
+    hpo_contributions_by_date (dictionary): dictionary with the following
+    key:value pairings
+        a. date:following dictionary
+        b. table type: list with the relative contribution of each HPO
+            with respect to the number of rows it contributes for the
+            particular table type. the sequence of the list follows
+            the alphabetical order of all the HPO sites.
+
+    valid_cols (lst): list of the table types to be iterated over
+
+    NOTE: rows_for_table may be better implemented as a dictionary.
+     This may be better than the current 'list in alphabetical order'
+     method in terms of code legibility. I chose the alphabetical
+     listing approach, however, because a list is more
+     computationally efficient for iterations. The list was
+     designed to contain all (and only) the HPOs that are relevant
+     to the particular Excel file being created.
+    """
+    hpo_contributions_by_date = {}
+    row_sheet_name = 'concept'  # should always have 'total rows' info
+
+    dataframes, hpo_id_col = load_total_row_sheet(
+        file_names, row_sheet_name)
+
+    valid_cols = get_row_totals(dataframes, contribution_type)
+
+    for number, sheet in enumerate(dataframes):  # for each date
+        num_chars_to_chop = 5  # get rid of .xlsx
+        date = file_names[number][:-num_chars_to_chop]
+        total_per_sheet = {}
+
+        for table_type in valid_cols:  # for each table
+            rows_for_table = []
+
+            for hpo in hpo_id_col:  # follows alphabetical order
+                hpo_row_idx = find_hpo_row(sheet, hpo)
+
+                if hpo == 'aggregate counts':  # will be added later
+                    pass
+                elif table_type not in sheet:
+                    pass
+                elif hpo_row_idx is None:  # HPO not in the sheet
+                    rows_for_table.append(float('NaN'))
+                else:
+                    rows_for_hpo = sheet[table_type][hpo_row_idx]
+
+                    try:  # in case number of rows is logged as a str
+                        rows_for_hpo = float(rows_for_hpo)
+                    except ValueError:  # already a float
+                        pass
+
+                    if isinstance(rows_for_hpo, (int, float)) and \
+                            not math.isnan(rows_for_hpo):
+                        rows_for_table.append(rows_for_hpo)
+                    else:
+                        rows_for_table.append(float('NaN'))
+
+            # error information for the table type
+            total_per_sheet[table_type] = rows_for_table
+
+        # error information for all of the dates
+        hpo_contributions_by_date[date] = total_per_sheet
+
+    return hpo_contributions_by_date, valid_cols
+
+
+def determine_means_to_calculate_weighted_avg(
+        analytics_type, table, new_col_info):
+    """
+    Function is used to get the 'standard' table name
+    for the table to be investigated. The 'standard'
+    name should match a column in the 'concept'
+    sheet of the analytics report so it can be
+    used to get the total number of rows.
+
+    :param
+    analytics_type (str): the data quality metric the
+        user wants to investigate
+
+    table (str): table whose weighted average for a particular
+        date is being determined
+
+    new_col_info (list): shows the proportion of 'well defined' HPO records
+        by HPO site. organized alphabetically.
+
+
+    :return:
+    table_tot (str): name that will be used to get the column
+        that contains the number of rows per site for the
+        table in question
+    """
+    first_underscore = True
+    underscore_idx = 0
+
+    # need to specify the table to use as a reference
+    if analytics_type in ['unit_integration']:
+        table = 'measurement'
+    elif analytics_type in ['drug_routes']:
+        if table == 'drugs_overall_success_rate':
+            table = 'drug_expousure'
+        # cannot calculate an aggregate statistic based on a specific
+        # drug class; we do not know how many of a particular drug
+        # class each site contributes
+        else:
+            return None
+
+    # just a simple average; all sites contribute equally
+    # since 'integration' only means having one instance
+    elif analytics_type in ['drug_concept_integration',
+                            'integration_measurement_concept']:
+        return np.nanmean(new_col_info)
+
+    # ASSUMPTION: table naming convention (see #6 in the header)
+    for idx, char in enumerate(table):
+        if first_underscore and char == '_':
+            underscore_idx = idx
+            first_underscore = False
+
+    if not first_underscore:  # underscore in the table name
+        table = table[0:underscore_idx]
+
+    table_tot = table + "_total_row"
+
+    return table_tot
+
+
 def generate_weighted_average_table_sheet(
-        file_names, date, table, new_col_info):
+        file_names, date, table, new_col_info,
+        analytics_type):
     """
     Function is used to generate a weighted average to indicate the
     'completeness' of a particular table type across all sites.
@@ -598,7 +866,6 @@ def generate_weighted_average_table_sheet(
     This is to make the final value of the column (a weighted average).
 
     :param
-
     file_names (list): list of the user-specified Excel files that are
         in the current directory. Files are analytics reports to be
         scanned.
@@ -608,8 +875,11 @@ def generate_weighted_average_table_sheet(
     table (str): table whose weighted average for a particular date is
         being determined
 
-    new_col_info (list): shows the proportion of 'poor' records per HPO
-        site
+    new_col_info (list): shows the proportion of 'well defined' HPO records
+        by HPO site. organized alphabetically.
+
+    analytics_type (str): the data quality metric the user wants to
+        investigate
 
     :return:
     total_quality (float): indicates the overall proportion of well
@@ -617,43 +887,49 @@ def generate_weighted_average_table_sheet(
 
     Function returns None object when it cannot calculate a weighted
         average
+
+    NOTES:
+    -----
+    Since you are using the rounded 'success rate' to calculate the number
+    of 'successful' rows, the final aggregate success rate will be
+    slightly off from the 'true' value. This form of calculation, however,
+    should not greatly disturb the final values and also prevents us from
+    needing another function to get the 'successful' rows column from
+    the sheet.
     """
+    # getting the number of rows per site for the table type
+    table_tot = determine_means_to_calculate_weighted_avg(
+        analytics_type, table, new_col_info)
+
+    if table_tot is None:
+        return None
+    elif isinstance(table_tot, float):  # mean was returned; the aggregate info
+        return round(table_tot, 1)
 
     hpo_total_rows_by_date, valid_cols_tot = generate_hpo_contribution(
         file_names, 'total')
-
-    first_underscore = True
-    underscore_idx = 0
-
-    for idx, char in enumerate(table):
-        if first_underscore and char == '_':
-            underscore_idx = idx
-            first_underscore = False
-
-    # NOTE: the analysis script needs to output to source with a consistent
-    # naming convention with respect to the table types
-    if not first_underscore:  # no underscore in the table name
-        table = table[0:underscore_idx]
-
-    table_tot = table + "_total_row"
 
     if table_tot in valid_cols_tot:
         site_totals = hpo_total_rows_by_date[date][table_tot]
 
         total_table_rows_across_all_sites = 0
-        total_poor_rows_across_all_sites = 0
+        total_succ_rows_across_all_sites = 0
 
         # can only count actual values
-        for site_rows, site_err_rate in zip(site_totals, new_col_info):
-            if not math.isnan(site_rows) and not math.isnan(site_err_rate):
+        for site_rows, site_succ_rate in zip(site_totals, new_col_info):
+
+            if not math.isnan(site_rows):
                 total_table_rows_across_all_sites += site_rows
-                site_err_rate = site_err_rate / 100  # logged as a percent
-                site_poor_rows = site_err_rate * site_rows
-                total_poor_rows_across_all_sites += site_poor_rows
+
+            if not math.isnan(site_succ_rate) and not math.isnan(site_rows):
+                site_succ_rate = site_succ_rate / 100  # logged as a percent
+                site_succ_rows = site_succ_rate * site_rows
+                total_succ_rows_across_all_sites += site_succ_rows
 
         if total_table_rows_across_all_sites > 0:
-            total_quality = 100 * round(total_poor_rows_across_all_sites /
+            total_quality = 100 * round(total_succ_rows_across_all_sites /
                                         total_table_rows_across_all_sites, 3)
+
         else:  # table only started to appear in later sheets
             return float('NaN')
 
@@ -662,19 +938,91 @@ def generate_weighted_average_table_sheet(
         return None
 
 
+def generate_column_for_table_df(
+        site_and_date_info, date, sorted_names, table,
+        percentage, file_names, analytics_type):
+    """
+    Function is used to generate a column for each dataframe
+    in the case where
+        a. the rows are the HPOs
+        b. the columns are the dates
+        c. the sheets are the different table types
+
+    :param
+    site_and_date_info (dict): dictionary with key:value
+        of date:additional dictionaries that contain metrics
+        for each HPO's data quality by type
+
+    date (str): date to investigate for populating the column
+
+    sorted_names (lst): list of the hpo site names sorted
+        alphabetically
+
+    table (str): table (e.g. drug exposure) whose data quality
+        for all of the sites is being investigated
+
+    percentage (boolean): used to determine whether or not the
+        number is a simple record count (e.g. duplicates)
+        versus the percentage of records (e.g. the success rate
+        for each of the tables)
+
+    file_names (list): list of the user-specified Excel files that are
+        in the current directory. Files are analytics reports to be
+        scanned.
+
+    analytics_type (str): the data quality metric the user wants to
+        investigate
+
+    :return:
+    new_col_info (lst): list containing the data quality for each
+        of the HPOs. Each index represents the data quality for a
+        particular HPO. All of the values are with respect to the
+        same table.
+    """
+    new_col_info = []
+    hpo_site_info = site_and_date_info[date]
+
+    for site in sorted_names:  # add the rows for the column
+        if site != 'aggregate_info':
+            hpo_table_info = hpo_site_info[site][table]
+
+            if not math.isnan(hpo_table_info):
+                new_col_info.append(hpo_table_info)
+            else:
+                new_col_info.append(float('NaN'))
+
+    if not percentage:  # total; add a sum of the aforementioned values
+        total = 0
+
+        for site_val in new_col_info:
+            if not math.isnan(site_val):
+                total += site_val
+
+        new_col_info.append(total)  # adding aggregate
+    else:
+
+        # need to weight sites' relative contributions when
+        # calculating an aggregate 'end' value
+        weighted_avg = generate_weighted_average_table_sheet(
+            file_names, date, table, new_col_info, analytics_type)
+
+        if weighted_avg is not None:  # successful calculation
+            new_col_info.append(weighted_avg)
+        else:
+            new_col_info.append("N/A")
+
+    return new_col_info
+
+
 def generate_table_dfs(sorted_names, sorted_tables,
                        ordered_dates_str, site_and_date_info,
-                       percentage, file_names):
+                       percentage, file_names, analytics_type):
     """
     Function generates a unique dataframe containing data quality
     metrics. Each dataframe should match to the metrics for a
     particular table type.
 
     The ROWS of each dataframe should be each HPO site.
-
-    NOTE: This function INTENTIONALLY excludes aggregate
-    information generation. This is so it can be generated
-    more efficiently down the line.
 
     :param
     sorted_names (lst): list of the hpo site names sorted
@@ -700,6 +1048,9 @@ def generate_table_dfs(sorted_names, sorted_tables,
         in the current directory. Files are analytics reports to be
         scanned.
 
+    analytics_type (str): the data quality metric the user wants to
+        investigate
+
     :return:
     df_dictionary_by_table (dict): dictionary with key:value
         of table type: pandas df with the format described above
@@ -708,6 +1059,7 @@ def generate_table_dfs(sorted_names, sorted_tables,
     total_dfs = []
     num_tables = len(sorted_tables)
 
+    # instantiate the HPO column in each of the sheets
     for _ in range(num_tables):
         new_df = pd.DataFrame({'hpo_ids': sorted_names})
         total_dfs.append(new_df)
@@ -717,213 +1069,230 @@ def generate_table_dfs(sorted_names, sorted_tables,
         df_in_question = total_dfs[new_sheet_num]
 
         for date in ordered_dates_str:  # generate the columns
-            new_col_info = []
-            hpo_site_info = site_and_date_info[date]
+            new_col_info = generate_column_for_table_df
 
-            for site in sorted_names:  # add the rows for the column
-                if site != 'aggregate_info':
-                    hpo_table_info = hpo_site_info[site][table]
-
-                    if not math.isnan(hpo_table_info):
-                        new_col_info.append(hpo_table_info)
-                    else:
-                        new_col_info.append(float('NaN'))
-
-            if not percentage:
-                total = 0
-
-                for site_val in new_col_info:
-                    if not math.isnan(site_val):
-                        total += site_val
-
-                new_col_info.append(total)  # adding aggregate
-            else:
-                # FIXME: There is no way to actually create a weighted
-                #  average with some of the tables whose row counts
-                #  do not exist.
-
-                weighted_avg = generate_weighted_average_table_sheet(
-                    file_names, date, table, new_col_info)
-
-                if weighted_avg is not None:  # successful calculation
-                    new_col_info.append(weighted_avg)
-                else:
-                    new_col_info.append("N/A")
-
-            df_in_question[date] = new_col_info
+            # new col info are the metrics from all of the sites in
+            # alphabetical order followed by an 'aggregate' value.
+            df_in_question[date] = new_col_info(
+                site_and_date_info, date, sorted_names, table,
+                percentage, file_names, analytics_type)
 
     df_dictionary_by_table = dict(zip(sorted_tables, total_dfs))
     return df_dictionary_by_table
 
 
-def load_total_row_sheet(file_names, sheet_name):
+"""
+This part of the script deals with making sheets where the
+   a. SITES are SHEETS
+   b. TABLES are ROWS
+"""
+
+
+def standardize_column_types(sorted_tables, valid_cols_tot):
     """
-    Function loads the sheets that contain information regarding the
-    total number of rows for each site for each table type. This loads
-    the corresponding sheets for all of the analytics reports in the
-    current directory.
+    Function is used to ensure that the 'valid_cols_tot'
+    list ONLY contains relevant table types. This means
+    that there are no table types that cannot be found
+    in the sheet that contains the metric being investigated.
 
     :param
+    sorted_tables (lst): list of the different table types
+        sorted alphabetically. These are the tables that
+        are found in the sheet of interest.
+
+    valid_cols_tot (lst): list of the table types that can
+        be iterated. This includes columns that exist in
+        the 'source' sheet (and thus have a total row
+        count) but may not exist in other sheets (and
+        thus need to be removed for iteration)
+
+    :return:
+    new_valid_cols (lst): list of the table types that
+        should be used for the iteration. This only
+        includes tables that are relevant to the
+        sheet in question.
+    """
+    sorted_tables_before_udscr = []
+    new_valid_cols = []
+
+    # for comparison down the line
+    for idx, table_type in enumerate(sorted_tables):
+        under_encountered = False
+        end_idx = 0
+
+        for c_idx, char in enumerate(table_type):
+            if char == '_' and not under_encountered:
+                end_idx = c_idx
+                under_encountered = True
+
+        table_type = table_type[0:end_idx]
+        sorted_tables_before_udscr.append(table_type)
+
+    # ensure we are only looking for columns that appear in the sheet
+    for idx, column_type in enumerate(valid_cols_tot):
+        under_encountered = False
+        end_idx = 0
+
+        for c_idx, char in enumerate(column_type):
+            if char == '_' and not under_encountered:
+                end_idx = c_idx
+                under_encountered = True
+
+        column_type_trunc = column_type[0:end_idx]
+
+        #  ensures that the the table is both
+        #       a. in the 'source' sheet (and thus has
+        #          'total_row' information available)
+        #       b. in the sheet that is being investigated
+        if column_type_trunc in sorted_tables_before_udscr:
+            new_valid_cols.append(column_type)
+
+    return new_valid_cols
+
+
+def determine_dq_for_hpo_on_date(
+        site_and_date_info, file_names, sorted_names,
+        sorted_tables, date, site):
+    """
+    This function is used to determine the aggregate 'percent'
+    metric for a site's data quality on a particular date.
+
+    This is calculated by giving more weight to categories
+    that have more logged rows.
+
+    :param
+    site_and_date_info (dict): dictionary with key:value
+        of date:additional dictionaries that contain metrics
+        for each HPO's data quality by type
+
     file_names (list): list of the user-specified Excel files that are
         in the current directory. Files are analytics reports to be
         scanned.
 
-    sheet_name (str): label for the sheet with the information
-        containing the number of rows
+    sorted_names (lst): list of the hpo site names sorted
+        alphabetically
+
+    sorted_tables (lst): list of the different table types
+        sorted alphabetically
+
+    date (string): the column (date) for which the aggregate statistic
+        is being measured. date of the analysis report.
+
+    site (string): the HPO site whose aggregate statistic is being
+        measured
 
     :return:
-    dataframes (list): list of Pandas dataframes that contain the
-        information regarding the total number of rows
-
-    hpo_id_col (list): list of the strings that should go
-        into an HPO ID column. for use in generating subsequent
-        dataframes.
-
-    selective_rows (list): list of the strings that are in
-        the HPO ID columns for some but not all of the sheets
+    tot_err_rate (float): shows the total proportion of a particular
+        metric for a particular site on a particular date. this is
+        the 'weighted' metric.
     """
+    hpo_total_rows_by_date, valid_cols_tot = generate_hpo_contribution(
+        file_names, 'total')
 
-    num_files = len(file_names)
-    dataframes = []
+    # tables that have 'total_row' and data quality metrics available
+    valid_cols_tot = standardize_column_types(sorted_tables, valid_cols_tot)
 
-    for file_num in range(num_files):
-        sheet = pd.read_excel(file_names[file_num], sheet_name)
-        dataframes.append(sheet)
+    incidence_for_site = site_and_date_info[date]  # data quality
 
-    hpo_id_col, selective_rows = generate_hpo_id_col(dataframes)
+    tot_rows_for_date, tot_errors_for_date = 0, 0
 
-    return dataframes, hpo_id_col, selective_rows
+    # iterated first b/c rows per site parallels alphabetical site names
+    for table, table_row_total in zip(sorted_tables[:-1], valid_cols_tot):
+        total_rows_per_site = hpo_total_rows_by_date[date][table_row_total]
+
+        for site_name, site_rows in zip(sorted_names, total_rows_per_site):
+
+            # found the site in question
+            if site == site_name and not math.isnan(site_rows):
+                site_err_rate = incidence_for_site[site][table]
+                if not math.isnan(site_rows) and not math.isnan(site_err_rate):
+                    tot_rows_for_date += site_rows
+                    site_err_rate = site_err_rate / 100
+
+                    tot_table_errs_for_date = site_err_rate * site_rows
+                    tot_errors_for_date += tot_table_errs_for_date
+
+    if tot_rows_for_date > 0:  # calculated across all of the tables
+        total_err_rate = tot_errors_for_date / tot_rows_for_date * 100
+        total_err_rate = round(total_err_rate, 2)
+    else:  # new site; no rows for first date(s)
+        total_err_rate = "n/a"
+
+    return total_err_rate
 
 
-def get_valid_columns(dataframes, contribution_type, row_sheet_name):
+def generate_column_for_hpo_df(
+        site_and_date_info, date, site, tables_only,
+        percentage, file_names, sorted_names,
+        sorted_tables):
     """
-    Function is used to determine the columns to be investigated in
-    across all of the site report dataframes. The columns should all
-    be the same in the 'source' sheet (otherwise an error is thrown).
-
-    The columns of interest are those that can help elucidate an
-    HPO site's relative contribution (total rows, well defined rows,
-    etc.)
+    Function is used to generate a column for each dataframe
+    in the case where
+        a. the rows are the table types
+        b. the columns are the dates
+        c. the sheets are the HPOs (and the aggregate statistic)
 
     :param
-    dataframes (lst): list of pandas dataframes loaded from the Excel
-        files generated from the analysis reports
+    site_and_date_info (dict): dictionary with key:value
+        of date:additional dictionaries that contain metrics
+        for each HPO's data quality by type
 
-    contribution_type (str): string representing the types of columns to
-        look at for the dataframe. either can represent the 'total' row
-        metrics or the 'error' metrics for a particular column.
+    date (string): the date used to populate the data in
+        the column
 
-    row_sheet_name (str): sheet name within the analytics files that
-        show the total number of rows and the number of well defined
-        rows
+    site (string): the site whose dataframe is being
+        generated and will eventually output to an
+        Excel sheet
 
-    :return:
-    valid_cols (lst): list of the columns that are consistent across all
-        of the sheets and relevant to the HPO weighting report needed
-    """
-    valid_cols = []
+    tables_only (lst): list of the different table types
+        sorted alphabetically; excludes 'total' table
+        type
 
-    # find the columns you want to investigate
-    for df in dataframes:
-        for column in df:
-            if contribution_type == 'total' and len(column) > 9 and \
-                    column[-9:] == 'total_row':
-                valid_cols.append(column)
-            elif contribution_type == 'valid' and len(column) > 16 and \
-                    column[-16:] == 'well_defined_row':
-                valid_cols.append(column)
+    percentage (boolean): used to determine whether or not the
+        number is a 'flawed' record count (e.g. duplicates)
+        versus the percentage of 'acceptable' records
 
-    valid_cols = list(dict.fromkeys(valid_cols))
-    valid_cols.sort()
-
-    return valid_cols
-
-
-def generate_hpo_contribution(file_names, contribution_type):
-    """
-    Function is used to determine the 'contribution' for
-    each of the HPO sites. This is useful in determining
-    the 'weight' each site should be given when generating
-    aggregate statistics with respect to data quality.
-
-    :param
     file_names (list): list of the user-specified Excel files that are
         in the current directory. Files are analytics reports to be
         scanned.
 
-    contribution_type (str): string representing the types of columns to
-        look at for the dataframe. either can represent the 'total' row
-        metrics or the 'error' metrics for a particular column.
+    sorted_names (lst): list of the hpo site names sorted
+        alphabetically
 
-    :return:
-    hpo_contributions_by_date (dictionary): dictionary with the following
-    key:value pairings
-        a. date:following dictionary
-        b. table type: list with the relative contribution of each HPO
-            with respect to the number of rows it contributes for the
-            particular table type. the sequence of the list follows
-            the alphabetical order of all the HPO sites.
+    sorted_tables (lst): list of the different table types
+        sorted alphabetically
 
-    valid_cols (lst): list of the table types to be iterated over
+    :return
+    new_col_info (lst): list containing the data quality for each
+        of the table types/classes. Each index represents the data
+        quality for a particular table/class. All of the values
+        are with respect to the same HPO.
     """
-    hpo_contributions_by_date = {}  # key:value will be date:dict
-    row_sheet_name = 'concept'
+    tot_errs_date = 0
+    new_col_info = []
+    site_info = site_and_date_info[date][site]
 
-    dataframes, hpo_id_col, selective_rows = load_total_row_sheet(
-        file_names, row_sheet_name)
+    for table in tables_only:  # populating each row in the col
+        new_col_info.append(site_info[table])
+        tot_errs_date += site_info[table]
 
-    valid_cols = get_valid_columns(dataframes, contribution_type,
-                                   row_sheet_name)
+    # creating the 'aggregate' statistic for the bottom of the col
+    if not percentage:
+        new_col_info.append(tot_errs_date)
+    else:  # need to weight the overall DQ by number of rows by table
+        weighted_errs = determine_dq_for_hpo_on_date(
+            site_and_date_info, file_names, sorted_names,
+            sorted_tables, date, site)
 
-    for number, sheet in enumerate(dataframes):  # for each date
-        num_chars_to_chop = 5  # get rid of .xlsx
-        date = file_names[number][:-num_chars_to_chop]
-        total_per_sheet = {}
+        new_col_info.append(weighted_errs)
 
-        for _, table_type in enumerate(valid_cols):  # for each table
-            rows_for_table = []
-
-            for hpo in hpo_id_col:  # follows alphabetical order
-                hpo_row_idx = find_hpo_row(sheet, hpo, date, selective_rows,
-                                           row_sheet_name)
-
-                if hpo == 'aggregate counts':  # will be added later
-                    pass
-                elif table_type not in sheet:
-                    pass
-                elif hpo_row_idx is None:
-                    rows_for_table.append(float('NaN'))
-                else:
-                    rows_for_hpo = sheet[table_type][hpo_row_idx]
-
-                    try:  # later sheets put in the number of rows as a str
-                        rows_for_hpo = float(rows_for_hpo)
-                    except ValueError:
-                        pass
-
-                    if isinstance(rows_for_hpo, (int, float)) and \
-                            not math.isnan(rows_for_hpo):
-                        rows_for_table.append(rows_for_hpo)
-                    else:
-                        rows_for_table.append(float('NaN'))
-
-            # error information for the table type
-            total_per_sheet[table_type] = rows_for_table
-
-        # error information for all of the dates
-        hpo_contributions_by_date[date] = total_per_sheet
-
-    return hpo_contributions_by_date, valid_cols
-
-
-# This part of the script deals with making sheets where the
-#     a. SITES are SHEETS
-#     b. TABLES are ROWS
+    return new_col_info
 
 
 def generate_site_dfs(sorted_names, sorted_tables,
                       ordered_dates_str, site_and_date_info,
-                      percentage, file_names, analytics_type):
+                      percentage, file_names, analytics_type,
+                      dataframes):
     """
     Function generates a unique dataframe for each site
     containing data quality metrics. The dictionary has
@@ -960,6 +1329,9 @@ def generate_site_dfs(sorted_names, sorted_tables,
     analytics_type (str): the data quality metric the user wants to
         investigate
 
+    dataframes (list): list of pandas dataframes. each dataframe contains
+        info about data quality for all of the sites for a date.
+
     :return:
     df_dictionary_by_site (dict): dictionary with key:value
         of table type: pandas df with the format described above
@@ -970,7 +1342,7 @@ def generate_site_dfs(sorted_names, sorted_tables,
     # ignoring 'total' and 'aggregate info'
     tables_only, hpo_names_only = sorted_tables[:-1], sorted_names[:-1]
 
-    # df generation for each HPO and 'total'
+    # df generation for each HPO and 'aggregate info'
     for _ in range(len(hpo_names_only)):
         new_df = pd.DataFrame({'table_type': sorted_tables})
         total_dfs.append(new_df)
@@ -978,41 +1350,27 @@ def generate_site_dfs(sorted_names, sorted_tables,
     for new_sheet_num, site in enumerate(hpo_names_only):
         df_in_question = total_dfs[new_sheet_num]
 
-        for date in ordered_dates_str:
-            tot_errs_date = 0
-            new_col_info = []
-            site_info = site_and_date_info[date][site]
+        for date in ordered_dates_str:  # populating each column
+            # includes aggregate statistic
+            new_col_info = generate_column_for_hpo_df(
+                site_and_date_info, date, site, tables_only,
+                percentage, file_names, sorted_names,
+                sorted_tables)
 
-            for table in tables_only:  # populating the row
-                new_col_info.append(site_info[table])
-                tot_errs_date += site_info[table]
-
-            # creating the 'aggregate' statistic
-            if not percentage:
-                new_col_info.append(tot_errs_date)
-            else:
-                weighted_errs = determine_overall_percent_of_an_hpo(
-                    site_and_date_info, file_names, sorted_names,
-                    sorted_tables, date, site)
-
-                new_col_info.append(weighted_errs)
-
-            df_in_question[date] = new_col_info
+            df_in_question[date] = new_col_info  # adding the col
 
     # make the aggregate sheet
     aggregate_dfs = generate_aggregate_sheets(
         file_names, tables_only, site_and_date_info,
         ordered_dates_str, percentage, analytics_type,
-        sorted_names)
+        sorted_names, dataframes)
 
     total_dfs.extend(aggregate_dfs)
 
-    if len(aggregate_dfs) == 3:
-        sorted_names.extend(['poorly_defined_rows_total',
-                             'total_rows'])
+    if len(aggregate_dfs) == 3:  # when hpo_sheets used
+        sorted_names.extend(['poorly_defined_rows_total', 'total_rows'])
 
     df_dictionary_by_site = dict(zip(sorted_names, total_dfs))
-
     return df_dictionary_by_site
 
 
@@ -1027,7 +1385,7 @@ def generate_nonpercent_aggregate_col(sorted_tables, site_and_date_info,
     outputted Excel sheet.
 
     This ONLY adds aggregate info for values that should NOW be
-    weighted.
+    weighted. Example would be the number of duplicates.
 
     :param
     sorted_tables (lst): list of the different table types
@@ -1050,6 +1408,7 @@ def generate_nonpercent_aggregate_col(sorted_tables, site_and_date_info,
 
     info_for_date = site_and_date_info[date]
 
+    #  do not take the 'aggregate info' table
     for table in sorted_tables[:-1]:
         total, sites_and_dates_iterated = 0, 0
 
@@ -1068,16 +1427,219 @@ def generate_nonpercent_aggregate_col(sorted_tables, site_and_date_info,
     return aggregate_metrics_col
 
 
-def generate_aggregate_data_completeness_sheet(
+def calculate_row_counts_by_table(
+        hpo_total_rows_by_date, hpo_errors_by_date,
+        date, table_tot, table_valid, total_rows,
+        total_by_table, total_errs, errs_by_table):
+    """
+    Function is used to calculate the row counts (the number of
+    errors, the total number of rows) for a particular table
+    across all of the HPO sites for a particular date. This
+    function then adds this 'total' metric to a list so it
+    can be reflected in a data quality column.
+
+    :param
+    hpo_total_rows_by_date (dictionary): dictionary with the following
+    key:value pairings
+        a. date:following dictionary
+        b. table type: list with the total number of rows for each
+            HPO. the sequence of the list follows the alphabetical
+            order of all the HPO sites.
+
+    hpo_errors_by_date (dictionary): dictionary with the following
+    key:value pairings
+        a. date:following dictionary
+        b. table type: list with the total number of errors for each
+            HPO. the sequence of the list follows the alphabetical
+            order of all the HPO sites.
+
+    date (string): date used to index into the dictionaries above
+
+    table_tot (string): name of the table whose row counts are being
+        investigated (total_rows)
+
+    table_valid (string) name of the table whose row counts are
+        being investigated (well_defined_rows)
+
+    total_rows (int): total number of rows across all sites for
+        a date; growing
+
+    total_by_table (list): list of the total number of row counts
+        across all sites. sequence of the list parallels the
+        alphabetical order of the tables.
+
+    total_errs (int): total number of errors across all sites
+        for a particular date; growing
+
+    errs_by_table (list): list of the total number of
+        poorly defined row counts across all sites.
+        sequence of the list parallels the alphabetical
+        order of the tables.
+
+    :return:
+    errs_by_table (list): list given to the function
+        with an additional 'sum' metric added to the end
+
+    total_by_table (list): list given to the function with an
+        additional 'sum' metric added to the end
+
+    total_errs (int): number of errors across all sites for
+        a particular date; now has the errors for the table
+        in question logged
+
+    total_rows (int): number of rows across all sites for
+        a particular date; now has the row number for the
+        table in question logged
+    """
+    # these are lists, each idx represents a site
+    site_totals = hpo_total_rows_by_date[date][table_tot]
+    site_valids = hpo_errors_by_date[date][table_valid]
+
+    site_totals = [x if isinstance(x, float) and
+                   not math.isnan(x) else 0
+                   for x in site_totals]
+
+    site_valids = [x if isinstance(x, float) and
+                   not math.isnan(x) else 0
+                   for x in site_valids]
+
+    site_total_for_table = sum(site_totals)
+    total_rows += site_total_for_table
+
+    if site_total_for_table > 0:
+        total_by_table.append(site_total_for_table)
+    else:
+        total_by_table.append(float('NaN'))
+
+    # valids are well_defined rows. sum across all sites
+    table_errs = (site_total_for_table - sum(site_valids))
+    total_errs += table_errs
+
+    if table_errs > 0:
+        errs_by_table.append(table_errs)
+    else:
+        errs_by_table.append(float('NaN'))
+
+    return errs_by_table, total_by_table, total_errs, total_rows
+
+
+def add_error_total_and_proportion_cols(
+        total_errs, total_rows, date,
+        errs_by_table, total_by_table,
+        aggregate_df_total, aggregate_df_error,
+        aggregate_df_proportion):
+    """
+    Function adds a new column to the growing dataframes. This
+    column contains information depending on the dataframe in
+    question. The column may contain information about
+        a. the total number of rows
+        b. the total number of 'poorly defined' rows
+        c. the relative contribution of a particular table
+        to the number of 'poorly defined' rows
+
+    The column represents a particular date. Each row
+    represents a particular table type. The final row
+    is an 'aggregate' metric that is a sum of the
+    rows immediately above it.
+
+    :param
+    total_errs (int): total number of errors across all sites
+        for a particular date; across all tables
+
+    total_rows (int): total number of rows across all sites
+        for a particular date; across all tables
+
+    date (string): date used to index into the dictionaries above
+
+    errs_by_table (list): list of the total number of
+        poorly defined row counts across all sites.
+        sequence of the list parallels the alphabetical
+        order of the tables. has 'total' metric at the end.
+
+    total_by_table (list): list of the total number of row counts
+        across all sites. sequence of the list parallels the
+        alphabetical order of the tables. has 'total'
+        metric at the end.
+
+    aggregate_df_total (dataframe): dataframe that contains the
+        total number of rows across all sites. each column
+        is a date. each row is a table type. last row
+        is the total number of rows for a particular
+        date.
+
+    aggregate_df_error (dataframe): dataframe that contains
+        the total number of poorly defined rows across
+        all sites. each column is a date. each row is a table
+        type. last row is the total number of poorly defined
+        rows for a particular date.
+
+    aggregate_df_proportion (dataframe): dataframe that
+        shows the 'contribution' of each table to the
+        total number of poorly defined rows. for instance,
+        if a table has half of all of the 'poorly defined
+        rows' for a particular date, it will have a value of
+        0.5. each column is a date. each row is a table
+        type.
+
+    :return:
+
+    aggregate_df_total (dataframe): same as the df that
+        entered except now with an additional column
+        to represent the date in question
+
+    aggregate_df_error (dataframe): same as the df that
+        entered except now with an additional column
+        to represent the date in question
+
+    aggregate_df_proportion (dataframe): same as the df
+        that entered except now with an additional
+        column to represent the date in question
+
+    """
+    # adding to the growing column
+    # total number of 'poorly defined' rows for a date
+    if total_errs > 0:
+        errs_by_table.append(total_errs)
+    else:
+        errs_by_table.append(float('NaN'))
+
+    # total number of rows for a table for the date
+    if total_rows > 0:
+        total_by_table.append(total_rows)
+    else:
+        total_by_table.append(float('NaN'))
+
+    # column for the 'total' rows; column for one date
+    aggregate_df_total[date] = total_by_table
+
+    # column for 'error' rows; column for one date
+    aggregate_df_error[date] = errs_by_table
+
+    # column for the contribution of each error type
+    succ_rate_by_table = []
+    for errors, total in zip(errs_by_table, total_by_table):
+        error_rate = round(errors / total * 100, 2)
+        success_rate = 100 - error_rate
+        succ_rate_by_table.append(success_rate)
+
+    aggregate_df_proportion[date] = succ_rate_by_table
+
+    return aggregate_df_error, aggregate_df_total, \
+        aggregate_df_proportion
+
+
+def generate_additional_aggregate_dq_sheets(
         file_names, ordered_dates_str):
     """
     Function is used to generate two 'aggregate data' sheets that
     show the data quality for various tables across the various
-    dates. The two sheets generated show:
+    dates. The three sheets generated show:
         a. the total number of 'poorly defined' rows for each of the
            table types
 
-        b. the relative proportion by which each table contributes to
+        b. the total number of rows for each of the table types
+
+        c. the relative proportion by which each table contributes to
            the total number of 'poorly defined' rows. for instance, if
            half of the poorly defined rows are from the condition_occurrence
            table, condition_occurrence will have a value of 0.5
@@ -1095,10 +1657,11 @@ def generate_aggregate_data_completeness_sheet(
     total_dfs (lst): list with the two pandas dataframes described
         above.
     """
-    # need to generate aggregate df before any dates
+    # getting the number of total rows for each HPO
     hpo_total_rows_by_date, valid_cols_tot = generate_hpo_contribution(
         file_names, 'total')
 
+    # getting the number of 'successful' rows for each HPO
     hpo_errors_by_date, valid_cols_val = generate_hpo_contribution(
         file_names, 'valid')
 
@@ -1112,182 +1675,111 @@ def generate_aggregate_data_completeness_sheet(
 
     for date in ordered_dates_str:
         total_errs, total_rows = 0, 0
-        errs_by_table, total_by_table = [], []  # parallel the alphabetical order of tables
+        errs_by_table, total_by_table = [], []
 
         for table_tot, table_valid in zip(valid_cols_tot[:-1], valid_cols_val):
-            # these are lists, each idx represents a site
-            site_totals = hpo_total_rows_by_date[date][table_tot]
-            site_valids = hpo_errors_by_date[date][table_valid]
+            # adding errors and totals for each table
+            errs_by_table, total_by_table, total_errs, total_rows = \
+                calculate_row_counts_by_table(
+                    hpo_total_rows_by_date, hpo_errors_by_date, date,
+                    table_tot, table_valid, total_rows, total_by_table,
+                    total_errs, errs_by_table)
 
-            site_totals = [x if isinstance(x, float) and not
-            math.isnan(x) else 0 for x in site_totals]
-            site_valids = [x if isinstance(x, float) and not
-            math.isnan(x) else 0 for x in site_valids]
+        # adding the columns (for particular date) to the dataframe
+        aggregate_df_error, aggregate_df_total, \
+            aggregate_df_proportion = add_error_total_and_proportion_cols(
+                total_errs, total_rows, date, errs_by_table, total_by_table,
+                aggregate_df_total, aggregate_df_error,
+                aggregate_df_proportion)
 
-            site_total_for_table = sum(site_totals)
-            total_rows += site_total_for_table
-
-            if site_total_for_table > 0:
-                total_by_table.append(site_total_for_table)
-            else:
-                total_by_table.append(float('NaN'))
-
-            # b/c valids are well_defined rows. sum across all sites
-            table_errs = (site_total_for_table - sum(site_valids))
-            total_errs += table_errs
-
-            if table_errs > 0:
-                errs_by_table.append(table_errs)
-            else:
-                errs_by_table.append(float('NaN'))
-
-        if total_errs > 0:
-            errs_by_table.append(total_errs)
-        else:
-            errs_by_table.append(float('NaN'))
-
-        if total_rows > 0:
-            total_by_table.append(total_rows)
-        else:
-            total_by_table.append(float('NaN'))
-
-        aggregate_df_total[date] = total_by_table  # list the parallels alphabetical order
-        aggregate_df_error[date] = errs_by_table
-        # now all as a proportion
-
-        succ_rate_by_table = []
-        for errors, total in zip(errs_by_table, total_by_table):
-            error_rate = round(errors / total * 100, 2)
-            success_rate = 100 - error_rate
-            succ_rate_by_table.append(success_rate)
-
-        aggregate_df_proportion[date] = succ_rate_by_table
     return total_dfs
 
 
-def standardize_column_types(sorted_tables, valid_cols_tot):
+def determine_table_dq_for_date(
+        hpo_total_rows_by_date, date, column_label,
+        sorted_names, incidence_for_site, table,
+        tot_rows_for_date, tot_errors_for_date,
+        error_amounts_for_date):
     """
-    Function is used to standardize the 'valid_cols_tot'
-    variable. This standardization ensures that the caller
-    function (determine_overall_percent_of_an_hpo) is accessing
-    the 'total rows' of the proper table type during its
-    iterations.
+    Function looks at a particular table for a particular
+    date and calculates the 'aggregate' data quality for said
+    timepoint.
 
     :param
-    sorted_tables (lst): list of the different table types
-        sorted alphabetically
+    hpo_total_rows_by_date (dict):  dictionary with the following
+    key:value pairings
+        a. date:following dictionary
+        b. table type: list with the total number of errors for each
+            HPO. the sequence of the list follows the alphabetical
+            order of all the HPO sites.
 
-    valid_cols_tot (lst): list of the table types that can
-        be iterated. This includes columns that exist in
-        the 'source' sheet (and thus have a total row
-        count) but may not exist in other sheets (and
-        thus need to be removed for iteration)
+    date (string): date used to index into the dictionaries above
 
-    :return:
-    new_valid_cols (lst): list of the table types that
-        should be used for the iteration. This only
-        includes tables that are relevant to the
-        sheet in question.
-    """
-    sorted_tables_before_udscr = []
-    new_valid_cols = []
-
-    # for comparison down the line
-    for idx, table_type in enumerate(sorted_tables):
-        under_encountered = False
-        end_idx = 0
-
-        for c_idx, char in enumerate(table_type):
-            if char == '_' and not under_encountered:
-                end_idx = c_idx
-                under_encountered = True
-
-        table_type = table_type[0:end_idx]
-        sorted_tables_before_udscr.append(table_type)
-
-    # we need to ensure we are only looking for columns that appear in the sheet
-    for idx, column_type in enumerate(valid_cols_tot):
-        under_encountered = False
-        end_idx = 0
-
-        for c_idx, char in enumerate(column_type):
-            if char == '_' and not under_encountered:
-                end_idx = c_idx
-                under_encountered = True
-
-        column_type_trunc = column_type[0:end_idx]
-
-        if column_type_trunc in sorted_tables_before_udscr:
-            new_valid_cols.append(column_type)
-
-    return new_valid_cols
-
-
-def determine_overall_percent_of_an_hpo(
-        site_and_date_info, file_names, sorted_names,
-        sorted_tables, date, site):
-    """
-    This function is used to determine the aggregate 'percent'
-    metric. This is calculated by giving more weight to categories
-    that have more logged rows.
-
-    :param
-    site_and_date_info (dict): dictionary with key:value
-        of date:additional dictionaries that contain metrics
-        for each HPO's data quality by type
-
-    file_names (list): list of the user-specified Excel files that are
-        in the current directory. Files are analytics reports to be
-        scanned.
+    column_label (string): table whose data quality is being
+        investigated. this string specifically allows one to find
+        the 'total row' count.
 
     sorted_names (lst): list of the hpo site names sorted
         alphabetically
 
-    sorted_tables (lst): list of the different table types
-        sorted alphabetically
+    incidence_for_site (dict): dictionary with the following
+    key:value pairings
+        a. hpo_id: following dict
+        b. table name: metric being investigated
 
-    date (string): the column (date) for which the aggregate statistic
-        is being measured. date of the analysis report.
+    table (string): table whose data quality is being investigated
 
-    site (string): the HPO site whose aggregate statistic is being
-        measured
+    tot_rows_for_date (int): running total for the total number
+        of rows across all tables/sites for a particular date.
+
+    tot_errors_for_date (int): running total for the total
+        number of errors across all tables/sites for
+        a particular date.
+
+    error_amounts_for_date (list): going to serve as the
+        column for the date. each row is the data quality
+        total for a particular table across all sites.
 
     :return:
-    tot_err_rate (float): shows the total proportion of a particular
-        metric for a particular site on a particular date. this is
-        the 'weighted' metric.
+    tot_errors_for_date (int): same as what was given
+        to the function as a parameter with the number
+        of errors for a particular table added
+
+    tot_rows_for_date (int): same as what was given
+        to the function as a parameter with the total
+        number of rows for a particular date added
+
+    error_amounts_for_date (list): same as column given
+        but now with an additional index to represent the
+        data quality for a particular table.
     """
+    tot_errors_for_table, tot_rows_for_table = 0, 0
+    total_rows_per_site = hpo_total_rows_by_date[date][column_label]
 
-    hpo_total_rows_by_date, valid_cols_tot = generate_hpo_contribution(
-        file_names, 'total')
+    for site, site_rows in zip(sorted_names[:-1], total_rows_per_site):
+        site_err_rate = incidence_for_site[site][table]
 
-    valid_cols_tot = standardize_column_types(sorted_tables, valid_cols_tot)
+        # NOTE: Many sites have a NaN error rate
+        if not math.isnan(site_err_rate) and not math.isnan(site_rows):
+            site_err_rate = site_err_rate / 100  # convert from percent
+            site_err_tot = site_err_rate * site_rows
 
-    incidence_for_site = site_and_date_info[date]
+            tot_rows_for_table += site_rows
+            tot_rows_for_date += site_rows
 
-    tot_rows_for_date, tot_errors_for_date = 0, 0
+            tot_errors_for_table += site_err_tot
+            tot_errors_for_date += site_err_tot
 
-    # this is iterated first b/c total rows per site is a list that parallels the site names
-    for table, table_row_total in zip(sorted_tables[:-1], valid_cols_tot):
-        total_rows_per_site = hpo_total_rows_by_date[date][table_row_total]
+    # now all the error rates for each table type; append to list
+    if tot_rows_for_table > 0:
+        err_rate_table = tot_errors_for_table / tot_rows_for_table
+        err_rate_table = round(err_rate_table, 3)
+        error_amounts_for_date.append(err_rate_table)
+    else:
+        error_amounts_for_date.append(float('NaN'))
 
-        for site_name, site_rows in zip(sorted_names, total_rows_per_site):
-            if site == site_name and not math.isnan(site_rows):  # found the site in question
-                site_err_rate = incidence_for_site[site][table]
-                if not math.isnan(site_rows) and not math.isnan(site_err_rate):
-                    tot_rows_for_date += site_rows
-                    site_err_rate = site_err_rate / 100
-
-                    tot_table_errs_for_date = site_err_rate * site_rows
-                    tot_errors_for_date += tot_table_errs_for_date
-
-    if tot_rows_for_date > 0:
-        total_err_rate = tot_errors_for_date / tot_rows_for_date * 100
-        total_err_rate = round(total_err_rate, 2)
-    else:  # new site; no rows for first date(s)
-        total_err_rate = float('NaN')
-
-    return total_err_rate
+    return tot_errors_for_date, \
+        tot_rows_for_date, error_amounts_for_date
 
 
 def determine_weighted_average_of_percent(
@@ -1300,10 +1792,10 @@ def determine_weighted_average_of_percent(
     and thus gives us a better idea of the 'overall health' of a
     table.
 
-    :param
-    site_and_date_info (dict): dictionary with key:value
+    :paramt): dictionary with key:value
         of date:additional dictionaries that contain metrics
-        for each HPO's data quality by type
+        for each HPO's data
+    site_and_date_info (dic quality by type
 
     ordered_dates_str (lst): list of the different dates for
         the data analysis outputs. goes from oldest to most
@@ -1321,11 +1813,14 @@ def determine_weighted_average_of_percent(
 
     :return:
     aggregate_df_weighted (dataframe): dataframe with weighted
-        metrics for the data quality for each table. put in a list
-        for consistency with how it will be added with respect to
+        metrics for the data quality for each table.
+
+        column represents each date rows are the table types
+        final row is an 'aggregate' statistic to represent the date as a whole
+
+        put in a list for consistency with how it will be added with respect to
         the other generated dataframes.
     """
-
     hpo_total_rows_by_date, valid_cols_tot = generate_hpo_contribution(
         file_names, 'total')
 
@@ -1335,8 +1830,8 @@ def determine_weighted_average_of_percent(
     # the relevant sheet
     aggregate_df_weighted = pd.DataFrame({'table_type': sorted_tables})
 
-    total_rows = valid_cols_tot
-    total_rows.sort()
+    total_row_cols = valid_cols_tot
+    total_row_cols.sort()
 
     for date in ordered_dates_str:
         error_amounts_for_date = []
@@ -1344,49 +1839,238 @@ def determine_weighted_average_of_percent(
         tot_rows_for_date, tot_errors_for_date = 0, 0
 
         # do not take the 'total' for the sorted_tables
-        for table, table_row_tot in zip(sorted_tables[:-1], total_rows):
-            tot_errors_for_table, tot_rows_for_table = 0, 0
-            total_rows_per_site = hpo_total_rows_by_date[date][table_row_tot]
+        for table, column_label in zip(sorted_tables[:-1], total_row_cols):
+            # adding a row to the growing column; DQ for the table in question
+            tot_errors_for_date, tot_rows_for_date, error_amounts_for_date = \
+                determine_table_dq_for_date(
+                    hpo_total_rows_by_date, date, column_label,
+                    sorted_names, incidence_for_site, table,
+                    tot_rows_for_date, tot_errors_for_date,
+                    error_amounts_for_date)
 
-            for site, site_rows in zip(sorted_names[:-1], total_rows_per_site):
-                site_err_rate = incidence_for_site[site][table]
-
-                # FIXME: Most sites have a NaN error rate; cannot calculate
-                #  a meaningful total error rate
-                if not math.isnan(site_err_rate) and not math.isnan(site_rows):
-                    site_err_rate = site_err_rate / 100  # convert from percent
-                    site_err_tot = site_err_rate * site_rows
-
-                    tot_rows_for_table += site_rows
-                    tot_rows_for_date += site_rows
-
-                    tot_errors_for_table += site_err_tot
-                    tot_errors_for_date += site_err_tot
-
-            # now all the error rates for each table type
-            if tot_rows_for_table > 0:
-                err_rate_table = tot_errors_for_table / tot_rows_for_table
-                err_rate_table = round(err_rate_table, 3)
-                error_amounts_for_date.append(err_rate_table)
-            else:
-                error_amounts_for_date.append(float('NaN'))
-
+        # aggregate data quality for a date
         if tot_rows_for_date > 0:
             tot_errors_for_date = tot_errors_for_date / tot_rows_for_date
             tot_errors_for_date = round(tot_errors_for_date, 3)
-            # overall error rate for the date
             error_amounts_for_date.append(tot_errors_for_date)
         else:
             error_amounts_for_date.append(float('NaN'))
 
+        # end product - finalized column
         aggregate_df_weighted[date] = error_amounts_for_date
+
+    return [aggregate_df_weighted]
+
+
+def unit_integration_aggregate_sheet(
+        ordered_dates_str, dataframes):
+    """
+    Function is used to generate an aggregate_info dataframe
+    that can be used for the 'unit integration' option. The
+    'unit integration' option warrants its own aggregate
+    calculation because you must use the original dataframe
+    (rather than looking at the total number of rows for
+    any given table).
+
+    One must use the original dataframe because the
+    unit_integration success rate ONLY looks at particular
+    rows in the measurement table (namely rows where the
+    concept_id is in a list of concept_ids that we are
+    looking at as the DRC). This means that the 'total
+    rows' in the measurement table generated earlier
+    could not help us with this calculation.
+
+    :param
+    ordered_dates_str (lst): list of the different dates for
+        the data analysis outputs. goes from oldest to most
+        recent.
+
+    dataframes (list): list of pandas dataframes. each dataframe contains
+        info about data quality for all of the sites for a date.
+
+    :return:
+    aggregate_df (dataframe): a dataframe that contains proportion
+        of 'successful unit populations for selected measurements'
+        for each date investigated.
+    """
+    aggregate_df = pd.DataFrame(
+        index=['integration rate', 'total rows'], columns=ordered_dates_str)
+
+    # populating column-by-column
+    for date_idx, date in enumerate(ordered_dates_str):
+        df = dataframes[date_idx]
+
+        wd_col = df['unit_well_defined_row'].tolist()
+        tot_col = df['unit_total_row'].tolist()
+
+        tot_wd_units, tot_units = 0, 0
+
+        for site_val in wd_col:
+            try:
+                site_val = float(site_val)
+                if not math.isnan(site_val):
+                    tot_wd_units += site_val
+            except ValueError:
+                pass
+
+        for site_val in tot_col:
+            try:
+                site_val = float(site_val)
+                if not math.isnan(site_val):
+                    tot_units += site_val
+            except ValueError:
+                pass
+
+        tot_success_rate = tot_wd_units / tot_units
+        aggregate_df[date] = [tot_success_rate, tot_units]
+
+    return [aggregate_df]  # list so it can be easily appended
+
+
+def aggregate_sheet_route_population(
+        file_names, ordered_dates_str,
+        sorted_names, site_and_date_info):
+    """
+    This function creates an 'aggregate' dataframe that shows
+    what proportion of rows in the drug exposure table (across
+    all sites) have a populated 'route' field.
+
+    :param
+    file_names (list): list of the user-specified Excel files that are
+        in the current directory. Files are analytics reports to be
+        scanned
+
+    ordered_dates_str (lst): list of the different dates for
+        the data analysis outputs. goes from oldest to most
+        recent.
+
+    sorted_names (lst): list of the hpo site names sorted
+        alphabetically
+
+    site_and_date_info (dict): dictionary with key:value
+        of date:additional dictionaries that contain metrics
+        for each HPO's data quality by type
+
+    :return:
+    [aggregate_df] (lst containing a single df):
+    dataframe has:
+        a. columns that are dates
+        b. single row
+
+    the aggregate_df is put in a list so it can be easily
+    appended to an existing list.
+
+    NOTE: You cannot really create a 'weighted' metric for a specific drug
+    class at this point. This metric is impossible to calculate because
+    we do not necessarily know how many drugs of a particular class
+    (e.g. antibiotics) that each site contributes. One could hypothetically
+    give more weights to sites that contribute more drugs as a whole but
+    doing so would merely be a 'guestimate.'
+    """
+    aggregate_df_weighted = pd.DataFrame(
+        index=['drug_route_overall_success_rate'],
+        columns=ordered_dates_str)
+
+    hpo_total_rows_by_date, _ = generate_hpo_contribution(
+        file_names, 'total')
+
+    for date in ordered_dates_str:
+        drug_rows = hpo_total_rows_by_date[date]['drug_total_row']
+        total_drug_rows_for_date = np.nansum(drug_rows)  # ignoring nan
+
+        rows_w_unit_date = 0
+
+        # gathering data from all of the sites
+        for site_name, total_drug_rows in zip(sorted_names, drug_rows):
+            site_succ_rate = site_and_date_info[date][site_name][
+                'drugs_overall_success_rate']
+
+            if not math.isnan(total_drug_rows) and \
+                    not math.isnan(site_succ_rate):
+                site_succ_rows = site_succ_rate * total_drug_rows
+                rows_w_unit_date += site_succ_rows
+
+        if total_drug_rows_for_date > 0:
+            quality_for_date = rows_w_unit_date / total_drug_rows_for_date
+        else:
+            quality_for_date = np.nan
+
+        aggregate_df_weighted[date] = quality_for_date
+
+    # putting in list to make it easy to append
+    return [aggregate_df_weighted]
+
+
+def aggregate_sheet_integration(
+        dataframes, sorted_tables, ordered_dates_str):
+    """
+    This function is used to generate an 'aggregate' sheet
+    that should represent the average integration of drug
+    ingredients or measurements across all sites.
+    The ingredient and measurement concepts are separated
+    into different 'categories'.
+
+    :param
+    dataframes (list): list of pandas dataframes. each dataframe
+        contains info about data quality for all of the sites
+         for a date.
+
+    sorted_tables (lst): list of the different table types
+        sorted alphabetically
+
+    ordered_dates_str (lst): list of the different dates for
+        the data analysis outputs. goes from oldest to most
+        recent.
+
+    :return:
+    [aggregate_df] (lst containing a single df):
+    dataframe has:
+        a. columns that are dates
+        b. rows that are the different classes of
+        drugs/measurements (e.g. ACE Inhibitor, lipids)
+
+    each point within the dataframe shows the average
+    integration across all sites for the particular
+    date and drug class.
+
+    the aggregate_df is put in a list so it can be easily
+    appended to an existing list.
+
+    NOTE: There is no 'total' row at this point. Cannot create
+    a weighted metric that 'weights' integration of all of
+    the concepts since we do not know how many drugs may
+    belong to each category.
+    """
+    aggregate_df_weighted = pd.DataFrame(
+        index=sorted_tables, columns=ordered_dates_str)
+
+    for date_idx, date in enumerate(ordered_dates_str):
+        df = dataframes[date_idx]
+        means_for_dates = []
+        for drug_type in sorted_tables:
+            column = df[drug_type]
+            tot, iterated = 0, 0
+
+            # all sites weighted equally - simple mean
+            for stat in column:
+                try:
+                    stat = float(stat)
+                    tot += stat
+                    iterated += 1
+                except ValueError:  # 'No Data' logged
+                    pass
+
+            average_for_drug_int = round(tot / iterated, 1)
+            means_for_dates.append(average_for_drug_int)
+
+        aggregate_df_weighted[date] = means_for_dates
 
     return [aggregate_df_weighted]
 
 
 def generate_aggregate_sheets(file_names, sorted_tables, site_and_date_info,
                               ordered_dates_str, percentage, analytics_type,
-                              sorted_names):
+                              sorted_names, dataframes):
     """
     This function is called when
         a. The rows of each dataframe should be each table.
@@ -1422,18 +2106,44 @@ def generate_aggregate_sheets(file_names, sorted_tables, site_and_date_info,
     sorted_names (lst): list of the hpo site names sorted
         alphabetically
 
+    dataframes (list): list of pandas dataframes. each dataframe contains
+        info about data quality for all of the sites for a date.
+
     :return:
     total_dfs (lst): list of pandas dataframes that document the
         data quality of the various data types
     """
     if analytics_type in ['source', 'concept']:
-        total_dfs = generate_aggregate_data_completeness_sheet(
+        # three additional dataframes
+        total_dfs = generate_additional_aggregate_dq_sheets(
             file_names, ordered_dates_str)
+
+    elif analytics_type in ['unit_integration']:
+        # warrants unique approach since units
+        # are only for selected measurements
+        total_dfs = unit_integration_aggregate_sheet(
+            ordered_dates_str, dataframes)
+
+    elif analytics_type in ['drug_routes']:
+        # do not want categories; only one statistic per date
+        total_dfs = aggregate_sheet_route_population(
+            file_names, ordered_dates_str,
+            sorted_names, site_and_date_info)
+
+    elif analytics_type in [
+      'drug_concept_integration', 'integration_measurement_concept']:
+        # categorical classification; no weighting
+        total_dfs = aggregate_sheet_integration(
+            dataframes, sorted_tables, ordered_dates_str)
+
     elif percentage:
+        # weighting with respect to established tables
         total_dfs = determine_weighted_average_of_percent(
             site_and_date_info, ordered_dates_str, sorted_tables,
             file_names, sorted_names)
-    else:  # just really summing the numbers
+
+    else:
+        # summing the numbers (e.g. duplicates)
         sorted_tables.append('total')
         total_dfs = []
         aggregate_df = pd.DataFrame({'table_type': sorted_tables})
@@ -1462,20 +2172,19 @@ def understand_sheet_output_type(sorted_tables, sorted_names):
         alphabetically
 
     :return:
-    output_choice (string): determines which variable (either
+    user_choice (string): determines which variable (either
         distinct site or distince talbe) will serve as a
         'anchor' to separate out the sheets
     """
-    output_prompt = "\nWould you prefer to generate: \n" \
-                    "A. {} sheets detailing the data quality for " \
-                    "each table. The HPO IDs would be displayed " \
-                    "as rows. \nor \n" \
-                    "B. {} sheets detailing the data quality for " \
-                    "each HPO site. The table type would be " \
-                    "displayed as rows. This will also include 1-3 " \
-                    "table(s) with statistics on the aggregate data " \
-                    "for each table type on each date.".format(
-        len(sorted_tables), len(sorted_names))
+    output_prompt = \
+        "\nWould you prefer to generate: \n" \
+        "A. {} sheets detailing the data quality for each table. " \
+        "The HPO IDs would be displayed as rows. \nor \n" \
+        "B. {} sheets detailing the data quality for each HPO site. " \
+        "The table type would be displayed as rows. This will " \
+        "also include 1-3 table(s) with statistics on the " \
+        "aggregate data for each table type on each date.". \
+        format(len(sorted_tables), len(sorted_names))
 
     user_input = input(output_prompt).lower()
     output_choice_dict = {'a': 'table_sheets',
@@ -1486,68 +2195,86 @@ def understand_sheet_output_type(sorted_tables, sorted_names):
               "to an appropriate output type.\n")
         user_input = input(output_prompt).lower()
 
-    output_choice = output_choice_dict[user_input]
+    user_choice = output_choice_dict[user_input]
 
-    return output_choice
+    return user_choice
 
 
-cwd = os.getcwd()
-
-# NOTE: This is hard-coded in rather than asking the user to specify the
-# file names. This can be modified in future iterations if needed.
-report1 = 'july_15_2019.xlsx'
-report2 = 'july_23_2019.xlsx'
-report3 = 'august_05_2019.xlsx'  # NOTE: do not know if this is 05 or 02
-report4 = 'august_13_2019.xlsx'
-report5 = 'august_19_2019.xlsx'
-report6 = 'august_23_2019.xlsx'
-# report1 = 'march_27_2019.xlsx'  # CDR releases
+"""
+NOW we are actually getting into the 'execution' of the
+code. This marks the end of the functions that organize
+and quantify the data.
+"""
+# CDR releases
+# ------------
+# report1 = 'march_27_2019.xlsx'
 # report2 = 'may_10_2019.xlsx'
-# report3 = 'august_02_2019.xlsx'
+# report3 = 'october_04_2019.xlsx'
 
-report_names = [report1, report2, report3, report4, report5, report6]
+# Weekly reports
+# --------------
+# report1 = 'july_15_2019.xlsx'
+# report2 = 'july_23_2019.xlsx'
+# report3 = 'august_05_2019.xlsx'
+# report4 = 'august_13_2019.xlsx'
+# report5 = 'august_19_2019.xlsx'
+# report6 = 'august_26_2019.xlsx'
+# report7 = 'september_03_2019.xlsx'
+# report8 = 'september_09_2019.xlsx'
+# report9 = 'september_16_2019.xlsx'
+# report10 = 'september_23_2019.xlsx'
+report11 = 'september_30_2019.xlsx'
+report12 = 'october_07_2019.xlsx'
+report13 = 'october_15_2019.xlsx'
+report14 = 'october_22_2019.xlsx'
+report15 = 'october_28_2019.xlsx'
 
-analytics_choice, percent_bool, target_low = get_user_analysis_choice()
+report_titles = [report11, report12, report13, report14, report15]
 
-data_frames = load_files(analytics_choice, report_names)
+metric_choice, metric_is_percent, ideal_low = get_user_analysis_choice()
+
+data_frames = load_files(metric_choice, report_titles)
 
 # creating a consistent row/column label set
-hpo_id_col, selective_rows = generate_hpo_id_col(data_frames)
+hpo_name_col = generate_hpo_id_col(report_titles)
 
 # creating an organized dictionary with all of the information easily-indexed
-site_and_date_info, all_tables = iterate_sheets(
-    data_frames, hpo_id_col, selective_rows, percent_bool,
-    analytics_choice, report_names)
+date_site_table_info, all_tables = iterate_sheets(
+    data_frames, hpo_name_col, metric_is_percent,
+    metric_choice, ideal_low, report_titles)
 
 # creating a consistent means to navigate the tables
-ordered_dates, sorted_names, sorted_tables = sort_names_and_tables(
-    site_and_date_info, all_tables)
+ordered_dates, ordered_names, ordered_tables = sort_names_and_tables(
+    date_site_table_info, all_tables)
 
 # adding new aggregate metrics for each date; sum or average of HPO sites
-site_and_date_info = add_aggregate_info(
-    site_and_date_info, percent_bool, hpo_id_col)
+date_site_table_info = add_aggregate_info(
+    date_site_table_info, metric_is_percent, hpo_name_col)
 
 # understanding which variable will distinguish new sheets
-user_output_choice = understand_sheet_output_type(sorted_tables,
-                                                  sorted_names)
+output_choice = understand_sheet_output_type(
+    ordered_tables, ordered_names)
+
+df_dict = {}  # will be replaced later on; need holder
 
 # creating dataframes with site/table/date metrics
-if user_output_choice == 'table_sheets':
+if output_choice == 'table_sheets':
     df_dict = generate_table_dfs(
-        sorted_names, sorted_tables, ordered_dates,
-        site_and_date_info, percent_bool, report_names)
-elif user_output_choice == 'hpo_sheets':
+        ordered_names, ordered_tables, ordered_dates,
+        date_site_table_info, metric_is_percent, report_titles,
+        metric_choice)
+elif output_choice == 'hpo_sheets':
     df_dict = generate_site_dfs(
-        sorted_names, sorted_tables, ordered_dates,
-        site_and_date_info, percent_bool, report_names,
-        analytics_choice)
+        ordered_names, ordered_tables, ordered_dates,
+        date_site_table_info, metric_is_percent, report_titles,
+        metric_choice, data_frames)
 
-file_name = analytics_choice + "_" + user_output_choice + \
-            "_data_analytics.xlsx"
+output_file_name = metric_choice + "_" + output_choice + \
+                   "_data_analytics.xlsx"
 
-writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
+writer = pd.ExcelWriter(output_file_name, engine='xlsxwriter')
 
-for df_name, df in df_dict.items():
-    df.to_excel(writer, sheet_name=df_name)
+for df_name, dataframe in df_dict.items():
+    dataframe.to_excel(writer, sheet_name=df_name)
 
 writer.save()
