@@ -754,7 +754,14 @@ def load_table_from_csv(project_id, dataset_id, table_name, fields=None):
 
     pair_exprs = []
     for mapping_dict in table_list:
-        pair_expr = cols.format(**mapping_dict)
+        converted_dict = dict()
+        for k, v in mapping_dict.items():
+            for field in fields:
+                if field['name'] == k and field['type'] == 'integer':
+                    converted_dict[k] = int(v)
+                else:
+                    converted_dict[k] = v
+        pair_expr = cols.format(**converted_dict)
         pair_exprs.append(pair_expr)
     formatted_mapping_list = ', '.join(pair_exprs)
 
