@@ -13,8 +13,15 @@
             "copy_to": ["value_as_concept_id"]
         },
         {
+            "comment": "IN PROGRESS.  intermediate commit here.",
             "rules": "@generalize.STATE",
             "fields": ["value_source_concept_id"],
+            "dataset": ":idataset",
+            "table": "observation",
+            "alias": "state_table",
+            "key_field": "state_table.person_id",
+            "key_row": "state_table.value_source_concept_id",
+            "value_field": "observation.person_id",
             "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1585249)) ",
             "copy_to": ["value_as_concept_id"]
         },

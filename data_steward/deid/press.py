@@ -12,6 +12,36 @@ import numpy as np
 
 from rules import Deid
 
+LOGGER = logging.getLogger(__name__)
+
+def set_up_logging(log_path, idataset):
+    output_log_path = os.path.join(log_path, idataset)
+    try:
+        os.makedirs(output_log_path)
+    except OSError:
+        # directory already exists.  move on.
+        pass
+
+    name = datetime.now().strftime('logs/deid-%Y-%m-%d.log')
+    filename = os.path.join(log_path, name)
+    file_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+    root_logger = logging.getLogger('')
+
+    if root_logger.handlers:
+        # Add file handler if logging is configured
+        file_handler = logging.FileHandler(name)
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(logging.Formatter(file_format))
+        root_logger.addHandler(file_handler)
+    else:
+        # Create basic config if logging isn't configured
+        logging.basicConfig(filename=filename,
+                            level=logging.INFO,
+                            format=file_format)
+
+
+
 class Press(object):
 
     def __init__(self, **args):
@@ -20,13 +50,20 @@ class Press(object):
         :info_path   path to the configuration of how the rules get applied
         :pipeline   operations and associated sequence in which they should be performed
         """
-        with codecs.open(args['rules'], 'r', encoding='utf-8') as config:
-            self.deid_rules = json.loads(config.read(), encoding='utf-8')
+        self.idataset = args.get('idataset', '')
+        self.tablepath = args.get('table')
+        self.tablename = os.path.basename(self.tablepath).split('.json')[0].strip()
 
-        self.pipeline = args['pipeline']
+        self.logpath = args.get('logs', 'logs')
+        set_up_logging(self.logpath, self.idataset)
+
+        with codecs.open(args.get('rules'), 'r') as config:
+            self.deid_rules = json.loads(config.read())
+
+        self.pipeline = args.get('pipeline', ['generalize', 'suppress', 'shift', 'compute'])
         try:
-            with codecs.open(args['table'], 'r', encoding='utf-8') as config:
-                self.info = json.loads(config.read(), encoding='utf-8')
+            with codecs.open(self.tablepath, 'r') as config:
+                self.info = json.loads(config.read())
         except StandardError:
             # In case a table name is not provided, we will apply default rules on he table
             #   I.e physical field suppression and row filter
@@ -40,12 +77,7 @@ class Press(object):
                 cache[_id] = row
             self.deid_rules = cache
 
-        self.idataset = args['idataset']
-        self.tablename = args['table']
-
-        self.tablename = os.path.basename(self.tablename).split('.json')[0].strip()
-
-        self.store = 'sqlite' if 'store' not in args else args['store']
+        self.store = args.get('store', 'sqlite')
 
         if 'suppress' not in self.deid_rules:
             self.deid_rules['suppress'] = {'FILTERS': []}
@@ -53,20 +85,8 @@ class Press(object):
         if 'FILTERS' not in self.deid_rules['suppress']:
             self.deid_rules['suppress']['FILTERS'] = []
 
-        self.logpath = args.get('logs', 'logs')
         self.action = [term.strip()
                        for term in args['action'].split(',')] if 'action' in args else ['submit']
-
-        output_log_path = os.path.join(self.logpath, self.idataset)
-        try:
-            os.makedirs(output_log_path)
-        except OSError:
-            # directory already exists.  move on.
-            pass
-
-        name = datetime.now().strftime('deid-%Y-%m-%d.log')
-        filename = os.path.join(self.logpath, name)
-        logging.basicConfig(filename=filename, level=logging.INFO, format='%(message)s')
 
 
     def meta(self, data_frame):
@@ -78,7 +98,7 @@ class Press(object):
         #
         # Let us update and see if the default filters apply at all
         dfilters = []
-        columns = self.get(limit=1).columns.tolist()
+        columns = self.get_dataframe(limit=1).columns.tolist()
         for row in self.deid_rules['suppress']['FILTERS']:
             if set(columns) & set(row['filter'].split(' ')):
                 dfilters.append(row)
@@ -113,7 +133,7 @@ class Press(object):
         p = d.apply(_info, self.store, self.get_tablename())
 
         is_meta = np.sum([1*('on' in _item) for _item in p]) != 0
-        self.log(module='do', action='table-type', table=self.get_tablename(), is_meta=int(is_meta))
+        LOGGER.info('table:\t%s\t\tis a meta table:\t%s', self.get_tablename(), int(is_meta))
         if not is_meta:
             sql = self.to_sql(p)
             _rsql = None
@@ -169,6 +189,8 @@ class Press(object):
                 # Make this threaded if there is a submit action that is associated with it
                 self.simulate(p)
 
+        LOGGER.info('FINISHED de-identification on table:\t%s', self.tablename)
+
     def get_tablename(self):
         return self.idataset + "." + self.tablename if self.idataset else self.tablename
 
@@ -177,9 +199,6 @@ class Press(object):
             print()
             print(row['label'], not row['apply'])
             print()
-
-    def log(self, **args):
-        logging.info(json.dumps(args))
 
     def simulate(self, info):
         """
@@ -203,7 +222,8 @@ class Press(object):
             labels = item['label'].split('.')
 
             if not (set(labels) & set(self.pipeline)):
-                self.log(module='simulate', table=table_name, action='skip', value=labels)
+                LOGGER.info('Skipping simulation for table:\t%s\t\tvalues:\t%s',
+                            table_name, labels)
                 continue
 
             if labels[0] not in counts:
@@ -236,12 +256,13 @@ class Press(object):
                     sql_list.extend(['WHERE ', item['on']])
 
             if 'shift' in labels:
-                data_frame = self.get(sql=" ".join(sql_list).replace(':idataset', self.idataset), limit=5)
+                data_frame = self.get_dataframe(sql=" ".join(sql_list).replace(':idataset', self.idataset), limit=5)
             else:
-                data_frame = self.get(sql=" ".join(sql_list).replace(':idataset', self.idataset))
+                data_frame = self.get_dataframe(sql=" ".join(sql_list).replace(':idataset', self.idataset))
 
             if data_frame.shape[0] == 0:
-                self.log(module="simulate", table=table_name, attribute=field, type=item['label'], status='no data-found')
+                LOGGER.info('no data-found for simulation of table:\t%s\t\tfield:\t%s\t\ttype:\t%s',
+                            table_name, field, item['label'])
                 continue
 
             data_frame.columns = ['original', 'transformed']
@@ -261,7 +282,7 @@ class Press(object):
             transformed_sql = transformed_sql.replace(':filter', " OR ".join(filters))
             sql_list = ['SELECT * FROM ', original_sql, transformed_sql]
 
-            r = self.get(sql=" ".join(sql_list).replace(":idataset", self.idataset))
+            r = self.get_dataframe(sql=" ".join(sql_list).replace(":idataset", self.idataset))
             table_name = self.idataset + "." + self.tablename
 
             rdf = pd.DataFrame({"operation": ["row-suppression"], "count": r.transformed.tolist()})
@@ -285,23 +306,24 @@ class Press(object):
                 os.path.join(root, 'stats-' + self.tablename + '.csv'): stats}
         for path in _map:
             _data_frame = _map[path]
-            _data_frame.to_csv(path, encoding='utf-8')
+            _data_frame.to_csv(path)
 
-        self.log(module='simulation', table=table_name, status='completed', value=root)
+        LOGGER.info('simulation completed for table:\t%s\t\tvalue:\t%s',
+                    table_name, root)
 
     def to_sql(self, info):
         """
         :info   payload with information of the process to be performed
         """
         table_name = self.get_tablename()
-        fields = self.get(limit=1).columns.tolist()
+        fields = self.get_dataframe(limit=1).columns.tolist()
         columns = list(fields)
         sql_list = []
-        self.log(module='to_sql', action='generating-sql', table=table_name, fields=fields)
+        LOGGER.info('generating-sql for table:\t%s\t\tfields:\t%s', table_name, fields)
         #
         # @NOTE:
         #   If we are dealing with a meta-table we should
-        for rule_id in self.pipeline: #['generalize', 'suppress', 'shift', 'compute']:
+        for rule_id in self.pipeline:
             for row in info:
                 name = row['name']
 
@@ -310,7 +332,7 @@ class Press(object):
 
                 index = fields.index(name)
                 fields[index] = row['apply']
-                self.log(module='to_sql', field=name, sql=row['apply'])
+                LOGGER.info('creating SQL for field:\t%s\t\twith:\t%s', name, row['apply'])
 
         sql_list = ['SELECT', ",".join(fields), 'FROM ', table_name]
 

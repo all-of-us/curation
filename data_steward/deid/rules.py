@@ -18,13 +18,18 @@
     Compute:
         Computed fields stored
 """
-import json
+# Python imports
 import logging
 
+# Third party imports
 import numpy as np
 
+# Project imports
 from parser import Parse
 from resources import fields_for
+
+LOGGER = logging.getLogger(__name__)
+
 
 def _get_case_condition_syntax(cond, regex, gen_value, rule, rules, syntax):
     """
@@ -159,9 +164,6 @@ class Deid(Rules):
     def aggregate(self, sql, **args):
         pass
 
-    def log(self, **args):
-        logging.info(json.dumps(args))
-
     def generalize(self, **args):
         """
         Apply generalizations given a set of rules.
@@ -191,7 +193,11 @@ class Deid(Rules):
                     # This will call a built-in SQL function (non-aggregate)'
                     # qualifier = rule['qualifier'] if 'qualifier' in rule else ''
                     fillter = args.get('filter', name)
-                    self.log(module='generalize', label=label.split('.')[1], on=name, type=rule['apply'])
+                    LOGGER.info('generalizing with SQL aggregates label:\t%s\t\t'
+                                'on:\t%s\t\ttype:\t%s\t\t',
+                                label.split('.')[1],
+                                name,
+                                rule['apply'])
 
                     if 'apply' not in self.store_syntax[store_id]:
                         regex = [rule['apply'], "(", fillter, " , '", "|".join(rule['values']), "') ", qualifier]
@@ -271,7 +277,10 @@ class Deid(Rules):
                     # @TODO: Document what is going on here
                     #   - An if or else type of generalization given a list of values or function
                     #   - IF <filter> IN <values>, THEN <generalized-value> else <attribute>
-                    self.log(module='generalize', label=label.split('.')[1], on=name, type='inline')
+                    LOGGER.info('generalizing inline arguments label:\t%s\t\t'
+                                'on:\t%s\t\ttype:\tinline',
+                                label.split('.')[1],
+                                name)
                     fillter = args.get('filter', name)
                     qualifier = rule.get('qualifier', '')
                     gen_value = args.get('into', rule.get('into', ''))
@@ -368,7 +377,7 @@ class Deid(Rules):
                             value = "0 AS " + name
 
                     out.append({"name": name, "apply": value, "label": label})
-                    self.log(module='suppression', label=label.split('.')[1], type='columns')
+                    LOGGER.info('suppress fields(columns) for:\t%s', label.split('.')[1])
                 else:
                     #
                     # If we have alist of fields to be removed, The following code will figure out which ones apply
@@ -390,7 +399,7 @@ class Deid(Rules):
                                     else:
                                         value = "0 AS " + name
                                 out.append({"name": name, "apply": (value), "label": label})
-            self.log(module='suppress', label=label.split('.')[1], on=fields, type='columns')
+            LOGGER.info('suppress fields(columns):\t%s\t\tfor:\t%s', label.split('.')[1], fields)
 
         else:
             #

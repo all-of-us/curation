@@ -72,21 +72,27 @@ DESIGN:
                         submit      will create an output table
                         debug       will just print output without simulation or submit (runs alone)
 """
+# Python imports
 from datetime import datetime
 import json
+import logging
 import os
 import time
 
+# Third party imports
 from google.cloud import bigquery as bq
 from google.oauth2 import service_account
 import numpy as np
 import pandas as pd
 
+# Project imports
 import bq_utils
 import constants.bq_utils as bq_consts
 from parser import parse_args
 from press import Press
 
+
+LOGGER = logging.getLogger(__name__)
 
 def milliseconds_since_epoch():
     """
@@ -95,6 +101,146 @@ def milliseconds_since_epoch():
     :return:  an integer number of milliseconds
     """
     return int((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
+
+
+def create_participant_mapping_table(table, map_tablename, lower_bound, max_day_shift, credentials):
+    # create the deid_map table.  set upper and lower bounds of the research_id array
+    records = table.shape[0]
+    upper_bound = lower_bound + (10 * records)
+    map_table = pd.DataFrame({"person_id": table['person_id'].tolist()})
+
+    # generate random research_ids
+    research_id_array = np.random.choice(np.arange(lower_bound, upper_bound), records, replace=False)
+
+    # throw in some extra, non-deterministic shuffling
+    for _ in range(milliseconds_since_epoch() % 5):
+        np.random.shuffle(research_id_array)
+    map_table['research_id'] = research_id_array
+
+    # generate date shift values
+    shift_array = np.random.choice(np.arange(1, max_day_shift), records)
+
+    # throw in some extra, non-deterministic shuffling
+    for _ in range(milliseconds_since_epoch() % 5):
+        np.random.shuffle(shift_array)
+    map_table['shift'] = shift_array
+
+    # write this to bigquery.
+    map_table.to_gbq(map_tablename, credentials=credentials, if_exists='fail')
+    LOGGER.info('created new patient mapping table')
+
+
+def create_person_id_src_hpo_map(input_dataset, credentials):
+    """
+    Create a table containing person_ids and src_hpo_ids
+
+    :param input_dataset:  the input dataset to deid
+    :param credentidals:  the credentials needed to create a new table.
+    """
+    map_tablename = "_mapping_person_src_hpos"
+    sql = ("select person_id, src_hpo_id "
+           "from {input_dataset}._mapping_{table} "
+           "join {input_dataset}.{table} "
+           "using ({table}_id) "
+           "where src_hpo_id not like 'rdr'"
+          )
+
+    # list dataset contents
+    dataset_tables = bq_utils.list_dataset_contents(input_dataset)
+    mapping_tables = []
+    mapped_tables = []
+    for table in dataset_tables:
+        if table.startswith('_mapping_'):
+            mapping_tables.append(table)
+            mapped_tables.append(table[9:])
+
+    # make sure mapped tables all exist
+    check_tables = []
+    for table in mapped_tables:
+        if table in dataset_tables:
+            check_tables.append(table)
+
+    # make sure check_tables contain person_id fields
+    person_id_tables = []
+    for table in check_tables:
+        info = bq_utils.get_table_info(table, dataset_id=input_dataset)
+        schema = info.get('schema', {})
+        for field_info in schema.get('fields', []):
+            if 'person_id' in field_info.get('name'):
+                person_id_tables.append(table)
+
+    # revamp mapping tables to contain only mapping tables for tables
+    # with person_id fields
+    mapping_tables = ['_mapping_' + table for table in person_id_tables]
+
+    sql_statement = []
+    for table in person_id_tables:
+        sql_statement.append(sql.format(table=table, input_dataset=input_dataset))
+
+    final_query = ' UNION ALL '.join(sql_statement)
+
+    # create the mapping table
+    if map_tablename not in dataset_tables:
+        fields = [
+            {
+                "type": "integer",
+                "name": "person_id",
+                "mode": "required",
+                "description": "the person_id of someone with an ehr record"
+            },
+            {
+                "type": "string",
+                "name": "src_hpo_id",
+                "mode": "required",
+                "description": "the src_hpo_id of an ehr record"
+            }
+        ]
+        bq_utils.create_table(map_tablename,
+                              fields,
+                              dataset_id=input_dataset)
+
+    bq_utils.query(final_query,
+                   destination_table_id=map_tablename,
+                   destination_dataset_id=input_dataset,
+                   write_disposition=bq_consts.WRITE_TRUNCATE)
+    LOGGER.info("Created mapping table:\t%s.%s", input_dataset, map_tablename)
+
+
+def create_allowed_states_table(input_dataset, credentials):
+    """
+    Create a mapping table of src_hpos to states they are located in.
+    """
+
+    map_tablename = input_dataset + "._mapping_src_hpos_to_allowed_states"
+    data = pd.read_csv('deid/config/internal_tables/src_hpos_to_allowed_states.csv')
+
+    # write this to bigquery.
+    data.to_gbq(map_tablename, credentials=credentials, if_exists='replace')
+
+
+def create_questionnaire_mapping_table(table, map_tablename, lower_bound, credentials):
+    """
+    Create a random mapping table for questionnaire response ids.
+
+    :param lower_bound:  The smallest number that may be used as an identifier.
+    """
+    # create the deid table.  set upper and lower bounds of the research_id array
+    records = table.shape[0]
+    upper_bound = lower_bound + (10 * records)
+    qr_id_list = table['questionnaire_response_id'].tolist()
+    map_table = pd.DataFrame({"questionnaire_response_id": qr_id_list})
+
+    # generate random research_questionnaire_response_ids
+    research_id_array = np.random.choice(np.arange(lower_bound, upper_bound), records, replace=False)
+
+    # throw in some extra, non-deterministic shuffling
+    for _ in range(milliseconds_since_epoch() % 5):
+        np.random.shuffle(research_id_array)
+    map_table['research_response_id'] = research_id_array
+
+    # write this to bigquery.
+    map_table.to_gbq(map_tablename, credentials=credentials, if_exists='fail')
+    LOGGER.info('created new questionnaire response mapping table')
 
 
 class AOU(Press):
@@ -111,136 +257,130 @@ class AOU(Press):
             #
             # Minor updates that are the result of a limitation as to how rules are specified.
             # @TODO: Improve the rule specification language
-            shift_days = ('SELECT shift from {idataset}.deid_map '
-                          'WHERE deid_map.person_id = {tablename}.person_id'
+            shift_days = ('SELECT shift from {idataset}._deid_map '
+                          'WHERE _deid_map.person_id = {tablename}.person_id'
                           .format(idataset=self.idataset, tablename=self.tablename))
             self.deid_rules['shift'] = json.loads(json.dumps(self.deid_rules['shift']).replace(":SHIFT", shift_days))
 
     def initialize(self, **args):
         Press.initialize(self, **args)
+        LOGGER.info('BEGINNING de-identification on table:\t%s', self.tablename)
+
         age_limit = args['age_limit']
         max_day_shift = args['max_day_shift']
         million = 1000000
-        map_tablename = self.idataset + ".deid_map"
+        map_tablename = self.idataset + "._deid_map"
         sql = ("SELECT DISTINCT person_id, EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth as age "
                "FROM {idataset}.person ORDER BY 2"
                .format(idataset=self.idataset))
-        person_table = self.get(sql=sql)
-        self.log(module='initialize',
-                 subject=self.get_tablename(),
-                 action='patient-count',
-                 value=person_table.shape[0])
+        person_table = self.get_dataframe(sql=sql)
+        LOGGER.info('patient count is:\t%s', person_table.shape[0])
         map_table = pd.DataFrame()
 
-        # only need to create this mapping table if an observation table exists
-        if self.get_tablename().lower() == 'observation':
+        # only need to create these tables deidentifying the observation table
+        if 'observation' in self.get_tablename().lower().split('.'):
+            create_allowed_states_table(self.idataset, self.credentials)
             self.map_questionnaire_response_ids(million)
+            create_person_id_src_hpo_map(self.idataset, self.credentials)
 
         if person_table.shape[0] > 0:
             person_table = person_table[person_table.age < age_limit]
-            map_table = self.get(sql="SELECT * FROM " + map_tablename)
-            if map_table.shape[0] > 0 and map_table.shape[0] == person_table.shape[0]:
-                #
-                # There is nothing to be done here
-                # @TODO: This weak post-condition is not enough nor consistent
-                #   - consider using a set operation
-                #
-                pass
+            map_table = self.get_dataframe(sql="SELECT * FROM " + map_tablename)
+            if map_table.shape[0] > 0:
+                # Make sure the mapping table is mapping the expected data
+                map_table_set = set(map_table.loc[:, 'person_id'].tolist())
+                person_set = set(person_table.loc[:, 'person_id'].tolist())
+                if map_table_set == person_set:
+                    LOGGER.info('participant mapping table contains '
+                                'all person ids.  continuing...')
+                else:
+                    LOGGER.info("creating new participant mapping table because the current mapping table doesn't match")
+                    create_participant_mapping_table(
+                        person_table, map_tablename, million, max_day_shift, self.credentials
+                    )
             else:
-                # create the deid_map table.  set upper and lower bounds of the research_id array
-                records = person_table.shape[0]
-                lower_bound = million
-                upper_bound = lower_bound + (10 * records)
-                map_table = pd.DataFrame({"person_id": person_table['person_id'].tolist()})
-
-                # generate random research_ids
-                research_id_array = np.random.choice(np.arange(lower_bound, upper_bound), records, replace=False)
-
-                # throw in some extra, non-deterministic shuffling
-                for _ in range(milliseconds_since_epoch() % 5):
-                    np.random.shuffle(research_id_array)
-                map_table['research_id'] = research_id_array
-
-                # generate date shift values
-                shift_array = np.random.choice(np.arange(1, max_day_shift), records)
-
-                # throw in some extra, non-deterministic shuffling
-                for _ in range(milliseconds_since_epoch() % 5):
-                    np.random.shuffle(shift_array)
-                map_table['shift'] = shift_array
-
-                # write this to bigquery.
-                map_table.to_gbq(map_tablename, credentials=self.credentials, if_exists='fail')
+                LOGGER.info("creating new participant mapping table because one doesn't exist")
+                create_participant_mapping_table(
+                    person_table, map_tablename, million, max_day_shift, self.credentials
+                )
         else:
-            print ("Unable to initialize Deid.  "
-                   "Check configuration files, parameters, and credentials.")
+            LOGGER.error("Unable to initialize Deid.  Check "
+                         "configuration files, parameters, and credentials.")
 
-        #
-        # @TODO: Make sure that what happened here is logged and made available
-        #   - how many people are mapped
-        #   - how many people are not mapped
-        #   - was the table created or not
-        #
-        self.log(module='initialize',
-                 subject=self.get_tablename(),
-                 action='mapped-patients',
-                 value=map_table.shape[0])
+        LOGGER.info('map table contains %d participants.', map_table.shape[0])
         return person_table.shape[0] > 0 or map_table.shape[0] > 0
 
-
     def map_questionnaire_response_ids(self, lower_bound):
-        map_tablename = self.idataset + ".deid_questionnaire_response_map"
+        """
+        Create a random mapping table for questionnaire response ids.
+
+        :param lower_bound:  The smallest number that may be used as an identifier.
+        """
+        map_tablename = self.idataset + "._deid_questionnaire_response_map"
         sql = ("SELECT DISTINCT o.questionnaire_response_id "
                "FROM {idataset}.observation as o "
                "WHERE o.questionnaire_response_id IS NOT NULL "
                "ORDER BY 1"
                .format(idataset=self.idataset))
-        observation_table = self.get(sql=sql)
-        self.log(module='initialize',
-                 subject=self.get_tablename(),
-                 action='questionnaire-response-id-count',
-                 value=observation_table.shape[0])
+        observation_table = self.get_dataframe(sql=sql)
+        LOGGER.info('total of distinct questionnaire_response_ids:\t%d',
+                    observation_table.shape[0])
         map_table = pd.DataFrame()
 
         if observation_table.shape[0] > 0:
-            map_table = self.get(sql="SELECT * FROM " + map_tablename)
-            if map_table.shape[0] > 0 and map_table.shape[0] == observation_table.shape[0]:
-                #
-                # There is nothing to be done here
-                # @TODO: This weak post-condition is not enough nor consistent
-                #   - consider using a set operation
-                #
-                pass
+            map_table = self.get_dataframe(sql="SELECT * FROM " + map_tablename)
+            if map_table.shape[0] > 0:
+                # Make sure the mapping table is mapping the expected data
+                map_table_set = set(map_table.loc[:, 'questionnaire_response_id'].tolist())
+                observation_set = set(observation_table.loc[:, 'questionnaire_response_id'].tolist())
+                if map_table_set == observation_set:
+                    LOGGER.info('questionnaire response mapping table contains '
+                                'all questionnaire response ids')
+                else:
+                    LOGGER.info('creating new questionnaire response mapping '
+                                'table because the existing table doesn\'t match')
+                    # The tables do NOT contain the same mapped elements
+                    create_questionnaire_mapping_table(
+                        observation_table, map_tablename, lower_bound, self.credentials
+                    )
             else:
-                # create the deid_map table.  set upper and lower bounds of the research_id array
-                records = observation_table.shape[0]
-                upper_bound = lower_bound + (10 * records)
-                qr_id_list = observation_table['questionnaire_response_id'].tolist()
-                map_table = pd.DataFrame({"questionnaire_response_id": qr_id_list})
-
-                # generate random research_questionnaire_response_ids
-                research_id_array = np.random.choice(np.arange(lower_bound, upper_bound), records, replace=False)
-
-                # throw in some extra, non-deterministic shuffling
-                for _ in range(milliseconds_since_epoch() % 5):
-                    np.random.shuffle(research_id_array)
-                map_table['research_response_id'] = research_id_array
-
-                # write this to bigquery.
-                map_table.to_gbq(map_tablename, credentials=self.credentials, if_exists='fail')
+                LOGGER.info('creating a new questionnaire response mapping '
+                            'table because it doesn\'t exist')
+                # create the deid table.  set upper and lower bounds of the research_id array
+                create_questionnaire_mapping_table(
+                    observation_table, map_tablename, lower_bound, self.credentials
+                )
         else:
-            self.log(module="initialize",
-                     subject=self.get_tablename(),
-                     action="questionnaire_response_id_count",
-                     value="No questionnaire_response_ids found.")
+            LOGGER.error("No questionnaire_response_ids found.")
 
+        LOGGER.info('questionnaire response mapping table contains %d records',
+                    map_table.shape[0])
+
+    def get_dataframe(self, sql=None, limit=None):
+        """
+        This function will execute a query to a data-frame (for easy handling)
+        """
+        if sql is None:
+            sql = ("SELECT * FROM {idataset}.{tablename}"
+                   .format(idataset=self.idataset, tablename=self.tablename))
+
+        if limit:
+            sql = sql + " LIMIT " + str(limit)
+
+        try:
+            df = pd.read_gbq(sql, credentials=self.credentials, dialect='standard')
+            return df
+        except Exception:
+            LOGGER.exception("Unable to execute the query:\t%s", sql)
+
+        return pd.DataFrame()
 
     def update_rules(self):
         """
         This will add rules that are to be applied by default to the current table
         @TODO: Make sure there's a way to specify these in the configuration
         """
-        df = self.get(limit=1)
+        df = self.get_dataframe(limit=1)
         columns = df.columns.tolist()
         if 'suppress' not in self.info:
             self.info['suppress'] = []
@@ -293,7 +433,7 @@ class AOU(Press):
                 self.info['shift'] = []
 
             if _toshift:
-                self.log(module='update-rules', subject=self.get_tablename(), object='shift', fields=_toshift)
+                LOGGER.info('shifting fields:\t%s', _toshift)
                 self.info['shift'] += _toshift
 
         #
@@ -311,33 +451,11 @@ class AOU(Press):
                 {
                     "rules": "@compute.id",
                     "fields": ["person_id"],
-                    "table": ":idataset.deid_map as map_user",
+                    "table": ":idataset._deid_map as map_user",
                     "key_field": "map_user.person_id",
                     "value_field": self.tablename + ".person_id"
                 }
             ]
-
-    def get(self, **args):
-        """
-        This function will execute a query to a data-frame (for easy handling)
-        """
-        if 'sql' in args:
-            sql = args['sql']
-        else:
-            sql = ("SELECT * FROM {idataset}.{tablename}"
-                   .format(idataset=self.idataset, tablename=self.tablename))
-
-        if 'limit' in args:
-            sql = sql + " LIMIT " + str(args['limit'])
-
-        try:
-            df = pd.read_gbq(sql, credentials=self.credentials, dialect='standard')
-            return df
-        except Exception as error:
-            self.log(module='get', action='error', value=error.message)
-            print error.message
-
-        return pd.DataFrame()
 
     def submit(self, sql, create):
         table_name = self.get_tablename()
@@ -352,16 +470,14 @@ class AOU(Press):
 
         # create the output table
         if create:
-            self.log(module='submit', subject=self.get_tablename(),
-                     action='creating new table')
+            LOGGER.info('creating new table:\t%s', self.tablename)
             bq_utils.create_standard_table(
                 self.tablename, self.tablename, drop_existing=True, dataset_id=self.odataset
             )
             write_disposition = bq_consts.WRITE_EMPTY
         else:
             write_disposition = bq_consts.WRITE_APPEND
-            self.log(module='submit', subject=self.get_tablename(),
-                     action='not creating new table')
+            LOGGER.info('appending results to table:\t%s', self.tablename)
 
         job = bq.QueryJobConfig()
         job.destination = client.dataset(self.odataset).table(self.tablename)
@@ -375,10 +491,10 @@ class AOU(Press):
         job.priority = self.priority
         job.dry_run = True
 
-        self.log(module='submit-job',
-                 subject=self.get_tablename(),
-                 action='dry-run',
-                 value={'priority': self.priority, 'parition': self.partition})
+        LOGGER.info('submitting a dry-run for:\t%s\t\tpriority:\t%s\t\tpartition:\t%s',
+                    self.get_tablename(),
+                    self.priority,
+                    self.partition)
 
         logpath = os.path.join(self.logpath, self.idataset)
         try:
@@ -387,30 +503,31 @@ class AOU(Press):
             # log path already exists and we don't care
             pass
 
-        r = client.query(sql, location='US', job_config=job)
-        if r.errors is None and r.state == 'DONE':
-            job.dry_run = False
-
+        try:
             r = client.query(sql, location='US', job_config=job)
-            self.log(module='submit',
-                     subject=self.get_tablename(),
-                     action='submit-job',
-                     table=table_name,
-                     status='pending',
-                     value=r.job_id,
-                     object='bigquery')
-            self.wait(client, r.job_id)
+        except Exception:
+            LOGGER.exception('dry run query failed for:\t%s\n'
+                             '\t\tSQL:\t%s\n'
+                             '\t\tjob config:\t%s',
+                             self.get_tablename(),
+                             sql,
+                             job)
         else:
-            self.log(module='submit',
-                     subject=self.get_tablename(),
-                     action='submit-job',
-                     table=table_name,
-                     status='error',
-                     value=r.errors)
-            print (r.errors)
+            if r.state == 'DONE':
+                job.dry_run = False
+
+                LOGGER.info('dry-run passed.  submitting query for execution.')
+
+                r = client.query(sql, location='US', job_config=job)
+                LOGGER.info('submitted a %s job for table:\t%s\t\tstatus:\t%s\t\tvalue:\t%s',
+                            'bigquery',
+                            table_name,
+                            'pending',
+                            r.job_id)
+                self.wait(client, r.job_id)
 
     def wait(self, client, job_id):
-        self.log(module='wait', subject=self.get_tablename(), action="sleep", value=job_id)
+        LOGGER.info('sleeping for table:\t%s\t\tjob_id:\t%s', self.get_tablename(), job_id)
         status = 'NONE'
 
         while True:
@@ -421,7 +538,7 @@ class AOU(Press):
             else:
                 time.sleep(5)
 
-        self.log(module='wait', action='awake', status=status)
+        LOGGER.info('awake.  status is:\t%s', status)
 
 
 def main(raw_args=None):

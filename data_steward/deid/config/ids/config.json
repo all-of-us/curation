@@ -3,46 +3,75 @@
         "_id":"generalize",
         "RACE": [
             {
-                "comment": "perform aggregation first",
+                "comment": [
+                    "aggregate multi-race answers before generalizing ",
+                    "single race answers.  treat HLS as an ethnicity, ",
+                    "not a race."
+                ],
                 "apply": "SQL",
                 "statement": [
-                    "(select count(obs.person_id) ",
-                    "from :idataset.:table as obs ",
-                    "where obs.person_id = :table.person_id and obs.value_source_concept_id IN (1586141, 1586142, 1586143, 1586144, 1586145, 1586146) ",
-                    "group by obs.person_id ) "
+                    "(SELECT COUNT(obs.person_id) ",
+                    "FROM :idataset.:table AS obs ",
+                    "WHERE obs.person_id = :table.person_id ",
+                    "AND obs.value_source_concept_id IN (1586141, 1586142, 1586143, 1586144, 1586145, 1586146) ",
+                    "GROUP BY obs.person_id ) "
                 ],
-                "qualifier": " > 1 and value_source_concept_id != 1586147 ",
+                "qualifier": " > 1 AND value_source_concept_id != 1586147 ",
                 "into": 2000000008
             },
             {
                 "comment": "generalize single race values",
-                "values":[1586141, 1586144, 1586145],
-                "into":2000000001,
-                "qualifier":"IN"
+                "values": [1586141, 1586144, 1586145],
+                "into": 2000000001,
+                "qualifier": "IN"
             }
         ],
         "STATE": [
             {
-                "comment": "generalize states with a low number of participants",
+                "comment": [
+                    "generalize participant state when PIIState doesn't match ",
+                    "participant EHR state.  requires the reference tables ",
+                    "_mapping_person_src_hpos and _mapping_src_hpos_to_allowed_states ",
+                    "to be built during initialization."
+                ],
+                "apply": "SQL",
+                "statement": [
+                    "observation_id IN (SELECT observation_id FROM ( ",
+                    "SELECT DISTINCT src_hpo_id, obs.person_id, value_source_concept_id, observation_id ",
+                    "FROM :idataset._mapping_person_src_hpos AS person_hpos ",
+                    "JOIN :idataset.observation AS obs ",
+                    "USING (person_id) ",
+                    "LEFT JOIN :idataset._mapping_src_hpos_to_allowed_states ",
+                    "USING (src_hpo_id, value_source_concept_id) ",
+                    "WHERE observation_source_concept_id = 1585249  AND state IS NULL))"
+                ],
+                "into": 2000000011
+            },
+            {
+                "comment": "generalize the PIIState for participants with a low participant total",
                 "qualifier": "IN",
-                "values": [1585262, 1585263, 1585270, 1585271, 1585274, 1585275, 1585284, 1585299, 1585291, 1585300, 1585306, 1585304, 1585307, 1585309, 1585315, 1585313, 1585409, 1585411],
+                "values": [
+                    1585262, 1585263, 1585270, 1585271, 1585274, 1585275,
+                    1585284, 1585299, 1585291, 1585300, 1585304, 1585306,
+                    1585307, 1585309, 1585313, 1585315, 1585409, 1585411
+                ],
                 "into": 2000000011
             }
         ],
         "SEXUAL-ORIENTATION":[
             {
-                "comment": "generalize any answer that is not straight",
-                "qualifier":"IN",
-                "values":[903096, 903079, 1585901, 1585902, 1585903, 1585904],
-                "into":2000000003
+                "comment": "generalize any response that is not straight",
+                "qualifier": "IN",
+                "values": [903096, 903079, 1585901, 1585902, 1585903, 1585904],
+                "into": 2000000003
             }
         ],
         "SEX-AT-BIRTH":[
             {
-                "comment": "generalizing not male and not female responses",
-                "qualifier":"IN",
-                "values":[903096, 903079, 1585848, 1585849],
-                "into":2000000009
+                "comment": "generalize any response that is not male and not female",
+                "qualifier": "IN",
+                "values": [903096, 903079, 1585848, 1585849],
+                "into": 2000000009
             }
         ],
         "GENDER":[
@@ -204,7 +233,7 @@
             }
         ],
         "FILTERS":[
-            {"filter":"person_id IN (SELECT DISTINCT person_id FROM :idataset.deid_map)"}
+            {"filter":"person_id IN (SELECT DISTINCT person_id FROM :idataset._deid_map)"}
         ],
         "ICD-9":[
             {"apply":"REGEXP", "values":["^E8[0-4"],"description":"rare accidents"},
@@ -230,13 +259,13 @@
     },
     {
         "_id": "compute",
-        "id": ["(SELECT research_id FROM :idataset.deid_map WHERE deid_map.person_id = :value_field) as :FIELD"],
+        "id": ["(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = :value_field) as :FIELD"],
         "response_id": [
             "(SELECT ",
             "CASE WHEN :value_field IS NULL THEN NULL ",
             "ELSE (",
                 "SELECT dqrm.research_response_id ",
-                "FROM :idataset.deid_questionnaire_response_map AS dqrm ",
+                "FROM :idataset._deid_questionnaire_response_map AS dqrm ",
                 "WHERE dqrm.questionnaire_response_id = :value_field) ",
             "END ) AS :FIELD"
         ],
