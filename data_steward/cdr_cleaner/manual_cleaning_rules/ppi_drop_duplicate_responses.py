@@ -131,6 +131,8 @@ if __name__ == '__main__':
                         action='store', dest='sandbox_dataset_id',
                         help='Identifies the sandbox dataset.',
                         required=True)
+    parser.add_argument('-l', '--console_log', dest='console_log', action='store_true',
+                        help='Send logs to console')
 
     ARGS = parser.parse_args()
 
