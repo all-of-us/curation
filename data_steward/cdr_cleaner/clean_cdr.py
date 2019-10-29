@@ -33,7 +33,7 @@ import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_recor
 import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_concept_ids
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
-import constants.cdr_cleaner.clean_cdr as clean_cdr_consts
+import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 
 LOGGER = logging.getLogger(__name__)
 
@@ -65,6 +65,7 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     query_list.extend(ppi_numeric_fields.get_clean_ppi_num_fields_using_parameters_queries(project_id, dataset_id))
     query_list.extend(
         remove_multiple_race_answers.get_remove_multiple_race_ethnicity_answers_queries(project_id, dataset_id))
+    query_list.extend(negative_ppi.get_update_ppi_queries(project_id, dataset_id, sandbox_dataset_id))
     return query_list
 
 
