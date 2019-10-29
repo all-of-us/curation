@@ -35,9 +35,6 @@ jobs:
           name: Activate service account
           command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
       - run:
-          name: Add credentials path to bash startup
-          command: echo "export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json" >> ${BASH_ENV}
-      - run:
           name: Set up environment variables
           command: ./init_env.sh
       - run:
