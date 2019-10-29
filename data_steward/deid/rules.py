@@ -26,6 +26,30 @@ import numpy as np
 from parser import Parse
 from resources import fields_for
 
+def _get_case_condition_syntax(cond, regex, gen_value, rule, rules, syntax):
+    """
+    Build case statement syntax.
+
+    :param cond:  The current conditional list
+    :param regex:  The built up regular expression string
+    :param gen_value:  The value to generalize values meeting the syntax into
+    :param rule:  The current dictionary rule that is being processed
+    :param rules:  The list of rules for processing a generalization
+
+    :return:  A populated condition list, that when joined will form
+        part of a proper CASE statement
+    """
+    if rules[0] == rule:
+        cond.append(syntax['IF'])
+
+    cond += [" ".join([syntax['OPEN'], regex, syntax['THEN'], gen_value])]
+
+    if rule == rules[-1]:
+        cond += [syntax['ELSE']]
+
+    return cond
+
+
 class Rules(object):
     def __init__(self, **args):
         self.cache = {}
@@ -43,8 +67,7 @@ class Rules(object):
                           "COUNT-DISTINCT": ("SELECT COUNT (DISTINCT :ALIAS.:DISTINCT_FIELD) "
                                              "FROM :DATASET.:TABLE AS :ALIAS WHERE :KEY=:VALUE"),
                           "SQL":  ":SQL_STATEMENT"},
-                "cond_syntax": {"IF": "IF", "OPEN": "(", "THEN": ",", "ELSE": ",", "CLOSE": ")"},
-                "case_syntax": {"CASE": "CASE", "WHEN": "WHEN", "OPEN": "(", "CLOSE": ")", "THEN": "THEN", "ELSE": "ELSE", "END": "END"},
+                "cond_syntax": {"IF": "CASE", "OPEN": "WHEN", "THEN": "THEN", "ELSE": "ELSE", "CLOSE": "END"},
                 "random": "CAST( (RAND() * 364) + 1 AS INT64)"
             },
             "postgresql": {
@@ -196,7 +219,7 @@ class Deid(Rules):
                                 key_row = key_row.replace(':name', name)
                                 conjunction = ' AND ' if 'qualifier' in rule else ' WHERE '
 
-                                if isinstance(rule['on'], list):
+                                if isinstance(rule.get('on'), list):
                                     try:
                                         val_list = " IN ('" + "','".join(rule['on']) + "')"
                                     except TypeError:
@@ -224,7 +247,7 @@ class Deid(Rules):
                             statement = statement.replace(':table', args.get('table', 'table_NOT_SET'))
                             regex = regex.replace(':SQL_STATEMENT', statement)
 
-                            regex = ' '.join([regex])
+                            regex = ' '.join([regex, qualifier])
 
                         else:
                             regex = ' '.join([regex, qualifier])
@@ -232,20 +255,15 @@ class Deid(Rules):
                         # Is there a filter associated with the aggregate function or not
                         #
                     if 'into' in rule or 'into' in args:
-                        _into = rule['into'] if 'into' not in args else args['into']
+                        gen_value = args.get('into', rule.get('into', ''))
 
-                        if not isinstance(_into, (int, long)):
-                            _into = "'" + _into + "'"
+                        if not isinstance(gen_value, (int, long)):
+                            gen_value = "'" + gen_value + "'"
                         else:
-                            _into = str(_into)
+                            gen_value = str(gen_value)
 
                         regex = "".join(regex)
-                        cond += [" ".join([syntax['IF'], syntax['OPEN'], regex, syntax['THEN'], _into])]
-
-                        if rules.index(rule) % 2 == 0 or rules.index(rule) % 3:
-                            cond += [syntax['ELSE']]
-                    elif 'SQL' in rule['apply']:
-                        cond += [regex]
+                        cond = _get_case_condition_syntax(cond, regex, gen_value, rule, rules, syntax)
 
                 else:
                     #
@@ -254,35 +272,28 @@ class Deid(Rules):
                     #   - An if or else type of generalization given a list of values or function
                     #   - IF <filter> IN <values>, THEN <generalized-value> else <attribute>
                     self.log(module='generalize', label=label.split('.')[1], on=name, type='inline')
-                    key_field = args.get('key_field', name)
-
-                    if 'on' in args and 'key_field' in args:
-                        key_field += ' AND '+ args['on']
-
                     fillter = args.get('filter', name)
-                    qualifier = rule['qualifier']
-                    _into = rule['into'] if 'into' not in args else args['into']
+                    qualifier = rule.get('qualifier', '')
+                    gen_value = args.get('into', rule.get('into', ''))
 
-                    if isinstance(_into, (int, long)):
-                        _into = str(_into)
+                    if isinstance(gen_value, (int, long)):
+                        gen_value = str(gen_value)
                         values = [str(value) for value in rule['values']]
                         values = '(' + ','.join(values) + ')'
                     else:
-                        _into = "'" + _into + "'"
+                        gen_value = "'" + gen_value + "'"
                         values = "('" + "','".join(rule['values']) + "')"
 
-                    regex = " ".join([fillter, qualifier, values])
-                    cond += [" ".join([syntax['IF'], syntax['OPEN'], regex, syntax['THEN'], _into])]
+                    regex_list = [fillter, qualifier, values]
 
-                    if rules.index(rule) % 2 == 0 or rules.index(rule) % 3:
-                        cond += [syntax['ELSE']]
+                    regex = " ".join(regex_list)
+                    cond = _get_case_condition_syntax(cond, regex, gen_value, rule, rules, syntax)
 
             #
             # Let's build the syntax here to make it sound for any persistence storage
-            if 'SQL' not in rule.get('apply', []):
-                cond += [name]
-                cond_counts = sum([1 for xchar in cond if syntax['IF'] in xchar])
-                cond += np.repeat(syntax['CLOSE'], cond_counts).tolist()
+            cond += [name]
+            cond_counts = sum([1 for xchar in cond if syntax['IF'] in xchar])
+            cond += np.repeat(syntax['CLOSE'], cond_counts).tolist()
 
             cond += ['AS', name]
             result = {"name": name, "apply": " ".join(cond), "label": label}
@@ -292,14 +303,18 @@ class Deid(Rules):
             out.append(result)
 
             # allows to generalize one field off another field's values
-            # essentially, it copies the generalized value of one field to another
+            # essentially, it copies generalized values of one field to another
+            # if the source field is not generalized, the field retains its original value
             if 'copy_to' in args:
                 copy_to = args.get('copy_to')
                 if not isinstance(copy_to, list):
                     copy_to = [copy_to]
 
                 for copy_field in copy_to:
+                    # save as copy_field
                     cond[-1] = copy_field
+                    # fall back to original field value
+                    cond[-4] = copy_field
                     copy_result = {"name": copy_field, "apply": " ".join(cond), "label": label}
                     if 'on' in args:
                         copy_result['on'] = args['on']
