@@ -14,9 +14,12 @@ def create_sandbox_dataset(project_id, dataset_id):
     """
     sandbox_dataset_id = get_sandbox_dataset_id(dataset_id)
     friendly_name = 'Sandbox for {dataset_id}'.format(dataset_id=dataset_id)
+    description = 'Sandbox created for storing records affected by the cleaning rules applied to {dataset_id}'.format(
+        dataset_id=dataset_id)
     create_dataset(project_id=project_id,
                    dataset_id=sandbox_dataset_id,
                    friendly_name=friendly_name,
+                   description=description,
                    overwrite_existing=bq_consts.FALSE)
 
     return sandbox_dataset_id
