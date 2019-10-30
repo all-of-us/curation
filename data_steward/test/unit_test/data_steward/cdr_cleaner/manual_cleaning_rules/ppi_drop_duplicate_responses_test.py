@@ -2,6 +2,7 @@ import unittest
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_drop
 import constants.bq_utils as bq_consts
+import sandbox
 
 
 class PPIDropDuplicateResponsesTest(unittest.TestCase):
@@ -20,8 +21,8 @@ class PPIDropDuplicateResponsesTest(unittest.TestCase):
     def test_get_remove_duplicate_queries(self):
         select_query = dict()
         select_query[cdr_consts.QUERY] = ppi_drop.get_select_statement(self.project_id, self.dataset_id)
-        select_query[cdr_consts.DESTINATION_TABLE] = ppi_drop.create_sandbox_table_name(self.dataset_id,
-                                                                                        ppi_drop.CLEANING_RULE_NAME)
+        select_query[cdr_consts.DESTINATION_TABLE] = sandbox.get_sandbox_table_name(self.dataset_id,
+                                                                                    ppi_drop.CLEANING_RULE_NAME)
         select_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         select_query[cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
 

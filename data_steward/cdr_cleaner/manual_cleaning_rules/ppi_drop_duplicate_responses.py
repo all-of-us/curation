@@ -102,7 +102,7 @@ def get_remove_duplicate_set_of_responses_to_same_questions_queries(project_id, 
 
     select_query = dict()
     select_query[cdr_consts.QUERY] = get_select_statement(project_id, dataset_id)
-    select_query[cdr_consts.DESTINATION_TABLE] = sandbox.create_sandbox_table_name(dataset_id, CLEANING_RULE_NAME)
+    select_query[cdr_consts.DESTINATION_TABLE] = sandbox.get_sandbox_table_name(dataset_id, CLEANING_RULE_NAME)
     select_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     select_query[cdr_consts.DESTINATION_DATASET] = sandbox_dataset_id
     queries.append(select_query)
