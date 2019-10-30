@@ -51,7 +51,7 @@ def _gather_ehr_queries(project_id, dataset_id):
     return query_list
 
 
-def _gather_rdr_queries(project_id, dataset_id):
+def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     gathers all the queries required to clean rdr dataset
 
@@ -147,9 +147,9 @@ def clean_rdr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
-    query_list = _gather_rdr_queries(project_id, dataset_id)
+    query_list = _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id)
 
     LOGGER.info("Cleaning rdr_dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.RDR)
