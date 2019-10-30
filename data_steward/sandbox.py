@@ -10,14 +10,16 @@ def create_sandbox_dataset(project_id, dataset_id):
     A helper function create a sandbox dataset if the sandbox dataset doesn't exist
     :param project_id: project_id
     :param dataset_id: any dataset_id
-    :return:
+    :return: the sandbox dataset_id
     """
     sandbox_dataset_id = get_sandbox_dataset_id(dataset_id)
     friendly_name = 'Sandbox for {dataset_id}'.format(dataset_id=dataset_id)
-    return create_dataset(project_id=project_id,
-                          dataset_id=sandbox_dataset_id,
-                          friendly_name=friendly_name,
-                          overwrite_existing=bq_consts.FALSE)
+    create_dataset(project_id=project_id,
+                   dataset_id=sandbox_dataset_id,
+                   friendly_name=friendly_name,
+                   overwrite_existing=bq_consts.FALSE)
+
+    return sandbox_dataset_id
 
 
 def get_sandbox_dataset_id(dataset_id):
