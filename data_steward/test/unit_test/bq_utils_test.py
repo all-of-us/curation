@@ -64,6 +64,18 @@ class BqUtilsTest(unittest.TestCase):
                 "name": "timestamp_field",
                 "mode": "required",
                 "description": "A timestamp field"
+            },
+            {
+                "type": "boolean",
+                "name": "boolean_field",
+                "mode": "required",
+                "description": "A boolean field"
+            },
+            {
+                "type": "float",
+                "name": "float_field",
+                "mode": "required",
+                "description": "A float field"
             }
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -364,9 +376,10 @@ class BqUtilsTest(unittest.TestCase):
         with open(csv_path, 'r') as f:
             expected = list(csv.DictReader(f))
         bq_utils.load_table_from_csv(self.project_id, self.dataset_id, table_id, csv_path, self.TEST_FIELDS)
-        q = "SELECT * FROM `{project_id}.{dataset_id}.{table_id}`".format(project_id=self.project_id,
-                                                                          dataset_id=self.dataset_id,
-                                                                          table_id=table_id)
+        q = """ SELECT *
+                FROM `{project_id}.{dataset_id}.{table_id}`""".format(project_id=self.project_id,
+                                                                      dataset_id=self.dataset_id,
+                                                                      table_id=table_id)
         r = bq_utils.query(q)
         actual = bq_utils.response2rows(r)
 

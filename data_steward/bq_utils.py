@@ -737,7 +737,7 @@ def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, field
     :param csv_path: path to the csv file which needs to be loaded into BQ.
                      If None, assumes that the file exists in the resources folder with the name table_name.csv
     :param fields: fields in list of dicts format. If set to None, assumes that
-                   the fields are stored in a json file in resources named table_name.json
+                   the fields are stored in a json file in resources/fields named table_name.json
     :return: BQ response for the load query
     """
     if csv_path is None:
@@ -749,9 +749,12 @@ def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, field
         fields = json.load(open(fields_filename, 'r'))
     field_names = ', '.join([field['name'] for field in fields])
 
-    # template for formatted values
-    insert_format_vals = '({cols})'.format(cols=', '.join(['{' + field['name'] + '}' if field["type"] == 'integer'
-                                                           else '"{' + field['name'] + '}"' for field in fields]))
+    # template for formatted values.
+    # string, dates and timestamps can be passed as string
+    # integer, float and boolean need to be passed without string quotes
+    insert_format_vals = '({cols})'.format(cols=', '.join(['"{' + field['name'] + '}"' if field["type"] == 'string'
+                                                           or field["type"] == 'date' or field["type"] == 'timestamp'
+                                                           else '{' + field['name'] + '}' for field in fields]))
 
     pair_exprs = []
     for mapping_dict in table_list:
