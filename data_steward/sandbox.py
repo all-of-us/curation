@@ -31,7 +31,7 @@ def get_sandbox_dataset_id(dataset_id):
     return '{dataset_id}_{sandbox_suffix}'.format(dataset_id=dataset_id, sandbox_suffix=SANDBOX_SUFFIX)
 
 
-def create_sandbox_table_name(dataset_id, rule_name):
+def get_sandbox_table_name(dataset_id, rule_name):
     """
     A helper function to create a table in the sandbox dataset
 
@@ -39,4 +39,4 @@ def create_sandbox_table_name(dataset_id, rule_name):
     :param rule_name: the name of the cleaning rule
     :return: the concatenated table name
     """
-    return '{dataset_id}_{rule_name}'.format(dataset_id=dataset_id, rule_name=re.sub('\W', '_', rule_name))
+    return '{dataset_id}_{rule_name}'.format(dataset_id=dataset_id, rule_name=re.sub(r'\W', '_', rule_name))
