@@ -727,30 +727,31 @@ def create_dataset(
     return insert_result
 
 
-def load_table_from_csv(project_id, dataset_id, table_name, fields=None):
+def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, fields=None):
+    """
+    Loads BQ table from a csv file without making use of GCS buckets
+
+    :param project_id: project containing the dataset
+    :param dataset_id: dataset where the table needs to be created
+    :param table_name: name of the table to be created
+    :param csv_path: path to the csv file which needs to be loaded into BQ.
+                     If None, assumes that the file exists in the resources folder with the name table_name.csv
+    :param fields: fields in list of dicts format. If set to None, assumes that
+                   the fields are stored in a json file in resources named table_name.json
+    :return: BQ response for the load query
+    """
+    if csv_path is None:
+        csv_path = os.path.join(resources.resource_path, table_name + ".csv")
+    table_list = resources.csv_to_list(csv_path)
+
     if fields is None:
         fields_filename = os.path.join(resources.fields_path, table_name + '.json')
         fields = json.load(open(fields_filename, 'r'))
-
     field_names = ', '.join([field['name'] for field in fields])
 
-    col_exprs = []
-    for field in fields:
-        if field['type'] == 'string' or field['type'] == 'date' or field['type'] == 'timestamp':
-            col_expr = '\"{' + '{field_name}'.format(field_name=field['name']) + '}\"'
-        else:
-            col_expr = '{' + '{field_name}'.format(field_name=field['name']) + '}'
-        col_exprs.append(col_expr)
-    cols = '({cols})'.format(cols=', '.join(col_exprs))
-
-    insert_query = """
-    INSERT INTO `{project_id}.{dataset_id}.{table_id}`
-     {columns}
-    VALUES {mapping_list}
-    """
-
-    table_csv = os.path.join(resources.resource_path, table_name + ".csv")
-    table_list = resources.csv_to_list(table_csv)
+    # template for formatted values
+    insert_format_vals = '({cols})'.format(cols=', '.join(['{' + field['name'] + '}' if field["type"] == 'integer'
+                                                           else '"{' + field['name'] + '}"' for field in fields]))
 
     pair_exprs = []
     for mapping_dict in table_list:
@@ -761,19 +762,17 @@ def load_table_from_csv(project_id, dataset_id, table_name, fields=None):
                     converted_dict[k] = int(v)
                 else:
                     converted_dict[k] = v
-        pair_expr = cols.format(**converted_dict)
+        pair_expr = insert_format_vals.format(**converted_dict)
         pair_exprs.append(pair_expr)
     formatted_mapping_list = ', '.join(pair_exprs)
 
-    create_table(table_id=table_name,
-                 fields=fields,
-                 drop_existing=True,
-                 dataset_id='{dataset}'.format(dataset=dataset_id))
-    table_populate_query = insert_query.format(dataset_id=dataset_id,
-                                               project_id=project_id,
-                                               table_id=table_name,
-                                               columns='({x})'.format(x=field_names),
-                                               mapping_list=formatted_mapping_list)
+    create_table(table_id=table_name, fields=fields, drop_existing=True, dataset_id=dataset_id)
+
+    table_populate_query = bq_consts.INSERT_QUERY.format(project_id=project_id,
+                                                         dataset_id=dataset_id,
+                                                         table_id=table_name,
+                                                         columns=field_names,
+                                                         mapping_list=formatted_mapping_list)
     result = query(table_populate_query)
     return result
 

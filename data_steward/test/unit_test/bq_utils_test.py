@@ -1,4 +1,6 @@
+import csv
 import os
+import time
 import unittest
 from datetime import datetime
 
@@ -7,6 +9,7 @@ from google.appengine.ext import testbed
 
 import bq_utils
 import common
+from google.appengine.api import app_identity
 import constants.bq_utils as bq_utils_consts
 import gcs_utils
 import resources
@@ -16,10 +19,6 @@ from test_util import NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_
 from test_util import PITT_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_OBSERVATION_CSV
 from validation.achilles import ACHILLES_TABLES
 
-# import time
-
-PERSON = 'person'
-
 
 class BqUtilsTest(unittest.TestCase):
     @classmethod
@@ -27,8 +26,6 @@ class BqUtilsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-
-    EHR_DATASET_ID = bq_utils.get_dataset_id()
 
     def setUp(self):
         self.testbed = testbed.Testbed()
@@ -39,8 +36,37 @@ class BqUtilsTest(unittest.TestCase):
         self.testbed.init_blobstore_stub()
         self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
-        self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)
-        test_util.delete_all_tables(self.EHR_DATASET_ID)
+        self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
+        self.dataset_id = bq_utils.get_dataset_id()
+        test_util.delete_all_tables(self.dataset_id)
+        self.project_id = app_identity.get_application_id()
+        self.TEST_FIELDS = [
+            {
+                "type": "integer",
+                "name": "integer_field",
+                "mode": "required",
+                "description": "An integer field"
+            },
+            {
+                "type": "string",
+                "name": "string_field",
+                "mode": "required",
+                "description": "A string field"
+            },
+            {
+                "type": "date",
+                "name": "date_field",
+                "mode": "required",
+                "description": "A date field"
+            },
+            {
+                "type": "timestamp",
+                "name": "timestamp_field",
+                "mode": "required",
+                "description": "A timestamp field"
+            }
+        ]
+        self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
         self._empty_bucket()
 
     def _empty_bucket(self):
@@ -78,7 +104,7 @@ class BqUtilsTest(unittest.TestCase):
             response = gcs_utils.upload_object(self.hpo_bucket, csv_file_name, fp)
         hpo_bucket = self.hpo_bucket
         gcs_object_path = 'gs://%(hpo_bucket)s/%(csv_file_name)s' % locals()
-        dataset_id = bq_utils.get_dataset_id()
+        dataset_id = self.dataset_id
         load_results = bq_utils.load_csv(schema_path, gcs_object_path, app_id, dataset_id, table_name)
 
         load_job_id = load_results['jobReference']['jobId']
@@ -90,7 +116,7 @@ class BqUtilsTest(unittest.TestCase):
     def test_load_cdm_csv(self):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
-        result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
+        result = bq_utils.load_cdm_csv(FAKE_HPO_ID, common.PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
 
         load_job_id = result['jobReference']['jobId']
@@ -108,13 +134,13 @@ class BqUtilsTest(unittest.TestCase):
     def test_query_result(self):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
-        result = bq_utils.load_cdm_csv(FAKE_HPO_ID, PERSON)
+        result = bq_utils.load_cdm_csv(FAKE_HPO_ID, common.PERSON)
 
         load_job_id = result['jobReference']['jobId']
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
-        self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(PERSON))
+        self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(common.PERSON))
 
-        table_id = bq_utils.get_table_id(FAKE_HPO_ID, PERSON)
+        table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
         q = 'SELECT person_id FROM %s' % table_id
         result = bq_utils.query(q)
         self.assertEqual(5, int(result['totalRows']))
@@ -144,7 +170,7 @@ class BqUtilsTest(unittest.TestCase):
         incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
         self.assertEqual(len(incomplete_jobs), 0, 'loading tables {},{} timed out'.format('nyc_person', 'pitt_person'))
 
-        dataset_id = bq_utils.get_dataset_id()
+        dataset_id = self.dataset_id
         table_ids = ['nyc_person', 'pitt_person']
         merged_table_id = 'merged_nyc_pitt'
         success_flag, error = bq_utils.merge_tables(dataset_id,
@@ -167,9 +193,9 @@ class BqUtilsTest(unittest.TestCase):
     def test_merge_bad_table_names(self):
         table_ids = ['nyc_person_foo', 'pitt_person_foo']
         success_flag, error_msg = bq_utils.merge_tables(
-            bq_utils.get_dataset_id(),
+            self.dataset_id,
             table_ids,
-            bq_utils.get_dataset_id(),
+            self.dataset_id,
             'merged_nyc_pitt'
         )
 
@@ -194,9 +220,9 @@ class BqUtilsTest(unittest.TestCase):
 
         table_names = ['nyc_measurement', 'pitt_person']
         success, error = bq_utils.merge_tables(
-            bq_utils.get_dataset_id(),
+            self.dataset_id,
             table_names,
-            bq_utils.get_dataset_id(),
+            self.dataset_id,
             'merged_nyc_pitt'
         )
         self.assertFalse(success)
@@ -283,7 +309,7 @@ class BqUtilsTest(unittest.TestCase):
 
     def test_load_ehr_observation(self):
         hpo_id = 'pitt'
-        dataset_id = bq_utils.get_dataset_id()
+        dataset_id = self.dataset_id
         table_id = bq_utils.get_table_id(hpo_id, table_name='observation')
         q = 'SELECT observation_id FROM {dataset_id}.{table_id} ORDER BY observation_id'.format(
             dataset_id=dataset_id,
@@ -331,7 +357,28 @@ class BqUtilsTest(unittest.TestCase):
         expected = 'dataset_foo'
         self.assertEqual(result_id, expected)
 
+    def test_load_table_from_csv(self):
+        table_id = 'test_csv_table'
+        csv_file = 'load_csv_test_data.csv'
+        csv_path = os.path.join(test_util.TEST_DATA_PATH, csv_file)
+        with open(csv_path, 'r') as f:
+            expected = list(csv.DictReader(f))
+        bq_utils.load_table_from_csv(self.project_id, self.dataset_id, table_id, csv_path, self.TEST_FIELDS)
+        q = "SELECT * FROM `{project_id}.{dataset_id}.{table_id}`".format(project_id=self.project_id,
+                                                                          dataset_id=self.dataset_id,
+                                                                          table_id=table_id)
+        r = bq_utils.query(q)
+        actual = bq_utils.response2rows(r)
+
+        # Convert the epoch times to datetime with time zone
+        for row in actual:
+            row['timestamp_field'] = time.strftime(self.DT_FORMAT + ' UTC', time.gmtime(row['timestamp_field']))
+        expected.sort(key=lambda row: row['integer_field'])
+        actual.sort(key=lambda row: row['integer_field'])
+        for i, _ in enumerate(expected):
+            self.assertItemsEqual(expected[i], actual[i])
+
     def tearDown(self):
-        test_util.delete_all_tables(self.EHR_DATASET_ID)
+        test_util.delete_all_tables(self.dataset_id)
         self._empty_bucket()
         self.testbed.deactivate()
