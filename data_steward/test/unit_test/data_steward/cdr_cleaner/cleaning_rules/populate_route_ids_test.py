@@ -7,9 +7,9 @@ from google.appengine.api.app_identity import app_identity
 
 import bq_utils
 import common
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
 from cdr_cleaner.cleaning_rules import populate_route_ids
-import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 
 class PopulateRouteIdsTest(unittest.TestCase):
@@ -72,7 +72,7 @@ class PopulateRouteIdsTest(unittest.TestCase):
     def test_create_dose_form_route_mappings_table(self, mock_query, mock_create_table):
         route_mappings_csv = os.path.join(resources.resource_path,
                                           populate_route_ids.DOSE_FORM_ROUTES_FILE + ".csv")
-        dose_form_route_mappings = resources._csv_to_list(route_mappings_csv)
+        dose_form_route_mappings = resources.csv_to_list(route_mappings_csv)
         mapping_list = populate_route_ids.get_mapping_list(dose_form_route_mappings)
         query_params = dict(project_id=self.project_id,
                             dataset_id=self.dataset_id,

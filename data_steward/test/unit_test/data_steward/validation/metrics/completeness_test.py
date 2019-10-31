@@ -1,11 +1,11 @@
 import unittest
 
+import test_util
 from mock import patch
 
 import bq_utils
 import constants.validation.metrics.completeness as consts
 import resources
-import test_util
 from validation.metrics import completeness
 
 
@@ -116,7 +116,7 @@ class CompletenessTest(unittest.TestCase):
     @staticmethod
     def get_nyc_cu_cols():
         result = []
-        cols = resources._csv_to_list(test_util.TEST_NYC_CU_COLS_CSV)
+        cols = resources.csv_to_list(test_util.TEST_NYC_CU_COLS_CSV)
         for col in cols:
             omop_table_name = completeness.get_standard_table_name(col[consts.TABLE_NAME])
             if omop_table_name:

@@ -727,6 +727,59 @@ def create_dataset(
     return insert_result
 
 
+def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, fields=None):
+    """
+    Loads BQ table from a csv file without making use of GCS buckets
+
+    :param project_id: project containing the dataset
+    :param dataset_id: dataset where the table needs to be created
+    :param table_name: name of the table to be created
+    :param csv_path: path to the csv file which needs to be loaded into BQ.
+                     If None, assumes that the file exists in the resources folder with the name table_name.csv
+    :param fields: fields in list of dicts format. If set to None, assumes that
+                   the fields are stored in a json file in resources/fields named table_name.json
+    :return: BQ response for the load query
+    """
+    if csv_path is None:
+        csv_path = os.path.join(resources.resource_path, table_name + ".csv")
+    table_list = resources.csv_to_list(csv_path)
+
+    if fields is None:
+        fields_filename = os.path.join(resources.fields_path, table_name + '.json')
+        fields = json.load(open(fields_filename, 'r'))
+    field_names = ', '.join([field['name'] for field in fields])
+
+    # template for formatted values.
+    # string, dates and timestamps can be passed as string
+    # integer, float and boolean need to be passed without string quotes
+    insert_format_vals = '({cols})'.format(cols=', '.join(['"{' + field['name'] + '}"' if field["type"] == 'string'
+                                                           or field["type"] == 'date' or field["type"] == 'timestamp'
+                                                           else '{' + field['name'] + '}' for field in fields]))
+
+    pair_exprs = []
+    for mapping_dict in table_list:
+        converted_dict = dict()
+        for k, v in mapping_dict.items():
+            for field in fields:
+                if field['name'] == k and field['type'] == 'integer':
+                    converted_dict[k] = int(v)
+                else:
+                    converted_dict[k] = v
+        pair_expr = insert_format_vals.format(**converted_dict)
+        pair_exprs.append(pair_expr)
+    formatted_mapping_list = ', '.join(pair_exprs)
+
+    create_table(table_id=table_name, fields=fields, drop_existing=True, dataset_id=dataset_id)
+
+    table_populate_query = bq_consts.INSERT_QUERY.format(project_id=project_id,
+                                                         dataset_id=dataset_id,
+                                                         table_id=table_name,
+                                                         columns=field_names,
+                                                         mapping_list=formatted_mapping_list)
+    result = query(table_populate_query)
+    return result
+
+
 def has_primary_key(table):
     """
     Determines if a CDM table contains a numeric primary key field

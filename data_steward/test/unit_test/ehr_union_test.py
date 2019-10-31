@@ -95,7 +95,7 @@ class EhrUnionTest(unittest.TestCase):
                 bucket = gcs_utils.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_file_name):
                     test_util.write_cloud_file(bucket, cdm_file_name)
-                    csv_rows = resources._csv_to_list(cdm_file_name)
+                    csv_rows = resources.csv_to_list(cdm_file_name)
                 else:
                     # results in empty table
                     test_util.write_cloud_str(bucket, cdm_table + '.csv', 'dummy\n')

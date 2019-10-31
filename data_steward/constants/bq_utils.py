@@ -45,3 +45,9 @@ MATCH_DATASET = 'VALIDATION_RESULTS_DATASET_ID'
 COMBINED_UNIDENTIFIED_DATASET_FORMAT = 'combined{}_deid'
 VALIDATION_DATASET_FORMAT = 'validation_{}'
 VALIDATION_DATASET_REGEX = 'validation_\d{8}'
+
+INSERT_QUERY = """
+INSERT INTO `{project_id}.{dataset_id}.{table_id}`
+  ({columns})
+VALUES {mapping_list}
+"""
