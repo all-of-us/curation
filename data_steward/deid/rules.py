@@ -172,15 +172,14 @@ class Deid(Rules):
         :rules  list of rules to be applied
         :label  context of what is being generalized
         """
-        fields = args['fields'] if 'fields' in args else [args['value_field']]
-        label = args['label']
-        rules = args['rules']
+        fields = args.get('fields', [args.get('value_field')])
+        label = args.get('label', '')
+        rules = args.get('rules', [])
 
 
         store_id = args.get('store', 'sqlite')
         syntax = self.store_syntax[store_id]['cond_syntax']
         out = []
-        label = args['label']
         for name in fields:
             cond = []
             for rule in rules:
@@ -189,7 +188,6 @@ class Deid(Rules):
                 if 'apply' in rule:
                     #
                     # This will call a built-in SQL function (non-aggregate)'
-                    # qualifier = rule['qualifier'] if 'qualifier' in rule else ''
                     fillter = args.get('filter', name)
                     self.log(module='generalize', label=label.split('.')[1], on=name, type=rule['apply'])
 
@@ -245,6 +243,7 @@ class Deid(Rules):
                             statement = rule.get('statement', ['statement NOT SET'])
                             statement = ' '.join(statement)
                             statement = statement.replace(':table', args.get('table', 'table_NOT_SET'))
+                            statement = statement.replace(':fields', fillter)
                             regex = regex.replace(':SQL_STATEMENT', statement)
 
                             regex = ' '.join([regex, qualifier])
