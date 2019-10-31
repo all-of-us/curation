@@ -2,15 +2,80 @@
 Several answers to smoking questions were incorrectly coded as questions
 This rule generates corrected rows and deletes incorrect rows
 """
-
-import csv
-
-import constants.bq_utils as bq_consts
+import bq_utils
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+import sandbox
+
+SMOKING_LOOKUP_TABLE = 'smoking_lookup'
+NEW_SMOKING_ROWS = 'new_smoking_rows'
+
+
+SMOKING_LOOKUP_FIELDS = [
+    {
+        "type": "string",
+        "name": "type",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "string",
+        "name": "observation_source_value_info",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "rank",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "observation_source_concept_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "observation_source_concept_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "value_as_concept_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "new_observation_concept_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "new_observation_source_concept_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "new_value_as_concept_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "new_value_source_concept_id",
+        "mode": "nullable",
+        "description": ""
+    }
+]
 
 
 SANDBOX_CREATE_QUERY = """
-CREATE TABLE `{project_id}.{sandbox_dataset_id}.{temp_new_smoking_rows}`
+CREATE TABLE `{project_id}.{sandbox_dataset_id}.{new_smoking_rows}`
 AS
 SELECT
     observation_id,
@@ -98,18 +163,52 @@ INSERT INTO `{project_id}.{combined_dataset_id}.observation`
     questionnaire_response_id)
 SELECT
     *
-FROM `{project_id}.{sandbox_dataset_id}.{temp_new_smoking_rows}`
+FROM `{project_id}.{sandbox_dataset_id}.{new_smoking_rows}`
 """
 
 
 def get_queries_clean_smoking(project_id, dataset_id):
     """
     Queries to run for deleting incorrect smoking rows and inserting corrected rows
+
     :param project_id: project id associated with the dataset to run the queries on
     :param dataset_id: dataset id to run the queries on
     :return: list of query dicts
     """
     queries = []
+
+    # fetch sandbox_dataset_id
+    sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
+
+    # load smoking_lookup table
+    bq_utils.load_table_from_csv(project_id,
+                                 sandbox_dataset_id,
+                                 SMOKING_LOOKUP_TABLE,
+                                 csv_path=None,
+                                 fields=SMOKING_LOOKUP_FIELDS)
+
+    sandbox_query = dict()
+    sandbox_query[cdr_consts.QUERY] = SANDBOX_CREATE_QUERY.format(project_id=project_id,
+                                                                  combined_dataset_id=dataset_id,
+                                                                  sandbox_dataset_id=sandbox_dataset_id,
+                                                                  new_smoking_rows=NEW_SMOKING_ROWS,
+                                                                  smoking_lookup_table=SMOKING_LOOKUP_TABLE)
+    queries.append(sandbox_query)
+
+    delete_query = dict()
+    delete_query[cdr_consts.QUERY] = DELETE_INCORRECT_RECORDS.format(project_id=project_id,
+                                                                     combined_dataset_id=dataset_id,
+                                                                     sandbox_dataset_id=sandbox_dataset_id,
+                                                                     smoking_lookup_table=SMOKING_LOOKUP_TABLE)
+    queries.append(delete_query)
+
+    insert_query = dict()
+    insert_query[cdr_consts.QUERY] = INSERT_CORRECTED_RECORDS.format(project_id=project_id,
+                                                                     combined_dataset_id=dataset_id,
+                                                                     sandbox_dataset_id=sandbox_dataset_id,
+                                                                     new_smoking_rows=NEW_SMOKING_ROWS)
+    queries.append(insert_query)
+
     return queries
 
 
