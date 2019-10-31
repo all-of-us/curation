@@ -3,7 +3,6 @@ Update answers where the participant skipped answering but the answer was regist
 """
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import constants.bq_utils as bq_consts
-import sandbox
 
 CLEANING_RULE_NAME = 'update_ppi_negative_pain_level'
 
@@ -43,7 +42,7 @@ def get_update_ppi_queries(project_id, dataset_id, sandbox_dataset_id):
     select_query = dict()
     select_query[cdr_consts.QUERY] = SELECT_NEGATIVE_PPI_QUERY.format(project_id=project_id,
                                                                       dataset_id=dataset_id)
-    select_query[cdr_consts.DESTINATION_TABLE] = sandbox.get_sandbox_table_name(dataset_id, CLEANING_RULE_NAME)
+    select_query[cdr_consts.DESTINATION_TABLE] = CLEANING_RULE_NAME
     select_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     select_query[cdr_consts.DESTINATION_DATASET] = sandbox_dataset_id
     queries.append(select_query)
