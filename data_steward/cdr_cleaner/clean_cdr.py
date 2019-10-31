@@ -34,6 +34,7 @@ import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replac
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
+import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_drop_duplicates
 
 LOGGER = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
 
     :param project_id: project name
     :param dataset_id: rdr dataset name
+    :param sandbox_dataset_id: sandbox_dataset_id
     :return: returns list of queries
     """
     query_list = []
@@ -66,6 +68,10 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     query_list.extend(
         remove_multiple_race_answers.get_remove_multiple_race_ethnicity_answers_queries(project_id, dataset_id))
     query_list.extend(negative_ppi.get_update_ppi_queries(project_id, dataset_id, sandbox_dataset_id))
+    query_list.extend(
+        ppi_drop_duplicates.get_remove_duplicate_set_of_responses_to_same_questions_queries(project_id,
+                                                                                            dataset_id,
+                                                                                            sandbox_dataset_id))
     return query_list
 
 
