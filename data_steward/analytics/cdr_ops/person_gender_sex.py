@@ -19,7 +19,7 @@ DEID = DEFAULT_DATASETS.latest.deid
 print("""
 DEID={DEID}
 SANDBOX={SANDBOX}
-""")
+""".format(DEID=DEID, SANDBOX=SANDBOX))
 # -
 
 SEX_AT_BIRTH_QUERY = """
@@ -70,11 +70,21 @@ gender_df = bq.query(q)
 render.dataframe(gender_df)
 
 # +
+from pandas_gbq.gbq import TableCreationError
+
+def df_to_gbq(df, destination_table, table_schema=None):
+    try:
+        df.to_gbq(destination_table=destination_table, if_exists='fail', table_schema=table_schema)
+    except TableCreationError as table_creation_error:
+        print('Using existing {} table'.format(destination_table))
+
+
+# +
 sex_at_birth_log_table = '{SANDBOX}.{DATASET}_dc540_sex_at_birth'.format(SANDBOX=SANDBOX, DATASET=DEID)
-sex_at_birth_df.to_gbq(destination_table=sex_at_birth_log_table, if_exists='fail')
+df_to_gbq(sex_at_birth_df, destination_table=sex_at_birth_log_table)
 
 gender_log_table = '{SANDBOX}.{DATASET}_dc540_gender'.format(SANDBOX=SANDBOX, DATASET=DEID)
-gender_df.to_gbq(destination_table=gender_log_table, if_exists='fail')
+df_to_gbq(gender_df, destination_table=gender_log_table)
 # -
 
 UPDATED_PERSON_QUERY = """
@@ -109,7 +119,7 @@ person_schema = resources.fields_for('person')
 
 person_df = bq.query(UPDATED_PERSON_QUERY)
 person_log_table = '{SANDBOX}.{DATASET}_dc540_person'.format(SANDBOX=SANDBOX, DATASET=DEID)
-person_df.to_gbq(destination_table=person_log_table, if_exists='fail', table_schema=person_schema)
+df_to_gbq(person_df, destination_table=person_log_table, table_schema=person_schema)
 
 PERSON_HIST_QUERY = """
 SELECT 
