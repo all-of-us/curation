@@ -56,13 +56,25 @@ class Parse(object):
     @staticmethod
     def suppress(row, cache, tablename):
         """
-        setup suppression rules to be applied the the given 'row' i.e entry
+        setup suppression rules to be applied to the 'row' i.e entry
         """
         return Parse.init('suppress', row, cache, tablename)
 
     @staticmethod
     def compute(row, cache, tablename):
+        """
+        Compute fields.
+
+        This includes shifting dates and mapping values.
+        """
         return Parse.init('compute', row, cache, tablename)
+
+    @staticmethod
+    def dml_statements(row, cache, tablename):
+        """
+        When indicated, it will create dml statements to execute after all other de-identifications.
+        """
+        return Parse.init('dml_statements', row, cache, tablename)
 
 
 # This is the pythonic way to parse system arguments

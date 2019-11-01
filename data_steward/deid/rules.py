@@ -31,6 +31,53 @@ from resources import fields_for
 LOGGER = logging.getLogger(__name__)
 
 
+def create_on_string(item):
+    """
+    Given a dictionary of 'on' keys and values, create a string.
+
+    A helper method to create a string from a list of values.
+
+    :param item: a dictionary with 'field', 'qualifier', and 'values' keys.
+
+    :return:  a tuple.  The first tuple member is a a string with the values
+        for each key substituted such that it equals, 'field qualifier (values)'.
+        the second value is the field name, if provided.  if a string is passed,
+        the string is returned and None is sent as the specific field name
+    """
+    if isinstance(item, dict):
+        field = item.get('field')
+        qualifier = item.get('qualifier')
+        values = item.get('values')
+
+        # turn a list into a single string
+        values = [str(value) for value in values]
+        values = ' '.join(values)
+
+        string = ' '.join([field, qualifier, '(', values, ')'])
+        return string, field
+    else:
+        return item, None
+
+
+def _get_boolean(value):
+    """
+    Return a boolean for a given sgring value.
+
+    :param value:  The value to interpret as a boolean
+
+    :return:  either True or False
+    """
+    true_bools = ['yes', 'y', 'true', 't']
+
+    if isinstance(value, bool):
+        return value
+    elif isinstance(value, (str, unicode)):
+        if value.lower() in true_bools:
+            return True
+
+    return False
+
+
 def _get_case_condition_syntax(cond, regex, gen_value, rule, rules, syntax):
     """
     Build case statement syntax.
@@ -81,14 +128,13 @@ class Rules(object):
                 "random": "(random() * 364) + 1 :: int"
             }
         }
-        self.pipeline = args['pipeline']
-        self.cache = args['rules']
-        self.parent = args['parent']
-        #--
+        self.pipeline = args.get('pipeline', ['generalize', 'compute', 'suppress', 'shift'])
+        self.cache = args.get('rules', [])
+        self.parent = args.get('parent')
 
     def set(self, key, rule_id, **args):
-        if key not in self.pipeline: #['generalize','suppress','compute','shift'] :
-            raise (key + " is Unknown, [suppress, generalize, compute, shift] are allowed")
+        if key not in self.pipeline:
+            raise (key + " is Unknown, [generalize, compute, suppress, shift] are allowed")
         if key not in self.cache:
             self.cache[key] = {}
         if id not in self.cache[key]:
@@ -158,23 +204,81 @@ class Deid(Rules):
                 p = getattr(Parse, rule_id)(row, self.cache, tablename)
                 payload['args'] += [p]
 
-
         return payload
 
-    def aggregate(self, sql, **args):
-        pass
+    def dml_statements(self, **args):
+        """
+        Drop duplicate generalized values.
+
+        Arguments are accessed as key, value pairs of a dictionary.
+        The following keys are defined for this function.
+
+        :param generalized_values: a list of generalized integers that may produce
+            duplicate records.  the list is joined and placed into the query.
+        :param rules: a list of rules for the given table.  This is a list of the
+            SQL lines that when joined, will produce a DML statement.
+        :param tablename: a qualified table name of dataset.tablename
+        :param label: a string denoting this is droping duplicates for the table
+            with name, 'drop_duplicates.<tablename>'
+        :param key_values:  a list of integer values to use to filter the records.
+            the list is joined and placed into the query.
+        :param store: a string name for the datastore
+
+        :return: a dictionary defining the delete rule, a rule name, label, and
+            specifying the query is a DML statement
+        """
+        dml_statements = []
+
+        for rule_dict in args.get('rules', []):
+            # get parameters passed to the function
+            rule_list = rule_dict.get('statement', [])
+            generalized_values = args.get('generalized_values', [])
+            generalized_values = [str(value) for value in generalized_values]
+            key_values = args.get('key_values', [])
+            key_values = [str(value) for value in key_values]
+            tablename = args.get('tablename')
+
+            # create the SQL rule
+            rule = ' '.join(rule_list)
+            key_values_string = ', '.join(key_values)
+            generalized_values_string = ', '.join(generalized_values)
+
+            # replace values as required
+            rule = rule.replace(':generalized_values', generalized_values_string)
+            rule = rule.replace(':key_values', key_values_string)
+            rule = rule.replace(':odataset', self.parent.odataset)
+            rule = rule.replace(':idataset', self.parent.idataset)
+
+            # log values inserted into the query
+            LOGGER.info('generalized_values causing duplicates: %s    in table:  %s',
+                        generalized_values_string, tablename)
+            LOGGER.info('key_values causing duplicates: %s    in table:  %s',
+                        key_values_string, tablename)
+            dml_statements.append(
+                {
+                    'apply': rule,
+                    'name': rule_dict.get('name', 'NAME_UNSET'),
+                    'label': rule_dict.get('label', 'LABEL_UNSET'),
+                    'dml_statement': True
+                }
+            )
+
+        return dml_statements
+
 
     def generalize(self, **args):
         """
         Apply generalizations given a set of rules.
 
-        The rules apply to both meta tables and relational tables
+        The rules apply to both meta tables and relational tables.
+        The rules are defined in the config.json file.  The arguments, args,
+        are defined in the <table_name>.json file.
 
         :fields list of target fields
         :rules  list of rules to be applied
         :label  context of what is being generalized
         """
-        fields = args.get('fields', [args.get('value_field')])
+        fields = args.get('fields', [args.get('value_field', '')])
         label = args.get('label', '')
         rules = args.get('rules', [])
 
@@ -239,7 +343,8 @@ class Deid(Rules):
                                     regex += conjunction + val_list
 
                             if 'on' in args:
-                                conditional = args.get('on')
+                                conditional, _ = create_on_string(args.get('on'))
+
                                 alias = args.get('alias', 'alias NOT SET')
                                 conditional = conditional.replace(':join_tablename', alias)
                                 regex += ' AND ' + conditional
@@ -337,10 +442,10 @@ class Deid(Rules):
         We should be able to suppress the columns and/or rows provided specification
         """
 
-        rules = args['rules'] if 'rules' in args else {}
-        label = args['label']
-        fields = args['fields'] if 'fields' in args else []
-        store_id = args['store']
+        rules = args.get('rules', {})
+        label = args.get('label')
+        fields = args.get('fields', [])
+        store_id = args.get('store')
         apply_fn = self.store_syntax[store_id]['apply'] if 'apply' in self.store_syntax[store_id] else {}
         out = []
 
@@ -571,8 +676,7 @@ class Deid(Rules):
         r = {}
         ismeta = info['info']['type'] if 'info' in info and 'type' in info['info'] else False
 
-        for rule_id in self.pipeline: #['generalize', 'compute', 'suppress', 'shift'] :
-
+        for rule_id in self.pipeline:
             if rule_id in info:
                 r = self.validate(rule_id, info[rule_id], tablename)
 
@@ -587,5 +691,7 @@ class Deid(Rules):
                                     out.append(_item)
                                 else:
                                     out += _item
+            else:
+                LOGGER.error('rule_id:  {} not in info'.format(rule_id))
 
         return out

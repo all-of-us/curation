@@ -17,7 +17,8 @@
                     "GROUP BY obs.person_id ) "
                 ],
                 "qualifier": " > 1 AND value_source_concept_id != 1586147 ",
-                "into": 2000000008
+                "into": 2000000008,
+                "drop_duplicates": "True"
             },
             {
                 "comment": "generalize single race values",
@@ -84,7 +85,8 @@
                 "apply": "COUNT",
                 "into": 2000000002,
                 "qualifier": "> 1",
-                "values": [1585839, 1585840, 1585841, 1585842, 1585843]
+                "values": [1585839, 1585840, 1585841, 1585842, 1585843],
+                "drop_duplicates": "True"
             },
             {
                 "comment": [
@@ -133,13 +135,15 @@
                 "comment":"this will generalize values to unemployed or not employed",
                 "qualifier":"IN",
                 "values":[1585955, 1585956, 1585957, 1585958, 1585959, 1585960],
-                "into":2000000005
+                "into":2000000005,
+                "drop_duplicates": "True"
             },
             {
                 "comment":"generalizing to currently employed",
                 "qualifier":"IN",
                 "values":[1585953, 1585954],
-                "into":2000000004
+                "into":2000000004,
+                "drop_duplicates": "True"
             }
         ]
 
@@ -275,10 +279,11 @@
             }
         ]
     },
-    {"_id":"shift",
-        "day":"SELECT date_shift from :table where :key_field=:key_value ",
-        "date":"DATE_SUB( CAST(:FIELD AS DATE), INTERVAL (:SHIFT) DAY) AS :FIELD",
-        "datetime":"TIMESTAMP_SUB( CAST(:FIELD AS TIMESTAMP), INTERVAL (:SHIFT) DAY) AS :FIELD"
+    {
+        "_id": "shift",
+        "day": "SELECT date_shift from :table where :key_field=:key_value ",
+        "date": "DATE_SUB( CAST(:FIELD AS DATE), INTERVAL (:SHIFT) DAY) AS :FIELD",
+        "datetime": "TIMESTAMP_SUB( CAST(:FIELD AS TIMESTAMP), INTERVAL (:SHIFT) DAY) AS :FIELD"
 
 
     },
@@ -297,5 +302,43 @@
         "month": ["EXTRACT (MONTH FROM :value_field) AS :FIELD"],
         "day": ["EXTRACT (DAY FROM :value_field) AS :FIELD"],
         "year": ["EXTRACT (YEAR FROM :value_field) AS :FIELD"]
+    },
+    {
+        "_id": "dml_statements",
+        "comment": [
+            "A place to define Data Manipulation Statments to execute after creating ",
+            "a de-identified table.  The statements are defined as a list of dictionaries ",
+            "containing a comment about the intent of each statement and an SQL DML statement."
+        ],
+        "observation": [
+            {
+                "comment": [
+                    "SQL to delete extra rows created by generalization rules. ",
+                    "This can happen when questions with multiple possible answers are ",
+                    "generalized.  The exact delete statement to use will depend on the ",
+                    "table receiving the generalization and its available fields."
+                ],
+                "name": "drop_generalized_duplicates",
+                "label": "cleaning_query",
+                "statement": [
+                    "DELETE FROM",
+                    ":odataset.observation AS o ",
+                    "WHERE observation_id in (",
+                      "SELECT observation_id FROM (",
+                         "SELECT DENSE_RANK() OVER(PARTITION BY person_id, observation_source_concept_id, value_source_concept_id ",
+                          "ORDER BY observation_datetime DESC, observation_id DESC) AS rank_order, ",
+                          "observation_id ",
+                          "FROM :odataset.observation ",
+                          "JOIN :idataset._mapping_observation AS map ",
+                          "USING (observation_id) ",
+                          "WHERE observation_source_concept_id IN (:key_values) ",
+                          "AND value_source_concept_id IN (:generalized_values) ",
+                          "AND map.src_hpo_id like \"rdr\"",
+                      ") o ",
+                      "WHERE o.rank_order <> 1 ",
+                    ")"
+                ]
+            }
+        ]
     }
 ]

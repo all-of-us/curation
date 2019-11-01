@@ -73,6 +73,7 @@ DESIGN:
                         debug       will just print output without simulation or submit (runs alone)
 """
 # Python imports
+from copy import copy
 from datetime import datetime
 import json
 import logging
@@ -218,12 +219,15 @@ def create_allowed_states_table(input_dataset, credentials):
     data.to_gbq(map_tablename, credentials=credentials, if_exists='replace')
 
 
-def create_questionnaire_mapping_table(table, map_tablename, lower_bound, credentials):
+def create_questionnaire_mapping_table(table, map_tablename, lower_bound, credentials, exists_flag=None):
     """
     Create a random mapping table for questionnaire response ids.
 
     :param lower_bound:  The smallest number that may be used as an identifier.
     """
+    if not exists_flag:
+        exists_flag = 'fail'
+
     # create the deid table.  set upper and lower bounds of the research_id array
     records = table.shape[0]
     upper_bound = lower_bound + (10 * records)
@@ -239,7 +243,7 @@ def create_questionnaire_mapping_table(table, map_tablename, lower_bound, creden
     map_table['research_response_id'] = research_id_array
 
     # write this to bigquery.
-    map_table.to_gbq(map_tablename, credentials=credentials, if_exists='fail')
+    map_table.to_gbq(map_tablename, credentials=credentials, if_exists=exists_flag)
     LOGGER.info('created new questionnaire response mapping table')
 
 
@@ -270,10 +274,17 @@ class AOU(Press):
         max_day_shift = args['max_day_shift']
         million = 1000000
         map_tablename = self.idataset + "._deid_map"
+
         sql = ("SELECT DISTINCT person_id, EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth as age "
-               "FROM {idataset}.person ORDER BY 2"
-               .format(idataset=self.idataset))
-        person_table = self.get_dataframe(sql=sql)
+               "FROM person ORDER BY 2")
+        job_config = {
+            'query': {
+                'defaultDataset': {
+                    'datasetId': self.idataset
+                }
+            }
+        }
+        person_table = self.get_dataframe(sql=sql, query_config=job_config)
         LOGGER.info('patient count is:\t%s', person_table.shape[0])
         map_table = pd.DataFrame()
 
@@ -285,7 +296,15 @@ class AOU(Press):
 
         if person_table.shape[0] > 0:
             person_table = person_table[person_table.age < age_limit]
-            map_table = self.get_dataframe(sql="SELECT * FROM " + map_tablename)
+            map_sql = 'SELECT * FROM ' + map_tablename
+            job_config = {
+                'query': {
+                    'defaultDataset': {
+                        'datasetId': self.idataset
+                    }
+                }
+            }
+            map_table = self.get_dataframe(sql=map_sql, query_config=job_config)
             if map_table.shape[0] > 0:
                 # Make sure the mapping table is mapping the expected data
                 map_table_set = set(map_table.loc[:, 'person_id'].tolist())
@@ -316,19 +335,33 @@ class AOU(Press):
 
         :param lower_bound:  The smallest number that may be used as an identifier.
         """
-        map_tablename = self.idataset + "._deid_questionnaire_response_map"
+        map_tablename = "_deid_questionnaire_response_map"
         sql = ("SELECT DISTINCT o.questionnaire_response_id "
-               "FROM {idataset}.observation as o "
+               "FROM observation as o "
                "WHERE o.questionnaire_response_id IS NOT NULL "
-               "ORDER BY 1"
-               .format(idataset=self.idataset))
-        observation_table = self.get_dataframe(sql=sql)
+               "ORDER BY 1")
+        job_config = {
+            'query': {
+                'defaultDataset': {
+                    'datasetId': self.idataset
+                }
+            }
+        }
+        observation_table = self.get_dataframe(sql=sql, query_config=job_config)
         LOGGER.info('total of distinct questionnaire_response_ids:\t%d',
                     observation_table.shape[0])
         map_table = pd.DataFrame()
 
         if observation_table.shape[0] > 0:
-            map_table = self.get_dataframe(sql="SELECT * FROM " + map_tablename)
+            map_sql = 'SELECT * FROM ' + map_tablename
+            job_config = {
+                'query': {
+                    'defaultDataset': {
+                        'datasetId': self.idataset
+                    }
+                }
+            }
+            map_table = self.get_dataframe(sql=map_sql, query_config=job_config)
             if map_table.shape[0] > 0:
                 # Make sure the mapping table is mapping the expected data
                 map_table_set = set(map_table.loc[:, 'questionnaire_response_id'].tolist())
@@ -337,11 +370,11 @@ class AOU(Press):
                     LOGGER.info('questionnaire response mapping table contains '
                                 'all questionnaire response ids')
                 else:
-                    LOGGER.info('creating new questionnaire response mapping '
-                                'table because the existing table doesn\'t match')
+                    LOGGER.warning('creating new questionnaire response mapping '
+                                   'table because the existing table doesn\'t match')
                     # The tables do NOT contain the same mapped elements
                     create_questionnaire_mapping_table(
-                        observation_table, map_tablename, lower_bound, self.credentials
+                        observation_table, map_tablename, lower_bound, self.credentials, 'replace'
                     )
             else:
                 LOGGER.info('creating a new questionnaire response mapping '
@@ -356,7 +389,7 @@ class AOU(Press):
         LOGGER.info('questionnaire response mapping table contains %d records',
                     map_table.shape[0])
 
-    def get_dataframe(self, sql=None, limit=None):
+    def get_dataframe(self, sql=None, limit=None, query_config=None):
         """
         This function will execute a query to a data-frame (for easy handling)
         """
@@ -368,39 +401,57 @@ class AOU(Press):
             sql = sql + " LIMIT " + str(limit)
 
         try:
-            df = pd.read_gbq(sql, credentials=self.credentials, dialect='standard')
+            if query_config:
+                df = pd.read_gbq(sql, credentials=self.credentials, dialect='standard', configuration=query_config)
+            else:
+                df = pd.read_gbq(sql, credentials=self.credentials, dialect='standard')
+
             return df
         except Exception:
             LOGGER.exception("Unable to execute the query:\t%s", sql)
 
         return pd.DataFrame()
 
-    def update_rules(self):
+    def _add_suppression_rules(self, columns):
         """
-        This will add rules that are to be applied by default to the current table
-        @TODO: Make sure there's a way to specify these in the configuration
+        Adding suppression rules that should always exist.
+
+        :param columns: a list of column names for the given table
         """
-        df = self.get_dataframe(limit=1)
-        columns = df.columns.tolist()
-        if 'suppress' not in self.info:
-            self.info['suppress'] = []
+        if 'suppress' not in self.table_info:
+            self.table_info['suppress'] = []
         #
         # Relational attributes that require suppression are inventoried this allows automatic suppression
         # It's done to make the engine more usable (by minimizing the needs for configuration)
         #
         rem_cols = True
-        for rule in self.info['suppress']:
+        for rule in self.table_info['suppress']:
             if 'rules' in rule and rule['rules'].endswith('DEMOGRAPHICS-COLUMNS'):
                 rem_cols = False
                 rule['table'] = self.get_tablename()
                 rule['fields'] = columns
 
         if rem_cols:
-            self.info['suppress'] += [{"rules": "@suppress.DEMOGRAPHICS-COLUMNS",
-                                       "table": self.get_tablename(),
-                                       "fields": df.columns.tolist()}]
+            self.table_info['suppress'].append(
+                {
+                    "rules": "@suppress.DEMOGRAPHICS-COLUMNS",
+                    "table": self.get_tablename(),
+                    "fields": columns
+                }
+            )
+            LOGGER.info('added demographics-columns suppression rules')
 
-        date_columns = [name for name in columns if set(['date', 'time', 'datetime']) & set(name.split('_'))]
+    def _add_temporal_shifting_rules(self, columns):
+        """
+        Add default date shifting rules, if not specified in the config file.
+
+        :param columns: a list of column names for the given table
+        """
+        date_columns = []
+        for name in columns:
+            for temporal in ['date', 'time', 'datetime']:
+                if temporal in name.split('_'):
+                    date_columns.append(name)
         #
         # shifting date attributes can be automatically done for relational fields
         # by looking at the field name of the data-type
@@ -411,7 +462,9 @@ class AOU(Press):
             datetime_field = {}
 
             for name in date_columns:
-                if 'datetime' in name or 'time' in name:
+                # check covers 'datetime' fields by default,
+                # they already have 'time' in the name
+                if 'time' in name:
                     if 'fields' not in datetime_field:
                         datetime_field['fields'] = []
                     datetime_field['fields'].append(name)
@@ -429,25 +482,31 @@ class AOU(Press):
             elif date or datetime_field:
                 _toshift = [date] if date else [datetime_field]
 
-            if 'shift' not in self.info:
-                self.info['shift'] = []
+            if 'shift' not in self.table_info:
+                self.table_info['shift'] = []
 
             if _toshift:
                 LOGGER.info('shifting fields:\t%s', _toshift)
-                self.info['shift'] += _toshift
+                self.table_info['shift'] += _toshift
 
-        #
-        # let's check for the person_id
-        has_compute_id = False
-        if 'compute' not in self.info:
-            self.info['compute'] = []
+    def _add_compute_rules(self, columns):
+        """
+        Add default value mapping rules, if not specified in the config file.
+
+        :param columns: a list of column names for the given table
+        """
+        # check if person_id mapping has already been configured
+        needs_compute_id = True
+        if 'compute' not in self.table_info:
+            self.table_info['compute'] = []
         else:
-            for rule_dict in self.info.get('compute', {}):
+            for rule_dict in self.table_info.get('compute', {}):
                 if '@compute.id' in rule_dict.get('rules'):
-                    has_compute_id = True
+                    needs_compute_id = False
 
-        if not has_compute_id and 'person_id' in columns:
-            self.info['compute'] += [
+        # if a person_id column exists and a mapping has not been configured, add one
+        if needs_compute_id and 'person_id' in columns:
+            self.table_info['compute'].append(
                 {
                     "rules": "@compute.id",
                     "fields": ["person_id"],
@@ -455,9 +514,73 @@ class AOU(Press):
                     "key_field": "map_user.person_id",
                     "value_field": self.tablename + ".person_id"
                 }
+            )
+
+    def _add_dml_statements_rules(self, columns):
+        """
+        Add default duplicate records dropping configuration, if not specified in the config file.
+        """
+        if 'generalize' in self.table_info:
+            gen_rules = {}
+            # pull the where clause information for generalization rules
+            for item in self.table_info['generalize']:
+                name = item.get('rules').split('.')[1]
+                gen_rules[name] = item.get('on')
+
+            # pull the rules that may have duplicates
+            drop_duplicates_rules = {}
+            for key, rule_list in self.deid_rules.get('generalize').iteritems():
+                rule_generalizations = []
+                if isinstance(rule_list, list):
+                    for rule in rule_list:
+                        if rule.get('drop_duplicates', 'no').lower() in ['true', 't', 'yes', 'y']:
+                            rule_generalizations.append(rule.get('into'))
+                            drop_duplicates_rules[key] = rule_generalizations
+
+            # create lists for the generalized values and where clauses
+            values_to_drop_on = []
+            generalized_multiple_values = []
+            for drop_rule, drop_values in drop_duplicates_rules.iteritems():
+                on_dict = gen_rules.get(drop_rule)
+                on_values = on_dict.get('values')
+                values_to_drop_on.extend(on_values)
+                generalized_multiple_values.extend(drop_values)
+
+            # set a dml statement to execute with the generalized info
+            self.table_info['dml_statements'] = [
+                {
+                    'rules': '@dml_statements.' + self.tablename,
+                    'tablename': self.tablename,
+                    'generalized_values': generalized_multiple_values,
+                    'key_values': values_to_drop_on
+                }
             ]
 
-    def submit(self, sql, create):
+            self.pipeline.append('dml_statements')
+
+
+    def update_rules(self):
+        """
+        This will add rules that are to be applied by default to the current table
+        @TODO: Make sure there's a way to specify these in the configuration
+        """
+        columns = self.get_table_columns(self.tablename)
+
+        self._add_suppression_rules(columns)
+        self._add_temporal_shifting_rules(columns)
+        self._add_compute_rules(columns)
+        self._add_dml_statements_rules(columns)
+
+    def submit(self, sql, create, dml=None):
+        """
+        Submit the sql query to create a de-identified table.
+
+        :param sql:  The sql to send.
+        :param create: a flag to identify if this query should create a new
+            table or append to an existing table.
+        :param dml:  boolean flag identifying if a statement is a dml statement
+        """
+        dml = False if dml is None else dml
         table_name = self.get_tablename()
         client = bq.Client.from_service_account_json(self.private_key)
         #
@@ -480,16 +603,21 @@ class AOU(Press):
             LOGGER.info('appending results to table:\t%s', self.tablename)
 
         job = bq.QueryJobConfig()
-        job.destination = client.dataset(self.odataset).table(self.tablename)
-        job.use_query_cache = True
-        job.allow_large_results = True
-        job.write_disposition = write_disposition
-        if self.partition:
-            job._properties['timePartitioning'] = {'type': 'DAY'}
-            job._properties['clustering'] = {'field': 'person_id'}
-
         job.priority = self.priority
         job.dry_run = True
+
+        dml_job = None
+        if not dml:
+            job.destination = client.dataset(self.odataset).table(self.tablename)
+            job.use_query_cache = True
+            job.allow_large_results = True
+            job.write_disposition = write_disposition
+            if self.partition:
+                job._properties['timePartitioning'] = {'type': 'DAY'}
+                job._properties['clustering'] = {'field': 'person_id'}
+        else:
+            # create a copy of the job config to use if the dry-run passes
+            dml_job = copy(job)
 
         LOGGER.info('submitting a dry-run for:\t%s\t\tpriority:\t%s\t\tpartition:\t%s',
                     self.get_tablename(),
@@ -504,7 +632,7 @@ class AOU(Press):
             pass
 
         try:
-            r = client.query(sql, location='US', job_config=job)
+            response = client.query(sql, location='US', job_config=job)
         except Exception:
             LOGGER.exception('dry run query failed for:\t%s\n'
                              '\t\tSQL:\t%s\n'
@@ -513,20 +641,30 @@ class AOU(Press):
                              sql,
                              job)
         else:
-            if r.state == 'DONE':
+
+            if response.state == 'DONE':
+                if dml_job:
+                    job = dml_job
+
                 job.dry_run = False
 
                 LOGGER.info('dry-run passed.  submitting query for execution.')
 
-                r = client.query(sql, location='US', job_config=job)
+                response = client.query(sql, location='US', job_config=job)
                 LOGGER.info('submitted a %s job for table:\t%s\t\tstatus:\t%s\t\tvalue:\t%s',
                             'bigquery',
                             table_name,
                             'pending',
-                            r.job_id)
-                self.wait(client, r.job_id)
+                            response.job_id)
+                self.wait(client, response.job_id)
 
     def wait(self, client, job_id):
+        """
+        Wait for the query to finish executing.
+
+        :param client:  The BigQuery client object.
+        :param job_id:  job_id to verify finishes.
+        """
         LOGGER.info('sleeping for table:\t%s\t\tjob_id:\t%s', self.get_tablename(), job_id)
         status = 'NONE'
 
@@ -542,6 +680,12 @@ class AOU(Press):
 
 
 def main(raw_args=None):
+    """
+    Run the de-identifying software.
+
+    Entry point for de-identification.  Setting the main this way allows the
+    module to run as a stand alone script or as part of the pipeline.
+    """
     sys_args = parse_args(raw_args)
 
     handle = AOU(**sys_args)
