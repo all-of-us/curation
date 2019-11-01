@@ -25,68 +25,21 @@ class GenerateExtTablesTest(unittest.TestCase):
         self.bq_project_id = app_identity.get_application_id()
         self.bq_dataset_id = bq_utils.get_unioned_dataset_id()
         self.obs_fields = [{
-                                "type": "integer",
-                                "name": "observation_id",
-                                "mode": "nullable",
-                                "description": "The observation_id used in the observation table."
-                            }, {
-                                "type": "string",
-                                "name": "src_id",
-                                "mode": "nullable",
-                                "description": "The provenance of the data associated with the observation_id."
-                            }]
+                "type": "integer",
+                "name": "observation_id",
+                "mode": "nullable",
+                "description": "The observation_id used in the observation table."
+            }, {
+                "type": "string",
+                "name": "src_id",
+                "mode": "nullable",
+                "description": "The provenance of the data associated with the observation_id."
+            }]
         self.hpo_list = resources.hpo_csv()
         self.mapping_tables = [gen_ext.MAPPING_PREFIX + cdm_table
                                for cdm_table in common.AOU_REQUIRED
                                if cdm_table not in [common.PERSON, common.DEATH, common.FACT_RELATIONSHIP]]
-        self.bq_string = ("(\"va\", \"EHR site 236\"), "
-                          "(\"trans_am_baylor\", \"EHR site 864\"), "
-                          "(\"cpmc_ucsd\", \"EHR site 545\"), "
-                          "(\"cpmc_ucsf\", \"EHR site 790\"), "
-                          "(\"jhchc\", \"EHR site 285\"), "
-                          "(\"cpmc_usc\", \"EHR site 974\"), "
-                          "(\"chci\", \"EHR site 226\"), "
-                          "(\"uamc_uofa\", \"EHR site 476\"), "
-                          "(\"cpmc_ceders\", \"EHR site 110\"), "
-                          "(\"saou_uab_hunt\", \"EHR site 125\"), "
-                          "(\"ipmc_northshore\", \"EHR site 542\"), "
-                          "(\"saou_usahs\", \"EHR site 798\"), "
-                          "(\"aouw_mcw\", \"EHR site 559\"), "
-                          "(\"nyc_cu\", \"EHR site 712\"), "
-                          "(\"seec_miami\", \"EHR site 436\"), "
-                          "(\"aouw_mcri\", \"EHR site 400\"), "
-                          "(\"tach_hfhs\", \"EHR site 240\"), "
-                          "(\"uamc_banner\", \"EHR site 891\"), "
-                          "(\"chs\", \"EHR site 191\"), "
-                          "(\"seec_morehouse\", \"EHR site 398\"), "
-                          "(\"nyc_cornell\", \"EHR site 482\"), "
-                          "(\"saou_ummc\", \"EHR site 766\"), "
-                          "(\"saou_uab\", \"EHR site 608\"), "
-                          "(\"syhc\", \"EHR site 836\"), "
-                          "(\"ipmc_rush\", \"EHR site 299\"), "
-                          "(\"saou_cgmhs\", \"EHR site 133\"), "
-                          "(\"hrhc\", \"EHR site 680\"), "
-                          "(\"nec_bmc\", \"EHR site 149\"), "
-                          "(\"ipmc_uchicago\", \"EHR site 220\"), "
-                          "(\"seec_ufl\", \"EHR site 425\"), "
-                          "(\"ecchc\", \"EHR site 322\"), "
-                          "(\"aouw_uwh\", \"EHR site 252\"), "
-                          "(\"nyc_hh\", \"EHR site 134\"), "
-                          "(\"ipmc_nu\", \"EHR site 575\"), "
-                          "(\"ghs\", \"EHR site 607\"), "
-                          "(\"pitt_temple\", \"EHR site 550\"), "
-                          "(\"pitt\", \"EHR site 938\"), "
-                          "(\"saou_tul\", \"EHR site 505\"), "
-                          "(\"trans_am_essentia\", \"EHR site 293\"), "
-                          "(\"cpmc_uci\", \"EHR site 724\"), "
-                          "(\"trans_am_spectrum\", \"EHR site 639\"), "
-                          "(\"ipmc_uic\", \"EHR site 885\"), "
-                          "(\"saou_umc\", \"EHR site 912\"), "
-                          "(\"seec_emory\", \"EHR site 442\"), "
-                          "(\"nec_phs\", \"EHR site 982\"), "
-                          "(\"cpmc_ucd\", \"EHR site 173\"), "
-                          "(\"saou_lsu\", \"EHR site 709\"), "
-                          "(\"rdr\", \"PPI/PM\")")
+        self.bq_string = '("{hpo_name}", "EHR site nnn")'
 
     def test_get_obs_fields(self):
         table = common.OBSERVATION
@@ -121,7 +74,11 @@ class GenerateExtTablesTest(unittest.TestCase):
 
     def test_convert_to_bq_string(self):
         hpo_rdr_mapping_list = gen_ext.get_hpo_and_rdr_mappings()
-        expected = self.bq_string
+        hpo_bq_list = []
+        for hpo in resources.hpo_csv():
+            hpo_bq_list.append(self.bq_string.format(hpo_name=hpo["hpo_id"]))
+        hpo_bq_list.append('("{rdr}", "{ppi_pm}")'.format(rdr=gen_ext.RDR, ppi_pm=gen_ext.PPI_PM))
+        expected = ', '.join(hpo_bq_list)
         actual = gen_ext.convert_to_bq_string(hpo_rdr_mapping_list)
         self.assertEquals(len(actual), len(expected))
 
