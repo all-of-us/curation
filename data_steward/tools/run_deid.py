@@ -3,6 +3,7 @@ Deid runner.
 
 A central script to execute deid for each table needing de-identification.
 """
+from datetime import datetime
 import logging
 import os
 from argparse import ArgumentParser
@@ -30,7 +31,9 @@ def add_console_logging(add_handler):
     This config should be done in a separate module, but that can wait
     until later.  Useful for debugging.
     """
-    logging.basicConfig(level=logging.INFO,
+    name = datetime.now().strftime('logs/run_deid-%Y-%m-%d.log')
+    logging.basicConfig(filename=name,
+                        level=logging.INFO,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     if add_handler:
@@ -38,7 +41,7 @@ def add_console_logging(add_handler):
         handler.setLevel(logging.INFO)
         formatter = logging.Formatter('%(levelname)s - %(name)s - %(message)s')
         handler.setFormatter(formatter)
-        LOGGER.addHandler(handler)
+        logging.getLogger('').addHandler(handler)
 
 
 def get_known_tables(field_path):
@@ -158,6 +161,10 @@ def parse_args(raw_args=None):
                         help=('Execute queries in INTERACTIVE mode.  Defaults to '
                               'execute queries in BATCH mode.')
                         )
+    parser.add_argument('-c', '--console-log', dest='console_log', action='store_true',
+                        required=False,
+                        help=('Log to the console as well as to a file.')
+                       )
     parser.add_argument('--version', action='version', version='deid-02')
     return parser.parse_args(raw_args)
 
@@ -168,8 +175,8 @@ def main(raw_args=None):
 
     Responsible for aggregating the tables deid will execute on and calling deid.
     """
-    add_console_logging(False)
     args = parse_args(raw_args)
+    add_console_logging(args.console_log)
     known_tables = get_known_tables(fields_path)
     configured_tables = get_known_tables('../deid/config/ids/tables')
     tables = get_output_tables(args.input_dataset, known_tables, args.skip_tables, args.tables)
