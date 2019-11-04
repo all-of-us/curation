@@ -167,18 +167,20 @@ FROM `{project_id}.{sandbox_dataset_id}.{new_smoking_rows}`
 """
 
 
-def get_queries_clean_smoking(project_id, dataset_id):
+def get_queries_clean_smoking(project_id, dataset_id, sandbox_dataset_id):
     """
     Queries to run for deleting incorrect smoking rows and inserting corrected rows
 
     :param project_id: project id associated with the dataset to run the queries on
     :param dataset_id: dataset id to run the queries on
+    :param sandbox_dataset_id: dataset id of the sandbox
     :return: list of query dicts
     """
     queries = []
 
     # fetch sandbox_dataset_id
-    sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
+    if sandbox_dataset_id is None:
+        sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
 
     # load smoking_lookup table
     bq_utils.load_table_from_csv(project_id,
@@ -212,12 +214,29 @@ def get_queries_clean_smoking(project_id, dataset_id):
     return queries
 
 
-if __name__ == '__main__':
+def parse_args():
+    """
+    Add sandbox_dataset_id to the default cdr_cleaner.args_parser argument list
+
+    :return: an expanded argument list object
+    """
     import cdr_cleaner.args_parser as parser
+
+    additional_argument = {parser.SHORT_ARGUMENT: '-n',
+                           parser.LONG_ARGUMENT: '--sandbox_dataset_id',
+                           parser.ACTION: 'store',
+                           parser.DEST: 'sandbox_dataset_id',
+                           parser.HELP: 'Please specify the sandbox_dataset_id',
+                           parser.REQUIRED: True}
+    args = parser.default_parse_args([additional_argument])
+    return args
+
+
+if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.parse_args()
+    ARGS = parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_queries_clean_smoking(ARGS.project_id, ARGS.dataset_id)
+    query_list = get_queries_clean_smoking(ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
