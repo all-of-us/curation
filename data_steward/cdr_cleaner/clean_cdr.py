@@ -10,8 +10,6 @@ import logging
 # Third party imports
 from google.appengine.api import app_identity
 
-import sandbox
-from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
 import bq_utils
 import cdr_cleaner.clean_cdr_engine as clean_engine
@@ -35,6 +33,9 @@ import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_drop_duplicates
+import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
+import sandbox
+from constants.cdr_cleaner.clean_cdr import DataStage as stage
 
 LOGGER = logging.getLogger(__name__)
 
@@ -72,6 +73,7 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
         ppi_drop_duplicates.get_remove_duplicate_set_of_responses_to_same_questions_queries(project_id,
                                                                                             dataset_id,
                                                                                             sandbox_dataset_id))
+    query_list.extend(operational_pii_fields.get_remove_operational_pii_fields_query(project_id, dataset_id))
     return query_list
 
 

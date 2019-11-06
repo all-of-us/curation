@@ -62,6 +62,10 @@ def get_remove_operational_pii_fields_query(project_id, dataset_id):
     :param dataset_id: Name of the dataset where the queries should be run
     :return:
     """
+
+    bq_utils.load_table_from_csv(project_id=ARGS.project_id, dataset_id=ARGS.dataset_id + '_sandbox',
+                                 table_name=OPERATIONAL_PII_FIELDS_TABLE, csv_path=None, fields=None)
+
     queries_list = []
 
     # Save operational pii records being deleted in sandbox `dataset.intermediary_table` .
@@ -93,8 +97,5 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
-
-    bq_utils.load_table_from_csv(project_id=ARGS.project_id, dataset_id=ARGS.dataset_id + '_sandbox',
-                                 table_name=OPERATIONAL_PII_FIELDS_TABLE, csv_path=None, fields=None)
     query_list = get_remove_operational_pii_fields_query(ARGS.project_id, ARGS.dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, query_list)
