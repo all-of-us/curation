@@ -31,3 +31,5 @@ uritemplate==3.0.0
 urllib3==1.22
 Werkzeug==0.12.2
 enum34==1.1.6
+google-cloud-logging==1.14.0
+google-auth-httplib2==0.0.3

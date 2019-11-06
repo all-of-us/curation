@@ -31,12 +31,10 @@ from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JS
 from validation import hpo_report
 from tools import retract_data_bq, retract_data_gcs
 from io import open
+from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
-
-root_logger = logging.getLogger()
-root_logger.setLevel(logging.DEBUG)
 
 
 class InternalValidationError(RuntimeError):
@@ -835,3 +833,8 @@ app.add_url_rule(
     endpoint='run_retraction_cron',
     view_func=run_retraction_cron,
     methods=['GET'])
+
+
+app.before_request(begin_request_logging)  # Must be first before_request() call.
+
+app.after_request(end_request_logging)  # Must be last after_request() call.
