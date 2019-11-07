@@ -1,5 +1,7 @@
 # coding=utf-8
 """
+Removes operational Pii fields from rdr export.
+
 Some new operational fields exists, that were not blacklisted in the RDR export. These rows needs to be dropped in the 
 RDR load process so they do not make it to CDR. These do not have concept_id maps. 
 The supplemental operational_pii_fields.csv shows all present PPI codes without a mapped concepts,
