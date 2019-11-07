@@ -6,18 +6,22 @@ The supplemental operational_pii_fields.csv shows all present PPI codes without 
 indicating which should be dropped in the “drop_value” column
 """
 import logging
+import os
 
 import bq_utils
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+import sandbox
 
 LOGGER = logging.getLogger(__name__)
 
+module_name = os.path.basename(file[:-3])
+
 OPERATIONAL_PII_FIELDS_TABLE = 'operational_pii_fields'
-INTERMEDIARY_TABLE = 'operation_pii_fields_to_delete'
+INTERMEDIARY_TABLE = module_name + '_observation'
 
 OPERATION_PII_FIELDS_INTERMEDIARY_QUERY = """
 CREATE OR REPLACE TABLE
-    `{project}.{dataset}_sandbox.{intermediary_table}` AS (
+    `{project}.{sandbox}.{intermediary_table}` AS (
   SELECT
     *
   FROM
@@ -27,7 +31,7 @@ CREATE OR REPLACE TABLE
     SELECT
       observation_id
     FROM
-      `{project}.{dataset}_sandbox.{pii_fields_table}` as pii
+      `{project}.{sandbox}.{pii_fields_table}` as pii
     JOIN
       `{project}.{dataset}.observation` as ob
     ON
@@ -45,7 +49,7 @@ FROM
     SELECT
       observation_id
     FROM
-      `{project}.{dataset}_sandbox.{pii_fields_table}` as pii
+      `{project}.{sandbox}.{pii_fields_table}` as pii
     JOIN
       `{project}.{dataset}.observation` as ob
     ON
@@ -55,15 +59,16 @@ FROM
 """
 
 
-def get_remove_operational_pii_fields_query(project_id, dataset_id):
+def get_remove_operational_pii_fields_query(project_id, dataset_id, sandbox_dataset_id):
     """
 
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
+    :param sandbox_dataset_id: Name of the sandbox dataset
     :return:
     """
 
-    bq_utils.load_table_from_csv(project_id=ARGS.project_id, dataset_id=ARGS.dataset_id + '_sandbox',
+    bq_utils.load_table_from_csv(project_id=project_id, dataset_id=sandbox_dataset_id,
                                  table_name=OPERATIONAL_PII_FIELDS_TABLE, csv_path=None, fields=None)
 
     queries_list = []
@@ -75,6 +80,7 @@ def get_remove_operational_pii_fields_query(project_id, dataset_id):
                                                                              intermediary_table=INTERMEDIARY_TABLE,
                                                                              pii_fields_table=
                                                                              OPERATIONAL_PII_FIELDS_TABLE,
+                                                                             sandbox=sandbox_dataset_id
                                                                              )
     queries_list.append(query)
 
@@ -85,6 +91,7 @@ def get_remove_operational_pii_fields_query(project_id, dataset_id):
                                                                          project=project_id,
                                                                          pii_fields_table=
                                                                          OPERATIONAL_PII_FIELDS_TABLE,
+                                                                         sandbox=sandbox_dataset_id
                                                                          )
     queries_list.append(query)
 
@@ -96,6 +103,9 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
+
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=ARGS.project_id, dataset_id=ARGS.dataset_id)
+
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_remove_operational_pii_fields_query(ARGS.project_id, ARGS.dataset_id)
+    query_list = get_remove_operational_pii_fields_query(ARGS.project_id, ARGS.dataset_id, sandbox_dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, query_list)

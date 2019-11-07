@@ -73,7 +73,8 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
         ppi_drop_duplicates.get_remove_duplicate_set_of_responses_to_same_questions_queries(project_id,
                                                                                             dataset_id,
                                                                                             sandbox_dataset_id))
-    query_list.extend(operational_pii_fields.get_remove_operational_pii_fields_query(project_id, dataset_id))
+    query_list.extend(operational_pii_fields.get_remove_operational_pii_fields_query(project_id, dataset_id,
+                                                                                    sandbox_dataset_id))
     return query_list
 
 
