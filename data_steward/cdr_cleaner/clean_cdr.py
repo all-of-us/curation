@@ -12,6 +12,7 @@ from google.appengine.api import app_identity
 
 # Project imports
 import bq_utils
+import sandbox
 import cdr_cleaner.clean_cdr_engine as clean_engine
 import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
 import cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters as ppi_numeric_fields
@@ -34,7 +35,7 @@ import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_drop_duplicates
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
-import sandbox
+import cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 
 LOGGER = logging.getLogger(__name__)
@@ -74,7 +75,12 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
                                                                                             dataset_id,
                                                                                             sandbox_dataset_id))
     query_list.extend(operational_pii_fields.get_remove_operational_pii_fields_query(project_id, dataset_id,
-                                                                                    sandbox_dataset_id))
+                                                                                     sandbox_dataset_id))
+    query_list.extend(
+        map_questions_answers_to_omop.get_update_questions_answers_not_mapped_to_omop(project_id,
+                                                                                      dataset_id,
+                                                                                      sandbox_dataset_id)
+    )
     return query_list
 
 
