@@ -22,10 +22,10 @@ handlers:
 
   - url: /admin/.*
     script: admin.admin_api.app
-    login: admin
     secure: always
+    script: auto
 
   - url: /.*
     script: validation.main.app
-    login: admin
     secure: always
+    script: auto
