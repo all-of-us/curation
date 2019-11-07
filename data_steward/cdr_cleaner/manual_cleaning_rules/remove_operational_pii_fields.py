@@ -16,7 +16,7 @@ import sandbox
 
 LOGGER = logging.getLogger(__name__)
 
-module_name = os.path.basename(file[:-3])
+module_name = os.path.basename(__file__[:-3])
 
 OPERATIONAL_PII_FIELDS_TABLE = 'operational_pii_fields'
 INTERMEDIARY_TABLE = module_name + '_observation'
