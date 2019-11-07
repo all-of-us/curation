@@ -1,7 +1,9 @@
 import unittest
 
+import mock
 from google.appengine.ext import testbed
 
+import bq_utils
 import gcs_utils
 from test.unit_test import test_util
 from tools import retract_data_gcs as rd
@@ -31,6 +33,9 @@ class RetractDataGcsTest(unittest.TestCase):
         self.folder_prefix_2 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_2
         self.pids = [17, 20]
         self.skip_pids = [10, 25]
+        self.project_id = 'project_id'
+        self.sandbox_dataset_id = bq_utils.get_unioned_dataset_id()
+        self.pid_table_id = 'pid_table'
         self._empty_bucket()
 
     def _empty_bucket(self):
@@ -38,7 +43,13 @@ class RetractDataGcsTest(unittest.TestCase):
         for bucket_item in bucket_items:
             gcs_utils.delete_object(self.bucket, bucket_item['name'])
 
-    def test_integration_five_person_data_retraction_skip(self):
+    @mock.patch('tools.retract_data_gcs.extract_pids_from_table')
+    @mock.patch('gcs_utils.get_drc_bucket')
+    @mock.patch('gcs_utils.get_hpo_bucket')
+    def test_integration_five_person_data_retraction_skip(self, mock_hpo_bucket, mock_bucket, mock_extract_pids):
+        mock_hpo_bucket.return_value = self.site_bucket
+        mock_bucket.return_value = self.bucket
+        mock_extract_pids.return_value = self.skip_pids
         self.folder_prefix_1 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_1
         self.folder_prefix_2 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_2
         lines_to_remove = {}
@@ -62,10 +73,10 @@ class RetractDataGcsTest(unittest.TestCase):
             test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_1)
             test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_2)
 
-        retract_result = rd.run_retraction(self.skip_pids,
-                                           self.bucket,
+        retract_result = rd.run_retraction(self.project_id,
+                                           self.sandbox_dataset_id,
+                                           self.pid_table_id,
                                            self.hpo_id,
-                                           self.site_bucket,
                                            folder=None,
                                            force_flag=True)
 
@@ -88,7 +99,13 @@ class RetractDataGcsTest(unittest.TestCase):
                 del lines_to_remove[key]
         self.assertEqual(len(retract_result[self.folder_prefix_1]), len(lines_to_remove.keys()))
 
-    def test_integration_five_person_data_retraction(self):
+    @mock.patch('tools.retract_data_gcs.extract_pids_from_table')
+    @mock.patch('gcs_utils.get_drc_bucket')
+    @mock.patch('gcs_utils.get_hpo_bucket')
+    def test_integration_five_person_data_retraction(self, mock_hpo_bucket, mock_bucket, mock_extract_pids):
+        mock_hpo_bucket.return_value = self.site_bucket
+        mock_bucket.return_value = self.bucket
+        mock_extract_pids.return_value = self.pids
         lines_to_remove = {}
         total_lines_prior = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
@@ -110,10 +127,10 @@ class RetractDataGcsTest(unittest.TestCase):
             test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_1)
             test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_2)
 
-        retract_result = rd.run_retraction(self.pids,
-                                           self.bucket,
+        retract_result = rd.run_retraction(self.project_id,
+                                           self.sandbox_dataset_id,
+                                           self.pid_table_id,
                                            self.hpo_id,
-                                           self.site_bucket,
                                            folder=None,
                                            force_flag=True)
 

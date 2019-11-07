@@ -4,33 +4,45 @@ import argparse
 import ast
 import logging
 
+import bq_utils
 import common
 import gcs_utils
 import resources
-import retract_data_bq
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction from buckets logger')
 # logger.setLevel(logging.DEBUG)
+
+EXTRACT_PIDS_QUERY = """
+SELECT person_id
+FROM `{project_id}.{sandbox_dataset_id}.{pid_table_id}`
+"""
 
 PID_IN_COL1 = [common.PERSON, common.DEATH] + common.PII_TABLES
 PID_IN_COL2 = [common.VISIT_OCCURRENCE, common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE, common.MEASUREMENT,
                common.PROCEDURE_OCCURRENCE, common.OBSERVATION, common.DEVICE_EXPOSURE, common.SPECIMEN, common.NOTE]
 
 
-def run_retraction(pids, bucket, hpo_id, site_bucket, folder, force_flag):
+def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder, force_flag):
     """
     Retract from a folder/folders in a GCS bucket all records associated with a pid
 
-    :param pids: person_ids to retract
-    :param bucket: bucket containing records to retract
+    :param project_id: project contaning the sandbox dataset
+    :param sandbox_dataset_id: dataset containing the pid_table
+    :param pid_table_id: table containing the person_ids whose data needs to be retracted
     :param hpo_id: hpo_id of the site to run retraction on
-    :param site_bucket: bucket name associated with the site
     :param folder: the site's submission folder; if unspecified, retract from all folders
     :param force_flag: if False then prompt for each file
     :return: metadata for each object updated in order to retract as a list of lists
     """
+
+    # extract the pids
+    pids = extract_pids_from_table(project_id, sandbox_dataset_id, pid_table_id)
+
+    bucket = gcs_utils.get_drc_bucket()
     logger.debug('Retracting from bucket %s' % bucket)
+
+    site_bucket = gcs_utils.get_hpo_bucket(hpo_id)
     full_bucket_path = bucket+'/'+hpo_id+'/'+site_bucket
     folder_prefixes = gcs_utils.list_bucket_prefixes(full_bucket_path)
 
@@ -159,32 +171,55 @@ def get_integer(num_str):
         return None
 
 
+def extract_pids_from_table(project_id, sandbox_dataset_id, pid_table_id):
+    """
+    Extracts person_ids from table in BQ in the form of a set of integers
+
+    :param project_id: project containing the sandbox dataset with pid table
+    :param sandbox_dataset_id: dataset containing the pid table
+    :param pid_table_id: identifies the table containing the person_ids to retract
+    :return: set of integer pids
+    """
+    q = EXTRACT_PIDS_QUERY.format(project_id=project_id,
+                                  sandbox_dataset_id=sandbox_dataset_id,
+                                  pid_table_id=pid_table_id)
+    r = bq_utils.query(q)
+    rows = bq_utils.response2rows(r)
+    pids = set()
+    for row in rows:
+        pids.add(get_integer(row['person_id']))
+    return pids
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-i', '--pid_file',
-                        action='store', dest='pid_file',
-                        help='Text file containing the pids on separate lines',
+    parser.add_argument('-p', '--project_id',
+                        action='store', dest='project_id',
+                        help='Identifies the project to retract data from',
                         required=True)
-    parser.add_argument('-b', '--bucket',
-                        action='store', dest='bucket',
-                        help='Identifies the bucket to retract data from',
+    parser.add_argument('-s', '--sandbox_dataset_id',
+                        action='store', dest='sandbox_dataset_id',
+                        help='Identifies the dataset containing the pid table',
                         required=True)
-    parser.add_argument('-s', '--hpo_id',
+    parser.add_argument('-t', '--pid_table_id',
+                        action='store', dest='pid_table_id',
+                        help='Identifies the table containing the person_ids for retraction',
+                        required=True)
+    parser.add_argument('-i', '--hpo_id',
                         action='store', dest='hpo_id',
                         help='Identifies the site to retract data from',
                         required=True)
-    parser.add_argument('-a', '--hpo_bucket',
-                        action='store', dest='hpo_bucket',
-                        help='Identifies the site bucket to retract data from',
-                        required=True)
     parser.add_argument('-n', '--folder_name',
                         action='store', dest='folder_name',
-                        help='Path of the folder to retract from')
+                        help='Optional. Path of the folder to retract from',
+                        required=False)
     parser.add_argument('-f', '--force_flag', dest='force_flag', action='store_true',
-                        help='Indicates pids must be force retracted')
+                        help='Optional. Indicates pids must be force retracted',
+                        required=False)
 
     args = parser.parse_args()
-    pids = retract_data_bq.extract_pids_from_file(args.pid_file)
+
     # result is mainly for debugging file uploads
-    result = run_retraction(pids, args.bucket, args.hpo_id, args.hpo_bucket, args.folder_name, args.force_flag)
+    result = run_retraction(args.project_id, args.sandbox_dataset_id, args.pid_table_id, args.hpo_id,
+                            args.folder_name, args.force_flag)

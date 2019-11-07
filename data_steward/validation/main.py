@@ -722,20 +722,17 @@ def union_ehr():
 def run_retraction_cron():
     project_id = bq_utils.app_identity.get_application_id()
     hpo_id = bq_utils.get_retraction_hpo_id()
-    person_ids_file = bq_utils.get_retraction_person_ids_file_name()
-    research_ids_file = bq_utils.get_retraction_research_ids_file_name()
-    person_ids = retract_data_bq.extract_pids_from_file(person_ids_file)
-    research_ids = retract_data_bq.extract_pids_from_file(research_ids_file)
-    logging.info('Running retraction on research_ids')
-    retract_data_bq.run_retraction(project_id, research_ids, hpo_id, deid_flag=True)
-    logging.info('Completed retraction on research_ids')
-    logging.info('Running retraction on person_ids')
-    retract_data_bq.run_retraction(project_id, person_ids, hpo_id, deid_flag=False)
-    logging.info('Completed retraction on person_ids')
-    bucket = gcs_utils.get_drc_bucket()
-    hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+    pid_table_id = bq_utils.get_retraction_pid_table_id()
+    sandbox_dataset_id = bq_utils.get_retraction_sandbox_dataset_id()
+
+    # retract from bq
+    logging.info('Running retraction on BQ datasets')
+    retract_data_bq.run_retraction(project_id, sandbox_dataset_id, hpo_id, pid_table_id)
+    logging.info('Completed retraction on BQ datasets')
+
+    # retract from gcs
     logging.info('Running retraction from bucket folders')
-    retract_data_gcs.run_retraction(person_ids, bucket, hpo_id, hpo_bucket, folder=None, force_flag=True)
+    retract_data_gcs.run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder=None, force_flag=True)
     logging.info('Completed retraction from bucket folders')
     return 'retraction-complete'
 

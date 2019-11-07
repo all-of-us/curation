@@ -14,16 +14,39 @@ from tools import retract_data_bq
 from validation import ehr_union
 
 
-TABLE_ROWS_QUERY = (
-    ' SELECT * '
-    ' FROM {dataset_id}.__TABLES__ '
-)
+TABLE_ROWS_QUERY = """
+SELECT *
+FROM {dataset_id}.__TABLES__
+"""
 
-EXPECTED_ROWS_QUERY = (
-    ' SELECT * '
-    ' FROM {dataset_id}.{table_id} '
-    ' WHERE person_id '
-    ' IN {pids} ')
+EXPECTED_ROWS_QUERY = """
+SELECT *
+FROM {dataset_id}.{table_id}
+WHERE person_id IN
+(SELECT person_id
+FROM {dataset_id}.{pid_table_id})
+"""
+
+INSERT_PID_TABLE = """
+INSERT INTO {dataset_id}.{pid_table_id}
+(person_id, research_id)
+VALUES{person_research_ids}
+"""
+
+PID_TABLE_FIELDS = [
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "nullable",
+    "description": "The person_id to retract"
+  },
+  {
+    "type": "integer",
+    "name": "research_id",
+    "mode": "nullable",
+    "description": "The research_id corresponding to the person_id"
+  }
+]
 
 
 class RetractDataBqTest(unittest.TestCase):
@@ -40,8 +63,10 @@ class RetractDataBqTest(unittest.TestCase):
         self.ehr_dataset_id = 'ehr20190801_fake'
         self.unioned_dataset_id = 'unioned_ehr20190801'
         self.combined_dataset_id = 'combined20190801'
+        self.sandbox_dataset_id = 'sandbox_dataset'
+        self.pid_table_id = 'pid_table'
         self.bq_dataset_id = bq_utils.get_unioned_dataset_id()
-        self.person_ids = [1, 2, 1234567]
+        self.person_research_ids = [(1, 6890173), (2, 858761), (1234567, 4589763)]
         self.tables_to_retract_unioned = retract_data_bq.TABLES_FOR_RETRACTION | {common.FACT_RELATIONSHIP, common.PERSON}
         self.tables_to_retract_combined = retract_data_bq.TABLES_FOR_RETRACTION | {common.FACT_RELATIONSHIP}
         self.all_tables = resources.CDM_TABLES
@@ -108,8 +133,11 @@ class RetractDataBqTest(unittest.TestCase):
                 ignored_tables.append(legacy_mapping_table)
 
         mock_list_existing_tables.return_value = existing_table_ids
-        mqs, qs = retract_data_bq.queries_to_retract_from_ehr_dataset(self.project_id, self.ehr_dataset_id, self.hpo_id,
-                                                                      self.person_ids)
+        mqs, qs = retract_data_bq.queries_to_retract_from_ehr_dataset(self.project_id,
+                                                                      self.ehr_dataset_id,
+                                                                      self.sandbox_dataset_id,
+                                                                      self.hpo_id,
+                                                                      self.pid_table_id)
         actual_dest_tables = set(q[retract_data_bq.DEST_TABLE] for q in qs+mqs)
         expected_dest_tables = set(existing_table_ids) - set(hpo_person) - set(ignored_tables)
         self.assertSetEqual(expected_dest_tables, actual_dest_tables)
@@ -133,7 +161,9 @@ class RetractDataBqTest(unittest.TestCase):
         mock_list_existing_tables.return_value = existing_table_ids
         mqs, qs = retract_data_bq.queries_to_retract_from_combined_or_deid_dataset(self.project_id,
                                                                                    self.combined_dataset_id,
-                                                                                   self.person_ids)
+                                                                                   self.sandbox_dataset_id,
+                                                                                   self.pid_table_id,
+                                                                                   deid_flag=False)
         actual_dest_tables = set(q[retract_data_bq.DEST_TABLE] for q in qs+mqs)
         expected_dest_tables = set(existing_table_ids) - set(ignored_tables)
         self.assertSetEqual(expected_dest_tables, actual_dest_tables)
@@ -163,7 +193,8 @@ class RetractDataBqTest(unittest.TestCase):
         mock_list_existing_tables.return_value = existing_table_ids
         mqs, qs = retract_data_bq.queries_to_retract_from_unioned_dataset(self.project_id,
                                                                           self.unioned_dataset_id,
-                                                                          self.person_ids)
+                                                                          self.sandbox_dataset_id,
+                                                                          self.pid_table_id)
         actual_dest_tables = set(q[retract_data_bq.DEST_TABLE] for q in qs+mqs)
         expected_dest_tables = set(existing_table_ids) - set(ignored_tables)
         self.assertSetEqual(expected_dest_tables, actual_dest_tables)
@@ -185,6 +216,15 @@ class RetractDataBqTest(unittest.TestCase):
         mock_is_unioned_dataset.return_value = False
         mock_is_ehr_dataset.return_value = True
 
+        # create and load person_ids to pid table
+        bq_utils.create_table(self.pid_table_id, PID_TABLE_FIELDS, drop_existing=True, dataset_id=self.bq_dataset_id)
+        bq_formatted_insert_values = ', '.join(['(%s, %s)' % (person_id, research_id)
+                                                for (person_id, research_id) in self.person_research_ids])
+        q = INSERT_PID_TABLE.format(dataset_id=self.bq_dataset_id,
+                                    pid_table_id=self.pid_table_id,
+                                    person_research_ids=bq_formatted_insert_values)
+        bq_utils.query(q)
+
         job_ids = []
         row_count_queries = {}
         # load the cdm files into dataset
@@ -195,8 +235,7 @@ class RetractDataBqTest(unittest.TestCase):
             # store query for checking number of rows to delete
             row_count_queries[hpo_table] = EXPECTED_ROWS_QUERY.format(dataset_id=self.bq_dataset_id,
                                                                       table_id=hpo_table,
-                                                                      pids=retract_data_bq.int_list_to_bq(
-                                                                                self.person_ids))
+                                                                      pid_table_id=self.pid_table_id)
             retract_data_bq.logger.debug('Preparing to load table %s.%s' % (self.bq_dataset_id,
                                                                             hpo_table))
             with open(cdm_file, 'rb') as f:
@@ -223,10 +262,12 @@ class RetractDataBqTest(unittest.TestCase):
         row_count_before_retraction = {}
         for row in result:
             row_count_before_retraction[row['table_id']] = row['row_count']
-        deid_flag = False
 
         # perform retraction
-        retract_data_bq.run_retraction(self.test_project_id, self.person_ids, self.hpo_id, deid_flag)
+        retract_data_bq.run_retraction(self.test_project_id,
+                                       self.bq_dataset_id,
+                                       self.hpo_id,
+                                       self.pid_table_id)
 
         # find actual deleted rows
         q_result = bq_utils.query(q)
