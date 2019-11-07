@@ -16,12 +16,22 @@ then
   echo "Usage: $USAGE"
   exit 1
 fi
+
+# Determine separator to use for directories and PYTHONPATH
+# only tested on Git Bash for Windows
+SEP=':'
+if [[ "$OSTYPE" == "msys" ]]; then
+  SEP=';'
+fi
+
 NOTEBOOKS_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 BASE_DIR="$( cd "${NOTEBOOKS_DIR}" && cd .. && pwd )"
-export PYTHONPATH="${PYTHONPATH}:${NOTEBOOKS_DIR}:${BASE_DIR}"
+export PYTHONPATH="${PYTHONPATH}${SEP}${NOTEBOOKS_DIR}${SEP}${BASE_DIR}"
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 
 export APPLICATION_ID=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
+export PROJECT_ID="${APPLICATION_ID}"
+
 ACCOUNT=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["client_email"]);')
 
 echo "Activating service account ${ACCOUNT} for application ID ${APPLICATION_ID}..."
@@ -54,6 +64,18 @@ source "${BIN_PATH}/activate"
 echo "Which python: $(which python)"
 python -m pip install -U pip
 python -m pip install -U -r "${NOTEBOOKS_DIR}/requirements.txt"
+
+# The path set to /c/path/to/file gets converted to C:\\c\\path\\to\\file
+# instead of C:\\path\\to\\file, requiring the following fix for Git Bash for Windows
+if [[ "$OSTYPE" == "msys" ]]; then
+  for i in $(echo "${PYTHONPATH//;/ }")
+  do
+      PATH_VAR="$(echo "${i}" | tail -c +3)"
+      export PYTHONPATH="${PYTHONPATH}${SEP}${PATH_VAR}"
+      echo "Added path ${PATH_VAR}"
+  done
+fi
+
 jupyter nbextension enable --py --sys-prefix qgrid
 jupyter nbextension enable --py --sys-prefix widgetsnbextension
 jupyter notebook --notebook-dir=${BASE_DIR}
