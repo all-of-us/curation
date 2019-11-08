@@ -76,11 +76,36 @@
         ],
         "GENDER":[
             {
-                "comment": "multi gender generalization rule, the values the count is limited to is provided by the 'on' key",
+                "comment": [
+                    "multi gender generalization rule, the values the count is ",
+                    "limited to is provided by the 'on' key.  it is best to ",
+                    "perform aggregate functions before other generalizations"
+                ],
                 "apply": "COUNT",
                 "into": 2000000002,
                 "qualifier": "> 1",
                 "values": [1585839, 1585840, 1585841, 1585842, 1585843]
+            },
+            {
+                "comment": [
+                    "transgender generalization rule.  if sex-at-birth does ",
+                    "not match the identified gender, generalize the gender.  ",
+                    "generalizes born female but gender is male, or born ",
+                    "male but gender is female.  all other gender choices are ",
+                    "already generalized"
+                ],
+                "apply": "SQL",
+                "statement": [
+                    ":table_id IN (",
+                    "SELECT gender.:table_id ",
+                    "FROM :idataset.:table AS gender ",
+                    "JOIN :idataset.:table AS sex_at_birth ",
+                    "USING (person_id) ",
+                    "WHERE gender.observation_source_concept_id = 1585838 ",
+                    "AND ((gender.:fields = 1585839 AND sex_at_birth.:fields = 1585847) ",
+                    "OR (gender.:fields = 1585840 AND sex_at_birth.:fields = 1585846)))"
+                ],
+                "into": 2000000002
             },
             {
                 "comment": "values that are not male or female will be generalized into other",
