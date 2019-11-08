@@ -24,17 +24,20 @@ OLD_MAP_SHORT_CODES_TABLE_FIELDS = [
     {
         "type": "string",
         "name": "type",
-        "mode": "nullable"
+        "mode": "required",
+        "description": "determines if it is a question or an answer"
     },
     {
         "type": "string",
         "name": "pmi_code",
-        "mode": "nullable"
+        "mode": "required",
+        "description": "Concept code which is available is concept table."
     },
     {
         "type": "string",
         "name": "short_code",
-        "mode": "nullable"
+        "mode": "required",
+        "description": "short codee used by Odysseus"
     }
 ]
 
@@ -117,6 +120,8 @@ UPDATE_ANSWERS_MAP_QUERY = """
 def get_update_questions_answers_not_mapped_to_omop(project_id, dataset_id, sandbox_dataset_id):
     """
 
+    This function gets the queries required to update the questions and answers that were unmapped to OMOP concepts
+
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
     :param sandbox_dataset_id: Name of the sandbox dataset
@@ -126,7 +131,6 @@ def get_update_questions_answers_not_mapped_to_omop(project_id, dataset_id, sand
     bq_utils.load_table_from_csv(project_id=project_id,
                                  dataset_id=sandbox_dataset_id,
                                  table_name=OLD_MAP_SHORT_CODES_TABLE,
-                                 csv_path=None,
                                  fields=OLD_MAP_SHORT_CODES_TABLE_FIELDS)
 
     queries_list = []
