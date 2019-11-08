@@ -1,29 +1,16 @@
-runtime: python27
-api_version: 1
-threadsafe: yes
+runtime: python37
 instance_class: B8
 basic_scaling:
   max_instances: 10
   idle_timeout: 60m
 
-skip_files:
-  - ^(.*/)?#.*#$
-  - ^(.*/)?.*~$
-  - ^(.*/)?.*\.py[co]$
-  - ^(.*/)?.*\.sh$
-  - ^(.*/)?.*/RCS/.*$
-  - ^(.*/)?\..*$
-  - ci/
-  - config/
-  - test/
-  - tools/
-
 handlers:
 
-  - url: /admin/.*
-    script: admin.admin_api.app
-    secure: always
-    script: auto
+#  TODO set up handler for Admin API in py3
+#  - url: /admin/.*
+#    script: admin.admin_api.app
+#    secure: always
+#    script: auto
 
   - url: /.*
     script: validation.main.app
