@@ -6,7 +6,7 @@ For all answers for the survey question (43528428) and given pids,
 
 import csv
 
-import constants.bq_utils as bq_consts
+import bq_utils
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 
@@ -15,6 +15,39 @@ HCAU_OBSERVATION_SOURCE_CONCEPT_ID = 1384450
 
 INSURANCE_LOOKUP = 'insurance_lookup'
 NEW_INSURANCE_ROWS = 'new_insurance_rows'
+
+INSURANCE_LOOKUP_FIELDS = [
+    {
+        "type": "string",
+        "name": "answer_for_obs_src_c_id_43528428",
+        "mode": "nullable",
+        "description": "Answers for observation_source_concept_id = 43528428"
+    },
+    {
+        "type": "string",
+        "name": "basics_value_source_value",
+        "mode": "nullable",
+        "description": "value_source_value field for the basics survey answer"
+    },
+    {
+        "type": "integer",
+        "name": "basics_value_source_concept_id",
+        "mode": "nullable",
+        "description": "value_source_concept_id for the basics survey answer"
+    },
+    {
+        "type": "string",
+        "name": "hcau_value_source_value",
+        "mode": "nullable",
+        "description": "value_source_value field for the HCAU survey answer"
+    },
+    {
+        "type": "integer",
+        "name": "hcau_value_source_concept_id",
+        "mode": "nullable",
+        "description": "value_source_concept_id for the HCAU survey answer"
+    }
+]
 
 
 SANDBOX_CREATE_QUERY = """
@@ -148,6 +181,12 @@ def get_queries_health_insurance(project_id, dataset_id, sandbox_dataset_id, pid
 
     pids_list = extract_pids_from_file(pid_file)
     pids = ', '.join([str(pid) for pid in pids_list])
+
+    bq_utils.load_table_from_csv(project_id,
+                                 sandbox_dataset_id,
+                                 INSURANCE_LOOKUP,
+                                 csv_path=None,
+                                 fields=INSURANCE_LOOKUP_FIELDS)
 
     queries = []
 
