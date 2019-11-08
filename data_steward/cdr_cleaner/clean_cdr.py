@@ -32,6 +32,7 @@ import cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers as remo
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_concept_ids
 import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_ppi_values
+import cdr_cleaner.cleaning_rules.repopulate_person_post_deid as repopulate_person
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
@@ -131,6 +132,7 @@ def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id, sandbox_datase
     query_list.extend(bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
     query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
     query_list.extend(fill_source_value.get_fill_freetext_source_value_fields_queries(project_id, dataset_id))
+    query_list.extend(repopulate_person.get_repopulate_person_post_deid_queries(project_id, dataset_id))
     return query_list
 
 
