@@ -98,6 +98,9 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder,
 def retract(pids, bucket, found_files, folder_prefix, force_flag):
     """
     Retract from a folder in a GCS bucket all records associated with a pid
+    pid table must follow schema described in retract_data_bq.PID_TABLE_FIELDS and must reside in sandbox_dataset_id
+    This function removes lines from all files containing person_ids if they exist in pid_table_id
+    Throws SyntaxError/TypeError/ValueError if non-ints are found
 
     :param pids: person_ids to retract
     :param bucket: bucket containing records to retract
@@ -163,12 +166,10 @@ def get_response():
 
 
 def get_integer(num_str):
-    try:
-        num = int(ast.literal_eval(str(num_str)))
-        if isinstance(num, int):
-            return num
-    except (SyntaxError, TypeError, ValueError):
-        return None
+    num = int(ast.literal_eval(str(num_str)))
+    if isinstance(num, int):
+        return num
+    return None
 
 
 def extract_pids_from_table(project_id, sandbox_dataset_id, pid_table_id):
@@ -192,7 +193,12 @@ def extract_pids_from_table(project_id, sandbox_dataset_id, pid_table_id):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description='Performs retraction on bucket files for site to retract data for, '
+                                                 'determined by hpo_id. Uses project_id, sandbox_dataset_id and '
+                                                 'pid_table_id to determine the pids to retract data for. '
+                                                 'Folder name is optional. Will retract from all folders for the site '
+                                                 'if unspecified. Force flag overrides prompts for each folder.',
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('-p', '--project_id',
                         action='store', dest='project_id',

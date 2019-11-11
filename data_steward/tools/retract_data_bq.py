@@ -122,6 +122,21 @@ WHERE (
 )
 """
 
+PID_TABLE_FIELDS = [
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "The person_id to retract data for"
+  },
+  {
+    "type": "integer",
+    "name": "research_id",
+    "mode": "nullable",
+    "description": "The research_id corresponding to the person_id"
+  }
+]
+
 
 def get_site_table(hpo_id, table):
     return hpo_id + '_' + table
@@ -484,6 +499,8 @@ def int_list_to_bq(l):
 def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset_ids=None):
     """
     Main function to perform retraction
+    pid table must follow schema described above in PID_TABLE_FIELDS and must reside in sandbox_dataset_id
+    This function removes rows from all tables containing person_ids if they exist in pid_table_id
 
     :param project_id: project to retract from
     :param sandbox_dataset_id: identifies the dataset containing the pid table
@@ -548,6 +565,7 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset
         retraction_query_runner(combined_queries)
     logger.debug('Finished retracting from COMBINED datasets')
 
+    # TODO ensure the correct research_ids for persons_ids are used for each deid retraction
     logger.debug('Retracting from DEID datasets: %s' % ', '.join(deid_datasets))
     for dataset in deid_datasets:
         deid_mapping_queries, deid_queries = queries_to_retract_from_combined_or_deid_dataset(project_id,
@@ -575,7 +593,13 @@ def to_int(val, default=None):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description='Runs retraction on specified datasets or all datasets in project. '
+                                                 'Uses project_id, sandbox_dataset_id and pid_table_id to determine '
+                                                 'the pids to retract data for. The pid_table_id needs to contain '
+                                                 'the person_id and research_id columns specified in the schema above, '
+                                                 'but research_id can be null if deid has not been run yet. '
+                                                 'hpo_id is used to retract from ehr datasets.',
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-p', '--project_id',
                         action='store', dest='project_id',
                         help='Identifies the project to retract data from',

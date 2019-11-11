@@ -33,21 +33,6 @@ INSERT INTO {dataset_id}.{pid_table_id}
 VALUES{person_research_ids}
 """
 
-PID_TABLE_FIELDS = [
-  {
-    "type": "integer",
-    "name": "person_id",
-    "mode": "nullable",
-    "description": "The person_id to retract"
-  },
-  {
-    "type": "integer",
-    "name": "research_id",
-    "mode": "nullable",
-    "description": "The research_id corresponding to the person_id"
-  }
-]
-
 
 class RetractDataBqTest(unittest.TestCase):
     @classmethod
@@ -217,7 +202,8 @@ class RetractDataBqTest(unittest.TestCase):
         mock_is_ehr_dataset.return_value = True
 
         # create and load person_ids to pid table
-        bq_utils.create_table(self.pid_table_id, PID_TABLE_FIELDS, drop_existing=True, dataset_id=self.bq_dataset_id)
+        bq_utils.create_table(self.pid_table_id, retract_data_bq.PID_TABLE_FIELDS, drop_existing=True,
+                              dataset_id=self.bq_dataset_id)
         bq_formatted_insert_values = ', '.join(['(%s, %s)' % (person_id, research_id)
                                                 for (person_id, research_id) in self.person_research_ids])
         q = INSERT_PID_TABLE.format(dataset_id=self.bq_dataset_id,
