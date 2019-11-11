@@ -264,10 +264,7 @@ class RetractDataBqTest(unittest.TestCase):
             row_count_before_retraction[row['table_id']] = row['row_count']
 
         # perform retraction
-        retract_data_bq.run_retraction(self.test_project_id,
-                                       self.bq_dataset_id,
-                                       self.hpo_id,
-                                       self.pid_table_id)
+        retract_data_bq.run_retraction(self.test_project_id, self.bq_dataset_id, self.pid_table_id, self.hpo_id)
 
         # find actual deleted rows
         q_result = bq_utils.query(q)

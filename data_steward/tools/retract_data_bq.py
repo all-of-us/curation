@@ -481,14 +481,14 @@ def int_list_to_bq(l):
     return "(%s)" % ', '.join(str_l)
 
 
-def run_retraction(project_id, sandbox_dataset_id, hpo_id, pid_table_id, dataset_ids=None):
+def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset_ids=None):
     """
     Main function to perform retraction
 
     :param project_id: project to retract from
     :param sandbox_dataset_id: identifies the dataset containing the pid table
-    :param hpo_id: hpo_id of the site to retract from
     :param pid_table_id: table containing the person_ids and research_ids
+    :param hpo_id: hpo_id of the site to retract from
     :param dataset_ids: datasets to retract from. If None, retracts from all datasets
     :return:
     """
@@ -599,6 +599,6 @@ if __name__ == '__main__':
                         required=False)
     args = parser.parse_args()
 
-    run_retraction(args.project_id, args.sandbox_dataset_id, args.hpo_id, args.pid_table_id, args.dataset_ids)
+    run_retraction(args.project_id, args.sandbox_dataset_id, args.pid_table_id, args.hpo_id, args.dataset_ids)
     logger.debug('Retraction complete')
 

@@ -727,7 +727,7 @@ def run_retraction_cron():
 
     # retract from bq
     logging.info('Running retraction on BQ datasets')
-    retract_data_bq.run_retraction(project_id, sandbox_dataset_id, hpo_id, pid_table_id)
+    retract_data_bq.run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id)
     logging.info('Completed retraction on BQ datasets')
 
     # retract from gcs
