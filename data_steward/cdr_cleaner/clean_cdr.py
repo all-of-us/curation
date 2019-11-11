@@ -18,6 +18,7 @@ import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
 import cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters as ppi_numeric_fields
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
+import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency as fix_datetimes
 import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
@@ -42,7 +43,7 @@ from constants.cdr_cleaner.clean_cdr import DataStage as stage
 LOGGER = logging.getLogger(__name__)
 
 
-def _gather_ehr_queries(project_id, dataset_id):
+def _gather_ehr_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     gathers all the queries required to clean ehr dataset
 
@@ -80,13 +81,12 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     query_list.extend(
         map_questions_answers_to_omop.get_update_questions_answers_not_mapped_to_omop(project_id,
                                                                                       dataset_id,
-                                                                                      sandbox_dataset_id)
-    )
+                                                                                      sandbox_dataset_id))
     query_list.extend(round_ppi_values.get_round_ppi_values_queries(project_id, dataset_id))
     return query_list
 
 
-def _gather_ehr_rdr_queries(project_id, dataset_id):
+def _gather_ehr_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     gathers all the queries required to clean ehr_rdr dataset
 
@@ -107,12 +107,15 @@ def _gather_ehr_rdr_queries(project_id, dataset_id):
     query_list.extend(populate_routes.get_route_mapping_queries(project_id, dataset_id))
     query_list.extend(fix_datetimes.get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id))
     query_list.extend(remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries(project_id, dataset_id))
+    query_list.extend(drop_duplicate_states.get_drop_duplicate_states_queries(project_id,
+                                                                              dataset_id,
+                                                                              sandbox_dataset_id))
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     query_list.extend(null_foreign_key.null_invalid_foreign_keys(project_id, dataset_id))
     return query_list
 
 
-def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id):
+def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     gathers all the queries required to clean de_identified dataset
 
@@ -129,7 +132,7 @@ def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id):
     return query_list
 
 
-def _gather_unioned_ehr_queries(project_id, dataset_id):
+def _gather_unioned_ehr_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     gathers all the queries required to clean unioned_ehr dataset
 
@@ -188,9 +191,9 @@ def clean_ehr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
-    query_list = _gather_ehr_queries(project_id, dataset_id)
+    query_list = _gather_ehr_queries(project_id, dataset_id, sandbox_dataset_id)
 
     LOGGER.info("Cleaning ehr_dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.EHR)
@@ -211,12 +214,12 @@ def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_unioned_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
-    query_list = _gather_unioned_ehr_queries(project_id, dataset_id, stage.UNIONED)
+    query_list = _gather_unioned_ehr_queries(project_id, dataset_id, sandbox_dataset_id)
 
     LOGGER.info("Cleaning unioned_dataset")
-    clean_engine.clean_dataset(project_id, query_list)
+    clean_engine.clean_dataset(project_id, query_list, stage.UNIONED)
 
 
 def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
@@ -234,9 +237,9 @@ def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_ehr_rdr_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
-    query_list = _gather_ehr_rdr_queries(project_id, dataset_id)
+    query_list = _gather_ehr_rdr_queries(project_id, dataset_id, sandbox_dataset_id)
 
     LOGGER.info("Cleaning ehr_rdr_dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.COMBINED)
@@ -257,9 +260,9 @@ def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
         dataset_id = bq_utils.get_combined_deid_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
-    sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
-    query_list = _gather_ehr_rdr_de_identified_queries(project_id, dataset_id)
+    query_list = _gather_ehr_rdr_de_identified_queries(project_id, dataset_id, sandbox_dataset_id)
 
     LOGGER.info("Cleaning de-identified dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.DEID)
