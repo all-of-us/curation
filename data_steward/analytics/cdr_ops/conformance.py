@@ -21,7 +21,7 @@
 import yaml
 # %matplotlib inline
 from google.datalab import storage
-import parameters
+from notebooks import parameters
 
 with open ('env.yaml') as f:
     app_env = yaml.safe_load(f)

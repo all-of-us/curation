@@ -1,15 +1,13 @@
 # +
 from jinja2 import Template
-import pandas as pd
 
-import bq
-from defaults import DEFAULT_DATASETS, is_deid_dataset
-from parameters import SANDBOX
-import render
+from notebooks import bq, render
+from notebooks.defaults import is_deid_dataset
+from notebooks.parameters import SANDBOX, RDR_DATASET_ID, COMBINED_DATASET_ID, DEID_DATASET_ID
 
-RDR = DEFAULT_DATASETS.latest.rdr
-DEID = DEFAULT_DATASETS.latest.deid
-COMBINED = DEFAULT_DATASETS.latest.combined
+RDR = RDR_DATASET_ID
+DEID = DEID_DATASET_ID
+COMBINED = COMBINED_DATASET_ID
 
 # identifies dataset containing the records to remove (original or backup)
 INPUT_DATASET = COMBINED

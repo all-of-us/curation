@@ -1,8 +1,7 @@
 # +
-from defaults import DEFAULT_DATASETS
-import bq
+from notebooks import bq, parameters
 
-DEID = DEFAULT_DATASETS.latest.deid
+DEID = parameters.DEID_DATASET_ID
 # -
 
 # Derive combined dataset associated with this deid dataset

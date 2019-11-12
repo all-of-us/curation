@@ -16,8 +16,8 @@
 
 # +
 import datetime
-import bq
-from parameters import RDR_PROJECT_ID, RDR_DATASET_ID, EHR_DATASET_ID
+from notebooks import bq
+from notebooks.parameters import RDR_PROJECT_ID, RDR_DATASET_ID, EHR_DATASET_ID
 
 UPLOADED_SINCE_DAYS = 30
 

@@ -8,19 +8,13 @@
 #   * `sex_at_birth_source_concept_id` contains the associated `value_source_concept_id`
 #   * `sex_at_birth_source_value` contains the `concept_code` associated with `sex_at_birth_source_concept_id`
 
-# +
-import bq
-from defaults import DEFAULT_DATASETS
-from parameters import SANDBOX
-import render
+from notebooks import bq, render
+from notebooks.parameters import SANDBOX, DEID_DATASET_ID
 import resources
-
-DEID = DEFAULT_DATASETS.latest.deid
 print("""
 DEID={DEID}
 SANDBOX={SANDBOX}
-""".format(DEID=DEID, SANDBOX=SANDBOX))
-# -
+""".format(DEID=DEID_DATASET_ID, SANDBOX=SANDBOX))
 
 SEX_AT_BIRTH_QUERY = """
 WITH sex_at_birth AS
@@ -61,11 +55,11 @@ JOIN `{DATASET}.concept` c
   ON g.gender_source_concept_id = c.concept_id
 """
 
-q = SEX_AT_BIRTH_QUERY.format(DATASET=DEID)
+q = SEX_AT_BIRTH_QUERY.format(DATASET=DEID_DATASET_ID)
 sex_at_birth_df = bq.query(q)
 render.dataframe(sex_at_birth_df)
 
-q = GENDER_QUERY.format(DATASET=DEID)
+q = GENDER_QUERY.format(DATASET=DEID_DATASET_ID)
 gender_df = bq.query(q)
 render.dataframe(gender_df)
 
@@ -80,10 +74,10 @@ def df_to_gbq(df, destination_table, table_schema=None):
 
 
 # +
-sex_at_birth_log_table = '{SANDBOX}.{DATASET}_dc540_sex_at_birth'.format(SANDBOX=SANDBOX, DATASET=DEID)
+sex_at_birth_log_table = '{SANDBOX}.{DATASET}_dc540_sex_at_birth'.format(SANDBOX=SANDBOX, DATASET=DEID_DATASET_ID)
 df_to_gbq(sex_at_birth_df, destination_table=sex_at_birth_log_table)
 
-gender_log_table = '{SANDBOX}.{DATASET}_dc540_gender'.format(SANDBOX=SANDBOX, DATASET=DEID)
+gender_log_table = '{SANDBOX}.{DATASET}_dc540_gender'.format(SANDBOX=SANDBOX, DATASET=DEID_DATASET_ID)
 df_to_gbq(gender_df, destination_table=gender_log_table)
 # -
 
@@ -113,12 +107,12 @@ SELECT
 FROM {DATASET}.person p
 JOIN `{GENDER_LOG}` g       ON p.person_id = g.person_id
 JOIN `{SEX_AT_BIRTH_LOG}` s ON p.person_id = s.person_id
-""".format(DATASET=DEID, GENDER_LOG=gender_log_table, SEX_AT_BIRTH_LOG=sex_at_birth_log_table)
+""".format(DATASET=DEID_DATASET_ID, GENDER_LOG=gender_log_table, SEX_AT_BIRTH_LOG=sex_at_birth_log_table)
 
 person_schema = resources.fields_for('person')
 
 person_df = bq.query(UPDATED_PERSON_QUERY)
-person_log_table = '{SANDBOX}.{DATASET}_dc540_person'.format(SANDBOX=SANDBOX, DATASET=DEID)
+person_log_table = '{SANDBOX}.{DATASET}_dc540_person'.format(SANDBOX=SANDBOX, DATASET=DEID_DATASET_ID)
 df_to_gbq(person_df, destination_table=person_log_table, table_schema=person_schema)
 
 PERSON_HIST_QUERY = """

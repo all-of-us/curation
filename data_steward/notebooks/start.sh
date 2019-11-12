@@ -26,7 +26,7 @@ fi
 
 NOTEBOOKS_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 BASE_DIR="$( cd "${NOTEBOOKS_DIR}" && cd .. && pwd )"
-export PYTHONPATH="${PYTHONPATH}${SEP}${NOTEBOOKS_DIR}${SEP}${BASE_DIR}"
+export PYTHONPATH="${PYTHONPATH}${SEP}${BASE_DIR}"
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 
 export APPLICATION_ID=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
@@ -63,6 +63,7 @@ virtualenv --python=${PYTHON_CMD} ${VENV_PATH}
 source "${BIN_PATH}/activate"
 echo "Which python: $(which python)"
 python -m pip install -U pip
+python -m pip install -U -r "${BASE_DIR}/requirements.txt"
 python -m pip install -U -r "${NOTEBOOKS_DIR}/requirements.txt"
 
 # The path set to /c/path/to/file gets converted to C:\\c\\path\\to\\file
@@ -78,4 +79,4 @@ fi
 
 jupyter nbextension enable --py --sys-prefix qgrid
 jupyter nbextension enable --py --sys-prefix widgetsnbextension
-jupyter notebook --notebook-dir=${BASE_DIR}
+jupyter notebook --notebook-dir=${BASE_DIR} --config=${NOTEBOOKS_DIR}/jupyter_notebook_config.py

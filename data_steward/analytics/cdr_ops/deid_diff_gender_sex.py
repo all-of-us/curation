@@ -1,10 +1,7 @@
-from defaults import DEFAULT_DATASETS
-import bq
-from parameters import SANDBOX
-import render
+from notebooks import bq, render, parameters
 
-DEID = DEFAULT_DATASETS.latest.deid
-RDR = DEFAULT_DATASETS.latest.rdr
+DEID = parameters.DEID_DATASET_ID
+RDR = parameters.RDR_DATASET_ID
 
 # Privacy requirements indicate that in survey responses where reported gender identity (`value_source_concept_id` in observation rows where `observation_source_concept_id` is [1585838](http://athena.ohdsi.org/search-terms/terms/1585838)) differs from sex assigned at birth (`value_source_concept_id` in observation rows where `observation_source_concept_id` is [1585845](http://athena.ohdsi.org/search-terms/terms/1585845)) the gender identity should be generalized using the concept ID [2000000002](https://github.com/all-of-us/curation/blob/develop/data_steward/resources/aou_general/concept.csv#L4).
 

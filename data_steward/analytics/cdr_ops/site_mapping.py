@@ -1,10 +1,8 @@
 # +
-import bq
-from defaults import DEFAULT_DATASETS
-import render
+from notebooks import bq, render, parameters
 
-COMBINED = DEFAULT_DATASETS.latest.combined
-DEID = DEFAULT_DATASETS.latest.deid
+COMBINED = parameters.COMBINED_DATASET_ID
+DEID = parameters.DEID_DATASET_ID
 print("""COMBINED = {COMBINED}
 DEID = {DEID}""".format(COMBINED=COMBINED, DEID=DEID))
 # -

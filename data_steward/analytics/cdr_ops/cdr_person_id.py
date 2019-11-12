@@ -1,8 +1,8 @@
 # # Person
 # ## Person ID validation
 
-import bq
-from parameters import RDR_DATASET_ID, EHR_DATASET_ID
+from notebooks import bq
+from notebooks.parameters import RDR_DATASET_ID, EHR_DATASET_ID
 
 # Report sites where the number of invalid / total participant IDs
 # exceeds this threshold and provide diagnostics
