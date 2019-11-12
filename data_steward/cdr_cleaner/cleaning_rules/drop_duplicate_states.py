@@ -2,13 +2,10 @@
  Currently there are some individuals with multiple state records from consent.
  We need to include only one state, dropping all but the most recent record.
 """
-import logging
 import os
 
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import sandbox
-
-LOGGER = logging.getLogger(__name__)
 
 module_name = os.path.basename(__file__[:-3])
 INTERMEDIARY_TABLE = module_name + '_observation'
@@ -45,7 +42,6 @@ WHERE
 
 def get_drop_duplicate_states_queries(project_id, dataset_id, sandbox_dataset_id):
     """
-
     This function returns the parsed queries to delete the duplicate state records.
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
