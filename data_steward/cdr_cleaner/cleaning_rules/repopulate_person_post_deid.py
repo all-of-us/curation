@@ -1,4 +1,6 @@
 """
+Repopulate the person table from the de-identified observation table.
+
 The de-id scripts removes all fields in the person table except for the person_id and the birthdate_time field.
 Before CDR handoff to the Workbench team, we need to repopulate the following fields with demographic information
 from the observation table.
@@ -18,12 +20,10 @@ race_source_concept_id
 ethnicity_source_value
 ethnicity_source_concept_id
 """
-import logging
 
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
-LOGGER = logging.getLogger(__name__)
 
 PERSON_TABLE = 'person'
 
@@ -100,11 +100,11 @@ ON
 
 def get_repopulate_person_post_deid_queries(project_id, dataset_id):
     """
-
     This Function returns a parsed query to repopulate the person table using observation.
+
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
-    :return:
+    :return: A list of query dictionaries.
     """
     queries_list = []
     query = dict()
