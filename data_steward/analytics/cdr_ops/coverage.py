@@ -13,7 +13,7 @@
 # ---
 
 import warnings
-import parameters
+from notebooks import parameters
 import google.datalab.bigquery as bq
 warnings.filterwarnings('ignore')
 dataset = parameters.EHR_DATASET_ID

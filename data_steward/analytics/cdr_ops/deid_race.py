@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 # + {}
-from defaults import DEFAULT_DATASETS
-import bq
+from notebooks import bq, render, parameters
 import pandas as pd
-import render
 
 pd.set_option('display.max_colwidth', -1)
-RDR = DEFAULT_DATASETS.latest.rdr
-DEID = DEFAULT_DATASETS.latest.deid
-VOCAB = DEFAULT_DATASETS.latest.vocabulary
+RDR = parameters.RDR_DATASET_ID
+DEID = parameters.DEID_DATASET_ID
+VOCAB = parameters.VOCAB_DATASET_ID
 # -
 
 print("""RDR = {RDR}

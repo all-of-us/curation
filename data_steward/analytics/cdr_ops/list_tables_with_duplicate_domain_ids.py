@@ -13,7 +13,7 @@
 # ---
 
 import google.datalab.bigquery as bq
-import parameters
+from notebooks import parameters
 
 bigquery_dataset_id = parameters.SUBMISSION_DATASET_ID
 print(bigquery_dataset_id)

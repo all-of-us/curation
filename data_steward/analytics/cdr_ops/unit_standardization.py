@@ -1,13 +1,13 @@
-from defaults import DEFAULT_DATASETS
-from parameters import SANDBOX
-import bq
-import pandas as pd
-import render
-import matplotlib.pyplot as plt
 import json
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from notebooks import bq, render
+from notebooks.parameters import SANDBOX, VOCAB_DATASET_ID
+
 
 pd.set_option('display.max_colwidth', -1)
-VOCAB = DEFAULT_DATASETS.latest.vocabulary
+VOCAB = VOCAB_DATASET_ID
 
 # Fully qualified tables
 TABLE_BEFORE_CONVERSION = '' # e.g. deid.measurement
