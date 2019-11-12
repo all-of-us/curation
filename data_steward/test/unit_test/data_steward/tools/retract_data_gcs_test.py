@@ -61,6 +61,8 @@ class RetractDataGcsTest(unittest.TestCase):
             lines_to_remove[file_name] = 0
             total_lines_prior[file_name] = 0
             with open(file_path) as f:
+                # skip header
+                next(f)
                 for line in f:
                     line = line.strip()
                     if line != '':
@@ -84,8 +86,8 @@ class RetractDataGcsTest(unittest.TestCase):
         for file_path in test_util.FIVE_PERSONS_FILES:
             file_name = file_path.split('/')[-1]
             actual_result_contents = test_util.read_cloud_file(self.bucket, self.folder_prefix_1 + file_name)
-            # convert to list and remove last list item since it is a newline
-            total_lines_post[file_name] = len(actual_result_contents.split('\n')[:-1])
+            # convert to list and remove header and last list item since it is a newline
+            total_lines_post[file_name] = len(actual_result_contents.split('\n')[1:-1])
 
         for key in total_lines_prior.keys():
             if key in lines_to_remove:
@@ -115,6 +117,8 @@ class RetractDataGcsTest(unittest.TestCase):
             lines_to_remove[file_name] = 0
             total_lines_prior[file_name] = 0
             with open(file_path) as f:
+                # skip header
+                next(f)
                 for line in f:
                     line = line.strip()
                     if line != '':
@@ -138,8 +142,8 @@ class RetractDataGcsTest(unittest.TestCase):
         for file_path in test_util.FIVE_PERSONS_FILES:
             file_name = file_path.split('/')[-1]
             actual_result_contents = test_util.read_cloud_file(self.bucket, self.folder_prefix_1 + file_name)
-            # convert to list and remove last list item since it is a newline
-            total_lines_post[file_name] = len(actual_result_contents.split('\n')[:-1])
+            # convert to list and remove header and last list item since it is a newline
+            total_lines_post[file_name] = len(actual_result_contents.split('\n')[1:-1])
 
         for key in total_lines_prior.keys():
             if key in lines_to_remove:

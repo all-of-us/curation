@@ -126,8 +126,10 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
             # Output and input file content initialization
             retracted_file_string = StringIO.StringIO()
             input_file_string = gcs_utils.get_object(bucket, folder_prefix + file_name)
-            input_contents = input_file_string.split('\n')
+            input_header = input_file_string.split('\n')[0]
+            input_contents = input_file_string.split('\n')[1:]
             modified_flag = False
+            retracted_file_string.write(input_header + '\n')
 
             logger.debug("Checking for person_ids %s in path %s/%s%s"
                          % (pids, bucket, folder_prefix, file_name))
@@ -166,6 +168,13 @@ def get_response():
 
 
 def get_integer(num_str):
+    """
+    Converts an integer in string form to integer form
+    Throws SyntaxError/TypeError/ValueError if input string is not an integer and terminates
+
+    :param num_str: an integer in string form
+    :return: integer form of num_str
+    """
     num = int(ast.literal_eval(str(num_str)))
     if isinstance(num, int):
         return num
