@@ -1,11 +1,12 @@
 """
+ Drop duplicate states from participant records.
+
  Currently there are some individuals with multiple state records from consent.
  We need to include only one state, dropping all but the most recent record.
 """
 import os
 
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import sandbox
 
 module_name = os.path.basename(__file__[:-3])
 INTERMEDIARY_TABLE = module_name + '_observation'
@@ -24,7 +25,7 @@ FROM (
   WHERE
     observation_source_concept_id = 1585249 )
 WHERE
-  this_row>1
+  this_row > 1
 """
 
 DROP_DUPLICATE_STATES_QUERY = """
@@ -42,7 +43,9 @@ WHERE
 
 def get_drop_duplicate_states_queries(project_id, dataset_id, sandbox_dataset_id):
     """
+
     This function returns the parsed queries to delete the duplicate state records.
+
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
     :param sandbox_dataset_id: Name of the sandbox dataset
@@ -78,6 +81,7 @@ def get_drop_duplicate_states_queries(project_id, dataset_id, sandbox_dataset_id
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
+    import sandbox
 
     ARGS = parser.parse_args()
 
