@@ -30,6 +30,7 @@ import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers as remove_multiple_race_answers
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_concept_ids
+import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_ppi_values
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
@@ -81,6 +82,7 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
                                                                                       dataset_id,
                                                                                       sandbox_dataset_id)
     )
+    query_list.extend(round_ppi_values.get_round_ppi_values_queries(project_id, dataset_id))
     return query_list
 
 
