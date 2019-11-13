@@ -2223,13 +2223,20 @@ and quantify the data.
 # report8 = 'september_09_2019.xlsx'
 # report9 = 'september_16_2019.xlsx'
 # report10 = 'september_23_2019.xlsx'
-report11 = 'september_30_2019.xlsx'
-report12 = 'october_07_2019.xlsx'
-report13 = 'october_15_2019.xlsx'
+# report11 = 'september_30_2019.xlsx'
+# report12 = 'october_07_2019.xlsx'
+# report13 = 'october_15_2019.xlsx'
 report14 = 'october_22_2019.xlsx'
 report15 = 'october_28_2019.xlsx'
+report16 = 'november_04_2019.xlsx'
+report17 = 'november_11_2019.xlsx'
+report18 = 'november_13_2019.xlsx'
 
-report_titles = [report11, report12, report13, report14, report15]
+# DEID versus DEID_clean
+# report17 = 'october_05_2019.xlsx'
+# report18 = 'october_06_2019.xlsx'
+
+report_titles = [report14, report15, report16, report17, report18]
 
 metric_choice, metric_is_percent, ideal_low = get_user_analysis_choice()
 
