@@ -726,14 +726,19 @@ def run_retraction_cron():
     sandbox_dataset_id = bq_utils.get_retraction_sandbox_dataset_id()
 
     # retract from bq
+    dataset_ids = bq_utils.get_retraction_dataset_ids()
+    dataset_ids = dataset_ids.split() if dataset_ids else None
     logging.info('Running retraction on BQ datasets')
-    retract_data_bq.run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id)
+    retract_data_bq.run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset_ids)
     logging.info('Completed retraction on BQ datasets')
 
     # retract from gcs
-    logging.info('Running retraction from bucket folders')
-    retract_data_gcs.run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder=None, force_flag=True)
-    logging.info('Completed retraction from bucket folders')
+    folder = bq_utils.get_retraction_submission_folder()
+    if not folder:
+        folder = None
+    logging.info('Running retraction from internal bucket folders')
+    retract_data_gcs.run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder, force_flag=True)
+    logging.info('Completed retraction from internal bucket folders')
     return 'retraction-complete'
 
 

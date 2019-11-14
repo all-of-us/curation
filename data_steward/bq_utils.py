@@ -71,6 +71,14 @@ def get_retraction_sandbox_dataset_id():
     return os.environ.get('RETRACTION_SANDBOX_DATASET_ID')
 
 
+def get_retraction_dataset_ids():
+    return os.environ.get('RETRACTION_DATASET_IDS')
+
+
+def get_retraction_submission_folder():
+    return os.environ.get('RETRACTION_SUBMISSION_FOLDER')
+
+
 def get_combined_deid_dataset_id():
     """
     Get the combined unidentified dataset id.
