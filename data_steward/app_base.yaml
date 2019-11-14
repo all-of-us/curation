@@ -13,6 +13,5 @@ handlers:
 #    script: auto
 
   - url: /.*
-    script: validation.main.app
     secure: always
     script: auto
