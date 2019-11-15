@@ -2,7 +2,7 @@
 import unittest
 
 # Third party imports
-from mock import Mock, patch
+from mock import patch
 
 # Project imports
 # uncomment the following line when move to python 3 environment is complete
