@@ -4,8 +4,9 @@ EHR = 'ehr'
 UNIONED = 'unioned'
 RDR = 'rdr'
 COMBINED = 'combined'
-DEID = 'deid'
-DATASET_CHOICES = [EHR, UNIONED, RDR, COMBINED, DEID]
+DEID_BASE = 'deid_base'
+DEID_CLEAN = 'deid_clean'
+DATASET_CHOICES = [EHR, UNIONED, RDR, COMBINED, DEID_BASE, DEID_CLEAN]
 
 PERSON_TABLE_NAME = 'person'
 
@@ -28,7 +29,8 @@ class DataStage(Enum):
     RDR = 'rdr'
     UNIONED = 'unioned'
     COMBINED = 'combined'
-    DEID = 'deid'
+    DEID_BASE = 'deid_base'
+    DEID_CLEAN = 'deid_clean'
 
     def __str__(self):
         return self.value

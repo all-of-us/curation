@@ -8,6 +8,7 @@ Usage: deid_runner.sh
   --key_file <path to key file>
   --cdr_id <combined_dataset name>
   --vocab_dataset <vocabulary dataset name>
+  --identifier <version identifier>
 "
 
 while true; do
@@ -22,6 +23,10 @@ while true; do
     ;;
   --vocab_dataset)
     vocab_dataset=$2
+    shift 2
+    ;;
+  --identifier)
+    identifier=$2
     shift 2
     ;;
   --)
@@ -76,7 +81,7 @@ export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
 version=$(git describe --abbrev=0 --tags)
 
 # create empty de-id dataset
-bq mk --dataset --description "${version} deidentified base version of ${cdr_id}" "${APP_ID}":"${cdr_deid}"
+bq mk --dataset --description "${version} deidentified version of ${cdr_id}" "${APP_ID}":"${cdr_deid}"
 
 # create the clinical tables
 python "${DATA_STEWARD_DIR}/cdm.py" "${cdr_deid}"
@@ -91,11 +96,61 @@ python "${DATA_STEWARD_DIR}/tools/run_deid.py" --idataset "${cdr_id}" -p "${key_
 # generate ext tables in deid dataset
 python "${DATA_STEWARD_DIR}/tools/generate_ext_tables.py" -p "${APP_ID}" -d "${cdr_deid}" -c "${cdr_id}" -s
 
+cdr_deid_base_staging="${identifier}_base_staging"
+cdr_deid_base="${identifier}_base"
+cdr_deid_clean_staging="${identifier}_clean_staging"
+cdr_deid_clean="${identifier}_clean"
+
 # create empty de-id_clean dataset to apply cleaning rules
-bq mk --dataset --description "${version} deidentified clean version of ${cdr_id}" "${APP_ID}":"${cdr_deid_clean}"
+bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${cdr_deid}" ${APP_ID}:${cdr_deid_base_staging}
 
 # copy de_id dataset to a clean version
-"${DATA_STEWARD_DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_clean}"
+"${DATA_STEWARD_DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_base_staging}"
+
+export BIGQUERY_DATASET_ID="${cdr_deid_base_staging}"
+export EHR_RDR_DEID_DATASET_ID="${cdr_deid_base_staging}"
+data_stage='deid_base'
+
+cd "${DATA_STEWARD_DIR}/cdr_cleaner/"
+
+# run cleaning_rules on a dataset
+python clean_cdr.py --data_stage ${data_stage} -s 2>&1 | tee deid_base_cleaning_log.txt
+
+cd "${DATA_STEWARD_DIR}/tools/"
+
+# Create a snapshot dataset with the result
+python snapshot_by_query.py -p "${APP_ID}" -d "${cdr_deid_base_staging}" -n "${cdr_deid_base}"
+
+bq update --description "${version} De-identified Base version of ${cdr_id}" ${APP_ID}:${cdr_deid_base}
+
+#copy sandbox dataset
+./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${cdr_deid_base_staging}_sandbox" --target_dataset "${cdr_deid_base}_sandbox"
+
+
+# create empty de-id_clean dataset to apply cleaning rules
+bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${cdr_deid_base}" ${APP_ID}:${cdr_deid_clean_staging}
+
+# copy de_id dataset to a clean version
+"${DATA_STEWARD_DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid_base}" --target_dataset "${cdr_deid_clean_staging}"
+
+export BIGQUERY_DATASET_ID="${cdr_deid_clean_staging}"
+export EHR_RDR_DEID_CLEAN_DATASET_ID="${cdr_deid_clean_staging}"
+data_stage='deid_clean'
+
+cd "${DATA_STEWARD_DIR}/cdr_cleaner/"
+
+# run cleaning_rules on a dataset
+python clean_cdr.py --data_stage ${data_stage} -s 2>&1 | tee deid_clean_cleaning_log.txt
+
+cd "${DATA_STEWARD_DIR}/tools/"
+
+# Create a snapshot dataset with the result
+python snapshot_by_query.py -p "${APP_ID}" -d "${cdr_deid_clean_staging}" -n "${cdr_deid_clean}"
+
+bq update --description "${version} De-identified Clean version of ${cdr_deid_base}" ${APP_ID}:${cdr_deid_clean}
+
+#copy sandbox dataset
+./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${cdr_deid_clean_staging}_sandbox" --target_dataset "${cdr_deid_clean}_sandbox"
 
 # deactivate virtual environment
 deactivate

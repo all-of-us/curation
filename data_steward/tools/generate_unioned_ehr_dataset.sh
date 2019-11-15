@@ -6,9 +6,9 @@
 USAGE="
 Usage: generate_unioned_ehr_dataset.sh
   --key_file <path to key file>
-  --app_id <application id>
   --vocab_dataset <vocab dataset>
-  --ehr_snap_dataset <EHR dataset>
+  --ehr_snapshot <EHR dataset>
+  --identifier <version identifier>
 "
 
 echo
@@ -18,16 +18,16 @@ while true; do
     key_file=$2
     shift 2
     ;;
-  --app_id)
-    app_id=$2
-    shift 2
-    ;;
   --vocab_dataset)
     vocab_dataset=$2
     shift 2
     ;;
-  --ehr_snap_dataset)
-    ehr_snap_dataset=$2
+  --ehr_snapshot)
+    ehr_snapshot=$2
+    shift 2
+    ;;
+  --identifier)
+    identifier=$2
     shift 2
     ;;
   --)
@@ -38,19 +38,20 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snap_dataset}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snapshot}" ]] || [[ -z "${identifier}" ]]; then
   echo "$USAGE"
   exit 1
 fi
 
 today=$(date '+%Y%m%d')
 current_dir=$(pwd)
+app_id=$(cat "${key_file}" | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
 
-echo "today --> ${today}"
-echo "ehr_snap_dataset --> ${ehr_snap_dataset}"
+echo "ehr_snapshot --> ${ehr_snapshot}"
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
+echo "identifier --> ${identifier}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
@@ -74,13 +75,13 @@ source set_path.sh
 
 echo "-------------------------->Take a Snapshot of Unioned EHR Submissions (step 5)"
 source_prefix="unioned_ehr_"
-unioned_ehr_dataset="unioned_ehr${today}"
-echo "unioned_ehr_dataset --> $unioned_ehr_dataset"
+unioned_ehr_dataset="${identifier}_unioned_ehr"
+echo "unioned_ehr_dataset --> ${unioned_ehr_dataset}"
 
 #---------------------------------------------------------------------
 # Step 1 Create an empty dataset
-echo "bq mk --dataset --description "copy ehr_union from ${ehr_snap_dataset}" ${app_id}:$unioned_ehr_dataset"
-bq mk --dataset --description "copy ehr_union from ${ehr_snap_dataset}" ${app_id}:${unioned_ehr_dataset}
+echo "bq mk --dataset --description "copy ehr_union from ${ehr_snapshot}" ${app_id}:$unioned_ehr_dataset"
+bq mk --dataset --description "copy ehr_union from ${ehr_snapshot}" ${app_id}:${unioned_ehr_dataset}
 
 #----------------------------------------------------------------------
 # Step 2 Create the clinical tables for unioned EHR data set
@@ -97,13 +98,13 @@ echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source
 
 #----------------------------------------------------------------------
 # Step 4 copy unioned ehr clinical tables tables
-echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset}"
-./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset} --sync false
+echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snapshot} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset}"
+./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snapshot} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset} --sync false
 
 #----------------------------------------------------------------------
 # Step 5 copy mapping tables tables
-echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_"
-./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_ --sync false
+echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snapshot} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_"
+./table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snapshot} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_ --sync false
 
 echo "removing tables copies unintentionally"
 bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_condition_occurrence

@@ -61,6 +61,14 @@ def get_ehr_rdr_dataset_id():
     return os.environ.get('EHR_RDR_DATASET_ID')
 
 
+def get_ehr_rdr_deid_dataset_id():
+    return os.environ.get('EHR_RDR_DEID_DATASET_ID')
+
+
+def get_ehr_rdr_deid_clean_dataset_id():
+    return os.environ.get('EHR_RDR_DEID_CLEAN_DATASET_ID')
+
+
 def get_retraction_hpo_id():
     return os.environ.get('RETRACTION_HPO_ID')
 
