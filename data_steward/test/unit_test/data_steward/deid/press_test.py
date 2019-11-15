@@ -5,9 +5,11 @@ import unittest
 from mock import Mock, patch
 
 # Project imports
-from deid.press import Press 
+# uncomment the following line when move to python 3 environment is complete
+#from deid.press import Press
 
 
+@unittest.skip('Skipping PressTest until move to python 3 environment is complete')
 class PressTest(unittest.TestCase):
 
     @classmethod
@@ -16,16 +18,22 @@ class PressTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    @patch('deid.press.json.loads')
-    @patch('deid.press.set_up_logging')
-    @patch('deid.press.codecs.open')
-    def setUp(self, mock_open, mock_logging, mock_file):
+    def setUp(self):
         # set up mocks for initialization
-        mock_logging = Mock()
-        mock_open = Mock()
-        mock_open.side_effect = [[], StandardError]
-        mock_file = Mock()
-        mock_file.side_effect = [[], []]
+        mock_logs = patch('deid.press.set_up_logging')
+        mock_logs.start()
+        self.addCleanup(mock_logs.stop)
+
+        mock_open = patch('deid.press.codecs')
+        self.mock_open_file = mock_open.start()
+        self.mock_open_file.side_effect = [[], StandardError]
+        self.addCleanup(mock_open.stop)
+
+        mock_json = patch('deid.press.json.loads')
+        self.mock_read_json = mock_json.start()
+        self.mock_read_json.side_effect = [[], []]
+        self.addCleanup(mock_json.stop)
+
 
         # input parameters expected by the class
         self.input_dataset = 'foo_input'
@@ -55,13 +63,13 @@ class PressTest(unittest.TestCase):
                 'dml_statement': True
             },
             {
-                'apply': 'select count(*) from ' + table_path,
+                'apply': 'select count(*) from foo_input.bar_table',
                 'name': 'bogus_count_statement',
                 'label': 'getting a count'
                 # leave dml_statement out to make sure it defaults to False
             },
             {
-                'apply': 'select * from ' + table_path,
+                'apply': 'select * from foo_input.bar_table',
                 # leave name out to make sure it doesn't break
                 'label': 'select all contents',
                 'dml_statement': False

@@ -143,7 +143,7 @@ class Press(object):
         """
         return None
 
-    def submit(self, **args):
+    def submit(self, sql, create, dml=None):
         """
         Should be overridden by subclasses.
         """
