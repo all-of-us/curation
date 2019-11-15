@@ -97,7 +97,6 @@ echo "unioned_ehr_dataset --> $unioned_ehr_dataset"
 # Step 3 Generate combined dataset
 echo "-------------------------->Generate combined ehr rdr dataset (step 3)"
 combined_backup="${identifier}_combined_backup"
-combined_staging="${identifier}_combined_staging"
 combined="${identifier}_combined"
 tag=$(git describe --abbrev=0 --tags)
 version=${tag}
