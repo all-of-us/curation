@@ -1,5 +1,5 @@
 {
-    "generalize":[
+    "generalize": [
         {
             "rules": "@generalize.RACE",
             "fields": ["value_source_concept_id"],
@@ -9,7 +9,11 @@
             "key_field": "my_table.person_id",
             "key_row": "my_table.value_source_concept_id",
             "value_field": "observation.person_id",
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1586140)) ",
+            "on": {
+                "field": "observation_source_concept_id",
+                "qualifier": "in",
+                "values": [1586140]
+            },
             "copy_to": ["value_as_concept_id"]
         },
         {
@@ -22,44 +26,68 @@
             "key_field": "state_table.person_id",
             "key_row": "state_table.value_source_concept_id",
             "value_field": "observation.person_id",
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1585249)) ",
+            "on": {
+                "field": "observation_source_concept_id",
+                "qualifier": "in",
+                "values": [1585249]
+            },
             "copy_to": ["value_as_concept_id"]
         },
         {
-            "rules":"@generalize.SEXUAL-ORIENTATION",
-            "fields":["value_source_concept_id"],
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1585899)) ",
+            "rules": "@generalize.SEXUAL-ORIENTATION",
+            "fields": ["value_source_concept_id"],
+            "on": {
+                "field": "observation_source_concept_id",
+                "qualifier": "in",
+                "values": [1585899]
+            },
             "copy_to": ["value_as_concept_id"]
         },
 
          {
-             "rules":"@generalize.SEX-AT-BIRTH",
-             "fields":["value_source_concept_id"],
-             "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1585845)) ",
+            "rules": "@generalize.SEX-AT-BIRTH",
+            "fields": ["value_source_concept_id"],
+            "on": {
+                "field": "observation_source_concept_id",
+                "qualifier": "in",
+                "values": [1585845]
+            },
             "copy_to": ["value_as_concept_id"]
          },
         {
-            "rules":"@generalize.GENDER",
-            "fields":["value_source_concept_id"],
+            "rules": "@generalize.GENDER",
+            "fields": ["value_source_concept_id"],
             "dataset": ":idataset",
             "table": "observation",
             "alias": "find_gender",
-            "key_field":"find_gender.person_id",
+            "key_field": "find_gender.person_id",
             "key_row": "find_gender.value_source_concept_id",
-            "value_field":"observation.person_id",
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1585838)) ",
+            "value_field": "observation.person_id",
+            "on": {
+                "field": "observation_source_concept_id",
+                "qualifier": "in",
+                "values": [1585838]
+            },
             "copy_to": ["value_as_concept_id"]
         },
         {
-            "rules":"@generalize.EDUCATION",
-            "fields":["value_source_concept_id"],
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1585940)) ",
+            "rules": "@generalize.EDUCATION",
+            "fields": ["value_source_concept_id"],
+            "on": {
+                "field": "observation_source_concept_id",
+                "qualifier": "in",
+                "values": [1585940]
+            },
             "copy_to": ["value_as_concept_id"]
         },
          {
-            "rules":"@generalize.EMPLOYMENT",
-            "fields":["value_source_concept_id"],
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (1585952)) ",
+            "rules": "@generalize.EMPLOYMENT",
+            "fields": ["value_source_concept_id"],
+            "on": {
+                "field": "observation_source_concept_id",
+                "qualifier": "in",
+                "values": [1585952]
+            },
             "copy_to": ["value_as_concept_id"]
          }
     ],
@@ -72,13 +100,13 @@
             "value_field": "observation.questionnaire_response_id"
         }
     ],
-    "shift":[
-        {"rules":"@shift.date",
-         "fields":["observation_date"]},
-        {"rules":"@shift.datetime",
-         "fields":["observation_datetime"]}
+    "shift": [
+        {"rules": "@shift.date",
+         "fields": ["observation_date"]},
+        {"rules": "@shift.datetime",
+         "fields": ["observation_datetime"]}
     ],
-    "suppress":[
+    "suppress": [
         {
             "comment": "removing specific ICD9CM and ICD10CM codes based on the value_source_concept_id field",
             "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and value_source_concept_id in (select concept_id from `:idataset.concept` where (vocabulary_id='ICD9CM' and (concept_code like 'E80%' OR concept_code like 'E81%' OR concept_code like 'E82%' OR concept_code like 'E83%' OR concept_code like 'E84%' OR concept_code like 'E913%' OR concept_code like 'E910%' OR concept_code like 'E928.0' OR concept_code like 'E95%' OR concept_code like 'E96%' OR concept_code like 'E97%' OR concept_code like 'E99%' OR concept_code = '799.9' OR concept_code = '799' OR concept_code = '798' OR concept_code like 'V3%' OR concept_code like '764%' OR concept_code like '765%' OR concept_code like '766%' OR concept_code like '767%' OR concept_code like '768%' OR concept_code like '769%' OR concept_code like '770%' OR concept_code like '771%' OR concept_code like '772%' OR concept_code like '773%' OR concept_code like '774%' OR concept_code like '775%' OR concept_code like '776%' OR concept_code like '777%' OR concept_code like '778%' OR concept_code like '779%')) OR (vocabulary_id='ICD10CM' and (concept_code like 'P%' OR concept_code like 'Z38%' OR concept_code = 'R99' OR concept_code like 'Y36%' OR concept_code like 'Y36%' OR concept_code like 'Y37%' OR concept_code like 'Y35%' OR concept_code like 'Y38%' OR concept_code like 'X52%' OR concept_code like 'V*' OR concept_code like 'W65%' OR concept_code like 'W66%' OR concept_code like 'W67%' OR concept_code like 'W68%' OR concept_code like 'W69%' OR concept_code like 'W70%' OR concept_code like 'W71%' OR concept_code like 'W72%' OR concept_code like 'W73%' OR concept_code like 'W74%' OR concept_code like 'X92%' OR concept_code like 'X93%' OR concept_code like 'X94%' OR concept_code like 'X95%' OR concept_code like 'X96%' OR concept_code like 'X97%' OR concept_code like 'X98%' OR concept_code like 'X99%' OR concept_code like 'Y00%' OR concept_code like 'Y01%' OR concept_code like 'Y02%' OR concept_code like 'Y03%' OR concept_code like 'Y04%' OR concept_code like 'Y05%' OR concept_code like 'Y06%' OR concept_code like 'Y07%' OR concept_code like 'Y08%' OR concept_code like 'Y09%'))))"
@@ -87,8 +115,8 @@
             "comment": "removing specific ICD9CM and ICD10CM codes based on the observation_source_concept_id field",
             "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (select concept_id from `:idataset.concept` where (vocabulary_id='ICD9CM' and (concept_code like 'E80%' OR concept_code like 'E81%' OR concept_code like 'E82%' OR concept_code like 'E83%' OR concept_code like 'E84%' OR concept_code like 'E913%' OR concept_code like 'E910%' OR concept_code like 'E928.0' OR concept_code like 'E95%' OR concept_code like 'E96%' OR concept_code like 'E97%' OR concept_code like 'E99%' OR concept_code = '799.9' OR concept_code = '799' OR concept_code = '798' OR concept_code like 'V3%' OR concept_code like '764%' OR concept_code like '765%' OR concept_code like '766%' OR concept_code like '767%' OR concept_code like '768%' OR concept_code like '769%' OR concept_code like '770%' OR concept_code like '771%' OR concept_code like '772%' OR concept_code like '773%' OR concept_code like '774%' OR concept_code like '775%' OR concept_code like '776%' OR concept_code like '777%' OR concept_code like '778%' OR concept_code like '779%')) OR (vocabulary_id='ICD10CM' and (concept_code like 'P%' OR concept_code like 'Z38%' OR concept_code = 'R99' OR concept_code like 'Y36%' OR concept_code like 'Y36%' OR concept_code like 'Y37%' OR concept_code like 'Y35%' OR concept_code like 'Y38%' OR concept_code like 'X52%' OR concept_code like 'V*' OR concept_code like 'W65%' OR concept_code like 'W66%' OR concept_code like 'W67%' OR concept_code like 'W68%' OR concept_code like 'W69%' OR concept_code like 'W70%' OR concept_code like 'W71%' OR concept_code like 'W72%' OR concept_code like 'W73%' OR concept_code like 'W74%' OR concept_code like 'X92%' OR concept_code like 'X93%' OR concept_code like 'X94%' OR concept_code like 'X95%' OR concept_code like 'X96%' OR concept_code like 'X97%' OR concept_code like 'X98%' OR concept_code like 'X99%' OR concept_code like 'Y00%' OR concept_code like 'Y01%' OR concept_code like 'Y02%' OR concept_code like 'Y03%' OR concept_code like 'Y04%' OR concept_code like 'Y05%' OR concept_code like 'Y06%' OR concept_code like 'Y07%' OR concept_code like 'Y08%' OR concept_code like 'Y09%'))))"
         },
-        {   "comment":"removing ethnic groups, alternative race and fields (data has redundancies)",
-             "on":"observation_concept_id in (4013886, 4271761, 4135376)"
+        {   "comment": "removing ethnic groups, alternative race and fields (data has redundancies)",
+             "on": "observation_concept_id in (4013886, 4271761, 4135376)"
         },
         {
             "comment": "remove nullable rows fix for the nullable based rule",
