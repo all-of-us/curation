@@ -529,7 +529,7 @@ class AOU(Press):
 
             # pull the rules that may have duplicates
             drop_duplicates_rules = {}
-            for key, rule_list in self.deid_rules.get('generalize').iteritems():
+            for key, rule_list in self.deid_rules.get('generalize').items():
                 rule_generalizations = []
                 if isinstance(rule_list, list):
                     for rule in rule_list:
@@ -540,7 +540,7 @@ class AOU(Press):
             # create lists for the generalized values and where clauses
             values_to_drop_on = []
             generalized_multiple_values = []
-            for drop_rule, drop_values in drop_duplicates_rules.iteritems():
+            for drop_rule, drop_values in drop_duplicates_rules.items():
                 on_dict = gen_rules.get(drop_rule)
                 on_values = on_dict.get('values')
                 values_to_drop_on.extend(on_values)

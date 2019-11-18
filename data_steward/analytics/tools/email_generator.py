@@ -352,7 +352,7 @@ row_idx = determine_row(sample_df, hpo_id)
 hpo_full_name = 9999  # should be reset
 row_info = sample_df.iloc[row_idx, :]  # series, row labels and values
 
-for col_name, val in row_info.iteritems():
+for col_name, val in row_info.items():
     if col_name == 'HPO':
         hpo_full_name = val
 
