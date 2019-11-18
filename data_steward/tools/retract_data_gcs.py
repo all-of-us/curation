@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import StringIO
 import argparse
-import ast
 import logging
 
 import bq_utils
@@ -175,10 +174,7 @@ def get_integer(num_str):
     :param num_str: an integer in string form
     :return: integer form of num_str
     """
-    num = int(ast.literal_eval(str(num_str)))
-    if isinstance(num, int):
-        return num
-    return None
+    return int(num_str)
 
 
 def extract_pids_from_table(project_id, sandbox_dataset_id, pid_table_id):
