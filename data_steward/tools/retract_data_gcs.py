@@ -112,6 +112,7 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
     for file_name in found_files:
         table_name = file_name.split(".")[0]
         lines_removed = 0
+        file_gcs_path = '%s/%s%s' % (bucket, folder_prefix, file_name)
         if force_flag:
             logger.debug("Attempting to force retract for person_ids %s in path %s/%s%s"
                          % (pids, bucket, folder_prefix, file_name))
@@ -129,7 +130,6 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
             input_header = input_file_lines[0]
             input_contents = input_file_lines[1:]
             retracted_file_string.write(input_header + '\n')
-            file_gcs_path = '%s/%s%s' % (bucket, folder_prefix, file_name)
             logger.debug("Checking for person_ids %s in path %s" % (pids, file_gcs_path))
 
             # Check if file has person_id in first or second column
@@ -160,9 +160,9 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
 # Make sure user types Y to proceed
 def get_response():
     prompt_text = 'Please press Y/n\n'
-    response = raw_input(prompt_text)
+    response = input(prompt_text)
     while response not in ('Y', 'n', 'N'):
-        response = raw_input(prompt_text)
+        response = input(prompt_text)
     return response
 
 
