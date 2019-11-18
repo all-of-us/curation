@@ -63,12 +63,21 @@ def get_retraction_hpo_id():
     return os.environ.get('RETRACTION_HPO_ID')
 
 
-def get_retraction_person_ids_file_name():
-    return os.environ.get('RETRACTION_PERSON_IDS_FILE_NAME')
+def get_retraction_pid_table_id():
+    return os.environ.get('RETRACTION_PID_TABLE_ID')
 
 
-def get_retraction_research_ids_file_name():
-    return os.environ.get('RETRACTION_RESEARCH_IDS_FILE_NAME')
+def get_retraction_sandbox_dataset_id():
+    return os.environ.get('RETRACTION_SANDBOX_DATASET_ID')
+
+
+def get_retraction_dataset_ids():
+    # dataset ids from which to retract, separated by spaces ' '
+    return os.environ.get('RETRACTION_DATASET_IDS')
+
+
+def get_retraction_submission_folder():
+    return os.environ.get('RETRACTION_SUBMISSION_FOLDER')
 
 
 def get_combined_deid_dataset_id():
