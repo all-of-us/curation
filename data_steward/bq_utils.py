@@ -72,6 +72,7 @@ def get_retraction_sandbox_dataset_id():
 
 
 def get_retraction_dataset_ids():
+    # dataset ids from which to retract, separated by spaces ' '
     return os.environ.get('RETRACTION_DATASET_IDS')
 
 
