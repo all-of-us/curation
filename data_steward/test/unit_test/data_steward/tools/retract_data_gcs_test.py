@@ -154,6 +154,14 @@ class RetractDataGcsTest(unittest.TestCase):
         # metadata for each updated file is returned
         self.assertEqual(len(retract_result[self.folder_prefix_1]), len(lines_to_remove.keys()))
 
+    def test_get_int(self):
+        self.assertEqual(rd.get_integer('100'), 100)
+        self.assertEqual(rd.get_integer('0'), 0)
+        self.assertEqual(rd.get_integer('-1'), -1)
+        with self.assertRaises(ValueError) as cm:
+            rd.get_integer('1.999')
+            rd.get_integer('True')
+
     def tearDown(self):
         self._empty_bucket()
         test_util.empty_bucket(self.bucket)
