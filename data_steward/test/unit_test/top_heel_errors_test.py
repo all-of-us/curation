@@ -1,9 +1,10 @@
 import os
 import unittest
 
-
+import app_identity
 import bq_utils
 import common
+import gcs_utils
 import resources
 from test.unit_test import test_util
 from tools.top_heel_errors import top_heel_errors, RESULT_LIMIT, FIELD_ANALYSIS_ID, FIELD_RECORD_COUNT, \
@@ -55,9 +56,9 @@ class TopHeelErrorsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.app_id = os.environ.get('APPLICATION_ID')
-        self.dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
-        self.bucket = os.environ.get('DRC_BUCKET_NAME')
+        self.app_id = app_identity.get_application_id()
+        self.dataset_id = bq_utils.get_dataset_id()
+        self.bucket = gcs_utils.get_drc_bucket()
         test_util.empty_bucket(self.bucket)
         test_util.delete_all_tables(self.dataset_id)
         self.load_test_data(hpo_id=HPO_NYC)
