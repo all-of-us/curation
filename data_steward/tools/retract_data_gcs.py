@@ -126,35 +126,35 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
             # Output and input file content initialization
             retracted_file_string = StringIO.StringIO()
             input_file_string = gcs_utils.get_object(bucket, folder_prefix + file_name)
-            input_header = input_file_string.split('\n')[0]
-            input_contents = input_file_string.split('\n')[1:]
-            modified_flag = False
+            input_file_lines = input_file_string.split('\n')
+            input_header = input_file_lines[0]
+            input_contents = input_file_lines[1:]
             retracted_file_string.write(input_header + '\n')
-
-            logger.debug("Checking for person_ids %s in path %s/%s%s"
-                         % (pids, bucket, folder_prefix, file_name))
+            file_gcs_path = '%s/%s%s' % (bucket, folder_prefix, file_name)
+            logger.debug("Checking for person_ids %s in path %s" % (pids, file_gcs_path))
 
             # Check if file has person_id in first or second column
             for input_line in input_contents:
                 if input_line != '':
-                    if (table_name in PID_IN_COL1 and get_integer(input_line.split(",")[0]) in pids) or \
-                            (table_name in PID_IN_COL2 and get_integer(input_line.split(",")[1]) in pids):
+                    cols = input_line.split(",")
+                    col_1 = cols[0]
+                    col_2 = cols[1]
+                    if (table_name in PID_IN_COL1 and get_integer(col_1) in pids) or \
+                            (table_name in PID_IN_COL2 and get_integer(col_2) in pids):
                         lines_removed += 1
-                        modified_flag = True
                     else:
                         retracted_file_string.write(input_line + '\n')
 
             # Write result back to bucket
-            if modified_flag:
-                logger.debug("Retracted %d rows from %s/%s%s" % (lines_removed, bucket, folder_prefix, file_name))
-                logger.debug("Overwriting file %s/%s%s" % (bucket, folder_prefix, file_name))
+            if lines_removed > 0:
+                logger.debug("%d rows retracted from %s, overwriting..." % (lines_removed, file_gcs_path))
                 upload_result = gcs_utils.upload_object(bucket, folder_prefix + file_name, retracted_file_string)
                 result_list.append(upload_result)
-                logger.debug("Retraction successful for file %s/%s%s " % (bucket, folder_prefix, file_name))
+                logger.debug("Retraction successful for file %s" % file_gcs_path)
             else:
-                logger.debug("Skipping file %s/%s%s since pids %s not found" % (bucket, folder_prefix, file_name, pids))
+                logger.debug("Not updating file %s since pids %s not found" % (file_gcs_path, pids))
         elif response.lower() == "n":
-            logger.debug("Ignoring file %s" % file_name)
+            logger.debug("Skipping file %s" % file_gcs_path)
     return result_list
 
 
