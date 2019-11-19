@@ -10,4 +10,9 @@ def get_application_id():
     :return:
     """
     # NOTE: Google interchangeably refers to this identifier as application_id or project_id
-    return os.environ.get(GOOGLE_CLOUD_PROJECT)
+    project_id = os.environ.get(GOOGLE_CLOUD_PROJECT)
+
+    if project_id:
+        return project_id
+    else:
+        raise RuntimeError('{} is not set.  Set and retry.'.format(GOOGLE_CLOUD_PROJECT))

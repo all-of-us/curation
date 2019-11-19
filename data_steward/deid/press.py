@@ -15,7 +15,7 @@ import numpy as np
 # Project imports
 import bq_utils
 from resources import fields_for
-from rules import Deid, create_on_string
+from deid.rules import Deid, create_on_string
 
 
 LOGGER = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ class Press(object):
         try:
             with codecs.open(self.tablepath, 'r') as config:
                 self.table_info = json.loads(config.read())
-        except StandardError:
+        except (OSError, TypeError, ValueError):
             # In case a table name is not provided, we will apply default rules on he table
             #   I.e physical field suppression and row filter
             #   Date Shifting

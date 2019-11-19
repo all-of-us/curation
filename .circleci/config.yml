@@ -46,7 +46,10 @@ jobs:
           command: python3 -m venv ~/curation_env && echo "source ~/curation_env/bin/activate" >> $BASH_ENV
       - run:
           name: Upgrade pip and install requirements
-          command: pip install --upgrade pip setuptools && pip install -r requirements.txt
+          command: |
+            pip install --upgrade pip setuptools
+            pip install -r requirements.txt
+            pip install -r deid/requirements.txt
       - run:
           name: Show bashrc file
           command: cat ${BASH_ENV}

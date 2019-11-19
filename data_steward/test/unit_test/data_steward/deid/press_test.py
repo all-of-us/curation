@@ -5,11 +5,9 @@ import unittest
 from mock import patch
 
 # Project imports
-# uncomment the following line when move to python 3 environment is complete
-#from deid.press import Press
+from deid.press import Press
 
 
-@unittest.skip('Skipping PressTest until move to python 3 environment is complete')
 class PressTest(unittest.TestCase):
 
     @classmethod
@@ -26,7 +24,7 @@ class PressTest(unittest.TestCase):
 
         mock_open = patch('deid.press.codecs')
         self.mock_open_file = mock_open.start()
-        self.mock_open_file.side_effect = [[], StandardError]
+        self.mock_open_file.side_effect = [[], OSError]
         self.addCleanup(mock_open.stop)
 
         mock_json = patch('deid.press.json.loads')

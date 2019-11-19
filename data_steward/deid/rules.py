@@ -367,7 +367,7 @@ class Deid(Rules):
                     if 'into' in rule or 'into' in args:
                         gen_value = args.get('into', rule.get('into', ''))
 
-                        if not isinstance(gen_value, (int, long)):
+                        if not isinstance(gen_value, int):
                             gen_value = "'" + gen_value + "'"
                         else:
                             gen_value = str(gen_value)
@@ -389,7 +389,7 @@ class Deid(Rules):
                     qualifier = rule.get('qualifier', '')
                     gen_value = args.get('into', rule.get('into', ''))
 
-                    if isinstance(gen_value, (int, long)):
+                    if isinstance(gen_value, int):
                         gen_value = str(gen_value)
                         values = [str(value) for value in rule['values']]
                         values = '(' + ','.join(values) + ')'
