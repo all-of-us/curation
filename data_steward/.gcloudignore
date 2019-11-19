@@ -80,13 +80,7 @@ ipython_config.py
 .python-version
 
 # Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+*_env/
 
 # Ignored by the build system
 /setup.cfg
