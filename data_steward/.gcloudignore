@@ -93,6 +93,5 @@ venv.bak/
 ci/
 config/
 test/
-tools/
 *.sh
 dev_requirements.txt

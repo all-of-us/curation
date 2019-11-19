@@ -1,8 +1,11 @@
+service: ehr
+version: py3
 runtime: python37
+env: standard
 instance_class: B8
 basic_scaling:
+  idle_timeout: 3600s
   max_instances: 10
-  idle_timeout: 60m
 
 handlers:
 
