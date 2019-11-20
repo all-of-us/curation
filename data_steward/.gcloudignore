@@ -10,6 +10,10 @@
 .git
 .gitignore
 
+# Duplicating .gitignore entries below because
+# the gcloudignore include directive does not accept paths (i.e. "../.gitignore")
+# and to reduce potential issues with *ignore inconsistencies
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
