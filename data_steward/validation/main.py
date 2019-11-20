@@ -35,6 +35,9 @@ from io import open
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
+
 
 class InternalValidationError(RuntimeError):
     """Raised when an internal error occurs during validation"""
