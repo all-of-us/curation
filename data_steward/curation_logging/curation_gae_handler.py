@@ -66,10 +66,6 @@ def setup_logging_zone():
     return zone
 
 
-# Safe to use for all threads.
-logging_zone_pb2 = setup_logging_zone()
-
-
 def setup_logging_resource():
     """
     Set the values for the Google Logging Resource object. Thread safe.
@@ -79,16 +75,12 @@ def setup_logging_resource():
         "project_id": app_identity.get_application_id(),
         "module_id": GAE_LOGGING_MODULE_ID,
         "version_id": GAE_LOGGING_VERSION_ID,
-        "zone": logging_zone_pb2
+        "zone": setup_logging_zone()
     }
 
     # https://cloud.google.com/logging/docs/reference/v2/rpc/google.api#google.api.MonitoredResource
     resource_pb2 = MonitoredResource(type='gae_app', labels=labels)
     return resource_pb2
-
-
-# Safe to use for all threads.
-logging_resource_pb2 = setup_logging_resource()
 
 
 # pylint: disable=unused-argument
@@ -357,7 +349,7 @@ class GCPStackDriverLogger(object):
         self._end_time = datetime.now(timezone.utc).isoformat()
 
         log_entry_pb2_args = {
-            'resource': logging_resource_pb2,
+            'resource': setup_logging_resource(),
             'severity': get_highest_severity_level_from_lines(lines),
             'trace': self._trace,
             'insert_id': insert_id,
