@@ -1,31 +1,19 @@
-runtime: python27
-api_version: 1
-threadsafe: yes
+service: ehr
+runtime: python37
+env: standard
 instance_class: B8
 basic_scaling:
+  idle_timeout: 3600s
   max_instances: 10
-  idle_timeout: 60m
-
-skip_files:
-  - ^(.*/)?#.*#$
-  - ^(.*/)?.*~$
-  - ^(.*/)?.*\.py[co]$
-  - ^(.*/)?.*\.sh$
-  - ^(.*/)?.*/RCS/.*$
-  - ^(.*/)?\..*$
-  - ci/
-  - config/
-  - test/
-  - tools/
 
 handlers:
 
-  - url: /admin/.*
-    script: admin.admin_api.app
-    secure: always
-    script: auto
+#  TODO set up handler for Admin API in py3
+#  - url: /admin/.*
+#    script: admin.admin_api.app
+#    secure: always
+#    script: auto
 
   - url: /.*
-    script: validation.main.app
     secure: always
     script: auto
