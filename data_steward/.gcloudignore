@@ -93,3 +93,6 @@ config/
 test/
 *.sh
 dev_requirements.txt
+
+logs/
+LOGS/
