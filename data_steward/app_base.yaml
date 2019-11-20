@@ -1,5 +1,4 @@
 service: ehr
-version: py3
 runtime: python37
 env: standard
 instance_class: B8
