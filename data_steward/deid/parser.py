@@ -158,5 +158,4 @@ def parse_args(raw_args=None):
     # normally, the parsed arguments are returned as a namespace object.  To avoid
     # rewriting a lot of existing code, the namespace elements will be turned into
     # a dictionary object and returned.
-    #return parser.parse_args()
     return vars(parser.parse_args(raw_args))
