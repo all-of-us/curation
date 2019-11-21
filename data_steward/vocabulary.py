@@ -70,7 +70,7 @@ def transform_file(file_path, out_dir):
     try:
         os.makedirs(err_dir)
     except OSError:
-        logging.debug("Error directory:\t%s\t already exists", err_dir)
+        logging.info("Error directory:\t%s\t already exists", err_dir)
 
     with open(file_path, 'r') as in_fp, open(out_file_name, 'w') as out_fp, open(err_file_name, 'w') as err_fp:
         _transform_csv(in_fp, out_fp, err_fp)

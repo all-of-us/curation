@@ -10,7 +10,7 @@ import resources
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction from buckets logger')
-# logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.INFO)
 
 EXTRACT_PIDS_QUERY = """
 SELECT person_id
@@ -39,7 +39,7 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder,
     pids = extract_pids_from_table(project_id, sandbox_dataset_id, pid_table_id)
 
     bucket = gcs_utils.get_drc_bucket()
-    logger.debug('Retracting from bucket %s' % bucket)
+    logger.info('Retracting from bucket %s' % bucket)
 
     site_bucket = gcs_utils.get_hpo_bucket(hpo_id)
     full_bucket_path = bucket+'/'+hpo_id+'/'+site_bucket
@@ -54,14 +54,14 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder,
         if folder_path in folder_prefixes:
             to_process_folder_list = [folder_path]
         else:
-            logger.debug('Folder %s does not exist in %s. Exiting' % (folder, full_bucket_path))
+            logger.info('Folder %s does not exist in %s. Exiting' % (folder, full_bucket_path))
             return result_dict
 
-    logger.debug("Retracting data from the following folders:")
-    logger.debug([bucket+'/'+folder_prefix for folder_prefix in to_process_folder_list])
+    logger.info("Retracting data from the following folders:")
+    logger.info([bucket+'/'+folder_prefix for folder_prefix in to_process_folder_list])
 
     for folder_prefix in to_process_folder_list:
-        logger.debug('Processing gs://%s/%s' % (bucket, folder_prefix))
+        logger.info('Processing gs://%s/%s' % (bucket, folder_prefix))
         # separate cdm from the unknown (unexpected) files
         bucket_items = gcs_utils.list_bucket_dir(bucket+'/'+folder_prefix[:-1])
         found_files = []
@@ -74,12 +74,12 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder,
             if item in resources.CDM_FILES or item in common.PII_FILES:
                 found_files.append(item)
 
-        logger.debug('Found the following files to retract data from:')
-        logger.debug([bucket + '/' + folder_prefix + file_name for file_name in found_files])
+        logger.info('Found the following files to retract data from:')
+        logger.info([bucket + '/' + folder_prefix + file_name for file_name in found_files])
 
-        logger.debug("Proceed?")
+        logger.info("Proceed?")
         if force_flag:
-            logger.debug("Attempting to force retract for folder %s in bucket %s" % (folder_prefix, bucket))
+            logger.info("Attempting to force retract for folder %s in bucket %s" % (folder_prefix, bucket))
             response = "Y"
         else:
             # Make sure user types Y to proceed
@@ -87,10 +87,10 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder,
         if response == "Y":
             folder_upload_output = retract(pids, bucket, found_files, folder_prefix, force_flag)
             result_dict[folder_prefix] = folder_upload_output
-            logger.debug("Retraction successful for folder %s/%s " % (bucket, folder_prefix))
+            logger.info("Retraction successful for folder %s/%s " % (bucket, folder_prefix))
         elif response.lower() == "n":
-            logger.debug("Skipping folder %s" % folder_prefix)
-    logger.debug("Retraction from GCS complete")
+            logger.info("Skipping folder %s" % folder_prefix)
+    logger.info("Retraction from GCS complete")
     return result_dict
 
 
@@ -114,12 +114,12 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
         lines_removed = 0
         file_gcs_path = '%s/%s%s' % (bucket, folder_prefix, file_name)
         if force_flag:
-            logger.debug("Attempting to force retract for person_ids %s in path %s/%s%s"
+            logger.info("Attempting to force retract for person_ids %s in path %s/%s%s"
                          % (pids, bucket, folder_prefix, file_name))
             response = "Y"
         else:
             # Make sure user types Y to proceed
-            logger.debug("Are you sure you want to retract rows for person_ids %s from path %s/%s%s?"
+            logger.info("Are you sure you want to retract rows for person_ids %s from path %s/%s%s?"
                          % (pids, bucket, folder_prefix, file_name))
             response = get_response()
         if response == "Y":
@@ -130,7 +130,7 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
             input_header = input_file_lines[0]
             input_contents = input_file_lines[1:]
             retracted_file_string.write(input_header + '\n')
-            logger.debug("Checking for person_ids %s in path %s" % (pids, file_gcs_path))
+            logger.info("Checking for person_ids %s in path %s" % (pids, file_gcs_path))
 
             # Check if file has person_id in first or second column
             for input_line in input_contents:
@@ -146,14 +146,14 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
 
             # Write result back to bucket
             if lines_removed > 0:
-                logger.debug("%d rows retracted from %s, overwriting..." % (lines_removed, file_gcs_path))
+                logger.info("%d rows retracted from %s, overwriting..." % (lines_removed, file_gcs_path))
                 upload_result = gcs_utils.upload_object(bucket, folder_prefix + file_name, retracted_file_string)
                 result_list.append(upload_result)
-                logger.debug("Retraction successful for file %s" % file_gcs_path)
+                logger.info("Retraction successful for file %s" % file_gcs_path)
             else:
-                logger.debug("Not updating file %s since pids %s not found" % (file_gcs_path, pids))
+                logger.info("Not updating file %s since pids %s not found" % (file_gcs_path, pids))
         elif response.lower() == "n":
-            logger.debug("Skipping file %s" % file_gcs_path)
+            logger.info("Skipping file %s" % file_gcs_path)
     return result_list
 
 

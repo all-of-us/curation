@@ -33,7 +33,7 @@ def create_table(table, dataset_id):
     :param dataset_id: identifies the dataset to create the tables in
     :return:
     """
-    logger.debug('Creating table {dataset_id}.{table}...'.format(table=table, dataset_id=dataset_id))
+    logger.info('Creating table {dataset_id}.{table}...'.format(table=table, dataset_id=dataset_id))
     bq_utils.create_standard_table(table, table, drop_existing=True, dataset_id=dataset_id)
 
 
@@ -43,7 +43,7 @@ def create_vocabulary_tables(dataset_id):
     :param dataset_id:
     :return:
     """
-    logger.debug('Creating vocabulary tables in {dataset_id}...'.format(dataset_id=dataset_id))
+    logger.info('Creating vocabulary tables in {dataset_id}...'.format(dataset_id=dataset_id))
     for table in common.VOCABULARY_TABLES:
         create_table(table, dataset_id)
 
@@ -55,7 +55,7 @@ def create_all_tables(dataset_id):
     :param dataset_id: identifies the dataset to create the tables in
     :return:
     """
-    logger.debug('Creating all CDM tables in {dataset_id}...'.format(dataset_id=dataset_id))
+    logger.info('Creating all CDM tables in {dataset_id}...'.format(dataset_id=dataset_id))
     for table in resources.CDM_TABLES:
         create_table(table, dataset_id)
 

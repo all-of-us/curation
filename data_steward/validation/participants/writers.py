@@ -57,7 +57,7 @@ def write_to_result_table(
     field_list_str = ','.join(field_list) + '\n'
     results.write(field_list_str)
 
-    LOGGER.debug("Generating csv values to write to storage for site: %s", site)
+    LOGGER.info("Generating csv values to write to storage for site: %s", site)
 
     for person_key, person_values in match_values.items():
         str_list = [str(person_key)]
@@ -227,5 +227,5 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     report_result = gcs_utils.upload_object(bucket, filename, report_file)
     report_file.close()
 
-    LOGGER.debug("Wrote validation report csv:  %s", bucket + filename)
+    LOGGER.info("Wrote validation report csv:  %s", bucket + filename)
     return report_result, read_errors

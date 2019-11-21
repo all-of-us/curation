@@ -72,7 +72,7 @@ def shift_display_orders(at_display_order):
     """
     q = SHIFT_HPO_SITE_DISPLAY_ORDER.format(display_order=at_display_order,
                                             hpo_site_id_mappings_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
-    logging.debug('Shifting lookup with the following query:\n %s\n...' % q)
+    logging.info('Shifting lookup with the following query:\n %s\n...' % q)
     query_response = bq_utils.query(q)
     return query_response
 
@@ -87,7 +87,7 @@ def add_hpo_mapping(hpo_id, hpo_name, org_id, display_order):
     :return:
     """
     q = ADD_HPO_SITE_ID_MAPPING.format(hpo_id=hpo_id, hpo_name=hpo_name, org_id=org_id, display_order=display_order)
-    logging.debug('Adding mapping lookup with the following query:\n %s\n...' % q)
+    logging.info('Adding mapping lookup with the following query:\n %s\n...' % q)
     query_response = bq_utils.query(q, destination_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID,
                                     write_disposition='WRITE_APPEND')
     return query_response
@@ -101,7 +101,7 @@ def add_hpo_bucket(hpo_id, bucket_name):
     :return:
     """
     q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id, bucket_name=bucket_name)
-    logging.debug('Adding bucket lookup with the following query:\n %s\n...' % q)
+    logging.info('Adding bucket lookup with the following query:\n %s\n...' % q)
     query_response = bq_utils.query(q, destination_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
                                     write_disposition='WRITE_APPEND')
     return query_response
