@@ -3,24 +3,20 @@ import json
 import logging
 import os
 import string
-import sys
 import threading
-import traceback
 import app_identity
 from datetime import datetime, timezone
 from enum import IntEnum
 import random
 
 import requests
-from flask import request, Response
+from flask import request
 
 from google.api.monitored_resource_pb2 import MonitoredResource
 from google.cloud import logging as gcp_logging
 from google.cloud import logging_v2 as gcp_logging_v2
 from google.logging.type import http_request_pb2 as gcp_http_request_pb2
 from google.protobuf import json_format as gcp_json_format, any_pb2 as gcp_any_pb2
-
-from werkzeug.exceptions import HTTPException
 
 # Do not remove this import.
 import curation_logging.gcp_request_log_pb2  # pylint: disable=unused-import
@@ -34,6 +30,8 @@ _LOG_BUFFER_SIZE = 100
 
 GAE_LOGGING_MODULE_ID = 'app-' + os.environ.get('GAE_SERVICE', 'default')
 GAE_LOGGING_VERSION_ID = os.environ.get('GAE_VERSION', 'devel')
+LOG_NAME_TEMPLATE = 'projects/{project_id}/logs/appengine.googleapis.com%2Frequest_log'
+REQUEST_LOG_TYPE = 'type.googleapis.com/google.appengine.logging.v1.RequestLog'
 
 # This is where we save all data that is tied to a specific execution thread.
 _thread_store = threading.local()
@@ -134,9 +132,10 @@ def get_highest_severity_level_from_lines(lines):
     :param lines: List of log records
     """
     if lines:
+
         s = sorted(
             [line['severity'] for line in lines],
-            key=lambda severity: -getattr(logging, "severity", 0)
+            key=lambda severity: -severity
         )
         return s[0]
     else:
@@ -153,7 +152,7 @@ def setup_proto_payload(lines: list, log_status: LogCompletionStatusEnum, **kwar
 
     # Base set of values for proto_payload object.
     req_dict = {
-        "@type": "type.googleapis.com/google.appengine.logging.v1.RequestLog",
+        "@type": REQUEST_LOG_TYPE,
         "startTime": datetime.now(timezone.utc).isoformat(),
         "ip": "0.0.0.0",
         "first": True,
@@ -217,8 +216,6 @@ class GCPStackDriverLogger(object):
     Sends log records to google stack driver logging.  Each thread needs its own copy of this object.
     Buffers up to `buffer_size` log records into one ProtoBuffer to be submitted.
     """
-    # Used to determine how long a request took.
-    __first_log_ts = None
 
     def __init__(self, buffer_size=_LOG_BUFFER_SIZE):
 
@@ -230,9 +227,12 @@ class GCPStackDriverLogger(object):
         self._logging_client = gcp_logging_v2.LoggingServiceV2Client()
         self._operation_pb2 = None
 
+        # Used to determine how long a request took.
+        self._first_log_ts = None
+
     def _reset(self):
 
-        self.__first_log_ts = None
+        self._first_log_ts = None
 
         self.log_completion_status = LogCompletionStatusEnum.COMPLETE
         self._operation_pb2 = None
@@ -242,7 +242,6 @@ class GCPStackDriverLogger(object):
         self._end_time = None
 
         self._request_method = None
-        self._request_endpoint = None
         self._request_resource = None
         self._request_agent = None
         self._request_remote_addr = None
@@ -267,26 +266,25 @@ class GCPStackDriverLogger(object):
         # send any pending log entries in case 'end_request' was not called.
         if len(self._buffer) and initial:
             self.finalize()
-        if _request:
-            self._start_time = datetime.now(timezone.utc).isoformat()
-            self._request_method = _request.method
-            self._request_endpoint = _request.endpoint
-            self._request_resource = _request.full_path
-            if self._request_resource and self._request_resource.endswith('?'):
-                self._request_resource = self._request_resource[:-1]
-            self._request_agent = str(_request.user_agent)
-            self._request_remote_addr = _request.headers.get('X-Appengine-User-Ip', request.remote_addr)
-            self._request_host = _request.headers.get('X-Appengine-Default-Version-Hostname', request.host)
-            self._request_log_id = _request.headers.get('X-Appengine-Request-Log-Id', 'None')
 
-            self._request_taskname = _request.headers.get('X-Appengine-Taskname', None)
-            self._request_queue = _request.headers.get('X-Appengine-Queuename', None)
+        self._start_time = datetime.now(timezone.utc).isoformat()
+        self._request_method = _request.method
+        self._request_resource = _request.full_path
+        if self._request_resource and self._request_resource.endswith('?'):
+            self._request_resource = self._request_resource[:-1]
+        self._request_agent = str(_request.user_agent)
+        self._request_remote_addr = _request.headers.get('X-Appengine-User-Ip', _request.remote_addr)
+        self._request_host = _request.headers.get('X-Appengine-Default-Version-Hostname', _request.host)
+        self._request_log_id = _request.headers.get('X-Appengine-Request-Log-Id', 'None')
 
-            trace_id = _request.headers.get('X-Cloud-Trace-Context', '')
-            if trace_id:
-                trace_id = trace_id.split('/')[0]
-                trace = 'projects/{0}/traces/{1}'.format(app_identity.get_application_id(), trace_id)
-                self._trace = trace
+        self._request_taskname = _request.headers.get('X-Appengine-Taskname', None)
+        self._request_queue = _request.headers.get('X-Appengine-Queuename', None)
+
+        trace_id = _request.headers.get('X-Cloud-Trace-Context', '')
+        if trace_id:
+            trace_id = trace_id.split('/')[0]
+            trace = 'projects/{0}/traces/{1}'.format(app_identity.get_application_id(), trace_id)
+            self._trace = trace
 
     def log_event(self, record: logging.LogRecord):
         """
@@ -295,8 +293,8 @@ class GCPStackDriverLogger(object):
         """
         self._buffer.appendleft(record)
 
-        if not self.__first_log_ts:
-            self.__first_log_ts = datetime.utcnow()
+        if not self._first_log_ts:
+            self._first_log_ts = datetime.utcnow()
 
         if len(self._buffer) >= self._buffer_size:
             if self.log_completion_status == LogCompletionStatusEnum.COMPLETE:
@@ -389,9 +387,9 @@ class GCPStackDriverLogger(object):
             proto_payload_args['taskName'] = self._request_taskname
             proto_payload_args['taskQueueName'] = self._request_queue
 
-        if self.__first_log_ts:
-            if self.__first_log_ts:
-                total_time = datetime.utcnow() - self.__first_log_ts
+        if self._first_log_ts:
+            if self._first_log_ts:
+                total_time = datetime.utcnow() - self._first_log_ts
             else:
                 total_time = 0
             proto_payload_args['latency'] = '{0}.{1}s'.format(total_time.seconds, total_time.microseconds)
@@ -408,105 +406,8 @@ class GCPStackDriverLogger(object):
         log_entry_pb2 = gcp_logging_v2.types.log_entry_pb2.LogEntry(**log_entry_pb2_args)
 
         self._logging_client.write_log_entries([log_entry_pb2],
-                                               log_name="projects/{project_id}/logs/appengine.googleapis.com%2Frequest_log".
+                                               log_name=LOG_NAME_TEMPLATE.
                                                format(project_id=app_identity.get_application_id()))
-
-
-def _get_traceback(e):
-    """
-    Return a string formatted with the exception traceback.
-    :param e: exception object
-    :return: string, source location object
-    """
-    tb = None
-    source_location = None
-    if e:
-        tb = e.__traceback__ if hasattr(e, '__traceback__') else None
-
-    if not tb:
-        # pylint: disable=unused-variable
-        etype, value, tb = sys.exc_info()
-
-    if tb:
-        tb_out = traceback.format_tb(tb)
-        # Extract the individual traceback items into a list and reverse them. Capture the source location info for
-        # the first item filename in our project.
-        tb_items = traceback.extract_tb(tb)[::-1]
-        for item in tb_items:
-            if '/rdr_service/' in item.filename:
-                source_location = {
-                    "file": item.filename,
-                    "functionName": item.name,
-                    "line": item.lineno
-                }
-                break
-
-    else:
-        tb_out = ['No exception traceback available.', ]
-
-    # Mimic the nice python exception and traceback print.
-    e_error = e.__repr__().strip()
-    tb_heading = 'LogMessage: Exception on $$resource$$ [$$method$$]'
-    tb_data = ''.join(tb_out).strip()
-    message = '{0}\nTraceback (most recent call last):\n{1}\n{2}'.format(tb_heading, tb_data, e_error)
-
-    # Embed source location information in the message, which will be picked when the log entry is parsed later.
-    if source_location:
-        message = '{0}\n%%{1}%%'.format(message, json.dumps(source_location))
-
-    return message
-
-
-def log_exception_error(e):
-    """
-    Log exception errors, this is where all unhandled exceptions errors are logged.
-    :param e: exception object
-    :return: flask response
-    """
-    traceback_msg = _get_traceback(e)
-
-    if isinstance(e, HTTPException):
-        response = e.get_response()
-        response.data = json.dumps({
-            "code": e.code,
-            "name": e.name,
-            "description": e.description,
-        })
-        response.content_type = "application/json"
-    else:
-        response = Response()
-        response.status_code = 500
-
-    logging.error(traceback_msg)
-    # app_log_service.end_request(response)
-
-    # pass through HTTP errors
-    if isinstance(e, HTTPException):
-        return e
-
-    # now you're handling non-HTTP exceptions only
-    return response
-
-
-# pylint: disable=unused-argument
-def flask_restful_log_exception_error(sender, exception, **kwargs):
-    """
-    Make sure we can log exception errors to GCP when running under Gunicorn.
-    """
-    if request:
-        try:
-            # Log headers for debugging purposes.
-            out = ''
-            for k, v in request.headers:
-                # Mask oauth token if in headers.
-                if k == 'Authorization':
-                    out += f'{k}: Bearer **********\n'
-                else:
-                    out += f'{k}: {v}\n'
-            logging.info(out)
-        except RuntimeError:
-            pass
-    log_exception_error(exception)
 
 
 def get_gcp_logger() -> GCPStackDriverLogger:
@@ -523,8 +424,6 @@ def get_gcp_logger() -> GCPStackDriverLogger:
         _logger = GCPStackDriverLogger()
         setattr(_thread_store, 'logger', _logger)
         return _logger
-
-    return None
 
 
 class GCPLoggingHandler(logging.Handler):
