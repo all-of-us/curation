@@ -22,7 +22,7 @@ def add_console_logging(add_handler):
     until later.  Useful for debugging.
 
     """
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO,
                         filename=FILENAME,
                         filemode='a',
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -45,7 +45,7 @@ def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
        """
     if project is None or project == '' or project.isspace():
         project = app_identity.get_application_id()
-        LOGGER.debug('Project name not provided.  Using default.')
+        LOGGER.info('Project name not provided.  Using default.')
 
     if statements is None:
         statements = []

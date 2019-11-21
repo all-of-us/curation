@@ -191,7 +191,7 @@ def create_drug_route_mappings_table(project_id, route_mapping_dataset_id, dose_
                             batch=True)
     incomplete_jobs = bq_utils.wait_on_jobs([result['jobReference']['jobId']])
     if incomplete_jobs:
-        LOGGER.debug('Failed job id {id}'.format(id=incomplete_jobs[0]))
+        LOGGER.info('Failed job id {id}'.format(id=incomplete_jobs[0]))
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
     LOGGER.info("Created %s.%s", route_mapping_dataset_id, DRUG_ROUTES_TABLE_ID)
     return result

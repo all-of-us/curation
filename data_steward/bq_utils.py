@@ -260,7 +260,7 @@ def delete_table(table_id, dataset_id=None):
         dataset_id = get_dataset_id()
     bq_service = create_service()
     delete_job = bq_service.tables().delete(projectId=app_id, datasetId=dataset_id, tableId=table_id)
-    logging.debug('Deleting {dataset_id}.{table_id}'.format(dataset_id=dataset_id, table_id=table_id))
+    logging.info('Deleting {dataset_id}.{table_id}'.format(dataset_id=dataset_id, table_id=table_id))
     return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
@@ -303,14 +303,14 @@ def wait_on_jobs(job_ids, retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT, max_poll
     _job_ids = list(job_ids)
     poll_interval = 1
     for i in range(retry_count):
-        logging.debug('Waiting %s seconds for completion of job(s): %s' % (poll_interval, _job_ids))
+        logging.info('Waiting %s seconds for completion of job(s): %s' % (poll_interval, _job_ids))
         time.sleep(poll_interval)
         _job_ids = [job_id for job_id in _job_ids if not job_status_done(job_id)]
         if len(_job_ids) == 0:
             return []
         if poll_interval < max_poll_interval:
             poll_interval = 2 ** i
-    logging.debug('Job(s) failed to complete: %s' % _job_ids)
+    logging.info('Job(s) failed to complete: %s' % _job_ids)
     return _job_ids
 
 

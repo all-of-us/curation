@@ -49,7 +49,7 @@ def create_match_values_table(project, rdr_dataset, destination_dataset):
         pii_list=','.join(consts.PII_CODES_LIST)
     )
 
-    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    LOGGER.info("Participant validation ran the query\n%s", query_string)
     results = bq_utils.query(
         query_string,
         destination_dataset_id=destination_dataset,
@@ -94,7 +94,7 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
         field=column_name,
     )
 
-    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    LOGGER.info("Participant validation ran the query\n%s", query_string)
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
@@ -145,7 +145,7 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
         field_value=concept_id
     )
 
-    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    LOGGER.info("Participant validation ran the query\n%s", query_string)
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
@@ -200,7 +200,7 @@ def get_pii_values(project, pii_dataset, hpo, table, field):
         table_suffix=table
     )
 
-    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    LOGGER.info("Participant validation ran the query\n%s", query_string)
 
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
@@ -259,7 +259,7 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
         id_list=location_id_str
     )
 
-    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    LOGGER.info("Participant validation ran the query\n%s", query_string)
 
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)

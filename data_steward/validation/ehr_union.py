@@ -199,7 +199,7 @@ def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id, project_
     """
     q = mapping_query(domain_table, hpo_ids, input_dataset_id, project_id)
     mapping_table = mapping_table_for(domain_table)
-    logging.debug('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
+    logging.info('Query for {mapping_table} is {q}'.format(mapping_table=mapping_table, q=q))
     query(q, mapping_table, output_dataset_id, 'WRITE_TRUNCATE')
 
 
@@ -511,7 +511,7 @@ def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
         q = fact_table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
     else:
         q = table_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id)
-    logging.debug('Query for union of {domain_table} tables from {hpo_ids} is {q}'.format(
+    logging.info('Query for union of {domain_table} tables from {hpo_ids} is {q}'.format(
         domain_table=cdm_table, hpo_ids=hpo_ids, q=q))
     query_result = query(q, output_table, output_dataset_id)
     return query_result
