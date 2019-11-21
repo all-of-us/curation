@@ -5,12 +5,12 @@
 #     text_representation:
 #       extension: .py
 #       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.2.1
+#       format_version: '1.3'
+#       jupytext_version: 1.0.5
 #   kernelspec:
-#     display_name: Python 2
+#     display_name: Python 3
 #     language: python
-#     name: python2
+#     name: python3
 # ---
 
 from google.cloud import bigquery
@@ -32,7 +32,6 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 
 import matplotlib.pyplot as plt
-
 # %matplotlib inline
 
 
@@ -77,15 +76,14 @@ site_df
 diuretics = (974166, 956874, 970250, 1395058, 904542, 942350, 932745, 907013, 978555, 991382,
              1309799)
 
-ccb = (1332418, 1328165, 1318853, 1307863, 1353776, 1318137, 1318853)
+ccb = (1332418, 1328165, 1318853, 1307863, 1353776, 1318137)
 
 vaccine = (45637323, 529411, 529303, 42800027, 45658522, 45628027, 529218, 36212685, 40163692, 528323, 528986, 792777,
-           596876, 45658522, 45628027, 529218, 36212685, 523365,
-           523367, 509079, 509081)
+           596876)
 
 oralhypoglycemics = (
 1503297, 1560171, 1580747, 1559684, 1525215, 1597756, 43526465, 45774751, 40239216, 44785829, 40166035, 1516766,
-1529331, 1502826, 1547504, 730548, 1510202, 1515249)
+1529331, 1502826, 1547504, 730548)
 
 opiods = (1124957, 1103314, 1201620, 1174888, 1126658, 1110410, 1154029, 1103640,
           1102527)
@@ -116,7 +114,7 @@ len(set(diuretics))
 df_diuretics = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / 11 * 100, 2) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
      `{}.unioned_ehr_drug_exposure` de
  JOIN
@@ -134,8 +132,8 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, diuretics, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(len(set(diuretics)), DATASET, DATASET, DATASET, diuretics, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET),
                                   dialect='standard'
                                   )
 df_diuretics.shape
@@ -153,7 +151,7 @@ len(set(ccb))
 df_ccb = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / 6 * 100, 2) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
      `{}.unioned_ehr_drug_exposure` de
  JOIN
@@ -171,7 +169,8 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, ccb, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(len(set(ccb)), DATASET, DATASET, DATASET, ccb, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET),
                             dialect='standard'
                             )
 df_ccb.shape
@@ -189,7 +188,7 @@ len(set(vaccine))
 df_vaccine = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / 17 * 100, 2) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
      `{}.unioned_ehr_drug_exposure` de
  JOIN
@@ -207,8 +206,8 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, vaccine, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(len(set(vaccine)), DATASET, DATASET, DATASET, vaccine, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET),
                                 dialect='standard'
                                 )
 df_vaccine.shape
@@ -226,7 +225,7 @@ len(set(oralhypoglycemics))
 df_oralhypoglycemics = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / 18 * 100, 2) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
      `{}.unioned_ehr_drug_exposure` de
  JOIN
@@ -244,8 +243,8 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, oralhypoglycemics, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
+    '''.format(len(set(oralhypoglycemics)), DATASET, DATASET, DATASET, oralhypoglycemics, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
                                           dialect='standard'
                                           )
 df_oralhypoglycemics.shape
@@ -263,7 +262,7 @@ len(set(opiods))
 df_opiods = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / 9 * 100, 2) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
      `{}.unioned_ehr_drug_exposure` de
  JOIN
@@ -281,8 +280,8 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, opiods, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(len(set(opiods)), DATASET, DATASET, DATASET, opiods, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET),
                                dialect='standard'
                                )
 df_opiods.shape
@@ -300,7 +299,7 @@ len(set(antibiotics))
 df_antibiotics = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / 19 * 100, 2) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
      `{}.unioned_ehr_drug_exposure` de
  JOIN
@@ -318,8 +317,8 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, antibiotics, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(len(set(antibiotics)), DATASET, DATASET, DATASET, antibiotics, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET),
                                     dialect='standard'
                                     )
 df_antibiotics.shape
@@ -337,7 +336,7 @@ len(set(statins))
 df_statins = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / 7 * 100, 2) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
      `{}.unioned_ehr_drug_exposure` de
  JOIN
@@ -355,8 +354,8 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, statins, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(len(set(statins)), DATASET, DATASET, DATASET, statins, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET),
                                 dialect='standard'
                                 )
 df_statins.shape
@@ -374,7 +373,7 @@ len(set(msknsaids))
 df_msknsaids = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / 10 * 100, 2) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
      `{}.unioned_ehr_drug_exposure` de
  JOIN
@@ -392,8 +391,8 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, msknsaids, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(len(set(msknsaids)), DATASET, DATASET, DATASET, msknsaids, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET),
                                   dialect='standard'
                                   )
 df_msknsaids.shape
@@ -411,7 +410,7 @@ len(set(painnsaids))
 df_painnsaids = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / 9 * 100, 2) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
      `{}.unioned_ehr_drug_exposure` de
  JOIN
@@ -429,8 +428,8 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, painnsaids, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(len(set(painnsaids)), DATASET, DATASET, DATASET, painnsaids, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET),
                                    dialect='standard'
                                    )
 df_painnsaids.shape
@@ -448,7 +447,7 @@ len(set(ace_inhibitors))
 df_ace_inhibitors = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / 7 * 100, 2) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
      `{}.unioned_ehr_drug_exposure` de
  JOIN
@@ -466,8 +465,8 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, ace_inhibitors, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(len(set(ace_inhibitors)), DATASET, DATASET, DATASET, ace_inhibitors, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET),
                                        dialect='standard'
                                        )
 df_ace_inhibitors.shape
