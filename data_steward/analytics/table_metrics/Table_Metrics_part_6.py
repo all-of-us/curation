@@ -32,7 +32,6 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 
 import matplotlib.pyplot as plt
-
 # %matplotlib inline
 
 
@@ -72,22 +71,18 @@ site_df = pd.DataFrame(data=dic)
 site_df
 # -
 
-Lipid = (40772590, 40782589, 40795800, 40782590, 40772572)
+Lipid = (40772590, 40782589, 40795800, 40772572)
 
 CBC = (40789356, 40789120, 40789179, 40782521, 40772748, 40782735, 40789182, 40786033,
        40779159)
 
 CBCwDiff = (
-    40785788, 40785796, 40779195, 40795733, 40795725, 40772531, 40779190, 40785793, 40779191, 40782561, 40789266,
-    3012764,
-    3003214,
-    3008757)
+40785788, 40785796, 40779195, 40795733, 40795725, 40772531, 40779190, 40785793, 40779191, 40782561, 40789266)
 
 CMP = (
-    3049187, 3053283, 40775801, 40779224, 40779250, 40782562, 40782579, 40785850, 40785861, 40785869, 40789180,
-    40789190,
-    40789527, 40791227, 3020509, 40792413, 40792440, 40795730, 40795740,
-    40795754)
+3049187, 3053283, 40775801, 40779224, 40779250, 40782562, 40782579, 40785850, 40785861, 40785869, 40789180, 40789190,
+40789527, 40791227, 40792413, 40792440, 40795730, 40795740,
+40795754)
 
 Physical_Measurement = (45875982, 45876161, 45876166, 45876171, 45876174,
                         45876226)
@@ -103,7 +98,7 @@ len(set(Lipid))
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / 5 * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
@@ -115,7 +110,7 @@ FROM
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `aou-res-curation-prod.combined20191004.concept` c
+         `{}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
@@ -127,7 +122,8 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, Lipid, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(len(set(Lipid)), DATASET, DATASET, DATASET, DATASET, Lipid, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET),
                         dialect='standard'
                         )
 df.shape
@@ -145,7 +141,7 @@ len(set(CBC))
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / 9 * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
@@ -157,7 +153,7 @@ FROM
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `aou-res-curation-prod.combined20191004.concept` c
+         `{}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
@@ -169,7 +165,8 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, CBC, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(len(set(CBC)), DATASET, DATASET, DATASET, DATASET, CBC, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET),
                         dialect='standard'
                         )
 df.shape
@@ -187,7 +184,7 @@ len(set(CBCwDiff))
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / 14 * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
@@ -199,7 +196,7 @@ FROM
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `aou-res-curation-prod.combined20191004.concept` c
+         `{}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
@@ -211,7 +208,8 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, CBCwDiff, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(len(set(CBCwDiff)), DATASET, DATASET, DATASET, DATASET, CBCwDiff, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET),
                         dialect='standard'
                         )
 df.shape
@@ -229,7 +227,7 @@ len(set(CMP))
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / 20 * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
@@ -241,7 +239,7 @@ FROM
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `aou-res-curation-prod.combined20191004.concept` c
+         `{}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
@@ -253,7 +251,8 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, CMP, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(len(set(CMP)), DATASET, DATASET, DATASET, DATASET, CMP, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET),
                         dialect='standard'
                         )
 df.shape
@@ -271,7 +270,7 @@ len(set(Physical_Measurement))
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / 6 * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
@@ -283,7 +282,7 @@ FROM
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `aou-res-curation-prod.combined20191004.concept` c
+         `{}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
@@ -295,8 +294,8 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(DATASET, DATASET, DATASET, Physical_Measurement, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(len(set(Physical_Measurement)), DATASET, DATASET, DATASET, DATASET, Physical_Measurement, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
                         dialect='standard'
                         )
 df.shape
