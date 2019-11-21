@@ -45,9 +45,10 @@ class EhrUnionTest(unittest.TestCase):
         self.hpo_ids = [NYC_HPO_ID, PITT_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
-        self._empty_hpo_buckets()
-        test_util.delete_all_tables(self.input_dataset_id)
-        test_util.delete_all_tables(self.output_dataset_id)
+        # Done in tearDown().  this is redundant.
+#        self._empty_hpo_buckets()
+#        test_util.delete_all_tables(self.input_dataset_id)
+#        test_util.delete_all_tables(self.output_dataset_id)
 
         # TODO Generalize to work for all foreign key references
         # Collect all primary key fields in CDM tables
