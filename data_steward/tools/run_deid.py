@@ -25,13 +25,21 @@ VOCABULARY_TABLES = ['concept', 'vocabulary', 'domain', 'concept_class', 'concep
                      'relationship', 'concept_synonym', 'concept_ancestor', 'source_to_concept_map',
                      'drug_strength']
 
+LOGS_PATH = 'LOGS'
+
 
 def add_console_logging(add_handler):
     """
     This config should be done in a separate module, but that can wait
     until later.  Useful for debugging.
     """
-    name = datetime.now().strftime('logs/run_deid-%Y-%m-%d.log')
+    try:
+        os.makedirs(LOGS_PATH)
+    except OSError:
+        # directory already exists.  move on.
+        pass
+
+    name = datetime.now().strftime(os.path.join(LOGS_PATH, 'run_deid-%Y-%m-%d.log'))
     logging.basicConfig(filename=name,
                         level=logging.INFO,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -195,7 +203,8 @@ def main(raw_args=None):
             '--private_key', args.private_key,
             '--table', tablepath,
             '--action', args.action,
-            '--idataset', args.input_dataset
+            '--idataset', args.input_dataset,
+            '--log', LOGS_PATH
         ]
 
         if args.interactive_mode:
