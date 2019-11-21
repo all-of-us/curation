@@ -1,5 +1,7 @@
 [run]
 omit=*curation_env*
-     *unit_test*
+     *tests*
      *data_steward/lib/*
      *google-cloud-sdk*
+     *site-packages*
+     *_env/*

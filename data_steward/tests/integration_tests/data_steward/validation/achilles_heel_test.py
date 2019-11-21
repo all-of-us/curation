@@ -9,8 +9,8 @@ from google.appengine.ext import testbed
 import bq_utils
 import gcs_utils
 import resources
-import test_util
-from test_util import FAKE_HPO_ID
+import tests.test_util
+from tests.test_util import FAKE_HPO_ID
 from validation import achilles_heel
 import validation.sql_wrangle
 

@@ -39,8 +39,12 @@ fi
 
 if [[ -z ${substring} ]]
 then
-  cmd="test/runner.py --test-path test/unit_test/ "
-else
-  cmd="test/runner.py --test-path test/unit_test/ --test-pattern $substring"
+  if [[ -z ${substring} ]]
+  then
+    cmd="tests/runner.py --test-path tests/unit_test/ ${sdk_dir}"
+  else
+    cmd="tests/runner.py --test-path tests/unit_test/ ${sdk_dir} --test-pattern $substring"
+  fi
+  (cd ${BASE_DIR}; python ${cmd})
 fi
 (cd ${BASE_DIR}; python ${cmd})

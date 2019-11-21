@@ -6,10 +6,10 @@ from google.appengine.ext import testbed
 import bq_utils
 import gcs_utils
 import resources
-import test_util
-import validation.sql_wrangle
-from test_util import FAKE_HPO_ID
+import tests.test_util
+from tests.test_util import FAKE_HPO_ID
 from validation import achilles
+import validation.sql_wrangle
 
 # This may change if we strip out unused analyses
 ACHILLES_LOOKUP_COUNT = 215

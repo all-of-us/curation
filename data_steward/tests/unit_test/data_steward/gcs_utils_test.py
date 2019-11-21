@@ -3,8 +3,7 @@ import unittest
 from googleapiclient.errors import HttpError
 
 import gcs_utils
-from test.unit_test.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
-from io import open
+from tests.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 
 
 class GcsUtilsTest(unittest.TestCase):
