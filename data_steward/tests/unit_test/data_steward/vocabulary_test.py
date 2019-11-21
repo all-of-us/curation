@@ -1,23 +1,25 @@
-from io import StringIO
+# Python imports
+import StringIO
 import os
 import shutil
 import tempfile
 import unittest
 
+# Third party imports
 import mock
 
-from test.unit_test import test_util
+# Project imports
 from common import DELIMITER, LINE_TERMINATOR
 from resources import AOU_GENERAL_CONCEPT_CSV_PATH
-from vocabulary import _transform_csv, format_date_str, get_aou_general_vocabulary_row, \
-    append_vocabulary, append_concepts
-from io import open
+from tests.test_util import TEST_VOCABULARY_VOCABULARY_CSV, TEST_VOCABULARY_CONCEPT_CSV
+from vocabulary import (_transform_csv, format_date_str, get_aou_general_vocabulary_row,
+                        append_vocabulary, append_concepts)
 
 
 class VocabularyTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        print('**************************************************************')
+        print('\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
 
@@ -62,7 +64,7 @@ class VocabularyTest(unittest.TestCase):
             format_date_str('201901234')
 
     def test_append_vocabulary(self):
-        in_path = test_util.TEST_VOCABULARY_VOCABULARY_CSV
+        in_path = TEST_VOCABULARY_VOCABULARY_CSV
         out_dir = tempfile.mkdtemp()
         out_path = os.path.join(out_dir, 'VOCABULARY_1.CSV')
         out_path_2 = os.path.join(out_dir, 'VOCABULARY_2.CSV')
@@ -89,7 +91,7 @@ class VocabularyTest(unittest.TestCase):
             shutil.rmtree(out_dir)
 
     def test_append_concepts(self):
-        in_path = test_util.TEST_VOCABULARY_CONCEPT_CSV
+        in_path = TEST_VOCABULARY_CONCEPT_CSV
         out_dir = tempfile.mkdtemp()
         out_path = os.path.join(out_dir, 'CONCEPT_1.CSV')
         out_path_2 = os.path.join(out_dir, 'CONCEPT_2.CSV')

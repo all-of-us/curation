@@ -12,7 +12,7 @@ from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
 import gcs_utils
 import resources
-from test.unit_test import test_util
+import tests.test_util
 from validation import ehr_union
 from io import open
 

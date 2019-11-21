@@ -12,7 +12,7 @@ from io import open
 FAKE_HPO_ID = 'fake'
 VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
 COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
-TEST_DATA_PATH = os.path.join(resources.base_path, 'test', 'test_data')
+TEST_DATA_PATH = os.path.join(resources.base_path, 'tests', 'test_data')
 EMPTY_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'empty_validation_result.csv')
 ALL_FILES_UNPARSEABLE_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'all_files_unparseable_validation_result.csv')
 ALL_FILES_UNPARSEABLE_VALIDATION_RESULT_NO_HPO_JSON = os.path.join(TEST_DATA_PATH,
