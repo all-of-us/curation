@@ -191,7 +191,7 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
     logging.info('Uploading achilles index files to `gs://%s/%s`...', bucket, folder_prefix)
     for filename in resources.ACHILLES_INDEX_FILES:
-        logging.debug('Uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
+        logging.info('Uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
         bucket_file_name = filename.split(resources.resource_path + os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
             upload_result = gcs_utils.upload_object(bucket, folder_prefix + bucket_file_name, fp)

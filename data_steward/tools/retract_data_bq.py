@@ -13,7 +13,7 @@ from io import open
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction logger')
-# logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.INFO)
 
 UNIONED_REGEX = re.compile('unioned_ehr_?\d{6}')
 COMBINED_REGEX = re.compile('combined\d{6}')
@@ -170,7 +170,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, sandbox_dataset_
     :param pid_table_id: table containing the person_ids and research_ids
     :return: list of dict with keys query, dataset, table, delete_flag
     """
-    logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
+    logger.info('Checking existing tables for %s.%s' % (project_id, dataset_id))
     existing_tables = list_existing_tables(project_id, dataset_id)
     site_queries = []
     unioned_mapping_queries = []
@@ -304,7 +304,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id, sandbox_data
     :param pid_table_id: table containing the person_ids and research_ids
     :return: list of dict with keys query, dataset, table
     """
-    logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
+    logger.info('Checking existing tables for %s.%s' % (project_id, dataset_id))
     existing_tables = list_existing_tables(project_id, dataset_id)
     unioned_mapping_queries = []
     unioned_queries = []
@@ -384,7 +384,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id,
     :param deid_flag: flag indicating if running on a deid dataset
     :return: list of dict with keys query, dataset, table
     """
-    logger.debug('Checking existing tables for %s.%s' % (project_id, dataset_id))
+    logger.info('Checking existing tables for %s.%s' % (project_id, dataset_id))
     existing_tables = list_existing_tables(project_id, dataset_id)
     combined_mapping_queries = []
     combined_queries = []
@@ -454,13 +454,13 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id,
 def retraction_query_runner(queries):
     query_job_ids = []
     for query_dict in queries:
-        logger.debug('Retracting from %s.%s using query %s'
+        logger.info('Retracting from %s.%s using query %s'
                      % (query_dict[DEST_DATASET], query_dict[DEST_TABLE], query_dict[QUERY]))
         job_results = bq_utils.query(
                             q=query_dict[QUERY],
                             batch=True)
         rows_affected = job_results['numDmlAffectedRows']
-        logger.debug('%s rows deleted from %s.%s' % (rows_affected,
+        logger.info('%s rows deleted from %s.%s' % (rows_affected,
                                                      query_dict[DEST_DATASET],
                                                      query_dict[DEST_TABLE]))
         query_job_id = job_results['jobReference']['jobId']
@@ -468,9 +468,9 @@ def retraction_query_runner(queries):
 
     incomplete_jobs = bq_utils.wait_on_jobs(query_job_ids)
     if incomplete_jobs:
-        logger.debug('Failed on {count} job ids {ids}'.format(count=len(incomplete_jobs),
+        logger.info('Failed on {count} job ids {ids}'.format(count=len(incomplete_jobs),
                                                               ids=incomplete_jobs))
-        logger.debug('Terminating retraction')
+        logger.info('Terminating retraction')
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
 
@@ -516,7 +516,7 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset
         for dataset_obj in dataset_objs:
             dataset = bq_utils.get_dataset_id_from_obj(dataset_obj)
             dataset_ids.append(dataset)
-        logger.debug('Found datasets to retract from: %s' % ', '.join(dataset_ids))
+        logger.info('Found datasets to retract from: %s' % ', '.join(dataset_ids))
         # retract from latest datasets first
         dataset_ids.sort(reverse=True)
 
@@ -534,7 +534,7 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset
         elif is_ehr_dataset(dataset):
             ehr_datasets.append(dataset)
 
-    logger.debug('Retracting from EHR datasets: %s' % ', '.join(ehr_datasets))
+    logger.info('Retracting from EHR datasets: %s' % ', '.join(ehr_datasets))
     for dataset in ehr_datasets:
         ehr_mapping_queries, ehr_queries = queries_to_retract_from_ehr_dataset(project_id,
                                                                                dataset,
@@ -543,9 +543,9 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset
                                                                                pid_table_id)
         retraction_query_runner(ehr_mapping_queries)
         retraction_query_runner(ehr_queries)
-    logger.debug('Finished retracting from EHR datasets')
+    logger.info('Finished retracting from EHR datasets')
 
-    logger.debug('Retracting from UNIONED datasets: %s' % ', '.join(unioned_datasets))
+    logger.info('Retracting from UNIONED datasets: %s' % ', '.join(unioned_datasets))
     for dataset in unioned_datasets:
         unioned_mapping_queries, unioned_queries = queries_to_retract_from_unioned_dataset(project_id,
                                                                                            dataset,
@@ -553,9 +553,9 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset
                                                                                            pid_table_id)
         retraction_query_runner(unioned_mapping_queries)
         retraction_query_runner(unioned_queries)
-    logger.debug('Finished retracting from UNIONED datasets')
+    logger.info('Finished retracting from UNIONED datasets')
 
-    logger.debug('Retracting from COMBINED datasets: %s' % ', '.join(combined_datasets))
+    logger.info('Retracting from COMBINED datasets: %s' % ', '.join(combined_datasets))
     for dataset in combined_datasets:
         combined_mapping_queries, combined_queries = queries_to_retract_from_combined_or_deid_dataset(project_id,
                                                                                                       dataset,
@@ -564,10 +564,10 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset
                                                                                                       deid_flag=False)
         retraction_query_runner(combined_mapping_queries)
         retraction_query_runner(combined_queries)
-    logger.debug('Finished retracting from COMBINED datasets')
+    logger.info('Finished retracting from COMBINED datasets')
 
     # TODO ensure the correct research_ids for persons_ids are used for each deid retraction
-    logger.debug('Retracting from DEID datasets: %s' % ', '.join(deid_datasets))
+    logger.info('Retracting from DEID datasets: %s' % ', '.join(deid_datasets))
     for dataset in deid_datasets:
         deid_mapping_queries, deid_queries = queries_to_retract_from_combined_or_deid_dataset(project_id,
                                                                                               dataset,
@@ -576,7 +576,7 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset
                                                                                               deid_flag=True)
         retraction_query_runner(deid_mapping_queries)
         retraction_query_runner(deid_queries)
-    logger.debug('Finished retracting from DEID datasets')
+    logger.info('Finished retracting from DEID datasets')
 
 
 def to_int(val, default=None):
@@ -625,5 +625,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     run_retraction(args.project_id, args.sandbox_dataset_id, args.pid_table_id, args.hpo_id, args.dataset_ids)
-    logger.debug('Retraction complete')
+    logger.info('Retraction complete')
 

@@ -224,18 +224,18 @@ class RetractDataBqTest(unittest.TestCase):
             row_count_queries[hpo_table] = EXPECTED_ROWS_QUERY.format(dataset_id=self.bq_dataset_id,
                                                                       table_id=hpo_table,
                                                                       pid_table_id=self.pid_table_id)
-            retract_data_bq.logger.debug('Preparing to load table %s.%s' % (self.bq_dataset_id,
+            retract_data_bq.logger.info('Preparing to load table %s.%s' % (self.bq_dataset_id,
                                                                             hpo_table))
             with open(cdm_file, 'rb') as f:
                 gcs_utils.upload_object(gcs_utils.get_hpo_bucket(self.hpo_id), cdm_file_name, f)
             result = bq_utils.load_cdm_csv(self.hpo_id, cdm_table, dataset_id=self.bq_dataset_id)
-            retract_data_bq.logger.debug('Loading table %s.%s' % (self.bq_dataset_id,
+            retract_data_bq.logger.info('Loading table %s.%s' % (self.bq_dataset_id,
                                                                   hpo_table))
             job_id = result['jobReference']['jobId']
             job_ids.append(job_id)
         incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
         self.assertEqual(len(incomplete_jobs), 0, 'NYC five person load job did not complete')
-        retract_data_bq.logger.debug('All tables loaded successfully')
+        retract_data_bq.logger.info('All tables loaded successfully')
 
         # use query results to count number of expected row deletions
         expected_row_count = {}

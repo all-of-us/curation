@@ -78,8 +78,8 @@ def run_heel(hpo_id):
     count = 0
     for command in commands:
         count = count + 1
-        logging.debug(' ---- running query # {}'.format(count))
-        logging.debug(' ---- Running `%s`...\n' % command)
+        logging.info(' ---- running query # {}'.format(count))
+        logging.info(' ---- Running `%s`...\n' % command)
         if sql_wrangle.is_to_temp_table(command):
             table_id = sql_wrangle.get_temp_table_name(command)
             query = sql_wrangle.get_temp_table_query(command)
