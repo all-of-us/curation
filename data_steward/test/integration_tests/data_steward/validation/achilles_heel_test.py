@@ -1,20 +1,24 @@
+# Python imports
 import os
 import unittest
 
+# Third party imports
+from google.appengine.ext import testbed
+
+# Project imports
 import bq_utils
 import gcs_utils
 import resources
-from test.unit_test import test_util
-from validation import sql_wrangle
-from test.unit_test.test_util import FAKE_HPO_ID
+import test_util
+from test_util import FAKE_HPO_ID
 from validation import achilles_heel
+import validation.sql_wrangle
 
 ACHILLES_HEEL_RESULTS_COUNT = 19
-ACHILLES_HEEL_RESULTS_ERROR_COUNT = 2
-ACHILLES_HEEL_RESULTS_WARNING_COUNT = 12
-ACHILLES_HEEL_RESULTS_NOTIFICATION_COUNT = 5
+#ACHILLES_HEEL_RESULTS_ERROR_COUNT = 2
+#ACHILLES_HEEL_RESULTS_WARNING_COUNT = 12
+#ACHILLES_HEEL_RESULTS_NOTIFICATION_COUNT = 5
 ACHILLES_RESULTS_DERIVED_COUNT = 282
-BQ_TIMEOUT_RETRIES = 3
 
 
 @unittest.skipIf(os.getenv('ALL_TESTS') == 'False', 'Skipping AchillesHeelTest cases')
@@ -26,9 +30,19 @@ class AchillesHeelTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
-        test_util.empty_bucket(self.hpo_bucket)
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_app_identity_stub()
+        self.testbed.init_memcache_stub()
+        self.testbed.init_urlfetch_stub()
+        self.testbed.init_blobstore_stub()
+        self.testbed.init_datastore_v3_stub()
+        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
+
+    def tearDown(self):
         test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.empty_bucket(self.hpo_bucket)
+        self.testbed.deactivate()
 
     def _load_dataset(self):
         for cdm_table in resources.CDM_TABLES:
@@ -102,20 +116,3 @@ class AchillesHeelTest(unittest.TestCase):
         for analysis_id in actual_result:
             self.assertIn(analysis_id, notifications)
         # self.assertEqual(ACHILLES_HEEL_RESULTS_NOTIFICATION_COUNT, int(result['rows'][0]['f'][0]['v']))
-
-    def test_qualify_tables(self):
-        r = sql_wrangle.qualify_tables('temp.some_table', hpo_id='fake')
-        self.assertEqual(r, 'fake_temp_some_table')
-
-        r = sql_wrangle.qualify_tables('synpuf_100.achilles_results', hpo_id='fake')
-        self.assertEqual(r, 'fake_achilles_results')
-
-        r = sql_wrangle.qualify_tables('temp.some_table', hpo_id='pitt_temple')
-        self.assertEqual(r, 'pitt_temple_temp_some_table')
-
-        r = sql_wrangle.qualify_tables('synpuf_100.achilles_results', hpo_id='pitt_temple')
-        self.assertEqual(r, 'pitt_temple_achilles_results')
-
-    def tearDown(self):
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
-        test_util.empty_bucket(self.hpo_bucket)
