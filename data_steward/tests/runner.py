@@ -19,11 +19,18 @@
 Example invocation:
   $ python runner.py ~/google-cloud-sdk
 """
-
+# Python imports
 import argparse
 import os
 import sys
+import time
 import unittest
+
+# Third party imports
+try:
+    import coverage
+except ImportError:
+    print('coverage package not found.  Run `pip install -r dev_requirements.txt`')
 
 
 def print_unsuccessful(function, trace, msg_type):
@@ -38,9 +45,24 @@ def main(test_path, test_pattern):
     # Discover and run tests.
     suite = unittest.TestLoader().discover(test_path, test_pattern)
     all_results = []
+
+    coverage_filepath = os.getcwd()
+    coverage_filepath = os.path.dirname(coverage_filepath)
+    coverage_filepath = os.path.join(coverage_filepath, '.coveragerc')
+    cov = coverage.Coverage(config_file=coverage_filepath)
+    cov.start()
+
+    start_time = time.time()
     for mod_tests in suite:
         result = unittest.TextTestRunner(verbosity=2).run(mod_tests)
         all_results.append(result)
+
+    end_time = time.time()
+    cov.stop()
+    cov.save()
+
+    cov.html_report()
+    cov.xml_report()
 
     run = 0
     errors = []
@@ -53,17 +75,17 @@ def main(test_path, test_pattern):
     print('\n\n\n**********************************************************************')
     print('ALL TEST RESULTS')
     print('**********************************************************************')
-    message = "Ran {} tests.  ".format(run)
+    message = "Ran {} tests in {} seconds.".format(run, end_time - start_time)
 
     if errors:
         for err in errors:
             print_unsuccessful(err[0], err[1], 'ERROR')
-        message += "{} error(s).  ".format(len(errors))
+        message += "\n{} error(s).  ".format(len(errors))
 
     if failures:
         for fail in failures:
             print_unsuccessful(fail[0], fail[1], 'FAIL')
-        message += "{} failure(s).".format(len(failures))
+        message += "\n{} failure(s).".format(len(failures))
 
     print(message)
     return not errors and not failures

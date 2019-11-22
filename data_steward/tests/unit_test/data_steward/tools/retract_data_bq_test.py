@@ -10,7 +10,7 @@ import cdm
 import common
 import gcs_utils
 import resources
-from test.unit_test import test_util
+from tests import test_util
 from tools import retract_data_bq
 from validation import ehr_union
 from io import open

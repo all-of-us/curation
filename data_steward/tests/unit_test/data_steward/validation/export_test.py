@@ -5,8 +5,8 @@ import unittest
 import bq_utils
 import common
 import gcs_utils
-from test.unit_test import test_util
-from test.unit_test.test_util import FAKE_HPO_ID
+from tests import test_util
+from tests.test_util import FAKE_HPO_ID
 from validation import export, main
 
 BQ_TIMEOUT_RETRIES = 3
@@ -16,7 +16,7 @@ BQ_TIMEOUT_RETRIES = 3
 class ExportTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        print('**************************************************************')
+        print('\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
         fake_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
@@ -26,8 +26,7 @@ class ExportTest(unittest.TestCase):
         test_util.populate_achilles(fake_bucket)
 
     def setUp(self):
-        super(ExportTest, self).setUp()
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
+        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
 
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
@@ -67,12 +66,12 @@ class ExportTest(unittest.TestCase):
 
     def test_run_export(self):
         folder_prefix = 'dummy-prefix-2018-03-24/'
-        main._upload_achilles_files(test_util.FAKE_HPO_ID, folder_prefix)
-        main.run_export(hpo_id=test_util.FAKE_HPO_ID, folder_prefix=folder_prefix)
+        main._upload_achilles_files(FAKE_HPO_ID, folder_prefix)
+        main.run_export(hpo_id=FAKE_HPO_ID, folder_prefix=folder_prefix)
         bucket_objects = gcs_utils.list_bucket(self.hpo_bucket)
         actual_object_names = [obj['name'] for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
-            prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + test_util.FAKE_HPO_ID + '/'
+            prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + FAKE_HPO_ID + '/'
             expected_object_name = prefix + report
             self.assertIn(expected_object_name, actual_object_names)
 
@@ -82,7 +81,7 @@ class ExportTest(unittest.TestCase):
         datasources_actual = json.loads(datasources_json)
         datasources_expected = {
             'datasources': [
-                {'name': test_util.FAKE_HPO_ID, 'folder': test_util.FAKE_HPO_ID, 'cdmVersion': 5}
+                {'name': FAKE_HPO_ID, 'folder': FAKE_HPO_ID, 'cdmVersion': 5}
             ]
         }
         self.assertDictEqual(datasources_expected, datasources_actual)
@@ -113,11 +112,11 @@ class ExportTest(unittest.TestCase):
     def test_run_export_with_target_bucket_and_hpo_id(self):
         folder_prefix = 'dummy-prefix-2018-03-24/'
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
-        main.run_export(hpo_id=test_util.FAKE_HPO_ID, folder_prefix=folder_prefix, target_bucket=bucket_nyc)
+        main.run_export(hpo_id=FAKE_HPO_ID, folder_prefix=folder_prefix, target_bucket=bucket_nyc)
         bucket_objects = gcs_utils.list_bucket(bucket_nyc)
         actual_object_names = [obj['name'] for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
-            prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + test_util.FAKE_HPO_ID + '/'
+            prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + FAKE_HPO_ID + '/'
             expected_object_name = prefix + report
             self.assertIn(expected_object_name, actual_object_names)
         datasources_json_path = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
@@ -126,7 +125,7 @@ class ExportTest(unittest.TestCase):
         datasources_actual = json.loads(datasources_json)
         datasources_expected = {
             'datasources': [
-                {'name': test_util.FAKE_HPO_ID, 'folder': test_util.FAKE_HPO_ID, 'cdmVersion': 5}
+                {'name': FAKE_HPO_ID, 'folder': FAKE_HPO_ID, 'cdmVersion': 5}
             ]
         }
         self.assertDictEqual(datasources_expected, datasources_actual)

@@ -6,7 +6,7 @@ import mock
 
 import bq_utils
 import gcs_utils
-from test.unit_test import test_util
+from tests import test_util
 from tools import retract_data_gcs as rd
 
 

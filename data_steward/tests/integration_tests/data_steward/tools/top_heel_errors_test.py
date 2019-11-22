@@ -1,12 +1,14 @@
+# Python imports
 import os
 import unittest
 
+# Project imports
 import app_identity
 import bq_utils
 import common
 import gcs_utils
 import resources
-from test.unit_test import test_util
+from tests.unit_test import test_util
 from tools.top_heel_errors import top_heel_errors, RESULT_LIMIT, FIELD_ANALYSIS_ID, FIELD_RECORD_COUNT, \
     FIELD_DATASET_NAME, FIELD_ACHILLES_HEEL_WARNING
 
