@@ -38,7 +38,7 @@ echo "result_bucket --> ${result_bucket}"
 
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
-export APPLICATION_ID="${app_id}"
+export GOOGLE_CLOUD_PROJECT="${app_id}"
 
 #set application environment (ie dev, test, prod)
 gcloud auth activate-service-account --key-file=${key_file}
@@ -50,7 +50,7 @@ set -e
 
 cd ../../
 # create a new environment in directory curation_env
-virtualenv  -p $(which python2.7) curation_env
+virtualenv  -p $(which python3.7) curation_env
 
 
 # activate it
@@ -58,7 +58,7 @@ source curation_env/bin/activate
 
 # install the requirements in the virtualenv
 cd data_steward
-pip install -t lib -r requirements.txt
+pip install -r requirements.txt
 
 cd tools
 source set_path.sh

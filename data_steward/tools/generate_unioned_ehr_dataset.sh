@@ -53,7 +53,7 @@ echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
-export APPLICATION_ID="${app_id}"
+export GOOGLE_CLOUD_PROJECT="${app_id}"
 
 #set application environment (ie dev, test, prod)
 gcloud auth activate-service-account --key-file=${key_file}
@@ -62,13 +62,13 @@ gcloud config set project ${app_id}
 #---------Create curation virtual environment----------
 set -e
 # create a new environment in directory curation_env
-virtualenv -p $(which python2.7) curation_env
+virtualenv -p $(which python3.7) curation_env
 
 # activate it
 source curation_env/bin/activate
 
 # install the requirements in the virtualenv
-pip install -t ../lib -r ../requirements.txt
+pip install -r ../requirements.txt
 
 source set_path.sh
 

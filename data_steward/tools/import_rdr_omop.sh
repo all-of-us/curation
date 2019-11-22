@@ -53,7 +53,7 @@ if [[ -z "${PROJECT}" ]] || [[ -z "${DIRECTORY}" ]] || [[ -z "${DATASET}" ]] ||
 fi
 
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
-export APPLICATION_ID="${APP_ID}"
+export GOOGLE_CLOUD_PROJECT="${APP_ID}"
 export BIGQUERY_DATASET_ID="${DATASET}"
 
 today=$(date '+%Y%m%d')
@@ -61,13 +61,13 @@ export BACKUP_DATASET="${DATASET}_backup"
 
 #---------Create curation virtual environment----------
 # create a new environment in directory curation_env
-virtualenv -p $(which python2.7) curation_env
+virtualenv -p $(which python3.7) curation_env
 
 # activate it
 source curation_env/bin/activate
 
 # install the requirements in the virtualenv
-pip install -t lib -r requirements.txt
+pip install -r requirements.txt
 
 source tools/set_path.sh
 
@@ -92,6 +92,9 @@ for file in $(gsutil ls gs://${PROJECT}-cdm/${DIRECTORY}); do
   echo "bq load --replace --allow_quoted_newlines "${JAGGED_ROWS}" "${CLUSTERING_ARGS}" --skip_leading_rows=1 "${DATASET}"."${table_name}" "$file" resources/fields/"${table_name}".json"
   bq load --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${DATASET}.${table_name} $file resources/fields/${table_name}.json
 done
+
+echo "Copying vocabulary"
+./tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${VOCAB_DATASET} --target_dataset ${DATASET}
 
 echo "Creating a RDR back-up"
 ./tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${DATASET} --target_dataset ${BACKUP_DATASET}
