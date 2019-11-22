@@ -1,7 +1,46 @@
 [run]
-omit=*curation_env*
-     *tests*
-     *data_steward/lib/*
-     *google-cloud-sdk*
-     *site-packages*
-     *_env/*
+
+# Source packages/directories to include
+source = .
+         admin
+         analytics
+         cdr_cleaner
+         ci
+         deid
+         notebooks
+         resources
+         tools
+         validation
+         cdm
+
+# Ensure all branching logic has been tested
+branch = True
+
+data_file = test_results/coverage/.coverage
+
+# Exclude files whose paths match these patterns
+omit = *tests*
+       */lib/*
+       *google-cloud-sdk*
+       *site-packages*
+       *_env/*
+       *deid/manual_fixes/*
+       *deid/validations/*
+       *constants/*
+
+[report]
+exclude_lines =
+    # Don't compain if non-runnable code isn't run
+    if __name__ == .__main__.:
+
+show_missing = True
+
+skip_covered = True
+
+[html]
+directory = test_results/coverage/html
+
+title = Curation Python Coverage Report
+
+[xml]
+output = test_results/coverage/xml/coverage.xml

@@ -5,7 +5,7 @@ from mock import patch
 import bq_utils
 from constants.validation.metrics import completeness as consts
 import resources
-from test.unit_test import test_util
+from tests import test_util
 from validation.metrics import completeness
 
 

@@ -1,18 +1,19 @@
+# Python imports
 import logging
 import os
 import sys
 import unittest
 
+# Project imports
 import bq_utils
 import common
 import gcs_utils
 import resources
-from test.unit_test import test_util
+from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import copy_rdr_table, ehr_consent, main, mapping_table_for, create_cdm_tables
 from tools.combine_ehr_rdr import logger
 from tools.combine_ehr_rdr import mapping_query
-from io import open
 
 EXPECTED_MAPPING_QUERY = ('SELECT DISTINCT'
                           ' \'{rdr_dataset_id}\'  AS src_dataset_id,'
