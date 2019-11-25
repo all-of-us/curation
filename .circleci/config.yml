@@ -68,12 +68,13 @@ jobs:
             if [[ "$t" == *"fast tests"* ]] ; then export ALL_TESTS="False" ; else export ALL_TESTS="True" ; fi
             mkdir -p test_results/coverage/xml
             mkdir -p test_results/coverage/html
+            mkdir -p test_results/junit
             ./tests/run_tests.sh
           no_output_timeout: 3000s
           when:  always
       # Save test results
       - store_test_results:
-          path: ~/curation/data_steward/test_results/coverage/xml
+          path: ~/curation/data_steward/test_results/junit
       # Save artifacts
       - store_artifacts:
           path: ~/curation/data_steward/test_results

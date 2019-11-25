@@ -32,6 +32,11 @@ try:
 except ImportError:
     print('coverage package not found.  Run `pip install -r dev_requirements.txt`')
 
+try:
+    import xmlrunner
+except ImportError:
+    print('xmlrunner package not found.  Run `pip install -r dev_requirements.txt`')
+
 
 def print_unsuccessful(function, trace, msg_type):
     print('\n======================================================================')
@@ -54,7 +59,8 @@ def main(test_path, test_pattern):
 
     start_time = time.time()
     for mod_tests in suite:
-        result = unittest.TextTestRunner(verbosity=2).run(mod_tests)
+        result = xmlrunner.XMLTestRunner(output='test_results/junit', verbosity=2).run(mod_tests)
+#        result = unittest.TextTestRunner(verbosity=2).run(mod_tests)
         all_results.append(result)
 
     end_time = time.time()
