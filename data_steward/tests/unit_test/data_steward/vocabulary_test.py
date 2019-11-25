@@ -1,5 +1,5 @@
 # Python imports
-import StringIO
+from io import StringIO
 import os
 import shutil
 import tempfile
@@ -28,7 +28,10 @@ class VocabularyTest(unittest.TestCase):
         in_fp = StringIO(input_text)
         out_fp = StringIO()
         _transform_csv(in_fp, out_fp)
-        return out_fp.getvalue()
+        contents = out_fp.getvalue()
+        in_fp.close()
+        out_fp.close()
+        return contents
 
     def test_transform_file(self):
         header = ['concept_id', 'valid_start_date', 'valid_end_date', 'invalid_reason']
