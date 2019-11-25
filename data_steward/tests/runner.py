@@ -59,7 +59,7 @@ def main(test_path, test_pattern):
 
     start_time = time.time()
     for mod_tests in suite:
-        result = xmlrunner.XMLTestRunner(output='test_results/junit', verbosity=2).run(mod_tests)
+        result = xmlrunner.XMLTestRunner(output='test_results/junit').run(mod_tests)
 #        result = unittest.TextTestRunner(verbosity=2).run(mod_tests)
         all_results.append(result)
 
