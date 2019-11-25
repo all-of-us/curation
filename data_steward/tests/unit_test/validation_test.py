@@ -21,7 +21,7 @@ from constants.validation import main as main_constants
 from constants.validation.participants import identity_match as id_match_consts
 import gcs_utils
 import resources
-from test.unit_test import test_util as test_util
+from tests import test_util as test_util
 from validation import main
 
 
