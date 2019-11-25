@@ -19,12 +19,12 @@ class RunDeidTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @patch('run_deid.os.walk')
+    @patch('tools.run_deid.os.walk')
     def test_known_tables(self, mock_walk):
         # preconditions
         mock_walk.return_value = [
-            ('', 
-            '', 
+            ('',
+            '',
             ['fake/file/table.json',
              'table2.json',
               'odd_name.csv'])]
@@ -36,7 +36,7 @@ class RunDeidTest(unittest.TestCase):
         expected = ['fake/file/table', 'table2', 'odd_name.csv']
         self.assertEqual(result, expected)
 
-    @patch('run_deid.bq_utils.list_dataset_contents')
+    @patch('tools.run_deid.bq_utils.list_dataset_contents')
     def test_get_output_tables(self, mock_contents):
         # pre-conditions
         input_dataset = 'fake_input_dataset'
@@ -45,12 +45,12 @@ class RunDeidTest(unittest.TestCase):
         only_tables = 'observation,table_zed'
 
         mock_contents.return_value = [
-            '_map_table', 
-            'pii_fake', 
-            'note', 
-            'observation', 
-            'table_zed', 
-            'table', 
+            '_map_table',
+            'pii_fake',
+            'note',
+            'observation',
+            'table_zed',
+            'table',
             'skip_table',
         ]
 
