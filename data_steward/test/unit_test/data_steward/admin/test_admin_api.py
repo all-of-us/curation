@@ -1,5 +1,7 @@
+import os
 import mock
 import unittest
+from mock import patch
 
 from admin import admin_api
 
@@ -23,17 +25,27 @@ class AdminApiTest(unittest.TestCase):
         self.expired_keys = [self.expired_key]
         self.expiring_keys = [self.expiring_key]
 
-    def test_email_body(self):
+        self.mock_slack_token = patch.dict(os.environ, {'SLACK_TOKEN': 'fake token id'})
+
+    def test_text_body(self):
         expired_section = '{header}{details}'.format(header=admin_api.BODY_HEADER_EXPIRED_KEY_TEMPLATE,
                                                      details=admin_api.BODY_TEMPLATE.format(**self.expired_key))
         expiring_section = '{header}{details}'.format(header=admin_api.BODY_HEADER_EXPIRING_KEY_TEMPLATE,
                                                       details=admin_api.BODY_TEMPLATE.format(**self.expiring_key))
-        actual = admin_api.email_body(self.expired_keys, [])
+        actual = admin_api.text_body(self.expired_keys, [])
         self.assertEqual(actual, expired_section)
-        actual = admin_api.email_body([], self.expiring_keys)
+        actual = admin_api.text_body([], self.expiring_keys)
         self.assertEqual(actual, expiring_section)
-        actual = admin_api.email_body(self.expired_keys, self.expiring_keys)
+        actual = admin_api.text_body(self.expired_keys, self.expiring_keys)
         self.assertEqual(actual, expired_section + expiring_section)
+
+    @mock.patch('admin.admin_api.slack.WebClient')
+    def test_channel_exists(self, mock_slack_client):
+        mock_slack_client.channels_list.return_value = {
+            'channels': [{'name': 'channel_1'}, {'name': 'channel_2'}]}
+        self.assertTrue(admin_api.channel_exists('channel_1'))
+        self.assertTrue(admin_api.channel_exists('channel_2'))
+        self.assertFalse(admin_api.channel_exists('channel_3'))
 
     @mock.patch('admin.key_rotation.get_expiring_keys')
     @mock.patch('admin.key_rotation.delete_expired_keys')
@@ -41,7 +53,7 @@ class AdminApiTest(unittest.TestCase):
     def test_rm_expired_keys_endpoint_callable(self,
                                                mock_check_cron,
                                                mock_delete_expired_keys,
-                                               mock_get_expiring_keys,):
+                                               mock_get_expiring_keys, ):
         admin_api.app.testing = True
         with admin_api.app.test_client() as c:
             c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
@@ -77,9 +89,9 @@ class AdminApiTest(unittest.TestCase):
                                   to=mock_notification_address,
                                   subject=admin_api.SUBJECT)
             self.assertCountEqual(mock_send_mail.call_args_list,
-                                 [mock.call(body=full_body, **send_mail_args),
-                                  mock.call(body=expired_section, **send_mail_args),
-                                  mock.call(body=expiring_section, **send_mail_args)])
+                                  [mock.call(body=full_body, **send_mail_args),
+                                   mock.call(body=expired_section, **send_mail_args),
+                                   mock.call(body=expiring_section, **send_mail_args)])
 
     @mock.patch('admin.admin_api.NOTIFICATION_ADDRESS')
     @mock.patch('admin.admin_api.mail.send_mail')
