@@ -1,6 +1,6 @@
 import mock
 import unittest
-
+from mock import patch
 from admin import admin_api
 from slack.errors import SlackClientError
 
@@ -23,6 +23,11 @@ class AdminApiTest(unittest.TestCase):
                              'created_at': 'expiring-key-created-at'}
         self.expired_keys = [self.expired_key]
         self.expiring_keys = [self.expiring_key]
+        self.get_application_id_patcher = patch('app_identity.get_application_id')
+        self.mock_get_application_id = self.get_application_id_patcher.start()
+
+    def tearDown(self):
+        self.get_application_id_patcher.stop()
 
     def test_text_body(self):
         expired_section = '{header}{details}'.format(header=admin_api.BODY_HEADER_EXPIRED_KEY_TEMPLATE,
