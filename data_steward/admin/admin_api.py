@@ -10,8 +10,6 @@ from admin import key_rotation
 
 LOGGER = logging.getLogger(__name__)
 
-client = slack.WebClient(os.environ["SLACK_TOKEN"])
-
 channel_name = os.getenv('SLACK_CHANNEL', 'test_channel')
 
 PREFIX = '/admin/v1/'
@@ -26,6 +24,10 @@ BODY_TEMPLATE = ('service_account_email={service_account_email}\n'
                  'created_at={created_at}\n')
 
 app = Flask(__name__)
+
+
+def get_slack_client():
+    return slack.WebClient(os.environ["SLACK_TOKEN"])
 
 
 def text_body(expired_keys, expiring_keys):
@@ -53,13 +55,6 @@ def text_body(expired_keys, expiring_keys):
     return result
 
 
-def channel_exists(_channel_name):
-    for _channel in client.channels_list()['channels']:
-        if _channel['name'] == _channel_name:
-            return True
-    return False
-
-
 @api_util.auth_required_cron
 def remove_expired_keys():
     project_id = app_identity.get_application_id()
@@ -73,16 +68,12 @@ def remove_expired_keys():
     expiring_keys = key_rotation.get_expiring_keys(project_id)
     logging.info('Completed listing expiring service account keys for %s' % project_id)
 
-    if channel_exists(channel_name):
-        if len(expiring_keys) != 0 or len(expired_keys) != 0:
-            client.chat_postMessage(
-                channel=channel_name,
-                text=text_body(expired_keys, expiring_keys),
-                verify=False
-            )
-    else:
-        logging.error('The channel {channel_name} does not exist!'.format(channel_name=channel_name))
-
+    if len(expiring_keys) != 0 or len(expired_keys) != 0:
+        get_slack_client().chat_postMessage(
+            channel=channel_name,
+            text=text_body(expired_keys, expiring_keys),
+            verify=False
+        )
     return 'remove-expired-keys-complete'
 
 
