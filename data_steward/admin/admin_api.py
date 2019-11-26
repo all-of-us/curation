@@ -8,9 +8,11 @@ import slack
 import api_util
 from admin import key_rotation
 
-LOGGER = logging.getLogger(__name__)
+SLACK_TOKEN = 'SLACK_TOKEN'
+SLACK_CHANNEL = 'SLACK_CHANNEL'
+DEFAULT_SLACK_CHANNEL = 'test_channel'
 
-channel_name = os.getenv('SLACK_CHANNEL', 'test_channel')
+LOGGER = logging.getLogger(__name__)
 
 PREFIX = '/admin/v1/'
 REMOVE_EXPIRED_KEYS_RULE = PREFIX + 'RemoveExpiredServiceAccountKeys'
@@ -27,7 +29,12 @@ app = Flask(__name__)
 
 
 def get_slack_client():
-    return slack.WebClient(os.environ["SLACK_TOKEN"])
+    return slack.WebClient(os.environ[SLACK_TOKEN])
+
+
+def get_slack_channel_name():
+    channel_name = os.getenv(SLACK_CHANNEL, DEFAULT_SLACK_CHANNEL)
+    return DEFAULT_SLACK_CHANNEL if channel_name == '' else channel_name
 
 
 def text_body(expired_keys, expiring_keys):
@@ -70,7 +77,7 @@ def remove_expired_keys():
 
     if len(expiring_keys) != 0 or len(expired_keys) != 0:
         get_slack_client().chat_postMessage(
-            channel=channel_name,
+            channel=get_slack_channel_name(),
             text=text_body(expired_keys, expiring_keys),
             verify=False
         )
