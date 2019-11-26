@@ -24,6 +24,7 @@ class AdminApiTest(unittest.TestCase):
                              'created_at': 'expiring-key-created-at'}
         self.expired_keys = [self.expired_key]
         self.expiring_keys = [self.expiring_key]
+        self.slack_token = 'test_slack_token'
         self.channel_name = 'channel_name'
         self.get_application_id_patcher = patch('app_identity.get_application_id')
         self.mock_get_application_id = self.get_application_id_patcher.start()
@@ -43,13 +44,19 @@ class AdminApiTest(unittest.TestCase):
         actual = admin_api.text_body(self.expired_keys, self.expiring_keys)
         self.assertEqual(actual, expired_section + expiring_section)
 
+    def test_get_slack_token(self):
+        with patch.dict(os.environ, {admin_api.SLACK_TOKEN: self.slack_token}):
+            self.assertEqual(self.slack_token, admin_api.get_slack_token())
+        with self.assertRaises(admin_api.AdminConfigurationError) as c:
+            admin_api.get_slack_token()
+        self.assertEqual(c.exception.msg, admin_api.UNSET_SLACK_TOKEN_MSG)
+
     def test_get_slack_channel_name(self):
         with patch.dict(os.environ, {admin_api.SLACK_CHANNEL: self.channel_name}):
             self.assertEqual(self.channel_name, admin_api.get_slack_channel_name())
-        with patch.dict(os.environ, {admin_api.SLACK_CHANNEL: ''}):
-            self.assertEqual(admin_api.DEFAULT_SLACK_CHANNEL, admin_api.get_slack_channel_name())
-        with patch.dict(os.environ, dict()):
-            self.assertEqual(admin_api.DEFAULT_SLACK_CHANNEL, admin_api.get_slack_channel_name())
+        with self.assertRaises(admin_api.AdminConfigurationError) as c:
+            admin_api.get_slack_channel_name()
+        self.assertEqual(c.exception.msg, admin_api.UNSET_SLACK_CHANNEL_MSG)
 
     @mock.patch('admin.admin_api.get_slack_client')
     @mock.patch('admin.key_rotation.get_expiring_keys')
@@ -87,34 +94,36 @@ class AdminApiTest(unittest.TestCase):
         mock_post_message = mock_slack_client.return_value.chat_postMessage
 
         admin_api.app.testing = True
-        with admin_api.app.test_client() as c:
-            c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
-            c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
-            c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
+        with mock.patch.dict('os.environ', {admin_api.SLACK_CHANNEL: self.channel_name,
+                                            admin_api.SLACK_TOKEN: self.slack_token}):
+            with admin_api.app.test_client() as c:
+                c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
+                c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
+                c.get(admin_api.REMOVE_EXPIRED_KEYS_RULE)
 
-            slack_message_args = dict(channel=admin_api.DEFAULT_SLACK_CHANNEL,
-                                      verify=False)
+                slack_message_args = dict(channel=self.channel_name,
+                                          verify=False)
 
-            self.assertCountEqual(mock_post_message.call_args_list,
-                                  [mock.call(text=full_body, **slack_message_args),
-                                   mock.call(text=expired_section, **slack_message_args),
-                                   mock.call(text=expiring_section, **slack_message_args)])
+                self.assertCountEqual(mock_post_message.call_args_list,
+                                      [mock.call(text=full_body, **slack_message_args),
+                                       mock.call(text=expired_section, **slack_message_args),
+                                       mock.call(text=expiring_section, **slack_message_args)])
 
-    @mock.patch('admin.admin_api.get_slack_client')
+    @mock.patch('admin.admin_api.post_message')
     @mock.patch('admin.key_rotation.get_expiring_keys')
     @mock.patch('admin.key_rotation.delete_expired_keys')
     @mock.patch('api_util.check_cron')
-    def test_mail_errors_raised(self,
-                                mock_check_cron,
-                                mock_delete_expired_keys,
-                                mock_get_expiring_keys,
-                                mock_slack_client):
+    def test_client_errors_raised(self,
+                                  mock_check_cron,
+                                  mock_delete_expired_keys,
+                                  mock_get_expiring_keys,
+                                  mock_post_message):
         """
-        Exceptions while sending mail should be raised
+        Exceptions while posting message should be raised
         """
         mock_delete_expired_keys.return_value = self.expired_keys
         mock_get_expiring_keys.return_value = self.expiring_keys
-        mock_slack_client.return_value.chat_postMessage.side_effect = SlackClientError()
+        mock_post_message.side_effect = SlackClientError()
         admin_api.app.testing = True
         with admin_api.app.test_client() as c:
             with self.assertRaises(SlackClientError):

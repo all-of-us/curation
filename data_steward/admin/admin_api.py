@@ -10,7 +10,8 @@ from admin import key_rotation
 
 SLACK_TOKEN = 'SLACK_TOKEN'
 SLACK_CHANNEL = 'SLACK_CHANNEL'
-DEFAULT_SLACK_CHANNEL = 'test_channel'
+UNSET_SLACK_TOKEN_MSG = 'Slack token not set in environment variable %s' % SLACK_TOKEN
+UNSET_SLACK_CHANNEL_MSG = 'Slack channel not set in environment variable %s' % SLACK_CHANNEL
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,15 +29,65 @@ BODY_TEMPLATE = ('service_account_email={service_account_email}\n'
 app = Flask(__name__)
 
 
-def get_slack_client():
-    return slack.WebClient(os.environ[SLACK_TOKEN])
+class AdminConfigurationError(RuntimeError):
+    """
+    Raised when the Admin API is not properly configured
+    """
+
+    def __init__(self, msg):
+        super(AdminConfigurationError, self).__init__()
+        self.msg = msg
+
+
+def get_slack_token():
+    """
+    Get the token used to interact with the Slack API
+
+    :raises:
+      AdminConfigurationError: token is not configured
+    :return: configured Slack API token as str
+    """
+    if SLACK_TOKEN not in os.environ.keys():
+        raise AdminConfigurationError(UNSET_SLACK_TOKEN_MSG)
+    return os.environ[SLACK_TOKEN]
 
 
 def get_slack_channel_name():
-    channel_name = os.getenv(SLACK_CHANNEL, DEFAULT_SLACK_CHANNEL)
-    return DEFAULT_SLACK_CHANNEL if channel_name == '' else channel_name
+    """
+    Get name of the Slack channel to post notifications to
+
+    :raises:
+      AdminConfigurationError: channel name is not configured
+    :return: the configured Slack channel name as str
+    """
+    if SLACK_CHANNEL not in os.environ.keys():
+        raise AdminConfigurationError(UNSET_SLACK_CHANNEL_MSG)
+    return os.environ[SLACK_CHANNEL]
 
 
+def get_slack_client():
+    """
+    Get web client for Slack
+
+    :return: WebClient object to communicate with Slack
+    """
+    slack_token = get_slack_token()
+    return slack.WebClient(slack_token)
+
+
+def post_message(text):
+    """
+    Post a system notification
+
+    :param text: the message to post
+    :return:
+    """
+    slack_client = get_slack_client()
+    slack_channel_name = get_slack_channel_name()
+    return slack_client.chat_postMessage(channel=slack_channel_name, text=text, verify=False)
+
+
+# TODO Use jinja templates
 def text_body(expired_keys, expiring_keys):
     """
     This creates a text body for _expired_keys and _expiring_keys
@@ -76,11 +127,8 @@ def remove_expired_keys():
     logging.info('Completed listing expiring service account keys for %s' % project_id)
 
     if len(expiring_keys) != 0 or len(expired_keys) != 0:
-        get_slack_client().chat_postMessage(
-            channel=get_slack_channel_name(),
-            text=text_body(expired_keys, expiring_keys),
-            verify=False
-        )
+        text = text_body(expired_keys, expiring_keys)
+        post_message(text)
     return 'remove-expired-keys-complete'
 
 
