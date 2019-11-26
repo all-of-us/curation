@@ -43,7 +43,7 @@ echo "vocab_dataset --> ${vocab_dataset}"
 
 APP_ID=$(cat "${key_file}" | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
-export APPLICATION_ID="${APP_ID}"
+export GOOGLE_CLOUD_PROJECT="${APP_ID}"
 
 #set application environment (ie dev, test, prod)
 gcloud auth activate-service-account --key-file="${key_file}"
@@ -59,25 +59,15 @@ set -e
 TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 DATA_STEWARD_DIR="$(cd ${TOOLS_DIR} && cd .. && pwd )"
 DEID_DIR="${DATA_STEWARD_DIR}/deid"
-GCLOUD_PATH=$(which gcloud)
-CLOUDSDK_ROOT_DIR=${GCLOUD_PATH%/bin/gcloud}
-GAE_SDK_ROOT="${CLOUDSDK_ROOT_DIR}/platform/google_appengine"
-GAE_SDK_APPENGINE="${GAE_SDK_ROOT}/google/appengine"
-GAE_SDK_NET="${GAE_SDK_ROOT}/google/net"
 VENV_DIR="${DATA_STEWARD_DIR}/deid_venv"
 
-virtualenv --python=$(which python) "${VENV_DIR}"
+virtualenv  -p $(which python3.7) "${VENV_DIR}"
 
 source ${VENV_DIR}/bin/activate
 
 # install the requirements in the virtualenv
 pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 pip install -r "${DEID_DIR}/requirements.txt"
-
-VENV_LIB_GOOGLE="$(python -c "import google as _; print(_.__path__[-1])")"
-
-cp -R "${GAE_SDK_APPENGINE}" "${VENV_LIB_GOOGLE}"
-cp -R "${GAE_SDK_NET}" "${VENV_LIB_GOOGLE}"
 
 export BIGQUERY_DATASET_ID="${cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
