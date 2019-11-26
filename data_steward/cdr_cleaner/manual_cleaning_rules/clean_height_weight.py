@@ -317,6 +317,13 @@ WITH
   -- Easier to reference this table for later
   -- add some basic cleaning in here
   -- Drop anything over 16000
+  -- calculate min, mean and max value_as_number for measurement_concept_id = 3025315 over each unit_concept_id, 
+  -- including NULL. If there are discrepancies, plot the distribution of value_as_number
+  -- if multiple peaks exist, it is presumably due to multiple units being used with the same unit_concept_id/NULL
+  -- In such cases,
+  --  1. convert values that do not appear to use kg into kg using the conversion used below in phys_df_wt_adj_site
+  --     and add it as a step in the CASE statement to null out values above 16000
+  --  2. ensure that only one peak exists in the distribution for each unit for the measurement_concept_id 3025315
   phys_df_wt AS (
     SELECT
       person_id,
