@@ -6,13 +6,11 @@ import logging
 import os
 import re
 from io import StringIO
-from io import open
 
 # Third party imports
 from flask import Flask
 import app_identity
 from googleapiclient.errors import HttpError
-import slack
 
 # Project imports
 import api_util
@@ -193,7 +191,7 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
     logging.info('Uploading achilles index files to `gs://%s/%s`...', bucket, folder_prefix)
     for filename in resources.ACHILLES_INDEX_FILES:
-        logging.debug('Uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
+        logging.info('Uploading achilles file `%s` to bucket `%s`' % (filename, bucket))
         bucket_file_name = filename.split(resources.resource_path + os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
             upload_result = gcs_utils.upload_object(bucket, folder_prefix + bucket_file_name, fp)
@@ -399,7 +397,7 @@ def process_hpo(hpo_id, force_run=False):
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         logging.warning('Bucket `%s` configured for hpo_id `%s` does not exist',
-                        bucket, hpo_id)
+                     bucket, hpo_id)
     except HttpError as http_error:
         message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (hpo_id,
                                                                                          http_error.content.decode())
