@@ -32,6 +32,7 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 
 import matplotlib.pyplot as plt
+
 # %matplotlib inline
 
 
@@ -86,6 +87,18 @@ CMP = (
 
 Physical_Measurement = (45875982, 45876161, 45876166, 45876171, 45876174,
                         45876226)
+
+all_measurements = (40772590, 40782589, 40795800, 40772572,
+                    40789356, 40789120, 40789179, 40782521, 40772748, 40782735, 40789182, 40786033,
+                    40779159,
+                    40785788, 40785796, 40779195, 40795733, 40795725, 40772531, 40779190, 40785793, 40779191, 40782561,
+                    40789266,
+                    3049187, 3053283, 40775801, 40779224, 40779250, 40782562, 40782579, 40785850, 40785861,
+                    40785869, 40789180, 40789190,
+                    40789527, 40791227, 40792413, 40792440, 40795730, 40795740,
+                    40795754,
+                    45875982, 45876161, 45876166, 45876171, 45876174,
+                    45876226)
 
 # # Improve the Definitions of Measurement Integration
 
@@ -304,17 +317,61 @@ df_Physical_Measurement = df.rename(columns={"perc_ancestors": 'Physical_Measure
 
 df_Physical_Measurement.head(100)
 
+# ## All Measurements
+
+len(all_measurements)
+
+len(set(all_measurements))
+
+df = pd.io.gbq.read_gbq('''
+SELECT
+    a.src_hpo_id, 
+    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
+FROM
+     (
+     SELECT
+         DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
+     FROM
+         `{}.unioned_ehr_measurement` m
+     JOIN -- to get the site info
+         `{}._mapping_measurement` mm
+     ON
+         m.measurement_id = mm.measurement_id
+     JOIN
+         `{}.concept` c
+     ON
+         c.concept_id = m.measurement_concept_id
+     JOIN -- ensuring you 'navigate up' the hierarchy
+         `{}.concept_ancestor` ca
+     ON
+         m.measurement_concept_id = ca.descendant_concept_id
+     WHERE
+         ca.ancestor_concept_id IN {}
+     ) a
+ GROUP BY 1
+ ORDER BY perc_ancestors DESC, a.src_hpo_id
+    '''.format(len(set(all_measurements)), DATASET, DATASET, DATASET, DATASET, all_measurements, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET),
+                        dialect='standard'
+                        )
+df.shape
+
+df_all_measurements = df.rename(columns={"perc_ancestors": 'All_Measurements'})
+
+df_all_measurements.head(100)
+
 # ## Sites combined
 
 sites_measurement = pd.merge(df_Physical_Measurement, df_CMP, how='outer', on='src_hpo_id')
 sites_measurement = pd.merge(sites_measurement, df_CBCwDiff, how='outer', on='src_hpo_id')
 sites_measurement = pd.merge(sites_measurement, df_CBC, how='outer', on='src_hpo_id')
 sites_measurement = pd.merge(sites_measurement, df_Lipid, how='outer', on='src_hpo_id')
+sites_measurement = pd.merge(sites_measurement, df_all_measurements, how='outer', on='src_hpo_id')
 
 sites_measurement = sites_measurement.fillna(0)
 
-sites_measurement[["Physical_Measurement", "CMP", "CBCwDiff", "CBC", "Lipid"]] \
-    = sites_measurement[["Physical_Measurement", "CMP", "CBCwDiff", "CBC", "Lipid"]].astype(int)
+sites_measurement[["Physical_Measurement", "CMP", "CBCwDiff", "CBC", "Lipid", "All_Measurements"]] \
+    = sites_measurement[["Physical_Measurement", "CMP", "CBCwDiff", "CBC", "Lipid", "All_Measurements"]].astype(int)
 
 sites_measurement
 
