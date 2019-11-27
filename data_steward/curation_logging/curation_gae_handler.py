@@ -30,7 +30,7 @@ import curation_logging.gcp_request_log_pb2  # pylint: disable=unused-import
 # https://developers.google.com/resources/api-libraries/documentation/logging/v2/python/latest/logging_v2.entries.html
 
 # How many log lines should be batched before pushing them to StackDriver.
-_LOG_BUFFER_SIZE = 24
+_LOG_BUFFER_SIZE = 100
 
 GAE_LOGGING_MODULE_ID = 'app-' + os.environ.get('GAE_SERVICE', 'default')
 GAE_LOGGING_VERSION_ID = os.environ.get('GAE_VERSION', 'devel')
