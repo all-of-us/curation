@@ -7,6 +7,7 @@ Usage: run_cleaning_rules.sh
   --vocab_dataset <vocab dataset>
   --dataset <dataset name to apply cleaning rules>
   --snapshot_dataset <Dataset name to copy result dataset>
+  --data_stage <Dataset stage>
 "
 
 while true; do
@@ -31,6 +32,10 @@ while true; do
     snapshot_dataset=$2
     shift 2
     ;;
+  --data_stage)
+    data_stage=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -39,7 +44,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${snapshot_dataset}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${snapshot_dataset}" ]] || [[ -z "${snapshot_dataset}" ]]; then
   echo "$USAGE"
   exit 1
 fi
@@ -52,9 +57,10 @@ echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "snapshot_dataset --> ${snapshot_dataset}"
+echo "Data Stage --> ${data_stage}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
-export APPLICATION_ID="${app_id}"
+export GOOGLE_CLOUD_PROJECT="${app_id}"
 
 #set application environment (ie dev, test, prod)
 gcloud auth activate-service-account --key-file=${key_file}
@@ -63,13 +69,13 @@ gcloud config set project ${app_id}
 #---------Create curation virtual environment----------
 set -e
 # create a new environment in directory curation_env
-virtualenv -p $(which python2.7) curation_env
+virtualenv -p $(which python3.7) curation_env
 
 # activate it
 source curation_env/bin/activate
 
 # install the requirements in the virtualenv
-pip install -t ../lib -r ../requirements.txt
+pip install -r ../requirements.txt
 
 source set_path.sh
 
@@ -80,7 +86,7 @@ export BIGQUERY_DATASET_ID="${dataset}"
 cd ../cdr_cleaner/
 
 # run cleaning_rules on a dataset
-python clean_cdr.py -s 2>&1 | tee cleaning_rules_log.txt
+python clean_cdr.py -d ${data_stage} -s 2>&1 | tee cleaning_rules_log.txt
 
 cd ../tools/
 
