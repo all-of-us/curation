@@ -213,7 +213,7 @@ def create_allowed_states_table(input_dataset, credentials):
     """
 
     map_tablename = input_dataset + "._mapping_src_hpos_to_allowed_states"
-    data = pd.read_csv('deid/config/internal_tables/src_hpos_to_allowed_states.csv')
+    data = pd.read_csv('../deid/config/internal_tables/src_hpos_to_allowed_states.csv')
 
     # write this to bigquery.
     data.to_gbq(map_tablename, credentials=credentials, if_exists='replace')
@@ -335,7 +335,7 @@ class AOU(Press):
 
         :param lower_bound:  The smallest number that may be used as an identifier.
         """
-        map_tablename = "_deid_questionnaire_response_map"
+        map_tablename = self.idataset + "._deid_questionnaire_response_map"
         sql = ("SELECT DISTINCT o.questionnaire_response_id "
                "FROM observation as o "
                "WHERE o.questionnaire_response_id IS NOT NULL "
