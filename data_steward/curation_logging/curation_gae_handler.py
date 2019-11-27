@@ -548,14 +548,15 @@ def initialize_logging(log_level=logging.INFO):
     Setup GCP Stack Driver logging if we are running in App Engine.
     :param log_level: Log level to use.
     """
-    # Configure root logger
-    root_logger = logging.getLogger()
-    root_logger.setLevel(log_level)
-    # Configure StackDriver logging handler
-    log_handler = GCPLoggingHandler()
-    log_handler.setLevel(log_level)
-    # Add StackDriver logging handler to root logger.
-    root_logger.addHandler(log_handler)
+    if 'GAE_ENV' in os.environ:
+        # Configure root logger
+        root_logger = logging.getLogger()
+        root_logger.setLevel(log_level)
+        # Configure StackDriver logging handler
+        log_handler = GCPLoggingHandler()
+        log_handler.setLevel(log_level)
+        # Add StackDriver logging handler to root logger.
+        root_logger.addHandler(log_handler)
 
 
 def begin_request_logging():
