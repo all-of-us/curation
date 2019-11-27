@@ -558,9 +558,6 @@ def initialize_logging(log_level=logging.INFO):
     root_logger.addHandler(log_handler)
 
 
-initialize_logging()
-
-
 def begin_request_logging():
     """
     Initialize logging for a new request.  Not guarantied to always be called.
