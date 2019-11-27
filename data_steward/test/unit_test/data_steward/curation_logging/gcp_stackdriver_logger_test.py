@@ -2,7 +2,7 @@ import unittest
 from mock import patch
 import mock
 from google.api.monitored_resource_pb2 import MonitoredResource
-from data_steward.curation_logging.curation_gae_handler import GCPStackDriverLogger
+from curation_logging.curation_gae_handler import GCPStackDriverLogger
 
 LOG_BUFFER_SIZE = 50
 
