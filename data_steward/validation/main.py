@@ -31,7 +31,7 @@ from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JS
 from validation import hpo_report
 from tools import retract_data_bq, retract_data_gcs
 from io import open
-from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging
+from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, initialize_logging
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
@@ -397,7 +397,7 @@ def process_hpo(hpo_id, force_run=False):
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         logging.warning('Bucket `%s` configured for hpo_id `%s` does not exist',
-                     bucket, hpo_id)
+                        bucket, hpo_id)
     except HttpError as http_error:
         message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (hpo_id,
                                                                                          http_error.content.decode())
@@ -780,6 +780,11 @@ def write_sites_pii_validation_files():
     return consts.SITES_VALIDATION_REPORT_SUCCESS
 
 
+@app.before_first_request
+def set_up_logging():
+    initialize_logging()
+
+
 app.add_url_rule(
     consts.PREFIX + 'ValidateAllHpoFiles',
     endpoint='validate_all_hpos',
@@ -833,7 +838,6 @@ app.add_url_rule(
     endpoint='run_retraction_cron',
     view_func=run_retraction_cron,
     methods=['GET'])
-
 
 app.before_request(begin_request_logging)  # Must be first before_request() call.
 

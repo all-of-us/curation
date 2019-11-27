@@ -30,7 +30,7 @@ import curation_logging.gcp_request_log_pb2  # pylint: disable=unused-import
 # https://developers.google.com/resources/api-libraries/documentation/logging/v2/python/latest/logging_v2.entries.html
 
 # How many log lines should be batched before pushing them to StackDriver.
-_LOG_BUFFER_SIZE = 24
+_LOG_BUFFER_SIZE = 100
 
 GAE_LOGGING_MODULE_ID = 'app-' + os.environ.get('GAE_SERVICE', 'default')
 GAE_LOGGING_VERSION_ID = os.environ.get('GAE_VERSION', 'devel')
@@ -96,7 +96,7 @@ def setup_log_line(record: logging.LogRecord, resource=None, method=None):
     event_ts = event_ts.replace(tzinfo=timezone.utc)
     event_ts = event_ts.isoformat()
     severity = gcp_logging._helpers._normalize_severity(record.levelno)
-    message = record.msg % record.args if record.args else record.msg
+    message = str(record.msg) % record.args if record.args else str(record.msg)
 
     # Look for embedded traceback source location override information
     if '%%' in message:
@@ -519,9 +519,12 @@ def get_gcp_logger() -> GCPStackDriverLogger:
         return _logger
 
     # We may need to initialize the logger for this thread.
-    _logger = GCPStackDriverLogger()
-    setattr(_thread_store, 'logger', _logger)
-    return _logger
+    if 'GAE_ENV' in os.environ:
+        _logger = GCPStackDriverLogger()
+        setattr(_thread_store, 'logger', _logger)
+        return _logger
+
+    return None
 
 
 class GCPLoggingHandler(logging.Handler):
@@ -545,17 +548,15 @@ def initialize_logging(log_level=logging.INFO):
     Setup GCP Stack Driver logging if we are running in App Engine.
     :param log_level: Log level to use.
     """
-    # Configure root logger
-    root_logger = logging.getLogger()
-    root_logger.setLevel(log_level)
-    # Configure StackDriver logging handler
-    log_handler = GCPLoggingHandler()
-    log_handler.setLevel(log_level)
-    # Add StackDriver logging handler to root logger.
-    root_logger.addHandler(log_handler)
-
-
-initialize_logging()
+    if 'GAE_ENV' in os.environ:
+        # Configure root logger
+        root_logger = logging.getLogger()
+        root_logger.setLevel(log_level)
+        # Configure StackDriver logging handler
+        log_handler = GCPLoggingHandler()
+        log_handler.setLevel(log_level)
+        # Add StackDriver logging handler to root logger.
+        root_logger.addHandler(log_handler)
 
 
 def begin_request_logging():
