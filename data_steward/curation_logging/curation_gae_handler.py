@@ -519,9 +519,12 @@ def get_gcp_logger() -> GCPStackDriverLogger:
         return _logger
 
     # We may need to initialize the logger for this thread.
-    _logger = GCPStackDriverLogger()
-    setattr(_thread_store, 'logger', _logger)
-    return _logger
+    if 'GAE_ENV' in os.environ:
+        _logger = GCPStackDriverLogger()
+        setattr(_thread_store, 'logger', _logger)
+        return _logger
+
+    return None
 
 
 class GCPLoggingHandler(logging.Handler):
