@@ -72,26 +72,25 @@ DESIGN:
                         submit      will create an output table
                         debug       will just print output without simulation or submit (runs alone)
 """
-# Python imports
-from copy import copy
-from datetime import datetime
 import json
 import logging
 import os
 import time
+# Python imports
+from copy import copy
+from datetime import datetime
 
+import numpy as np
+import pandas as pd
 # Third party imports
 from google.cloud import bigquery as bq
 from google.oauth2 import service_account
-import numpy as np
-import pandas as pd
 
 # Project imports
 import bq_utils
 import constants.bq_utils as bq_consts
 from parser import parse_args
 from press import Press
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -213,7 +212,7 @@ def create_allowed_states_table(input_dataset, credentials):
     """
 
     map_tablename = input_dataset + "._mapping_src_hpos_to_allowed_states"
-    data = pd.read_csv('deid/config/internal_tables/src_hpos_to_allowed_states.csv')
+    data = pd.read_csv('../deid/config/internal_tables/src_hpos_to_allowed_states.csv')
 
     # write this to bigquery.
     data.to_gbq(map_tablename, credentials=credentials, if_exists='replace')
@@ -335,7 +334,7 @@ class AOU(Press):
 
         :param lower_bound:  The smallest number that may be used as an identifier.
         """
-        map_tablename = "_deid_questionnaire_response_map"
+        map_tablename = self.idataset + "._deid_questionnaire_response_map"
         sql = ("SELECT DISTINCT o.questionnaire_response_id "
                "FROM observation as o "
                "WHERE o.questionnaire_response_id IS NOT NULL "
