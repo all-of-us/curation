@@ -33,3 +33,5 @@ Werkzeug==0.12.2
 enum34==1.1.6
 google-cloud-logging==1.14.0
 google-auth-httplib2==0.0.3
+slackclient==2.3.1
+gunicorn==20.0.2
