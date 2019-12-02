@@ -1,0 +1,18 @@
+runtime: python37
+service: admin
+entrypoint: gunicorn -b :$PORT admin.admin_api:app
+instance_class: B8
+basic_scaling:
+  max_instances: 10
+  idle_timeout: 60m
+
+handlers:
+  - url: /admin/.*
+    secure: always
+    script: auto
+
+env_variables:
+  SLACK_TOKEN: # replace with the slack token 
+  SLACK_CHANNEL: # add the slack channel
+
+
