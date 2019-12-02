@@ -13,8 +13,6 @@ SLACK_CHANNEL = 'SLACK_CHANNEL'
 UNSET_SLACK_TOKEN_MSG = 'Slack token not set in environment variable %s' % SLACK_TOKEN
 UNSET_SLACK_CHANNEL_MSG = 'Slack channel not set in environment variable %s' % SLACK_CHANNEL
 
-LOGGER = logging.getLogger(__name__)
-
 PREFIX = '/admin/v1/'
 REMOVE_EXPIRED_KEYS_RULE = PREFIX + 'RemoveExpiredServiceAccountKeys'
 
