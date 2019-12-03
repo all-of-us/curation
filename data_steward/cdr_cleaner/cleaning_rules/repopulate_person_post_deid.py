@@ -44,6 +44,10 @@ select DISTINCT * from (SELECT
     when 1586142 then 8515 --asian
     when 1586143 then 8516 --black/aa
     when 1586146 then 8527 --white
+    when 903079 then 1177221 --PNA
+    when 1177221 then 1177221 --PNA
+    when 1586148 then 45882607 --None of these
+    when 45882607 then 45882607 --None of these
     --otherwise, just use the standard mapped answer (or 0)
     else coalesce(ob2.value_as_concept_id, 0) 
     end AS race_concept_id,
