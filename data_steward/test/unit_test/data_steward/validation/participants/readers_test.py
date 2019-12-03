@@ -386,3 +386,46 @@ class ReadersTest(unittest.TestCase):
             ),
             None
         )
+
+    @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
+    @patch('validation.participants.readers.bq_utils.query')
+    @unittest.expectedFailure
+    def test_get_ehr_person_values_birthdates(self, mock_query, mock_response):
+        # pre conditions
+        mock_query.return_value = {}
+        column_name = 'birth_datetime'
+        mock_response.return_value = [
+            {
+                consts.PERSON_ID_FIELD: 1,
+                column_name: 16520400.0,
+            },
+            {
+                consts.PERSON_ID_FIELD: 2,
+                column_name: -662670000.0,
+            },
+            {
+                consts.PERSON_ID_FIELD: 3,
+                column_name: 12459600.0,
+            },
+        ]
+
+        # test
+        actual = reader.get_ehr_person_values('project-foo', 'ehr-bar', 'table-doh', column_name)
+
+        # post-conditions
+        expected = {1: '1970-07-11', 2: '1949-01-01', 3: '1970-05-25'}
+        self.assertEqual(actual, expected)
+
+        self.assertEqual(mock_query.call_count, 1)
+        self.assertEqual(mock_response.call_count, 1)
+        self.assertEqual(
+            mock_query.assert_called_with(
+                consts.EHR_PERSON_VALUES.format(
+                    project='project-foo',
+                    dataset='ehr-bar',
+                    table='table-doh',
+                    field=column_name
+                )
+            ),
+            None
+        )
