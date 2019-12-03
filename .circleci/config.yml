@@ -16,7 +16,9 @@ jobs:
           path: ~/curation
       - run:
           name: Allow google cloud to be added as apt repo
-          command: sudo apt install software-properties-common
+          command: |
+            sudo apt-get update
+            sudo apt install software-properties-common
       # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
       - run: mkdir -p $CIRCLE_ARTIFACTS
       - run:
@@ -27,7 +29,10 @@ jobs:
           command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
       - run:
           name: Install google-cloud-sdk
-          command: sudo apt-get update && sudo apt-get install dpkg && sudo apt-get install google-cloud-sdk
+          command: |
+            sudo apt-get update
+            sudo apt-get install dpkg
+            sudo apt-get install google-cloud-sdk
       - run:
           name: Make scripts executable
           command: chmod 700 ./ci/activate_creds.sh && chmod 700 ./ci/setup.sh && chmod 700 ./ci/create_bucket.sh
