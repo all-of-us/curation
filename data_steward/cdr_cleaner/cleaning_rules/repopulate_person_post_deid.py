@@ -53,9 +53,11 @@ select DISTINCT * from (SELECT
   case ob2.value_source_concept_id
     when 0 then 0 --missing answer
     when null then 0 --missing answer
-    when 903079 then 903079 --PNA
+    when 903079 then 1177221 --PNA
+    when 1177221 then 1177221 --PNA
     when 903096 then 903096 --Skip
-    when 1586148 then 1586148 --None of these
+    when 1586148 then 45882607 --None of these
+    when 45882607 then 45882607 --None of these
     --otherwise, it's non-hispanic
     else 38003564
     end
