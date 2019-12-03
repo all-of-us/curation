@@ -36,6 +36,8 @@ REQUEST_LOG_TYPE = 'type.googleapis.com/google.appengine.logging.v1.RequestLog'
 # This is where we save all data that is tied to a specific execution thread.
 _thread_store = threading.local()
 
+_logging_client = gcp_logging_v2.LoggingServiceV2Client()
+
 
 class LogCompletionStatusEnum(IntEnum):
     """
@@ -224,7 +226,7 @@ class GCPStackDriverLogger(object):
 
         self._reset()
 
-        self._logging_client = gcp_logging_v2.LoggingServiceV2Client()
+        self._logging_client = _logging_client
         self._operation_pb2 = None
 
         # Used to determine how long a request took.
@@ -454,6 +456,7 @@ def initialize_logging(log_level=logging.INFO):
         # Configure StackDriver logging handler
         log_handler = GCPLoggingHandler()
         log_handler.setLevel(log_level)
+
         # Add StackDriver logging handler to root logger.
         root_logger.addHandler(log_handler)
 
