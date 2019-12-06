@@ -53,8 +53,7 @@ then
 fi
 
 BIN_PATH="${VENV_PATH}/bin"
-if test -d "${VENV_PATH}/Scripts"
-then
+if [[ "$OSTYPE" == "msys" ]]; then
     # Windows
     BIN_PATH="${VENV_PATH}/Scripts"
 fi
