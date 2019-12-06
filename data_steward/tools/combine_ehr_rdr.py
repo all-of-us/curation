@@ -78,10 +78,11 @@ def ehr_consent_query():
     """
     # Consenting are strictly those whose *most recent* (based on observation_datetime) consent record is YES
     # If the most recent record is NO or NULL, they are NOT consenting
-    return combine_consts.EHR_CONSENT_QUERY.format(dataset_id=bq_utils.get_rdr_dataset_id(),
-                                                   source_value_ehr_consent=combine_consts.SOURCE_VALUE_EHR_CONSENT,
-                                                   concept_id_consent_permission_yes=combine_consts.
-                                                   CONCEPT_ID_CONSENT_PERMISSION_YES)
+    return combine_consts.EHR_CONSENT_QUERY.format(
+        dataset_id=bq_utils.get_rdr_dataset_id(),
+        source_value_ehr_consent=combine_consts.SOURCE_VALUE_EHR_CONSENT,
+        concept_id_consent_permission_yes=combine_consts.CONCEPT_ID_CONSENT_PERMISSION_YES
+    )
 
 
 def assert_tables_in(dataset_id):
@@ -169,20 +170,23 @@ def mapping_query(domain_table):
     :return:
     """
 
-    if combine_consts.PERSON_ID in [field['name'] for field in resources.fields_for(domain_table)]:
-        return combine_consts.MAPPING_QUERY_WITH_PERSON_CHECK.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-                                                                     ehr_dataset_id=bq_utils.get_dataset_id(),
-                                                                     ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
-                                                                     domain_table=domain_table,
-                                                                     mapping_constant=common.RDR_ID_CONSTANT,
-                                                                     ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID)
+    if combine_consts.PERSON_ID in [field.get('name', '') for field in resources.fields_for(domain_table)]:
+        return combine_consts.MAPPING_QUERY_WITH_PERSON_CHECK.format(
+            rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+            ehr_dataset_id=bq_utils.get_dataset_id(),
+            ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+            domain_table=domain_table,
+            mapping_constant=common.RDR_ID_CONSTANT,
+            ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID
+        )
     else:
-        return combine_consts.MAPPING_QUERY_WITHOUT_PERSON_CHECK.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-                                                                        ehr_dataset_id=bq_utils.get_dataset_id(),
-                                                                        ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
-                                                                        domain_table=domain_table,
-                                                                        mapping_constant=common.RDR_ID_CONSTANT
-                                                                        )
+        return combine_consts.MAPPING_QUERY_WITHOUT_PERSON_CHECK.format(
+            rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+            ehr_dataset_id=bq_utils.get_dataset_id(),
+            ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+            domain_table=domain_table,
+            mapping_constant=common.RDR_ID_CONSTANT
+        )
 
 
 def mapping_table_for(domain_table):
