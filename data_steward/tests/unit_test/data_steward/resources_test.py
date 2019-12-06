@@ -41,6 +41,3 @@ class ResourcesTest(unittest.TestCase):
         result_vocab_tables = [table_name for table_name in table_names if table_name in resources.VOCABULARY_TABLES]
         self.assertCountEqual([], result_vocab_tables,
                              msg='Vocabulary tables %s should not be in result of cdm_schemas()' % result_vocab_tables)
-
-    def tearDown(self):
-        super(ResourcesTest, self).tearDown()
