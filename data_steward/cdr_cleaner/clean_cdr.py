@@ -19,6 +19,7 @@ import cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters as p
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
+import cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency as fix_datetimes
 import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
@@ -100,6 +101,7 @@ def _gather_ehr_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     query_list = []
     query_list.extend(replace_standard_concept_ids.replace_standard_id_in_domain_tables(project_id, dataset_id))
     query_list.extend(domain_alignment.domain_alignment(project_id, dataset_id))
+    query_list.extend(drop_participants_without_ppi_or_ehr.get_queries(project_id, dataset_id))
     query_list.extend(id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
     query_list.extend(clean_years.get_year_of_birth_queries(project_id, dataset_id))
     query_list.extend(neg_ages.get_negative_ages_queries(project_id, dataset_id))

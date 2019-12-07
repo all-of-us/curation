@@ -8,27 +8,13 @@ Run the person_id validation clean rule.
 """
 import logging
 
+import common
+from cdr_cleaner.cleaning_rules import drop_rows_for_missing_persons
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as clean_consts
 import resources
 
 LOGGER = logging.getLogger(__name__)
-
-MAPPED_VALIDATION_TABLES = [
-    'visit_occurrence',
-    'condition_occurrence',
-    'drug_exposure',
-    'measurement',
-    'procedure_occurrence',
-    'observation',
-    'device_exposure',
-    'specimen',
-]
-
-UNMAPPED_VALIDATION_TABLES = [
-    # mapping tables do not exist for the following tables
-    'death',
-]
 
 # The below query translates to:
 # Find all consented participants.
@@ -73,14 +59,6 @@ EXISTING_AND_VALID_CONSENTING_RECORDS = (
     'JOIN ppi_mappings AS maps ON maps.{table}_id = entry.{table}_id '
 )
 
-# Select rows where the person_id is in the person table
-SELECT_EXISTING_PERSON_IDS = (
-    'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
-    'JOIN `{project}.{dataset}.person` AS person '
-    'ON entry.person_id = person.person_id'
-)
-
-
 def get_person_id_validation_queries(project=None, dataset=None):
     """
     Return query list of queries to ensure valid people are in the tables.
@@ -102,7 +80,7 @@ def get_person_id_validation_queries(project=None, dataset=None):
         mapping_ds = dataset
 
     # generate queries to remove EHR records of non-ehr consented persons
-    for table in MAPPED_VALIDATION_TABLES:
+    for table in common.MAPPED_VALIDATION_TABLES:
         field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
         fields = ', '.join(field_names)
         consent_query = EXISTING_AND_VALID_CONSENTING_RECORDS.format(
@@ -121,25 +99,8 @@ def get_person_id_validation_queries(project=None, dataset=None):
         }
         query_list.append(query_dict)
 
-    all_tables = MAPPED_VALIDATION_TABLES
-    all_tables.extend(UNMAPPED_VALIDATION_TABLES)
-
     # generate queries to remove person_ids of people not in the person table
-    for table in all_tables:
-        field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
-        fields = ', '.join(field_names)
-
-        delete_query = SELECT_EXISTING_PERSON_IDS.format(
-            project=project, dataset=dataset, table=table, fields=fields
-        )
-
-        query_dict = {
-            clean_consts.QUERY: delete_query,
-            clean_consts.DESTINATION_TABLE: table,
-            clean_consts.DESTINATION_DATASET: dataset,
-            clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-        }
-        query_list.append(query_dict)
+    query_list.extend(drop_rows_for_missing_persons.get_queries(project, dataset))
 
     return query_list
 

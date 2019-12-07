@@ -5,8 +5,10 @@ import unittest
 # Third party imports
 
 # Project imports
+import common
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as clean_consts
+from cdr_cleaner.cleaning_rules import drop_rows_for_missing_persons
 from cdr_cleaner.cleaning_rules import person_id_validator as validator
 import resources
 
@@ -20,8 +22,8 @@ class PersonIDValidatorTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.mapped_tables = copy.copy(validator.MAPPED_VALIDATION_TABLES)
-        self.unmapped_tables = copy.copy(validator.UNMAPPED_VALIDATION_TABLES)
+        self.mapped_tables = copy.copy(common.MAPPED_VALIDATION_TABLES)
+        self.unmapped_tables = copy.copy(common.UNMAPPED_VALIDATION_TABLES)
         self.all_tables = copy.copy(self.mapped_tables)
         self.all_tables.extend(self.unmapped_tables)
 
@@ -35,7 +37,7 @@ class PersonIDValidatorTest(unittest.TestCase):
         self.assertEqual(len(results), ((len(self.all_tables) * 2) - 1))
 
         existing_and_consenting = validator.EXISTING_AND_VALID_CONSENTING_RECORDS
-        existing_in_person_table = validator.SELECT_EXISTING_PERSON_IDS
+        existing_in_person_table = drop_rows_for_missing_persons.SELECT_EXISTING_PERSON_IDS
 
         expected = []
         for table in self.mapped_tables:
