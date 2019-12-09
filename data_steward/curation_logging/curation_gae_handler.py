@@ -1,3 +1,6 @@
+"""
+The code is based off of the RDR gcp_logging.py at https://github.com/all-of-us/raw-data-repository/blob/1.60.6/rdr_service/services/gcp_logging.py
+"""
 import collections
 import json
 import logging
@@ -35,8 +38,6 @@ REQUEST_LOG_TYPE = 'type.googleapis.com/google.appengine.logging.v1.RequestLog'
 
 # This is where we save all data that is tied to a specific execution thread.
 _thread_store = threading.local()
-
-_logging_client = gcp_logging_v2.LoggingServiceV2Client()
 
 
 class LogCompletionStatusEnum(IntEnum):
@@ -226,7 +227,7 @@ class GCPStackDriverLogger(object):
 
         self._reset()
 
-        self._logging_client = _logging_client
+        self._logging_client = gcp_logging_v2.LoggingServiceV2Client()
         self._operation_pb2 = None
 
         # Used to determine how long a request took.
@@ -430,14 +431,17 @@ def get_gcp_logger() -> GCPStackDriverLogger:
 
 class GCPLoggingHandler(logging.Handler):
 
+    def __init__(self):
+        super().__init__()
+        self._logger = get_gcp_logger()
+
     def emit(self, record: logging.LogRecord):
         """
         Capture and store a log event record.
         :param record: Python log record
         """
-        _logger = get_gcp_logger()
-        if _logger:
-            _logger.log_event(record)
+        if self._logger:
+            self._logger.log_event(record)
             return
 
         line = setup_log_line(record)
