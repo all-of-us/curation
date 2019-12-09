@@ -36,8 +36,6 @@ from curation_logging.curation_gae_handler import begin_request_logging, end_req
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
-logging.getLogger(__name__).setLevel(logging.INFO)
-
 
 class InternalValidationError(RuntimeError):
     """Raised when an internal error occurs during validation"""
@@ -399,7 +397,7 @@ def process_hpo(hpo_id, force_run=False):
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         logging.warning('Bucket `%s` configured for hpo_id `%s` does not exist',
-                     bucket, hpo_id)
+                        bucket, hpo_id)
     except HttpError as http_error:
         message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (hpo_id,
                                                                                          http_error.content.decode())
