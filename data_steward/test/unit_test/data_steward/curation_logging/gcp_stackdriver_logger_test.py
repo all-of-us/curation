@@ -3,6 +3,7 @@ import logging
 from mock import patch
 from mock import MagicMock, PropertyMock
 from datetime import datetime, timedelta
+from logging import LogRecord
 import pytz
 import mock
 from google.api.monitored_resource_pb2 import MonitoredResource
@@ -67,11 +68,11 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
         # Define the log records for testing
         self.file_path = 'data_steward/validation/main'
         self.file_name = 'main'
-        self.info_log_record = self.create_log_record(self.log_record_created, logging.INFO, self.file_name,
+        self.info_log_record = self.create_log_record('info', self.log_record_created, logging.INFO, self.file_name,
                                                       self.file_path, 10, 'info message')
-        self.debug_log_record = self.create_log_record(self.log_record_created, logging.DEBUG, self.file_name,
+        self.debug_log_record = self.create_log_record('debug', self.log_record_created, logging.DEBUG, self.file_name,
                                                        self.file_path, 11, 'debug message')
-        self.error_log_record = self.create_log_record(self.log_record_created, logging.ERROR, self.file_name,
+        self.error_log_record = self.create_log_record('error', self.log_record_created, logging.ERROR, self.file_name,
                                                        self.file_path, 12, 'error message')
 
         self.info_log_line = {
@@ -116,15 +117,18 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
         self.request.stop()
 
     @staticmethod
-    def create_log_record(record_created, levelno, funcName, pathname, lineno, msg):
-        log_record_magic = MagicMock()
-        type(log_record_magic).created = PropertyMock(return_value=record_created)
-        type(log_record_magic).levelno = PropertyMock(return_value=levelno)
-        type(log_record_magic).funcName = PropertyMock(return_value=funcName)
-        type(log_record_magic).pathname = PropertyMock(return_value=pathname)
-        type(log_record_magic).lineno = PropertyMock(return_value=lineno)
-        type(log_record_magic).msg = PropertyMock(return_value=msg)
-        return log_record_magic
+    def create_log_record(name, record_created, level_no, func_name, pathname, lineno, msg):
+        log_record = LogRecord(name=name,
+                               levelno=level_no,
+                               lineno=lineno,
+                               func=func_name,
+                               pathname=pathname,
+                               msg=msg,
+                               level=level_no,
+                               args={},
+                               exc_info={})
+        log_record.created = record_created
+        return log_record
 
     @mock.patch('data_steward.curation_logging.curation_gae_handler.datetime')
     def test_gcp_stackdriver_logger(self, mock_datetime):
@@ -171,7 +175,7 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
             logging.info(self.info_log_record)
             logging.debug(self.debug_log_line)
             logging.error(self.error_log_record)
-            self.assertEqual(2, mock_get_gcp_logger.call_count)
+            self.assertEqual(1, mock_get_gcp_logger.call_count)
 
     @mock.patch('requests.get')
     def test_setup_logging_zone(self, mock_requests_get):
