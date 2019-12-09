@@ -3,15 +3,11 @@ import csv
 import os
 import time
 import unittest
-from datetime import datetime
 from io import open
-
-import mock
 
 import bq_utils
 import common
 import app_identity
-from constants import bq_utils as bq_utils_consts
 import gcs_utils
 import resources
 from tests import test_util
@@ -107,8 +103,6 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(tpe, 'DAY')
 
     def test_load_csv(self):
-        import app_identity
-
         app_id = app_identity.get_application_id()
         table_name = 'achilles_analysis'
         schema_file_name = table_name + '.json'
@@ -116,7 +110,7 @@ class BqUtilsTest(unittest.TestCase):
         schema_path = os.path.join(resources.fields_path, schema_file_name)
         local_csv_path = os.path.join(test_util.TEST_DATA_EXPORT_PATH, csv_file_name)
         with open(local_csv_path, 'rb') as fp:
-            response = gcs_utils.upload_object(self.hpo_bucket, csv_file_name, fp)
+            _ = gcs_utils.upload_object(self.hpo_bucket, csv_file_name, fp)
         hpo_bucket = self.hpo_bucket
         gcs_object_path = 'gs://%(hpo_bucket)s/%(csv_file_name)s' % locals()
         dataset_id = self.dataset_id
@@ -141,10 +135,6 @@ class BqUtilsTest(unittest.TestCase):
         table_info = bq_utils.get_table_info(table_id)
         num_rows = table_info.get('numRows')
         self.assertEqual(num_rows, '5')
-
-    def test_load_cdm_csv_error_on_bad_table_name(self):
-        with self.assertRaises(ValueError) as cm:
-            bq_utils.load_cdm_csv(FAKE_HPO_ID, 'not_a_cdm_table')
 
     def test_query_result(self):
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
@@ -172,13 +162,12 @@ class BqUtilsTest(unittest.TestCase):
         result = bq_utils.load_cdm_csv('pitt', 'person')
         running_jobs.append(result['jobReference']['jobId'])
 
-        nyc_person_ids = [int(row['person_id'])
-                          for row in
-                          resources.csv_to_list(NYC_FIVE_PERSONS_PERSON_CSV)]
-        pitt_person_ids = [int(row['person_id'])
-                           for row in resources.csv_to_list(
-                PITT_FIVE_PERSONS_PERSON_CSV
-            )]
+        nyc_person_ids = [
+            int(row['person_id']) for row in resources.csv_to_list(NYC_FIVE_PERSONS_PERSON_CSV)
+        ]
+        pitt_person_ids = [
+            int(row['person_id']) for row in resources.csv_to_list(PITT_FIVE_PERSONS_PERSON_CSV)
+        ]
         expected_result = nyc_person_ids + pitt_person_ids
         expected_result.sort()
 
@@ -207,15 +196,14 @@ class BqUtilsTest(unittest.TestCase):
 
     def test_merge_bad_table_names(self):
         table_ids = ['nyc_person_foo', 'pitt_person_foo']
-        success_flag, error_msg = bq_utils.merge_tables(
+        success_flag, _ = bq_utils.merge_tables(
             self.dataset_id,
             table_ids,
             self.dataset_id,
             'merged_nyc_pitt'
         )
 
-        # print error_msg
-        assert (not success_flag)
+        self.assertFalse(success_flag)
 
     def test_merge_with_unmatched_schema(self):
         running_jobs = []
@@ -234,7 +222,7 @@ class BqUtilsTest(unittest.TestCase):
                          'loading tables {},{} timed out'.format('nyc_measurement', 'pitt_person'))
 
         table_names = ['nyc_measurement', 'pitt_person']
-        success, error = bq_utils.merge_tables(
+        success, _ = bq_utils.merge_tables(
             self.dataset_id,
             table_names,
             self.dataset_id,
@@ -257,7 +245,7 @@ class BqUtilsTest(unittest.TestCase):
         fields = [dict(name='id', type='integer', mode='required'),
                   dict(name='name', type='string', mode='nullable')]
         bq_utils.create_table(table_id, fields)
-        with self.assertRaises(bq_utils.InvalidOperationError) as cm:
+        with self.assertRaises(bq_utils.InvalidOperationError):
             bq_utils.create_table(table_id, fields, drop_existing=False)
 
     def test_create_table_drop_existing_success(self):
@@ -283,45 +271,6 @@ class BqUtilsTest(unittest.TestCase):
             # sanity check
             self.assertTrue(bq_utils.table_exists(table_id))
 
-    @mock.patch('bq_utils.job_status_done', lambda x: True)
-    def test_wait_on_jobs_already_done(self):
-        job_ids = range(3)
-        actual = bq_utils.wait_on_jobs(job_ids)
-        expected = []
-        self.assertEqual(actual, expected)
-
-    @mock.patch('time.sleep', return_value=None)
-    @mock.patch('bq_utils.job_status_done', return_value=False)
-    def test_wait_on_jobs_all_fail(self, mock_job_status_done, mock_time_sleep):
-        job_ids = list(range(3))
-        actual = bq_utils.wait_on_jobs(job_ids)
-        expected = job_ids
-        self.assertEqual(actual, expected)
-        # TODO figure out how to count this
-        # self.assertEquals(mock_time_sleep.call_count, bq_utils.BQ_DEFAULT_RETRY_COUNT)
-
-    @mock.patch('time.sleep', return_value=None)
-    @mock.patch('bq_utils.job_status_done', side_effect=[False, False, False, True, False, False, True, True, True])
-    def test_wait_on_jobs_get_done(self, mock_job_status_done, mock_time_sleep):
-        job_ids = list(range(3))
-        actual = bq_utils.wait_on_jobs(job_ids)
-        expected = []
-        self.assertEqual(actual, expected)
-
-    @mock.patch('time.sleep', return_value=None)
-    @mock.patch('bq_utils.job_status_done', side_effect=[False, False, True, False, False, False, False,
-                                                         False, False, False, False, False])
-    def test_wait_on_jobs_some_fail(self, mock_job_status_done, mock_time_sleep):
-        job_ids = list(range(2))
-        actual = bq_utils.wait_on_jobs(job_ids)
-        expected = [1]
-        self.assertEqual(actual, expected)
-
-    def test_wait_on_jobs_retry_count(self):
-        # TODO figure out how to count this
-        # self.assertEquals(mock_time_sleep.call_count, bq_utils.BQ_DEFAULT_RETRY_COUNT)
-        pass
-
     def test_load_ehr_observation(self):
         hpo_id = 'pitt'
         dataset_id = self.dataset_id
@@ -346,31 +295,6 @@ class BqUtilsTest(unittest.TestCase):
         self.assertIsNone(query_job_errors)
         actual_result = [int(row['f'][0]['v']) for row in query_results_response['rows']]
         self.assertCountEqual(actual_result, expected_observation_ids)
-
-    @mock.patch('bq_utils.os.environ.get')
-    def test_get_validation_results_dataset_id_not_existing(self, mock_env_var):
-        # preconditions
-        mock_env_var.return_value = bq_utils_consts.BLANK
-
-        # test
-        result_id = bq_utils.get_validation_results_dataset_id()
-
-        # post conditions
-        date_string = datetime.now().strftime(bq_utils_consts.DATE_FORMAT)
-        expected = bq_utils_consts.VALIDATION_DATASET_FORMAT.format(date_string)
-        self.assertEqual(result_id, expected)
-
-    @mock.patch('bq_utils.os.environ.get')
-    def test_get_validation_results_dataset_id_existing(self, mock_env_var):
-        # preconditions
-        mock_env_var.return_value = 'dataset_foo'
-
-        # test
-        result_id = bq_utils.get_validation_results_dataset_id()
-
-        # post conditions
-        expected = 'dataset_foo'
-        self.assertEqual(result_id, expected)
 
     def test_load_table_from_csv(self):
         table_id = 'test_csv_table'
