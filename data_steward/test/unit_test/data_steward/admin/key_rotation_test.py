@@ -74,10 +74,11 @@ class KeyRotationTest(unittest.TestCase):
         today = datetime.datetime.now()
 
         yesterday = today - datetime.timedelta(days=1)
-        ok_key = {'validAfterTime':  yesterday.strftime(key_rotation.GCP_DTM_FMT)}
+        ok_key = {'validAfterTime': yesterday.strftime(key_rotation.GCP_DTM_FMT)}
         self.assertFalse(key_rotation.is_key_expired_after_period(ok_key))
 
-        in_alert = today - datetime.timedelta(days=key_rotation.KEY_EXPIRE_DAYS - key_rotation.KEY_EXPIRE_ALERT_DAYS + 1)
+        in_alert = today - datetime.timedelta(
+            days=key_rotation.KEY_EXPIRE_DAYS - key_rotation.KEY_EXPIRE_ALERT_DAYS + 1)
         expiring_key = {'validAfterTime': in_alert.strftime(key_rotation.GCP_DTM_FMT)}
         self.assertTrue(key_rotation.is_key_expired_after_period(expiring_key))
 
@@ -96,7 +97,7 @@ class KeyRotationTest(unittest.TestCase):
         mock_service_account_key_delete = mock_iam_service.return_value.projects.return_value. \
             serviceAccounts.return_value.keys.return_value.delete
         mock_service_account_key_delete.return_value.execute.side_effect = [dict(), HttpError(mock.Mock(status=404),
-                                                                                              'not found'.encode('utf-8'))]
+                                                                                              b'not found')]
 
         key_rotation.delete_key(key)
         mock_service_account_key_delete.assert_called_once_with(name='key-1')
