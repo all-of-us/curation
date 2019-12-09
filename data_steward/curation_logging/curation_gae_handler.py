@@ -1,6 +1,12 @@
-"""
-The code is based off of the RDR gcp_logging.py at https://github.com/all-of-us/raw-data-repository/blob/1.60.6/rdr_service/services/gcp_logging.py
-"""
+"""In GAE py2 request logs are automatically correlated to app logs in StackDriver when using the standard logging
+libraries. This is no longer the case in GAE py3. Although GAE py3 provides the stderr logger by default,
+it prints every single line as a separate long entry, in particular the query logs span multiple log entries in
+StackDriver logger, making it really hard to find anything. The RDR team informed us that we’d need to configure our
+flask app to use the Google Cloud Logging API- something provided out-of-box in GAE py2 but no longer in py3. They
+pointed us to the log handler RDR wrote at at
+https://github.com/all-of-us/raw-data-repository/blob/1.60.6/rdr_service/services /gcp_logging.py. This custom
+handler groups all the log messages generated within the same http request into an operation, this grouping
+mechnisam allows us to quickly navigate to the relevant log message."""
 import collections
 import json
 import logging
@@ -431,9 +437,9 @@ def get_gcp_logger() -> GCPStackDriverLogger:
 
 class GCPLoggingHandler(logging.Handler):
 
-    def __init__(self):
+    def __init__(self, _logger):
         super().__init__()
-        self._logger = get_gcp_logger()
+        self._logger = _logger
 
     def emit(self, record: logging.LogRecord):
         """
@@ -458,7 +464,7 @@ def initialize_logging(log_level=logging.INFO):
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
         # Configure StackDriver logging handler
-        log_handler = GCPLoggingHandler()
+        log_handler = GCPLoggingHandler(get_gcp_logger())
         log_handler.setLevel(log_level)
 
         # Add StackDriver logging handler to root logger.
