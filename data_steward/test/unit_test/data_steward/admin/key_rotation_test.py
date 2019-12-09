@@ -96,7 +96,7 @@ class KeyRotationTest(unittest.TestCase):
         mock_service_account_key_delete = mock_iam_service.return_value.projects.return_value. \
             serviceAccounts.return_value.keys.return_value.delete
         mock_service_account_key_delete.return_value.execute.side_effect = [dict(), HttpError(mock.Mock(status=404),
-                                                                                              'not found')]
+                                                                                              'not found'.encode('utf-8'))]
 
         key_rotation.delete_key(key)
         mock_service_account_key_delete.assert_called_once_with(name='key-1')
