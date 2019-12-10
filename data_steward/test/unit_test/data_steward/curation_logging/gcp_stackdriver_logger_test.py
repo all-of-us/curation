@@ -154,7 +154,8 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
         self.gcp_stackdriver_logger.log_event(self.debug_log_record)
         self.gcp_stackdriver_logger.log_event(self.error_log_record)
 
-        self.assertEqual(len(self.gcp_stackdriver_logger._buffer), 0)
+        self.assertEqual(len(self.gcp_stackdriver_logger._buffer), 0,
+                         'expected log buffer to flush itself after being filled')
         self.assertEqual(self.mock_logging_service_client.return_value.write_log_entries.call_count, 1)
 
         self.gcp_stackdriver_logger.finalize()
