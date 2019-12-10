@@ -7,7 +7,7 @@ WHITESPACE = '[\t\n\\s]+'
 SPACE = ' '
 
 
-class RetractDataGcsTest(unittest.TestCase):
+class SnapshotByQueryTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
