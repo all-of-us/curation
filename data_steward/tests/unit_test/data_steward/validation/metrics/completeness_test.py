@@ -18,7 +18,6 @@ class CompletenessTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_id = 'nyc_cu'
-        self.dataset_id = bq_utils.get_dataset_id()
 
     def test_is_omop_col(self):
         col = dict()
@@ -43,25 +42,25 @@ class CompletenessTest(unittest.TestCase):
     @patch('validation.participants.writers.bq_utils.query')
     def test_get_cols(self, mock_query):
         cols = [
-                {
-                    'column_name': 'condition_start_datetime',
-                    'concept_zero_count': 0,
-                    'null_count': 0,
-                    'omop_table_name': 'condition_occurrence',
-                    'percent_populated': 1.0,
-                    'table_name': 'nyc_cu_condition_occurrence',
-                    'table_row_count': 2105898
-                },
-                {
-                    'column_name': 'visit_occurrence_id',
-                    'concept_zero_count': 0,
-                    'null_count': None,
-                    'omop_table_name': 'condition_occurrence',
-                    'percent_populated': None,
-                    'table_name': 'nyc_cu_condition_occurrence',
-                    'table_row_count': 0
-                }
-            ]
+            {
+                'column_name': 'condition_start_datetime',
+                'concept_zero_count': 0,
+                'null_count': 0,
+                'omop_table_name': 'condition_occurrence',
+                'percent_populated': 1.0,
+                'table_name': 'nyc_cu_condition_occurrence',
+                'table_row_count': 2105898
+            },
+            {
+                'column_name': 'visit_occurrence_id',
+                'concept_zero_count': 0,
+                'null_count': None,
+                'omop_table_name': 'condition_occurrence',
+                'percent_populated': None,
+                'table_name': 'nyc_cu_condition_occurrence',
+                'table_row_count': 0
+            }
+        ]
         dataset_id = 'some_dataset_id'
         completeness.get_cols(dataset_id)
         self.assertEqual(mock_query.call_count, 1)
@@ -75,7 +74,7 @@ class CompletenessTest(unittest.TestCase):
     def test_create_completeness_query(self):
         dataset_id = 'some_dataset_id'
         table_name = 'hpo1_condition_occurrence'
-        omop_table_name = 'condition_occurrence',
+        omop_table_name = 'condition_occurrence'
         table_row_count = 100
         col1_name = 'condition_occurrence_id'
         col2_name = 'condition_concept_id'
