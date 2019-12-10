@@ -1,10 +1,13 @@
 """
-Run the person_id validation clean rule.
+Run the drop_participants_without_ppi_or_ehr validation clean rule.
 
-1.  The person_id in each of the defined tables exists in the person table.
-    If not valid, remove the record.
-2.  The person_id is consenting.  If not consenting, remove EHR records.
-    Keep PPI records.
+Drops all data for participants who:
+  1. have not completed "The Basics" PPI module, via the RDR
+  2. do not have any EHR data
+
+(1) is achieved by checking the observation table for children of TheBasics
+module. (2) is achieved by checking all mapping tables for all person_id tables,
+to confirm whether any data is sourced from EHR per participant.
 """
 import logging
 
