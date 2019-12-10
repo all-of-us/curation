@@ -1,12 +1,7 @@
-"""In GAE py2 request logs are automatically correlated to app logs in StackDriver when using the standard logging
-libraries. This is no longer the case in GAE py3. Although GAE py3 provides the stderr logger by default,
-it prints every single line as a separate long entry, in particular the query logs span multiple log entries in
-StackDriver logger, making it really hard to find anything. The RDR team informed us that we’d need to configure our
-flask app to use the Google Cloud Logging API- something provided out-of-box in GAE py2 but no longer in py3. They
-pointed us to the log handler RDR wrote at at
-https://github.com/all-of-us/raw-data-repository/blob/1.60.6/rdr_service/services/gcp_logging.py. This custom
-handler groups all the log messages generated within the same http request into an operation, this grouping
-mechnisam allows us to quickly navigate to the relevant log message."""
+"""Based closely on
+https://github.com/all-of-us/raw-data-repository/blob/1.60.6/rdr_service/services/gcp_logging.py. This custom handler
+groups all the log messages generated within the same http request into an operation, this grouping mechanism allows
+us to quickly navigate to the relevant log message. """
 import collections
 import json
 import logging
