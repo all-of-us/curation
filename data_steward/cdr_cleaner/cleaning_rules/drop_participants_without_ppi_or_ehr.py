@@ -70,12 +70,12 @@ def get_queries(project=None, dataset=None):
     fields = ', '.join(field_names)
 
     ehr_joins = ""
-    for t in common.MAPPED_VALIDATION_TABLES:
+    for t in common.MAPPED_CLINICAL_DATA_TABLES:
         ehr_joins += JOIN_EHR_PERSON_IDS_TEMPLATE.format(
             project=project, dataset=dataset, table=t,
             id_column=resources.get_domain_id_field(t))
     has_ehr_predicate = ' OR '.join(
-        ['{}.person_id IS NOT NULL'.format(t) for t in common.MAPPED_VALIDATION_TABLES])
+        ['{}.person_id IS NOT NULL'.format(t) for t in common.MAPPED_CLINICAL_DATA_TABLES])
 
     delete_query = SELECT_PERSON_WITH_BASICS_OR_EHR.format(
         project=project, dataset=dataset, fields=fields,
@@ -90,3 +90,25 @@ def get_queries(project=None, dataset=None):
         clean_consts.DESTINATION_DATASET: dataset,
         clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
     }] + drop_rows_for_missing_persons.get_queries(project, dataset)
+
+
+if __name__ == '__main__':
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-p', '--project_id',
+                        action='store', dest='project_id',
+                        help='Identifies the project to fix the data in.',
+                        required=True)
+    parser.add_argument('-d', '--dataset_id',
+                        action='store', dest='dataset_id',
+                        help='Identifies the dataset to apply the fix on.',
+                        required=True)
+    parser.add_argument('-l', '--console_log', dest='console_log', action='store_true',
+                        help='Send logs to console')
+
+    ARGS = parser.parse_args()
+
+    clean_engine.add_console_logging(ARGS.console_log)
+    query_list = get_queries(ARGS.project_id, ARGS.dataset_id)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

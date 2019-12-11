@@ -80,7 +80,7 @@ def get_person_id_validation_queries(project=None, dataset=None):
         mapping_ds = dataset
 
     # generate queries to remove EHR records of non-ehr consented persons
-    for table in common.MAPPED_VALIDATION_TABLES:
+    for table in common.MAPPED_CLINICAL_DATA_TABLES:
         field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
         fields = ', '.join(field_names)
         consent_query = EXISTING_AND_VALID_CONSENTING_RECORDS.format(

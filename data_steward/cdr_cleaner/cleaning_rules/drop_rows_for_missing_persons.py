@@ -1,5 +1,6 @@
-import clean_consts
 import common
+from constants.cdr_cleaner import clean_cdr as clean_consts
+from constants import bq_utils as bq_consts
 import resources
 
 # Select rows where the person_id is in the person table
@@ -20,8 +21,7 @@ def get_queries(project=None, dataset=None):
         other tables for non-person users.
     """
     query_list = []
-    # XXX: Is this the same as all PID tables?
-    for table in common.MAPPED_VALIDATION_TABLES + common.UNMAPPED_VALIDATION_TABLES:
+    for table in common.CLINICAL_DATA_TABLES:
         field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
         fields = ', '.join(field_names)
 
