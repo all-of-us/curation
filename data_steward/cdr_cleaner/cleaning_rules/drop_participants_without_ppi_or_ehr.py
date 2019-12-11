@@ -23,7 +23,7 @@ BASICS_MODULE_CONCEPT_ID = 1586134
 
 SELECT_PERSON_WITH_BASICS_OR_EHR = """
 SELECT {fields}
-FROM `{project}.{dataset}.{table}` person
+FROM `{project}.{dataset}.person` person
 LEFT JOIN (
   SELECT DISTINCT o.person_id
   FROM `{project}.{dataset}.concept_ancestor`
@@ -75,10 +75,10 @@ def get_queries(project=None, dataset=None):
             project=project, dataset=dataset, table=t,
             id_column=resources.get_domain_id_field(t))
     has_ehr_predicate = ' OR '.join(
-        ['{}.person_id IS NOT NULL'.format(t) for t in MAPPED_VALIDATION_TABLES])
+        ['{}.person_id IS NOT NULL'.format(t) for t in common.MAPPED_VALIDATION_TABLES])
 
-    delete_query = SELECT_EXISTING_PERSON_IDS.format(
-        project=project, dataset=dataset, table=table, fields=fields,
+    delete_query = SELECT_PERSON_WITH_BASICS_OR_EHR.format(
+        project=project, dataset=dataset, fields=fields,
         ehr_joins=ehr_joins, has_ehr_predicate=has_ehr_predicate,
         basics_module_concept_id=BASICS_MODULE_CONCEPT_ID
     )
