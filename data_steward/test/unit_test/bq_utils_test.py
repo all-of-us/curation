@@ -41,6 +41,14 @@ class BqUtilsTest(unittest.TestCase):
                 "mode": "required",
                 "description": "An integer field"
             },
+            # DC-586 Import RDR rules should support null fields
+            # TODO refactor for all other types or use external library
+            {
+                "type": "integer",
+                "name": "nullable_integer_field",
+                "mode": "nullable",
+                "description": "A nullable integer field"
+            },
             {
                 "type": "string",
                 "name": "string_field",
@@ -384,15 +392,6 @@ class BqUtilsTest(unittest.TestCase):
         actual.sort(key=lambda row: row['integer_field'])
         for i, _ in enumerate(expected):
             self.assertCountEqual(expected[i], actual[i])
-
-    def test_load_smoking_lookup(self):
-        # DC-586 Import RDR rules should support null fields
-        from cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi import SMOKING_LOOKUP_TABLE, SMOKING_LOOKUP_FIELDS
-        bq_utils.load_table_from_csv('fake-project',
-                                     'fake-dataset',
-                                     SMOKING_LOOKUP_TABLE,
-                                     csv_path=None,
-                                     fields=SMOKING_LOOKUP_FIELDS)
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)

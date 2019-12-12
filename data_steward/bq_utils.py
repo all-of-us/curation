@@ -739,6 +739,24 @@ def create_dataset(
     return insert_result
 
 
+def marshal_row(row_dict, fields):
+    """
+    Convert the types of a csv row (dict) based on a fields spec
+
+    :param row_dict: key value pairs (str, str) extracted from csv file
+    :param fields: bigquery fields spec
+    :return: the input row with typed values
+    """
+    converted_dict = dict()
+    for k, v in row_dict.items():
+        for field in fields:
+            if field['name'] == k and field['type'] == 'integer':
+                converted_dict[k] = int(v)
+            else:
+                converted_dict[k] = v
+    return converted_dict
+
+
 def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, fields=None):
     """
     Loads BQ table from a csv file without making use of GCS buckets
@@ -770,13 +788,7 @@ def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, field
 
     pair_exprs = []
     for mapping_dict in table_list:
-        converted_dict = dict()
-        for k, v in mapping_dict.items():
-            for field in fields:
-                if field['name'] == k and field['type'] == 'integer':
-                    converted_dict[k] = int(v)
-                else:
-                    converted_dict[k] = v
+        converted_dict = marshal_row(mapping_dict, fields)
         pair_expr = insert_format_vals.format(**converted_dict)
         pair_exprs.append(pair_expr)
     formatted_mapping_list = ', '.join(pair_exprs)
