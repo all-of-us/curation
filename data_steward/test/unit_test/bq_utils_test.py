@@ -385,6 +385,15 @@ class BqUtilsTest(unittest.TestCase):
         for i, _ in enumerate(expected):
             self.assertCountEqual(expected[i], actual[i])
 
+    def test_load_smoking_lookup(self):
+        # DC-586 Import RDR rules should support null fields
+        from cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi import SMOKING_LOOKUP_TABLE, SMOKING_LOOKUP_FIELDS
+        bq_utils.load_table_from_csv('fake-project',
+                                     'fake-dataset',
+                                     SMOKING_LOOKUP_TABLE,
+                                     csv_path=None,
+                                     fields=SMOKING_LOOKUP_FIELDS)
+
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
         self._empty_bucket()
