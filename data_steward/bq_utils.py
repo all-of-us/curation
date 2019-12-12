@@ -739,22 +739,29 @@ def create_dataset(
     return insert_result
 
 
-def marshal_row(row_dict, fields):
+def get_sql_row_expr(row: dict, fields: list):
     """
-    Convert the types of a csv row (dict) based on a fields spec
+    Get appropriate SQL expression for a row based on fields spec
 
-    :param row_dict: key value pairs (str, str) extracted from csv file
+    :param row: csv row with untyped values
     :param fields: bigquery fields spec
-    :return: the input row with typed values
+    :return: format string for row object
     """
-    converted_dict = dict()
-    for k, v in row_dict.items():
-        for field in fields:
-            if field['name'] == k and field['type'] == 'integer':
-                converted_dict[k] = int(v)
-            else:
-                converted_dict[k] = v
-    return converted_dict
+    val_exprs = []
+    # TODO refactor for all other types or use external library
+    for field_name, val in row.items():
+        field = next(filter(lambda f: f['name'] == field_name, fields), None)
+        if field is None:
+            raise InvalidOperationError(f'Unable to marshal {val}: field "{field_name}" was not found')
+        if not val and field['mode'] == 'nullable':
+            val_expr = "NULL"
+        elif field['type'] in ['string', 'date', 'timestamp']:
+            val_expr = f"'{val}'"
+        else:
+            val_expr = f"{val}"
+        val_exprs.append(val_expr)
+    cols = ','.join(val_exprs)
+    return f'({cols})'
 
 
 def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, fields=None):
@@ -779,19 +786,11 @@ def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, field
         fields = json.load(open(fields_filename, 'r'))
     field_names = ', '.join([field['name'] for field in fields])
 
-    # template for formatted values.
-    # string, dates and timestamps can be passed as string
-    # integer, float and boolean need to be passed without string quotes
-    insert_format_vals = '({cols})'.format(cols=', '.join(['"{' + field['name'] + '}"' if field["type"] == 'string'
-                                                           or field["type"] == 'date' or field["type"] == 'timestamp'
-                                                           else '{' + field['name'] + '}' for field in fields]))
-
-    pair_exprs = []
+    row_exprs = []
     for mapping_dict in table_list:
-        converted_dict = marshal_row(mapping_dict, fields)
-        pair_expr = insert_format_vals.format(**converted_dict)
-        pair_exprs.append(pair_expr)
-    formatted_mapping_list = ', '.join(pair_exprs)
+        pair_expr = get_sql_row_expr(mapping_dict, fields)
+        row_exprs.append(pair_expr)
+    formatted_mapping_list = ', '.join(row_exprs)
 
     create_table(table_id=table_name, fields=fields, drop_existing=True, dataset_id=dataset_id)
 

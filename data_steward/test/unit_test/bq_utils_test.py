@@ -42,7 +42,6 @@ class BqUtilsTest(unittest.TestCase):
                 "description": "An integer field"
             },
             # DC-586 Import RDR rules should support null fields
-            # TODO refactor for all other types or use external library
             {
                 "type": "integer",
                 "name": "nullable_integer_field",
