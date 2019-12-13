@@ -29,7 +29,7 @@ function make_circle_envvar {
 }
 
 GCLOUD_CREDENTIALS_KEY=$(openssl rand -base64 32)
-GCLOUD_CREDENTIALS=$(openssl enc  -aes-256-cbc -in $1 -base64 -A  -k $GCLOUD_CREDENTIALS_KEY)
+GCLOUD_CREDENTIALS=$(openssl enc  -aes-256-cbc -in $1 -base64 -A -md md5 -k $GCLOUD_CREDENTIALS_KEY)
 
 VCS_TYPE=github
 CI_PROJECT=curation
@@ -46,4 +46,4 @@ echo "----- Created vars:"
 curl https://circleci.com/api/v1.1/project/$VCS_TYPE/$CI_USERNAME/$CI_PROJECT/envvar?circle-token=$CI_TOKEN
 
 echo "----- Decryption command:"
-echo 'echo $GCLOUD_CREDENTIALS | openssl enc -d -aes-256-cbc -base64 -A -k $GCLOUD_CREDENTIALS_KEY'
+echo 'echo $GCLOUD_CREDENTIALS | openssl enc -d -aes-256-cbc -base64 -A -md md5 -k $GCLOUD_CREDENTIALS_KEY'
