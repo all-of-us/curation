@@ -22,7 +22,7 @@ class DropParticipantsWithoutPpiOrEhrTest(unittest.TestCase):
         print('**************************************************************')
 
     def test_get_queries(self):
-        # XXX: Add actual test coverage.
         results = drop_participants_without_ppi_or_ehr.get_queries('foo', 'bar')
 
-        self.assertGreater(len(results), 0)
+        self.assertEquals(len(results), 1 + len(common.CLINICAL_DATA_TABLES),
+                          'wanted one person deletion query and a deletion query per clinical table')

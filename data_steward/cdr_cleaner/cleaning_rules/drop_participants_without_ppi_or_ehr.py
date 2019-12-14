@@ -9,6 +9,7 @@ Drops all data for participants who:
 module. (2) is achieved by checking all mapping tables for all person_id tables,
 to confirm whether any data is sourced from EHR per participant.
 """
+from jinja2 import Template
 import logging
 
 from cdr_cleaner.cleaning_rules import drop_rows_for_missing_persons
@@ -21,36 +22,33 @@ LOGGER = logging.getLogger(__name__)
 
 BASICS_MODULE_CONCEPT_ID = 1586134
 
-SELECT_PERSON_WITH_BASICS_OR_EHR = """
-SELECT {fields}
-FROM `{project}.{dataset}.person` person
+SELECT_PERSON_WITH_BASICS_OR_EHR_TMPL = Template("""
+SELECT {{ fields | join(", ") }}
+FROM `{{ project }}.{{ dataset }}.person` person
 LEFT JOIN (
-  SELECT DISTINCT o.person_id
-  FROM `{project}.{dataset}.concept_ancestor`
-  INNER JOIN `{project}.{dataset}.observation` o ON observation_concept_id = descendant_concept_id
-  INNER JOIN `{project}.{dataset}.concept` d ON d.concept_id = descendant_concept_id
-  WHERE ancestor_concept_id = {basics_module_concept_id}) basics
+  SELECT DISTINCT o.person_FROM
+  id `{{ project }}.{{ dataset }}.concept_ancestor`
+  INNER JOIN `{{ project }}.{{ dataset }}.observation` o ON observation_concept_id = descendant_concept_id
+  INNER JOIN `{{ project }}.{{ dataset }}.concept` d ON d.concept_id = descendant_concept_id
+  WHERE ancestor_concept_id = {{ basics_module_concept_id }}) basics
 ON
   person.person_id = basics.person_id
-{ehr_joins}
+{% for table, config in mapped_clinical_data_configs.items() %}
+  LEFT JOIN (
+    SELECT DISTINCT v.person_id AS person_id
+    FROM `{{ project }}.{{ dataset }}.{{ table }}` t
+    LEFT JOIN `{{ project }}.{{ dataset }}._mapping_{{ table }}` m
+    ON at.{{ config["id_column"] }} = m.{{ config["id_column"] }}
+    # The source HPO is either the "rdr", or a site ID; we only want to capture sites here.
+    WHERE m.src_hpo_id != "rdr"
+  ) {{ table }}_ehr
+{% endfor %}}
 WHERE
   basics.person_id IS NOT NULL
-  OR ({has_ehr_predicate})
-"""
-
-# Template for a JOIN against the person table against a table which may contain
-# EHR data.
-JOIN_EHR_PERSON_IDS_TEMPLATE = """
-LEFT JOIN (
-  SELECT DISTINCT v.person_id AS person_id
-  FROM `{project}.{dataset}.{table}` t
-  LEFT JOIN `{project}.{dataset}._mapping_{table}` m ON at.{id_column} = m.{id_column}
-  # The source HPO is either the "rdr", or a site ID; we only want to capture sites here.
-  WHERE m.src_hpo_id != "rdr"
-) {table}_ehr
-ON
-  person.person_id = {table}_ehr.person_id
-"""
+  {% for table in mapped_clinical_data_configs.keys() %}
+    OR {{ table }}.person_id IS NOT NULL
+  {% endfor %}
+""")
 
 def get_queries(project=None, dataset=None):
     """
@@ -66,22 +64,17 @@ def get_queries(project=None, dataset=None):
     :return:  A list of string queries that can be executed to delete data-poor
         participants and corresponding rows from the dataset.
     """
-    field_names = ['entry.' + field['name'] for field in resources.fields_for('person')]
-    fields = ', '.join(field_names)
+    fields = ['person.' + field['name'] for field in resources.fields_for('person')]
+    mapped_clinical_data_configs = {
+        t: {'id_column': resources.get_domain_id_field(t)} for t in common.MAPPED_CLINICAL_DATA_TABLES
+    }
 
-    ehr_joins = ""
-    for t in common.MAPPED_CLINICAL_DATA_TABLES:
-        ehr_joins += JOIN_EHR_PERSON_IDS_TEMPLATE.format(
-            project=project, dataset=dataset, table=t,
-            id_column=resources.get_domain_id_field(t))
-    has_ehr_predicate = ' OR '.join(
-        ['{}.person_id IS NOT NULL'.format(t) for t in common.MAPPED_CLINICAL_DATA_TABLES])
-
-    delete_query = SELECT_PERSON_WITH_BASICS_OR_EHR.format(
-        project=project, dataset=dataset, fields=fields,
-        ehr_joins=ehr_joins, has_ehr_predicate=has_ehr_predicate,
-        basics_module_concept_id=BASICS_MODULE_CONCEPT_ID
-    )
+    delete_query = SELECT_PERSON_WITH_BASICS_OR_EHR_TMPL.render(
+        fields=fields,
+        project=project,
+        dataset=dataset,
+        basics_module_concept_id=BASICS_MODULE_CONCEPT_ID,
+        mapped_clinical_data_configs=mapped_clinical_data_configs)
 
     # drop from the person table, then delete all corresponding data for the now missing persons
     return [{
@@ -93,6 +86,7 @@ def get_queries(project=None, dataset=None):
 
 
 if __name__ == '__main__':
+    import argparse
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
