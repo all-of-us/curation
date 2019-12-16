@@ -214,7 +214,7 @@ def create_allowed_states_table(input_dataset, credentials):
 
     map_tablename = input_dataset + "._mapping_src_hpos_to_allowed_states"
     data = pd.read_csv(
-        os.path.join(DEID_PATH, 'config/internal_tables/src_hpos_to_allowed_states.csv')
+        os.path.join(DEID_PATH, 'config', 'internal_tables', 'src_hpos_to_allowed_states.csv')
     )
 
     # write this to bigquery.

@@ -186,7 +186,7 @@ def main(raw_args=None):
     args = parse_args(raw_args)
     add_console_logging(args.console_log)
     known_tables = get_known_tables(fields_path)
-    deid_tables_path = os.path.join(DEID_PATH, 'config/ids/tables')
+    deid_tables_path = os.path.join(DEID_PATH, 'config', 'ids', 'tables')
     configured_tables = get_known_tables(deid_tables_path)
     tables = get_output_tables(args.input_dataset, known_tables, args.skip_tables, args.tables)
 
@@ -200,7 +200,7 @@ def main(raw_args=None):
             tablepath = table
 
         parameter_list = [
-            '--rules', os.path.join(DEID_PATH, 'config/ids/config.json'),
+            '--rules', os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
             '--private_key', args.private_key,
             '--table', tablepath,
             '--action', args.action,
