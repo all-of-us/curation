@@ -510,7 +510,6 @@ class Deid(Rules):
             # In this case we are just removing the entire row we will be expecting :
             #   - filter    as the key field to match the filter
             #   - The values of the filter are provided by the rule
-            #
             apply_qualifier = {
                 'IN': 'NOT IN',
                 '=': '<>',
@@ -523,13 +522,18 @@ class Deid(Rules):
             if not rules:
                 #
                 # A row suppression rule has been provided in the form of an SQL filter
-                # For now we assume a simple scenario on="field qualifier ..."
                 # The qualifier needs to be flipped ...
-                #
                 on = args['on']
 
                 if isinstance(on, dict):
-                    fillter_values = "'" + "','".join(on.get('values')) + "'"
+                    try:
+                        # using string values
+                        fillter_values = "'" + "','".join(on.get('values')) + "'"
+                    except TypeError:
+                        # using non-string values, could be integers, floats, etc
+                        int_strings = [str(value) for value in on.get('values')]
+                        fillter_values = ','.join(int_strings)
+
                     fillter = ' '.join(
                         [args.get('qualifier'),
                         '(',
