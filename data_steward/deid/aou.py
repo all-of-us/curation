@@ -72,17 +72,17 @@ DESIGN:
                         submit      will create an output table
                         debug       will just print output without simulation or submit (runs alone)
 """
+# Python imports
 import json
 import logging
 import os
 import time
-# Python imports
 from copy import copy
 from datetime import datetime
 
+# Third party imports
 import numpy as np
 import pandas as pd
-# Third party imports
 from google.cloud import bigquery as bq
 from google.oauth2 import service_account
 
@@ -91,6 +91,7 @@ import bq_utils
 import constants.bq_utils as bq_consts
 from deid.parser import parse_args
 from deid.press import Press
+from resources import DEID_PATH
 
 LOGGER = logging.getLogger(__name__)
 
@@ -212,7 +213,9 @@ def create_allowed_states_table(input_dataset, credentials):
     """
 
     map_tablename = input_dataset + "._mapping_src_hpos_to_allowed_states"
-    data = pd.read_csv('../deid/config/internal_tables/src_hpos_to_allowed_states.csv')
+    data = pd.read_csv(
+        os.path.join(DEID_PATH, 'config', 'internal_tables', 'src_hpos_to_allowed_states.csv')
+    )
 
     # write this to bigquery.
     data.to_gbq(map_tablename, credentials=credentials, if_exists='replace')
