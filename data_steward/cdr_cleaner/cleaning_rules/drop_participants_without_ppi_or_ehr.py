@@ -26,8 +26,8 @@ SELECT_PERSON_WITH_BASICS_OR_EHR_TMPL = Template("""
 SELECT {{ fields | join(", ") }}
 FROM `{{ project }}.{{ dataset }}.person` person
 LEFT JOIN (
-  SELECT DISTINCT o.person_FROM
-  id `{{ project }}.{{ dataset }}.concept_ancestor`
+  SELECT DISTINCT o.person_id
+  FROM `{{ project }}.{{ dataset }}.concept_ancestor`
   INNER JOIN `{{ project }}.{{ dataset }}.observation` o ON observation_concept_id = descendant_concept_id
   INNER JOIN `{{ project }}.{{ dataset }}.concept` d ON d.concept_id = descendant_concept_id
   WHERE ancestor_concept_id = {{ basics_module_concept_id }}) basics
@@ -35,18 +35,19 @@ ON
   person.person_id = basics.person_id
 {% for table, config in mapped_clinical_data_configs.items() %}
   LEFT JOIN (
-    SELECT DISTINCT v.person_id AS person_id
+    SELECT DISTINCT t.person_id AS person_id
     FROM `{{ project }}.{{ dataset }}.{{ table }}` t
     LEFT JOIN `{{ project }}.{{ dataset }}._mapping_{{ table }}` m
-    ON at.{{ config["id_column"] }} = m.{{ config["id_column"] }}
+    ON t.{{ config["id_column"] }} = m.{{ config["id_column"] }}
     # The source HPO is either the "rdr", or a site ID; we only want to capture sites here.
     WHERE m.src_hpo_id != "rdr"
   ) {{ table }}_ehr
-{% endfor %}}
+  ON person.person_id = {{ table }}_ehr.person_id
+{% endfor %}
 WHERE
   basics.person_id IS NOT NULL
   {% for table in mapped_clinical_data_configs.keys() %}
-    OR {{ table }}.person_id IS NOT NULL
+    OR {{ table }}_ehr.person_id IS NOT NULL
   {% endfor %}
 """)
 
