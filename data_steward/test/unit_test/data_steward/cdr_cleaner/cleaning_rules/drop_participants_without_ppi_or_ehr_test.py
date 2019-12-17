@@ -1,21 +1,14 @@
 # Python imports
-import random
-import string
 import unittest
 
 # Third party imports
-from googleapiclient.errors import HttpError
 from jinja2 import Template
 
 # Project imports
 import bq_utils
 import common
-from constants import bq_utils as bq_consts
 from cdr_cleaner import clean_cdr_engine
-from constants.cdr_cleaner import clean_cdr as clean_consts
-from cdr_cleaner.cleaning_rules import drop_rows_for_missing_persons
 from cdr_cleaner.cleaning_rules import drop_participants_without_ppi_or_ehr
-import resources
 from test.unit_test import test_util
 
 
