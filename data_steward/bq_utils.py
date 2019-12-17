@@ -25,7 +25,8 @@ class InvalidOperationError(RuntimeError):
     """Raised when an invalid Big Query operation attempted during the validation process"""
 
     def __init__(self, msg):
-        super(InvalidOperationError, self).__init__(msg)
+        self.msg = msg
+        super(InvalidOperationError, self).__init__(self.msg)
 
 
 class BigQueryJobWaitError(RuntimeError):
@@ -739,13 +740,20 @@ def create_dataset(
     return insert_result
 
 
-def get_sql_row_expr(row: dict, fields: list):
+def csv_line_to_sql_row_expr(row: dict, fields: list):
     """
-    Get appropriate SQL expression for a row based on fields spec
+    Translate a dict to a SQL row expression based on a fields spec
 
-    :param row: csv row with untyped values
-    :param fields: bigquery fields spec
-    :return: format string for row object
+    :param row: dict whose values are all strings
+    :param fields: bigquery fields spec with keys {name, type, mode, description}
+    :return: SQL expression for row object
+    :rtype: str
+    :example:
+    >>> fields = [{ 'name': 'int_col',  'type': 'integer', 'mode': 'required', 'description': ''},
+    >>>           { 'name': 'date_col', 'type': 'date',    'mode': 'required', 'description': ''},
+    >>>           { 'name': 'str_col',  'type': 'string',  'mode': 'nullable', 'description': ''}]
+    >>> csv_line_to_sql_row_expr({'int_col': '1234', 'date_col': '2019-01-01', 'str_col': ''}, fields)
+    "(1234, '2019-01-01', NULL)"
     """
     val_exprs = []
     # TODO refactor for all other types or use external library
@@ -753,8 +761,13 @@ def get_sql_row_expr(row: dict, fields: list):
         field = next(filter(lambda f: f['name'] == field_name, fields), None)
         if field is None:
             raise InvalidOperationError(f'Unable to marshal {val}: field "{field_name}" was not found')
-        if not val and field['mode'] == 'nullable':
-            val_expr = "NULL"
+        if not val:
+            if field['mode'] == 'nullable':
+                val_expr = "NULL"
+            elif field['type'] == 'string':
+                val_expr = "''"
+            else:
+                raise InvalidOperationError(f'Value not provided for required field {field_name}')
         elif field['type'] in ['string', 'date', 'timestamp']:
             val_expr = f"'{val}'"
         else:
@@ -785,11 +798,7 @@ def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, field
         fields_filename = os.path.join(resources.fields_path, table_name + '.json')
         fields = json.load(open(fields_filename, 'r'))
     field_names = ', '.join([field['name'] for field in fields])
-
-    row_exprs = []
-    for mapping_dict in table_list:
-        pair_expr = get_sql_row_expr(mapping_dict, fields)
-        row_exprs.append(pair_expr)
+    row_exprs = [csv_line_to_sql_row_expr(t, fields) for t in table_list]
     formatted_mapping_list = ', '.join(row_exprs)
 
     create_table(table_id=table_name, fields=fields, drop_existing=True, dataset_id=dataset_id)
