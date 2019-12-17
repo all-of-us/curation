@@ -19,7 +19,7 @@ from test.unit_test import test_util
 # Participant 5: has only RDR consent (to be removed)
 # Participant 6: has EHR observation only
 INSERT_FAKE_PARTICIPANTS_TMPLS = [
-    # XXX: Ideally these tests should not manipulate concept table, not currently hermetic.
+    # TODO(calbach): Ideally these tests should not manipulate concept table, not currently hermetic.
     Template("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.concept` (concept_id)
 VALUES
@@ -90,8 +90,12 @@ class DropParticipantsWithoutPpiOrEhrTest(unittest.TestCase):
 
         create_tables = (['person'] + common.CLINICAL_DATA_TABLES +
                          ['_mapping_' + t for t in common.MAPPED_CLINICAL_DATA_TABLES])
+        # TODO(calbach): Make the setup/teardown of these concept tables hermetic.
+        for tbl in ['concept', 'concept_ancestor']:
+            if not bq_utils.table_exists(tbl, dataset_id=dataset_id):
+                create_tables.push(tbl)
         for tbl in create_tables:
-            bq_utils.create_standard_table(tbl, tbl, dataset_id=dataset_id, all_nullable=True)
+            bq_utils.create_standard_table(tbl, tbl, dataset_id=dataset_id, force_all_nullable=True)
 
         for tmpl in INSERT_FAKE_PARTICIPANTS_TMPLS:
           resp = bq_utils.query(tmpl.render(
@@ -103,7 +107,6 @@ class DropParticipantsWithoutPpiOrEhrTest(unittest.TestCase):
         queries = drop_participants_without_ppi_or_ehr.get_queries(project_id, dataset_id)
         clean_cdr_engine.clean_dataset(project_id, queries)
 
-        # query and assert
         def table_to_person_ids(t):
             rows = bq_utils.response2rows(bq_utils.query("SELECT person_id FROM `{}.{}.{}`".format(project_id, dataset_id, t)))
             return set([r["person_id"] for r in rows])
