@@ -143,11 +143,14 @@ class PopulateRouteIdsTest(unittest.TestCase):
         actual = populate_route_ids.get_col_exprs()
         self.assertEqual(actual, expected)
 
+    @mock.patch('bq_utils.get_dataset_id')
     @mock.patch('cdr_cleaner.cleaning_rules.populate_route_ids.create_drug_route_mappings_table')
     @mock.patch('cdr_cleaner.cleaning_rules.populate_route_ids.create_dose_form_route_mappings_table')
     def test_integration_get_route_mapping_queries(self,
                                                    mock_create_dose_form_route_mappings_table,
-                                                   mock_create_drug_route_mappings_table):
+                                                   mock_create_drug_route_mappings_table, mock_dataset_id):
+        # pre conditions
+        mock_dataset_id.return_value = self.dataset_id
         result = []
         mock_create_drug_route_mappings_table.return_value = (result, populate_route_ids.DRUG_ROUTES_TABLE_ID)
         mock_create_dose_form_route_mappings_table.return_value = (result, populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID)
