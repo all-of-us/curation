@@ -36,8 +36,8 @@ def get_update_family_history_qa_queries(project_id, dataset_id):
     query_list = []
 
     query = dict()
-    query[cdr_consts.QUERY] = UPDATE_FAMILY_HISTORY_QUERY.format(dataset=dataset_id,
-                                                                 project=project_id)
+    query[cdr_consts.QUERY] = UPDATE_FAMILY_HISTORY_QUERY.format(dataset_id=dataset_id,
+                                                                 project_id=project_id)
     query_list.append(query)
 
     return query_list
