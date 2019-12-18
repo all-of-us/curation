@@ -41,6 +41,13 @@ class BqUtilsTest(unittest.TestCase):
                 "mode": "required",
                 "description": "An integer field"
             },
+            # DC-586 Import RDR rules should support null fields
+            {
+                "type": "integer",
+                "name": "nullable_integer_field",
+                "mode": "nullable",
+                "description": "A nullable integer field"
+            },
             {
                 "type": "string",
                 "name": "string_field",
@@ -384,6 +391,70 @@ class BqUtilsTest(unittest.TestCase):
         actual.sort(key=lambda row: row['integer_field'])
         for i, _ in enumerate(expected):
             self.assertCountEqual(expected[i], actual[i])
+
+    def test_csv_line_to_sql_row_expr(self):
+        fields = [
+            {'name': 'nullable_date_col', 'type': 'date', 'mode': 'nullable', 'description': ''},
+            {'name': 'nullable_float_col', 'type': 'float', 'mode': 'nullable', 'description': ''},
+            {'name': 'nullable_integer_col', 'type': 'integer', 'mode': 'nullable', 'description': ''},
+            {'name': 'nullable_string_col', 'type': 'string', 'mode': 'nullable', 'description': ''},
+            {'name': 'nullable_timestamp_col', 'type': 'timestamp', 'mode': 'nullable', 'description': ''},
+            {'name': 'required_date_col', 'type': 'date', 'mode': 'required', 'description': ''},
+            {'name': 'required_float_col', 'type': 'float', 'mode': 'required', 'description': ''},
+            {'name': 'required_integer_col', 'type': 'integer', 'mode': 'required', 'description': ''},
+            {'name': 'required_string_col', 'type': 'string', 'mode': 'required', 'description': ''},
+            {'name': 'required_timestamp_col', 'type': 'timestamp', 'mode': 'required', 'description': ''}]
+
+        # dummy values for each type
+        flt_str = "3.14"
+        int_str = "1234"
+        str_str = "abc"
+        dt_str = "2019-01-01"
+        ts_str = "2019-01-01 14:00:00.0"
+        row = {
+            'nullable_date_col': dt_str,
+            'nullable_float_col': flt_str,
+            'nullable_integer_col': int_str,
+            'nullable_string_col': str_str,
+            'nullable_timestamp_col': ts_str,
+            'required_date_col': dt_str,
+            'required_float_col': flt_str,
+            'required_integer_col': int_str,
+            'required_string_col': str_str,
+            'required_timestamp_col': ts_str
+        }
+        # all fields populated
+        expected_expr = f"('{dt_str}',{flt_str},{int_str},'{str_str}','{ts_str}','{dt_str}',{flt_str},{int_str},'{str_str}','{ts_str}')"
+        actual_expr = bq_utils.csv_line_to_sql_row_expr(row, fields)
+        self.assertEqual(expected_expr, actual_expr)
+
+        # nullable int zero is converted
+        row['nullable_integer_col'] = '0'
+        expected_expr = f"('{dt_str}',{flt_str},0,'{str_str}','{ts_str}','{dt_str}',{flt_str},{int_str},'{str_str}','{ts_str}')"
+        actual_expr = bq_utils.csv_line_to_sql_row_expr(row, fields)
+        self.assertEqual(expected_expr, actual_expr)
+
+        # empty nullable is converted null
+        row['nullable_date_col'] = ''
+        row['nullable_float_col'] = ''
+        row['nullable_integer_col'] = ''
+        row['nullable_string_col'] = ''
+        row['nullable_timestamp_col'] = ''
+        expected_expr = f"(NULL,NULL,NULL,NULL,NULL,'{dt_str}',{flt_str},{int_str},'{str_str}','{ts_str}')"
+        actual_expr = bq_utils.csv_line_to_sql_row_expr(row, fields)
+        self.assertEqual(expected_expr, actual_expr)
+
+        # empty required string converted to empty string value
+        row['required_string_col'] = ''
+        actual_expr = bq_utils.csv_line_to_sql_row_expr(row, fields)
+        expected_expr = f"(NULL,NULL,NULL,NULL,NULL,'{dt_str}',{flt_str},{int_str},'','{ts_str}')"
+        self.assertEqual(expected_expr, actual_expr)
+
+        # empty required field raises error
+        row['required_integer_col'] = ''
+        with self.assertRaises(bq_utils.InvalidOperationError) as c:
+            bq_utils.csv_line_to_sql_row_expr(row, fields)
+        self.assertEqual(c.exception.msg, f'Value not provided for required field required_integer_col')
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
