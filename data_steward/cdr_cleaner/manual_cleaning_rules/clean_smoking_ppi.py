@@ -37,12 +37,6 @@ SMOKING_LOOKUP_FIELDS = [
     },
     {
         "type": "integer",
-        "name": "observation_source_concept_id",
-        "mode": "nullable",
-        "description": ""
-    },
-    {
-        "type": "integer",
         "name": "value_as_concept_id",
         "mode": "nullable",
         "description": ""
@@ -167,6 +161,22 @@ FROM `{project_id}.{sandbox_dataset_id}.{new_smoking_rows}`
 """
 
 
+def load_smoking_lookup_table(project_id, sandbox_dataset_id):
+    """
+    Loads the smoking lookup table from resources/smoking_lookup.csv
+    into project_id.sandbox_dataset_id.smoking_lookup in BQ
+
+    :param project_id: Project where the sandbox dataset resides
+    :param sandbox_dataset_id: Dataset where the smoking lookup table needs to be created
+    :return: None
+    """
+    bq_utils.load_table_from_csv(project_id,
+                                 sandbox_dataset_id,
+                                 SMOKING_LOOKUP_TABLE,
+                                 csv_path=None,
+                                 fields=SMOKING_LOOKUP_FIELDS)
+
+
 def get_queries_clean_smoking(project_id, dataset_id, sandbox_dataset_id):
     """
     Queries to run for deleting incorrect smoking rows and inserting corrected rows
@@ -182,12 +192,7 @@ def get_queries_clean_smoking(project_id, dataset_id, sandbox_dataset_id):
     if sandbox_dataset_id is None:
         sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
 
-    # load smoking_lookup table
-    bq_utils.load_table_from_csv(project_id,
-                                 sandbox_dataset_id,
-                                 SMOKING_LOOKUP_TABLE,
-                                 csv_path=None,
-                                 fields=SMOKING_LOOKUP_FIELDS)
+    load_smoking_lookup_table(project_id, sandbox_dataset_id)
 
     sandbox_query = dict()
     sandbox_query[cdr_consts.QUERY] = SANDBOX_CREATE_QUERY.format(project_id=project_id,
