@@ -40,5 +40,5 @@ class CleanSmokingPPITest(unittest.TestCase):
         for i, _ in enumerate(expected):
             self.assertCountEqual(expected[i], actual[i])
 
-    def TearDown(self):
+    def tearDown(self):
         test_util.delete_all_tables(self.sandbox_dataset_id)
