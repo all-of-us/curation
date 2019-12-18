@@ -1,7 +1,5 @@
 import unittest
 
-import app_identity
-import bq_utils
 from cdr_cleaner.cleaning_rules import ensure_date_datetime_consistency as eddc
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import constants.bq_utils as bq_consts
@@ -16,8 +14,8 @@ class EnsureDateDatetime(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.project_id = app_identity.get_application_id()
-        self.dataset_id = bq_utils.get_dataset_id()
+        self.project_id = 'bar_project'
+        self.dataset_id = 'foo_dataset'
         self.cols = {
             'death': (u'person_id',
                       'death_date',

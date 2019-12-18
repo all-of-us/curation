@@ -3,7 +3,6 @@ import time
 import unittest
 
 import mock
-import app_identity
 
 import bq_utils
 import common
@@ -21,8 +20,8 @@ class PopulateRouteIdsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.project_id = app_identity.get_application_id()
-        self.dataset_id = bq_utils.get_dataset_id()
+        self.project_id = 'foo_project'
+        self.dataset_id = 'bar_dataset'
         self.route_mappings_list = [{'dose_form_concept_id': '46719734', 'route_concept_id': '85738921'},
                                     {'dose_form_concept_id': '86340', 'route_concept_id': '52315'},
                                     {'dose_form_concept_id': '19082168', 'route_concept_id': '4132161'},
@@ -67,9 +66,12 @@ class PopulateRouteIdsTest(unittest.TestCase):
         expected = self.route_mappings_string
         self.assertEqual(expected, actual)
 
+    @mock.patch('bq_utils.get_dataset_id')
     @mock.patch('bq_utils.create_table')
     @mock.patch('bq_utils.query')
-    def test_create_dose_form_route_mappings_table(self, mock_query, mock_create_table):
+    def test_create_dose_form_route_mappings_table_none_dataset_id(self, mock_query, mock_create_table, mock_dataset_id):
+        # pre conditions
+        mock_dataset_id.return_value = self.dataset_id
         route_mappings_csv = os.path.join(resources.resource_path,
                                           populate_route_ids.DOSE_FORM_ROUTES_FILE + ".csv")
         dose_form_route_mappings = resources.csv_to_list(route_mappings_csv)
@@ -79,7 +81,35 @@ class PopulateRouteIdsTest(unittest.TestCase):
                             routes_table_id=populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID,
                             mapping_list=mapping_list)
         expected_query = populate_route_ids.INSERT_ROUTES_QUERY.format(**query_params)
+
+        # test
         populate_route_ids.create_dose_form_route_mappings_table(self.project_id)
+
+        # post conditions
+        mock_query.assert_called_with(expected_query)
+        mock_create_table.assert_called_with(populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID,
+                                             populate_route_ids.DOSE_FORM_ROUTE_FIELDS,
+                                             drop_existing=True,
+                                             dataset_id=self.dataset_id)
+
+    @mock.patch('bq_utils.create_table')
+    @mock.patch('bq_utils.query')
+    def test_create_dose_form_route_mappings_table_with_dataset_id(self, mock_query, mock_create_table):
+        # pre conditions
+        route_mappings_csv = os.path.join(resources.resource_path,
+                                          populate_route_ids.DOSE_FORM_ROUTES_FILE + ".csv")
+        dose_form_route_mappings = resources.csv_to_list(route_mappings_csv)
+        mapping_list = populate_route_ids.get_mapping_list(dose_form_route_mappings)
+        query_params = dict(project_id=self.project_id,
+                            dataset_id=self.dataset_id,
+                            routes_table_id=populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID,
+                            mapping_list=mapping_list)
+        expected_query = populate_route_ids.INSERT_ROUTES_QUERY.format(**query_params)
+
+        # test
+        populate_route_ids.create_dose_form_route_mappings_table(self.project_id, self.dataset_id)
+
+        # post conditions
         mock_query.assert_called_with(expected_query)
         mock_create_table.assert_called_with(populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID,
                                              populate_route_ids.DOSE_FORM_ROUTE_FIELDS,

@@ -46,6 +46,7 @@ class ExportTest(unittest.TestCase):
         # return result
 
     def test_export_data_density(self):
+        # INTEGRATION TEST
         export_result = self._test_report_export('datadensity')
         expected_keys = ['CONCEPTS_PER_PERSON', 'RECORDS_PER_PERSON', 'TOTAL_RECORDS']
         for expected_key in expected_keys:
@@ -53,6 +54,7 @@ class ExportTest(unittest.TestCase):
         self.assertEqual(len(export_result['TOTAL_RECORDS']['X_CALENDAR_MONTH']), 283)
 
     def test_export_person(self):
+        # INTEGRATION TEST
         export_result = self._test_report_export('person')
         expected_keys = ['BIRTH_YEAR_HISTOGRAM', 'ETHNICITY_DATA', 'GENDER_DATA', 'RACE_DATA', 'SUMMARY']
         for expected_key in expected_keys:
@@ -60,11 +62,13 @@ class ExportTest(unittest.TestCase):
         self.assertEqual(len(export_result['BIRTH_YEAR_HISTOGRAM']['DATA']['COUNT_VALUE']), 72)
 
     def test_export_achillesheel(self):
+        # INTEGRATION TEST
         export_result = self._test_report_export('achillesheel')
         self.assertTrue('MESSAGES' in export_result)
         self.assertEqual(len(export_result['MESSAGES']['ATTRIBUTENAME']), 14)
 
     def test_run_export(self):
+        # validation/main.py INTEGRATION TEST 
         folder_prefix = 'dummy-prefix-2018-03-24/'
         main._upload_achilles_files(FAKE_HPO_ID, folder_prefix)
         main.run_export(hpo_id=FAKE_HPO_ID, folder_prefix=folder_prefix)
@@ -87,6 +91,7 @@ class ExportTest(unittest.TestCase):
         self.assertDictEqual(datasources_expected, datasources_actual)
 
     def test_run_export_with_target_bucket(self):
+        # validation/main.py INTEGRATION TEST 
         folder_prefix = 'dummy-prefix-2018-03-24/'
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
         test_util.get_synpuf_results_files()
@@ -110,6 +115,7 @@ class ExportTest(unittest.TestCase):
         self.assertDictEqual(datasources_expected, datasources_actual)
 
     def test_run_export_with_target_bucket_and_hpo_id(self):
+        # validation/main.py INTEGRATION TEST 
         folder_prefix = 'dummy-prefix-2018-03-24/'
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
         main.run_export(hpo_id=FAKE_HPO_ID, folder_prefix=folder_prefix, target_bucket=bucket_nyc)
