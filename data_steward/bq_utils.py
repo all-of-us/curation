@@ -478,18 +478,22 @@ def create_table(table_id, fields, drop_existing=False, dataset_id=None):
     return insert_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
-def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=None):
+def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=None, force_all_nullable=False):
     """
     Create a supported OHDSI table
     :param table_name: the name of a table whose schema is specified
     :param table_id: name fo the table to create in the bigquery dataset
     :param drop_existing: if True delete an existing table with the given table_id
     :param dataset_id: dataset to create the table in
+    :param force_all_nullable: if True, overrides all fields of the schema to be nullable, primarily for testing
     :return: table reference object
     """
     fields_filename = os.path.join(resources.fields_path, table_name + '.json')
     with open(fields_filename, 'r') as fields_file:
         fields = json.load(fields_file)
+    if force_all_nullable:
+        for f in fields:
+            f["mode"] = "nullable"
     return create_table(table_id, fields, drop_existing, dataset_id)
 
 
