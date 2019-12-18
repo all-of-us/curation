@@ -1,12 +1,26 @@
-import constants.bq_utils as bq_consts
+"""
+Ticket: DC-564
+This cleaning rule is meant to run on RDR datasets
+This rule updates old Questions and Answers with the corresponding new ones.
+"""
+
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 UPDATE_FAMILY_HISTORY_QUERY = """
 UPDATE `{project_id}.{dataset_id}.observation`
-SET observation_source_concept_id = 43529655,
-    value_source_concept_id = 43529090
-WHERE observation_source_concept_id = 43529632
-AND value_source_concept_id = 43529091
+SET
+observation_source_concept_id = CASE
+    WHEN (observation_source_concept_id = 43529632 AND value_source_concept_id = 43529091) THEN 43529655
+    WHEN (observation_source_concept_id = 43529637 AND value_source_concept_id = 43529094) THEN 43529660
+    WHEN (observation_source_concept_id = 43529636 AND value_source_concept_id = 702787) THEN 43529659
+END,
+value_source_concept_id = CASE
+    WHEN (observation_source_concept_id = 43529632 AND value_source_concept_id = 43529091) THEN 43529090
+    WHEN (observation_source_concept_id = 43529637 AND value_source_concept_id = 43529094) THEN 43529093
+    WHEN (observation_source_concept_id = 43529636 AND value_source_concept_id = 702787) THEN 43529088
+END
+WHERE observation_source_concept_id IN (43529632, 43529637, 43529636)
+AND value_source_concept_id IN (43529091, 43529094, 702787)
 """
 
 
@@ -17,16 +31,16 @@ def get_update_family_history_qa_queries(project_id, dataset_id):
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
 
-    :return:
+    :return: list of query dicts
     """
-    queries_list = []
+    query_list = []
 
     query = dict()
     query[cdr_consts.QUERY] = UPDATE_FAMILY_HISTORY_QUERY.format(dataset=dataset_id,
                                                                  project=project_id)
-    queries_list.append(query)
+    query_list.append(query)
 
-    return queries_list
+    return query_list
 
 
 if __name__ == '__main__':
