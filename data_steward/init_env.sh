@@ -7,7 +7,9 @@ then
     CONFIG=$1
 fi
 
-# XXX: This is not guaranteed to exist - is this necessary?
+# TODO: Move away from this global state; none of the following is sticky since
+# there is no expectation of rerunning this script in new shells or on machine
+# restarts.
 export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json
 export APPLICATION_ID=aou-res-curation-test
 export GOOGLE_CLOUD_PROJECT=aou-res-curation-test
