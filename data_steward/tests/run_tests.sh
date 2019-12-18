@@ -41,9 +41,9 @@ if [[ -z ${substring} ]]
 then
   if [[ -z ${substring} ]]
   then
-    cmd="tests/runner.py --test-path tests/unit_test/ ${sdk_dir}"
+    cmd="tests/runner.py --test-path tests/unit_tests/ ${sdk_dir}"
   else
-    cmd="tests/runner.py --test-path tests/unit_test/ ${sdk_dir} --test-pattern $substring"
+    cmd="tests/runner.py --test-path tests/unit_tests/ ${sdk_dir} --test-pattern $substring"
   fi
   (cd ${BASE_DIR}; python ${cmd})
 fi
