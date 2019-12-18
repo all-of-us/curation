@@ -91,7 +91,6 @@ class ValidationMainTest(unittest.TestCase):
         self.assertEqual(tpe, 'DAY')
 
     def test_all_files_unparseable_output(self):
-        #  INTEGRATION TEST - UPLOADING OBJECTS TO CLOUD
         # TODO possible bug: if no pre-existing table, results in bq table not found error
         for cdm_table in common.SUBMISSION_FILES:
             test_util.write_cloud_str(self.hpo_bucket, self.folder_prefix + cdm_table, ".\n .")
@@ -101,7 +100,6 @@ class ValidationMainTest(unittest.TestCase):
         self.assertSetEqual(set(expected_results), set(r['results']))
 
     def test_bad_file_names(self):
-        # INTEGRATION TEST - UPLOADING OBJECTS TO CLOUD
         bad_file_names = ["avisit_occurrence.csv",
                           "condition_occurence.csv",  # misspelled
                           "person_final.csv",
@@ -117,7 +115,6 @@ class ValidationMainTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_validate_five_persons_success(self, mock_check_cron):
-        # INTEGRATION TEST - writing cloud resources
         expected_results = []
         test_file_names = [os.path.basename(f) for f in test_util.FIVE_PERSONS_FILES]
 
@@ -145,7 +142,6 @@ class ValidationMainTest(unittest.TestCase):
                     self.table_has_clustering(table_info)
 
     def test_check_processed(self):
-        # INTEGRATION TEST - writing resouces to cloud
         test_util.write_cloud_str(self.hpo_bucket, self.folder_prefix + 'person.csv', '\n')
         test_util.write_cloud_str(self.hpo_bucket, self.folder_prefix + common.PROCESSED_TXT, '\n')
 
@@ -157,7 +153,6 @@ class ValidationMainTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_copy_five_persons(self, mock_check_cron):
-        # INTEGRATION TEST - CREATING RESOURCES FOR THE TEST
         # upload all five_persons files
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket, cdm_file, prefix=self.folder_prefix)
@@ -176,7 +171,6 @@ class ValidationMainTest(unittest.TestCase):
             self.assertSetEqual(set(expected_bucket_items), set(actual_bucket_items))
 
     def test_target_bucket_upload(self):
-        # INTEGRATION TEST
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
         folder_prefix = 'test-folder-fake/'
         test_util.empty_bucket(bucket_nyc)
@@ -188,7 +182,6 @@ class ValidationMainTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
-        # INTEGRATION TEST - WRITING RESOURCES TO CLOUD
         # tests if pii files are loaded
         test_file_paths = [test_util.PII_NAME_FILE, test_util.PII_MRN_BAD_PERSON_ID_FILE]
         test_file_names = [os.path.basename(f) for f in test_file_paths]
@@ -208,7 +201,6 @@ class ValidationMainTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def _test_html_report_five_person(self, mock_check_cron):
-        # INTEGRATION TEST - ACTUALLY BUILDS RESOURCES
         # Not sure this test is still relevant (see hpo_report module and tests)
         # TODO refactor or remove this test
         folder_prefix = '2019-01-01/'

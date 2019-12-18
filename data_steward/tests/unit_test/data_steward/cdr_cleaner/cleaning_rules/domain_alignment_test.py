@@ -1,13 +1,14 @@
-from __future__ import print_function
+import re
 import unittest
+from collections import OrderedDict
 
 import mock
 from mock import patch
+
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
-from cdr_cleaner.cleaning_rules.domain_alignment import WHEN_STATEMENT, DOMAIN_ALIGNMENT_TABLE_NAME,\
-    CASE_STATEMENT, SRC_FIELD_AS_DEST_FIELD
-from collections import OrderedDict
-import re
+from cdr_cleaner.cleaning_rules.domain_alignment import (
+    WHEN_STATEMENT, DOMAIN_ALIGNMENT_TABLE_NAME, CASE_STATEMENT, SRC_FIELD_AS_DEST_FIELD
+)
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 

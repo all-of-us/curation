@@ -3,8 +3,10 @@ import unittest
 from mock import patch
 
 import resources
-from cdr_cleaner.cleaning_rules.domain_mapping import SRC_TABLE, DEST_TABLE, SRC_FIELD, DEST_FIELD, SRC_VALUE, \
+from cdr_cleaner.cleaning_rules.domain_mapping import (
+    SRC_TABLE, DEST_TABLE, SRC_FIELD, DEST_FIELD, SRC_VALUE,
     DEST_VALUE, IS_REROUTED, REROUTING_CRITERIA, EMPTY_STRING, TRANSLATION
+)
 from cdr_cleaner.cleaning_rules import domain_mapping as domain_mapping
 
 

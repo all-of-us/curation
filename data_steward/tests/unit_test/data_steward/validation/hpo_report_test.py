@@ -1,8 +1,13 @@
-import unittest
+# Python imports
 import os
-from validation import hpo_report
-from constants.validation import hpo_report as consts
+import unittest
 from io import open
+
+# Third party imports
+
+# Project imports
+from constants.validation import hpo_report as consts
+from validation import hpo_report
 
 
 class HpoReportTest(unittest.TestCase):
