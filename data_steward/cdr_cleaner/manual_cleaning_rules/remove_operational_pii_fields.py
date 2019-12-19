@@ -8,7 +8,6 @@ The supplemental operational_pii_fields.csv shows all present PPI codes without 
 indicating which should be dropped in the “drop_value” column
 """
 import logging
-import os
 
 import bq_utils
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -16,10 +15,8 @@ import sandbox
 
 LOGGER = logging.getLogger(__name__)
 
-module_name = os.path.basename(__file__[:-3])
-
 OPERATIONAL_PII_FIELDS_TABLE = 'operational_pii_fields'
-INTERMEDIARY_TABLE = module_name + '_observation'
+INTERMEDIARY_TABLE = 'remove_operational_pii_fields_observation'
 
 OPERATION_PII_FIELDS_INTERMEDIARY_QUERY = """
 CREATE OR REPLACE TABLE
