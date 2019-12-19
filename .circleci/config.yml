@@ -74,11 +74,11 @@ jobs:
           name: Run integration tests
           command: |
             t=$(git log -1 --pretty=%B)
-            if [[ "$t" == *"fast tests"* ]] ;
+            if [[ "$t" == *"all tests"* ]] || [[ ! -z "${CIRCLE_PULL_REQUEST}" ]] || [[ ! -z "${CIRCLE_PULL_REQUESTS}" ]];
             then
-                echo "Skipping integration tests"
-            else
                 ./tests/run_tests.sh -s integration
+            else
+                echo "Skipping integration tests"
             fi
           no_output_timeout: 3000s
       # Save test results
