@@ -4,6 +4,7 @@ import os
 import bq_utils
 import resources
 from validation import sql_wrangle
+from constants import bq_utils as bq_consts
 
 ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
@@ -11,6 +12,7 @@ ACHILLES_RESULTS_DIST = 'achilles_results_dist'
 ACHILLES_TABLES = [ACHILLES_ANALYSIS, ACHILLES_RESULTS, ACHILLES_RESULTS_DIST]
 ACHILLES_DML_SQL_PATH = os.path.join(resources.resource_path, 'achilles_dml.sql')
 END_OF_IMPORTING_LOOKUP_MARKER = 'end of importing values into analysis lookup'
+INSERT_INTO = 'insert into'
 
 
 def _get_load_analysis_commands(hpo_id):
@@ -44,12 +46,26 @@ def load_analyses(hpo_id):
         bq_utils.query(command)
 
 
+def convert_insert_to_append(command):
+    select_command_lines = []
+    table_id = None
+    for line in command.split('\n'):
+        if line.strip().lower().startswith(INSERT_INTO):
+            words = line.strip().split()
+            table_id = words[2]
+        else:
+            select_command_lines.append(line)
+    select_command = '\n'.join(select_command_lines)
+    return select_command, table_id
+
+
 def run_analyses(hpo_id):
     """
     Run the achilles analyses
     :param hpo_id:
     :return:
     """
+    job_ids = []
     commands = _get_run_analysis_commands(hpo_id)
     for command in commands:
         logging.info(' ---- Running `%s`...\n' % command)
@@ -72,7 +88,19 @@ def run_analyses(hpo_id):
             if bq_utils.table_exists(table_id):
                 bq_utils.delete_table(table_id)
         else:
-            bq_utils.query(command)
+            append_command, table_id = convert_insert_to_append(command)
+            if table_id:
+                job_result = bq_utils.query(append_command,
+                                            destination_table_id=table_id,
+                                            write_disposition=bq_consts.WRITE_APPEND)
+            else:
+                logging.info('Query without table is %s' % append_command)
+                job_result = bq_utils.query(append_command)
+            job_ids.append(job_result['jobReference']['jobId'])
+
+    incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
+    if len(incomplete_jobs) > 0:
+        raise RuntimeError('Jobs taking too long')
 
 
 def create_tables(hpo_id, drop_existing=False):
