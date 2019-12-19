@@ -8,17 +8,13 @@ subset="all"
 
 
 function usage() {
-  echo "Usage: run_test.sh " \
-      "[-s all|unit|client]" \
+  echo "Usage: run_tests.sh " \
       "[-r <file name match glob, e.g. 'extraction_*'>]" >& 2
   exit 1
 }
 
 while getopts "s:g:h:r:" opt; do
   case $opt in
-    s)
-      subset=$OPTARG
-      ;;
     r)
       substring=$OPTARG
       ;;
@@ -36,23 +32,15 @@ while getopts "s:g:h:r:" opt; do
   esac
 done
 
-if [[ ${subset} ]];
-then
-  echo Executing subset ${subset}
-fi
-
 if [[ ${substring} ]];
 then
    echo Executing tests that match glob ${substring}
 fi
 
-if [[ "$subset" == "all" || "$subset" == "unit" ]];
+if [[ -z ${substring} ]]
 then
-  if [[ -z ${substring} ]]
-  then
-    cmd="test/runner.py --test-path test/unit_test/ "
-  else
-    cmd="test/runner.py --test-path test/unit_test/ --test-pattern $substring"
-  fi
-  (cd ${BASE_DIR}; python ${cmd})
+  cmd="test/runner.py --test-path test/unit_test/ "
+else
+  cmd="test/runner.py --test-path test/unit_test/ --test-pattern $substring"
 fi
+(cd ${BASE_DIR}; python ${cmd})
