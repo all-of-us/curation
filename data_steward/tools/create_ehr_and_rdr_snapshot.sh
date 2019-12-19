@@ -55,7 +55,7 @@ echo "rdr --> ${rdr}"
 echo "identifier --> ${identifier}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
-export APPLICATION_ID="${app_id}"
+export GOOGLE_CLOUD_PROJECT="${app_id}"
 
 #set application environment (ie dev, test, prod)
 gcloud auth activate-service-account --key-file=${key_file}

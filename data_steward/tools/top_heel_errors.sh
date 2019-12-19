@@ -35,7 +35,7 @@ then
 fi
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
-export APPLICATION_ID="${app_id}"
+export GOOGLE_CLOUD_PROJECT="${app_id}"
 export BIGQUERY_DATASET_ID="${dataset_id}"
 
 #set application environment (ie dev, test, prod)
