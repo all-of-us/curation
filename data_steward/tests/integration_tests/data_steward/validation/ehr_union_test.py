@@ -12,7 +12,7 @@ from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
 import gcs_utils
 import resources
-import tests.test_util
+import tests.test_util as test_util
 from validation import ehr_union
 from io import open
 
@@ -31,7 +31,6 @@ def first_or_none(l):
     return next(iter(l or []), None)
 
 
-@unittest.skipIf(os.getenv('ALL_TESTS') == 'False', 'Skipping EhrUnionTest cases')
 class EhrUnionTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -46,9 +45,9 @@ class EhrUnionTest(unittest.TestCase):
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         # Done in tearDown().  this is redundant.
-#        self._empty_hpo_buckets()
-#        test_util.delete_all_tables(self.input_dataset_id)
-#        test_util.delete_all_tables(self.output_dataset_id)
+        self._empty_hpo_buckets()
+        test_util.delete_all_tables(self.input_dataset_id)
+        test_util.delete_all_tables(self.output_dataset_id)
 
         # TODO Generalize to work for all foreign key references
         # Collect all primary key fields in CDM tables

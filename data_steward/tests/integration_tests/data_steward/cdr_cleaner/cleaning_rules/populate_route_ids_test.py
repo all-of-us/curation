@@ -6,7 +6,9 @@ import mock
 
 import app_identity
 import bq_utils
+import common
 from cdr_cleaner.cleaning_rules import populate_route_ids
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 
 class PopulateRouteIdsTest(unittest.TestCase):
@@ -21,6 +23,32 @@ class PopulateRouteIdsTest(unittest.TestCase):
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
         self.route_mapping_prefix = "rm"
+
+        col_exprs = [
+            'de.drug_exposure_id',
+            'de.person_id',
+            'de.drug_concept_id',
+            'de.drug_exposure_start_date',
+            'de.drug_exposure_start_datetime',
+            'de.drug_exposure_end_date',
+            'de.drug_exposure_end_datetime',
+            'de.verbatim_end_date',
+            'de.drug_type_concept_id',
+            'de.stop_reason',
+            'de.refills',
+            'de.quantity',
+            'de.days_supply',
+            'de.sig',
+            'COALESCE(rm.route_concept_id, de.route_concept_id) AS route_concept_id',
+            'de.lot_number',
+            'de.provider_id',
+            'de.visit_occurrence_id',
+            'de.drug_source_value',
+            'de.drug_source_concept_id',
+            'de.route_source_value',
+            'de.dose_unit_source_value'
+        ]
+        self.cols = ', '.join(col_exprs)
 
     def test_integration_create_drug_route_mappings_table(self):
         if bq_utils.table_exists(populate_route_ids.DRUG_ROUTES_TABLE_ID, dataset_id=self.dataset_id):

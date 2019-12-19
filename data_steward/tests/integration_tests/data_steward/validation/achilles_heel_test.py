@@ -24,7 +24,6 @@ ACHILLES_HEEL_RESULTS_COUNT = 19
 ACHILLES_RESULTS_DERIVED_COUNT = 282
 
 
-@unittest.skipIf(os.getenv('ALL_TESTS') == 'False', 'Skipping AchillesHeelTest cases')
 class AchillesHeelTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
