@@ -3,16 +3,15 @@ import os
 import unittest
 
 # Third party imports
-from google.appengine.ext import testbed
 
 # Project imports
 import bq_utils
 import gcs_utils
 import resources
-import tests.test_util
+import tests.test_util as test_util
 from tests.test_util import FAKE_HPO_ID
 from validation import achilles_heel
-import validation.sql_wrangle
+import validation.sql_wrangle as sql_wrangle
 
 ACHILLES_HEEL_RESULTS_COUNT = 19
 #ACHILLES_HEEL_RESULTS_ERROR_COUNT = 2
@@ -29,19 +28,11 @@ class AchillesHeelTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.testbed = testbed.Testbed()
-        self.testbed.activate()
-        self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_urlfetch_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_datastore_v3_stub()
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
 
     def tearDown(self):
         test_util.delete_all_tables(bq_utils.get_dataset_id())
         test_util.empty_bucket(self.hpo_bucket)
-        self.testbed.deactivate()
 
     def _load_dataset(self):
         for cdm_table in resources.CDM_TABLES:
