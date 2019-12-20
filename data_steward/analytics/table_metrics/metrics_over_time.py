@@ -96,8 +96,8 @@ def get_user_analysis_choice():
         'e': 'concept',
         'f': 'unit_integration',
         'g': 'drug_routes',
-        'h': 'drug_concept_integration',
-        'i': 'integration_measurement_concept'}
+        'h': 'drug_success',
+        'i': 'sites_measurement'}
 
     while user_command not in choice_dict.keys():
         print("\nInvalid choice. Please specify a letter that corresponds "
@@ -113,8 +113,8 @@ def get_user_analysis_choice():
         'concept': True,
         'unit_integration': True,
         'drug_routes': True,
-        'drug_concept_integration': True,
-        'integration_measurement_concept': True
+        'drug_success': True,
+        'sites_measurement': True
     }
 
     # dictionary indicates if the target is to minimize or maximize number
@@ -126,8 +126,8 @@ def get_user_analysis_choice():
         'concept': False,
         'unit_integration': False,
         'drug_routes': False,
-        'drug_concept_integration': False,
-        'integration_measurement_concept': False
+        'drug_success': False,
+        'sites_measurement': False
     }
 
     analytics_type = choice_dict[user_command]
@@ -238,7 +238,7 @@ def get_comprehensive_tables(dataframes, analytics_type):
 
         # get all of the columns; ensure the columns are only logged once
         if analytics_type in rate_focused_inputs:
-            for col_label, _ in data_info.items():
+            for col_label, _ in data_info.iteritems():
                 if col_label[-5:] != '_rate' and \
                         col_label[-7:] != '_rate_y':
                     undocumented_cols.append(col_label)
@@ -296,7 +296,7 @@ def get_info(sheet, row_num, percentage, sheet_name,
 
     err_dictionary = {}
 
-    for col_label, number in data_info.items():
+    for col_label, number in data_info.iteritems():
         if col_label in mandatory_tables:
 
             # data for table for site does not exist
@@ -834,8 +834,7 @@ def determine_means_to_calculate_weighted_avg(
 
     # just a simple average; all sites contribute equally
     # since 'integration' only means having one instance
-    elif analytics_type in ['drug_concept_integration',
-                            'integration_measurement_concept']:
+    elif analytics_type in ['drug_routes', 'drug_success']:
         return np.nanmean(new_col_info)
 
     # ASSUMPTION: table naming convention (see #6 in the header)
@@ -1001,15 +1000,20 @@ def generate_column_for_table_df(
         new_col_info.append(total)  # adding aggregate
     else:
 
-        # need to weight sites' relative contributions when
-        # calculating an aggregate 'end' value
-        weighted_avg = generate_weighted_average_table_sheet(
-            file_names, date, table, new_col_info, analytics_type)
-
-        if weighted_avg is not None:  # successful calculation
-            new_col_info.append(weighted_avg)
+        if analytics_type in ['sites_measurement', 'drug_success']:
+            arith_avg = np.nanmean(new_col_info)
+            arith_avg = round(arith_avg, 1)
+            new_col_info.append(arith_avg)
         else:
-            new_col_info.append("N/A")
+            # need to weight sites' relative contributions when
+            # calculating an aggregate 'end' value
+            weighted_avg = generate_weighted_average_table_sheet(
+                file_names, date, table, new_col_info, analytics_type)
+
+            if weighted_avg is not None:  # successful calculation
+                new_col_info.append(weighted_avg)
+            else:
+                new_col_info.append("N/A")
 
     return new_col_info
 
@@ -1224,7 +1228,7 @@ def determine_dq_for_hpo_on_date(
 def generate_column_for_hpo_df(
         site_and_date_info, date, site, tables_only,
         percentage, file_names, sorted_names,
-        sorted_tables):
+        sorted_tables, analytics_type):
     """
     Function is used to generate a column for each dataframe
     in the case where
@@ -1262,6 +1266,9 @@ def generate_column_for_hpo_df(
     sorted_tables (lst): list of the different table types
         sorted alphabetically
 
+    analytics_type (str): the data quality metric the user wants to
+        investigate
+
     :return
     new_col_info (lst): list containing the data quality for each
         of the table types/classes. Each index represents the data
@@ -1277,7 +1284,9 @@ def generate_column_for_hpo_df(
         tot_errs_date += site_info[table]
 
     # creating the 'aggregate' statistic for the bottom of the col
-    if not percentage:
+    if analytics_type in ['sites_measurement', 'drug_success']:
+        pass
+    elif not percentage:
         new_col_info.append(tot_errs_date)
     else:  # need to weight the overall DQ by number of rows by table
         weighted_errs = determine_dq_for_hpo_on_date(
@@ -1337,10 +1346,19 @@ def generate_site_dfs(sorted_names, sorted_tables,
         of table type: pandas df with the format described above
     """
     total_dfs = []
-    sorted_tables.append('total')
 
-    # ignoring 'total' and 'aggregate info'
-    tables_only, hpo_names_only = sorted_tables[:-1], sorted_names[:-1]
+    no_total_needed = ['sites_measurement', 'drug_success']
+
+    if analytics_type not in no_total_needed:
+        sorted_tables.append('total')
+        # ignoring 'total'
+        tables_only = sorted_tables[:-1]
+    else:
+        # integration metric - the 'aggregate' statistic is already in place
+        tables_only = sorted_tables
+
+    # ignoring 'aggregate_info'
+    hpo_names_only = sorted_names[:-1]
 
     # df generation for each HPO and 'aggregate info'
     for _ in range(len(hpo_names_only)):
@@ -1355,7 +1373,7 @@ def generate_site_dfs(sorted_names, sorted_tables,
             new_col_info = generate_column_for_hpo_df(
                 site_and_date_info, date, site, tables_only,
                 percentage, file_names, sorted_names,
-                sorted_tables)
+                sorted_tables, analytics_type)
 
             df_in_question[date] = new_col_info  # adding the col
 
@@ -1921,7 +1939,7 @@ def unit_integration_aggregate_sheet(
             except ValueError:
                 pass
 
-        tot_success_rate = tot_wd_units / tot_units
+        tot_success_rate = round(tot_wd_units / tot_units * 100, 1)
         aggregate_df[date] = [tot_success_rate, tot_units]
 
     return [aggregate_df]  # list so it can be easily appended
@@ -1991,7 +2009,7 @@ def aggregate_sheet_route_population(
                 rows_w_unit_date += site_succ_rows
 
         if total_drug_rows_for_date > 0:
-            quality_for_date = rows_w_unit_date / total_drug_rows_for_date
+            quality_for_date = round(rows_w_unit_date / total_drug_rows_for_date, 1)
         else:
             quality_for_date = np.nan
 
@@ -2130,8 +2148,7 @@ def generate_aggregate_sheets(file_names, sorted_tables, site_and_date_info,
             file_names, ordered_dates_str,
             sorted_names, site_and_date_info)
 
-    elif analytics_type in [
-      'drug_concept_integration', 'integration_measurement_concept']:
+    elif analytics_type in ['sites_measurement', 'drug_success']:
         # categorical classification; no weighting
         total_dfs = aggregate_sheet_integration(
             dataframes, sorted_tables, ordered_dates_str)
@@ -2216,6 +2233,7 @@ and quantify the data.
 # report1 = 'july_15_2019.xlsx'
 # report2 = 'july_23_2019.xlsx'
 # report3 = 'august_05_2019.xlsx'
+
 # report4 = 'august_13_2019.xlsx'
 # report5 = 'august_19_2019.xlsx'
 # report6 = 'august_26_2019.xlsx'
@@ -2226,17 +2244,28 @@ and quantify the data.
 # report11 = 'september_30_2019.xlsx'
 # report12 = 'october_07_2019.xlsx'
 # report13 = 'october_15_2019.xlsx'
-report14 = 'october_22_2019.xlsx'
-report15 = 'october_28_2019.xlsx'
-report16 = 'november_04_2019.xlsx'
-report17 = 'november_11_2019.xlsx'
-report18 = 'november_13_2019.xlsx'
+# report14 = 'october_22_2019.xlsx'
+# report15 = 'october_28_2019.xlsx'
+# report16 = 'november_04_2019.xlsx'
+# report17 = 'november_11_2019.xlsx'
+report18 = 'november_18_2019.xlsx'
+report19 = 'november_27_2019.xlsx'
+report20 = 'december_02_2019.xlsx'
+report21 = 'december_09_2019.xlsx'
+report22 = 'december_16_2019.xlsx'
 
 # DEID versus DEID_clean
 # report17 = 'october_05_2019.xlsx'
 # report18 = 'october_06_2019.xlsx'
 
-report_titles = [report14, report15, report16, report17, report18]
+# 2019 retrospective
+# report1 = 'january_07_2019.xlsx'
+# report2 = 'april_10_2019.xlsx'
+# report3 = 'july_18_2019.xlsx'
+# report4 = 'october_10_2019.xlsx'
+# report5 = 'december_16_2019.xlsx'
+
+report_titles = [report18, report19, report20, report21, report22]
 
 metric_choice, metric_is_percent, ideal_low = get_user_analysis_choice()
 
