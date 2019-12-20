@@ -8,8 +8,6 @@ import resources
 import sandbox
 from test.unit_test import test_util
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as remove_operational_pii_fields
-from cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields import OPERATION_PII_FIELDS_INTERMEDIARY_QUERY, \
-    OPERATIONAL_PII_FIELDS_TABLE, INTERMEDIARY_TABLE, DELETE_OPERATIONAL_PII_FIELDS_QUERY
 
 SELECT_RECORDS = """ SELECT * FROM `{project_id}.{dataset_id}.{table_id}`"""
 
@@ -44,35 +42,6 @@ class RemoveOperationalPiiFieldsTest(unittest.TestCase):
 
         for i, _ in enumerate(expected):
             self.assertCountEqual(expected[i], actual[i])
-
-    def test_parse_intermideary_table_query(self):
-        expected_query = OPERATION_PII_FIELDS_INTERMEDIARY_QUERY.format(dataset=self.dataset_id,
-                                                                        project=self.project_id,
-                                                                        intermediary_table=INTERMEDIARY_TABLE,
-                                                                        pii_fields_table=
-                                                                        OPERATIONAL_PII_FIELDS_TABLE,
-                                                                        sandbox=self.sandbox_dataset_id
-                                                                        )
-
-        actual_query = remove_operational_pii_fields.parse_intermediary_table_query(self.dataset_id,
-                                                                                    self.project_id,
-                                                                                    self.sandbox_dataset_id)
-
-        self.assertCountEqual(expected_query, actual_query)
-
-    def test_parse_delete_query(self):
-        expected_query = DELETE_OPERATIONAL_PII_FIELDS_QUERY.format(dataset=self.dataset_id,
-                                                                    project=self.project_id,
-                                                                    pii_fields_table=
-                                                                    OPERATIONAL_PII_FIELDS_TABLE,
-                                                                    sandbox=self.sandbox_dataset_id
-                                                                    )
-
-        actual_query = remove_operational_pii_fields.parse_delete_query(self.dataset_id,
-                                                                        self.project_id,
-                                                                        self.sandbox_dataset_id)
-
-        self.assertCountEqual(expected_query, actual_query)
 
     def tearDown(self):
         test_util.delete_all_tables(self.sandbox_dataset_id)

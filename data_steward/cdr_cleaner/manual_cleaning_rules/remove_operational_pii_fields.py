@@ -74,7 +74,7 @@ def load_operational_pii_fields_lookup_table(project_id, sandbox_dataset_id):
                                  fields=None)
 
 
-def parse_intermediary_table_query(dataset_id, project_id, sandbox_dataset_id):
+def get_intermediary_table_query(dataset_id, project_id, sandbox_dataset_id):
     """
     parses the intermediary query used to store records being deleted.
 
@@ -83,7 +83,7 @@ def parse_intermediary_table_query(dataset_id, project_id, sandbox_dataset_id):
     :param sandbox_dataset_id: dataset id of the sandbox
     :return: query string
     """
-    query = OPERATION_PII_FIELDS_INTERMEDIARY_QUERY.format(dataset=dataset_id,
+    return OPERATION_PII_FIELDS_INTERMEDIARY_QUERY.format(dataset=dataset_id,
                                                            project=project_id,
                                                            intermediary_table=INTERMEDIARY_TABLE,
                                                            pii_fields_table=
@@ -91,10 +91,8 @@ def parse_intermediary_table_query(dataset_id, project_id, sandbox_dataset_id):
                                                            sandbox=sandbox_dataset_id
                                                            )
 
-    return query
 
-
-def parse_delete_query(dataset_id, project_id, sandbox_dataset_id):
+def get_delete_query(dataset_id, project_id, sandbox_dataset_id):
     """
     parses the query used to delete the operational pii.
 
@@ -104,13 +102,12 @@ def parse_delete_query(dataset_id, project_id, sandbox_dataset_id):
     :return: query string
     """
 
-    query = DELETE_OPERATIONAL_PII_FIELDS_QUERY.format(dataset=dataset_id,
+    return DELETE_OPERATIONAL_PII_FIELDS_QUERY.format(dataset=dataset_id,
                                                        project=project_id,
                                                        pii_fields_table=
                                                        OPERATIONAL_PII_FIELDS_TABLE,
                                                        sandbox=sandbox_dataset_id
                                                        )
-    return query
 
 
 def get_remove_operational_pii_fields_query(project_id, dataset_id, sandbox_dataset_id):
@@ -131,14 +128,14 @@ def get_remove_operational_pii_fields_query(project_id, dataset_id, sandbox_data
 
     # Save operational pii records being deleted in sandbox `dataset.intermediary_table` .
     query = dict()
-    query[cdr_consts.QUERY] = parse_intermediary_table_query(dataset_id, project_id, sandbox_dataset_id)
+    query[cdr_consts.QUERY] = get_intermediary_table_query(dataset_id, project_id, sandbox_dataset_id)
 
     queries_list.append(query)
 
     # Delete operational pii records from observation table
     query = dict()
 
-    query[cdr_consts.QUERY] = parse_delete_query(dataset_id, project_id, sandbox_dataset_id)
+    query[cdr_consts.QUERY] = get_delete_query(dataset_id, project_id, sandbox_dataset_id)
     queries_list.append(query)
 
     return queries_list
