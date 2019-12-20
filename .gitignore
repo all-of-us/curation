@@ -124,4 +124,4 @@ tmp/*
 # Notebooks
 data_steward/notebooks/parameters.py
 data_steward/analytics/cdr_ops/*.ipynb
-data_steward/notebooks/*.ipynb
+data_steward/notebooks/parameters.ipynb
