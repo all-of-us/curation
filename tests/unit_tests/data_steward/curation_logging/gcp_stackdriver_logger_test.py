@@ -1,18 +1,19 @@
-import unittest
 import logging
-from mock import patch
-from mock import MagicMock, PropertyMock
+import mock
+import unittest
 from datetime import datetime, timedelta
 from logging import LogRecord
-import pytz
-import mock
+from mock import patch
+from mock import MagicMock, PropertyMock
+
 from google.api.monitored_resource_pb2 import MonitoredResource
+from google.cloud.logging_v2.proto.log_entry_pb2 import LogEntryOperation
+from google.protobuf import json_format as gcp_json_format, any_pb2 as gcp_any_pb2
+import pytz
 
 from curation_logging import curation_gae_handler
-from data_steward.curation_logging.curation_gae_handler import GCPStackDriverLogger, LogCompletionStatusEnum
-from data_steward.curation_logging.curation_gae_handler import GAE_LOGGING_MODULE_ID, GAE_LOGGING_VERSION_ID
-from google.protobuf import json_format as gcp_json_format, any_pb2 as gcp_any_pb2
-from google.cloud.logging_v2.proto.log_entry_pb2 import LogEntryOperation
+from curation_logging.curation_gae_handler import GCPStackDriverLogger, LogCompletionStatusEnum
+from curation_logging.curation_gae_handler import GAE_LOGGING_MODULE_ID, GAE_LOGGING_VERSION_ID
 
 LOG_BUFFER_SIZE = 3
 SEVERITY_DEBUG = 100  # 100 is the equivalence of logging.DEBUG
@@ -130,7 +131,7 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
         log_record.created = record_created
         return log_record
 
-    @mock.patch('data_steward.curation_logging.curation_gae_handler.datetime')
+    @mock.patch('curation_logging.curation_gae_handler.datetime')
     def test_gcp_stackdriver_logger(self, mock_datetime):
         mock_datetime.now.return_value.isoformat.return_value = self.request_start_time.isoformat()
         mock_datetime.utcnow.return_value = self.request_start_time

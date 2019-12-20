@@ -3,10 +3,7 @@
 # Source packages/directories to include
 source = data_steward
 
-# Ensure all branching logic has been tested
-branch = True
-
-data_file = test_results/coverage/.coverage
+data_file = test_results/coverage/integration/.coverage
 
 # Exclude files whose paths match these patterns
 omit = *tests*
@@ -28,9 +25,9 @@ show_missing = True
 skip_covered = True
 
 [html]
-directory = test_results/coverage/html
+directory = test_results/coverage/integration/html
 
-title = Curation Python Coverage Report
+title = Curation Python Integration Tests Coverage Report
 
 [xml]
-output = test_results/coverage/xml/coverage.xml
+output = test_results/coverage/integration/xml/coverage.xml
