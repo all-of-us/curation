@@ -90,6 +90,6 @@ for t in $(bq ls -n 2000 ${SOURCE_DATASET} |
   #           grep -v ^\_ |  #Tables beginning with underscore "_" are skipped
   ([[ "${SOURCE_PREFIX}" ]] && grep ${SOURCE_PREFIX} || cat)); do
   TARGET_TABLE=${t//${SOURCE_PREFIX}/} #replace all occurrences, use ${parameter//pattern/replacement_string}
-  CP_CMD="bq ${SYNC} cp -f ${SOURCE_DATASET}.${t} ${TARGET_DATASET}.${TARGET_PREFIX}${TARGET_TABLE}"
+  CP_CMD="bq ${SYNC} --project_id ${TARGET_APPLICATION_ID} cp -f ${SOURCE_DATASET}.${t} ${TARGET_DATASET}.${TARGET_PREFIX}${TARGET_TABLE}"
   echo $(${CP_CMD})
 done

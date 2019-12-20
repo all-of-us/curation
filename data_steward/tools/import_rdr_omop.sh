@@ -1,29 +1,29 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 # Imports RDR ETL results from GCS into a dataset in BigQuery.
 # Assumes you have already activated a service account that is able to
 # access the files in GCS.
 
 USAGE="tools/import_rdr_omop.sh
-    --project <PROJECT where rdr files are dropped>
-    --directory <DIRECTORY>
-    --dataset <DATA SET>
+    --rdr_project <PROJECT where rdr files are dropped>
+    --rdr_directory <DIRECTORY, not including the gs:// bucket name>
+    --output_dataset <DATA SET>
     --key_file <path to key file>
     --app_id <application id>
     --vocab_dataset <vocabulary dataset>"
 
 while true; do
   case "$1" in
-  --project)
-    PROJECT=$2
+  --rdr_project)
+    RDR_PROJECT=$2
     shift 2
     ;;
-  --directory)
-    DIRECTORY=$2
+  --rdr_directory)
+    RDR_DIRECTORY=$2
     shift 2
     ;;
-  --dataset)
-    DATASET=$2
+  --output_dataset)
+    OUTPUT_DATASET=$2
     shift 2
     ;;
   --key_file)
@@ -46,7 +46,7 @@ while true; do
   esac
 done
 
-if [[ -z "${PROJECT}" ]] || [[ -z "${DIRECTORY}" ]] || [[ -z "${DATASET}" ]] ||
+if [[ -z "${RDR_PROJECT}" ]] || [[ -z "${RDR_DIRECTORY}" ]] || [[ -z "${OUTPUT_DATASET}" ]] ||
   [[ -z "${KEY_FILE}" ]] || [[ -z "${APP_ID}" ]] || [[ -z "${VOCAB_DATASET}" ]]; then
   echo "Usage: $USAGE"
   exit 1
@@ -54,33 +54,36 @@ fi
 
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 export GOOGLE_CLOUD_PROJECT="${APP_ID}"
-export BIGQUERY_DATASET_ID="${DATASET}"
+export BIGQUERY_DATASET_ID="${OUTPUT_DATASET}"
 
 today=$(date '+%Y%m%d')
-export BACKUP_DATASET="${DATASET}_backup"
+export BACKUP_DATASET="${OUTPUT_DATASET}_backup"
 
 #---------Create curation virtual environment----------
-# create a new environment in directory curation_env
-virtualenv -p $(which python3.7) curation_env
+# create a new environment in directory curation_venv
+virtualenv -p $(which python3.7) curation_venv
 
 # activate it
-source curation_env/bin/activate
+source curation_venv/bin/activate
 
 # install the requirements in the virtualenv
 pip install -r requirements.txt
 
 source tools/set_path.sh
 
-bq mk -f --description "RDR DUMP loaded from ${DIRECTORY} on ${today}" ${DATASET}
+bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} on ${today}" "${GOOGLE_CLOUD_PROJECT}:${OUTPUT_DATASET}"
 
-echo "python cdm.py ${DATASET}"
-python cdm.py "${DATASET}"
+python cdm.py "${OUTPUT_DATASET}"
 
-
-for file in $(gsutil ls gs://${PROJECT}-cdm/${DIRECTORY}); do
+cdm_files=$(gsutil ls gs://${RDR_PROJECT}-cdm/${RDR_DIRECTORY})
+if [[ $? -ne 0 ]]; then
+  echo "failed to read CDM files from RDR, verify your --rdr_directory exists with gsutil ls gs://${RDR_PROJECT}-cdm"
+  exit 1
+fi
+for file in $cdm_files; do
   filename=$(basename ${file})
   table_name=${filename%.*}
-  echo "Importing ${DATASET}.${table_name}..."
+  echo "Importing ${OUTPUT_DATASET}.${table_name}..."
   CLUSTERING_ARGS=""
   if grep -q person_id resources/fields/"${table_name}".json; then
     CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id"
@@ -89,20 +92,19 @@ for file in $(gsutil ls gs://${PROJECT}-cdm/${DIRECTORY}); do
   if [[ "${filename}" == "observation_period.csv" ]]; then
     JAGGED_ROWS="--allow_jagged_rows"
   fi
-  echo "bq load --replace --allow_quoted_newlines "${JAGGED_ROWS}" "${CLUSTERING_ARGS}" --skip_leading_rows=1 "${DATASET}"."${table_name}" "$file" resources/fields/"${table_name}".json"
-  bq load --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${DATASET}.${table_name} $file resources/fields/${table_name}.json
+  bq load --project_id ${GOOGLE_CLOUD_PROJECT} --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${GOOGLE_CLOUD_PROJECT}:${OUTPUT_DATASET}.${table_name} $file resources/fields/${table_name}.json
 done
 
 echo "Copying vocabulary"
-./tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${VOCAB_DATASET} --target_dataset ${DATASET}
+./tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${VOCAB_DATASET} --target_dataset ${OUTPUT_DATASET}
 
 echo "Creating a RDR back-up"
-./tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${DATASET} --target_dataset ${BACKUP_DATASET}
+./tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${OUTPUT_DATASET} --target_dataset ${BACKUP_DATASET}
 
 #set BIGQUERY_DATASET_ID variable to dataset name where the vocabulary exists
 export BIGQUERY_DATASET_ID="${VOCAB_DATASET}"
-export RDR_DATASET_ID="${DATASET}"
-echo "Fixing the RDR data using command - cdr_cleaner/clean_cdr.py -d rdr -s"
+export RDR_DATASET_ID="${OUTPUT_DATASET}"
+echo "Cleaning the RDR data"
 python cdr_cleaner/clean_cdr.py -d rdr -s
 
 echo "Done."
