@@ -21,6 +21,7 @@ Example invocation:
 """
 # Python imports
 import argparse
+import configparser
 import os
 import sys
 import time
@@ -46,27 +47,33 @@ def print_unsuccessful(function, trace, msg_type):
     print('----------------------------------------------------------------------')
 
 
-def main(test_path, test_pattern):
+def main(test_path, test_pattern, coverage_filepath):
     # Discover and run tests.
     suite = unittest.TestLoader().discover(test_path, pattern=test_pattern)
     all_results = []
 
-    coverage_filepath = os.getcwd()
-    coverage_filepath = os.path.dirname(coverage_filepath)
-    coverage_filepath = os.path.join(coverage_filepath, '.coveragerc')
     cov = coverage.Coverage(config_file=coverage_filepath)
     cov.start()
 
+    output_file = os.path.join('test_results', 'junit', coverage_filepath.split('_')[1])
     start_time = time.time()
     for mod_tests in suite:
         if mod_tests.countTestCases():
-            runner = xmlrunner.XMLTestRunner(output='test_results/junit', verbosity=2)
+            runner = xmlrunner.XMLTestRunner(output=output_file, verbosity=2)
             result = runner.run(mod_tests)
             all_results.append(result)
 
     end_time = time.time()
     cov.stop()
-    cov.save()
+    try:
+        cov.save()
+    except OSError:
+        # create the directory to save .coverage file to, if needed
+        config = configparser.ConfigParser()
+        config.read(coverage_filepath)
+        data_file = os.path.dirname(config.get('run', 'data_file'))
+        os.makedirs(data_file)
+        cov.save()
 
     cov.html_report()
     cov.xml_report()
@@ -98,22 +105,44 @@ def main(test_path, test_pattern):
     return not errors and not failures
 
 
+def config_file_path(path):
+    try:
+        with open(path, 'r'):
+            pass
+    except OSError:
+        # If not given, default to curation/.coveragerc
+        path = os.getcwd()
+        path = os.path.dirname(path)
+        path = os.path.join(path, '.coveragerc')
+
+    return path
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         '--test-path',
+        dest='test_path',
         help='The path to look for tests, defaults to the current directory.',
         default=os.getcwd())
     parser.add_argument(
         '--test-pattern',
+        dest='test_pattern',
         help='The file pattern for test modules, defaults to *_test.py.',
         default='*_test.py')
+    parser.add_argument(
+        '--coverage-file',
+        dest='coverage_file',
+        required=True,
+        help='The path to the coverage file to use.  Defaults to \'curation/.coveragerc\'',
+        type=config_file_path,
+        default='curation/.coveragerc')
 
     args = parser.parse_args()
 
-    result_success = main(args.test_path, args.test_pattern)
+    result_success = main(args.test_path, args.test_pattern, args.coverage_file)
 
     if not result_success:
         sys.exit(1)

@@ -63,19 +63,24 @@ jobs:
       #   This would typically be a build job when using workflows, possibly combined with build
       - run:
           name: Run unit tests
+          working_directory: ~/curation
           command: |
-            mkdir -p test_results/coverage/xml
-            mkdir -p test_results/coverage/html
-            mkdir -p test_results/junit
+            mkdir -p test_results/coverage/unit/xml
+            mkdir -p test_results/coverage/unit/html
+            mkdir -p test_results/junit/unit
             ./tests/run_tests.sh -s unit
           no_output_timeout: 300s
           when:  always
       - run:
           name: Run integration tests
+          working_directory: ~/curation
           command: |
             t=$(git log -1 --pretty=%B)
             if [[ "$t" == *"all tests"* ]] || [[ ! -z "${CIRCLE_PULL_REQUEST}" ]] || [[ ! -z "${CIRCLE_PULL_REQUESTS}" ]];
             then
+                mkdir -p test_results/coverage/integration/xml
+                mkdir -p test_results/coverage/integration/html
+                mkdir -p test_results/junit/integration
                 ./tests/run_tests.sh -s integration
             else
                 echo "Skipping integration tests"
@@ -86,5 +91,5 @@ jobs:
           path: ~/curation/data_steward/test_results/junit
       # Save artifacts
       - store_artifacts:
-          path: ~/curation/data_steward/test_results
+          path: ~/curation/data_steward/test_results/coverage
           destination: test_results

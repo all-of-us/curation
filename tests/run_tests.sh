@@ -1,8 +1,8 @@
 #!/bin/bash -e
 
 
-BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-. ${BASE_DIR}/tools/set_path.sh
+BASE_DIR="$(git rev-parse --show-toplevel)"
+. ${BASE_DIR}/data_steward/tools/set_path.sh
 
 subset="all"
 
@@ -41,19 +41,22 @@ fi
 if [[ "$subset" == "unit" ]]
 then
   path="tests/unit_tests/"
+  coverage_file=".coveragerc_unit"
 elif [[ "$subset" == "integration" ]]
 then
   path="tests/integration_tests/"
+  coverage_file=".coveragerc_integration"
 else
   path="tests/"
+  coverage_file=".coveragerc"
 fi
 
 if [[ -z ${substring} ]]
 then
-  cmd="tests/runner.py --test-path ${path} ${sdk_dir}"
+  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --coverage-file ${coverage_file}"
 else
-  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --test-pattern $substring"
+  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --test-pattern $substring --coverage-file ${coverage_file}"
 fi
 
-echo "PYTHONPATH=.:${PYTHONPATH} python ${cmd}"
-(cd ${BASE_DIR}; python ${cmd})
+echo "PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd}"
+(cd ${BASE_DIR}; PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd})
