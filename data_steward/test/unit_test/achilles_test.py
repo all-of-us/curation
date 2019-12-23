@@ -1,9 +1,7 @@
-import datetime
 import os
-import re
 import unittest
-
-import mock
+from random import randint
+from unittest import mock
 
 import bq_utils
 import gcs_utils
@@ -65,12 +63,6 @@ class AchillesTest(unittest.TestCase):
         test_util.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
 
-    @staticmethod
-    def _get_timestamp_nums():
-        timestamp = str(datetime.datetime.now().time()).split('.')[0]
-        time_nums = re.sub('\D', '', timestamp)
-        return time_nums
-
     def _load_dataset(self, hpo_id):
         for cdm_table in resources.CDM_TABLES:
             cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
@@ -125,13 +117,13 @@ class AchillesTest(unittest.TestCase):
     def test_run_analyses(self, mock_hpo_bucket):
         # Long-running test
         mock_hpo_bucket.return_value = self.get_mock_hpo_bucket()
-        timestamp_nums = self._get_timestamp_nums()
-        timestamped_hpo_id = FAKE_HPO_ID + '_' + timestamp_nums
-        self._load_dataset(timestamped_hpo_id)
-        achilles.create_tables(timestamped_hpo_id, True)
-        achilles.load_analyses(timestamped_hpo_id)
-        achilles.run_analyses(hpo_id=timestamped_hpo_id)
-        achilles_results_table = timestamped_hpo_id + '_' + achilles.ACHILLES_RESULTS
+        random_string = str(randint(10000, 99999))
+        randomized_hpo_id = FAKE_HPO_ID + '_' + random_string
+        self._load_dataset(randomized_hpo_id)
+        achilles.create_tables(randomized_hpo_id, True)
+        achilles.load_analyses(randomized_hpo_id)
+        achilles.run_analyses(hpo_id=randomized_hpo_id)
+        achilles_results_table = randomized_hpo_id + '_' + achilles.ACHILLES_RESULTS
         cmd = sql_wrangle.qualify_tables(
             'SELECT COUNT(1) as num_rows FROM %s' % achilles_results_table)
         response = bq_utils.query(cmd)
