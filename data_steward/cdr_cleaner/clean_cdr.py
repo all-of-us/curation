@@ -32,14 +32,14 @@ import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers as remove_multiple_race_answers
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_concept_ids
-import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_ppi_values
 import cdr_cleaner.cleaning_rules.repopulate_person_post_deid as repopulate_person
+import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_ppi_values
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.cleaning_rules.update_family_history_qa_codes as update_family_history
 import cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
-import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
+import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_drop_duplicates
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
 import cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
@@ -138,6 +138,17 @@ def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id, sandbox_datase
     query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
     query_list.extend(fill_source_value.get_fill_freetext_source_value_fields_queries(project_id, dataset_id))
     query_list.extend(repopulate_person.get_repopulate_person_post_deid_queries(project_id, dataset_id))
+    return query_list
+
+
+def _gather_ehr_rdr_de_identified_clean_queries(project_id, dataset_id, sandbox_dataset_id):
+    """
+    gathers all the queries required to clean base version of de_identified dataset
+    :param project_id: project name
+    :param dataset_id: de_identified dataset name
+    :return: returns list of queries
+    """
+    query_list = []
     return query_list
 
 
@@ -278,6 +289,28 @@ def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
     clean_engine.clean_dataset(project_id, query_list, stage.DEID)
 
 
+def clean_ehr_rdr_de_identified_clean_dataset(project_id=None, dataset_id=None):
+    """
+    Run all clean rules defined for the deidentified ehr and rdr clean dataset.
+    :param project_id:  Name of the BigQuery project.
+    :param dataset_id:  Name of the dataset to clean
+    """
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+
+    if dataset_id is None:
+        dataset_id = bq_utils.get_ehr_rdr_deid_clean_dataset_id()
+        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
+
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+
+    query_list = _gather_ehr_rdr_de_identified_clean_queries(project_id, dataset_id, sandbox_dataset_id)
+
+    LOGGER.info("Cleaning de-identified dataset")
+    clean_engine.clean_dataset(project_id, query_list, stage.DEID)
+
+
 def clean_all_cdr():
     """
     Runs cleaning rules on all the datasets
@@ -287,6 +320,7 @@ def clean_all_cdr():
     clean_rdr_dataset()
     clean_ehr_rdr_dataset()
     clean_ehr_rdr_de_identified_dataset()
+    clean_ehr_rdr_de_identified_clean_dataset()
 
 
 if __name__ == '__main__':
@@ -312,7 +346,11 @@ if __name__ == '__main__':
         clean_rdr_dataset()
     elif args.data_stage == stage.COMBINED:
         clean_ehr_rdr_dataset()
-    elif args.data_stage == stage.DEID:
+    elif args.data_stage == stage.DEID_BASE:
         clean_ehr_rdr_de_identified_dataset()
+    elif args.data_stage == stage.DEID_CLEAN:
+        clean_ehr_rdr_de_identified_clean_dataset()
     else:
-        raise EnvironmentError('Dataset selection should be from [ehr, unioned, rdr, combined, deid]')
+        raise EnvironmentError(
+            f'Dataset selection should be from [{stage.EHR}, {stage.UNIONED}, {stage.RDR}, {stage.COMBINED},'
+            f' {stage.DEID_BASE}, {stage.DEID_CLEAN}]')
