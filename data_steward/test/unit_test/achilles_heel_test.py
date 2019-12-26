@@ -136,5 +136,5 @@ class AchillesHeelTest(unittest.TestCase):
         self.assertEqual(r, 'pitt_temple_achilles_results')
 
     def tearDown(self):
-        # test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(bq_utils.get_dataset_id())
         test_util.empty_bucket(self.hpo_bucket)
