@@ -41,6 +41,7 @@ WITH
     WHERE (measurement_concept_id IN (3036277, 3023540, 3019171))
       AND value_as_number IS NOT NULL
       AND value_as_number != 0
+      AND measurement_source_concept_id != 903133
   ),
   sites AS (
     SELECT
@@ -229,6 +230,7 @@ DELETE_HEIGHT_ROWS_QUERY = """
 DELETE
 FROM `{project_id}.{dataset_id}.measurement`
 WHERE (measurement_concept_id IN (3036277, 3023540, 3019171))
+AND measurement_source_concept_id != 903133
 """
 
 # weight queries
@@ -262,6 +264,7 @@ WITH
     WHERE (measurement_concept_id IN (3025315, 3013762, 3023166))
       AND value_as_number IS NOT NULL
       AND value_as_number != 0
+      AND measurement_source_concept_id != 903121
   ),
   sites AS (
     SELECT
@@ -532,6 +535,7 @@ DELETE_WEIGHT_ROWS_QUERY = """
 DELETE
 FROM `{project_id}.{dataset_id}.measurement`
 WHERE (measurement_concept_id IN (3025315, 3013762, 3023166))
+AND measurement_source_concept_id != 903121
 """
 
 INSERT_NEW_ROWS_QUERY = """
