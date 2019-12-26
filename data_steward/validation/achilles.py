@@ -88,7 +88,7 @@ def run_analysis_job(command):
     job_id = job_result['jobReference']['jobId']
     incomplete_jobs = bq_utils.wait_on_jobs([job_id])
     if len(incomplete_jobs) > 0:
-        logging.info('Job id %s taking more than 15 secs' % job_id)
+        logging.info('Job id %s taking too long' % job_id)
         raise RuntimeError('Job id %s taking too long' % job_id)
 
 
