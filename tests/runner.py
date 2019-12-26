@@ -55,7 +55,7 @@ def main(test_path, test_pattern, coverage_filepath):
     cov = coverage.Coverage(config_file=coverage_filepath)
     cov.start()
 
-    output_file = os.path.join('test_results', 'junit', coverage_filepath.split('_')[1])
+    output_file = os.path.join('tests', 'results', 'junit', coverage_filepath.split('_')[1])
     start_time = time.time()
     for mod_tests in suite:
         if mod_tests.countTestCases():
