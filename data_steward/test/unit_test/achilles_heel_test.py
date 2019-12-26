@@ -30,8 +30,9 @@ class AchillesHeelTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
+        self.dataset = bq_utils.get_dataset_id()
         test_util.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.dataset)
 
     def _load_dataset(self, hpo_id):
         for cdm_table in resources.CDM_TABLES:
@@ -43,6 +44,9 @@ class AchillesHeelTest(unittest.TestCase):
             bq_utils.load_cdm_csv(hpo_id, cdm_table)
         if not bq_utils.table_exists(common.CONCEPT):
             bq_utils.create_standard_table(common.CONCEPT, common.CONCEPT)
+            q = """INSERT INTO {dataset}.concept
+            SELECT * FROM {vocab}.concept""".format(dataset=self.dataset, vocab=common.VOCABULARY_DATASET)
+            bq_utils.query(q)
 
     @staticmethod
     def get_mock_hpo_bucket():
@@ -85,9 +89,9 @@ class AchillesHeelTest(unittest.TestCase):
                   600, 605, 606, 609, 613, 700, 705, 706, 709, 711, 713, 715, 716, 717, 800, 805, 806,
                   809, 813, 814, 906, 1006, 1609, 1805]
         query = sql_wrangle.qualify_tables(
-            """SELECT analysis_id FROM %s
+            """SELECT analysis_id FROM {table_id}
             WHERE achilles_heel_warning LIKE 'ERROR:%'
-            GROUP BY analysis_id""" % achilles_heel_results)
+            GROUP BY analysis_id""".format(table_id=achilles_heel_results))
         response = bq_utils.query(query)
         rows = bq_utils.response2rows(response)
         actual_result = [row["analysis_id"] for row in rows]
@@ -97,9 +101,9 @@ class AchillesHeelTest(unittest.TestCase):
         warnings = [4, 5, 7, 8, 9, 200, 210, 302, 400, 402, 412, 420, 500, 511, 512, 513, 514, 515,
                     602, 612, 620, 702, 712, 720, 802, 812, 820]
         query = sql_wrangle.qualify_tables(
-            """SELECT analysis_id FROM %s
+            """SELECT analysis_id FROM {table_id}
             WHERE achilles_heel_warning LIKE 'WARNING:%'
-            GROUP BY analysis_id""" % achilles_heel_results)
+            GROUP BY analysis_id""".format(table_id=achilles_heel_results))
         response = bq_utils.query(query)
         rows = bq_utils.response2rows(response)
         actual_result = [row["analysis_id"] for row in rows]
@@ -109,9 +113,9 @@ class AchillesHeelTest(unittest.TestCase):
         notifications = [101, 103, 105, 114, 115, 118, 208, 301, 410, 610,
                          710, 810, 900, 907, 1000, 1800, 1807]
         query = sql_wrangle.qualify_tables(
-            """SELECT analysis_id FROM %s
+            """SELECT analysis_id FROM {table_id}
             WHERE achilles_heel_warning LIKE 'NOTIFICATION:%' and analysis_id is not null
-            GROUP BY analysis_id""" % achilles_heel_results)
+            GROUP BY analysis_id""".format(table_id=achilles_heel_results))
         response = bq_utils.query(query)
         rows = bq_utils.response2rows(response)
         actual_result = [row["analysis_id"] for row in rows]
