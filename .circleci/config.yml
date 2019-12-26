@@ -65,9 +65,9 @@ jobs:
           name: Run unit tests
           working_directory: ~/curation
           command: |
-            mkdir -p test_results/coverage/unit/xml
-            mkdir -p test_results/coverage/unit/html
-            mkdir -p test_results/junit/unit
+            mkdir -p tests/results/coverage/unit/xml
+            mkdir -p tests/results/coverage/unit/html
+            mkdir -p tests/results/junit/unit
             ./tests/run_tests.sh -s unit
           no_output_timeout: 300s
           when:  always
@@ -78,18 +78,67 @@ jobs:
             t=$(git log -1 --pretty=%B)
             if [[ "$t" == *"all tests"* ]] || [[ ! -z "${CIRCLE_PULL_REQUEST}" ]] || [[ ! -z "${CIRCLE_PULL_REQUESTS}" ]];
             then
-                mkdir -p test_results/coverage/integration/xml
-                mkdir -p test_results/coverage/integration/html
-                mkdir -p test_results/junit/integration
+                mkdir -p tests/results/coverage/integration/xml
+                mkdir -p tests/results/coverage/integration/html
+                mkdir -p tests/results/junit/integration
                 ./tests/run_tests.sh -s integration
             else
                 echo "Skipping integration tests"
             fi
           no_output_timeout: 3000s
+      - run:
+          name: Comine Coverage Results
+          working_directory: ~/curation/tests/results/coverage
+          command: |
+            mkdir -p all/xml
+
+            # This should happen on pull requests
+            if [ -f integration/.coverage ] && [ -f unit/.coverage ];
+            then
+                echo "Combining integration and unit test results."
+                cp integration/.coverage all/.coverage.integration
+                cp unit/.coverage all/.coverage.unit
+                cd all
+                coverage combine .coverage.integration .coverage.unit
+                coverage html -d html --title "Curation Python Test Coverage Report - ALL"
+                coverage xml -o xml/coverage.xml
+                cd -
+            fi
+
+            # This will happen for commits, but not pull requests
+            if [ ! -f integration/.coverage ] && [ -f unit/.coverage ];
+            then
+                echo "Providing unit test results only.  Integration tests coverage file not found."
+                cp unit/.coverage all/.coverage.unit
+                cd all
+                coverage combine .coverage.unit
+                coverage html -d html --title "Curation Python Test Coverage Report - UNIT"
+                coverage xml -o xml/coverage.xml
+                cd -
+            fi
+
+            # This would be unusual and probably should not happen unless a failure has occurred
+            if [ -f integration/.coverage ] && [ ! -f unit/.coverage ];
+            then
+                echo "Providing integration test results only.  Unit tests coverage file not found."
+                cp integration/.coverage all/.coverage.integration
+                cd all
+                coverage combine .coverage.integration
+                coverage html -d html --title "Curation Python Test Coverage Report - INTEGRATION"
+                coverage xml -o xml/coverage.xml
+                cd -
+            fi
+
+            # Likely a test failure occurred
+            if [ ! -f integration/.coverage ] && [ ! -f unit/.coverage ];
+            then
+                echo "No test coverage data available.  Did a test failure occur?"
+            fi
+          no_output_timeout: 30s
       # Save test results
       - store_test_results:
-          path: ~/curation/data_steward/test_results/junit
+          path: ~/curation/tests/results/junit
       # Save artifacts
       - store_artifacts:
-          path: ~/curation/data_steward/test_results/coverage
+          path: ~/curation/tests/results/coverage
           destination: test_results

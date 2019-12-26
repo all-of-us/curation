@@ -5,7 +5,7 @@ import unittest
 import app_identity
 import bq_utils
 import resources
-from test.unit_test import test_util
+from tests import test_util
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking_ppi
 
 SELECT_RECORDS = """ SELECT * FROM `{project_id}.{dataset_id}.{table_id}`"""

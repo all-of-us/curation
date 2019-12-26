@@ -14,8 +14,11 @@ function usage() {
   exit 1
 }
 
-while getopts "s:g:h:r:" opt; do
+while getopts "s:h:r:" opt; do
   case $opt in
+    s)
+      subset=$OPTARG
+      ;;
     r)
       substring=$OPTARG
       ;;

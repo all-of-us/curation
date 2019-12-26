@@ -9,7 +9,7 @@ import bq_utils
 import common
 from cdr_cleaner import clean_cdr_engine
 from cdr_cleaner.cleaning_rules import drop_participants_without_ppi_or_ehr
-from test.unit_test import test_util
+from tests import test_util
 
 
 # Participant 1: no data (to be removed)

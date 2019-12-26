@@ -55,7 +55,8 @@ def main(test_path, test_pattern, coverage_filepath):
     cov = coverage.Coverage(config_file=coverage_filepath)
     cov.start()
 
-    output_file = os.path.join('test_results', 'junit', coverage_filepath.split('_')[1])
+    test_type = coverage_filepath.split('_')[1]
+    output_file = os.path.join('tests', 'results', 'junit', test_type)
     start_time = time.time()
     for mod_tests in suite:
         if mod_tests.countTestCases():
@@ -65,14 +66,17 @@ def main(test_path, test_pattern, coverage_filepath):
 
     end_time = time.time()
     cov.stop()
+
+    config = configparser.ConfigParser()
+    config.read(coverage_filepath)
+    cov_data_file = config.get('run', 'data_file')
+    cov_data_filepath = os.path.dirname(cov_data_file)
+
     try:
         cov.save()
     except OSError:
         # create the directory to save .coverage file to, if needed
-        config = configparser.ConfigParser()
-        config.read(coverage_filepath)
-        data_file = os.path.dirname(config.get('run', 'data_file'))
-        os.makedirs(data_file)
+        os.makedirs(cov_data_filepath)
         cov.save()
 
     cov.html_report()
