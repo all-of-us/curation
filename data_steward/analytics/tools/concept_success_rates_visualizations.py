@@ -5,16 +5,8 @@
 #     text_representation:
 #       extension: .py
 #       format_name: light
-<<<<<<< HEAD
-#       format_version: '1.4'
-#       jupytext_version: 1.2.3
-||||||| merged common ancestors
-#       format_version: '1.4'
-#       jupytext_version: 1.2.4
-=======
 #       format_version: '1.5'
 #       jupytext_version: 1.3.0
->>>>>>> 743c86bca6683c2b89d5505b473df2c3a6246fb8
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -28,10 +20,11 @@
 #
 # ### NOTE: Aggregate info is weighted by the contribution of each site
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 from math import pi
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 # +
 sheets = []
@@ -65,16 +58,16 @@ date_cols = table_sheets[0].columns[2:]
 for idx, table_id in enumerate(sheet_names):
     under_encountered = False
     start_idx, end_idx = 0, 0
-    
+
     for c_idx, character in enumerate(table_id):
         if character == '_' and not under_encountered:
             start_idx = c_idx
             under_encountered = True
         elif character == '_' and under_encountered:
             end_idx = c_idx
-    
+
     in_between_str = table_id[start_idx:end_idx + 1]
-    
+
     if in_between_str == '_succes_':
         new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
         sheet_names[idx] = new_string
@@ -148,7 +141,6 @@ sns.heatmap(new_table_sheets['visit_success_rate'], annot=True, annot_kws={"size
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="RdYlGn")
 
-
 ax.set_title("Visit Table Concept Success Rate", size=14)
 # plt.savefig("visit_table_concepts.jpg")
 # -
@@ -169,7 +161,7 @@ ax.set_title("Visit Table Concept Success Rate", size=14)
 #
 # july_15_df = pd.DataFrame.from_dict(date_info)
 #
-# sns.boxplot(data=july_15_df, 
+# sns.boxplot(data=july_15_df,
 #             whis = "range", palette="vlag")
 #
 # sns.swarmplot(data=july_15_df,
@@ -194,14 +186,13 @@ ax.set_title("Visit Table Concept Success Rate", size=14)
 #                   'poorly_defined_rows_total', 'total_rows']
 
 # +
-site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders', 
+site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders',
                   'cpmc_ucd', 'cpmc_uci', 'cpmc_ucsd', 'cpmc_ucsf', 'cpmc_usc', 'ecchc',
                   'hrhc', 'ipmc_northshore', 'ipmc_nu', 'ipmc_rush', 'ipmc_uchicago',
                   'ipmc_uic', 'jhchc', 'nec_bmc', 'nec_phs', 'nyc_cornell', 'nyc_cu',
-                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_lsu', 'saou_uab', 'saou_ummc', 'seec_emory', 
+                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_uab', 'saou_ummc', 'seec_emory',
                   'seec_miami', 'seec_morehouse', 'seec_ufl', 'syhc', 'tach_hfhs', 'trans_am_baylor',
-                  'trans_am_essentia', 'trans_am_meyers', 'trans_am_spectrum', 'uamc_banner', 
-                  'aggregate_info']
+                  'trans_am_essentia', 'trans_am_spectrum', 'uamc_banner', 'aggregate_info']
 
 print(len(site_name_list))
 # -
@@ -210,7 +201,7 @@ print(len(site_name_list))
 
 # concept_file_hpo_sheet_name = 'cdr_concept_hpo_sheets_data_analytics.xlsx'
 #
-# site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders', 
+# site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders',
 #                   'cpmc_ucd', 'cpmc_uci', 'cpmc_ucsd', 'cpmc_ucsf', 'cpmc_usc', 'ecchc',
 #                   'hrhc', 'ipmc_northshore', 'ipmc_nu', 'ipmc_rush', 'ipmc_uchicago',
 #                   'ipmc_uic', 'jhchc', 'nec_bmc', 'nec_phs', 'nyc_cornell', 'nyc_cu',
@@ -220,10 +211,10 @@ print(len(site_name_list))
 #                   'poorly_defined_rows_total', 'total_rows']
 
 # +
-name_of_interest = 'ipmc_northshore'
+name_of_interest = 'aouw_mcri'
 
 if name_of_interest not in site_name_list:
-    raise ValueError("Name not found in the list of HPO site names.")    
+    raise ValueError("Name not found in the list of HPO site names.")
 
 for idx, site in enumerate(site_name_list):
     if site == name_of_interest:
@@ -252,14 +243,13 @@ s31, s32 = site_name_list[30], site_name_list[31]
 s33, s34 = site_name_list[32], site_name_list[33]
 s35, s36 = site_name_list[34], site_name_list[35]
 s37, s38 = site_name_list[36], site_name_list[37]
-s39, s40 = site_name_list[38], site_name_list[39]
-s41 = site_name_list[40]
+s39 = site_name_list[38]
 
 hpo_sheet_names = [
-    s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, 
+    s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14,
     s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26,
     s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
-    s39, s40, s41]
+    s39]
 
 # +
 hpo_sheets = []
@@ -275,16 +265,16 @@ date_cols = hpo_sheets[0].columns[2:]
 for idx, table_id in enumerate(table_id_cols):
     under_encountered = False
     start_idx, end_idx = 0, 0
-    
+
     for c_idx, character in enumerate(table_id):
         if character == '_' and not under_encountered:
             start_idx = c_idx
             under_encountered = True
         elif character == '_' and under_encountered:
             end_idx = c_idx
-    
+
     in_between_str = table_id[start_idx:end_idx + 1]
-    
+
     if in_between_str == '_succes_':
         new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
         table_id_cols[idx] = new_string
@@ -329,8 +319,7 @@ dates = new_hpo_sheets[0].columns.tolist()
 num_tables = len(new_hpo_sheets[0]) - 1  # do not include aggregate
 
 angles = [(angle / num_tables) * (2 * pi) for angle in range(num_tables)]
-angles += angles[:1] # back to the start
-
+angles += angles[:1]  # back to the start
 
 # +
 max_val = 0
@@ -341,7 +330,7 @@ site_name = site_name_list[idx_of_interest]
 for date in dates:
     date_vals = site[date].values
     date_vals = date_vals.flatten().tolist()[:-1]  # cut off aggregate
-    
+
     for value in date_vals:
         if value > max_val:
             max_val = value
@@ -355,28 +344,27 @@ for val in y_ticks:
 
 # +
 fig, ax = plt.subplots(figsize=(9, 6))
-ax = plt.subplot(111, polar = True)  # initialize
+ax = plt.subplot(111, polar=True)  # initialize
 
 ax.set_theta_offset(pi / 2)  # flip to top
 ax.set_theta_direction(-1)
 
-plt.xticks(angles[:-1],table_id_cols)
+plt.xticks(angles[:-1], table_id_cols)
 
 # Draw ylabels
 ax.set_rlabel_position(0)
 plt.yticks(y_ticks, y_ticks_str, color="grey", size=8)
 plt.ylim(0, max_val)
 
-
 for date_idx in range(len(dates)):
     date_vals = site[dates[date_idx]].values
     date = date_vals.flatten().tolist()[:-1]  # cut off aggregate
     date += date[:1]  # round out the graph
-    
+
     ax.plot(angles, date, linewidth=1, linestyle='solid', label=dates[date_idx])
     ax.fill(angles, date, alpha=0.1)
 
-plt.title("Concept Percent Population: {}".format(name_of_interest), size=15, y = 1.1)
+plt.title("Concept Percent Population: {}".format(name_of_interest), size=15, y=1.1)
 plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
 # -
 
@@ -384,7 +372,7 @@ dates = new_hpo_sheets[idx_of_interest].columns
 
 # ## Want a line chart over time.
 
-times=new_hpo_sheets[idx_of_interest].columns.tolist()
+times = new_hpo_sheets[idx_of_interest].columns.tolist()
 
 # +
 success_rates = {}
@@ -402,41 +390,27 @@ for table, values_over_time in success_rates.items():
     sample_list = [x for x in success_rates[table] if str(x) != 'nan']
     if len(sample_list) > 1:
         plt.plot(date_idxs, success_rates[table], '--', label=table)
-    
+
 for table, values_over_time in success_rates.items():
     non_nan_idx = 0
     new_lst = []
-    
+
     for idx, x in enumerate(success_rates[table]):
         if str(x) != 'nan':
             new_lst.append(x)
             non_nan_idx = idx
-    
+
     if len(new_lst) == 1:
         plt.plot(date_idxs[non_nan_idx], new_lst, 'o', label=table)
 
-plt.legend(loc="upper left", bbox_to_anchor=(1,1))
+plt.legend(loc="upper left", bbox_to_anchor=(1, 1))
 plt.title("{} concept success rates over time".format(name_of_interest))
 plt.ylabel("Success Rate (%)")
 plt.xlabel("")
-plt.xticks(date_idxs, times, rotation = 'vertical')
+plt.xticks(date_idxs, times, rotation='vertical')
 
 handles, labels = ax.get_legend_handles_labels()
-lgd = ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5,-0.1))
+lgd = ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, -0.1))
 
 img_name = name_of_interest + "_concept_success_line_graph.jpg"
 # plt.savefig(img_name, bbox_extraartist=(lgd,), bbox_inches='tight')
-<<<<<<< HEAD
-# -
-
-
-
-
-
-
-
-
-||||||| merged common ancestors
-# -
-=======
->>>>>>> 743c86bca6683c2b89d5505b473df2c3a6246fb8
