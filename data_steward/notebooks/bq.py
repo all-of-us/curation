@@ -1,13 +1,10 @@
-import os
+from google.cloud import bigquery
 
-from google import datalab
-from google.datalab import bigquery
 
-# In Windows we found that datalab project_id resolution prioritizes an obscure config.json over env vars
-# APPLICATION_ID or PROJECT_ID. This explicitly sets it to env var PROJECT_ID.
-datalab.Context.default().set_project_id(project_id=os.getenv('PROJECT_ID'))
+client = bigquery.Client()
 
 
 # Wrapper so we can more easily swap to whatever client library we prefer in the future
 def query(q, use_cache=False):
-    return bigquery.Query(q).execute(output_options=bigquery.QueryOutput.dataframe(use_cache=use_cache)).result()
+    query_job_config = bigquery.job.QueryJobConfig(use_query_cache=use_cache)
+    return client.query(q, job_config=query_job_config).to_dataframe()
