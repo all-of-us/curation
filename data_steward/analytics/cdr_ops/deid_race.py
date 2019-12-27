@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# + {}
+# +
 from notebooks import bq, render, parameters
 import pandas as pd
 

@@ -12,8 +12,11 @@ notebooks to represented by plain Python `.py` scripts. This provides the follow
 
 ## Requirements
 
- * Python 2.7
- * A service account associated with a data curation environment 
+ * Python 3.7.x
+  
+   Note: the interpreter must be accessible your PATH via `python3.7`.
+   
+ * A service account key associated with the curation environment
 
 ## Getting Started
 
