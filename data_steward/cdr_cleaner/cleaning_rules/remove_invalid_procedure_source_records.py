@@ -30,14 +30,14 @@ WHERE p.procedure_source_concept_id IN (
     TRIM(domain_id) != 'Procedure'
 )
 OR 
-p.procedure_concept_id IN (
+p.procedure_source_concept_id IN (
   SELECT
     concept_id
   FROM
     unioned_ehr20191004.concept
   WHERE
     TRIM(domain_id) = 'Procedure'
-    AND TRIM(standard_concept) != 'S'
+    AND TRIM(concept_class_id) = 'CPT4 Modifier'
 )
 """
 
