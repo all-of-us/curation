@@ -217,7 +217,7 @@ def find_most_popular_unit_type(tot_units, DATASET, string_desc_concepts):
 
 
 
-def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts):
+def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ancestor_concept):
     """
     Function is used to determine select metrics for the whole dataset for all
     of the measurement concept IDs that represent a particular measurement set.
@@ -232,6 +232,10 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts):
         
     string_desc_concepts(string): string of all the descendant concept IDs that
         represent the concept_ids for the particular measurement set.
+        
+    ancestor_concept (int): used as the 'starting' point for all of the measurements.
+        can hopefully capture multiple descendants that reflect the same type of
+        measurement.
     
     Returns
     -------
@@ -240,6 +244,12 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts):
     
     stdev (float): number that represents the 'standard deviation' of all the
         measurements for the measurement set that have the most popular unit concept
+        
+    num_records (float): number of records (across all sites) that are being measured
+        for the particular ancestor_concept_id, unit_concept_id, etc.
+        
+    mean (float): number that represents the 'mean' of all the measurements for the
+        meawsurement set that have the most popular unit
     """
     
     find_range_overall = """
@@ -264,6 +274,23 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts):
     measurements_for_lab_and_unit = bq.query(find_range_overall)
 
     values = measurements_for_lab_and_unit['value_as_number'].tolist()
+    
+    find_ancestor_lab = """
+    SELECT
+    DISTINCT
+    c.concept_name
+    FROM
+    `{}.concept` c
+    WHERE
+    c.concept_id = {}
+    """.format(DATASET, ancestor_id)
+    
+    concept_name = bq.query(find_ancestor_lab)
+    concept_name = concept_name['concept_name'].tolist()
+    concept_name = str(concept_name[0].lower())  # actual name
+    
+    num_records = len(values)
+    mean = np.mean(values)
 
     decile1 = np.percentile(values, 10)
 
@@ -275,19 +302,21 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts):
 
     stdev = np.std(np.asarray(values))
 
-
+    print("There are {} records for concept: {}\n".format(num_records, concept_name))
     print("The 10th percentile is: {}".format(decile1))
     print("The 25th percentile is: {}".format(quartile1))
     print("The 50th percentile is: {}".format(median))
     print("The 75th percentile is: {}".format(quartile3))
-    print("The 90th percentile is: {}".format(decile9))
+    print("The 90th percentile is: {}\n".format(decile9))
 
+    print("The mean is: {}".format(mean))
     print("The standard deviation is: {}".format(round(stdev, 2)))
     
-    return median, stdev
+    return median, stdev, num_records, mean
 
 
-def create_site_distribution_df(median, stdev, DATASET, string_desc_concepts, most_pop_unit):
+def create_site_distribution_df(
+    median, tot_stdev, tot_records, total_mean, DATASET, string_desc_concepts, most_pop_unit):
     """
     Function is used to create and return a dataframe that shows the mean and standard deviation
     for a site's values (of a particular measurement set, for the most popular unit_concept)
@@ -298,8 +327,11 @@ def create_site_distribution_df(median, stdev, DATASET, string_desc_concepts, mo
     median (float): number that represents the 'median' of all the measurements
         for the measurement set that have the most popular unit concept
     
-    stdev (float): number that represents the 'standard deviation' of all the
+    tot_stdev (float): number that represents the 'standard deviation' of all the
         measurements for the measurement set that have the most popular unit concept
+        
+    tot_records (float): number of records (across all sites) that are being measured
+        for the particular ancestor_concept_id, unit_concept_id, etc.
         
     DATASET (string): string representing the dataset to be queried. Taken from the
         parameters file
@@ -320,32 +352,51 @@ def create_site_distribution_df(median, stdev, DATASET, string_desc_concepts, mo
     find_site_distribution = """
     SELECT
     DISTINCT
-    mm.src_hpo_id, ROUND(AVG(m.value_as_number), 2) as mean, ROUND(STDDEV(m.value_as_number), 2) as stdev,
-    COUNT(*) as site_rows,
-    ROUND({}, 2) as total_median, ROUND({}, 2) as total_stdev
+    a.src_hpo_id, a.mean, a.tenth_perc, a.first_quartile, a.median, 
+    a.third_quartile, a.ninetieth_perc, a.stdev, total_median, total_stdev,
+    a.total_rows, COUNT(*) as num_rows,
+    ROUND(({} - a.mean) / SQRT(((({} - 1) * POW({}, 2)) + ((COUNT(*) - 1) * POW(a.stdev, 2))) / (({} - 1) + (COUNT(*) - 1)) * 
+    ( (1/{}) + (1/COUNT(*)) )), 2) as t_value
     FROM
-    `{}.unioned_ehr_measurement` m
-    JOIN
-    `{}._mapping_measurement` mm
-    ON
-    m.measurement_id = mm.measurement_id
-    JOIN
-    `{}.concept` c
-    ON
-    c.concept_id = m.unit_concept_id
-    WHERE
-    m.measurement_concept_id IN {}
-    AND
-    m.unit_concept_id IS NOT NULL
-    AND
-    m.unit_concept_id <> 0
-    AND
-    m.value_as_number IS NOT NULL
-    AND
-    c.concept_name LIKE '%{}%'
-    GROUP BY 1
-    ORDER BY mean DESC
-    """.format(median, stdev, DATASET, DATASET, DATASET, string_desc_concepts, most_pop_unit)
+      (SELECT
+      mm.src_hpo_id,
+      ROUND(AVG(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as mean,
+      ROUND(PERCENTILE_CONT(m.value_as_number, 0.1) OVER (PARTITION BY mm.src_hpo_id), 2) as tenth_perc,
+      ROUND(PERCENTILE_CONT(m.value_as_number, 0.25) OVER (PARTITION BY mm.src_hpo_id), 2) as first_quartile,
+      ROUND(PERCENTILE_CONT(m.value_as_number, 0.5) OVER (PARTITION BY mm.src_hpo_id), 2) as median,
+      ROUND(PERCENTILE_CONT(m.value_as_number, 0.75) OVER (PARTITION BY mm.src_hpo_id), 2) as third_quartile,
+      ROUND(PERCENTILE_CONT(m.value_as_number, 0.9) OVER (PARTITION BY mm.src_hpo_id), 2) as ninetieth_perc,
+      ROUND(STDDEV_POP(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as stdev,
+      ROUND({}, 2) as total_median, 
+      ROUND({}, 2) as total_stdev,
+      ROUND({}, 2) as total_rows
+      FROM
+      `{}.unioned_ehr_measurement` m
+      JOIN
+      `{}._mapping_measurement` mm
+      ON
+      m.measurement_id = mm.measurement_id 
+      JOIN
+      `{}.concept` c
+      ON
+      c.concept_id = m.unit_concept_id 
+      WHERE
+      m.measurement_concept_id IN {}
+      AND
+      m.unit_concept_id IS NOT NULL
+      AND
+      m.unit_concept_id <> 0
+      AND
+      c.concept_name LIKE '%{}%'
+      AND
+      m.value_as_number IS NOT NULL
+      ORDER BY mm.src_hpo_id, median DESC) a
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+    ORDER BY median DESC
+    """.format(total_mean, tot_records, tot_stdev,
+               tot_records, tot_records,
+               median, tot_stdev, tot_records,
+               DATASET, DATASET, DATASET, string_desc_concepts, most_pop_unit)
 
     site_value_distribution_df = bq.query(find_site_distribution)
     
@@ -376,10 +427,11 @@ def run_statistics(ancestor_concept):
     
     most_popular_unit = find_most_popular_unit_type(tot_units, DATASET, descendant_concepts)
     
-    median, stdev = metrics_for_whole_dataset(DATASET, most_popular_unit, descendant_concepts)
+    median, stdev, num_records, mean = metrics_for_whole_dataset(
+        DATASET, most_popular_unit, descendant_concepts, ancestor_concept)
     
     site_value_distribution_df = create_site_distribution_df(
-        median, stdev, DATASET, descendant_concepts, most_popular_unit)
+        median, stdev, num_records, mean, DATASET, descendant_concepts, most_popular_unit)
     
     
     return site_value_distribution_df, most_popular_unit
@@ -510,7 +562,11 @@ def process_image(DATASET, df, most_popular_unit):
 for ancestor_id in measurement_ancestors:
     site_value_distribution_df, most_popular_unit = run_statistics(ancestor_id)
     
+    print(site_value_distribution_df)
+    
     process_image(DATASET, site_value_distribution_df, most_popular_unit)
+
+
 
 
 
