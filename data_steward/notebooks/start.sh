@@ -39,7 +39,7 @@ echo "Activating service account ${ACCOUNT} for application ID ${APPLICATION_ID}
 gcloud auth activate-service-account ${ACCOUNT} --key-file=${KEY_FILE}
 gcloud config set project "${APPLICATION_ID}"
 
-PYTHON_CMD='python2.7'
+PYTHON_CMD='python3.7'
 VENV_NAME='cdr_ops_env'
 VENV_PATH="${HOME}/${VENV_NAME}"
 
