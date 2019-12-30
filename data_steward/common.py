@@ -31,6 +31,18 @@ AOU_REQUIRED = [CARE_SITE, CONDITION_OCCURRENCE, DEATH, DEVICE_EXPOSURE, DRUG_EX
                 FACT_RELATIONSHIP, LOCATION, MEASUREMENT, NOTE, OBSERVATION, PERSON,
                 PROCEDURE_OCCURRENCE, PROVIDER, SPECIMEN, VISIT_OCCURRENCE]
 
+# Standardized clinical data tables in OMOP. All should contain a person_id column. See
+# https://github.com/OHDSI/CommonDataModel/wiki/Standardized-Clinical-Data-Tables
+
+# Clinical tables which do not have a corresponding mapping table.
+MAPPED_CLINICAL_DATA_TABLES = [VISIT_OCCURRENCE, CONDITION_OCCURRENCE,
+                               DRUG_EXPOSURE, MEASUREMENT, PROCEDURE_OCCURRENCE,
+                               OBSERVATION, DEVICE_EXPOSURE, SPECIMEN]
+# Clinical tables which do not have a corresponding mapping table.
+UNMAPPED_CLINICAL_DATA_TABLES = [DEATH]
+# All clinical tables.
+CLINICAL_DATA_TABLES = MAPPED_CLINICAL_DATA_TABLES + UNMAPPED_CLINICAL_DATA_TABLES
+
 # other CDM tables
 OBSERVATION_PERIOD = 'observation_period'
 DRUG_ERA = 'drug_era'

@@ -1,12 +1,11 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:light
 #     text_representation:
 #       extension: .py
 #       format_name: light
-#       format_version: '1.3'
-#       jupytext_version: 1.0.5
+#       format_version: '1.5'
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -29,12 +28,29 @@ print('Setting everything up...')
 import warnings
 
 warnings.filterwarnings('ignore')
+import pandas_gbq
 import pandas as pd
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+from matplotlib.lines import Line2D
+
+import matplotlib.ticker as ticker
+import matplotlib.cm as cm
+import matplotlib as mpl
 
 import matplotlib.pyplot as plt
-
 # %matplotlib inline
 
+
+import os
+import sys
+from datetime import datetime
+from datetime import date
+from datetime import time
+from datetime import timedelta
+import time
 
 DATASET = ''
 
@@ -42,6 +58,8 @@ plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
+
+from IPython.display import HTML as html_print
 
 
 def cstr(s, color='black'):

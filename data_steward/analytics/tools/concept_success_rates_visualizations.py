@@ -5,12 +5,20 @@
 #     text_representation:
 #       extension: .py
 #       format_name: light
+<<<<<<< HEAD
 #       format_version: '1.4'
 #       jupytext_version: 1.2.3
+||||||| merged common ancestors
+#       format_version: '1.4'
+#       jupytext_version: 1.2.4
+=======
+#       format_version: '1.5'
+#       jupytext_version: 1.3.0
+>>>>>>> 743c86bca6683c2b89d5505b473df2c3a6246fb8
 #   kernelspec:
-#     display_name: Python 2
+#     display_name: Python 3
 #     language: python
-#     name: python2
+#     name: python3
 # ---
 
 # NOTES:
@@ -418,6 +426,7 @@ lgd = ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5,-0.1))
 
 img_name = name_of_interest + "_concept_success_line_graph.jpg"
 # plt.savefig(img_name, bbox_extraartist=(lgd,), bbox_inches='tight')
+<<<<<<< HEAD
 # -
 
 
@@ -427,3 +436,7 @@ img_name = name_of_interest + "_concept_success_line_graph.jpg"
 
 
 
+||||||| merged common ancestors
+# -
+=======
+>>>>>>> 743c86bca6683c2b89d5505b473df2c3a6246fb8

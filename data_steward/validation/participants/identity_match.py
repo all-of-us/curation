@@ -682,8 +682,8 @@ def _compare_birth_dates(
                 rdr_date = parse(rdr_birthdate)
                 ehr_date = parse(ehr_birthdate)
                 # convert datetime objects to Year/month/day strings and compare
-                rdr_string = rdr_date.strftime(consts.DATE)
-                ehr_string = ehr_date.strftime(consts.DATE)
+                rdr_string = rdr_date.strftime(consts.DATE_FORMAT)
+                ehr_string = ehr_date.strftime(consts.DATE_FORMAT)
 
                 match_str = consts.MATCH if rdr_string == ehr_string else consts.MISMATCH
                 match_values[person_id] = match_str

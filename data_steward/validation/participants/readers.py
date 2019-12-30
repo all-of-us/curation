@@ -4,6 +4,7 @@
 A module to perform reading operations for validation data.
 """
 # Python imports
+from datetime import datetime, timezone
 import logging
 
 # Third party imports
@@ -16,12 +17,42 @@ from constants.validation.participants import readers as consts
 LOGGER = logging.getLogger(__name__)
 
 
-def _get_utf8_string(value):
+def _get_field_type(table_name, column_name):
+    """
+    Get the defined field type for the table.
+
+    :param table_name:  name of the table containing the field
+    :param column_name: name of the column to get the type of
+
+    :return:  The defined type for the field in the table.
+    """
+    field_type = None
+    for field in rc.fields_for(table_name):
+        if field.get('name', '') == column_name:
+            field_type = field.get('type')
+
+    return field_type
+
+
+def _get_string(value, field_type=None):
+    """
+    Get the string value of a field based on its return value type and defiend type.
+
+    :param value: The value to return as a string.
+    :param field_type: The defined field type.
+
+    :return: The resulting string value or None.
+    """
+
+    time_types = [consts.DATE_TYPE, consts.DATETIME_TYPE, consts.TIMESTAMP_TYPE]
     result = None
-    if isinstance(type(value), bytes):
+    if isinstance(value, bytes):
         result = value.decode('utf-8', 'ignore')
     elif value is None:
         pass
+    elif isinstance(value, float) and field_type.lower() in time_types:
+        result = datetime.fromtimestamp(value, tz=timezone.utc)
+        result = result.strftime(consts.DATE_FORMAT)
     else:
         result = str(value)
 
@@ -98,11 +129,13 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
+    field_type = _get_field_type(table_name, column_name)
+
     result_dict = {}
     for item in row_results:
         person_id = item.get(consts.PERSON_ID_FIELD)
         value = item.get(column_name)
-        value = _get_utf8_string(value)
+        value = _get_string(value, field_type)
 
         exists = result_dict.get(person_id)
         if exists is None:
@@ -149,11 +182,13 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
+    field_type = _get_field_type(table_name, 'observation_source_concept_id')
+
     result_dict = {}
     for item in row_results:
         person_id = item.get(consts.PERSON_ID_FIELD)
         value = item.get(consts.STRING_VALUE_FIELD)
-        value = _get_utf8_string(value)
+        value = _get_string(value, field_type)
 
         exists = result_dict.get(person_id)
         if exists is None:
@@ -205,12 +240,14 @@ def get_pii_values(project, pii_dataset, hpo, table, field):
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
+    field_type = _get_field_type(table, field)
+
     result_list = []
     for item in row_results:
         person_id = item.get(consts.PERSON_ID_FIELD)
         value = item.get(field)
 
-        value = _get_utf8_string(value)
+        value = _get_string(value, field_type)
         result_list.append((person_id, value))
 
     return result_list
@@ -264,12 +301,14 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
+    field_type = _get_field_type(table, field)
+
     result_list = []
     for item in row_results:
         location_id = item.get(consts.LOCATION_ID_FIELD)
         value = item.get(field)
 
-        value = _get_utf8_string(value)
+        value = _get_string(value, field_type)
 
         person_id = location_id_dict.get(location_id, '')
         result_list.append((person_id, value))

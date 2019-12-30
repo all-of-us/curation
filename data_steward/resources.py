@@ -15,6 +15,7 @@ base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe
 tools_path = os.path.join(base_path, 'tools')
 
 # resources/*
+DEID_PATH = os.path.join(base_path, 'deid')
 resource_path = os.path.join(base_path, 'resources')
 hpo_csv_path = os.path.join(resource_path, 'hpo.csv')
 fields_path = os.path.join(resource_path, 'fields')

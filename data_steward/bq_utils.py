@@ -25,7 +25,8 @@ class InvalidOperationError(RuntimeError):
     """Raised when an invalid Big Query operation attempted during the validation process"""
 
     def __init__(self, msg):
-        super(InvalidOperationError, self).__init__(msg)
+        self.msg = msg
+        super(InvalidOperationError, self).__init__(self.msg)
 
 
 class BigQueryJobWaitError(RuntimeError):
@@ -477,18 +478,22 @@ def create_table(table_id, fields, drop_existing=False, dataset_id=None):
     return insert_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
-def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=None):
+def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=None, force_all_nullable=False):
     """
     Create a supported OHDSI table
     :param table_name: the name of a table whose schema is specified
     :param table_id: name fo the table to create in the bigquery dataset
     :param drop_existing: if True delete an existing table with the given table_id
     :param dataset_id: dataset to create the table in
+    :param force_all_nullable: if True, overrides all fields of the schema to be nullable, primarily for testing
     :return: table reference object
     """
     fields_filename = os.path.join(resources.fields_path, table_name + '.json')
     with open(fields_filename, 'r') as fields_file:
         fields = json.load(fields_file)
+    if force_all_nullable:
+        for f in fields:
+            f["mode"] = "nullable"
     return create_table(table_id, fields, drop_existing, dataset_id)
 
 
@@ -739,6 +744,43 @@ def create_dataset(
     return insert_result
 
 
+def csv_line_to_sql_row_expr(row: dict, fields: list):
+    """
+    Translate a dict to a SQL row expression based on a fields spec
+
+    :param row: dict whose values are all strings
+    :param fields: bigquery fields spec with keys {name, type, mode, description}
+    :return: SQL expression for row object
+    :rtype: str
+    :example:
+    >>> fields = [{ 'name': 'int_col',  'type': 'integer', 'mode': 'required', 'description': ''},
+    >>>           { 'name': 'date_col', 'type': 'date',    'mode': 'required', 'description': ''},
+    >>>           { 'name': 'str_col',  'type': 'string',  'mode': 'nullable', 'description': ''}]
+    >>> csv_line_to_sql_row_expr({'int_col': '1234', 'date_col': '2019-01-01', 'str_col': ''}, fields)
+    "(1234, '2019-01-01', NULL)"
+    """
+    val_exprs = []
+    # TODO refactor for all other types or use external library
+    for field_name, val in row.items():
+        field = next(filter(lambda f: f['name'] == field_name, fields), None)
+        if field is None:
+            raise InvalidOperationError(f'Unable to marshal {val}: field "{field_name}" was not found')
+        if not val:
+            if field['mode'] == 'nullable':
+                val_expr = "NULL"
+            elif field['type'] == 'string':
+                val_expr = "''"
+            else:
+                raise InvalidOperationError(f'Value not provided for required field {field_name}')
+        elif field['type'] in ['string', 'date', 'timestamp']:
+            val_expr = f"'{val}'"
+        else:
+            val_expr = f"{val}"
+        val_exprs.append(val_expr)
+    cols = ','.join(val_exprs)
+    return f'({cols})'
+
+
 def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, fields=None):
     """
     Loads BQ table from a csv file without making use of GCS buckets
@@ -760,26 +802,8 @@ def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, field
         fields_filename = os.path.join(resources.fields_path, table_name + '.json')
         fields = json.load(open(fields_filename, 'r'))
     field_names = ', '.join([field['name'] for field in fields])
-
-    # template for formatted values.
-    # string, dates and timestamps can be passed as string
-    # integer, float and boolean need to be passed without string quotes
-    insert_format_vals = '({cols})'.format(cols=', '.join(['"{' + field['name'] + '}"' if field["type"] == 'string'
-                                                           or field["type"] == 'date' or field["type"] == 'timestamp'
-                                                           else '{' + field['name'] + '}' for field in fields]))
-
-    pair_exprs = []
-    for mapping_dict in table_list:
-        converted_dict = dict()
-        for k, v in mapping_dict.items():
-            for field in fields:
-                if field['name'] == k and field['type'] == 'integer':
-                    converted_dict[k] = int(v)
-                else:
-                    converted_dict[k] = v
-        pair_expr = insert_format_vals.format(**converted_dict)
-        pair_exprs.append(pair_expr)
-    formatted_mapping_list = ', '.join(pair_exprs)
+    row_exprs = [csv_line_to_sql_row_expr(t, fields) for t in table_list]
+    formatted_mapping_list = ', '.join(row_exprs)
 
     create_table(table_id=table_name, fields=fields, drop_existing=True, dataset_id=dataset_id)
 

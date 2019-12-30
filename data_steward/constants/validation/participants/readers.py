@@ -53,3 +53,11 @@ STRING_VALUE_FIELD = 'value_as_string'
 
 # HPO dictionary keys
 HPO_ID = 'hpo_id'
+
+DATE_FORMAT = id_match.DATE_FORMAT
+DATE_TYPE = id_match.DATE_TYPE
+DATETIME_TYPE = id_match.DATETIME_TYPE
+FLOAT_TYPE = id_match.FLOAT_TYPE
+INTEGER_TYPE = id_match.INTEGER_TYPE
+STRING_TYPE = id_match.STRING_TYPE
+TIMESTAMP_TYPE = id_match.TIMESTAMP_TYPE

@@ -8,7 +8,6 @@ The supplemental operational_pii_fields.csv shows all present PPI codes without 
 indicating which should be dropped in the “drop_value” column
 """
 import logging
-import os
 
 import bq_utils
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -16,10 +15,8 @@ import sandbox
 
 LOGGER = logging.getLogger(__name__)
 
-module_name = os.path.basename(__file__[:-3])
-
 OPERATIONAL_PII_FIELDS_TABLE = 'operational_pii_fields'
-INTERMEDIARY_TABLE = module_name + '_observation'
+INTERMEDIARY_TABLE = 'remove_operational_pii_fields_observation'
 
 OPERATION_PII_FIELDS_INTERMEDIARY_QUERY = """
 CREATE OR REPLACE TABLE
@@ -61,6 +58,58 @@ FROM
 """
 
 
+def load_operational_pii_fields_lookup_table(project_id, sandbox_dataset_id):
+    """
+        Loads the operational pii fields from resources/operational_pii_fields.csv
+        into project_id.sandbox_dataset_id.operational_pii_fields in BQ
+
+        :param project_id: Project where the sandbox dataset resides
+        :param sandbox_dataset_id: Dataset where the smoking lookup table needs to be created
+        :return: None
+    """
+    bq_utils.load_table_from_csv(project_id,
+                                 sandbox_dataset_id,
+                                 OPERATIONAL_PII_FIELDS_TABLE,
+                                 csv_path=None,
+                                 fields=None)
+
+
+def _get_intermediary_table_query(dataset_id, project_id, sandbox_dataset_id):
+    """
+    parses the intermediary query used to store records being deleted.
+
+    :param project_id: project id associated with the dataset to run the queries on
+    :param dataset_id: dataset id to run the queries on
+    :param sandbox_dataset_id: dataset id of the sandbox
+    :return: query string
+    """
+    return OPERATION_PII_FIELDS_INTERMEDIARY_QUERY.format(dataset=dataset_id,
+                                                           project=project_id,
+                                                           intermediary_table=INTERMEDIARY_TABLE,
+                                                           pii_fields_table=
+                                                           OPERATIONAL_PII_FIELDS_TABLE,
+                                                           sandbox=sandbox_dataset_id
+                                                           )
+
+
+def _get_delete_query(dataset_id, project_id, sandbox_dataset_id):
+    """
+    parses the query used to delete the operational pii.
+
+    :param project_id: project id associated with the dataset to run the queries on
+    :param dataset_id: dataset id to run the queries on
+    :param sandbox_dataset_id: dataset id of the sandbox
+    :return: query string
+    """
+
+    return DELETE_OPERATIONAL_PII_FIELDS_QUERY.format(dataset=dataset_id,
+                                                       project=project_id,
+                                                       pii_fields_table=
+                                                       OPERATIONAL_PII_FIELDS_TABLE,
+                                                       sandbox=sandbox_dataset_id
+                                                       )
+
+
 def get_remove_operational_pii_fields_query(project_id, dataset_id, sandbox_dataset_id):
     """
 
@@ -69,32 +118,24 @@ def get_remove_operational_pii_fields_query(project_id, dataset_id, sandbox_data
     :param sandbox_dataset_id: Name of the sandbox dataset
     :return:
     """
+    # fetch sandbox_dataset_id
+    if sandbox_dataset_id is None:
+        sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
 
-    bq_utils.load_table_from_csv(project_id=project_id, dataset_id=sandbox_dataset_id,
-                                 table_name=OPERATIONAL_PII_FIELDS_TABLE, csv_path=None, fields=None)
+    load_operational_pii_fields_lookup_table(project_id=project_id, sandbox_dataset_id=sandbox_dataset_id)
 
     queries_list = []
 
     # Save operational pii records being deleted in sandbox `dataset.intermediary_table` .
     query = dict()
-    query[cdr_consts.QUERY] = OPERATION_PII_FIELDS_INTERMEDIARY_QUERY.format(dataset=dataset_id,
-                                                                             project=project_id,
-                                                                             intermediary_table=INTERMEDIARY_TABLE,
-                                                                             pii_fields_table=
-                                                                             OPERATIONAL_PII_FIELDS_TABLE,
-                                                                             sandbox=sandbox_dataset_id
-                                                                             )
+    query[cdr_consts.QUERY] = _get_intermediary_table_query(dataset_id, project_id, sandbox_dataset_id)
+
     queries_list.append(query)
 
     # Delete operational pii records from observation table
     query = dict()
 
-    query[cdr_consts.QUERY] = DELETE_OPERATIONAL_PII_FIELDS_QUERY.format(dataset=dataset_id,
-                                                                         project=project_id,
-                                                                         pii_fields_table=
-                                                                         OPERATIONAL_PII_FIELDS_TABLE,
-                                                                         sandbox=sandbox_dataset_id
-                                                                         )
+    query[cdr_consts.QUERY] = _get_delete_query(dataset_id, project_id, sandbox_dataset_id)
     queries_list.append(query)
 
     return queries_list

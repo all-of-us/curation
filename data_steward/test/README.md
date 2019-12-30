@@ -3,7 +3,7 @@
 These tests can be run with:
 
 ```Shell
-./run_tests.sh -g ${sdk_dir}
+./run_tests.sh
 ```
 
 ## Directory Structure

@@ -4,10 +4,8 @@ Specification document and data curation processes for data submitted to the DRC
 
 ## Development Requirements
 
- * Python 2.7.X (download from [here](https://www.python.org/downloads/) and install)
+ * Python 3.7.x (download from [here](https://www.python.org/downloads/) and install)
  * pip (download [get-pip.py](https://bootstrap.pypa.io/get-pip.py) and run `python get-pip.py`)
- * Google [Cloud SDK](https://cloud.google.com/sdk/downloads#interactive)
-    * `google-cloud-sdk-app-engine-python` (follow instructions in Cloud SDK)
  * _Recommended: [virtualenv](https://pypi.python.org/pypi/virtualenv)_
 
 ### Local Environment
@@ -31,4 +29,4 @@ the internet. The following environment variables are needed to configure access
 
  * Install requirements by running
 
-        pip install -t lib -r requirements.txt
+        pip install -r requirements.txt

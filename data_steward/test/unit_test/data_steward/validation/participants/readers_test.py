@@ -61,9 +61,10 @@ class ReadersTest(unittest.TestCase):
             None
         )
 
+    @patch('validation.participants.readers.rc.fields_for')
     @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.readers.bq_utils.query')
-    def test_get_ehr_person_values_with_duplicate_keys(self, mock_query, mock_response):
+    def test_get_ehr_person_values_with_duplicate_keys(self, mock_query, mock_response, mock_fields):
         # pre conditions
         mock_query.return_value = {}
         column_name = 'birth_datetime'
@@ -90,6 +91,8 @@ class ReadersTest(unittest.TestCase):
             },
         ]
 
+        mock_fields.return_value = [{'name': column_name, 'type': consts.DATE_TYPE}]
+
         # test
         actual = reader.get_ehr_person_values('project-foo', 'ehr-bar', 'table-doh', column_name)
 
@@ -111,9 +114,10 @@ class ReadersTest(unittest.TestCase):
             None
         )
 
+    @patch('validation.participants.readers.rc.fields_for')
     @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.readers.bq_utils.query')
-    def test_get_ehr_person_values(self, mock_query, mock_response):
+    def test_get_ehr_person_values(self, mock_query, mock_response, mock_fields):
         # pre conditions
         mock_query.return_value = {}
         column_name = 'gender_concept_id'
@@ -132,6 +136,8 @@ class ReadersTest(unittest.TestCase):
             },
         ]
 
+        mock_fields.return_value = [{'name': column_name, 'type': consts.DATE_TYPE}]
+
         # test
         actual = reader.get_ehr_person_values('project-foo', 'ehr-bar', 'table-doh', column_name)
 
@@ -153,9 +159,10 @@ class ReadersTest(unittest.TestCase):
             None
         )
 
+    @patch('validation.participants.readers.rc.fields_for')
     @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.readers.bq_utils.query')
-    def test_get_rdr_match_values(self, mock_query, mock_response):
+    def test_get_rdr_match_values(self, mock_query, mock_response, mock_fields):
         # pre conditions
         mock_query.return_value = {}
         mock_response.return_value = [
@@ -172,6 +179,8 @@ class ReadersTest(unittest.TestCase):
                 consts.STRING_VALUE_FIELD: 'MaTiLdA'
             },
         ]
+
+        mock_fields.return_value = [{'name': consts.STRING_VALUE_FIELD, 'type': consts.STRING_TYPE}]
 
         # test
         actual = reader.get_rdr_match_values('project-foo', 'rdr-bar', 'table-oye', 12345)
@@ -193,9 +202,10 @@ class ReadersTest(unittest.TestCase):
             None
         )
 
+    @patch('validation.participants.readers.rc.fields_for')
     @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.readers.bq_utils.query')
-    def test_get_rdr_match_values_with_duplicates(self, mock_query, mock_response):
+    def test_get_rdr_match_values_with_duplicates(self, mock_query, mock_response, mock_fields):
         # pre conditions
         mock_query.return_value = {}
         mock_response.return_value = [
@@ -221,6 +231,8 @@ class ReadersTest(unittest.TestCase):
             },
         ]
 
+        mock_fields.return_value = [{'name': consts.STRING_VALUE_FIELD, 'type': consts.STRING_TYPE}]
+
         # test
         actual = reader.get_rdr_match_values('project-foo', 'rdr-bar', 'table-oye', 12345)
 
@@ -241,9 +253,10 @@ class ReadersTest(unittest.TestCase):
             None
         )
 
+    @patch('validation.participants.readers.rc.fields_for')
     @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.readers.bq_utils.query')
-    def test_get_pii_values(self, mock_query, mock_response):
+    def test_get_pii_values(self, mock_query, mock_response, mock_fields):
         # pre conditions
         mock_query.return_value = {}
         mock_response.return_value = [
@@ -260,6 +273,8 @@ class ReadersTest(unittest.TestCase):
                 12345: 'MaTiLdA'
             },
         ]
+
+        mock_fields.return_value = [{'name': consts.PERSON_ID_FIELD, 'type': consts.INTEGER_TYPE}]
 
         # test
         actual = reader.get_pii_values('project-foo', 'pii-bar', 'zeta', '_sea', 12345)
@@ -282,9 +297,10 @@ class ReadersTest(unittest.TestCase):
             None
         )
 
+    @patch('validation.participants.readers.rc.fields_for')
     @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.readers.bq_utils.query')
-    def test_get_pii_values_with_duplicates(self, mock_query, mock_response):
+    def test_get_pii_values_with_duplicates(self, mock_query, mock_response, mock_fields):
         # pre conditions
         mock_query.return_value = {}
         mock_response.return_value = [
@@ -310,6 +326,8 @@ class ReadersTest(unittest.TestCase):
             },
         ]
 
+        mock_fields.return_value = [{'name': consts.PERSON_ID_FIELD, 'type': consts.INTEGER_TYPE}]
+
         # test
         actual = reader.get_pii_values('project-foo', 'pii-bar', 'zeta', '_sea', 12345)
 
@@ -331,9 +349,10 @@ class ReadersTest(unittest.TestCase):
             None
         )
 
+    @patch('validation.participants.readers.rc.fields_for')
     @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.readers.bq_utils.query')
-    def test_get_location_pii(self, mock_query, mock_response):
+    def test_get_location_pii(self, mock_query, mock_response, mock_fields):
         # pre conditions
         mock_query.return_value = {}
         mock_response.side_effect = [
@@ -367,6 +386,8 @@ class ReadersTest(unittest.TestCase):
             ]
         ]
 
+        mock_fields.return_value = [{'name': consts.LOCATION_ID_FIELD, 'type': consts.INTEGER_TYPE}]
+
         # test
         actual = reader.get_location_pii('project-foo', 'rdr-bar', 'pii-baz', 'chi', '_sky', 12345)
 
@@ -387,10 +408,10 @@ class ReadersTest(unittest.TestCase):
             None
         )
 
+    @patch('validation.participants.readers.rc.fields_for')
     @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.readers.bq_utils.query')
-    @unittest.expectedFailure
-    def test_get_ehr_person_values_birthdates(self, mock_query, mock_response):
+    def test_get_ehr_person_values_birthdates(self, mock_query, mock_response, mock_fields):
         # pre conditions
         mock_query.return_value = {}
         column_name = 'birth_datetime'
@@ -409,11 +430,51 @@ class ReadersTest(unittest.TestCase):
             },
         ]
 
+        mock_fields.return_value = [{'name': column_name, 'type': consts.TIMESTAMP_TYPE}]
+
         # test
         actual = reader.get_ehr_person_values('project-foo', 'ehr-bar', 'table-doh', column_name)
 
         # post-conditions
         expected = {1: '1970-07-11', 2: '1949-01-01', 3: '1970-05-25'}
+        self.assertEqual(actual, expected)
+
+        self.assertEqual(mock_query.call_count, 1)
+        self.assertEqual(mock_response.call_count, 1)
+        self.assertEqual(
+            mock_query.assert_called_with(
+                consts.EHR_PERSON_VALUES.format(
+                    project='project-foo',
+                    dataset='ehr-bar',
+                    table='table-doh',
+                    field=column_name
+                )
+            ),
+            None
+        )
+
+    @patch('validation.participants.readers.rc.fields_for')
+    @patch('validation.participants.readers.bq_utils.large_response_to_rowlist')
+    @patch('validation.participants.readers.bq_utils.query')
+    def test_get_ehr_person_values_bytes(self, mock_query, mock_response, mock_fields):
+        # pre conditions
+        mock_query.return_value = {}
+        column_name = 'foo_field'
+        column_value = b'hello'
+        mock_response.return_value = [
+            {
+                consts.PERSON_ID_FIELD: 1,
+                column_name: column_value,
+            },
+        ]
+
+        mock_fields.return_value = [{'name': column_name, 'type': consts.STRING_TYPE}]
+
+        # test
+        actual = reader.get_ehr_person_values('project-foo', 'ehr-bar', 'table-doh', column_name)
+
+        # post-conditions
+        expected = {1: 'hello'}
         self.assertEqual(actual, expected)
 
         self.assertEqual(mock_query.call_count, 1)

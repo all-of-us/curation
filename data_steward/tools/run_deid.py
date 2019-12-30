@@ -12,7 +12,7 @@ import google
 
 import bq_utils
 import deid.aou as aou
-from resources import fields_for, fields_path
+from resources import fields_for, fields_path, DEID_PATH
 
 LOGGER = logging.getLogger(__name__)
 DEID_TABLES = ['person', 'observation', 'visit_occurrence', 'condition_occurrence',
@@ -186,7 +186,8 @@ def main(raw_args=None):
     args = parse_args(raw_args)
     add_console_logging(args.console_log)
     known_tables = get_known_tables(fields_path)
-    configured_tables = get_known_tables('../deid/config/ids/tables')
+    deid_tables_path = os.path.join(DEID_PATH, 'config', 'ids', 'tables')
+    configured_tables = get_known_tables(deid_tables_path)
     tables = get_output_tables(args.input_dataset, known_tables, args.skip_tables, args.tables)
 
     exceptions = []
@@ -194,12 +195,12 @@ def main(raw_args=None):
     for table in tables:
         tablepath = None
         if table in configured_tables:
-            tablepath = '../deid/config/ids/tables/' + table + '.json'
+            tablepath = os.path.join(deid_tables_path, table + '.json')
         else:
             tablepath = table
 
         parameter_list = [
-            '--rules', '../deid/config/ids/config.json',
+            '--rules', os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
             '--private_key', args.private_key,
             '--table', tablepath,
             '--action', args.action,

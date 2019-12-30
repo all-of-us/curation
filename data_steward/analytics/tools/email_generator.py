@@ -297,7 +297,7 @@ def print_error_info(error_dict, starting_msg, percent,
 ###########################################################################
 # No longer defining functions                                            #
 # We are now doing everything that comes BEFORE we print the message      #
-###########################################################################
+# ##########################################################################
 
 
 # 1. Loading the files
@@ -372,7 +372,7 @@ for _, err_dict in err_dictionaries.items():
 # Now we are actually printing out the 'problem' information for the site #
 # This is admittedly clunky but I decided to not implement a standard     #
 # function in order to allow the text feel more 'natural.'                #
-###########################################################################
+# ##########################################################################
 
 
 # same for all of the sites

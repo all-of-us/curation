@@ -1,16 +1,16 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:light
+#     cell_metadata_json: true
 #     text_representation:
 #       extension: .py
 #       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.2.1
+#       format_version: '1.5'
+#       jupytext_version: 1.3.0
 #   kernelspec:
-#     display_name: Python 2
+#     display_name: Python 3
 #     language: python
-#     name: python2
+#     name: python3
 # ---
 
 # + {"pycharm": {"name": "#%%\n"}}
@@ -222,6 +222,7 @@ condition_occurrence
 # + {"pycharm": {"name": "#%%\n"}}
 
 
+
 # + {"pycharm": {"name": "#%%\n"}}
 total_wrong = temporal_df['wrong_date_rows'].sum()
 total_wrong
@@ -298,6 +299,7 @@ drug_exposure = drug_exposure.fillna(100)
 drug_exposure
 
 # + {"pycharm": {"name": "#%%\n"}}
+
 
 
 # + {"pycharm": {"name": "#%%\n"}}
@@ -1221,7 +1223,10 @@ combined.to_csv("data\\diabets.csv")
 # + {"pycharm": {"name": "#%%\n"}}
 
 
+
 # + {"pycharm": {"name": "#%%\n"}}
 
 
+
 # + {"pycharm": {"name": "#%%\n"}}
+
