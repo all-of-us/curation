@@ -14,7 +14,10 @@ notebooks to represented by plain Python `.py` scripts. This provides the follow
 
  * Python 3.7.x
   
-   Note: the interpreter must be accessible your PATH via `python3.7`.
+   Note: the interpreter must be accessible from your PATH via `python3.7`. On Windows you may save a copy of the 
+   executable `python.exe` called `python3.7.exe` in the installation directory (e.g. 
+   `C:\Users\username\AppData\Local\Programs\Python\Python37`).
+
    
  * A service account key associated with the curation environment
 
