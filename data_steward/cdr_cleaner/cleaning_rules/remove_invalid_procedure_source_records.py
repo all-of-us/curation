@@ -56,8 +56,7 @@ def get_remove_invalid_procedure_source_queries(project_id, dataset_id):
 
     query = dict()
     query[cdr_consts.QUERY] = REMOVE_INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.format(dataset=dataset_id,
-                                                                                project=project_id,
-                                                                                )
+                                                                                       project=project_id)
     queries_list.append(query)
 
     return queries_list
