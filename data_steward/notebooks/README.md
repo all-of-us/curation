@@ -43,6 +43,7 @@ DEID_DATASET_ID = 'deid_dataset_id'
 DRC_BUCKET_NAME = 'drc_bucket_name'
 RDR_PROJECT_ID = 'rdr_project_id'
 SANDBOX = 'sandbox_dataset_id'
+UNIONED_EHR_DATASET_ID = 'unioned_ehr_dataset_id'
 ```
 
 ## Defaults
