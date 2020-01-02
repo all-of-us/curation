@@ -117,12 +117,18 @@ class AchillesTest(unittest.TestCase):
     def test_run_analyses(self, mock_hpo_bucket):
         # Long-running test
         mock_hpo_bucket.return_value = self.get_mock_hpo_bucket()
+
+        # create randomized tables to bypass BQ rate limits
         random_string = str(randint(10000, 99999))
         randomized_hpo_id = FAKE_HPO_ID + '_' + random_string
+
+        # prepare and run achilles
         self._load_dataset(randomized_hpo_id)
         achilles.create_tables(randomized_hpo_id, True)
         achilles.load_analyses(randomized_hpo_id)
         achilles.run_analyses(hpo_id=randomized_hpo_id)
+
+        # validate results
         achilles_results_table = randomized_hpo_id + '_' + achilles.ACHILLES_RESULTS
         cmd = sql_wrangle.qualify_tables(
             'SELECT COUNT(1) as num_rows FROM %s' % achilles_results_table)

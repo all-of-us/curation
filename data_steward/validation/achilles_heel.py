@@ -67,6 +67,11 @@ def load_heel(hpo_id):
 
 
 def drop_or_truncate_table(command):
+    """
+    Deletes or truncates table
+    :param command: query to run
+    :return: None
+    """
     if sql_wrangle.is_truncate(command):
         table_id = sql_wrangle.get_truncate_table_name(command)
         query = 'DELETE FROM %s WHERE TRUE' % table_id
@@ -77,6 +82,12 @@ def drop_or_truncate_table(command):
 
 
 def extract_table_id_from_heel_query(command):
+    """
+    Returns table_id from an insert query
+    :param command: insert query formatted without newlines and comments
+    :return table_id: Table the query inserts to
+    :raises RuntimeError: Raised if table_id does not exist in the query
+    """
     table_id = None
     if command.strip().lower().startswith(achilles.INSERT_INTO):
         words = command.strip().split()
@@ -87,6 +98,12 @@ def extract_table_id_from_heel_query(command):
 
 
 def convert_heel_insert_to_append(command):
+    """
+    Convert a command formatted as "insert into" to "select"
+    :param command: insert query without any newlines or comments
+    :return ignore_insert_command: command without "insert into", table_id and column headers enclosed in brackets
+    :raises RuntimeError: Raised if query does not start with "insert into"
+    """
     if not command.strip().lower().startswith(achilles.INSERT_INTO):
         raise RuntimeError('Query does not start with "insert into": %s' % command)
     ignore_insert_command = command.split(')', 1)[1]
@@ -94,6 +111,11 @@ def convert_heel_insert_to_append(command):
 
 
 def run_heel_analysis_job(command):
+    """
+    Runs command (query) and waits for job completion
+    :param command: query to run
+    :return: None
+    """
     if sql_wrangle.is_to_temp_table(command):
         logging.info('Running achilles heel temp query %s' % command)
         table_id = sql_wrangle.get_temp_table_name(command)
@@ -120,10 +142,7 @@ def run_heel(hpo_id):
 
     :param hpo_id:  string name for the hpo identifier
     :returns: None
-    :raises RuntimeError: Raised if BigQuery takes longer than 30 seconds
-        to complete a job on a temporary table
     """
-    # very long test
     commands = _get_heel_commands(hpo_id)
     for command in commands:
         if sql_wrangle.is_truncate(command) or sql_wrangle.is_drop(command):

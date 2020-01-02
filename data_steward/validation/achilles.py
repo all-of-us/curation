@@ -25,8 +25,8 @@ def _get_run_analysis_commands(hpo_id):
 def load_analyses(hpo_id):
     """
     Populate achilles lookup table
-    :param hpo_id:
-    :return:
+    :param hpo_id: hpo_id of the site to run achilles on
+    :return: None
     """
     project_id = app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
@@ -42,9 +42,31 @@ def load_analyses(hpo_id):
     bq_utils.load_table_from_csv(project_id, dataset_id, table_name, csv_path, schema)
 
 
+def drop_or_truncate_table(command):
+    """
+    Deletes or truncates table
+    Previously, deletion was used for both truncate and drop, and this function retains the behavior
+    :param command: query to run
+    :return: None
+    """
+    if sql_wrangle.is_truncate(command):
+        table_id = sql_wrangle.get_truncate_table_name(command)
+    else:
+        table_id = sql_wrangle.get_drop_table_name(command)
+    if bq_utils.table_exists(table_id):
+        bq_utils.delete_table(table_id)
+
+
 def extract_table_id_from_query(command):
+    """
+    Returns the table_id from an insert query from achilles_dml.sql
+    :param command: command from the file 'achilles_dml.sql', could contain newlines and comments
+    :return: table_id that the command would insert to
+    :raises RuntimeError: Raised if table_id does not exist in insert query
+    """
     table_id = None
     for line in command.split('\n'):
+        # ignoring comments, all commands must start with 'insert into', followed by the table_id
         if line.strip().lower().startswith(INSERT_INTO):
             words = line.strip().split()
             table_id = words[2]
@@ -54,24 +76,28 @@ def extract_table_id_from_query(command):
 
 
 def convert_insert_to_append(command):
+    """
+    Convert a command formatted as "insert into" to "select"
+    :param command: insert query including newlines and comments
+    :return: command without the insert line
+    """
     select_command_lines = []
     for line in command.split('\n'):
+        # ignoring comments, all commands start with 'insert into', followed by the table_id,
+        # followed by table columns, all in the same line. Any changes to this in the achilles_dml.sql can cause errors.
         if not line.strip().lower().startswith(INSERT_INTO):
             select_command_lines.append(line)
     select_command = '\n'.join(select_command_lines)
     return select_command
 
 
-def drop_or_truncate_table(command):
-    if sql_wrangle.is_truncate(command):
-        table_id = sql_wrangle.get_truncate_table_name(command)
-    else:
-        table_id = sql_wrangle.get_drop_table_name(command)
-    if bq_utils.table_exists(table_id):
-        bq_utils.delete_table(table_id)
-
-
 def run_analysis_job(command):
+    """
+    Runs command query and waits for job completion
+    :param command: query to run
+    :return: None
+    :raises RuntimeError: Raised if job takes too long to complete
+    """
     if sql_wrangle.is_to_temp_table(command):
         logging.info('Running achilles temp query %s' % command)
         table_id = sql_wrangle.get_temp_table_name(command)
@@ -95,8 +121,8 @@ def run_analysis_job(command):
 def run_analyses(hpo_id):
     """
     Run the achilles analyses
-    :param hpo_id:
-    :return:
+    :param hpo_id: hpo_id of the site to run on
+    :return: None
     """
     commands = _get_run_analysis_commands(hpo_id)
     for command in commands:
@@ -111,7 +137,7 @@ def create_tables(hpo_id, drop_existing=False):
     Create the achilles related tables
     :param hpo_id: associated hpo id
     :param drop_existing: if True, drop existing tables
-    :return:
+    :return: None
     """
     for table_name in ACHILLES_TABLES:
         table_id = bq_utils.get_table_id(hpo_id, table_name)

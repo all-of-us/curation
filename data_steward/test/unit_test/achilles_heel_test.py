@@ -42,6 +42,8 @@ class AchillesHeelTest(unittest.TestCase):
             else:
                 test_util.write_cloud_str(self.hpo_bucket, cdm_table + '.csv', 'dummy\n')
             bq_utils.load_cdm_csv(hpo_id, cdm_table)
+
+        # ensure concept table exists
         if not bq_utils.table_exists(common.CONCEPT):
             bq_utils.create_standard_table(common.CONCEPT, common.CONCEPT)
             q = """INSERT INTO {dataset}.concept
@@ -62,17 +64,23 @@ class AchillesHeelTest(unittest.TestCase):
         mock_hpo_bucket.return_value = self.get_mock_hpo_bucket()
         test_util.get_synpuf_results_files()
 
+        # create randomized tables to bypass BQ rate limits
         random_string = str(randint(10000, 99999))
         randomized_hpo_id = FAKE_HPO_ID + '_' + random_string
 
+        # prepare
         self._load_dataset(randomized_hpo_id)
         test_util.populate_achilles(self.hpo_bucket, hpo_id=randomized_hpo_id, include_heel=False)
 
+        # define tables
         achilles_heel_results = randomized_hpo_id + '_' + achilles_heel.ACHILLES_HEEL_RESULTS
         achilles_results_derived = randomized_hpo_id + '_' + achilles_heel.ACHILLES_RESULTS_DERIVED
 
+        # run achilles heel
         achilles_heel.create_tables(randomized_hpo_id, True)
         achilles_heel.run_heel(hpo_id=randomized_hpo_id)
+
+        # validate
         query = sql_wrangle.qualify_tables(
             'SELECT COUNT(1) as num_rows FROM %s' % achilles_heel_results)
         response = bq_utils.query(query)
