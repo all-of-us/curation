@@ -5,12 +5,12 @@
 #     text_representation:
 #       extension: .py
 #       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.2.3
+#       format_version: '1.5'
+#       jupytext_version: 1.3.0
 #   kernelspec:
-#     display_name: Python 2
+#     display_name: Python 3
 #     language: python
-#     name: python2
+#     name: python3
 # ---
 
 # ## Script is used to determine any potential sites that may be using uploading erroneous measurements. Sites may have 'outlier' values beacuse:
@@ -24,6 +24,9 @@ import numpy as np
 from pandas.plotting import table 
 # %matplotlib inline
 import six
+from scipy import stats
+import math
+import seaborn as sns
 
 # +
 measurement_ancestors = [
@@ -46,9 +49,7 @@ measurement_ancestors = [
 # 40779250, 40782562, 40782579, 40785850,
 # 40785861, 40785869, 40789180, 40789190,
 # 40789527, 40791227, 40792413, 40792440,
-# 40795730, 
-
-40795740, 40795754,
+# 40795730, 40795740 40795754,
     
 #physical measurement
 45875982, 45876161, 45876166, 45876171,
@@ -250,6 +251,9 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ance
         
     mean (float): number that represents the 'mean' of all the measurements for the
         meawsurement set that have the most popular unit
+        
+    values (list): list of values for the entire dataset; used to create the
+        box-and-whisker plot
     """
     
     find_range_overall = """
@@ -267,6 +271,10 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ance
     m.measurement_concept_id IN {}
     AND
     m.value_as_number IS NOT NULL
+    AND
+    m.value_as_number <> 9999999  -- issue with one site that heavily skews data
+    AND
+    m.value_as_number <> 0.0  -- not something we expect; appears for a site
     ORDER BY
     m.value_as_number ASC
     """.format(DATASET, DATASET, most_pop_unit, string_desc_concepts)
@@ -312,8 +320,24 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ance
     print("The mean is: {}".format(mean))
     print("The standard deviation is: {}".format(round(stdev, 2)))
     
-    return median, stdev, num_records, mean
+    return median, stdev, num_records, mean, values
 
+
+#
+#     ({} - a.mean) as numerator,
+#     ROUND((POW({}, 2) / {}), 2) as prt1, 
+#     (POW(a.stdev, 2)) / a.total_rows as prt2,
+#     ROUND(((POW({}, 2)) / {}) + ((POW(a.stdev, 2)) / a.total_rows), 2) as sample,
+#     ROUND(SQRT( ((POW({}, 2)) / {}) + ((POW(a.stdev, 2)) / a.total_rows)), 2) as denom,
+#     
+#     
+#     
+#     ROUND(({} - a.mean) / SQRT( ((POW({}, 2)) / {}) + ((POW(a.stdev, 2)) / a.total_rows)), 2) as t_value, 
+#     
+#     ROUND(POW(((POW({}, 2)) / {}) + ((POW(a.stdev, 2)) / a.total_rows), 2) /
+#     (POW(((POW({}, 2)) / {}), 2) / ({} - 1) + POW(((POW(a.stdev, 2)) / a.total_rows), 2) / (a.total_rows - 1)), 2)
+#     as degrees_freedom, 
+#
 
 def create_site_distribution_df(
     median, tot_stdev, tot_records, total_mean, DATASET, string_desc_concepts, most_pop_unit):
@@ -347,26 +371,32 @@ def create_site_distribution_df(
     site_value_distribution_df (dataframe): dataframe that allows one to compare
         each site's values (of a particular measurement set, for the most popular unit_concept)
         compared to the values for the entire dataset.
+    
     """
     
     find_site_distribution = """
     SELECT
     DISTINCT
-    a.src_hpo_id, a.mean, a.tenth_perc, a.first_quartile, a.median, 
-    a.third_quartile, a.ninetieth_perc, a.stdev, total_median, total_stdev,
-    a.total_rows, COUNT(*) as num_rows,
-    ROUND(({} - a.mean) / SQRT(((({} - 1) * POW({}, 2)) + ((COUNT(*) - 1) * POW(a.stdev, 2))) / (({} - 1) + (COUNT(*) - 1)) * 
-    ( (1/{}) + (1/COUNT(*)) )), 2) as t_value
+    a.src_hpo_id, a.mean, a.min, a.tenth_perc, a.first_quartile, a.median, 
+    a.third_quartile, a.ninetieth_perc, a.max, a.stdev, 
+    a.total_mean, a.total_median, a.total_stdev,
+    a.total_rows,
+    COUNT(*) as hpo_rows
+    
+    
     FROM
       (SELECT
       mm.src_hpo_id,
       ROUND(AVG(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as mean,
+      ROUND(MIN(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as min,
       ROUND(PERCENTILE_CONT(m.value_as_number, 0.1) OVER (PARTITION BY mm.src_hpo_id), 2) as tenth_perc,
       ROUND(PERCENTILE_CONT(m.value_as_number, 0.25) OVER (PARTITION BY mm.src_hpo_id), 2) as first_quartile,
       ROUND(PERCENTILE_CONT(m.value_as_number, 0.5) OVER (PARTITION BY mm.src_hpo_id), 2) as median,
       ROUND(PERCENTILE_CONT(m.value_as_number, 0.75) OVER (PARTITION BY mm.src_hpo_id), 2) as third_quartile,
       ROUND(PERCENTILE_CONT(m.value_as_number, 0.9) OVER (PARTITION BY mm.src_hpo_id), 2) as ninetieth_perc,
+      ROUND(MAX(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as max,
       ROUND(STDDEV_POP(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as stdev,
+      ROUND({}, 2) as total_mean,
       ROUND({}, 2) as total_median, 
       ROUND({}, 2) as total_stdev,
       ROUND({}, 2) as total_rows
@@ -380,10 +410,14 @@ def create_site_distribution_df(
       `{}.concept` c
       ON
       c.concept_id = m.unit_concept_id 
-      WHERE
+      where
       m.measurement_concept_id IN {}
       AND
-      m.unit_concept_id IS NOT NULL
+      m.value_as_number IS NOT NULL
+      AND
+      m.value_as_number <> 9999999  -- issue with one site that heavily skews data
+      AND
+      m.value_as_number <> 0.0  -- not something we expect; appears for a site
       AND
       m.unit_concept_id <> 0
       AND
@@ -391,11 +425,9 @@ def create_site_distribution_df(
       AND
       m.value_as_number IS NOT NULL
       ORDER BY mm.src_hpo_id, median DESC) a
-    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
     ORDER BY median DESC
-    """.format(total_mean, tot_records, tot_stdev,
-               tot_records, tot_records,
-               median, tot_stdev, tot_records,
+    """.format(total_mean, median, tot_stdev, tot_records,
                DATASET, DATASET, DATASET, string_desc_concepts, most_pop_unit)
 
     site_value_distribution_df = bq.query(find_site_distribution)
@@ -419,6 +451,9 @@ def run_statistics(ancestor_concept):
     site_value_distribution_df (dataframe): dataframe that allows one to compare
         each site's values (of a particular measurement set, for the most popular unit_concept)
         compared to the values for the entire dataset.
+    
+    entire_values (list): list of values for the entire dataset; used to create the
+        box-and-whisker plot
     """
     
     descendant_concepts = find_descendants(DATASET, ancestor_concept)
@@ -427,14 +462,14 @@ def run_statistics(ancestor_concept):
     
     most_popular_unit = find_most_popular_unit_type(tot_units, DATASET, descendant_concepts)
     
-    median, stdev, num_records, mean = metrics_for_whole_dataset(
+    median, stdev, num_records, mean, entire_values = metrics_for_whole_dataset(
         DATASET, most_popular_unit, descendant_concepts, ancestor_concept)
     
     site_value_distribution_df = create_site_distribution_df(
         median, stdev, num_records, mean, DATASET, descendant_concepts, most_popular_unit)
     
     
-    return site_value_distribution_df, most_popular_unit
+    return site_value_distribution_df, most_popular_unit, entire_values
 
 
 # #### Below cell modified from this [StackOverflow](https://stackoverflow.com/questions/26678467/export-a-pandas-dataframe-as-a-table-image)
@@ -555,21 +590,114 @@ def process_image(DATASET, df, most_popular_unit):
     
     ax = render_mpl_table(df, header_columns=0, col_width=2.0)
     plt.savefig(img_name)
+    
+    return img_name
 
 
-#
+def add_significance_cols(df):
+    """
+    Function is used to add columns to the dataframe to give information about how the HPO's
+    data for the selected measurement/unit combination compares to the overall measurement/unit
+    combination (across all sites).
+    
+    These signficance metrics are based on Welch's t-test (unpaired t-test, using different subjects,
+    not assuming equal variance.)
+    
+    parameters:
+    -----------
+    site_value_distribution_df (dataframe): dataframe that allows one to compare
+        each site's values (of a particular measurement set, for the most popular unit_concept)
+        compared to the values for the entire dataset
+        
+    returns:
+    --------
+    site_value_distribution_df (dataframe): dataframe that allows one to compare
+        each site's values (of a particular measurement set, for the most popular unit_concept)
+        compared to the values for the entire dataset.
+    """
+    t_vals, degrees_freedom, p_vals, sig_diff = [], [], [], []
+
+    for idx, hpo in df.iterrows():
+        hpo_mean = hpo['mean']
+        hpo_stdev = hpo['stdev']
+        hpo_rows = hpo['hpo_rows']
+
+        tot_mean = hpo['total_mean']
+        tot_stdev = hpo['total_stdev']
+        tot_rows = hpo['total_rows']
+
+        numerator = tot_mean - hpo_mean
+
+        denom = ((tot_stdev ** 2) / tot_rows) + ((hpo_stdev ** 2) / hpo_rows)
+        denominator = denom ** (1/2)
+
+        try:
+            t_val = numerator / denominator
+        except ZeroDivisionError:
+            t_val = 0
+
+        if t_val > 0:  # standardize for the sake of the p-value calculation
+            t_val = t_val * -1
+
+
+        print(hpo['src_hpo_id'])
+
+        t_vals.append(round(t_val, 2))
+
+        num = ( (tot_stdev ** 2) / tot_rows + (hpo_stdev ** 2) / hpo_rows ) ** 2
+        denom_pt1 = (tot_stdev ** 2 / tot_rows) ** 2 / (tot_rows - 1)
+
+        try:
+            denom_pt2 = (hpo_stdev ** 2 / hpo_rows) ** 2  / (hpo_rows - 1)
+            denom = denom_pt1 + denom_pt2
+        except ZeroDivisionError:
+            denom = denom_pt1
+
+        deg_freedom = num / denom
+
+        degrees_freedom.append(round(deg_freedom, 2))
+
+        p = stats.t.cdf(t_val, df=deg_freedom) * 2  # for two-tailed info
+
+        if p < 0.05:
+            sig_diff.append("True")
+        else:
+            sig_diff.append("False")
+
+        print(t_val)
+        print(deg_freedom)
+        print(p)
+        print("\n")
+
+        p_vals.append(round(p, 4))
+
+    df['t_val'] = t_vals
+    df['degrees_freedom'] = degrees_freedom
+    df['p_val'] = p_vals
+    df['sig_diff'] = sig_diff
+    
+    return df
 
 for ancestor_id in measurement_ancestors:
-    site_value_distribution_df, most_popular_unit = run_statistics(ancestor_id)
+    site_value_distribution_df, most_popular_unit, entire_values = run_statistics(ancestor_id)
     
-    print(site_value_distribution_df)
+    df = add_significance_cols(site_value_distribution_df)
     
-    process_image(DATASET, site_value_distribution_df, most_popular_unit)
+    img_name = process_image(DATASET, site_value_distribution_df, most_popular_unit)
+site_value_distribution_df
 
+entire_values
 
+import pandas as pd
 
+# +
+d = {'Entire Dataset': entire_values}
+df = pd.DataFrame(d)
 
+df
 
-
+df.T.boxplot(vert=False)
+plt.show()
+# -
 
 
