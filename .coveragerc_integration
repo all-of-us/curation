@@ -3,7 +3,7 @@
 # Source packages/directories to include
 source = data_steward
 
-data_file = tests/results/coverage/integration/.coverage
+data_file = tests/results/coverage/.coverage_integration
 
 # Exclude files whose paths match these patterns
 omit = *tests*

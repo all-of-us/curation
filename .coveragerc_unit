@@ -6,7 +6,7 @@ source = data_steward
 # Ensure all branching logic has been tested
 branch = True
 
-data_file = tests/results/coverage/unit/.coverage
+data_file = tests/results/coverage/.coverage_unit
 
 # Exclude files whose paths match these patterns
 omit = *tests*

@@ -82,6 +82,9 @@ jobs:
                 mkdir -p tests/results/coverage/integration/html
                 mkdir -p tests/results/junit/integration
                 ./tests/run_tests.sh -s integration
+                # combine integration and unit tests
+                cd tests/results/coverage
+                coverage combine
             else
                 echo "Skipping integration tests"
             fi
