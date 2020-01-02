@@ -21,23 +21,26 @@ REMOVE_INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = """
 DELETE
 FROM
   `{project}.{dataset}.procedure_occurrence`
-WHERE p.procedure_source_concept_id IN (
+-- procedure_concept_id is not a standard concept in the procedure domain
+WHERE p.procedure_concept_id NOT IN (
   SELECT
     concept_id
   FROM
-    `{project}.{dataset}.concept`
+    `{DATASET_ID}.concept`
   WHERE
-    TRIM(domain_id) != 'Procedure'
+    domain_id = 'Procedure'
+    AND TRIM(concept_class_id) IN ('Procedure', 'CPT4')
+    AND standard_concept = 'S'
 )
-OR 
+AND
+-- procedure_source_concept_id is not in the procedure domain
 p.procedure_source_concept_id IN (
-  SELECT
+ SELECT
     concept_id
   FROM
-    unioned_ehr20191004.concept
+    `{DATASET_ID}.concept`
   WHERE
-    TRIM(domain_id) = 'Procedure'
-    AND TRIM(concept_class_id) = 'CPT4 Modifier'
+    TRIM(concept_class_id) = 'CPT4 Modifier'
 )
 """
 
