@@ -36,6 +36,7 @@ import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_p
 import cdr_cleaner.cleaning_rules.repopulate_person_post_deid as repopulate_person
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
+import cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
 import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_drop_duplicates
@@ -156,6 +157,7 @@ def _gather_unioned_ehr_queries(project_id, dataset_id, sandbox_dataset_id):
     query_list.extend(populate_routes.get_route_mapping_queries(project_id, dataset_id))
     query_list.extend(fix_datetimes.get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id))
     query_list.extend(remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries(project_id, dataset_id))
+    query_list.extend(invalid_procedure_source.get_remove_invalid_procedure_source_queries(project_id, dataset_id))
     return query_list
 
 
