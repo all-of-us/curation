@@ -640,7 +640,7 @@ def get_queries_clean_height_weight(project_id, dataset_id, sandbox_dataset_id):
                                                                               dataset_id=dataset_id,
                                                                               sandbox_dataset_id=sandbox_dataset_id,
                                                                               weight_table=WEIGHT_TABLE)
-    queries.append(height_table_query)
+    queries.append(weight_table_query)
 
     weight_rows_query = dict()
     weight_rows_query[cdr_consts.QUERY] = NEW_WEIGHT_ROWS_QUERY.format(project_id=project_id,
@@ -648,7 +648,7 @@ def get_queries_clean_height_weight(project_id, dataset_id, sandbox_dataset_id):
                                                                        sandbox_dataset_id=sandbox_dataset_id,
                                                                        weight_table=WEIGHT_TABLE,
                                                                        new_weight_rows=NEW_WEIGHT_ROWS)
-    queries.append(height_rows_query)
+    queries.append(weight_rows_query)
 
     delete_weights_query = dict()
     delete_weights_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.format(project_id=project_id,
