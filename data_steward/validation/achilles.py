@@ -57,40 +57,6 @@ def drop_or_truncate_table(command):
         bq_utils.delete_table(table_id)
 
 
-def extract_table_id_from_query(command):
-    """
-    Returns the table_id from an insert query from achilles_dml.sql
-    :param command: command from the file 'achilles_dml.sql', could contain newlines and comments
-    :return: table_id that the command would insert to
-    :raises RuntimeError: Raised if table_id does not exist in insert query
-    """
-    table_id = None
-    for line in command.split('\n'):
-        # ignoring comments, all commands must start with 'insert into', followed by the table_id
-        if line.strip().lower().startswith(INSERT_INTO):
-            words = line.strip().split()
-            table_id = words[2]
-    if not table_id:
-        raise RuntimeError('Table does not exist for insert query %s' % command)
-    return table_id
-
-
-def convert_insert_to_append(command):
-    """
-    Convert a command formatted as "insert into" to "select"
-    :param command: insert query including newlines and comments
-    :return: command without the insert line
-    """
-    select_command_lines = []
-    for line in command.split('\n'):
-        # ignoring comments, all commands start with 'insert into', followed by the table_id,
-        # followed by table columns, all in the same line. Any changes to this in the achilles_dml.sql can cause errors.
-        if not line.strip().lower().startswith(INSERT_INTO):
-            select_command_lines.append(line)
-    select_command = '\n'.join(select_command_lines)
-    return select_command
-
-
 def run_analysis_job(command):
     """
     Runs command query and waits for job completion
@@ -105,12 +71,8 @@ def run_analysis_job(command):
         job_result = bq_utils.query(query,
                                     destination_table_id=table_id)
     else:
-        query = convert_insert_to_append(command)
-        table_id = extract_table_id_from_query(command)
         logging.info('Running achilles load query %s' % command)
-        job_result = bq_utils.query(query,
-                                    destination_table_id=table_id,
-                                    write_disposition=bq_consts.WRITE_APPEND)
+        job_result = bq_utils.query(command)
     job_id = job_result['jobReference']['jobId']
     incomplete_jobs = bq_utils.wait_on_jobs([job_id])
     if len(incomplete_jobs) > 0:

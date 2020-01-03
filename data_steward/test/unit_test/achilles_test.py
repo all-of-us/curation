@@ -60,8 +60,9 @@ class AchillesTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
+        self.dataset = bq_utils.get_dataset_id()
         test_util.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.dataset)
 
     def _load_dataset(self, hpo_id):
         for cdm_table in resources.CDM_TABLES:
@@ -92,8 +93,7 @@ class AchillesTest(unittest.TestCase):
 
     def test_get_run_analysis_commands(self):
         cmd_iter = achilles._get_run_analysis_commands(FAKE_HPO_ID)
-        commands = [achilles.convert_insert_to_append(command)[0] for command in cmd_iter]
-        self.assertEqual(len(commands), ACHILLES_ANALYSIS_COUNT)
+        self.assertEqual(len(cmd_iter), ACHILLES_ANALYSIS_COUNT)
 
     def test_temp_table(self):
         self.assertTrue(sql_wrangle.is_to_temp_table(TEMP_QUERY_1))
@@ -143,5 +143,5 @@ class AchillesTest(unittest.TestCase):
             self.assertFalse(is_temp)
 
     def tearDown(self):
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.dataset)
         test_util.empty_bucket(self.hpo_bucket)
