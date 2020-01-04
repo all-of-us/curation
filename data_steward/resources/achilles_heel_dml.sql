@@ -10,7 +10,7 @@
 --optional TODO: possibly rewrite this with CASE statement to better make 705 into drug, 605 into proc ...etc
 --               in measure_id column (or make that separate sql calls for each category)
 insert into synpuf_100.achilles_results_derived (analysis_id, stratum_1, statistic_value,measure_id)
- select  null as analysis_id, stratum_2 as stratum_1, sum(count_value) as statistic_value, concat(concat('ach_', cast(analysis_id  as string) ), ':GlobalCnt' )as measure_id
+ select  null as analysis_id, stratum_2 as stratum_1, cast(sum(count_value) as float64) as statistic_value, concat(concat('ach_', cast(analysis_id  as string) ), ':GlobalCnt' )as measure_id
   from  synpuf_100.achilles_results
 where analysis_id in(1805,705,605,805,405)  group by  4, 2 ;
 
@@ -65,13 +65,13 @@ UNION ALL
 
 --age at first observation by decile
 insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
- select  cast(floor(cast(stratum_1  as int64)/10)  as string) as stratum_1, sum(count_value) as statistic_value, 'AgeAtFirstObsByDecile:PersonCnt' as measure_id
+ select  cast(floor(cast(stratum_1  as int64)/10)  as string) as stratum_1, cast(sum(count_value) as float64) as statistic_value, 'AgeAtFirstObsByDecile:PersonCnt' as measure_id
     from  synpuf_100.achilles_results where analysis_id = 101
  group by  1 ;
 
 --count whether all deciles from 0 to 8 are there  (has later a rule: if less the threshold, issue notification)
 insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
-select  count(*) as statistic_value, 'AgeAtFirstObsByDecile:DecileCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'AgeAtFirstObsByDecile:DecileCnt' as measure_id
  from  synpuf_100.achilles_results_derived
 where measure_id = 'AgeAtFirstObsByDecile:PersonCnt'
 and cast(stratum_1  as int64) <=8
@@ -80,69 +80,69 @@ and cast(stratum_1  as int64) <=8
 --data density measures
 
 UNION ALL
-select  count(*) as statistic_value, 'DrugExposure:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'DrugExposure:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 701
 
 UNION ALL
-select  count(*) as statistic_value, 'DrugEra:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'DrugEra:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 901
 
 UNION ALL
-select  count(*) as statistic_value, 'Condition:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Condition:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 401
 
 UNION ALL
-select  count(*) as statistic_value, 'Procedure:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Procedure:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 601
 
 UNION ALL
-select  count(*) as statistic_value, 'Observation:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Observation:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 801
 
 UNION ALL
-select  count(*) as statistic_value, 'Measurement:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Measurement:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 1801
 
 UNION ALL
-select  count(*) as statistic_value, 'Visit:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Visit:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 201
 
 UNION ALL
-select  count(*) as statistic_value, 'Death:DeathType:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Death:DeathType:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 505
 
 UNION ALL
-select  count(*) as statistic_value, 'Death:DeathCause:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Death:DeathCause:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 501
 
 UNION ALL
-select  count(*) as statistic_value, 'Person:Race:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Person:Race:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 4
 
 UNION ALL
-select  count(*) as statistic_value, 'Person:Ethnicity:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Person:Ethnicity:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 5
 
 
 UNION ALL
-select  count(*) as statistic_value, 'Device:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Device:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 2101
 
 UNION ALL
-select  count(*) as statistic_value, 'Note:ConceptCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Note:ConceptCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 2201;
 
 --unmapped data (concept_0) derived measures (focusing on source values)
 
 insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
- select  stratum_1, count(*) as statistic_value, 'UnmappedDataByDomain:SourceValueCnt' as measure_id
+ select  stratum_1, cast(count(*) as float64) as statistic_value, 'UnmappedDataByDomain:SourceValueCnt' as measure_id
   from  synpuf_100.achilles_results where analysis_id = 1900  group by  1 ;
 
 
 --count of specialties in the provider table
 --(subsequent rule can check if this count is > trehshold) (general population dataset only))
 insert into synpuf_100.achilles_results_derived (statistic_value,measure_id)
-select  count(*) as statistic_value, 'Provider:SpeciatlyCnt' as measure_id
+select  cast(count(*) as float64) as statistic_value, 'Provider:SpeciatlyCnt' as measure_id
  from  synpuf_100.achilles_results where analysis_id = 301;
 
 
@@ -152,7 +152,7 @@ select  count(*) as statistic_value, 'Provider:SpeciatlyCnt' as measure_id
 
 
 insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
-select  decade as stratum_1, temp_cnt as statistic_value, 'Death:byDecade:SafePatientCnt' as measure_id
+select  decade as stratum_1, cast(temp_cnt as float64) as statistic_value, 'Death:byDecade:SafePatientCnt' as measure_id
  from
    ( select  SUBSTR(stratum_1,0,3) as decade, sum(count_value) as temp_cnt   from  synpuf_100.achilles_results where analysis_id = 504   group by  1 )a
 where temp_cnt >= 11
@@ -160,7 +160,7 @@ where temp_cnt >= 11
 
 UNION ALL
 -- insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
-select  stratum_1, temp_cnt as statistic_value, 'Death:byYear:SafePatientCnt' as measure_id
+select  stratum_1, cast(temp_cnt as float64) as statistic_value, 'Death:byYear:SafePatientCnt' as measure_id
  from
    ( select  stratum_1, sum(count_value) as temp_cnt   from  synpuf_100.achilles_results where analysis_id = 504   group by  1 )a
 where temp_cnt >= 11;
@@ -182,7 +182,7 @@ where a.person_cnt >= 11;
 
 --size of Achilles Metadata
 insert into synpuf_100.achilles_results_derived (stratum_1,statistic_value,measure_id)
- select  cast(analysis_id as string) as stratum_1, COUNT(*) as statistic_value, 'Achilles:byAnalysis:RowCnt' as measure_id
+ select  cast(analysis_id as string) as stratum_1, cast(count(*) as float64) as statistic_value, 'Achilles:byAnalysis:RowCnt' as measure_id
   from  synpuf_100.achilles_results  group by  1 
 --;
 
@@ -225,7 +225,7 @@ insert into synpuf_100.achilles_heel_results (
 	rule_id,
 	record_count
 	)
-select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; count (n=' ), cast(or1.count_value  as string) ), ') should not be > 0' )as achilles_heel_warning, 1 as rule_id, or1.count_value
+select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('ERROR: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; count (n=' ), cast(or1.count_value  as string) ), ') should not be > 0' )as achilles_heel_warning, 1 as rule_id, or1.count_value as record_count
  from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id
@@ -1145,7 +1145,7 @@ insert into synpuf_100.achilles_heel_results (
 	rule_id,
 	record_count
 	)
-select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('NOTIFICATION: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; count (n=' ), cast(or1.count_value  as string) ), ') should not be > 0' )as achilles_heel_warning, 1 as rule_id, or1.count_value
+select distinct  or1.analysis_id, concat(concat(concat(concat(concat(concat('NOTIFICATION: ' , cast(or1.analysis_id  as string) ), '-' ), oa1.analysis_name ), '; count (n=' ), cast(or1.count_value  as string) ), ') should not be > 0' )as achilles_heel_warning, 1 as rule_id, or1.count_value as record_count
  from  synpuf_100.achilles_results or1
 inner join synpuf_100.achilles_analysis oa1
 	on or1.analysis_id = oa1.analysis_id

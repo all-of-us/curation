@@ -800,7 +800,8 @@ def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, field
 
     if fields is None:
         fields_filename = os.path.join(resources.fields_path, table_name + '.json')
-        fields = json.load(open(fields_filename, 'r'))
+        with open(fields_filename, 'r') as f:
+            fields = json.load(f)
     field_names = ', '.join([field['name'] for field in fields])
     row_exprs = [csv_line_to_sql_row_expr(t, fields) for t in table_list]
     formatted_mapping_list = ', '.join(row_exprs)

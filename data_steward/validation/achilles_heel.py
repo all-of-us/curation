@@ -6,6 +6,8 @@ import bq_utils
 import resources
 from validation import sql_wrangle
 from io import open
+from constants import bq_utils as bq_consts
+from validation import achilles
 
 ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
 ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
@@ -64,41 +66,56 @@ def load_heel(hpo_id):
         bq_utils.query(command)
 
 
+def drop_or_truncate_table(command):
+    """
+    Deletes or truncates table
+    :param command: query to run
+    :return: None
+    """
+    if sql_wrangle.is_truncate(command):
+        table_id = sql_wrangle.get_truncate_table_name(command)
+        query = 'DELETE FROM %s WHERE TRUE' % table_id
+        bq_utils.query(query)
+    else:
+        table_id = sql_wrangle.get_drop_table_name(command)
+        bq_utils.delete_table(table_id)
+
+
+def run_heel_analysis_job(command):
+    """
+    Runs command (query) and waits for job completion
+    :param command: query to run
+    :return: None
+    """
+    if sql_wrangle.is_to_temp_table(command):
+        logging.info('Running achilles heel temp query %s' % command)
+        table_id = sql_wrangle.get_temp_table_name(command)
+        query = sql_wrangle.get_temp_table_query(command)
+        job_result = bq_utils.query(query,
+                                    destination_table_id=table_id)
+    else:
+        logging.info('Running achilles heel load query %s' % command)
+        job_result = bq_utils.query(command)
+    job_id = job_result['jobReference']['jobId']
+    incomplete_jobs = bq_utils.wait_on_jobs([job_id])
+    if len(incomplete_jobs) > 0:
+        logging.info('Job id %s taking too long' % job_id)
+        raise RuntimeError('Job id %s taking too long' % job_id)
+
+
 def run_heel(hpo_id):
     """
     Run heel commands
 
     :param hpo_id:  string name for the hpo identifier
     :returns: None
-    :raises RuntimeError: Raised if BigQuery takes longer than 30 seconds
-        to complete a job on a temporary table
     """
-    # very long test
     commands = _get_heel_commands(hpo_id)
-    count = 0
     for command in commands:
-        count = count + 1
-        logging.info(' ---- running query # {}'.format(count))
-        logging.info(' ---- Running `%s`...\n' % command)
-        if sql_wrangle.is_to_temp_table(command):
-            table_id = sql_wrangle.get_temp_table_name(command)
-            query = sql_wrangle.get_temp_table_query(command)
-            insert_query_job_result = bq_utils.query(query, False, table_id)
-            query_job_id = insert_query_job_result['jobReference']['jobId']
-
-            incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
-            if len(incomplete_jobs) > 0:
-                logging.critical('tempresults doesnt get created in 30 secs')
-                raise RuntimeError('Tempresults taking too long to create')
-        elif sql_wrangle.is_truncate(command):
-            table_id = sql_wrangle.get_truncate_table_name(command)
-            query = 'DELETE FROM %s WHERE TRUE' % table_id
-            bq_utils.query(query)
-        elif sql_wrangle.is_drop(command):
-            table_id = sql_wrangle.get_drop_table_name(command)
-            bq_utils.delete_table(table_id)
+        if sql_wrangle.is_truncate(command) or sql_wrangle.is_drop(command):
+            drop_or_truncate_table(command)
         else:
-            bq_utils.query(command)
+            run_heel_analysis_job(command)
 
 
 def create_tables(hpo_id, drop_existing=False):
