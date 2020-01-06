@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -ex
 
 # This script automates the curation playbook (https://docs.google.com/document/d/1QnwUhJmrVc9JNt64goeRw-K7490gbaF7DsYhTTt9tUo/edit#heading=h.k24j7tgoprtn)
 # It assuming steps 1-3 are already done via a daily cron job. This script automates 4-7.
@@ -60,7 +61,7 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 
-app_id=$(cat "${key_file}" | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 today=$(date '+%Y%m%d')
 
 echo "today --> ${today}"

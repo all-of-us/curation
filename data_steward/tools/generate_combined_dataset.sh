@@ -47,12 +47,12 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 echo "today --> ${today}"
 echo "unioned_ehr_dataset --> ${unioned_ehr_dataset}"
 echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
-app_id=$(cat "${key_file}" | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"

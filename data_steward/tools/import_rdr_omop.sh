@@ -1,7 +1,8 @@
-#!/bin/bash -ex
+#!/usr/bin/env bash
+set -ex
 
 # Imports RDR ETL results from GCS into a dataset in BigQuery.
-# Assumes you have already activated a service account that is able to
+# Assumes you have al``ready activated a service account that is able to
 # access the files in GCS.
 
 USAGE="tools/import_rdr_omop.sh
@@ -52,7 +53,7 @@ DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 
-app_id=$(cat "${key_file}" | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
