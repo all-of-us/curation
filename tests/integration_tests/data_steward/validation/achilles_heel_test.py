@@ -31,10 +31,10 @@ class AchillesHeelTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
+        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.dataset = bq_utils.get_dataset_id()
         test_util.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(self.dataset)
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
 
     def tearDown(self):
         test_util.delete_all_tables(bq_utils.get_dataset_id())
