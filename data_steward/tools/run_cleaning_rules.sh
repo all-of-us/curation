@@ -86,7 +86,7 @@ pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 source "${TOOLS_DIR}/set_path.sh"
 
 #--------------------------------------------------------
-export EHR_RDR_DATASET_ID="${dataset}"
+export COMBINED_DATASET_ID="${dataset}"
 export BIGQUERY_DATASET_ID="${dataset}"
 
 

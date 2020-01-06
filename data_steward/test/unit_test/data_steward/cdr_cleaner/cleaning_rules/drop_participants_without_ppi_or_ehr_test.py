@@ -85,7 +85,7 @@ class DropParticipantsWithoutPpiOrEhrTest(unittest.TestCase):
     @unittest.skip("TODO(calbach): Move into integration test package, once that exists")
     def test_execute_queries(self):
         project_id = bq_utils.app_identity.get_application_id()
-        dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+        dataset_id = bq_utils.get_combined_dataset_id()
         test_util.delete_all_tables(dataset_id)
 
         create_tables = (['person'] + common.CLINICAL_DATA_TABLES +

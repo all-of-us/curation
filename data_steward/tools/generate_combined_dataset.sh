@@ -90,7 +90,7 @@ combined="${cdr}"
 
 export RDR_DATASET_ID="${rdr_dataset}"
 export UNIONED_DATASET_ID="${unioned_ehr_dataset}"
-export EHR_RDR_DATASET_ID="${cdr}"
+export COMBINED_DATASET_ID="${cdr}"
 export BIGQUERY_DATASET_ID="${unioned_ehr_dataset}"
 
 bq mk --dataset --description "${version} combine_ehr_rdr base version  ${rdr_dataset} + ${unioned_ehr_dataset}" ${app_id}:${combined_backup}
@@ -110,7 +110,7 @@ bq mk --dataset --description "intermediary dataset to apply cleaning rules on $
 
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined_backup} --target_dataset ${combined_staging}
 
-export EHR_RDR_DATASET_ID="${combined_staging}"
+export COMBINED_DATASET_ID="${combined_staging}"
 export BIGQUERY_DATASET_ID="${combined_staging}"
 data_stage='combined'
 

@@ -93,12 +93,12 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     return query_list
 
 
-def _gather_ehr_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
+def _gather_combined_queries(project_id, dataset_id, sandbox_dataset_id):
     """
-    gathers all the queries required to clean ehr_rdr dataset
+    gathers all the queries required to clean combined dataset
 
     :param project_id: project name
-    :param dataset_id: ehr_rdr dataset name
+    :param dataset_id: combined dataset name
     :return: returns list of queries
     """
     query_list = []
@@ -123,7 +123,7 @@ def _gather_ehr_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     return query_list
 
 
-def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id, sandbox_dataset_id):
+def _gather_combined_de_identified_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     gathers all the queries required to clean de_identified dataset
 
@@ -141,7 +141,7 @@ def _gather_ehr_rdr_de_identified_queries(project_id, dataset_id, sandbox_datase
     return query_list
 
 
-def _gather_ehr_rdr_de_identified_clean_queries(project_id, dataset_id, sandbox_dataset_id):
+def _gather_combined_de_identified_clean_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     gathers all the queries required to clean base version of de_identified dataset
     :param project_id: project name
@@ -243,7 +243,7 @@ def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
     clean_engine.clean_dataset(project_id, query_list, stage.UNIONED)
 
 
-def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
+def clean_combined_dataset(project_id=None, dataset_id=None):
     """
     Run all clean rules defined for the ehr and rdr dataset.
 
@@ -255,18 +255,18 @@ def clean_ehr_rdr_dataset(project_id=None, dataset_id=None):
         LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
 
     if dataset_id is None:
-        dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+        dataset_id = bq_utils.get_combined_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
-    query_list = _gather_ehr_rdr_queries(project_id, dataset_id, sandbox_dataset_id)
+    query_list = _gather_combined_queries(project_id, dataset_id, sandbox_dataset_id)
 
-    LOGGER.info("Cleaning ehr_rdr_dataset")
+    LOGGER.info("Cleaning combined_dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.COMBINED)
 
 
-def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
+def clean_combined_de_identified_dataset(project_id=None, dataset_id=None):
     """
     Run all clean rules defined for the deidentified ehr and rdr dataset.
 
@@ -283,13 +283,13 @@ def clean_ehr_rdr_de_identified_dataset(project_id=None, dataset_id=None):
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
-    query_list = _gather_ehr_rdr_de_identified_queries(project_id, dataset_id, sandbox_dataset_id)
+    query_list = _gather_combined_de_identified_queries(project_id, dataset_id, sandbox_dataset_id)
 
     LOGGER.info("Cleaning de-identified dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.DEID)
 
 
-def clean_ehr_rdr_de_identified_clean_dataset(project_id=None, dataset_id=None):
+def clean_combined_de_identified_clean_dataset(project_id=None, dataset_id=None):
     """
     Run all clean rules defined for the deidentified ehr and rdr clean dataset.
     :param project_id:  Name of the BigQuery project.
@@ -300,12 +300,12 @@ def clean_ehr_rdr_de_identified_clean_dataset(project_id=None, dataset_id=None):
         LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
 
     if dataset_id is None:
-        dataset_id = bq_utils.get_ehr_rdr_deid_clean_dataset_id()
+        dataset_id = bq_utils.get_combined_deid_clean_dataset_id()
         LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
 
-    query_list = _gather_ehr_rdr_de_identified_clean_queries(project_id, dataset_id, sandbox_dataset_id)
+    query_list = _gather_combined_de_identified_clean_queries(project_id, dataset_id, sandbox_dataset_id)
 
     LOGGER.info("Cleaning de-identified dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.DEID)
@@ -318,9 +318,9 @@ def clean_all_cdr():
     clean_ehr_dataset()
     clean_unioned_ehr_dataset()
     clean_rdr_dataset()
-    clean_ehr_rdr_dataset()
-    clean_ehr_rdr_de_identified_dataset()
-    clean_ehr_rdr_de_identified_clean_dataset()
+    clean_combined_dataset()
+    clean_combined_de_identified_dataset()
+    clean_combined_de_identified_clean_dataset()
 
 
 if __name__ == '__main__':
@@ -345,11 +345,11 @@ if __name__ == '__main__':
     elif args.data_stage == stage.RDR:
         clean_rdr_dataset()
     elif args.data_stage == stage.COMBINED:
-        clean_ehr_rdr_dataset()
+        clean_combined_dataset()
     elif args.data_stage == stage.DEID_BASE:
-        clean_ehr_rdr_de_identified_dataset()
+        clean_combined_de_identified_dataset()
     elif args.data_stage == stage.DEID_CLEAN:
-        clean_ehr_rdr_de_identified_clean_dataset()
+        clean_combined_de_identified_clean_dataset()
     else:
         raise EnvironmentError(
             f'Dataset selection should be from [{stage.EHR}, {stage.UNIONED}, {stage.RDR}, {stage.COMBINED},'

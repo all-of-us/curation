@@ -48,7 +48,7 @@ export BUCKET_NAME_UNIONED_EHR="${BUCKET_PREFIX}_drc"
 DATASET_PREFIX="${USERNAME_PREFIX}_${CURRENT_BRANCH}"
 export BIGQUERY_DATASET_ID="${DATASET_PREFIX}_ehr"
 export RDR_DATASET_ID="${DATASET_PREFIX}_rdr"
-export EHR_RDR_DATASET_ID="${DATASET_PREFIX}_combined"
+export COMBINED_DATASET_ID="${DATASET_PREFIX}_combined"
 export UNIONED_DATASET_ID="${DATASET_PREFIX}_unioned"
 
 # .circlerc is sourced before each test and deploy command
@@ -66,7 +66,7 @@ then
   echo "export BUCKET_NAME_CHS=${BUCKET_NAME_CHS}" >> ${BASH_ENV}
   echo "export BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID}" >> ${BASH_ENV}
   echo "export RDR_DATASET_ID=${RDR_DATASET_ID}" >> ${BASH_ENV}
-  echo "export EHR_RDR_DATASET_ID=${EHR_RDR_DATASET_ID}" >> ${BASH_ENV}
+  echo "export COMBINED_DATASET_ID=${COMBINED_DATASET_ID}" >> ${BASH_ENV}
   echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >> ${BASH_ENV}
   echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >> ${BASH_ENV}
   echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >> $BASH_ENV

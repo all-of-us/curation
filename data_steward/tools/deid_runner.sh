@@ -102,7 +102,7 @@ bq mk --dataset --description "Intermediary dataset to apply cleaning rules on $
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_base_staging}"
 
 export BIGQUERY_DATASET_ID="${cdr_deid_base_staging}"
-export EHR_RDR_DEID_DATASET_ID="${cdr_deid_base_staging}"
+export COMBINED_DEID_DATASET_ID="${cdr_deid_base_staging}"
 data_stage='deid_base'
 
 # run cleaning_rules on a dataset
@@ -123,7 +123,7 @@ bq mk --dataset --description "Intermediary dataset to apply cleaning rules on $
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid_base}" --target_dataset "${cdr_deid_clean_staging}"
 
 export BIGQUERY_DATASET_ID="${cdr_deid_clean_staging}"
-export EHR_RDR_DEID_CLEAN_DATASET_ID="${cdr_deid_clean_staging}"
+export COMBINED_DEID_CLEAN_DATASET_ID="${cdr_deid_clean_staging}"
 data_stage='deid_clean'
 
 # run cleaning_rules on a dataset

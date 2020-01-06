@@ -32,7 +32,7 @@ EXPECTED_MAPPING_QUERY = ('SELECT DISTINCT'
                           '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{'
                           'domain_table}_id'
                           '  WHERE EXISTS'
-                          '  (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c'
+                          '  (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c'
                           '  WHERE t.person_id = c.person_id)')
 
 UNCONSENTED_EHR_COUNTS_QUERY = ('  select \'{domain_table}\' as table_id, count(1) as n from (SELECT DISTINCT'
@@ -42,7 +42,7 @@ UNCONSENTED_EHR_COUNTS_QUERY = ('  select \'{domain_table}\' as table_id, count(
                                 '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{'
                                 'domain_table}_id'
                                 '  WHERE NOT EXISTS'
-                                '  (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c'
+                                '  (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c'
                                 '  WHERE t.person_id = c.person_id))')
 
 @unittest.skipIf(os.getenv('ALL_TESTS') == 'False', 'Skip CombineEhrRdrTest cases')
@@ -101,7 +101,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         self.APP_ID = bq_utils.app_identity.get_application_id()
         self.ehr_dataset_id = bq_utils.get_dataset_id()
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-        self.combined_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+        self.combined_dataset_id = bq_utils.get_combined_dataset_id()
         self.drc_bucket = gcs_utils.get_drc_bucket()
         test_util.delete_all_tables(self.combined_dataset_id)
 
@@ -164,7 +164,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         q = mapping_query(table_name)
         expected_query = EXPECTED_MAPPING_QUERY.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
                                                        ehr_dataset_id=bq_utils.get_dataset_id(),
-                                                       ehr_rdr_dataset_id=self.combined_dataset_id,
+                                                       combined_dataset_id=self.combined_dataset_id,
                                                        domain_table=table_name,
                                                        mapping_constant=common.RDR_ID_CONSTANT,
                                                        ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
@@ -188,11 +188,11 @@ class CombineEhrRdrTest(unittest.TestCase):
           ehr_only.person_id AS ehr_person_id,
           p.person_id        AS combined_person_id
         FROM ehr_only
-          LEFT JOIN {ehr_rdr_dataset_id}.person p
+          LEFT JOIN {combined_dataset_id}.person p
             ON ehr_only.person_id = p.person_id
         '''.format(ehr_dataset_id=self.ehr_dataset_id,
                    rdr_dataset_id=self.rdr_dataset_id,
-                   ehr_rdr_dataset_id=self.combined_dataset_id)
+                   combined_dataset_id=self.combined_dataset_id)
         response = bq_utils.query(q)
         rows = bq_utils.response2rows(response)
         self.assertGreater(len(rows), 0, 'Test data is missing EHR-only records')
@@ -204,7 +204,7 @@ class CombineEhrRdrTest(unittest.TestCase):
     def get_unconsented_ehr_records_count(self, table_name):
         q = UNCONSENTED_EHR_COUNTS_QUERY.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
                                                 ehr_dataset_id=bq_utils.get_dataset_id(),
-                                                ehr_rdr_dataset_id=self.combined_dataset_id,
+                                                combined_dataset_id=self.combined_dataset_id,
                                                 domain_table=table_name,
                                                 ehr_consent_table_id='_ehr_consent')
         response = bq_utils.query(q)
@@ -217,9 +217,9 @@ class CombineEhrRdrTest(unittest.TestCase):
         """
         where = '''
                 WHERE EXISTS
-                   (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c
+                   (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c
                     WHERE t.person_id = c.person_id)
-                '''.format(ehr_rdr_dataset_id=self.combined_dataset_id, ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+                '''.format(combined_dataset_id=self.combined_dataset_id, ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
         ehr_counts = test_util.get_table_counts(self.ehr_dataset_id, DOMAIN_TABLES, where)
         rdr_counts = test_util.get_table_counts(self.rdr_dataset_id)
         combined_counts = test_util.get_table_counts(self.combined_dataset_id)
@@ -257,16 +257,16 @@ class CombineEhrRdrTest(unittest.TestCase):
             mapping_table = mapping_table_for(domain_table)
             q = '''SELECT rt.{domain_table}_id as id
                FROM {rdr_dataset_id}.{domain_table} rt
-               LEFT JOIN {ehr_rdr_dataset_id}.{mapping_table} m
+               LEFT JOIN {combined_dataset_id}.{mapping_table} m
                ON rt.{domain_table}_id = m.src_{domain_table}_id
                WHERE
                  m.{domain_table}_id IS NULL
                OR NOT EXISTS
-                 (SELECT 1 FROM {ehr_rdr_dataset_id}.{domain_table} t
+                 (SELECT 1 FROM {combined_dataset_id}.{domain_table} t
                   WHERE t.{domain_table}_id = m.{domain_table}_id)'''.format(
                 domain_table=domain_table,
                 rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-                ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                combined_dataset_id=bq_utils.get_combined_dataset_id(),
                 mapping_table=mapping_table)
             response = bq_utils.query(q)
             rows = bq_utils.response2rows(response)
