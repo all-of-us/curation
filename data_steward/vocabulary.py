@@ -11,7 +11,7 @@ import warnings
 import re
 
 from common import CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, TRANSFORM_FILES, \
-    APPEND_VOCABULARY, APPEND_CONCEPTS, ADD_AOU_GENERAL, ERRORS, AOU_GEN_ID, AOU_GEN_VOCABULARY_CONCEPT_ID, \
+    APPEND_VOCABULARY, APPEND_CONCEPTS, ADD_AOU_VOCABS, ERRORS, AOU_GEN_ID, AOU_GEN_VOCABULARY_CONCEPT_ID, \
     AOU_GEN_VOCABULARY_REFERENCE, ERROR_APPENDING, AOU_GEN_NAME, \
     AOU_CUSTOM_ID, AOU_CUSTOM_NAME, AOU_CUSTOM_VOCABULARY_CONCEPT_ID, AOU_CUSTOM_VOCABULARY_REFERENCE
 from resources import AOU_VOCAB_PATH, AOU_VOCAB_CONCEPT_CSV_PATH, hash_dir
@@ -193,7 +193,14 @@ def append_vocabulary(in_path, out_path):
         out_fp.write(aou_custom_row)
 
 
-def add_aou_general(in_dir, out_dir):
+def add_aou_vocabs(in_dir, out_dir):
+    """
+    Add vocabularies AoU_General and AoU_Custom to the vocabulary at specified path
+
+    :param in_dir: existing vocabulary files
+    :param out_dir: location to save the updated vocabulary files
+    :return:
+    """
     file_names = os.listdir(in_dir)
     concept_in_path = None
     vocabulary_in_path = None
@@ -221,14 +228,14 @@ if __name__ == '__main__':
     import argparse
 
     arg_parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    arg_parser.add_argument('command', choices=[TRANSFORM_FILES, ADD_AOU_GENERAL, APPEND_VOCABULARY, APPEND_CONCEPTS])
+    arg_parser.add_argument('command', choices=[TRANSFORM_FILES, ADD_AOU_VOCABS, APPEND_VOCABULARY, APPEND_CONCEPTS])
     arg_parser.add_argument('--in_dir', required=True)
     arg_parser.add_argument('--out_dir', required=True)
     args = arg_parser.parse_args()
     if args.command == TRANSFORM_FILES:
         transform_files(args.in_dir, args.out_dir)
-    elif args.command == ADD_AOU_GENERAL:
-        add_aou_general(args.in_dir, args.out_dir)
+    elif args.command == ADD_AOU_VOCABS:
+        add_aou_vocabs(args.in_dir, args.out_dir)
     elif args.command == APPEND_VOCABULARY:
         append_vocabulary(args.file, args.out_dir)
     elif args.command == APPEND_CONCEPTS:

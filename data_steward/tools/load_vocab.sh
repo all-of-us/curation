@@ -69,10 +69,10 @@ python ${BASE_DIR}/vocabulary.py transform_files --in_dir ${BACKUP_DIR} --out_di
 TEMP_DIR=$(mktemp -d)
 echo "Created temp dir ${TEMP_DIR}"
 
-# Append AoU_General vocabulary and concept records
-echo "Adding AoU_General to vocabulary in ${IN_DIR}..."
+# Append vocabulary and concept records
+echo "Adding AoU_General and AoU_Custom to vocabulary in ${IN_DIR}..."
 cp ${IN_DIR}/* ${TEMP_DIR}
-python ${BASE_DIR}/vocabulary.py add_aou_general --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
+python ${BASE_DIR}/vocabulary.py add_aou_vocabs --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
 
 rm -rf ${TEMP_DIR}
 
