@@ -107,7 +107,7 @@ echo "Creating a RDR back-up"
 export BIGQUERY_DATASET_ID="${VOCAB_DATASET}"
 export RDR_DATASET_ID="${OUTPUT_DATASET}"
 echo "Cleaning the RDR data"
-python "${DATA_STEWARD_DIR}/clean_cdr.py" -d rdr -s
+python "${CLEANER_DIR}/clean_cdr.py" -d rdr -s
 
 echo "Done."
 
