@@ -1,3 +1,8 @@
+"""
+Utility for creating OMOP vocabulary DRC resources. OMOP vocabulary files are downloaded from
+[Athena](http://athena.ohdsi.org/) in tab-separated format. Before they can be loaded into BigQuery, they must
+be reformatted and records for the AOU Generalization and AOU Custom vocabularies must be added to them.
+"""
 import csv
 import logging
 import os
@@ -91,10 +96,20 @@ def transform_files(in_dir, out_dir):
 
 
 def get_aou_vocab_version():
+    """
+    Generate an identifier used to version AOU vocabulary resources
+
+    :return: unique identifier string
+    """
     return hash_dir(AOU_VOCAB_PATH)
 
 
 def get_aou_general_vocabulary_row():
+    """
+    Get row for the vocabulary AoU_General
+
+    :return: a delimited string representing row of the vocabulary.csv file
+    """
     aou_vocab_version = get_aou_vocab_version()
     # vocabulary_id vocabulary_name vocabulary_reference vocabulary_version vocabulary_concept_id
     return DELIMITER.join([AOU_GEN_ID, AOU_GEN_NAME, AOU_GEN_VOCABULARY_REFERENCE, aou_vocab_version,
@@ -102,6 +117,11 @@ def get_aou_general_vocabulary_row():
 
 
 def get_aou_custom_vocabulary_row():
+    """
+    Get row for the vocabulary AoU_Custom
+
+    :return: a delimited string representing row of the vocabulary.csv file
+    """
     aou_vocab_version = get_aou_vocab_version()
     # vocabulary_id vocabulary_name vocabulary_reference vocabulary_version vocabulary_concept_id
     return DELIMITER.join([AOU_CUSTOM_ID, AOU_CUSTOM_NAME, AOU_CUSTOM_VOCABULARY_REFERENCE, aou_vocab_version,
@@ -109,6 +129,12 @@ def get_aou_custom_vocabulary_row():
 
 
 def append_concepts(in_path, out_path):
+    """
+    Add AOU-specific concepts to the concept file at the specified path
+
+    :param in_path: existing concept file
+    :param out_path: location to save the updated concept file
+    """
     with open(out_path, 'w') as out_fp:
         # copy original rows line by line for memory efficiency
         with open(in_path, 'r') as in_fp:
@@ -140,6 +166,13 @@ def append_concepts(in_path, out_path):
 
 
 def append_vocabulary(in_path, out_path):
+    """
+    Add AOU-specific vocabularies to the vocabulary file at the specified path
+
+    :param in_path: existing vocabulary file
+    :param out_path: location to save the updated vocabulary file
+    :return:
+    """
     aou_general_row = get_aou_general_vocabulary_row()
     aou_custom_row = get_aou_custom_vocabulary_row()
     with open(out_path, 'w') as out_fp:
