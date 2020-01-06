@@ -52,11 +52,11 @@ then
 fi
 
 set -e
-# create a new environment in directory curation_env
-virtualenv curation_env
+# create a new environment in directory curation_venv
+virtualenv curation_venv
 
 # activate the report_env virtual environment
-source "curation_env/${VENV_BIN}/activate"
+source "curation_venv/${VENV_BIN}/activate"
 
 # install the requirements in the virtualenv
 pip install -t lib -r requirements.txt

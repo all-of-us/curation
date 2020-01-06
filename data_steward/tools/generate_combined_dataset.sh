@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -ex
 
 # This Script automates the process of combining ehr and rdr datasets
 
@@ -65,18 +66,17 @@ gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
 #---------Create curation virtual environment----------
-set -e
-# create a new environment in directory curation_env
-virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}"/curation_env
+# create a new environment in directory curation_venv
+virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
 
 # activate it
-source "${DATA_STEWARD_DIR}/curation_env/bin/activate"
+source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
 
 # install the requirements in the virtualenv
-pip install -r "${DATA_STEWARD_DIR}"/requirements.txt
+pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 
 # shellcheck source=src/set_path.sh
-source "${TOOLS_DIR}"/set_path.sh
+source "${TOOLS_DIR}/set_path.sh"
 
 #--------------------------------------------------------
 #Combine RDR and Unioned EHR data (step 6 in playbook)
@@ -96,42 +96,41 @@ export BIGQUERY_DATASET_ID="${unioned_ehr_dataset}"
 bq mk --dataset --description "${version} combine_ehr_rdr base version  ${rdr_dataset} + ${unioned_ehr_dataset}" ${app_id}:${combined_backup}
 
 #Create the clinical tables for unioned EHR data set
-python "${DATA_STEWARD_DIR}"/cdm.py ${combined_backup}
+python "${DATA_STEWARD_DIR}/cdm.py" ${combined_backup}
 
 #Copy OMOP vocabulary to CDR EHR data set
-python "${DATA_STEWARD_DIR}"cdm.py --component vocabulary ${combined_backup}
-"${TOOLS_DIR}"/table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${combined_backup}
+python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary ${combined_backup}
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${combined_backup}
 
 #Combine EHR and PPI data sets
-python "${TOOLS_DIR}"/combine_ehr_rdr.py
+python "${TOOLS_DIR}/combine_ehr_rdr.py"
 
 # create an intermediary table to apply cleaning rules on
 bq mk --dataset --description "intermediary dataset to apply cleaning rules on ${combined_backup}" ${app_id}:${combined_staging}
 
-echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined_backup} --target_dataset ${combined_staging}"
-"${TOOLS_DIR}"/table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined_backup} --target_dataset ${combined_staging}
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined_backup} --target_dataset ${combined_staging}
 
 export EHR_RDR_DATASET_ID="${combined_staging}"
 export BIGQUERY_DATASET_ID="${combined_staging}"
 data_stage='combined'
 
 # run cleaning_rules on a dataset
-python "${CLEANER_DIR}"/clean_cdr.py --data_stage ${data_stage} -s 2>&1 | tee combined_cleaning_log_"${today}".txt
+python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee combined_cleaning_log_"${today}".txt
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}"/snapshot_by_query.py -p "${app_id}" -d "${combined_staging}" -n "${combined}"
+python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${combined_staging}" -n "${combined}"
 
 bq update --description "${version} combined clean version of ${rdr_dataset} + ${unioned_ehr_dataset}" ${app_id}:${combined}
 
 #copy sandbox dataset
-"${TOOLS_DIR}"/table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${combined_staging}_sandbox" --target_dataset "${combined}_sandbox"
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${combined_staging}_sandbox" --target_dataset "${combined}_sandbox"
 
 dbrowser="${combined}_dbrowser"
 
 # Create a dataset for data browser team
 bq mk --dataset --description "intermediary dataset to apply cleaning rules on ${combined_backup}" ${app_id}:${dbrowser}
 
-"${TOOLS_DIR}"/table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${combined}" --target_dataset "${dbrowser}"
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined} --target_dataset ${dbrowser}
 
 unset PYTHOPATH
 deactivate

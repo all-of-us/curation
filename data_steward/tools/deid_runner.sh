@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -ex
 # This Script automates the process of de-identification of the combined_dataset
 # This script expects you are using the venv in curation directory
 
@@ -58,12 +58,11 @@ set -e
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
-DEID_DIR="${DATA_STEWARD_DIR}/deid"
-VENV_DIR="${DATA_STEWARD_DIR}/deid_venv"
+DEID_DIR="${DATA_STEWARD_DIR}/deid" 
 
-virtualenv -p $(which python3.7) "${VENV_DIR}"
+virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
 
-source ${VENV_DIR}/bin/activate
+source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
 
 # install the requirements in the virtualenv
 pip install -r "${DATA_STEWARD_DIR}/requirements.txt"

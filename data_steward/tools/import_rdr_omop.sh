@@ -9,7 +9,6 @@ USAGE="tools/import_rdr_omop.sh
     --rdr_directory <DIRECTORY, not including the gs:// bucket name>
     --output_dataset <DATA SET>
     --key_file <path to key file>
-    --app_id <application id>
     --vocab_dataset <vocabulary dataset>"
 
 while true; do
@@ -30,10 +29,6 @@ while true; do
     KEY_FILE=$2
     shift 2
     ;;
-  --app_id)
-    APP_ID=$2
-    shift 2
-    ;;
   --vocab_dataset)
     VOCAB_DATASET=$2
     shift 2
@@ -47,13 +42,20 @@ while true; do
 done
 
 if [[ -z "${RDR_PROJECT}" ]] || [[ -z "${RDR_DIRECTORY}" ]] || [[ -z "${OUTPUT_DATASET}" ]] ||
-  [[ -z "${KEY_FILE}" ]] || [[ -z "${APP_ID}" ]] || [[ -z "${VOCAB_DATASET}" ]]; then
+  [[ -z "${KEY_FILE}" ]] || [[ -z "${VOCAB_DATASET}" ]]; then
   echo "Usage: $USAGE"
   exit 1
 fi
 
+ROOT_DIR=$(git rev-parse --show-toplevel)
+DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
+TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
+CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
+
+app_id=$(cat "${key_file}" | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
+
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
-export GOOGLE_CLOUD_PROJECT="${APP_ID}"
+export GOOGLE_CLOUD_PROJECT="${app_id}"
 export BIGQUERY_DATASET_ID="${OUTPUT_DATASET}"
 
 today=$(date '+%Y%m%d')
@@ -61,19 +63,19 @@ export BACKUP_DATASET="${OUTPUT_DATASET}_backup"
 
 #---------Create curation virtual environment----------
 # create a new environment in directory curation_venv
-virtualenv -p $(which python3.7) curation_venv
+virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
 
 # activate it
-source curation_venv/bin/activate
+source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
 
 # install the requirements in the virtualenv
-pip install -r requirements.txt
+pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 
-source tools/set_path.sh
+source "${TOOLS_DIR}/set_path.sh"
 
 bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} on ${today}" "${GOOGLE_CLOUD_PROJECT}:${OUTPUT_DATASET}"
 
-python cdm.py "${OUTPUT_DATASET}"
+python "${DATA_STEWARD_DIR}/cdm.py" "${OUTPUT_DATASET}"
 
 cdm_files=$(gsutil ls gs://${RDR_PROJECT}-cdm/${RDR_DIRECTORY})
 if [[ $? -ne 0 ]]; then
@@ -96,16 +98,16 @@ for file in $cdm_files; do
 done
 
 echo "Copying vocabulary"
-./tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${VOCAB_DATASET} --target_dataset ${OUTPUT_DATASET}
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${VOCAB_DATASET} --target_dataset ${OUTPUT_DATASET}
 
 echo "Creating a RDR back-up"
-./tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${OUTPUT_DATASET} --target_dataset ${BACKUP_DATASET}
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${OUTPUT_DATASET} --target_dataset ${BACKUP_DATASET}
 
 #set BIGQUERY_DATASET_ID variable to dataset name where the vocabulary exists
 export BIGQUERY_DATASET_ID="${VOCAB_DATASET}"
 export RDR_DATASET_ID="${OUTPUT_DATASET}"
 echo "Cleaning the RDR data"
-python cdr_cleaner/clean_cdr.py -d rdr -s
+python "${DATA_STEWARD_DIR}/clean_cdr.py" -d rdr -s
 
 echo "Done."
 

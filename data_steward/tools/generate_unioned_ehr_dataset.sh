@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -ex
 
 # Generate unioned_ehr dataset
 # Loads vocabulary from specified dataset and unioned EHR tables from specified dataset
@@ -59,17 +60,16 @@ gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
 #---------Create curation virtual environment----------
-set -e
-# create a new environment in directory curation_env
-virtualenv -p $(which python3.7) "${DATA_STEWARD_DIR}"/curation_venv
+# create a new environment in directory curation_venv
+virtualenv -p $(which python3.7) "${DATA_STEWARD_DIR}/curation_venv"
 
 # activate it
-source "${DATA_STEWARD_DIR}"/curation_venv/bin/activate
+source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
 
 # install the requirements in the virtualenv
-pip install -r "${DATA_STEWARD_DIR}"/requirements.txt
+pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 
-source "${TOOLS_DIR}"/set_path.sh
+source "${TOOLS_DIR}/set_path.sh"
 
 echo "-------------------------->Take a Snapshot of Unioned EHR Submissions (step 5)"
 source_prefix="unioned_ehr_"
@@ -78,31 +78,25 @@ echo "unioned_ehr_dataset --> $unioned_ehr_dataset"
 
 #---------------------------------------------------------------------
 # Step 1 Create an empty dataset
-echo "bq mk --dataset --description "copy ehr_union from ${ehr_snap_dataset}" ${app_id}:$unioned_ehr_dataset"
 bq mk --dataset --description "copy ehr_union from ${ehr_snap_dataset}" ${app_id}:${unioned_ehr_dataset}
 
 #----------------------------------------------------------------------
 # Step 2 Create the clinical tables for unioned EHR data set
-echo "python cdm.py ${unioned_ehr_dataset}"
-python "${DATA_STEWARD_DIR}"/cdm.py ${unioned_ehr_dataset}
+python "${DATA_STEWARD_DIR}/cdm.py" ${unioned_ehr_dataset}
 
 #----------------------------------------------------------------------
 # Step 3 Copy OMOP vocabulary to unioned EHR data set
-echo "python cdm.py --component vocabulary $unioned_ehr_dataset"
-python "${DATA_STEWARD_DIR}"/cdm.py --component vocabulary ${unioned_ehr_dataset}
+python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary ${unioned_ehr_dataset}
 
-echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${unioned_ehr_dataset}"
-"${TOOLS_DIR}"/table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${unioned_ehr_dataset} --sync false
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${unioned_ehr_dataset} --sync false
 
 #----------------------------------------------------------------------
 # Step 4 copy unioned ehr clinical tables tables
-echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset}"
-"${TOOLS_DIR}"/table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset} --sync false
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix ${source_prefix} --target_dataset ${unioned_ehr_dataset} --sync false
 
 #----------------------------------------------------------------------
 # Step 5 copy mapping tables tables
-echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_"
-"${TOOLS_DIR}"/table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_ --sync false
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snap_dataset} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset} --target_prefix _mapping_ --sync false
 
 echo "removing tables copies unintentionally"
 bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_condition_occurrence

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -ex
 # This Script automates the process of generating the ehr_snapshot
 
 USAGE="
@@ -53,18 +53,17 @@ gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
 #---------Create curation virtual environment----------
-set -e
-# create a new environment in directory curation_env
-virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}"/curation_venv
+# create a new environment in directory curation_venv
+virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
 
 # activate it
 source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
 
 # install the requirements in the virtualenv
-pip install -r "${DATA_STEWARD_DIR}"/requirements.txt
+pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 
 # shellcheck source=src/set_path.sh
-source "${TOOLS_DIR}"/set_path.sh
+source "${TOOLS_DIR}/set_path.sh"
 #------------------------------------------------------
 
 echo "-------------------------->Take a Snapshot of EHR Dataset (step 4)"
@@ -74,8 +73,7 @@ echo "ehr_snap_dataset --> $ehr_snap_dataset"
 bq mk --dataset --description "snapshot of EHR dataset ${ehr_dataset}" ${app_id}:${ehr_snap_dataset}
 
 #copy tables
-echo "table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_dataset} --target_dataset ${ehr_snap_dataset}"
-"${TOOLS_DIR}"/table_copy.sh --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_dataset} --target_dataset ${ehr_snap_dataset} --sync false
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_dataset} --target_dataset ${ehr_snap_dataset} --sync false
 
 deactivate
 unset PYTHONPATH
