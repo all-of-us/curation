@@ -7,8 +7,9 @@ import re
 
 from common import CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, TRANSFORM_FILES, \
     APPEND_VOCABULARY, APPEND_CONCEPTS, ADD_AOU_GENERAL, ERRORS, AOU_GEN_ID, AOU_GEN_VOCABULARY_CONCEPT_ID, \
-    AOU_GEN_VOCABULARY_REFERENCE, ERROR_APPENDING, AOU_GEN_NAME
-from resources import AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
+    AOU_GEN_VOCABULARY_REFERENCE, ERROR_APPENDING, AOU_GEN_NAME, \
+    AOU_CUSTOM_ID, AOU_CUSTOM_NAME, AOU_CUSTOM_VOCABULARY_CONCEPT_ID, AOU_CUSTOM_VOCABULARY_REFERENCE
+from resources import AOU_VOCAB_PATH, AOU_VOCAB_CONCEPT_CSV_PATH, hash_dir
 from io import open
 
 RAW_DATE_PATTERN = re.compile(r'\d{8}$')
@@ -89,15 +90,22 @@ def transform_files(in_dir, out_dir):
         transform_file(in_path, out_dir)
 
 
-def get_aou_general_version():
-    return hash_dir(AOU_GENERAL_PATH)
+def get_aou_vocab_version():
+    return hash_dir(AOU_VOCAB_PATH)
 
 
 def get_aou_general_vocabulary_row():
-    aou_gen_version = get_aou_general_version()
+    aou_vocab_version = get_aou_vocab_version()
     # vocabulary_id vocabulary_name vocabulary_reference vocabulary_version vocabulary_concept_id
-    return DELIMITER.join([AOU_GEN_ID, AOU_GEN_NAME, AOU_GEN_VOCABULARY_REFERENCE, aou_gen_version,
+    return DELIMITER.join([AOU_GEN_ID, AOU_GEN_NAME, AOU_GEN_VOCABULARY_REFERENCE, aou_vocab_version,
                            AOU_GEN_VOCABULARY_CONCEPT_ID])
+
+
+def get_aou_custom_vocabulary_row():
+    aou_vocab_version = get_aou_vocab_version()
+    # vocabulary_id vocabulary_name vocabulary_reference vocabulary_version vocabulary_concept_id
+    return DELIMITER.join([AOU_CUSTOM_ID, AOU_CUSTOM_NAME, AOU_CUSTOM_VOCABULARY_REFERENCE, aou_vocab_version,
+                           AOU_CUSTOM_VOCABULARY_CONCEPT_ID])
 
 
 def append_concepts(in_path, out_path):
@@ -107,12 +115,15 @@ def append_concepts(in_path, out_path):
             for row in in_fp:
                 if AOU_GEN_ID in row:
                     # skip it so it is appended below
-                    warnings.warn(ERROR_APPENDING.format(in_path=in_path))
+                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=AOU_GEN_ID))
+                elif AOU_CUSTOM_ID in row:
+                    # skip it so it is appended below
+                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=AOU_CUSTOM_ID))
                 else:
                     out_fp.write(row)
 
         # append new rows
-        with open(AOU_GENERAL_CONCEPT_CSV_PATH, 'r') as aou_gen_fp:
+        with open(AOU_VOCAB_CONCEPT_CSV_PATH, 'r') as aou_gen_fp:
             # Sending the first five lines of the file because tab delimiters
             # are causing trouble with the Sniffer and has_header method
             five_lines = ''
@@ -129,18 +140,24 @@ def append_concepts(in_path, out_path):
 
 
 def append_vocabulary(in_path, out_path):
-    new_row = get_aou_general_vocabulary_row()
+    aou_general_row = get_aou_general_vocabulary_row()
+    aou_custom_row = get_aou_custom_vocabulary_row()
     with open(out_path, 'w') as out_fp:
         # copy original rows line by line for memory efficiency
         with open(in_path, 'r') as in_fp:
             for row in in_fp:
                 if AOU_GEN_ID in row:
                     # skip it so it is appended below
-                    warnings.warn(ERROR_APPENDING.format(in_path=in_path))
+                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=AOU_GEN_ID))
+                elif AOU_CUSTOM_ID in row:
+                    # skip it so it is appended below
+                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=AOU_CUSTOM_ID))
                 else:
                     out_fp.write(row)
-        # append new row
-        out_fp.write(new_row)
+        # append AoU_General and AoU_Custom
+        # newline needed here because write[lines] does not include line separator
+        out_fp.write(aou_general_row + '\n')
+        out_fp.write(aou_custom_row)
 
 
 def add_aou_general(in_dir, out_dir):
