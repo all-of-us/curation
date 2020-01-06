@@ -32,14 +32,12 @@ if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]]; then
 fi
 
 today=$(date '+%Y%m%d')
-current_dir=$(pwd)
 app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 echo "today --> ${today}"
 echo "ehr_dataset --> ${ehr_dataset}"
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
-echo "current_dir --> ${current_dir}"
 
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
