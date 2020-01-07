@@ -730,15 +730,18 @@ def run_retraction_cron():
 
     # retract from bq
     dataset_ids = bq_utils.get_retraction_dataset_ids()
-    dataset_ids = dataset_ids.split() if dataset_ids else None
+    # If the env variable RETRACTION_DATASET_IDS does not exist in app.yaml, dataset_ids will be set to None
+    # This allows retraction to be performed on all datasets existing in the project
+    if dataset_ids is not None:
+        dataset_ids = dataset_ids.split()
     logging.info('Running retraction on BQ datasets')
     retract_data_bq.run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset_ids)
     logging.info('Completed retraction on BQ datasets')
 
     # retract from gcs
     folder = bq_utils.get_retraction_submission_folder()
-    if not folder:
-        folder = None
+    # If the env variable RETRACTION_SUBMISSION_FOLDER does not exist in app.yaml, folder will be set to None
+    # This allows retraction to be performed on all folders submitted by the site that exist in the archive
     logging.info('Running retraction from internal bucket folders')
     retract_data_gcs.run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder, force_flag=True)
     logging.info('Completed retraction from internal bucket folders')
