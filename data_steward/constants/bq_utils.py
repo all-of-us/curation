@@ -38,11 +38,9 @@ TRUE = 'true'
 FALSE = 'false'
 
 # Dataset Environment variable names
-COMBINED_DEID_DATASET = 'COMBINED_DEID_DATASET_ID'
 MATCH_DATASET = 'VALIDATION_RESULTS_DATASET_ID'
 
 # Dataset name formats
-COMBINED_DEID_DATASET_FORMAT = 'combined{}_deid'
 VALIDATION_DATASET_FORMAT = 'validation_{}'
 VALIDATION_DATASET_REGEX = 'validation_\d{8}'
 

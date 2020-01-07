@@ -87,21 +87,7 @@ def get_retraction_submission_folder():
 
 
 def get_combined_deid_dataset_id():
-    """
-    Get the combined unidentified dataset id.
-
-    If the environment variable has not been set, default to the defined name,
-    set the environment variable for the process, and return the dataset name.
-
-    :return:  A name for the combined unidentified dataset id.
-    """
-    dataset_id = os.environ.get(bq_consts.COMBINED_DEID_DATASET,
-                                bq_consts.BLANK)
-    if dataset_id == bq_consts.BLANK:
-        date_string = datetime.now().strftime(bq_consts.DATE_FORMAT)
-        dataset_id = bq_consts.COMBINED_DEID_DATASET_FORMAT.format(date_string)
-        os.environ[bq_consts.COMBINED_DEID_DATASET] = dataset_id
-    return dataset_id
+    return os.environ.get('COMBINED_DEID_DATASET_ID')
 
 
 def get_validation_results_dataset_id():
