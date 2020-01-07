@@ -2330,7 +2330,6 @@ aceinhibitor = (
 
 drugs = antibiotics + ccb + diuretics + opioids + statins + msknaids + oralhypo + painnsaids + vaccine + aceinhibitor
 
-
 # ## Antibiotics
 
 antibiotics_standard_df = pd.io.gbq.read_gbq('''
