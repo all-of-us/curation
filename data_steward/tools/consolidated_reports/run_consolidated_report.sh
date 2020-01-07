@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
+# TODO - Update script with absolute paths.
 report_for="results"
 USAGE="
 Usage: tools/consolidated_reports/run_consolidated_report.sh
 --key_file <path to key file>
---app_id <application id>
 --bucket_name <bucket name>
 --dataset <dataset id>
 --report_for <name of reports, choose b/w results and achilles: default is ${report_for} >"
 while true; do
   case "$1" in
     --key_file) key_file=$2; shift 2;;
-    --app_id) app_id=$2; shift 2;;
     --bucket_name) bucket_name=$2; shift 2;;
     --dataset) dataset=$2; shift 2;;
     --report_for) report_for=$2; shift 2;;
@@ -19,11 +18,13 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${bucket_name}" ]] || [[ -z "${dataset}" ]] || [[ -z "${report_for}" ]]
+if [[ -z "${key_file}" ]] || [[ -z "${bucket_name}" ]] || [[ -z "${dataset}" ]] || [[ -z "${report_for}" ]]
 then
   echo "Specify the key file location, application_id, bucket_name, dataset and report selection. $USAGE"
   exit 1
 fi
+
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 echo "key_file --> ${key_file}"
 echo "app_id --> ${app_id}"
@@ -52,11 +53,11 @@ then
 fi
 
 set -e
-# create a new environment in directory curation_env
-virtualenv curation_env
+# create a new environment in directory curation_venv
+virtualenv curation_venv
 
 # activate the report_env virtual environment
-source "curation_env/${VENV_BIN}/activate"
+source "curation_venv/${VENV_BIN}/activate"
 
 # install the requirements in the virtualenv
 pip install -t lib -r requirements.txt

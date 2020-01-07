@@ -48,7 +48,7 @@ jobs:
       # Dependencies
       - run:
           name: Add virtual environment activation to bash startup
-          command: python3 -m venv ~/curation_env && echo "source ~/curation_env/bin/activate" >> $BASH_ENV
+          command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
       - run:
           name: Upgrade pip and install requirements
           command: |

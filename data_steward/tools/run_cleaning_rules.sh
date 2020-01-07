@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
+set -ex
 
 USAGE="
 Usage: run_cleaning_rules.sh
   --key_file <path to key file>
-  --app_id <application id>
   --vocab_dataset <vocab dataset>
   --dataset <dataset name to apply cleaning rules>
   --snapshot_dataset <Dataset name to copy result dataset>
@@ -12,10 +12,6 @@ Usage: run_cleaning_rules.sh
 
 while true; do
   case "$1" in
-  --app_id)
-    app_id=$2
-    shift 2
-    ;;
   --dataset)
     dataset=$2
     shift 2
@@ -44,10 +40,17 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${snapshot_dataset}" ]] || [[ -z "${snapshot_dataset}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${snapshot_dataset}" ]] || [[ -z "${snapshot_dataset}" ]]; then
   echo "$USAGE"
   exit 1
 fi
+
+ROOT_DIR=$(git rev-parse --show-toplevel)
+DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
+TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
+CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
+
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 today=$(date '+%Y%m%d')
 
@@ -67,31 +70,27 @@ gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
 #---------Create curation virtual environment----------
-set -e
-# create a new environment in directory curation_env
-virtualenv -p $(which python3.7) curation_env
+# create a new environment in directory curation_venv
+virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
 
 # activate it
-source curation_env/bin/activate
+source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
 
 # install the requirements in the virtualenv
-pip install -r ../requirements.txt
+pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 
-source set_path.sh
+source "${TOOLS_DIR}/set_path.sh"
 
 #--------------------------------------------------------
-export EHR_RDR_DATASET_ID="${dataset}"
+export COMBINED_DATASET_ID="${dataset}"
 export BIGQUERY_DATASET_ID="${dataset}"
 
-cd ../cdr_cleaner/
 
 # run cleaning_rules on a dataset
-python clean_cdr.py -d ${data_stage} -s 2>&1 | tee cleaning_rules_log.txt
-
-cd ../tools/
+python "${CLEANER_DIR}/clean_cdr.py" -d ${data_stage} -s 2>&1 | tee cleaning_rules_log.txt
 
 # Create a snapshot dataset with the result
-python snapshot_by_query.py -p "${app_id}" -d "${dataset}" -n "${snapshot_dataset}"
+python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${dataset}" -n "${snapshot_dataset}"
 
 unset PYTHOPATH
 deactivate

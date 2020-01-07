@@ -23,7 +23,7 @@ Combine data sets `ehr` and `rdr` to form another data set `combined`
 Currently the following environment variables must be set:
  * BIGQUERY_DATASET_ID: BQ dataset where unioned EHR data is stored
  * RDR_DATASET_ID: BQ dataset where the RDR is stored
- * EHR_RDR_DATASET_ID: BQ dataset where the combined result will be stored
+ * COMBINED_DATASET_ID: BQ dataset where the combined result will be stored
  * APPLICATION_ID: GCP project ID (e.g. all-of-us-ehr-dev)
  * GOOGLE_APPLICATION_CREDENTIALS: location of service account key json file (e.g.
  /path/to/all-of-us-ehr-dev-abc123.json)
@@ -61,7 +61,7 @@ def query(q, dst_table_id, write_disposition='WRITE_APPEND'):
     :param dst_table_id: if set, output is saved in a table with the specified id
     :param write_disposition: WRITE_TRUNCATE, WRITE_EMPTY, or WRITE_APPEND (default, to preserve schema)
     """
-    dst_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+    dst_dataset_id = bq_utils.get_combined_dataset_id()
     query_job_result = bq_utils.query(q, destination_table_id=dst_table_id, write_disposition=write_disposition,
                                       destination_dataset_id=dst_dataset_id)
     query_job_id = query_job_result['jobReference']['jobId']
@@ -113,10 +113,10 @@ def create_cdm_tables():
 
     Note: Recreates any existing tables
     """
-    ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+    combined_dataset_id = bq_utils.get_combined_dataset_id()
     for table in resources.CDM_TABLES:
-        logger.info('Creating table {dataset}.{table}...'.format(table=table, dataset=ehr_rdr_dataset_id))
-        bq_utils.create_standard_table(table, table, drop_existing=True, dataset_id=ehr_rdr_dataset_id)
+        logger.info('Creating table {dataset}.{table}...'.format(table=table, dataset=combined_dataset_id))
+        bq_utils.create_standard_table(table, table, drop_existing=True, dataset_id=combined_dataset_id)
 
 
 def ehr_consent():
@@ -156,7 +156,7 @@ def copy_ehr_table(table):
     q = combine_consts.COPY_EHR_QUERY.format(ehr_dataset_id=bq_utils.get_dataset_id(),
                                              table=table,
                                              ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID,
-                                             ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id())
+                                             combined_dataset_id=bq_utils.get_combined_dataset_id())
     logger.info('Query for {table} is `{q}`'.format(table=table, q=q))
     query(q, table)
 
@@ -172,14 +172,14 @@ def mapping_query(domain_table):
     if combine_consts.PERSON_ID in [field['name'] for field in resources.fields_for(domain_table)]:
         return combine_consts.MAPPING_QUERY_WITH_PERSON_CHECK.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
                                                                      ehr_dataset_id=bq_utils.get_dataset_id(),
-                                                                     ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                                                                     combined_dataset_id=bq_utils.get_combined_dataset_id(),
                                                                      domain_table=domain_table,
                                                                      mapping_constant=common.RDR_ID_CONSTANT,
                                                                      ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID)
     else:
         return combine_consts.MAPPING_QUERY_WITHOUT_PERSON_CHECK.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
                                                                         ehr_dataset_id=bq_utils.get_dataset_id(),
-                                                                        ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                                                                        combined_dataset_id=bq_utils.get_combined_dataset_id(),
                                                                         domain_table=domain_table,
                                                                         mapping_constant=common.RDR_ID_CONSTANT
                                                                         )
@@ -212,12 +212,12 @@ def mapping(domain_table):
             'Excluding table {table_id} from mapping query because it does not exist'.format(table_id=domain_table))
 
 
-def join_expression_generator(domain_table, ehr_rdr_dataset_id):
+def join_expression_generator(domain_table, combined_dataset_id):
     """
     adds table aliases as references to columns and generates join expression
 
     :param domain_table: Name of the cdm table
-    :param ehr_rdr_dataset_id: name of the datqset where the tables are present
+    :param combined_dataset_id: name of the datqset where the tables are present
     :return: returns cols and join expression strings.
     """
     field_names = [field['name'] for field in resources.fields_for(domain_table)]
@@ -245,7 +245,7 @@ def join_expression_generator(domain_table, ehr_rdr_dataset_id):
             if domain_table == combine_consts.PERSON_TABLE:
                 table_alias = mapping_table_for('{x}'.format(x=key)[:-3])
                 join_expression.append(
-                    combine_consts.LEFT_JOIN_PERSON.format(dataset_id=ehr_rdr_dataset_id,
+                    combine_consts.LEFT_JOIN_PERSON.format(dataset_id=combined_dataset_id,
                                                            prefix=key[:3],
                                                            field=key,
                                                            table=table_alias
@@ -254,7 +254,7 @@ def join_expression_generator(domain_table, ehr_rdr_dataset_id):
             else:
                 table_alias = mapping_table_for('{x}'.format(x=key)[:-3])
                 join_expression.append(
-                    combine_consts.LEFT_JOIN.format(dataset_id=ehr_rdr_dataset_id,
+                    combine_consts.LEFT_JOIN.format(dataset_id=combined_dataset_id,
                                                     prefix=key[:3],
                                                     field=key,
                                                     table=table_alias
@@ -273,9 +273,9 @@ def load_query(domain_table):
     """
     rdr_dataset_id = bq_utils.get_rdr_dataset_id()
     ehr_dataset_id = bq_utils.get_dataset_id()
-    ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
+    combined_dataset_id = bq_utils.get_combined_dataset_id()
     mapping_table = mapping_table_for(domain_table)
-    cols, join_expression = join_expression_generator(domain_table, ehr_rdr_dataset_id)
+    cols, join_expression = join_expression_generator(domain_table, combined_dataset_id)
 
     return combine_consts.LOAD_QUERY.format(cols=cols,
                                             domain_table=domain_table,
@@ -283,7 +283,7 @@ def load_query(domain_table):
                                             ehr_dataset_id=ehr_dataset_id,
                                             mapping_table=mapping_table,
                                             join_expr=join_expression,
-                                            ehr_rdr_dataset_id=ehr_rdr_dataset_id)
+                                            combined_dataset_id=combined_dataset_id)
 
 
 def load(domain_table):
@@ -303,7 +303,7 @@ def fact_relationship_query():
     :return:
     """
     return combine_consts.FACT_RELATIONSHIP_QUERY.format(rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-                                                         combined_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                                                         combined_dataset_id=bq_utils.get_combined_dataset_id(),
                                                          mapping_measurement=mapping_table_for('measurement'),
                                                          ehr_dataset=bq_utils.get_dataset_id(),
                                                          mapping_observation=mapping_table_for('observation'),
@@ -328,10 +328,10 @@ def person_query(table_name):
 
     :return: query
     """
-    ehr_rdr_dataset_id = bq_utils.get_ehr_rdr_dataset_id()
-    columns, join_expression = join_expression_generator(table_name, ehr_rdr_dataset_id)
+    combined_dataset_id = bq_utils.get_combined_dataset_id()
+    columns, join_expression = join_expression_generator(table_name, combined_dataset_id)
     return combine_consts.MAPPED_PERSON_QUERY.format(cols=columns,
-                                                     dataset=ehr_rdr_dataset_id,
+                                                     dataset=combined_dataset_id,
                                                      table=table_name,
                                                      join_expr=join_expression)
 
