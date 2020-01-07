@@ -1,6 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:light
 #     text_representation:
 #       extension: .py
 #       format_name: light
@@ -41,8 +42,11 @@ import matplotlib.cm as cm
 import matplotlib as mpl
 
 import matplotlib.pyplot as plt
+
 # %matplotlib inline
 
+
+DATASET = ''
 
 import os
 import sys
@@ -51,8 +55,6 @@ from datetime import date
 from datetime import time
 from datetime import timedelta
 import time
-
-DATASET = ''
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
@@ -69,12 +71,14 @@ def cstr(s, color='black'):
 print('done.')
 
 # +
-dic = {'src_hpo_id': ["trans_am_essentia", "saou_ummc", "seec_miami", "seec_morehouse", "seec_emory", "uamc_banner",
-                      "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum", "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs",
-                      "nyc_cornell", "ipmc_nu", "nyc_hh", "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders",
-                      "seec_ufl", "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh", "cpmc_usc",
-                      "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"],
-       'HPO': ["Essentia Health Superior Clinic", "University of Mississippi", "SouthEast Enrollment Center Miami",
+dic = {'src_hpo_id': ["pitt_temple", "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc", "seec_miami",
+                      "seec_morehouse", "seec_emory", "uamc_banner", "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum",
+                      "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
+                      "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl", "saou_uab", "trans_am_baylor",
+                      "cpmc_ucsd", "ecchc", "chci", "aouw_uwh", "cpmc_usc", "hrhc", "ipmc_northshore", "chs",
+                      "cpmc_ucsf", "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"],
+       'HPO': ["Temple University", "Louisiana State University", "Reliant Medical Group (Meyers Primary Care)",
+               "Essentia Health Superior Clinic", "University of Mississippi", "SouthEast Enrollment Center Miami",
                "SouthEast Enrollment Center Morehouse", "SouthEast Enrollment Center Emory", "Banner Health",
                "University of Pittsburgh", "Columbia University Medical Center", "University of Illinois Chicago",
                "Spectrum Health", "Henry Ford Health System", "Boston Medical Center", "UC Irvine",
@@ -88,7 +92,111 @@ dic = {'src_hpo_id': ["trans_am_essentia", "saou_ummc", "seec_miami", "seec_more
 
 site_df = pd.DataFrame(data=dic)
 site_df
+
+# +
+######################################
+print('Getting the data from the database...')
+######################################
+
+site_map = pd.io.gbq.read_gbq('''
+    select distinct * from (
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_visit_occurrence`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_care_site`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_condition_occurrence`  
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_device_exposure`
+
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_drug_exposure`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_location`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_measurement`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_note`        
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_observation`         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_person`         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_procedure_occurrence`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_provider`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_specimen`
+    
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_visit_occurrence`   
+    )     
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET
+               , DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET
+               , DATASET, DATASET, DATASET, DATASET),
+                              dialect='standard')
+print(site_map.shape[0], 'records received.')
 # -
+
+site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
+
+site_df
 
 # # Improve the Definitions of Drug Ingredient 
 
@@ -572,5 +680,8 @@ sites_drug_success[
     ["ace_inhibitors", "painnsaids", "msknsaids", "statins", "antibiotics", "opiods", "oralhypoglycemics", "vaccine",
      "ccb", "diuretics", "all_drugs"]].astype(int)
 sites_drug_success
+
+sites_drug_success = pd.merge(sites_drug_success, site_df, how='outer', on='src_hpo_id')
+sites_drug_success = sites_drug_success.fillna("No Data")
 
 sites_drug_success.to_csv("data\\drug_success.csv")
