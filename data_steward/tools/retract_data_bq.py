@@ -1,3 +1,10 @@
+"""
+This script retracts rows for specified pids from tables in specific types of datasets in the project
+The pids must be specified via a pid table containing a person_id and research_id
+The pid table must be located in the sandbox_dataset
+The schema for the pid table is specified under PID_TABLE_FIELDS
+Datasets are categorized by type (ehr/unioned/combined/deid) and retraction is performed on each type of dataset
+"""
 # Python imports
 import argparse
 import re

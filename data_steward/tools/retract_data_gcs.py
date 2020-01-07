@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+"""
+This script retracts rows for specified pids from the site's submissions located in the archive
+The pids must be specified via a pid table containing a person_id and research_id
+The pid table must be located in the sandbox_dataset
+The schema for the pid table is located in retract_data_bq.py as PID_TABLE_FIELDS
+Only the specified site's submissions will be considered for retraction
+If a submission folder is specified, only that folder will be considered for retraction
+"""
+
 from io import StringIO
 import argparse
 import logging
@@ -44,6 +53,8 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder,
     site_bucket = gcs_utils.get_hpo_bucket(hpo_id)
     full_bucket_path = bucket+'/'+hpo_id+'/'+site_bucket
     folder_prefixes = gcs_utils.list_bucket_prefixes(full_bucket_path)
+    # retract from latest folders first
+    folder_prefixes.sort(reverse=True)
 
     result_dict = {}
     if folder is None:
@@ -138,10 +149,14 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
                     cols = input_line.split(",")
                     col_1 = cols[0]
                     col_2 = cols[1]
-                    if (table_name in PID_IN_COL1 and get_integer(col_1) in pids) or \
-                            (table_name in PID_IN_COL2 and get_integer(col_2) in pids):
-                        lines_removed += 1
-                    else:
+                    # skip if non-integer is encountered and keep the line as is
+                    try:
+                        if (table_name in PID_IN_COL1 and get_integer(col_1) in pids) or \
+                                (table_name in PID_IN_COL2 and get_integer(col_2) in pids):
+                            lines_removed += 1
+                        else:
+                            retracted_file_string.write(input_line + '\n')
+                    except ValueError:
                         retracted_file_string.write(input_line + '\n')
 
             # Write result back to bucket
