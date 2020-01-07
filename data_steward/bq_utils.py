@@ -79,13 +79,13 @@ def get_retraction_sandbox_dataset_id():
 
 def get_retraction_dataset_ids():
     # dataset ids from which to retract, separated by spaces ' '
-    # if retraction needs to be performed on all datasets in the project, remove this env variable from app.yaml
+    # if retraction needs to be performed on all datasets in the project, remove this env variable
     return os.environ.get('RETRACTION_DATASET_IDS')
 
 
 def get_retraction_submission_folder():
     # submission folder from which to retract
-    # if retraction needs to be performed on all submissions by a site, remove this env variable from app.yaml
+    # if retraction needs to be performed on all submissions by a site, remove this env variable
     return os.environ.get('RETRACTION_SUBMISSION_FOLDER')
 
 
