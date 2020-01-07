@@ -12,10 +12,6 @@ Usage: run_cleaning_rules.sh
 
 while true; do
   case "$1" in
-  --app_id)
-    app_id=$2
-    shift 2
-    ;;
   --dataset)
     dataset=$2
     shift 2
@@ -44,7 +40,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${app_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${snapshot_dataset}" ]] || [[ -z "${snapshot_dataset}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${snapshot_dataset}" ]] || [[ -z "${snapshot_dataset}" ]]; then
   echo "$USAGE"
   exit 1
 fi

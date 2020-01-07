@@ -13,10 +13,6 @@ Usage: top_heel_errors.sh
 "
 while true; do
   case "$1" in
-  --app_id)
-    app_id=$2
-    shift 2
-    ;;
   --dataset_id)
     dataset_id=$2
     shift 2

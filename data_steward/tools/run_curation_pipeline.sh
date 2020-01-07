@@ -116,4 +116,4 @@ echo "cdr_deid --> ${cdr_deid}"
 # Step 6 Run achilles on de-identified dataset
 echo "-------------------------->Run achilles on identified CDR"
 echo "cdr_deid --> ${cdr_deid}"
-"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${cdr_deid} --key_file ${key_file} --app_id ${app_id} --result_bucket ${result_bucket}
+"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${cdr_deid} --key_file ${key_file} --result_bucket ${result_bucket}

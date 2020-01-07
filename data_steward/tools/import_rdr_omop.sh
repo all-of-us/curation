@@ -2,7 +2,7 @@
 set -ex
 
 # Imports RDR ETL results from GCS into a dataset in BigQuery.
-# Assumes you have al``ready activated a service account that is able to
+# Assumes you have already activated a service account that is able to
 # access the files in GCS.
 
 USAGE="tools/import_rdr_omop.sh
