@@ -57,7 +57,7 @@ def _transform_csv(in_fp, out_fp, err_fp=None):
                 row[i] = format_date_str(row[i])
             csv_writer.writerow(row)
         except (ValueError, IndexError) as e:
-            message = 'Error %s transforming row:\n%s' % (e.message, row)
+            message = 'Error %s transforming row:\n%s' % (str(e), row)
             err_fp.write(message)
 
 
