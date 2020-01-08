@@ -8,7 +8,7 @@ Only the specified site's submissions will be considered for retraction
 If a submission folder is specified, only that folder will be considered for retraction
 """
 
-from io import StringIO
+from io import BytesIO
 import argparse
 import logging
 
@@ -135,12 +135,12 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
             response = get_response()
         if response == "Y":
             # Output and input file content initialization
-            retracted_file_string = StringIO()
-            input_file_string = gcs_utils.get_object(bucket, folder_prefix + file_name)
-            input_file_lines = input_file_string.split('\n')
+            retracted_file_string = BytesIO()
+            input_file_bytes = gcs_utils.get_object(bucket, folder_prefix + file_name)
+            input_file_lines = input_file_bytes.split('\n')
             input_header = input_file_lines[0]
             input_contents = input_file_lines[1:]
-            retracted_file_string.write(input_header + '\n')
+            retracted_file_string.write(input_header.encode('utf-8') + b'\n')
             logger.info("Checking for person_ids %s in path %s" % (pids, file_gcs_path))
 
             # Check if file has person_id in first or second column
@@ -155,9 +155,9 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
                                 (table_name in PID_IN_COL2 and get_integer(col_2) in pids):
                             lines_removed += 1
                         else:
-                            retracted_file_string.write(input_line + '\n')
+                            retracted_file_string.write(input_line.encode('utf-8') + b'\n')
                     except ValueError:
-                        retracted_file_string.write(input_line + '\n')
+                        retracted_file_string.write(input_line.encode('utf-8') + b'\n')
 
             # Write result back to bucket
             if lines_removed > 0:
