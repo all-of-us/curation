@@ -1,12 +1,11 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:light
 #     text_representation:
 #       extension: .py
 #       format_name: light
-#       format_version: '1.3'
-#       jupytext_version: 1.0.5
+#       format_version: '1.5'
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -2329,10 +2328,8 @@ aceinhibitor = (
     40163765, 40165789, 19125668, 40165776, 40165769, 40171412, 19127398, 19013174, 40163759, 974169, 1310756, 40165755,
     19129688, 40163763)
 
-# +
 drugs = antibiotics + ccb + diuretics + opioids + statins + msknaids + oralhypo + painnsaids + vaccine + aceinhibitor
 
-# -
 
 # ## Antibiotics
 
