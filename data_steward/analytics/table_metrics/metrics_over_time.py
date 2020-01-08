@@ -131,11 +131,19 @@ def get_user_analysis_choice():
         'e': 'concept',
         'f': 'unit_integration',
         'g': 'drug_routes',
+<<<<<<< HEAD
         'h': 'drug_success',
         'i': 'sites_measurement'}
 =======
         'e': 'concept'}
 >>>>>>> f71fb17571dc6b8021330b096ba2e817e6398bb0
+||||||| parent of 841e26b0... Updated metrics over time. No longer has wonky formatting for 'integration' metrics.
+        'h': 'drug_concept_integration',
+        'i': 'integration_measurement_concept'}
+=======
+        'h': 'drug_success',
+        'i': 'sites_measurement'}
+>>>>>>> 841e26b0... Updated metrics over time. No longer has wonky formatting for 'integration' metrics.
 
     while user_command not in choice_dict.keys():
         print("\nInvalid choice. Please specify a letter that corresponds "
@@ -308,6 +316,7 @@ def get_comprehensive_tables(dataframes, analytics_type):
 
         # get all of the columns; ensure the columns are only logged once
         if analytics_type in rate_focused_inputs:
+<<<<<<< HEAD
             for col_label, _ in data_info.iteritems():
 =======
     # FIXME: We need to think about how to ensure we might only
@@ -328,6 +337,11 @@ def get_comprehensive_tables(dataframes, analytics_type):
         if analytics_type in rate_focused_inputs:
             for col_label, val in data_info.iteritems():
 >>>>>>> f71fb17571dc6b8021330b096ba2e817e6398bb0
+||||||| parent of 841e26b0... Updated metrics over time. No longer has wonky formatting for 'integration' metrics.
+            for col_label, _ in data_info.items():
+=======
+            for col_label, _ in data_info.iteritems():
+>>>>>>> 841e26b0... Updated metrics over time. No longer has wonky formatting for 'integration' metrics.
                 if col_label[-5:] != '_rate' and \
                         col_label[-7:] != '_rate_y':
                     undocumented_cols.append(col_label)
@@ -3127,6 +3141,7 @@ report22 = 'december_16_2019.xlsx'
 # report17 = 'october_05_2019.xlsx'
 # report18 = 'october_06_2019.xlsx'
 
+<<<<<<< HEAD
 # 2019 retrospective
 # report1 = 'january_07_2019.xlsx'
 # report2 = 'april_10_2019.xlsx'
@@ -3159,6 +3174,18 @@ report10 = 'september_16' \
 
 report_titles = [report1, report3, report5, report7, report10]
 >>>>>>> f71fb17571dc6b8021330b096ba2e817e6398bb0
+||||||| parent of 841e26b0... Updated metrics over time. No longer has wonky formatting for 'integration' metrics.
+report_titles = [report14, report15, report16, report17, report18]
+=======
+# 2019 retrospective
+# report1 = 'january_07_2019.xlsx'
+# report2 = 'april_10_2019.xlsx'
+# report3 = 'july_18_2019.xlsx'
+# report4 = 'october_10_2019.xlsx'
+# report5 = 'december_16_2019.xlsx'
+
+report_titles = [report18, report19, report20, report21, report22]
+>>>>>>> 841e26b0... Updated metrics over time. No longer has wonky formatting for 'integration' metrics.
 
 metric_choice, metric_is_percent, ideal_low = get_user_analysis_choice()
 
