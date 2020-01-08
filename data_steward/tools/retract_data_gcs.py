@@ -136,17 +136,17 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
         if response == "Y":
             # Output and input file content initialization
             retracted_file_string = BytesIO()
-            input_file_bytes = gcs_utils.get_object(bucket, folder_prefix + file_name)
-            input_file_lines = input_file_bytes.split('\n')
+            input_file_bytes = gcs_utils.get_object(bucket, folder_prefix + file_name, as_text=False)
+            input_file_lines = input_file_bytes.split(b'\n')
             input_header = input_file_lines[0]
             input_contents = input_file_lines[1:]
-            retracted_file_string.write(input_header.encode('utf-8') + b'\n')
+            retracted_file_string.write(input_header + b'\n')
             logger.info("Checking for person_ids %s in path %s" % (pids, file_gcs_path))
 
             # Check if file has person_id in first or second column
             for input_line in input_contents:
-                if input_line != '':
-                    cols = input_line.split(",")
+                if input_line != b'':
+                    cols = input_line.split(b',')
                     col_1 = cols[0]
                     col_2 = cols[1]
                     # skip if non-integer is encountered and keep the line as is
@@ -155,9 +155,9 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
                                 (table_name in PID_IN_COL2 and get_integer(col_2) in pids):
                             lines_removed += 1
                         else:
-                            retracted_file_string.write(input_line.encode('utf-8') + b'\n')
+                            retracted_file_string.write(input_line + b'\n')
                     except ValueError:
-                        retracted_file_string.write(input_line.encode('utf-8') + b'\n')
+                        retracted_file_string.write(input_line + b'\n')
 
             # Write result back to bucket
             if lines_removed > 0:
