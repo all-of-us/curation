@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -ex
 # Given a path to vocabulary csv files downloaded from Athena and specified by --in_dir:
 # 1. Add the local vocabulary AoU_General
 # 2. Transform the vocabulary files to a format BigQuery can load
@@ -12,12 +12,14 @@ tools/load_vocab.sh --app_id app_id --in_dir in_dir [--gcs_path gcs_path --datas
  --in_dir   in_dir   directory where vocabulary files are located
  --gcs_path gcs_path full GCS path to save transformed files
  --dataset  dataset  name of BigQuery dataset to create and load vocabulary
+ [--venv_dir venv_dir directory where virtual environment should be created]
 "
 SCRIPT_PATH="$(
   cd "$(dirname "$0")"
   pwd -P
 )"
 BASE_DIR="$(cd ${SCRIPT_PATH} && cd .. && pwd)"
+VENV_DIR="curation_venv"
 OMOP_VOCABULARY_CONCEPT_ID="44819096"
 while true; do
   case "$1" in
@@ -35,6 +37,10 @@ while true; do
     ;;
   --gcs_path)
     GCS_PATH=$2
+    shift 2
+    ;;
+  --venv_dir)
+    VENV_DIR=$2
     shift 2
     ;;
   --)
@@ -62,6 +68,13 @@ echo "Creating backup in ${BACKUP_DIR}..."
 mkdir ${BACKUP_DIR}
 cp ${IN_DIR}/* ${BACKUP_DIR}
 
+# create a new environment in directory curation_venv
+virtualenv -p $(which python3.7) ${VENV_DIR}
+# activate it
+source ${VENV_DIR}/bin/activate
+# install the requirements in the virtualenv
+pip install -r requirements.txt
+
 # Format dates, standardize line endings
 echo "Transforming the files in ${IN_DIR}..."
 python ${BASE_DIR}/vocabulary.py transform_files --in_dir ${BACKUP_DIR} --out_dir ${IN_DIR}
@@ -72,6 +85,8 @@ echo "Created temp dir ${TEMP_DIR}"
 # Append vocabulary and concept records
 echo "Adding AoU_General and AoU_Custom to vocabulary in ${IN_DIR}..."
 cp ${IN_DIR}/* ${TEMP_DIR}
+
+## TODO Unset -ex or this won't run
 python ${BASE_DIR}/vocabulary.py add_aou_vocabs --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
 
 rm -rf ${TEMP_DIR}
