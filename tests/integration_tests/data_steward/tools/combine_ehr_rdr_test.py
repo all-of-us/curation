@@ -163,11 +163,11 @@ class CombineEhrRdrTest(unittest.TestCase):
             'ehr_only.person_id AS ehr_person_id, '
             'p.person_id AS combined_person_id '
             'FROM ehr_only '
-            'LEFT JOIN {ehr_rdr_dataset_id}.person p '
+            'LEFT JOIN {combined_dataset_id}.person p '
             'ON ehr_only.person_id = p.person_id'
         ).format(ehr_dataset_id=self.ehr_dataset_id,
                  rdr_dataset_id=self.rdr_dataset_id,
-                 ehr_rdr_dataset_id=self.combined_dataset_id)
+                 combined_dataset_id=self.combined_dataset_id)
         response = bq_utils.query(query)
         rows = bq_utils.response2rows(response)
         self.assertGreater(len(rows), 0, 'Test data is missing EHR-only records')
@@ -180,7 +180,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         query = UNCONSENTED_EHR_COUNTS_QUERY.format(
             rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
             ehr_dataset_id=bq_utils.get_dataset_id(),
-            ehr_rdr_dataset_id=self.combined_dataset_id,
+            combined_dataset_id=self.combined_dataset_id,
             domain_table=table_name,
             ehr_consent_table_id='_ehr_consent'
         )
@@ -194,9 +194,9 @@ class CombineEhrRdrTest(unittest.TestCase):
         """
         where = (
             'WHERE EXISTS '
-            '  (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c '
+            '  (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c '
             '   WHERE t.person_id = c.person_id)'
-        ).format(ehr_rdr_dataset_id=self.combined_dataset_id,
+        ).format(combined_dataset_id=self.combined_dataset_id,
                  ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
         ehr_counts = test_util.get_table_counts(self.ehr_dataset_id, DOMAIN_TABLES, where)
         rdr_counts = test_util.get_table_counts(self.rdr_dataset_id)
@@ -240,16 +240,16 @@ class CombineEhrRdrTest(unittest.TestCase):
             query = (
                 'SELECT rt.{domain_table}_id as id '
                 'FROM {rdr_dataset_id}.{domain_table} rt '
-                'LEFT JOIN {ehr_rdr_dataset_id}.{mapping_table} m '
+                'LEFT JOIN {combined_dataset_id}.{mapping_table} m '
                 'ON rt.{domain_table}_id = m.src_{domain_table}_id '
                 'WHERE '
                 '  m.{domain_table}_id IS NULL '
                 'OR NOT EXISTS '
-                ' (SELECT 1 FROM {ehr_rdr_dataset_id}.{domain_table} t '
+                ' (SELECT 1 FROM {combined_dataset_id}.{domain_table} t '
                 '  WHERE t.{domain_table}_id = m.{domain_table}_id)').format(
                     domain_table=domain_table,
                     rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-                    ehr_rdr_dataset_id=bq_utils.get_ehr_rdr_dataset_id(),
+                    combined_dataset_id=bq_utils.get_combined_dataset_id(),
                     mapping_table=mapping_table)
             response = bq_utils.query(query)
             rows = bq_utils.response2rows(response)

@@ -25,7 +25,7 @@ EXPECTED_MAPPING_QUERY = ('SELECT DISTINCT'
                           '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v '
                           '  on t.{domain_table}_id = v.{domain_table}_id'
                           '  WHERE EXISTS'
-                          '  (SELECT 1 FROM {ehr_rdr_dataset_id}.{ehr_consent_table_id} c'
+                          '  (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c'
                           '  WHERE t.person_id = c.person_id)')
 
 class CombineEhrRdrTest(unittest.TestCase):
@@ -41,7 +41,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         self.rdr_dataset_id = 'rdr_dataset'
         self.combined_dataset_id = 'ehr_rdr_dataset'
 
-    @patch('tools.combine_ehr_rdr.bq_utils.get_ehr_rdr_dataset_id')
+    @patch('tools.combine_ehr_rdr.bq_utils.get_combined_dataset_id')
     @patch('tools.combine_ehr_rdr.bq_utils.get_dataset_id')
     @patch('tools.combine_ehr_rdr.bq_utils.get_rdr_dataset_id')
     def test_mapping_query(self, mock_rdr, mock_ehr, mock_combined):
@@ -59,7 +59,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         expected_query = EXPECTED_MAPPING_QUERY.format(
             rdr_dataset_id=self.rdr_dataset_id,
             ehr_dataset_id=self.ehr_dataset_id,
-            ehr_rdr_dataset_id=self.combined_dataset_id,
+            combined_dataset_id=self.combined_dataset_id,
             domain_table=table_name,
             mapping_constant=common.RDR_ID_CONSTANT,
             ehr_consent_table_id=EHR_CONSENT_TABLE_ID
