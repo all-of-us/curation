@@ -145,19 +145,31 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
 
             # Check if file has person_id in first or second column
             for input_line in input_contents:
-                if input_line != b'':
+                # ensure line is not empty
+                if input_line.strip() != b'':
+                    input_line = input_line.strip()
                     cols = input_line.split(b',')
-                    col_1 = cols[0]
-                    col_2 = cols[1]
-                    # skip if non-integer is encountered and keep the line as is
-                    try:
-                        if (table_name in PID_IN_COL1 and get_integer(col_1) in pids) or \
-                                (table_name in PID_IN_COL2 and get_integer(col_2) in pids):
-                            lines_removed += 1
-                        else:
+                    # ensure at least two columns exist
+                    if len(cols) > 1:
+                        col_1 = cols[0]
+                        col_2 = cols[1]
+                        # skip if non-integer is encountered and keep the line as is
+                        try:
+                            if (table_name in PID_IN_COL1 and get_integer(col_1) in pids) or \
+                                    (table_name in PID_IN_COL2 and get_integer(col_2) in pids):
+                                lines_removed += 1
+                            else:
+                                # pid not found
+                                retracted_file_string.write(input_line + b'\n')
+                        except ValueError:
+                            # write back non-num lines
                             retracted_file_string.write(input_line + b'\n')
-                    except ValueError:
+                    else:
+                        # write back ill-formed lines
                         retracted_file_string.write(input_line + b'\n')
+                else:
+                    # write back empty lines
+                    retracted_file_string.write(input_line + b'\n')
 
             # Write result back to bucket
             if lines_removed > 0:
@@ -184,7 +196,6 @@ def get_response():
 def get_integer(num_str):
     """
     Converts an integer in string form to integer form
-    Throws SyntaxError/TypeError/ValueError if input string is not an integer and terminates
 
     :param num_str: an integer in string form
     :return: integer form of num_str
