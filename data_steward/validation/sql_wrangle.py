@@ -104,7 +104,7 @@ def is_to_temp_table(query):
 
     query_list = query_string.split()
     insert_query = False
-    if query_list[0].lower() in ['insert']:
+    if query_list[0].lower() == 'insert':
         insert_query = True
 
     stores_output = False

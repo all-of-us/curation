@@ -78,11 +78,10 @@ def ehr_consent_query():
     """
     # Consenting are strictly those whose *most recent* (based on observation_datetime) consent record is YES
     # If the most recent record is NO or NULL, they are NOT consenting
-    return combine_consts.EHR_CONSENT_QUERY.format(
-        dataset_id=bq_utils.get_rdr_dataset_id(),
-        source_value_ehr_consent=combine_consts.SOURCE_VALUE_EHR_CONSENT,
-        concept_id_consent_permission_yes=combine_consts.CONCEPT_ID_CONSENT_PERMISSION_YES
-    )
+    return combine_consts.EHR_CONSENT_QUERY.format(dataset_id=bq_utils.get_rdr_dataset_id(),
+                                                   source_value_ehr_consent=combine_consts.SOURCE_VALUE_EHR_CONSENT,
+                                                   concept_id_consent_permission_yes=combine_consts.
+                                                   CONCEPT_ID_CONSENT_PERMISSION_YES)
 
 
 def assert_tables_in(dataset_id):

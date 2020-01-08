@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+# print executed commands
+set -x
 
 BASE_DIR="$(git rev-parse --show-toplevel)"
 . ${BASE_DIR}/data_steward/tools/set_path.sh
@@ -61,5 +63,7 @@ else
   cmd="tests/runner.py --test-path ${path} ${sdk_dir} --test-pattern $substring --coverage-file ${coverage_file}"
 fi
 
-echo "PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd}"
 (cd ${BASE_DIR}; PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd})
+
+# stop printing executed commands
+set +x

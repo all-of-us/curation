@@ -3,7 +3,7 @@
 These tests can be run with:
 
 ```Shell
-$ ./tests/run_tests.sh
+$ ./tests/run_tests.sh -s [unit|integration|all] -r [file name pattern]
 ```
 or with:
 ```Shell

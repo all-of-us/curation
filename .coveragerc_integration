@@ -3,19 +3,17 @@
 # Source packages/directories to include
 source = data_steward
 
-# Ensure all branching logic has been tested
+# Measure how branching logic has been tested
 branch = True
 
 data_file = tests/results/coverage/integration/.coverage
 
 # Exclude files whose paths match these patterns
-omit = *tests*
+omit = *curation/tests*
        */lib/*
        *google-cloud-sdk*
        *site-packages*
        *_env/*
-       *deid/manual_fixes/*
-       *deid/validations/*
        *constants/*
 
 [report]

@@ -1,4 +1,4 @@
 coverage==4.5.2
 pylint==1.9.4
 modernize==0.7
-unittest-xml-reporting
+unittest-xml-reporting>=2.5.2,==2.*
