@@ -7,13 +7,13 @@ done
 
 # Delete datasets if existing
 bq rm -r -d -f ${APPLICATION_ID}:${RDR_DATASET_ID}
-bq rm -r -d -f ${APPLICATION_ID}:${EHR_RDR_DATASET_ID}
+bq rm -r -d -f ${APPLICATION_ID}:${COMBINED_DATASET_ID}
 bq rm -r -d -f ${APPLICATION_ID}:${BIGQUERY_DATASET_ID}
 bq rm -r -d -f ${APPLICATION_ID}:${UNIONED_DATASET_ID}
 
 # Create datasets
 bq mk --dataset --description "Test RDR dataset for ${USERNAME}" ${APPLICATION_ID}:${RDR_DATASET_ID}
-bq mk --dataset --description "Test EHR-RDR dataset for ${USERNAME}" ${APPLICATION_ID}:${EHR_RDR_DATASET_ID}
+bq mk --dataset --description "Test COMBINED dataset for ${USERNAME}" ${APPLICATION_ID}:${COMBINED_DATASET_ID}
 bq mk --dataset --description "Test EHR dataset for ${USERNAME}" ${APPLICATION_ID}:${BIGQUERY_DATASET_ID}
 bq mk --dataset --description "Test EHR union dataset for ${USERNAME}" ${APPLICATION_ID}:${UNIONED_DATASET_ID}
 

@@ -25,28 +25,31 @@ WITH
       birth_datetime
     FROM `{project_id}.{dataset_id}.person`
   ),
-  height_measurements AS (
-    SELECT
-      person_id,
-      measurement_id,
-      measurement_concept_id,
-      measurement_date,
-      measurement_datetime,
-      measurement_type_concept_id,
-      operator_concept_id,
-      value_as_number,
-      value_as_concept_id,
-      unit_concept_id
-    FROM `{project_id}.{dataset_id}.measurement`
-    WHERE (measurement_concept_id IN (3036277, 3023540, 3019171))
-      AND value_as_number IS NOT NULL
-      AND value_as_number != 0
-  ),
   sites AS (
     SELECT
       measurement_id,
       src_id
     FROM `{project_id}.{dataset_id}.measurement_ext`
+  ),
+  height_measurements AS (
+    SELECT
+      m.person_id,
+      m.measurement_id,
+      m.measurement_concept_id,
+      m.measurement_date,
+      m.measurement_datetime,
+      m.measurement_type_concept_id,
+      m.operator_concept_id,
+      m.value_as_number,
+      m.value_as_concept_id,
+      m.unit_concept_id
+    FROM `{project_id}.{dataset_id}.measurement` m
+    LEFT JOIN sites s
+    USING (measurement_id)
+    WHERE (m.measurement_concept_id IN (3036277, 3023540, 3019171))
+      AND m.value_as_number IS NOT NULL
+      AND m.value_as_number != 0
+      AND s.src_id != 'PPI/PM' -- site could use measurement_source_concept_id 903133 but we still need to include them
   ),
   condition_occ AS (
     SELECT
@@ -227,8 +230,14 @@ LEFT JOIN `{project_id}.{dataset_id}.concept` u_c ON (adj_unit=concept_id)
 
 DELETE_HEIGHT_ROWS_QUERY = """
 DELETE
-FROM `{project_id}.{dataset_id}.measurement`
-WHERE (measurement_concept_id IN (3036277, 3023540, 3019171))
+FROM `{project_id}.{dataset_id}.measurement` m
+WHERE measurement_id IN
+(SELECT measurement_id
+FROM `{project_id}.{dataset_id}.measurement` m
+LEFT JOIN `{project_id}.{dataset_id}.measurement_ext` me
+USING (measurement_id)
+WHERE (m.measurement_concept_id IN (3036277, 3023540, 3019171))
+AND me.src_id != 'PPI/PM')
 """
 
 # weight queries
@@ -246,28 +255,31 @@ WITH
       birth_datetime
     FROM `{project_id}.{dataset_id}.person`
   ),
-  weight_measurements AS (
-    SELECT
-      person_id,
-      measurement_id,
-      measurement_concept_id,
-      measurement_date,
-      measurement_datetime,
-      measurement_type_concept_id,
-      operator_concept_id,
-      value_as_number,
-      value_as_concept_id,
-      unit_concept_id
-    FROM `{project_id}.{dataset_id}.measurement`
-    WHERE (measurement_concept_id IN (3025315, 3013762, 3023166))
-      AND value_as_number IS NOT NULL
-      AND value_as_number != 0
-  ),
   sites AS (
     SELECT
       measurement_id,
       src_id
     FROM `{project_id}.{dataset_id}.measurement_ext`
+  ),
+  weight_measurements AS (
+    SELECT
+      m.person_id,
+      m.measurement_id,
+      m.measurement_concept_id,
+      m.measurement_date,
+      m.measurement_datetime,
+      m.measurement_type_concept_id,
+      m.operator_concept_id,
+      m.value_as_number,
+      m.value_as_concept_id,
+      m.unit_concept_id
+    FROM `{project_id}.{dataset_id}.measurement` m
+    LEFT JOIN sites s
+    USING (measurement_id)
+    WHERE (m.measurement_concept_id IN (3025315, 3013762, 3023166))
+      AND m.value_as_number IS NOT NULL
+      AND m.value_as_number != 0
+      AND s.src_id != 'PPI/PM' -- site could use measurement_source_concept_id 903121 but we still need to include them
   ),
   condition_occ AS (
     SELECT
@@ -531,7 +543,13 @@ LEFT JOIN `{project_id}.{dataset_id}.concept` u_c ON (adj_unit=concept_id)
 DELETE_WEIGHT_ROWS_QUERY = """
 DELETE
 FROM `{project_id}.{dataset_id}.measurement`
-WHERE (measurement_concept_id IN (3025315, 3013762, 3023166))
+WHERE measurement_id IN 
+(SELECT measurement_id
+FROM `{project_id}.{dataset_id}.measurement` m
+LEFT JOIN `{project_id}.{dataset_id}.measurement_ext` me
+USING (measurement_id)
+WHERE (m.measurement_concept_id IN (3025315, 3013762, 3023166))
+AND me.src_id != 'PPI/PM')
 """
 
 INSERT_NEW_ROWS_QUERY = """
@@ -622,7 +640,7 @@ def get_queries_clean_height_weight(project_id, dataset_id, sandbox_dataset_id):
                                                                               dataset_id=dataset_id,
                                                                               sandbox_dataset_id=sandbox_dataset_id,
                                                                               weight_table=WEIGHT_TABLE)
-    queries.append(height_table_query)
+    queries.append(weight_table_query)
 
     weight_rows_query = dict()
     weight_rows_query[cdr_consts.QUERY] = NEW_WEIGHT_ROWS_QUERY.format(project_id=project_id,
@@ -630,7 +648,7 @@ def get_queries_clean_height_weight(project_id, dataset_id, sandbox_dataset_id):
                                                                        sandbox_dataset_id=sandbox_dataset_id,
                                                                        weight_table=WEIGHT_TABLE,
                                                                        new_weight_rows=NEW_WEIGHT_ROWS)
-    queries.append(height_rows_query)
+    queries.append(weight_rows_query)
 
     delete_weights_query = dict()
     delete_weights_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.format(project_id=project_id,

@@ -1,7 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
-#     cell_metadata_json: true
+#     formats: ipynb,py:light
 #     text_representation:
 #       extension: .py
 #       format_name: light
@@ -13,19 +13,15 @@
 #     name: python3
 # ---
 
-# + {"pycharm": {"name": "#%%\n"}}
 from google.cloud import bigquery
 
-# + {"pycharm": {"name": "#%%\n"}}
 client = bigquery.Client()
 
-# + {"pycharm": {"name": "#%%\n"}}
 # %load_ext google.cloud.bigquery
 
-# + {"pycharm": {"name": "#%%\n"}}
 # %reload_ext google.cloud.bigquery
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 #######################################
 print('Setting everything up...')
 #######################################
@@ -33,12 +29,29 @@ print('Setting everything up...')
 import warnings
 
 warnings.filterwarnings('ignore')
+import pandas_gbq
 import pandas as pd
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+from matplotlib.lines import Line2D
+
+import matplotlib.ticker as ticker
+import matplotlib.cm as cm
+import matplotlib as mpl
 
 import matplotlib.pyplot as plt
-
 # %matplotlib inline
 
+
+import os
+import sys
+from datetime import datetime
+from datetime import date
+from datetime import time
+from datetime import timedelta
+import time
 
 DATASET = ''
 
@@ -47,6 +60,8 @@ pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
 
+from IPython.display import HTML as html_print
+
 
 def cstr(s, color='black'):
     return "<text style=color:{}>{}</text>".format(color, s)
@@ -54,13 +69,15 @@ def cstr(s, color='black'):
 
 print('done.')
 
-# + {"pycharm": {"name": "#%%\n"}}
-dic = {'src_hpo_id': ["trans_am_essentia", "saou_ummc", "seec_miami", "seec_morehouse", "seec_emory", "uamc_banner",
-                      "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum", "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs",
-                      "nyc_cornell", "ipmc_nu", "nyc_hh", "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders",
-                      "seec_ufl", "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh", "cpmc_usc",
-                      "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"],
-       'HPO': ["Essentia Health Superior Clinic", "University of Mississippi", "SouthEast Enrollment Center Miami",
+# +
+dic = {'src_hpo_id': ["pitt_temple", "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc", "seec_miami",
+                      "seec_morehouse", "seec_emory", "uamc_banner", "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum",
+                      "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
+                      "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl", "saou_uab", "trans_am_baylor",
+                      "cpmc_ucsd", "ecchc", "chci", "aouw_uwh", "cpmc_usc", "hrhc", "ipmc_northshore", "chs",
+                      "cpmc_ucsf", "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"],
+       'HPO': ["Temple University", "Louisiana State University", "Reliant Medical Group (Meyers Primary Care)",
+               "Essentia Health Superior Clinic", "University of Mississippi", "SouthEast Enrollment Center Miami",
                "SouthEast Enrollment Center Morehouse", "SouthEast Enrollment Center Emory", "Banner Health",
                "University of Pittsburgh", "Columbia University Medical Center", "University of Illinois Chicago",
                "Spectrum Health", "Henry Ford Health System", "Boston Medical Center", "UC Irvine",
@@ -74,13 +91,117 @@ dic = {'src_hpo_id': ["trans_am_essentia", "saou_ummc", "seec_miami", "seec_more
 
 site_df = pd.DataFrame(data=dic)
 site_df
+
+# +
+######################################
+print('Getting the data from the database...')
+######################################
+
+site_map = pd.io.gbq.read_gbq('''
+    select distinct * from (
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_visit_occurrence`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_care_site`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_condition_occurrence`  
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_device_exposure`
+
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_drug_exposure`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_location`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_measurement`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_note`        
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_observation`         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_person`         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_procedure_occurrence`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_provider`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_specimen`
+    
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_visit_occurrence`   
+    )     
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET
+               , DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET
+               , DATASET, DATASET, DATASET, DATASET),
+                              dialect='standard')
+print(site_map.shape[0], 'records received.')
 # -
+
+site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
+
+site_df
 
 # # All temporal data points should be consistent such that end dates should NOT be before a start date. 
 
 # ## Visit Occurrence Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -97,14 +218,13 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
-
-# + {"pycharm": {"name": "#%%\n"}}
-temporal_df
 # -
+
+temporal_df
 
 # ### Visit Occurrence Table By Site
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -131,30 +251,26 @@ temporal_df = pd.io.gbq.read_gbq('''
                                  dialect='standard')
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 visit_occurrence = temporal_df.rename(columns={"succes_rate": "visit_occurrence"})
 visit_occurrence = visit_occurrence[["src_hpo_id", "visit_occurrence"]]
 visit_occurrence = visit_occurrence.fillna(100)
 visit_occurrence
 
-# + {"pycharm": {"name": "#%%\n"}}
 total_wrong = temporal_df['wrong_date_rows'].sum()
 total_wrong
 
-# + {"pycharm": {"name": "#%%\n"}}
 total_row = temporal_df['total_rows'].sum()
 percent = round(100 - 100 * (total_wrong / (total_row)), 1)
 percent
-# -
 
 # ## Condition Occurrence Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -170,17 +286,17 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 # print("success rate for condition_occurrence is: ",round(100-100*(temporal_df.iloc[0,1]/temporal_df.iloc[0,0]),1))
 # -
 
 # ### Condition Occurrence Table By Site
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -208,34 +324,26 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 condition_occurrence = temporal_df.rename(columns={"succes_rate": "condition_occurrence"})
 condition_occurrence = condition_occurrence[["src_hpo_id", "condition_occurrence"]]
 condition_occurrence = condition_occurrence.fillna(100)
 condition_occurrence
 
-# + {"pycharm": {"name": "#%%\n"}}
-
-
-
-# + {"pycharm": {"name": "#%%\n"}}
 total_wrong = temporal_df['wrong_date_rows'].sum()
 total_wrong
 
-# + {"pycharm": {"name": "#%%\n"}}
 total_row = temporal_df['total_rows'].sum()
 percent = round(100 - 100 * (total_wrong / (total_row)), 1)
 percent
-# -
 
 # ## Drug Exposure Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -251,17 +359,17 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 # print("success rate for drug_exposure is: ",round(100-100*(temporal_df.iloc[0,1]/temporal_df.iloc[0,0]),1))
 # -
 
 # ### Drug Exposure Table By Site
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -287,34 +395,26 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 drug_exposure = temporal_df.rename(columns={"succes_rate": "drug_exposure"})
 drug_exposure = drug_exposure[["src_hpo_id", "drug_exposure"]]
 drug_exposure = drug_exposure.fillna(100)
 drug_exposure
 
-# + {"pycharm": {"name": "#%%\n"}}
-
-
-
-# + {"pycharm": {"name": "#%%\n"}}
 total_wrong = temporal_df['wrong_date_rows'].sum()
 total_wrong
 
-# + {"pycharm": {"name": "#%%\n"}}
 total_row = temporal_df['total_rows'].sum()
 percent = round(100 - 100 * (total_wrong / (total_row)), 1)
 percent
-# -
 
 # ## Device Exposure Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -330,17 +430,15 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 print("success rate for device is: ", round(100 - 100 * (temporal_df.iloc[0, 1] / temporal_df.iloc[0, 0]), 1))
-# -
 
 # ### Device Exposure Table By Site
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -366,33 +464,28 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 device_exposure = temporal_df.rename(columns={"succes_rate": "device_exposure"})
 device_exposure = device_exposure[["src_hpo_id", "device_exposure"]]
 device_exposure = device_exposure.fillna(100)
 device_exposure
 
-# + {"pycharm": {"name": "#%%\n"}}
 total_wrong = temporal_df['wrong_date_rows'].sum()
 total_wrong
 
-# + {"pycharm": {"name": "#%%\n"}}
 total_row = temporal_df['total_rows'].sum()
 percent = round(100 - 100 * (total_wrong / (total_row)), 1)
 percent
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df
-# -
 
 # ## Temporal Data Points - End Dates Before Start Dates
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 
 succes_rate = pd.merge(visit_occurrence, condition_occurrence, how='outer', on='src_hpo_id')
 succes_rate = pd.merge(succes_rate, drug_exposure, how='outer', on='src_hpo_id')
@@ -400,16 +493,15 @@ succes_rate = pd.merge(succes_rate, device_exposure, how='outer', on='src_hpo_id
 succes_rate = pd.merge(succes_rate, site_df, how='outer', on='src_hpo_id')
 succes_rate = succes_rate.fillna("No Data")
 succes_rate
-
-# + {"pycharm": {"name": "#%%\n"}}
-succes_rate.to_csv("data\\end_before_begin.csv")
 # -
+
+succes_rate.to_csv("data\\end_before_begin.csv")
 
 # # No data point exists beyond 30 days of the death date. (Achilles rule_id #3)
 
 # ## Visit Occurrence Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -439,24 +531,21 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
-# -
 
 # - main reason death date entered as default value ("1890")
 
-# + {"pycharm": {"name": "#%%\n"}}
 visit_occurrence = temporal_df.rename(columns={"succes_rate": "visit_occurrence"})
 visit_occurrence = visit_occurrence[["src_hpo_id", "visit_occurrence"]]
 visit_occurrence = visit_occurrence.fillna(100)
 visit_occurrence
-# -
 
 # ## Condition Occurrence Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -486,21 +575,19 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 condition_occurrence = temporal_df.rename(columns={"succes_rate": "condition_occurrence"})
 condition_occurrence = condition_occurrence[["src_hpo_id", "condition_occurrence"]]
 condition_occurrence = condition_occurrence.fillna(100)
 condition_occurrence
-# -
 
 # ## Drug Exposure Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -530,21 +617,19 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 drug_exposure = temporal_df.rename(columns={"succes_rate": "drug_exposure"})
 drug_exposure = drug_exposure[["src_hpo_id", "drug_exposure"]]
 drug_exposure = drug_exposure.fillna(100)
 drug_exposure
-# -
 
 # ## Measurement Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -574,21 +659,19 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 measurement = temporal_df.rename(columns={"succes_rate": "measurement"})
 measurement = measurement[["src_hpo_id", "measurement"]]
 measurement = measurement.fillna(100)
 measurement
-# -
 
 # ## Procedure Occurrence Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -618,21 +701,19 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 procedure_occurrence = temporal_df.rename(columns={"succes_rate": "procedure_occurrence"})
 procedure_occurrence = procedure_occurrence[["src_hpo_id", "procedure_occurrence"]]
 procedure_occurrence = procedure_occurrence.fillna(100)
 procedure_occurrence
-# -
 
 # ## Observation Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -662,21 +743,19 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 observation = temporal_df.rename(columns={"succes_rate": "observation"})
 observation = observation[["src_hpo_id", "observation"]]
 observation = observation.fillna(100)
 observation
-# -
 
 # ## Device Exposure Table
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -706,49 +785,40 @@ temporal_df = pd.io.gbq.read_gbq('''
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 device_exposure = temporal_df.rename(columns={"succes_rate": "device_exposure"})
 device_exposure = device_exposure[["src_hpo_id", "device_exposure"]]
 device_exposure = device_exposure.fillna(100)
 device_exposure
-# -
 
 # ## 4. Succes Rate Temporal Data Points - Data After Death Date
 
-# + {"pycharm": {"name": "#%%\n"}}
 datas = [
     condition_occurrence, drug_exposure
     , measurement, procedure_occurrence, observation, device_exposure
 ]
 
-# + {"pycharm": {"name": "#%%\n"}}
 master_df = visit_occurrence
 
-# + {"pycharm": {"name": "#%%\n"}}
 for filename in datas:
     master_df = pd.merge(master_df, filename, on='src_hpo_id', how='outer')
 
-# + {"pycharm": {"name": "#%%\n"}}
 master_df
 
-# + {"pycharm": {"name": "#%%\n"}}
 succes_rate = pd.merge(master_df, site_df, how='outer', on='src_hpo_id')
 succes_rate = succes_rate.fillna("No Data")
 
-# + {"pycharm": {"name": "#%%\n"}}
 succes_rate.to_csv("data\\data_after_date.csv")
-# -
 
 # # Age of participant should NOT be below 18 and should NOT be too high (Achilles rule_id #20 and 21)
 
 # ## Count number of unique participants with age <18 
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 
 
 ######################################
@@ -765,14 +835,13 @@ birth_df = pd.io.gbq.read_gbq('''
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
-
-# + {"pycharm": {"name": "#%%\n"}}
-birth_df
 # -
+
+birth_df
 
 # ## Count number of unique participants with age >120
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 
 ######################################
 print('Getting the data from the database...')
@@ -788,14 +857,13 @@ birth_df = pd.io.gbq.read_gbq('''
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
-
-# + {"pycharm": {"name": "#%%\n"}}
-birth_df
 # -
+
+birth_df
 
 # ## Histogram
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 
 
 ######################################
@@ -810,19 +878,17 @@ birth_df = pd.io.gbq.read_gbq('''
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 birth_df.head()
 
-# + {"pycharm": {"name": "#%%\n"}}
 birth_df['AGE'].hist(bins=88)
-# -
 
 # # Participant should have supporting data in either lab results or drugs if he/she has a condition code for diabetes.
 
 # ## T2D
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -865,13 +931,13 @@ t2d_condition = pd.io.gbq.read_gbq('''
                                    dialect='standard')
 t2d_condition.shape
 
-# + {"pycharm": {"name": "#%%\n"}}
-t2d_condition.head()
 # -
+
+t2d_condition.head()
 
 # ## Drug
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -927,14 +993,13 @@ drug = pd.io.gbq.read_gbq('''
                DATASET, DATASET, DATASET),
                           dialect='standard')
 drug.shape
-
-# + {"pycharm": {"name": "#%%\n"}}
-drug.head(15)
 # -
+
+drug.head(15)
 
 # ## glucose_lab
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -964,17 +1029,16 @@ glucose_lab = pd.io.gbq.read_gbq('''
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                                  dialect='standard')
 glucose_lab.shape
-
-# + {"pycharm": {"name": "#%%\n"}}
-glucose_lab.head()
 # -
+
+glucose_lab.head()
 
 #
 # -glucose lab may not be a got clasifier
 
 # ## fasting_glucose
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -1004,14 +1068,13 @@ fasting_glucose = pd.io.gbq.read_gbq('''
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                                      dialect='standard')
 fasting_glucose.shape
-
-# + {"pycharm": {"name": "#%%\n"}}
-fasting_glucose.head()
 # -
+
+fasting_glucose.head()
 
 # ## a1c
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -1040,14 +1103,13 @@ a1c = pd.io.gbq.read_gbq('''
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                          dialect='standard')
 a1c.shape
-
-# + {"pycharm": {"name": "#%%\n"}}
-a1c.head()
 # -
+
+a1c.head()
 
 # ## t1d_condition
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 
 ######################################
 print('Getting the data from the database...')
@@ -1084,14 +1146,13 @@ t1d_condition = pd.io.gbq.read_gbq('''
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                                    dialect='standard')
 t1d_condition.shape
-
-# + {"pycharm": {"name": "#%%\n"}}
-t1d_condition.head()
 # -
+
+t1d_condition.head()
 
 # ## insulin
 
-# + {"pycharm": {"name": "#%%\n"}}
+# +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -1146,87 +1207,61 @@ insulin = pd.io.gbq.read_gbq('''
                DATASET, DATASET, DATASET, DATASET, DATASET),
                              dialect='standard')
 insulin.shape
+# -
 
-# + {"pycharm": {"name": "#%%\n"}}
 insulin.head(15)
 
-# + {"pycharm": {"name": "#%%\n"}}
 diabet = pd.merge(t2d_condition, t1d_condition, on=["src_hpo_id", "person_id"], how="outer")
 diabet["diabetes"] = 1
 
-# + {"pycharm": {"name": "#%%\n"}}
 diabet = diabet.loc[:, ["src_hpo_id", "person_id", "diabetes"]]
 diabet.shape
 
-# + {"pycharm": {"name": "#%%\n"}}
 diabet.head()
 
-# + {"pycharm": {"name": "#%%\n"}}
 total_diab = diabet.drop_duplicates(keep=False, inplace=False)
 total_diab.shape
 
-# + {"pycharm": {"name": "#%%\n"}}
 total_diab = total_diab.groupby(["src_hpo_id"]).size().reset_index().rename(columns={0: 'total_diabetes'}).sort_values(
     ["total_diabetes"])
 total_diab
 
-# + {"pycharm": {"name": "#%%\n"}}
 test = pd.merge(drug, glucose_lab, on=["src_hpo_id", "person_id"], how="outer")
 test = pd.merge(test, fasting_glucose, on=["src_hpo_id", "person_id"], how="outer")
 test = pd.merge(test, a1c, on=["src_hpo_id", "person_id"], how="outer")
 test = pd.merge(test, insulin, on=["src_hpo_id", "person_id"], how="outer")
 test["tests"] = 1
 
-# + {"pycharm": {"name": "#%%\n"}}
 test = test.loc[:, ["src_hpo_id", "person_id", "tests"]]
 test.shape
 
-# + {"pycharm": {"name": "#%%\n"}}
 test.head()
 
-# + {"pycharm": {"name": "#%%\n"}}
 total_test = test.drop_duplicates(keep=False, inplace=False)
 total_test.shape
 
-# + {"pycharm": {"name": "#%%\n"}}
 total_test = total_test.groupby(["src_hpo_id"]).size().reset_index().rename(columns={0: 'total_diabetes'}).sort_values(
     ["total_diabetes"])
 total_test
 
-# + {"pycharm": {"name": "#%%\n"}}
 diabetes_and_test = pd.merge(test, diabet, on=["src_hpo_id", "person_id"], how="outer")
 
-# + {"pycharm": {"name": "#%%\n"}}
 diabetes_and_test.head()
 
-# + {"pycharm": {"name": "#%%\n"}}
 mistakes = diabetes_and_test.loc[(diabetes_and_test["tests"].isnull()) & (diabetes_and_test["diabetes"] == 1), :]
 
-# + {"pycharm": {"name": "#%%\n"}}
 mistakes.shape
 
-# + {"pycharm": {"name": "#%%\n"}}
 mistakes.head(5)
 
-# + {"pycharm": {"name": "#%%\n"}}
 diabets_no_proof = mistakes.groupby(['src_hpo_id']).size().reset_index().rename(
     columns={0: 'diabets_no_proof'}).sort_values(["diabets_no_proof"])
 diabets_no_proof
 
-# + {"pycharm": {"name": "#%%\n"}}
 combined = diabetes_and_test = pd.merge(diabets_no_proof, total_diab, on=["src_hpo_id"], how="outer")
 combined = combined.fillna(0)
 
-# + {"pycharm": {"name": "#%%\n"}}
+combined = pd.merge(combined, site_df, how='outer', on='src_hpo_id')
+combined = combined.fillna("No Data")
+
 combined.to_csv("data\\diabets.csv")
-
-# + {"pycharm": {"name": "#%%\n"}}
-
-
-
-# + {"pycharm": {"name": "#%%\n"}}
-
-
-
-# + {"pycharm": {"name": "#%%\n"}}
-

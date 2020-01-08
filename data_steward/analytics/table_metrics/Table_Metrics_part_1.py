@@ -1,6 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
+#     formats: ipynb,py:light
 #     text_representation:
 #       extension: .py
 #       format_name: light
@@ -18,11 +19,11 @@
 
 from google.cloud import bigquery
 
+# %reload_ext google.cloud.bigquery
+
 client = bigquery.Client()
 
 # %load_ext google.cloud.bigquery
-
-# %reload_ext google.cloud.bigquery
 
 # +
 #######################################
@@ -32,16 +33,36 @@ print('Setting everything up...')
 import warnings
 
 warnings.filterwarnings('ignore')
+import pandas_gbq
 import pandas as pd
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+from matplotlib.lines import Line2D
+
+import matplotlib.ticker as ticker
+import matplotlib.cm as cm
+import matplotlib as mpl
 
 import matplotlib.pyplot as plt
 
-DATASET =
+DATASET = ''
+
+import os
+import sys
+from datetime import datetime
+from datetime import date
+from datetime import time
+from datetime import timedelta
+import time
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
+
+from IPython.display import HTML as html_print
 
 
 def cstr(s, color='black'):
@@ -51,12 +72,14 @@ def cstr(s, color='black'):
 print('done.')
 
 # +
-dic = {'src_hpo_id': ["trans_am_essentia", "saou_ummc", "seec_miami", "seec_morehouse", "seec_emory", "uamc_banner",
-                      "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum", "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs",
-                      "nyc_cornell", "ipmc_nu", "nyc_hh", "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders",
-                      "seec_ufl", "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh", "cpmc_usc",
-                      "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"],
-       'HPO': ["Essentia Health Superior Clinic", "University of Mississippi", "SouthEast Enrollment Center Miami",
+dic = {'src_hpo_id': ["pitt_temple", "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc", "seec_miami",
+                      "seec_morehouse", "seec_emory", "uamc_banner", "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum",
+                      "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
+                      "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl", "saou_uab", "trans_am_baylor",
+                      "cpmc_ucsd", "ecchc", "chci", "aouw_uwh", "cpmc_usc", "hrhc", "ipmc_northshore", "chs",
+                      "cpmc_ucsf", "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"],
+       'HPO': ["Temple University", "Louisiana State University", "Reliant Medical Group (Meyers Primary Care)",
+               "Essentia Health Superior Clinic", "University of Mississippi", "SouthEast Enrollment Center Miami",
                "SouthEast Enrollment Center Morehouse", "SouthEast Enrollment Center Emory", "Banner Health",
                "University of Pittsburgh", "Columbia University Medical Center", "University of Illinois Chicago",
                "Spectrum Health", "Henry Ford Health System", "Boston Medical Center", "UC Irvine",
@@ -69,8 +92,111 @@ dic = {'src_hpo_id': ["trans_am_essentia", "saou_ummc", "seec_miami", "seec_more
                "Jackson-Hinds CHC", "Medical College of Wisconsin", "UC Davis", "Rush University"]}
 
 site_df = pd.DataFrame(data=dic)
-site_df
+
+# +
+######################################
+print('Getting the data from the database...')
+######################################
+
+site_map = pd.io.gbq.read_gbq('''
+    select distinct * from (
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_visit_occurrence`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_care_site`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_condition_occurrence`  
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_device_exposure`
+
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_drug_exposure`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_location`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_measurement`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_note`        
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_observation`         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_person`         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_procedure_occurrence`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_provider`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_specimen`
+    
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{}._mapping_visit_occurrence`   
+    )     
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET
+               , DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET
+               , DATASET, DATASET, DATASET, DATASET),
+                              dialect='standard')
+print(site_map.shape[0], 'records received.')
 # -
+
+site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
+
+site_df
 
 # # There should not be duplicate rows. 
 
@@ -162,6 +288,83 @@ condition_occurrence = foreign_key_df.groupby(['src_hpo_id']).size().reset_index
     columns={0: 'condition_occurrence'}).sort_values(["condition_occurrence"]).set_index("src_hpo_id")
 condition_occurrence = condition_occurrence.reset_index()
 condition_occurrence
+
+# +
+# test=foreign_key_df.loc[foreign_key_df["src_hpo_id"]=="cpmc_usc",:]
+# -
+
+# test.head()
+
+
+# +
+# ######################################
+# print('Getting the data from the database...')
+# ######################################
+
+# foreign_key_df = pd.io.gbq.read_gbq('''
+#     SELECT
+#      src_hpo_id,
+# person_id, condition_concept_id, condition_start_date, condition_start_datetime, condition_end_date,
+# condition_end_datetime, condition_type_concept_id, stop_reason, provider_id, visit_occurrence_id,
+# condition_source_value, condition_source_concept_id, condition_status_source_value, condition_status_concept_id,
+#         COUNT(*) as cnt
+#     FROM
+#        `{}.unioned_ehr_condition_occurrence` AS t1
+#     INNER JOIN
+#         (SELECT
+#             DISTINCT * 
+#     FROM
+#          `{}._mapping_condition_occurrence`) AS t2
+#     ON
+#         t1.condition_occurrence_id=t2.condition_occurrence_id
+#     WHERE
+#         t1.condition_concept_id!=0 AND t1.condition_concept_id IS NOT NULL AND
+#         t1.person_id=154704129 and t1.person_id IS NOT NULL 
+#     GROUP BY
+#         1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+#     HAVING 
+#         COUNT(*) > 1
+#     ORDER BY
+#         1,2,3,4,5,6,7,8,9,10,11,12,13,14
+#     '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+#                     dialect='standard')
+# print(foreign_key_df.shape[0], 'records received.')
+
+# +
+# foreign_key_df
+
+# +
+# ######################################
+# print('Getting the data from the database...')
+# ######################################
+
+# foreign_key_df = pd.io.gbq.read_gbq('''
+#     SELECT
+#      src_hpo_id,
+#      t1.*   
+#     FROM
+#        `{}.unioned_ehr_condition_occurrence` AS t1
+#     INNER JOIN
+#         (SELECT
+#             DISTINCT * 
+#     FROM
+#          `{}._mapping_condition_occurrence`) AS t2
+#     ON
+#         t1.condition_occurrence_id=t2.condition_occurrence_id
+#     WHERE
+#         t1.condition_concept_id!=0 AND t1.condition_concept_id IS NOT NULL AND
+#         t1.person_id!=0 and t1.person_id IS NOT NULL and t1.person_id=154704129  
+#         and t1.condition_concept_id=4157332 and t1.condition_source_concept_id=45600511
+#         and condition_source_value="C50.919" and condition_start_date="2018-09-12"
+#     ORDER BY
+#         1,2,3,4,5,6,7,8,9,10,11,12,13,14
+#     '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+#                     dialect='standard')
+# print(foreign_key_df.shape[0], 'records received.')
+
+# +
+# foreign_key_df
+# -
 
 # ## drug_exposure table
 
@@ -427,18 +630,18 @@ print('Getting the data from the database...')
 
 foreign_key_df = pd.io.gbq.read_gbq('''
     SELECT
-        death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id,
+        person_id,death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id,
         COUNT(*) as cnt
     FROM
        `{}.unioned_ehr_death` AS t1
     WHERE
         t1.death_date IS NOT NULL AND t1.person_id IS NOT NULL 
     GROUP BY
-        1,2,3,4,5,6
+        1,2,3,4,5,6,7
     HAVING 
         COUNT(*) > 1    
     ORDER BY
-        1,2,3,4,5,6
+        1,2,3,4,5,6,7
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                                     dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
@@ -475,20 +678,27 @@ foreign_key_df.head()
 
 # ## Sites combined
 
+# +
 sites_success = pd.merge(visit_occurrence, condition_occurrence, how='outer', on='src_hpo_id')
 sites_success = pd.merge(sites_success, drug_exposure, how='outer', on='src_hpo_id')
 sites_success = pd.merge(sites_success, measurement, how='outer', on='src_hpo_id')
 sites_success = pd.merge(sites_success, procedure_occurrence, how='outer', on='src_hpo_id')
 sites_success = pd.merge(sites_success, device_exposure, how='outer', on='src_hpo_id')
 sites_success = pd.merge(sites_success, observation, how='outer', on='src_hpo_id')
-sites_success = pd.merge(sites_success, site_df, how='outer', on='src_hpo_id')
+
+# -
 
 sites_success = sites_success.fillna(0)
 sites_success[["visit_occurrence", "condition_occurrence", "drug_exposure", "measurement", "procedure_occurrence",
                "device_exposure", "observation"]] \
     = sites_success[["visit_occurrence", "condition_occurrence", "drug_exposure", "measurement", "procedure_occurrence",
                      "device_exposure", "observation"]].astype(int)
+
 sites_success
+
+sites_success = pd.merge(sites_success, site_df, how='outer', on='src_hpo_id')
+
+sites_success = sites_success.fillna("No Data")
 
 sites_success.to_csv("data\\duplicates.csv")
 
@@ -529,7 +739,7 @@ condition_concept_df = pd.io.gbq.read_gbq('''
             INNER JOIN
                 `{}.concept` as t3
             ON
-                t3.concept_id = t1.condition_concept_id
+                t3.concept_id = t1.condition_source_concept_id
             WHERE 
                  t3.domain_id="Condition" and t3.standard_concept="S"
             GROUP BY
@@ -553,7 +763,7 @@ condition_concept_df = pd.io.gbq.read_gbq('''
             INNER JOIN
                 `{}.concept` as t3
             ON
-                t3.concept_id = t1.condition_concept_id
+                t3.concept_id = t1.condition_source_concept_id
             WHERE 
                  (t3.concept_id=0 or t3.concept_id is null)
             GROUP BY
@@ -1664,3 +1874,4 @@ success_rate = success_rate.fillna("No Data")
 success_rate
 
 success_rate.to_csv("data\\concept.csv")
+# -

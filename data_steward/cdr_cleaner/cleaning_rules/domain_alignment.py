@@ -1,5 +1,5 @@
 """
-EHR_RDR_SNAPSHOT should be set to create a new snapshot dataset while running this cleaning rule.
+COMBINED_SNAPSHOT should be set to create a new snapshot dataset while running this cleaning rule.
 """
 import logging
 

@@ -1,5 +1,7 @@
 import os
 import unittest
+from random import randint
+from unittest import mock
 
 import bq_utils
 import gcs_utils
@@ -58,17 +60,18 @@ class AchillesTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
+        self.dataset = bq_utils.get_dataset_id()
         test_util.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.dataset)
 
-    def _load_dataset(self):
+    def _load_dataset(self, hpo_id):
         for cdm_table in resources.CDM_TABLES:
             cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
             if os.path.exists(cdm_file_name):
                 test_util.write_cloud_file(self.hpo_bucket, cdm_file_name)
             else:
                 test_util.write_cloud_str(self.hpo_bucket, cdm_table + '.csv', 'dummy\n')
-            bq_utils.load_cdm_csv(FAKE_HPO_ID, cdm_table)
+            bq_utils.load_cdm_csv(hpo_id, cdm_table)
 
     def test_detect_commented_block(self):
         commented_command = """
@@ -90,8 +93,7 @@ class AchillesTest(unittest.TestCase):
 
     def test_get_run_analysis_commands(self):
         cmd_iter = achilles._get_run_analysis_commands(FAKE_HPO_ID)
-        commands = list(cmd_iter)
-        self.assertEqual(len(commands), ACHILLES_ANALYSIS_COUNT)
+        self.assertEqual(len(cmd_iter), ACHILLES_ANALYSIS_COUNT)
 
     def test_temp_table(self):
         self.assertTrue(sql_wrangle.is_to_temp_table(TEMP_QUERY_1))
@@ -103,16 +105,36 @@ class AchillesTest(unittest.TestCase):
         self.assertTrue(
             sql_wrangle.get_temp_table_query(TEMP_QUERY_2).startswith('SELECT ce.condition_concept_id'))
 
-    def test_run_analyses(self):
+    @staticmethod
+    def get_mock_hpo_bucket():
+        bucket_env = 'BUCKET_NAME_' + FAKE_HPO_ID.upper()
+        hpo_bucket_name = os.getenv(bucket_env)
+        if hpo_bucket_name is None:
+            raise EnvironmentError()
+        return hpo_bucket_name
+
+    @mock.patch('gcs_utils.get_hpo_bucket')
+    def test_run_analyses(self, mock_hpo_bucket):
         # Long-running test
-        self._load_dataset()
-        achilles.create_tables(FAKE_HPO_ID, True)
-        achilles.load_analyses(FAKE_HPO_ID)
-        achilles.run_analyses(hpo_id=FAKE_HPO_ID)
+        mock_hpo_bucket.return_value = self.get_mock_hpo_bucket()
+
+        # create randomized tables to bypass BQ rate limits
+        random_string = str(randint(10000, 99999))
+        randomized_hpo_id = FAKE_HPO_ID + '_' + random_string
+
+        # prepare and run achilles
+        self._load_dataset(randomized_hpo_id)
+        achilles.create_tables(randomized_hpo_id, True)
+        achilles.load_analyses(randomized_hpo_id)
+        achilles.run_analyses(hpo_id=randomized_hpo_id)
+
+        # validate results
+        achilles_results_table = randomized_hpo_id + '_' + achilles.ACHILLES_RESULTS
         cmd = sql_wrangle.qualify_tables(
-            'SELECT COUNT(1) FROM %sachilles_results' % sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
-        result = bq_utils.query(cmd)
-        self.assertEqual(int(result['rows'][0]['f'][0]['v']), ACHILLES_RESULTS_COUNT)
+            'SELECT COUNT(1) as num_rows FROM %s' % achilles_results_table)
+        response = bq_utils.query(cmd)
+        rows = bq_utils.response2rows(response)
+        self.assertEqual(rows[0]['num_rows'], ACHILLES_RESULTS_COUNT)
 
     def test_parse_temp(self):
         commands = achilles._get_run_analysis_commands(FAKE_HPO_ID)
@@ -121,5 +143,5 @@ class AchillesTest(unittest.TestCase):
             self.assertFalse(is_temp)
 
     def tearDown(self):
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.dataset)
         test_util.empty_bucket(self.hpo_bucket)

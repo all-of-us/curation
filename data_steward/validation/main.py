@@ -748,7 +748,7 @@ def run_retraction_cron():
 @api_util.auth_required_cron
 def validate_pii():
     project = bq_utils.app_identity.get_application_id()
-    combined_dataset = bq_utils.get_ehr_rdr_dataset_id()
+    combined_dataset = bq_utils.get_combined_dataset_id()
     ehr_dataset = bq_utils.get_dataset_id()
     dest_dataset = bq_utils.get_validation_results_dataset_id()
     logging.info('Calling match_participants')

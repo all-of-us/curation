@@ -53,12 +53,16 @@ def get_rdr_dataset_id():
     return os.environ.get('RDR_DATASET_ID')
 
 
-def get_ehr_rdr_snapshot_dataset_id():
-    return os.environ.get('EHR_RDR_SNAPSHOT')
+def get_combined_snapshot_dataset_id():
+    return os.environ.get('COMBINED_SNAPSHOT')
 
 
-def get_ehr_rdr_dataset_id():
-    return os.environ.get('EHR_RDR_DATASET_ID')
+def get_combined_dataset_id():
+    return os.environ.get('COMBINED_DATASET_ID')
+
+
+def get_combined_deid_clean_dataset_id():
+    return os.environ.get('COMBINED_DEID_CLEAN_DATASET_ID')
 
 
 def get_retraction_hpo_id():
@@ -83,21 +87,7 @@ def get_retraction_submission_folder():
 
 
 def get_combined_deid_dataset_id():
-    """
-    Get the combined unidentified dataset id.
-
-    If the environment variable has not been set, default to the defined name,
-    set the environment variable for the process, and return the dataset name.
-
-    :return:  A name for the combined unidentified dataset id.
-    """
-    dataset_id = os.environ.get(bq_consts.COMBINED_UNIDENTIFIED_DATASET,
-                                bq_consts.BLANK)
-    if dataset_id == bq_consts.BLANK:
-        date_string = datetime.now().strftime(bq_consts.DATE_FORMAT)
-        dataset_id = bq_consts.COMBINED_UNIDENTIFIED_DATASET_FORMAT.format(date_string)
-        os.environ[bq_consts.COMBINED_UNIDENTIFIED_DATASET] = dataset_id
-    return dataset_id
+    return os.environ.get('COMBINED_DEID_DATASET_ID')
 
 
 def get_validation_results_dataset_id():
@@ -800,7 +790,8 @@ def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, field
 
     if fields is None:
         fields_filename = os.path.join(resources.fields_path, table_name + '.json')
-        fields = json.load(open(fields_filename, 'r'))
+        with open(fields_filename, 'r') as f:
+            fields = json.load(f)
     field_names = ', '.join([field['name'] for field in fields])
     row_exprs = [csv_line_to_sql_row_expr(t, fields) for t in table_list]
     formatted_mapping_list = ', '.join(row_exprs)
