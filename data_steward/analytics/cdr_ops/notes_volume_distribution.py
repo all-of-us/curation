@@ -13,9 +13,6 @@
 #     name: python3
 # ---
 
-import sys
-print(sys.executable)
-
 # +
 from notebooks import bq, render, parameters
 
@@ -134,23 +131,17 @@ create_graphs(info_dict=gen_note_title_dictionary, xlabel='Site', ylabel='Number
 note_titles_query = """
 SELECT
 DISTINCT
-a.*
+n.note_title, COUNT(*) as num_notes
 FROM
-    (SELECT
-    DISTINCT
-    n.note_title, COUNT(*) as num_notes
-    FROM
-    `aou-res-curation-prod.ehr_ops.unioned_ehr_note` n
-    JOIN
-    `aou-res-curation-prod.ehr_ops._mapping_note` mn
-    ON
-    mn.note_id = n.note_id
-    WHERE
-    n.note_title IS NOT NULL
-    GROUP BY 1
-    ORDER BY num_notes DESC) a
-WHERE a.num_notes > 10000
-ORDER BY a.num_notes DESC
+`aou-res-curation-prod.ehr_ops.unioned_ehr_note` n
+JOIN
+`aou-res-curation-prod.ehr_ops._mapping_note` mn
+ON
+mn.note_id = n.note_id
+WHERE
+n.note_title IS NOT NULL
+GROUP BY 1
+ORDER BY num_notes DESC
 """
 
 titles_df = bq.query(note_titles_query)
@@ -159,47 +150,22 @@ titles_df = bq.query(note_titles_query)
 titles_df
 
 # +
-titles_dict = {}
+words_dict = {}
 
 for index, row in titles_df.iterrows():
     title = row['note_title']
     cnt = row['num_notes']
     
-    if title in titles_dict:
-        titles_dict[title.lower()] += cnt
-    else:
-        titles_dict[title.lower()] = cnt
-
-print(titles_dict)
+    for word in title.split():
+        
+        if word.lower() in words_dict:
+            words_dict[word.lower()] += cnt
+        else:
+            words_dict[word.lower()] = cnt
+        
+print(words_dict)
 # -
 
 # ?WordCloud
-
-# +
-novel = ""
-
-for title, num in titles_dict.items():
-    new_string = title + " "
-    tot_string = new_string * num
-    
-    novel += tot_string
-# -
-
-print(len(novel))
-
-# +
-wordcloud = WordCloud().generate(text = novel)
-
-plt.imshow(wordcloud, interpolation='bilinear')
-plt.axis("off")
-plt.show()
-
-# +
-wordcloud = WordCloud().generate(text = 'jelly belly smelly jelly jelly jelly jelly jellyjelly jelly jelly jelly jelly jelly')
-
-plt.imshow(wordcloud, interpolation='bilinear')
-plt.axis("off")
-plt.show()
-# -
 
 
