@@ -125,6 +125,7 @@ def _vocab_id_match(s):
     :return: the first vocabulary ID found in the string, otherwise None
     """
     vocab_id_in_row_iter = (vocab_id for vocab_id in VOCABULARY_UPDATES if vocab_id in s)
+    # if there are matches return the first one, otherwise None
     return next(vocab_id_in_row_iter, None)
 
 
