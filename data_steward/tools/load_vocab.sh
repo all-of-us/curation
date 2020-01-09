@@ -14,11 +14,8 @@ tools/load_vocab.sh --app_id app_id --in_dir in_dir [--gcs_path gcs_path --datas
  --dataset  dataset  name of BigQuery dataset to create and load vocabulary
  [--venv_dir venv_dir directory where virtual environment should be created]
 "
-SCRIPT_PATH="$(
-  cd "$(dirname "$0")"
-  pwd -P
-)"
-BASE_DIR="$(cd ${SCRIPT_PATH} && cd .. && pwd)"
+BASE_DIR="$(git rev-parse --show-toplevel)"/data_steward
+TOOLS_PATH=${BASE_DIR}/tools
 VENV_DIR="curation_venv"
 OMOP_VOCABULARY_CONCEPT_ID="44819096"
 while true; do
@@ -56,7 +53,7 @@ if [[ -z "${APP_ID}" ]] || [[ -z "${IN_DIR}" ]]; then
   exit 1
 fi
 
-source ${SCRIPT_PATH}/set_path.sh
+source ${TOOLS_PATH}/set_path.sh
 
 # Determine the version of the OMOP vocabulary
 OMOP_VOCABULARY_VERSION="$(grep ${OMOP_VOCABULARY_CONCEPT_ID} ${IN_DIR}/VOCABULARY.csv | cut -f4)"
