@@ -84,7 +84,8 @@ echo "Adding AoU_General and AoU_Custom to vocabulary in ${IN_DIR}..."
 cp -a ${IN_DIR}/* ${TEMP_DIR}
 
 python ${BASE_DIR}/vocabulary.py add_aou_vocabs --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
-
+deactivate
+rm -rf ${VENV_DIR}
 rm -rf ${TEMP_DIR}
 
 # Upload to bucket
