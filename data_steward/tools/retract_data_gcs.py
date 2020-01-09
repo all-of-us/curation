@@ -167,9 +167,6 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
                     else:
                         # write back ill-formed lines
                         retracted_file_string.write(input_line + b'\n')
-                else:
-                    # write back empty lines
-                    retracted_file_string.write(input_line + b'\n')
 
             # Write result back to bucket
             if lines_removed > 0:
