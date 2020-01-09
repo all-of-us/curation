@@ -10,10 +10,9 @@ import sys
 import warnings
 import re
 
-from common import CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, TRANSFORM_FILES, \
-    APPEND_VOCABULARY, APPEND_CONCEPTS, ADD_AOU_VOCABS, ERRORS, AOU_GEN_ID, AOU_GEN_VOCABULARY_CONCEPT_ID, \
-    AOU_GEN_VOCABULARY_REFERENCE, ERROR_APPENDING, AOU_GEN_NAME, \
-    AOU_CUSTOM_ID, AOU_CUSTOM_NAME, AOU_CUSTOM_VOCABULARY_CONCEPT_ID, AOU_CUSTOM_VOCABULARY_REFERENCE
+from common import (CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, TRANSFORM_FILES, APPEND_VOCABULARY,
+                    APPEND_CONCEPTS, ADD_AOU_VOCABS, ERRORS, ERROR_APPENDING, VOCABULARY_UPDATES,
+                    AOU_GEN_ID, AOU_CUSTOM_ID)
 from resources import AOU_VOCAB_PATH, AOU_VOCAB_CONCEPT_CSV_PATH, hash_dir
 from io import open
 
@@ -104,28 +103,29 @@ def get_aou_vocab_version():
     return hash_dir(AOU_VOCAB_PATH)
 
 
-def get_aou_general_vocabulary_row():
+def get_aou_vocabulary_row(vocab_id):
     """
-    Get row for the vocabulary AoU_General
+    Get row for the vocabulary
 
+    :param vocab_id:  vocabulary id to generate row for
     :return: a delimited string representing row of the vocabulary.csv file
     """
     aou_vocab_version = get_aou_vocab_version()
     # vocabulary_id vocabulary_name vocabulary_reference vocabulary_version vocabulary_concept_id
-    return DELIMITER.join([AOU_GEN_ID, AOU_GEN_NAME, AOU_GEN_VOCABULARY_REFERENCE, aou_vocab_version,
-                           AOU_GEN_VOCABULARY_CONCEPT_ID])
+    vocab_row = VOCABULARY_UPDATES.get(vocab_id)
+    vocab_row[-2] = aou_vocab_version
+    return DELIMITER.join(vocab_row)
 
 
-def get_aou_custom_vocabulary_row():
+def _vocab_id_match(s):
     """
-    Get row for the vocabulary AoU_Custom
+    Get a matching AOU vocabulary ID in the specified string, if any
 
-    :return: a delimited string representing row of the vocabulary.csv file
+    :param s: string to search for AOU vocabulary IDs
+    :return: the first vocabulary ID found in the string, otherwise None
     """
-    aou_vocab_version = get_aou_vocab_version()
-    # vocabulary_id vocabulary_name vocabulary_reference vocabulary_version vocabulary_concept_id
-    return DELIMITER.join([AOU_CUSTOM_ID, AOU_CUSTOM_NAME, AOU_CUSTOM_VOCABULARY_REFERENCE, aou_vocab_version,
-                           AOU_CUSTOM_VOCABULARY_CONCEPT_ID])
+    vocab_id_in_row_iter = (vocab_id for vocab_id in VOCABULARY_UPDATES if vocab_id in s)
+    return next(vocab_id_in_row_iter, None)
 
 
 def append_concepts(in_path, out_path):
@@ -139,12 +139,11 @@ def append_concepts(in_path, out_path):
         # copy original rows line by line for memory efficiency
         with open(in_path, 'r') as in_fp:
             for row in in_fp:
-                if AOU_GEN_ID in row:
+                # check if the vocab_id is in the row text
+                vocab_id_in_row = _vocab_id_match(row)
+                if vocab_id_in_row:
                     # skip it so it is appended below
-                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=AOU_GEN_ID))
-                elif AOU_CUSTOM_ID in row:
-                    # skip it so it is appended below
-                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=AOU_CUSTOM_ID))
+                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=vocab_id_in_row))
                 else:
                     out_fp.write(row)
 
@@ -173,18 +172,16 @@ def append_vocabulary(in_path, out_path):
     :param out_path: location to save the updated vocabulary file
     :return:
     """
-    aou_general_row = get_aou_general_vocabulary_row()
-    aou_custom_row = get_aou_custom_vocabulary_row()
+    aou_general_row = get_aou_vocabulary_row(AOU_GEN_ID)
+    aou_custom_row = get_aou_vocabulary_row(AOU_CUSTOM_ID)
     with open(out_path, 'w') as out_fp:
         # copy original rows line by line for memory efficiency
         with open(in_path, 'r') as in_fp:
             for row in in_fp:
-                if AOU_GEN_ID in row:
+                vocab_id_in_row = _vocab_id_match(row)
+                if vocab_id_in_row:
                     # skip it so it is appended below
-                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=AOU_GEN_ID))
-                elif AOU_CUSTOM_ID in row:
-                    # skip it so it is appended below
-                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=AOU_CUSTOM_ID))
+                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=vocab_id_in_row))
                 else:
                     out_fp.write(row)
         # append AoU_General and AoU_Custom
