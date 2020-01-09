@@ -66,7 +66,7 @@ echo "Version of OMOP Standard vocabulary is ${OMOP_VOCABULARY_VERSION}"
 BACKUP_DIR="${IN_DIR}-backup"
 echo "Creating backup in ${BACKUP_DIR}..."
 mkdir ${BACKUP_DIR}
-cp ${IN_DIR}/* ${BACKUP_DIR}
+cp -a ${IN_DIR}/* ${BACKUP_DIR}
 
 # create a new environment in directory curation_venv
 virtualenv -p $(which python3.7) ${VENV_DIR}
@@ -84,9 +84,8 @@ echo "Created temp dir ${TEMP_DIR}"
 
 # Append vocabulary and concept records
 echo "Adding AoU_General and AoU_Custom to vocabulary in ${IN_DIR}..."
-cp ${IN_DIR}/* ${TEMP_DIR}
+cp -a ${IN_DIR}/* ${TEMP_DIR}
 
-## TODO Unset -ex or this won't run
 python ${BASE_DIR}/vocabulary.py add_aou_vocabs --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
 
 rm -rf ${TEMP_DIR}
