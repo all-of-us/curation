@@ -1,5 +1,5 @@
 # Python imports
-from io import StringIO
+from io import StringIO, open
 import os
 import shutil
 import tempfile
@@ -10,10 +10,10 @@ import mock
 
 # Project imports
 from common import DELIMITER, LINE_TERMINATOR
-from resources import AOU_GENERAL_CONCEPT_CSV_PATH
+from resources import AOU_VOCAB_CONCEPT_CSV_PATH
 from tests.test_util import TEST_VOCABULARY_VOCABULARY_CSV, TEST_VOCABULARY_CONCEPT_CSV
-from vocabulary import (_transform_csv, format_date_str, get_aou_general_vocabulary_row,
-                        append_vocabulary, append_concepts)
+from vocabulary import (_transform_csv, format_date_str, get_aou_vocabulary_row, append_vocabulary, append_concepts,
+                        AOU_GEN_ID, AOU_CUSTOM_ID, _vocab_id_match)
 
 
 class VocabularyTest(unittest.TestCase):
@@ -66,12 +66,21 @@ class VocabularyTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             format_date_str('201901234')
 
+    def test_vocab_id_match(self):
+        s1 = 'dummy,text,,dummy,text'
+        self.assertIsNone(_vocab_id_match(s1))
+        s2 = 'dummy,text,' + AOU_GEN_ID + ',dummy,text'
+        self.assertEqual(_vocab_id_match(s2), AOU_GEN_ID)
+        s3 = 'dummy,text,' + AOU_CUSTOM_ID + ',dummy,text'
+        self.assertEqual(_vocab_id_match(s3), AOU_CUSTOM_ID)
+
     def test_append_vocabulary(self):
         in_path = TEST_VOCABULARY_VOCABULARY_CSV
         out_dir = tempfile.mkdtemp()
         out_path = os.path.join(out_dir, 'VOCABULARY_1.CSV')
         out_path_2 = os.path.join(out_dir, 'VOCABULARY_2.CSV')
-        expected_last_row = get_aou_general_vocabulary_row()
+        aou_general_row = get_aou_vocabulary_row(AOU_GEN_ID)
+        aou_custom_row = get_aou_vocabulary_row(AOU_CUSTOM_ID)
 
         try:
             append_vocabulary(in_path, out_path)
@@ -81,8 +90,10 @@ class VocabularyTest(unittest.TestCase):
                     out_row = out_fp.readline()
                     self.assertEqual(in_row, out_row)
                 # new row added
-                actual_last_row = out_fp.readline()
-                self.assertEqual(actual_last_row, expected_last_row)
+                actual_last_row1 = out_fp.readline()
+                self.assertEqual(actual_last_row1, aou_general_row + '\n')
+                actual_last_row2 = out_fp.readline()
+                self.assertEqual(actual_last_row2, aou_custom_row)
                 # end of file
                 self.assertEqual('', out_fp.readline())
 
@@ -101,7 +112,7 @@ class VocabularyTest(unittest.TestCase):
 
         try:
             append_concepts(in_path, out_path)
-            with open(in_path, 'r') as in_fp, open(AOU_GENERAL_CONCEPT_CSV_PATH, 'r') as add_fp:
+            with open(in_path, 'r') as in_fp, open(AOU_VOCAB_CONCEPT_CSV_PATH, 'r') as add_fp:
                 # Note: Test files are small so memory usage here is acceptable
                 original_lines = in_fp.readlines()
                 all_lines = add_fp.readlines()

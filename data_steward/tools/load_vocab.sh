@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -x
 # Given a path to vocabulary csv files downloaded from Athena and specified by --in_dir:
 # 1. Add the local vocabulary AoU_General
 # 2. Transform the vocabulary files to a format BigQuery can load
@@ -12,12 +12,11 @@ tools/load_vocab.sh --app_id app_id --in_dir in_dir [--gcs_path gcs_path --datas
  --in_dir   in_dir   directory where vocabulary files are located
  --gcs_path gcs_path full GCS path to save transformed files
  --dataset  dataset  name of BigQuery dataset to create and load vocabulary
+ [--venv_dir venv_dir directory where virtual environment should be created]
 "
-SCRIPT_PATH="$(
-  cd "$(dirname "$0")"
-  pwd -P
-)"
-BASE_DIR="$(cd ${SCRIPT_PATH} && cd .. && pwd)"
+BASE_DIR="$(git rev-parse --show-toplevel)"/data_steward
+TOOLS_PATH=${BASE_DIR}/tools
+VENV_DIR="curation_venv"
 OMOP_VOCABULARY_CONCEPT_ID="44819096"
 while true; do
   case "$1" in
@@ -37,6 +36,10 @@ while true; do
     GCS_PATH=$2
     shift 2
     ;;
+  --venv_dir)
+    VENV_DIR=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -50,7 +53,7 @@ if [[ -z "${APP_ID}" ]] || [[ -z "${IN_DIR}" ]]; then
   exit 1
 fi
 
-source ${SCRIPT_PATH}/set_path.sh
+source ${TOOLS_PATH}/set_path.sh
 
 # Determine the version of the OMOP vocabulary
 OMOP_VOCABULARY_VERSION="$(grep ${OMOP_VOCABULARY_CONCEPT_ID} ${IN_DIR}/VOCABULARY.csv | cut -f4)"
@@ -60,7 +63,14 @@ echo "Version of OMOP Standard vocabulary is ${OMOP_VOCABULARY_VERSION}"
 BACKUP_DIR="${IN_DIR}-backup"
 echo "Creating backup in ${BACKUP_DIR}..."
 mkdir ${BACKUP_DIR}
-cp ${IN_DIR}/* ${BACKUP_DIR}
+cp -a ${IN_DIR}/* ${BACKUP_DIR}
+
+# create a new environment in directory curation_venv
+virtualenv -p $(which python3.7) ${VENV_DIR}
+# activate it
+source ${VENV_DIR}/bin/activate
+# install the requirements in the virtualenv
+pip install -r requirements.txt
 
 # Format dates, standardize line endings
 echo "Transforming the files in ${IN_DIR}..."
@@ -69,11 +79,13 @@ python ${BASE_DIR}/vocabulary.py transform_files --in_dir ${BACKUP_DIR} --out_di
 TEMP_DIR=$(mktemp -d)
 echo "Created temp dir ${TEMP_DIR}"
 
-# Append AoU_General vocabulary and concept records
-echo "Adding AoU_General to vocabulary in ${IN_DIR}..."
-cp ${IN_DIR}/* ${TEMP_DIR}
-python ${BASE_DIR}/vocabulary.py add_aou_general --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
+# Append vocabulary and concept records
+echo "Adding AoU_General and AoU_Custom to vocabulary in ${IN_DIR}..."
+cp -a ${IN_DIR}/* ${TEMP_DIR}
 
+python ${BASE_DIR}/vocabulary.py add_aou_vocabs --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
+deactivate
+rm -rf ${VENV_DIR}
 rm -rf ${TEMP_DIR}
 
 # Upload to bucket
@@ -99,3 +111,4 @@ for file in $(gsutil ls ${GCS_PATH}); do
   echo "Loading ${DATASET}.${table_name}..."
   bq load --replace=true --project_id ${APP_ID} --source_format CSV --quote "" --field_delimiter "\t" --max_bad_records 500 --skip_leading_rows 1 ${DATASET}.${table_name} ${file} ${BASE_DIR}/resources/fields/${table_name}.json
 done
+set +x

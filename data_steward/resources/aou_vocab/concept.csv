@@ -11,3 +11,5 @@ concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concep
 2000000009	Not male, not female, prefer not to answer, or skipped	Observation	AoU_General	Answer	S	SexAtBirth_GeneralizedDiffSex	2017-05-17	2099-12-31	
 2000000010	Response removed due to invalid value	Observation	AoU_General	Answer	S	AoUDRC_ResponseRemoval	2017-05-17	2099-12-31	
 2000000011	State Information Suppressed for Privacy	Observation	AoU_General	Answer	S	AoUDRC_GeneralizedState	2017-05-17	2099-12-31	
+3000000000	AoU_Custom	Metadata	Vocabulary	Vocabulary		AOU generated	2020-01-01	2099-12-31	
+3000000001	None Indicated	Observation	AoU_Custom	Answer	S	AoUDRC_NoneIndicated	2017-05-17	2099-12-31	
