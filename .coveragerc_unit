@@ -6,7 +6,7 @@ source = data_steward
 # Measure how branching logic has been tested
 branch = True
 
-data_file = tests/results/coverage/.coverage
+data_file = tests/results/coverage/unit/.coverage
 
 # Exclude files whose paths match these patterns
 omit = *curation/tests*
@@ -26,9 +26,9 @@ show_missing = True
 skip_covered = True
 
 [html]
-directory = tests/results/coverage/html
+directory = tests/results/coverage/unit/html
 
-title = Curation Python Coverage Report
+title = Curation Python Unit Tests Coverage Report
 
 [xml]
-output = tests/results/coverage/xml/coverage.xml
+output = tests/results/coverage/unit/xml/coverage.xml
