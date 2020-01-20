@@ -17,65 +17,66 @@ This is expected to drop a very small number of rows (less than 300 total) based
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 DELETE_HEIGHT_ROWS_QUERY = """
---drop all height recrods out of bounds
-DELETE
-FROM `{project_id}.{dataset_id}.measurement`
-WHERE measurement_source_concept_id = 903133
-AND value_as_number NOT BETWEEN 90 AND 228
-UNION ALL
---drop BMI row associated with PID
-DELETE
-FROM `{project_id}.{dataset_id}.measurement`
-WHERE person_id IN (SELECT person_id 
+DELETE FROM `{project_id}.{dataset_id}.measurement` m
+WHERE 
+  EXISTS (
+  --subquery to select associated bmi records
+  WITH outbound_heights AS (
+  SELECT person_id, measurement_datetime
   FROM `{project_id}.{dataset_id}.measurement`
   WHERE measurement_source_concept_id = 903133
-  AND value_as_number NOT BETWEEN 90 AND 228)
-AND measurement_source_concept_id = 903124
+  AND value_as_number NOT BETWEEN 90 AND 228
+  )
+--drop BMI row associated with PID where height is out of bounds
+(SELECT person_id FROM outbound_heights
+WHERE m.measurement_source_concept_id = 903124
+AND m.measurement_datetime = outbound_heights.measurement_datetime)
+)
+--drop all height records out of bounds
+OR (m.measurement_source_concept_id = 903133
+AND value_as_number NOT BETWEEN 90 AND 228)
 """
 
 DELETE_WEIGHT_ROWS_QUERY = """
---drop all weight records out of bounds
-DELETE
-FROM `{project_id}.{dataset_id}.measurement`
-WHERE measurement_source_concept_id = 903121 
-AND value_as_number NOT BETWEEN 30 AND 250
-UNION ALL
---drop BMI rows associated with PID
-DELETE
-FROM `{project_id}.{dataset_id}.measurement`
-WHERE person_id IN (SELECT person_id 
+DELETE FROM `{project_id}.{dataset_id}.measurement` m
+WHERE EXISTS (
+  --subquery to select associated bmi records
+  WITH outbound_weights AS (
+  SELECT person_id, measurement_datetime
   FROM `{project_id}.{dataset_id}.measurement`
   WHERE measurement_source_concept_id = 903121
-  AND value_as_number NOT BETWEEN 30 AND 250)
-AND measurement_source_concept_id = 903124
+  AND value_as_number NOT BETWEEN 30 AND 250
+  )
+--drop BMI row associated with PID where height is out of bounds
+(SELECT person_id FROM outbound_weights
+WHERE m.measurement_source_concept_id = 903124
+AND m.measurement_datetime = outbound_weights.measurement_datetime)
+)
+--drop all height records out of bounds
+OR (m.measurement_source_concept_id = 903121
+AND value_as_number NOT BETWEEN 30 AND 250)
 
 """
 
 DELETE_BMI_ROWS_QUERY = """
-DELETE
-FROM
-  `{project_id}.{dataset_id}.measurement`
-WHERE
-  measurement_source_concept_id = 903124
+DELETE FROM `{project_id}.{dataset_id}.measurement` m
+WHERE 
+  EXISTS (
+  --subquery to select associated height and weight records
+  WITH outbound_bmi AS (
+  SELECT person_id, measurement_datetime
+  FROM `{project_id}.{dataset_id}.measurement`
+  WHERE measurement_source_concept_id = 903124
   AND value_as_number NOT BETWEEN 10 AND 125
---drop height rows associated with PID
-UNION ALL
-DELETE
-FROM `{project_id}.{dataset_id}.measurement`
-WHERE person_id IN (SELECT person_id 
-  FROM `{project_id}.{dataset_id}.measurement`
-  WHERE measurement_source_concept_id = 903124
-  AND value_as_number NOT BETWEEN 10 AND 125)
-AND measurement_source_concept_id = 903133
---drop weight rows associated with PID
-UNION ALL
-DELETE
-FROM `{project_id}.{dataset_id}.measurement`
-WHERE person_id IN (SELECT person_id 
-  FROM `{project_id}.{dataset_id}.measurement`
-  WHERE measurement_source_concept_id = 903124
-  AND value_as_number NOT BETWEEN 10 AND 125)
-AND measurement_source_concept_id = 903121
+  )
+--drop height & weight rows associated with PID where bmi is out of bounds
+(SELECT person_id FROM outbound_bmi
+WHERE m.measurement_source_concept_id IN(903133, 903121)
+AND m.measurement_datetime = outbound_bmi.measurement_datetime)
+)
+--drop all bmi records out of bounds
+OR (m.measurement_source_concept_id = 903124
+AND value_as_number NOT BETWEEN 10 AND 125)
 """
 
 
