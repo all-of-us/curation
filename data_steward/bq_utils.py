@@ -41,6 +41,10 @@ class BigQueryJobWaitError(RuntimeError):
         super(BigQueryJobWaitError, self).__init__(msg)
 
 
+def get_output_project_id():
+    return os.environ.get('OUTPUT_PROJECT_ID')
+
+
 def get_dataset_id():
     return os.environ.get('BIGQUERY_DATASET_ID')
 

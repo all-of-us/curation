@@ -53,7 +53,7 @@ FROM `{project}.{dataset}.{table}`
 WHERE person_id IN (
   SELECT
     {person_research_id}
-  FROM `{project}.{sandbox_dataset_id}.{pid_table_id}`
+  FROM `{pid_project}.{sandbox_dataset_id}.{pid_table_id}`
 )
 """
 
@@ -67,7 +67,7 @@ WHERE {table_id} IN (
   WHERE person_id IN (
     SELECT
       {person_research_id}
-    FROM `{project}.{sandbox_dataset_id}.{pid_table_id}`
+    FROM `{pid_project}.{sandbox_dataset_id}.{pid_table_id}`
   )
 )
 """
@@ -78,7 +78,7 @@ FROM `{project}.{dataset}.{table}`
 WHERE person_id IN (
   SELECT
     {person_research_id}
-  FROM `{project}.{sandbox_dataset_id}.{pid_table_id}`
+  FROM `{pid_project}.{sandbox_dataset_id}.{pid_table_id}`
 )
 """
 
@@ -91,7 +91,7 @@ WHERE {table_id} IN (
   WHERE person_id IN (
     SELECT
       {person_research_id}
-    FROM `{project}.{sandbox_dataset_id}.{pid_table_id}`
+    FROM `{pid_project}.{sandbox_dataset_id}.{pid_table_id}`
   )
   AND {table_id} >= {CONSTANT_FACTOR}
 )
@@ -103,7 +103,7 @@ FROM `{project}.{dataset}.{table}`
 WHERE person_id IN (
   SELECT
     {person_research_id}
-  FROM `{project}.{sandbox_dataset_id}.{pid_table_id}`
+  FROM `{pid_project}.{sandbox_dataset_id}.{pid_table_id}`
 )
 AND {table_id} >= {CONSTANT_FACTOR}
 """
@@ -117,7 +117,7 @@ WHERE (
     AND fact_id_1 IN (
       SELECT
         {person_research_id}
-      FROM `{project}.{sandbox_dataset_id}.{pid_table_id}`
+      FROM `{pid_project}.{sandbox_dataset_id}.{pid_table_id}`
     )
   )
   OR
@@ -126,7 +126,7 @@ WHERE (
     AND fact_id_2 IN (
       SELECT
         {person_research_id}
-      FROM `{project}.{sandbox_dataset_id}.{pid_table_id}`
+      FROM `{pid_project}.{sandbox_dataset_id}.{pid_table_id}`
     )
   )
 )
@@ -166,7 +166,7 @@ def list_existing_tables(project_id, dataset_id):
     return existing_tables
 
 
-def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
+def queries_to_retract_from_ehr_dataset(project_id, dataset_id, pid_project_id,
                                         sandbox_dataset_id, hpo_id,
                                         pid_table_id):
     """
@@ -174,6 +174,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
 
     :param project_id: identifies associated project
     :param dataset_id: identifies associated dataset
+    :param pid_project_id: identifies the project containing the sandbox dataset
     :param sandbox_dataset_id: identifies the dataset containing the pid table
     :param hpo_id: identifies the HPO site
     :param pid_table_id: table containing the person_ids and research_ids
@@ -192,6 +193,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
         if q_site[DEST_TABLE] in existing_tables:
             q_site[QUERY] = RETRACT_DATA_SITE_QUERY.format(
                 project=project_id,
+                pid_project=pid_project_id,
                 dataset=q_site[DEST_DATASET],
                 table=q_site[DEST_TABLE],
                 pid_table_id=pid_table_id,
@@ -208,6 +210,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
                 q_unioned_mapping[
                     QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                         project=project_id,
+                        pid_project=pid_project_id,
                         dataset=q_unioned_mapping[DEST_DATASET],
                         mapping_table=q_unioned_mapping[DEST_TABLE],
                         table_id=get_table_id(table),
@@ -225,6 +228,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
                 q_unioned_mapping_legacy[
                     QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                         project=project_id,
+                        pid_project=pid_project_id,
                         dataset=q_unioned_mapping_legacy[DEST_DATASET],
                         mapping_table=q_unioned_mapping_legacy[DEST_TABLE],
                         table_id=get_table_id(table),
@@ -240,6 +244,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
         if q_unioned[DEST_TABLE] in existing_tables:
             q_unioned[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
                 project=project_id,
+                pid_project=pid_project_id,
                 dataset=q_unioned[DEST_DATASET],
                 table=q_unioned[DEST_TABLE],
                 pid_table_id=pid_table_id,
@@ -254,6 +259,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
     if q_site_person[DEST_TABLE] in existing_tables:
         q_site_person[QUERY] = RETRACT_DATA_SITE_QUERY.format(
             project=project_id,
+            pid_project=pid_project_id,
             dataset=q_site_person[DEST_DATASET],
             table=q_site_person[DEST_TABLE],
             pid_table_id=pid_table_id,
@@ -267,6 +273,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
     if q_unioned_person[DEST_TABLE] in existing_tables:
         q_unioned_person[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
             project=project_id,
+            pid_project=pid_project_id,
             dataset=q_unioned_person[DEST_DATASET],
             table=q_unioned_person[DEST_TABLE],
             pid_table_id=pid_table_id,
@@ -282,6 +289,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
     if q_site_fact_relationship[DEST_TABLE] in existing_tables:
         q_site_fact_relationship[QUERY] = RETRACT_DATA_FACT_RELATIONSHIP.format(
             project=project_id,
+            pid_project=pid_project_id,
             dataset=q_site_fact_relationship[DEST_DATASET],
             table=q_site_fact_relationship[DEST_TABLE],
             PERSON_DOMAIN=PERSON_DOMAIN,
@@ -298,6 +306,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
         q_unioned_fact_relationship[
             QUERY] = RETRACT_DATA_FACT_RELATIONSHIP.format(
                 project=project_id,
+                pid_project=pid_project_id,
                 dataset=q_unioned_fact_relationship[DEST_DATASET],
                 table=q_unioned_fact_relationship[DEST_TABLE],
                 PERSON_DOMAIN=PERSON_DOMAIN,
@@ -310,12 +319,14 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id,
 
 
 def queries_to_retract_from_unioned_dataset(project_id, dataset_id,
-                                            sandbox_dataset_id, pid_table_id):
+                                            pid_project_id, sandbox_dataset_id,
+                                            pid_table_id):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
     :param project_id: identifies associated project
     :param dataset_id: identifies associated dataset
+    :param pid_project_id: identifies the project containing the sandbox dataset
     :param sandbox_dataset_id: identifies the dataset containing the pid table
     :param pid_table_id: table containing the person_ids and research_ids
     :return: list of dict with keys query, dataset, table
@@ -333,6 +344,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id,
                 q_unioned_mapping[
                     QUERY] = RETRACT_MAPPING_DATA_UNIONED_QUERY.format(
                         project=project_id,
+                        pid_project=pid_project_id,
                         dataset=q_unioned_mapping[DEST_DATASET],
                         mapping_table=q_unioned_mapping[DEST_TABLE],
                         table_id=get_table_id(table),
@@ -348,6 +360,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id,
         if q_unioned[DEST_TABLE] in existing_tables:
             q_unioned[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
                 project=project_id,
+                pid_project=pid_project_id,
                 dataset=q_unioned[DEST_DATASET],
                 table=q_unioned[DEST_TABLE],
                 pid_table_id=pid_table_id,
@@ -362,6 +375,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id,
     if q_unioned_person[DEST_TABLE] in existing_tables:
         q_unioned_person[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
             project=project_id,
+            pid_project=pid_project_id,
             dataset=q_unioned_person[DEST_DATASET],
             table=q_unioned_person[DEST_TABLE],
             pid_table_id=pid_table_id,
@@ -376,6 +390,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id,
         q_unioned_fact_relationship[
             QUERY] = RETRACT_DATA_FACT_RELATIONSHIP.format(
                 project=project_id,
+                pid_project=pid_project_id,
                 dataset=q_unioned_fact_relationship[DEST_DATASET],
                 table=q_unioned_fact_relationship[DEST_TABLE],
                 PERSON_DOMAIN=PERSON_DOMAIN,
@@ -388,6 +403,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id,
 
 
 def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id,
+                                                     pid_project_id,
                                                      sandbox_dataset_id,
                                                      pid_table_id, deid_flag):
     """
@@ -395,6 +411,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id,
 
     :param project_id: identifies associated project
     :param dataset_id: identifies associated dataset
+    :param pid_project_id: identifies the project containing the sandbox dataset
     :param sandbox_dataset_id: identifies the dataset containing the pid table
     :param pid_table_id: table containing the person_ids and research_ids
     :param deid_flag: flag indicating if running on a deid dataset
@@ -413,6 +430,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id,
                 q_combined_mapping[
                     QUERY] = RETRACT_MAPPING_DATA_COMBINED_QUERY.format(
                         project=project_id,
+                        pid_project=pid_project_id,
                         dataset=q_combined_mapping[DEST_DATASET],
                         mapping_table=q_combined_mapping[DEST_TABLE],
                         table_id=get_table_id(table),
@@ -431,6 +449,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id,
         if q_combined[DEST_TABLE] in existing_tables:
             q_combined[QUERY] = RETRACT_DATA_COMBINED_QUERY.format(
                 project=project_id,
+                pid_project=pid_project_id,
                 dataset=q_combined[DEST_DATASET],
                 table=q_combined[DEST_TABLE],
                 pid_table_id=pid_table_id,
@@ -446,6 +465,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id,
         if q[DEST_TABLE] is common.DEATH:
             q[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
                 project=project_id,
+                pid_project=pid_project_id,
                 dataset=q[DEST_DATASET],
                 table=q[DEST_TABLE],
                 pid_table_id=pid_table_id,
@@ -459,6 +479,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id,
         q_combined_fact_relationship[
             QUERY] = RETRACT_DATA_FACT_RELATIONSHIP.format(
                 project=project_id,
+                pid_project=pid_project_id,
                 dataset=q_combined_fact_relationship[DEST_DATASET],
                 table=q_combined_fact_relationship[DEST_TABLE],
                 PERSON_DOMAIN=PERSON_DOMAIN,
@@ -493,7 +514,8 @@ def retraction_query_runner(queries):
 
 
 def is_deid_dataset(dataset_id):
-    return bool(re.match(DEID_REGEX, dataset_id))
+    return bool(re.match(DEID_REGEX, dataset_id)) or bool(
+        re.match(RELEASE_REGEX, dataset_id))
 
 
 def is_combined_dataset(dataset_id):
@@ -511,8 +533,12 @@ def is_ehr_dataset(dataset_id):
         EHR_REGEX, dataset_id)) or dataset_id == bq_utils.get_dataset_id()
 
 
-def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
-                   dataset_ids):
+def run_retraction(project_id,
+                   sandbox_dataset_id,
+                   pid_table_id,
+                   hpo_id,
+                   dataset_ids,
+                   pid_project_id=None):
     """
     Main function to perform retraction
     pid table must follow schema described above in PID_TABLE_FIELDS and must reside in sandbox_dataset_id
@@ -520,11 +546,16 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
 
     :param project_id: project to retract from
     :param sandbox_dataset_id: identifies the dataset containing the pid table
+    :param pid_project_id: identifies the dataset containing the sandbox dataset
     :param pid_table_id: table containing the person_ids and research_ids
     :param hpo_id: hpo_id of the site to retract from
     :param dataset_ids: datasets to retract from. If set to 'all_datasets', retracts from all datasets
     :return:
     """
+    # set default pid_project_id to project_id
+    if pid_project_id is None:
+        pid_project_id = project_id
+
     if dataset_ids == 'all_datasets':
         dataset_objs = bq_utils.list_datasets(project_id)
         dataset_ids = []
@@ -555,7 +586,8 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
     logger.info('Retracting from EHR datasets: %s' % ', '.join(ehr_datasets))
     for dataset in ehr_datasets:
         ehr_mapping_queries, ehr_queries = queries_to_retract_from_ehr_dataset(
-            project_id, dataset, sandbox_dataset_id, hpo_id, pid_table_id)
+            project_id, dataset, pid_project_id, sandbox_dataset_id, hpo_id,
+            pid_table_id)
         retraction_query_runner(ehr_mapping_queries)
         retraction_query_runner(ehr_queries)
     logger.info('Finished retracting from EHR datasets')
@@ -564,7 +596,8 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
                 ', '.join(unioned_datasets))
     for dataset in unioned_datasets:
         unioned_mapping_queries, unioned_queries = queries_to_retract_from_unioned_dataset(
-            project_id, dataset, sandbox_dataset_id, pid_table_id)
+            project_id, dataset, pid_project_id, sandbox_dataset_id,
+            pid_table_id)
         retraction_query_runner(unioned_mapping_queries)
         retraction_query_runner(unioned_queries)
     logger.info('Finished retracting from UNIONED datasets')
@@ -575,6 +608,7 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
         combined_mapping_queries, combined_queries = queries_to_retract_from_combined_or_deid_dataset(
             project_id,
             dataset,
+            pid_project_id,
             sandbox_dataset_id,
             pid_table_id,
             deid_flag=False)
@@ -588,26 +622,13 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
         deid_mapping_queries, deid_queries = queries_to_retract_from_combined_or_deid_dataset(
             project_id,
             dataset,
+            pid_project_id,
             sandbox_dataset_id,
             pid_table_id,
             deid_flag=True)
         retraction_query_runner(deid_mapping_queries)
         retraction_query_runner(deid_queries)
     logger.info('Finished retracting from DEID datasets')
-
-
-def to_int(val, default=None):
-    """
-    Convert numeric string value to int and return default value if invalid int
-
-    :param val: the numeric string value
-    :param default: the default value
-    :return: int if conversion successful, None otherwise
-    """
-    try:
-        return int(val)
-    except (ValueError, TypeError):
-        return default
 
 
 if __name__ == '__main__':

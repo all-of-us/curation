@@ -105,8 +105,7 @@ class RetractDataBqTest(unittest.TestCase):
         expected_row_count = {}
         for table in row_count_queries:
             result = bq_utils.query(row_count_queries[table])
-            expected_row_count[table] = retract_data_bq.to_int(
-                result['totalRows'])
+            expected_row_count[table] = int(result['totalRows'])
 
         # separate check to find number of actual deleted rows
         q = TABLE_ROWS_QUERY.format(dataset_id=self.bq_dataset_id)
