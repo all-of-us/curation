@@ -16,7 +16,7 @@ COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
 BASE_TESTS_PATH = os.path.dirname(
     os.path.abspath(inspect.getfile(inspect.currentframe())))
 TEST_DATA_PATH = os.path.join(BASE_TESTS_PATH, 'test_data')
-EMPTY_VALIDATION_RESULT = os.path.join(BASE_TESTS_PATH,
+EMPTY_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH,
                                        'empty_validation_result.csv')
 ALL_FILES_UNPARSEABLE_VALIDATION_RESULT = os.path.join(
     TEST_DATA_PATH, 'all_files_unparseable_validation_result.csv')
