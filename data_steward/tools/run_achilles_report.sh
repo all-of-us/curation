@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
 set -ex
 
-dataset="test_rdr"
-result_bucket="drc_curation_internal_test"
-
 USAGE="
 Usage: run_achilles_report.sh
   --key_file <path to key file>
   --vocab_dataset <vocab dataset>
-  [--dataset <Dataset ID: default is ${dataset}>]
-  [--result_bucket <Internal bucket: default is ${result_bucket}>]
+  --dataset <Dataset ID>
+  --result_bucket <Internal bucket>
 "
 
 while true; do
@@ -38,12 +35,12 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${result_bucket}" ]]; then
   echo "$USAGE"
   exit 1
 fi
 
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
 
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
