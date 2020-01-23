@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -12,7 +13,13 @@
 #     name: python3
 # ---
 
-# ## Script is used to model different distributions of 'foreign key' discrepancies
+# ## Script is used to model different distributions of 'foreign key' discrepancies. These 'foreign key discrepancies' are defined as instances where the start and end dates of the
+
+# ### NOTE: This notebook is limited in terms of utility until the following problem is addressed:
+#
+# Many of the sites are uploading their date information in their local timezone (e.g. 12-11-2019). They are also uploading their datetime information in their local timezone (e.g. 12-11-2019 22:00 EST). Bigquery, however, applies a rule to their datetime information to adjust for time zone differences (e.g. the 12-11-2019 22:00 EST would turn into 12-12-2019 03:00 UTC).
+#
+# The issue, however, arises when the datetime object is towards the end of the day and this conversion ‘pushes'  the date of the datetime into the following day UTC. Since the ‘date’ object is never adjusted, the ‘dates' of the date and datetime are not considered equal and thus removed by one of our cleaning rules.
 
 # +
 from notebooks import bq, render, parameters
@@ -34,7 +41,21 @@ DATASET = parameters.LATEST_DATASET
 print("""
 DATASET TO USE: {}
 """.format(DATASET))
+# -
 
+
+procedure_visit_df
+
+# ### The below query is used to generate a 'procedure/visit dataframe'. This procedure shows the difference between the start/end times for the same visit_occurrence_id with respect to the procedure table.
+#
+# ### Each row shows information for:
+# - The difference between the visit start date and the procedure date
+# - The difference between the visit end date and the procedure date
+# - The difference between the visit start datetime (as a date) and the procedure date
+# - The difference between the visit end datetime (as a date) and the procedure date
+# - The difference between the visit start datetime (as a date) and the procedure datetime (as a date)
+# - The difference between the visit end datetime (as a date) and the procedure datetime (as a date)
+# - The sum of all the values listed above
 
 # +
 p_v_query = """
@@ -142,9 +163,13 @@ ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancie
 """.format(DATASET, DATASET, DATASET)
 
 procedure_visit_df = bq.query(p_v_query)
-
-
 # -
+
+# ##### Creating copies of the procedure_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
+
+c1 = procedure_visit_df
+c2 = procedure_visit_df
+
 
 def create_dicts_w_info(df, bad_records_string, table_visit_diff_string):
     
@@ -189,8 +214,29 @@ def create_dicts_w_info(df, bad_records_string, table_visit_diff_string):
 
 def create_graphs(info_dict, xlabel, ylabel, title, img_name, color, total_diff_color):
     """
-    Function is used to create graphs for each of the
+    Function is used to create a bar graph for a particular dictionary with information about
+    data quality
     
+    Parameters
+    ----------
+    info_dict (dictionary): contains information about data quality. The keys for the dictionary
+        will serve as the x-axis labels whereas the values should serve as the 'y-value' for the
+        particular bar
+        
+    xlabel (str): label to display across the x-axis
+    
+    ylabel (str): label to display across the y-axis
+    
+    title (str): title for the graph
+    
+    img_name (str): image used to save the image to the local repository
+    
+    color (str): character used to specify the colours of the bars
+    
+    total_diff_color (bool): indicates whether or not the last bar should be coloured red (
+        as opposed to the rest of the bars on the graph). This is typically used when the ultimate
+        value of the dictionary is of particular important (e.g. representing an 'aggregate' metric
+        across all of the sites)    
     """
     bar_list = plt.bar(range(len(info_dict)), list(info_dict.values()), align='center', color = color)
     
