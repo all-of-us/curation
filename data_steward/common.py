@@ -138,11 +138,20 @@ LINE_TERMINATOR = '\n'
 TRANSFORM_FILES = 'transform_files'
 APPEND_VOCABULARY = 'append_vocabulary'
 APPEND_CONCEPTS = 'append_concepts'
-ADD_AOU_GENERAL = 'add_aou_general'
+ADD_AOU_VOCABS = 'add_aou_vocabs'
 ERRORS = 'errors'
 AOU_GEN_ID = 'AoU_General'
 AOU_GEN_NAME = 'AoU_General'
 AOU_GEN_VOCABULARY_CONCEPT_ID = '2000000000'
 AOU_GEN_VOCABULARY_REFERENCE = 'https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g'
+AOU_CUSTOM_ID = 'AoU_Custom'
+AOU_CUSTOM_NAME = 'AoU_Custom'
+AOU_CUSTOM_VOCABULARY_CONCEPT_ID = '3000000000'
+AOU_CUSTOM_VOCABULARY_REFERENCE = 'https://precisionmedicineinitiative.atlassian.net/browse/DC-618'
 OMOP_VOCABULARY_CONCEPT_ID = '44819096'
-ERROR_APPENDING = 'Appending to {in_path} which already contains rows for ' + AOU_GEN_ID
+ERROR_APPENDING = 'Appending to {in_path} which already contains rows for {vocab_id}'
+VERSION_TEMPLATE = 'insert version info here'
+VOCABULARY_UPDATES = {
+    AOU_GEN_ID: [AOU_GEN_ID, AOU_GEN_NAME, AOU_GEN_VOCABULARY_CONCEPT_ID, VERSION_TEMPLATE, AOU_GEN_VOCABULARY_REFERENCE],
+    AOU_CUSTOM_ID: [AOU_CUSTOM_ID, AOU_CUSTOM_NAME, AOU_CUSTOM_VOCABULARY_CONCEPT_ID, VERSION_TEMPLATE, AOU_CUSTOM_VOCABULARY_REFERENCE]
+}

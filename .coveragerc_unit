@@ -1,0 +1,34 @@
+[run]
+
+# Source packages/directories to include
+source = data_steward
+
+# Measure how branching logic has been tested
+branch = True
+
+data_file = tests/results/coverage/unit/.coverage
+
+# Exclude files whose paths match these patterns
+omit = *curation/tests*
+       */lib/*
+       *google-cloud-sdk*
+       *site-packages*
+       *_env/*
+       *constants/*
+
+[report]
+exclude_lines =
+    # Don't compain if non-runnable code isn't run
+    if __name__ == .__main__.:
+
+show_missing = True
+
+skip_covered = True
+
+[html]
+directory = tests/results/coverage/unit/html
+
+title = Curation Python Unit Tests Coverage Report
+
+[xml]
+output = tests/results/coverage/unit/xml/coverage.xml

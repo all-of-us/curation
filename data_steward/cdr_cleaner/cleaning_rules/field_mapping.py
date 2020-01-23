@@ -1,11 +1,12 @@
+import re
 from collections import OrderedDict
+from io import open
+
+import resources
+from cdr_cleaner.cleaning_rules import domain_mapping
 from cdr_cleaner.cleaning_rules.domain_mapping import DOMAIN_TABLE_NAMES, get_field_mappings,\
     exist_domain_mappings, NULL_VALUE
 from resources import get_domain_id_field, get_domain
-from cdr_cleaner.cleaning_rules import domain_mapping
-import resources
-import re
-from io import open
 
 NAME_FIELD = 'name'
 FIELD_MODE = 'mode'

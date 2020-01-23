@@ -39,6 +39,8 @@ import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.cleaning_rules.update_family_history_qa_codes as update_family_history
 import cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
+import cdr_cleaner.cleaning_rules.drop_multiple_measurements as drop_mult_meas
+import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_drop_duplicates
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
@@ -90,6 +92,8 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
                                                                                       sandbox_dataset_id))
     query_list.extend(round_ppi_values.get_round_ppi_values_queries(project_id, dataset_id))
     query_list.extend(update_family_history.get_update_family_history_qa_queries(project_id, dataset_id))
+    query_list.extend(extreme_measurements.get_drop_extreme_measurement_queries(project_id, dataset_id))
+    query_list.extend(drop_mult_meas.get_drop_multiple_measurement_queries(project_id, dataset_id))
     return query_list
 
 
