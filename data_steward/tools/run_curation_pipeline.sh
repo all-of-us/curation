@@ -4,10 +4,6 @@ set -ex
 # This script automates the curation playbook (https://docs.google.com/document/d/1QnwUhJmrVc9JNt64goeRw-K7490gbaF7DsYhTTt9tUo/edit#heading=h.k24j7tgoprtn)
 # It assuming steps 1-3 are already done via a daily cron job. This script automates 4-7.
 
-ehr_dataset="auto_pipeline_input"
-rdr_dataset="test_rdr"
-result_bucket="drc_curation_internal_test"
-
 USAGE="
 Usage: run_curation_pipeline.sh
   --key_file <path to key file>
@@ -62,7 +58,7 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
@@ -131,3 +127,5 @@ output="${dataset_release_tag}_deid_output"
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${cdr_deid_base} --target_dataset ${output_base} --sync false
 
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${cdr_deid_clean} --target_dataset ${output} --sync false
+
+set +ex

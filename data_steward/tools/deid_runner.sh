@@ -46,7 +46,7 @@ echo "key_file --> ${key_file}"
 echo "cdr_id --> ${cdr_id}"
 echo "vocab_dataset --> ${vocab_dataset}"
 
-APP_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
+APP_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${APP_ID}"
 
@@ -117,6 +117,10 @@ bq update --description "${version} De-identified Base version of ${cdr_id}" ${A
 #copy sandbox dataset
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${cdr_deid_base_staging}_sandbox" --target_dataset "${cdr_deid_base}_sandbox"
 
+# remove intemideary datasets
+bq rm -r -d "${cdr_deid_base_staging}_sandbox"
+bq rm -r -d "${cdr_deid_base_staging}"
+
 # create empty de-id_clean dataset to apply cleaning rules
 bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${cdr_deid_base}" ${APP_ID}:${cdr_deid_clean_staging}
 
@@ -138,5 +142,12 @@ bq update --description "${version} De-identified Clean version of ${cdr_deid_ba
 #copy sandbox dataset
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${cdr_deid_clean_staging}_sandbox" --target_dataset "${cdr_deid_clean}_sandbox"
 
+# remove intemideary datasets
+bq rm -r -d "${cdr_deid_clean_staging}_sandbox"
+bq rm -r -d "${cdr_deid_clean_staging}"
+
 # deactivate virtual environment
+unset PYTHONPATH
 deactivate
+
+set +ex

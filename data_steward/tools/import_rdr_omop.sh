@@ -51,7 +51,7 @@ DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${KEY_FILE}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${KEY_FILE}")
 
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
@@ -59,8 +59,6 @@ export BIGQUERY_DATASET_ID="${OUTPUT_DATASET}"
 
 today=$(date '+%Y%m%d')
 RDR_DATASET="${today}_rdr"
-RDR_BACKUP="${RDR_DATASET}_backup"
-RDR_STAGING="${RDR_DATASET}_staging"
 
 #---------Create curation virtual environment----------
 # create a new environment in directory curation_venv
@@ -86,7 +84,7 @@ fi
 for file in $cdm_files; do
   filename=$(basename ${file})
   table_name=${filename%.*}
-  echo "Importing ${RDR_BACKUP}.${table_name}..."
+  echo "Importing ${RDR_DATASET}.${table_name}..."
   CLUSTERING_ARGS=""
   if grep -q person_id resources/fields/"${table_name}".json; then
     CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id"
@@ -95,30 +93,14 @@ for file in $cdm_files; do
   if [[ "${filename}" == "observation_period.csv" ]]; then
     JAGGED_ROWS="--allow_jagged_rows"
   fi
-  bq load --project_id ${GOOGLE_CLOUD_PROJECT} --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${GOOGLE_CLOUD_PROJECT}:${RDR_BACKUP}.${table_name} $file resources/fields/${table_name}.json
+  bq load --project_id ${GOOGLE_CLOUD_PROJECT} --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.${table_name} $file resources/fields/${table_name}.json
 done
 
 echo "Copying vocabulary"
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${VOCAB_DATASET} --target_dataset ${RDR_BACKUP}
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${VOCAB_DATASET} --target_dataset ${RDR_DATASET}
 
-echo "Creating a RDR intermediary dataset"
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${RDR_BACKUP} --target_dataset ${RDR_STAGING}
-
-#set BIGQUERY_DATASET_ID variable to dataset name where the vocabulary exists
-export BIGQUERY_DATASET_ID="${VOCAB_DATASET}"
-export RDR_DATASET_ID="${RDR_STAGING}"
-echo "Cleaning the RDR data"
-data_stage="rdr"
-
-python "${CLEANER_DIR}/clean_cdr.py" --data_stag ${data_stage} -s
-
-# Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${RDR_STAGING}" -n "${RDR_STAGING}"
-
-#copy sandbox dataset
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${RDR_STAGING}_sandbox" --target_dataset "${RDR_STAGING}_sandbox"
-
-echo "Done."
-
+# deactivate venv and unset PYTHON PATH
 unset PYTHONPATH
 deactivate
+
+set +ex

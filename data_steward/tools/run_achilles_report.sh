@@ -40,7 +40,7 @@ if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]
   exit 1
 fi
 
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
@@ -81,5 +81,8 @@ export BUCKET_NAME_NYC="test-bucket"
 # Run Achilles analysis
 python "${TOOLS_DIR}/run_achilles_and_export.py" --bucket=${result_bucket} --folder=${dataset}
 
+# Deactivate venv and unset PYTHONPATH
 unset PYTHONPATH
 deactivate
+
+set +ex

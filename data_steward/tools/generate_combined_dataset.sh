@@ -50,7 +50,7 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 echo "unioned_ehr_dataset --> ${unioned_ehr_dataset}"
 echo "rdr_dataset --> ${rdr_dataset}"
@@ -123,6 +123,9 @@ bq update --description "${version} combined clean version of ${rdr_dataset} + $
 #copy sandbox dataset
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${combined_staging}_sandbox" --target_dataset "${combined}_sandbox"
 
+bq rm -r -d "${combined_staging}_sandbox"
+bq rm -r -d "${combined_staging}"
+
 dbrowser="${combined}_dbrowser"
 
 # Create a dataset for data browser team
@@ -130,5 +133,8 @@ bq mk --dataset --description "intermediary dataset to apply cleaning rules on $
 
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined} --target_dataset ${dbrowser}
 
+# Deactivate venv and unset PYTHONPATH
 unset PYTHOPATH
 deactivate
+
+set +ex

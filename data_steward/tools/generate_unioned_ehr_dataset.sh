@@ -44,7 +44,7 @@ if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snapsho
   exit 1
 fi
 
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
@@ -116,3 +116,5 @@ bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_visit_occurrence
 
 unset PYTHONPATH
 deactivate
+
+set +ex

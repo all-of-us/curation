@@ -41,7 +41,7 @@ if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}"
   exit 1
 fi
 
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 echo "ehr_dataset --> ${ehr_dataset}"
 echo "rdr_dataset --> ${rdr_dataset}"
@@ -83,14 +83,36 @@ bq mk --dataset --description "snapshot of latest EHR dataset ${ehr_dataset}" ${
 #copy tables
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_dataset} --target_dataset ${ehr_snapshot} --sync false
 
-echo "--------------------------> Snapshotting RDR Dataset (step 5)"
+echo "--------------------------> Snapshotting  and cleaning RDR Dataset (step 5)"
 rdr_snapshot="${dataset_release_tag}_rdr"
-echo "rdr_snapshot --> ${rdr_snapshot}"
+rdr_snapshot_staging="${rdr_snapshot}_staging"
 
-bq mk --dataset --description "snapshot of latest RDR dataset ${rdr_dataset}" ${app_id}:${rdr_snapshot}
+bq mk --dataset --description "snapshot of latest RDR dataset ${rdr_dataset}" ${app_id}:${rdr_snapshot_staging}
 
 #copy tables
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${rdr_dataset} --target_dataset ${rdr_snapshot} --sync false
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${rdr_dataset} --target_dataset ${rdr_snapshot_staging} --sync false
 
+#set BIGQUERY_DATASET_ID variable to dataset name where the vocabulary exists
+export BIGQUERY_DATASET_ID="${rdr_snapshot_staging}"
+export RDR_DATASET_ID="${rdr_snapshot_staging}"
+echo "Cleaning the RDR data"
+data_stage="rdr"
+
+python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s
+
+# Create a snapshot dataset with the result
+python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${rdr_snapshot_staging}" -n "${rdr_snapshot}"
+
+#copy sandbox dataset
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${rdr_snapshot_staging}_sandbox" --target_dataset "${rdr_snapshot}_sandbox"
+
+bq rm -r -d "${rdr_snapshot_staging}_sandbox" 
+bq rm -r -d "${rdr_snapshot_staging}" 
+
+echo "Done."
+
+# deactivate venv and unset PYTHONPATH
 deactivate
 unset PYTHONPATH
+
+set +ex
