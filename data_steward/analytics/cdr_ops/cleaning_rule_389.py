@@ -4,12 +4,12 @@
 #     text_representation:
 #       extension: .py
 #       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.2.3
+#       format_version: '1.5'
+#       jupytext_version: 1.3.0
 #   kernelspec:
-#     display_name: Python 2
+#     display_name: Python 3
 #     language: python
-#     name: python2
+#     name: python3
 # ---
 
 # ### Notebook is intended to test the efficacy of DC-389:
@@ -38,10 +38,10 @@ TABLE_BEFORE_CONVERSION = '' # e.g. deid.measurement
 TABLE_AFTER_CONVERSION = ''  # e.g. deid_clean.measurement
 
 print("""TABLE_BEFORE_CONVERSION = {TABLE_BEFORE_CONVERSION}
-TABLE_AFTER_CONVERSION = {TABLE_AFTER_CONVERSION}""").format(
+TABLE_AFTER_CONVERSION = {TABLE_AFTER_CONVERSION}""".format(
         TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION, 
     TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION
-)
+))
 # -
 
 
