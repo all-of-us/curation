@@ -16,7 +16,6 @@ import logging
 import common
 import bq_utils
 from validation import ehr_union
-from io import open
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Data retraction logger')
@@ -499,12 +498,7 @@ def is_ehr_dataset(dataset_id):
     return bool(re.match(EHR_REGEX, dataset_id)) or dataset_id == bq_utils.get_dataset_id()
 
 
-def int_list_to_bq(l):
-    str_l = map(str, l)
-    return "(%s)" % ', '.join(str_l)
-
-
-def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset_ids=None):
+def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset_ids):
     """
     Main function to perform retraction
     pid table must follow schema described above in PID_TABLE_FIELDS and must reside in sandbox_dataset_id
@@ -514,10 +508,10 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset
     :param sandbox_dataset_id: identifies the dataset containing the pid table
     :param pid_table_id: table containing the person_ids and research_ids
     :param hpo_id: hpo_id of the site to retract from
-    :param dataset_ids: datasets to retract from. If None, retracts from all datasets
+    :param dataset_ids: datasets to retract from. If set to 'all_datasets', retracts from all datasets
     :return:
     """
-    if dataset_ids is None:
+    if dataset_ids == 'all_datasets':
         dataset_objs = bq_utils.list_datasets(project_id)
         dataset_ids = []
         for dataset_obj in dataset_objs:
@@ -526,6 +520,8 @@ def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset
         logger.info('Found datasets to retract from: %s' % ', '.join(dataset_ids))
         # retract from latest datasets first
         dataset_ids.sort(reverse=True)
+    else:
+        dataset_ids = dataset_ids.split()
 
     deid_datasets = []
     combined_datasets = []
@@ -625,10 +621,11 @@ if __name__ == '__main__':
                         help='Identifies the site to retract data from',
                         required=True)
     parser.add_argument('-d', '--dataset_ids',
-                        nargs='*', dest='dataset_ids',
-                        help='Optional. Identifies the datasets to retract from. Format: -d dataset_1 "dataset 2" '
-                             'If unspecified, retracts from all datasets in project',
-                        required=False)
+                        action='store', dest='dataset_ids',
+                        help='Identifies the datasets to retract from, separated by spaces'
+                             'Format: "dataset_id_1 dataset_id_2 dataset_id_3" and so on'
+                             'If set to "all_datasets", retracts from all datasets in project',
+                        required=True)
     args = parser.parse_args()
 
     run_retraction(args.project_id, args.sandbox_dataset_id, args.pid_table_id, args.hpo_id, args.dataset_ids)
