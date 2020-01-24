@@ -71,16 +71,20 @@ echo "dataset_release_tag --> ${dataset_release_tag}"
 #---------------------------------------------------------
 # Step 1 create EHR and RDR snapshot
 echo "-------------------------->Take a Snapshot of EHR Dataset (step 1)"
-"${TOOLS_DIR}/create_ehr_and_rdr_snapshot.sh" --key_file ${key_file} --ehr_dataset ${ehr_dataset} --rdr_dataset ${rdr_datset} --dataset_release_tag ${dataset_release_tag}
+"${TOOLS_DIR}/create_ehr_and_rdr_snapshot.sh" --key_file ${key_file} --ehr_dataset ${ehr_dataset} --rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag}
 
 #---------------------------------------------------------
 # Step 2 Generate Unioned ehr dataset
 echo "-------------------------->Generate Unioned ehr dataset (step 2)"
+ehr_snapshot="${dataset_release_tag}_ehr"
+echo "ehr_snapshot ----> ${ehr_snapshot}"
 "${TOOLS_DIR}/generate_unioned_ehr_dataset.sh" --key_file ${key_file} --ehr_snap_dataset ${ehr_snapshot} --vocab_dataset ${vocab_dataset} --dataset_release_tag ${dataset_release_tag}
 
 #---------------------------------------------------------
 # Step 3 Generate combined dataset
 echo "-------------------------->Generate combined ehr rdr dataset (step 3)"
+unioned_ehr_dataset="${dataset_release_tag}_unioned_ehr"
+echo "unioned_ehr_dataset --> $unioned_ehr_dataset"
 "${TOOLS_DIR}/generate_combined_dataset.sh" --key_file ${key_file} --vocab_dataset ${vocab_dataset} --unioned_ehr_dataset ${unioned_ehr_dataset} --rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag}
 
 #-------------------------------------------------------
