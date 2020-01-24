@@ -78,11 +78,20 @@ def get_retraction_sandbox_dataset_id():
 
 
 def get_retraction_dataset_ids():
-    # dataset ids from which to retract, separated by spaces ' '
+    """
+    Dataset ids from which to retract, separated by spaces
+    If retraction needs to be performed on all datasets in the project, set to 'all_datasets'
+    :return: string 'all_datasets' or dataset_ids separated by spaces
+    """
     return os.environ.get('RETRACTION_DATASET_IDS')
 
 
 def get_retraction_submission_folder():
+    """
+    Submission folder from which to retract
+    If retraction needs to be performed on all submissions by a site, set to 'all_folders'
+    :return: string 'all_folders' or submission folder name
+    """
     return os.environ.get('RETRACTION_SUBMISSION_FOLDER')
 
 

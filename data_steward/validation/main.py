@@ -730,15 +730,14 @@ def run_retraction_cron():
 
     # retract from bq
     dataset_ids = bq_utils.get_retraction_dataset_ids()
-    dataset_ids = dataset_ids.split() if dataset_ids else None
+    logging.info('Dataset id/s to target from env variable: %s' % dataset_ids)
     logging.info('Running retraction on BQ datasets')
     retract_data_bq.run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, dataset_ids)
     logging.info('Completed retraction on BQ datasets')
 
     # retract from gcs
     folder = bq_utils.get_retraction_submission_folder()
-    if not folder:
-        folder = None
+    logging.info('Submission folder/s to target from env variable: %s' % folder)
     logging.info('Running retraction from internal bucket folders')
     retract_data_gcs.run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder, force_flag=True)
     logging.info('Completed retraction from internal bucket folders')

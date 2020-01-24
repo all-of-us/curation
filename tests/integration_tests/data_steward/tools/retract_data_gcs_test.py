@@ -60,8 +60,8 @@ class RetractDataGcsTest(unittest.TestCase):
                 for line in f:
                     line = line.strip()
                     if line != '':
-                        if (table_name in rd.PID_IN_COL1 and rd.get_integer(line.split(",")[0]) in self.skip_pids) or \
-                                (table_name in rd.PID_IN_COL2 and rd.get_integer(line.split(",")[1]) in self.skip_pids):
+                        if (table_name in rd.PID_IN_COL1 and int(line.split(",")[0]) in self.skip_pids) or \
+                                (table_name in rd.PID_IN_COL2 and int(line.split(",")[1]) in self.skip_pids):
                             lines_to_remove[file_name] += 1
                         total_lines_prior[file_name] += 1
 
@@ -73,7 +73,7 @@ class RetractDataGcsTest(unittest.TestCase):
                                            self.sandbox_dataset_id,
                                            self.pid_table_id,
                                            self.hpo_id,
-                                           folder=None,
+                                           folder='all_folders',
                                            force_flag=True)
 
         total_lines_post = {}
@@ -117,8 +117,8 @@ class RetractDataGcsTest(unittest.TestCase):
                 for line in f:
                     line = line.strip()
                     if line != '':
-                        if (table_name in rd.PID_IN_COL1 and rd.get_integer(line.split(",")[0]) in self.pids) or \
-                                (table_name in rd.PID_IN_COL2 and rd.get_integer(line.split(",")[1]) in self.pids):
+                        if (table_name in rd.PID_IN_COL1 and int(line.split(",")[0]) in self.pids) or \
+                                (table_name in rd.PID_IN_COL2 and int(line.split(",")[1]) in self.pids):
                             lines_to_remove[file_name] += 1
                         total_lines_prior[file_name] += 1
 
@@ -130,7 +130,7 @@ class RetractDataGcsTest(unittest.TestCase):
                                            self.sandbox_dataset_id,
                                            self.pid_table_id,
                                            self.hpo_id,
-                                           folder=None,
+                                           folder='all_folders',
                                            force_flag=True)
 
         total_lines_post = {}
