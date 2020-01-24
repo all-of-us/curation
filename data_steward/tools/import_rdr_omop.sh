@@ -72,9 +72,9 @@ pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 
 source "${TOOLS_DIR}/set_path.sh"
 
-bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} on ${today}" "${GOOGLE_CLOUD_PROJECT}:${RDR_BACKUP}"
+bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} on ${today}" "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}"
 
-python "${DATA_STEWARD_DIR}/cdm.py" "${RDR_BACKUP}"
+python "${DATA_STEWARD_DIR}/cdm.py" "${RDR_DATASET}"
 
 cdm_files=$(gsutil ls gs://${RDR_PROJECT}-cdm/${RDR_DIRECTORY})
 if [[ $? -ne 0 ]]; then
