@@ -44,6 +44,7 @@ class RetractDataBqTest(unittest.TestCase):
         self.test_project_id = app_identity.get_application_id()
         self.pid_table_id = 'pid_table'
         self.bq_dataset_id = bq_utils.get_unioned_dataset_id()
+        self.dataset_ids = 'all_datasets'
         self.person_research_ids = [(1, 6890173), (2, 858761), (1234567, 4589763)]
 
     @mock.patch('tools.retract_data_bq.is_deid_dataset')
@@ -112,7 +113,8 @@ class RetractDataBqTest(unittest.TestCase):
             row_count_before_retraction[row['table_id']] = row['row_count']
 
         # perform retraction
-        retract_data_bq.run_retraction(self.test_project_id, self.bq_dataset_id, self.pid_table_id, self.hpo_id)
+        retract_data_bq.run_retraction(self.test_project_id, self.bq_dataset_id, self.pid_table_id, self.hpo_id,
+                                       self.dataset_ids)
 
         # find actual deleted rows
         q_result = bq_utils.query(q)
