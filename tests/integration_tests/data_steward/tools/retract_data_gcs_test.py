@@ -73,7 +73,7 @@ class RetractDataGcsTest(unittest.TestCase):
                                            self.sandbox_dataset_id,
                                            self.pid_table_id,
                                            self.hpo_id,
-                                           folder=None,
+                                           folder='all_folders',
                                            force_flag=True)
 
         total_lines_post = {}
@@ -130,7 +130,7 @@ class RetractDataGcsTest(unittest.TestCase):
                                            self.sandbox_dataset_id,
                                            self.pid_table_id,
                                            self.hpo_id,
-                                           folder=None,
+                                           folder='all_folders',
                                            force_flag=True)
 
         total_lines_post = {}

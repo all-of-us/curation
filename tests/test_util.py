@@ -1,4 +1,6 @@
+import inspect
 import os
+from io import open
 
 import requests
 
@@ -7,13 +9,13 @@ import common
 from constants.validation import main as main
 import gcs_utils
 import resources
-from io import open
 
 FAKE_HPO_ID = 'fake'
 VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
 COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
-TEST_DATA_PATH = os.path.join(os.getcwd(), 'tests', 'test_data')
-EMPTY_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'empty_validation_result.csv')
+BASE_TESTS_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+TEST_DATA_PATH = os.path.join(BASE_TESTS_PATH, 'test_data')
+EMPTY_VALIDATION_RESULT = os.path.join(BASE_TESTS_PATH, 'empty_validation_result.csv')
 ALL_FILES_UNPARSEABLE_VALIDATION_RESULT = os.path.join(TEST_DATA_PATH, 'all_files_unparseable_validation_result.csv')
 ALL_FILES_UNPARSEABLE_VALIDATION_RESULT_NO_HPO_JSON = os.path.join(TEST_DATA_PATH,
                                                                    'all_files_unparseable_validation_result_no_hpo.json')
@@ -118,7 +120,6 @@ def _export_query_response_by_path(p, hpo_id):
     """Utility to create response test payloads"""
 
     from validation import export
-    import bq_utils
 
     for f in export.list_files_only(p):
         abs_path = os.path.join(p, f)
@@ -234,7 +235,6 @@ def write_cloud_fp(bucket, name, fp):
 def populate_achilles(hpo_bucket, hpo_id=FAKE_HPO_ID, include_heel=True):
     from validation import achilles, achilles_heel
     import app_identity
-    import bq_utils
 
     app_id = app_identity.get_application_id()
 
@@ -319,7 +319,6 @@ def get_table_summary(dataset_id):
     :param dataset_id: identifies the dataset
     :return: list of dict with keys: project_id dataset_id table_id creation_time type
     """
-    import bq_utils
     q = '''
         SELECT * FROM {dataset_id}.__TABLES_SUMMARY__
         '''.format(dataset_id=dataset_id)
@@ -355,7 +354,6 @@ def get_table_counts(dataset_id, table_ids=None, where=''):
     :param where: an optional SQL where clause
     :return: a mapping of table_id => count
     """
-    import bq_utils
     if table_ids is None:
         tables = get_table_summary(dataset_id)
         table_ids = set(t['table_id'] for t in tables)
