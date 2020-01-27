@@ -1,7 +1,22 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
 from notebooks import bq, render
 
-identify_labs_query = """
+# ## Strategy for getting all related lab concepts
+#
+# We are going to use a combination of LOINC Group and LOINC Hierarchy because both classification systems cover some concepts the other does not cover. In general, LOINC Hierarchy provides generalized concepts that cover more descendants except for **physical measurements**, in which case we want to use LOINC Group. 
+#
+# <ul>
+#     <li>LONIC Group: going up 1 level is sufficient for getting the generalized lab concept ids. </li>
+#     <br>
+#     <li>LOINC Hierarchy: going up by 2 levels improved the coverages greatly. However, we need to place the restriction (going up by 1 level only) on Leukocytes, Protein and Cholesterol because their granularities are too “coarse”. Leukocytes in the hierarchy subsume concepts such as Neutrophils, Basophils, which are separate labs on their own. The same issue with another lab Protein that subsumes Albumin, which is a separate lab on its own.</li>
+#     <br>
+#     <li>We are going to union the descendants of the generalized lab concepts using LOINC Group and LOINC Hierarchy in order to identify whether or not the HPO sites have submitted the required labs. If a site submits data on any one of the labs, we will flag it as yes otherwise flag it as no. </li>
+# </ul>
+
+DATASET_ID = 'combined20190802_base'
+
+IDENTIFY_LABS_QUERY = """
 WITH get_excluded_ancestor_ids AS
 (
   -- 36206173 and 36208978 are the root concepts `Laboratory` and `Clinical Categories`,
@@ -184,32 +199,33 @@ get_loinc_hierarchy_descendant_concept_ids AS
       AND ca1.min_levels_of_separation <> 0
   LEFT JOIN prod_drc_dataset.concept AS c1
     ON ca1.descendant_concept_id = c1.concept_id  
+),
+
+get_measurement_concept_sets_descendants AS
+(
+  SELECT DISTINCT
+    COALESCE(lh.Panel_OMOP_ID, lg.Panel_OMOP_ID) AS panel_omop_id,
+    COALESCE(lh.Panel_Name, lg.Panel_Name) AS panel_name,
+    COALESCE(lh.measurement_concept_id, lg.measurement_concept_id) AS measurement_concept_id,
+    COALESCE(lh.measurement_concept_name, lg.measurement_concept_name) AS measurement_concept_name,
+    COALESCE(lh.ancestor_concept_id, lg.parent_concept_id, lh.measurement_concept_id, lg.measurement_concept_id) AS ancestor_concept_id,
+    COALESCE(lh.ancestor_concept_name, lg.parent_concept_name, lh.measurement_concept_name, lg.measurement_concept_name) AS ancestor_concept_name,
+    CASE
+      WHEN lh.loinc_hierarchy_descendant_concept_id IS NOT NULL AND lg.loinc_groupy_descendant_concept_id IS NOT NULL THEN CONCAT(lh.ancestor_concept_class_id, ' / ', lg.parent_concept_class_id)
+      WHEN lh.loinc_hierarchy_descendant_concept_id IS NOT NULL AND lg.loinc_groupy_descendant_concept_id IS NULL THEN lh.ancestor_concept_class_id
+      WHEN lh.loinc_hierarchy_descendant_concept_id IS NULL AND lg.loinc_groupy_descendant_concept_id IS NOT NULL THEN lg.parent_concept_class_id
+      ELSE 'N/A'
+    END AS classification,
+    COALESCE(lh.loinc_hierarchy_descendant_concept_id, lg.loinc_groupy_descendant_concept_id) AS descendant_concept_id,
+    COALESCE(lh.loinc_hierarchy_descendant_concept_name, lg.loinc_groupy_descendant_concept_name) AS descendant_concept_name,
+    COALESCE(lh.loinc_hierarchy_descendant_concept_class_id, lg.loinc_groupy_descendant_concept_class_id) AS descendant_concept_class_id
+  FROM get_loinc_hierarchy_descendant_concept_ids AS lh
+  FULL OUTER JOIN 
+    get_loinc_group_descendant_concept_ids AS lg
+  ON
+    lh.loinc_hierarchy_descendant_concept_id = lg.loinc_groupy_descendant_concept_id
 )
 
-SELECT DISTINCT
-  COALESCE(lh.Panel_OMOP_ID, lg.Panel_OMOP_ID) AS panel_omop_id,
-  COALESCE(lh.Panel_Name, lg.Panel_Name) AS panel_name,
-  COALESCE(lh.measurement_concept_id, lg.measurement_concept_id) AS measurement_concept_id,
-  COALESCE(lh.measurement_concept_name, lg.measurement_concept_name) AS measurement_concept_name,
-  COALESCE(lh.ancestor_concept_id, lg.parent_concept_id, lh.measurement_concept_id, lg.measurement_concept_id) AS ancestor_concept_id,
-  COALESCE(lh.ancestor_concept_name, lg.parent_concept_name, lh.measurement_concept_name, lg.measurement_concept_name) AS ancestor_concept_name,
-  CASE
-    WHEN lh.loinc_hierarchy_descendant_concept_id IS NOT NULL AND lg.loinc_groupy_descendant_concept_id IS NOT NULL THEN CONCAT(lh.ancestor_concept_class_id, ' / ', lg.parent_concept_class_id)
-    WHEN lh.loinc_hierarchy_descendant_concept_id IS NOT NULL AND lg.loinc_groupy_descendant_concept_id IS NULL THEN lh.ancestor_concept_class_id
-    WHEN lh.loinc_hierarchy_descendant_concept_id IS NULL AND lg.loinc_groupy_descendant_concept_id IS NOT NULL THEN lg.parent_concept_class_id
-    ELSE 'N/A'
-  END AS classification,
-  COALESCE(lh.loinc_hierarchy_descendant_concept_id, lg.loinc_groupy_descendant_concept_id) AS descendant_concept_id,
-  COALESCE(lh.loinc_hierarchy_descendant_concept_name, lg.loinc_groupy_descendant_concept_name) AS descendant_concept_name,
-  COALESCE(lh.loinc_hierarchy_descendant_concept_class_id, lg.loinc_groupy_descendant_concept_class_id) AS descendant_concept_class_id
-FROM get_loinc_hierarchy_descendant_concept_ids AS lh
-FULL OUTER JOIN 
-  get_loinc_group_descendant_concept_ids AS lg
-ON
-  lh.loinc_hierarchy_descendant_concept_id = lg.loinc_groupy_descendant_concept_id
-"""
-
-lab_count_per_site_query = """
 SELECT
   panel_name,
   valid_lab.ancestor_concept_name,
@@ -218,7 +234,7 @@ SELECT
   src_hpo_id,
   COUNT(DISTINCT person_id) AS n_person,
   COUNT(DISTINCT measurement_id) AS n_meas,
-  COUNT(DISTINCT meas.measurement_concept_id) AS n_measurement_concept_ids
+  COUNT(DISTINCT descendant_concept_id) AS n_descendant
 FROM 
 (
   SELECT
@@ -226,14 +242,14 @@ FROM
     person_id,
     IF(measurement_concept_id IS NULL OR measurement_concept_id=0, measurement_source_concept_id, measurement_concept_id) AS measurement_concept_id
   FROM
-    `combined20190802_base.measurement` 
+    `{DATASET_ID}.measurement` 
 ) meas
 JOIN
-  `combined20190802_base._mapping_measurement`
+  `{DATASET_ID}._mapping_measurement`
 USING
   (measurement_id)
 JOIN 
-  `aou-res-curation-prod.prod_drc_dataset.measurement_concept_sets_descendants_new` AS valid_lab
+  get_measurement_concept_sets_descendants AS valid_lab
 ON
   meas.measurement_concept_id = valid_lab.descendant_concept_id
 GROUP BY
@@ -246,10 +262,7 @@ ORDER BY
   1,2
 """
 
-identify_labs_query_results = bq.query(identify_labs_query)
+identify_labs_query_results = bq.query(IDENTIFY_LABS_QUERY.format(DATASET_ID=DATASET_ID))
 render.dataframe(identify_labs_query_results)
-
-lab_count_per_site_query_results = bq.query(lab_count_per_site_query)
-render.dataframe(lab_count_per_site_query_results)
 
 
