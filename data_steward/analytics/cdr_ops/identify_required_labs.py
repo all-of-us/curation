@@ -14,7 +14,8 @@ from notebooks import bq, render
 #     <li>We are going to union the descendants of the generalized lab concepts using LOINC Group and LOINC Hierarchy in order to identify whether or not the HPO sites have submitted the required labs. If a site submits data on any one of the labs, we will flag it as yes otherwise flag it as no. </li>
 # </ul>
 
-DATASET_ID = 'combined20190802_base'
+DATASET_ID = '' # the dataset_id for which we are checking the require labs
+VOCAB_DATASET_ID = '' # the latest vocabulary dataset_id
 
 IDENTIFY_LABS_QUERY = """
 WITH get_excluded_ancestor_ids AS
@@ -23,14 +24,14 @@ WITH get_excluded_ancestor_ids AS
   -- we exclude all the direct children of `Laboratory` and `Clinical Categories` in the ancestor lookup later
   SELECT 
     ca.concept_id_1 AS excluded_ancestor_concept_id
-  FROM `prod_drc_dataset.concept_relationship`  AS ca
+  FROM `{VOCAB_DATASET_ID}.concept_relationship`  AS ca
   WHERE ca.concept_id_2 IN (36206173, 36208978) AND ca.relationship_id = 'Is a'
   
   UNION DISTINCT
   
   SELECT 
     ca.descendant_concept_id AS excluded_ancestor_concept_id
-  FROM `prod_drc_dataset.concept_ancestor` AS ca
+  FROM `{VOCAB_DATASET_ID}.concept_ancestor` AS ca
   WHERE ca.ancestor_concept_id IN (36206173, 36208978) AND ca.min_levels_of_separation = 1
   
   UNION DISTINCT
@@ -63,13 +64,13 @@ get_direct_parents_loinc_group AS
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_class_id, NULL) AS parent_concept_class_id,
     IF(ex.excluded_ancestor_concept_id IS NULL, ca.min_levels_of_separation, -1) AS distance
   FROM
-    `prod_drc_dataset.measurement_concept_sets` AS m
+    `ehr_ops.measurement_concept_sets` AS m
   JOIN 
-    `prod_drc_dataset.concept` AS c1
+    `{VOCAB_DATASET_ID}.concept` AS c1
   ON 
     m.Measurement_OMOP_ID = c1.concept_id
   LEFT JOIN
-    `prod_drc_dataset.concept_ancestor` AS ca
+    `{VOCAB_DATASET_ID}.concept_ancestor` AS ca
   ON
     m.Measurement_OMOP_ID = ca.descendant_concept_id 
     AND ca.min_levels_of_separation = 1
@@ -78,7 +79,7 @@ get_direct_parents_loinc_group AS
   ON 
     ca.ancestor_concept_id = ex.excluded_ancestor_concept_id
   LEFT JOIN
-    `prod_drc_dataset.concept` AS c2
+    `{VOCAB_DATASET_ID}.concept` AS c2
   ON 
     ca.ancestor_concept_id = c2.concept_id
   WHERE c2.concept_class_id IS NULL OR c2.concept_class_id = 'LOINC Group'
@@ -97,13 +98,13 @@ get_ancestors_loinc_hierarchy AS
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_class_id, NULL) AS ancestor_concept_class_id,
     IF(ex.excluded_ancestor_concept_id IS NULL, COALESCE(ca.min_levels_of_separation, -1), -1) AS distance
   FROM
-    `prod_drc_dataset.measurement_concept_sets` AS m
+    `ehr_ops.measurement_concept_sets` AS m
   JOIN 
-    `prod_drc_dataset.concept` AS c1
+    `{VOCAB_DATASET_ID}.concept` AS c1
   ON 
     m.Measurement_OMOP_ID = c1.concept_id
   LEFT JOIN
-    `prod_drc_dataset.concept_ancestor` AS ca
+    `{VOCAB_DATASET_ID}.concept_ancestor` AS ca
   ON
     m.Measurement_OMOP_ID = ca.descendant_concept_id 
       AND ca.min_levels_of_separation IN (1, 2)
@@ -112,7 +113,7 @@ get_ancestors_loinc_hierarchy AS
   ON 
     ca.ancestor_concept_id = ex.excluded_ancestor_concept_id
   LEFT JOIN
-    `prod_drc_dataset.concept` AS c2
+    `{VOCAB_DATASET_ID}.concept` AS c2
   ON 
     ca.ancestor_concept_id = c2.concept_id  
   WHERE
@@ -169,11 +170,11 @@ get_loinc_group_descendant_concept_ids AS
     COALESCE(ca1.min_levels_of_separation, -1) AS distance
   FROM get_direct_parents_loinc_group AS lg
   LEFT JOIN 
-    prod_drc_dataset.concept_ancestor AS ca1
+    {VOCAB_DATASET_ID}.concept_ancestor AS ca1
   ON
     lg.parent_concept_id = ca1.ancestor_concept_id 
       AND ca1.min_levels_of_separation <> 0
-  LEFT JOIN prod_drc_dataset.concept AS c1
+  LEFT JOIN {VOCAB_DATASET_ID}.concept AS c1
     ON ca1.descendant_concept_id = c1.concept_id 
 ),
 
@@ -193,11 +194,11 @@ get_loinc_hierarchy_descendant_concept_ids AS
     COALESCE(ca1.min_levels_of_separation, -1) AS distance
   FROM get_ancestors_loinc_hierarchy_distinct AS lh
   LEFT JOIN 
-    prod_drc_dataset.concept_ancestor AS ca1
+    {VOCAB_DATASET_ID}.concept_ancestor AS ca1
   ON
     lh.ancestor_concept_id = ca1.ancestor_concept_id
       AND ca1.min_levels_of_separation <> 0
-  LEFT JOIN prod_drc_dataset.concept AS c1
+  LEFT JOIN {VOCAB_DATASET_ID}.concept AS c1
     ON ca1.descendant_concept_id = c1.concept_id  
 ),
 
@@ -262,7 +263,8 @@ ORDER BY
   1,2
 """
 
-identify_labs_query_results = bq.query(IDENTIFY_LABS_QUERY.format(DATASET_ID=DATASET_ID))
+identify_labs_query_results = bq.query(IDENTIFY_LABS_QUERY.format(VOCAB_DATASET_ID=VOCAB_DATASET_ID,
+                                                                  DATASET_ID=DATASET_ID))
 render.dataframe(identify_labs_query_results)
 
 
