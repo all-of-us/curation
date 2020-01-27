@@ -52,6 +52,7 @@ echo "dataset_release_tag --> ${dataset_release_tag}"
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
+CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
