@@ -2,6 +2,7 @@ from constants.bq_utils import VALIDATION_DATASET_REGEX
 from constants.validation.participants.identity_match import REPORT_DIRECTORY_REGEX
 
 # AOU required PII tables
+PII_WILDCARD = 'pii*'
 PII_NAME = 'pii_name'
 PII_EMAIL = 'pii_email'
 PII_PHONE_NUMBER = 'pii_phone_number'

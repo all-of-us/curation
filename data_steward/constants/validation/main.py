@@ -133,6 +133,39 @@ DUPLICATE_IDS_SUBQUERY = '''
         COUNT({table_name}_id) > 1)
     '''
 
+MISSING_PII_QUERY = '''
+WITH ehr_persons AS
+(SELECT person_id
+FROM `{project_id}.{dataset_id}.{person_table_id}`),
+pii_names AS
+(SELECT person_id
+FROM `{project_id}.{dataset_id}.{pii_name_table_id}`),
+all_pii AS
+(SELECT DISTINCT person_id
+FROM `{project_id}.{dataset_id}.{pii_wildcard}`),
+participant_records AS
+(SELECT person_id
+FROM `{project_id}.{dataset_id}.{participant_match_table_id}`)
+(SELECT DISTINCT 'ehr_exists_but_no_pii_name' AS participant_missingness,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM ehr_persons
+    EXCEPT DISTINCT
+    SELECT person_id FROM pii_names))
+UNION ALL
+(SELECT DISTINCT 'pii_exists_but_no_ehr_person_record' AS participant_missingness,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM all_pii
+    EXCEPT DISTINCT
+    SELECT person_id FROM ehr_persons))
+UNION ALL
+(SELECT DISTINCT 'ehr_exists_but_no_participant_match_record' AS participant_missingness,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM ehr_persons
+    EXCEPT DISTINCT
+    SELECT person_id FROM participant_records))
+ORDER BY count DESC
+'''
+
 PREFIX = '/data_steward/v1/'
 
 # Cron URLs

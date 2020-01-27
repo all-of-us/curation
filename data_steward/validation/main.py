@@ -378,6 +378,12 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(
             completeness_query)
 
+        # missing PII
+        logging.info('Getting missing record stats for %s...' % hpo_id)
+        missing_pii_query = get_hpo_missing_pii_query(hpo_id)
+        report_data[report_consts.MISSING_PII_KEY] = query_rows(
+            missing_pii_query)
+
         logging.info(
             'Processing complete. Saving timestamp %s to `gs://%s/%s`.',
             processed_datetime_str, bucket,
@@ -500,6 +506,25 @@ def get_drug_class_counts_query(hpo_id):
     """
     table_id = bq_utils.get_table_id(hpo_id, consts.DRUG_CHECK_TABLE)
     return render_query(consts.DRUG_CHECKS_QUERY_VALIDATION, table_id=table_id)
+
+
+def get_hpo_missing_pii_query(hpo_id):
+    """
+    Query to retrieve counts of drug classes in an HPO site's drug_exposure table
+
+    :param hpo_id: identifies the HPO site
+    :return: the query
+    """
+    person_table_id = bq_utils.get_table_id(hpo_id, common.PERSON)
+    pii_name_table_id = bq_utils.get_table_id(hpo_id, common.PII_NAME)
+    pii_wildcard = bq_utils.get_table_id(hpo_id, common.PII_WILDCARD)
+    participant_match_table_id = bq_utils.get_table_id(hpo_id,
+                                                       common.PARTICIPANT_MATCH)
+    return render_query(consts.MISSING_PII_QUERY,
+                        person_table_id=person_table_id,
+                        pii_name_table_id=pii_name_table_id,
+                        pii_wildcard=pii_wildcard,
+                        participant_match_table_id=participant_match_table_id)
 
 
 def perform_validation_on_file(file_name, found_file_names, hpo_id,
