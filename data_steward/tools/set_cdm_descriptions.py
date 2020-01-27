@@ -31,7 +31,8 @@ for f in listdir('../resources/fields'):
         for column in schema_json:
             description = description_map.get(column['name'])
             if not description:
-                print("No description found for column %s, skipping." % column['name'])
+                print("No description found for column %s, skipping." %
+                      column['name'])
             else:
                 column['description'] = description
     with open('../resources/fields/%s' % f, 'w') as json_file:

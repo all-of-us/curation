@@ -21,15 +21,13 @@ KEEP_YEAR_OF_BIRTH_TABLE_ROWS = (
     '(SELECT person_id '
     'FROM `{project_id}.{dataset_id}.{person_table}` p '
     'WHERE p.year_of_birth > {MIN_YEAR_OF_BIRTH} '
-    'AND p.year_of_birth < {MAX_YEAR_OF_BIRTH}) '
-)
+    'AND p.year_of_birth < {MAX_YEAR_OF_BIRTH}) ')
 
 KEEP_YEAR_OF_BIRTH_PERSON_ROWS = (
     'SELECT * '
     'FROM `{project_id}.{dataset_id}.{person_table}` p '
     'WHERE p.year_of_birth > {MIN_YEAR_OF_BIRTH} '
-    'AND p.year_of_birth < {MAX_YEAR_OF_BIRTH} '
-)
+    'AND p.year_of_birth < {MAX_YEAR_OF_BIRTH} ')
 
 
 def has_person_id_key(table):
@@ -43,7 +41,9 @@ def has_person_id_key(table):
         return False
     fields = resources.fields_for(table)
     person_id_field = 'person_id'
-    return any(field for field in fields if field['type'] == 'integer' and field['name'] == person_id_field)
+    return any(
+        field for field in fields
+        if field['type'] == 'integer' and field['name'] == person_id_field)
 
 
 def get_year_of_birth_queries(project_id, dataset_id):
@@ -59,22 +59,24 @@ def get_year_of_birth_queries(project_id, dataset_id):
     for table in resources.CDM_TABLES:
         if has_person_id_key(table):
             query = dict()
-            query[cdr_consts.QUERY] = KEEP_YEAR_OF_BIRTH_TABLE_ROWS.format(project_id=project_id,
-                                                                           dataset_id=dataset_id,
-                                                                           table=table,
-                                                                           person_table=person,
-                                                                           MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
-                                                                           MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
+            query[cdr_consts.QUERY] = KEEP_YEAR_OF_BIRTH_TABLE_ROWS.format(
+                project_id=project_id,
+                dataset_id=dataset_id,
+                table=table,
+                person_table=person,
+                MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
+                MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
             query[cdr_consts.DESTINATION_TABLE] = table
             query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
             query[cdr_consts.DESTINATION_DATASET] = dataset_id
             queries.append(query)
     person_query = dict()
-    person_query[cdr_consts.QUERY] = KEEP_YEAR_OF_BIRTH_PERSON_ROWS.format(project_id=project_id,
-                                                                           dataset_id=dataset_id,
-                                                                           person_table=person,
-                                                                           MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
-                                                                           MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
+    person_query[cdr_consts.QUERY] = KEEP_YEAR_OF_BIRTH_PERSON_ROWS.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        person_table=person,
+        MIN_YEAR_OF_BIRTH=MIN_YEAR_OF_BIRTH,
+        MAX_YEAR_OF_BIRTH=MAX_YEAR_OF_BIRTH)
     person_query[cdr_consts.DESTINATION_TABLE] = person
     person_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     person_query[cdr_consts.DESTINATION_DATASET] = dataset_id

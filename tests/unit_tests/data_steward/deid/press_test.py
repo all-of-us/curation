@@ -32,7 +32,6 @@ class PressTest(unittest.TestCase):
         self.mock_read_json.side_effect = [[], []]
         self.addCleanup(mock_json.stop)
 
-
         # input parameters expected by the class
         self.input_dataset = 'foo_input'
         self.tablename = 'bar_table'
@@ -41,13 +40,12 @@ class PressTest(unittest.TestCase):
         self.pipeline = None
         self.action = 'submit'
 
-        self.press_obj = Press(
-            idataset=self.input_dataset,
-            table=self.tablename,
-            logs=self.log_path,
-            rules=self.rules_path,
-            pipeline=self.pipeline,
-            action=self.action)
+        self.press_obj = Press(idataset=self.input_dataset,
+                               table=self.tablename,
+                               logs=self.log_path,
+                               rules=self.rules_path,
+                               pipeline=self.pipeline,
+                               action=self.action)
 
     def test_gather_dml_queries(self):
         # pre-conditions

@@ -23,7 +23,8 @@ class GenerateExtTablesTest(unittest.TestCase):
         expected = str(len(mapping_list))
 
         # test
-        num_rows_affected = gen_ext.create_and_populate_source_mapping_table(self.bq_project_id, self.bq_dataset_id)
+        num_rows_affected = gen_ext.create_and_populate_source_mapping_table(
+            self.bq_project_id, self.bq_dataset_id)
 
         # post condition
         self.assertEqual(expected, num_rows_affected)

@@ -22,15 +22,17 @@ def add_console_logging(add_handler):
     until later.  Useful for debugging.
 
     """
-    logging.basicConfig(level=logging.INFO,
-                        filename=FILENAME,
-                        filemode='a',
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(
+        level=logging.INFO,
+        filename=FILENAME,
+        filemode='a',
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     if add_handler:
         handler = logging.StreamHandler()
         handler.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(name)s - %(message)s')
         handler.setFormatter(formatter)
         LOGGER.addHandler(handler)
 
@@ -56,9 +58,12 @@ def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
         rule_query = statement.get(cdr_consts.QUERY, '')
         legacy_sql = statement.get(cdr_consts.LEGACY_SQL, False)
         destination_table = statement.get(cdr_consts.DESTINATION_TABLE, None)
-        retry = statement.get(cdr_consts.RETRY_COUNT, bq_consts.BQ_DEFAULT_RETRY_COUNT)
-        disposition = statement.get(cdr_consts.DISPOSITION, bq_consts.WRITE_EMPTY)
-        destination_dataset = statement.get(cdr_consts.DESTINATION_DATASET, None)
+        retry = statement.get(cdr_consts.RETRY_COUNT,
+                              bq_consts.BQ_DEFAULT_RETRY_COUNT)
+        disposition = statement.get(cdr_consts.DISPOSITION,
+                                    bq_consts.WRITE_EMPTY)
+        destination_dataset = statement.get(cdr_consts.DESTINATION_DATASET,
+                                            None)
         batch = statement.get(cdr_consts.BATCH, None)
 
         try:
@@ -71,8 +76,10 @@ def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
                                      destination_dataset_id=destination_dataset,
                                      batch=batch)
 
-        except (oauth2client.client.HttpAccessTokenRefreshError, googleapiclient.errors.HttpError):
-            LOGGER.exception("FAILED:  Clean rule not executed:\n%s", rule_query)
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError):
+            LOGGER.exception("FAILED:  Clean rule not executed:\n%s",
+                             rule_query)
             failures += 1
             continue
 
@@ -88,18 +95,20 @@ def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
         if destination_table is not None:
             updated_rows = results.get("totalRows")
             if updated_rows is not None:
-                LOGGER.info("Query returned %d rows for %s.%s", updated_rows, destination_dataset, destination_table)
+                LOGGER.info("Query returned %d rows for %s.%s", updated_rows,
+                            destination_dataset, destination_table)
 
         successes += 1
 
     if successes > 0:
-        LOGGER.info("Successfully applied %d clean rules for %s.%s",
-                    successes, project, data_stage)
+        LOGGER.info("Successfully applied %d clean rules for %s.%s", successes,
+                    project, data_stage)
     else:
-        LOGGER.warning("No clean rules successfully applied to %s.%s",
-                       project, data_stage)
+        LOGGER.warning("No clean rules successfully applied to %s.%s", project,
+                       data_stage)
 
     if failures > 0:
-        print("Failed to apply {} clean rules for {}.{}".format(failures, project, data_stage))
-        LOGGER.warning("Failed to apply %d clean rules for %s.%s",
-                       failures, project, data_stage)
+        print("Failed to apply {} clean rules for {}.{}".format(
+            failures, project, data_stage))
+        LOGGER.warning("Failed to apply %d clean rules for %s.%s", failures,
+                       project, data_stage)

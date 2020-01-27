@@ -5,14 +5,8 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 OBSERVATION_TABLE = 'observation'
 
 DOMAIN_TABLES_EXCEPT_OBSERVATION = [
-    'condition_occurrence',
-    'visit_occurrence',
-    'drug_exposure',
-    'measurement',
-    'procedure_occurrence',
-    'observation_period',
-    'device_exposure',
-    'specimen'
+    'condition_occurrence', 'visit_occurrence', 'drug_exposure', 'measurement',
+    'procedure_occurrence', 'observation_period', 'device_exposure', 'specimen'
 ]
 
 OBSERVATION_DEFAULT_YEAR_THRESHOLD = 1900
@@ -45,7 +39,10 @@ def get_date_fields(table_id):
     :param table_id:
     :return:
     """
-    return [field for field in field_mapping.get_domain_fields(table_id) if DATE_FIELD_KEY_WORD in field]
+    return [
+        field for field in field_mapping.get_domain_fields(table_id)
+        if DATE_FIELD_KEY_WORD in field
+    ]
 
 
 def generate_field_expr(table_id, year_threshold):
@@ -58,21 +55,25 @@ def generate_field_expr(table_id, year_threshold):
     """
     col_expression_list = []
 
-    nullable_date_field_names = [field for field in get_date_fields(table_id) if
-                                 not field_mapping.is_field_required(table_id, field)]
+    nullable_date_field_names = [
+        field for field in get_date_fields(table_id)
+        if not field_mapping.is_field_required(table_id, field)
+    ]
 
     for field_name in field_mapping.get_domain_fields(table_id):
 
         if field_name in nullable_date_field_names:
             col_expression_list.append(
-                NULLABLE_DATE_FIELD_EXPRESSION.format(date_field_name=field_name, year_threshold=year_threshold))
+                NULLABLE_DATE_FIELD_EXPRESSION.format(
+                    date_field_name=field_name, year_threshold=year_threshold))
         else:
             col_expression_list.append(field_name)
 
     return ','.join(col_expression_list)
 
 
-def parse_remove_records_with_wrong_date_query(project_id, dataset_id, table_id, year_threshold):
+def parse_remove_records_with_wrong_date_query(project_id, dataset_id, table_id,
+                                               year_threshold):
     """
     This query generates the query to keep the records whose date fields are larger than and equal to the year_threshold
     :param project_id: the project id
@@ -82,8 +83,10 @@ def parse_remove_records_with_wrong_date_query(project_id, dataset_id, table_id,
     :return: a query that keep the records qualifying for the year threshold
     """
 
-    required_date_field_names = [field for field in get_date_fields(table_id) if
-                                 field_mapping.is_field_required(table_id, field)]
+    required_date_field_names = [
+        field for field in get_date_fields(table_id)
+        if field_mapping.is_field_required(table_id, field)
+    ]
     where_clause = ''
 
     for date_field_name in required_date_field_names:
@@ -91,22 +94,24 @@ def parse_remove_records_with_wrong_date_query(project_id, dataset_id, table_id,
         if where_clause != '':
             where_clause += AND
 
-        where_clause += WHERE_CLAUSE_REQUIRED_FIELD.format(date_field_name=date_field_name,
-                                                           year_threshold=year_threshold)
+        where_clause += WHERE_CLAUSE_REQUIRED_FIELD.format(
+            date_field_name=date_field_name, year_threshold=year_threshold)
 
     col_expr = generate_field_expr(table_id, year_threshold)
 
-    return REMOVE_RECORDS_WITH_WRONG_DATE_FIELD_TEMPLATE.format(project_id=project_id,
-                                                                dataset_id=dataset_id,
-                                                                table_id=table_id,
-                                                                col_expr=col_expr,
-                                                                where_clause=where_clause)
+    return REMOVE_RECORDS_WITH_WRONG_DATE_FIELD_TEMPLATE.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        table_id=table_id,
+        col_expr=col_expr,
+        where_clause=where_clause)
 
 
-def get_remove_records_with_wrong_date_queries(project_id,
-                                               dataset_id,
-                                               year_threshold=DEFAULT_YEAR_THRESHOLD,
-                                               observation_year_threshold=OBSERVATION_DEFAULT_YEAR_THRESHOLD):
+def get_remove_records_with_wrong_date_queries(
+    project_id,
+    dataset_id,
+    year_threshold=DEFAULT_YEAR_THRESHOLD,
+    observation_year_threshold=OBSERVATION_DEFAULT_YEAR_THRESHOLD):
     """
     This function generates a list of query dicts for removing the records with wrong date in the corresponding destination table.
     :param project_id: the project_id in which the query is run
@@ -119,10 +124,8 @@ def get_remove_records_with_wrong_date_queries(project_id,
     queries = []
 
     query = dict()
-    query[cdr_consts.QUERY] = parse_remove_records_with_wrong_date_query(project_id,
-                                                                         dataset_id,
-                                                                         OBSERVATION_TABLE,
-                                                                         observation_year_threshold)
+    query[cdr_consts.QUERY] = parse_remove_records_with_wrong_date_query(
+        project_id, dataset_id, OBSERVATION_TABLE, observation_year_threshold)
     query[cdr_consts.DESTINATION_TABLE] = OBSERVATION_TABLE
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -131,10 +134,8 @@ def get_remove_records_with_wrong_date_queries(project_id,
 
     for domain_table in DOMAIN_TABLES_EXCEPT_OBSERVATION:
         query = dict()
-        query[cdr_consts.QUERY] = parse_remove_records_with_wrong_date_query(project_id,
-                                                                             dataset_id,
-                                                                             domain_table,
-                                                                             year_threshold)
+        query[cdr_consts.QUERY] = parse_remove_records_with_wrong_date_query(
+            project_id, dataset_id, domain_table, year_threshold)
         query[cdr_consts.DESTINATION_TABLE] = domain_table
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -153,13 +154,14 @@ def parse_args():
 
     argument_parser = parser.get_argument_parser()
 
-    argument_parser.add_argument('-y',
-                                 '--year_threshold',
-                                 dest='year_threshold',
-                                 action='store',
-                                 help='The year threshold applied to domain tables except observation',
-                                 required=False,
-                                 default=DEFAULT_YEAR_THRESHOLD)
+    argument_parser.add_argument(
+        '-y',
+        '--year_threshold',
+        dest='year_threshold',
+        action='store',
+        help='The year threshold applied to domain tables except observation',
+        required=False,
+        default=DEFAULT_YEAR_THRESHOLD)
 
     argument_parser.add_argument('-o',
                                  '--observation_year_threshold',
@@ -178,8 +180,7 @@ if __name__ == '__main__':
     ARGS = parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_remove_records_with_wrong_date_queries(ARGS.project_id,
-                                                            ARGS.dataset_id,
-                                                            ARGS.year_threshold,
-                                                            ARGS.observation_year_threshold)
+    query_list = get_remove_records_with_wrong_date_queries(
+        ARGS.project_id, ARGS.dataset_id, ARGS.year_threshold,
+        ARGS.observation_year_threshold)
     clean_engine.clean_dataset(ARGS.project_id, query_list)

@@ -40,16 +40,16 @@ def get_update_ppi_queries(project_id, dataset_id, sandbox_dataset_id):
     queries = []
 
     select_query = dict()
-    select_query[cdr_consts.QUERY] = SELECT_NEGATIVE_PPI_QUERY.format(project_id=project_id,
-                                                                      dataset_id=dataset_id)
+    select_query[cdr_consts.QUERY] = SELECT_NEGATIVE_PPI_QUERY.format(
+        project_id=project_id, dataset_id=dataset_id)
     select_query[cdr_consts.DESTINATION_TABLE] = CLEANING_RULE_NAME
     select_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     select_query[cdr_consts.DESTINATION_DATASET] = sandbox_dataset_id
     queries.append(select_query)
 
     update_query = dict()
-    update_query[cdr_consts.QUERY] = UPDATE_NEGATIVE_PPI_QUERY.format(project_id=project_id,
-                                                                      dataset_id=dataset_id)
+    update_query[cdr_consts.QUERY] = UPDATE_NEGATIVE_PPI_QUERY.format(
+        project_id=project_id, dataset_id=dataset_id)
     queries.append(update_query)
 
     return queries
@@ -62,12 +62,14 @@ def parse_args():
     """
     import cdr_cleaner.args_parser as parser
 
-    additional_argument = {parser.SHORT_ARGUMENT: '-n',
-                           parser.LONG_ARGUMENT: '--sandbox_dataset_id',
-                           parser.ACTION: 'store',
-                           parser.DEST: 'sandbox_dataset_id',
-                           parser.HELP: 'Specify the sandbox_dataset_id',
-                           parser.REQUIRED: True}
+    additional_argument = {
+        parser.SHORT_ARGUMENT: '-n',
+        parser.LONG_ARGUMENT: '--sandbox_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'sandbox_dataset_id',
+        parser.HELP: 'Specify the sandbox_dataset_id',
+        parser.REQUIRED: True
+    }
     args = parser.default_parse_args([additional_argument])
     return args
 
@@ -78,5 +80,6 @@ if __name__ == '__main__':
     ARGS = parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_update_ppi_queries(ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
+    query_list = get_update_ppi_queries(ARGS.project_id, ARGS.dataset_id,
+                                        ARGS.sandbox_dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, query_list)

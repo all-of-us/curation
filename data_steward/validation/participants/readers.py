@@ -77,17 +77,14 @@ def create_match_values_table(project, rdr_dataset, destination_dataset):
         project=project,
         dataset=rdr_dataset,
         table=consts.OBSERVATION_TABLE,
-        pii_list=','.join(consts.PII_CODES_LIST)
-    )
+        pii_list=','.join(consts.PII_CODES_LIST))
 
     LOGGER.info("Participant validation ran the query\n%s", query_string)
-    results = bq_utils.query(
-        query_string,
-        destination_dataset_id=destination_dataset,
-        destination_table_id=consts.ID_MATCH_TABLE,
-        write_disposition='WRITE_TRUNCATE',
-        batch=True
-    )
+    results = bq_utils.query(query_string,
+                             destination_dataset_id=destination_dataset,
+                             destination_table_id=consts.ID_MATCH_TABLE,
+                             write_disposition='WRITE_TRUNCATE',
+                             batch=True)
 
     query_job_id = results['jobReference']['jobId']
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
@@ -171,12 +168,10 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
     :raises:  oauth2client.client.HttpAccessTokenRefreshError,
               googleapiclient.errors.HttpError
     """
-    query_string = consts.PPI_OBSERVATION_VALUES.format(
-        project=project,
-        dataset=dataset,
-        table=table_name,
-        field_value=concept_id
-    )
+    query_string = consts.PPI_OBSERVATION_VALUES.format(project=project,
+                                                        dataset=dataset,
+                                                        table=table_name,
+                                                        field_value=concept_id)
 
     LOGGER.info("Participant validation ran the query\n%s", query_string)
     results = bq_utils.query(query_string)
@@ -227,13 +222,11 @@ def get_pii_values(project, pii_dataset, hpo, table, field):
     :raises:  oauth2client.client.HttpAccessTokenRefreshError,
               googleapiclient.errors.HttpError
     """
-    query_string = consts.PII_VALUES.format(
-        project=project,
-        dataset=pii_dataset,
-        hpo_site_str=hpo,
-        field=field,
-        table_suffix=table
-    )
+    query_string = consts.PII_VALUES.format(project=project,
+                                            dataset=pii_dataset,
+                                            hpo_site_str=hpo,
+                                            field=field,
+                                            table_suffix=table)
 
     LOGGER.info("Participant validation ran the query\n%s", query_string)
 
@@ -270,13 +263,8 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
     :raises:  oauth2client.client.HttpAccessTokenRefreshError,
               googleapiclient.errors.HttpError
     """
-    location_ids = get_pii_values(
-        project,
-        pii_dataset,
-        hpo,
-        table,
-        consts.LOCATION_ID_FIELD
-    )
+    location_ids = get_pii_values(project, pii_dataset, hpo, table,
+                                  consts.LOCATION_ID_FIELD)
 
     location_id_list = []
     location_id_dict = {}
@@ -289,12 +277,10 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
         return []
 
     location_id_str = ', '.join(location_id_list)
-    query_string = consts.PII_LOCATION_VALUES.format(
-        project=project,
-        dataset=rdr_dataset,
-        field=field,
-        id_list=location_id_str
-    )
+    query_string = consts.PII_LOCATION_VALUES.format(project=project,
+                                                     dataset=rdr_dataset,
+                                                     field=field,
+                                                     id_list=location_id_str)
 
     LOGGER.info("Participant validation ran the query\n%s", query_string)
 

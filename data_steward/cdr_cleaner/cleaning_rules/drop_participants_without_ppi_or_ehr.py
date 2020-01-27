@@ -51,6 +51,7 @@ WHERE
   {% endfor %}
 """)
 
+
 def get_queries(project=None, dataset=None):
     """
     Return a list of queries to remove data-poor participant rows.
@@ -65,9 +66,13 @@ def get_queries(project=None, dataset=None):
     :return:  A list of string queries that can be executed to delete data-poor
         participants and corresponding rows from the dataset.
     """
-    fields = ['person.' + field['name'] for field in resources.fields_for('person')]
+    fields = [
+        'person.' + field['name'] for field in resources.fields_for('person')
+    ]
     mapped_clinical_data_configs = {
-        t: {'id_column': resources.get_domain_id_field(t)} for t in common.MAPPED_CLINICAL_DATA_TABLES
+        t: {
+            'id_column': resources.get_domain_id_field(t)
+        } for t in common.MAPPED_CLINICAL_DATA_TABLES
     }
 
     delete_query = SELECT_PERSON_WITH_BASICS_OR_EHR_TMPL.render(
@@ -90,16 +95,24 @@ if __name__ == '__main__':
     import argparse
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-p', '--project_id',
-                        action='store', dest='project_id',
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-p',
+                        '--project_id',
+                        action='store',
+                        dest='project_id',
                         help='Identifies the project to fix the data in.',
                         required=True)
-    parser.add_argument('-d', '--dataset_id',
-                        action='store', dest='dataset_id',
+    parser.add_argument('-d',
+                        '--dataset_id',
+                        action='store',
+                        dest='dataset_id',
                         help='Identifies the dataset to apply the fix on.',
                         required=True)
-    parser.add_argument('-l', '--console_log', dest='console_log', action='store_true',
+    parser.add_argument('-l',
+                        '--console_log',
+                        dest='console_log',
+                        action='store_true',
                         help='Send logs to console')
 
     ARGS = parser.parse_args()

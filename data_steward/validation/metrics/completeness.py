@@ -40,10 +40,14 @@ def create_completeness_query(dataset_id, columns):
         concept_zero_expr = "0"
         if column[consts.COLUMN_NAME].endswith('concept_id'):
             concept_zero_expr = consts.CONCEPT_ZERO_CLAUSE.format(**column)
-        subquery = consts.COMPLETENESS_SUBQUERY_FMT.format(dataset_id=dataset_id, concept_zero_expr=concept_zero_expr, **column)
+        subquery = consts.COMPLETENESS_SUBQUERY_FMT.format(
+            dataset_id=dataset_id,
+            concept_zero_expr=concept_zero_expr,
+            **column)
         subqueries.append(subquery)
     union_all_subqueries = consts.UNION_ALL.join(subqueries)
-    result = consts.COMPLETENESS_QUERY_FMT.format(union_all_subqueries=union_all_subqueries)
+    result = consts.COMPLETENESS_QUERY_FMT.format(
+        union_all_subqueries=union_all_subqueries)
     return result
 
 
@@ -162,16 +166,23 @@ if __name__ == '__main__':
             results[hpo_id] = hpo_results
         return results
 
-    parser = argparse.ArgumentParser(description='Generate completeness metrics for OMOP dataset of specified HPO')
+    parser = argparse.ArgumentParser(
+        description=
+        'Generate completeness metrics for OMOP dataset of specified HPO')
     parser.add_argument('-c',
                         '--credentials',
                         required=True,
                         help='Path to GCP credentials file')
-    parser.add_argument('-d',
-                        '--dataset_id',
-                        required=True,
-                        help='Identifies the dataset containing the OMOP tables to report on')
-    parser.add_argument('hpo_id', nargs='?', help='Identifies an HPO site to report on; all sites by default')
+    parser.add_argument(
+        '-d',
+        '--dataset_id',
+        required=True,
+        help='Identifies the dataset containing the OMOP tables to report on')
+    parser.add_argument(
+        'hpo_id',
+        nargs='?',
+        help='Identifies an HPO site to report on; all sites by default')
     ARGS = parser.parse_args()
-    completeness_rows = run_with_args(ARGS.credentials, ARGS.dataset_id, ARGS.hpo_id)
+    completeness_rows = run_with_args(ARGS.credentials, ARGS.dataset_id,
+                                      ARGS.hpo_id)
     print(json.dumps(completeness_rows, indent=JSON_INDENT, sort_keys=True))

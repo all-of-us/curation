@@ -9,64 +9,52 @@ import sandbox
 SMOKING_LOOKUP_TABLE = 'smoking_lookup'
 NEW_SMOKING_ROWS = 'new_smoking_rows'
 
-
-SMOKING_LOOKUP_FIELDS = [
-    {
-        "type": "string",
-        "name": "type",
-        "mode": "nullable",
-        "description": ""
-    },
-    {
-        "type": "string",
-        "name": "observation_source_value_info",
-        "mode": "nullable",
-        "description": ""
-    },
-    {
-        "type": "integer",
-        "name": "rank",
-        "mode": "nullable",
-        "description": ""
-    },
-    {
-        "type": "integer",
-        "name": "observation_source_concept_id",
-        "mode": "nullable",
-        "description": ""
-    },
-    {
-        "type": "integer",
-        "name": "value_as_concept_id",
-        "mode": "nullable",
-        "description": ""
-    },
-    {
-        "type": "integer",
-        "name": "new_observation_concept_id",
-        "mode": "nullable",
-        "description": ""
-    },
-    {
-        "type": "integer",
-        "name": "new_observation_source_concept_id",
-        "mode": "nullable",
-        "description": ""
-    },
-    {
-        "type": "integer",
-        "name": "new_value_as_concept_id",
-        "mode": "nullable",
-        "description": ""
-    },
-    {
-        "type": "integer",
-        "name": "new_value_source_concept_id",
-        "mode": "nullable",
-        "description": ""
-    }
-]
-
+SMOKING_LOOKUP_FIELDS = [{
+    "type": "string",
+    "name": "type",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "string",
+    "name": "observation_source_value_info",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "rank",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "observation_source_concept_id",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "value_as_concept_id",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "new_observation_concept_id",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "new_observation_source_concept_id",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "new_value_as_concept_id",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "new_value_source_concept_id",
+    "mode": "nullable",
+    "description": ""
+}]
 
 SANDBOX_CREATE_QUERY = """
 CREATE TABLE `{project_id}.{sandbox_dataset_id}.{new_smoking_rows}`
@@ -195,25 +183,28 @@ def get_queries_clean_smoking(project_id, dataset_id, sandbox_dataset_id):
     load_smoking_lookup_table(project_id, sandbox_dataset_id)
 
     sandbox_query = dict()
-    sandbox_query[cdr_consts.QUERY] = SANDBOX_CREATE_QUERY.format(project_id=project_id,
-                                                                  combined_dataset_id=dataset_id,
-                                                                  sandbox_dataset_id=sandbox_dataset_id,
-                                                                  new_smoking_rows=NEW_SMOKING_ROWS,
-                                                                  smoking_lookup_table=SMOKING_LOOKUP_TABLE)
+    sandbox_query[cdr_consts.QUERY] = SANDBOX_CREATE_QUERY.format(
+        project_id=project_id,
+        combined_dataset_id=dataset_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        new_smoking_rows=NEW_SMOKING_ROWS,
+        smoking_lookup_table=SMOKING_LOOKUP_TABLE)
     queries.append(sandbox_query)
 
     delete_query = dict()
-    delete_query[cdr_consts.QUERY] = DELETE_INCORRECT_RECORDS.format(project_id=project_id,
-                                                                     combined_dataset_id=dataset_id,
-                                                                     sandbox_dataset_id=sandbox_dataset_id,
-                                                                     smoking_lookup_table=SMOKING_LOOKUP_TABLE)
+    delete_query[cdr_consts.QUERY] = DELETE_INCORRECT_RECORDS.format(
+        project_id=project_id,
+        combined_dataset_id=dataset_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        smoking_lookup_table=SMOKING_LOOKUP_TABLE)
     queries.append(delete_query)
 
     insert_query = dict()
-    insert_query[cdr_consts.QUERY] = INSERT_CORRECTED_RECORDS.format(project_id=project_id,
-                                                                     combined_dataset_id=dataset_id,
-                                                                     sandbox_dataset_id=sandbox_dataset_id,
-                                                                     new_smoking_rows=NEW_SMOKING_ROWS)
+    insert_query[cdr_consts.QUERY] = INSERT_CORRECTED_RECORDS.format(
+        project_id=project_id,
+        combined_dataset_id=dataset_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        new_smoking_rows=NEW_SMOKING_ROWS)
     queries.append(insert_query)
 
     return queries
@@ -227,12 +218,14 @@ def parse_args():
     """
     import cdr_cleaner.args_parser as parser
 
-    additional_argument = {parser.SHORT_ARGUMENT: '-n',
-                           parser.LONG_ARGUMENT: '--sandbox_dataset_id',
-                           parser.ACTION: 'store',
-                           parser.DEST: 'sandbox_dataset_id',
-                           parser.HELP: 'Please specify the sandbox_dataset_id',
-                           parser.REQUIRED: True}
+    additional_argument = {
+        parser.SHORT_ARGUMENT: '-n',
+        parser.LONG_ARGUMENT: '--sandbox_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'sandbox_dataset_id',
+        parser.HELP: 'Please specify the sandbox_dataset_id',
+        parser.REQUIRED: True
+    }
     args = parser.default_parse_args([additional_argument])
     return args
 
@@ -243,5 +236,6 @@ if __name__ == '__main__':
     ARGS = parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_queries_clean_smoking(ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
+    query_list = get_queries_clean_smoking(ARGS.project_id, ARGS.dataset_id,
+                                           ARGS.sandbox_dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)

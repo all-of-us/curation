@@ -30,7 +30,8 @@ SEX_AT_BIRTH_MALE_CONCEPT_ID = 1585846
 SEX_AT_BIRTH_FEMALE_CONCEPT_ID = 1585847
 
 
-def parse_query_for_updating_woman_to_generalized_concept_id(project_id, dataset_id):
+def parse_query_for_updating_woman_to_generalized_concept_id(
+    project_id, dataset_id):
     """
     This function returns an update query to update the gender to the generalized gender concept_id for the cases
     where the biological sex is reported as male and gender is reported as woman.
@@ -38,14 +39,16 @@ def parse_query_for_updating_woman_to_generalized_concept_id(project_id, dataset
     :param dataset_id: the dataset id
     :return:an update query to update the gender from woman to the generalized concept id
     """
-    return GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.format(project_id=project_id,
-                                                        dataset_id=dataset_id,
-                                                        gender_value_source_concept_id=WOMAN_CONCEPT_ID,
-                                                        biological_sex_birth_concept_id=SEX_AT_BIRTH_MALE_CONCEPT_ID,
-                                                        generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
+    return GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        gender_value_source_concept_id=WOMAN_CONCEPT_ID,
+        biological_sex_birth_concept_id=SEX_AT_BIRTH_MALE_CONCEPT_ID,
+        generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
 
 
-def parse_query_for_updating_man_to_generalized_concept_id(project_id, dataset_id):
+def parse_query_for_updating_man_to_generalized_concept_id(
+    project_id, dataset_id):
     """
     This function returns an update query to update the gender to the generalized gender concept_id for the cases
     where the biological sex is reported as female and gender is reported as man.
@@ -53,11 +56,12 @@ def parse_query_for_updating_man_to_generalized_concept_id(project_id, dataset_i
     :param dataset_id: the dataset id
     :return:an update query to update the gender from man to the generalized concept id
     """
-    return GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.format(project_id=project_id,
-                                                        dataset_id=dataset_id,
-                                                        gender_value_source_concept_id=MAN_CONCEPT_ID,
-                                                        biological_sex_birth_concept_id=SEX_AT_BIRTH_FEMALE_CONCEPT_ID,
-                                                        generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
+    return GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        gender_value_source_concept_id=MAN_CONCEPT_ID,
+        biological_sex_birth_concept_id=SEX_AT_BIRTH_FEMALE_CONCEPT_ID,
+        generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
 
 
 def get_generalized_concept_id_queries(project_id, dataset_id):
@@ -72,12 +76,16 @@ def get_generalized_concept_id_queries(project_id, dataset_id):
     queries = []
 
     query = dict()
-    query[cdr_consts.QUERY] = parse_query_for_updating_woman_to_generalized_concept_id(project_id, dataset_id)
+    query[cdr_consts.
+          QUERY] = parse_query_for_updating_woman_to_generalized_concept_id(
+              project_id, dataset_id)
     query[cdr_consts.BATCH] = True
     queries.append(query)
 
     query = dict()
-    query[cdr_consts.QUERY] = parse_query_for_updating_man_to_generalized_concept_id(project_id, dataset_id)
+    query[cdr_consts.
+          QUERY] = parse_query_for_updating_man_to_generalized_concept_id(
+              project_id, dataset_id)
     query[cdr_consts.BATCH] = True
     queries.append(query)
 

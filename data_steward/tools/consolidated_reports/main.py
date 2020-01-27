@@ -39,7 +39,10 @@ def transform_bq_list(uploads):
         hpo_id = get_hpo_id(p)
         report_path = p.replace('datasources.json', hpo_id)
         name = get_submission_name(p)
-        result = dict(hpo_id=hpo_id, updated=dte, report_path=report_path, name=name)
+        result = dict(hpo_id=hpo_id,
+                      updated=dte,
+                      report_path=report_path,
+                      name=name)
         results.append(result)
     return results
 

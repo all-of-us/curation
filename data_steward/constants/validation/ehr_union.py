@@ -15,10 +15,8 @@ CONCEPT_CONSTANT_FACTOR = 1000000000000
 # Starting factor to create ID space for person to observation mapped record
 EHR_PERSON_TO_OBS_CONSTANT = 2 * common.ID_CONSTANT_FACTOR
 
-
 # Starting factor to create ID spaces for each HPO (without RDR collisions)
 EHR_ID_MULTIPLIER_START = 3
-
 
 # person to observation (pto) constants
 GENDER_CONCEPT_ID = 4135376

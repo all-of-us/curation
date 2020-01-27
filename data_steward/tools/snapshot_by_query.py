@@ -38,7 +38,10 @@ def get_copy_table_query(project_id, dataset_id, table_id):
         # default to select *
         col_expr = '*'
     select_all_query = 'SELECT {col_expr} FROM `{project_id}.{dataset_id}.{table_id}`'
-    return select_all_query.format(col_expr=col_expr, project_id=project_id, dataset_id=dataset_id, table_id=table_id)
+    return select_all_query.format(col_expr=col_expr,
+                                   project_id=project_id,
+                                   dataset_id=dataset_id,
+                                   table_id=table_id)
 
 
 def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
@@ -52,8 +55,11 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
     copy_table_job_ids = []
     for table_id in list_all_table_ids(dataset_id):
         q = get_copy_table_query(project_id, dataset_id, table_id)
-        results = query(q, use_legacy_sql=False, destination_table_id=table_id,
-                        destination_dataset_id=snapshot_dataset_id, batch=True)
+        results = query(q,
+                        use_legacy_sql=False,
+                        destination_table_id=table_id,
+                        destination_dataset_id=snapshot_dataset_id,
+                        batch=True)
         copy_table_job_ids.append(results['jobReference']['jobId'])
     incomplete_jobs = wait_on_jobs(copy_table_job_ids)
     if len(incomplete_jobs) > 0:
@@ -75,20 +81,29 @@ def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Parse project_id and dataset_id',
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-p', '--project_id',
-                        action='store', dest='project_id',
-                        help='Project associated with the input and output datasets',
-                        required=True)
-    parser.add_argument('-d', '--dataset_id',
-                        action='store', dest='dataset_id',
+    parser = argparse.ArgumentParser(
+        description='Parse project_id and dataset_id',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        '-p',
+        '--project_id',
+        action='store',
+        dest='project_id',
+        help='Project associated with the input and output datasets',
+        required=True)
+    parser.add_argument('-d',
+                        '--dataset_id',
+                        action='store',
+                        dest='dataset_id',
                         help='Dataset where cleaning rules are to be applied',
                         required=True)
-    parser.add_argument('-n', '--snapshot_dataset_id',
-                        action='store', dest='snapshot_dataset_id',
+    parser.add_argument('-n',
+                        '--snapshot_dataset_id',
+                        action='store',
+                        dest='snapshot_dataset_id',
                         help='Name of the new dataset that needs to be created',
                         required=True)
     args = parser.parse_args()
 
-    create_snapshot_dataset(args.project_id, args.dataset_id, args.snapshot_dataset_id)
+    create_snapshot_dataset(args.project_id, args.dataset_id,
+                            args.snapshot_dataset_id)

@@ -13,9 +13,11 @@ BQ_TIMEOUT_RETRIES = 3
 
 
 class ExportTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
-        print('\n**************************************************************')
+        print(
+            '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
         fake_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
@@ -47,18 +49,26 @@ class ExportTest(unittest.TestCase):
     def test_export_data_density(self):
         # INTEGRATION TEST
         export_result = self._test_report_export('datadensity')
-        expected_keys = ['CONCEPTS_PER_PERSON', 'RECORDS_PER_PERSON', 'TOTAL_RECORDS']
+        expected_keys = [
+            'CONCEPTS_PER_PERSON', 'RECORDS_PER_PERSON', 'TOTAL_RECORDS'
+        ]
         for expected_key in expected_keys:
             self.assertTrue(expected_key in export_result)
-        self.assertEqual(len(export_result['TOTAL_RECORDS']['X_CALENDAR_MONTH']), 283)
+        self.assertEqual(
+            len(export_result['TOTAL_RECORDS']['X_CALENDAR_MONTH']), 283)
 
     def test_export_person(self):
         # INTEGRATION TEST
         export_result = self._test_report_export('person')
-        expected_keys = ['BIRTH_YEAR_HISTOGRAM', 'ETHNICITY_DATA', 'GENDER_DATA', 'RACE_DATA', 'SUMMARY']
+        expected_keys = [
+            'BIRTH_YEAR_HISTOGRAM', 'ETHNICITY_DATA', 'GENDER_DATA',
+            'RACE_DATA', 'SUMMARY'
+        ]
         for expected_key in expected_keys:
             self.assertTrue(expected_key in export_result)
-        self.assertEqual(len(export_result['BIRTH_YEAR_HISTOGRAM']['DATA']['COUNT_VALUE']), 72)
+        self.assertEqual(
+            len(export_result['BIRTH_YEAR_HISTOGRAM']['DATA']['COUNT_VALUE']),
+            72)
 
     def test_export_achillesheel(self):
         # INTEGRATION TEST
@@ -67,7 +77,7 @@ class ExportTest(unittest.TestCase):
         self.assertEqual(len(export_result['MESSAGES']['ATTRIBUTENAME']), 14)
 
     def test_run_export(self):
-        # validation/main.py INTEGRATION TEST 
+        # validation/main.py INTEGRATION TEST
         folder_prefix = 'dummy-prefix-2018-03-24/'
         main._upload_achilles_files(FAKE_HPO_ID, folder_prefix)
         main.run_export(hpo_id=FAKE_HPO_ID, folder_prefix=folder_prefix)
@@ -80,17 +90,20 @@ class ExportTest(unittest.TestCase):
 
         datasources_json_path = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
         self.assertIn(datasources_json_path, actual_object_names)
-        datasources_json = gcs_utils.get_object(self.hpo_bucket, datasources_json_path)
+        datasources_json = gcs_utils.get_object(self.hpo_bucket,
+                                                datasources_json_path)
         datasources_actual = json.loads(datasources_json)
         datasources_expected = {
-            'datasources': [
-                {'name': FAKE_HPO_ID, 'folder': FAKE_HPO_ID, 'cdmVersion': 5}
-            ]
+            'datasources': [{
+                'name': FAKE_HPO_ID,
+                'folder': FAKE_HPO_ID,
+                'cdmVersion': 5
+            }]
         }
         self.assertDictEqual(datasources_expected, datasources_actual)
 
     def test_run_export_with_target_bucket(self):
-        # validation/main.py INTEGRATION TEST 
+        # validation/main.py INTEGRATION TEST
         folder_prefix = 'dummy-prefix-2018-03-24/'
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
         test_util.get_synpuf_results_files()
@@ -104,20 +117,25 @@ class ExportTest(unittest.TestCase):
 
         datasources_json_path = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
         self.assertIn(datasources_json_path, actual_object_names)
-        datasources_json = gcs_utils.get_object(bucket_nyc, datasources_json_path)
+        datasources_json = gcs_utils.get_object(bucket_nyc,
+                                                datasources_json_path)
         datasources_actual = json.loads(datasources_json)
         datasources_expected = {
-            'datasources': [
-                {'name': 'default', 'folder': 'default', 'cdmVersion': 5}
-            ]
+            'datasources': [{
+                'name': 'default',
+                'folder': 'default',
+                'cdmVersion': 5
+            }]
         }
         self.assertDictEqual(datasources_expected, datasources_actual)
 
     def test_run_export_with_target_bucket_and_hpo_id(self):
-        # validation/main.py INTEGRATION TEST 
+        # validation/main.py INTEGRATION TEST
         folder_prefix = 'dummy-prefix-2018-03-24/'
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
-        main.run_export(hpo_id=FAKE_HPO_ID, folder_prefix=folder_prefix, target_bucket=bucket_nyc)
+        main.run_export(hpo_id=FAKE_HPO_ID,
+                        folder_prefix=folder_prefix,
+                        target_bucket=bucket_nyc)
         bucket_objects = gcs_utils.list_bucket(bucket_nyc)
         actual_object_names = [obj['name'] for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
@@ -126,12 +144,15 @@ class ExportTest(unittest.TestCase):
             self.assertIn(expected_object_name, actual_object_names)
         datasources_json_path = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
         self.assertIn(datasources_json_path, actual_object_names)
-        datasources_json = gcs_utils.get_object(bucket_nyc, datasources_json_path)
+        datasources_json = gcs_utils.get_object(bucket_nyc,
+                                                datasources_json_path)
         datasources_actual = json.loads(datasources_json)
         datasources_expected = {
-            'datasources': [
-                {'name': FAKE_HPO_ID, 'folder': FAKE_HPO_ID, 'cdmVersion': 5}
-            ]
+            'datasources': [{
+                'name': FAKE_HPO_ID,
+                'folder': FAKE_HPO_ID,
+                'cdmVersion': 5
+            }]
         }
         self.assertDictEqual(datasources_expected, datasources_actual)
 

@@ -7,8 +7,8 @@ import resources
 SELECT_EXISTING_PERSON_IDS = (
     'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
     'JOIN `{project}.{dataset}.person` AS person '
-    'ON entry.person_id = person.person_id'
-)
+    'ON entry.person_id = person.person_id')
+
 
 def get_queries(project=None, dataset=None):
     """
@@ -22,12 +22,15 @@ def get_queries(project=None, dataset=None):
     """
     query_list = []
     for table in common.CLINICAL_DATA_TABLES:
-        field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
+        field_names = [
+            'entry.' + field['name'] for field in resources.fields_for(table)
+        ]
         fields = ', '.join(field_names)
 
-        delete_query = SELECT_EXISTING_PERSON_IDS.format(
-            project=project, dataset=dataset, table=table, fields=fields
-        )
+        delete_query = SELECT_EXISTING_PERSON_IDS.format(project=project,
+                                                         dataset=dataset,
+                                                         table=table,
+                                                         fields=fields)
 
         query_list.append({
             clean_consts.QUERY: delete_query,

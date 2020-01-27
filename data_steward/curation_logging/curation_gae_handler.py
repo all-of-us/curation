@@ -59,7 +59,9 @@ def setup_logging_zone():
     zone = 'local-machine'
     if 'GAE_SERVICE' in os.environ:
         try:
-            resp = requests.get('http://metadata.google.internal/computeMetadata/v1/instance/zone', timeout=15.0)
+            resp = requests.get(
+                'http://metadata.google.internal/computeMetadata/v1/instance/zone',
+                timeout=15.0)
             if resp.status_code == 200:
                 zone = resp.text.strip()
         # pylint: disable=broad-except
@@ -137,16 +139,15 @@ def get_highest_severity_level_from_lines(lines):
     """
     if lines:
 
-        s = sorted(
-            [line['severity'] for line in lines],
-            key=lambda severity: -severity
-        )
+        s = sorted([line['severity'] for line in lines],
+                   key=lambda severity: -severity)
         return s[0]
     else:
         return gcp_logging_v2.gapic.enums.LogSeverity(200)
 
 
-def setup_proto_payload(lines: list, log_status: LogCompletionStatusEnum, **kwargs):
+def setup_proto_payload(lines: list, log_status: LogCompletionStatusEnum,
+                        **kwargs):
     """
     Build the log protoPayload portion of the log entry. Thread safe.
     :param lines: List of LogMessage lines to add.
@@ -209,8 +210,7 @@ def update_long_operation(request_log_id, op_status):
         id=request_log_id,
         producer='appengine.googleapis.com/request_id',
         first=first,
-        last=last
-    )
+        last=last)
 
     return operation_pb2
 
@@ -277,17 +277,23 @@ class GCPStackDriverLogger(object):
         if self._request_resource and self._request_resource.endswith('?'):
             self._request_resource = self._request_resource[:-1]
         self._request_agent = str(_request.user_agent)
-        self._request_remote_addr = _request.headers.get('X-Appengine-User-Ip', _request.remote_addr)
-        self._request_host = _request.headers.get('X-Appengine-Default-Version-Hostname', _request.host)
-        self._request_log_id = _request.headers.get('X-Appengine-Request-Log-Id', 'None')
+        self._request_remote_addr = _request.headers.get(
+            'X-Appengine-User-Ip', _request.remote_addr)
+        self._request_host = _request.headers.get(
+            'X-Appengine-Default-Version-Hostname', _request.host)
+        self._request_log_id = _request.headers.get(
+            'X-Appengine-Request-Log-Id', 'None')
 
-        self._request_taskname = _request.headers.get('X-Appengine-Taskname', None)
-        self._request_queue = _request.headers.get('X-Appengine-Queuename', None)
+        self._request_taskname = _request.headers.get('X-Appengine-Taskname',
+                                                      None)
+        self._request_queue = _request.headers.get('X-Appengine-Queuename',
+                                                   None)
 
         trace_id = _request.headers.get('X-Cloud-Trace-Context', '')
         if trace_id:
             trace_id = trace_id.split('/')[0]
-            trace = 'projects/{0}/traces/{1}'.format(app_identity.get_application_id(), trace_id)
+            trace = 'projects/{0}/traces/{1}'.format(
+                app_identity.get_application_id(), trace_id)
             self._trace = trace
 
     def log_event(self, record: logging.LogRecord):
@@ -303,11 +309,13 @@ class GCPStackDriverLogger(object):
         if len(self._buffer) >= self._buffer_size:
             if self.log_completion_status == LogCompletionStatusEnum.COMPLETE:
                 self.log_completion_status = LogCompletionStatusEnum.PARTIAL_BEGIN
-                self._operation_pb2 = update_long_operation(self._request_log_id, self.log_completion_status)
+                self._operation_pb2 = update_long_operation(
+                    self._request_log_id, self.log_completion_status)
 
             elif self.log_completion_status == LogCompletionStatusEnum.PARTIAL_BEGIN:
                 self.log_completion_status = LogCompletionStatusEnum.PARTIAL_MORE
-                self._operation_pb2 = update_long_operation(self._request_log_id, self.log_completion_status)
+                self._operation_pb2 = update_long_operation(
+                    self._request_log_id, self.log_completion_status)
 
             self.publish_to_stackdriver()
 
@@ -325,7 +333,8 @@ class GCPStackDriverLogger(object):
                 return
         else:
             self.log_completion_status = LogCompletionStatusEnum.PARTIAL_FINISHED
-            self._operation_pb2 = update_long_operation(self._request_log_id, self.log_completion_status)
+            self._operation_pb2 = update_long_operation(
+                self._request_log_id, self.log_completion_status)
 
         if _response:
             self._response_status_code = _response.status_code
@@ -345,7 +354,9 @@ class GCPStackDriverLogger(object):
 
         while len(self._buffer):
             line = self._buffer.pop()
-            lines.append(setup_log_line(line, self._request_resource, self._request_method))
+            lines.append(
+                setup_log_line(line, self._request_resource,
+                               self._request_method))
             index += 1
 
         self._end_time = datetime.now(timezone.utc).isoformat()
@@ -359,15 +370,20 @@ class GCPStackDriverLogger(object):
         }
 
         if self._response_status_code:
-            log_entry_pb2_args['http_request'] = gcp_http_request_pb2.HttpRequest(status=self._response_status_code)
+            log_entry_pb2_args[
+                'http_request'] = gcp_http_request_pb2.HttpRequest(
+                    status=self._response_status_code)
             # Transform the response code to a logging severity level.
             tmp_code = int(round(self._response_status_code / 100, 0) * 100)
             if tmp_code > int(log_entry_pb2_args['severity']):
-                log_entry_pb2_args['severity'] = gcp_logging_v2.gapic.enums.LogSeverity(tmp_code)
+                log_entry_pb2_args[
+                    'severity'] = gcp_logging_v2.gapic.enums.LogSeverity(
+                        tmp_code)
 
         if not self._operation_pb2:
             self.log_completion_status = LogCompletionStatusEnum.COMPLETE
-            self._operation_pb2 = update_long_operation(self._request_log_id, self.log_completion_status)
+            self._operation_pb2 = update_long_operation(
+                self._request_log_id, self.log_completion_status)
 
         log_entry_pb2_args['operation'] = self._operation_pb2
 
@@ -396,22 +412,23 @@ class GCPStackDriverLogger(object):
                 total_time = datetime.utcnow() - self._first_log_ts
             else:
                 total_time = 0
-            proto_payload_args['latency'] = '{0}.{1}s'.format(total_time.seconds, total_time.microseconds)
+            proto_payload_args['latency'] = '{0}.{1}s'.format(
+                total_time.seconds, total_time.microseconds)
 
-        proto_payload_pb2 = setup_proto_payload(
-            lines,
-            self.log_completion_status,
-            **proto_payload_args
-        )
+        proto_payload_pb2 = setup_proto_payload(lines,
+                                                self.log_completion_status,
+                                                **proto_payload_args)
 
         log_entry_pb2_args['proto_payload'] = proto_payload_pb2
 
         # https://cloud.google.com/logging/docs/reference/v2/rpc/google.logging.v2#google.logging.v2.LogEntry
-        log_entry_pb2 = gcp_logging_v2.types.log_entry_pb2.LogEntry(**log_entry_pb2_args)
+        log_entry_pb2 = gcp_logging_v2.types.log_entry_pb2.LogEntry(
+            **log_entry_pb2_args)
 
-        self._logging_client.write_log_entries([log_entry_pb2],
-                                               log_name=LOG_NAME_TEMPLATE.
-                                               format(project_id=app_identity.get_application_id()))
+        self._logging_client.write_log_entries(
+            [log_entry_pb2],
+            log_name=LOG_NAME_TEMPLATE.format(
+                project_id=app_identity.get_application_id()))
 
 
 def get_gcp_logger() -> GCPStackDriverLogger:

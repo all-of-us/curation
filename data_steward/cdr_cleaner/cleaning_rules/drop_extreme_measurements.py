@@ -91,15 +91,18 @@ def get_drop_extreme_measurement_queries(project_id, dataset_id):
     queries_list = []
 
     height_query = dict()
-    height_query[cdr_consts.QUERY] = DELETE_HEIGHT_ROWS_QUERY.format(dataset_id=dataset_id, project_id=project_id)
+    height_query[cdr_consts.QUERY] = DELETE_HEIGHT_ROWS_QUERY.format(
+        dataset_id=dataset_id, project_id=project_id)
     queries_list.append(height_query)
 
     weight_query = dict()
-    weight_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.format(dataset_id=dataset_id, project_id=project_id)
+    weight_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.format(
+        dataset_id=dataset_id, project_id=project_id)
     queries_list.append(weight_query)
 
     bmi_query = dict()
-    height_query[cdr_consts.QUERY] = DELETE_BMI_ROWS_QUERY.format(dataset_id=dataset_id, project_id=project_id)
+    height_query[cdr_consts.QUERY] = DELETE_BMI_ROWS_QUERY.format(
+        dataset_id=dataset_id, project_id=project_id)
     queries_list.append(bmi_query)
 
     return queries_list
@@ -111,6 +114,6 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_drop_extreme_measurement_queries(ARGS.project_id, ARGS.dataset_id)
+    query_list = get_drop_extreme_measurement_queries(ARGS.project_id,
+                                                      ARGS.dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, query_list)
-
