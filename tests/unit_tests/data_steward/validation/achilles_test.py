@@ -10,9 +10,11 @@ from validation import sql_wrangle
 
 
 class AchillesTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
-        print('\n**************************************************************')
+        print(
+            '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
 

@@ -147,7 +147,9 @@ def get_table_info(table_id, dataset_id=None, project_id=None):
         project_id = app_identity.get_application_id()
     if dataset_id is None:
         dataset_id = get_dataset_id()
-    job = bq_service.tables().get(projectId=project_id, datasetId=dataset_id, tableId=table_id)
+    job = bq_service.tables().get(projectId=project_id,
+                                  datasetId=dataset_id,
+                                  tableId=table_id)
     return job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
@@ -174,25 +176,33 @@ def load_csv(schema_path,
 
     with open(schema_path, 'r') as schema_file:
         fields = json.load(schema_file)
-    load = {'sourceUris': [gcs_object_path],
-            bq_consts.SCHEMA: {bq_consts.FIELDS: fields},
-            'destinationTable': {
-                'projectId': project_id,
-                'datasetId': dataset_id,
-                'tableId': table_id},
-            'skipLeadingRows': 1,
-            'allowQuotedNewlines': True,
-            'writeDisposition': write_disposition,
-            'allowJaggedRows': allow_jagged_rows,
-            'sourceFormat': 'CSV'
-            }
+    load = {
+        'sourceUris': [gcs_object_path],
+        bq_consts.SCHEMA: {
+            bq_consts.FIELDS: fields
+        },
+        'destinationTable': {
+            'projectId': project_id,
+            'datasetId': dataset_id,
+            'tableId': table_id
+        },
+        'skipLeadingRows': 1,
+        'allowQuotedNewlines': True,
+        'writeDisposition': write_disposition,
+        'allowJaggedRows': allow_jagged_rows,
+        'sourceFormat': 'CSV'
+    }
     job_body = {'configuration': {'load': load}}
     insert_job = bq_service.jobs().insert(projectId=project_id, body=job_body)
-    insert_result = insert_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+    insert_result = insert_job.execute(
+        num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
     return insert_result
 
 
-def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix="", dataset_id=None):
+def load_cdm_csv(hpo_id,
+                 cdm_table_name,
+                 source_folder_prefix="",
+                 dataset_id=None):
     """
     Load CDM file from a bucket into a table in bigquery
     :param hpo_id: ID for the HPO site
@@ -200,17 +210,25 @@ def load_cdm_csv(hpo_id, cdm_table_name, source_folder_prefix="", dataset_id=Non
     :return: an object describing the associated bigquery job
     """
     if cdm_table_name not in resources.CDM_TABLES:
-        raise ValueError('{} is not a valid table to load'.format(cdm_table_name))
+        raise ValueError(
+            '{} is not a valid table to load'.format(cdm_table_name))
 
     app_id = app_identity.get_application_id()
     if dataset_id is None:
         dataset_id = get_dataset_id()
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    fields_filename = os.path.join(resources.fields_path, cdm_table_name + '.json')
-    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix, cdm_table_name)
+    fields_filename = os.path.join(resources.fields_path,
+                                   cdm_table_name + '.json')
+    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix,
+                                            cdm_table_name)
     table_id = get_table_id(hpo_id, cdm_table_name)
     allow_jagged_rows = cdm_table_name == 'observation'
-    return load_csv(fields_filename, gcs_object_path, app_id, dataset_id, table_id, allow_jagged_rows=allow_jagged_rows)
+    return load_csv(fields_filename,
+                    gcs_object_path,
+                    app_id,
+                    dataset_id,
+                    table_id,
+                    allow_jagged_rows=allow_jagged_rows)
 
 
 def load_pii_csv(hpo_id, pii_table_name, source_folder_prefix=""):
@@ -221,15 +239,19 @@ def load_pii_csv(hpo_id, pii_table_name, source_folder_prefix=""):
     :return: an object describing the associated bigquery job
     """
     if pii_table_name not in common.PII_TABLES:
-        raise ValueError('{} is not a valid table to load'.format(pii_table_name))
+        raise ValueError(
+            '{} is not a valid table to load'.format(pii_table_name))
 
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    fields_filename = os.path.join(resources.fields_path, pii_table_name + '.json')
-    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix, pii_table_name)
+    fields_filename = os.path.join(resources.fields_path,
+                                   pii_table_name + '.json')
+    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix,
+                                            pii_table_name)
     table_id = get_table_id(hpo_id, pii_table_name)
-    return load_csv(fields_filename, gcs_object_path, app_id, dataset_id, table_id)
+    return load_csv(fields_filename, gcs_object_path, app_id, dataset_id,
+                    table_id)
 
 
 def load_from_csv(hpo_id, table_name, source_folder_prefix=""):
@@ -259,8 +281,11 @@ def delete_table(table_id, dataset_id=None):
     if dataset_id is None:
         dataset_id = get_dataset_id()
     bq_service = create_service()
-    delete_job = bq_service.tables().delete(projectId=app_id, datasetId=dataset_id, tableId=table_id)
-    logging.info('Deleting {dataset_id}.{table_id}'.format(dataset_id=dataset_id, table_id=table_id))
+    delete_job = bq_service.tables().delete(projectId=app_id,
+                                            datasetId=dataset_id,
+                                            tableId=table_id)
+    logging.info('Deleting {dataset_id}.{table_id}'.format(
+        dataset_id=dataset_id, table_id=table_id))
     return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
@@ -276,9 +301,8 @@ def table_exists(table_id, dataset_id=None):
     bq_service = create_service()
     try:
         bq_service.tables().get(
-            projectId=app_id,
-            datasetId=dataset_id,
-            tableId=table_id).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+            projectId=app_id, datasetId=dataset_id, tableId=table_id).execute(
+                num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
         return True
     except HttpError as err:
         if err.resp.status != 404:
@@ -292,7 +316,9 @@ def job_status_done(job_id):
     return job_running_status == 'DONE'
 
 
-def wait_on_jobs(job_ids, retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT, max_poll_interval=300):
+def wait_on_jobs(job_ids,
+                 retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
+                 max_poll_interval=300):
     """
     Exponential backoff wait for jobs to complete
     :param job_ids:
@@ -303,13 +329,16 @@ def wait_on_jobs(job_ids, retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT, max_poll
     _job_ids = list(job_ids)
     poll_interval = 1
     for i in range(retry_count):
-        logging.info('Waiting %s seconds for completion of job(s): %s' % (poll_interval, _job_ids))
+        logging.info('Waiting %s seconds for completion of job(s): %s' %
+                     (poll_interval, _job_ids))
         time.sleep(poll_interval)
-        _job_ids = [job_id for job_id in _job_ids if not job_status_done(job_id)]
+        _job_ids = [
+            job_id for job_id in _job_ids if not job_status_done(job_id)
+        ]
         if len(_job_ids) == 0:
             return []
         if poll_interval < max_poll_interval:
-            poll_interval = 2 ** i
+            poll_interval = 2**i
     logging.info('Job(s) failed to complete: %s' % _job_ids)
     return _job_ids
 
@@ -321,13 +350,13 @@ def get_job_details(job_id):
     """
     bq_service = create_service()
     app_id = app_identity.get_application_id()
-    return bq_service.jobs().get(projectId=app_id, jobId=job_id).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+    return bq_service.jobs().get(
+        projectId=app_id,
+        jobId=job_id).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
-def merge_tables(source_dataset_id,
-                 source_table_id_list,
-                 destination_dataset_id,
-                 destination_table_id):
+def merge_tables(source_dataset_id, source_table_id_list,
+                 destination_dataset_id, destination_table_id):
     """Takes a list of table names and runs a copy job
 
     :source_table_name_list: list of tables to merge
@@ -358,16 +387,18 @@ def merge_tables(source_dataset_id,
     }
 
     bq_service = create_service()
-    insert_result = bq_service.jobs().insert(projectId=app_id,
-                                             body=job_body).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+    insert_result = bq_service.jobs().insert(
+        projectId=app_id,
+        body=job_body).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
     job_id = insert_result[bq_consts.JOB_REFERENCE][bq_consts.JOB_ID]
     incomplete_jobs = wait_on_jobs([job_id])
 
     if len(incomplete_jobs) == 0:
         job_status = get_job_details(job_id)['status']
         if 'errorResult' in job_status:
-            error_messages = ['{}'.format(item['message'])
-                              for item in job_status['errors']]
+            error_messages = [
+                '{}'.format(item['message']) for item in job_status['errors']
+            ]
             logging.info(' || '.join(error_messages))
             return False, ' || '.join(error_messages)
     else:
@@ -424,7 +455,8 @@ def query(q,
                 }
             }
         }
-        return bq_service.jobs().insert(projectId=app_id, body=job_body).execute(num_retries=retry_count)
+        return bq_service.jobs().insert(
+            projectId=app_id, body=job_body).execute(num_retries=retry_count)
     else:
         job_body = {
             'defaultDataset': {
@@ -436,7 +468,8 @@ def query(q,
             'useLegacySql': use_legacy_sql,
             bq_consts.PRIORITY_TAG: priority_mode,
         }
-        return bq_service.jobs().query(projectId=app_id, body=job_body).execute(num_retries=retry_count)
+        return bq_service.jobs().query(
+            projectId=app_id, body=job_body).execute(num_retries=retry_count)
 
 
 def create_table(table_id, fields, drop_existing=False, dataset_id=None):
@@ -454,7 +487,8 @@ def create_table(table_id, fields, drop_existing=False, dataset_id=None):
         if drop_existing:
             delete_table(table_id, dataset_id)
         else:
-            raise InvalidOperationError('Attempt to create an existing table with id `%s`.' % table_id)
+            raise InvalidOperationError(
+                'Attempt to create an existing table with id `%s`.' % table_id)
     bq_service = create_service()
     app_id = app_identity.get_application_id()
     insert_body = {
@@ -463,21 +497,25 @@ def create_table(table_id, fields, drop_existing=False, dataset_id=None):
             "datasetId": dataset_id,
             "tableId": table_id
         },
-        bq_consts.SCHEMA: {bq_consts.FIELDS: fields}
+        bq_consts.SCHEMA: {
+            bq_consts.FIELDS: fields
+        }
     }
     field_names = [field['name'] for field in fields]
     if 'person_id' in field_names:
-        insert_body['clustering'] = {
-            bq_consts.FIELDS: ['person_id']
-        }
-        insert_body['timePartitioning'] = {
-            'type': 'DAY'
-        }
-    insert_job = bq_service.tables().insert(projectId=app_id, datasetId=dataset_id, body=insert_body)
+        insert_body['clustering'] = {bq_consts.FIELDS: ['person_id']}
+        insert_body['timePartitioning'] = {'type': 'DAY'}
+    insert_job = bq_service.tables().insert(projectId=app_id,
+                                            datasetId=dataset_id,
+                                            body=insert_body)
     return insert_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
-def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=None, force_all_nullable=False):
+def create_standard_table(table_name,
+                          table_id,
+                          drop_existing=False,
+                          dataset_id=None,
+                          force_all_nullable=False):
     """
     Create a supported OHDSI table
     :param table_name: the name of a table whose schema is specified
@@ -496,7 +534,9 @@ def create_standard_table(table_name, table_id, drop_existing=False, dataset_id=
     return create_table(table_id, fields, drop_existing, dataset_id)
 
 
-def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS, project_id=None):
+def list_tables(dataset_id=None,
+                max_results=bq_consts.LIST_TABLES_MAX_RESULTS,
+                project_id=None):
     """
     List all the tables in the dataset
 
@@ -517,7 +557,9 @@ def list_tables(dataset_id=None, max_results=bq_consts.LIST_TABLES_MAX_RESULTS, 
     if dataset_id is None:
         dataset_id = get_dataset_id()
     results = []
-    request = bq_service.tables().list(projectId=app_id, datasetId=dataset_id, maxResults=max_results)
+    request = bq_service.tables().list(projectId=app_id,
+                                       datasetId=dataset_id,
+                                       maxResults=max_results)
     while request is not None:
         response = request.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
         tables = response.get('tables', [])
@@ -654,13 +696,11 @@ def list_all_table_ids(dataset_id=None):
     return [table['tableReference']['tableId'] for table in tables]
 
 
-def create_dataset(
-        project_id=None,
-        dataset_id=None,
-        description=None,
-        friendly_name=None,
-        overwrite_existing=None
-):
+def create_dataset(project_id=None,
+                   dataset_id=None,
+                   description=None,
+                   friendly_name=None,
+                   overwrite_existing=None):
     """
     Creates a new dataset from the API.
 
@@ -704,9 +744,11 @@ def create_dataset(
     if friendly_name:
         job_body.update({bq_consts.FRIENDLY_NAME: friendly_name})
 
-    insert_dataset = bq_service.datasets().insert(projectId=app_id, body=job_body)
+    insert_dataset = bq_service.datasets().insert(projectId=app_id,
+                                                  body=job_body)
     try:
-        insert_result = insert_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+        insert_result = insert_dataset.execute(
+            num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
         logging.info('Created dataset:\t%s.%s', app_id, dataset_id)
     except HttpError as error:
         # dataset exists.  try deleting if deleteContents is set and try again.
@@ -715,12 +757,10 @@ def create_dataset(
                 rm_dataset = bq_service.datasets().delete(
                     projectId=app_id,
                     datasetId=dataset_id,
-                    deleteContents=overwrite_existing
-                )
+                    deleteContents=overwrite_existing)
                 rm_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
                 insert_result = insert_dataset.execute(
-                    num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT
-                )
+                    num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
                 logging.info('Overwrote dataset %s.%s', app_id, dataset_id)
             else:
                 logging.exception(
@@ -731,13 +771,13 @@ def create_dataset(
                     'dataset_id:\t%s\n'
                     'description:\t%s\n'
                     'friendly_name:\t%s\n'
-                    'overwrite_existing:\t%s\n\n',
-                    project_id, dataset_id, description, friendly_name, overwrite_existing
-                )
+                    'overwrite_existing:\t%s\n\n', project_id, dataset_id,
+                    description, friendly_name, overwrite_existing)
                 raise
         else:
-            logging.exception('Encountered an HttpError when trying to create '
-                              'dataset: %s.%s', app_id, dataset_id)
+            logging.exception(
+                'Encountered an HttpError when trying to create '
+                'dataset: %s.%s', app_id, dataset_id)
             raise
 
     return insert_result
@@ -763,14 +803,16 @@ def csv_line_to_sql_row_expr(row: dict, fields: list):
     for field_name, val in row.items():
         field = next(filter(lambda f: f['name'] == field_name, fields), None)
         if field is None:
-            raise InvalidOperationError(f'Unable to marshal {val}: field "{field_name}" was not found')
+            raise InvalidOperationError(
+                f'Unable to marshal {val}: field "{field_name}" was not found')
         if not val:
             if field['mode'] == 'nullable':
                 val_expr = "NULL"
             elif field['type'] == 'string':
                 val_expr = "''"
             else:
-                raise InvalidOperationError(f'Value not provided for required field {field_name}')
+                raise InvalidOperationError(
+                    f'Value not provided for required field {field_name}')
         elif field['type'] in ['string', 'date', 'timestamp']:
             val_expr = f"'{val}'"
         else:
@@ -780,7 +822,11 @@ def csv_line_to_sql_row_expr(row: dict, fields: list):
     return f'({cols})'
 
 
-def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, fields=None):
+def load_table_from_csv(project_id,
+                        dataset_id,
+                        table_name,
+                        csv_path=None,
+                        fields=None):
     """
     Loads BQ table from a csv file without making use of GCS buckets
 
@@ -798,20 +844,25 @@ def load_table_from_csv(project_id, dataset_id, table_name, csv_path=None, field
     table_list = resources.csv_to_list(csv_path)
 
     if fields is None:
-        fields_filename = os.path.join(resources.fields_path, table_name + '.json')
+        fields_filename = os.path.join(resources.fields_path,
+                                       table_name + '.json')
         with open(fields_filename, 'r') as f:
             fields = json.load(f)
     field_names = ', '.join([field['name'] for field in fields])
     row_exprs = [csv_line_to_sql_row_expr(t, fields) for t in table_list]
     formatted_mapping_list = ', '.join(row_exprs)
 
-    create_table(table_id=table_name, fields=fields, drop_existing=True, dataset_id=dataset_id)
+    create_table(table_id=table_name,
+                 fields=fields,
+                 drop_existing=True,
+                 dataset_id=dataset_id)
 
-    table_populate_query = bq_consts.INSERT_QUERY.format(project_id=project_id,
-                                                         dataset_id=dataset_id,
-                                                         table_id=table_name,
-                                                         columns=field_names,
-                                                         mapping_list=formatted_mapping_list)
+    table_populate_query = bq_consts.INSERT_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        table_id=table_name,
+        columns=field_names,
+        mapping_list=formatted_mapping_list)
     result = query(table_populate_query)
     return result
 
@@ -827,7 +878,8 @@ def has_primary_key(table):
         raise AssertionError()
     fields = resources.fields_for(table)
     id_field = table + '_id'
-    return any(field for field in fields if field['type'] == 'integer' and field['name'] == id_field)
+    return any(field for field in fields
+               if field['type'] == 'integer' and field['name'] == id_field)
 
 
 def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
@@ -849,15 +901,23 @@ def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
     for table_id in list_all_table_ids(dataset_id):
         metadata = get_table_info(table_id, dataset_id)
         fields = metadata['schema']['fields']
-        create_table(table_id, fields, drop_existing=True, dataset_id=snapshot_dataset_id)
+        create_table(table_id,
+                     fields,
+                     drop_existing=True,
+                     dataset_id=snapshot_dataset_id)
     # Copy the table content from the current dataset to the snapshot dataset
     copy_table_job_ids = []
     for table_id in list_all_table_ids(dataset_id):
-        select_all_query = ('SELECT * FROM `{project_id}.{dataset_id}.{table_id}` ')
+        select_all_query = (
+            'SELECT * FROM `{project_id}.{dataset_id}.{table_id}` ')
         q = select_all_query.format(project_id=project_id,
-                                    dataset_id=dataset_id, table_id=table_id)
-        results = query(q, use_legacy_sql=False, destination_table_id=table_id,
-                        destination_dataset_id=snapshot_dataset_id, batch=True)
+                                    dataset_id=dataset_id,
+                                    table_id=table_id)
+        results = query(q,
+                        use_legacy_sql=False,
+                        destination_table_id=table_id,
+                        destination_dataset_id=snapshot_dataset_id,
+                        batch=True)
         copy_table_job_ids.append(results['jobReference']['jobId'])
     incomplete_jobs = wait_on_jobs(copy_table_job_ids)
     if len(incomplete_jobs) > 0:

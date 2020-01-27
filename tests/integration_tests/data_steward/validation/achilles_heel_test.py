@@ -21,6 +21,7 @@ ACHILLES_RESULTS_DERIVED_COUNT = 282
 
 
 class AchillesHeelTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -39,18 +40,21 @@ class AchillesHeelTest(unittest.TestCase):
 
     def _load_dataset(self, hpo_id):
         for cdm_table in resources.CDM_TABLES:
-            cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
+            cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH,
+                                         cdm_table + '.csv')
             if os.path.exists(cdm_file_name):
                 test_util.write_cloud_file(self.hpo_bucket, cdm_file_name)
             else:
-                test_util.write_cloud_str(self.hpo_bucket, cdm_table + '.csv', 'dummy\n')
+                test_util.write_cloud_str(self.hpo_bucket, cdm_table + '.csv',
+                                          'dummy\n')
             bq_utils.load_cdm_csv(hpo_id, cdm_table)
 
         # ensure concept table exists
         if not bq_utils.table_exists(common.CONCEPT):
             bq_utils.create_standard_table(common.CONCEPT, common.CONCEPT)
             q = """INSERT INTO {dataset}.concept
-            SELECT * FROM {vocab}.concept""".format(dataset=self.dataset, vocab=common.VOCABULARY_DATASET)
+            SELECT * FROM {vocab}.concept""".format(
+                dataset=self.dataset, vocab=common.VOCABULARY_DATASET)
             bq_utils.query(q)
 
     @staticmethod
@@ -73,7 +77,9 @@ class AchillesHeelTest(unittest.TestCase):
 
         # prepare
         self._load_dataset(randomized_hpo_id)
-        test_util.populate_achilles(self.hpo_bucket, hpo_id=randomized_hpo_id, include_heel=False)
+        test_util.populate_achilles(self.hpo_bucket,
+                                    hpo_id=randomized_hpo_id,
+                                    include_heel=False)
 
         # define tables
         achilles_heel_results = randomized_hpo_id + '_' + achilles_heel.ACHILLES_HEEL_RESULTS
@@ -96,11 +102,13 @@ class AchillesHeelTest(unittest.TestCase):
         self.assertEqual(ACHILLES_RESULTS_DERIVED_COUNT, rows[0]['num_rows'])
 
         # test new heel re-categorization
-        errors = [2, 4, 5, 101, 200, 206, 207, 209, 400, 405, 406, 409, 411, 413, 500, 505, 506, 509,
-                  600, 605, 606, 609, 613, 700, 705, 706, 709, 711, 713, 715, 716, 717, 800, 805, 806,
-                  809, 813, 814, 906, 1006, 1609, 1805]
-        query = sql_wrangle.qualify_tables(
-            """SELECT analysis_id FROM {table_id}
+        errors = [
+            2, 4, 5, 101, 200, 206, 207, 209, 400, 405, 406, 409, 411, 413, 500,
+            505, 506, 509, 600, 605, 606, 609, 613, 700, 705, 706, 709, 711,
+            713, 715, 716, 717, 800, 805, 806, 809, 813, 814, 906, 1006, 1609,
+            1805
+        ]
+        query = sql_wrangle.qualify_tables("""SELECT analysis_id FROM {table_id}
             WHERE achilles_heel_warning LIKE 'ERROR:%'
             GROUP BY analysis_id""".format(table_id=achilles_heel_results))
         response = bq_utils.query(query)
@@ -109,10 +117,11 @@ class AchillesHeelTest(unittest.TestCase):
         for analysis_id in actual_result:
             self.assertIn(analysis_id, errors)
 
-        warnings = [4, 5, 7, 8, 9, 200, 210, 302, 400, 402, 412, 420, 500, 511, 512, 513, 514, 515,
-                    602, 612, 620, 702, 712, 720, 802, 812, 820]
-        query = sql_wrangle.qualify_tables(
-            """SELECT analysis_id FROM {table_id}
+        warnings = [
+            4, 5, 7, 8, 9, 200, 210, 302, 400, 402, 412, 420, 500, 511, 512,
+            513, 514, 515, 602, 612, 620, 702, 712, 720, 802, 812, 820
+        ]
+        query = sql_wrangle.qualify_tables("""SELECT analysis_id FROM {table_id}
             WHERE achilles_heel_warning LIKE 'WARNING:%'
             GROUP BY analysis_id""".format(table_id=achilles_heel_results))
         response = bq_utils.query(query)
@@ -121,10 +130,11 @@ class AchillesHeelTest(unittest.TestCase):
         for analysis_id in actual_result:
             self.assertIn(analysis_id, warnings)
 
-        notifications = [101, 103, 105, 114, 115, 118, 208, 301, 410, 610,
-                         710, 810, 900, 907, 1000, 1800, 1807]
-        query = sql_wrangle.qualify_tables(
-            """SELECT analysis_id FROM {table_id}
+        notifications = [
+            101, 103, 105, 114, 115, 118, 208, 301, 410, 610, 710, 810, 900,
+            907, 1000, 1800, 1807
+        ]
+        query = sql_wrangle.qualify_tables("""SELECT analysis_id FROM {table_id}
             WHERE achilles_heel_warning LIKE 'NOTIFICATION:%' and analysis_id is not null
             GROUP BY analysis_id""".format(table_id=achilles_heel_results))
         response = bq_utils.query(query)

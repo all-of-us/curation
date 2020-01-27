@@ -31,8 +31,7 @@ DOMAIN_REROUTE_INCLUDED_INNER_QUERY = (
     '    FROM `{project_id}.{dataset_id}.{src_table}` AS s '
     '    JOIN `{project_id}.{dataset_id}.concept` AS c '
     '        ON s.{domain_concept_id} = c.concept_id '
-    '    WHERE c.domain_id in ({domain}) '
-)
+    '    WHERE c.domain_id in ({domain}) ')
 
 DOMAIN_REROUTE_EXCLUDED_INNER_QUERY = (
     '    SELECT  '
@@ -45,14 +44,12 @@ DOMAIN_REROUTE_EXCLUDED_INNER_QUERY = (
     '    LEFT JOIN `{project_id}.{dataset_id}._logging_domain_alignment` AS m '
     '        ON s.{src_id} = m.src_id '
     '            AND m.src_table = \'{src_table}\' '
-    '    WHERE m.src_id IS NULL'
-)
+    '    WHERE m.src_id IS NULL')
 
 MAXIMUM_DOMAIN_ID_QUERY = (
     '    SELECT '
     '        MAX({domain_id_field}) AS max_id '
-    '    FROM `{project_id}.{dataset_id}.{domain_table}` '
-)
+    '    FROM `{project_id}.{dataset_id}.{domain_table}` ')
 
 DOMAIN_MAPPING_OUTER_QUERY = (
     'SELECT '
@@ -68,8 +65,7 @@ DOMAIN_MAPPING_OUTER_QUERY = (
     'CROSS JOIN '
     '( '
     '    {domain_query} '
-    ') src '
-)
+    ') src ')
 
 REROUTE_DOMAIN_RECORD_QUERY = (
     'SELECT '
@@ -80,15 +76,12 @@ REROUTE_DOMAIN_RECORD_QUERY = (
     'ON s.{src_domain_id_field} = m.src_id '
     'AND m.src_table = \'{src_table}\' '
     'AND m.dest_table = \'{dest_table}\' '
-    'AND m.is_rerouted = True '
-)
+    'AND m.is_rerouted = True ')
 
-CASE_STATEMENT = (
-    ' CASE {src_field} '
-    ' {statements} '
-    ' ELSE NULL '
-    ' END AS {dest_field} '
-)
+CASE_STATEMENT = (' CASE {src_field} '
+                  ' {statements} '
+                  ' ELSE NULL '
+                  ' END AS {dest_field} ')
 
 WHEN_STATEMENT = 'WHEN {src_value} THEN {dest_value}'
 
@@ -116,7 +109,8 @@ def parse_domain_mapping_query_cross_domain(project_id, dataset_id, dest_table):
 
     for src_table in domain_mapping.DOMAIN_TABLE_NAMES:
 
-        if src_table != dest_table and domain_mapping.exist_domain_mappings(src_table, dest_table):
+        if src_table != dest_table and domain_mapping.exist_domain_mappings(
+                src_table, dest_table):
 
             src_id_field = resources.get_domain_id_field(src_table)
             domain_concept_id = resources.get_domain_concept_id(src_table)
@@ -124,16 +118,18 @@ def parse_domain_mapping_query_cross_domain(project_id, dataset_id, dest_table):
             if union_query != EMPTY_STRING:
                 union_query += UNION_ALL
 
-            union_query += DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(project_id=project_id,
-                                                                      dataset_id=dataset_id,
-                                                                      src_table=src_table,
-                                                                      dest_table=dest_table,
-                                                                      src_id=src_id_field,
-                                                                      dest_id=NULL_VALUE,
-                                                                      domain_concept_id=domain_concept_id,
-                                                                      domain='\'{}\''.format(domain))
+            union_query += DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(
+                project_id=project_id,
+                dataset_id=dataset_id,
+                src_table=src_table,
+                dest_table=dest_table,
+                src_id=src_id_field,
+                dest_id=NULL_VALUE,
+                domain_concept_id=domain_concept_id,
+                domain='\'{}\''.format(domain))
 
-            criteria = domain_mapping.get_rerouting_criteria(src_table, dest_table)
+            criteria = domain_mapping.get_rerouting_criteria(
+                src_table, dest_table)
 
             if criteria != EMPTY_STRING:
                 union_query += AND + criteria
@@ -142,13 +138,14 @@ def parse_domain_mapping_query_cross_domain(project_id, dataset_id, dest_table):
 
     if union_query != EMPTY_STRING:
         # the query to get the max id for the dest table
-        domain_query = MAXIMUM_DOMAIN_ID_QUERY.format(project_id=project_id,
-                                                      dataset_id=dataset_id,
-                                                      domain_table=dest_table,
-                                                      domain_id_field=dest_id_field)
+        domain_query = MAXIMUM_DOMAIN_ID_QUERY.format(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            domain_table=dest_table,
+            domain_id_field=dest_id_field)
 
-        output_query = DOMAIN_MAPPING_OUTER_QUERY.format(union_query=union_query,
-                                                         domain_query=domain_query)
+        output_query = DOMAIN_MAPPING_OUTER_QUERY.format(
+            union_query=union_query, domain_query=domain_query)
     return output_query
 
 
@@ -172,15 +169,15 @@ def parse_domain_mapping_query_for_same_domains(project_id, dataset_id):
         if union_query != EMPTY_STRING:
             union_query += UNION_ALL
 
-        union_query += DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(project_id=project_id,
-                                                                  dataset_id=dataset_id,
-                                                                  src_table=domain_table,
-                                                                  dest_table=domain_table,
-                                                                  src_id=domain_id_field,
-                                                                  dest_id=domain_id_field,
-                                                                  domain_concept_id=domain_concept_id,
-                                                                  domain='\'{}\''.format(
-                                                                      '\',\''.join([domain, METADATA_DOMAIN])))
+        union_query += DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            src_table=domain_table,
+            dest_table=domain_table,
+            src_id=domain_id_field,
+            dest_id=domain_id_field,
+            domain_concept_id=domain_concept_id,
+            domain='\'{}\''.format('\',\''.join([domain, METADATA_DOMAIN])))
     return union_query
 
 
@@ -203,11 +200,12 @@ def parse_domain_mapping_query_for_excluded_records(project_id, dataset_id):
         if union_query != EMPTY_STRING:
             union_query += UNION_ALL
 
-        union_query += DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(project_id=project_id,
-                                                                  dataset_id=dataset_id,
-                                                                  src_table=domain_table,
-                                                                  src_id=domain_id_field,
-                                                                  src_domain_id_field=domain_id_field)
+        union_query += DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            src_table=domain_table,
+            src_id=domain_id_field,
+            src_domain_id_field=domain_id_field)
     return union_query
 
 
@@ -230,9 +228,8 @@ def get_domain_mapping_queries(project_id, dataset_id):
 
     for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
         query = dict()
-        query[cdr_consts.QUERY] = parse_domain_mapping_query_cross_domain(project_id,
-                                                                          dataset_id,
-                                                                          domain_table)
+        query[cdr_consts.QUERY] = parse_domain_mapping_query_cross_domain(
+            project_id, dataset_id, domain_table)
         query[cdr_consts.DESTINATION_TABLE] = DOMAIN_ALIGNMENT_TABLE_NAME
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
         query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -240,7 +237,8 @@ def get_domain_mapping_queries(project_id, dataset_id):
 
     # Create the query for creating field_mappings for the records moving between the same domain
     query = dict()
-    query[cdr_consts.QUERY] = parse_domain_mapping_query_for_same_domains(project_id, dataset_id)
+    query[cdr_consts.QUERY] = parse_domain_mapping_query_for_same_domains(
+        project_id, dataset_id)
     query[cdr_consts.DESTINATION_TABLE] = DOMAIN_ALIGNMENT_TABLE_NAME
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -248,7 +246,8 @@ def get_domain_mapping_queries(project_id, dataset_id):
 
     # Create the query for the records that are in the wrong domain but will not be moved
     query = dict()
-    query[cdr_consts.QUERY] = parse_domain_mapping_query_for_excluded_records(project_id, dataset_id)
+    query[cdr_consts.QUERY] = parse_domain_mapping_query_for_excluded_records(
+        project_id, dataset_id)
     query[cdr_consts.DESTINATION_TABLE] = DOMAIN_ALIGNMENT_TABLE_NAME
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -269,25 +268,33 @@ def resolve_field_mappings(src_table, dest_table):
     field_mappings = domain_mapping.get_field_mappings(src_table, dest_table)
 
     for dest_field, src_field in field_mappings.items():
-        if domain_mapping.value_requires_translation(src_table, dest_table, src_field, dest_field):
-            value_mappings = domain_mapping.get_value_mappings(src_table, dest_table, src_field, dest_field)
+        if domain_mapping.value_requires_translation(src_table, dest_table,
+                                                     src_field, dest_field):
+            value_mappings = domain_mapping.get_value_mappings(
+                src_table, dest_table, src_field, dest_field)
 
             if len(value_mappings) == 0:
                 if field_mapping.is_field_required(dest_table, dest_field):
-                    case_statements = ZERO_AS_DEST_FIELD.format(dest_field=dest_field)
+                    case_statements = ZERO_AS_DEST_FIELD.format(
+                        dest_field=dest_field)
                 else:
-                    case_statements = NULL_AS_DEST_FIELD.format(dest_field=dest_field)
+                    case_statements = NULL_AS_DEST_FIELD.format(
+                        dest_field=dest_field)
             else:
-                case_statements = '\n\t\t'.join(
-                    [WHEN_STATEMENT.format(src_value=s, dest_value=d) for d, s in
-                     value_mappings.items()])
+                case_statements = '\n\t\t'.join([
+                    WHEN_STATEMENT.format(src_value=s, dest_value=d)
+                    for d, s in value_mappings.items()
+                ])
 
-                case_statements = CASE_STATEMENT.format(src_field=src_field,
-                                                        dest_field=dest_field,
-                                                        statements=case_statements)
+                case_statements = CASE_STATEMENT.format(
+                    src_field=src_field,
+                    dest_field=dest_field,
+                    statements=case_statements)
             select_statements.append(case_statements)
         else:
-            select_statements.append(SRC_FIELD_AS_DEST_FIELD.format(src_field=src_field, dest_field=dest_field))
+            select_statements.append(
+                SRC_FIELD_AS_DEST_FIELD.format(src_field=src_field,
+                                               dest_field=dest_field))
 
     return ',\n\t'.join(select_statements)
 
@@ -305,7 +312,8 @@ def parse_reroute_domain_query(project_id, dataset_id, dest_table):
     union_query = EMPTY_STRING
 
     for src_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        if src_table == dest_table or domain_mapping.exist_domain_mappings(src_table, dest_table):
+        if src_table == dest_table or domain_mapping.exist_domain_mappings(
+                src_table, dest_table):
 
             src_domain_id_field = get_domain_id_field(src_table)
             dest_domain_id_field = get_domain_id_field(dest_table)
@@ -314,13 +322,14 @@ def parse_reroute_domain_query(project_id, dataset_id, dest_table):
             if union_query != EMPTY_STRING:
                 union_query += UNION_ALL
 
-            union_query += REROUTE_DOMAIN_RECORD_QUERY.format(project_id=project_id,
-                                                              dataset_id=dataset_id,
-                                                              src_table=src_table,
-                                                              dest_table=dest_table,
-                                                              src_domain_id_field=src_domain_id_field,
-                                                              dest_domain_id_field=dest_domain_id_field,
-                                                              field_mapping_expr=field_mapping_expr)
+            union_query += REROUTE_DOMAIN_RECORD_QUERY.format(
+                project_id=project_id,
+                dataset_id=dataset_id,
+                src_table=src_table,
+                dest_table=dest_table,
+                src_domain_id_field=src_domain_id_field,
+                dest_domain_id_field=dest_domain_id_field,
+                field_mapping_expr=field_mapping_expr)
     return union_query
 
 
@@ -338,7 +347,8 @@ def get_reroute_domain_queries(project_id, dataset_id):
 
     for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
         query = dict()
-        query[cdr_consts.QUERY] = parse_reroute_domain_query(project_id, dataset_id, domain_table)
+        query[cdr_consts.QUERY] = parse_reroute_domain_query(
+            project_id, dataset_id, domain_table)
         query[cdr_consts.DESTINATION_TABLE] = domain_table
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = dataset_id

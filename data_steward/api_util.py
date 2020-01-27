@@ -30,12 +30,14 @@ def auth_required(role_whitelist):
         role_whitelist = [role_whitelist]
 
     def auth_required_wrapper(func):
+
         def wrapped(*args, **kwargs):
             appid = app_identity.get_application_id()
             # Only enforce HTTPS and auth for external requests; requests made for data generation
             # are allowed through (when enabled).
             if not _is_self_request():
-                if request.scheme.lower() != 'https' and appid not in ('None', 'testbed-test', 'testapp'):
+                if request.scheme.lower() != 'https' and appid not in (
+                        'None', 'testbed-test', 'testapp'):
                     raise Unauthorized('HTTPS is required for %r' % appid)
                 check_auth(role_whitelist)
             return func(*args, **kwargs)
@@ -60,7 +62,9 @@ def nonprod(func):
 
     def wrapped(*args, **kwargs):
         if not config.getSettingJson(config.ALLOW_NONPROD_REQUESTS, False):
-            raise Forbidden('Request not allowed in production environment (according to config).')
+            raise Forbidden(
+                'Request not allowed in production environment (according to config).'
+            )
         return func(*args, **kwargs)
 
     return wrapped
@@ -74,9 +78,7 @@ def check_auth(role_whitelist):
         return
 
     logging.info('User {} has roles {}, but {} is required'.format(
-        user_email,
-        user_info.get('roles'),
-        role_whitelist))
+        user_email, user_info.get('roles'), role_whitelist))
     raise Forbidden()
 
 
@@ -95,8 +97,7 @@ def check_cron():
     if request.headers.get('X-Appengine-Cron'):
         logging.info('Appengine-Cron ALLOWED for cron endpoint.')
         return
-    logging.info('User {} NOT ALLOWED for cron endpoint'.format(
-        get_oauth_id()))
+    logging.info('User {} NOT ALLOWED for cron endpoint'.format(get_oauth_id()))
     raise Forbidden()
 
 
@@ -105,9 +106,9 @@ def lookup_user_info(user_email):
 
 
 def _is_self_request():
-    return (request.remote_addr is None
-            and config.getSettingJson(config.ALLOW_NONPROD_REQUESTS, False)
-            and not request.headers.get('unauthenticated'))
+    return (request.remote_addr is None and
+            config.getSettingJson(config.ALLOW_NONPROD_REQUESTS, False) and
+            not request.headers.get('unauthenticated'))
 
 
 def get_validated_user_info():
@@ -119,16 +120,19 @@ def get_validated_user_info():
     # when using dev_appserver. When client tests are checking to ensure that an
     # unauthenticated requests gets rejected, they helpfully add this header.
     # The `application_id` check ensures this feature only works in dev_appserver.
-    if request.headers.get('unauthenticated') and app_identity.get_application_id() == 'None':
+    if request.headers.get(
+            'unauthenticated') and app_identity.get_application_id() == 'None':
         user_email = None
     if user_email is None:
         raise Unauthorized('No OAuth user found.')
 
     user_info = lookup_user_info(user_email)
     if user_info:
-        enforce_ip_whitelisted(request.remote_addr, get_whitelisted_ips(user_info))
-        enforce_appid_whitelisted(request.headers.get('X-Appengine-Inbound-Appid'),
-                                  get_whitelisted_appids(user_info))
+        enforce_ip_whitelisted(request.remote_addr,
+                               get_whitelisted_ips(user_info))
+        enforce_appid_whitelisted(
+            request.headers.get('X-Appengine-Inbound-Appid'),
+            get_whitelisted_appids(user_info))
         logging.info('User %r ALLOWED', user_email)
         return (user_email, user_info)
 
@@ -167,9 +171,11 @@ def enforce_appid_whitelisted(request_app_id, whitelisted_appids):
             logging.info('APP ID {} ALLOWED'.format(request_app_id))
             return
         else:
-            logging.info('APP ID {} NOT FOUND IN {}'.format(request_app_id, whitelisted_appids))
+            logging.info('APP ID {} NOT FOUND IN {}'.format(
+                request_app_id, whitelisted_appids))
     else:
-        logging.info('NO APP ID FOUND WHEN REQUIRED TO BE ONE OF: {}'.format(whitelisted_appids))
+        logging.info('NO APP ID FOUND WHEN REQUIRED TO BE ONE OF: {}'.format(
+            whitelisted_appids))
     raise Forbidden()
 
 
@@ -183,7 +189,8 @@ def update_model(old_model, new_model):
     """
 
     for k, v in new_model.to_dict().items():
-        if type(getattr(type(new_model), k)) != ndb.ComputedProperty and v is not None:
+        if type(getattr(type(new_model),
+                        k)) != ndb.ComputedProperty and v is not None:
             setattr(old_model, k, v)
 
 

@@ -27,7 +27,8 @@ def render():
 
     :return: a str representation of the cron file
     """
-    j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(resources.TEMPLATES_PATH))
+    j2_env = jinja2.Environment(
+        loader=jinja2.FileSystemLoader(resources.TEMPLATES_PATH))
     tpl = j2_env.get_template(resources.CRON_TPL_YAML)
     # TODO obtain cron urls from validation.main/app_base.yaml instead of through template
     hpos = resources.hpo_csv()
@@ -43,7 +44,9 @@ def generate():
     :raises IOError if the cron.yaml file already exists
     """
     if os.path.exists(CRON_YAML_PATH):
-        raise IOError('The file "%s" already exists. Please remove or rename it and retry.' % CRON_YAML_PATH)
+        raise IOError(
+            'The file "%s" already exists. Please remove or rename it and retry.'
+            % CRON_YAML_PATH)
     else:
         cron_yaml = render()
         with open(CRON_YAML_PATH, 'w') as cron_yaml_fp:

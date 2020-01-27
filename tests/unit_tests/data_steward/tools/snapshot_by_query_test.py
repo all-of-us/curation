@@ -8,6 +8,7 @@ SPACE = ' '
 
 
 class SnapshotByQueryTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -15,7 +16,8 @@ class SnapshotByQueryTest(unittest.TestCase):
         print('**************************************************************')
 
     def test_get_copy_table_query(self):
-        actual_query = snapshot_by_query.get_copy_table_query('test-project', 'test-dataset', 'person')
+        actual_query = snapshot_by_query.get_copy_table_query(
+            'test-project', 'test-dataset', 'person')
         expected_query = '''SELECT person_id, gender_concept_id, year_of_birth, 
         month_of_birth, day_of_birth, birth_datetime, race_concept_id, ethnicity_concept_id, location_id, 
         provider_id, care_site_id, person_source_value, gender_source_value, gender_source_concept_id, 
@@ -24,6 +26,7 @@ class SnapshotByQueryTest(unittest.TestCase):
         expected_query = re.sub(WHITESPACE, SPACE, expected_query)
         self.assertEqual(actual_query, expected_query)
 
-        actual_query = snapshot_by_query.get_copy_table_query('test-project', 'test-dataset', 'non_cdm_table')
+        actual_query = snapshot_by_query.get_copy_table_query(
+            'test-project', 'test-dataset', 'non_cdm_table')
         expected_query = '''SELECT * FROM `test-project.test-dataset.non_cdm_table`'''
         self.assertEqual(actual_query, expected_query)

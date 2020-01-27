@@ -12,14 +12,17 @@ import mock
 from common import DELIMITER, LINE_TERMINATOR
 from resources import AOU_VOCAB_CONCEPT_CSV_PATH
 from tests.test_util import TEST_VOCABULARY_VOCABULARY_CSV, TEST_VOCABULARY_CONCEPT_CSV
-from vocabulary import (_transform_csv, format_date_str, get_aou_vocabulary_row, append_vocabulary, append_concepts,
-                        AOU_GEN_ID, AOU_CUSTOM_ID, _vocab_id_match)
+from vocabulary import (_transform_csv, format_date_str, get_aou_vocabulary_row,
+                        append_vocabulary, append_concepts, AOU_GEN_ID,
+                        AOU_CUSTOM_ID, _vocab_id_match)
 
 
 class VocabularyTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
-        print('\n**************************************************************')
+        print(
+            '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
 
@@ -34,7 +37,9 @@ class VocabularyTest(unittest.TestCase):
         return contents
 
     def test_transform_file(self):
-        header = ['concept_id', 'valid_start_date', 'valid_end_date', 'invalid_reason']
+        header = [
+            'concept_id', 'valid_start_date', 'valid_end_date', 'invalid_reason'
+        ]
         row1 = ['1', '2017-05-17', '2099-12-31', '']
         row2 = ['2', '2019-01-01', '2099-12-31', '']
         rows = [header, row1, row2]
@@ -45,15 +50,13 @@ class VocabularyTest(unittest.TestCase):
         input_text = expected_text.replace('-', '')
         actual_text = VocabularyTest.do_transform_file(input_text)
         msg_fmt = 'Dates were not formatted as expected.\nExpected:\n{0}\nActual:\n{1}'
-        self.assertEqual(expected_text,
-                         actual_text,
+        self.assertEqual(expected_text, actual_text,
                          msg_fmt.format(expected_text, actual_text))
 
         # windows line endings are replaced with linux ones
         input_text = expected_text.replace(LINE_TERMINATOR, '\r\n')
         actual_text = VocabularyTest.do_transform_file(input_text)
-        self.assertEqual(expected_text,
-                         actual_text,
+        self.assertEqual(expected_text, actual_text,
                          'Windows line endings were not replaced as expected.')
 
     def test_format_date_str(self):
@@ -112,7 +115,8 @@ class VocabularyTest(unittest.TestCase):
 
         try:
             append_concepts(in_path, out_path)
-            with open(in_path, 'r') as in_fp, open(AOU_VOCAB_CONCEPT_CSV_PATH, 'r') as add_fp:
+            with open(in_path, 'r') as in_fp, open(AOU_VOCAB_CONCEPT_CSV_PATH,
+                                                   'r') as add_fp:
                 # Note: Test files are small so memory usage here is acceptable
                 original_lines = in_fp.readlines()
                 all_lines = add_fp.readlines()

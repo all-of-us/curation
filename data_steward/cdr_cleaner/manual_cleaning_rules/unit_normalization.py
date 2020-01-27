@@ -10,28 +10,23 @@ LOGGER = logging.getLogger(__name__)
 UNIT_MAPPING_TABLE = 'unit_mapping'
 UNIT_MAPPING_FILE = 'unit_mapping'
 MEASUREMENT = 'measurement'
-UNIT_MAPPING_FIELDS = [
-    {
-        "type": "integer",
-        "name": "measurement_concept_id",
-        "mode": "nullable"
-    },
-    {
-        "type": "integer",
-        "name": "unit_concept_id",
-        "mode": "nullable"
-    },
-    {
-        "type": "integer",
-        "name": "set_unit_concept_id",
-        "mode": "nullable"
-    },
-    {
-        "type": "string",
-        "name": "transform_value_as_number",
-        "mode": "nullable"
-    }
-]
+UNIT_MAPPING_FIELDS = [{
+    "type": "integer",
+    "name": "measurement_concept_id",
+    "mode": "nullable"
+}, {
+    "type": "integer",
+    "name": "unit_concept_id",
+    "mode": "nullable"
+}, {
+    "type": "integer",
+    "name": "set_unit_concept_id",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "transform_value_as_number",
+    "mode": "nullable"
+}]
 
 INSERT_UNITS_QUERY = """
 INSERT INTO `{project_id}.{dataset_id}.{units_table_id}`
@@ -143,10 +138,13 @@ def create_unit_mapping_table(project_id, dataset_id):
     :param dataset_id:
     :return:
     """
-    bq_utils.create_table(table_id=UNIT_MAPPING_TABLE, fields=UNIT_MAPPING_FIELDS, drop_existing=True,
+    bq_utils.create_table(table_id=UNIT_MAPPING_TABLE,
+                          fields=UNIT_MAPPING_FIELDS,
+                          drop_existing=True,
                           dataset_id=dataset_id)
 
-    unit_mappings_csv = os.path.join(resources.resource_path, UNIT_MAPPING_FILE + ".csv")
+    unit_mappings_csv = os.path.join(resources.resource_path,
+                                     UNIT_MAPPING_FILE + ".csv")
     unit_mappings_list = resources.csv_to_list(unit_mappings_csv)
     unit_mappings_populate_query = INSERT_UNITS_QUERY.format(
         dataset_id=dataset_id,
@@ -167,10 +165,11 @@ def get_unit_normalization_query(project_id, dataset_id):
     queries = []
 
     query = dict()
-    query[cdr_consts.QUERY] = UNIT_NORMALIZATION_QUERY.format(project_id=project_id,
-                                                              dataset_id=dataset_id,
-                                                              unit_table_name=UNIT_MAPPING_TABLE,
-                                                              measurement_table=MEASUREMENT)
+    query[cdr_consts.QUERY] = UNIT_NORMALIZATION_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        unit_table_name=UNIT_MAPPING_TABLE,
+        measurement_table=MEASUREMENT)
     query[cdr_consts.DESTINATION_TABLE] = MEASUREMENT
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id

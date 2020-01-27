@@ -9,7 +9,8 @@ import cachetools
 from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML
 from io import open
 
-base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+base_path = os.path.dirname(
+    os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 # tools/*
 tools_path = os.path.join(base_path, 'tools')
@@ -31,7 +32,8 @@ CRON_TPL_YAML = 'cron.tpl.yaml'
 DATASOURCES_JSON = os.path.join(achilles_index_path, 'data/datasources.json')
 
 domain_mappings_path = os.path.join(resource_path, 'domain_mappings')
-field_mappings_replaced_path = os.path.join(domain_mappings_path, 'field_mappings_replaced.csv')
+field_mappings_replaced_path = os.path.join(domain_mappings_path,
+                                            'field_mappings_replaced.csv')
 table_mappings_path = os.path.join(domain_mappings_path, 'table_mappings.csv')
 field_mappings_path = os.path.join(domain_mappings_path, 'field_mappings.csv')
 value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
@@ -177,7 +179,10 @@ def hash_dir(in_dir):
 CDM_TABLES = list(cdm_schemas().keys())
 ACHILLES_INDEX_FILES = achilles_index_files()
 CDM_FILES = [table + '.csv' for table in CDM_TABLES]
-ALL_ACHILLES_INDEX_FILES = [name.split(resource_path + os.sep)[1].strip() for name in ACHILLES_INDEX_FILES]
+ALL_ACHILLES_INDEX_FILES = [
+    name.split(resource_path + os.sep)[1].strip()
+    for name in ACHILLES_INDEX_FILES
+]
 IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES
 
 

@@ -56,8 +56,8 @@ EXISTING_AND_VALID_CONSENTING_RECORDS = (
     # get all unconsented non-ehr rows
     'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
     'JOIN unconsented as cons on entry.person_id = cons.person_id '
-    'JOIN ppi_mappings AS maps ON maps.{table}_id = entry.{table}_id '
-)
+    'JOIN ppi_mappings AS maps ON maps.{table}_id = entry.{table}_id ')
+
 
 def get_person_id_validation_queries(project=None, dataset=None):
     """
@@ -81,7 +81,9 @@ def get_person_id_validation_queries(project=None, dataset=None):
 
     # generate queries to remove EHR records of non-ehr consented persons
     for table in common.MAPPED_CLINICAL_DATA_TABLES:
-        field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
+        field_names = [
+            'entry.' + field['name'] for field in resources.fields_for(table)
+        ]
         fields = ', '.join(field_names)
         consent_query = EXISTING_AND_VALID_CONSENTING_RECORDS.format(
             project=project,
@@ -100,7 +102,8 @@ def get_person_id_validation_queries(project=None, dataset=None):
         query_list.append(query_dict)
 
     # generate queries to remove person_ids of people not in the person table
-    query_list.extend(drop_rows_for_missing_persons.get_queries(project, dataset))
+    query_list.extend(
+        drop_rows_for_missing_persons.get_queries(project, dataset))
 
     return query_list
 

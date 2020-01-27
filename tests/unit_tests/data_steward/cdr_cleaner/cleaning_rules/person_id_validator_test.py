@@ -39,34 +39,47 @@ class PersonIDValidatorTest(unittest.TestCase):
 
         expected = []
         for table in self.mapped_tables:
-            field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
+            field_names = [
+                'entry.' + field['name']
+                for field in resources.fields_for(table)
+            ]
             fields = ', '.join(field_names)
 
-            expected.append(
-                {
-                    clean_consts.QUERY: existing_and_consenting.format(
-                        project='foo', dataset='bar', mapping_dataset='bar', table=table, fields=fields
-                    ),
-                    clean_consts.DESTINATION_TABLE: table,
-                    clean_consts.DESTINATION_DATASET: 'bar',
-                    clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-                }
-            )
+            expected.append({
+                clean_consts.QUERY:
+                    existing_and_consenting.format(project='foo',
+                                                   dataset='bar',
+                                                   mapping_dataset='bar',
+                                                   table=table,
+                                                   fields=fields),
+                clean_consts.DESTINATION_TABLE:
+                    table,
+                clean_consts.DESTINATION_DATASET:
+                    'bar',
+                clean_consts.DISPOSITION:
+                    bq_consts.WRITE_TRUNCATE,
+            })
 
         for table in self.all_tables:
-            field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
+            field_names = [
+                'entry.' + field['name']
+                for field in resources.fields_for(table)
+            ]
             fields = ', '.join(field_names)
 
-            expected.append(
-                {
-                    clean_consts.QUERY: existing_in_person_table.format(
-                        project='foo', dataset='bar', table=table, fields=fields
-                    ),
-                    clean_consts.DESTINATION_TABLE: table,
-                    clean_consts.DESTINATION_DATASET: 'bar',
-                    clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-                }
-            )
+            expected.append({
+                clean_consts.QUERY:
+                    existing_in_person_table.format(project='foo',
+                                                    dataset='bar',
+                                                    table=table,
+                                                    fields=fields),
+                clean_consts.DESTINATION_TABLE:
+                    table,
+                clean_consts.DESTINATION_DATASET:
+                    'bar',
+                clean_consts.DISPOSITION:
+                    bq_consts.WRITE_TRUNCATE,
+            })
 
         self.assertEqual(expected, results)
 
@@ -84,33 +97,46 @@ class PersonIDValidatorTest(unittest.TestCase):
 
         expected = []
         for table in self.mapped_tables:
-            field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
+            field_names = [
+                'entry.' + field['name']
+                for field in resources.fields_for(table)
+            ]
             fields = ', '.join(field_names)
 
-            expected.append(
-                {
-                    clean_consts.QUERY: existing_and_consenting.format(
-                        project='foo', dataset='bar_deid', mapping_dataset='bar', table=table, fields=fields
-                    ),
-                    clean_consts.DESTINATION_TABLE: table,
-                    clean_consts.DESTINATION_DATASET: 'bar_deid',
-                    clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-                }
-            )
+            expected.append({
+                clean_consts.QUERY:
+                    existing_and_consenting.format(project='foo',
+                                                   dataset='bar_deid',
+                                                   mapping_dataset='bar',
+                                                   table=table,
+                                                   fields=fields),
+                clean_consts.DESTINATION_TABLE:
+                    table,
+                clean_consts.DESTINATION_DATASET:
+                    'bar_deid',
+                clean_consts.DISPOSITION:
+                    bq_consts.WRITE_TRUNCATE,
+            })
 
         for table in self.all_tables:
-            field_names = ['entry.' + field['name'] for field in resources.fields_for(table)]
+            field_names = [
+                'entry.' + field['name']
+                for field in resources.fields_for(table)
+            ]
             fields = ', '.join(field_names)
 
-            expected.append(
-                {
-                    clean_consts.QUERY: existing_in_person_table.format(
-                        project='foo', dataset='bar_deid', table=table, fields=fields
-                    ),
-                    clean_consts.DESTINATION_TABLE: table,
-                    clean_consts.DESTINATION_DATASET: 'bar_deid',
-                    clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-                }
-            )
+            expected.append({
+                clean_consts.QUERY:
+                    existing_in_person_table.format(project='foo',
+                                                    dataset='bar_deid',
+                                                    table=table,
+                                                    fields=fields),
+                clean_consts.DESTINATION_TABLE:
+                    table,
+                clean_consts.DESTINATION_DATASET:
+                    'bar_deid',
+                clean_consts.DISPOSITION:
+                    bq_consts.WRITE_TRUNCATE,
+            })
 
         self.assertEqual(expected, results)

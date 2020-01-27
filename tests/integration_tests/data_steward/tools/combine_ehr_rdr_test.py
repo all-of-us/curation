@@ -11,18 +11,20 @@ import gcs_utils
 import resources
 from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
-from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main, mapping_table_for,
-                                   create_cdm_tables, logger)
+from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
+                                   mapping_table_for, create_cdm_tables, logger)
 
-UNCONSENTED_EHR_COUNTS_QUERY = ('  select \'{domain_table}\' as table_id, count(1) as n from (SELECT DISTINCT'
-                                '  v.src_hpo_id AS src_hpo_id,'
-                                '  t.{domain_table}_id  AS {domain_table}_id'
-                                '  FROM {ehr_dataset_id}.{domain_table} t'
-                                '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v'
-                                '  on t.{domain_table}_id = v.{domain_table}_id'
-                                '  WHERE NOT EXISTS'
-                                '  (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c'
-                                '  WHERE t.person_id = c.person_id))')
+UNCONSENTED_EHR_COUNTS_QUERY = (
+    '  select \'{domain_table}\' as table_id, count(1) as n from (SELECT DISTINCT'
+    '  v.src_hpo_id AS src_hpo_id,'
+    '  t.{domain_table}_id  AS {domain_table}_id'
+    '  FROM {ehr_dataset_id}.{domain_table} t'
+    '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v'
+    '  on t.{domain_table}_id = v.{domain_table}_id'
+    '  WHERE NOT EXISTS'
+    '  (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c'
+    '  WHERE t.person_id = c.person_id))')
+
 
 class CombineEhrRdrTest(unittest.TestCase):
 
@@ -39,7 +41,8 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        cls.load_dataset_from_files(ehr_dataset_id, test_util.NYC_FIVE_PERSONS_PATH, True)
+        cls.load_dataset_from_files(ehr_dataset_id,
+                                    test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
 
     @staticmethod
@@ -48,10 +51,14 @@ class CombineEhrRdrTest(unittest.TestCase):
         test_util.empty_bucket(bucket)
         job_ids = []
         for table in resources.CDM_TABLES:
-            job_ids.append(CombineEhrRdrTest._upload_file_to_bucket(bucket, dataset_id, path, table))
+            job_ids.append(
+                CombineEhrRdrTest._upload_file_to_bucket(
+                    bucket, dataset_id, path, table))
             if mappings and table in DOMAIN_TABLES:
                 mapping_table = '_mapping_{table}'.format(table=table)
-                job_ids.append(CombineEhrRdrTest._upload_file_to_bucket(bucket, dataset_id, path, mapping_table))
+                job_ids.append(
+                    CombineEhrRdrTest._upload_file_to_bucket(
+                        bucket, dataset_id, path, mapping_table))
         incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
         if len(incomplete_jobs) > 0:
             message = "Job id(s) %s failed to complete" % incomplete_jobs
@@ -71,8 +78,14 @@ class CombineEhrRdrTest(unittest.TestCase):
         except OSError:
             test_util.write_cloud_str(bucket, filename, '\n')
 
-        gcs_path = 'gs://{bucket}/{filename}'.format(bucket=bucket, filename=filename)
-        load_results = bq_utils.load_csv(schema, gcs_path, app_id, dataset_id, table, allow_jagged_rows=True)
+        gcs_path = 'gs://{bucket}/{filename}'.format(bucket=bucket,
+                                                     filename=filename)
+        load_results = bq_utils.load_csv(schema,
+                                         gcs_path,
+                                         app_id,
+                                         dataset_id,
+                                         table,
+                                         allow_jagged_rows=True)
         load_job_id = load_results['jobReference']['jobId']
         return load_job_id
 
@@ -96,85 +109,94 @@ class CombineEhrRdrTest(unittest.TestCase):
         """
         # sanity check
         # pre-conditions
-        self.assertFalse(bq_utils.table_exists(EHR_CONSENT_TABLE_ID, self.combined_dataset_id))
+        self.assertFalse(
+            bq_utils.table_exists(EHR_CONSENT_TABLE_ID,
+                                  self.combined_dataset_id))
 
         # test
         ehr_consent()
 
         # post conditions
-        self.assertTrue(bq_utils.table_exists(EHR_CONSENT_TABLE_ID, self.combined_dataset_id),
-                        'Table {dataset}.{table} created by consented_person'.format(dataset=self.combined_dataset_id,
-                                                                                     table=EHR_CONSENT_TABLE_ID))
-        response = bq_utils.query('SELECT * FROM {dataset}.{table}'.format(dataset=self.combined_dataset_id,
-                                                                           table=EHR_CONSENT_TABLE_ID))
+        self.assertTrue(
+            bq_utils.table_exists(EHR_CONSENT_TABLE_ID,
+                                  self.combined_dataset_id),
+            'Table {dataset}.{table} created by consented_person'.format(
+                dataset=self.combined_dataset_id, table=EHR_CONSENT_TABLE_ID))
+        response = bq_utils.query('SELECT * FROM {dataset}.{table}'.format(
+            dataset=self.combined_dataset_id, table=EHR_CONSENT_TABLE_ID))
         rows = bq_utils.response2rows(response)
         expected = {2, 4}
         actual = set(row['person_id'] for row in rows)
-        self.assertSetEqual(expected,
-                            actual,
-                            'Records in {dataset}.{table}'.format(dataset=self.combined_dataset_id,
-                                                                  table=EHR_CONSENT_TABLE_ID))
+        self.assertSetEqual(
+            expected, actual, 'Records in {dataset}.{table}'.format(
+                dataset=self.combined_dataset_id, table=EHR_CONSENT_TABLE_ID))
 
     def test_copy_rdr_tables(self):
         for table in RDR_TABLES_TO_COPY:
-            self.assertFalse(bq_utils.table_exists(table, self.combined_dataset_id))  # sanity check
+            self.assertFalse(
+                bq_utils.table_exists(table,
+                                      self.combined_dataset_id))  # sanity check
             copy_rdr_table(table)
             actual = bq_utils.table_exists(table, self.combined_dataset_id)
-            self.assertTrue(actual, msg='RDR table {table} should be copied'.format(table=table))
+            self.assertTrue(
+                actual,
+                msg='RDR table {table} should be copied'.format(table=table))
 
             # Check that row count in combined is same as rdr
-            query = (
-                'WITH rdr AS '
-                ' (SELECT COUNT(1) n FROM {rdr_dataset_id}.{table}), '
-                'combined AS '
-                ' (SELECT COUNT(1) n FROM {combined_dataset_id}.{table}) '
-                'SELECT '
-                'rdr.n AS rdr_count, '
-                'combined.n AS combined_count '
-                'FROM rdr, combined '
-            ).format(
-                rdr_dataset_id=self.rdr_dataset_id,
-                combined_dataset_id=self.combined_dataset_id,
-                table=table
-            )
+            query = ('WITH rdr AS '
+                     ' (SELECT COUNT(1) n FROM {rdr_dataset_id}.{table}), '
+                     'combined AS '
+                     ' (SELECT COUNT(1) n FROM {combined_dataset_id}.{table}) '
+                     'SELECT '
+                     'rdr.n AS rdr_count, '
+                     'combined.n AS combined_count '
+                     'FROM rdr, combined ').format(
+                         rdr_dataset_id=self.rdr_dataset_id,
+                         combined_dataset_id=self.combined_dataset_id,
+                         table=table)
             response = bq_utils.query(query)
             rows = bq_utils.response2rows(response)
             self.assertTrue(len(rows) == 1)  # sanity check
             row = rows[0]
             rdr_count, combined_count = row['rdr_count'], row['combined_count']
             msg_fmt = 'Table {table} has {rdr_count} in rdr and {combined_count} in combined (expected to be equal)'
-            self.assertEqual(rdr_count, combined_count,
-                             msg_fmt.format(table=table, rdr_count=rdr_count, combined_count=combined_count))
+            self.assertEqual(
+                rdr_count, combined_count,
+                msg_fmt.format(table=table,
+                               rdr_count=rdr_count,
+                               combined_count=combined_count))
 
     def _ehr_only_records_excluded(self):
         """
         EHR person records which are missing from RDR are excluded from combined
         """
-        query = (
-            'WITH ehr_only AS '
-            ' (SELECT person_id '
-            '  FROM {ehr_dataset_id}.person ep '
-            '  WHERE NOT EXISTS '
-            '    (SELECT 1 '
-            '     FROM {rdr_dataset_id}.person rp '
-            '     WHERE rp.person_id = ep.person_id) '
-            ' ) '
-            'SELECT '
-            'ehr_only.person_id AS ehr_person_id, '
-            'p.person_id AS combined_person_id '
-            'FROM ehr_only '
-            'LEFT JOIN {combined_dataset_id}.person p '
-            'ON ehr_only.person_id = p.person_id'
-        ).format(ehr_dataset_id=self.ehr_dataset_id,
-                 rdr_dataset_id=self.rdr_dataset_id,
-                 combined_dataset_id=self.combined_dataset_id)
+        query = ('WITH ehr_only AS '
+                 ' (SELECT person_id '
+                 '  FROM {ehr_dataset_id}.person ep '
+                 '  WHERE NOT EXISTS '
+                 '    (SELECT 1 '
+                 '     FROM {rdr_dataset_id}.person rp '
+                 '     WHERE rp.person_id = ep.person_id) '
+                 ' ) '
+                 'SELECT '
+                 'ehr_only.person_id AS ehr_person_id, '
+                 'p.person_id AS combined_person_id '
+                 'FROM ehr_only '
+                 'LEFT JOIN {combined_dataset_id}.person p '
+                 'ON ehr_only.person_id = p.person_id').format(
+                     ehr_dataset_id=self.ehr_dataset_id,
+                     rdr_dataset_id=self.rdr_dataset_id,
+                     combined_dataset_id=self.combined_dataset_id)
         response = bq_utils.query(query)
         rows = bq_utils.response2rows(response)
-        self.assertGreater(len(rows), 0, 'Test data is missing EHR-only records')
+        self.assertGreater(len(rows), 0,
+                           'Test data is missing EHR-only records')
         for row in rows:
             combined_person_id = row['combined_person_id']
-            self.assertIsNone(combined_person_id,
-                              'EHR-only person_id `{ehr_person_id}` found in combined when it should be excluded')
+            self.assertIsNone(
+                combined_person_id,
+                'EHR-only person_id `{ehr_person_id}` found in combined when it should be excluded'
+            )
 
     def get_unconsented_ehr_records_count(self, table_name):
         query = UNCONSENTED_EHR_COUNTS_QUERY.format(
@@ -182,8 +204,7 @@ class CombineEhrRdrTest(unittest.TestCase):
             ehr_dataset_id=bq_utils.get_dataset_id(),
             combined_dataset_id=self.combined_dataset_id,
             domain_table=table_name,
-            ehr_consent_table_id='_ehr_consent'
-        )
+            ehr_consent_table_id='_ehr_consent')
         response = bq_utils.query(query)
         rows = bq_utils.response2rows(response)
         return rows[0]['n']
@@ -195,10 +216,11 @@ class CombineEhrRdrTest(unittest.TestCase):
         where = (
             'WHERE EXISTS '
             '  (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c '
-            '   WHERE t.person_id = c.person_id)'
-        ).format(combined_dataset_id=self.combined_dataset_id,
-                 ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
-        ehr_counts = test_util.get_table_counts(self.ehr_dataset_id, DOMAIN_TABLES, where)
+            '   WHERE t.person_id = c.person_id)').format(
+                combined_dataset_id=self.combined_dataset_id,
+                ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+        ehr_counts = test_util.get_table_counts(self.ehr_dataset_id,
+                                                DOMAIN_TABLES, where)
         rdr_counts = test_util.get_table_counts(self.rdr_dataset_id)
         combined_counts = test_util.get_table_counts(self.combined_dataset_id)
         output_tables = combined_counts.keys()
@@ -209,15 +231,22 @@ class CombineEhrRdrTest(unittest.TestCase):
             expected_mapping_table = mapping_table_for(table)
             self.assertIn(expected_mapping_table, output_tables)
             expected_fields = resources.fields_for(expected_mapping_table)
-            actual_table_info = bq_utils.get_table_info(expected_mapping_table, self.combined_dataset_id)
-            actual_fields = actual_table_info.get('schema', dict()).get('fields', [])
-            actual_fields_norm = map(test_util.normalize_field_payload, actual_fields)
+            actual_table_info = bq_utils.get_table_info(
+                expected_mapping_table, self.combined_dataset_id)
+            actual_fields = actual_table_info.get('schema',
+                                                  dict()).get('fields', [])
+            actual_fields_norm = map(test_util.normalize_field_payload,
+                                     actual_fields)
             self.assertCountEqual(expected_fields, actual_fields_norm)
 
             # Count should be sum of EHR and RDR
             # (except for tables like observation where extra records are created for demographics)
-            if 'person_id' in [field.get('name', '') for field in resources.fields_for(table)]:
-                unconsented_ehr_records = self.get_unconsented_ehr_records_count(table)
+            if 'person_id' in [
+                    field.get('name', '')
+                    for field in resources.fields_for(table)
+            ]:
+                unconsented_ehr_records = self.get_unconsented_ehr_records_count(
+                    table)
             else:
                 unconsented_ehr_records = 0
 
@@ -226,7 +255,8 @@ class CombineEhrRdrTest(unittest.TestCase):
             if table in expected_diffs:
                 expected_count = actual_count
             else:
-                expected_count = (ehr_counts[table] - unconsented_ehr_records) + rdr_counts[table]
+                expected_count = (ehr_counts[table] -
+                                  unconsented_ehr_records) + rdr_counts[table]
             expected_counts[expected_mapping_table] = expected_count
 
         self.assertDictContainsSubset(expected_counts, combined_counts)
@@ -253,13 +283,18 @@ class CombineEhrRdrTest(unittest.TestCase):
                     mapping_table=mapping_table)
             response = bq_utils.query(query)
             rows = bq_utils.response2rows(response)
-            self.assertEqual(0, len(rows), "RDR records should map to records in mapping and combined tables")
+            self.assertEqual(
+                0, len(rows),
+                "RDR records should map to records in mapping and combined tables"
+            )
 
     def test_create_cdm_tables(self):
         # pre-conditions
         # Sanity check
         tables_before = bq_utils.list_tables(self.combined_dataset_id)
-        table_names_before = [t['tableReference']['tableId'] for t in tables_before]
+        table_names_before = [
+            t['tableReference']['tableId'] for t in tables_before
+        ]
         for table in resources.CDM_TABLES:
             self.assertNotIn(table, table_names_before)
 
@@ -268,7 +303,9 @@ class CombineEhrRdrTest(unittest.TestCase):
 
         # post conditions
         tables_after = bq_utils.list_tables(self.combined_dataset_id)
-        table_names_after = [t['tableReference']['tableId'] for t in tables_after]
+        table_names_after = [
+            t['tableReference']['tableId'] for t in tables_after
+        ]
         for table in resources.CDM_TABLES:
             self.assertIn(table, table_names_after)
 

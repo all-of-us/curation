@@ -11,6 +11,7 @@ from tools import retract_data_gcs as rd
 
 
 class RetractDataGcsTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -23,8 +24,8 @@ class RetractDataGcsTest(unittest.TestCase):
         self.site_bucket = 'test_bucket'
         self.folder_1 = '2019-01-01-v1/'
         self.folder_2 = '2019-02-02-v2/'
-        self.folder_prefix_1 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_1
-        self.folder_prefix_2 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_2
+        self.folder_prefix_1 = self.hpo_id + '/' + self.site_bucket + '/' + self.folder_1
+        self.folder_prefix_2 = self.hpo_id + '/' + self.site_bucket + '/' + self.folder_2
         self.pids = [17, 20]
         self.skip_pids = [10, 25]
         self.project_id = 'project_id'
@@ -40,12 +41,13 @@ class RetractDataGcsTest(unittest.TestCase):
     @mock.patch('tools.retract_data_gcs.extract_pids_from_table')
     @mock.patch('gcs_utils.get_drc_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
-    def test_integration_five_person_data_retraction_skip(self, mock_hpo_bucket, mock_bucket, mock_extract_pids):
+    def test_integration_five_person_data_retraction_skip(
+        self, mock_hpo_bucket, mock_bucket, mock_extract_pids):
         mock_hpo_bucket.return_value = self.site_bucket
         mock_bucket.return_value = self.bucket
         mock_extract_pids.return_value = self.skip_pids
-        self.folder_prefix_1 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_1
-        self.folder_prefix_2 = self.hpo_id+'/'+self.site_bucket+'/'+self.folder_2
+        self.folder_prefix_1 = self.hpo_id + '/' + self.site_bucket + '/' + self.folder_1
+        self.folder_prefix_2 = self.hpo_id + '/' + self.site_bucket + '/' + self.folder_2
         lines_to_remove = {}
         total_lines_prior = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
@@ -66,8 +68,12 @@ class RetractDataGcsTest(unittest.TestCase):
                         total_lines_prior[file_name] += 1
 
             # write file to cloud for testing
-            test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_1)
-            test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_2)
+            test_util.write_cloud_file(self.bucket,
+                                       file_path,
+                                       prefix=self.folder_prefix_1)
+            test_util.write_cloud_file(self.bucket,
+                                       file_path,
+                                       prefix=self.folder_prefix_2)
 
         retract_result = rd.run_retraction(self.project_id,
                                            self.sandbox_dataset_id,
@@ -79,13 +85,16 @@ class RetractDataGcsTest(unittest.TestCase):
         total_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
             file_name = file_path.split('/')[-1]
-            actual_result_contents = test_util.read_cloud_file(self.bucket, self.folder_prefix_1 + file_name)
+            actual_result_contents = test_util.read_cloud_file(
+                self.bucket, self.folder_prefix_1 + file_name)
             # convert to list and remove header and last list item since it is a newline
-            total_lines_post[file_name] = len(actual_result_contents.split('\n')[1:-1])
+            total_lines_post[file_name] = len(
+                actual_result_contents.split('\n')[1:-1])
 
         for key in total_lines_prior.keys():
             if key in lines_to_remove:
-                self.assertEqual(lines_to_remove[key], total_lines_prior[key] - total_lines_post[key])
+                self.assertEqual(lines_to_remove[key],
+                                 total_lines_prior[key] - total_lines_post[key])
             else:
                 self.assertEqual(total_lines_prior[key], total_lines_post[key])
 
@@ -94,12 +103,15 @@ class RetractDataGcsTest(unittest.TestCase):
         for key, val in lines_to_remove.items():
             if val != 0:
                 lines_to_keep[key] = val
-        self.assertEqual(len(retract_result[self.folder_prefix_1]), len(lines_to_keep))
+        self.assertEqual(len(retract_result[self.folder_prefix_1]),
+                         len(lines_to_keep))
 
     @mock.patch('tools.retract_data_gcs.extract_pids_from_table')
     @mock.patch('gcs_utils.get_drc_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
-    def test_integration_five_person_data_retraction(self, mock_hpo_bucket, mock_bucket, mock_extract_pids):
+    def test_integration_five_person_data_retraction(self, mock_hpo_bucket,
+                                                     mock_bucket,
+                                                     mock_extract_pids):
         mock_hpo_bucket.return_value = self.site_bucket
         mock_bucket.return_value = self.bucket
         mock_extract_pids.return_value = self.pids
@@ -123,8 +135,12 @@ class RetractDataGcsTest(unittest.TestCase):
                         total_lines_prior[file_name] += 1
 
             # write file to cloud for testing
-            test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_1)
-            test_util.write_cloud_file(self.bucket, file_path, prefix=self.folder_prefix_2)
+            test_util.write_cloud_file(self.bucket,
+                                       file_path,
+                                       prefix=self.folder_prefix_1)
+            test_util.write_cloud_file(self.bucket,
+                                       file_path,
+                                       prefix=self.folder_prefix_2)
 
         retract_result = rd.run_retraction(self.project_id,
                                            self.sandbox_dataset_id,
@@ -136,18 +152,22 @@ class RetractDataGcsTest(unittest.TestCase):
         total_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
             file_name = file_path.split('/')[-1]
-            actual_result_contents = test_util.read_cloud_file(self.bucket, self.folder_prefix_1 + file_name)
+            actual_result_contents = test_util.read_cloud_file(
+                self.bucket, self.folder_prefix_1 + file_name)
             # convert to list and remove header and last list item since it is a newline
-            total_lines_post[file_name] = len(actual_result_contents.split('\n')[1:-1])
+            total_lines_post[file_name] = len(
+                actual_result_contents.split('\n')[1:-1])
 
         for key in total_lines_prior.keys():
             if key in lines_to_remove:
-                self.assertEqual(lines_to_remove[key], total_lines_prior[key] - total_lines_post[key])
+                self.assertEqual(lines_to_remove[key],
+                                 total_lines_prior[key] - total_lines_post[key])
             else:
                 self.assertEqual(total_lines_prior[key], total_lines_post[key])
 
         # metadata for each updated file is returned
-        self.assertEqual(len(retract_result[self.folder_prefix_1]), len(lines_to_remove.keys()))
+        self.assertEqual(len(retract_result[self.folder_prefix_1]),
+                         len(lines_to_remove.keys()))
 
     def tearDown(self):
         self._empty_bucket()

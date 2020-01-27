@@ -41,7 +41,8 @@ WHERE
 """
 
 
-def get_drop_duplicate_states_queries(project_id, dataset_id, sandbox_dataset_id):
+def get_drop_duplicate_states_queries(project_id, dataset_id,
+                                      sandbox_dataset_id):
     """
 
     This function returns the parsed queries to delete the duplicate state records.
@@ -56,23 +57,23 @@ def get_drop_duplicate_states_queries(project_id, dataset_id, sandbox_dataset_id
 
     # Save duplicate state records being deleted in sandbox `dataset.intermediary_table` .
     query = dict()
-    query[cdr_consts.QUERY] = DROP_DUPLICATE_STATES_INTERMEDIARY_QUERY.format(dataset=dataset_id,
-                                                                              project=project_id,
-                                                                              intermediary_table=INTERMEDIARY_TABLE,
-                                                                              sandbox=sandbox_dataset_id
-                                                                              )
+    query[cdr_consts.QUERY] = DROP_DUPLICATE_STATES_INTERMEDIARY_QUERY.format(
+        dataset=dataset_id,
+        project=project_id,
+        intermediary_table=INTERMEDIARY_TABLE,
+        sandbox=sandbox_dataset_id)
     queries_list.append(query)
 
     # Delete duplicate state records from observation table and _mapping_observation_table
     for table in ['observation', '_mapping_observation']:
         query = dict()
 
-        query[cdr_consts.QUERY] = DROP_DUPLICATE_STATES_QUERY.format(dataset=dataset_id,
-                                                                     project=project_id,
-                                                                     table=table,
-                                                                     intermediary_table=INTERMEDIARY_TABLE,
-                                                                     sandbox=sandbox_dataset_id
-                                                                     )
+        query[cdr_consts.QUERY] = DROP_DUPLICATE_STATES_QUERY.format(
+            dataset=dataset_id,
+            project=project_id,
+            table=table,
+            intermediary_table=INTERMEDIARY_TABLE,
+            sandbox=sandbox_dataset_id)
         queries_list.append(query)
 
     return queries_list
@@ -85,8 +86,11 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=ARGS.project_id, dataset_id=ARGS.dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(
+        project_id=ARGS.project_id, dataset_id=ARGS.dataset_id)
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_drop_duplicate_states_queries(ARGS.project_id, ARGS.dataset_id, sandbox_dataset_id)
+    query_list = get_drop_duplicate_states_queries(ARGS.project_id,
+                                                   ARGS.dataset_id,
+                                                   sandbox_dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, query_list)

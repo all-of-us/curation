@@ -3,7 +3,6 @@ import re
 
 import google.datalab.bigquery as bq
 
-
 VOCABULARY_DATASET_RE = re.compile(r'^vocabulary\d{8}$')
 RDR_DATASET_RE = re.compile(r'^rdr\d{8}$')
 UNIONED_DATASET_RE = re.compile(r'^unioned_ehr\d{8}$')
@@ -55,14 +54,16 @@ def _datasets():
         elif is_deid_dataset(dataset_id):
             deid.append(dataset_id)
 
-    LatestDatasets = collections.namedtuple('LatestDatasets', 'vocabulary rdr unioned combined deid')
+    LatestDatasets = collections.namedtuple(
+        'LatestDatasets', 'vocabulary rdr unioned combined deid')
     latest = LatestDatasets(vocabulary=vocabulary[0],
                             rdr=rdr[0],
                             unioned=unioned[0],
                             combined=combined[0],
                             deid=deid[0])
 
-    TrendDatasets = collections.namedtuple('TrendDatasets', 'rdr unioned combined deid')
+    TrendDatasets = collections.namedtuple('TrendDatasets',
+                                           'rdr unioned combined deid')
     trend = TrendDatasets(rdr=rdr[0:TREND_N],
                           unioned=unioned[0:TREND_N],
                           combined=combined[0:TREND_N],

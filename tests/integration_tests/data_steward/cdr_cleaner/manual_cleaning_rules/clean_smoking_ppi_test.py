@@ -29,7 +29,8 @@ class CleanSmokingPPITest(unittest.TestCase):
         with open(csv_path, 'r') as f:
             expected = list(csv.DictReader(f))
 
-        smoking_ppi.load_smoking_lookup_table(self.project_id, self.sandbox_dataset_id)
+        smoking_ppi.load_smoking_lookup_table(self.project_id,
+                                              self.sandbox_dataset_id)
 
         q = SELECT_RECORDS.format(project_id=self.project_id,
                                   dataset_id=self.sandbox_dataset_id,

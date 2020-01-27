@@ -9,7 +9,10 @@ TEMP_PREFIX = 'temp.'
 TEMP_TABLE_PATTERN = re.compile('\s*INTO\s+([^\s]+)')
 TRUNCATE_TABLE_PATTERN = re.compile('\s*truncate\s+table\s+([^\s]+)')
 DROP_TABLE_PATTERN = re.compile('\s*drop\s+table\s+([^\s]+)')
-COMMENTED_BLOCK_REGEX = re.compile('(?P<before_comment>(^)(.)*)(?P<comment>(\/\*)(.)*(\*\/))(?P<after_comment>(.)*$)', re.DOTALL)
+COMMENTED_BLOCK_REGEX = re.compile(
+    '(?P<before_comment>(^)(.)*)(?P<comment>(\/\*)(.)*(\*\/))(?P<after_comment>(.)*$)',
+    re.DOTALL)
+
 
 def _is_commented_line(s):
     s = s.strip()
@@ -31,10 +34,12 @@ def is_commented_block(statement):
 
     block_comment = False
     match = COMMENTED_BLOCK_REGEX.search(statement)
-    if match and not (match.group('before_comment') or match.group('after_comment')):
+    if match and not (match.group('before_comment') or
+                      match.group('after_comment')):
         block_comment = True
 
     return block_comment
+
 
 def is_active_command(s):
     """
@@ -99,7 +104,8 @@ def is_to_temp_table(query):
     query_string = ' '.join(query_without_line_comments)
     match = COMMENTED_BLOCK_REGEX.search(query_string)
     while match:
-        query_string = match.group('before_comment') + match.group('after_comment')
+        query_string = match.group('before_comment') + match.group(
+            'after_comment')
         match = COMMENTED_BLOCK_REGEX.search(query_string)
 
     query_list = query_string.split()

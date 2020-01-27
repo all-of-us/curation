@@ -47,10 +47,12 @@ def comparison_view(rs):
     :param rs: list of achilles_heel_results records
     :return: list of records with dataset_name, analysis_id, record_count keys
     """
-    return [(r[FIELD_DATASET_NAME], get_int(r, FIELD_ANALYSIS_ID), get_int(r, FIELD_RECORD_COUNT)) for r in rs]
+    return [(r[FIELD_DATASET_NAME], get_int(r, FIELD_ANALYSIS_ID),
+             get_int(r, FIELD_RECORD_COUNT)) for r in rs]
 
 
 class TopHeelErrorsTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -72,15 +74,18 @@ class TopHeelErrorsTest(unittest.TestCase):
         :param hpo_id: if specified, prefix to use on csv test file and bq table, otherwise no prefix is used
         :return: contents of the file as list of objects
         """
-        schema_path = os.path.join(resources.fields_path, common.ACHILLES_HEEL_RESULTS + '.json')
+        schema_path = os.path.join(resources.fields_path,
+                                   common.ACHILLES_HEEL_RESULTS + '.json')
         table_id = common.ACHILLES_HEEL_RESULTS
         if hpo_id is not None:
-            table_id = bq_utils.get_table_id(hpo_id, common.ACHILLES_HEEL_RESULTS)
+            table_id = bq_utils.get_table_id(hpo_id,
+                                             common.ACHILLES_HEEL_RESULTS)
         test_file_name = table_id + '.csv'
         test_file_path = os.path.join(test_util.TEST_DATA_PATH, test_file_name)
         test_util.write_cloud_file(self.bucket, test_file_path)
         gcs_path = 'gs://' + self.bucket + '/' + test_file_name
-        load_results = bq_utils.load_csv(schema_path, gcs_path, self.app_id, self.dataset_id, table_id)
+        load_results = bq_utils.load_csv(schema_path, gcs_path, self.app_id,
+                                         self.dataset_id, table_id)
         job_id = load_results['jobReference']['jobId']
         bq_utils.wait_on_jobs([job_id])
         return resources.csv_to_list(test_file_path)
@@ -103,7 +108,9 @@ class TopHeelErrorsTest(unittest.TestCase):
                 row[FIELD_DATASET_NAME] = hpo_id
             errors = top_n_errors(rows)
             expected_results += comparison_view(errors)
-        dataset_errors = top_heel_errors(self.app_id, self.dataset_id, all_hpo=True)
+        dataset_errors = top_heel_errors(self.app_id,
+                                         self.dataset_id,
+                                         all_hpo=True)
         actual_results = comparison_view(dataset_errors)
         self.assertCountEqual(actual_results, expected_results)
 

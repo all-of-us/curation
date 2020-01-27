@@ -13,7 +13,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 """Local test runner
 
 Example invocation:
@@ -31,20 +30,30 @@ import unittest
 try:
     import coverage
 except ImportError:
-    print('coverage package not found.  Run `pip install -r dev_requirements.txt`')
+    print(
+        'coverage package not found.  Run `pip install -r dev_requirements.txt`'
+    )
 
 try:
     import xmlrunner
 except ImportError:
-    print('xmlrunner package not found.  Run `pip install -r dev_requirements.txt`')
+    print(
+        'xmlrunner package not found.  Run `pip install -r dev_requirements.txt`'
+    )
 
 
 def print_unsuccessful(function, trace, msg_type):
-    print('\n======================================================================')
+    print(
+        '\n======================================================================'
+    )
     print('{}:  {}'.format(msg_type, function))
-    print('----------------------------------------------------------------------')
+    print(
+        '----------------------------------------------------------------------'
+    )
     print(trace)
-    print('----------------------------------------------------------------------')
+    print(
+        '----------------------------------------------------------------------'
+    )
 
 
 def main(test_path, test_pattern, coverage_filepath):
@@ -90,9 +99,13 @@ def main(test_path, test_pattern, coverage_filepath):
         errors.extend(item.errors)
         failures.extend(item.failures)
 
-    print('\n\n\n**********************************************************************')
+    print(
+        '\n\n\n**********************************************************************'
+    )
     print('ALL TEST RESULTS')
-    print('**********************************************************************')
+    print(
+        '**********************************************************************'
+    )
     message = "Ran {} tests in {} seconds.".format(run, end_time - start_time)
 
     if errors:
@@ -140,7 +153,8 @@ if __name__ == '__main__':
         '--coverage-file',
         dest='coverage_file',
         required=True,
-        help='The path to the coverage file to use.  Defaults to \'curation/.coveragerc\'',
+        help=
+        'The path to the coverage file to use.  Defaults to \'curation/.coveragerc\'',
         type=config_file_path,
         default='curation/.coveragerc')
 

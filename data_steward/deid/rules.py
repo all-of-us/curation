@@ -103,38 +103,73 @@ def _get_case_condition_syntax(cond, regex, gen_value, rule, rules, syntax):
 
 
 class Rules(object):
+
     def __init__(self, **args):
         self.cache = {}
         self.store_syntax = {
-
             "sqlite": {
-                "apply": {"REGEXP": "LOWER(:FIELD) REGEXP LOWER(':VAR')",
-                          "COUNT": "SELECT COUNT(:FIELD) FROM :TABLE WHERE :KEY=:VALUE"},
-                "cond_syntax": {"IF": "CASE WHEN", "OPEN": "", "THEN": "THEN", "ELSE": "ELSE", "CLOSE": "END"},
+                "apply": {
+                    "REGEXP":
+                        "LOWER(:FIELD) REGEXP LOWER(':VAR')",
+                    "COUNT":
+                        "SELECT COUNT(:FIELD) FROM :TABLE WHERE :KEY=:VALUE"
+                },
+                "cond_syntax": {
+                    "IF": "CASE WHEN",
+                    "OPEN": "",
+                    "THEN": "THEN",
+                    "ELSE": "ELSE",
+                    "CLOSE": "END"
+                },
                 "random": "random() % 365 "
             },
             "bigquery": {
-                "apply": {"REGEXP": "REGEXP_CONTAINS (LOWER(:FIELD), LOWER(':VAR'))",
-                          "COUNT": "SELECT COUNT (:KEY) FROM :DATASET.:TABLE AS :ALIAS WHERE :KEY=:VALUE",
-                          "COUNT-DISTINCT": ("SELECT COUNT (DISTINCT :ALIAS.:DISTINCT_FIELD) "
-                                             "FROM :DATASET.:TABLE AS :ALIAS WHERE :KEY=:VALUE"),
-                          "SQL":  ":SQL_STATEMENT"},
-                "cond_syntax": {"IF": "CASE", "OPEN": "WHEN", "THEN": "THEN", "ELSE": "ELSE", "CLOSE": "END"},
+                "apply": {
+                    "REGEXP":
+                        "REGEXP_CONTAINS (LOWER(:FIELD), LOWER(':VAR'))",
+                    "COUNT":
+                        "SELECT COUNT (:KEY) FROM :DATASET.:TABLE AS :ALIAS WHERE :KEY=:VALUE",
+                    "COUNT-DISTINCT":
+                        ("SELECT COUNT (DISTINCT :ALIAS.:DISTINCT_FIELD) "
+                         "FROM :DATASET.:TABLE AS :ALIAS WHERE :KEY=:VALUE"),
+                    "SQL":
+                        ":SQL_STATEMENT"
+                },
+                "cond_syntax": {
+                    "IF": "CASE",
+                    "OPEN": "WHEN",
+                    "THEN": "THEN",
+                    "ELSE": "ELSE",
+                    "CLOSE": "END"
+                },
                 "random": "CAST( (RAND() * 364) + 1 AS INT64)"
             },
             "postgresql": {
-                "cond_syntax": {"IF": "CASE WHEN", "OPEN": "", "THEN": "THEN", "ELSE": "ELSE", "CLOSE": "END"},
-                "shift": {"date": "FIELD INTERVAL 'SHIFT DAY' ", "datetime": "FIELD INTERVAL 'SHIFT DAY'"},
+                "cond_syntax": {
+                    "IF": "CASE WHEN",
+                    "OPEN": "",
+                    "THEN": "THEN",
+                    "ELSE": "ELSE",
+                    "CLOSE": "END"
+                },
+                "shift": {
+                    "date": "FIELD INTERVAL 'SHIFT DAY' ",
+                    "datetime": "FIELD INTERVAL 'SHIFT DAY'"
+                },
                 "random": "(random() * 364) + 1 :: int"
             }
         }
-        self.pipeline = args.get('pipeline', ['generalize', 'compute', 'suppress', 'shift'])
+        self.pipeline = args.get('pipeline',
+                                 ['generalize', 'compute', 'suppress', 'shift'])
         self.cache = args.get('rules', [])
         self.parent = args.get('parent')
 
     def set(self, key, rule_id, **args):
         if key not in self.pipeline:
-            raise (key + " is Unknown, [generalize, compute, suppress, shift] are allowed")
+            raise (
+                key +
+                " is Unknown, [generalize, compute, suppress, shift] are allowed"
+            )
         if key not in self.cache:
             self.cache[key] = {}
         if id not in self.cache[key]:
@@ -156,7 +191,9 @@ class Rules(object):
         for row in entry:
 
             if 'rules' in row:
-                if not isinstance(row['rules'], list) and row['rules'].startswith('@')  and "into" in row:
+                if not isinstance(row['rules'],
+                                  list) and row['rules'].startswith(
+                                      '@') and "into" in row:
                     #
                     # Making sure the expression is {apply,into} suggesting a rule applied relative to an attribute
                     # finding the rules that need to be applied to a given attribute
@@ -177,6 +214,7 @@ class Rules(object):
 
         return (p and q) or (not p and q)
 
+
 class Deid(Rules):
     """
     This class is designed to apply rules to structured data.
@@ -186,6 +224,7 @@ class Deid(Rules):
         - a field can have several rules applied to it:
 
     """
+
     def __init__(self, **args):
         Rules.__init__(self, **args)
 
@@ -244,27 +283,26 @@ class Deid(Rules):
             generalized_values_string = ', '.join(generalized_values)
 
             # replace values as required
-            rule = rule.replace(':generalized_values', generalized_values_string)
+            rule = rule.replace(':generalized_values',
+                                generalized_values_string)
             rule = rule.replace(':key_values', key_values_string)
             rule = rule.replace(':odataset', self.parent.odataset)
             rule = rule.replace(':idataset', self.parent.idataset)
 
             # log values inserted into the query
-            LOGGER.info('generalized_values causing duplicates: %s    in table:  %s',
-                        generalized_values_string, tablename)
+            LOGGER.info(
+                'generalized_values causing duplicates: %s    in table:  %s',
+                generalized_values_string, tablename)
             LOGGER.info('key_values causing duplicates: %s    in table:  %s',
                         key_values_string, tablename)
-            dml_statements.append(
-                {
-                    'apply': rule,
-                    'name': rule_dict.get('name', 'NAME_UNSET'),
-                    'label': rule_dict.get('label', 'LABEL_UNSET'),
-                    'dml_statement': True
-                }
-            )
+            dml_statements.append({
+                'apply': rule,
+                'name': rule_dict.get('name', 'NAME_UNSET'),
+                'label': rule_dict.get('label', 'LABEL_UNSET'),
+                'dml_statement': True
+            })
 
         return dml_statements
-
 
     def generalize(self, **args):
         """
@@ -282,7 +320,6 @@ class Deid(Rules):
         label = args.get('label', '')
         rules = args.get('rules', [])
 
-
         store_id = args.get('store', 'sqlite')
         syntax = self.store_syntax[store_id]['cond_syntax']
         out = []
@@ -295,44 +332,67 @@ class Deid(Rules):
                     #
                     # This will call a built-in SQL function (non-aggregate)'
                     fillter = args.get('filter', name)
-                    LOGGER.info('generalizing with SQL aggregates label:\t%s\t\t'
-                                'on:\t%s\t\ttype:\t%s\t\t',
-                                label.split('.')[1],
-                                name,
-                                rule['apply'])
+                    LOGGER.info(
+                        'generalizing with SQL aggregates label:\t%s\t\t'
+                        'on:\t%s\t\ttype:\t%s\t\t',
+                        label.split('.')[1], name, rule['apply'])
 
                     if 'apply' not in self.store_syntax[store_id]:
-                        regex = [rule['apply'], "(", fillter, " , '", "|".join(rule['values']), "') ", qualifier]
+                        regex = [
+                            rule['apply'], "(", fillter, " , '",
+                            "|".join(rule['values']), "') ", qualifier
+                        ]
                     else:
-                        template = self.store_syntax[store_id]['apply'][rule['apply']]
-                        regex = template.replace(':FIELD', fillter).replace(':FN', rule['apply'])
+                        template = self.store_syntax[store_id]['apply'][
+                            rule['apply']]
+                        regex = template.replace(':FIELD', fillter).replace(
+                            ':FN', rule['apply'])
 
                         if ':VAR' in template:
-                            regex = regex.replace(":VAR", "|".join(rule['values']))
+                            regex = regex.replace(":VAR",
+                                                  "|".join(rule['values']))
 
-                        if rule['apply'] in ['COUNT', 'COUNT-DISTINCT', 'AVG', 'SUM']:
+                        if rule['apply'] in [
+                                'COUNT', 'COUNT-DISTINCT', 'AVG', 'SUM'
+                        ]:
                             #
                             # Dealing with an aggregate expression. It is important to know what we are counting
                             # count(:field) from :table [where filter]
                             #
-                            regex = regex.replace(':TABLE', args.get('table', 'table NOT SET'))
-                            regex = regex.replace(':KEY', args.get('key_field', 'key_field NOT SET'))
-                            regex = regex.replace(':VALUE', args.get('value_field', 'value_field NOT SET'))
-                            regex = regex.replace(':DATASET', args.get('dataset', 'dataset NOT SET'))
-                            regex = regex.replace(':ALIAS', args.get('alias', 'alias NOT SET'))
-                            regex = regex.replace(':DISTINCT_FIELD', rule.get('distinct', 'distinct NOT SET'))
+                            regex = regex.replace(
+                                ':TABLE', args.get('table', 'table NOT SET'))
+                            regex = regex.replace(
+                                ':KEY',
+                                args.get('key_field', 'key_field NOT SET'))
+                            regex = regex.replace(
+                                ':VALUE',
+                                args.get('value_field', 'value_field NOT SET'))
+                            regex = regex.replace(
+                                ':DATASET',
+                                args.get('dataset', 'dataset NOT SET'))
+                            regex = regex.replace(
+                                ':ALIAS', args.get('alias', 'alias NOT SET'))
+                            regex = regex.replace(
+                                ':DISTINCT_FIELD',
+                                rule.get('distinct', 'distinct NOT SET'))
 
                             if 'on' in rule:
-                                key_row = args['key_row'] if 'key_row' in args else name
+                                key_row = args[
+                                    'key_row'] if 'key_row' in args else name
                                 key_row = key_row.replace(':name', name)
                                 conjunction = ' AND ' if 'qualifier' in rule else ' WHERE '
 
                                 if isinstance(rule.get('on'), list):
                                     try:
-                                        val_list = " IN ('" + "','".join(rule['on']) + "')"
+                                        val_list = " IN ('" + "','".join(
+                                            rule['on']) + "')"
                                     except TypeError:
-                                        val_list = [str(val_item) for val_item in rule['on']]
-                                        val_list = " IN (" + ",".join(val_list) + ")"
+                                        val_list = [
+                                            str(val_item)
+                                            for val_item in rule['on']
+                                        ]
+                                        val_list = " IN (" + ",".join(
+                                            val_list) + ")"
                                     regex += conjunction + key_row + val_list
                                 # the following conditions added to help with nullable columns
                                 elif 'exists' in rule.get('on', ''):
@@ -343,17 +403,21 @@ class Deid(Rules):
                                     regex += conjunction + val_list
 
                             if 'on' in args:
-                                conditional, _ = create_on_string(args.get('on'))
+                                conditional, _ = create_on_string(
+                                    args.get('on'))
 
                                 alias = args.get('alias', 'alias NOT SET')
-                                conditional = conditional.replace(':join_tablename', alias)
+                                conditional = conditional.replace(
+                                    ':join_tablename', alias)
                                 regex += ' AND ' + conditional
 
                             regex = ' '.join(['(', regex, ')', qualifier])
                         elif rule['apply'] in ['SQL']:
-                            statement = rule.get('statement', ['statement NOT SET'])
+                            statement = rule.get('statement',
+                                                 ['statement NOT SET'])
                             statement = ' '.join(statement)
-                            statement = statement.replace(':table', args.get('table', 'table_NOT_SET'))
+                            statement = statement.replace(
+                                ':table', args.get('table', 'table_NOT_SET'))
                             statement = statement.replace(':fields', fillter)
                             regex = regex.replace(':SQL_STATEMENT', statement)
 
@@ -373,7 +437,8 @@ class Deid(Rules):
                             gen_value = str(gen_value)
 
                         regex = "".join(regex)
-                        cond = _get_case_condition_syntax(cond, regex, gen_value, rule, rules, syntax)
+                        cond = _get_case_condition_syntax(
+                            cond, regex, gen_value, rule, rules, syntax)
 
                 else:
                     #
@@ -381,10 +446,10 @@ class Deid(Rules):
                     # @TODO: Document what is going on here
                     #   - An if or else type of generalization given a list of values or function
                     #   - IF <filter> IN <values>, THEN <generalized-value> else <attribute>
-                    LOGGER.info('generalizing inline arguments label:\t%s\t\t'
-                                'on:\t%s\t\ttype:\tinline',
-                                label.split('.')[1],
-                                name)
+                    LOGGER.info(
+                        'generalizing inline arguments label:\t%s\t\t'
+                        'on:\t%s\t\ttype:\tinline',
+                        label.split('.')[1], name)
                     fillter = args.get('filter', name)
                     qualifier = rule.get('qualifier', '')
                     gen_value = args.get('into', rule.get('into', ''))
@@ -400,7 +465,8 @@ class Deid(Rules):
                     regex_list = [fillter, qualifier, values]
 
                     regex = " ".join(regex_list)
-                    cond = _get_case_condition_syntax(cond, regex, gen_value, rule, rules, syntax)
+                    cond = _get_case_condition_syntax(cond, regex, gen_value,
+                                                      rule, rules, syntax)
 
             #
             # Let's build the syntax here to make it sound for any persistence storage
@@ -428,7 +494,11 @@ class Deid(Rules):
                     cond[-1] = copy_field
                     # fall back to original field value
                     cond[-4] = copy_field
-                    copy_result = {"name": copy_field, "apply": " ".join(cond), "label": label}
+                    copy_result = {
+                        "name": copy_field,
+                        "apply": " ".join(cond),
+                        "label": label
+                    }
                     if 'on' in args:
                         copy_result['on'] = args['on']
                     out.append(copy_result)
@@ -446,7 +516,8 @@ class Deid(Rules):
         label = args.get('label')
         fields = args.get('fields', [])
         store_id = args.get('store')
-        apply_fn = self.store_syntax[store_id]['apply'] if 'apply' in self.store_syntax[store_id] else {}
+        apply_fn = self.store_syntax[store_id][
+            'apply'] if 'apply' in self.store_syntax[store_id] else {}
         out = []
 
         tablename = args.get('tablename').split('.')[1]
@@ -481,7 +552,8 @@ class Deid(Rules):
                             value = "0 AS " + name
 
                     out.append({"name": name, "apply": value, "label": label})
-                    LOGGER.info('suppress fields(columns) for:\t%s', label.split('.')[1])
+                    LOGGER.info('suppress fields(columns) for:\t%s',
+                                label.split('.')[1])
                 else:
                     #
                     # If we have alist of fields to be removed, The following code will figure out which ones apply
@@ -502,8 +574,13 @@ class Deid(Rules):
                                         value = 'NULL AS ' + name
                                     else:
                                         value = "0 AS " + name
-                                out.append({"name": name, "apply": (value), "label": label})
-            LOGGER.info('suppress fields(columns):\t%s\t\tfor:\t%s', label.split('.')[1], fields)
+                                out.append({
+                                    "name": name,
+                                    "apply": (value),
+                                    "label": label
+                                })
+            LOGGER.info('suppress fields(columns):\t%s\t\tfor:\t%s',
+                        label.split('.')[1], fields)
 
         else:
             #
@@ -528,20 +605,17 @@ class Deid(Rules):
                 if isinstance(on, dict):
                     try:
                         # using string values
-                        fillter_values = "'" + "','".join(on.get('values')) + "'"
+                        fillter_values = "'" + "','".join(
+                            on.get('values')) + "'"
                     except TypeError:
                         # using non-string values, could be integers, floats, etc
                         int_strings = [str(value) for value in on.get('values')]
                         fillter_values = ','.join(int_strings)
 
-                    fillter = ' '.join(
-                        [args.get('qualifier'),
-                        '(',
-                        on.get('condition'),
-                        "(",
-                        fillter_values,
-                        "))"]
-                    )
+                    fillter = ' '.join([
+                        args.get('qualifier'), '(',
+                        on.get('condition'), "(", fillter_values, "))"
+                    ])
                     on = fillter
 
                 # don't lower the actual 'on' argument.  it may have undesirable
@@ -575,23 +649,33 @@ class Deid(Rules):
                     fillter = fillter.replace(' like ', ' NOT LIKE ')
 
                 fillter = {"filter": fillter, "label": "suppress.ROWS"}
-                found = [1 * (fillter == row) for row in self.cache['suppress']['FILTERS']]
+                found = [
+                    1 * (fillter == row)
+                    for row in self.cache['suppress']['FILTERS']
+                ]
 
                 if np.sum(found) == 0:
                     self.cache['suppress']['FILTERS'] += [fillter]
-                    self.parent.deid_rules['suppress']['FILTERS'] = self.cache['suppress']['FILTERS']
+                    self.parent.deid_rules['suppress']['FILTERS'] = self.cache[
+                        'suppress']['FILTERS']
                 return []
 
             for rule in rules:
                 qualifier = args['qualifier'] if 'qualifier' in args else ''
 
                 if 'apply' in rule and rule['apply'] in apply_fn:
-                    template = self.store_syntax[store_id]['apply'][rule['apply']]
-                    key_field = args['filter'] if 'filter' in args else args['on']
-                    expression = template.replace(':VAR', "|".join(rule['values']))
+                    template = self.store_syntax[store_id]['apply'][
+                        rule['apply']]
+                    key_field = args['filter'] if 'filter' in args else args[
+                        'on']
+                    expression = template.replace(':VAR',
+                                                  "|".join(rule['values']))
                     expression = expression.replace(':FN', rule['apply'])
                     expression = expression.replace(':FIELD', key_field)
-                    self.cache['suppress']['FILTERS'].append({"filter": expression +' '+ qualifier, "label": label})
+                    self.cache['suppress']['FILTERS'].append({
+                        "filter": expression + ' ' + qualifier,
+                        "label": label
+                    })
                 elif 'on' in args:
                     # If we have no application of a function, we will
                     # assume an expression of type <attribute> IN <list>
@@ -599,13 +683,18 @@ class Deid(Rules):
                     qualifier = 'IN' if qualifier == '' else qualifier
                     qualifier = apply_qualifier[qualifier]
                     if 'values' in rule:
-                        expression = " ".join([args['on'], qualifier, "('"+ "','".join(rule['values'])+"')"])
+                        expression = " ".join([
+                            args['on'], qualifier,
+                            "('" + "','".join(rule['values']) + "')"
+                        ])
                     else:
                         expression = args['on']
 
-                    self.cache['suppress']['FILTERS'].append({"filter": expression, "label": label})
+                    self.cache['suppress']['FILTERS'].append({
+                        "filter": expression,
+                        "label": label
+                    })
         return out
-
 
     def shift(self, **args):
         """
@@ -630,13 +719,20 @@ class Deid(Rules):
 
             for name in fields:
                 rules = args['rules']
-                result = {"apply": rules.replace(':FIELD', name), "label": label, "name": name}
+                result = {
+                    "apply": rules.replace(':FIELD', name),
+                    "label": label,
+                    "name": name
+                }
                 if 'on' in args:
                     result['on'] = args['on']
                     xchar = ' AS ' if ' AS ' in result['apply'] else ' as '
-                    suffix = xchar +result['apply'].split(xchar)[-1]
+                    suffix = xchar + result['apply'].split(xchar)[-1]
 
-                    result['apply'] = ' '.join(['CAST(', result['apply'].replace(suffix, ''), 'AS STRING ) ', suffix])
+                    result['apply'] = ' '.join([
+                        'CAST(', result['apply'].replace(suffix, ''),
+                        'AS STRING ) ', suffix
+                    ])
                 out.append(result)
         else:
             pass
@@ -661,7 +757,9 @@ class Deid(Rules):
         out = []
 
         rule_str = ' '.join(args.get('rules', []))
-        statement = rule_str.replace(':FIELD', fields[0]).replace(':value_field', value_field)
+        statement = rule_str.replace(':FIELD',
+                                     fields[0]).replace(':value_field',
+                                                        value_field)
 
         if 'key_field' in args:
             statement = statement.replace(':key_field', args['key_field'])
@@ -678,7 +776,8 @@ class Deid(Rules):
         """
         out = []
         r = {}
-        ismeta = info['info']['type'] if 'info' in info and 'type' in info['info'] else False
+        ismeta = info['info'][
+            'type'] if 'info' in info and 'type' in info['info'] else False
 
         for rule_id in self.pipeline:
             if rule_id in info:
@@ -687,7 +786,10 @@ class Deid(Rules):
                 if r:
                     r = dict(r, **{'ismeta': ismeta})
                     pointer = r['pointer']
-                    tmp = [pointer(** dict(args, **{"store": store_id})) for args in r['args']]
+                    tmp = [
+                        pointer(**dict(args, **{"store": store_id}))
+                        for args in r['args']
+                    ]
                     if tmp:
                         for _item in tmp:
                             if _item:
