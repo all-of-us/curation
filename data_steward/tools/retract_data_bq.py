@@ -533,12 +533,8 @@ def is_ehr_dataset(dataset_id):
         EHR_REGEX, dataset_id)) or dataset_id == bq_utils.get_dataset_id()
 
 
-def run_retraction(project_id,
-                   sandbox_dataset_id,
-                   pid_table_id,
-                   hpo_id,
-                   dataset_ids,
-                   pid_project_id=None):
+def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
+                      pid_table_id, hpo_id, dataset_ids):
     """
     Main function to perform retraction
     pid table must follow schema described above in PID_TABLE_FIELDS and must reside in sandbox_dataset_id
@@ -552,10 +548,6 @@ def run_retraction(project_id,
     :param dataset_ids: datasets to retract from. If set to 'all_datasets', retracts from all datasets
     :return:
     """
-    # set default pid_project_id to project_id
-    if pid_project_id is None:
-        pid_project_id = project_id
-
     if dataset_ids == 'all_datasets':
         dataset_objs = bq_utils.list_datasets(project_id)
         dataset_ids = []
@@ -647,6 +639,13 @@ if __name__ == '__main__':
                         dest='project_id',
                         help='Identifies the project to retract data from',
                         required=True)
+    parser.add_argument(
+        '-q',
+        '--pid_project_id',
+        action='store',
+        dest='pid_project_id',
+        help='Identifies the project containing the sandbox dataset',
+        required=True)
     parser.add_argument('-s',
                         '--sandbox_dataset_id',
                         action='store',
@@ -678,6 +677,7 @@ if __name__ == '__main__':
         required=True)
     args = parser.parse_args()
 
-    run_retraction(args.project_id, args.sandbox_dataset_id, args.pid_table_id,
-                   args.hpo_id, args.dataset_ids)
+    run_bq_retraction(args.project_id, args.sandbox_dataset_id,
+                      args.pid_project_id, args.pid_table_id, args.hpo_id,
+                      args.dataset_ids)
     logger.info('Retraction complete')
