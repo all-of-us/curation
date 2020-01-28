@@ -37,7 +37,7 @@ Combined Dataset: {combined}
 """.format(ref = ref, combined = combined))
 # -
 
-# ### The below query is used to determine rows where the condition_occurrence_concept_id in the unioned EHR dataset is NOT standard. With this information, we then look at the condition_occurrence_concept_id in the combined dataset 
+# ### The below query is used to determine rows where the condition_occurrence_concept_id in the unioned EHR dataset is NOT standard. With this information, we then look at the condition_occurrence_concept_id in the combined dataset to see if it is both standard and of the domain 'Condition'
 
 # +
 co_query = """
@@ -110,7 +110,7 @@ print("There is/are {num} instances where a condition concept ID from the combin
       "the 'Condition' domain.".format(num = total_co_domain_failures))
 # -
 
-# ### The below query is used to determine rows where the drug_concept_id in the unioned EHR dataset is NOT standard. With this information, we then look at the drug_concept_id in the combined dataset 
+# ### The below query is used to determine rows where the drug_concept_id in the unioned EHR dataset is NOT standard. With this information, we then look at the drug_concept_id in the combined dataset to see if it is both standard and of the domain 'Drug'
 
 # +
 de_query = """
@@ -183,3 +183,56 @@ total_de_domain_failures = co_no_domain_enforcement['count'].sum()
 
 print("There is/are {num} instances where a drug concept ID from the combined dataset was not of \n"
       "the 'Drug' domain.".format(num = total_de_domain_failures))
+# -
+
+# ### The below query is used to determine rows where the measurement_concept_id in the unioned EHR dataset is NOT standard. With this information, we then look at the measurement_concept_id in the combined dataset to see if it is both standard and of the domain 'Measurement'
+
+# +
+m_query = """
+SELECT
+DISTINCT
+m.measurement_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn, 
+m_combined.measurement_concept_id as post_cr_concept_id, c2.standard_concept as post_cr_standard_concept, c2.concept_name as post_cr_cn,
+(LOWER(c2.domain_id) LIKE '%measurement%') as post_cr_domain_correct,
+COUNT(*) as count, COUNT(DISTINCT mm.src_hpo_id) as num_sites_w_change
+
+-- linking the 'pre-cr' to the 'post-cr counterpart
+FROM
+`{ref}.measurement` m
+JOIN
+`{combined}.measurement` m_combined
+ON
+m.measurement_id = m_combined.measurement_id
+
+-- to determine how many sites are affected by the change
+JOIN
+`{ref}._mapping_measurement` mm
+ON
+m.measurement_id = mm.measurement_id
+
+-- trying to figure out the status of the 'pre-cr' concept ID
+JOIN
+`{ref}.concept` c1
+ON
+m.measurement_concept_id = c1.concept_id
+
+-- trying to figure out the status of the 'post-CR' concept ID
+JOIN
+`{combined}.concept` c2
+ON
+m_combined.measurement_concept_id = c2.concept_id
+
+-- checking instances where the unioned_ehr is non standard
+WHERE
+c1.standard_concept NOT IN ('S')
+
+GROUP BY 1, 2, 3, 4, 5, 6, 7
+ORDER BY count DESC
+""".format(combined = combined, ref = ref)
+
+m_results = bq.query(m_query)
+# -
+
+m_results
+
+
