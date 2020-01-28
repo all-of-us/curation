@@ -20,21 +20,6 @@ VOCAB_DATASET_ID = '' # the latest vocabulary dataset_id
 IDENTIFY_LABS_QUERY = """
 WITH get_excluded_ancestor_ids AS
 (
-  -- 36206173 and 36208978 are the root concepts `Laboratory` and `Clinical Categories`,
-  -- we exclude all the direct children of `Laboratory` and `Clinical Categories` in the ancestor lookup later
-  SELECT 
-    ca.concept_id_1 AS excluded_ancestor_concept_id
-  FROM `{VOCAB_DATASET_ID}.concept_relationship`  AS ca
-  WHERE ca.concept_id_2 IN (36206173, 36208978) AND ca.relationship_id = 'Is a'
-  
-  UNION DISTINCT
-  
-  SELECT 
-    ca.descendant_concept_id AS excluded_ancestor_concept_id
-  FROM `{VOCAB_DATASET_ID}.concept_ancestor` AS ca
-  WHERE ca.ancestor_concept_id IN (36206173, 36208978) AND ca.min_levels_of_separation = 1
-  
-  UNION DISTINCT
   -- Exclude the list of general concept is below
   -- 36208978 Clinical Categories
   -- 36206173 Laboratory Categories
@@ -53,7 +38,7 @@ WITH get_excluded_ancestor_ids AS
 
 get_direct_parents_loinc_group AS
 (
-  # We use left joins because there are concepts that don't have a LONIC_Hierarchy type ancestor in concept_ancestor
+  # We use left joins because there are concepts that don't have a LONIC_Group type ancestor in concept_ancestor
   SELECT DISTINCT
     m.Panel_OMOP_ID,
     m.Panel_Name,
@@ -62,7 +47,7 @@ get_direct_parents_loinc_group AS
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_id, NULL) AS parent_concept_id,
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_name, NULL) AS parent_concept_name,
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_class_id, NULL) AS parent_concept_class_id,
-    IF(ex.excluded_ancestor_concept_id IS NULL, ca.min_levels_of_separation, -1) AS distance
+    IF(ex.excluded_ancestor_concept_id IS NULL, COALESCE(ca.min_levels_of_separation, -1), -1) AS distance
   FROM
     `ehr_ops.measurement_concept_sets` AS m
   JOIN 
@@ -133,8 +118,8 @@ get_ancestors_loinc_hierarchy AS
 
 get_ancestors_loinc_hierarchy_distinct AS 
 (
-  -- For some concepts in LONIC Hierarchy, we include both parent and grandparent concept_ids, 
-  -- We want to remove the parent concept_id if the grandparent concept_id is present. 
+  # For some concepts in LONIC Hierarchy, we include both parent and grandparent concept_ids, 
+  # We want to remove the parent concept_id if the grandparent concept_id is present. 
   SELECT DISTINCT
       Panel_OMOP_ID,
       Panel_Name,
@@ -156,6 +141,8 @@ get_ancestors_loinc_hierarchy_distinct AS
 
 get_loinc_group_descendant_concept_ids AS
 (
+  # We use left join to concept_ancestor because not all the concepts have an ancestor, in which case 
+  # we make the measurement_concept_id its own ancestor
   SELECT 
     lg.Panel_OMOP_ID,
     lg.Panel_Name,
@@ -180,6 +167,8 @@ get_loinc_group_descendant_concept_ids AS
 
 get_loinc_hierarchy_descendant_concept_ids AS
 (
+  # We use left join to concept_ancestor because not all the concepts have an ancestor, in which case 
+  # we make the measurement_concept_id its own ancestor
   SELECT
     lh.Panel_OMOP_ID,
     lh.Panel_Name,
@@ -204,6 +193,8 @@ get_loinc_hierarchy_descendant_concept_ids AS
 
 get_measurement_concept_sets_descendants AS
 (
+  # We use a full outer join between the loinc_hierarchy descendants and loinc_group descendants 
+  # in order to maximize the number of descendants retrieved by both classficiation systems. 
   SELECT DISTINCT
     COALESCE(lh.Panel_OMOP_ID, lg.Panel_OMOP_ID) AS panel_omop_id,
     COALESCE(lh.Panel_Name, lg.Panel_Name) AS panel_name,
