@@ -51,12 +51,9 @@ def get_maps_to_value_ppi_vocab_update_queries(project_id, dataset_id):
     queries_list = []
 
     query = dict()
-    query[cdr_consts.QUERY] = UPDATE_PPI_QUERY.format(
-        dataset=dataset_id,
-        project=project_id
-    )
+    query[cdr_consts.QUERY] = UPDATE_PPI_QUERY.format(dataset=dataset_id,
+                                                      project=project_id)
     queries_list.append(query)
-
     return queries_list
 
 
