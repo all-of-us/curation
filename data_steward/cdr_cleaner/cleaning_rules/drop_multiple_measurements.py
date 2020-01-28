@@ -13,24 +13,22 @@ Relevant measurement_source_concept_ids are listed in query
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 REMOVE_MULTIPLE_MEASUREMENTS = """
-DELETE
-FROM
-(
-SELECT
-  person_id,
-  measurement_id,
-  ROW_NUMBER() OVER(PARTITION BY person_id, measurement_source_concept_id ORDER BY measurement_datetime DESC) AS row_num
-FROM 
-  `{project}.{dataset}.measurement`
-WHERE
-  measurement_source_concept_id IN (903131,903119,903107,903124,903115,903126,903136,903118,903135,903132,903110,903112,
-                                    903117,903109,903127,1586218,903133,903111,903120,903113,903129,903105,903125,903114,
-                                    903134,903116,903106,903108,903123,903130,903128,903122,903121)
-ORDER BY
-  person_id, measurement_source_concept_id, row_num
-  )
-WHERE
-  row_num != 1
+DELETE FROM `{project}.{dataset}.measurement`
+WHERE 
+  EXISTS (
+  --subquery to order multiple measurements by measurement_datetime
+    WITH mult_measurements AS(
+      SELECT person_id, measurement_id, ROW_NUMBER() OVER(PARTITION BY person_id, measurement_source_concept_id ORDER BY 
+      measurement_datetime DESC) AS row_num
+      FROM `{project}.{dataset}.measurement`
+      WHERE measurement_source_concept_id IN (903131,903119,903107,903124,903115,903126,903136,903118,903135,903132,
+                                              903110,903112,903117,903109,903127,1586218,903133,903111,903120,903113,
+                                              903129,903105,903125,903114,903134,903116,903106,903108,903123,903130,
+                                              903128,903122,903121)
+      ORDER BY person_id, measurement_source_concept_id, row_num
+    )
+--selection measurements to delete where row_num !=1
+  SELECT * FROM mult_measurements WHERE row_num != 1)
 """
 
 
