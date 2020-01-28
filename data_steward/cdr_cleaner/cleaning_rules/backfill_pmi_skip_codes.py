@@ -134,9 +134,10 @@ def get_run_pmi_fix_queries(project_id, dataset_id):
     queries_list = []
 
     query = dict()
-    query[cdr_consts.QUERY] = PMI_SKIP_FIX_QUERY.format(dataset=dataset_id,
-                                                        project=project_id,
-                                                        )
+    query[cdr_consts.QUERY] = PMI_SKIP_FIX_QUERY.format(
+        dataset=dataset_id,
+        project=project_id,
+    )
     query[cdr_consts.DESTINATION_TABLE] = OBSERVATION_TABLE_NAME
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id

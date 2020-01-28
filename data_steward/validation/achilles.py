@@ -12,7 +12,8 @@ ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
 ACHILLES_RESULTS_DIST = 'achilles_results_dist'
 ACHILLES_TABLES = [ACHILLES_ANALYSIS, ACHILLES_RESULTS, ACHILLES_RESULTS_DIST]
-ACHILLES_DML_SQL_PATH = os.path.join(resources.resource_path, 'achilles_dml.sql')
+ACHILLES_DML_SQL_PATH = os.path.join(resources.resource_path,
+                                     'achilles_dml.sql')
 INSERT_INTO = 'insert into'
 
 
@@ -39,7 +40,8 @@ def load_analyses(hpo_id):
     json_path = os.path.join(resources.fields_path, ACHILLES_ANALYSIS + '.json')
     with open(json_path, 'r') as f:
         schema = json.load(f)
-    bq_utils.load_table_from_csv(project_id, dataset_id, table_name, csv_path, schema)
+    bq_utils.load_table_from_csv(project_id, dataset_id, table_name, csv_path,
+                                 schema)
 
 
 def drop_or_truncate_table(command):
@@ -68,8 +70,7 @@ def run_analysis_job(command):
         logging.info('Running achilles temp query %s' % command)
         table_id = sql_wrangle.get_temp_table_name(command)
         query = sql_wrangle.get_temp_table_query(command)
-        job_result = bq_utils.query(query,
-                                    destination_table_id=table_id)
+        job_result = bq_utils.query(query, destination_table_id=table_id)
     else:
         logging.info('Running achilles load query %s' % command)
         job_result = bq_utils.query(command)

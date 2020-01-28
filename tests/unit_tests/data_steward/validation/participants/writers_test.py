@@ -27,7 +27,8 @@ class WritersTest(unittest.TestCase):
     @patch('validation.participants.writers.bq_utils.wait_on_jobs')
     @patch('validation.participants.writers.gcs_utils.upload_object')
     @patch('validation.participants.writers.bq_utils.load_csv')
-    def test_write_to_result_table(self, mock_load_csv, mock_upload, mock_wait, mock_bucket):
+    def test_write_to_result_table(self, mock_load_csv, mock_upload, mock_wait,
+                                   mock_bucket):
         # pre-conditions
         bucket_name = 'mock_bucket'
         mock_wait.return_value = []
@@ -40,9 +41,8 @@ class WritersTest(unittest.TestCase):
         matches = {1: match}
 
         # test
-        writer.write_to_result_table(
-            self.project, self.dataset, self.site, matches
-        )
+        writer.write_to_result_table(self.project, self.dataset, self.site,
+                                     matches)
 
         # post conditions
         self.assertEqual(mock_upload.call_count, 1)
@@ -51,33 +51,27 @@ class WritersTest(unittest.TestCase):
 
         upload_path = self.dataset + '/intermediate_results/' + self.site + '.csv'
         self.assertEqual(
-            mock_upload.assert_called_with(
-                bucket_name, upload_path, ANY
-            ),
-            None
-        )
+            mock_upload.assert_called_with(bucket_name, upload_path, ANY), None)
 
         self.assertEqual(
             mock_load_csv.assert_called_with(
                 ANY,
-                'gs://' + bucket_name +'/' + upload_path,
+                'gs://' + bucket_name + '/' + upload_path,
                 self.project,
                 self.dataset,
                 self.site + consts.VALIDATION_TABLE_SUFFIX,
-                write_disposition=consts.WRITE_TRUNCATE
-            ),
-            None
-        )
-
+                write_disposition=consts.WRITE_TRUNCATE), None)
 
     @patch('validation.participants.writers.gcs_utils.get_drc_bucket')
     @patch('validation.participants.writers.gcs_utils.upload_object')
     @patch('validation.participants.writers.bq_utils.load_csv')
-    def test_write_to_result_table_error(self, mock_load_csv, mock_upload, mock_bucket):
+    def test_write_to_result_table_error(self, mock_load_csv, mock_upload,
+                                         mock_bucket):
         # pre-conditions
         bucket_name = 'mock_bucket'
         mock_bucket.return_value = bucket_name
-        mock_load_csv.side_effect = oauth2client.client.HttpAccessTokenRefreshError()
+        mock_load_csv.side_effect = oauth2client.client.HttpAccessTokenRefreshError(
+        )
 
         match = {}
         for field in consts.VALIDATION_FIELDS:
@@ -86,14 +80,9 @@ class WritersTest(unittest.TestCase):
         matches = {1: match}
 
         # test
-        self.assertRaises(
-            oauth2client.client.HttpAccessTokenRefreshError,
-            writer.write_to_result_table,
-            self.project,
-            self.dataset,
-            self.site,
-            matches
-        )
+        self.assertRaises(oauth2client.client.HttpAccessTokenRefreshError,
+                          writer.write_to_result_table, self.project,
+                          self.dataset, self.site, matches)
 
         # post conditions
         self.assertEqual(mock_load_csv.call_count, 1)
@@ -102,28 +91,22 @@ class WritersTest(unittest.TestCase):
 
         upload_path = self.dataset + '/intermediate_results/' + self.site + '.csv'
         self.assertEqual(
-            mock_upload.assert_called_with(
-                bucket_name, upload_path, ANY
-            ),
-            None
-        )
+            mock_upload.assert_called_with(bucket_name, upload_path, ANY), None)
 
         self.assertEqual(
             mock_load_csv.assert_called_with(
                 ANY,
-                'gs://' + bucket_name +'/' + upload_path,
+                'gs://' + bucket_name + '/' + upload_path,
                 self.project,
                 self.dataset,
                 self.site + consts.VALIDATION_TABLE_SUFFIX,
-                write_disposition=consts.WRITE_TRUNCATE
-            ),
-            None
-        )
+                write_disposition=consts.WRITE_TRUNCATE), None)
 
     def test_get_address_match(self):
         # pre conditions
-        values = [consts.MATCH, consts.MATCH,
-                  consts.MATCH, consts.MATCH, consts.MATCH]
+        values = [
+            consts.MATCH, consts.MATCH, consts.MATCH, consts.MATCH, consts.MATCH
+        ]
         # test
         actual = writer.get_address_match(values)
 
@@ -133,8 +116,10 @@ class WritersTest(unittest.TestCase):
 
     def test_get_address_match_and_mismatch(self):
         # pre conditions
-        values = [consts.MATCH, consts.MATCH,
-                  consts.MATCH, consts.MATCH, consts.MISMATCH]
+        values = [
+            consts.MATCH, consts.MATCH, consts.MATCH, consts.MATCH,
+            consts.MISMATCH
+        ]
         # test
         actual = writer.get_address_match(values)
 
@@ -144,8 +129,10 @@ class WritersTest(unittest.TestCase):
 
     def test_get_address_match_and_missing(self):
         # pre conditions
-        values = [consts.MATCH, consts.MATCH,
-                  consts.MATCH, consts.MATCH, consts.MISSING]
+        values = [
+            consts.MATCH, consts.MATCH, consts.MATCH, consts.MATCH,
+            consts.MISSING
+        ]
         # test
         actual = writer.get_address_match(values)
 
@@ -155,8 +142,10 @@ class WritersTest(unittest.TestCase):
 
     def test_get_address_match_mismatch_and_missing(self):
         # pre conditions
-        values = [consts.MATCH, consts.MATCH,
-                  consts.MATCH, consts.MISMATCH, consts.MISSING]
+        values = [
+            consts.MATCH, consts.MATCH, consts.MATCH, consts.MISMATCH,
+            consts.MISSING
+        ]
         # test
         actual = writer.get_address_match(values)
 
@@ -168,13 +157,8 @@ class WritersTest(unittest.TestCase):
     @patch('validation.participants.writers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.writers.bq_utils.query')
     @patch('validation.participants.writers.StringIO')
-    def test_create_site_validation_report(
-            self,
-            mock_report_file,
-            mock_query,
-            mock_response,
-            mock_upload
-    ):
+    def test_create_site_validation_report(self, mock_report_file, mock_query,
+                                           mock_response, mock_upload):
         # preconditions
         bucket = 'abc'
         filename = 'output.csv'
@@ -214,9 +198,8 @@ class WritersTest(unittest.TestCase):
         ]
 
         # test
-        writer.create_site_validation_report(
-            self.project, self.dataset, [self.site], bucket, filename
-        )
+        writer.create_site_validation_report(self.project, self.dataset,
+                                             [self.site], bucket, filename)
 
         # post conditions
         self.assertEqual(mock_report_file.call_count, 1)
@@ -230,22 +213,19 @@ class WritersTest(unittest.TestCase):
             table=self.site + consts.VALIDATION_TABLE_SUFFIX,
         )
         self.assertEqual(
-            mock_query.assert_called_with(expected_query, batch=True),
-            None
-        )
+            mock_query.assert_called_with(expected_query, batch=True), None)
 
-        self.assertEqual(
-            mock_upload.assert_called_with(
-                bucket, filename, ANY
-            ),
-            None
-        )
+        self.assertEqual(mock_upload.assert_called_with(bucket, filename, ANY),
+                         None)
 
         expected_report_calls = [
             call(),
-            call().write('person_id,first_name,last_name,birth_date,sex,address,phone_number,email,algorithm\n'),
+            call().write(
+                'person_id,first_name,last_name,birth_date,sex,address,phone_number,email,algorithm\n'
+            ),
             call().write('1,match,match,match,match,match,match,match,match\n'),
-            call().write('2,match,match,no_match,missing,no_match,match,match,match\n'),
+            call().write(
+                '2,match,match,no_match,missing,no_match,match,match,match\n'),
             call().seek(0),
             call().close()
         ]
@@ -254,22 +234,18 @@ class WritersTest(unittest.TestCase):
     @patch('validation.participants.writers.gcs_utils.upload_object')
     @patch('validation.participants.writers.bq_utils.query')
     @patch('validation.participants.writers.StringIO')
-    def test_create_site_validation_report_with_errors(
-            self,
-            mock_report_file,
-            mock_query,
-            mock_upload
-    ):
+    def test_create_site_validation_report_with_errors(self, mock_report_file,
+                                                       mock_query, mock_upload):
         # preconditions
-        mock_query.side_effect = oauth2client.client.HttpAccessTokenRefreshError()
+        mock_query.side_effect = oauth2client.client.HttpAccessTokenRefreshError(
+        )
 
         bucket = 'abc'
         filename = 'output.csv'
 
         # test
-        writer.create_site_validation_report(
-            self.project, self.dataset, [self.site], bucket, filename
-        )
+        writer.create_site_validation_report(self.project, self.dataset,
+                                             [self.site], bucket, filename)
 
         # post conditions
         self.assertEqual(mock_report_file.call_count, 1)
@@ -282,21 +258,19 @@ class WritersTest(unittest.TestCase):
             table=self.site + consts.VALIDATION_TABLE_SUFFIX,
         )
         self.assertEqual(
-            mock_query.assert_called_with(expected_query, batch=True),
-            None
-        )
+            mock_query.assert_called_with(expected_query, batch=True), None)
 
-        self.assertEqual(
-            mock_upload.assert_called_with(
-                bucket, filename, ANY
-            ),
-            None
-        )
+        self.assertEqual(mock_upload.assert_called_with(bucket, filename, ANY),
+                         None)
 
         expected_report_calls = [
             call(),
-            call().write('person_id,first_name,last_name,birth_date,sex,address,phone_number,email,algorithm\n'),
-            call().write("Unable to report id validation match records for site:\t{}.\n".format(self.site)),
+            call().write(
+                'person_id,first_name,last_name,birth_date,sex,address,phone_number,email,algorithm\n'
+            ),
+            call().write(
+                "Unable to report id validation match records for site:\t{}.\n".
+                format(self.site)),
             call().seek(0),
             call().close()
         ]

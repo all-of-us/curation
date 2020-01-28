@@ -16,12 +16,8 @@ IS_REROUTED = 'is_rerouted'
 REROUTING_CRITERIA = 'rerouting_criteria'
 
 DOMAIN_TABLE_NAMES = [
-    'condition_occurrence',
-    'procedure_occurrence',
-    'drug_exposure',
-    'device_exposure',
-    'observation',
-    'measurement'
+    'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
+    'device_exposure', 'observation', 'measurement'
 ]
 
 METADATA_DOMAIN = 'Metadata'

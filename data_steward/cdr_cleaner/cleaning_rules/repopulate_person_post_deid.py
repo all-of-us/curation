@@ -24,7 +24,6 @@ ethnicity_source_concept_id
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
-
 PERSON_TABLE = 'person'
 
 REPOPULATE_PERSON_QUERY = """
@@ -161,5 +160,6 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_repopulate_person_post_deid_queries(ARGS.project_id, ARGS.dataset_id)
+    query_list = get_repopulate_person_post_deid_queries(
+        ARGS.project_id, ARGS.dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, query_list)

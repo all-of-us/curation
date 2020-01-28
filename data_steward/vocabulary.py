@@ -10,8 +10,9 @@ import sys
 import warnings
 import re
 
-from common import (CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, TRANSFORM_FILES, APPEND_VOCABULARY,
-                    APPEND_CONCEPTS, ADD_AOU_VOCABS, ERRORS, ERROR_APPENDING, VOCABULARY_UPDATES,
+from common import (CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR,
+                    TRANSFORM_FILES, APPEND_VOCABULARY, APPEND_CONCEPTS,
+                    ADD_AOU_VOCABS, ERRORS, ERROR_APPENDING, VOCABULARY_UPDATES,
                     AOU_GEN_ID, AOU_CUSTOM_ID)
 from resources import AOU_VOCAB_PATH, AOU_VOCAB_CONCEPT_CSV_PATH, hash_dir
 from io import open
@@ -48,7 +49,9 @@ def _transform_csv(in_fp, out_fp, err_fp=None):
     for index, item in enumerate(header):
         if item.endswith('_date'):
             date_indexes.append(index)
-    csv_writer = csv.writer(out_fp, delimiter=DELIMITER, lineterminator=LINE_TERMINATOR)
+    csv_writer = csv.writer(out_fp,
+                            delimiter=DELIMITER,
+                            lineterminator=LINE_TERMINATOR)
     csv_writer.writerow(header)
     for row in csv_reader:
         try:
@@ -77,7 +80,10 @@ def transform_file(file_path, out_dir):
     except OSError:
         logging.info("Error directory:\t%s\t already exists", err_dir)
 
-    with open(file_path, 'r') as in_fp, open(out_file_name, 'w') as out_fp, open(err_file_name, 'w') as err_fp:
+    with open(file_path,
+              'r') as in_fp, open(out_file_name,
+                                  'w') as out_fp, open(err_file_name,
+                                                       'w') as err_fp:
         _transform_csv(in_fp, out_fp, err_fp)
 
 
@@ -124,7 +130,8 @@ def _vocab_id_match(s):
     :param s: string to search for AOU vocabulary IDs
     :return: the first vocabulary ID found in the string, otherwise None
     """
-    vocab_id_in_row_iter = (vocab_id for vocab_id in VOCABULARY_UPDATES if vocab_id in s)
+    vocab_id_in_row_iter = (
+        vocab_id for vocab_id in VOCABULARY_UPDATES if vocab_id in s)
     # if there are matches return the first one, otherwise None
     return next(vocab_id_in_row_iter, None)
 
@@ -144,7 +151,9 @@ def append_concepts(in_path, out_path):
                 vocab_id_in_row = _vocab_id_match(row)
                 if vocab_id_in_row:
                     # skip it so it is appended below
-                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=vocab_id_in_row))
+                    warnings.warn(
+                        ERROR_APPENDING.format(in_path=in_path,
+                                               vocab_id=vocab_id_in_row))
                 else:
                     out_fp.write(row)
 
@@ -182,7 +191,9 @@ def append_vocabulary(in_path, out_path):
                 vocab_id_in_row = _vocab_id_match(row)
                 if vocab_id_in_row:
                     # skip it so it is appended below
-                    warnings.warn(ERROR_APPENDING.format(in_path=in_path, vocab_id=vocab_id_in_row))
+                    warnings.warn(
+                        ERROR_APPENDING.format(in_path=in_path,
+                                               vocab_id=vocab_id_in_row))
                 else:
                     out_fp.write(row)
         # append AoU_General and AoU_Custom
@@ -218,15 +229,21 @@ def add_aou_vocabs(in_dir, out_dir):
     concept_out_path = os.path.join(out_dir, os.path.basename(concept_in_path))
     append_concepts(concept_in_path, concept_out_path)
 
-    vocabulary_out_path = os.path.join(out_dir, os.path.basename(vocabulary_in_path))
+    vocabulary_out_path = os.path.join(out_dir,
+                                       os.path.basename(vocabulary_in_path))
     append_vocabulary(vocabulary_in_path, vocabulary_out_path)
 
 
 if __name__ == '__main__':
     import argparse
 
-    arg_parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    arg_parser.add_argument('command', choices=[TRANSFORM_FILES, ADD_AOU_VOCABS, APPEND_VOCABULARY, APPEND_CONCEPTS])
+    arg_parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    arg_parser.add_argument('command',
+                            choices=[
+                                TRANSFORM_FILES, ADD_AOU_VOCABS,
+                                APPEND_VOCABULARY, APPEND_CONCEPTS
+                            ])
     arg_parser.add_argument('--in_dir', required=True)
     arg_parser.add_argument('--out_dir', required=True)
     args = arg_parser.parse_args()

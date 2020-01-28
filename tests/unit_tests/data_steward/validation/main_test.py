@@ -17,6 +17,7 @@ from validation import main
 
 
 class ValidationMainTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -26,9 +27,7 @@ class ValidationMainTest(unittest.TestCase):
     def setUp(self):
         self.hpo_id = 'fake_hpo_id'
         self.hpo_bucket = 'fake_aou_000'
-        mock_get_hpo_name = mock.patch(
-            'validation.main.get_hpo_name'
-        )
+        mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
 
         self.mock_get_hpo_name = mock_get_hpo_name.start()
         self.mock_get_hpo_name.return_value = 'Fake HPO'
@@ -38,22 +37,30 @@ class ValidationMainTest(unittest.TestCase):
         self.folder_prefix = '2019-01-01/'
 
     def test_retention_checks_list_submitted_bucket_items(self):
-        outside_retention = datetime.datetime.today() - datetime.timedelta(days=29)
-        outside_retention_str = outside_retention.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        bucket_items = [{'name': '2018-09-01/person.csv',
-                         'timeCreated': outside_retention_str,
-                         'updated': outside_retention_str}]
+        outside_retention = datetime.datetime.today() - datetime.timedelta(
+            days=29)
+        outside_retention_str = outside_retention.strftime(
+            '%Y-%m-%dT%H:%M:%S.%fZ')
+        bucket_items = [{
+            'name': '2018-09-01/person.csv',
+            'timeCreated': outside_retention_str,
+            'updated': outside_retention_str
+        }]
         # if the file expires within a day it should not be returned
         actual_result = main.list_submitted_bucket_items(bucket_items)
         expected_result = []
         self.assertCountEqual(expected_result, actual_result)
 
         # if the file within retention period it should be returned
-        within_retention = datetime.datetime.today() - datetime.timedelta(days=25)
-        within_retention_str = within_retention.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        item_2 = {'name': '2018-09-01/visit_occurrence.csv',
-                  'timeCreated': within_retention_str,
-                  'updated': within_retention_str}
+        within_retention = datetime.datetime.today() - datetime.timedelta(
+            days=25)
+        within_retention_str = within_retention.strftime(
+            '%Y-%m-%dT%H:%M:%S.%fZ')
+        item_2 = {
+            'name': '2018-09-01/visit_occurrence.csv',
+            'timeCreated': within_retention_str,
+            'updated': within_retention_str
+        }
         bucket_items.append(item_2)
         expected_result = [item_2]
         actual_result = main.list_submitted_bucket_items(bucket_items)
@@ -62,9 +69,11 @@ class ValidationMainTest(unittest.TestCase):
         actual_result = main.list_submitted_bucket_items([])
         self.assertCountEqual([], actual_result)
 
-        unknown_item = {'name': '2018-09-01/nyc_cu_person.csv',
-                        'timeCreated': within_retention_str,
-                        'updated': within_retention_str}
+        unknown_item = {
+            'name': '2018-09-01/nyc_cu_person.csv',
+            'timeCreated': within_retention_str,
+            'updated': within_retention_str
+        }
         bucket_items = [unknown_item]
         actual_result = main.list_submitted_bucket_items(bucket_items)
         self.assertCountEqual(actual_result, bucket_items)
@@ -84,40 +93,53 @@ class ValidationMainTest(unittest.TestCase):
         t2 = (now - datetime.timedelta(days=1)).strftime(fmt)
         t3 = (now - datetime.timedelta(hours=1)).strftime(fmt)
         expected = 't2/'
-        bucket_items = [{'name': 't0/person.csv',
-                         'updated': t0,
-                         'timeCreated': t0},
-                        {'name': 't1/person.csv',
-                         'updated': t1,
-                         'timeCreated': t1},
-                        {'name': '%sperson.csv' % expected,
-                         'updated': t2,
-                         'timeCreated': t2}]
+        bucket_items = [{
+            'name': 't0/person.csv',
+            'updated': t0,
+            'timeCreated': t0
+        }, {
+            'name': 't1/person.csv',
+            'updated': t1,
+            'timeCreated': t1
+        }, {
+            'name': '%sperson.csv' % expected,
+            'updated': t2,
+            'timeCreated': t2
+        }]
 
         # mock bypasses api call and says no folders were processed
-        with mock.patch('validation.main._validation_done') as mock_validation_done:
+        with mock.patch(
+                'validation.main._validation_done') as mock_validation_done:
             mock_validation_done.return_value = False
 
             # should be bucket_item with latest timestamp
-            submission_folder = main._get_submission_folder(self.hpo_bucket, bucket_items)
+            submission_folder = main._get_submission_folder(
+                self.hpo_bucket, bucket_items)
             self.assertEqual(submission_folder, expected)
 
             # report dir should be ignored despite being more recent than t2
-            report_dir = id_match_consts.REPORT_DIRECTORY.format(date=now.strftime('%Y%m%d'))
+            report_dir = id_match_consts.REPORT_DIRECTORY.format(
+                date=now.strftime('%Y%m%d'))
             # sanity check
             compiled_exp = re.compile(id_match_consts.REPORT_DIRECTORY_REGEX)
             assert (compiled_exp.match(report_dir))
-            report_item = {'name': '%s/id-validation.csv' % report_dir,
-                           'updated': t3,
-                           'timeCreated': t3}
-            submission_folder = main._get_submission_folder(self.hpo_bucket, bucket_items + [report_item])
+            report_item = {
+                'name': '%s/id-validation.csv' % report_dir,
+                'updated': t3,
+                'timeCreated': t3
+            }
+            submission_folder = main._get_submission_folder(
+                self.hpo_bucket, bucket_items + [report_item])
             self.assertEqual(submission_folder, 't2/')
 
             # participant dir should be ignored despite being more recent than t2
-            partipant_item = {'name': '%s/person.csv' % common.PARTICIPANT_DIR,
-                              'updated': t3,
-                              'timeCreated': t3}
-            submission_folder = main._get_submission_folder(self.hpo_bucket, bucket_items + [partipant_item])
+            partipant_item = {
+                'name': '%s/person.csv' % common.PARTICIPANT_DIR,
+                'updated': t3,
+                'timeCreated': t3
+            }
+            submission_folder = main._get_submission_folder(
+                self.hpo_bucket, bucket_items + [partipant_item])
             self.assertEqual(submission_folder, 't2/')
 
     @mock.patch('api_util.check_cron')
@@ -127,7 +149,8 @@ class ValidationMainTest(unittest.TestCase):
         expected_unknown_files = ['random.csv']
         ignored_files = ['curation_report/index.html']
         folder_items = expected_cdm_files + expected_pii_files + expected_unknown_files + ignored_files
-        cdm_files, pii_files, unknown_files = main.categorize_folder_items(folder_items)
+        cdm_files, pii_files, unknown_files = main.categorize_folder_items(
+            folder_items)
         self.assertCountEqual(expected_cdm_files, cdm_files)
         self.assertCountEqual(expected_pii_files, pii_files)
         self.assertCountEqual(expected_unknown_files, unknown_files)
@@ -135,8 +158,7 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('bq_utils.create_standard_table')
     @mock.patch('validation.main.perform_validation_on_file')
     @mock.patch('api_util.check_cron')
-    def test_validate_submission(self,
-                                 mock_check_cron,
+    def test_validate_submission(self, mock_check_cron,
                                  mock_perform_validation_on_file,
                                  mock_create_standard_table):
         """
@@ -148,8 +170,11 @@ class ValidationMainTest(unittest.TestCase):
         :return:
         """
         folder_prefix = '2019-01-01/'
-        bucket_items = [{'name': folder_prefix + 'person.csv'},
-                        {'name': folder_prefix + 'invalid_file.csv'}]
+        bucket_items = [{
+            'name': folder_prefix + 'person.csv'
+        }, {
+            'name': folder_prefix + 'invalid_file.csv'
+        }]
 
         perform_validation_on_file_returns = dict()
         expected_results = []
@@ -174,12 +199,14 @@ class ValidationMainTest(unittest.TestCase):
             expected_results += result
             expected_errors += errors
 
-        def perform_validation_on_file(cdm_file_name, found_cdm_files, hpo_id, folder_prefix, bucket):
+        def perform_validation_on_file(cdm_file_name, found_cdm_files, hpo_id,
+                                       folder_prefix, bucket):
             return perform_validation_on_file_returns.get(cdm_file_name)
 
         mock_perform_validation_on_file.side_effect = perform_validation_on_file
 
-        actual_result = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items, folder_prefix)
+        actual_result = main.validate_submission(self.hpo_id, self.hpo_bucket,
+                                                 bucket_items, folder_prefix)
         self.assertCountEqual(expected_results, actual_result.get('results'))
         self.assertCountEqual(expected_errors, actual_result.get('errors'))
         self.assertCountEqual(expected_warnings, actual_result.get('warnings'))
@@ -189,18 +216,17 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('validation.main.list_bucket')
     @mock.patch('logging.error')
     @mock.patch('api_util.check_cron')
-    def test_validate_all_hpos_exception(self,
-                                         check_cron,
-                                         mock_logging_error,
-                                         mock_list_bucket,
-                                         mock_hpo_csv,
+    def test_validate_all_hpos_exception(self, check_cron, mock_logging_error,
+                                         mock_list_bucket, mock_hpo_csv,
                                          mock_hpo_bucket):
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
-        mock_list_bucket.side_effect = googleapiclient.errors.HttpError('fake http error', b'fake http error')
+        mock_list_bucket.side_effect = googleapiclient.errors.HttpError(
+            'fake http error', b'fake http error')
         with main.app.test_client() as c:
             c.get(main_constants.PREFIX + 'ValidateAllHpoFiles')
-        expected_call = mock.call('Failed to process hpo_id `{}` due to the following '
-                                  'HTTP error: fake http error'.format(self.hpo_id))
+        expected_call = mock.call(
+            'Failed to process hpo_id `{}` due to the following '
+            'HTTP error: fake http error'.format(self.hpo_id))
         self.assertIn(expected_call, mock_logging_error.mock_calls)
 
     @mock.patch('validation.main.run_export')
@@ -215,18 +241,11 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_process_hpo_ignore_dirs(
-            self,
-            mock_hpo_bucket,
-            mock_bucket_list,
-            mock_validation,
-            mock_get_hpo_name,
-            mock_write_string_to_file,
-            mock_get_duplicate_counts_query,
-            mock_query_rows,
-            mock_all_required_files_loaded,
-            mock_upload,
-            mock_run_achilles,
-            mock_export):
+        self, mock_hpo_bucket, mock_bucket_list, mock_validation,
+        mock_get_hpo_name, mock_write_string_to_file,
+        mock_get_duplicate_counts_query, mock_query_rows,
+        mock_all_required_files_loaded, mock_upload, mock_run_achilles,
+        mock_export):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -256,19 +275,37 @@ class ValidationMainTest(unittest.TestCase):
         yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         moment = datetime.datetime.now()
         now = moment.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        mock_bucket_list.return_value = [
-            {'name': 'unknown.pdf', 'timeCreated': now, 'updated': now},
-            {'name': 'participant/no-site/foo.pdf', 'timeCreated': now, 'updated': now},
-            {'name': 'PARTICIPANT/siteone/foo.pdf', 'timeCreated': now, 'updated': now},
-            {'name': 'Participant/sitetwo/foo.pdf', 'timeCreated': now, 'updated': now},
-            {'name': 'submission/person.csv', 'timeCreated': yesterday, 'updated': yesterday},
-            {'name': 'SUBMISSION/measurement.csv', 'timeCreated': now, 'updated': now}
-        ]
+        mock_bucket_list.return_value = [{
+            'name': 'unknown.pdf',
+            'timeCreated': now,
+            'updated': now
+        }, {
+            'name': 'participant/no-site/foo.pdf',
+            'timeCreated': now,
+            'updated': now
+        }, {
+            'name': 'PARTICIPANT/siteone/foo.pdf',
+            'timeCreated': now,
+            'updated': now
+        }, {
+            'name': 'Participant/sitetwo/foo.pdf',
+            'timeCreated': now,
+            'updated': now
+        }, {
+            'name': 'submission/person.csv',
+            'timeCreated': yesterday,
+            'updated': yesterday
+        }, {
+            'name': 'SUBMISSION/measurement.csv',
+            'timeCreated': now,
+            'updated': now
+        }]
 
         mock_validation.return_value = {
             'results': [('SUBMISSION/measurement.csv', 1, 1, 1)],
             'errors': [],
-            'warnings': []}
+            'warnings': []
+        }
 
         # test
         main.process_hpo('noob', force_run=True)
@@ -277,18 +314,14 @@ class ValidationMainTest(unittest.TestCase):
         self.assertTrue(mock_validation.called)
         self.assertEqual(
             mock_validation.assert_called_once_with(
-                'noob', 'noob', mock_bucket_list.return_value, 'SUBMISSION/'
-            ),
-            None
-        )
+                'noob', 'noob', mock_bucket_list.return_value, 'SUBMISSION/'),
+            None)
         self.assertTrue(mock_run_achilles.called)
         self.assertTrue(mock_export.called)
         self.assertEqual(
-            mock_export.assert_called_once_with(
-                hpo_id='noob', folder_prefix='SUBMISSION/'
-            ),
-            None
-        )
+            mock_export.assert_called_once_with(hpo_id='noob',
+                                                folder_prefix='SUBMISSION/'),
+            None)
         # make sure upload is called for only the most recent
         # non-participant directory
         self.assertTrue(mock_upload.called)
@@ -304,13 +337,9 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('gcs_utils.get_drc_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_ignore_dir(
-            self,
-            mock_check_cron,
-            mock_hpo_bucket,
-            mock_drc_bucket,
-            mock_bucket_list,
-            mock_copy):
+    def test_copy_files_ignore_dir(self, mock_check_cron, mock_hpo_bucket,
+                                   mock_drc_bucket, mock_bucket_list,
+                                   mock_copy):
         """
         Test copying files to the drc internal bucket.
 
@@ -330,13 +359,17 @@ class ValidationMainTest(unittest.TestCase):
         # pre-conditions
         mock_hpo_bucket.return_value = 'noob'
         mock_drc_bucket.return_value = 'unit_test_drc_internal'
-        mock_bucket_list.return_value = [
-            {'name': 'participant/no-site/foo.pdf', },
-            {'name': 'PARTICIPANT/siteone/foo.pdf', },
-            {'name': 'Participant/sitetwo/foo.pdf', },
-            {'name': 'submission/person.csv', },
-            {'name': 'SUBMISSION/measurement.csv', }
-        ]
+        mock_bucket_list.return_value = [{
+            'name': 'participant/no-site/foo.pdf',
+        }, {
+            'name': 'PARTICIPANT/siteone/foo.pdf',
+        }, {
+            'name': 'Participant/sitetwo/foo.pdf',
+        }, {
+            'name': 'submission/person.csv',
+        }, {
+            'name': 'SUBMISSION/measurement.csv',
+        }]
 
         # test
         result = main.copy_files('noob')
@@ -354,28 +387,33 @@ class ValidationMainTest(unittest.TestCase):
                       source_object_id='submission/person.csv',
                       destination_bucket='unit_test_drc_internal',
                       destination_object_id='noob/noob/submission/person.csv'),
-            mock.call(source_bucket='noob',
-                      source_object_id='SUBMISSION/measurement.csv',
-                      destination_bucket='unit_test_drc_internal',
-                      destination_object_id='noob/noob/SUBMISSION/measurement.csv')
+            mock.call(
+                source_bucket='noob',
+                source_object_id='SUBMISSION/measurement.csv',
+                destination_bucket='unit_test_drc_internal',
+                destination_object_id='noob/noob/SUBMISSION/measurement.csv')
         ]
         self.assertTrue(mock_copy.called)
         self.assertEqual(mock_copy.call_count, 2)
-        self.assertEqual(mock_copy.assert_has_calls(expected_calls, any_order=True), None)
+        self.assertEqual(
+            mock_copy.assert_has_calls(expected_calls, any_order=True), None)
 
         unexpected_calls = [
-            mock.call(source_bucket='noob',
-                      source_object_id='participant/no-site/foo.pdf',
-                      destination_bucket='unit_test_drc_internal',
-                      destination_object_id='noob/noob/participant/no-site/foo.pdf'),
-            mock.call(source_bucket='noob',
-                      source_object_id='PARTICIPANT/siteone/foo.pdf',
-                      destination_bucket='unit_test_drc_internal',
-                      destination_object_id='noob/noob/PARTICIPANT/siteone/foo.pdf'),
-            mock.call(source_bucket='noob',
-                      source_object_id='Participant/sitetwo/foo.pdf',
-                      destination_bucket='unit_test_drc_internal',
-                      destination_object_id='noob/noob/Participant/sitetwo/foo.pdf')
+            mock.call(
+                source_bucket='noob',
+                source_object_id='participant/no-site/foo.pdf',
+                destination_bucket='unit_test_drc_internal',
+                destination_object_id='noob/noob/participant/no-site/foo.pdf'),
+            mock.call(
+                source_bucket='noob',
+                source_object_id='PARTICIPANT/siteone/foo.pdf',
+                destination_bucket='unit_test_drc_internal',
+                destination_object_id='noob/noob/PARTICIPANT/siteone/foo.pdf'),
+            mock.call(
+                source_bucket='noob',
+                source_object_id='Participant/sitetwo/foo.pdf',
+                destination_bucket='unit_test_drc_internal',
+                destination_object_id='noob/noob/Participant/sitetwo/foo.pdf')
         ]
         # can't easily use assertRaises here.  3.5 has mock.assert_not_called
         # that should be used when we upgrade instead of this
@@ -385,16 +423,17 @@ class ValidationMainTest(unittest.TestCase):
             except AssertionError:
                 pass
             else:
-                raise AssertionError("Unexpected call in mock_copy calls:  {}"
-                                     .format(call))
+                raise AssertionError(
+                    "Unexpected call in mock_copy calls:  {}".format(call))
 
     def test_generate_metrics(self):
         summary = {
-            report_consts.RESULTS_REPORT_KEY:
-                [{'file_name': 'person.csv',
-                  'found': 1,
-                  'parsed': 1,
-                  'loaded': 1}],
+            report_consts.RESULTS_REPORT_KEY: [{
+                'file_name': 'person.csv',
+                'found': 1,
+                'parsed': 1,
+                'loaded': 1
+            }],
             report_consts.ERRORS_REPORT_KEY: [],
             report_consts.WARNINGS_REPORT_KEY: []
         }
@@ -414,27 +453,33 @@ class ValidationMainTest(unittest.TestCase):
         def get_duplicate_counts_query(hpo_id):
             return ''
 
-        with mock.patch.multiple('validation.main',
-                                 all_required_files_loaded=all_required_files_loaded,
-                                 query_rows=query_rows,
-                                 get_duplicate_counts_query=get_duplicate_counts_query,
-                                 _write_string_to_file=_write_string_to_file):
-            result = main.generate_metrics(self.hpo_id, self.hpo_bucket, self.folder_prefix, summary)
+        with mock.patch.multiple(
+                'validation.main',
+                all_required_files_loaded=all_required_files_loaded,
+                query_rows=query_rows,
+                get_duplicate_counts_query=get_duplicate_counts_query,
+                _write_string_to_file=_write_string_to_file):
+            result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
+                                           self.folder_prefix, summary)
             self.assertIn(report_consts.RESULTS_REPORT_KEY, result)
             self.assertIn(report_consts.WARNINGS_REPORT_KEY, result)
             self.assertIn(report_consts.ERRORS_REPORT_KEY, result)
             self.assertNotIn(report_consts.HEEL_ERRORS_REPORT_KEY, result)
-            self.assertIn(report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY, result)
+            self.assertIn(report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY,
+                          result)
             self.assertIn(report_consts.COMPLETENESS_REPORT_KEY, result)
             self.assertIn(report_consts.DRUG_CLASS_METRICS_REPORT_KEY, result)
 
         # if error occurs (e.g. limit reached) error flag is set
-        with mock.patch.multiple('validation.main',
-                                 all_required_files_loaded=all_required_files_loaded,
-                                 query_rows=query_rows_error,
-                                 get_duplicate_counts_query=get_duplicate_counts_query,
-                                 _write_string_to_file=_write_string_to_file):
+        with mock.patch.multiple(
+                'validation.main',
+                all_required_files_loaded=all_required_files_loaded,
+                query_rows=query_rows_error,
+                get_duplicate_counts_query=get_duplicate_counts_query,
+                _write_string_to_file=_write_string_to_file):
             with self.assertRaises(googleapiclient.errors.HttpError):
-                result = main.generate_metrics(self.hpo_id, self.hpo_bucket, self.folder_prefix, summary)
-                error_occurred = result.get(report_consts.ERROR_OCCURRED_REPORT_KEY)
+                result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
+                                               self.folder_prefix, summary)
+                error_occurred = result.get(
+                    report_consts.ERROR_OCCURRED_REPORT_KEY)
                 self.assertEqual(error_occurred, True)

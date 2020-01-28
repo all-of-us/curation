@@ -95,23 +95,28 @@ from resources import DEID_PATH
 
 LOGGER = logging.getLogger(__name__)
 
+
 def milliseconds_since_epoch():
     """
     Helper method to get the number of milliseconds from the epoch to now
 
     :return:  an integer number of milliseconds
     """
-    return int((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
+    return int(
+        (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
 
 
-def create_participant_mapping_table(table, map_tablename, lower_bound, max_day_shift, credentials):
+def create_participant_mapping_table(table, map_tablename, lower_bound,
+                                     max_day_shift, credentials):
     # create the deid_map table.  set upper and lower bounds of the research_id array
     records = table.shape[0]
     upper_bound = lower_bound + (10 * records)
     map_table = pd.DataFrame({"person_id": table['person_id'].tolist()})
 
     # generate random research_ids
-    research_id_array = np.random.choice(np.arange(lower_bound, upper_bound), records, replace=False)
+    research_id_array = np.random.choice(np.arange(lower_bound, upper_bound),
+                                         records,
+                                         replace=False)
 
     # throw in some extra, non-deterministic shuffling
     for _ in range(milliseconds_since_epoch() % 5):
@@ -143,8 +148,7 @@ def create_person_id_src_hpo_map(input_dataset, credentials):
            "from {input_dataset}._mapping_{table} "
            "join {input_dataset}.{table} "
            "using ({table}_id) "
-           "where src_hpo_id not like 'rdr'"
-          )
+           "where src_hpo_id not like 'rdr'")
 
     # list dataset contents
     dataset_tables = bq_utils.list_dataset_contents(input_dataset)
@@ -176,29 +180,25 @@ def create_person_id_src_hpo_map(input_dataset, credentials):
 
     sql_statement = []
     for table in person_id_tables:
-        sql_statement.append(sql.format(table=table, input_dataset=input_dataset))
+        sql_statement.append(
+            sql.format(table=table, input_dataset=input_dataset))
 
     final_query = ' UNION ALL '.join(sql_statement)
 
     # create the mapping table
     if map_tablename not in dataset_tables:
-        fields = [
-            {
-                "type": "integer",
-                "name": "person_id",
-                "mode": "required",
-                "description": "the person_id of someone with an ehr record"
-            },
-            {
-                "type": "string",
-                "name": "src_hpo_id",
-                "mode": "required",
-                "description": "the src_hpo_id of an ehr record"
-            }
-        ]
-        bq_utils.create_table(map_tablename,
-                              fields,
-                              dataset_id=input_dataset)
+        fields = [{
+            "type": "integer",
+            "name": "person_id",
+            "mode": "required",
+            "description": "the person_id of someone with an ehr record"
+        }, {
+            "type": "string",
+            "name": "src_hpo_id",
+            "mode": "required",
+            "description": "the src_hpo_id of an ehr record"
+        }]
+        bq_utils.create_table(map_tablename, fields, dataset_id=input_dataset)
 
     bq_utils.query(final_query,
                    destination_table_id=map_tablename,
@@ -214,14 +214,18 @@ def create_allowed_states_table(input_dataset, credentials):
 
     map_tablename = input_dataset + "._mapping_src_hpos_to_allowed_states"
     data = pd.read_csv(
-        os.path.join(DEID_PATH, 'config', 'internal_tables', 'src_hpos_to_allowed_states.csv')
-    )
+        os.path.join(DEID_PATH, 'config', 'internal_tables',
+                     'src_hpos_to_allowed_states.csv'))
 
     # write this to bigquery.
     data.to_gbq(map_tablename, credentials=credentials, if_exists='replace')
 
 
-def create_questionnaire_mapping_table(table, map_tablename, lower_bound, credentials, exists_flag=None):
+def create_questionnaire_mapping_table(table,
+                                       map_tablename,
+                                       lower_bound,
+                                       credentials,
+                                       exists_flag=None):
     """
     Create a random mapping table for questionnaire response ids.
 
@@ -237,7 +241,9 @@ def create_questionnaire_mapping_table(table, map_tablename, lower_bound, creden
     map_table = pd.DataFrame({"questionnaire_response_id": qr_id_list})
 
     # generate random research_questionnaire_response_ids
-    research_id_array = np.random.choice(np.arange(lower_bound, upper_bound), records, replace=False)
+    research_id_array = np.random.choice(np.arange(lower_bound, upper_bound),
+                                         records,
+                                         replace=False)
 
     # throw in some extra, non-deterministic shuffling
     for _ in range(milliseconds_since_epoch() % 5):
@@ -245,16 +251,20 @@ def create_questionnaire_mapping_table(table, map_tablename, lower_bound, creden
     map_table['research_response_id'] = research_id_array
 
     # write this to bigquery.
-    map_table.to_gbq(map_tablename, credentials=credentials, if_exists=exists_flag)
+    map_table.to_gbq(map_tablename,
+                     credentials=credentials,
+                     if_exists=exists_flag)
     LOGGER.info('created new questionnaire response mapping table')
 
 
 class AOU(Press):
+
     def __init__(self, **args):
         args['store'] = 'bigquery'
         Press.__init__(self, **args)
         self.private_key = args.get('private_key', '')
-        self.credentials = service_account.Credentials.from_service_account_file(self.private_key)
+        self.credentials = service_account.Credentials.from_service_account_file(
+            self.private_key)
         self.odataset = self.idataset + '_deid'
         self.partition = args.get('cluster', False)
         self.priority = args.get('interactive', 'BATCH')
@@ -263,10 +273,13 @@ class AOU(Press):
             #
             # Minor updates that are the result of a limitation as to how rules are specified.
             # @TODO: Improve the rule specification language
-            shift_days = ('SELECT shift from {idataset}._deid_map '
-                          'WHERE _deid_map.person_id = {tablename}.person_id'
-                          .format(idataset=self.idataset, tablename=self.tablename))
-            self.deid_rules['shift'] = json.loads(json.dumps(self.deid_rules['shift']).replace(":SHIFT", shift_days))
+            shift_days = (
+                'SELECT shift from {idataset}._deid_map '
+                'WHERE _deid_map.person_id = {tablename}.person_id'.format(
+                    idataset=self.idataset, tablename=self.tablename))
+            self.deid_rules['shift'] = json.loads(
+                json.dumps(self.deid_rules['shift']).replace(
+                    ":SHIFT", shift_days))
 
     def initialize(self, **args):
         Press.initialize(self, **args)
@@ -277,15 +290,10 @@ class AOU(Press):
         million = 1000000
         map_tablename = self.idataset + "._deid_map"
 
-        sql = ("SELECT DISTINCT person_id, EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth as age "
-               "FROM person ORDER BY 2")
-        job_config = {
-            'query': {
-                'defaultDataset': {
-                    'datasetId': self.idataset
-                }
-            }
-        }
+        sql = (
+            "SELECT DISTINCT person_id, EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth as age "
+            "FROM person ORDER BY 2")
+        job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
         person_table = self.get_dataframe(sql=sql, query_config=job_config)
         LOGGER.info('patient count is:\t%s', person_table.shape[0])
         map_table = pd.DataFrame()
@@ -315,15 +323,20 @@ class AOU(Press):
                     LOGGER.info('participant mapping table contains '
                                 'all person ids.  continuing...')
                 else:
-                    LOGGER.info("creating new participant mapping table because the current mapping table doesn't match")
-                    create_participant_mapping_table(
-                        person_table, map_tablename, million, max_day_shift, self.credentials
+                    LOGGER.info(
+                        "creating new participant mapping table because the current mapping table doesn't match"
                     )
+                    create_participant_mapping_table(person_table,
+                                                     map_tablename, million,
+                                                     max_day_shift,
+                                                     self.credentials)
             else:
-                LOGGER.info("creating new participant mapping table because one doesn't exist")
-                create_participant_mapping_table(
-                    person_table, map_tablename, million, max_day_shift, self.credentials
+                LOGGER.info(
+                    "creating new participant mapping table because one doesn't exist"
                 )
+                create_participant_mapping_table(person_table, map_tablename,
+                                                 million, max_day_shift,
+                                                 self.credentials)
         else:
             LOGGER.error("Unable to initialize Deid.  Check "
                          "configuration files, parameters, and credentials.")
@@ -342,13 +355,7 @@ class AOU(Press):
                "FROM observation as o "
                "WHERE o.questionnaire_response_id IS NOT NULL "
                "ORDER BY 1")
-        job_config = {
-            'query': {
-                'defaultDataset': {
-                    'datasetId': self.idataset
-                }
-            }
-        }
+        job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
         observation_table = self.get_dataframe(sql=sql, query_config=job_config)
         LOGGER.info('total of distinct questionnaire_response_ids:\t%d',
                     observation_table.shape[0])
@@ -366,25 +373,31 @@ class AOU(Press):
             map_table = self.get_dataframe(sql=map_sql, query_config=job_config)
             if map_table.shape[0] > 0:
                 # Make sure the mapping table is mapping the expected data
-                map_table_set = set(map_table.loc[:, 'questionnaire_response_id'].tolist())
-                observation_set = set(observation_table.loc[:, 'questionnaire_response_id'].tolist())
+                map_table_set = set(
+                    map_table.loc[:, 'questionnaire_response_id'].tolist())
+                observation_set = set(
+                    observation_table.loc[:,
+                                          'questionnaire_response_id'].tolist())
                 if map_table_set == observation_set:
                     LOGGER.info('questionnaire response mapping table contains '
                                 'all questionnaire response ids')
                 else:
-                    LOGGER.warning('creating new questionnaire response mapping '
-                                   'table because the existing table doesn\'t match')
+                    LOGGER.warning(
+                        'creating new questionnaire response mapping '
+                        'table because the existing table doesn\'t match')
                     # The tables do NOT contain the same mapped elements
-                    create_questionnaire_mapping_table(
-                        observation_table, map_tablename, lower_bound, self.credentials, 'replace'
-                    )
+                    create_questionnaire_mapping_table(observation_table,
+                                                       map_tablename,
+                                                       lower_bound,
+                                                       self.credentials,
+                                                       'replace')
             else:
                 LOGGER.info('creating a new questionnaire response mapping '
                             'table because it doesn\'t exist')
                 # create the deid table.  set upper and lower bounds of the research_id array
-                create_questionnaire_mapping_table(
-                    observation_table, map_tablename, lower_bound, self.credentials
-                )
+                create_questionnaire_mapping_table(observation_table,
+                                                   map_tablename, lower_bound,
+                                                   self.credentials)
         else:
             LOGGER.error("No questionnaire_response_ids found.")
 
@@ -396,17 +409,22 @@ class AOU(Press):
         This function will execute a query to a data-frame (for easy handling)
         """
         if sql is None:
-            sql = ("SELECT * FROM {idataset}.{tablename}"
-                   .format(idataset=self.idataset, tablename=self.tablename))
+            sql = ("SELECT * FROM {idataset}.{tablename}".format(
+                idataset=self.idataset, tablename=self.tablename))
 
         if limit:
             sql = sql + " LIMIT " + str(limit)
 
         try:
             if query_config:
-                df = pd.read_gbq(sql, credentials=self.credentials, dialect='standard', configuration=query_config)
+                df = pd.read_gbq(sql,
+                                 credentials=self.credentials,
+                                 dialect='standard',
+                                 configuration=query_config)
             else:
-                df = pd.read_gbq(sql, credentials=self.credentials, dialect='standard')
+                df = pd.read_gbq(sql,
+                                 credentials=self.credentials,
+                                 dialect='standard')
 
             return df
         except Exception:
@@ -428,19 +446,18 @@ class AOU(Press):
         #
         rem_cols = True
         for rule in self.table_info['suppress']:
-            if 'rules' in rule and rule['rules'].endswith('DEMOGRAPHICS-COLUMNS'):
+            if 'rules' in rule and rule['rules'].endswith(
+                    'DEMOGRAPHICS-COLUMNS'):
                 rem_cols = False
                 rule['table'] = self.get_tablename()
                 rule['fields'] = columns
 
         if rem_cols:
-            self.table_info['suppress'].append(
-                {
-                    "rules": "@suppress.DEMOGRAPHICS-COLUMNS",
-                    "table": self.get_tablename(),
-                    "fields": columns
-                }
-            )
+            self.table_info['suppress'].append({
+                "rules": "@suppress.DEMOGRAPHICS-COLUMNS",
+                "table": self.get_tablename(),
+                "fields": columns
+            })
             LOGGER.info('added demographics-columns suppression rules')
 
     def _add_temporal_shifting_rules(self, columns):
@@ -508,15 +525,13 @@ class AOU(Press):
 
         # if a person_id column exists and a mapping has not been configured, add one
         if needs_compute_id and 'person_id' in columns:
-            self.table_info['compute'].append(
-                {
-                    "rules": "@compute.id",
-                    "fields": ["person_id"],
-                    "table": ":idataset._deid_map as map_user",
-                    "key_field": "map_user.person_id",
-                    "value_field": self.tablename + ".person_id"
-                }
-            )
+            self.table_info['compute'].append({
+                "rules": "@compute.id",
+                "fields": ["person_id"],
+                "table": ":idataset._deid_map as map_user",
+                "key_field": "map_user.person_id",
+                "value_field": self.tablename + ".person_id"
+            })
 
     def _add_dml_statements_rules(self, columns):
         """
@@ -535,7 +550,8 @@ class AOU(Press):
                 rule_generalizations = []
                 if isinstance(rule_list, list):
                     for rule in rule_list:
-                        if rule.get('drop_duplicates', 'no').lower() in ['true', 't', 'yes', 'y']:
+                        if rule.get('drop_duplicates',
+                                    'no').lower() in ['true', 't', 'yes', 'y']:
                             rule_generalizations.append(rule.get('into'))
                             drop_duplicates_rules[key] = rule_generalizations
 
@@ -549,17 +565,14 @@ class AOU(Press):
                 generalized_multiple_values.extend(drop_values)
 
             # set a dml statement to execute with the generalized info
-            self.table_info['dml_statements'] = [
-                {
-                    'rules': '@dml_statements.' + self.tablename,
-                    'tablename': self.tablename,
-                    'generalized_values': generalized_multiple_values,
-                    'key_values': values_to_drop_on
-                }
-            ]
+            self.table_info['dml_statements'] = [{
+                'rules': '@dml_statements.' + self.tablename,
+                'tablename': self.tablename,
+                'generalized_values': generalized_multiple_values,
+                'key_values': values_to_drop_on
+            }]
 
             self.pipeline.append('dml_statements')
-
 
     def update_rules(self):
         """
@@ -588,7 +601,8 @@ class AOU(Press):
         #
         # Let's make sure the out dataset exists
         datasets = list(client.list_datasets())
-        found = np.sum([1  for dataset in datasets if dataset.dataset_id == self.odataset])
+        found = np.sum(
+            [1 for dataset in datasets if dataset.dataset_id == self.odataset])
         if not found:
             dataset = bq.Dataset(client.dataset(self.odataset))
             client.create_dataset(dataset)
@@ -596,9 +610,10 @@ class AOU(Press):
         # create the output table
         if create:
             LOGGER.info('creating new table:\t%s', self.tablename)
-            bq_utils.create_standard_table(
-                self.tablename, self.tablename, drop_existing=True, dataset_id=self.odataset
-            )
+            bq_utils.create_standard_table(self.tablename,
+                                           self.tablename,
+                                           drop_existing=True,
+                                           dataset_id=self.odataset)
             write_disposition = bq_consts.WRITE_EMPTY
         else:
             write_disposition = bq_consts.WRITE_APPEND
@@ -610,7 +625,8 @@ class AOU(Press):
 
         dml_job = None
         if not dml:
-            job.destination = client.dataset(self.odataset).table(self.tablename)
+            job.destination = client.dataset(self.odataset).table(
+                self.tablename)
             job.use_query_cache = True
             job.allow_large_results = True
             job.write_disposition = write_disposition
@@ -621,10 +637,9 @@ class AOU(Press):
             # create a copy of the job config to use if the dry-run passes
             dml_job = copy(job)
 
-        LOGGER.info('submitting a dry-run for:\t%s\t\tpriority:\t%s\t\tpartition:\t%s',
-                    self.get_tablename(),
-                    self.priority,
-                    self.partition)
+        LOGGER.info(
+            'submitting a dry-run for:\t%s\t\tpriority:\t%s\t\tpartition:\t%s',
+            self.get_tablename(), self.priority, self.partition)
 
         logpath = os.path.join(self.logpath, self.idataset)
         try:
@@ -636,12 +651,10 @@ class AOU(Press):
         try:
             response = client.query(sql, location='US', job_config=job)
         except Exception:
-            LOGGER.exception('dry run query failed for:\t%s\n'
-                             '\t\tSQL:\t%s\n'
-                             '\t\tjob config:\t%s',
-                             self.get_tablename(),
-                             sql,
-                             job)
+            LOGGER.exception(
+                'dry run query failed for:\t%s\n'
+                '\t\tSQL:\t%s\n'
+                '\t\tjob config:\t%s', self.get_tablename(), sql, job)
         else:
 
             if response.state == 'DONE':
@@ -653,11 +666,9 @@ class AOU(Press):
                 LOGGER.info('dry-run passed.  submitting query for execution.')
 
                 response = client.query(sql, location='US', job_config=job)
-                LOGGER.info('submitted a %s job for table:\t%s\t\tstatus:\t%s\t\tvalue:\t%s',
-                            'bigquery',
-                            table_name,
-                            'pending',
-                            response.job_id)
+                LOGGER.info(
+                    'submitted a %s job for table:\t%s\t\tstatus:\t%s\t\tvalue:\t%s',
+                    'bigquery', table_name, 'pending', response.job_id)
                 self.wait(client, response.job_id)
 
     def wait(self, client, job_id):
@@ -667,7 +678,8 @@ class AOU(Press):
         :param client:  The BigQuery client object.
         :param job_id:  job_id to verify finishes.
         """
-        LOGGER.info('sleeping for table:\t%s\t\tjob_id:\t%s', self.get_tablename(), job_id)
+        LOGGER.info('sleeping for table:\t%s\t\tjob_id:\t%s',
+                    self.get_tablename(), job_id)
         status = 'NONE'
 
         while True:
@@ -692,11 +704,12 @@ def main(raw_args=None):
 
     handle = AOU(**sys_args)
 
-    if handle.initialize(age_limit=sys_args.get('age-limit'), max_day_shift=365):
+    if handle.initialize(age_limit=sys_args.get('age-limit'),
+                         max_day_shift=365):
         handle.do()
     else:
-        print ("Unable to initialize process ")
-        print ("\tEnsure that the parameters are correct")
+        print("Unable to initialize process ")
+        print("\tEnsure that the parameters are correct")
 
 
 if __name__ == '__main__':

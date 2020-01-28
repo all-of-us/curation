@@ -9,46 +9,38 @@ import csv
 import bq_utils
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
-
 ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID = 43528428
 HCAU_OBSERVATION_SOURCE_CONCEPT_ID = 1384450
 
 INSURANCE_LOOKUP = 'insurance_lookup'
 NEW_INSURANCE_ROWS = 'new_insurance_rows'
 
-INSURANCE_LOOKUP_FIELDS = [
-    {
-        "type": "string",
-        "name": "answer_for_obs_src_c_id_43528428",
-        "mode": "nullable",
-        "description": "Answers for observation_source_concept_id = 43528428"
-    },
-    {
-        "type": "string",
-        "name": "basics_value_source_value",
-        "mode": "nullable",
-        "description": "value_source_value field for the basics survey answer"
-    },
-    {
-        "type": "integer",
-        "name": "basics_value_source_concept_id",
-        "mode": "nullable",
-        "description": "value_source_concept_id for the basics survey answer"
-    },
-    {
-        "type": "string",
-        "name": "hcau_value_source_value",
-        "mode": "nullable",
-        "description": "value_source_value field for the HCAU survey answer"
-    },
-    {
-        "type": "integer",
-        "name": "hcau_value_source_concept_id",
-        "mode": "nullable",
-        "description": "value_source_concept_id for the HCAU survey answer"
-    }
-]
-
+INSURANCE_LOOKUP_FIELDS = [{
+    "type": "string",
+    "name": "answer_for_obs_src_c_id_43528428",
+    "mode": "nullable",
+    "description": "Answers for observation_source_concept_id = 43528428"
+}, {
+    "type": "string",
+    "name": "basics_value_source_value",
+    "mode": "nullable",
+    "description": "value_source_value field for the basics survey answer"
+}, {
+    "type": "integer",
+    "name": "basics_value_source_concept_id",
+    "mode": "nullable",
+    "description": "value_source_concept_id for the basics survey answer"
+}, {
+    "type": "string",
+    "name": "hcau_value_source_value",
+    "mode": "nullable",
+    "description": "value_source_value field for the HCAU survey answer"
+}, {
+    "type": "integer",
+    "name": "hcau_value_source_concept_id",
+    "mode": "nullable",
+    "description": "value_source_concept_id for the HCAU survey answer"
+}]
 
 SANDBOX_CREATE_QUERY = """
 CREATE TABLE `{project_id}.{sandbox_dataset_id}.{new_insurance_rows}`
@@ -99,7 +91,6 @@ AND person_id IN ({pids})
 )
 """
 
-
 UPDATE_INVALID_QUERY = """
 UPDATE 
  `{project_id}.{combined_dataset_id}.observation` ob
@@ -112,7 +103,6 @@ WHERE ob.observation_source_concept_id IN ({ORIGINAL_OBSERVATION_SOURCE_CONCEPT_
 AND ob.person_id IN ({pids})
 """
 
-
 DELETE_ORIGINAL_FOR_HCAU_PARTICIPANTS = """
 DELETE
 FROM `{project_id}.{combined_dataset_id}.observation` ob
@@ -122,7 +112,6 @@ AND ob.person_id IN
   person_id
 FROM `{project_id}.{sandbox_dataset_id}.{new_insurance_rows}`)
 """
-
 
 INSERT_ANSWERS_FOR_HCAU_PARTICIPANTS = """
 INSERT INTO `{project_id}.{combined_dataset_id}.observation`
@@ -168,7 +157,8 @@ def extract_pids_from_file(pid_file):
     return pids
 
 
-def get_queries_health_insurance(project_id, dataset_id, sandbox_dataset_id, pid_file):
+def get_queries_health_insurance(project_id, dataset_id, sandbox_dataset_id,
+                                 pid_file):
     """
     Queries to run for updating health insurance information
 
@@ -192,39 +182,44 @@ def get_queries_health_insurance(project_id, dataset_id, sandbox_dataset_id, pid
 
     sandbox_query = dict()
     sandbox_query[cdr_consts.QUERY] = SANDBOX_CREATE_QUERY.format(
-                                        project_id=project_id,
-                                        combined_dataset_id=dataset_id,
-                                        sandbox_dataset_id=sandbox_dataset_id,
-                                        new_insurance_rows=NEW_INSURANCE_ROWS,
-                                        insurance_lookup=INSURANCE_LOOKUP,
-                                        ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID=ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID,
-                                        HCAU_OBSERVATION_SOURCE_CONCEPT_ID=HCAU_OBSERVATION_SOURCE_CONCEPT_ID,
-                                        pids=pids)
+        project_id=project_id,
+        combined_dataset_id=dataset_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        new_insurance_rows=NEW_INSURANCE_ROWS,
+        insurance_lookup=INSURANCE_LOOKUP,
+        ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID=
+        ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID,
+        HCAU_OBSERVATION_SOURCE_CONCEPT_ID=HCAU_OBSERVATION_SOURCE_CONCEPT_ID,
+        pids=pids)
     queries.append(sandbox_query)
 
     invalidate_query = dict()
     invalidate_query[cdr_consts.QUERY] = UPDATE_INVALID_QUERY.format(
-                                          project_id=project_id,
-                                          combined_dataset_id=dataset_id,
-                                          ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID=ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID,
-                                          pids=pids)
+        project_id=project_id,
+        combined_dataset_id=dataset_id,
+        ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID=
+        ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID,
+        pids=pids)
     queries.append(invalidate_query)
 
     delete_query = dict()
-    delete_query[cdr_consts.QUERY] = DELETE_ORIGINAL_FOR_HCAU_PARTICIPANTS.format(
-                                        project_id=project_id,
-                                        combined_dataset_id=dataset_id,
-                                        sandbox_dataset_id=sandbox_dataset_id,
-                                        new_insurance_rows=NEW_INSURANCE_ROWS,
-                                        ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID=ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID)
+    delete_query[
+        cdr_consts.QUERY] = DELETE_ORIGINAL_FOR_HCAU_PARTICIPANTS.format(
+            project_id=project_id,
+            combined_dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            new_insurance_rows=NEW_INSURANCE_ROWS,
+            ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID=
+            ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID)
     queries.append(delete_query)
 
     insert_query = dict()
-    insert_query[cdr_consts.QUERY] = INSERT_ANSWERS_FOR_HCAU_PARTICIPANTS.format(
-                                        project_id=project_id,
-                                        combined_dataset_id=dataset_id,
-                                        sandbox_dataset_id=sandbox_dataset_id,
-                                        new_insurance_rows=NEW_INSURANCE_ROWS)
+    insert_query[
+        cdr_consts.QUERY] = INSERT_ANSWERS_FOR_HCAU_PARTICIPANTS.format(
+            project_id=project_id,
+            combined_dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            new_insurance_rows=NEW_INSURANCE_ROWS)
     queries.append(insert_query)
 
     return queries
@@ -238,22 +233,27 @@ def parse_args():
     """
     import cdr_cleaner.args_parser as parser
 
-    additional_argument_1 = {parser.SHORT_ARGUMENT: '-n',
-                             parser.LONG_ARGUMENT: '--sandbox_dataset_id',
-                             parser.ACTION: 'store',
-                             parser.DEST: 'sandbox_dataset_id',
-                             parser.HELP: 'Please specify the sandbox_dataset_id',
-                             parser.REQUIRED: True}
+    additional_argument_1 = {
+        parser.SHORT_ARGUMENT: '-n',
+        parser.LONG_ARGUMENT: '--sandbox_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'sandbox_dataset_id',
+        parser.HELP: 'Please specify the sandbox_dataset_id',
+        parser.REQUIRED: True
+    }
 
     help_text = 'path to csv file (with header row) containing pids whose observation records are to be removed'
-    additional_argument_2 = {parser.SHORT_ARGUMENT: '-f',
-                             parser.LONG_ARGUMENT: '--file_path',
-                             parser.ACTION: 'store',
-                             parser.DEST: 'file_path',
-                             parser.HELP: help_text,
-                             parser.REQUIRED: True}
+    additional_argument_2 = {
+        parser.SHORT_ARGUMENT: '-f',
+        parser.LONG_ARGUMENT: '--file_path',
+        parser.ACTION: 'store',
+        parser.DEST: 'file_path',
+        parser.HELP: help_text,
+        parser.REQUIRED: True
+    }
 
-    args = parser.default_parse_args([additional_argument_1, additional_argument_2])
+    args = parser.default_parse_args(
+        [additional_argument_1, additional_argument_2])
 
     return args
 
@@ -264,5 +264,7 @@ if __name__ == '__main__':
     ARGS = parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_queries_health_insurance(ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id, ARGS.file_path)
+    query_list = get_queries_health_insurance(ARGS.project_id, ARGS.dataset_id,
+                                              ARGS.sandbox_dataset_id,
+                                              ARGS.file_path)
     clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)

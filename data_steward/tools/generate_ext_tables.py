@@ -5,33 +5,29 @@ import resources
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
-EXT_FIELD_TEMPLATE = [
-    {
-        "type": "integer",
-        "name": "{table}_id",
-        "mode": "nullable",
-        "description": "The {table}_id used in the {table} table."
-    },
-    {
-        "type": "string",
-        "name": "src_id",
-        "mode": "nullable",
-        "description": "The provenance of the data associated with the {table}_id."
-    }]
+EXT_FIELD_TEMPLATE = [{
+    "type": "integer",
+    "name": "{table}_id",
+    "mode": "nullable",
+    "description": "The {table}_id used in the {table} table."
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The provenance of the data associated with the {table}_id."
+}]
 
-SITE_MAPPING_FIELDS = [
-    {
-        "type": "string",
-        "name": "hpo_id",
-        "mode": "nullable",
-        "description": "The hpo_id of the hpo site/RDR."
-    },
-    {
-        "type": "string",
-        "name": "src_id",
-        "mode": "nullable",
-        "description": "The masked id of the hpo site/RDR."
-    }]
+SITE_MAPPING_FIELDS = [{
+    "type": "string",
+    "name": "hpo_id",
+    "mode": "nullable",
+    "description": "The hpo_id of the hpo site/RDR."
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The masked id of the hpo site/RDR."
+}]
 
 EXT_TABLE_SUFFIX = '_ext'
 MAPPING_PREFIX = '_mapping_'
@@ -75,7 +71,8 @@ def get_mapping_table_ids(project_id, combined_dataset_id):
     :param combined_dataset_id: dataset_id containing mapping tables
     :return: returns mapping table ids
     """
-    table_objs = bq_utils.list_tables(combined_dataset_id, project_id=project_id)
+    table_objs = bq_utils.list_tables(combined_dataset_id,
+                                      project_id=project_id)
     mapping_table_ids = []
     for table_obj in table_objs:
         table_id = bq_utils.get_table_id_from_obj(table_obj)
@@ -105,7 +102,8 @@ def get_hpo_and_rdr_mappings():
     site_mapping_dict = generate_site_mappings()
     mappings_list = []
     for hpo_id in site_mapping_dict:
-        mappings_list.append([hpo_id, EHR_SITE_PREFIX + str(site_mapping_dict[hpo_id])])
+        mappings_list.append(
+            [hpo_id, EHR_SITE_PREFIX + str(site_mapping_dict[hpo_id])])
     mappings_list.append([RDR, PPI_PM])
     return mappings_list
 
@@ -118,8 +116,8 @@ def convert_to_bq_string(mapping_list):
     """
     bq_insert_list = []
     for hpo_rdr_item in mapping_list:
-        bq_insert_list.append("(\"{hpo_rdr_id}\", \"{src_id}\")".format(hpo_rdr_id=hpo_rdr_item[0],
-                                                                        src_id=hpo_rdr_item[1]))
+        bq_insert_list.append("(\"{hpo_rdr_id}\", \"{src_id}\")".format(
+            hpo_rdr_id=hpo_rdr_item[0], src_id=hpo_rdr_item[1]))
     bq_insert_string = ', '.join(bq_insert_list)
     return bq_insert_string
 
@@ -142,17 +140,22 @@ def create_and_populate_source_mapping_table(project_id, dataset_id):
     """
     mapping_list = get_hpo_and_rdr_mappings()
     site_mapping_insert_string = convert_to_bq_string(mapping_list)
-    result = bq_utils.create_table(SITE_TABLE_ID, SITE_MAPPING_FIELDS, drop_existing=True, dataset_id=dataset_id)
-    site_mappings_insert_query = INSERT_SITE_MAPPINGS_QUERY.format(combined_dataset_id=dataset_id,
-                                                                   project_id=project_id,
-                                                                   table_id=SITE_TABLE_ID,
-                                                                   values=site_mapping_insert_string)
+    result = bq_utils.create_table(SITE_TABLE_ID,
+                                   SITE_MAPPING_FIELDS,
+                                   drop_existing=True,
+                                   dataset_id=dataset_id)
+    site_mappings_insert_query = INSERT_SITE_MAPPINGS_QUERY.format(
+        combined_dataset_id=dataset_id,
+        project_id=project_id,
+        table_id=SITE_TABLE_ID,
+        values=site_mapping_insert_string)
     result = bq_utils.query(site_mappings_insert_query)
     rows_affected = result['numDmlAffectedRows']
     return rows_affected
 
 
-def get_generate_ext_table_queries(project_id, deid_dataset_id, combined_dataset_id):
+def get_generate_ext_table_queries(project_id, deid_dataset_id,
+                                   combined_dataset_id):
     """
     Generate the queries for generating the ext tables
     :param project_id: project_id containing the dataset to generate ext tables in
@@ -169,13 +172,17 @@ def get_generate_ext_table_queries(project_id, deid_dataset_id, combined_dataset
         cdm_table_id = get_cdm_table_from_mapping(mapping_table_id)
         ext_table_id = cdm_table_id + EXT_TABLE_SUFFIX
         ext_table_fields = get_table_fields(cdm_table_id)
-        bq_utils.create_table(ext_table_id, ext_table_fields, drop_existing=True, dataset_id=deid_dataset_id)
+        bq_utils.create_table(ext_table_id,
+                              ext_table_fields,
+                              drop_existing=True,
+                              dataset_id=deid_dataset_id)
         query = dict()
-        query[cdr_consts.QUERY] = REPLACE_SRC_QUERY.format(project_id=project_id,
-                                                           combined_dataset_id=combined_dataset_id,
-                                                           mapping_table_id=mapping_table_id,
-                                                           site_mappings_table_id=SITE_TABLE_ID,
-                                                           cdm_table_id=cdm_table_id)
+        query[cdr_consts.QUERY] = REPLACE_SRC_QUERY.format(
+            project_id=project_id,
+            combined_dataset_id=combined_dataset_id,
+            mapping_table_id=mapping_table_id,
+            site_mappings_table_id=SITE_TABLE_ID,
+            cdm_table_id=cdm_table_id)
         query[cdr_consts.DESTINATION_TABLE] = ext_table_id
         query[cdr_consts.DESTINATION_DATASET] = deid_dataset_id
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_EMPTY
@@ -193,12 +200,13 @@ def parse_args():
 
     argument_parser = parser.get_argument_parser()
 
-    argument_parser.add_argument('-c',
-                                 '--combined_dataset_id',
-                                 dest='combined_dataset_id',
-                                 action='store',
-                                 help='The combined dataset used to generate the deid dataset',
-                                 required=True)
+    argument_parser.add_argument(
+        '-c',
+        '--combined_dataset_id',
+        dest='combined_dataset_id',
+        action='store',
+        help='The combined dataset used to generate the deid dataset',
+        required=True)
 
     return argument_parser.parse_args()
 
@@ -208,5 +216,7 @@ if __name__ == '__main__':
 
     ARGS = parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_generate_ext_table_queries(ARGS.project_id, ARGS.dataset_id, ARGS.combined_dataset_id)
+    query_list = get_generate_ext_table_queries(ARGS.project_id,
+                                                ARGS.dataset_id,
+                                                ARGS.combined_dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, query_list)

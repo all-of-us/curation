@@ -59,7 +59,8 @@ def _gather_ehr_queries(project_id, dataset_id, sandbox_dataset_id):
     :return: returns list of queries
     """
     query_list = []
-    query_list.extend(id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
+    query_list.extend(
+        id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
     return query_list
 
 
@@ -73,27 +74,46 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     :return: returns list of queries
     """
     query_list = []
-    query_list.extend(maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries(project_id, dataset_id))
-    query_list.extend(back_fill_pmi_skip.get_run_pmi_fix_queries(project_id, dataset_id))
-    query_list.extend(ppi_numeric_fields.get_clean_ppi_num_fields_using_parameters_queries(project_id, dataset_id))
     query_list.extend(
-        remove_multiple_race_answers.get_remove_multiple_race_ethnicity_answers_queries(project_id, dataset_id))
-    query_list.extend(negative_ppi.get_update_ppi_queries(project_id, dataset_id, sandbox_dataset_id))
-    query_list.extend(smoking.get_queries_clean_smoking(project_id, dataset_id, sandbox_dataset_id))
+        maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries(
+            project_id, dataset_id))
     query_list.extend(
-        ppi_drop_duplicates.get_remove_duplicate_set_of_responses_to_same_questions_queries(project_id,
-                                                                                            dataset_id,
-                                                                                            sandbox_dataset_id))
-    query_list.extend(operational_pii_fields.get_remove_operational_pii_fields_query(project_id, dataset_id,
-                                                                                     sandbox_dataset_id))
+        back_fill_pmi_skip.get_run_pmi_fix_queries(project_id, dataset_id))
     query_list.extend(
-        map_questions_answers_to_omop.get_update_questions_answers_not_mapped_to_omop(project_id,
-                                                                                      dataset_id,
-                                                                                      sandbox_dataset_id))
-    query_list.extend(round_ppi_values.get_round_ppi_values_queries(project_id, dataset_id))
-    query_list.extend(update_family_history.get_update_family_history_qa_queries(project_id, dataset_id))
-    query_list.extend(extreme_measurements.get_drop_extreme_measurement_queries(project_id, dataset_id))
-    query_list.extend(drop_mult_meas.get_drop_multiple_measurement_queries(project_id, dataset_id))
+        ppi_numeric_fields.get_clean_ppi_num_fields_using_parameters_queries(
+            project_id, dataset_id))
+    query_list.extend(
+        remove_multiple_race_answers.
+        get_remove_multiple_race_ethnicity_answers_queries(
+            project_id, dataset_id))
+    query_list.extend(
+        negative_ppi.get_update_ppi_queries(project_id, dataset_id,
+                                            sandbox_dataset_id))
+    query_list.extend(
+        smoking.get_queries_clean_smoking(project_id, dataset_id,
+                                          sandbox_dataset_id))
+    query_list.extend(
+        ppi_drop_duplicates.
+        get_remove_duplicate_set_of_responses_to_same_questions_queries(
+            project_id, dataset_id, sandbox_dataset_id))
+    query_list.extend(
+        operational_pii_fields.get_remove_operational_pii_fields_query(
+            project_id, dataset_id, sandbox_dataset_id))
+    query_list.extend(
+        map_questions_answers_to_omop.
+        get_update_questions_answers_not_mapped_to_omop(project_id, dataset_id,
+                                                        sandbox_dataset_id))
+    query_list.extend(
+        round_ppi_values.get_round_ppi_values_queries(project_id, dataset_id))
+    query_list.extend(
+        update_family_history.get_update_family_history_qa_queries(
+            project_id, dataset_id))
+    query_list.extend(
+        extreme_measurements.get_drop_extreme_measurement_queries(
+            project_id, dataset_id))
+    query_list.extend(
+        drop_mult_meas.get_drop_multiple_measurement_queries(
+            project_id, dataset_id))
     return query_list
 
 
@@ -106,28 +126,48 @@ def _gather_combined_queries(project_id, dataset_id, sandbox_dataset_id):
     :return: returns list of queries
     """
     query_list = []
-    query_list.extend(replace_standard_concept_ids.replace_standard_id_in_domain_tables(project_id, dataset_id))
+    query_list.extend(
+        replace_standard_concept_ids.replace_standard_id_in_domain_tables(
+            project_id, dataset_id))
     query_list.extend(domain_alignment.domain_alignment(project_id, dataset_id))
-    query_list.extend(drop_participants_without_ppi_or_ehr.get_queries(project_id, dataset_id))
-    query_list.extend(id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
-    query_list.extend(clean_years.get_year_of_birth_queries(project_id, dataset_id))
-    query_list.extend(neg_ages.get_negative_ages_queries(project_id, dataset_id))
-    query_list.extend(bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
-    query_list.extend(no_data_30days_after_death.no_data_30_days_after_death(project_id, dataset_id))
-    query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
-    query_list.extend(drug_refills_supply.get_days_supply_refills_queries(project_id, dataset_id))
-    query_list.extend(populate_routes.get_route_mapping_queries(project_id, dataset_id))
-    query_list.extend(fix_datetimes.get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id))
-    query_list.extend(remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries(project_id, dataset_id))
-    query_list.extend(drop_duplicate_states.get_drop_duplicate_states_queries(project_id,
-                                                                              dataset_id,
-                                                                              sandbox_dataset_id))
+    query_list.extend(
+        drop_participants_without_ppi_or_ehr.get_queries(
+            project_id, dataset_id))
+    query_list.extend(
+        id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
+    query_list.extend(
+        clean_years.get_year_of_birth_queries(project_id, dataset_id))
+    query_list.extend(neg_ages.get_negative_ages_queries(
+        project_id, dataset_id))
+    query_list.extend(
+        bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
+    query_list.extend(
+        no_data_30days_after_death.no_data_30_days_after_death(
+            project_id, dataset_id))
+    query_list.extend(
+        valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
+    query_list.extend(
+        drug_refills_supply.get_days_supply_refills_queries(
+            project_id, dataset_id))
+    query_list.extend(
+        populate_routes.get_route_mapping_queries(project_id, dataset_id))
+    query_list.extend(
+        fix_datetimes.get_fix_incorrect_datetime_to_date_queries(
+            project_id, dataset_id))
+    query_list.extend(
+        remove_records_with_wrong_date.
+        get_remove_records_with_wrong_date_queries(project_id, dataset_id))
+    query_list.extend(
+        drop_duplicate_states.get_drop_duplicate_states_queries(
+            project_id, dataset_id, sandbox_dataset_id))
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
-    query_list.extend(null_foreign_key.null_invalid_foreign_keys(project_id, dataset_id))
+    query_list.extend(
+        null_foreign_key.null_invalid_foreign_keys(project_id, dataset_id))
     return query_list
 
 
-def _gather_combined_de_identified_queries(project_id, dataset_id, sandbox_dataset_id):
+def _gather_combined_de_identified_queries(project_id, dataset_id,
+                                           sandbox_dataset_id):
     """
     gathers all the queries required to clean de_identified dataset
 
@@ -136,16 +176,25 @@ def _gather_combined_de_identified_queries(project_id, dataset_id, sandbox_datas
     :return: returns list of queries
     """
     query_list = []
-    query_list.extend(id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
-    query_list.extend(neg_ages.get_negative_ages_queries(project_id, dataset_id))
-    query_list.extend(bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
-    query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
-    query_list.extend(fill_source_value.get_fill_freetext_source_value_fields_queries(project_id, dataset_id))
-    query_list.extend(repopulate_person.get_repopulate_person_post_deid_queries(project_id, dataset_id))
+    query_list.extend(
+        id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
+    query_list.extend(neg_ages.get_negative_ages_queries(
+        project_id, dataset_id))
+    query_list.extend(
+        bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
+    query_list.extend(
+        valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
+    query_list.extend(
+        fill_source_value.get_fill_freetext_source_value_fields_queries(
+            project_id, dataset_id))
+    query_list.extend(
+        repopulate_person.get_repopulate_person_post_deid_queries(
+            project_id, dataset_id))
     return query_list
 
 
-def _gather_combined_de_identified_clean_queries(project_id, dataset_id, sandbox_dataset_id):
+def _gather_combined_de_identified_clean_queries(project_id, dataset_id,
+                                                 sandbox_dataset_id):
     """
     gathers all the queries required to clean base version of de_identified dataset
     :param project_id: project name
@@ -165,16 +214,30 @@ def _gather_unioned_ehr_queries(project_id, dataset_id, sandbox_dataset_id):
     :return: returns list of queries
     """
     query_list = []
-    query_list.extend(id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
-    query_list.extend(clean_years.get_year_of_birth_queries(project_id, dataset_id))
-    query_list.extend(neg_ages.get_negative_ages_queries(project_id, dataset_id))
-    query_list.extend(bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
-    query_list.extend(valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
-    query_list.extend(drug_refills_supply.get_days_supply_refills_queries(project_id, dataset_id))
-    query_list.extend(populate_routes.get_route_mapping_queries(project_id, dataset_id))
-    query_list.extend(fix_datetimes.get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id))
-    query_list.extend(remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries(project_id, dataset_id))
-    query_list.extend(invalid_procedure_source.get_remove_invalid_procedure_source_queries(project_id, dataset_id))
+    query_list.extend(
+        id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
+    query_list.extend(
+        clean_years.get_year_of_birth_queries(project_id, dataset_id))
+    query_list.extend(neg_ages.get_negative_ages_queries(
+        project_id, dataset_id))
+    query_list.extend(
+        bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
+    query_list.extend(
+        valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
+    query_list.extend(
+        drug_refills_supply.get_days_supply_refills_queries(
+            project_id, dataset_id))
+    query_list.extend(
+        populate_routes.get_route_mapping_queries(project_id, dataset_id))
+    query_list.extend(
+        fix_datetimes.get_fix_incorrect_datetime_to_date_queries(
+            project_id, dataset_id))
+    query_list.extend(
+        remove_records_with_wrong_date.
+        get_remove_records_with_wrong_date_queries(project_id, dataset_id))
+    query_list.extend(
+        invalid_procedure_source.get_remove_invalid_procedure_source_queries(
+            project_id, dataset_id))
     return query_list
 
 
@@ -187,13 +250,16 @@ def clean_rdr_dataset(project_id=None, dataset_id=None):
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
+                    project_id)
 
     if dataset_id is None:
         dataset_id = bq_utils.get_rdr_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
+        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
+                    dataset_id)
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+                                                        dataset_id=dataset_id)
 
     query_list = _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id)
 
@@ -210,13 +276,16 @@ def clean_ehr_dataset(project_id=None, dataset_id=None):
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
+                    project_id)
 
     if dataset_id is None:
         dataset_id = bq_utils.get_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
+        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
+                    dataset_id)
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+                                                        dataset_id=dataset_id)
 
     query_list = _gather_ehr_queries(project_id, dataset_id, sandbox_dataset_id)
 
@@ -233,15 +302,19 @@ def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
+                    project_id)
 
     if dataset_id is None:
         dataset_id = bq_utils.get_unioned_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
+        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
+                    dataset_id)
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+                                                        dataset_id=dataset_id)
 
-    query_list = _gather_unioned_ehr_queries(project_id, dataset_id, sandbox_dataset_id)
+    query_list = _gather_unioned_ehr_queries(project_id, dataset_id,
+                                             sandbox_dataset_id)
 
     LOGGER.info("Cleaning unioned_dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.UNIONED)
@@ -256,15 +329,19 @@ def clean_combined_dataset(project_id=None, dataset_id=None):
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
+                    project_id)
 
     if dataset_id is None:
         dataset_id = bq_utils.get_combined_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
+        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
+                    dataset_id)
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+                                                        dataset_id=dataset_id)
 
-    query_list = _gather_combined_queries(project_id, dataset_id, sandbox_dataset_id)
+    query_list = _gather_combined_queries(project_id, dataset_id,
+                                          sandbox_dataset_id)
 
     LOGGER.info("Cleaning combined_dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.COMBINED)
@@ -279,21 +356,26 @@ def clean_combined_de_identified_dataset(project_id=None, dataset_id=None):
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
+                    project_id)
 
     if dataset_id is None:
         dataset_id = bq_utils.get_combined_deid_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
+        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
+                    dataset_id)
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+                                                        dataset_id=dataset_id)
 
-    query_list = _gather_combined_de_identified_queries(project_id, dataset_id, sandbox_dataset_id)
+    query_list = _gather_combined_de_identified_queries(project_id, dataset_id,
+                                                        sandbox_dataset_id)
 
     LOGGER.info("Cleaning de-identified dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.DEID)
 
 
-def clean_combined_de_identified_clean_dataset(project_id=None, dataset_id=None):
+def clean_combined_de_identified_clean_dataset(project_id=None,
+                                               dataset_id=None):
     """
     Run all clean rules defined for the deidentified ehr and rdr clean dataset.
     :param project_id:  Name of the BigQuery project.
@@ -301,15 +383,19 @@ def clean_combined_de_identified_clean_dataset(project_id=None, dataset_id=None)
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s', project_id)
+        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
+                    project_id)
 
     if dataset_id is None:
         dataset_id = bq_utils.get_combined_deid_clean_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s', dataset_id)
+        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
+                    dataset_id)
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id, dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+                                                        dataset_id=dataset_id)
 
-    query_list = _gather_combined_de_identified_clean_queries(project_id, dataset_id, sandbox_dataset_id)
+    query_list = _gather_combined_de_identified_clean_queries(
+        project_id, dataset_id, sandbox_dataset_id)
 
     LOGGER.info("Cleaning de-identified dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.DEID)
@@ -330,16 +416,18 @@ def clean_all_cdr():
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-d', '--data_stage',
-                        required=True, dest='data_stage',
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-d',
+                        '--data_stage',
+                        required=True,
+                        dest='data_stage',
                         action='store',
                         type=stage,
-                        choices=list([s for s in stage if s is not stage.UNSPECIFIED]),
+                        choices=list(
+                            [s for s in stage if s is not stage.UNSPECIFIED]),
                         help='Specify the dataset')
-    parser.add_argument('-s',
-                        action='store_true',
-                        help='Send logs to console')
+    parser.add_argument('-s', action='store_true', help='Send logs to console')
     args = parser.parse_args()
     clean_engine.add_console_logging(args.s)
     if args.data_stage == stage.EHR:

@@ -30,11 +30,12 @@ def get_valid_death_date_queries(project_id, dataset_id):
     """
     queries = []
     query = dict()
-    query[cdr_consts.QUERY] = KEEP_VALID_DEATH_TABLE_ROWS.format(project_id=project_id,
-                                                                 dataset_id=dataset_id,
-                                                                 table=death,
-                                                                 program_start_date=program_start_date,
-                                                                 current_date=current_date)
+    query[cdr_consts.QUERY] = KEEP_VALID_DEATH_TABLE_ROWS.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        table=death,
+        program_start_date=program_start_date,
+        current_date=current_date)
     query[cdr_consts.DESTINATION_TABLE] = death
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id

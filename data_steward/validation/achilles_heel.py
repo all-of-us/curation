@@ -19,7 +19,8 @@ SPLIT_PATTERN = ';zzzzzz'
 TRUNCATE_TABLE_PATTERN = re.compile('\s*truncate\s+table\s+([^\s]+)')
 DROP_TABLE_PATTERN = re.compile('\s*drop\s+table\s+([^\s]+)')
 
-ACHILLES_HEEL_DML = os.path.join(resources.resource_path, 'achilles_heel_dml.sql')
+ACHILLES_HEEL_DML = os.path.join(resources.resource_path,
+                                 'achilles_heel_dml.sql')
 
 
 def remove_sql_comment_from_string(string):
@@ -91,8 +92,7 @@ def run_heel_analysis_job(command):
         logging.info('Running achilles heel temp query %s' % command)
         table_id = sql_wrangle.get_temp_table_name(command)
         query = sql_wrangle.get_temp_table_query(command)
-        job_result = bq_utils.query(query,
-                                    destination_table_id=table_id)
+        job_result = bq_utils.query(query, destination_table_id=table_id)
     else:
         logging.info('Running achilles heel load query %s' % command)
         job_result = bq_utils.query(command)

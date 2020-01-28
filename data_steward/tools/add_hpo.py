@@ -56,7 +56,8 @@ def get_last_display_order():
     gets the display order from hpo_site_id_mappings table
     :return:
     """
-    q = DEFAULT_DISPLAY_ORDER.format(hpo_site_id_mappings_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID)
+    q = DEFAULT_DISPLAY_ORDER.format(
+        hpo_site_id_mappings_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID)
     query_response = bq_utils.query(q)
     rows = bq_utils.response2rows(query_response)
     row = rows[0]
@@ -70,8 +71,9 @@ def shift_display_orders(at_display_order):
     :param at_display_order: index where the display order
     :return:
     """
-    q = SHIFT_HPO_SITE_DISPLAY_ORDER.format(display_order=at_display_order,
-                                            hpo_site_id_mappings_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
+    q = SHIFT_HPO_SITE_DISPLAY_ORDER.format(
+        display_order=at_display_order,
+        hpo_site_id_mappings_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
     logging.info('Shifting lookup with the following query:\n %s\n...' % q)
     query_response = bq_utils.query(q)
     return query_response
@@ -86,10 +88,16 @@ def add_hpo_mapping(hpo_id, hpo_name, org_id, display_order):
     :param display_order: index number in which hpo should be added in table
     :return:
     """
-    q = ADD_HPO_SITE_ID_MAPPING.format(hpo_id=hpo_id, hpo_name=hpo_name, org_id=org_id, display_order=display_order)
-    logging.info('Adding mapping lookup with the following query:\n %s\n...' % q)
-    query_response = bq_utils.query(q, destination_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID,
-                                    write_disposition='WRITE_APPEND')
+    q = ADD_HPO_SITE_ID_MAPPING.format(hpo_id=hpo_id,
+                                       hpo_name=hpo_name,
+                                       org_id=org_id,
+                                       display_order=display_order)
+    logging.info('Adding mapping lookup with the following query:\n %s\n...' %
+                 q)
+    query_response = bq_utils.query(
+        q,
+        destination_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID,
+        write_disposition='WRITE_APPEND')
     return query_response
 
 
@@ -102,8 +110,10 @@ def add_hpo_bucket(hpo_id, bucket_name):
     """
     q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id, bucket_name=bucket_name)
     logging.info('Adding bucket lookup with the following query:\n %s\n...' % q)
-    query_response = bq_utils.query(q, destination_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
-                                    write_disposition='WRITE_APPEND')
+    query_response = bq_utils.query(
+        q,
+        destination_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
+        write_disposition='WRITE_APPEND')
     return query_response
 
 
@@ -133,7 +143,9 @@ def add_hpo_csv(hpo_id, hpo_name):
     :return:
     """
     if find_hpo(hpo_id, hpo_name):
-        raise IOError('Entry not added. A site with hpo_id {hpo_id} and name {name} already exists.')
+        raise IOError(
+            'Entry not added. A site with hpo_id {hpo_id} and name {name} already exists.'
+        )
     logging.info('Adding new entry for hpo_id %s to hpo.csv...' % hpo_id)
     line = HPO_CSV_LINE_FMT.format(hpo_id=hpo_id, hpo_name=hpo_name)
     with open(resources.hpo_csv_path, 'a') as hpo_fp:
@@ -166,7 +178,9 @@ def main(hpo_id, org_id, hpo_name, bucket_name, display_order):
     :return:
     """
     if bucket_access_configured(bucket_name):
-        logging.info('Accessing bucket %s successful. Proceeding to add site...' % bucket_name)
+        logging.info(
+            'Accessing bucket %s successful. Proceeding to add site...' %
+            bucket_name)
         add_hpo_csv(hpo_id, hpo_name)
         add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order)
 
@@ -197,12 +211,14 @@ if __name__ == '__main__':
                         '--bucket_name',
                         required=True,
                         help='Name of the GCS bucket')
-    parser.add_argument('--display_order',
-                        required=False,
-                        help='Display order in dashboard; increments display order by default')
+    parser.add_argument(
+        '--display_order',
+        required=False,
+        help='Display order in dashboard; increments display order by default')
 
     args = parser.parse_args()
     creds_path = args.credentials
     cli_util.activate_creds(creds_path)
     cli_util.set_default_dataset_id(LOOKUP_TABLES_DATASET_ID)
-    main(args.hpo_id, args.org_id, args.hpo_name, args.bucket_name, args.display_order)
+    main(args.hpo_id, args.org_id, args.hpo_name, args.bucket_name,
+         args.display_order)

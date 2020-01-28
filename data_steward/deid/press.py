@@ -17,7 +17,6 @@ import bq_utils
 from resources import fields_for
 from deid.rules import Deid, create_on_string
 
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -58,7 +57,6 @@ def set_up_logging(log_path, idataset):
                             format=file_format)
 
 
-
 class Press(object):
 
     def __init__(self, **args):
@@ -69,7 +67,8 @@ class Press(object):
         """
         self.idataset = args.get('idataset', '')
         self.tablepath = args.get('table')
-        self.tablename = os.path.basename(self.tablepath).split('.json')[0].strip()
+        self.tablename = os.path.basename(
+            self.tablepath).split('.json')[0].strip()
 
         self.logpath = args.get('logs', 'logs')
         set_up_logging(self.logpath, self.idataset)
@@ -77,7 +76,8 @@ class Press(object):
         with codecs.open(args.get('rules'), 'r') as config:
             self.deid_rules = json.loads(config.read())
 
-        self.pipeline = args.get('pipeline', ['generalize', 'suppress', 'shift', 'compute'])
+        self.pipeline = args.get('pipeline',
+                                 ['generalize', 'suppress', 'shift', 'compute'])
         try:
             with codecs.open(self.tablepath, 'r') as config:
                 self.table_info = json.loads(config.read())
@@ -102,14 +102,14 @@ class Press(object):
         if 'FILTERS' not in self.deid_rules['suppress']:
             self.deid_rules['suppress']['FILTERS'] = []
 
-        self.action = [term.strip()
-                       for term in args['action'].split(',')] if 'action' in args else ['submit']
-
+        self.action = [term.strip() for term in args['action'].split(',')
+                      ] if 'action' in args else ['submit']
 
     def meta(self, data_frame):
-        return pd.DataFrame(
-            {"names": list(data_frame.dtypes.to_dict().keys()), "types": list(data_frame.dtypes.to_dict().values())}
-        )
+        return pd.DataFrame({
+            "names": list(data_frame.dtypes.to_dict().keys()),
+            "types": list(data_frame.dtypes.to_dict().values())
+        })
 
     def initialize(self, **args):
         #
@@ -121,7 +121,6 @@ class Press(object):
             if set(columns) & set(row['filter'].split(' ')):
                 dfilters.append(row)
         self.deid_rules['suppress']['FILTERS'] = dfilters
-
 
     def get_table_columns(self, tablename):
         """
@@ -164,8 +163,9 @@ class Press(object):
 
         p = d.apply(self.table_info, self.store, self.get_tablename())
 
-        is_meta = np.sum([1*('on' in _item) for _item in p]) != 0
-        LOGGER.info('table:\t%s\t\tis a meta table:\t%s', self.get_tablename(), is_meta)
+        is_meta = np.sum([1 * ('on' in _item) for _item in p]) != 0
+        LOGGER.info('table:\t%s\t\tis a meta table:\t%s', self.get_tablename(),
+                    is_meta)
         if not is_meta:
             sql = [self.to_sql(p)]
             _rsql = None
@@ -191,7 +191,7 @@ class Press(object):
                 item_filter = _map.get(filter_id, {}).get('on', {})
                 fillter.append(item_filter)
 
-                _sql = self.to_sql(item + relational_cols)  + ' AND ' + filter_id
+                _sql = self.to_sql(item + relational_cols) + ' AND ' + filter_id
 
                 sql.append(_sql)
 
@@ -204,20 +204,26 @@ class Press(object):
 
             for index, segment in enumerate(sql):
                 formatted = segment.replace(':idataset', self.idataset)
-                sql[index] = formatted.replace(':join_tablename', self.tablename)
+                sql[index] = formatted.replace(':join_tablename',
+                                               self.tablename)
 
         if 'debug' in self.action:
             self.debug(p)
         else:
             # write SQL to file
-            sql_filepath = os.path.join(self.logpath, self.idataset, self.tablename + '.sql')
+            sql_filepath = os.path.join(self.logpath, self.idataset,
+                                        self.tablename + '.sql')
             with open(sql_filepath, 'w') as sql_file:
-                final_sql = "\n\nAppend these results to previous results\n\n".join(sql)
+                final_sql = "\n\nAppend these results to previous results\n\n".join(
+                    sql)
                 sql_file.write(final_sql)
 
                 if dml_sql:
-                    sql_file.write('\n\nDML SQL statements to execute on de-identified table data\n\n')
-                    final_sql = '\n\n  ----------------------------------\n\n'.join(dml_sql)
+                    sql_file.write(
+                        '\n\nDML SQL statements to execute on de-identified table data\n\n'
+                    )
+                    final_sql = '\n\n  ----------------------------------\n\n'.join(
+                        dml_sql)
                     sql_file.write(final_sql)
 
             if 'submit' in self.action:
@@ -279,7 +285,10 @@ class Press(object):
 
             field = item['name']
             alias = 'original_' + field
-            sql_list = ["SELECT DISTINCT ", field, 'AS ', alias, ",", item['apply'], " FROM ", table_name]
+            sql_list = [
+                "SELECT DISTINCT ", field, 'AS ', alias, ",", item['apply'],
+                " FROM ", table_name
+            ]
 
             if suppression_filters:
                 sql_list.append('WHERE')
@@ -287,7 +296,8 @@ class Press(object):
                 for row in suppression_filters:
                     sql_list.append(row['filter'])
 
-                    if suppression_filters.index(row) < len(suppression_filters) -1:
+                    if suppression_filters.index(
+                            row) < len(suppression_filters) - 1:
                         sql_list.append('AND')
 
             if 'on' in item:
@@ -299,13 +309,17 @@ class Press(object):
                     sql_list.extend(['WHERE ', item['on']])
 
             if 'shift' in labels:
-                data_frame = self.get_dataframe(sql=" ".join(sql_list).replace(':idataset', self.idataset), limit=5)
+                data_frame = self.get_dataframe(sql=" ".join(sql_list).replace(
+                    ':idataset', self.idataset),
+                                                limit=5)
             else:
-                data_frame = self.get_dataframe(sql=" ".join(sql_list).replace(':idataset', self.idataset))
+                data_frame = self.get_dataframe(
+                    sql=" ".join(sql_list).replace(':idataset', self.idataset))
 
             if data_frame.shape[0] == 0:
-                LOGGER.info('no data-found for simulation of table:\t%s\t\tfield:\t%s\t\ttype:\t%s',
-                            table_name, field, item['label'])
+                LOGGER.info(
+                    'no data-found for simulation of table:\t%s\t\tfield:\t%s\t\ttype:\t%s',
+                    table_name, field, item['label'])
                 continue
 
             data_frame.columns = ['original', 'transformed']
@@ -317,21 +331,32 @@ class Press(object):
         out.index = range(out.shape[0])
         rdf = pd.DataFrame()
         if suppression_filters:
-            filters += [item['filter'] for item in suppression_filters if 'filter' in item]
+            filters += [
+                item['filter']
+                for item in suppression_filters
+                if 'filter' in item
+            ]
             original_sql = ' (SELECT COUNT(*) as original FROM :table) AS ORIGINAL_TABLE ,'
             original_sql = original_sql.replace(':table', table_name)
             transformed_sql = '(SELECT COUNT(*) AS transformed FROM :table WHERE :filter) AS TRANSF_TABLE'
             transformed_sql = transformed_sql.replace(':table', table_name)
-            transformed_sql = transformed_sql.replace(':filter', " OR ".join(filters))
+            transformed_sql = transformed_sql.replace(':filter',
+                                                      " OR ".join(filters))
             sql_list = ['SELECT * FROM ', original_sql, transformed_sql]
 
-            r = self.get_dataframe(sql=" ".join(sql_list).replace(":idataset", self.idataset))
+            r = self.get_dataframe(
+                sql=" ".join(sql_list).replace(":idataset", self.idataset))
             table_name = self.idataset + "." + self.tablename
 
-            rdf = pd.DataFrame({"operation": ["row-suppression"], "count": r.transformed.tolist()})
+            rdf = pd.DataFrame({
+                "operation": ["row-suppression"],
+                "count": r.transformed.tolist()
+            })
 
         now = datetime.now()
-        flag = "-".join(np.array([now.year, now.month, now.day, now.hour]).astype(str).tolist())
+        flag = "-".join(
+            np.array([now.year, now.month, now.day,
+                      now.hour]).astype(str).tolist())
 
         root = os.path.join(self.logpath, self.idataset, flag)
         try:
@@ -340,13 +365,18 @@ class Press(object):
             # directory already exists.  move on.
             pass
 
-        stats = pd.DataFrame({"operation": counts.keys(), "count": counts.values()})
+        stats = pd.DataFrame({
+            "operation": counts.keys(),
+            "count": counts.values()
+        })
         stats = stats.append(rdf)
         stats.index = range(stats.shape[0])
         stats.reset_index()
 
-        _map = {os.path.join(root, 'samples-' + self.tablename + '.csv'): out,
-                os.path.join(root, 'stats-' + self.tablename + '.csv'): stats}
+        _map = {
+            os.path.join(root, 'samples-' + self.tablename + '.csv'): out,
+            os.path.join(root, 'stats-' + self.tablename + '.csv'): stats
+        }
         for path in _map:
             _data_frame = _map[path]
             _data_frame.to_csv(path)
@@ -366,7 +396,8 @@ class Press(object):
         fields = self.get_table_columns(self.tablename)
         columns = list(fields)
         sql_list = []
-        LOGGER.info('generating-sql for table:\t%s\t\tfields:\t%s', table_name, fields)
+        LOGGER.info('generating-sql for table:\t%s\t\tfields:\t%s', table_name,
+                    fields)
 
         for rule_id in self.pipeline:
             for row in info:
@@ -377,11 +408,13 @@ class Press(object):
 
                 index = fields.index(name)
                 fields[index] = row['apply']
-                LOGGER.info('creating SQL for field:\t%s\t\twith:\t%s', name, row['apply'])
+                LOGGER.info('creating SQL for field:\t%s\t\twith:\t%s', name,
+                            row['apply'])
 
         sql_list = ['SELECT', ",".join(fields), 'FROM ', table_name]
 
-        if 'suppress' in self.deid_rules and 'FILTERS' in self.deid_rules['suppress']:
+        if 'suppress' in self.deid_rules and 'FILTERS' in self.deid_rules[
+                'suppress']:
             suppression_filters = self.deid_rules['suppress']['FILTERS']
 
             if suppression_filters:
@@ -446,9 +479,10 @@ class Press(object):
             if field_mode.lower() == 'nullable':
                 item['qualifier'] = item['qualifier'].upper()
                 string, _ = create_on_string(item)
-                nullable_str = (' exists (SELECT * FROM `:idataset.observation` AS record2 '
-                                'WHERE :join_tablename.observation_id = record2.observation_id '
-                                'AND {conditional})')
+                nullable_str = (
+                    ' exists (SELECT * FROM `:idataset.observation` AS record2 '
+                    'WHERE :join_tablename.observation_id = record2.observation_id '
+                    'AND {conditional})')
                 string = nullable_str.format(conditional=string)
 
             string_list.append(string)

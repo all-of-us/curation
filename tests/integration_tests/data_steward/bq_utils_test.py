@@ -11,15 +11,16 @@ import app_identity
 import gcs_utils
 import resources
 from tests import test_util
-from tests.test_util import (
-        FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV,
-        NYC_FIVE_PERSONS_MEASUREMENT_CSV, NYC_FIVE_PERSONS_PERSON_CSV,
-        PITT_FIVE_PERSONS_PERSON_CSV, PITT_FIVE_PERSONS_OBSERVATION_CSV
-    )
+from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV,
+                             NYC_FIVE_PERSONS_MEASUREMENT_CSV,
+                             NYC_FIVE_PERSONS_PERSON_CSV,
+                             PITT_FIVE_PERSONS_PERSON_CSV,
+                             PITT_FIVE_PERSONS_OBSERVATION_CSV)
 from validation.achilles import ACHILLES_TABLES
 
 
 class BqUtilsTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -108,18 +109,22 @@ class BqUtilsTest(unittest.TestCase):
         schema_file_name = table_name + '.json'
         csv_file_name = table_name + '.csv'
         schema_path = os.path.join(resources.fields_path, schema_file_name)
-        local_csv_path = os.path.join(test_util.TEST_DATA_EXPORT_PATH, csv_file_name)
+        local_csv_path = os.path.join(test_util.TEST_DATA_EXPORT_PATH,
+                                      csv_file_name)
         with open(local_csv_path, 'rb') as fp:
             _ = gcs_utils.upload_object(self.hpo_bucket, csv_file_name, fp)
         hpo_bucket = self.hpo_bucket
         gcs_object_path = 'gs://%(hpo_bucket)s/%(csv_file_name)s' % locals()
         dataset_id = self.dataset_id
-        load_results = bq_utils.load_csv(schema_path, gcs_object_path, app_id, dataset_id, table_name)
+        load_results = bq_utils.load_csv(schema_path, gcs_object_path, app_id,
+                                         dataset_id, table_name)
 
         load_job_id = load_results['jobReference']['jobId']
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
-        self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(table_name))
-        query_response = bq_utils.query('SELECT COUNT(1) FROM %(table_name)s' % locals())
+        self.assertEqual(len(incomplete_jobs), 0,
+                         'loading table {} timed out'.format(table_name))
+        query_response = bq_utils.query('SELECT COUNT(1) FROM %(table_name)s' %
+                                        locals())
         self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
 
     def test_load_cdm_csv(self):
@@ -129,9 +134,11 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(result['status']['state'], 'RUNNING')
 
         load_job_id = result['jobReference']['jobId']
-        table_id = result['configuration']['load']['destinationTable']['tableId']
+        table_id = result['configuration']['load']['destinationTable'][
+            'tableId']
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
-        self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(table_id))
+        self.assertEqual(len(incomplete_jobs), 0,
+                         'loading table {} timed out'.format(table_id))
         table_info = bq_utils.get_table_info(table_id)
         num_rows = table_info.get('numRows')
         self.assertEqual(num_rows, '5')
@@ -143,7 +150,8 @@ class BqUtilsTest(unittest.TestCase):
 
         load_job_id = result['jobReference']['jobId']
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
-        self.assertEqual(len(incomplete_jobs), 0, 'loading table {} timed out'.format(common.PERSON))
+        self.assertEqual(len(incomplete_jobs), 0,
+                         'loading table {} timed out'.format(common.PERSON))
 
         table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
         q = 'SELECT person_id FROM %s' % table_id
@@ -153,87 +161,93 @@ class BqUtilsTest(unittest.TestCase):
     def test_merge_with_good_data(self):
         running_jobs = []
         with open(NYC_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'person.csv', fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'),
+                                    'person.csv', fp)
         result = bq_utils.load_cdm_csv('nyc', 'person')
         running_jobs.append(result['jobReference']['jobId'])
 
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'),
+                                    'person.csv', fp)
         result = bq_utils.load_cdm_csv('pitt', 'person')
         running_jobs.append(result['jobReference']['jobId'])
 
         nyc_person_ids = [
-            int(row['person_id']) for row in resources.csv_to_list(NYC_FIVE_PERSONS_PERSON_CSV)
+            int(row['person_id'])
+            for row in resources.csv_to_list(NYC_FIVE_PERSONS_PERSON_CSV)
         ]
         pitt_person_ids = [
-            int(row['person_id']) for row in resources.csv_to_list(PITT_FIVE_PERSONS_PERSON_CSV)
+            int(row['person_id'])
+            for row in resources.csv_to_list(PITT_FIVE_PERSONS_PERSON_CSV)
         ]
         expected_result = nyc_person_ids + pitt_person_ids
         expected_result.sort()
 
         incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
-        self.assertEqual(len(incomplete_jobs), 0, 'loading tables {},{} timed out'.format('nyc_person', 'pitt_person'))
+        self.assertEqual(
+            len(incomplete_jobs), 0,
+            'loading tables {},{} timed out'.format('nyc_person',
+                                                    'pitt_person'))
 
         dataset_id = self.dataset_id
         table_ids = ['nyc_person', 'pitt_person']
         merged_table_id = 'merged_nyc_pitt'
-        success_flag, error = bq_utils.merge_tables(dataset_id,
-                                                    table_ids,
-                                                    dataset_id,
-                                                    merged_table_id)
+        success_flag, error = bq_utils.merge_tables(dataset_id, table_ids,
+                                                    dataset_id, merged_table_id)
 
         self.assertTrue(success_flag)
         self.assertEqual(error, "")
 
-        query_string = 'SELECT person_id FROM {dataset_id}.{table_id}'.format(dataset_id=dataset_id,
-                                                                              table_id=merged_table_id)
+        query_string = 'SELECT person_id FROM {dataset_id}.{table_id}'.format(
+            dataset_id=dataset_id, table_id=merged_table_id)
         merged_query_job_result = bq_utils.query(query_string)
 
         self.assertIsNone(merged_query_job_result.get('errors', None))
-        actual_result = [int(row['f'][0]['v']) for row in merged_query_job_result['rows']]
+        actual_result = [
+            int(row['f'][0]['v']) for row in merged_query_job_result['rows']
+        ]
         actual_result.sort()
         self.assertCountEqual(expected_result, actual_result)
 
     def test_merge_bad_table_names(self):
         table_ids = ['nyc_person_foo', 'pitt_person_foo']
-        success_flag, _ = bq_utils.merge_tables(
-            self.dataset_id,
-            table_ids,
-            self.dataset_id,
-            'merged_nyc_pitt'
-        )
+        success_flag, _ = bq_utils.merge_tables(self.dataset_id, table_ids,
+                                                self.dataset_id,
+                                                'merged_nyc_pitt')
 
         self.assertFalse(success_flag)
 
     def test_merge_with_unmatched_schema(self):
         running_jobs = []
         with open(NYC_FIVE_PERSONS_MEASUREMENT_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'), 'measurement.csv', fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('nyc'),
+                                    'measurement.csv', fp)
         result = bq_utils.load_cdm_csv('nyc', 'measurement')
         running_jobs.append(result['jobReference']['jobId'])
 
         with open(PITT_FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'), 'person.csv', fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket('pitt'),
+                                    'person.csv', fp)
         result = bq_utils.load_cdm_csv('pitt', 'person')
         running_jobs.append(result['jobReference']['jobId'])
 
         incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
-        self.assertEqual(len(incomplete_jobs), 0,
-                         'loading tables {},{} timed out'.format('nyc_measurement', 'pitt_person'))
+        self.assertEqual(
+            len(incomplete_jobs), 0,
+            'loading tables {},{} timed out'.format('nyc_measurement',
+                                                    'pitt_person'))
 
         table_names = ['nyc_measurement', 'pitt_person']
-        success, _ = bq_utils.merge_tables(
-            self.dataset_id,
-            table_names,
-            self.dataset_id,
-            'merged_nyc_pitt'
-        )
+        success, _ = bq_utils.merge_tables(self.dataset_id, table_names,
+                                           self.dataset_id, 'merged_nyc_pitt')
         self.assertFalse(success)
 
     def test_create_table(self):
         table_id = 'some_random_table_id'
-        fields = [dict(name='person_id', type='integer', mode='required'),
-                  dict(name='name', type='string', mode='nullable')]
+        fields = [
+            dict(name='person_id', type='integer', mode='required'),
+            dict(name='name', type='string', mode='nullable')
+        ]
         result = bq_utils.create_table(table_id, fields)
         self.assertTrue('kind' in result)
         self.assertEqual(result['kind'], 'bigquery#table')
@@ -242,16 +256,20 @@ class BqUtilsTest(unittest.TestCase):
 
     def test_create_existing_table_without_drop_raises_error(self):
         table_id = 'some_random_table_id'
-        fields = [dict(name='id', type='integer', mode='required'),
-                  dict(name='name', type='string', mode='nullable')]
+        fields = [
+            dict(name='id', type='integer', mode='required'),
+            dict(name='name', type='string', mode='nullable')
+        ]
         bq_utils.create_table(table_id, fields)
         with self.assertRaises(bq_utils.InvalidOperationError):
             bq_utils.create_table(table_id, fields, drop_existing=False)
 
     def test_create_table_drop_existing_success(self):
         table_id = 'some_random_table_id'
-        fields = [dict(name='id', type='integer', mode='required'),
-                  dict(name='name', type='string', mode='nullable')]
+        fields = [
+            dict(name='id', type='integer', mode='required'),
+            dict(name='name', type='string', mode='nullable')
+        ]
         result_1 = bq_utils.create_table(table_id, fields)
         # sanity check
         table_id = result_1['tableReference']['tableId']
@@ -276,24 +294,31 @@ class BqUtilsTest(unittest.TestCase):
         dataset_id = self.dataset_id
         table_id = bq_utils.get_table_id(hpo_id, table_name='observation')
         q = 'SELECT observation_id FROM {dataset_id}.{table_id} ORDER BY observation_id'.format(
-            dataset_id=dataset_id,
-            table_id=table_id)
-        expected_observation_ids = [int(row['observation_id'])
-                                    for row in resources.csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)]
+            dataset_id=dataset_id, table_id=table_id)
+        expected_observation_ids = [
+            int(row['observation_id'])
+            for row in resources.csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)
+        ]
         with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'rb') as fp:
-            gcs_utils.upload_object(gcs_utils.get_hpo_bucket(hpo_id), 'observation.csv', fp)
+            gcs_utils.upload_object(gcs_utils.get_hpo_bucket(hpo_id),
+                                    'observation.csv', fp)
         result = bq_utils.load_cdm_csv(hpo_id, 'observation')
         job_id = result['jobReference']['jobId']
         incomplete_jobs = bq_utils.wait_on_jobs([job_id])
-        self.assertEqual(len(incomplete_jobs), 0, 'pitt_observation load job did not complete')
+        self.assertEqual(len(incomplete_jobs), 0,
+                         'pitt_observation load job did not complete')
         load_job_result = bq_utils.get_job_details(job_id)
         load_job_result_status = load_job_result['status']
         load_job_errors = load_job_result_status.get('errors')
-        self.assertIsNone(load_job_errors, msg='pitt_observation load job failed: ' + str(load_job_errors))
+        self.assertIsNone(load_job_errors,
+                          msg='pitt_observation load job failed: ' +
+                          str(load_job_errors))
         query_results_response = bq_utils.query(q)
         query_job_errors = query_results_response.get('errors')
         self.assertIsNone(query_job_errors)
-        actual_result = [int(row['f'][0]['v']) for row in query_results_response['rows']]
+        actual_result = [
+            int(row['f'][0]['v']) for row in query_results_response['rows']
+        ]
         self.assertCountEqual(actual_result, expected_observation_ids)
 
     def test_load_table_from_csv(self):
@@ -302,34 +327,77 @@ class BqUtilsTest(unittest.TestCase):
         csv_path = os.path.join(test_util.TEST_DATA_PATH, csv_file)
         with open(csv_path, 'r') as f:
             expected = list(csv.DictReader(f))
-        bq_utils.load_table_from_csv(self.project_id, self.dataset_id, table_id, csv_path, self.TEST_FIELDS)
+        bq_utils.load_table_from_csv(self.project_id, self.dataset_id, table_id,
+                                     csv_path, self.TEST_FIELDS)
         q = """ SELECT *
-                FROM `{project_id}.{dataset_id}.{table_id}`""".format(project_id=self.project_id,
-                                                                      dataset_id=self.dataset_id,
-                                                                      table_id=table_id)
+                FROM `{project_id}.{dataset_id}.{table_id}`""".format(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            table_id=table_id)
         r = bq_utils.query(q)
         actual = bq_utils.response2rows(r)
 
         # Convert the epoch times to datetime with time zone
         for row in actual:
-            row['timestamp_field'] = time.strftime(self.DT_FORMAT + ' UTC', time.gmtime(row['timestamp_field']))
+            row['timestamp_field'] = time.strftime(
+                self.DT_FORMAT + ' UTC', time.gmtime(row['timestamp_field']))
         expected.sort(key=lambda row: row['integer_field'])
         actual.sort(key=lambda row: row['integer_field'])
         for i, _ in enumerate(expected):
             self.assertCountEqual(expected[i], actual[i])
 
     def test_csv_line_to_sql_row_expr(self):
-        fields = [
-            {'name': 'nullable_date_col', 'type': 'date', 'mode': 'nullable', 'description': ''},
-            {'name': 'nullable_float_col', 'type': 'float', 'mode': 'nullable', 'description': ''},
-            {'name': 'nullable_integer_col', 'type': 'integer', 'mode': 'nullable', 'description': ''},
-            {'name': 'nullable_string_col', 'type': 'string', 'mode': 'nullable', 'description': ''},
-            {'name': 'nullable_timestamp_col', 'type': 'timestamp', 'mode': 'nullable', 'description': ''},
-            {'name': 'required_date_col', 'type': 'date', 'mode': 'required', 'description': ''},
-            {'name': 'required_float_col', 'type': 'float', 'mode': 'required', 'description': ''},
-            {'name': 'required_integer_col', 'type': 'integer', 'mode': 'required', 'description': ''},
-            {'name': 'required_string_col', 'type': 'string', 'mode': 'required', 'description': ''},
-            {'name': 'required_timestamp_col', 'type': 'timestamp', 'mode': 'required', 'description': ''}]
+        fields = [{
+            'name': 'nullable_date_col',
+            'type': 'date',
+            'mode': 'nullable',
+            'description': ''
+        }, {
+            'name': 'nullable_float_col',
+            'type': 'float',
+            'mode': 'nullable',
+            'description': ''
+        }, {
+            'name': 'nullable_integer_col',
+            'type': 'integer',
+            'mode': 'nullable',
+            'description': ''
+        }, {
+            'name': 'nullable_string_col',
+            'type': 'string',
+            'mode': 'nullable',
+            'description': ''
+        }, {
+            'name': 'nullable_timestamp_col',
+            'type': 'timestamp',
+            'mode': 'nullable',
+            'description': ''
+        }, {
+            'name': 'required_date_col',
+            'type': 'date',
+            'mode': 'required',
+            'description': ''
+        }, {
+            'name': 'required_float_col',
+            'type': 'float',
+            'mode': 'required',
+            'description': ''
+        }, {
+            'name': 'required_integer_col',
+            'type': 'integer',
+            'mode': 'required',
+            'description': ''
+        }, {
+            'name': 'required_string_col',
+            'type': 'string',
+            'mode': 'required',
+            'description': ''
+        }, {
+            'name': 'required_timestamp_col',
+            'type': 'timestamp',
+            'mode': 'required',
+            'description': ''
+        }]
 
         # dummy values for each type
         flt_str = "3.14"
@@ -380,7 +448,9 @@ class BqUtilsTest(unittest.TestCase):
         row['required_integer_col'] = ''
         with self.assertRaises(bq_utils.InvalidOperationError) as c:
             bq_utils.csv_line_to_sql_row_expr(row, fields)
-        self.assertEqual(c.exception.msg, f'Value not provided for required field required_integer_col')
+        self.assertEqual(
+            c.exception.msg,
+            f'Value not provided for required field required_integer_col')
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)

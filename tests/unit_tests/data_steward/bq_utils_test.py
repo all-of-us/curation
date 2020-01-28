@@ -8,6 +8,7 @@ from constants import bq_utils as bq_utils_consts
 
 
 class BqUtilsTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -18,9 +19,7 @@ class BqUtilsTest(unittest.TestCase):
         self.hpo_id = 'fake-hpo'
 
     def test_load_cdm_csv_error_on_bad_table_name(self):
-        self.assertRaises(ValueError,
-                          bq_utils.load_cdm_csv,
-                          self.hpo_id,
+        self.assertRaises(ValueError, bq_utils.load_cdm_csv, self.hpo_id,
                           'not_a_cdm_table')
 
     @mock.patch('bq_utils.job_status_done', lambda x: True)
@@ -41,7 +40,9 @@ class BqUtilsTest(unittest.TestCase):
         # self.assertEquals(mock_time_sleep.call_count, bq_utils.BQ_DEFAULT_RETRY_COUNT)
 
     @mock.patch('time.sleep', return_value=None)
-    @mock.patch('bq_utils.job_status_done', side_effect=[False, False, False, True, False, False, True, True, True])
+    @mock.patch(
+        'bq_utils.job_status_done',
+        side_effect=[False, False, False, True, False, False, True, True, True])
     def test_wait_on_jobs_get_done(self, mock_job_status_done, mock_time_sleep):
         job_ids = list(range(3))
         actual = bq_utils.wait_on_jobs(job_ids)
@@ -49,9 +50,13 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     @mock.patch('time.sleep', return_value=None)
-    @mock.patch('bq_utils.job_status_done', side_effect=[False, False, True, False, False, False, False,
-                                                         False, False, False, False, False])
-    def test_wait_on_jobs_some_fail(self, mock_job_status_done, mock_time_sleep):
+    @mock.patch('bq_utils.job_status_done',
+                side_effect=[
+                    False, False, True, False, False, False, False, False,
+                    False, False, False, False
+                ])
+    def test_wait_on_jobs_some_fail(self, mock_job_status_done,
+                                    mock_time_sleep):
         job_ids = list(range(2))
         actual = bq_utils.wait_on_jobs(job_ids)
         expected = [1]

@@ -18,35 +18,37 @@ DOSE_FORM_ROUTES_FILE = "dose_form_route_mappings"
 DOSE_FORM_ROUTES_TABLE_ID = "_logging_dose_form_route_mappings"
 DRUG_ROUTES_TABLE_ID = "_logging_drug_route_mappings"
 
-DOSE_FORM_ROUTE_FIELDS = [
-    {
-        "type": "integer",
-        "name": "dose_form_concept_id",
-        "mode": "required",
-        "description": "The dose_form_concept_id of the dose form."
-    },
-    {
-        "type": "integer",
-        "name": "route_concept_id",
-        "mode": "required",
-        "description": "The route_concept_id indicating the typical route used for administering the drug."
-    }
-]
+DOSE_FORM_ROUTE_FIELDS = [{
+    "type": "integer",
+    "name": "dose_form_concept_id",
+    "mode": "required",
+    "description": "The dose_form_concept_id of the dose form."
+}, {
+    "type":
+        "integer",
+    "name":
+        "route_concept_id",
+    "mode":
+        "required",
+    "description":
+        "The route_concept_id indicating the typical route used for administering the drug."
+}]
 
-DRUG_ROUTE_FIELDS = [
-    {
-        "type": "integer",
-        "name": "drug_concept_id",
-        "mode": "required",
-        "description": "The drug_concept_id of the drug."
-    },
-    {
-        "type": "integer",
-        "name": "route_concept_id",
-        "mode": "required",
-        "description": "The route_concept_id indicating the typical route used for administering the drug."
-    }
-]
+DRUG_ROUTE_FIELDS = [{
+    "type": "integer",
+    "name": "drug_concept_id",
+    "mode": "required",
+    "description": "The drug_concept_id of the drug."
+}, {
+    "type":
+        "integer",
+    "name":
+        "route_concept_id",
+    "mode":
+        "required",
+    "description":
+        "The route_concept_id indicating the typical route used for administering the drug."
+}]
 
 INSERT_ROUTES_QUERY = """
 INSERT INTO `{project_id}.{dataset_id}.{routes_table_id}` (dose_form_concept_id, route_concept_id)
@@ -119,7 +121,8 @@ def get_mapping_list(route_mappings_list):
     """
     pair_exprs = []
     for route_mapping_dict in route_mappings_list:
-        pair_expr = '({dose_form_concept_id}, {route_concept_id})'.format(**route_mapping_dict)
+        pair_expr = '({dose_form_concept_id}, {route_concept_id})'.format(
+            **route_mapping_dict)
         pair_exprs.append(pair_expr)
     formatted_mapping_list = ', '.join(pair_exprs)
     return formatted_mapping_list
@@ -142,21 +145,27 @@ def create_dose_form_route_mappings_table(project_id, dataset_id=None):
     LOGGER.info("Creating %s.%s", dataset_id, DOSE_FORM_ROUTES_TABLE_ID)
 
     # create empty table
-    bq_utils.create_table(DOSE_FORM_ROUTES_TABLE_ID, DOSE_FORM_ROUTE_FIELDS, drop_existing=True, dataset_id=dataset_id)
+    bq_utils.create_table(DOSE_FORM_ROUTES_TABLE_ID,
+                          DOSE_FORM_ROUTE_FIELDS,
+                          drop_existing=True,
+                          dataset_id=dataset_id)
 
-    dose_form_route_mappings_csv = os.path.join(resources.resource_path, DOSE_FORM_ROUTES_FILE + ".csv")
-    dose_form_route_mappings_list = resources.csv_to_list(dose_form_route_mappings_csv)
+    dose_form_route_mappings_csv = os.path.join(resources.resource_path,
+                                                DOSE_FORM_ROUTES_FILE + ".csv")
+    dose_form_route_mappings_list = resources.csv_to_list(
+        dose_form_route_mappings_csv)
     dose_form_routes_populate_query = INSERT_ROUTES_QUERY.format(
-                                                    dataset_id=dataset_id,
-                                                    project_id=project_id,
-                                                    routes_table_id=DOSE_FORM_ROUTES_TABLE_ID,
-                                                    mapping_list=get_mapping_list(dose_form_route_mappings_list))
+        dataset_id=dataset_id,
+        project_id=project_id,
+        routes_table_id=DOSE_FORM_ROUTES_TABLE_ID,
+        mapping_list=get_mapping_list(dose_form_route_mappings_list))
     result = bq_utils.query(dose_form_routes_populate_query)
     LOGGER.info("Created %s.%s", dataset_id, dose_form_routes_table_id)
     return result
 
 
-def create_drug_route_mappings_table(project_id, route_mapping_dataset_id, dose_form_routes_table_id,
+def create_drug_route_mappings_table(project_id, route_mapping_dataset_id,
+                                     dose_form_routes_table_id,
                                      route_mapping_prefix):
     """
     Creates "drug_route_mappings" table using the query GET_DRUGS_FROM_DOSE_FORM
@@ -172,18 +181,21 @@ def create_drug_route_mappings_table(project_id, route_mapping_dataset_id, dose_
         # Using table created in bq_dataset instead of re-creating in every dataset
         route_mapping_dataset_id = bq_utils.get_dataset_id()
 
-    LOGGER.info("Creating %s.%s", route_mapping_dataset_id, DRUG_ROUTES_TABLE_ID)
+    LOGGER.info("Creating %s.%s", route_mapping_dataset_id,
+                DRUG_ROUTES_TABLE_ID)
 
     # create empty table
-    bq_utils.create_table(DRUG_ROUTES_TABLE_ID, DRUG_ROUTE_FIELDS, drop_existing=True,
+    bq_utils.create_table(DRUG_ROUTES_TABLE_ID,
+                          DRUG_ROUTE_FIELDS,
+                          drop_existing=True,
                           dataset_id=route_mapping_dataset_id)
 
     drug_routes_populate_query = GET_DRUGS_FROM_DOSE_FORM.format(
-                                                    project_id=project_id,
-                                                    vocabulary_dataset=common.VOCABULARY_DATASET,
-                                                    route_mapping_dataset_id=route_mapping_dataset_id,
-                                                    dose_form_route_mapping_table=dose_form_routes_table_id,
-                                                    route_mapping_prefix=route_mapping_prefix)
+        project_id=project_id,
+        vocabulary_dataset=common.VOCABULARY_DATASET,
+        route_mapping_dataset_id=route_mapping_dataset_id,
+        dose_form_route_mapping_table=dose_form_routes_table_id,
+        route_mapping_prefix=route_mapping_prefix)
     result = bq_utils.query(q=drug_routes_populate_query,
                             write_disposition='WRITE_TRUNCATE',
                             destination_dataset_id=route_mapping_dataset_id,
@@ -211,13 +223,16 @@ def get_col_exprs():
         col_expr = DRUG_EXPOSURE_ALIAS + '.' + field["name"]
         if field["name"] == route_field:
             # COALESCE(rm.route_concept_id, de.route_concept_id)
-            col_expr = "COALESCE(%s, %s) AS route_concept_id" % (ROUTE_MAPPING_ALIAS + '.' + field["name"],
-                                                                 DRUG_EXPOSURE_ALIAS + '.' + field["name"])
+            col_expr = "COALESCE(%s, %s) AS route_concept_id" % (
+                ROUTE_MAPPING_ALIAS + '.' + field["name"],
+                DRUG_EXPOSURE_ALIAS + '.' + field["name"])
         col_exprs.append(col_expr)
     return col_exprs
 
 
-def get_route_mapping_queries(project_id, dataset_id, route_mapping_dataset_id=None):
+def get_route_mapping_queries(project_id,
+                              dataset_id,
+                              route_mapping_dataset_id=None):
     """
     Generates queries to populate route_concept_ids correctly
 
@@ -229,7 +244,8 @@ def get_route_mapping_queries(project_id, dataset_id, route_mapping_dataset_id=N
     queries = []
     if route_mapping_dataset_id is None:
         route_mapping_dataset_id = bq_utils.get_dataset_id()
-    result = create_dose_form_route_mappings_table(project_id, route_mapping_dataset_id)
+    result = create_dose_form_route_mappings_table(project_id,
+                                                   route_mapping_dataset_id)
     table = common.DRUG_EXPOSURE
     col_exprs = get_col_exprs()
     result = create_drug_route_mappings_table(project_id,
@@ -238,14 +254,15 @@ def get_route_mapping_queries(project_id, dataset_id, route_mapping_dataset_id=N
                                               ROUTE_MAPPING_ALIAS)
     cols = ', '.join(col_exprs)
     query = dict()
-    query[cdr_consts.QUERY] = FILL_ROUTE_ID_QUERY.format(project_id=project_id,
-                                                         dataset_id=dataset_id,
-                                                         drug_exposure_table=table,
-                                                         route_mapping_dataset_id=route_mapping_dataset_id,
-                                                         drug_route_mapping_table=DRUG_ROUTES_TABLE_ID,
-                                                         cols=cols,
-                                                         drug_exposure_prefix=DRUG_EXPOSURE_ALIAS,
-                                                         route_mapping_prefix=ROUTE_MAPPING_ALIAS)
+    query[cdr_consts.QUERY] = FILL_ROUTE_ID_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        drug_exposure_table=table,
+        route_mapping_dataset_id=route_mapping_dataset_id,
+        drug_route_mapping_table=DRUG_ROUTES_TABLE_ID,
+        cols=cols,
+        drug_exposure_prefix=DRUG_EXPOSURE_ALIAS,
+        route_mapping_prefix=ROUTE_MAPPING_ALIAS)
     query[cdr_consts.DESTINATION_TABLE] = table
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id

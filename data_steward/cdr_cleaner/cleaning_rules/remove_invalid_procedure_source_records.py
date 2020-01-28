@@ -58,8 +58,9 @@ def get_remove_invalid_procedure_source_queries(project_id, dataset_id):
     queries_list = []
 
     query = dict()
-    query[cdr_consts.QUERY] = REMOVE_INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.format(dataset=dataset_id,
-                                                                                       project=project_id)
+    query[cdr_consts.
+          QUERY] = REMOVE_INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.format(
+              dataset=dataset_id, project=project_id)
     queries_list.append(query)
 
     return queries_list
@@ -71,6 +72,6 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_remove_invalid_procedure_source_queries(ARGS.project_id, ARGS.dataset_id)
+    query_list = get_remove_invalid_procedure_source_queries(
+        ARGS.project_id, ARGS.dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, query_list)
-

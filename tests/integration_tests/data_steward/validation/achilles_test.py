@@ -15,6 +15,7 @@ ACHILLES_RESULTS_COUNT = 2497
 
 
 class AchillesTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -32,19 +33,21 @@ class AchillesTest(unittest.TestCase):
 
     def _load_dataset(self):
         for cdm_table in resources.CDM_TABLES:
-            cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv')
+            cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH,
+                                         cdm_table + '.csv')
             if os.path.exists(cdm_file_name):
                 test_util.write_cloud_file(self.hpo_bucket, cdm_file_name)
             else:
-                test_util.write_cloud_str(self.hpo_bucket, cdm_table + '.csv', 'dummy\n')
+                test_util.write_cloud_str(self.hpo_bucket, cdm_table + '.csv',
+                                          'dummy\n')
             bq_utils.load_cdm_csv(FAKE_HPO_ID, cdm_table)
 
     def test_load_analyses(self):
         achilles.create_tables(FAKE_HPO_ID, True)
         achilles.load_analyses(FAKE_HPO_ID)
         cmd = sql_wrangle.qualify_tables(
-            'SELECT DISTINCT(analysis_id) FROM %sachilles_analysis' % sql_wrangle.PREFIX_PLACEHOLDER,
-            FAKE_HPO_ID)
+            'SELECT DISTINCT(analysis_id) FROM %sachilles_analysis' %
+            sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         self.assertEqual(ACHILLES_LOOKUP_COUNT, int(result['totalRows']))
 
@@ -55,6 +58,8 @@ class AchillesTest(unittest.TestCase):
         achilles.load_analyses(FAKE_HPO_ID)
         achilles.run_analyses(hpo_id=FAKE_HPO_ID)
         cmd = sql_wrangle.qualify_tables(
-            'SELECT COUNT(1) FROM %sachilles_results' % sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
+            'SELECT COUNT(1) FROM %sachilles_results' %
+            sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
         result = bq_utils.query(cmd)
-        self.assertEqual(int(result['rows'][0]['f'][0]['v']), ACHILLES_RESULTS_COUNT)
+        self.assertEqual(int(result['rows'][0]['f'][0]['v']),
+                         ACHILLES_RESULTS_COUNT)

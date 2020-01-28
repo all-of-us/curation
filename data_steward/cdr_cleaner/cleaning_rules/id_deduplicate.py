@@ -14,8 +14,7 @@ ID_DE_DUP_QUERY = (
     'from (select m.*, '
     'ROW_NUMBER() OVER (PARTITION BY m.{domain_table}_id) AS row_num '
     'from `{project_id}.{dataset_id}.{table_name}` as m) as t '
-    'where row_num = 1 '
-)
+    'where row_num = 1 ')
 
 
 def get_id_deduplicate_queries(project_id, dataset_id):
