@@ -748,7 +748,7 @@ def _write_string_to_file(bucket, name, string):
     Save the validation results in GCS
     :param bucket: bucket to save to
     :param name: name of the file (object) to save to in GCS
-    :param cdm_file_results: list of tuples (<cdm_file_name>, <found>)
+    :param string: string to write
     :return:
     """
     f = StringIO()
@@ -780,6 +780,7 @@ def union_ehr():
 @api_util.auth_required_cron
 def run_retraction_cron():
     project_id = bq_utils.app_identity.get_application_id()
+    output_project_id = bq_utils.get_output_project_id()
     hpo_id = bq_utils.get_retraction_hpo_id()
     pid_table_id = bq_utils.get_retraction_pid_table_id()
     sandbox_dataset_id = bq_utils.get_retraction_sandbox_dataset_id()
@@ -788,20 +789,26 @@ def run_retraction_cron():
     dataset_ids = bq_utils.get_retraction_dataset_ids()
     logging.info('Dataset id/s to target from env variable: %s' % dataset_ids)
     logging.info('Running retraction on BQ datasets')
-    retract_data_bq.run_retraction(project_id, sandbox_dataset_id, pid_table_id,
-                                   hpo_id, dataset_ids)
+    # retract from output dataset
+    retract_data_bq.run_bq_retraction(output_project_id, sandbox_dataset_id,
+                                      project_id, pid_table_id, hpo_id,
+                                      dataset_ids)
+    # retract from default dataset
+    retract_data_bq.run_bq_retraction(project_id, sandbox_dataset_id,
+                                      project_id, pid_table_id, hpo_id,
+                                      dataset_ids)
     logging.info('Completed retraction on BQ datasets')
 
     # retract from gcs
     folder = bq_utils.get_retraction_submission_folder()
     logging.info('Submission folder/s to target from env variable: %s' % folder)
     logging.info('Running retraction from internal bucket folders')
-    retract_data_gcs.run_retraction(project_id,
-                                    sandbox_dataset_id,
-                                    pid_table_id,
-                                    hpo_id,
-                                    folder,
-                                    force_flag=True)
+    retract_data_gcs.run_gcs_retraction(project_id,
+                                        sandbox_dataset_id,
+                                        pid_table_id,
+                                        hpo_id,
+                                        folder,
+                                        force_flag=True)
     logging.info('Completed retraction from internal bucket folders')
     return 'retraction-complete'
 

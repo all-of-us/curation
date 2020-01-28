@@ -34,8 +34,8 @@ PID_IN_COL2 = [
 ]
 
 
-def run_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id, folder,
-                   force_flag):
+def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
+                       folder, force_flag):
     """
     Retract from a folder/folders in a GCS bucket all records associated with a pid
 
@@ -293,6 +293,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # result is mainly for debugging file uploads
-    result = run_retraction(args.project_id, args.sandbox_dataset_id,
-                            args.pid_table_id, args.hpo_id, args.folder_name,
-                            args.force_flag)
+    result = run_gcs_retraction(args.project_id, args.sandbox_dataset_id,
+                                args.pid_table_id, args.hpo_id,
+                                args.folder_name, args.force_flag)

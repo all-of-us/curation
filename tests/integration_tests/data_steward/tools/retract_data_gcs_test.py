@@ -75,12 +75,12 @@ class RetractDataGcsTest(unittest.TestCase):
                                        file_path,
                                        prefix=self.folder_prefix_2)
 
-        retract_result = rd.run_retraction(self.project_id,
-                                           self.sandbox_dataset_id,
-                                           self.pid_table_id,
-                                           self.hpo_id,
-                                           folder='all_folders',
-                                           force_flag=True)
+        retract_result = rd.run_gcs_retraction(self.project_id,
+                                               self.sandbox_dataset_id,
+                                               self.pid_table_id,
+                                               self.hpo_id,
+                                               folder='all_folders',
+                                               force_flag=True)
 
         total_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
@@ -142,12 +142,12 @@ class RetractDataGcsTest(unittest.TestCase):
                                        file_path,
                                        prefix=self.folder_prefix_2)
 
-        retract_result = rd.run_retraction(self.project_id,
-                                           self.sandbox_dataset_id,
-                                           self.pid_table_id,
-                                           self.hpo_id,
-                                           folder='all_folders',
-                                           force_flag=True)
+        retract_result = rd.run_gcs_retraction(self.project_id,
+                                               self.sandbox_dataset_id,
+                                               self.pid_table_id,
+                                               self.hpo_id,
+                                               folder='all_folders',
+                                               force_flag=True)
 
         total_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:

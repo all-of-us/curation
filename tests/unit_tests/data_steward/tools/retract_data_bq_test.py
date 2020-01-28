@@ -112,8 +112,8 @@ class RetractDataBqTest(unittest.TestCase):
 
         mock_list_existing_tables.return_value = existing_table_ids
         mqs, qs = retract_data_bq.queries_to_retract_from_ehr_dataset(
-            self.project_id, self.ehr_dataset_id, self.sandbox_dataset_id,
-            self.hpo_id, self.pid_table_id)
+            self.project_id, self.ehr_dataset_id, self.project_id,
+            self.sandbox_dataset_id, self.hpo_id, self.pid_table_id)
         actual_dest_tables = set(
             q[retract_data_bq.DEST_TABLE] for q in qs + mqs)
         expected_dest_tables = set(existing_table_ids) - set(hpo_person) - set(
@@ -141,6 +141,7 @@ class RetractDataBqTest(unittest.TestCase):
         mqs, qs = retract_data_bq.queries_to_retract_from_combined_or_deid_dataset(
             self.project_id,
             self.combined_dataset_id,
+            self.project_id,
             self.sandbox_dataset_id,
             self.pid_table_id,
             deid_flag=False)
@@ -174,8 +175,8 @@ class RetractDataBqTest(unittest.TestCase):
 
         mock_list_existing_tables.return_value = existing_table_ids
         mqs, qs = retract_data_bq.queries_to_retract_from_unioned_dataset(
-            self.project_id, self.unioned_dataset_id, self.sandbox_dataset_id,
-            self.pid_table_id)
+            self.project_id, self.unioned_dataset_id, self.project_id,
+            self.sandbox_dataset_id, self.pid_table_id)
         actual_dest_tables = set(
             q[retract_data_bq.DEST_TABLE] for q in qs + mqs)
         expected_dest_tables = set(existing_table_ids) - set(ignored_tables)
