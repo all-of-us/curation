@@ -27,36 +27,48 @@ class GeneralizeSexGenderConceptsTest(unittest.TestCase):
         generalize_birth_male_gender_identity_woman_query = generalize_concept_ids.parse_query_for_updating_woman_to_generalized_concept_id(
             self.project_id, self.dataset_id)
 
-        expected = generalize_concept_ids.GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.format(project_id=self.project_id,
-                                                                                       dataset_id=self.dataset_id,
-                                                                                       gender_value_source_concept_id=WOMAN_CONCEPT_ID,
-                                                                                       biological_sex_birth_concept_id=SEX_AT_BIRTH_MALE_CONCEPT_ID,
-                                                                                       generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
+        expected = generalize_concept_ids.GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.format(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            gender_value_source_concept_id=WOMAN_CONCEPT_ID,
+            biological_sex_birth_concept_id=SEX_AT_BIRTH_MALE_CONCEPT_ID,
+            generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
 
-        self.assertCountEqual(expected, generalize_birth_male_gender_identity_woman_query)
+        self.assertCountEqual(
+            expected, generalize_birth_male_gender_identity_woman_query)
 
     def test_parse_query_for_updating_man_to_generalized_concept_id(self):
         generalize_birth_female_gender_identity_man_query = generalize_concept_ids.parse_query_for_updating_man_to_generalized_concept_id(
             self.project_id, self.dataset_id)
 
-        expected = generalize_concept_ids.GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.format(project_id=self.project_id,
-                                                                                       dataset_id=self.dataset_id,
-                                                                                       gender_value_source_concept_id=MAN_CONCEPT_ID,
-                                                                                       biological_sex_birth_concept_id=SEX_AT_BIRTH_FEMALE_CONCEPT_ID,
-                                                                                       generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
+        expected = generalize_concept_ids.GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.format(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            gender_value_source_concept_id=MAN_CONCEPT_ID,
+            biological_sex_birth_concept_id=SEX_AT_BIRTH_FEMALE_CONCEPT_ID,
+            generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
 
-        self.assertCountEqual(expected, generalize_birth_female_gender_identity_man_query)
+        self.assertCountEqual(
+            expected, generalize_birth_female_gender_identity_man_query)
 
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts.parse_query_for_updating_man_to_generalized_concept_id')
+        'cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts.parse_query_for_updating_man_to_generalized_concept_id'
+    )
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts.parse_query_for_updating_woman_to_generalized_concept_id')
-    def test_get_generalized_concept_id_queries(self, mock_parse_query_for_updating_woman_to_generalized_concept_id,
-                                                mock_parse_query_for_updating_man_to_generalized_concept_id):
-        mock_parse_query_for_updating_woman_to_generalized_concept_id.side_effect = [self.query_woman_to_generalized]
-        mock_parse_query_for_updating_man_to_generalized_concept_id.side_effect = [self.query_man_to_generalized]
+        'cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts.parse_query_for_updating_woman_to_generalized_concept_id'
+    )
+    def test_get_generalized_concept_id_queries(
+        self, mock_parse_query_for_updating_woman_to_generalized_concept_id,
+        mock_parse_query_for_updating_man_to_generalized_concept_id):
+        mock_parse_query_for_updating_woman_to_generalized_concept_id.side_effect = [
+            self.query_woman_to_generalized
+        ]
+        mock_parse_query_for_updating_man_to_generalized_concept_id.side_effect = [
+            self.query_man_to_generalized
+        ]
 
-        actual = generalize_concept_ids.get_generalized_concept_id_queries(self.project_id, self.dataset_id)
+        actual = generalize_concept_ids.get_generalized_concept_id_queries(
+            self.project_id, self.dataset_id)
 
         expected = []
         query_woman = dict()

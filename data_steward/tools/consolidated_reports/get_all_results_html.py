@@ -42,8 +42,10 @@ def download_report(path_dict):
         os.mkdir('%s/result_data' % (cdir))
     except OSError:
         # log the exception but keep moving because it doesn't hurt your code.
-        print("The file %s/result_data/%s already exists", cdir, path_dict['hpo_id'])
-    cmd = 'gsutil -m cp -r %s ./result_data/%s_results.html' % (path_dict['report_path'], path_dict['hpo_id'])
+        print("The file %s/result_data/%s already exists", cdir,
+              path_dict['hpo_id'])
+    cmd = 'gsutil -m cp -r %s ./result_data/%s_results.html' % (
+        path_dict['report_path'], path_dict['hpo_id'])
     print('Downloading %s rpt with cmd: `%s`...' % (path_dict['hpo_id'], cmd))
     os.system(cmd)
 

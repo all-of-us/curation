@@ -10,6 +10,7 @@ from validation import ehr_union
 
 
 class RetractDataBqTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -24,22 +25,34 @@ class RetractDataBqTest(unittest.TestCase):
         self.combined_dataset_id = 'combined20190801'
         self.sandbox_dataset_id = 'sandbox_dataset'
         self.pid_table_id = 'pid_table'
-        self.tables_to_retract_unioned = retract_data_bq.TABLES_FOR_RETRACTION | {common.FACT_RELATIONSHIP, common.PERSON}
-        self.tables_to_retract_combined = retract_data_bq.TABLES_FOR_RETRACTION | {common.FACT_RELATIONSHIP}
+        self.tables_to_retract_unioned = retract_data_bq.TABLES_FOR_RETRACTION | {
+            common.FACT_RELATIONSHIP, common.PERSON
+        }
+        self.tables_to_retract_combined = retract_data_bq.TABLES_FOR_RETRACTION | {
+            common.FACT_RELATIONSHIP
+        }
 
     def test_is_combined_dataset(self):
         self.assertTrue(retract_data_bq.is_combined_dataset('combined20190801'))
-        self.assertFalse(retract_data_bq.is_combined_dataset('combined20190801_deid'))
-        self.assertTrue(retract_data_bq.is_combined_dataset('combined20190801_base'))
-        self.assertTrue(retract_data_bq.is_combined_dataset('combined20190801_clean'))
-        self.assertFalse(retract_data_bq.is_combined_dataset('combined20190801_deid_v1'))
+        self.assertFalse(
+            retract_data_bq.is_combined_dataset('combined20190801_deid'))
+        self.assertTrue(
+            retract_data_bq.is_combined_dataset('combined20190801_base'))
+        self.assertTrue(
+            retract_data_bq.is_combined_dataset('combined20190801_clean'))
+        self.assertFalse(
+            retract_data_bq.is_combined_dataset('combined20190801_deid_v1'))
 
     def test_is_deid_dataset(self):
         self.assertFalse(retract_data_bq.is_deid_dataset('combined20190801'))
-        self.assertTrue(retract_data_bq.is_deid_dataset('combined20190801_deid'))
-        self.assertFalse(retract_data_bq.is_deid_dataset('combined20190801_base'))
-        self.assertFalse(retract_data_bq.is_deid_dataset('combined20190801_clean'))
-        self.assertTrue(retract_data_bq.is_deid_dataset('combined20190801_deid_v1'))
+        self.assertTrue(
+            retract_data_bq.is_deid_dataset('combined20190801_deid'))
+        self.assertFalse(
+            retract_data_bq.is_deid_dataset('combined20190801_base'))
+        self.assertFalse(
+            retract_data_bq.is_deid_dataset('combined20190801_clean'))
+        self.assertTrue(
+            retract_data_bq.is_deid_dataset('combined20190801_deid_v1'))
 
     @mock.patch('bq_utils.get_dataset_id')
     def test_is_ehr_dataset(self, mock_get_dataset_id):
@@ -50,18 +63,23 @@ class RetractDataBqTest(unittest.TestCase):
         # tests
         self.assertTrue(retract_data_bq.is_ehr_dataset('ehr20190801'))
         self.assertTrue(retract_data_bq.is_ehr_dataset('ehr_20190801'))
-        self.assertFalse(retract_data_bq.is_ehr_dataset('unioned_ehr_20190801_base'))
-        self.assertFalse(retract_data_bq.is_ehr_dataset('unioned_ehr20190801_clean'))
+        self.assertFalse(
+            retract_data_bq.is_ehr_dataset('unioned_ehr_20190801_base'))
+        self.assertFalse(
+            retract_data_bq.is_ehr_dataset('unioned_ehr20190801_clean'))
         self.assertTrue(retract_data_bq.is_ehr_dataset(dataset_id))
 
     def test_is_unioned_dataset(self):
         self.assertFalse(retract_data_bq.is_unioned_dataset('ehr20190801'))
         self.assertFalse(retract_data_bq.is_unioned_dataset('ehr_20190801'))
-        self.assertTrue(retract_data_bq.is_unioned_dataset('unioned_ehr_20190801_base'))
-        self.assertTrue(retract_data_bq.is_unioned_dataset('unioned_ehr20190801_clean'))
+        self.assertTrue(
+            retract_data_bq.is_unioned_dataset('unioned_ehr_20190801_base'))
+        self.assertTrue(
+            retract_data_bq.is_unioned_dataset('unioned_ehr20190801_clean'))
 
     @mock.patch('tools.retract_data_bq.list_existing_tables')
-    def test_queries_to_retract_from_ehr_dataset(self, mock_list_existing_tables):
+    def test_queries_to_retract_from_ehr_dataset(self,
+                                                 mock_list_existing_tables):
         hpo_person = bq_utils.get_table_id(self.hpo_id, common.PERSON)
         hpo_death = bq_utils.get_table_id(self.hpo_id, common.DEATH)
 
@@ -93,17 +111,18 @@ class RetractDataBqTest(unittest.TestCase):
                 ignored_tables.append(legacy_mapping_table)
 
         mock_list_existing_tables.return_value = existing_table_ids
-        mqs, qs = retract_data_bq.queries_to_retract_from_ehr_dataset(self.project_id,
-                                                                      self.ehr_dataset_id,
-                                                                      self.sandbox_dataset_id,
-                                                                      self.hpo_id,
-                                                                      self.pid_table_id)
-        actual_dest_tables = set(q[retract_data_bq.DEST_TABLE] for q in qs + mqs)
-        expected_dest_tables = set(existing_table_ids) - set(hpo_person) - set(ignored_tables)
+        mqs, qs = retract_data_bq.queries_to_retract_from_ehr_dataset(
+            self.project_id, self.ehr_dataset_id, self.sandbox_dataset_id,
+            self.hpo_id, self.pid_table_id)
+        actual_dest_tables = set(
+            q[retract_data_bq.DEST_TABLE] for q in qs + mqs)
+        expected_dest_tables = set(existing_table_ids) - set(hpo_person) - set(
+            ignored_tables)
         self.assertSetEqual(expected_dest_tables, actual_dest_tables)
 
     @mock.patch('tools.retract_data_bq.list_existing_tables')
-    def test_queries_to_retract_from_combined_or_deid_dataset(self, mock_list_existing_tables):
+    def test_queries_to_retract_from_combined_or_deid_dataset(
+        self, mock_list_existing_tables):
         existing_table_ids = []
         ignored_tables = []
         for cdm_table in resources.CDM_TABLES:
@@ -119,12 +138,14 @@ class RetractDataBqTest(unittest.TestCase):
                 ignored_tables.append(mapping_table)
 
         mock_list_existing_tables.return_value = existing_table_ids
-        mqs, qs = retract_data_bq.queries_to_retract_from_combined_or_deid_dataset(self.project_id,
-                                                                                   self.combined_dataset_id,
-                                                                                   self.sandbox_dataset_id,
-                                                                                   self.pid_table_id,
-                                                                                   deid_flag=False)
-        actual_dest_tables = set(q[retract_data_bq.DEST_TABLE] for q in qs+mqs)
+        mqs, qs = retract_data_bq.queries_to_retract_from_combined_or_deid_dataset(
+            self.project_id,
+            self.combined_dataset_id,
+            self.sandbox_dataset_id,
+            self.pid_table_id,
+            deid_flag=False)
+        actual_dest_tables = set(
+            q[retract_data_bq.DEST_TABLE] for q in qs + mqs)
         expected_dest_tables = set(existing_table_ids) - set(ignored_tables)
         self.assertSetEqual(expected_dest_tables, actual_dest_tables)
 
@@ -135,7 +156,8 @@ class RetractDataBqTest(unittest.TestCase):
                 self.assertNotIn(str(constant_factor), q[retract_data_bq.QUERY])
 
     @mock.patch('tools.retract_data_bq.list_existing_tables')
-    def test_queries_to_retract_from_unioned_dataset(self, mock_list_existing_tables):
+    def test_queries_to_retract_from_unioned_dataset(self,
+                                                     mock_list_existing_tables):
         existing_table_ids = []
         ignored_tables = []
         for cdm_table in resources.CDM_TABLES:
@@ -151,10 +173,10 @@ class RetractDataBqTest(unittest.TestCase):
                 ignored_tables.append(mapping_table)
 
         mock_list_existing_tables.return_value = existing_table_ids
-        mqs, qs = retract_data_bq.queries_to_retract_from_unioned_dataset(self.project_id,
-                                                                          self.unioned_dataset_id,
-                                                                          self.sandbox_dataset_id,
-                                                                          self.pid_table_id)
-        actual_dest_tables = set(q[retract_data_bq.DEST_TABLE] for q in qs + mqs)
+        mqs, qs = retract_data_bq.queries_to_retract_from_unioned_dataset(
+            self.project_id, self.unioned_dataset_id, self.sandbox_dataset_id,
+            self.pid_table_id)
+        actual_dest_tables = set(
+            q[retract_data_bq.DEST_TABLE] for q in qs + mqs)
         expected_dest_tables = set(existing_table_ids) - set(ignored_tables)
         self.assertSetEqual(expected_dest_tables, actual_dest_tables)

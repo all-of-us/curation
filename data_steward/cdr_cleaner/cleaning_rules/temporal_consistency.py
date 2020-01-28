@@ -15,22 +15,26 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 import common
 
-table_dates = {common.CONDITION_OCCURRENCE: ['condition_start_date', 'condition_end_date'],
-               common.DRUG_EXPOSURE: ['drug_exposure_start_date', 'drug_exposure_end_date'],
-               common.DEVICE_EXPOSURE: ['device_exposure_start_date', 'device_exposure_start_date']}
+table_dates = {
+    common.CONDITION_OCCURRENCE: ['condition_start_date', 'condition_end_date'],
+    common.DRUG_EXPOSURE: [
+        'drug_exposure_start_date', 'drug_exposure_end_date'
+    ],
+    common.DEVICE_EXPOSURE: [
+        'device_exposure_start_date', 'device_exposure_start_date'
+    ]
+}
 
 visit_occurrence = common.VISIT_OCCURRENCE
 placeholder_date = '1900-01-01'
 end_date = 'end_date'
 
-NULL_BAD_END_DATES = (
-    'SELECT {cols} '
-    'FROM `{project_id}.{dataset_id}.{table}` l '
-    'LEFT JOIN (SELECT * '
-    'FROM `{project_id}.{dataset_id}.{table}` '
-    'WHERE NOT {table_end_date} < {table_start_date}) r '
-    'ON l.{table}_id = r.{table}_id '
-)
+NULL_BAD_END_DATES = ('SELECT {cols} '
+                      'FROM `{project_id}.{dataset_id}.{table}` l '
+                      'LEFT JOIN (SELECT * '
+                      'FROM `{project_id}.{dataset_id}.{table}` '
+                      'WHERE NOT {table_end_date} < {table_start_date}) r '
+                      'ON l.{table}_id = r.{table}_id ')
 
 POPULATE_VISIT_END_DATES = (
     'SELECT '
@@ -68,8 +72,7 @@ POPULATE_VISIT_END_DATES = (
     'UNION ALL '
     'SELECT * '
     'FROM `{project_id}.{dataset_id}.visit_occurrence` '
-    'WHERE visit_start_date <= visit_end_date '
-)
+    'WHERE visit_start_date <= visit_end_date ')
 
 
 def get_bad_end_date_queries(project_id, dataset_id):
@@ -84,25 +87,29 @@ def get_bad_end_date_queries(project_id, dataset_id):
     for table in table_dates:
         fields = resources.fields_for(table)
         # Generate column expressions for select
-        col_exprs = ['r.' + field['name'] if field['name'] == table_dates[table][1]
-                     else 'l.' + field['name']
-                     for field in fields]
+        col_exprs = [
+            'r.' +
+            field['name'] if field['name'] == table_dates[table][1] else 'l.' +
+            field['name'] for field in fields
+        ]
         cols = ', '.join(col_exprs)
         query = dict()
-        query[cdr_consts.QUERY] = NULL_BAD_END_DATES.format(project_id=project_id,
-                                                            dataset_id=dataset_id,
-                                                            cols=cols,
-                                                            table=table,
-                                                            table_start_date=table_dates[table][0],
-                                                            table_end_date=table_dates[table][1])
+        query[cdr_consts.QUERY] = NULL_BAD_END_DATES.format(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            cols=cols,
+            table=table,
+            table_start_date=table_dates[table][0],
+            table_end_date=table_dates[table][1])
         query[cdr_consts.DESTINATION_TABLE] = table
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = dataset_id
         queries.append(query)
     query = dict()
-    query[cdr_consts.QUERY] = POPULATE_VISIT_END_DATES.format(project_id=project_id,
-                                                              dataset_id=dataset_id,
-                                                              placeholder_date=placeholder_date)
+    query[cdr_consts.QUERY] = POPULATE_VISIT_END_DATES.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        placeholder_date=placeholder_date)
     query[cdr_consts.DESTINATION_TABLE] = visit_occurrence
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id

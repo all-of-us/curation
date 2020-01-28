@@ -8,6 +8,7 @@ from tests.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 
 
 class GcsUtilsTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -52,7 +53,8 @@ class GcsUtilsTest(unittest.TestCase):
 
     def test_get_metadata_on_not_existing_file(self):
         expected = 100
-        actual = gcs_utils.get_metadata(self.hpo_bucket, 'this_file_does_not_exist', expected)
+        actual = gcs_utils.get_metadata(self.hpo_bucket,
+                                        'this_file_does_not_exist', expected)
         self.assertEqual(expected, actual)
 
     def test_list_bucket_404_when_bucket_does_not_exist(self):

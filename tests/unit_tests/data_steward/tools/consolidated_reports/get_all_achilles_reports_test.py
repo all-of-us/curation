@@ -17,11 +17,12 @@ class GetAllAchillesReportsTest(unittest.TestCase):
         self.hpo_id = 'hpo-id'
         self.bucket_id = 'id-bar'
         self.search_dir = 'curation_report'
-        self.filepath = 'gs://{}/{}/{}/{}'.format(
-            self.drc_bucket_name, self.hpo_id, self.bucket_id, self.search_dir
-        )
+        self.filepath = 'gs://{}/{}/{}/{}'.format(self.drc_bucket_name,
+                                                  self.hpo_id, self.bucket_id,
+                                                  self.search_dir)
         self.original_drc_bucket_path = achilles_report.DRC_BUCKET_PATH
-        achilles_report.DRC_BUCKET_PATH = 'gs://{}/'.format(self.drc_bucket_name)
+        achilles_report.DRC_BUCKET_PATH = 'gs://{}/'.format(
+            self.drc_bucket_name)
 
     def tearDown(self):
         achilles_report.DRC_BUCKET_PATH = self.original_drc_bucket_path
@@ -61,20 +62,15 @@ class GetAllAchillesReportsTest(unittest.TestCase):
         filepath = self.filepath.replace(self.search_dir, 'bunk')
 
         # test
-        self.assertRaises(
-            RuntimeError,
-            achilles_report.get_submission_name,
-            filepath
-        )
+        self.assertRaises(RuntimeError, achilles_report.get_submission_name,
+                          filepath)
 
     def test_transform_bq_list(self):
         # pre conditions
-        uploads_list = [
-            {
-                'upload_timestamp': '2019-01-01',
-                'file_path': self.filepath,
-            }
-        ]
+        uploads_list = [{
+            'upload_timestamp': '2019-01-01',
+            'file_path': self.filepath,
+        }]
 
         # test
         result = achilles_report.transform_bq_list(uploads_list)

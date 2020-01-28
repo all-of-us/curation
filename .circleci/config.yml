@@ -59,6 +59,10 @@ jobs:
       - run:
           name: Show bashrc file
           command: cat ${BASH_ENV}
+      - run:
+          name: Check Python lint
+          working_directory: ~/curation
+          command: tools/yapf_lint.sh
       # Test
       #   This would typically be a build job when using workflows, possibly combined with build
       - run:

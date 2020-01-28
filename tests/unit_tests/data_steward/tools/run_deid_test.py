@@ -5,11 +5,13 @@ from mock import mock, patch
 
 from tools import run_deid
 
+
 class RunDeidTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        print('\n**************************************************************')
+        print(
+            '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
 
@@ -23,11 +25,8 @@ class RunDeidTest(unittest.TestCase):
     def test_known_tables(self, mock_walk):
         # preconditions
         mock_walk.return_value = [
-            ('',
-            '',
-            ['fake/file/table.json',
-             'table2.json',
-              'odd_name.csv'])]
+            ('', '', ['fake/file/table.json', 'table2.json', 'odd_name.csv'])
+        ]
 
         # test
         result = run_deid.get_known_tables('fake_field_path')
@@ -40,7 +39,9 @@ class RunDeidTest(unittest.TestCase):
     def test_get_output_tables(self, mock_contents):
         # pre-conditions
         input_dataset = 'fake_input_dataset'
-        known_tables = ['table', 'observation', 'odd_name.csv', '_map_table', 'skip_table']
+        known_tables = [
+            'table', 'observation', 'odd_name.csv', '_map_table', 'skip_table'
+        ]
         skip_tables = 'odd_name.csv,madeup,skip_table'
         only_tables = 'observation,table_zed'
 
@@ -55,7 +56,8 @@ class RunDeidTest(unittest.TestCase):
         ]
 
         # test
-        result = run_deid.get_output_tables(input_dataset, known_tables, skip_tables, only_tables)
+        result = run_deid.get_output_tables(input_dataset, known_tables,
+                                            skip_tables, only_tables)
 
         # post condition
         expected = ['observation']
@@ -80,8 +82,5 @@ class RunDeidTest(unittest.TestCase):
                 'note',
                 fields_list,
                 drop_existing=True,
-                dataset_id=dest_dataset
-            ),
-            None
-        )
+                dataset_id=dest_dataset), None)
         self.assertEqual(mock_bq_utils.create_table.call_count, 1)

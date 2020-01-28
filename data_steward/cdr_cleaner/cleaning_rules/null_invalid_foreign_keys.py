@@ -13,19 +13,17 @@ from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 
-FOREIGN_KEYS_FIELDS = ['person_id', 'visit_occurrence_id',
-                       'location_id', 'care_site_id', 'provider_id']
+FOREIGN_KEYS_FIELDS = [
+    'person_id', 'visit_occurrence_id', 'location_id', 'care_site_id',
+    'provider_id'
+]
 
-INVALID_FOREIGN_KEY_QUERY = (
-    'SELECT {cols} '
-    'FROM `{project}.{dataset_id}.{table_name}` t '
-    '{join_expr}'
-)
+INVALID_FOREIGN_KEY_QUERY = ('SELECT {cols} '
+                             'FROM `{project}.{dataset_id}.{table_name}` t '
+                             '{join_expr}')
 
-LEFT_JOIN = (
-    'LEFT JOIN `{dataset_id}.{table}` {prefix} '
-    'ON t.{field} = {prefix}.{field} '
-)
+LEFT_JOIN = ('LEFT JOIN `{dataset_id}.{table}` {prefix} '
+             'ON t.{field} = {prefix}.{field} ')
 
 
 def _mapping_table_for(domain_table):
@@ -75,23 +73,22 @@ def null_invalid_foreign_keys(project_id, dataset_id):
                     if key == 'person_id':
                         table_alias = cdr_consts.PERSON_TABLE_NAME
                     else:
-                        table_alias = _mapping_table_for('{x}'.format(x=key)[:-3])
+                        table_alias = _mapping_table_for(
+                            '{x}'.format(x=key)[:-3])
                     join_expression.append(
                         LEFT_JOIN.format(dataset_id=dataset_id,
                                          prefix=key[:3],
                                          field=key,
-                                         table=table_alias
-                                         )
-                    )
+                                         table=table_alias))
 
             full_join_expression = " ".join(join_expression)
             query = dict()
-            query[cdr_consts.QUERY] = INVALID_FOREIGN_KEY_QUERY.format(cols=cols,
-                                                                       table_name=table,
-                                                                       dataset_id=dataset_id,
-                                                                       project=project_id,
-                                                                       join_expr=full_join_expression
-                                                                       )
+            query[cdr_consts.QUERY] = INVALID_FOREIGN_KEY_QUERY.format(
+                cols=cols,
+                table_name=table,
+                dataset_id=dataset_id,
+                project=project_id,
+                join_expr=full_join_expression)
             query[cdr_consts.DESTINATION_TABLE] = table
             query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
             query[cdr_consts.DESTINATION_DATASET] = dataset_id

@@ -20,8 +20,12 @@ or tag you need. The specification document should always be consistent with the
     *   `test` Unit tests.
         [README](data_steward/test/README.md) has instructions for running tests.
 
+## Developer setup
 
-### Authentication Details
+Please reference [this guide](https://docs.google.com/document/d/16Q_F5ecN1hnKviuPTbXxy914FUGFuTXO1F4zvYbjDmc/edit)
+for development setup.
+
+## Authentication Details
 
 All actors calling APIs in production will use [service accounts](https://cloud.google.com/compute/docs/access/service-accounts).
 We will use a Google Cloud Project owned by Vanderbilt for testing: `aou-res-curation-test`.

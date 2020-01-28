@@ -21,12 +21,7 @@ from resources import fields_path
 LOGGER = logging.getLogger(__name__)
 
 
-def write_to_result_table(
-        project,
-        dataset,
-        site,
-        match_values
-    ):
+def write_to_result_table(project, dataset, site, match_values):
     """
     Append items in match_values to the table generated from site name.
 
@@ -83,8 +78,9 @@ def write_to_result_table(
 
     schema_path = os.path.join(fields_path, 'identity_match.json')
 
-    LOGGER.info("Beginning load of identity match values from csv into BigQuery "
-                "for site: %s", site)
+    LOGGER.info(
+        "Beginning load of identity match values from csv into BigQuery "
+        "for site: %s", site)
     try:
         # load csv file into bigquery
         results = bq_utils.load_csv(schema_path,
@@ -103,8 +99,8 @@ def write_to_result_table(
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
         LOGGER.exception(
-            "Encountered an exception when loading records from csv for site: %s", site
-        )
+            "Encountered an exception when loading records from csv for site: %s",
+            site)
         raise
 
     LOGGER.info("Loaded match values for site: %s", site)
@@ -167,11 +163,11 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     if not isinstance(hpo_list, list):
         hpo_list = [hpo_list]
 
-    fields = [consts.PERSON_ID_FIELD, consts.FIRST_NAME_FIELD,
-              consts.LAST_NAME_FIELD, consts.BIRTH_DATE_FIELD, consts.SEX_FIELD,
-              consts.ADDRESS_MATCH_FIELD, consts.PHONE_NUMBER_FIELD,
-              consts.EMAIL_FIELD, consts.ALGORITHM_FIELD
-             ]
+    fields = [
+        consts.PERSON_ID_FIELD, consts.FIRST_NAME_FIELD, consts.LAST_NAME_FIELD,
+        consts.BIRTH_DATE_FIELD, consts.SEX_FIELD, consts.ADDRESS_MATCH_FIELD,
+        consts.PHONE_NUMBER_FIELD, consts.EMAIL_FIELD, consts.ALGORITHM_FIELD
+    ]
 
     fields_str = ','.join(fields) + '\n'
 
@@ -184,16 +180,14 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     for site in hpo_list:
         result_table = site + consts.VALIDATION_TABLE_SUFFIX
         query_string = consts.VALIDATION_RESULTS_VALUES.format(
-            project=project,
-            dataset=dataset,
-            table=result_table
-        )
+            project=project, dataset=dataset, table=result_table)
 
         try:
             results = bq_utils.query(query_string, batch=True)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Encountered an exception when selecting site records")
+            LOGGER.exception(
+                "Encountered an exception when selecting site records")
             report_file.write("Unable to report id validation match records "
                               "for site:\t{}.\n".format(site))
             read_errors += 1

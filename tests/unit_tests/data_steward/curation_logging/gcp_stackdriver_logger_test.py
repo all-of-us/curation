@@ -38,21 +38,29 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
         self.request_host_name = 'py3.aou-res-curation-test.appspot.com'
         self.request_log_id = 'fake_request_id'
         self.request_trace_id = 'fake_trace_id'
-        self.request_trace = 'projects/{0}/traces/{1}'.format(self.project_id, self.request_trace_id)
+        self.request_trace = 'projects/{0}/traces/{1}'.format(
+            self.project_id, self.request_trace_id)
 
         self.request_start_time = pytz.utc.localize(datetime(2020, 1, 1))
-        self.request_end_time = pytz.utc.localize(datetime(2020, 1, 1)) + timedelta(minutes=1)
-        self.request_log_entry_ts = self.request_start_time + timedelta(seconds=10)
-        self.log_record_created = self.request_start_time - timedelta(seconds=10)
+        self.request_end_time = pytz.utc.localize(datetime(
+            2020, 1, 1)) + timedelta(minutes=1)
+        self.request_log_entry_ts = self.request_start_time + timedelta(
+            seconds=10)
+        self.log_record_created = self.request_start_time - timedelta(
+            seconds=10)
 
-        self.mock_get_application_id_patcher = patch('app_identity.get_application_id')
-        self.mock_get_application_id = self.mock_get_application_id_patcher.start()
+        self.mock_get_application_id_patcher = patch(
+            'app_identity.get_application_id')
+        self.mock_get_application_id = self.mock_get_application_id_patcher.start(
+        )
         self.mock_get_application_id.return_value = self.project_id
 
         # Mock a flask request for testing
         self.request = MagicMock()
-        type(self.request).method = PropertyMock(return_value=self.request_method)
-        type(self.request).full_path = PropertyMock(return_value=self.request_full_path)
+        type(self.request).method = PropertyMock(
+            return_value=self.request_method)
+        type(self.request).full_path = PropertyMock(
+            return_value=self.request_full_path)
         type(self.request).user_agent = PropertyMock(
             return_value=self.request_user_agent)
 
@@ -69,12 +77,15 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
         # Define the log records for testing
         self.file_path = 'data_steward/validation/main'
         self.file_name = 'main'
-        self.info_log_record = self.create_log_record('info', self.log_record_created, logging.INFO, self.file_name,
-                                                      self.file_path, 10, 'info message')
-        self.debug_log_record = self.create_log_record('debug', self.log_record_created, logging.DEBUG, self.file_name,
-                                                       self.file_path, 11, 'debug message')
-        self.error_log_record = self.create_log_record('error', self.log_record_created, logging.ERROR, self.file_name,
-                                                       self.file_path, 12, 'error message')
+        self.info_log_record = self.create_log_record(
+            'info', self.log_record_created, logging.INFO, self.file_name,
+            self.file_path, 10, 'info message')
+        self.debug_log_record = self.create_log_record(
+            'debug', self.log_record_created, logging.DEBUG, self.file_name,
+            self.file_path, 11, 'debug message')
+        self.error_log_record = self.create_log_record(
+            'error', self.log_record_created, logging.ERROR, self.file_name,
+            self.file_path, 12, 'error message')
 
         self.info_log_line = {
             'logMessage': 'info message',
@@ -110,15 +121,18 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
         }
 
         self.mock_logging_service_client_patcher = patch(
-            'curation_logging.curation_gae_handler.gcp_logging_v2.LoggingServiceV2Client')
-        self.mock_logging_service_client = self.mock_logging_service_client_patcher.start()
+            'curation_logging.curation_gae_handler.gcp_logging_v2.LoggingServiceV2Client'
+        )
+        self.mock_logging_service_client = self.mock_logging_service_client_patcher.start(
+        )
 
     def tearDown(self):
         self.mock_logging_service_client_patcher.stop()
         self.request.stop()
 
     @staticmethod
-    def create_log_record(name, record_created, level_no, func_name, pathname, lineno, msg):
+    def create_log_record(name, record_created, level_no, func_name, pathname,
+                          lineno, msg):
         log_record = LogRecord(name=name,
                                levelno=level_no,
                                lineno=lineno,
@@ -133,7 +147,8 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
 
     @mock.patch('curation_logging.curation_gae_handler.datetime')
     def test_gcp_stackdriver_logger(self, mock_datetime):
-        mock_datetime.now.return_value.isoformat.return_value = self.request_start_time.isoformat()
+        mock_datetime.now.return_value.isoformat.return_value = self.request_start_time.isoformat(
+        )
         mock_datetime.utcnow.return_value = self.request_start_time
         mock_datetime.utcfromtimestamp.return_value = self.log_record_created
 
@@ -142,22 +157,32 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
         self.gcp_stackdriver_logger.setup_from_request(self.request)
 
         self.assertIsNone(self.gcp_stackdriver_logger._first_log_ts)
-        self.assertEqual(self.gcp_stackdriver_logger._start_time, self.request_start_time.isoformat())
-        self.assertEqual(self.gcp_stackdriver_logger._request_method, self.request_method)
-        self.assertEqual(self.gcp_stackdriver_logger._request_resource, self.request_full_path)
-        self.assertEqual(self.gcp_stackdriver_logger._request_agent, self.request_user_agent)
-        self.assertEqual(self.gcp_stackdriver_logger._request_remote_addr, self.request_ip)
-        self.assertEqual(self.gcp_stackdriver_logger._request_host, self.request_host_name)
-        self.assertEqual(self.gcp_stackdriver_logger._request_log_id, self.request_log_id)
+        self.assertEqual(self.gcp_stackdriver_logger._start_time,
+                         self.request_start_time.isoformat())
+        self.assertEqual(self.gcp_stackdriver_logger._request_method,
+                         self.request_method)
+        self.assertEqual(self.gcp_stackdriver_logger._request_resource,
+                         self.request_full_path)
+        self.assertEqual(self.gcp_stackdriver_logger._request_agent,
+                         self.request_user_agent)
+        self.assertEqual(self.gcp_stackdriver_logger._request_remote_addr,
+                         self.request_ip)
+        self.assertEqual(self.gcp_stackdriver_logger._request_host,
+                         self.request_host_name)
+        self.assertEqual(self.gcp_stackdriver_logger._request_log_id,
+                         self.request_log_id)
         self.assertEqual(self.gcp_stackdriver_logger._trace, self.request_trace)
 
         self.gcp_stackdriver_logger.log_event(self.info_log_record)
         self.gcp_stackdriver_logger.log_event(self.debug_log_record)
         self.gcp_stackdriver_logger.log_event(self.error_log_record)
 
-        self.assertEqual(len(self.gcp_stackdriver_logger._buffer), 0,
-                         'expected log buffer to flush itself after being filled')
-        self.assertEqual(self.mock_logging_service_client.return_value.write_log_entries.call_count, 1)
+        self.assertEqual(
+            len(self.gcp_stackdriver_logger._buffer), 0,
+            'expected log buffer to flush itself after being filled')
+        self.assertEqual(
+            self.mock_logging_service_client.return_value.write_log_entries.
+            call_count, 1)
 
         self.gcp_stackdriver_logger.finalize()
         self.assertIsNone(self.gcp_stackdriver_logger._first_log_ts)
@@ -203,30 +228,42 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
         timezone = 'test time zone'
         mock_setup_logging_zone.return_value = timezone
         actual_resource = curation_gae_handler.setup_logging_resource()
-        expected_resource = MonitoredResource(type='gae_app', labels={'project_id': self.project_id,
-                                                                      'module_id': GAE_LOGGING_MODULE_ID,
-                                                                      'version_id': GAE_LOGGING_VERSION_ID,
-                                                                      'zone': timezone})
+        expected_resource = MonitoredResource(
+            type='gae_app',
+            labels={
+                'project_id': self.project_id,
+                'module_id': GAE_LOGGING_MODULE_ID,
+                'version_id': GAE_LOGGING_VERSION_ID,
+                'zone': timezone
+            })
         self.assertEqual(expected_resource, actual_resource)
 
     @mock.patch('curation_logging.curation_gae_handler.datetime')
-    @mock.patch('curation_logging.curation_gae_handler.gcp_logging._helpers._normalize_severity')
+    @mock.patch(
+        'curation_logging.curation_gae_handler.gcp_logging._helpers._normalize_severity'
+    )
     def test_setup_log_line(self, mock_normalize_severity, mock_datetime):
         mock_datetime.utcfromtimestamp.return_value = self.log_record_created
-        mock_normalize_severity.side_effect = [SEVERITY_INFO, SEVERITY_DEBUG, SEVERITY_ERROR]
+        mock_normalize_severity.side_effect = [
+            SEVERITY_INFO, SEVERITY_DEBUG, SEVERITY_ERROR
+        ]
 
-        actual_info_log_line = curation_gae_handler.setup_log_line(self.info_log_record)
+        actual_info_log_line = curation_gae_handler.setup_log_line(
+            self.info_log_record)
         self.assertDictEqual(self.info_log_line, actual_info_log_line)
 
-        actual_debug_log_line = curation_gae_handler.setup_log_line(self.debug_log_record)
+        actual_debug_log_line = curation_gae_handler.setup_log_line(
+            self.debug_log_record)
         self.assertDictEqual(self.debug_log_line, actual_debug_log_line)
 
-        actual_error_log_line = curation_gae_handler.setup_log_line(self.error_log_record)
+        actual_error_log_line = curation_gae_handler.setup_log_line(
+            self.error_log_record)
         self.assertDictEqual(self.error_log_line, actual_error_log_line)
 
     def test_get_highest_severity_level_from_lines(self):
         lines = [self.info_log_line, self.debug_log_line, self.error_log_line]
-        actual_severity_level = curation_gae_handler.get_highest_severity_level_from_lines(lines)
+        actual_severity_level = curation_gae_handler.get_highest_severity_level_from_lines(
+            lines)
         self.assertEqual(SEVERITY_ERROR, actual_severity_level)
 
     def test_setup_proto_payload(self):
@@ -243,12 +280,16 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
             'responseSize': None
         }
 
-        actual_proto_payload = curation_gae_handler.setup_proto_payload(lines, LogCompletionStatusEnum.PARTIAL_BEGIN,
-                                                                        **proto_payload_args)
+        actual_proto_payload = curation_gae_handler.setup_proto_payload(
+            lines, LogCompletionStatusEnum.PARTIAL_BEGIN, **proto_payload_args)
 
         expected_dict = dict(
-            {'@type': curation_gae_handler.REQUEST_LOG_TYPE, 'first': True, 'finished': False, 'line': lines},
-            **proto_payload_args)
+            {
+                '@type': curation_gae_handler.REQUEST_LOG_TYPE,
+                'first': True,
+                'finished': False,
+                'line': lines
+            }, **proto_payload_args)
 
         expected_proto_payload = gcp_json_format.ParseDict(
             expected_dict, gcp_any_pb2.Any())
@@ -256,26 +297,32 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
         self.assertEqual(expected_proto_payload, actual_proto_payload)
 
     def test_update_long_operation(self):
-        expected_operation = LogEntryOperation(id=self.request_log_id,
-                                               producer='appengine.googleapis.com/request_id',
-                                               first=True, last=True)
+        expected_operation = LogEntryOperation(
+            id=self.request_log_id,
+            producer='appengine.googleapis.com/request_id',
+            first=True,
+            last=True)
 
-        actual_operation = curation_gae_handler.update_long_operation(self.request_log_id,
-                                                                      LogCompletionStatusEnum.COMPLETE)
+        actual_operation = curation_gae_handler.update_long_operation(
+            self.request_log_id, LogCompletionStatusEnum.COMPLETE)
         self.assertEqual(expected_operation, actual_operation)
 
-        expected_operation = LogEntryOperation(id=self.request_log_id,
-                                               producer='appengine.googleapis.com/request_id',
-                                               first=True, last=False)
+        expected_operation = LogEntryOperation(
+            id=self.request_log_id,
+            producer='appengine.googleapis.com/request_id',
+            first=True,
+            last=False)
 
-        actual_operation = curation_gae_handler.update_long_operation(self.request_log_id,
-                                                                      LogCompletionStatusEnum.PARTIAL_BEGIN)
+        actual_operation = curation_gae_handler.update_long_operation(
+            self.request_log_id, LogCompletionStatusEnum.PARTIAL_BEGIN)
         self.assertEqual(expected_operation, actual_operation)
 
-        expected_operation = LogEntryOperation(id=self.request_log_id,
-                                               producer='appengine.googleapis.com/request_id',
-                                               first=False, last=False)
+        expected_operation = LogEntryOperation(
+            id=self.request_log_id,
+            producer='appengine.googleapis.com/request_id',
+            first=False,
+            last=False)
 
-        actual_operation = curation_gae_handler.update_long_operation(self.request_log_id,
-                                                                      LogCompletionStatusEnum.PARTIAL_MORE)
+        actual_operation = curation_gae_handler.update_long_operation(
+            self.request_log_id, LogCompletionStatusEnum.PARTIAL_MORE)
         self.assertEqual(expected_operation, actual_operation)

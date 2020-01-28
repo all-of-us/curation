@@ -15,4 +15,5 @@ def get_application_id():
     if project_id:
         return project_id
     else:
-        raise RuntimeError('{} is not set.  Set and retry.'.format(GOOGLE_CLOUD_PROJECT))
+        raise RuntimeError(
+            '{} is not set.  Set and retry.'.format(GOOGLE_CLOUD_PROJECT))

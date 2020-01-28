@@ -4,7 +4,6 @@ Normalize all height and weight data into cm and kg, remove invalid/implausible 
 
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
-
 HEIGHT_TABLE = 'height_table'
 WEIGHT_TABLE = 'weight_table'
 NEW_HEIGHT_ROWS = 'new_height_rows'
@@ -608,58 +607,64 @@ def get_queries_clean_height_weight(project_id, dataset_id, sandbox_dataset_id):
 
     # height
     height_table_query = dict()
-    height_table_query[cdr_consts.QUERY] = CREATE_HEIGHT_SANDBOX_QUERY.format(project_id=project_id,
-                                                                              dataset_id=dataset_id,
-                                                                              sandbox_dataset_id=sandbox_dataset_id,
-                                                                              height_table=HEIGHT_TABLE)
+    height_table_query[cdr_consts.QUERY] = CREATE_HEIGHT_SANDBOX_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        height_table=HEIGHT_TABLE)
     queries.append(height_table_query)
 
     height_rows_query = dict()
-    height_rows_query[cdr_consts.QUERY] = NEW_HEIGHT_ROWS_QUERY.format(project_id=project_id,
-                                                                       dataset_id=dataset_id,
-                                                                       sandbox_dataset_id=sandbox_dataset_id,
-                                                                       height_table=HEIGHT_TABLE,
-                                                                       new_height_rows=NEW_HEIGHT_ROWS)
+    height_rows_query[cdr_consts.QUERY] = NEW_HEIGHT_ROWS_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        height_table=HEIGHT_TABLE,
+        new_height_rows=NEW_HEIGHT_ROWS)
     queries.append(height_rows_query)
 
     delete_heights_query = dict()
-    delete_heights_query[cdr_consts.QUERY] = DELETE_HEIGHT_ROWS_QUERY.format(project_id=project_id,
-                                                                             dataset_id=dataset_id)
+    delete_heights_query[cdr_consts.QUERY] = DELETE_HEIGHT_ROWS_QUERY.format(
+        project_id=project_id, dataset_id=dataset_id)
     queries.append(delete_heights_query)
 
     insert_heights_query = dict()
-    insert_heights_query[cdr_consts.QUERY] = INSERT_NEW_ROWS_QUERY.format(project_id=project_id,
-                                                                          dataset_id=dataset_id,
-                                                                          sandbox_dataset_id=sandbox_dataset_id,
-                                                                          new_rows=NEW_HEIGHT_ROWS)
+    insert_heights_query[cdr_consts.QUERY] = INSERT_NEW_ROWS_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        new_rows=NEW_HEIGHT_ROWS)
     queries.append(insert_heights_query)
 
     # weight
     weight_table_query = dict()
-    weight_table_query[cdr_consts.QUERY] = CREATE_WEIGHT_SANDBOX_QUERY.format(project_id=project_id,
-                                                                              dataset_id=dataset_id,
-                                                                              sandbox_dataset_id=sandbox_dataset_id,
-                                                                              weight_table=WEIGHT_TABLE)
+    weight_table_query[cdr_consts.QUERY] = CREATE_WEIGHT_SANDBOX_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        weight_table=WEIGHT_TABLE)
     queries.append(weight_table_query)
 
     weight_rows_query = dict()
-    weight_rows_query[cdr_consts.QUERY] = NEW_WEIGHT_ROWS_QUERY.format(project_id=project_id,
-                                                                       dataset_id=dataset_id,
-                                                                       sandbox_dataset_id=sandbox_dataset_id,
-                                                                       weight_table=WEIGHT_TABLE,
-                                                                       new_weight_rows=NEW_WEIGHT_ROWS)
+    weight_rows_query[cdr_consts.QUERY] = NEW_WEIGHT_ROWS_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        weight_table=WEIGHT_TABLE,
+        new_weight_rows=NEW_WEIGHT_ROWS)
     queries.append(weight_rows_query)
 
     delete_weights_query = dict()
-    delete_weights_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.format(project_id=project_id,
-                                                                             dataset_id=dataset_id)
+    delete_weights_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.format(
+        project_id=project_id, dataset_id=dataset_id)
     queries.append(delete_weights_query)
 
     insert_weights_query = dict()
-    insert_weights_query[cdr_consts.QUERY] = INSERT_NEW_ROWS_QUERY.format(project_id=project_id,
-                                                                          dataset_id=dataset_id,
-                                                                          sandbox_dataset_id=sandbox_dataset_id,
-                                                                          new_rows=NEW_WEIGHT_ROWS)
+    insert_weights_query[cdr_consts.QUERY] = INSERT_NEW_ROWS_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        new_rows=NEW_WEIGHT_ROWS)
     queries.append(insert_weights_query)
 
     return queries
@@ -673,12 +678,14 @@ def parse_args():
     """
     import cdr_cleaner.args_parser as parser
 
-    additional_argument = {parser.SHORT_ARGUMENT: '-n',
-                           parser.LONG_ARGUMENT: '--sandbox_dataset_id',
-                           parser.ACTION: 'store',
-                           parser.DEST: 'sandbox_dataset_id',
-                           parser.HELP: 'Please specify the sandbox_dataset_id',
-                           parser.REQUIRED: True}
+    additional_argument = {
+        parser.SHORT_ARGUMENT: '-n',
+        parser.LONG_ARGUMENT: '--sandbox_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'sandbox_dataset_id',
+        parser.HELP: 'Please specify the sandbox_dataset_id',
+        parser.REQUIRED: True
+    }
     args = parser.default_parse_args([additional_argument])
     return args
 
@@ -689,5 +696,7 @@ if __name__ == '__main__':
     ARGS = parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_queries_clean_height_weight(ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
+    query_list = get_queries_clean_height_weight(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)

@@ -20,26 +20,22 @@ LOGGER = logging.getLogger(__name__)
 
 OLD_MAP_SHORT_CODES_TABLE = 'old_map_short_codes'
 
-OLD_MAP_SHORT_CODES_TABLE_FIELDS = [
-    {
-        "type": "string",
-        "name": "type",
-        "mode": "required",
-        "description": "determines if it is a question or an answer"
-    },
-    {
-        "type": "string",
-        "name": "pmi_code",
-        "mode": "required",
-        "description": "Concept code which is available is concept table."
-    },
-    {
-        "type": "string",
-        "name": "short_code",
-        "mode": "required",
-        "description": "short codee used by Odysseus"
-    }
-]
+OLD_MAP_SHORT_CODES_TABLE_FIELDS = [{
+    "type": "string",
+    "name": "type",
+    "mode": "required",
+    "description": "determines if it is a question or an answer"
+}, {
+    "type": "string",
+    "name": "pmi_code",
+    "mode": "required",
+    "description": "Concept code which is available is concept table."
+}, {
+    "type": "string",
+    "name": "short_code",
+    "mode": "required",
+    "description": "short codee used by Odysseus"
+}]
 
 UPDATE_QUESTIONS_MAP_QUERY = """
     UPDATE
@@ -117,7 +113,8 @@ UPDATE_ANSWERS_MAP_QUERY = """
         map.value_source_value=obs.value_source_value"""
 
 
-def get_update_questions_answers_not_mapped_to_omop(project_id, dataset_id, sandbox_dataset_id):
+def get_update_questions_answers_not_mapped_to_omop(project_id, dataset_id,
+                                                    sandbox_dataset_id):
     """
 
     This function gets the queries required to update the questions and answers that were unmapped to OMOP concepts
@@ -137,22 +134,20 @@ def get_update_questions_answers_not_mapped_to_omop(project_id, dataset_id, sand
 
     # Update concept_ids to questions using OLD_MAP_SHORT_CODES_TABLE.
     query = dict()
-    query[cdr_consts.QUERY] = UPDATE_QUESTIONS_MAP_QUERY.format(dataset=dataset_id,
-                                                                project=project_id,
-                                                                old_map=
-                                                                OLD_MAP_SHORT_CODES_TABLE,
-                                                                sandbox=sandbox_dataset_id
-                                                                )
+    query[cdr_consts.QUERY] = UPDATE_QUESTIONS_MAP_QUERY.format(
+        dataset=dataset_id,
+        project=project_id,
+        old_map=OLD_MAP_SHORT_CODES_TABLE,
+        sandbox=sandbox_dataset_id)
     queries_list.append(query)
 
     # Update concept_ids to answers using OLD_MAP_SHORT_CODES_TABLE.
     query = dict()
-    query[cdr_consts.QUERY] = UPDATE_ANSWERS_MAP_QUERY.format(dataset=dataset_id,
-                                                              project=project_id,
-                                                              old_map=
-                                                              OLD_MAP_SHORT_CODES_TABLE,
-                                                              sandbox=sandbox_dataset_id
-                                                              )
+    query[cdr_consts.QUERY] = UPDATE_ANSWERS_MAP_QUERY.format(
+        dataset=dataset_id,
+        project=project_id,
+        old_map=OLD_MAP_SHORT_CODES_TABLE,
+        sandbox=sandbox_dataset_id)
     queries_list.append(query)
 
     return queries_list
@@ -164,8 +159,10 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=ARGS.project_id, dataset_id=ARGS.dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(
+        project_id=ARGS.project_id, dataset_id=ARGS.dataset_id)
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_update_questions_answers_not_mapped_to_omop(ARGS.project_id, ARGS.dataset_id, sandbox_dataset_id)
+    query_list = get_update_questions_answers_not_mapped_to_omop(
+        ARGS.project_id, ARGS.dataset_id, sandbox_dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, query_list)
