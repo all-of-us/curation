@@ -101,7 +101,7 @@ def get_drop_extreme_measurement_queries(project_id, dataset_id):
     queries_list.append(weight_query)
 
     bmi_query = dict()
-    height_query[cdr_consts.QUERY] = DELETE_BMI_ROWS_QUERY.format(
+    bmi_query[cdr_consts.QUERY] = DELETE_BMI_ROWS_QUERY.format(
         dataset_id=dataset_id, project_id=project_id)
     queries_list.append(bmi_query)
 
