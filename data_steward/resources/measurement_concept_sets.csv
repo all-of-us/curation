@@ -1,0 +1,126 @@
+Panel_Name,Panel_OMOP_ID,Measurement_Name,Measurement_OMOP_ID,Measurement_Unit,Measurement_Unit_Concept_ID,Notes,Mapping_Notes,LOINC_ID,LOINC_URL
+CBC w/Diff,40758558,RBC morphology,3012764,Not Specified,N/A,,,6742-1,https://s.details.loinc.org/LOINC/6742-1.html?sections=Comprehensive
+CBC w/Diff,40758558,Platelet morphology,3003214,Not Specified,N/A,,,11125-2,https://s.details.loinc.org/LOINC/11125-2.html?sections=Comprehensive
+CBC w/Diff,40758558,WBC morphology,3008757,Not Specified,N/A,,,11156-7,https://s.details.loinc.org/LOINC/11156-7.html?sections=Comprehensive
+CBC w/Diff,40758558,Eosinophils %,3006504,%,8554,,,26450-7,https://r.details.loinc.org/LOINC/26450-7.html?sections=Comprehensive
+CBC w/Diff,40758558,Monocytes %,3019069,%,8554,,,26485-3,https://r.details.loinc.org/LOINC/26485-3.html?sections=Comprehensive
+CBC w/Diff,40758558,Neutrophils %,3018010,%,8554,,,26511-6,https://r.details.loinc.org/LOINC/26511-6.html?sections=Comprehensive
+CBC w/Diff,40758558,Promyelocytes %,3021440,%,8554,,,26524-9,https://r.details.loinc.org/LOINC/26524-9.html?sections=Comprehensive
+CBC w/Diff,40758558,Metamyelocytes %,3002179,%,8554,,,28541-1,https://r.details.loinc.org/LOINC/28541-1.html?sections=Comprehensive
+CBC w/Diff,40758558,Basophils %,3022096,%,8554,,,"
+30180-4",https://r.details.loinc.org/LOINC/30180-4.html?sections=Comprehensive
+CBC w/Diff,40758558,Hematocrit,3009542,%,8554,,,"
+20570-8",https://s.details.loinc.org/LOINC/20570-8.html?sections=Comprehensive
+CBC w/Diff,40758558,Lymphocytes %,3002030,%,8554,,,26478-8,https://s.details.loinc.org/LOINC/26478-8.html?sections=Comprehensive
+CBC w/Diff,40758558,Bands %,3004809,%,8554,,,26508-2,https://s.details.loinc.org/LOINC/26508-2.html?sections=Comprehensive
+CBC w/Diff,40758558,Blasts %,3025159,%,8554,,,26446-5,http://www.hipaaspace.com/medical_billing/coding/logical.observation.identifiers.names.and.codes/26446-5
+CBC w/Diff,40758558,Myelocytes %,3017181,%,8554,,,26498-6,http://www.hipaaspace.com/medical_billing/coding/logical.observation.identifiers.names.and.codes/26498-6
+CBC w/Diff,40758558,Reticulocytes %,3027945,%,8554,,,4679-7,https://www.hipaaspace.com/medical_billing/coding/logical.observation.identifiers.names.and.codes/4679-7
+CBC w/Diff,40758558,MCH,3035941,pg,8564,,"Part of Erythrocyte mean corpuscular hemoglobin, part of red cell indices",28539-5,https://s.details.loinc.org/LOINC/28539-5.html?sections=Comprehensive
+CBC w/Diff,40758558,MCV,3024731,fL,8583,,"Part of Erythrocyte mean corpuscular volume, part of red cell indices",30428-7,https://s.details.loinc.org/LOINC/30428-7.html?sections=Comprehensive
+CBC w/Diff,40758558,MCHC,3003338,g/dL,8713,,"Part of Erythrocyte mean corpuscular hemoglobin concentration, part of red cell indices",28540-3,https://s.details.loinc.org/LOINC/28540-3.html?sections=Comprehensive
+CBC w/Diff,40758558,Red blood cell (RBC) count,3026361,10*6/uL,8815,,,26453-1,https://r.details.loinc.org/LOINC/26453-1.html?sections=Comprehensive
+CBC w/Diff,40758558,Hemoglobin,3000963,"g/L, g/dL","8636,  8713",,,718-7,https://s.details.loinc.org/LOINC/718-7.html?sections=Comprehensive
+CBC w/Diff,40758558,Platelet count,3007461,"10*3/uL, k/cumm","8848, 
+8961",,,26515-7,https://s.details.loinc.org/LOINC/26515-7.html?sections=Comprehensive
+CBC w/Diff,40758558,White Blood cell (WBC) count (leukocyte),3010813,"#/mm3, 10*3/uL, k/cumm","8888 (cells/mm3), 8848, 8961",,,26464-8,https://s.details.loinc.org/LOINC/26464-8.html?sections=Comprehensive
+CMP,3026023,Albumin/Globulin [Mass Ratio] in Serum or Plasma,3020509,unitless ratio,8523,,,1759-0,https://r.details.loinc.org/LOINC/1759-0.html?sections=Comprehensive
+BMP,3026023,Bicarbonate [Moles/volume] in Serum or Plasma,3016293,mmol/L,8753,,From Electrolytes serum/plasma 3027995,1963-8,https://s.details.loinc.org/LOINC/1963-8.html?sections=Comprehensive
+CMP,3026023,Bicarbonate [Moles/volume] in Serum or Plasma,3016293,mmol/L,8753,,From Electrolytes serum/plasma 3027995,1963-8,https://s.details.loinc.org/LOINC/1963-8.html?sections=Comprehensive
+CMP,3026023,Carbon dioxide serum/plasma,3015632,mmol/L,8753,,From Electrolytes serum/plasma 3027995,2028-9,https://s.details.loinc.org/LOINC/2028-9.html?sections=Comprehensive
+BMP,3026023,Carbon dioxide serum/plasma,3015632,mmol/L,8753,,From Electrolytes serum/plasma 3027995,2028-9,https://s.details.loinc.org/LOINC/2028-9.html?sections=Comprehensive
+BMP,3026023,Chloride serum/plasma,3014576,mmol/L,8753,,From Electrolytes serum/plasma 3027995,2075-0,https://s.details.loinc.org/LOINC/2075-0.html?sections=Comprehensive
+CMP,3026023,Chloride serum/plasma,3014576,mmol/L,8753,,From Electrolytes serum/plasma 3027995,2075-0,https://s.details.loinc.org/LOINC/2075-0.html?sections=Comprehensive
+BMP,3026023,Potassium serum/plasma,3023103,mmol/L,8753,,From Electrolytes serum/plasma 3027995,2823-3,https://s.details.loinc.org/LOINC/2823-3.html?sections=Comprehensive
+CMP,3026023,Potassium serum/plasma,3023103,mmol/L,8753,,From Electrolytes serum/plasma 3027995,2823-3,https://s.details.loinc.org/LOINC/2823-3.html?sections=Comprehensive
+BMP,3026023,Sodium serum/plasma,3019550,mmol/L,8753,,From Electrolytes serum/plasma 3027995,2951-2,https://s.details.loinc.org/LOINC/2951-2.html?sections=Comprehensive
+CMP,3026023,Sodium serum/plasma,3019550,mmol/L,8753,,From Electrolytes serum/plasma 3027995,2951-2,https://s.details.loinc.org/LOINC/2951-2.html?sections=Comprehensive
+CMP,3026023,Anion gap serum/plasma,3045716,mmol/L,8753,,From Electrolytes serum/plasma,33037-3,https://s.details.loinc.org/LOINC/33037-3.html?sections=Comprehensive
+BMP,3026023,Anion gap serum/plasma,3045716,mmol/L,8753,,From Electrolytes serum/plasma 3027995,33037-3,https://s.details.loinc.org/LOINC/33037-3.html?sections=Comprehensive
+BMP,3026023,Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum or Plasma by Creatinine-based formula (MDRD),3030354,mL/min,8795,,,33914-3,https://s.details.loinc.org/LOINC/33914-3.html?sections=Comprehensive
+CMP,3026023,Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum or Plasma by Creatinine-based formula (MDRD),3030354,mL/min,8795,,,33914-3,https://s.details.loinc.org/LOINC/33914-3.html?sections=Comprehensive
+CMP,3026023,"Glomerular filtration rate/1.73 sq M predicted among females [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (MDRD)",3029829,mL/min,8795,,,50044-7,https://www.hipaaspace.com/medical_billing/coding/logical.observation.identifiers.names.and.codes/50044-7
+BMP,3026023,"Glomerular filtration rate/1.73 sq M predicted among females [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (MDRD)",3029829,mL/min,8795,,,50044-7,https://www.hipaaspace.com/medical_billing/coding/logical.observation.identifiers.names.and.codes/50044-7
+CMP,3026023,Total Bilirubin serum/plasma,3024128,mg/dL,8840,,,1975-2,https://s.details.loinc.org/LOINC/1975-2.html?sections=Comprehensive
+BMP,3026023,Creatinine serum/plasma,3016723,mg/dL,8840,,,2160-0,https://s.details.loinc.org/LOINC/2160-0.html?sections=Comprehensive
+CMP,3026023,Creatinine serum/plasma,3016723,mg/dL,8840,,,2160-0,https://s.details.loinc.org/LOINC/2160-0.html?sections=Comprehensive
+CMP,3026023,Glucose lab,3004501,mg/dL,8840,,,2345-7,https://s.details.loinc.org/LOINC/2345-7.html?sections=Comprehensive
+BMP,3026023,Glucose lab,3004501,mg/dL,8840,,,2345-7,https://s.details.loinc.org/LOINC/2345-7.html?sections=Comprehensive
+BMP,3026023,Urea nitrogen serum/plasma,3013682,mg/dL,8840,,,3094-0,https://s.details.loinc.org/LOINC/3094-0.html?sections=Comprehensive
+CMP,3026023,Urea nitrogen serum/plasma,3013682,mg/dL,8840,,,3094-0,https://s.details.loinc.org/LOINC/3094-0.html?sections=Comprehensive
+BMP,3026023,Calcium serum/plasma serum/plasma,3006906,mg/dL,8840,,,17861-6,https://s.details.loinc.org/LOINC/17861-6.html?sections=Comprehensive
+CMP,3026023,Calcium serum/plasma serum/plasma,3006906,mg/dL,8840,,,17861-6,https://s.details.loinc.org/LOINC/17861-6.html?sections=Comprehensive
+BMP,3026023,Urea nitrogen/Creatinine serum/plasma,3018311,mg/mg{creat},9074,,,3097-3,https://r.details.loinc.org/LOINC/3097-3.html?sections=Comprehensive
+CMP,3026023,Urea nitrogen/Creatinine serum/plasma,3018311,mg/mg{creat},9074,,,3097-3,https://r.details.loinc.org/LOINC/3097-3.html?sections=Comprehensive
+BMP,3026023,eGFR with normals for non-black,3049187,mL/min/1.73.m2,9117,,,48642-3,https://s.details.loinc.org/LOINC/48642-3.html?sections=Comprehensive
+CMP,3026023,eGFR with normals for non-black,3049187,"mL/min/{1.73_m2}, ml/min/1.73m2",9117,,,48642-3,https://s.details.loinc.org/LOINC/48642-3.html?sections=Comprehensive
+BMP,3026023,eGFR with normals for black,3053283,mL/min/1.73.m2,9117,,,48643-1,https://s.details.loinc.org/LOINC/48643-1.html?sections=Comprehensive
+CMP,3026023,eGFR with normals for black,3053283,"mL/min/{1.73_m2}, ml/min/1.73m2",9117,,,48643-1,https://s.details.loinc.org/LOINC/48643-1.html?sections=Comprehensive
+CMP,3026023,Globulin [Mass/volume] in Serum by calculation,3027970,"g/L, g/dL","8636, 8713",,,10834-0,https://details.loinc.org/LOINC/10834-0.html
+CMP,3026023,Protein serum/plasma,3020630,"g/L, g/dL","8636,  8713",,,2885-2,https://details.loinc.org/LOINC/2885-2.html
+CMP,3026023,Alkaline phosphatase serum/plasma,3035995,U/L,4118000 (SNOMED),,,6768-6,https://details.loinc.org/LOINC/6768-6.html
+CMP,3026023,Alanine aminotransferase serum/plasma,3006923,U/L,4118000 (SNOMED),,,1742-6,https://s.details.loinc.org/LOINC/1742-6.html?sections=Comprehensive
+CMP,3026023,Aspartate aminotransferase serum/plasma,3013721,U/L,4118000 (SNOMED),,,1920-8,https://s.details.loinc.org/LOINC/1920-8.html?sections=Comprehensive
+CMP,3026023,Albumin serum/plasma,3024561,"g/L, g/dL, mg/dL","8636,  8713, 8840",,,1751-7,https://s.details.loinc.org/LOINC/1751-7.html?sections=Comprehensive
+CBC,40761511,Erythrocyte distribution width [Ratio] by Automated count,3019897,%,8554,,LOINC Map Guidance Preferred,788-0,https://s.details.loinc.org/LOINC/788-0.html?sections=Comprehensive
+CBC,40761511,Hematocrit [Volume Fraction] of Blood by Automated count,3023314,%,8554,,LOINC Map Guidance Preferred,4544-3,https://s.details.loinc.org/LOINC/4544-3.html?sections=Comprehensive
+CBC,40761511,MCH [Entitic mass] by Automated count,3012030,pg,8564,,,785-6,https://r.details.loinc.org/LOINC/785-6.html?sections=Comprehensive
+CBC,40761511,MCV [Entitic volume] by Automated count,3023599,fL,8583,,,787-2,https://s.details.loinc.org/LOINC/787-2.html?sections=Comprehensive
+CBC,40761511,Platelet distribution width [Entitic volume] in Blood by Automated count,3002736,fL,8583,,,"
+32207-3",https://r.details.loinc.org/LOINC/32207-3.html?sections=Comprehensive
+CBC,40761511,Platelet mean volume [Entitic volume] in Blood by Automated count,3043111,fL,8583,,,"
+32623-1",https://r.details.loinc.org/LOINC/32623-1.html?sections=Comprehensive
+CBC,40761511,Erythrocyte distribution width [Entitic volume] by Automated count,3015182,fL,8583,,,"
+21000-5",https://s.details.loinc.org/LOINC/21000-5.html?sections=Comprehensive
+CBC,40761511,MCHC [Mass/volume] by Automated count,3009744,"g/L, g/dL","8636,  8713",,,786-4,https://r.details.loinc.org/LOINC/786-4.html?sections=Comprehensive
+CBC,40761511,Hemoglobin,3000963,"g/L, g/dL","8636,  8713",,LOINC Map Guidance Preferred,718-7,https://s.details.loinc.org/LOINC/718-7.html?sections=Comprehensive
+CBC,40761511,Platelets [#/volume] in Blood by Automated count,3024929,"10*3/uL, 10^9/L","8848,
+ 9444 ",,LOINC Map Guidance Preferred,777-3,https://s.details.loinc.org/LOINC/777-3.html?sections=Comprehensive
+CBC,40761511,Leukocytes [#/volume] in Blood by Automated count,3000905,"10*3/uL, 10^9/L","8848,
+ 9444 ",,,6690-2,https://s.details.loinc.org/LOINC/6690-2.html?sections=Comprehensive
+CBC,40761511,Erythrocytes [#/volume] in Blood by Automated count,3020416,"10*6/uL , 10^12/L, million/mm3","8815, 8734, 
+8931",,,"
+789-8",https://s.details.loinc.org/LOINC/789-8.html?sections=Comprehensive
+Physical Measurement/Vital Signs,3044313,Body position,3019204,Not Specified,N/A,,,8361-8,https://s.details.loinc.org/LOINC/8361-8.html?sections=Comprehensive
+Physical Measurement/Vital Signs,3044313,Body height,3036277,INCH(s),8533,,,8302-2,https://s.details.loinc.org/LOINC/8302-2.html?sections=Comprehensive
+Physical Measurement/Vital Signs,3044313,BP diastolic,3012888,mm Hg,8876,,From Blood pressure panel 3031203,8462-4,https://s.details.loinc.org/LOINC/8462-4.html?sections=Comprehensive
+Physical Measurement/Vital Signs,3044313,Mean blood pressure,3027598,mm Hg,8876,,From Blood pressure panel 3031203,8478-0,https://s.details.loinc.org/LOINC/8478-0.html?sections=Comprehensive
+Physical Measurement/Vital Signs,3044313,BP systolic,3004249,mm Hg,8876,,From Blood pressure panel 3031203,8480-6,https://s.details.loinc.org/LOINC/8480-6.html?sections=Comprehensive
+Physical Measurement/Vital Signs,3044313,Body temperature,3020891,"C, Cel, DEG, Deg C",586323,,From Body temperature panel 3031443,8310-5,https://s.details.loinc.org/LOINC/8310-5.html?sections=Comprehensive
+Physical Measurement/Vital Signs,3044313,Body weight Measured,3013762,"KG, [lb_av];kg, lb","9529, 
+8739",,,3141-9,https://s.details.loinc.org/LOINC/3141-9.html?sections=Comprehensive
+Physical Measurement/Vital Signs,3044313,Respiratory rate,3024171,{breaths}/min,"8483 (counts per minute), 4117833 (SNOMED)",,,9279-1,https://s.details.loinc.org/LOINC/9279-1.html?sections=Comprehensive
+Physical Measurement/Vital Signs,3044313,Heart rate,3027018,{beats}/min,"8483 (counts per minute), 
+4118124 (SNOMED)",,,8867-4,https://s.details.loinc.org/LOINC/8867-4.html?sections=Comprehensive
+Lipids,3010946,Cholesterol [Moles/volume] in Serum or Plasma,3019900,mmol/L,8753,,,14647-2,
+Lipids,3010946,Cholesterol [Mass/volume] in Serum or Plasma,3027114,mg/dL,8840,,,70554,
+Lipids,3010946,Cholesterol [Mass/volume] in Serum or Plasma ultracentrifugate,3049873,mg/dL,8840,,,48620-9,
+Lipids,3010946,Cholesterol in HDL [Mass/volume] in Serum or Plasma,3007070,mg/dL,8840,,,2085-9,
+Lipids,3010946,Cholesterol in HDL [Moles/volume] in Serum or Plasma,3023602,mmol/L,8753,,,14646-4,
+Lipids,3010946,Cholesterol in HDL [Units/volume] in Serum or Plasma by Electrophoresis,3034482,,,,,12772-0,
+Lipids,3010946,Cholesterol in HDL [Mass/volume] in Serum or Plasma by Electrophoresis,3053286,mg/dL,8840,,,49130-8,
+Lipids,3010946,Cholesterol in LDL [Moles/volume] in Serum or Plasma,3001308,mmol/L,8753,,,22748-8,
+Lipids,3010946,Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation,3028288,mg/dL,8840,,,13457-7,
+Lipids,3010946,Cholesterol in LDL [Mass/volume] in Serum or Plasma,3028437,mg/dL,8840,,,69034,
+Lipids,3010946,Cholesterol in LDL [Units/volume] in Serum or Plasma by Electrophoresis,3035009,,,,,12773-8,
+Lipids,3010946,Cholesterol in LDL [Mass/volume] in Serum or Plasma ultracentrifugate,3035899,mg/dL,8840,,,18261-8,
+Lipids,3010946,Cholesterol in LDL [Moles/volume] in Serum or Plasma by calculation,3038988,mmol/L,8753,,,39469-2,
+Lipids,3010946,Cholesterol in LDL [Moles/volume] in Serum or Plasma by Direct assay,42870529,mmol/L,8753,,,69419-0,
+Lipids,3010946,Cholesterol in LDL [Mass/volume] in Serum or Plasma by Direct assay,3009966,mg/dL,8840,,,18262-6,
+Lipids,3010946,Cholesterol in LDL [Mass/volume] in Serum or Plasma by Electrophoresis,3053341,mg/dL,8840,,,49132-4,
+Lipids,3010946,Cholesterol in LDL/Cholesterol in HDL [Mass Ratio] in Serum or Plasma,3002109,ratio,8523,,,11054-4,
+Lipids,3010946,Cholesterol in LDL/Cholesterol in HDL [Molar ratio] in Serum or Plasma,3045001,ratio,8523,,,44915-7,
+Lipids,3010946,Cholesterol in VLDL [Mass/volume] in Serum or Plasma,3007352,mg/dL,8840,,,69945,
+Lipids,3010946,Cholesterol in VLDL [Mass/volume] in Serum or Plasma by calculation,3009596,mg/dL,8840,,,13458-5,
+Lipids,3010946,Cholesterol in VLDL [Moles/volume] in Serum or Plasma,3022487,mmol/L,8753,,,25371-6,
+Lipids,3010946,Cholesterol in VLDL [Moles/volume] in Serum or Plasma by calculation,40768809,,,,,66126-4,
+Lipids,3010946,Cholesterol.total/Cholesterol in HDL [Mass Ratio] in Serum or Plasma,3011163,ratio,8523,,,2896375,
+Lipids,3010946,Cholesterol.total/Cholesterol in HDL [Molar ratio] in Serum or Plasma,3016087,ratio,8523,,,32309-7,
+Lipids,3010946,Triglyceride [Mass/volume] in Serum or Plasma by calculation,3007943,mg/dL,8840,,,12951-0,
+Lipids,3010946,Triglyceride [Moles/volume] in Serum or Plasma --12 hours fasting,3019038,mmol/L,8753,,,30524-3,
+Lipids,3010946,Triglyceride [Mass/volume] in Serum or Plasma --12 hours fasting,3013678,mg/dL,8840,,,1644-4,
+Lipids,3010946,Triglyceride [Mass/volume] in Blood,3022038,mg/dL,8840,,,417655,
+Lipids,3010946,Triglyceride [Mass/volume] in Serum or Plasma,3022192,mg/dL,8840,,,245292,
+Lipids,3010946,Triglyceride [Moles/volume] in Serum or Plasma,3025839,mmol/L,8753,,,14927-8,
+Lipids,3010946,Triglyceride [Mass/volume] in Serum or Plasma --fasting,3027997,mg/dL,8840,,,419452,
+Lipids,3010946,Triglyceride [Moles/volume] in Blood,42868692,mmol/L,8753,,,70218-3,
