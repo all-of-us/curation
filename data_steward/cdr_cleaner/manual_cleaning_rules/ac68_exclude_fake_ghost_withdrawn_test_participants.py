@@ -3,7 +3,7 @@ Remove observation records associated with a provided list of person_ids
 """
 import csv
 
-import constants.bq_utils as bq_consts
+from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 OBSERVATION = 'observation'
@@ -11,8 +11,7 @@ OBSERVATION = 'observation'
 SELECT_OBSERVATION_RECORDS_EXCLUDE_PIDS = (
     'select * '
     'FROM `{project_id}.{dataset_id}.observation` '
-    'where person_id not in ({records}) '
-)
+    'where person_id not in ({records}) ')
 
 
 def read_pids_csv(filepath):
@@ -54,9 +53,8 @@ def get_exclude_pids_query(project_id, dataset_id, pids):
     """
     query = dict()
     pids_sql = pids2sql(pids)
-    query[cdr_consts.QUERY] = SELECT_OBSERVATION_RECORDS_EXCLUDE_PIDS.format(project_id=project_id,
-                                                                             dataset_id=dataset_id,
-                                                                             records=pids_sql)
+    query[cdr_consts.QUERY] = SELECT_OBSERVATION_RECORDS_EXCLUDE_PIDS.format(
+        project_id=project_id, dataset_id=dataset_id, records=pids_sql)
     query[cdr_consts.DESTINATION_TABLE] = OBSERVATION
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -88,12 +86,14 @@ def parse_args():
     """
     import cdr_cleaner.args_parser as parser
     help_text = 'path to csv file (with header row) containing pids whose observation records are to be removed'
-    additional_argument_1 = {parser.SHORT_ARGUMENT: '-f',
-                             parser.LONG_ARGUMENT: '--file_path',
-                             parser.ACTION: 'store',
-                             parser.DEST: 'file_path',
-                             parser.HELP: help_text,
-                             parser.REQUIRED: True}
+    additional_argument_1 = {
+        parser.SHORT_ARGUMENT: '-f',
+        parser.LONG_ARGUMENT: '--file_path',
+        parser.ACTION: 'store',
+        parser.DEST: 'file_path',
+        parser.HELP: help_text,
+        parser.REQUIRED: True
+    }
 
     args = parser.default_parse_args([additional_argument_1])
     return args
@@ -106,4 +106,4 @@ if __name__ == '__main__':
 
     clean_engine.add_console_logging(ARGS.console_log)
     query_list = main(ARGS.project_id, ARGS.dataset_id, ARGS.file_path)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

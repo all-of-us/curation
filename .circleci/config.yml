@@ -1,87 +1,109 @@
 version: 2
 jobs:
   build:
-    working_directory: ~/curation
+    working_directory: ~/curation/data_steward
     parallelism: 1
     shell: /bin/bash --login
     # CircleCI 2.0 does not support environment variables that refer to each other the same way as 1.0 did.
     # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
     environment:
-      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      GOOGLE_APPLICATION_CREDENTIALS: /home/ubuntu/gcloud-credentials-key.json
-      PYTHONPATH: /usr/lib/google-cloud-sdk/platform/google_appengine/:~/curation/data_steward:~/curation/data_steward/lib
+      - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
 
     docker:
-      - image: circleci/build-image:ubuntu-14.04-XXL-upstart-1189-5614f37
-        # This command is commented out due to failure in docker image initialisation.
-        # command: /sbin/init
+      - image: circleci/python:3.7.4
     steps:
-      # Machine Setup
-
-      # `checkout` checks out your code to your working directory.
-      - checkout
+      - checkout:
+          path: ~/curation
+      - run:
+          name: Allow google cloud to be added as apt repo
+          command: |
+            sudo apt-get update
+            sudo apt install software-properties-common
       # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
       - run: mkdir -p $CIRCLE_ARTIFACTS
-      # This is based on our 1.0 configuration file or project settings
       - run:
-          working_directory: ~/curation
-          command: ~/curation/data_steward/init_env.sh
-      - run:
-          working_directory: ~/curation
-          command: cat $HOME/.circlerc
-      - run:
-          working_directory: ~/curation
+          name: Add google-cloud-sdk repo to apt
           command: echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
       - run:
-          working_directory: ~/curation
+          name: Add google key to apt
           command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
       - run:
-          working_directory: ~/curation
-          command: sudo apt-get update && sudo apt-get install dpkg && sudo apt-get install google-cloud-sdk
+          name: Install google-cloud-sdk
+          command: |
+            sudo apt-get update
+            sudo apt-get install dpkg
+            sudo apt-get install google-cloud-sdk
       - run:
-          working_directory: ~/curation
-          command: sudo apt-get install google-cloud-sdk-app-engine-python
+          name: Make scripts executable
+          command: chmod 700 ./ci/activate_creds.sh && chmod 700 ./ci/setup.sh && chmod 700 ./ci/create_bucket.sh
       - run:
-          working_directory: ~/curation
-          command: chmod 700 ~/curation/data_steward/ci/activate_creds.sh && chmod 700 ~/curation/data_steward/ci/setup.sh && chmod 700 ~/curation/data_steward/ci/create_bucket.sh
+          name: Activate service account
+          command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
       - run:
-          working_directory: ~/curation
-          command: ~/curation/data_steward/ci/activate_creds.sh ~/gcloud-credentials-key.json
+          name: Set up environment variables
+          command: ./init_env.sh
       - run:
-          working_directory: ~/curation
-          command: ~/curation/data_steward/ci/setup.sh
+          name: Create buckets and datasets
+          command: ./ci/setup.sh
       # Dependencies
       - run:
-          command: pip install --upgrade pip setuptools virtualenv
+          name: Add virtual environment activation to bash startup
+          command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
       - run:
-          command: cd ~/curation/data_steward/ && pip install -t lib/ -r requirements.txt
+          name: Upgrade pip and install requirements
+          command: |
+            pip install --upgrade pip setuptools
+            pip install -r requirements.txt
+            pip install -r deid/requirements.txt
+            pip install -r dev_requirements.txt
+      - run:
+          name: Show bashrc file
+          command: cat ${BASH_ENV}
+      - run:
+          name: Check Python lint
+          working_directory: ~/curation
+          command: tools/yapf_lint.sh
       # Test
       #   This would typically be a build job when using workflows, possibly combined with build
       - run:
+          name: Run unit tests
           working_directory: ~/curation
-          command: t=$(git log -1 --pretty=%B) ; if [[ "$t" == *"fast tests"* ]] ; then export ALL_TESTS="False" ; else export ALL_TESTS="True" ; fi ; ~/curation/data_steward/test/run_tests.sh -g /usr/lib/google-cloud-sdk/platform/google_appengine/
+          command: |
+            mkdir -p tests/results/coverage/unit/xml
+            mkdir -p tests/results/coverage/unit/html
+            # store test results in junit format to allow CircleCI Test Summary reporting
+            #  https://circleci.com/docs/2.0/collect-test-data/
+            mkdir -p tests/results/junit/unit
+            ./tests/run_tests.sh -s unit
+          no_output_timeout: 300s
+          when:  always
+      - run:
+          name: Run integration tests
+          working_directory: ~/curation
+          command: |
+            t=$(git log -1 --pretty=%B)
+            if [[ "$t" == *"all tests"* ]] || [[ -n "${CIRCLE_PULL_REQUEST}" ]] || [[ -n "${CIRCLE_PULL_REQUESTS}" ]];
+            then
+                mkdir -p tests/results/coverage/integration/xml
+                mkdir -p tests/results/coverage/integration/html
+                # store test results in junit format to allow CircleCI Test Summary reporting
+                #  https://circleci.com/docs/2.0/collect-test-data/
+                mkdir -p tests/results/junit/integration
+                ./tests/run_tests.sh -s integration
+            else
+                echo "Skipping integration tests"
+            fi
           no_output_timeout: 3000s
+      - run:
+          name: Combine Coverage Results
+          working_directory: ~/curation
+          command: |
+              . tests/combine_coverage.sh
+          no_output_timeout: 30s
       # Save test results
-      #    - store_test_results:
-      #        path: /tmp/circleci-test-results
+      - store_test_results:
+          path: ~/curation/tests/results/junit
       # Save artifacts
       - store_artifacts:
-          path: /tmp/circleci-artifacts
-#    - store_artifacts:
-#        path: /tmp/circleci-test-results
-# To deploy to staging, cut a GitHub release on a green build, with tag of
-#  # the form v0-1-1-rc0. We use tags as AppEngine version names, so they must
-#  # follow AE rules (no dots).
-#   staging:
-#     tag: /v[0-9]+(-[0-9]+)*-rc[0-9]+[a-z]*/
-#     commands:
-#        - run: ~/ci/activate_creds.sh ~/gcloud-credentials.key
-#        - run: ~/ci/release_notes.py all-of-us-rdr-staging
-#        - run: ~/tools/upgrade_database.sh -i https://all-of-us-rdr-staging.appspot.com --creds_file ~/gcloud-credentials.key:
-#               pwd:
-#                 rest-api
-#        - run: ~/ci/deploy.sh all-of-us-rdr-staging config/config_staging.json ~/gcloud-credentials.key
-#        - run: ~/rest-api/test/test_server.sh -i https://all-of-us-rdr-staging.appspot.com -c ~/gcloud-credentials.key
-
-## ~/ci/deploy.sh all-of-us-rdr-stable config/config_stable.json <configurator key file>
-## ~/ci/deploy.sh all-of-us-rdr config/config_prod.json <configurator key file>
+          path: ~/curation/tests/results/coverage
+          destination: test_results

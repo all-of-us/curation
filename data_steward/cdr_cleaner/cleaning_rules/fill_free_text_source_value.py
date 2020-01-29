@@ -48,20 +48,16 @@ drug_exposure : dose_unit_source_value
 note : note_source_value
 """
 
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 
-LEFT_JOIN = (
-    'LEFT JOIN `{project}.{dataset}.concept` as {prefix} '
-    'on m.{concept_id_field} = {prefix}.concept_id '
-)
+LEFT_JOIN = ('LEFT JOIN `{project}.{dataset}.concept` as {prefix} '
+             'on m.{concept_id_field} = {prefix}.concept_id ')
 
-FIELD_REPLACE_QUERY = (
-    'select {columns} '
-    '    from `{project}.{dataset}.{table_name}` as m '
-    '    {join_expression}'
-)
+FIELD_REPLACE_QUERY = ('select {columns} '
+                       '    from `{project}.{dataset}.{table_name}` as m '
+                       '    {join_expression}')
 
 
 def get_fields_dict(table_name, fields):
@@ -80,29 +76,60 @@ def get_fields_dict(table_name, fields):
         prefix_counter += 1
         # Check if the field is _source_value field and has corresponding _source_concept_id field
         if '_source_value' in field and field[:-5] + 'concept_id' in fields:
-            fields_to_replace[field] = {'name': field, 'join_field': field[:-5] + 'concept_id',
-                                        'prefix': field[:3] + '_{counter}'.format(counter=prefix_counter)}
+            fields_to_replace[field] = {
+                'name':
+                    field,
+                'join_field':
+                    field[:-5] + 'concept_id',
+                'prefix':
+                    field[:3] + '_{counter}'.format(counter=prefix_counter)
+            }
         # Check if the field is _source_value field and has corresponding _concept_id field
         # if _source_concept_id is not available
         elif '_source_value' in field and field[:-12] + 'concept_id' in fields:
-            fields_to_replace[field] = {'name': field, 'join_field': field[:-12] + 'concept_id',
-                                        'prefix': field[:3] + '_{counter}'.format(counter=prefix_counter)}
+            fields_to_replace[field] = {
+                'name':
+                    field,
+                'join_field':
+                    field[:-12] + 'concept_id',
+                'prefix':
+                    field[:3] + '_{counter}'.format(counter=prefix_counter)
+            }
         # if _concept_id is not available
         # Check if the field is _source_value field and has corresponding _as_concept_id field
-        elif '_source_value' in field and field[:-12] + 'as_concept_id' in fields:
-            fields_to_replace[field] = {'name': field, 'join_field': field[:-12] + 'as_concept_id',
-                                        'prefix': field[:3] + '_{counter}'.format(counter=prefix_counter)}
+        elif '_source_value' in field and field[:
+                                                -12] + 'as_concept_id' in fields:
+            fields_to_replace[field] = {
+                'name':
+                    field,
+                'join_field':
+                    field[:-12] + 'as_concept_id',
+                'prefix':
+                    field[:3] + '_{counter}'.format(counter=prefix_counter)
+            }
         # Check if the field is value_as_string and has corresponding value_as_concept_id field
         elif '_as_string' in field and field[:-6] + 'concept_id' in fields:
-            fields_to_replace[field] = {'name': field, 'join_field': field[:-6] + 'concept_id',
-                                        'prefix': field[:3] + '_{counter}'.format(counter=prefix_counter)}
+            fields_to_replace[field] = {
+                'name':
+                    field,
+                'join_field':
+                    field[:-6] + 'concept_id',
+                'prefix':
+                    field[:3] + '_{counter}'.format(counter=prefix_counter)
+            }
         # if the table is procedure_occurrence check if the field is qualifier_Source_value if so.
         # it doesn't have qualifier_concept_id field or qualifier_source_concept_id field in this vocabulary version
         # it is fixed in the later versions. In the mean time we will be using modifier_concept_id
         # as the corresponding id_field
         elif table_name == cdr_consts.PROCEDURE_OCCURRENCE and field == cdr_consts.QUALIFIER_SOURCE_VALUE:
-            fields_to_replace[field] = {'name': field, 'join_field': 'modifier_concept_id',
-                                        'prefix': field[:3] + '_{counter}'.format(counter=prefix_counter)}
+            fields_to_replace[field] = {
+                'name':
+                    field,
+                'join_field':
+                    'modifier_concept_id',
+                'prefix':
+                    field[:3] + '_{counter}'.format(counter=prefix_counter)
+            }
     return fields_to_replace
 
 
@@ -119,8 +146,9 @@ def get_modified_columns(fields, fields_to_replace):
     col_exprs = []
     for field in fields:
         if field in fields_to_replace:
-            col_expr = '{prefix}.concept_code as {name}'.format(prefix=fields_to_replace[field]['prefix'],
-                                                                name=fields_to_replace[field]['name'])
+            col_expr = '{prefix}.concept_code as {name}'.format(
+                prefix=fields_to_replace[field]['prefix'],
+                name=fields_to_replace[field]['name'])
         else:
             col_expr = field
         col_exprs.append(col_expr)
@@ -140,10 +168,11 @@ def get_full_join_expression(dataset_id, project_id, fields_to_replace):
     """
     join_expr = []
     for field in fields_to_replace:
-        left_join = LEFT_JOIN.format(project=project_id,
-                                     dataset=dataset_id,
-                                     concept_id_field=fields_to_replace[field]['join_field'],
-                                     prefix='{}'.format(fields_to_replace[field]['prefix']))
+        left_join = LEFT_JOIN.format(
+            project=project_id,
+            dataset=dataset_id,
+            concept_id_field=fields_to_replace[field]['join_field'],
+            prefix='{}'.format(fields_to_replace[field]['prefix']))
         join_expr.append(left_join)
     return " ".join(join_expr)
 
@@ -165,15 +194,16 @@ def get_fill_freetext_source_value_fields_queries(project_id, dataset_id):
         if fields_to_replace:
             cols = get_modified_columns(fields, fields_to_replace)
 
-            full_join_expression = get_full_join_expression(dataset_id, project_id, fields_to_replace)
+            full_join_expression = get_full_join_expression(
+                dataset_id, project_id, fields_to_replace)
 
             query = dict()
-            query[cdr_consts.QUERY] = FIELD_REPLACE_QUERY.format(columns=cols,
-                                                                 table_name=table,
-                                                                 dataset=dataset_id,
-                                                                 project=project_id,
-                                                                 join_expression=full_join_expression
-                                                                 )
+            query[cdr_consts.QUERY] = FIELD_REPLACE_QUERY.format(
+                columns=cols,
+                table_name=table,
+                dataset=dataset_id,
+                project=project_id,
+                join_expression=full_join_expression)
             query[cdr_consts.DESTINATION_TABLE] = table
             query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
             query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -187,5 +217,6 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_fill_freetext_source_value_fields_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    query_list = get_fill_freetext_source_value_fields_queries(
+        ARGS.project_id, ARGS.dataset_id)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

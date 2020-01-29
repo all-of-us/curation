@@ -10,3 +10,4 @@ numpy
 pandas
 pandas-gbq
 pydata-google-auth
+tqdm

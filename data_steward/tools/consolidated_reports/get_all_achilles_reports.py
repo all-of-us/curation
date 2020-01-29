@@ -1,11 +1,10 @@
-from __future__ import print_function
-
 import json
 import os
 
 import common
 import gcs_utils
-import query_reports
+from tools.consolidated_reports import query_reports as query_reports
+from io import open
 
 DRC_BUCKET_PATH = 'gs://%s/' % gcs_utils.get_drc_bucket()
 DATASOURCES_PATH = 'curation_report/data/datasources.json'
@@ -41,7 +40,12 @@ def transform_bq_list(uploads):
         hpo_id = get_hpo_id(p)
         report_path = p.replace('datasources.json', hpo_id)
         name = get_submission_name(p)
-        result = {'hpo_id': hpo_id, 'updated': dte, 'report_path': report_path, 'name': name}
+        result = {
+            'hpo_id': hpo_id,
+            'updated': dte,
+            'report_path': report_path,
+            'name': name
+        }
         results.append(result)
     return results
 
@@ -108,14 +112,17 @@ def download_report(path_dict):
 
     except OSError:
         # log the exception but keep moving because it doesn't hurt your code.
-        print("The file %s/result_data/%s already exists", cdir, path_dict['hpo_id'])
-    cmd = 'gsutil -m cp -r %s ./curation_report/data/' % (path_dict['report_path'])
+        print("The file %s/result_data/%s already exists", cdir,
+              path_dict['hpo_id'])
+    cmd = 'gsutil -m cp -r %s ./curation_report/data/' % (
+        path_dict['report_path'])
     print('Downloading %s rpt with cmd: `%s`...' % (path_dict['hpo_id'], cmd))
     os.system(cmd)
 
 
 def main():
-    bq_list = query_reports.get_most_recent(report_for=common.REPORT_FOR_ACHILLES)
+    bq_list = query_reports.get_most_recent(
+        report_for=common.REPORT_FOR_ACHILLES)
     reports = transform_bq_list(bq_list)
     for report in reports:
         print('processing report: \n %s\n...' % json.dumps(report, indent=4))

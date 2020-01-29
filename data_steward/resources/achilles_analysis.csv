@@ -1,0 +1,216 @@
+analysis_id,analysis_name,stratum_1_name,stratum_2_name,stratum_3_name,stratum_4_name,stratum_5_name
+0,"Source name",NULL,NULL,NULL,NULL,NULL
+1,"Number of persons",NULL,NULL,NULL,NULL,NULL
+2,"Number of persons by gender","gender_concept_id",NULL,NULL,NULL,NULL
+3,"Number of persons by year of birth","year_of_birth",NULL,NULL,NULL,NULL
+4,"Number of persons by race","race_concept_id",NULL,NULL,NULL,NULL
+5,"Number of persons by ethnicity","ethnicity_concept_id",NULL,NULL,NULL,NULL
+7,"Number of persons with invalid provider_id",NULL,NULL,NULL,NULL,NULL
+8,"Number of persons with invalid location_id",NULL,NULL,NULL,NULL,NULL
+9,"Number of persons with invalid care_site_id",NULL,NULL,NULL,NULL,NULL
+10,"Number of all persons by year of birth by gender","year_of_birth","gender_concept_id",NULL,NULL,NULL
+11,"Number of non-deceased persons by year of birth by gender","year_of_birth","gender_concept_id",NULL,NULL,NULL
+12,"Number of persons by race and ethnicity","race_concept_id","ethnicity_concept_id",NULL,NULL,NULL
+101,"Number of persons by age,with age at first observation period","age",NULL,NULL,NULL,NULL
+102,"Number of persons by gender by age,with age at first observation period","gender_concept_id","age",NULL,NULL,NULL
+103,"Distribution of age at first observation period",NULL,NULL,NULL,NULL,NULL
+104,"Distribution of age at first observation period by gender","gender_concept_id",NULL,NULL,NULL,NULL
+105,"Length of observation (days) of first observation period",NULL,NULL,NULL,NULL,NULL
+106,"Length of observation (days) of first observation period by gender","gender_concept_id",NULL,NULL,NULL,NULL
+107,"Length of observation (days) of first observation period by age decile","age decile",NULL,NULL,NULL,NULL
+108,"Number of persons by length of observation period,in 30d increments","Observation period length 30d increments",NULL,NULL,NULL,NULL
+109,"Number of persons with continuous observation in each year","calendar year",NULL,NULL,NULL,NULL
+110,"Number of persons with continuous observation in each month","calendar month",NULL,NULL,NULL,NULL
+111,"Number of persons by observation period start month","calendar month",NULL,NULL,NULL,NULL
+112,"Number of persons by observation period end month","calendar month",NULL,NULL,NULL,NULL
+113,"Number of persons by number of observation periods","number of observation periods",NULL,NULL,NULL,NULL
+114,"Number of persons with observation period before year-of-birth",NULL,NULL,NULL,NULL,NULL
+115,"Number of persons with observation period end < observation period start",NULL,NULL,NULL,NULL,NULL
+116,"Number of persons with at least one day of observation in each year by gender and age decile","calendar year","gender_concept_id","age decile",NULL,NULL
+117,"Number of persons with at least one day of observation in each month","calendar month",NULL,NULL,NULL,NULL
+118,"Number of observation periods with invalid person_id",NULL,NULL,NULL,NULL,NULL
+119,"Number of observation period records by period_type_concept_id","period_type_concept_id",NULL,NULL,NULL,NULL
+200,"Number of persons with at least one visit occurrence,by visit_concept_id","visit_concept_id",NULL,NULL,NULL,NULL
+201,"Number of visit occurrence records,by visit_concept_id","visit_concept_id",NULL,NULL,NULL,NULL
+202,"Number of persons by visit occurrence start month,by visit_concept_id","visit_concept_id","calendar month",NULL,NULL,NULL
+203,"Number of distinct visit occurrence concepts per person",NULL,NULL,NULL,NULL,NULL
+204,"Number of persons with at least one visit occurrence,by visit_concept_id by calendar year by gender by age decile","visit_concept_id","calendar year","gender_concept_id","age decile",NULL
+206,"Distribution of age by visit_concept_id","visit_concept_id","gender_concept_id",NULL,NULL,NULL
+207,"Number of visit records with invalid person_id",NULL,NULL,NULL,NULL,NULL
+208,"Number of visit records outside valid observation period",NULL,NULL,NULL,NULL,NULL
+209,"Number of visit records with end date < start date",NULL,NULL,NULL,NULL,NULL
+210,"Number of visit records with invalid care_site_id",NULL,NULL,NULL,NULL,NULL
+211,"Distribution of length of stay by visit_concept_id","visit_concept_id",NULL,NULL,NULL,NULL
+212,"Number of persons with at least one visit occurrence,by calendar year by gender by age decile","calendar year","gender_concept_id","age decile",NULL,NULL
+220,"Number of visit occurrence records by visit occurrence start month","calendar month",NULL,NULL,NULL,NULL
+221,"Number of persons by visit start year","calendar year",NULL,NULL,NULL,NULL
+300,"Number of providers",NULL,NULL,NULL,NULL,NULL
+301,"Number of providers by specialty concept_id","specialty_concept_id",NULL,NULL,NULL,NULL
+302,"Number of providers with invalid care site id",NULL,NULL,NULL,NULL,NULL
+400,"Number of persons with at least one condition occurrence,by condition_concept_id","condition_concept_id",NULL,NULL,NULL,NULL
+401,"Number of condition occurrence records,by condition_concept_id","condition_concept_id",NULL,NULL,NULL,NULL
+402,"Number of persons by condition occurrence start month,by condition_concept_id","condition_concept_id","calendar month",NULL,NULL,NULL
+403,"Number of distinct condition occurrence concepts per person",NULL,NULL,NULL,NULL,NULL
+404,"Number of persons with at least one condition occurrence,by condition_concept_id by calendar year by gender by age decile","condition_concept_id","calendar year","gender_concept_id","age decile",NULL
+405,"Number of condition occurrence records,by condition_concept_id by condition_type_concept_id","condition_concept_id","condition_type_concept_id",NULL,NULL,NULL
+406,"Distribution of age by condition_concept_id","condition_concept_id","gender_concept_id",NULL,NULL,NULL
+409,"Number of condition occurrence records with invalid person_id",NULL,NULL,NULL,NULL,NULL
+410,"Number of condition occurrence records outside valid observation period",NULL,NULL,NULL,NULL,NULL
+411,"Number of condition occurrence records with end date < start date",NULL,NULL,NULL,NULL,NULL
+412,"Number of condition occurrence records with invalid provider_id",NULL,NULL,NULL,NULL,NULL
+413,"Number of condition occurrence records with invalid visit_id",NULL,NULL,NULL,NULL,NULL
+420,"Number of condition occurrence records by condition occurrence start month","calendar month",NULL,NULL,NULL,NULL
+500,"Number of persons with death,by cause_concept_id","cause_concept_id",NULL,NULL,NULL,NULL
+501,"Number of records of death,by cause_concept_id","cause_concept_id",NULL,NULL,NULL,NULL
+502,"Number of persons by death month","calendar month",NULL,NULL,NULL,NULL
+504,"Number of persons with a death,by calendar year by gender by age decile","calendar year","gender_concept_id","age decile",NULL,NULL
+505,"Number of death records,by death_type_concept_id","death_type_concept_id",NULL,NULL,NULL,NULL
+506,"Distribution of age at death by gender","gender_concept_id",NULL,NULL,NULL,NULL
+509,"Number of death records with invalid person_id",NULL,NULL,NULL,NULL,NULL
+510,"Number of death records outside valid observation period",NULL,NULL,NULL,NULL,NULL
+511,"Distribution of time from death to last condition",NULL,NULL,NULL,NULL,NULL
+512,"Distribution of time from death to last drug",NULL,NULL,NULL,NULL,NULL
+513,"Distribution of time from death to last visit",NULL,NULL,NULL,NULL,NULL
+514,"Distribution of time from death to last procedure",NULL,NULL,NULL,NULL,NULL
+515,"Distribution of time from death to last observation",NULL,NULL,NULL,NULL,NULL
+600,"Number of persons with at least one procedure occurrence,by procedure_concept_id","procedure_concept_id",NULL,NULL,NULL,NULL
+601,"Number of procedure occurrence records,by procedure_concept_id","procedure_concept_id",NULL,NULL,NULL,NULL
+602,"Number of persons by procedure occurrence start month,by procedure_concept_id","procedure_concept_id","calendar month",NULL,NULL,NULL
+603,"Number of distinct procedure occurrence concepts per person",NULL,NULL,NULL,NULL,NULL
+604,"Number of persons with at least one procedure occurrence,by procedure_concept_id by calendar year by gender by age decile","procedure_concept_id","calendar year","gender_concept_id","age decile",NULL
+605,"Number of procedure occurrence records,by procedure_concept_id by procedure_type_concept_id","procedure_concept_id","procedure_type_concept_id",NULL,NULL,NULL
+606,"Distribution of age by procedure_concept_id","procedure_concept_id","gender_concept_id",NULL,NULL,NULL
+609,"Number of procedure occurrence records with invalid person_id",NULL,NULL,NULL,NULL,NULL
+610,"Number of procedure occurrence records outside valid observation period",NULL,NULL,NULL,NULL,NULL
+612,"Number of procedure occurrence records with invalid provider_id",NULL,NULL,NULL,NULL,NULL
+613,"Number of procedure occurrence records with invalid visit_id",NULL,NULL,NULL,NULL,NULL
+620,"Number of procedure occurrence records by procedure occurrence start month","calendar month",NULL,NULL,NULL,NULL
+691,"Number of persons that have at least x procedures","procedure_id","procedure_count",NULL,NULL,NULL
+700,"Number of persons with at least one drug exposure,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+701,"Number of drug exposure records,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+702,"Number of persons by drug exposure start month,by drug_concept_id","drug_concept_id","calendar month",NULL,NULL,NULL
+703,"Number of distinct drug exposure concepts per person",NULL,NULL,NULL,NULL,NULL
+704,"Number of persons with at least one drug exposure,by drug_concept_id by calendar year by gender by age decile","drug_concept_id","calendar year","gender_concept_id","age decile",NULL
+705,"Number of drug exposure records,by drug_concept_id by drug_type_concept_id","drug_concept_id","drug_type_concept_id",NULL,NULL,NULL
+706,"Distribution of age by drug_concept_id","drug_concept_id","gender_concept_id",NULL,NULL,NULL
+709,"Number of drug exposure records with invalid person_id",NULL,NULL,NULL,NULL,NULL
+710,"Number of drug exposure records outside valid observation period",NULL,NULL,NULL,NULL,NULL
+711,"Number of drug exposure records with end date < start date",NULL,NULL,NULL,NULL,NULL
+712,"Number of drug exposure records with invalid provider_id",NULL,NULL,NULL,NULL,NULL
+713,"Number of drug exposure records with invalid visit_id",NULL,NULL,NULL,NULL,NULL
+715,"Distribution of days_supply by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+716,"Distribution of refills by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+717,"Distribution of quantity by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+720,"Number of drug exposure records by drug exposure start month","calendar month",NULL,NULL,NULL,NULL
+791,"Number of persons that have at least x drug exposures","drug_concept_id","drug_count",NULL,NULL,NULL
+800,"Number of persons with at least one observation occurrence,by observation_concept_id","observation_concept_id",NULL,NULL,NULL,NULL
+801,"Number of observation occurrence records,by observation_concept_id","observation_concept_id",NULL,NULL,NULL,NULL
+802,"Number of persons by observation occurrence start month,by observation_concept_id","observation_concept_id","calendar month",NULL,NULL,NULL
+803,"Number of distinct observation occurrence concepts per person",NULL,NULL,NULL,NULL,NULL
+804,"Number of persons with at least one observation occurrence,by observation_concept_id by calendar year by gender by age decile","observation_concept_id","calendar year","gender_concept_id","age decile",NULL
+805,"Number of observation occurrence records,by observation_concept_id by observation_type_concept_id","observation_concept_id","observation_type_concept_id",NULL,NULL,NULL
+806,"Distribution of age by observation_concept_id","observation_concept_id","gender_concept_id",NULL,NULL,NULL
+807,"Number of observation occurrence records,by observation_concept_id and unit_concept_id","observation_concept_id","unit_concept_id",NULL,NULL,NULL
+809,"Number of observation records with invalid person_id",NULL,NULL,NULL,NULL,NULL
+810,"Number of observation records outside valid observation period",NULL,NULL,NULL,NULL,NULL
+812,"Number of observation records with invalid provider_id",NULL,NULL,NULL,NULL,NULL
+813,"Number of observation records with invalid visit_id",NULL,NULL,NULL,NULL,NULL
+814,"Number of observation records with no value (numeric,string,or concept)",NULL,NULL,NULL,NULL,NULL
+815,"Distribution of numeric values,by observation_concept_id and unit_concept_id",NULL,NULL,NULL,NULL,NULL
+820,"Number of observation records by observation start month","calendar month",NULL,NULL,NULL,NULL
+891,"Number of persons that have at least x observations","observation_concept_id","observation_count",NULL,NULL,NULL
+900,"Number of persons with at least one drug era,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+901,"Number of drug era records,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+902,"Number of persons by drug era start month,by drug_concept_id","drug_concept_id","calendar month",NULL,NULL,NULL
+903,"Number of distinct drug era concepts per person",NULL,NULL,NULL,NULL,NULL
+904,"Number of persons with at least one drug era,by drug_concept_id by calendar year by gender by age decile","drug_concept_id","calendar year","gender_concept_id","age decile",NULL
+906,"Distribution of age by drug_concept_id","drug_concept_id","gender_concept_id",NULL,NULL,NULL
+907,"Distribution of drug era length,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+908,"Number of drug eras without valid person",NULL,NULL,NULL,NULL,NULL
+909,"Number of drug eras outside valid observation period",NULL,NULL,NULL,NULL,NULL
+910,"Number of drug eras with end date < start date",NULL,NULL,NULL,NULL,NULL
+920,"Number of drug era records by drug era start month","calendar month",NULL,NULL,NULL,NULL
+1000,"Number of persons with at least one condition era,by condition_concept_id","condition_concept_id",NULL,NULL,NULL,NULL
+1001,"Number of condition era records,by condition_concept_id","condition_concept_id",NULL,NULL,NULL,NULL
+1002,"Number of persons by condition era start month,by condition_concept_id","condition_concept_id","calendar month",NULL,NULL,NULL
+1003,"Number of distinct condition era concepts per person",NULL,NULL,NULL,NULL,NULL
+1004,"Number of persons with at least one condition era,by condition_concept_id by calendar year by gender by age decile","condition_concept_id","calendar year","gender_concept_id","age decile",NULL
+1006,"Distribution of age by condition_concept_id","condition_concept_id","gender_concept_id",NULL,NULL,NULL
+1007,"Distribution of condition era length,by condition_concept_id","condition_concept_id",NULL,NULL,NULL,NULL
+1008,"Number of condition eras without valid person",NULL,NULL,NULL,NULL,NULL
+1009,"Number of condition eras outside valid observation period",NULL,NULL,NULL,NULL,NULL
+1010,"Number of condition eras with end date < start date",NULL,NULL,NULL,NULL,NULL
+1020,"Number of condition era records by condition era start month","calendar month",NULL,NULL,NULL,NULL
+1100,"Number of persons by location 3-digit zip","3-digit zip",NULL,NULL,NULL,NULL
+1101,"Number of persons by location state","state",NULL,NULL,NULL,NULL
+1102,"Number of care sites by location 3-digit zip","3-digit zip",NULL,NULL,NULL,NULL
+1103,"Number of care sites by location state","state",NULL,NULL,NULL,NULL
+1200,"Number of persons by place of service","place_of_service_concept_id",NULL,NULL,NULL,NULL
+1201,"Number of visits by place of service","place_of_service_concept_id",NULL,NULL,NULL,NULL
+1202,"Number of care sites by place of service","place_of_service_concept_id",NULL,NULL,NULL,NULL
+1406,"Length of payer plan (days) of first payer plan period by gender","gender_concept_id",NULL,NULL,NULL,NULL
+1407,"Length of payer plan (days) of first payer plan period by age decile","age_decile",NULL,NULL,NULL,NULL
+1408,"Number of persons by length of payer plan period,in 30d increments","payer plan period length 30d increments",NULL,NULL,NULL,NULL
+1409,"Number of persons with continuous payer plan in each year","calendar year",NULL,NULL,NULL,NULL
+1410,"Number of persons with continuous payer plan in each month","calendar month",NULL,NULL,NULL,NULL
+1411,"Number of persons by payer plan period start month","calendar month",NULL,NULL,NULL,NULL
+1412,"Number of persons by payer plan period end month","calendar month",NULL,NULL,NULL,NULL
+1413,"Number of persons by number of payer plan periods","number of payer plan periods",NULL,NULL,NULL,NULL
+1414,"Number of persons with payer plan period before year-of-birth",NULL,NULL,NULL,NULL,NULL
+1415,"Number of persons with payer plan period end < payer plan period start",NULL,NULL,NULL,NULL,NULL
+1500,"Number of drug cost records with invalid drug exposure id",NULL,NULL,NULL,NULL,NULL
+1501,"Number of drug cost records with invalid payer plan period id",NULL,NULL,NULL,NULL,NULL
+1502,"Distribution of paid copay,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+1503,"Distribution of paid coinsurance,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+1504,"Distribution of paid toward deductible,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+1505,"Distribution of paid by payer,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+1506,"Distribution of paid by coordination of benefit,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+1507,"Distribution of total out-of-pocket,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+1508,"Distribution of total paid,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+1509,"Distribution of ingredient_cost,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+1510,"Distribution of dispensing fee,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+1511,"Distribution of average wholesale price,by drug_concept_id","drug_concept_id",NULL,NULL,NULL,NULL
+1600,"Number of procedure cost records with invalid procedure occurrence id",NULL,NULL,NULL,NULL,NULL
+1601,"Number of procedure cost records with invalid payer plan period id",NULL,NULL,NULL,NULL,NULL
+1602,"Distribution of paid copay,by procedure_concept_id","procedure_concept_id",NULL,NULL,NULL,NULL
+1603,"Distribution of paid coinsurance,by procedure_concept_id","procedure_concept_id",NULL,NULL,NULL,NULL
+1604,"Distribution of paid toward deductible,by procedure_concept_id","procedure_concept_id",NULL,NULL,NULL,NULL
+1605,"Distribution of paid by payer,by procedure_concept_id","procedure_concept_id",NULL,NULL,NULL,NULL
+1606,"Distribution of paid by coordination of benefit,by procedure_concept_id","procedure_concept_id",NULL,NULL,NULL,NULL
+1607,"Distribution of total out-of-pocket,by procedure_concept_id","procedure_concept_id",NULL,NULL,NULL,NULL
+1608,"Distribution of total paid,by procedure_concept_id","procedure_concept_id",NULL,NULL,NULL,NULL
+1610,"Number of records by revenue_code_concept_id","revenue_code_concept_id",NULL,NULL,NULL,NULL
+1700,"Number of records by cohort_concept_id","cohort_concept_id",NULL,NULL,NULL,NULL
+1701,"Number of records with cohort end date < cohort start date",NULL,NULL,NULL,NULL,NULL
+1800,"Number of persons with at least one measurement occurrence,by measurement_concept_id","measurement_concept_id",NULL,NULL,NULL,NULL
+1801,"Number of measurement occurrence records,by measurement_concept_id","measurement_concept_id",NULL,NULL,NULL,NULL
+1802,"Number of persons by measurement occurrence start month,by measurement_concept_id","measurement_concept_id","calendar month",NULL,NULL,NULL
+1803,"Number of distinct mesurement occurrence concepts per person",NULL,NULL,NULL,NULL,NULL
+1804,"Number of persons with at least one mesurement occurrence,by measurement_concept_id by calendar year by gender by age decile","measurement_concept_id","calendar year","gender_concept_id","age decile",NULL
+1805,"Number of measurement occurrence records,by measurement_concept_id by measurement_type_concept_id","measurement_concept_id","measurement_type_concept_id",NULL,NULL,NULL
+1806,"Distribution of age by measurement_concept_id","measurement_concept_id","gender_concept_id",NULL,NULL,NULL
+1807,"Number of measurement occurrence records,by measurement_concept_id and unit_concept_id","measurement_concept_id","unit_concept_id",NULL,NULL,NULL
+1809,"Number of measurement records with invalid person_id",NULL,NULL,NULL,NULL,NULL
+1810,"Number of measurement records outside valid observation period",NULL,NULL,NULL,NULL,NULL
+1812,"Number of measurement records with invalid provider_id",NULL,NULL,NULL,NULL,NULL
+1813,"Number of measurement records with invalid visit_id",NULL,NULL,NULL,NULL,NULL
+1814,"Number of measurement records with no value (numeric,string,or concept)",NULL,NULL,NULL,NULL,NULL
+1815,"Distribution of numeric values,by measurement_concept_id and unit_concept_id",NULL,NULL,NULL,NULL,NULL
+1816,"Distribution of low range,by measurement_concept_id and unit_concept_id",NULL,NULL,NULL,NULL,NULL
+1817,"Distribution of high range,by observation_concept_id and unit_concept_id",NULL,NULL,NULL,NULL,NULL
+1818,"Number of measurement records below/within/above normal range,by measurement_concept_id and unit_concept_id",NULL,NULL,NULL,NULL,NULL
+1820,"Number of measurement records by measurement start month","calendar month",NULL,NULL,NULL,NULL
+1821,"Number of measurement records with no numeric value",NULL,NULL,NULL,NULL,NULL
+1891,"Number of persons that have at least x measurements","measurement_concept_id","measurement_count",NULL,NULL,NULL
+1900,"Source values mapped to concept_id 0 by table,by source_value","table_name","source_value",NULL,NULL,NULL
+2000,"Number of patients with at least 1 Dx and 1 Rx",NULL,NULL,NULL,NULL,NULL
+2001,"Number of patients with at least 1 Dx and 1 Proc",NULL,NULL,NULL,NULL,NULL
+2002,"Number of patients with at least 1 Meas,1 Dx and 1 Rx",NULL,NULL,NULL,NULL,NULL
+2003,"Number of patients with at least 1 Visit",NULL,NULL,NULL,NULL,NULL
+2100,"Number of persons with at least one device exposure,by device_concept_id","device_concept_id",NULL,NULL,NULL,NULL
+2101,"Number of device exposure records,by device_concept_id","device_concept_id",NULL,NULL,NULL,NULL
+2102,"Number of persons by device records start month,by device_concept_id","device_concept_id","calendar month",NULL,NULL,NULL
+2104,"Number of persons with at least one device exposure,by device_concept_id by calendar year by gender by age decile","device_concept_id","calendar year","gender_concept_id","age decile",NULL
+2105,"Number of device exposure records,by device_concept_id by device_type_concept_id","device_concept_id","device_type_concept_id",NULL,NULL,NULL
+2200,"Number of persons with at least one note by note_type_concept_id","note_type_concept_id",NULL,NULL,NULL,NULL
+2201,"Number of note records,by note_type_concept_id","note_type_concept_id",NULL,NULL,NULL,NULL

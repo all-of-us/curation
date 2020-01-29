@@ -1,37 +1,32 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -ex
 
 # Imports RDR ETL results from GCS into a dataset in BigQuery.
 # Assumes you have already activated a service account that is able to
 # access the files in GCS.
 
 USAGE="tools/import_rdr_omop.sh
-    --project <PROJECT where rdr files are dropped>
-    --directory <DIRECTORY>
-    --dataset <DATA SET>
+    --rdr_project <PROJECT where rdr files are dropped>
+    --rdr_directory <DIRECTORY, not including the gs:// bucket name>
     --key_file <path to key file>
-    --app_id <application id>
     --vocab_dataset <vocabulary dataset>"
 
 while true; do
   case "$1" in
-  --project)
-    PROJECT=$2
+  --rdr_project)
+    RDR_PROJECT=$2
     shift 2
     ;;
-  --directory)
-    DIRECTORY=$2
+  --rdr_directory)
+    RDR_DIRECTORY=$2
     shift 2
     ;;
-  --dataset)
-    DATASET=$2
+  --output_dataset)
+    OUTPUT_DATASET=$2
     shift 2
     ;;
   --key_file)
     KEY_FILE=$2
-    shift 2
-    ;;
-  --app_id)
-    APP_ID=$2
     shift 2
     ;;
   --vocab_dataset)
@@ -46,60 +41,66 @@ while true; do
   esac
 done
 
-if [[ -z "${PROJECT}" ]] || [[ -z "${DIRECTORY}" ]] || [[ -z "${DATASET}" ]] ||
-  [[ -z "${KEY_FILE}" ]] || [[ -z "${APP_ID}" ]] || [[ -z "${VOCAB_DATASET}" ]]; then
+if [[ -z "${RDR_PROJECT}" ]] || [[ -z "${RDR_DIRECTORY}" ]] || [[ -z "${KEY_FILE}" ]] || [[ -z "${VOCAB_DATASET}" ]]; then
   echo "Usage: $USAGE"
   exit 1
 fi
 
+ROOT_DIR=$(git rev-parse --show-toplevel)
+DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
+TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
+CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
+
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${KEY_FILE}")
+
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
-export APPLICATION_ID="${APP_ID}"
-export BIGQUERY_DATASET_ID="${DATASET}"
+export GOOGLE_CLOUD_PROJECT="${app_id}"
+export BIGQUERY_DATASET_ID="${OUTPUT_DATASET}"
 
 today=$(date '+%Y%m%d')
-export BACKUP_DATASET="${DATASET}_backup"
+RDR_DATASET="${today}_rdr"
 
 #---------Create curation virtual environment----------
-# create a new environment in directory curation_env
-virtualenv -p $(which python2.7) curation_env
+# create a new environment in directory curation_venv
+virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
 
 # activate it
-source curation_env/bin/activate
+source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
 
 # install the requirements in the virtualenv
-pip install -t lib -r requirements.txt
+pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 
-source tools/set_path.sh
+source "${TOOLS_DIR}/set_path.sh"
 
-bq mk -f --description "RDR DUMP loaded from ${DIRECTORY} on ${today}" ${DATASET}
+bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} on ${today}" "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}"
 
-echo "python cdm.py ${DATASET}"
-python cdm.py ${DATASET}
+python "${DATA_STEWARD_DIR}/cdm.py" "${RDR_DATASET}"
 
-for file in $(gsutil ls gs://${PROJECT}-cdm/${DIRECTORY}); do
+cdm_files=$(gsutil ls gs://${RDR_PROJECT}-cdm/${RDR_DIRECTORY})
+if [[ $? -ne 0 ]]; then
+  echo "failed to read CDM files from RDR, verify your --rdr_directory exists with gsutil ls gs://${RDR_PROJECT}-cdm"
+  exit 1
+fi
+for file in $cdm_files; do
   filename=$(basename ${file})
-  table_name="${filename%.*}"
-  echo "Importing ${DATASET}.${table_name}..."
-  CLUSTERING_ARGS=
-  if grep -q person_id resources/fields/${table_name}.json; then
-    CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id "
+  table_name=${filename%.*}
+  echo "Importing ${RDR_DATASET}.${table_name}..."
+  CLUSTERING_ARGS=""
+  if grep -q person_id resources/fields/"${table_name}".json; then
+    CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id"
   fi
-  JAGGED_ROWS=
+  JAGGED_ROWS=""
   if [[ "${filename}" == "observation_period.csv" ]]; then
-    JAGGED_ROWS="--allow_jagged_rows "
+    JAGGED_ROWS="--allow_jagged_rows"
   fi
-  bq load --replace --allow_quoted_newlines ${JAGGED_ROWS}${CLUSTERING_ARGS}--skip_leading_rows=1 ${DATASET}.${table_name} $file resources/fields/${table_name}.json
+  bq load --project_id ${GOOGLE_CLOUD_PROJECT} --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.${table_name} $file resources/fields/${table_name}.json
 done
 
-echo "Creating a RDR back-up"
-./tools/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${DATASET} --target_dataset ${BACKUP_DATASET}
+echo "Copying vocabulary"
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${VOCAB_DATASET} --target_dataset ${RDR_DATASET}
 
-#set BIGQUERY_DATASET_ID variable to dataset name where the vocabulary exists
-export BIGQUERY_DATASET_ID="${VOCAB_DATASET}"
-echo "Fixing the PMI_Skip and the PPI_Vocabulary using command - fix_rdr_data.py -p ${APP_ID} -d ${DATASET}"
-python tools/fix_rdr_data.py -p ${APP_ID} -d ${DATASET}
-
-echo "Done."
-
+# deactivate venv and unset PYTHON PATH
 unset PYTHONPATH
 deactivate
+
+set +ex

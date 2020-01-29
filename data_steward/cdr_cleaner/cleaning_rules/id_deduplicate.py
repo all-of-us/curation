@@ -5,8 +5,8 @@ ID columns in each domain should be unique
 
 # Project imports
 import cdm
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 
 ID_DE_DUP_QUERY = (
@@ -14,8 +14,7 @@ ID_DE_DUP_QUERY = (
     'from (select m.*, '
     'ROW_NUMBER() OVER (PARTITION BY m.{domain_table}_id) AS row_num '
     'from `{project_id}.{dataset_id}.{table_name}` as m) as t '
-    'where row_num = 1 '
-)
+    'where row_num = 1 ')
 
 
 def get_id_deduplicate_queries(project_id, dataset_id):
@@ -55,4 +54,4 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
     query_list = get_id_deduplicate_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

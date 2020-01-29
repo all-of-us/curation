@@ -4,8 +4,8 @@ Ensure rug refills < 10 and days_supply < 180
 
 # Project imports
 import common
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 MAX_DAYS_SUPPLY = 180
 MAX_REFILLS = 10
@@ -15,8 +15,7 @@ MAX_DAYS_SUPPLY_AND_REFILLS_QUERY = (
     'SELECT * '
     'FROM `{project_id}.{dataset_id}.drug_exposure` '
     'WHERE ((days_supply <= {MAX_DAYS_SUPPLY} or days_supply is null) '
-    '       AND (REFILLS <= {MAX_REFILLS} or REFILLS IS NULL))'
-)
+    '       AND (REFILLS <= {MAX_REFILLS} or REFILLS IS NULL))')
 
 
 def get_days_supply_refills_queries(project_id, dataset_id):
@@ -30,10 +29,11 @@ def get_days_supply_refills_queries(project_id, dataset_id):
     """
     queries = []
     query = dict()
-    query[cdr_consts.QUERY] = MAX_DAYS_SUPPLY_AND_REFILLS_QUERY.format(project_id=project_id,
-                                                                       dataset_id=dataset_id,
-                                                                       MAX_DAYS_SUPPLY=MAX_DAYS_SUPPLY,
-                                                                       MAX_REFILLS=MAX_REFILLS)
+    query[cdr_consts.QUERY] = MAX_DAYS_SUPPLY_AND_REFILLS_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        MAX_DAYS_SUPPLY=MAX_DAYS_SUPPLY,
+        MAX_REFILLS=MAX_REFILLS)
     query[cdr_consts.DESTINATION_TABLE] = drug_exposure
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -47,5 +47,6 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_days_supply_refills_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    query_list = get_days_supply_refills_queries(ARGS.project_id,
+                                                 ARGS.dataset_id)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

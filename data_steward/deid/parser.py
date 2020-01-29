@@ -9,6 +9,7 @@
 """
 from argparse import ArgumentParser, ArgumentTypeError
 
+
 class Parse(object):
     """
     Parse rules into a canonical form.
@@ -17,6 +18,7 @@ class Parse(object):
     applications are put into a canonical form.
     Having rules in a canonical form makes it easy for an engine to apply them in batch
     """
+
     @staticmethod
     def init(rule_id, row, cache, tablename):
         try:
@@ -27,7 +29,7 @@ class Parse(object):
 
         label = ".".join([_id, _key]) if _key is not None else rule_id
 
-        if _id and _key  and _id in cache and _key in cache[_id]:
+        if _id and _key and _id in cache and _key in cache[_id]:
             p = {'label': label, 'rules': cache[_id][_key]}
 
         else:
@@ -37,8 +39,6 @@ class Parse(object):
 
         p['tablename'] = tablename
         return p
-
-
 
     @staticmethod
     def shift(row, cache, tablename):
@@ -56,13 +56,25 @@ class Parse(object):
     @staticmethod
     def suppress(row, cache, tablename):
         """
-        setup suppression rules to be applied the the given 'row' i.e entry
+        setup suppression rules to be applied to the 'row' i.e entry
         """
         return Parse.init('suppress', row, cache, tablename)
 
     @staticmethod
     def compute(row, cache, tablename):
+        """
+        Compute fields.
+
+        This includes shifting dates and mapping values.
+        """
         return Parse.init('compute', row, cache, tablename)
+
+    @staticmethod
+    def dml_statements(row, cache, tablename):
+        """
+        When indicated, it will create dml statements to execute after all other de-identifications.
+        """
+        return Parse.init('dml_statements', row, cache, tablename)
 
 
 # This is the pythonic way to parse system arguments
@@ -103,48 +115,73 @@ def parse_args(raw_args=None):
     """
     parser = ArgumentParser(description='Parse deid command line arguments')
     parser.add_argument('--rules',
-                        action='store', dest='rules',
+                        action='store',
+                        dest='rules',
                         help='Filepath to the JSON file containing rules',
                         required=True)
     parser.add_argument('--idataset',
-                        action='store', dest='idataset',
+                        action='store',
+                        dest='idataset',
                         help=('Name of the input dataset (an output dataset '
                               'with suffix _deid will be generated)'),
                         required=True)
-    parser.add_argument('--private_key', dest='private_key', action='store',
+    parser.add_argument('--private_key',
+                        dest='private_key',
+                        action='store',
                         required=True,
                         help='Service account file location')
-    parser.add_argument('--table', dest='table', action='store', required=True,
-                        help='Path that specifies how rules are applied on a table')
-    parser.add_argument('--action', dest='action', action='store', required=True,
-                        choices=['submit', 'simulate', 'debug'],
-                        help=('simulate: generate simulation without creating an '
-                              'output table\nsubmit: create an output table\n'
-                              'debug: print output without simulation or submit '
-                              '(runs alone)')
-                       )
-    parser.add_argument('--cluster', dest='cluster', action='store_true',
+    parser.add_argument(
+        '--table',
+        dest='table',
+        action='store',
+        required=True,
+        help='Path that specifies how rules are applied on a table')
+    parser.add_argument(
+        '--action',
+        dest='action',
+        action='store',
+        required=True,
+        choices=['submit', 'simulate', 'debug'],
+        help=('simulate: generate simulation without creating an '
+              'output table\nsubmit: create an output table\n'
+              'debug: print output without simulation or submit '
+              '(runs alone)'))
+    parser.add_argument('--cluster',
+                        dest='cluster',
+                        action='store_true',
                         help='Enable clustering on person_id')
-    parser.add_argument('--log', dest='log', action='store',
+    parser.add_argument('--log',
+                        dest='log',
+                        action='store',
                         help='Filepath for the log file')
-    parser.add_argument('--pipeline', dest='pipeline', action='store',
-                        default='generalize,suppress,shift,compute',
-                        type=pipeline_list,
-                        help=('Specifies operations and their order.  '
-                              'Operations are comma separated.  Default pipeline is:  '
-                              'generalize, suppress, shift, compute')
-                       )
-    parser.add_argument('--age-limit', dest='age-limit', action='store',
-                        default=89, type=int,
-                        help=('Optional parameter to set the maximum age limit.  '
-                              'Defaults to 89.')
-                       )
-    parser.add_argument('--interactive', dest='interactive', action='store', nargs='?',
-                        default='BATCH', type=query_priority, const='INTERACTIVE',
-                        help='Run the query in interactive mode.  Default is batch mode.')
+    parser.add_argument(
+        '--pipeline',
+        dest='pipeline',
+        action='store',
+        default='generalize,suppress,shift,compute',
+        type=pipeline_list,
+        help=('Specifies operations and their order.  '
+              'Operations are comma separated.  Default pipeline is:  '
+              'generalize, suppress, shift, compute'))
+    parser.add_argument(
+        '--age-limit',
+        dest='age-limit',
+        action='store',
+        default=89,
+        type=int,
+        help=('Optional parameter to set the maximum age limit.  '
+              'Defaults to 89.'))
+    parser.add_argument(
+        '--interactive',
+        dest='interactive',
+        action='store',
+        nargs='?',
+        default='BATCH',
+        type=query_priority,
+        const='INTERACTIVE',
+        help='Run the query in interactive mode.  Default is batch mode.')
     parser.add_argument('--version', action='version', version='deid-02')
     # normally, the parsed arguments are returned as a namespace object.  To avoid
     # rewriting a lot of existing code, the namespace elements will be turned into
     # a dictionary object and returned.
-    #return parser.parse_args()
     return vars(parser.parse_args(raw_args))

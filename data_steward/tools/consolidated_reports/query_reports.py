@@ -1,11 +1,12 @@
 import json
 import os
 
-from google.appengine.api.app_identity import app_identity
+import app_identity
 
 import bq_utils
 import common
 import gcs_utils
+from io import open
 
 LATEST_REPORTS_QUERY = (
     'SELECT'
@@ -25,8 +26,7 @@ LATEST_REPORTS_QUERY = (
     '    AND protopayload_auditlog.resourceName LIKE \'%datasources.json\' '
     '    AND REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+") IS NOT NULL ) a '
     'WHERE '
-    '  rank_order = 1'
-)
+    '  rank_order = 1')
 
 LATEST_RESULTS_QUERY = (
     'SELECT'
@@ -46,8 +46,7 @@ LATEST_RESULTS_QUERY = (
     '    AND protopayload_auditlog.resourceName LIKE \'%person.csv\' '
     '    AND REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+") IS NOT NULL ) a '
     'WHERE '
-    '  rank_order = 1'
-)
+    '  rank_order = 1')
 
 
 def get_most_recent(app_id=None, drc_bucket=None, report_for=None):
@@ -66,7 +65,9 @@ def get_most_recent(app_id=None, drc_bucket=None, report_for=None):
         drc_bucket = gcs_utils.get_drc_bucket()
         if report_for == common.REPORT_FOR_ACHILLES:
             if not os.path.exists(common.LATEST_REPORTS_JSON):
-                query = LATEST_REPORTS_QUERY.format(app_id=app_id, drc_bucket=drc_bucket, year=common.LOG_YEAR)
+                query = LATEST_REPORTS_QUERY.format(app_id=app_id,
+                                                    drc_bucket=drc_bucket,
+                                                    year=common.LOG_YEAR)
                 query_job = bq_utils.query(query)
                 result = bq_utils.response2rows(query_job)
                 with open(common.LATEST_REPORTS_JSON, 'w') as fp:
@@ -75,7 +76,9 @@ def get_most_recent(app_id=None, drc_bucket=None, report_for=None):
                 return json.load(fp)
         elif report_for == common.REPORT_FOR_RESULTS:
             if not os.path.exists(common.LATEST_RESULTS_JSON):
-                query = LATEST_RESULTS_QUERY.format(app_id=app_id, drc_bucket=drc_bucket, year=common.LOG_YEAR)
+                query = LATEST_RESULTS_QUERY.format(app_id=app_id,
+                                                    drc_bucket=drc_bucket,
+                                                    year=common.LOG_YEAR)
                 query_job = bq_utils.query(query)
                 result = bq_utils.response2rows(query_job)
                 with open(common.LATEST_RESULTS_JSON, 'w') as fp:

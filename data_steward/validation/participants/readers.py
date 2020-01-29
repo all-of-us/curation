@@ -4,6 +4,7 @@
 A module to perform reading operations for validation data.
 """
 # Python imports
+from datetime import datetime, timezone
 import logging
 
 # Third party imports
@@ -11,20 +12,49 @@ import logging
 # Project imports
 import bq_utils
 import resources as rc
-import constants.validation.participants.readers as consts
+from constants.validation.participants import readers as consts
 
 LOGGER = logging.getLogger(__name__)
 
 
-def _get_utf8_string(value):
+def _get_field_type(table_name, column_name):
+    """
+    Get the defined field type for the table.
+
+    :param table_name:  name of the table containing the field
+    :param column_name: name of the column to get the type of
+
+    :return:  The defined type for the field in the table.
+    """
+    field_type = None
+    for field in rc.fields_for(table_name):
+        if field.get('name', '') == column_name:
+            field_type = field.get('type')
+
+    return field_type
+
+
+def _get_string(value, field_type=None):
+    """
+    Get the string value of a field based on its return value type and defiend type.
+
+    :param value: The value to return as a string.
+    :param field_type: The defined field type.
+
+    :return: The resulting string value or None.
+    """
+
+    time_types = [consts.DATE_TYPE, consts.DATETIME_TYPE, consts.TIMESTAMP_TYPE]
     result = None
-    try:
-        result = value.encode('utf-8', 'ignore')
-    except AttributeError:
-        if value is None:
-            pass
-        elif isinstance(value, int):
-            result = str(value)
+    if isinstance(value, bytes):
+        result = value.decode('utf-8', 'ignore')
+    elif value is None:
+        pass
+    elif isinstance(value, float) and field_type.lower() in time_types:
+        result = datetime.fromtimestamp(value, tz=timezone.utc)
+        result = result.strftime(consts.DATE_FORMAT)
+    else:
+        result = str(value)
 
     return result
 
@@ -47,17 +77,14 @@ def create_match_values_table(project, rdr_dataset, destination_dataset):
         project=project,
         dataset=rdr_dataset,
         table=consts.OBSERVATION_TABLE,
-        pii_list=','.join(consts.PII_CODES_LIST)
-    )
+        pii_list=','.join(consts.PII_CODES_LIST))
 
-    LOGGER.debug("Participant validation ran the query\n%s", query_string)
-    results = bq_utils.query(
-        query_string,
-        destination_dataset_id=destination_dataset,
-        destination_table_id=consts.ID_MATCH_TABLE,
-        write_disposition='WRITE_TRUNCATE',
-        batch=True
-    )
+    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    results = bq_utils.query(query_string,
+                             destination_dataset_id=destination_dataset,
+                             destination_table_id=consts.ID_MATCH_TABLE,
+                             write_disposition='WRITE_TRUNCATE',
+                             batch=True)
 
     query_job_id = results['jobReference']['jobId']
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
@@ -95,15 +122,17 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
         field=column_name,
     )
 
-    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    LOGGER.info("Participant validation ran the query\n%s", query_string)
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
+
+    field_type = _get_field_type(table_name, column_name)
 
     result_dict = {}
     for item in row_results:
         person_id = item.get(consts.PERSON_ID_FIELD)
         value = item.get(column_name)
-        value = _get_utf8_string(value)
+        value = _get_string(value, field_type)
 
         exists = result_dict.get(person_id)
         if exists is None:
@@ -139,22 +168,22 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
     :raises:  oauth2client.client.HttpAccessTokenRefreshError,
               googleapiclient.errors.HttpError
     """
-    query_string = consts.PPI_OBSERVATION_VALUES.format(
-        project=project,
-        dataset=dataset,
-        table=table_name,
-        field_value=concept_id
-    )
+    query_string = consts.PPI_OBSERVATION_VALUES.format(project=project,
+                                                        dataset=dataset,
+                                                        table=table_name,
+                                                        field_value=concept_id)
 
-    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    LOGGER.info("Participant validation ran the query\n%s", query_string)
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
+
+    field_type = _get_field_type(table_name, 'observation_source_concept_id')
 
     result_dict = {}
     for item in row_results:
         person_id = item.get(consts.PERSON_ID_FIELD)
         value = item.get(consts.STRING_VALUE_FIELD)
-        value = _get_utf8_string(value)
+        value = _get_string(value, field_type)
 
         exists = result_dict.get(person_id)
         if exists is None:
@@ -193,25 +222,25 @@ def get_pii_values(project, pii_dataset, hpo, table, field):
     :raises:  oauth2client.client.HttpAccessTokenRefreshError,
               googleapiclient.errors.HttpError
     """
-    query_string = consts.PII_VALUES.format(
-        project=project,
-        dataset=pii_dataset,
-        hpo_site_str=hpo,
-        field=field,
-        table_suffix=table
-    )
+    query_string = consts.PII_VALUES.format(project=project,
+                                            dataset=pii_dataset,
+                                            hpo_site_str=hpo,
+                                            field=field,
+                                            table_suffix=table)
 
-    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    LOGGER.info("Participant validation ran the query\n%s", query_string)
 
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
+
+    field_type = _get_field_type(table, field)
 
     result_list = []
     for item in row_results:
         person_id = item.get(consts.PERSON_ID_FIELD)
         value = item.get(field)
 
-        value = _get_utf8_string(value)
+        value = _get_string(value, field_type)
         result_list.append((person_id, value))
 
     return result_list
@@ -234,13 +263,8 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
     :raises:  oauth2client.client.HttpAccessTokenRefreshError,
               googleapiclient.errors.HttpError
     """
-    location_ids = get_pii_values(
-        project,
-        pii_dataset,
-        hpo,
-        table,
-        consts.LOCATION_ID_FIELD
-    )
+    location_ids = get_pii_values(project, pii_dataset, hpo, table,
+                                  consts.LOCATION_ID_FIELD)
 
     location_id_list = []
     location_id_dict = {}
@@ -253,24 +277,24 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
         return []
 
     location_id_str = ', '.join(location_id_list)
-    query_string = consts.PII_LOCATION_VALUES.format(
-        project=project,
-        dataset=rdr_dataset,
-        field=field,
-        id_list=location_id_str
-    )
+    query_string = consts.PII_LOCATION_VALUES.format(project=project,
+                                                     dataset=rdr_dataset,
+                                                     field=field,
+                                                     id_list=location_id_str)
 
-    LOGGER.debug("Participant validation ran the query\n%s", query_string)
+    LOGGER.info("Participant validation ran the query\n%s", query_string)
 
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
+
+    field_type = _get_field_type(table, field)
 
     result_list = []
     for item in row_results:
         location_id = item.get(consts.LOCATION_ID_FIELD)
         value = item.get(field)
 
-        value = _get_utf8_string(value)
+        value = _get_string(value, field_type)
 
         person_id = location_id_dict.get(location_id, '')
         result_list.append((person_id, value))

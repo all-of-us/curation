@@ -10,11 +10,7 @@ or tag you need. The specification document should always be consistent with the
 
 ## Directory Overview
 
-*   `data_steward`
-    *   `spec` Source for the specification document. HPO data stewards will refer to this document to understand the
-        structure and contents of the data that they are responsible for submitting to the DRC. It produces a static 
-        website and stores it in a specially provisioned GCS bucket.
-        [README](data_steward/spec/README.md) 
+*   `data_steward` 
     *   `validation` Source for data curation processes. DRC will execute this package in order to assess whether
         data sets submitted by HPO data stewards satisfy the requirements outlined in the specification document.
         HPO data stewards may refer to this package to validate their data sets __before__ submitting them
@@ -24,8 +20,12 @@ or tag you need. The specification document should always be consistent with the
     *   `test` Unit tests.
         [README](data_steward/test/README.md) has instructions for running tests.
 
+## Developer setup
 
-### Authentication Details
+Please reference [this guide](https://docs.google.com/document/d/16Q_F5ecN1hnKviuPTbXxy914FUGFuTXO1F4zvYbjDmc/edit)
+for development setup.
+
+## Authentication Details
 
 All actors calling APIs in production will use [service accounts](https://cloud.google.com/compute/docs/access/service-accounts).
 We will use a Google Cloud Project owned by Vanderbilt for testing: `aou-res-curation-test`.

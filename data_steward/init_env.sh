@@ -7,8 +7,14 @@ then
     CONFIG=$1
 fi
 
+# TODO: Move away from this global state; none of the following is sticky since
+# there is no expectation of rerunning this script in new shells or on machine
+# restarts.
+export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json
+export APPLICATION_ID=aou-res-curation-test
+export GOOGLE_CLOUD_PROJECT=aou-res-curation-test
+
 # Require username in GH_USERNAME or CIRCLE_USERNAME
-export APPLICATION_ID="aou-res-curation-$CONFIG"
 export USERNAME=$(echo "${GH_USERNAME:-${CIRCLE_USERNAME:-}}" | tr '[:upper:]' '[:lower:]')
 
 if [ -z "${USERNAME}" ]
@@ -42,24 +48,26 @@ export BUCKET_NAME_UNIONED_EHR="${BUCKET_PREFIX}_drc"
 DATASET_PREFIX="${USERNAME_PREFIX}_${CURRENT_BRANCH}"
 export BIGQUERY_DATASET_ID="${DATASET_PREFIX}_ehr"
 export RDR_DATASET_ID="${DATASET_PREFIX}_rdr"
-export EHR_RDR_DATASET_ID="${DATASET_PREFIX}_combined"
+export COMBINED_DATASET_ID="${DATASET_PREFIX}_combined"
 export UNIONED_DATASET_ID="${DATASET_PREFIX}_unioned"
 
 # .circlerc is sourced before each test and deploy command
 # See https://www.compose.com/articles/experience-with-circleci/#dontcommitcredentials
-if [ -n "CIRCLECI" ]
+if [ -n "${CIRCLECI}" ]
 then
-  echo "export APPLICATION_ID=${APPLICATION_ID}" >> $HOME/.circlerc
-  echo "export USERNAME=${USERNAME}" >> $HOME/.circlerc
-  echo "export DRC_BUCKET_NAME=${DRC_BUCKET_NAME}" >> $HOME/.circlerc
-  echo "export BUCKET_NAME_FAKE=${BUCKET_NAME_FAKE}" >> $HOME/.circlerc
-  echo "export BUCKET_NAME_NYC=${BUCKET_NAME_NYC}" >> $HOME/.circlerc
-  echo "export BUCKET_NAME_PITT=${BUCKET_NAME_PITT}" >> $HOME/.circlerc
-  echo "export BUCKET_NAME_CHS=${BUCKET_NAME_CHS}" >> $HOME/.circlerc
-  echo "export BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID}" >> $HOME/.circlerc
-  echo "export RDR_DATASET_ID=${RDR_DATASET_ID}" >> $HOME/.circlerc
-  echo "export EHR_RDR_DATASET_ID=${EHR_RDR_DATASET_ID}" >> $HOME/.circlerc
-  echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >> $HOME/.circlerc
-  echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >> $HOME/.circlerc
-  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/data_steward/ci" >> $HOME/.circlerc
+  echo "export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json" >> ${BASH_ENV}
+  echo "export APPLICATION_ID=${APPLICATION_ID}" >> ${BASH_ENV}
+  echo "export GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" >> ${BASH_ENV}
+  echo "export USERNAME=${USERNAME}" >> ${BASH_ENV}
+  echo "export DRC_BUCKET_NAME=${DRC_BUCKET_NAME}" >> ${BASH_ENV}
+  echo "export BUCKET_NAME_FAKE=${BUCKET_NAME_FAKE}" >> ${BASH_ENV}
+  echo "export BUCKET_NAME_NYC=${BUCKET_NAME_NYC}" >> ${BASH_ENV}
+  echo "export BUCKET_NAME_PITT=${BUCKET_NAME_PITT}" >> ${BASH_ENV}
+  echo "export BUCKET_NAME_CHS=${BUCKET_NAME_CHS}" >> ${BASH_ENV}
+  echo "export BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID}" >> ${BASH_ENV}
+  echo "export RDR_DATASET_ID=${RDR_DATASET_ID}" >> ${BASH_ENV}
+  echo "export COMBINED_DATASET_ID=${COMBINED_DATASET_ID}" >> ${BASH_ENV}
+  echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >> ${BASH_ENV}
+  echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >> ${BASH_ENV}
+  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >> $BASH_ENV
 fi

@@ -1,12 +1,12 @@
-from collections import OrderedDict
-from domain_mapping import DOMAIN_TABLE_NAMES
-from resources import get_domain_id_field, get_domain
-from domain_mapping import get_field_mappings
-from domain_mapping import exist_domain_mappings
-from domain_mapping import NULL_VALUE
-import domain_mapping
-import resources
 import re
+from collections import OrderedDict
+from io import open
+
+import resources
+from cdr_cleaner.cleaning_rules import domain_mapping
+from cdr_cleaner.cleaning_rules.domain_mapping import DOMAIN_TABLE_NAMES, get_field_mappings,\
+    exist_domain_mappings, NULL_VALUE
+from resources import get_domain_id_field, get_domain
 
 NAME_FIELD = 'name'
 FIELD_MODE = 'mode'
@@ -17,21 +17,12 @@ DOMAIN_SPECIFIC_FIELDS = 'specific_fields'
 DOMAIN_DATE_FIELDS = 'date_fields'
 
 COMMON_DOMAIN_FIELD_SUFFIXES = [
-    'person_id',
-    'visit_occurrence_id',
-    'provider_id',
-    '_concept_id',
-    '_type_concept_id',
-    '_source_value',
-    '_source_concept_id'
+    'person_id', 'visit_occurrence_id', 'provider_id', '_concept_id',
+    '_type_concept_id', '_source_value', '_source_concept_id'
 ]
 
 DATE_FIELD_SUFFIXES = [
-    '_start_date',
-    '_start_datetime',
-    '_end_date',
-    '_end_datetime',
-    '_date',
+    '_start_date', '_start_datetime', '_end_date', '_end_datetime', '_date',
     '_datetime'
 ]
 
@@ -42,7 +33,8 @@ CDM_TABLE_SCHEMAS = resources.cdm_schemas(False, False)
 FIELD_MAPPING_HEADER = 'src_table,dest_table,src_field,dest_field,translation\n'
 
 
-def generate_field_mappings(_src_table, _dest_table, src_table_fields, dest_table_fields):
+def generate_field_mappings(_src_table, _dest_table, src_table_fields,
+                            dest_table_fields):
     """
     This functions generates a list of field mappings between the src_table and dest_table
 
@@ -56,18 +48,21 @@ def generate_field_mappings(_src_table, _dest_table, src_table_fields, dest_tabl
     for field_type in dest_table_fields:
 
         if field_type == DOMAIN_SPECIFIC_FIELDS:
-            specific_field_mappings = resolve_specific_field_mappings(_src_table, _dest_table,
-                                                                      dest_table_fields[DOMAIN_SPECIFIC_FIELDS])
+            specific_field_mappings = resolve_specific_field_mappings(
+                _src_table, _dest_table,
+                dest_table_fields[DOMAIN_SPECIFIC_FIELDS])
             _field_mappings.update(specific_field_mappings)
 
         elif field_type == DOMAIN_DATE_FIELDS:
-            date_field_mappings = resolve_date_field_mappings(src_table_fields[DOMAIN_DATE_FIELDS],
-                                                              dest_table_fields[DOMAIN_DATE_FIELDS])
+            date_field_mappings = resolve_date_field_mappings(
+                src_table_fields[DOMAIN_DATE_FIELDS],
+                dest_table_fields[DOMAIN_DATE_FIELDS])
             _field_mappings.update(date_field_mappings)
 
         else:
-            common_field_mappings = resolve_common_field_mappings(src_table_fields[DOMAIN_COMMON_FIELDS],
-                                                                  dest_table_fields[DOMAIN_COMMON_FIELDS])
+            common_field_mappings = resolve_common_field_mappings(
+                src_table_fields[DOMAIN_COMMON_FIELDS],
+                dest_table_fields[DOMAIN_COMMON_FIELDS])
             _field_mappings.update(common_field_mappings)
 
     return _field_mappings
@@ -84,13 +79,15 @@ def resolve_common_field_mappings(src_common_fields, dest_common_fields):
 
     for field_suffix in dest_common_fields:
         _dest_field = dest_common_fields[field_suffix]
-        _src_field = src_common_fields[field_suffix] if field_suffix in src_common_fields else NULL_VALUE
+        _src_field = src_common_fields[
+            field_suffix] if field_suffix in src_common_fields else NULL_VALUE
         common_field_mappings[_dest_field] = _src_field
 
     return common_field_mappings
 
 
-def resolve_specific_field_mappings(_src_table, _dest_table, _dest_specific_fields):
+def resolve_specific_field_mappings(_src_table, _dest_table,
+                                    _dest_specific_fields):
     """
     This function generates a list of field mappings between _src_table and _dest_table for the domain specific fields.
     E.g. The fields value_as_number and value_as_concept_id can be mapped between observation and measurement.
@@ -109,7 +106,8 @@ def resolve_specific_field_mappings(_src_table, _dest_table, _dest_specific_fiel
     else:
 
         # Retrieve the field mappings and put them into the dict
-        specific_field_mappings.update(get_field_mappings(_src_table, _dest_table))
+        specific_field_mappings.update(
+            get_field_mappings(_src_table, _dest_table))
 
         # For dest_specific_field that is not defined, map it to NULL
         for dest_specific_field in _dest_specific_fields:
@@ -152,7 +150,8 @@ def resolve_date_field_mappings(src_date_fields, dest_date_fields):
             else:
                 src_date_suffix = '_start{}'.format(dest_date_suffix)
 
-            _src_field = src_date_fields[src_date_suffix] if src_date_suffix is not None else NULL_VALUE
+            _src_field = src_date_fields[
+                src_date_suffix] if src_date_suffix is not None else NULL_VALUE
             _dest_field = dest_date_fields[dest_date_suffix]
             date_field_mappings[_dest_field] = _src_field
 
@@ -176,7 +175,10 @@ def create_domain_field_dict():
         domain = get_domain(domain_table)
         domain_id_field = get_domain_id_field(domain_table)
 
-        for field_name in get_domain_fields(domain_table):
+        for field_name in [
+                field_name for field_name in get_domain_fields(domain_table)
+                if field_name != domain_id_field
+        ]:
 
             # Added a special check for drug_exposure because the drug_exposure columns don't follow the same pattern
             # E.g. drug_exposure_start_time doesn't follow the pattern {domain}_start_datetime
@@ -205,13 +207,12 @@ def create_domain_field_dict():
 
 def get_domain_fields(_domain_table):
     """
-    This function retrieves all field names of a CDM table except for the id column such as condition_occurrence_id
+    This function retrieves all field names of a CDM table
     :param _domain_table:
     :return:
     """
-    id_field = get_domain_id_field(_domain_table)
     fields = CDM_TABLE_SCHEMAS[_domain_table]
-    return [field[NAME_FIELD] for field in fields if field[NAME_FIELD] != id_field]
+    return [field[NAME_FIELD] for field in fields]
 
 
 def is_field_required(_domain_table, field_name):
@@ -235,10 +236,12 @@ if __name__ == '__main__':
         field_dict = create_domain_field_dict()
         for src_table in DOMAIN_TABLE_NAMES:
             for dest_table in DOMAIN_TABLE_NAMES:
-                if src_table == dest_table or exist_domain_mappings(src_table, dest_table):
-                    field_mappings = generate_field_mappings(src_table, dest_table, field_dict[src_table],
-                                                             field_dict[dest_table])
-                    for dest_field, src_field in field_mappings.iteritems():
+                if src_table == dest_table or exist_domain_mappings(
+                        src_table, dest_table):
+                    field_mappings = generate_field_mappings(
+                        src_table, dest_table, field_dict[src_table],
+                        field_dict[dest_table])
+                    for dest_field, src_field in field_mappings.items():
                         translation = 1 if TYPE_CONCEPT_SUFFIX in src_field \
                                            and TYPE_CONCEPT_SUFFIX in dest_field \
                                            and src_table != dest_table else 0

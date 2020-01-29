@@ -1,9 +1,12 @@
-EHR_DATASET = 'ehr_dataset'
-UNIONED_EHR_DATASET = 'unioned_ehr_dataset'
-RDR_DATASET = 'rdr_dataset'
-EHR_RDR_DATASET = 'ehr_rdr_dataset'
-EHR_RDR_DE_IDENTIFIED = 'ehr_rdr_de_identified_dataset'
-PROJECT = 'project'
+from enum import Enum, unique
+
+EHR = 'ehr'
+UNIONED = 'unioned'
+RDR = 'rdr'
+COMBINED = 'combined'
+DEID_BASE = 'deid_base'
+DEID_CLEAN = 'deid_clean'
+DATASET_CHOICES = [EHR, UNIONED, RDR, COMBINED, DEID_BASE, DEID_CLEAN]
 
 PERSON_TABLE_NAME = 'person'
 
@@ -17,3 +20,17 @@ DESTINATION_DATASET = 'destination_dataset_id'
 BATCH = 'batch'
 PROCEDURE_OCCURRENCE = 'procedure_occurrence'
 QUALIFIER_SOURCE_VALUE = 'qualifier_source_value'
+
+
+@unique
+class DataStage(Enum):
+    UNSPECIFIED = 'unspecified'
+    EHR = 'ehr'
+    RDR = 'rdr'
+    UNIONED = 'unioned'
+    COMBINED = 'combined'
+    DEID_BASE = 'deid_base'
+    DEID_CLEAN = 'deid_clean'
+
+    def __str__(self):
+        return self.value

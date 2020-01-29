@@ -1,6 +1,7 @@
 import re
 
 import bq_utils
+from io import open
 
 COMMAND_SEP = ';'
 PREFIX_PLACEHOLDER = 'synpuf_100.'
@@ -8,6 +9,9 @@ TEMP_PREFIX = 'temp.'
 TEMP_TABLE_PATTERN = re.compile('\s*INTO\s+([^\s]+)')
 TRUNCATE_TABLE_PATTERN = re.compile('\s*truncate\s+table\s+([^\s]+)')
 DROP_TABLE_PATTERN = re.compile('\s*drop\s+table\s+([^\s]+)')
+COMMENTED_BLOCK_REGEX = re.compile(
+    '(?P<before_comment>(^)(.)*)(?P<comment>(\/\*)(.)*(\*\/))(?P<after_comment>(.)*$)',
+    re.DOTALL)
 
 
 def _is_commented_line(s):
@@ -15,14 +19,26 @@ def _is_commented_line(s):
     return s == '' or s.startswith('--')
 
 
-def is_commented_block(s):
+def is_commented_block(statement):
     """
     True if the statement is commented or whitespace
-    :param s:
+    :param statement:
     :return:
     """
-    ls = s.split('\n')
-    return all(map(_is_commented_line, ls))
+    statement = statement.strip()
+    ls = statement.split('\n')
+    line_comments = all(map(_is_commented_line, ls))
+
+    if line_comments:
+        return line_comments
+
+    block_comment = False
+    match = COMMENTED_BLOCK_REGEX.search(statement)
+    if match and not (match.group('before_comment') or
+                      match.group('after_comment')):
+        block_comment = True
+
+    return block_comment
 
 
 def is_active_command(s):
@@ -40,10 +56,12 @@ def get_commands(sql_path):
     :param sql_path:
     :return:
     """
+    commands = []
     with open(sql_path, 'r') as f:
         text = f.read()
         commands = text.split(COMMAND_SEP)
-        return filter(is_active_command, commands)
+    commands = [command for command in commands if is_active_command(command)]
+    return commands
 
 
 def qualify_tables(command, hpo_id=None):
@@ -68,13 +86,39 @@ def qualify_tables(command, hpo_id=None):
     return command
 
 
-def is_to_temp_table(q):
+def is_to_temp_table(query):
     """
-    True if `q` is a DML statement that outputs to a temp table
-    :param q:
-    :return:
+    Determine if the query is a DML statement that outputs to a temp table
+
+    :param query: The query string to parse
+    :return:  True if the query string is saving results to a temporary table.
+        False if not a DML statement outputting to a temporary table.
     """
-    return 'INTO' in q
+    # remove all line comments
+    query_without_line_comments = []
+    for line in query.split('\n'):
+        if not _is_commented_line(line):
+            query_without_line_comments.append(line)
+
+    # remove all block comments
+    query_string = ' '.join(query_without_line_comments)
+    match = COMMENTED_BLOCK_REGEX.search(query_string)
+    while match:
+        query_string = match.group('before_comment') + match.group(
+            'after_comment')
+        match = COMMENTED_BLOCK_REGEX.search(query_string)
+
+    query_list = query_string.split()
+    insert_query = False
+    if query_list[0].lower() == 'insert':
+        insert_query = True
+
+    stores_output = False
+    for qualifier in [' INTO ', ' into ']:
+        if qualifier in query or qualifier.lstrip() in query:
+            stores_output = True
+
+    return stores_output and not insert_query
 
 
 def get_temp_table_name(q):

@@ -1,3 +1,8 @@
+"""
+Utility for creating OMOP vocabulary DRC resources. OMOP vocabulary files are downloaded from
+[Athena](http://athena.ohdsi.org/) in tab-separated format. Before they can be loaded into BigQuery, they must
+be reformatted and records for the AOU Generalization and AOU Custom vocabularies must be added to them.
+"""
 import csv
 import logging
 import os
@@ -5,10 +10,12 @@ import sys
 import warnings
 import re
 
-from common import CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR, TRANSFORM_FILES, \
-    APPEND_VOCABULARY, APPEND_CONCEPTS, ADD_AOU_GENERAL, ERRORS, AOU_GEN_ID, AOU_GEN_VOCABULARY_CONCEPT_ID, \
-    AOU_GEN_VOCABULARY_REFERENCE, ERROR_APPENDING, AOU_GEN_NAME
-from resources import AOU_GENERAL_PATH, AOU_GENERAL_CONCEPT_CSV_PATH, hash_dir
+from common import (CONCEPT, VOCABULARY, DELIMITER, LINE_TERMINATOR,
+                    TRANSFORM_FILES, APPEND_VOCABULARY, APPEND_CONCEPTS,
+                    ADD_AOU_VOCABS, ERRORS, ERROR_APPENDING, VOCABULARY_UPDATES,
+                    AOU_GEN_ID, AOU_CUSTOM_ID)
+from resources import AOU_VOCAB_PATH, AOU_VOCAB_CONCEPT_CSV_PATH, hash_dir
+from io import open
 
 RAW_DATE_PATTERN = re.compile(r'\d{8}$')
 BQ_DATE_PATTERN = re.compile(r'\d{4}-\d{2}-\d{2}$')
@@ -42,15 +49,17 @@ def _transform_csv(in_fp, out_fp, err_fp=None):
     for index, item in enumerate(header):
         if item.endswith('_date'):
             date_indexes.append(index)
-    csv_writer = csv.writer(out_fp, delimiter=DELIMITER, lineterminator=LINE_TERMINATOR)
+    csv_writer = csv.writer(out_fp,
+                            delimiter=DELIMITER,
+                            lineterminator=LINE_TERMINATOR)
     csv_writer.writerow(header)
     for row in csv_reader:
         try:
             for i in date_indexes:
                 row[i] = format_date_str(row[i])
             csv_writer.writerow(row)
-        except (ValueError, IndexError), e:
-            message = 'Error %s transforming row:\n%s' % (e.message, row)
+        except (ValueError, IndexError) as e:
+            message = 'Error %s transforming row:\n%s' % (str(e), row)
             err_fp.write(message)
 
 
@@ -69,9 +78,12 @@ def transform_file(file_path, out_dir):
     try:
         os.makedirs(err_dir)
     except OSError:
-        logging.debug("Error directory:\t%s\t already exists", err_dir)
+        logging.info("Error directory:\t%s\t already exists", err_dir)
 
-    with open(file_path, 'rb') as in_fp, open(out_file_name, 'wb') as out_fp, open(err_file_name, 'wb') as err_fp:
+    with open(file_path,
+              'r') as in_fp, open(out_file_name,
+                                  'w') as out_fp, open(err_file_name,
+                                                       'w') as err_fp:
         _transform_csv(in_fp, out_fp, err_fp)
 
 
@@ -88,30 +100,65 @@ def transform_files(in_dir, out_dir):
         transform_file(in_path, out_dir)
 
 
-def get_aou_general_version():
-    return hash_dir(AOU_GENERAL_PATH)
+def get_aou_vocab_version():
+    """
+    Generate an identifier used to version AOU vocabulary resources
+
+    :return: unique identifier string
+    """
+    return hash_dir(AOU_VOCAB_PATH)
 
 
-def get_aou_general_vocabulary_row():
-    aou_gen_version = get_aou_general_version()
+def get_aou_vocabulary_row(vocab_id):
+    """
+    Get row for the vocabulary
+
+    :param vocab_id:  vocabulary id to generate row for
+    :return: a delimited string representing row of the vocabulary.csv file
+    """
+    aou_vocab_version = get_aou_vocab_version()
     # vocabulary_id vocabulary_name vocabulary_reference vocabulary_version vocabulary_concept_id
-    return DELIMITER.join([AOU_GEN_ID, AOU_GEN_NAME, AOU_GEN_VOCABULARY_REFERENCE, aou_gen_version,
-                           AOU_GEN_VOCABULARY_CONCEPT_ID])
+    vocab_row = VOCABULARY_UPDATES.get(vocab_id)
+    vocab_row[-2] = aou_vocab_version
+    return DELIMITER.join(vocab_row)
+
+
+def _vocab_id_match(s):
+    """
+    Get a matching AOU vocabulary ID in the specified string, if any
+
+    :param s: string to search for AOU vocabulary IDs
+    :return: the first vocabulary ID found in the string, otherwise None
+    """
+    vocab_id_in_row_iter = (
+        vocab_id for vocab_id in VOCABULARY_UPDATES if vocab_id in s)
+    # if there are matches return the first one, otherwise None
+    return next(vocab_id_in_row_iter, None)
 
 
 def append_concepts(in_path, out_path):
-    with open(out_path, 'wb') as out_fp:
+    """
+    Add AOU-specific concepts to the concept file at the specified path
+
+    :param in_path: existing concept file
+    :param out_path: location to save the updated concept file
+    """
+    with open(out_path, 'w') as out_fp:
         # copy original rows line by line for memory efficiency
-        with open(in_path, 'rb') as in_fp:
+        with open(in_path, 'r') as in_fp:
             for row in in_fp:
-                if AOU_GEN_ID in row:
+                # check if the vocab_id is in the row text
+                vocab_id_in_row = _vocab_id_match(row)
+                if vocab_id_in_row:
                     # skip it so it is appended below
-                    warnings.warn(ERROR_APPENDING.format(in_path=in_path))
+                    warnings.warn(
+                        ERROR_APPENDING.format(in_path=in_path,
+                                               vocab_id=vocab_id_in_row))
                 else:
                     out_fp.write(row)
 
         # append new rows
-        with open(AOU_GENERAL_CONCEPT_CSV_PATH, 'rb') as aou_gen_fp:
+        with open(AOU_VOCAB_CONCEPT_CSV_PATH, 'r') as aou_gen_fp:
             # Sending the first five lines of the file because tab delimiters
             # are causing trouble with the Sniffer and has_header method
             five_lines = ''
@@ -128,21 +175,41 @@ def append_concepts(in_path, out_path):
 
 
 def append_vocabulary(in_path, out_path):
-    new_row = get_aou_general_vocabulary_row()
-    with open(out_path, 'wb') as out_fp:
+    """
+    Add AOU-specific vocabularies to the vocabulary file at the specified path
+
+    :param in_path: existing vocabulary file
+    :param out_path: location to save the updated vocabulary file
+    :return:
+    """
+    aou_general_row = get_aou_vocabulary_row(AOU_GEN_ID)
+    aou_custom_row = get_aou_vocabulary_row(AOU_CUSTOM_ID)
+    with open(out_path, 'w') as out_fp:
         # copy original rows line by line for memory efficiency
-        with open(in_path, 'rb') as in_fp:
+        with open(in_path, 'r') as in_fp:
             for row in in_fp:
-                if AOU_GEN_ID in row:
+                vocab_id_in_row = _vocab_id_match(row)
+                if vocab_id_in_row:
                     # skip it so it is appended below
-                    warnings.warn(ERROR_APPENDING.format(in_path=in_path))
+                    warnings.warn(
+                        ERROR_APPENDING.format(in_path=in_path,
+                                               vocab_id=vocab_id_in_row))
                 else:
                     out_fp.write(row)
-        # append new row
-        out_fp.write(new_row)
+        # append AoU_General and AoU_Custom
+        # newline needed here because write[lines] does not include line separator
+        out_fp.write(aou_general_row + '\n')
+        out_fp.write(aou_custom_row)
 
 
-def add_aou_general(in_dir, out_dir):
+def add_aou_vocabs(in_dir, out_dir):
+    """
+    Add vocabularies AoU_General and AoU_Custom to the vocabulary at specified path
+
+    :param in_dir: existing vocabulary files
+    :param out_dir: location to save the updated vocabulary files
+    :return:
+    """
     file_names = os.listdir(in_dir)
     concept_in_path = None
     vocabulary_in_path = None
@@ -162,22 +229,28 @@ def add_aou_general(in_dir, out_dir):
     concept_out_path = os.path.join(out_dir, os.path.basename(concept_in_path))
     append_concepts(concept_in_path, concept_out_path)
 
-    vocabulary_out_path = os.path.join(out_dir, os.path.basename(vocabulary_in_path))
+    vocabulary_out_path = os.path.join(out_dir,
+                                       os.path.basename(vocabulary_in_path))
     append_vocabulary(vocabulary_in_path, vocabulary_out_path)
 
 
 if __name__ == '__main__':
     import argparse
 
-    arg_parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    arg_parser.add_argument('command', choices=[TRANSFORM_FILES, ADD_AOU_GENERAL, APPEND_VOCABULARY, APPEND_CONCEPTS])
+    arg_parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    arg_parser.add_argument('command',
+                            choices=[
+                                TRANSFORM_FILES, ADD_AOU_VOCABS,
+                                APPEND_VOCABULARY, APPEND_CONCEPTS
+                            ])
     arg_parser.add_argument('--in_dir', required=True)
     arg_parser.add_argument('--out_dir', required=True)
     args = arg_parser.parse_args()
     if args.command == TRANSFORM_FILES:
         transform_files(args.in_dir, args.out_dir)
-    elif args.command == ADD_AOU_GENERAL:
-        add_aou_general(args.in_dir, args.out_dir)
+    elif args.command == ADD_AOU_VOCABS:
+        add_aou_vocabs(args.in_dir, args.out_dir)
     elif args.command == APPEND_VOCABULARY:
         append_vocabulary(args.file, args.out_dir)
     elif args.command == APPEND_CONCEPTS:

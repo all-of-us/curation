@@ -4,7 +4,7 @@ import json
 import os
 
 import gcs_utils
-import query_reports
+from tools.consolidated_reports import query_reports
 
 DRC_BUCKET_PATH = 'gs://%s/' % gcs_utils.get_drc_bucket()
 
@@ -42,8 +42,10 @@ def download_report(path_dict):
         os.mkdir('%s/result_data' % (cdir))
     except OSError:
         # log the exception but keep moving because it doesn't hurt your code.
-        print("The file %s/result_data/%s already exists", cdir, path_dict['hpo_id'])
-    cmd = 'gsutil -m cp -r %s ./result_data/%s_results.html' % (path_dict['report_path'], path_dict['hpo_id'])
+        print("The file %s/result_data/%s already exists", cdir,
+              path_dict['hpo_id'])
+    cmd = 'gsutil -m cp -r %s ./result_data/%s_results.html' % (
+        path_dict['report_path'], path_dict['hpo_id'])
     print('Downloading %s rpt with cmd: `%s`...' % (path_dict['hpo_id'], cmd))
     os.system(cmd)
 

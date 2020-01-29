@@ -12,6 +12,7 @@ import pandas as pd
 
 
 class Meta(object):
+
     def sqlite(self, **args):
         """
         Will load a csv/json file with the type information of a table

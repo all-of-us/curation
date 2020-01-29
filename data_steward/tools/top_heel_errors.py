@@ -6,11 +6,12 @@ import json
 import os
 from functools import partial
 
-from google.appengine.api.app_identity import app_identity
+import app_identity
 
 import bq_utils
 import common
 import resources
+from io import open
 
 HPO_ID_LIST = [item['hpo_id'] for item in resources.hpo_csv()]
 JSON = 'json'
@@ -25,8 +26,10 @@ FIELD_ACHILLES_HEEL_WARNING = 'achilles_heel_warning'
 FIELD_HEEL_ERROR = 'heel_error'
 FIELD_RULE_ID = 'rule_id'
 FIELD_RECORD_COUNT = 'record_count'
-FIELDS = [FIELD_DATASET_NAME, FIELD_ANALYSIS_ID, FIELD_HEEL_ERROR,
-          FIELD_RULE_ID, FIELD_RECORD_COUNT]
+FIELDS = [
+    FIELD_DATASET_NAME, FIELD_ANALYSIS_ID, FIELD_HEEL_ERROR, FIELD_RULE_ID,
+    FIELD_RECORD_COUNT
+]
 RESULT_LIMIT = 10
 
 # Query template
@@ -114,7 +117,7 @@ def construct_query(app_id, dataset_id, all_hpo=False):
     if all_hpo:
         # Fetch and union results from all <hpo_id>_achilles_heel_results tables
         subqueries = get_hpo_subqueries(app_id, dataset_id, all_table_ids)
-        enclosed = map(lambda s: '(%s)' % s, subqueries)
+        enclosed = ['(%s)' % s for s in subqueries]
         query = UNION_ALL.join(enclosed)
     else:
         # Fetch from achilles_heel_results table
@@ -176,7 +179,8 @@ def main(app_id, dataset_id, file_name, all_hpo=False, file_format=None):
         file_name_comps = file_name.lower().split('.')
         file_format = file_name_comps[-1]
     if file_format not in OUTPUT_FORMATS:
-        raise ValueError('File format must be one of (%s)' % ', '.join(OUTPUT_FORMATS))
+        raise ValueError('File format must be one of (%s)' %
+                         ', '.join(OUTPUT_FORMATS))
     heel_errors = top_heel_errors(app_id, dataset_id, all_hpo)
     if file_format == CSV:
         save_csv(heel_errors, file_name)
@@ -189,7 +193,8 @@ def main(app_id, dataset_id, file_name, all_hpo=False, file_format=None):
 if __name__ == '__main__':
     import argparse
 
-    PARSER = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    PARSER = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     PARSER.add_argument('--app_id',
                         required=True,
                         help='Identifies the google cloud project')
@@ -200,8 +205,11 @@ if __name__ == '__main__':
     PARSER.add_argument('--all_hpo',
                         help='If specified fetch top results for all HPOs',
                         action='store_true')
-    PARSER.add_argument('--format', help='Output format', choices=OUTPUT_FORMATS,
+    PARSER.add_argument('--format',
+                        help='Output format',
+                        choices=OUTPUT_FORMATS,
                         default=CSV)
     PARSER.add_argument('file_name', help='Path of file to save results to')
     ARGS = PARSER.parse_args()
-    main(ARGS.app_id, ARGS.dataset_id, ARGS.file_name, ARGS.all_hpo, ARGS.format)
+    main(ARGS.app_id, ARGS.dataset_id, ARGS.file_name, ARGS.all_hpo,
+         ARGS.format)

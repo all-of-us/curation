@@ -18,8 +18,10 @@ RESULT_PASS_COLOR = 'green'
 # Table Headers
 RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
 ERROR_FILE_HEADERS = ["File Name", "Message"]
-DRUG_CHECK_HEADERS = ['Counts by Drug class', 'Drug Class Concept Name',
-                      'Drug Class', 'Percentage', 'Drug Class Concept ID']
+DRUG_CHECK_HEADERS = [
+    'Counts by Drug class', 'Drug Class Concept Name', 'Drug Class',
+    'Percentage', 'Drug Class Concept ID'
+]
 HEEL_ERROR_HEADERS = ['Record Count', 'Heel Error', 'Analysis ID', 'Rule ID']
 DUPLICATE_IDS_HEADERS = ['Table Name', 'Duplicate ID Count']
 
@@ -36,7 +38,8 @@ HEEL_ERROR_QUERY_VALIDATION = '''
         record_count DESC, 
         analysis_id
     '''
-HEEL_ERROR_FAIL_ROWS = [(NULL_MESSAGE, HEEL_ERROR_FAIL_MESSAGE, NULL_MESSAGE, NULL_MESSAGE)]
+HEEL_ERROR_FAIL_ROWS = [(NULL_MESSAGE, HEEL_ERROR_FAIL_MESSAGE, NULL_MESSAGE,
+                         NULL_MESSAGE)]
 
 # Used in get_drug_checks_in_results_html()
 DRUG_CHECKS_QUERY_VALIDATION = '''

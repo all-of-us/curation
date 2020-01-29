@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -ex
 # This Script automates the process of de-identification of the combined_dataset
 # This script expects you are using the venv in curation directory
 
@@ -8,6 +8,7 @@ Usage: deid_runner.sh
   --key_file <path to key file>
   --cdr_id <combined_dataset name>
   --vocab_dataset <vocabulary dataset name>
+  --dataset_release_tag <release tag for the CDR>
 "
 
 while true; do
@@ -24,6 +25,10 @@ while true; do
     vocab_dataset=$2
     shift 2
     ;;
+  --dataset_release_tag)
+    dataset_release_tag=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -32,8 +37,8 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${vocab_dataset}" ]]; then
-  echo "Specify the key file location and input dataset name application id and vocab dataset name. $USAGE"
+if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset_release_tag}" ]]; then
+  echo "${USAGE}"
   exit 1
 fi
 
@@ -41,43 +46,28 @@ echo "key_file --> ${key_file}"
 echo "cdr_id --> ${cdr_id}"
 echo "vocab_dataset --> ${vocab_dataset}"
 
-APP_ID=$(cat "${key_file}" | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
+APP_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
-export APPLICATION_ID="${APP_ID}"
+export GOOGLE_CLOUD_PROJECT="${APP_ID}"
 
 #set application environment (ie dev, test, prod)
 gcloud auth activate-service-account --key-file="${key_file}"
 gcloud config set project "${APP_ID}"
 
 cdr_deid="${cdr_id}_deid"
-cdr_deid_clean="${cdr_deid}_clean"
+ROOT_DIR=$(git rev-parse --show-toplevel)
+DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
+TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
+DEID_DIR="${DATA_STEWARD_DIR}/deid"
 
 #------Create de-id virtual environment----------
-set -e
+virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
 
-# create a new environment in directory deid_env
-TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-DATA_STEWARD_DIR="$(cd ${TOOLS_DIR} && cd .. && pwd )"
-DEID_DIR="${DATA_STEWARD_DIR}/deid"
-GCLOUD_PATH=$(which gcloud)
-CLOUDSDK_ROOT_DIR=${GCLOUD_PATH%/bin/gcloud}
-GAE_SDK_ROOT="${CLOUDSDK_ROOT_DIR}/platform/google_appengine"
-GAE_SDK_APPENGINE="${GAE_SDK_ROOT}/google/appengine"
-GAE_SDK_NET="${GAE_SDK_ROOT}/google/net"
-VENV_DIR="${DATA_STEWARD_DIR}/deid_venv"
-
-virtualenv --python=$(which python) "${VENV_DIR}"
-
-source ${VENV_DIR}/bin/activate
+source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
 
 # install the requirements in the virtualenv
 pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
 pip install -r "${DEID_DIR}/requirements.txt"
-
-VENV_LIB_GOOGLE="$(python -c "import google as _; print(_.__path__[-1])")"
-
-cp -R "${GAE_SDK_APPENGINE}" "${VENV_LIB_GOOGLE}"
-cp -R "${GAE_SDK_NET}" "${VENV_LIB_GOOGLE}"
 
 export BIGQUERY_DATASET_ID="${cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
@@ -86,23 +76,78 @@ export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
 version=$(git describe --abbrev=0 --tags)
 
 # create empty de-id dataset
-bq mk --dataset --description "${version} deidentified base version of ${cdr_id}" "${APP_ID}":"${cdr_deid}"
+bq mk --dataset --description "${version} deidentified version of ${cdr_id}" "${APP_ID}":"${cdr_deid}"
 
 # create the clinical tables
 python "${DATA_STEWARD_DIR}/cdm.py" "${cdr_deid}"
 
 # copy OMOP vocabulary
 python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${cdr_deid}"
-"${DATA_STEWARD_DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${cdr_deid}"
+"${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${cdr_deid}"
 
 # apply deidentification on combined dataset
-python "${DATA_STEWARD_DIR}/tools/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive |& tee -a deid_output.txt
+python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive -c
+
+# generate ext tables in deid dataset
+python "${TOOLS_DIR}/generate_ext_tables.py" -p "${APP_ID}" -d "${cdr_deid}" -c "${cdr_id}" -s
+
+cdr_deid_base_staging="${cdr_deid}_base_staging"
+cdr_deid_base="${cdr_deid}_base"
+cdr_deid_clean_staging="${cdr_deid}_clean_staging"
+cdr_deid_clean="${cdr_deid}_clean"
 
 # create empty de-id_clean dataset to apply cleaning rules
-bq mk --dataset --description "${version} deidentified clean version of ${cdr_id}" "${APP_ID}":"${cdr_deid_clean}"
+bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${cdr_deid}" ${APP_ID}:${cdr_deid_base_staging}
 
 # copy de_id dataset to a clean version
-"${DATA_STEWARD_DIR}"/tools/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_clean}"
+"${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_base_staging}"
+
+export BIGQUERY_DATASET_ID="${cdr_deid_base_staging}"
+export COMBINED_DEID_DATASET_ID="${cdr_deid_base_staging}"
+data_stage='deid_base'
+
+# run cleaning_rules on a dataset
+python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee deid_base_cleaning_log.txt
+
+# Create a snapshot dataset with the result
+python "${TOOLS_DIR}/snapshot_by_query.py" -p "${APP_ID}" -d "${cdr_deid_base_staging}" -n "${cdr_deid_base}"
+
+bq update --description "${version} De-identified Base version of ${cdr_id}" ${APP_ID}:${cdr_deid_base}
+
+#copy sandbox dataset
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${cdr_deid_base_staging}_sandbox" --target_dataset "${cdr_deid_base}_sandbox"
+
+# remove intemideary datasets
+bq rm -r -d "${cdr_deid_base_staging}_sandbox"
+bq rm -r -d "${cdr_deid_base_staging}"
+
+# create empty de-id_clean dataset to apply cleaning rules
+bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${cdr_deid_base}" ${APP_ID}:${cdr_deid_clean_staging}
+
+# copy de_id dataset to a clean version
+"${TOOLS_DIR}/table_copy.sh" --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid_base}" --target_dataset "${cdr_deid_clean_staging}"
+
+export BIGQUERY_DATASET_ID="${cdr_deid_clean_staging}"
+export COMBINED_DEID_CLEAN_DATASET_ID="${cdr_deid_clean_staging}"
+data_stage='deid_clean'
+
+# run cleaning_rules on a dataset
+python "${CLEANER_DIR}clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee deid_clean_cleaning_log.txt
+
+# Create a snapshot dataset with the result
+python "${TOOLS_DIR}/snapshot_by_query.py" -p "${APP_ID}" -d "${cdr_deid_clean_staging}" -n "${cdr_deid_clean}"
+
+bq update --description "${version} De-identified Clean version of ${cdr_deid_base}" ${APP_ID}:${cdr_deid_clean}
+
+#copy sandbox dataset
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${cdr_deid_clean_staging}_sandbox" --target_dataset "${cdr_deid_clean}_sandbox"
+
+# remove intemideary datasets
+bq rm -r -d "${cdr_deid_clean_staging}_sandbox"
+bq rm -r -d "${cdr_deid_clean_staging}"
 
 # deactivate virtual environment
+unset PYTHONPATH
 deactivate
+
+set +ex

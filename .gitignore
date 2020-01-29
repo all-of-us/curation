@@ -82,6 +82,7 @@ celerybeat-schedule
 .venv/
 venv/
 ENV/
+curation_venv/
 
 # Spyder project settings
 .spyderproject
@@ -119,4 +120,8 @@ tmp/*
 /data_steward/test/test_data/export/synpuf/*.csv
 .circleci/oldconfig.yml
 /data_steward/tools/consolidated_achilles_report/curation_report/data/*
-data_steward/analytics/cdr_ops/notebooks/parameters.py
+
+
+# Notebooks
+data_steward/notebooks/parameters.py
+data_steward/analytics/cdr_ops/*.ipynb

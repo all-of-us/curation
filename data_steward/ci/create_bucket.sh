@@ -13,6 +13,6 @@ then
   echo "Usage: $USAGE"
   exit 1
 fi
-gsutil mb gs://${BUCKET_NAME}
+gsutil mb -p ${PROJECT} gs://${BUCKET_NAME}
 gsutil lifecycle set ${SCRIPTPATH}/${PROJECT}-bucket-lifecycle.json gs://${BUCKET_NAME}
 gsutil iam set ${SCRIPTPATH}/${PROJECT}-bucket-iam-policy.txt gs://${BUCKET_NAME}

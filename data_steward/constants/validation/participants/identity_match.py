@@ -20,7 +20,7 @@ MISMATCH = "no_match"
 MISSING = "missing"
 
 # Date format strings
-DATE = '%Y-%m-%d'
+DATE_FORMAT = '%Y-%m-%d'
 DRC_DATE_FORMAT = '%Y%m%d'
 DRC_DATE_REGEX = '\d{8}'
 
@@ -34,6 +34,14 @@ PII_ADDRESS_TABLE = '_pii_address'
 PII_NAME_TABLE = '_pii_name'
 EHR_PERSON_TABLE_SUFFIX = '_person'
 VALIDATION_TABLE_SUFFIX = '_identity_match'
+
+# Field types
+DATE_TYPE = 'date'
+DATETIME_TYPE = 'datetime'
+TIMESTAMP_TYPE = 'timestamp'
+INTEGER_TYPE = 'integer'
+STRING_TYPE = 'string'
+FLOAT_TYPE = 'float'
 
 # Field names
 PERSON_ID_FIELD = 'person_id'
@@ -53,10 +61,9 @@ GENDER_FIELD = 'gender_concept_id'
 BIRTH_DATETIME_FIELD = 'birth_datetime'
 
 VALIDATION_FIELDS = [
-    FIRST_NAME_FIELD, MIDDLE_NAME_FIELD, LAST_NAME_FIELD,
-    EMAIL_FIELD, PHONE_NUMBER_FIELD, ZIP_CODE_FIELD, STATE_FIELD,
-    CITY_FIELD, ADDRESS_ONE_FIELD, ADDRESS_TWO_FIELD,
-    BIRTH_DATE_FIELD, SEX_FIELD
+    FIRST_NAME_FIELD, MIDDLE_NAME_FIELD, LAST_NAME_FIELD, EMAIL_FIELD,
+    PHONE_NUMBER_FIELD, ZIP_CODE_FIELD, STATE_FIELD, CITY_FIELD,
+    ADDRESS_ONE_FIELD, ADDRESS_TWO_FIELD, BIRTH_DATE_FIELD, SEX_FIELD
 ]
 
 # Report names and directories

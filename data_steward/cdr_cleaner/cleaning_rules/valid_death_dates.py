@@ -4,8 +4,8 @@ Allowing for more flexibility, we choose Jan 1, 2017 as the program start date.
 """
 
 # Project imports
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 import common
 
 death = common.DEATH
@@ -30,11 +30,12 @@ def get_valid_death_date_queries(project_id, dataset_id):
     """
     queries = []
     query = dict()
-    query[cdr_consts.QUERY] = KEEP_VALID_DEATH_TABLE_ROWS.format(project_id=project_id,
-                                                                 dataset_id=dataset_id,
-                                                                 table=death,
-                                                                 program_start_date=program_start_date,
-                                                                 current_date=current_date)
+    query[cdr_consts.QUERY] = KEEP_VALID_DEATH_TABLE_ROWS.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        table=death,
+        program_start_date=program_start_date,
+        current_date=current_date)
     query[cdr_consts.DESTINATION_TABLE] = death
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -49,4 +50,4 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
     query_list = get_valid_death_date_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

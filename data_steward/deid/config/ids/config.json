@@ -1,130 +1,245 @@
 [
-	{
-		"_id":"generalize",
-		"RACE":[
-			{
-                "comment":"generalizing minorities into a group",
-				"values":[1586141, 1586144, 1586145, 1586148],
-				"into":2000000001,
-				"qualifier":"IN"
-
-			},
-			{
-				"comment":"multi racial generalization rule, the values the count is limited to is provided by the 'on' key",
-                "apply":"COUNT-DISTINCT",
-				"into":2000000008,
-				"qualifier":"> 1",
-                "distinct": "value_source_concept_id",
-				"on": "value_source_concept_id = 1586141 or value_source_concept_id = 1586142 or value_source_concept_id = 1586143 or value_source_concept_id = 1586144 or value_source_concept_id = 1586145 or value_source_concept_id = 1586146 or value_source_concept_id = 1586147 or value_source_concept_id = 1586148"
-			}
-		],
-		"SEXUAL-ORIENTATION":[
-			{
-                "comment": "generalize any answer that is not straight",
-				"qualifier":"IN",
-				"values":[903096, 903079, 1585901, 1585902, 1585903, 1585904],
-				"into":2000000003
-			},
+    {
+        "_id":"generalize",
+        "RACE": [
             {
-                "comment": "generalize straight values to same concept id",
-                "qualifier": "IN",
-                "values": [1585900],
-                "into": 4069091
-            }
-		],
-		"SEX-AT-BIRTH":[
-			{
-                "comment": "generalizing not male and not female responses",
-				"qualifier":"IN",
-				"values":[903096, 903079, 1585848, 1585849],
-				"into":2000000009
-			},
-            {
-                "comment": "generalizing female responses",
-                "qualifier": "IN",
-                "values": [1585847],
-                "into": 45878463
+                "comment": [
+                    "aggregate multi-race answers before generalizing ",
+                    "single race answers.  treat HLS as an ethnicity, ",
+                    "not a race."
+                ],
+                "apply": "SQL",
+                "statement": [
+                    "(SELECT COUNT(obs.person_id) ",
+                    "FROM :idataset.:table AS obs ",
+                    "WHERE obs.person_id = :table.person_id ",
+                    "AND obs.value_source_concept_id IN (1586141, 1586142, 1586143, 1586144, 1586145, 1586146) ",
+                    "GROUP BY obs.person_id ) "
+                ],
+                "qualifier": " > 1 AND value_source_concept_id != 1586147 ",
+                "into": 2000000008,
+                "drop_duplicates": "True"
             },
             {
-                "comment": "generalizing male responses",
-                "qualifier": "IN",
-                "values": [1585846],
-                "into": 45880669
+                "comment": "generalize single race values",
+                "values": [1586141, 1586144, 1586145],
+                "into": 2000000001,
+                "qualifier": "IN"
             }
-		],
-		"GENDER":[
-			{
-                "comment":"values that are not male or female will be generalized into other",
-				"qualifier":"IN",
-				"values":[903096, 903079, 1585843, 1585841,1585842],
-				"into": 2000000002
-			}
-		],
-		"EDUCATION":[
+        ],
+        "STATE": [
             {
-                "comment":"generalizing to no highschool degree",
-				"qualifier": "IN",
-				"values": [1585941, 1585942, 1585943, 1585944],
-				"into": 2000000007
-			},
-			{
-                "comment":"generalizing to above highschool degree",
-				"into": 2000000006,
-				"values":[1585947, 1585948],
-				"qualifier":"IN"
-			}
-		],
-		"EMPLOYMENT":[
-			{
+                "comment": [
+                    "generalize participant state when PIIState doesn't match ",
+                    "participant EHR state.  requires the reference tables ",
+                    "_mapping_person_src_hpos and _mapping_src_hpos_to_allowed_states ",
+                    "to be built during initialization."
+                ],
+                "apply": "SQL",
+                "statement": [
+                    "observation_id IN (SELECT observation_id FROM ( ",
+                    "SELECT DISTINCT src_hpo_id, obs.person_id, value_source_concept_id, observation_id ",
+                    "FROM :idataset._mapping_person_src_hpos AS person_hpos ",
+                    "JOIN :idataset.observation AS obs ",
+                    "USING (person_id) ",
+                    "LEFT JOIN :idataset._mapping_src_hpos_to_allowed_states ",
+                    "USING (src_hpo_id, value_source_concept_id) ",
+                    "WHERE observation_source_concept_id = 1585249  AND state IS NULL))"
+                ],
+                "into": 2000000011
+            },
+            {
+                "comment": "generalize the PIIState for participants with a low participant total",
+                "qualifier": "IN",
+                "values": [
+                    1585262, 1585263, 1585270, 1585271, 1585274, 1585275,
+                    1585284, 1585299, 1585291, 1585300, 1585304, 1585306,
+                    1585307, 1585309, 1585313, 1585315, 1585409, 1585411
+                ],
+                "into": 2000000011
+            }
+        ],
+        "SEXUAL-ORIENTATION":[
+            {
+                "comment": "generalize any response that is not straight",
+                "qualifier": "IN",
+                "values": [903096, 903079, 1585901, 1585902, 1585903, 1585904],
+                "into": 2000000003
+            }
+        ],
+        "SEX-AT-BIRTH":[
+            {
+                "comment": "generalize any response that is not male and not female",
+                "qualifier": "IN",
+                "values": [903096, 903079, 1585848, 1585849],
+                "into": 2000000009
+            }
+        ],
+        "GENDER":[
+            {
+                "comment": [
+                    "multi gender generalization rule, the values the count is ",
+                    "limited to is provided by the 'on' key.  it is best to ",
+                    "perform aggregate functions before other generalizations"
+                ],
+                "apply": "COUNT",
+                "into": 2000000002,
+                "qualifier": "> 1",
+                "values": [1585839, 1585840, 1585841, 1585842, 1585843],
+                "drop_duplicates": "True"
+            },
+            {
+                "comment": [
+                    "transgender generalization rule.  if sex-at-birth does ",
+                    "not match the identified gender, generalize the gender.  ",
+                    "generalizes born female but gender is male, or born ",
+                    "male but gender is female.  all other gender choices are ",
+                    "already generalized"
+                ],
+                "apply": "SQL",
+                "statement": [
+                    ":table_id IN (",
+                    "SELECT gender.:table_id ",
+                    "FROM :idataset.:table AS gender ",
+                    "JOIN :idataset.:table AS sex_at_birth ",
+                    "USING (person_id) ",
+                    "WHERE gender.observation_source_concept_id = 1585838 ",
+                    "AND ((gender.:fields = 1585839 AND sex_at_birth.:fields = 1585847) ",
+                    "OR (gender.:fields = 1585840 AND sex_at_birth.:fields = 1585846)))"
+                ],
+                "into": 2000000002
+            },
+            {
+                "comment": "values that are not male or female will be generalized into other",
+                "qualifier": "IN",
+                "values": [903096, 903079, 1585843, 1585841,1585842],
+                "into": 2000000002
+            }
+        ],
+        "EDUCATION":[
+            {
+                "comment": "generalizing to no highschool degree",
+                "qualifier": "IN",
+                "values": [1585941, 1585942, 1585943, 1585944],
+                "into": 2000000007
+            },
+            {
+                "comment": "generalizing to above highschool degree",
+                "into": 2000000006,
+                "values": [1585947, 1585948],
+                "qualifier": "IN"
+            }
+        ],
+        "EMPLOYMENT":[
+            {
                 "comment":"this will generalize values to unemployed or not employed",
-				"qualifier":"IN",
-				"values":[1585955, 1585956, 1585957, 1585958, 1585959, 1585960],
-				"into":2000000005
-			},
+                "qualifier":"IN",
+                "values":[1585955, 1585956, 1585957, 1585958, 1585959, 1585960],
+                "into":2000000005,
+                "drop_duplicates": "True"
+            },
             {
                 "comment":"generalizing to currently employed",
                 "qualifier":"IN",
                 "values":[1585953, 1585954],
-                "into":2000000004
+                "into":2000000004,
+                "drop_duplicates": "True"
             }
-		]
-		
-	},
-	{
-	"_id":"suppress",
-		"DEMOGRAPHICS-COLUMNS":[
-			{
-                "comment":"list of columns to be suppressed regardless of the table",
-                "values": ["year_of_birth","month_of_birth","day_of_birth","race_concept_id","ethnicity_concept_id","location_id","provider_id","care_site_id","person_source_value","gender_source_value","gender_source_concept_id","race_source_value","race_source_concept_id","ethnicity_source_value","ethnicity_source_concept_id","cause_concept_id","cause_source_value","cause_source_concept_id","visit_detail_id","value_source_value","value_as_string","visit_detail_id"]}
-		],
-		"ROWS":[
-			{
-                "comment":"remove all rows that match the following criteria. Implementation is different",
-                "qualifier":"IN", "values": ["ExtraConsent_EverReceivedUPMCCare","ExtraConsent_ScheduledWithPACares","ArizonaSitePairing_AZSitepairingLocation","CaliforniaSitePairing_CaliforniaUniversityCare","SouthCarolinaSitePairing_EauClaire","SouthCarolinaSitePairing_EauClaireAppointment","ColumbiaSitePairing_ColumbiaCare","NewYorkSitePairing_HRHCare","CHCSitePairing_CHCCareatLocation","MichiganSitePairing_LiveInFollowingAreas","EastSoutheastMichigan_CareAtHenryFord","IllinoisSitePairing_IllinoisInstitution","TennesseeSitePairing_CherokeeHealthPatient","TexasSitePairing_BaylorScott","NewEnglandSitePairing_CareReceived","MississippiSitePairing_JacksonHinds","MississippiSitePairing_JacksonHindsAppointment","PIIName_First","PIIName_Middle","PIIName_Last","PIIAddress_StreetAddress","PIIAddress_StreetAddress2","StreetAddress_PIICity","StreetAddress_PIIZIP","PIIContactInformation_Phone","ConsentPII_EmailAddress","ExtraConsent_Signature","ExtraConsent_CABoRSignature","SanDiegoSitePairing_SanDiegoBloodBank","SitePairing_CurrentlyReside","ResideAZSArizona_AZSArizonaSpecific","ResideAZCArizona_AZCArizonaSpecific","EHRConsentPII_Signature","EHRConsentPII_ILHIPPAWitnessSignature","TheBasics_CountryBornTextBox","RaceEthnicityNoneOfThese_RaceEthnicityFreeTextBox","AIAN_AIANSpecific","Asian_AsianSpecific","Black_BlackSpecific","MENA_MENASpecific","NHPI_NHPISpecific","White_WhiteSpecific","Hispanic_HispanicSpecific","WhatTribeAffiliation_FreeText","AIANNoneOfTheseDescribeMe_AIANFreeText","NoneOfTheseDescribeMe_AsianFreeText","BlackNoneOfTheseDescribeMe_BlackFreeText","MENANoneOfTheseDescribeMe_MENAFreeText","NHPINoneOfTheseDescribeMe_NHPIFreeText","WhiteNoneOfTheseDescribeMe_WhiteFreeText","Gender_CloserGenderDescription","SpecifiedGender_SpecifiedGenderTextBox","GenderIdentity_SexualityCloserDescription","SomethingElse_SexualitySomethingElseTextBox","LivingSituation_CurrentLiving","LivingSituation_LivingSituationFreeText","SecondaryContactInfo_PersonOneFirstName","SecondaryContactInfo_PersonOneMiddleInitial","SecondaryContactInfo_PersonOneLastName","SecondaryContactInfo_PersonOneAddressOne","SecondaryContactInfo_PersonOneAddressTwo","PersonOneAddress_PersonOneAddressCity","PersonOneAddress_PersonOneAddressZipCode","SecondaryContactInfo_PersonOneEmail","SecondaryContactInfo_PersonOneTelephone","SecondaryContactInfo_SecondContactsFirstName","SecondaryContactInfo_SecondContactsMiddleInitial","SecondaryContactInfo_SecondContactsLastName","SecondaryContactInfo_SecondContactsAddressOne","SecondaryContactInfo_SecondContactsAddressTwo","SecondContactsAddress_SecondContactCity","SecondContactsAddress_SecondContactZipCode","SecondaryContactInfo_SecondContactsEmail","SecondaryContactInfo_SecondContactsNumber","SocialSecurity_SocialSecurityNumber","Employment_EmploymentWorkAddress","EmploymentWorkAddress_AddressLineOne","EmploymentWorkAddress_AddressLineTwo","EmploymentWorkAddress_City","EmploymentWorkAddress_ZipCode","EmploymentWorkAddress_Country","HispanicNoneOfTheseDescribeMe_HispanicFreeText","SexAtBirthNoneOfThese_SexAtBirthTextBox","ActiveDuty_AvtiveDutyServeStatus","OtherSpecify_OtherDrugsTextBox","OrganTransplantDescription_OtherOrgan","OrganTransplantDescription_OtherTissue","PersonalMedicalHistory_AdditionalDiagnosis","HowOldWereYouHypertension_FreeTextBox","HowOldWereYouHighCholesterol_FreeTextBox","HowOldWereYouHeartAttack_FreeTextBox","HowOldWereYouCoronaryArtery_FreeTextBox","HowOldWereYouCongestiveHeartFailure_FreeTextBox","HowOldWereYouAtrialFibrillation_FreeTextBox","HowOldWereYouHeartValveDisease_FreeTextBox","HowOldWereYouStroke_FreeTextBox","HowOldWereYouTransientIschemicAttack_FreeTextBox","HowOldWereYouPulmonaryEmbolism_FreeTextBox","HowOldPeripheralVascularDisease_FreeTextBox","HowOldWereYouAnemia_FreeTextBox","HowOldWereYouSickleCellDisease_FreeTextBox","HowOldWereYouBleedingDisorder_FreeTextBox","HowOldWereYouAsthma_FreeTextBox","HowOldWereYouChronicLung_FreeTextBox","HowOldWereYouSleepApnea_FreeTextBox","HowOldWereYouBladderCancer_FreeTextBox","HowOldWereYouBloodCancer_FreeTextBox","HowOldWereYouBoneCancer_FreeTextBox","HowOldWereYouBrainCancer_FreeTextBox","HowOldWereYouBreastCancer_FreeTextBox","HowOldWereYouCervicalCancer_FreeTextBox","HowOldWereYouColonRectalCancer_FreeTextBox","HowOldWereYouEndocrineCancer_FreeTextBox","HowOldWereYouEndometrialCancer_FreeTextBox","HowOldWereYouEsophagealCancer_FreeTextBox","HowOldWereYouEyeCancer_FreeTextBox","HowOldWereYouHeadNeckCancer_FreeTextBox","HowOldWereYouKidneyCancer_FreeTextBox","HowOldWereYouLungCancer_FreeTextBox","HowOldWereYouPancreaticCancer_FreeTextBox","HowOldWereYouProstateCancer_FreeTextBox","HowOldWereYouSkinCancer_FreeTextBox","HowOldWereYouStomachCancer_FreeTextBox","HowOldWereYouThyroidCancer_FreeTextBox","HowOldWereYouOtherCancer_FreeTextBox","HowOldWereYouAcidReflux_FreeTextBox","HowOldWereYouBowelObstruction_FreeTextBox","HowOldWereYouColonPolyps_FreeTextBox","HowOldWereYouCrohnsDisease_FreeTextBox","HowOldWereYouDiverticulosis_FreeTextBox","HowOldWereYouGallStones_FreeTextBox","HowOldWereYouHemorrhoids_FreeTextBox","HowOldWereYouHernia_FreeTextBox","HowOldWereYouIrritableBowel_FreeTextBox","HowOldWereYouLiverCondition_FreeTextBox","HowOldWereYouPancreatitis_FreeTextBox","HowOldWereYouPepticUlcers_FreeTextBox","HowOldWereYouUlcerativeColitis_FreeTextBox","HowOldWereYouHyperthyroidism_FreeTextBox","HowOldWereYouHypothyroidism_FreeTextBox","HowOldWereYouOtherThyroid_FreeTextBox","HowOldWereYouType1Diabetes_FreeTextBox","HowOldWereYouType2Diabetes_FreeTextBox","HowOldWereYouPreDiabetes_FreeTextBox","HowOldWereYouOtherDiabetes_FreeTextBox","HowOldWereYouAcuteKidneyNoDialysis_FreeTextBox","HowOldWereYouKidneyWithDialysis_FreeTextBox","HowOldWereYouKidneyWithoutDialysis_FreeTextBox","HowOldWereYouKidneyStones_FreeTextBox","HowOldWereYouArthritis_FreeTextBox","HowOldWereYouCarpalTunnel_FreeTextBox","HowOldWereYouFibromyalgia_FreeTextBox","HowOldWereYouFracturedBrokenBone_FreeTextBox","HowOldWereYouGout_FreeTextBox","HowOldWereYouLupus_FreeTextBox","HowOldWereYouOsteoporosis_FreeTextBox","HowOldWereYouSpineMuscleBone_FreeTextBox","HowOldWereYouBlindness_FreeTextBox","HowOldWereYouCataracts_FreeTextBox","HowOldWereYouDryEyes_FreeTextBox","HowOldWereYouFarSightedness_FreeTextBox","HowOldWereYouGlaucoma_FreeTextBox","HowOldWereYouMacularDegeneration_FreeTextBox","HowOldWereYouNearSightedness_FreeTextBox","HowOldWereYouTinnitus_FreeTextBox","HowOldWereYouHearingLoss_FreeTextBox","HowOldWereYouChronicSinus_FreeTextBox","HowOldWereYouHepatitisC_FreeTextBox","HowOldWereYouHIVAIDS_FreeTextBox","HowOldWereYouUrinaryTract_FreeTextBox","HowOldWereYouTuberculosis_FreeTextBox","HowOldWereYouAmytrophicLateral_FreeTextBox","HowOldWereYouChronicFatigue_FreeTextBox","HowOldWereYouConcussion_FreeTextBox","HowOldWereYouDementia_FreeTextBox","HowOldWereYouEpilepsy_FreeTextBox","HowOldWereYouInsomnia_FreeTextBox","HowOldWereYouMemoryLoss_FreeTextBox","HowOldWereYouMigraine_FreeTextBox","HowOldWereYouMultipleSclerosis_FreeTextBox","HowOldWereYouMuscularDystrophy_FreeTextBox","HowOldWereYouNarcolepsy_FreeTextBox","HowOldWereYouNeuropathy_FreeTextBox","HowOldWereYouOtherHeadaches_FreeTextBox","HowOldWereYouParkinsonsDisease_FreeTextBox","HowOldWereYouRestlessLeg_FreeTextBox","HowOldWereYouSpinalCordInjury_FreeTextBox","HowOldWereYouTraumaBrainInjury_FreeTextBox","HowOldWereYouAlcoholOrDrug_FreeTextBox","HowOldWereYouAnxiety_FreeTextBox","HowOldWereYouADHD_FreeTextBox","HowOldWereYouBipolar_FreeTextBox","HowOldWereYouDepression_FreeTextBox","HowOldWereYouEatingDisorder_FreeTextBox","HowOldWereYouPersonalityDisorder_FreeTextBox","HowOldWereYouPTSD_FreeTextBox","HowOldWereYouSchizophrenia_FreeTextBox","HowOldWereYouSocialPhobia_FreeTextBox","HowOldWereYouAcne_FreeTextBox","HowOldWereYouAllergies_FreeTextBox","HowOldWereYouEnlargedProstate_FreeTextBox","HowOldWereYouSkinCondition_FreeTextBox","HowOldWereYouObesity_FreeTextBox","HowOldWereYouVitaminBDeficiency_FreeTextBox","HowOldWereYouVitaminDDeficiency_FreeTextBox","CancerCondition_OtherCancer","GrandparentDiagnosisHistory_WhichConditions","MotherDiagnosisHistory_WhichConditions","FatherDiagnosisHistory_WhichConditions","SiblingDiagnosisHistory_WhichConditions","DaughterDiagnosisHistory_WhichConditions","SonDiagnosisHistory_WhichConditions","MotherCancerCondition_OtherCancer","OtherCancer_MotherFreeTextBox","FatherCancerCondition_OtherCancer","OtherCancer_FatherFreeTextBox","SiblingCancerCondition_OtherCancer","OtherCancer_SiblingFreeTextBox","DaughterCancerCondition_OtherCancer","OtherCancer_DaughterFreeTextBox","SonCancerCondition_OtherCancer","OtherCancer_SonFreeTextBox","GrandparentCancerCondition_OtherCancer","OtherCancer_GrandparentFreeTextBox","notes","WesternMichiganSitePairing_SpectrumHealth","WesternMichiganSitePairing_SpectrumHealthSitePairi","OutsideTravel6Month_OutsideTravel6MonthWhereTravel","OutsideTravel6Month_OutsideTravel6MonthWhere","Language_SpokenWrittenLanguage","ConsentPII_HelpWithConsentSignature","OtherCondition_FatherFreeTextBox","OtherCondition_MotherFreeTextBox","OtherCondition_DaughterFreeTextBox","OtherHealthPlan_FreeText","OtherCondition_SiblingFreeTextBox","OtherDelayedMedicalCare_FreeText","OtherCondition_SonFreeTextBox","OtherCondition_GrandparentFreeTextBox","OtherThyroid_FreeTextBox","OtherInfectiousDisease_FreeTextBox","ConsentPII_VerifiedPrimaryPhoneNumber","OtherDiabetes_FreeTextBox","OtherCancer_FreeTextBox","OtherHearingEye_FreeTextBox","OtherBrainNervousSystem_FreeTextBox","OtherDiagnosis_FreeTextBox","OtherHeartorBloodCondition_FreeTextBox","OtherDigestiveCondition_FreeTextBox","OtherArthritis_FreeTextBox","OtherHormoneEndocrine_FreeTextBox","OtherRespiratory_FreeTextBox","OtherKidneyCondition_FreeTextBox","OtherMentalHealthSubstanceUse_FreeTextBox","OtherBoneJointMuscle_FreeTextBox","OtherInsuranceType_FreeText"]
-            }
-		],
-		"FILTERS":[
-			{"filter":"person_id IN (SELECT DISTINCT person_id FROM :idataset.deid_map)"}
-		],
-		"ICD-9":[
-			{"apply":"REGEXP", "values":["^E8[0-4"],"description":"rare accidents"},
-			{"apply":"REGEXP", "values":["^E8[0-4]"],"description":"rare accidents"},
-			{"apply":"REGEXP","values":["^E8[0-4].*","^E91[0,3].*","^E9([9,7,6,5]|28.0).*","^79[8,9].*","^V3.*","^(76[4-9]|77[0-9])\\\\.([0-9]){0,2}.*","^P[0-9]{2}\\\\.[0-9]{1}.*","^Z38.*","^R99.*","^Y3[5,6,7,8].*","^x52.*","^(W6[5-9]|W7[0-4][0-9]).*","^(X92[0-9]|Y0[1-9]).*","^V[0-9]{2}.*"]}
-		]
-	},
-	{"_id":"shift",
-        "day":"SELECT date_shift from :table where :key_field=:key_value ",
-        "date":"DATE_SUB( CAST(:FIELD AS DATE), INTERVAL (:SHIFT) DAY) AS :FIELD",
-        "datetime":"TIMESTAMP_SUB( CAST(:FIELD AS TIMESTAMP), INTERVAL (:SHIFT) DAY) AS :FIELD"
-
+        ]
 
     },
-	{
-		"_id":"compute",
-		"id":"(SELECT research_id FROM :idataset.deid_map WHERE deid_map.person_id = :value_field) as :FIELD",
-		"month":"EXTRACT (MONTH FROM :value_field) AS :FIELD",
-		"day":"EXTRACT (DAY FROM :value_field) AS :FIELD",
-		"year":"EXTRACT (YEAR FROM :value_field) AS :FIELD"
-	}
-
+    {
+    "_id":"suppress",
+        "DEMOGRAPHICS-COLUMNS":[
+            {
+                "comment":"list of columns to be suppressed regardless of the table",
+                "values": [
+                    "year_of_birth","month_of_birth","day_of_birth",
+                    "race_concept_id","ethnicity_concept_id","location_id",
+                    "provider_id","care_site_id","person_source_value",
+                    "gender_source_value","gender_source_concept_id","race_source_value",
+                    "race_source_concept_id","ethnicity_source_value","ethnicity_source_concept_id",
+                    "cause_concept_id","cause_source_value","cause_source_concept_id",
+                    "visit_detail_id","value_source_value","value_as_string"
+                ]
+            }
+        ],
+        "FILTERS":[
+            {"filter":"person_id IN (SELECT DISTINCT person_id FROM :idataset._deid_map)"}
+        ],
+        "ICD-9":[
+            {"apply":"REGEXP", "values":["^E8[0-4"],"description":"rare accidents"},
+            {"apply":"REGEXP", "values":["^E8[0-4]"],"description":"rare accidents"},
+            {
+                "apply":"REGEXP",
+                "values":[
+                    "^E8[0-4].*","^E91[0,3].*","^E9([9,7,6,5]|28.0).*",
+                    "^79[8,9].*","^V3.*","^(76[4-9]|77[0-9])\\\\.([0-9]){0,2}.*",
+                    "^P[0-9]{2}\\\\.[0-9]{1}.*","^Z38.*","^R99.*",
+                    "^Y3[5,6,7,8].*","^x52.*","^(W6[5-9]|W7[0-4][0-9]).*",
+                    "^(X92[0-9]|Y0[1-9]).*","^V[0-9]{2}.*"
+                ]
+            }
+        ]
+    },
+    {
+        "_id": "shift",
+        "day": "SELECT date_shift from :table where :key_field=:key_value ",
+        "date": "DATE_SUB( CAST(:FIELD AS DATE), INTERVAL (:SHIFT) DAY) AS :FIELD",
+        "datetime": "TIMESTAMP_SUB( CAST(:FIELD AS TIMESTAMP), INTERVAL (:SHIFT) DAY) AS :FIELD"
+    },
+    {
+        "_id": "compute",
+        "id": ["(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = :value_field) as :FIELD"],
+        "response_id": [
+            "(SELECT ",
+            "CASE WHEN :value_field IS NULL THEN NULL ",
+            "ELSE (",
+                "SELECT dqrm.research_response_id ",
+                "FROM :idataset._deid_questionnaire_response_map AS dqrm ",
+                "WHERE dqrm.questionnaire_response_id = :value_field) ",
+            "END ) AS :FIELD"
+        ],
+        "month": ["EXTRACT (MONTH FROM :value_field) AS :FIELD"],
+        "day": ["EXTRACT (DAY FROM :value_field) AS :FIELD"],
+        "year": ["EXTRACT (YEAR FROM :value_field) AS :FIELD"]
+    },
+    {
+        "_id": "dml_statements",
+        "comment": [
+            "A place to define Data Manipulation Statments to execute after creating ",
+            "a de-identified table.  The statements are defined as a list of dictionaries ",
+            "containing a comment about the intent of each statement and an SQL DML statement."
+        ],
+        "observation": [
+            {
+                "comment": [
+                    "SQL to delete extra rows created by generalization rules. ",
+                    "This can happen when questions with multiple possible answers are ",
+                    "generalized.  The exact delete statement to use will depend on the ",
+                    "table receiving the generalization and its available fields."
+                ],
+                "name": "drop_generalized_duplicates",
+                "label": "cleaning_query",
+                "statement": [
+                    "DELETE FROM",
+                    ":odataset.observation AS o ",
+                    "WHERE observation_id in (",
+                      "SELECT observation_id FROM (",
+                         "SELECT DENSE_RANK() OVER(PARTITION BY person_id, observation_source_concept_id, value_source_concept_id ",
+                          "ORDER BY observation_datetime DESC, observation_id DESC) AS rank_order, ",
+                          "observation_id ",
+                          "FROM :odataset.observation ",
+                          "JOIN :idataset._mapping_observation AS map ",
+                          "USING (observation_id) ",
+                          "WHERE observation_source_concept_id IN (:key_values) ",
+                          "AND value_source_concept_id IN (:generalized_values) ",
+                          "AND map.src_hpo_id like \"rdr\"",
+                      ") o ",
+                      "WHERE o.rank_order <> 1 ",
+                    ")"
+                ]
+            }
+        ]
+    }
 ]

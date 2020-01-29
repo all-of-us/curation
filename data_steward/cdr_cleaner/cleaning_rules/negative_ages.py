@@ -6,35 +6,35 @@ Also ensure ages are not beyond 150.
 
 # Project imports
 import common
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 # tables to consider, along with their date/start date fields
-date_fields = {common.OBSERVATION_PERIOD: 'observation_period_start_date',
-               common.VISIT_OCCURRENCE: 'visit_start_date',
-               common.CONDITION_OCCURRENCE: 'condition_start_date',
-               common.PROCEDURE_OCCURRENCE: 'procedure_date',
-               common.DRUG_EXPOSURE: 'drug_exposure_start_date',
-               common.OBSERVATION: 'observation_date',
-               common.DRUG_ERA: 'drug_era_start_date',
-               common.CONDITION_ERA: 'condition_era_start_date',
-               common.MEASUREMENT: 'measurement_date',
-               common.DEVICE_EXPOSURE: 'device_exposure_start_date'}
+date_fields = {
+    common.OBSERVATION_PERIOD: 'observation_period_start_date',
+    common.VISIT_OCCURRENCE: 'visit_start_date',
+    common.CONDITION_OCCURRENCE: 'condition_start_date',
+    common.PROCEDURE_OCCURRENCE: 'procedure_date',
+    common.DRUG_EXPOSURE: 'drug_exposure_start_date',
+    common.OBSERVATION: 'observation_date',
+    common.DRUG_ERA: 'drug_era_start_date',
+    common.CONDITION_ERA: 'condition_era_start_date',
+    common.MEASUREMENT: 'measurement_date',
+    common.DEVICE_EXPOSURE: 'device_exposure_start_date'
+}
 
 person = common.PERSON
 MAX_AGE = 150
 
 # negative age at recorded time in table
-NEGATIVE_AGES_QUERY = (
-    'SELECT * '
-    'FROM `{project_id}.{dataset_id}.{table}` '
-    'WHERE {table}_id NOT IN '
-    '(SELECT t.{table}_id '
-    'FROM `{project_id}.{dataset_id}.{table}` t '
-    'JOIN `{project_id}.{dataset_id}.{person_table}` p '
-    'ON t.person_id = p.person_id '
-    'WHERE t.{table_date} < DATE(p.birth_datetime)) '
-)
+NEGATIVE_AGES_QUERY = ('SELECT * '
+                       'FROM `{project_id}.{dataset_id}.{table}` '
+                       'WHERE {table}_id NOT IN '
+                       '(SELECT t.{table}_id '
+                       'FROM `{project_id}.{dataset_id}.{table}` t '
+                       'JOIN `{project_id}.{dataset_id}.{person_table}` p '
+                       'ON t.person_id = p.person_id '
+                       'WHERE t.{table_date} < DATE(p.birth_datetime)) ')
 
 # age > MAX_AGE (=150) at recorded time in table
 MAX_AGE_QUERY = (
@@ -49,16 +49,14 @@ MAX_AGE_QUERY = (
 )
 
 # negative age at death
-NEGATIVE_AGE_DEATH_QUERY = (
-    'SELECT * '
-    'FROM `{project_id}.{dataset_id}.{table}` '
-    'WHERE person_id NOT IN '
-    '(SELECT d.person_id '
-    'FROM `{project_id}.{dataset_id}.{table}` d '
-    'JOIN `{project_id}.{dataset_id}.{person_table}` p '
-    'ON d.person_id = p.person_id '
-    'WHERE d.death_date < DATE(p.birth_datetime)) '
-)
+NEGATIVE_AGE_DEATH_QUERY = ('SELECT * '
+                            'FROM `{project_id}.{dataset_id}.{table}` '
+                            'WHERE person_id NOT IN '
+                            '(SELECT d.person_id '
+                            'FROM `{project_id}.{dataset_id}.{table}` d '
+                            'JOIN `{project_id}.{dataset_id}.{person_table}` p '
+                            'ON d.person_id = p.person_id '
+                            'WHERE d.death_date < DATE(p.birth_datetime)) ')
 
 
 def get_negative_ages_queries(project_id, dataset_id):
@@ -75,20 +73,22 @@ def get_negative_ages_queries(project_id, dataset_id):
         query_na = dict()
         query_ma = dict()
         person_table = person
-        query_na[cdr_consts.QUERY] = NEGATIVE_AGES_QUERY.format(project_id=project_id,
-                                                                dataset_id=dataset_id,
-                                                                table=table,
-                                                                person_table=person_table,
-                                                                table_date=date_fields[table])
+        query_na[cdr_consts.QUERY] = NEGATIVE_AGES_QUERY.format(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            table=table,
+            person_table=person_table,
+            table_date=date_fields[table])
         query_na[cdr_consts.DESTINATION_TABLE] = table
         query_na[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query_na[cdr_consts.DESTINATION_DATASET] = dataset_id
-        query_ma[cdr_consts.QUERY] = MAX_AGE_QUERY.format(project_id=project_id,
-                                                          dataset_id=dataset_id,
-                                                          table=table,
-                                                          person_table=person_table,
-                                                          table_date=date_fields[table],
-                                                          MAX_AGE=MAX_AGE)
+        query_ma[cdr_consts.QUERY] = MAX_AGE_QUERY.format(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            table=table,
+            person_table=person_table,
+            table_date=date_fields[table],
+            MAX_AGE=MAX_AGE)
         query_ma[cdr_consts.DESTINATION_TABLE] = table
         query_ma[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query_ma[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -98,10 +98,11 @@ def get_negative_ages_queries(project_id, dataset_id):
     death = common.DEATH
     query = dict()
     person_table = person
-    query[cdr_consts.QUERY] = NEGATIVE_AGE_DEATH_QUERY.format(project_id=project_id,
-                                                              dataset_id=dataset_id,
-                                                              table=death,
-                                                              person_table=person_table)
+    query[cdr_consts.QUERY] = NEGATIVE_AGE_DEATH_QUERY.format(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        table=death,
+        person_table=person_table)
     query[cdr_consts.DESTINATION_TABLE] = death
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -116,4 +117,4 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
     query_list = get_negative_ages_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

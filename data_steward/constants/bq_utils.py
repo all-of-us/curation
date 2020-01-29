@@ -38,10 +38,14 @@ TRUE = 'true'
 FALSE = 'false'
 
 # Dataset Environment variable names
-COMBINED_UNIDENTIFIED_DATASET = 'EHR_RDR_DEID_DATASET_ID'
 MATCH_DATASET = 'VALIDATION_RESULTS_DATASET_ID'
 
 # Dataset name formats
-COMBINED_UNIDENTIFIED_DATASET_FORMAT = 'combined{}_deid'
 VALIDATION_DATASET_FORMAT = 'validation_{}'
 VALIDATION_DATASET_REGEX = 'validation_\d{8}'
+
+INSERT_QUERY = """
+INSERT INTO `{project_id}.{dataset_id}.{table_id}`
+  ({columns})
+VALUES {mapping_list}
+"""

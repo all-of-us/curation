@@ -38,20 +38,14 @@ TODO when the time comes, include care_site, death, note, provider, specimen
 """
 
 import bq_utils
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 from validation.ehr_union import mapping_table_for
 
-
 DOMAIN_TABLE_NAMES = [
-    'condition_occurrence',
-    'procedure_occurrence',
-    'drug_exposure',
-    'device_exposure',
-    'observation',
-    'measurement',
-    'visit_occurrence'
+    'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
+    'device_exposure', 'observation', 'measurement', 'visit_occurrence'
 ]
 
 SRC_CONCEPT_ID_TABLE_NAME = '_logging_standard_concept_id_replacement'
@@ -103,8 +97,7 @@ SRC_CONCEPT_ID_MAPPING_QUERY = (
     '  scr.concept_id_1 = sc.concept_id '
     '  AND scr.relationship_id = \'Maps to\' '
     'WHERE '
-    '  dc.standard_concept IS NULL or dc.standard_concept = \'C\' '
-)
+    '  dc.standard_concept IS NULL or dc.standard_concept = \'C\' ')
 
 DUPLICATE_ID_UPDATE_QUERY = (
     'UPDATE '
@@ -141,20 +134,17 @@ DUPLICATE_ID_UPDATE_QUERY = (
     ' WHERE'
     '   v.src_id = to_update.src_id'
     '   AND v.domain_table = to_update.domain_table'
-    '   AND v.new_concept_id = to_update.new_concept_id'
-)
+    '   AND v.new_concept_id = to_update.new_concept_id')
 
-SRC_CONCEPT_ID_UPDATE_QUERY = (
-    'SELECT'
-    '  {cols} '
-    'FROM'
-    '  `{project}.{dataset}.{domain_table}` '
-    'LEFT JOIN '
-    '  `{project}.{dataset}.{logging_table}` '
-    'ON'
-    '  domain_table = \'{domain_table}\' '
-    '  AND src_id = {domain_table}_id '
-)
+SRC_CONCEPT_ID_UPDATE_QUERY = ('SELECT'
+                               '  {cols} '
+                               'FROM'
+                               '  `{project}.{dataset}.{domain_table}` '
+                               'LEFT JOIN '
+                               '  `{project}.{dataset}.{logging_table}` '
+                               'ON'
+                               '  domain_table = \'{domain_table}\' '
+                               '  AND src_id = {domain_table}_id ')
 
 UPDATE_MAPPING_TABLES_QUERY = (
     'SELECT '
@@ -165,11 +155,11 @@ UPDATE_MAPPING_TABLES_QUERY = (
     '  `{project}.{dataset}.{logging_table}` as log '
     'ON'
     '  src_id = {domain_table}_id'
-    '  AND domain_table = \'{domain_table}\' '
-)
+    '  AND domain_table = \'{domain_table}\' ')
 
 
-def parse_mapping_table_update_query(project_id, dataset_id, table_name, mapping_table_name):
+def parse_mapping_table_update_query(project_id, dataset_id, table_name,
+                                     mapping_table_name):
     """
 
     Fill in mapping tables query so it either gets dest_id from the logging table or the domain table
@@ -180,21 +170,25 @@ def parse_mapping_table_update_query(project_id, dataset_id, table_name, mapping
     :param mapping_table_name: name of the mapping_table for which the query needs to be parsed
     :return:
     """
-    fields = [field['name'] for field in resources.fields_for(mapping_table_name)]
+    fields = [
+        field['name'] for field in resources.fields_for(mapping_table_name)
+    ]
     col_exprs = []
     for field_name in fields:
         if field_name == resources.get_domain_id_field(table_name):
-            col_expr = 'coalesce(dest_id, {field}) AS {field}'.format(field=field_name)
+            col_expr = 'coalesce(dest_id, {field}) AS {field}'.format(
+                field=field_name)
         else:
             col_expr = field_name
         col_exprs.append(col_expr)
     cols = ', '.join(col_exprs)
-    return UPDATE_MAPPING_TABLES_QUERY.format(cols=cols,
-                                              project=project_id,
-                                              dataset=dataset_id,
-                                              mapping_table=mapping_table_name,
-                                              logging_table=SRC_CONCEPT_ID_TABLE_NAME,
-                                              domain_table=table_name)
+    return UPDATE_MAPPING_TABLES_QUERY.format(
+        cols=cols,
+        project=project_id,
+        dataset=dataset_id,
+        mapping_table=mapping_table_name,
+        logging_table=SRC_CONCEPT_ID_TABLE_NAME,
+        domain_table=table_name)
 
 
 def get_mapping_table_update_queries(project_id, dataset_id):
@@ -209,7 +203,8 @@ def get_mapping_table_update_queries(project_id, dataset_id):
     for domain_table in DOMAIN_TABLE_NAMES:
         mapping_table = mapping_table_for(domain_table)
         query = dict()
-        query[cdr_consts.QUERY] = parse_mapping_table_update_query(project_id, dataset_id, domain_table, mapping_table)
+        query[cdr_consts.QUERY] = parse_mapping_table_update_query(
+            project_id, dataset_id, domain_table, mapping_table)
         query[cdr_consts.DESTINATION_TABLE] = mapping_table
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -238,18 +233,18 @@ def parse_src_concept_id_update_query(project_id, dataset_id, table_name):
     for field_name in fields:
         if field_name in fields_to_replace:
             col_expr = 'coalesce({replace_field}, {field}) AS {field}'.format(
-                replace_field=fields_to_replace[field_name],
-                field=field_name)
+                replace_field=fields_to_replace[field_name], field=field_name)
         else:
             col_expr = field_name
         col_exprs.append(col_expr)
     cols = ', '.join(col_exprs)
 
-    return SRC_CONCEPT_ID_UPDATE_QUERY.format(cols=cols,
-                                              project=project_id,
-                                              dataset=dataset_id,
-                                              domain_table=table_name,
-                                              logging_table=SRC_CONCEPT_ID_TABLE_NAME)
+    return SRC_CONCEPT_ID_UPDATE_QUERY.format(
+        cols=cols,
+        project=project_id,
+        dataset=dataset_id,
+        domain_table=table_name,
+        logging_table=SRC_CONCEPT_ID_TABLE_NAME)
 
 
 def get_src_concept_id_update_queries(project_id, dataset_id):
@@ -264,7 +259,8 @@ def get_src_concept_id_update_queries(project_id, dataset_id):
     queries = []
     for domain_table in DOMAIN_TABLE_NAMES:
         query = dict()
-        query[cdr_consts.QUERY] = parse_src_concept_id_update_query(project_id, dataset_id, domain_table)
+        query[cdr_consts.QUERY] = parse_src_concept_id_update_query(
+            project_id, dataset_id, domain_table)
         query[cdr_consts.DESTINATION_TABLE] = domain_table
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -283,11 +279,11 @@ def parse_duplicate_id_update_query(project_id, dataset_id, domain_table):
     :param domain_table: name of the domain_table for which a query needs to be generated.
     :return: a domain_table specific update query
     """
-    query = DUPLICATE_ID_UPDATE_QUERY.format(table_name=domain_table,
-                                             project=project_id,
-                                             dataset=dataset_id,
-                                             logging_table=SRC_CONCEPT_ID_TABLE_NAME
-                                             )
+    query = DUPLICATE_ID_UPDATE_QUERY.format(
+        table_name=domain_table,
+        project=project_id,
+        dataset=dataset_id,
+        logging_table=SRC_CONCEPT_ID_TABLE_NAME)
 
     return query
 
@@ -328,9 +324,8 @@ def get_src_concept_id_logging_queries(project_id, dataset_id):
     queries = []
     for domain_table in DOMAIN_TABLE_NAMES:
         query = dict()
-        query[cdr_consts.QUERY] = parse_src_concept_id_logging_query(project_id,
-                                                                     dataset_id,
-                                                                     domain_table)
+        query[cdr_consts.QUERY] = parse_src_concept_id_logging_query(
+            project_id, dataset_id, domain_table)
         query[cdr_consts.DESTINATION_TABLE] = SRC_CONCEPT_ID_TABLE_NAME
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
         query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -339,9 +334,8 @@ def get_src_concept_id_logging_queries(project_id, dataset_id):
     # For new rows added as a result of one-to-many standard concepts, we give newly generated rows new ids
     for domain_table in DOMAIN_TABLE_NAMES:
         query = dict()
-        query[cdr_consts.QUERY] = parse_duplicate_id_update_query(project_id,
-                                                                  dataset_id,
-                                                                  domain_table)
+        query[cdr_consts.QUERY] = parse_duplicate_id_update_query(
+            project_id, dataset_id, domain_table)
         query[cdr_consts.DESTINATION_DATASET] = dataset_id
         queries.append(query)
 
@@ -356,9 +350,12 @@ def replace_standard_id_in_domain_tables(project_id, dataset_id):
     :return: a list of query dicts for replacing standard_concept_ids in domain_tables
     """
     queries_list = []
-    queries_list.extend(get_src_concept_id_logging_queries(project_id, dataset_id))
-    queries_list.extend(get_src_concept_id_update_queries(project_id, dataset_id))
-    queries_list.extend(get_mapping_table_update_queries(project_id, dataset_id))
+    queries_list.extend(
+        get_src_concept_id_logging_queries(project_id, dataset_id))
+    queries_list.extend(
+        get_src_concept_id_update_queries(project_id, dataset_id))
+    queries_list.extend(get_mapping_table_update_queries(
+        project_id, dataset_id))
 
     return queries_list
 
@@ -371,12 +368,14 @@ def parse_args():
 
     import cdr_cleaner.args_parser as parser
 
-    additional_argument = {parser.SHORT_ARGUMENT: '-n',
-                           parser.LONG_ARGUMENT: '--snapshot_dataset_id',
-                           parser.ACTION: 'store',
-                           parser.DEST: 'snapshot_dataset_id',
-                           parser.HELP: 'Create a snapshot of the dataset',
-                           parser.REQUIRED: True}
+    additional_argument = {
+        parser.SHORT_ARGUMENT: '-n',
+        parser.LONG_ARGUMENT: '--snapshot_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'snapshot_dataset_id',
+        parser.HELP: 'Create a snapshot of the dataset',
+        parser.REQUIRED: True
+    }
     args = parser.default_parse_args([additional_argument])
     return args
 
@@ -391,5 +390,6 @@ if __name__ == '__main__':
     # create_snapshot_dataset(ARGS.project_id, ARGS.dataset_id, ARGS.snapshot_dataset_id)
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = replace_standard_id_in_domain_tables(ARGS.project_id, ARGS.snapshot_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.snapshot_dataset_id, query_list)
+    query_list = replace_standard_id_in_domain_tables(ARGS.project_id,
+                                                      ARGS.snapshot_dataset_id)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

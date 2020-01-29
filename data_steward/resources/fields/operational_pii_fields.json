@@ -1,0 +1,22 @@
+[
+  {
+    "type": "string",
+    "name": "observation_source_value",
+    "mode": "required",
+    "description": "The observation code as it appears in the source data. This code is mapped to a Standard Concept in the Standardized Vocabularies and the original code is, stored here for reference."
+    
+    
+  },
+  {
+    "type": "integer",
+    "name": "total_count",
+    "mode": "required",
+    "description": "Total no of records in with the particular observation_source_value."
+  },
+  {
+    "type": "bool",
+    "name": "drop_value",
+    "mode": "required",
+    "description": "Boolean flag to determine if observation_source_value is to be dropped."
+  }
+]
