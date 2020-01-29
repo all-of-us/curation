@@ -136,8 +136,6 @@ ORDER BY count DESC
 gender_cleaned_output = bq.query(gender_cleaned)
 render.dataframe(gender_cleaned_output)
 
-gender_cleaned_output['difference']
-
 # +
 indexes = gender_cleaned_output['concept_name']
 
@@ -154,7 +152,20 @@ plt.xticks(rotation = 45)
 plt.title("Gender Concepts By Cleaning Rule")
 plt.ylabel("Count")
 plt.xlabel('concept_name')
+
+# +
+a = gender_cleaned_output['count'].tolist()
+b = gender_output['count'].tolist()
+    
+cr_difference = []
+
+for x, y in zip(a, b):
+    cr_difference.append(x - y)
 # -
+
+gender_cleaned_output['original'] = gender_output['count']
+gender_cleaned_output['difference'] = cr_difference
+gender_cleaned_output
 
 # ### Want to also see if the new post-cleaning rule matches the information from the "Gender Identity"  question from the observation table
 
@@ -210,7 +221,20 @@ plt.xticks(rotation = 45)
 plt.title("Gender Concepts - from Observation (pre-CR) and Person (post-Cr)")
 plt.ylabel("Count")
 plt.xlabel('concept_name')
+
+# +
+a = gender_cleaned_output['count'].tolist()
+b = gender_from_observation['count'].tolist()
+    
+cr_difference = []
+
+for x, y in zip(a, b):
+    cr_difference.append(x - y)
 # -
+
+gender_cleaned_output['original'] = gender_from_observation['count']
+gender_cleaned_output['difference'] = cr_difference
+gender_cleaned_output
 
 # ### Want to see the sex_at_birth values; want to see that the information from the observation table (PPI) made it over to the person table after the cleaning rule
 
@@ -316,7 +340,20 @@ plt.xticks(rotation = 45)
 plt.title("Sex at Birth Distribution - Observation to Person Mapping")
 plt.ylabel("Count")
 plt.xlabel('concept_name')
+
+# +
+a = person_sab['count'].tolist()
+b = observation_ppi['count'].tolist()
+    
+cr_difference = []
+
+for x, y in zip(a, b):
+    cr_difference.append(x - y)
 # -
+
+person_sab['original'] = observation_ppi['count']
+person_sab['difference'] = cr_difference
+person_sab
 
 # ## You may notice the slight increase in the number across all of the 'sex at birth' values across the observation table and the person table. The following query can prove informative:
 
