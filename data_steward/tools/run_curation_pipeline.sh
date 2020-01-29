@@ -78,7 +78,7 @@ echo "-------------------------->Take a Snapshot of EHR Dataset (step 1)"
 echo "-------------------------->Generate Unioned ehr dataset (step 2)"
 ehr_snapshot="${dataset_release_tag}_ehr"
 echo "ehr_snapshot ----> ${ehr_snapshot}"
-"${TOOLS_DIR}/generate_unioned_ehr_dataset.sh" --key_file ${key_file} --ehr_snap_dataset ${ehr_snapshot} --vocab_dataset ${vocab_dataset} --dataset_release_tag ${dataset_release_tag}
+"${TOOLS_DIR}/generate_unioned_ehr_dataset.sh" --key_file ${key_file} --ehr_snapshot ${ehr_snapshot} --vocab_dataset ${vocab_dataset} --dataset_release_tag ${dataset_release_tag}
 
 #---------------------------------------------------------
 # Step 3 Generate combined dataset
