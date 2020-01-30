@@ -44,7 +44,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 # %matplotlib inline
 
-
 import os
 import sys
 from datetime import datetime
@@ -70,24 +69,40 @@ def cstr(s, color='black'):
 print('done.')
 
 # +
-dic = {'src_hpo_id': ["pitt_temple", "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc", "seec_miami",
-                      "seec_morehouse", "seec_emory", "uamc_banner", "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum",
-                      "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
-                      "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl", "saou_uab", "trans_am_baylor",
-                      "cpmc_ucsd", "ecchc", "chci", "aouw_uwh", "cpmc_usc", "hrhc", "ipmc_northshore", "chs",
-                      "cpmc_ucsf", "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"],
-       'HPO': ["Temple University", "Louisiana State University", "Reliant Medical Group (Meyers Primary Care)",
-               "Essentia Health Superior Clinic", "University of Mississippi", "SouthEast Enrollment Center Miami",
-               "SouthEast Enrollment Center Morehouse", "SouthEast Enrollment Center Emory", "Banner Health",
-               "University of Pittsburgh", "Columbia University Medical Center", "University of Illinois Chicago",
-               "Spectrum Health", "Henry Ford Health System", "Boston Medical Center", "UC Irvine",
-               "Partners HealthCare", "Weill Cornell Medical Center", "Northwestern Memorial Hospital",
-               "Harlem Hospital", "University of Chicago", "Marshfield Clinic", "San Ysidro Health Center",
-               "Cedars-Sinai", "University of Florida", "University of Alabama at Birmingham", "Baylor", "UC San Diego",
-               "Eau Claire Cooperative Health Center", "Community Health Center, Inc.",
-               "UW Health (University of Wisconsin Madison)", "University of Southern California", "HRHCare",
-               "NorthShore University Health System", "Cherokee Health Systems", "UC San Francisco",
-               "Jackson-Hinds CHC", "Medical College of Wisconsin", "UC Davis", "Rush University"]}
+dic = {
+    'src_hpo_id': [
+        "pitt_temple", "saou_lsu", "trans_am_meyers", "trans_am_essentia",
+        "saou_ummc", "seec_miami", "seec_morehouse", "seec_emory",
+        "uamc_banner", "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum",
+        "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu",
+        "nyc_hh", "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders",
+        "seec_ufl", "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci",
+        "aouw_uwh", "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf",
+        "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"
+    ],
+    'HPO': [
+        "Temple University", "Louisiana State University",
+        "Reliant Medical Group (Meyers Primary Care)",
+        "Essentia Health Superior Clinic", "University of Mississippi",
+        "SouthEast Enrollment Center Miami",
+        "SouthEast Enrollment Center Morehouse",
+        "SouthEast Enrollment Center Emory", "Banner Health",
+        "University of Pittsburgh", "Columbia University Medical Center",
+        "University of Illinois Chicago", "Spectrum Health",
+        "Henry Ford Health System", "Boston Medical Center", "UC Irvine",
+        "Partners HealthCare", "Weill Cornell Medical Center",
+        "Northwestern Memorial Hospital", "Harlem Hospital",
+        "University of Chicago", "Marshfield Clinic",
+        "San Ysidro Health Center", "Cedars-Sinai", "University of Florida",
+        "University of Alabama at Birmingham", "Baylor", "UC San Diego",
+        "Eau Claire Cooperative Health Center", "Community Health Center, Inc.",
+        "UW Health (University of Wisconsin Madison)",
+        "University of Southern California", "HRHCare",
+        "NorthShore University Health System", "Cherokee Health Systems",
+        "UC San Francisco", "Jackson-Hinds CHC", "Medical College of Wisconsin",
+        "UC Davis", "Rush University"
+    ]
+}
 
 site_df = pd.DataFrame(data=dic)
 site_df
@@ -186,9 +201,10 @@ site_map = pd.io.gbq.read_gbq('''
     FROM
          `{}._mapping_visit_occurrence`   
     )     
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET
-               , DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET
-               , DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
@@ -197,7 +213,7 @@ site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
 
 site_df
 
-# # All temporal data points should be consistent such that end dates should NOT be before a start date. 
+# # All temporal data points should be consistent such that end dates should NOT be before a start date.
 
 # ## Visit Occurrence Table
 
@@ -253,10 +269,12 @@ temporal_df = pd.io.gbq.read_gbq('''
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
-visit_occurrence = temporal_df.rename(columns={"succes_rate": "visit_occurrence"})
+visit_occurrence = temporal_df.rename(
+    columns={"succes_rate": "visit_occurrence"})
 visit_occurrence = visit_occurrence[["src_hpo_id", "visit_occurrence"]]
 visit_occurrence = visit_occurrence.fillna(100)
 visit_occurrence
@@ -326,11 +344,15 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
-condition_occurrence = temporal_df.rename(columns={"succes_rate": "condition_occurrence"})
-condition_occurrence = condition_occurrence[["src_hpo_id", "condition_occurrence"]]
+condition_occurrence = temporal_df.rename(
+    columns={"succes_rate": "condition_occurrence"})
+condition_occurrence = condition_occurrence[[
+    "src_hpo_id", "condition_occurrence"
+]]
 condition_occurrence = condition_occurrence.fillna(100)
 condition_occurrence
 
@@ -397,7 +419,8 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
 drug_exposure = temporal_df.rename(columns={"succes_rate": "drug_exposure"})
@@ -434,7 +457,8 @@ print(temporal_df.shape[0], 'records received.')
 
 temporal_df
 
-print("success rate for device is: ", round(100 - 100 * (temporal_df.iloc[0, 1] / temporal_df.iloc[0, 0]), 1))
+print("success rate for device is: ",
+      round(100 - 100 * (temporal_df.iloc[0, 1] / temporal_df.iloc[0, 0]), 1))
 
 # ### Device Exposure Table By Site
 
@@ -466,7 +490,8 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
 device_exposure = temporal_df.rename(columns={"succes_rate": "device_exposure"})
@@ -487,9 +512,15 @@ temporal_df
 
 # +
 
-succes_rate = pd.merge(visit_occurrence, condition_occurrence, how='outer', on='src_hpo_id')
+succes_rate = pd.merge(visit_occurrence,
+                       condition_occurrence,
+                       how='outer',
+                       on='src_hpo_id')
 succes_rate = pd.merge(succes_rate, drug_exposure, how='outer', on='src_hpo_id')
-succes_rate = pd.merge(succes_rate, device_exposure, how='outer', on='src_hpo_id')
+succes_rate = pd.merge(succes_rate,
+                       device_exposure,
+                       how='outer',
+                       on='src_hpo_id')
 succes_rate = pd.merge(succes_rate, site_df, how='outer', on='src_hpo_id')
 succes_rate = succes_rate.fillna("No Data")
 succes_rate
@@ -533,12 +564,14 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
 # - main reason death date entered as default value ("1890")
 
-visit_occurrence = temporal_df.rename(columns={"succes_rate": "visit_occurrence"})
+visit_occurrence = temporal_df.rename(
+    columns={"succes_rate": "visit_occurrence"})
 visit_occurrence = visit_occurrence[["src_hpo_id", "visit_occurrence"]]
 visit_occurrence = visit_occurrence.fillna(100)
 visit_occurrence
@@ -577,11 +610,15 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-condition_occurrence = temporal_df.rename(columns={"succes_rate": "condition_occurrence"})
-condition_occurrence = condition_occurrence[["src_hpo_id", "condition_occurrence"]]
+condition_occurrence = temporal_df.rename(
+    columns={"succes_rate": "condition_occurrence"})
+condition_occurrence = condition_occurrence[[
+    "src_hpo_id", "condition_occurrence"
+]]
 condition_occurrence = condition_occurrence.fillna(100)
 condition_occurrence
 
@@ -619,7 +656,8 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
 drug_exposure = temporal_df.rename(columns={"succes_rate": "drug_exposure"})
@@ -661,7 +699,8 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
 measurement = temporal_df.rename(columns={"succes_rate": "measurement"})
@@ -703,11 +742,15 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-procedure_occurrence = temporal_df.rename(columns={"succes_rate": "procedure_occurrence"})
-procedure_occurrence = procedure_occurrence[["src_hpo_id", "procedure_occurrence"]]
+procedure_occurrence = temporal_df.rename(
+    columns={"succes_rate": "procedure_occurrence"})
+procedure_occurrence = procedure_occurrence[[
+    "src_hpo_id", "procedure_occurrence"
+]]
 procedure_occurrence = procedure_occurrence.fillna(100)
 procedure_occurrence
 
@@ -745,7 +788,8 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
 observation = temporal_df.rename(columns={"succes_rate": "observation"})
@@ -787,7 +831,8 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['succes_rate'] = 100 - round(100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
+temporal_df['succes_rate'] = 100 - round(
+    100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
 device_exposure = temporal_df.rename(columns={"succes_rate": "device_exposure"})
@@ -798,8 +843,8 @@ device_exposure
 # ## 4. Succes Rate Temporal Data Points - Data After Death Date
 
 datas = [
-    condition_occurrence, drug_exposure
-    , measurement, procedure_occurrence, observation, device_exposure
+    condition_occurrence, drug_exposure, measurement, procedure_occurrence,
+    observation, device_exposure
 ]
 
 master_df = visit_occurrence
@@ -812,14 +857,15 @@ master_df
 succes_rate = pd.merge(master_df, site_df, how='outer', on='src_hpo_id')
 succes_rate = succes_rate.fillna("No Data")
 
+succes_rate
+
 succes_rate.to_csv("data\\data_after_date.csv")
 
 # # Age of participant should NOT be below 18 and should NOT be too high (Achilles rule_id #20 and 21)
 
-# ## Count number of unique participants with age <18 
+# ## Count number of unique participants with age <18
 
 # +
-
 
 ######################################
 print('Getting the data from the database...')
@@ -839,6 +885,23 @@ print(birth_df.shape[0], 'records received.')
 
 birth_df
 
+# +
+######################################
+print('Getting the data from the database...')
+######################################
+
+birth_df = pd.io.gbq.read_gbq('''
+    SELECT
+        person_id          
+    FROM
+       `{}.unioned_ehr_person` AS t1
+    where 
+        (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18)
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                              dialect='standard')
+print(birth_df.shape[0], 'records received.')
+# -
+
 # ## Count number of unique participants with age >120
 
 # +
@@ -857,6 +920,22 @@ birth_df = pd.io.gbq.read_gbq('''
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
+
+# +
+######################################
+print('Getting the data from the database...')
+######################################
+
+birth_df = pd.io.gbq.read_gbq('''
+    SELECT
+        person_id          
+    FROM
+       `{}.unioned_ehr_person` AS t1
+    where 
+        DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)>120
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                              dialect='standard')
+print(birth_df.shape[0], 'records received.')
 # -
 
 birth_df
@@ -864,7 +943,6 @@ birth_df
 # ## Histogram
 
 # +
-
 
 ######################################
 print('Getting the data from the database...')
@@ -989,8 +1067,8 @@ drug = pd.io.gbq.read_gbq('''
           and t5.ancestor_concept_id in (1529331,1530014,1594973,1583722,1597756,1560171,19067100,1559684,1503297,1510202,
           1502826,1525215,1516766,1547504,1580747,1502809,1515249)
           and (t4.invalid_reason is null or t4.invalid_reason='')
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET),
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                           dialect='standard')
 drug.shape
 # -
@@ -1203,15 +1281,19 @@ insulin = pd.io.gbq.read_gbq('''
                     t7.drug_exposure_id=t6.drug_exposure_id
           and t5.ancestor_concept_id in (19122121,1567198,1531601,1516976,1502905,1544838,1550023,1513876,1517998)
           and (t4.invalid_reason is null or t4.invalid_reason='')
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET),
                              dialect='standard')
 insulin.shape
 # -
 
 insulin.head(15)
 
-diabet = pd.merge(t2d_condition, t1d_condition, on=["src_hpo_id", "person_id"], how="outer")
+diabet = pd.merge(t2d_condition,
+                  t1d_condition,
+                  on=["src_hpo_id", "person_id"],
+                  how="outer")
 diabet["diabetes"] = 1
 
 diabet = diabet.loc[:, ["src_hpo_id", "person_id", "diabetes"]]
@@ -1222,12 +1304,17 @@ diabet.head()
 total_diab = diabet.drop_duplicates(keep=False, inplace=False)
 total_diab.shape
 
-total_diab = total_diab.groupby(["src_hpo_id"]).size().reset_index().rename(columns={0: 'total_diabetes'}).sort_values(
-    ["total_diabetes"])
+total_diab = total_diab.groupby(["src_hpo_id"
+                                ]).size().reset_index().rename(columns={
+                                    0: 'total_diabetes'
+                                }).sort_values(["total_diabetes"])
 total_diab
 
 test = pd.merge(drug, glucose_lab, on=["src_hpo_id", "person_id"], how="outer")
-test = pd.merge(test, fasting_glucose, on=["src_hpo_id", "person_id"], how="outer")
+test = pd.merge(test,
+                fasting_glucose,
+                on=["src_hpo_id", "person_id"],
+                how="outer")
 test = pd.merge(test, a1c, on=["src_hpo_id", "person_id"], how="outer")
 test = pd.merge(test, insulin, on=["src_hpo_id", "person_id"], how="outer")
 test["tests"] = 1
@@ -1240,28 +1327,41 @@ test.head()
 total_test = test.drop_duplicates(keep=False, inplace=False)
 total_test.shape
 
-total_test = total_test.groupby(["src_hpo_id"]).size().reset_index().rename(columns={0: 'total_diabetes'}).sort_values(
-    ["total_diabetes"])
+total_test = total_test.groupby(["src_hpo_id"
+                                ]).size().reset_index().rename(columns={
+                                    0: 'total_diabetes'
+                                }).sort_values(["total_diabetes"])
 total_test
 
-diabetes_and_test = pd.merge(test, diabet, on=["src_hpo_id", "person_id"], how="outer")
+diabetes_and_test = pd.merge(test,
+                             diabet,
+                             on=["src_hpo_id", "person_id"],
+                             how="outer")
 
 diabetes_and_test.head()
 
-mistakes = diabetes_and_test.loc[(diabetes_and_test["tests"].isnull()) & (diabetes_and_test["diabetes"] == 1), :]
+mistakes = diabetes_and_test.loc[(diabetes_and_test["tests"].isnull()) &
+                                 (diabetes_and_test["diabetes"] == 1), :]
 
 mistakes.shape
 
 mistakes.head(5)
 
-diabets_no_proof = mistakes.groupby(['src_hpo_id']).size().reset_index().rename(
-    columns={0: 'diabets_no_proof'}).sort_values(["diabets_no_proof"])
+diabets_no_proof = mistakes.groupby(['src_hpo_id'
+                                    ]).size().reset_index().rename(columns={
+                                        0: 'diabets_no_proof'
+                                    }).sort_values(["diabets_no_proof"])
 diabets_no_proof
 
-combined = diabetes_and_test = pd.merge(diabets_no_proof, total_diab, on=["src_hpo_id"], how="outer")
+combined = diabetes_and_test = pd.merge(diabets_no_proof,
+                                        total_diab,
+                                        on=["src_hpo_id"],
+                                        how="outer")
 combined = combined.fillna(0)
+combined
 
 combined = pd.merge(combined, site_df, how='outer', on='src_hpo_id')
 combined = combined.fillna("No Data")
+combined
 
 combined.to_csv("data\\diabets.csv")
