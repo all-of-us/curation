@@ -262,7 +262,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -299,7 +299,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -336,7 +336,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -373,7 +373,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -410,7 +410,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -447,7 +447,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -484,7 +484,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -521,7 +521,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -558,7 +558,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -595,7 +595,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -632,7 +632,7 @@ SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 2) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{}.drug_exposure` de
  JOIN
      `{}.concept_ancestor` ca
  ON
@@ -684,4 +684,6 @@ sites_drug_success
 sites_drug_success = pd.merge(sites_drug_success, site_df, how='outer', on='src_hpo_id')
 sites_drug_success = sites_drug_success.fillna("No Data")
 
-sites_drug_success.to_csv("data\\drug_success.csv")
+sites_drug_success.to_csv("C://Users//ne2310//PycharmProjects//curation//data_steward//analytics//table_metrics//drug_success.csv")
+
+

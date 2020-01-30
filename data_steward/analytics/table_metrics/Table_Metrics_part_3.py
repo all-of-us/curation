@@ -211,7 +211,7 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (t1.visit_start_datetime>t1.visit_end_datetime) then 1 else 0 end) as wrong_date
     FROM
-       `{}.unioned_ehr_visit_occurrence` AS t1
+       `{}.visit_occurrence` AS t1
 
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                                  dialect='standard')
@@ -235,7 +235,7 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total_rows,
         sum(case when (t1.visit_start_datetime>t1.visit_end_datetime) then 1 else 0 end) as wrong_date_rows
     FROM
-       `{}.unioned_ehr_visit_occurrence` AS t1
+       `{}.visit_occurrence` AS t1
     INNER JOIN
         (SELECT
             DISTINCT * 
@@ -280,7 +280,7 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (t1.condition_start_datetime>t1.condition_end_datetime) then 1 else 0 end) as wrong_date
     FROM
-       `{}.unioned_ehr_condition_occurrence` AS t1
+       `{}.condition_occurrence` AS t1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                                  dialect='standard')
 temporal_df.shape
@@ -307,7 +307,7 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total_rows,
         sum(case when (t1.condition_start_datetime>t1.condition_end_datetime) then 1 else 0 end) as wrong_date_rows
     FROM
-       `{}.unioned_ehr_condition_occurrence` AS t1
+       `{}.condition_occurrence` AS t1
     INNER JOIN
         (SELECT
             DISTINCT * 
@@ -353,7 +353,7 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (t1.drug_exposure_start_datetime>t1.drug_exposure_end_datetime) then 1 else 0 end) as wrong_date
     FROM
-       `{}.unioned_ehr_drug_exposure` AS t1
+       `{}.drug_exposure` AS t1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                                  dialect='standard')
 temporal_df.shape
@@ -380,7 +380,7 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total_rows,
         sum(case when (t1.drug_exposure_start_datetime>t1.drug_exposure_end_datetime) then 1 else 0 end) as wrong_date_rows
     FROM
-       `{}.unioned_ehr_drug_exposure` AS t1
+       `{}.drug_exposure` AS t1
     INNER JOIN
         (SELECT
             DISTINCT * 
@@ -424,7 +424,7 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (t1.device_exposure_start_datetime>t1.device_exposure_end_datetime) then 1 else 0 end) as wrong_date
     FROM
-       `{}.unioned_ehr_device_exposure` AS t1
+       `{}.device_exposure` AS t1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                                  dialect='standard')
 temporal_df.shape
@@ -449,7 +449,7 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total_rows,
         sum(case when (t1.device_exposure_start_datetime>t1.device_exposure_end_datetime) then 1 else 0 end) as wrong_date_rows
     FROM
-       `{}.unioned_ehr_device_exposure` AS t1
+       `{}.device_exposure` AS t1
     INNER JOIN
         (SELECT
             DISTINCT * 
@@ -495,7 +495,7 @@ succes_rate = succes_rate.fillna("No Data")
 succes_rate
 # -
 
-succes_rate.to_csv("data\\end_before_begin.csv")
+succes_rate.to_csv("C://Users//ne2310//PycharmProjects//curation//data_steward//analytics//table_metrics//end_before_begin.csv")
 
 # # No data point exists beyond 30 days of the death date. (Achilles rule_id #3)
 
@@ -512,9 +512,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(visit_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_visit_occurrence` AS t1
+       `{}.visit_occurrence` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -556,9 +556,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(condition_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_condition_occurrence` AS t1
+       `{}.condition_occurrence` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -598,9 +598,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(drug_exposure_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_drug_exposure` AS t1
+       `{}.drug_exposure` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -640,9 +640,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(measurement_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_measurement` AS t1
+       `{}.measurement` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -682,9 +682,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(procedure_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_procedure_occurrence` AS t1
+       `{}.procedure_occurrence` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -724,9 +724,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(observation_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_observation` AS t1
+       `{}.observation` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -766,9 +766,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(device_exposure_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_device_exposure` AS t1
+       `{}.device_exposure` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -812,7 +812,7 @@ master_df
 succes_rate = pd.merge(master_df, site_df, how='outer', on='src_hpo_id')
 succes_rate = succes_rate.fillna("No Data")
 
-succes_rate.to_csv("data\\data_after_date.csv")
+succes_rate.to_csv("C://Users//ne2310//PycharmProjects//curation//data_steward//analytics//table_metrics//data_after_date.csv")
 
 # # Age of participant should NOT be below 18 and should NOT be too high (Achilles rule_id #20 and 21)
 
@@ -831,7 +831,7 @@ birth_df = pd.io.gbq.read_gbq('''
         sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18) then 1 else 0 end) as wrong_death_date
          
     FROM
-       `{}.unioned_ehr_person` AS t1
+       `{}.person` AS t1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
@@ -853,7 +853,7 @@ birth_df = pd.io.gbq.read_gbq('''
         sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)>120) then 1 else 0 end) as wrong_death_date
          
     FROM
-       `{}.unioned_ehr_person` AS t1
+       `{}.person` AS t1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
@@ -874,7 +874,7 @@ birth_df = pd.io.gbq.read_gbq('''
     SELECT
         DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR) as AGE    
     FROM
-       `{}.unioned_ehr_person` AS t1
+       `{}.person` AS t1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
@@ -902,7 +902,7 @@ t2d_condition = pd.io.gbq.read_gbq('''
         FROM
             `{}.concept` t1 
         INNER JOIN
-            `{}.unioned_ehr_condition_occurrence` AS t2
+            `{}.condition_occurrence` AS t2
         ON
             t1.concept_id=t2.condition_concept_id
         INNER JOIN
@@ -951,7 +951,7 @@ drug = pd.io.gbq.read_gbq('''
         FROM
             `{}.concept`  AS t1
         INNER JOIN
-            `{}.unioned_ehr_drug_exposure` AS t2
+            `{}.drug_exposure` AS t2
         ON
             t1.concept_id=t2.drug_concept_id
         INNER JOIN
@@ -976,7 +976,7 @@ drug = pd.io.gbq.read_gbq('''
                 ON 
                     t4.concept_id = t5.descendant_concept_id
                 INNER JOIN
-                    `{}.unioned_ehr_drug_exposure` AS t6
+                    `{}.drug_exposure` AS t6
                 ON
                     t4.concept_id=t6.drug_concept_id
                 INNER JOIN
@@ -1013,7 +1013,7 @@ glucose_lab = pd.io.gbq.read_gbq('''
         FROM
             `{}.concept`  as t1
         INNER JOIN
-            `{}.unioned_ehr_measurement` AS t2
+            `{}.measurement` AS t2
         ON
             t1.concept_id=t2.measurement_concept_id
         INNER JOIN
@@ -1052,7 +1052,7 @@ fasting_glucose = pd.io.gbq.read_gbq('''
         FROM
             `{}.concept`  as t1
         INNER JOIN
-            `{}.unioned_ehr_measurement` AS t2
+            `{}.measurement` AS t2
         ON
             t1.concept_id=t2.measurement_concept_id
         INNER JOIN
@@ -1088,7 +1088,7 @@ a1c = pd.io.gbq.read_gbq('''
         FROM
             `{}.concept`  as t1
         INNER JOIN
-            `{}.unioned_ehr_measurement` AS t2
+            `{}.measurement` AS t2
         ON
             t1.concept_id=t2.measurement_concept_id
         INNER JOIN
@@ -1124,7 +1124,7 @@ t1d_condition = pd.io.gbq.read_gbq('''
         FROM
             `{}.concept` t1 
         INNER JOIN
-            `{}.unioned_ehr_condition_occurrence` AS t2
+            `{}.condition_occurrence` AS t2
         ON
             t1.concept_id=t2.condition_concept_id
         INNER JOIN
@@ -1166,7 +1166,7 @@ insulin = pd.io.gbq.read_gbq('''
         FROM
             `{}.concept`  AS t1
         INNER JOIN
-            `{}.unioned_ehr_drug_exposure` AS t2
+            `{}.drug_exposure` AS t2
         ON
             t1.concept_id=t2.drug_concept_id
         INNER JOIN
@@ -1191,7 +1191,7 @@ insulin = pd.io.gbq.read_gbq('''
                 ON 
                     t4.concept_id = t5.descendant_concept_id
                 INNER JOIN
-                    `{}.unioned_ehr_drug_exposure` AS t6
+                    `{}.drug_exposure` AS t6
                 ON
                     t4.concept_id=t6.drug_concept_id
                 INNER JOIN
@@ -1264,4 +1264,4 @@ combined = combined.fillna(0)
 combined = pd.merge(combined, site_df, how='outer', on='src_hpo_id')
 combined = combined.fillna("No Data")
 
-combined.to_csv("data\\diabets.csv")
+combined.to_csv("C://Users//ne2310//PycharmProjects//curation//data_steward//analytics//table_metrics//diabetes.csv")

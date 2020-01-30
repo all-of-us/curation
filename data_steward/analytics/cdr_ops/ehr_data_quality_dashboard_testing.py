@@ -22,7 +22,6 @@ from notebooks import bq, render, parameters
 import matplotlib.pyplot as plt
 import numpy as np
 from pandas.plotting import table 
-# %matplotlib inline
 import pandas as pd
 import six
 
@@ -359,6 +358,7 @@ def create_dicts_w_info(df, x_label, column_label):
     Returns
     -------
     data_qual_info (dictionary): has the following structure
+        
         keys: the column for a particular dataframe that represents the elements that
             whose data quality is being compared (e.g. HPOs, different measurement/unit
             combinations)
@@ -490,7 +490,7 @@ del hpo_dict["Total"]  # want to get rid of the total (which will be ~100%)
 
 create_graphs(info_dict = hpo_dict, xlabel = 'Site', ylabel = 'Percentage of Implausible Values',
               title = "Spread of Implausible Values by Site",
-              img_name = 'spread_implausible_values.png',
+              img_name = 'spread_implausible_values.jpg',
               color = 'b', total_diff_color = False, turnoff_x = False)
 # -
 

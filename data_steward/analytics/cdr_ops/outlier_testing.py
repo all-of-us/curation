@@ -13,7 +13,7 @@
 #     name: python3
 # ---
 
-# ## Script is used to determine any potential sites that may be using uploading erroneous measurements. Sites may have 'outlier' values beacuse:
+# ## Script is used to determine any potential sites that may be using uploading erroneous measurements. Sites may have 'outlier' values beacuse (running list):
 # - They may be using a unit_concept_id that does not have a correspondining 'conversion' in '[unit_mapping.csv](https://github.com/all-of-us/curation/blob/develop/data_steward/resources/unit_mapping.csv)'.
 
 # +
@@ -23,7 +23,6 @@ from notebooks import bq, render, parameters
 import matplotlib.pyplot as plt
 import numpy as np
 from pandas.plotting import table 
-# %matplotlib inline
 import six
 import scipy.stats
 import math
@@ -80,7 +79,7 @@ def find_descendants(DATASET, ancestor_concept):
     DATASET (string): string representing the dataset to be queried. Taken from the
         parameters file
         
-    ancestor_concept(integer): integer that is the 'ancestor_concept_id' for a particular
+    ancestor_concept (integer): integer that is the 'ancestor_concept_id' for a particular
         set of labs
         
     Returns
@@ -234,7 +233,7 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ance
     most_pop_unit (string): string that represents the most popular unit concept
         name for the particular measurement set.
         
-    string_desc_concepts(string): string of all the descendant concept IDs that
+    string_desc_concepts (string): string of all the descendant concept IDs that
         represent the concept_ids for the particular measurement set.
         
     ancestor_concept (int): used as the 'starting' point for all of the measurements.
@@ -337,22 +336,6 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ance
     
     return median, stdev, num_records, mean, decile1, quartile1, median, quartile3, decile9, concept_name
 
-
-#
-#     ({} - a.mean) as numerator,
-#     ROUND((POW({}, 2) / {}), 2) as prt1, 
-#     (POW(a.stdev, 2)) / a.total_rows as prt2,
-#     ROUND(((POW({}, 2)) / {}) + ((POW(a.stdev, 2)) / a.total_rows), 2) as sample,
-#     ROUND(SQRT( ((POW({}, 2)) / {}) + ((POW(a.stdev, 2)) / a.total_rows)), 2) as denom,
-#     
-#     
-#     
-#     ROUND(({} - a.mean) / SQRT( ((POW({}, 2)) / {}) + ((POW(a.stdev, 2)) / a.total_rows)), 2) as t_value, 
-#     
-#     ROUND(POW(((POW({}, 2)) / {}) + ((POW(a.stdev, 2)) / a.total_rows), 2) /
-#     (POW(((POW({}, 2)) / {}), 2) / ({} - 1) + POW(((POW(a.stdev, 2)) / a.total_rows), 2) / (a.total_rows - 1)), 2)
-#     as degrees_freedom, 
-#
 
 def create_site_distribution_df(
     DATASET, string_desc_concepts, most_pop_unit):
@@ -482,6 +465,8 @@ def generate_aggregate_df(median, decile1, quartile1, quartile3, decile9,
     return aggregate_df
 
 
+# ## Below is the 'main' function that dictates most of the 'flow' of the analysis
+
 def run_statistics(ancestor_concept, DATASET):
     """
     Function runs the statistics and created the dataframe for all of the measurements
@@ -533,16 +518,18 @@ def run_statistics(ancestor_concept, DATASET):
 
 # #### Below cell modified from this [StackOverflow](https://stackoverflow.com/questions/26678467/export-a-pandas-dataframe-as-a-table-image)
 
-def render_mpl_table(data, col_width=3.0, row_height=0.625, font_size=12,
+def render_mpl_table(data, col_width=15, row_height=0.625, font_size=12,
                      header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
                      bbox=[0, 0, 1, 1], header_columns=0,
                      ax=None, **kwargs):
     """
-    Function is used to improve the formatting / image quality of the output
+    Function is used to improve the formatting / image quality of the output. The
+    parameters can be changed as needed/desired.
     """
     
+    # the np.array added to size is the main determinant for column dimensions
     if ax is None:
-        size = (np.array(data.shape[::-1]) + np.array([0, 1])) * np.array([col_width, row_height])
+        size = (np.array(data.shape[::-1]) + np.array([2, 1])) * np.array([col_width, row_height])
         fig, ax = plt.subplots(figsize=size)
         ax.axis('off')
 
@@ -582,7 +569,7 @@ def replace_name(name):
         name = name.replace(ch, "_")
     
     if name[-1:] == "_":
-        name = name[:-1]  # chop off the underscore
+        name = name[:-1]  # chop off the final underscore
         
     num_underscores = 0
     for char in name:
@@ -867,6 +854,8 @@ def display_boxplot(lst, img_name, names):
     
     plt.show()
 
+
+# ## Below does the bulk of the 'heavy lifting' of this script
 
 for ancestor_id in measurement_ancestors:
     site_value_distribution_df, most_popular_unit, concept_name, aggregate_df = \

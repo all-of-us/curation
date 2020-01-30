@@ -241,7 +241,7 @@ FROM
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{}.measurement` m
      JOIN -- to get the site info
          `{}._mapping_measurement` mm
      ON
@@ -284,7 +284,7 @@ FROM
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{}.measurement` m
      JOIN -- to get the site info
          `{}._mapping_measurement` mm
      ON
@@ -327,7 +327,7 @@ FROM
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{}.measurement` m
      JOIN -- to get the site info
          `{}._mapping_measurement` mm
      ON
@@ -370,7 +370,7 @@ FROM
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{}.measurement` m
      JOIN -- to get the site info
          `{}._mapping_measurement` mm
      ON
@@ -413,7 +413,7 @@ FROM
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{}.measurement` m
      JOIN -- to get the site info
          `{}._mapping_measurement` mm
      ON
@@ -456,7 +456,7 @@ FROM
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{}.measurement` m
      JOIN -- to get the site info
          `{}._mapping_measurement` mm
      ON
@@ -502,4 +502,4 @@ sites_measurement = sites_measurement.fillna("No Data")
 
 sites_measurement
 
-sites_measurement.to_csv("data\\sites_measurement.csv")
+sites_measurement.to_csv("C://Users//ne2310//PycharmProjects//curation//data_steward//analytics//table_metrics//sites_measurement.csv")

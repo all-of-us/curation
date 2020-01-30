@@ -112,7 +112,7 @@ unit_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS unit_total_row
             FROM
-               `{}.unioned_ehr_measurement` AS t1
+               `{}.measurement` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -129,7 +129,7 @@ unit_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS unit_well_defined_row
             FROM
-               `{}.unioned_ehr_measurement` AS t1
+               `{}.measurement` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -171,7 +171,7 @@ unit_standard_df = unit_standard_df.fillna(0)
 
 unit_standard_df
 
-unit_standard_df.to_csv("data\q7_Integration_Units_Select_Measurements.csv")
+unit_standard_df.to_csv("C://Users//ne2310//PycharmProjects//curation//data_steward//analytics//table_metrics//q7_Integration_Units_Select_Measurements.csv")
 
 # #  Integration of Routes for Select Drugs:
 #
@@ -2339,7 +2339,7 @@ antibiotics_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2356,7 +2356,7 @@ antibiotics_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2409,7 +2409,7 @@ ccb_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2426,7 +2426,7 @@ ccb_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2479,7 +2479,7 @@ diuretics_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2496,7 +2496,7 @@ diuretics_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2549,7 +2549,7 @@ opioids_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2566,7 +2566,7 @@ opioids_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2619,7 +2619,7 @@ statins_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2636,7 +2636,7 @@ statins_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2689,7 +2689,7 @@ msknaids_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2706,7 +2706,7 @@ msknaids_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2759,7 +2759,7 @@ oralhypo_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2776,7 +2776,7 @@ oralhypo_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2829,7 +2829,7 @@ painnsaids_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2846,7 +2846,7 @@ painnsaids_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2899,7 +2899,7 @@ vaccine_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2916,7 +2916,7 @@ vaccine_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2969,7 +2969,7 @@ aceinhibitor_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2986,7 +2986,7 @@ aceinhibitor_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3039,7 +3039,7 @@ drugs_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_total_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3056,7 +3056,7 @@ drugs_standard_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(*) AS route_well_defined_row
             FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
+               `{}.drug_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3143,4 +3143,4 @@ for i in liste:
     drugs_standard_df = pd.merge(drugs_standard_df, i, how="outer", on="src_hpo_id")
 drugs_standard_df
 
-drugs_standard_df.to_csv("data\\q5_Integration_Routes_Select_Drugs.csv")
+drugs_standard_df.to_csv("C://Users//ne2310//PycharmProjects//curation//data_steward//analytics//table_metrics//q5_Integration_Routes_Select_Drugs.csv")
