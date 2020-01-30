@@ -228,6 +228,7 @@ class ValidationMainTest(unittest.TestCase):
             'HTTP error: fake http error'.format(self.hpo_id))
         self.assertIn(expected_call, mock_logging_error.mock_calls)
 
+    @mock.patch('validation.main.run_export_dashboard_bucket')
     def test_extract_date_from_rdr(self):
         rdr_dataset_id = 'rdr20200201'
         bad_rdr_dataset_id = 'ehr2019-02-01'
@@ -254,7 +255,7 @@ class ValidationMainTest(unittest.TestCase):
         mock_validation, mock_get_hpo_name, mock_write_string_to_file,
         mock_get_duplicate_counts_query, mock_query_rows,
         mock_all_required_files_loaded, mock_upload, mock_run_achilles,
-        mock_export):
+        mock_export, mock_export_dashboard_bucket):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -273,6 +274,7 @@ class ValidationMainTest(unittest.TestCase):
         :param mock_upload: mock uploading to a bucket
         :param mock_run_achilles: mock running the achilles reports
         :param mock_export: mock exporting the files
+        :param mock_export_dashboard_bucket: mock exporting files to achilles
         """
         # pre-conditions
         mock_hpo_bucket.return_value = 'noob'
@@ -329,6 +331,7 @@ class ValidationMainTest(unittest.TestCase):
             None)
         self.assertTrue(mock_run_achilles.called)
         self.assertTrue(mock_export.called)
+        self.assertTrue(mock_export_dashboard_bucket.called)
         self.assertEqual(
             mock_export.assert_called_once_with(hpo_id='noob',
                                                 folder_prefix='SUBMISSION/'),
@@ -342,6 +345,29 @@ class ValidationMainTest(unittest.TestCase):
             filepath = args[1]
             self.assertEqual('noob', bucket)
             self.assertTrue(filepath.startswith('SUBMISSION/'))
+
+    @mock.patch('validation.main.run_achilles_export')
+    @mock.patch('gcs_utils.get_achilles_transfer_bucket')
+    def test_run_export_dashboard_bucket(self, mock_transfer_bucket,
+                                         mock_run_achilles_export):
+        """
+        test if the export to achilles dashboard bucket is called with right values
+        :param mock_transfer_bucket: mock achilles transfer bucket name
+        :param mock_run_achilles_export: mock exporting the achilles reports
+        :return: 
+        """
+        expected_bucket_name = 'noob'
+        mock_transfer_bucket.return_value = expected_bucket_name
+        fake_hpo_id = 'fake'
+        datasource_name = fake_hpo_id
+        folder_prefix = fake_hpo_id + '/'
+        reports_prefix = datasource_name + '/'
+        main.run_export_dashboard_bucket(fake_hpo_id)
+
+        mock_run_achilles_export.assert_called_with(fake_hpo_id,
+                                                    expected_bucket_name,
+                                                    folder_prefix,
+                                                    reports_prefix)
 
     @mock.patch('gcs_utils.copy_object')
     @mock.patch('gcs_utils.list_bucket')

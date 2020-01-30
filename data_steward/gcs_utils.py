@@ -22,6 +22,10 @@ def get_drc_bucket():
     return result
 
 
+def get_achilles_transfer_bucket():
+    return os.environ.get('ACHILLES_TRANSFER_BUCKET')
+
+
 def get_hpo_bucket(hpo_id):
     """
     Get the name of an HPO site's private bucket

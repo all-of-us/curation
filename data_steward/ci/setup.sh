@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Create buckets
-for b in ${DRC_BUCKET_NAME} ${BUCKET_NAME_FAKE} ${BUCKET_NAME_NYC} ${BUCKET_NAME_PITT} ${BUCKET_NAME_CHS} ${BUCKET_NAME_UNIONED_EHR}; do
+for b in ${DRC_BUCKET_NAME} ${ACHILLES_TRANSFER_BUCKET} ${BUCKET_NAME_FAKE} ${BUCKET_NAME_NYC} ${BUCKET_NAME_PITT} ${BUCKET_NAME_CHS} ${BUCKET_NAME_UNIONED_EHR}; do
   $(git rev-parse --show-toplevel)/data_steward/ci/create_bucket.sh ${b}
 done
 

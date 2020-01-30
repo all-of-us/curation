@@ -116,13 +116,48 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
 
     # Run export queries and store json payloads in specified folder in the target bucket
     reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
-    for export_name in common.ALL_REPORTS:
-        sql_path = os.path.join(export.EXPORT_PATH, export_name)
+    results = run_achilles_export(hpo_id, target_bucket, folder_prefix,
+                                  reports_prefix)
+    return results
+
+
+def run_export_dashboard_bucket(hpo_id):
+    """
+    Uploads achilles files to a bucket for dashboards access
+
+    :param hpo_id: which hpo bucket do these files go into
+    :return:
+    """
+    datasource_name = hpo_id
+    target_bucket = gcs_utils.get_achilles_transfer_bucket()
+
+    logging.info(
+        f'Exporting {datasource_name} report to bucket {target_bucket}')
+
+    # Run export queries and store json payloads in specified folder in the target bucket
+    folder_prefix = hpo_id + '/'
+    reports_prefix = datasource_name + '/'
+    results = run_achilles_export(hpo_id, target_bucket, folder_prefix,
+                                  reports_prefix)
+    return results
+
+
+def run_achilles_export(hpo_id, target_bucket, folder_prefix, report_prefix):
+    """
+        :param hpo_id: which hpo bucket do these files go into
+        :param target_bucket: Name of the bucket where the files need to be dumped
+        :param folder_prefix: 
+        :param report_prefix: 
+        :return: 
+    """
+    results = []
+    for report_name in common.ALL_REPORTS:
+        sql_path = os.path.join(export.EXPORT_PATH, report_name)
         result = export.export_from_path(sql_path, hpo_id)
         content = json.dumps(result)
         fp = StringIO(content)
         result = gcs_utils.upload_object(target_bucket,
-                                         reports_prefix + export_name + '.json',
+                                         report_prefix + report_name + '.json',
                                          fp)
         results.append(result)
     result = save_datasources_json(hpo_id=hpo_id,
@@ -317,6 +352,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             logging.info('Running achilles on %s.', folder_prefix)
             run_achilles(hpo_id)
             run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
+            run_export_dashboard_bucket(hpo_id=hpo_id)
             logging.info('Uploading achilles index files to `%s`.', gcs_path)
             _upload_achilles_files(hpo_id, folder_prefix)
             heel_error_query = get_heel_error_query(hpo_id)
