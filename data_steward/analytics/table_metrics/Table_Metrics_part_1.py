@@ -21,7 +21,7 @@ from google.cloud import bigquery
 
 # %reload_ext google.cloud.bigquery
 
-client = bigquery.Client()
+client=bigquery.Client()
 
 # %load_ext google.cloud.bigquery
 
@@ -31,9 +31,8 @@ print('Setting everything up...')
 #######################################
 
 import warnings
-
 warnings.filterwarnings('ignore')
-import pandas_gbq
+import pandas_gbq 
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -47,6 +46,7 @@ import matplotlib as mpl
 
 import matplotlib.pyplot as plt
 
+
 DATASET = ''
 
 import os
@@ -57,6 +57,8 @@ from datetime import time
 from datetime import timedelta
 import time
 
+
+
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
@@ -64,34 +66,20 @@ pd.options.display.max_colwidth = 999
 
 from IPython.display import HTML as html_print
 
-
 def cstr(s, color='black'):
     return "<text style=color:{}>{}</text>".format(color, s)
 
 
 print('done.')
 
-# +
-dic = {'src_hpo_id': ["pitt_temple", "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc", "seec_miami",
-                      "seec_morehouse", "seec_emory", "uamc_banner", "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum",
-                      "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
-                      "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl", "saou_uab", "trans_am_baylor",
-                      "cpmc_ucsd", "ecchc", "chci", "aouw_uwh", "cpmc_usc", "hrhc", "ipmc_northshore", "chs",
-                      "cpmc_ucsf", "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"],
-       'HPO': ["Temple University", "Louisiana State University", "Reliant Medical Group (Meyers Primary Care)",
-               "Essentia Health Superior Clinic", "University of Mississippi", "SouthEast Enrollment Center Miami",
-               "SouthEast Enrollment Center Morehouse", "SouthEast Enrollment Center Emory", "Banner Health",
-               "University of Pittsburgh", "Columbia University Medical Center", "University of Illinois Chicago",
-               "Spectrum Health", "Henry Ford Health System", "Boston Medical Center", "UC Irvine",
-               "Partners HealthCare", "Weill Cornell Medical Center", "Northwestern Memorial Hospital",
-               "Harlem Hospital", "University of Chicago", "Marshfield Clinic", "San Ysidro Health Center",
-               "Cedars-Sinai", "University of Florida", "University of Alabama at Birmingham", "Baylor", "UC San Diego",
-               "Eau Claire Cooperative Health Center", "Community Health Center, Inc.",
-               "UW Health (University of Wisconsin Madison)", "University of Southern California", "HRHCare",
-               "NorthShore University Health System", "Cherokee Health Systems", "UC San Francisco",
-               "Jackson-Hinds CHC", "Medical College of Wisconsin", "UC Davis", "Rush University"]}
 
-site_df = pd.DataFrame(data=dic)
+# +
+dic={'src_hpo_id':["pitt_temple","saou_lsu","trans_am_meyers","trans_am_essentia","saou_ummc","seec_miami","seec_morehouse","seec_emory","uamc_banner","pitt","nyc_cu","ipmc_uic","trans_am_spectrum","tach_hfhs","nec_bmc","cpmc_uci","nec_phs","nyc_cornell","ipmc_nu","nyc_hh","ipmc_uchicago","aouw_mcri","syhc","cpmc_ceders","seec_ufl","saou_uab","trans_am_baylor","cpmc_ucsd","ecchc","chci","aouw_uwh","cpmc_usc","hrhc","ipmc_northshore","chs","cpmc_ucsf","jhchc","aouw_mcw","cpmc_ucd","ipmc_rush"],
+    'HPO':["Temple University","Louisiana State University","Reliant Medical Group (Meyers Primary Care)","Essentia Health Superior Clinic","University of Mississippi","SouthEast Enrollment Center Miami","SouthEast Enrollment Center Morehouse","SouthEast Enrollment Center Emory","Banner Health","University of Pittsburgh","Columbia University Medical Center","University of Illinois Chicago","Spectrum Health","Henry Ford Health System","Boston Medical Center","UC Irvine","Partners HealthCare","Weill Cornell Medical Center","Northwestern Memorial Hospital","Harlem Hospital","University of Chicago","Marshfield Clinic","San Ysidro Health Center","Cedars-Sinai","University of Florida","University of Alabama at Birmingham","Baylor","UC San Diego","Eau Claire Cooperative Health Center","Community Health Center, Inc.","UW Health (University of Wisconsin Madison)","University of Southern California","HRHCare","NorthShore University Health System","Cherokee Health Systems","UC San Francisco","Jackson-Hinds CHC","Medical College of Wisconsin","UC Davis","Rush University"]}
+
+
+site_df=pd.DataFrame(data=dic)
+
 
 # +
 ######################################
@@ -187,14 +175,14 @@ site_map = pd.io.gbq.read_gbq('''
     FROM
          `{}._mapping_visit_occurrence`   
     )     
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET
-               , DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET
-               , DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET, DATASET,DATASET,DATASET,DATASET,DATASET
+              , DATASET,DATASET,DATASET,DATASET,DATASET, DATASET,DATASET,DATASET,DATASET,DATASET, DATASET
+               ,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
 
-site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
+site_df=pd.merge(site_map,site_df,how='outer',on='src_hpo_id')
 
 site_df
 
@@ -233,16 +221,15 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         COUNT(*) > 1
     ORDER BY
         1,2,3,4,5,6,7,8,9
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                    dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
 foreign_key_df.head()
 
-visit_occurrence = foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(
-    columns={0: 'visit_occurrence'}).sort_values(["visit_occurrence"]).set_index("src_hpo_id")
-visit_occurrence = visit_occurrence.reset_index()
+visit_occurrence=foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(columns={0:'visit_occurrence'}).sort_values(["visit_occurrence"]).set_index("src_hpo_id")
+visit_occurrence=visit_occurrence.reset_index()
 visit_occurrence
 
 # ## condition_occurrence table
@@ -277,16 +264,15 @@ condition_source_value, condition_source_concept_id, condition_status_source_val
         COUNT(*) > 1
     ORDER BY
         1,2,3,4,5,6,7,8,9,10,11,12,13,14
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                    dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
 foreign_key_df.head()
 
-condition_occurrence = foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(
-    columns={0: 'condition_occurrence'}).sort_values(["condition_occurrence"]).set_index("src_hpo_id")
-condition_occurrence = condition_occurrence.reset_index()
+condition_occurrence=foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(columns={0:'condition_occurrence'}).sort_values(["condition_occurrence"]).set_index("src_hpo_id")
+condition_occurrence=condition_occurrence.reset_index()
 condition_occurrence
 
 # +
@@ -369,6 +355,7 @@ condition_occurrence
 # ## drug_exposure table
 
 
+
 # +
 ######################################
 print('Getting the data from the database...')
@@ -401,19 +388,19 @@ drug_source_concept_id, route_source_value, dose_unit_source_value,
         COUNT(*) > 1
     ORDER BY
         1,2,3
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                    dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
 foreign_key_df.head()
 
-drug_exposure = foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(
-    columns={0: 'drug_exposure'}).sort_values(["drug_exposure"]).set_index("src_hpo_id")
-drug_exposure = drug_exposure.reset_index()
+drug_exposure=foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(columns={0:'drug_exposure'}).sort_values(["drug_exposure"]).set_index("src_hpo_id")
+drug_exposure=drug_exposure.reset_index()
 drug_exposure
 
 # ## measurement table
+
 
 
 # +
@@ -447,16 +434,15 @@ measurement_source_value, measurement_source_concept_id, unit_source_value, valu
         COUNT(*) > 1
     ORDER BY
         1,2,3
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                    dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
 foreign_key_df.head()
 
-measurement = foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(
-    columns={0: 'measurement'}).sort_values(["measurement"]).set_index("src_hpo_id")
-measurement = measurement.reset_index()
+measurement=foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(columns={0:'measurement'}).sort_values(["measurement"]).set_index("src_hpo_id")
+measurement=measurement.reset_index()
 measurement
 
 # ## procedure_occurrence
@@ -490,19 +476,19 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         COUNT(*) > 1
     ORDER BY
         1,2,3,4,5,6,7,8,9,10,11,12,13,14
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                    dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
 foreign_key_df.head()
 
-procedure_occurrence = foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(
-    columns={0: 'procedure_occurrence'}).sort_values(["procedure_occurrence"]).set_index("src_hpo_id")
-procedure_occurrence = procedure_occurrence.reset_index()
+procedure_occurrence=foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(columns={0:'procedure_occurrence'}).sort_values(["procedure_occurrence"]).set_index("src_hpo_id")
+procedure_occurrence=procedure_occurrence.reset_index()
 procedure_occurrence
 
 # ## observation table
+
 
 
 # +
@@ -536,16 +522,15 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         COUNT(*) > 1
     ORDER BY
         1,2,3,4,5,6,7,8,9,10,11,12,13,14
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                    dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
 foreign_key_df.head()
 
-observation = foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(
-    columns={0: 'observation'}).sort_values(["observation"]).set_index("src_hpo_id")
-observation = observation.reset_index()
+observation=foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(columns={0:'observation'}).sort_values(["observation"]).set_index("src_hpo_id")
+observation=observation.reset_index()
 observation
 
 # ## provider table
@@ -569,14 +554,15 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         COUNT(*) > 1
     ORDER BY
         1,2,3,4,5,6,7,8,9,10,11,12
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                    dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
 foreign_key_df.head()
 
 # ## device_exposure table
+
 
 
 # +
@@ -609,16 +595,15 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         COUNT(*) > 1
     ORDER BY
         1,2,3,4,5,6,7,8,9,10,11,12,13,14
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                    dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
 foreign_key_df.head()
 
-device_exposure = foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(
-    columns={0: 'device_exposure'}).sort_values(["device_exposure"]).set_index("src_hpo_id")
-device_exposure = device_exposure.reset_index()
+device_exposure=foreign_key_df.groupby(['src_hpo_id']).size().reset_index().rename(columns={0:'device_exposure'}).sort_values(["device_exposure"]).set_index("src_hpo_id")
+device_exposure=device_exposure.reset_index()
 device_exposure
 
 # ## death table
@@ -642,8 +627,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         COUNT(*) > 1    
     ORDER BY
         1,2,3,4,5,6,7
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                    dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
@@ -669,8 +654,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         COUNT(*) > 1
     ORDER BY
         1,2,3,4,5
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                    dialect='standard')
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
+                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
@@ -679,32 +664,33 @@ foreign_key_df.head()
 # ## Sites combined
 
 # +
-sites_success = pd.merge(visit_occurrence, condition_occurrence, how='outer', on='src_hpo_id')
-sites_success = pd.merge(sites_success, drug_exposure, how='outer', on='src_hpo_id')
-sites_success = pd.merge(sites_success, measurement, how='outer', on='src_hpo_id')
-sites_success = pd.merge(sites_success, procedure_occurrence, how='outer', on='src_hpo_id')
-sites_success = pd.merge(sites_success, device_exposure, how='outer', on='src_hpo_id')
-sites_success = pd.merge(sites_success, observation, how='outer', on='src_hpo_id')
+sites_success=pd.merge(visit_occurrence,condition_occurrence,how='outer',on='src_hpo_id')
+sites_success=pd.merge(sites_success,drug_exposure,how='outer',on='src_hpo_id')
+sites_success=pd.merge(sites_success,measurement,how='outer',on='src_hpo_id')
+sites_success=pd.merge(sites_success,procedure_occurrence,how='outer',on='src_hpo_id')
+sites_success=pd.merge(sites_success,device_exposure,how='outer',on='src_hpo_id')
+sites_success=pd.merge(sites_success,observation,how='outer',on='src_hpo_id')
+
 
 # -
 
-sites_success = sites_success.fillna(0)
-sites_success[["visit_occurrence", "condition_occurrence", "drug_exposure", "measurement", "procedure_occurrence",
-               "device_exposure", "observation"]] \
-    = sites_success[["visit_occurrence", "condition_occurrence", "drug_exposure", "measurement", "procedure_occurrence",
-                     "device_exposure", "observation"]].astype(int)
+sites_success=sites_success.fillna(0)
+sites_success[["visit_occurrence","condition_occurrence","drug_exposure","measurement","procedure_occurrence","device_exposure","observation"]]\
+    =sites_success[["visit_occurrence","condition_occurrence","drug_exposure","measurement","procedure_occurrence","device_exposure","observation"]].astype(int)
 
 sites_success
 
-sites_success = pd.merge(sites_success, site_df, how='outer', on='src_hpo_id')
+sites_success=pd.merge(sites_success,site_df,how='outer',on='src_hpo_id')
 
-sites_success = sites_success.fillna("No Data")
+sites_success=sites_success.fillna(0)
+
+sites_success
 
 sites_success.to_csv("data\\duplicates.csv")
 
 # # 20.Dataframe (row for each hpo_id) Condition_occurrence table, condition_source_concept_id field
 
-condition_concept_df = pd.io.gbq.read_gbq('''
+ condition_concept_df = pd.io.gbq.read_gbq('''
     WITH
         data1 AS (
             SELECT
@@ -787,13 +773,12 @@ condition_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data3.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                          dialect='standard'
-                                          )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 condition_concept_df.shape
 
-condition_concept_df = condition_concept_df.fillna(0)
+condition_concept_df=condition_concept_df.fillna(0)
 condition_concept_df
 
 # # 21.Dataframe (row for each hpo_id) Procedure_occurrence table, procedure_source_concept_id field
@@ -853,13 +838,12 @@ procedure_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data2.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                          dialect='standard'
-                                          )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 procedure_concept_df.shape
 
-procedure_concept_df = procedure_concept_df.fillna(0)
+procedure_concept_df=procedure_concept_df.fillna(0)
 procedure_concept_df
 
 # # 22.Dataframe (row for each hpo_id) Drug_exposures table, drug_source_concept_id  field
@@ -919,13 +903,12 @@ drug_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data2.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                     dialect='standard'
-                                     )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 drug_concept_df.shape
 
-drug_concept_df = drug_concept_df.fillna(0)
+drug_concept_df=drug_concept_df.fillna(0)
 drug_concept_df
 
 # # 23.Dataframe (row for each hpo_id) Observation table, Observation_source_concept_id field
@@ -969,7 +952,7 @@ observation_concept_df = pd.io.gbq.read_gbq('''
             ON
                 t3.concept_id = t1.observation_source_concept_id 
             WHERE 
-                 t3.standard_concept="S" and t3.domain_id="Observation"
+                 t3.standard_concept="S"
             GROUP BY
                 1
         )
@@ -987,13 +970,12 @@ observation_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data2.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                            dialect='standard'
-                                            )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 observation_concept_df.shape
 
-observation_concept_df = observation_concept_df.fillna(0)
+observation_concept_df=observation_concept_df.fillna(0)
 observation_concept_df
 
 # # 21.Dataframe (row for each hpo_id) Measurement table, measurement_source_concept_id field
@@ -1053,13 +1035,12 @@ measurement_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data2.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                            dialect='standard'
-                                            )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 measurement_concept_df.shape
 
-measurement_concept_df = measurement_concept_df.fillna(0)
+measurement_concept_df=measurement_concept_df.fillna(0)
 measurement_concept_df
 
 # # 21.Dataframe (row for each hpo_id) visit_occurrence table, visit_source_concept_id field
@@ -1119,28 +1100,27 @@ visit_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data2.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                      dialect='standard'
-                                      )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 visit_concept_df.shape
 
-visit_concept_df = visit_concept_df.fillna(0)
+visit_concept_df=visit_concept_df.fillna(0)
 visit_concept_df
 
-datas = [
-    procedure_concept_df, drug_concept_df, observation_concept_df, measurement_concept_df, visit_concept_df
+datas=[
+       procedure_concept_df,drug_concept_df,observation_concept_df,measurement_concept_df,visit_concept_df
 ]
 
-master_df = condition_concept_df
+master_df=condition_concept_df
 
 for filename in datas:
-    master_df = pd.merge(master_df, filename, on='src_hpo_id', how='outer')
+    master_df = pd.merge(master_df,filename,on='src_hpo_id',how='outer')
 
 master_df
 
-source = pd.merge(master_df, site_df, how='outer', on='src_hpo_id')
-source = source.fillna("No Data")
+source=pd.merge(master_df,site_df,how='outer',on='src_hpo_id')
+source=source.fillna("No Data")
 source.to_csv("data\\source.csv")
 
 # # 16.Dataframe (row for each hpo_id) Condition_occurrence table, condition_concept_id field
@@ -1250,13 +1230,12 @@ condition_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data4.src_hpo_id
     ORDER BY
         4 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                          dialect='standard'
-                                          )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 condition_concept_df.shape
 
-condition_concept_df = condition_concept_df.fillna(0)
+condition_concept_df=condition_concept_df.fillna(0)
 condition_concept_df
 
 # # 17.Dataframe (row for each hpo_id) Procedure_occurrence table, procedure_concept_id field
@@ -1365,13 +1344,12 @@ procedure_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data4.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                          dialect='standard'
-                                          )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 procedure_concept_df.shape
 
-procedure_concept_df = procedure_concept_df.fillna(0)
+procedure_concept_df=procedure_concept_df.fillna(0)
 procedure_concept_df
 
 # # 18.Dataframe (row for each hpo_id) Drug_exposures table, drug_concept_id field
@@ -1483,15 +1461,14 @@ drug_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data4.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
-                                     dialect='standard'
-                                     )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 drug_concept_df.shape
 
 # +
 
-drug_concept_df = drug_concept_df.fillna(0)
+drug_concept_df=drug_concept_df.fillna(0)
 drug_concept_df
 # -
 
@@ -1535,7 +1512,7 @@ observation_concept_df = pd.io.gbq.read_gbq('''
             ON
                 t3.concept_id = t1.observation_concept_id
             WHERE 
-                 t3.standard_concept="S" and t3.domain_id="Observation"
+                 t3.standard_concept="S" 
             GROUP BY
                 1
         ),
@@ -1605,13 +1582,12 @@ observation_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data4.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                            dialect='standard'
-                                            )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 observation_concept_df.shape
 
-observation_concept_df = observation_concept_df.fillna(0)
+observation_concept_df=observation_concept_df.fillna(0)
 observation_concept_df
 
 # # 19.Dataframe (row for each hpo_id) measurement table, measurement_concept_id field
@@ -1724,13 +1700,12 @@ measurement_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data4.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                            dialect='standard'
-                                            )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 measurement_concept_df.shape
 
-measurement_concept_df = measurement_concept_df.fillna(0)
+measurement_concept_df=measurement_concept_df.fillna(0)
 measurement_concept_df
 
 # # 17.Dataframe (row for each hpo_id) visit_occurrence table, visit_concept_id field
@@ -1839,39 +1814,51 @@ visit_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data4.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                      dialect='standard'
-                                      )
+    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
+                                    dialect='standard'
+)
 visit_concept_df.shape
 
-visit_concept_df = visit_concept_df.fillna(0)
+visit_concept_df=visit_concept_df.fillna(0)
 visit_concept_df
+
+
 
 # ## Sites combined
 
 # +
-datas = [
-    drug_concept_df,
-    procedure_concept_df,
-    condition_concept_df,
+datas=[
+drug_concept_df,
+procedure_concept_df,
+condition_concept_df,
     measurement_concept_df,
     visit_concept_df
 ]
 
-master_df = observation_concept_df
+master_df=observation_concept_df
 
 for filename in datas:
-    master_df = pd.merge(master_df, filename, on='src_hpo_id', how='outer')
+    master_df = pd.merge(master_df,filename,on='src_hpo_id',how='outer')
 
 master_df
 
-success_rate = pd.merge(master_df, site_df, how='outer', on='src_hpo_id')
+success_rate=pd.merge(master_df,site_df,how='outer',on='src_hpo_id')
 success_rate
+# -
 
-# +
-success_rate = success_rate.fillna("No Data")
+success_rate=success_rate.fillna("No Data")
 success_rate
 
 success_rate.to_csv("data\\concept.csv")
-# -
+
+
+
+
+
+
+
+
+
+
+
+
