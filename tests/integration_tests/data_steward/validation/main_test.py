@@ -2,23 +2,17 @@
 Unit test components of data_steward.validation.main
 """
 from __future__ import print_function
-from io import StringIO
-import datetime
 import json
 import os
-import re
 import unittest
 from io import open
 
-import googleapiclient.errors
 import mock
 
 import bq_utils
 import common
 from constants import bq_utils as bq_consts
-from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_constants
-from constants.validation.participants import identity_match as id_match_consts
 import gcs_utils
 import resources
 from tests import test_util as test_util
@@ -46,9 +40,7 @@ class ValidationMainTest(unittest.TestCase):
         self.folder_prefix = '2019-01-01/'
         self._empty_bucket()
         test_util.delete_all_tables(self.bigquery_dataset_id)
-
-
-#        self._create_drug_class_table()
+        self._create_drug_class_table()
 
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
@@ -83,17 +75,15 @@ class ValidationMainTest(unittest.TestCase):
                        write_disposition='WRITE_TRUNCATE',
                        destination_dataset_id=self.bigquery_dataset_id)
 
-    # ignore the timestamp and folder tags from testing
-    @staticmethod
-    def _remove_timestamp_tags_from_results(result_file):
-        # convert to list to avoid using regex
-        result_list = result_file.split('\n')
-        remove_start_index = result_list.index('</h1>') + 4
-        # the folder tags span 3 indices starting immediately after h1 tag ends, timestamp tags span 3 indices after
-        output_result_list = result_list[:remove_start_index] + result_list[
-            remove_start_index + 3:]
-        output_result_file = '\n'.join(output_result_list)
-        return output_result_file
+        # ensure concept ancestor table exists
+        if not bq_utils.table_exists(common.CONCEPT_ANCESTOR):
+            bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
+                                           common.CONCEPT_ANCESTOR)
+            q = """INSERT INTO {dataset}.concept_ancestor
+            SELECT * FROM {vocab}.concept_ancestor""".format(
+                dataset=self.bigquery_dataset_id,
+                vocab=common.VOCABULARY_DATASET)
+            bq_utils.query(q)
 
     def table_has_clustering(self, table_info):
         clustering = table_info.get('clustering')
@@ -259,7 +249,7 @@ class ValidationMainTest(unittest.TestCase):
         self.assertSetEqual(set(expected_results), set(r['results']))
 
     @mock.patch('api_util.check_cron')
-    def _test_html_report_five_person(self, mock_check_cron):
+    def test_html_report_five_person(self, mock_check_cron):
         # Not sure this test is still relevant (see hpo_report module and tests)
         # TODO refactor or remove this test
         folder_prefix = '2019-01-01/'
@@ -267,25 +257,12 @@ class ValidationMainTest(unittest.TestCase):
             test_util.write_cloud_file(self.hpo_bucket,
                                        cdm_file,
                                        prefix=folder_prefix)
-        # achilles sometimes fails due to rate limits.
-        # using both success and failure cases allow it to fail gracefully until there is a fix for achilles
-        with open(test_util.FIVE_PERSON_RESULTS_FILE, 'r') as f:
-            expected_result_achilles_success = self._remove_timestamp_tags_from_results(
-                f.read())
-        with open(test_util.FIVE_PERSON_RESULTS_ACHILLES_ERROR_FILE, 'r') as f:
-            expected_result_achilles_failure = self._remove_timestamp_tags_from_results(
-                f.read())
-        expected_results = [
-            expected_result_achilles_success, expected_result_achilles_failure
-        ]
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
             actual_result = test_util.read_cloud_file(
                 self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-            actual_result_file = self._remove_timestamp_tags_from_results(
-                StringIO(actual_result).getvalue())
-            self.assertIn(actual_result_file, expected_results)
+        # print(actual_result)
 
     def tearDown(self):
         self._empty_bucket()

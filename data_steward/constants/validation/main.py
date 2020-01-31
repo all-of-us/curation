@@ -146,19 +146,19 @@ FROM `{project_id}.{dataset_id}.{pii_wildcard}`),
 participant_records AS
 (SELECT person_id
 FROM `{project_id}.{dataset_id}.{participant_match_table_id}`)
-(SELECT DISTINCT 'ehr_exists_but_no_pii_name' AS participant_missingness,
+(SELECT DISTINCT 'EHR person record exists but no PII Name record' AS missingness_type,
     COUNT(person_id) AS count
 FROM (SELECT person_id FROM ehr_persons
     EXCEPT DISTINCT
     SELECT person_id FROM pii_names))
 UNION ALL
-(SELECT DISTINCT 'pii_exists_but_no_ehr_person_record' AS participant_missingness,
+(SELECT DISTINCT 'PII record exists but no EHR person record' AS missingness_type,
     COUNT(person_id) AS count
 FROM (SELECT person_id FROM all_pii
     EXCEPT DISTINCT
     SELECT person_id FROM ehr_persons))
 UNION ALL
-(SELECT DISTINCT 'ehr_exists_but_no_participant_match_record' AS participant_missingness,
+(SELECT DISTINCT 'EHR record exists but no participant match record' AS missingness_type,
     COUNT(person_id) AS count
 FROM (SELECT person_id FROM ehr_persons
     EXCEPT DISTINCT

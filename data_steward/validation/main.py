@@ -131,37 +131,6 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
     return results
 
 
-def run_achilles_helper(hpo_id, folder_prefix, bucket):
-    """
-    This helper catches HttpError 400 for rate limits until there is a fix for achilles to prevent it.
-    This function merely allows it to fail gracefully.
-
-    :param hpo_id: ID of the HPO to run Achilles for.
-    :param folder_prefix: Relative base path.
-    :param bucket: Bucket to save report. If None, use bucket associated with hpo_id.
-    :return: success: Boolean identifying if Achilles ran successfully
-    """
-    success = False
-    try:
-        logging.info('Running achilles on %s', folder_prefix)
-        run_achilles(hpo_id)
-        run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
-        logging.info('Uploading achilles index files to `gs://%s/%s`.', bucket,
-                     folder_prefix)
-        _upload_achilles_files(hpo_id, folder_prefix)
-        success = True
-    except HttpError as err:
-        if err.resp.status == 400:
-            reason = err.content
-            if err.resp.get(consts.CONTENT_TYPE,
-                            '').startswith(consts.APPLICATION_JSON):
-                err_content = json.loads(err.content)
-                reason = err_content.get(consts.ERROR).get(
-                    consts.ERRORS)[0].get(consts.REASON)
-            logging.info('Achilles failed. Reason: %s' % reason)
-    return success
-
-
 def run_achilles(hpo_id=None):
     """checks for full results and run achilles/heel
 
@@ -372,17 +341,17 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         report_data[report_consts.DRUG_CLASS_METRICS_REPORT_KEY] = query_rows(
             drug_class_metrics_query)
 
+        # missing PII
+        logging.info('Getting missing record stats for %s...' % hpo_id)
+        missing_pii_query = get_hpo_missing_pii_query(hpo_id)
+        missing_pii_results = query_rows(missing_pii_query)
+        report_data[report_consts.MISSING_PII_KEY] = missing_pii_results
+
         # completeness
         logging.info('Getting completeness stats for %s...' % hpo_id)
         completeness_query = completeness.get_hpo_completeness_query(hpo_id)
         report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(
             completeness_query)
-
-        # missing PII
-        logging.info('Getting missing record stats for %s...' % hpo_id)
-        missing_pii_query = get_hpo_missing_pii_query(hpo_id)
-        report_data[report_consts.MISSING_PII_KEY] = query_rows(
-            missing_pii_query)
 
         logging.info(
             'Processing complete. Saving timestamp %s to `gs://%s/%s`.',

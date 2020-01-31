@@ -316,19 +316,19 @@ This report may be incomplete because the submission is still being processed. P
     </div>
 {% endif %}
 
-<h2><a name="missing_pii">Missing PII Records</a></h2>
+<h2><a name="missing_pii">Missing Participant Records</a></h2>
 {% if missing_pii %}
 <table class="table table-striped table-hover">
     <thead class="thead-dark">
     <tr>
-        <th>Missing metric</th>
-        <th>Missingness Count</th>
+        <th>Missing Participant Record Type</th>
+        <th>Count</th>
     </tr>
     </thead>
     <tbody>
     {% for row in missing_pii %}
         <tr>
-            <td>{{ row["metric"] }}</td>
+            <td>{{ row["missingness_type"] }}</td>
             <td>{{ row["count"] }}</td>
         </tr>
     {% endfor %}
