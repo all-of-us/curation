@@ -489,11 +489,24 @@ def get_hpo_missing_pii_query(hpo_id):
     pii_wildcard = bq_utils.get_table_id(hpo_id, common.PII_WILDCARD)
     participant_match_table_id = bq_utils.get_table_id(hpo_id,
                                                        common.PARTICIPANT_MATCH)
-    return render_query(consts.MISSING_PII_QUERY,
-                        person_table_id=person_table_id,
-                        pii_name_table_id=pii_name_table_id,
-                        pii_wildcard=pii_wildcard,
-                        participant_match_table_id=participant_match_table_id)
+    rdr_dataset_id = bq_utils.get_rdr_dataset_id()
+    rdr_date = rdr_dataset_id[3:]
+    # TODO remove dependence on date string in RDR dataset id
+    rdr_date = rdr_date[:4] + '-' + rdr_date[4:6] + '-' + rdr_date[6:]
+    rdr_person_table_id = common.PERSON
+    return render_query(
+        consts.MISSING_PII_QUERY,
+        person_table_id=person_table_id,
+        rdr_dataset_id=rdr_dataset_id,
+        rdr_person_table_id=rdr_person_table_id,
+        ehr_no_pii=consts.EHR_NO_PII,
+        ehr_no_rdr=consts.EHR_NO_RDR,
+        pii_no_ehr=consts.PII_NO_EHR,
+        ehr_no_participant_match=consts.EHR_NO_PARTICIPANT_MATCH,
+        rdr_date=rdr_date,
+        pii_name_table_id=pii_name_table_id,
+        pii_wildcard=pii_wildcard,
+        participant_match_table_id=participant_match_table_id)
 
 
 def perform_validation_on_file(file_name, found_file_names, hpo_id,
