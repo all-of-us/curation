@@ -238,7 +238,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         concept_name,
         COUNT(*) AS cnt
     FROM
-       `{}.unioned_ehr_person` AS p
+       `{}.person` AS p
     INNER JOIN
         `{}.concept` AS c
         ON
@@ -274,7 +274,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         concept_name,
         COUNT(*) AS cnt
     FROM
-       `{}.unioned_ehr_person` AS p
+       `{}.person` AS p
     INNER JOIN
         `{}.concept` AS c
         ON
@@ -308,7 +308,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         concept_name,
         COUNT(*) AS cnt
     FROM
-       `{}.unioned_ehr_person` AS p
+       `{}.person` AS p
     INNER JOIN
         `{}.concept` AS c
         ON
@@ -341,7 +341,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
     location_id,
     COUNT(*) AS total_cnt
     FROM
-       `{}.unioned_ehr_person` AS p
+       `{}.person` AS p
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -370,7 +370,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         provider_id,
         COUNT(*) AS cnt
     FROM
-       `{}.unioned_ehr_person` AS p
+       `{}.person` AS p
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -399,7 +399,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         care_site_id,
         COUNT(*) AS cnt
     FROM
-       `{}.unioned_ehr_person` AS p
+       `{}.person` AS p
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -428,7 +428,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         gender_source_concept_id,
         COUNT(*) AS cnt
     FROM
-       `{}.unioned_ehr_person` AS p
+       `{}.person` AS p
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -458,7 +458,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         concept_name,
         COUNT(*) AS cnt
     FROM
-       `{}.unioned_ehr_person` AS p
+       `{}.person` AS p
     INNER JOIN
         `{}.concept` AS c
         ON
@@ -491,7 +491,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         ethnicity_source_concept_id,
         COUNT(*) AS cnt
     FROM
-       `{}.unioned_ehr_person` AS p
+       `{}.person` AS p
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -522,9 +522,9 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (vo.person_id is null or vo.person_id=0) then 1 else 0 end) as missing
     FROM
-       `{}.unioned_ehr_visit_occurrence` AS vo
+       `{}.visit_occurrence` AS vo
     INNER JOIN
-        `{}.unioned_ehr_observation` AS o
+        `{}.observation` AS o
         ON
             vo.person_id=o.person_id
     WHERE 
@@ -551,7 +551,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         visit_concept_id,
         COUNT(*)
     FROM
-       `{}.unioned_ehr_visit_occurrence` AS vo
+       `{}.visit_occurrence` AS vo
     INNER JOIN
         `{}.concept` AS c
         ON
@@ -583,7 +583,7 @@ visit_occurrence_visit_concept_id_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(vo.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -604,7 +604,7 @@ visit_occurrence_visit_concept_id_df = pd.io.gbq.read_gbq('''
                 mvo.src_hpo_id,
                 COUNT(vo.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -667,7 +667,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         visit_type_concept_id,
         COUNT(*)
     FROM
-       `{}.unioned_ehr_visit_occurrence` AS vo
+       `{}.visit_occurrence` AS vo
     INNER JOIN
         `{}.concept` AS c
         ON
@@ -702,7 +702,7 @@ visit_occurrence_visit_type_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(vo.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -723,7 +723,7 @@ visit_occurrence_visit_type_concept_id = pd.io.gbq.read_gbq('''
                 mvo.src_hpo_id,
                 COUNT(vo.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -784,7 +784,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         vo.provider_id,
         COUNT(*) AS cnt
     FROM
-       `{}.unioned_ehr_visit_occurrence` AS vo
+       `{}.visit_occurrence` AS vo
     GROUP BY
         1
     ORDER BY
@@ -823,7 +823,7 @@ visit_occurrence_provider_id_df = pd.io.gbq.read_gbq('''
                 mvo.src_hpo_id,
                 COUNT(vo.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -840,7 +840,7 @@ visit_occurrence_provider_id_df = pd.io.gbq.read_gbq('''
                 mvo.src_hpo_id,
                 COUNT(vo.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -897,7 +897,7 @@ visit_occurrence_care_site_id_df = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(vo.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -914,7 +914,7 @@ visit_occurrence_care_site_id_df = pd.io.gbq.read_gbq('''
                 mvo.src_hpo_id,
                 COUNT(vo.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -972,7 +972,7 @@ visit_occurrence_visit_source_concept_id_df = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(vo.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -989,7 +989,7 @@ visit_occurrence_visit_source_concept_id_df = pd.io.gbq.read_gbq(
                 mvo.src_hpo_id,
                 COUNT(vo.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -1047,7 +1047,7 @@ visit_occurrence_admitting_source_concept_id_df = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(vo.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -1064,7 +1064,7 @@ visit_occurrence_admitting_source_concept_id_df = pd.io.gbq.read_gbq(
                 mvo.src_hpo_id,
                 COUNT(vo.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -1122,7 +1122,7 @@ visit_occurrence_discharge_to_concept_id_df = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(vo.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1143,7 +1143,7 @@ visit_occurrence_discharge_to_concept_id_df = pd.io.gbq.read_gbq(
                 mvo.src_hpo_id,
                 COUNT(vo.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1205,7 +1205,7 @@ visit_occurrence_preceding_visit_occurrence_id_df = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(vo.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -1222,7 +1222,7 @@ visit_occurrence_preceding_visit_occurrence_id_df = pd.io.gbq.read_gbq(
                 mvo.src_hpo_id,
                 COUNT(vo.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_visit_occurrence` AS vo
+               `{}.visit_occurrence` AS vo
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -1282,7 +1282,7 @@ condition_occurrence_condition_concept_id_df = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(co.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_condition_occurrence` AS co
+               `{}.condition_occurrence` AS co
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1303,7 +1303,7 @@ condition_occurrence_condition_concept_id_df = pd.io.gbq.read_gbq(
                 mco.src_hpo_id,
                 COUNT(co.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_condition_occurrence` AS co
+               `{}.condition_occurrence` AS co
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1366,7 +1366,7 @@ condition_occurrence_condition_type_concept_id = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(co.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_condition_occurrence` AS co
+               `{}.condition_occurrence` AS co
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1387,7 +1387,7 @@ condition_occurrence_condition_type_concept_id = pd.io.gbq.read_gbq(
                 mco.src_hpo_id,
                 COUNT(co.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_condition_occurrence` AS co
+               `{}.condition_occurrence` AS co
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1448,7 +1448,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         co.provider_id,
         COUNT(*) as cnt
     FROM
-       `{}.unioned_ehr_condition_occurrence` AS co
+       `{}.condition_occurrence` AS co
     GROUP BY
         1
     ORDER BY
@@ -1474,7 +1474,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         co.visit_occurrence_id,
         COUNT(*) as cnt
     FROM
-       `{}.unioned_ehr_condition_occurrence` AS co
+       `{}.condition_occurrence` AS co
     GROUP BY
         1
     ORDER BY
@@ -1500,7 +1500,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         condition_source_concept_id,
         COUNT(*) as cnt
     FROM
-       `{}.unioned_ehr_condition_occurrence` AS co
+       `{}.condition_occurrence` AS co
     GROUP BY
         1
     ORDER BY
@@ -1539,7 +1539,7 @@ condition_occurrence_condition_source_concept_id = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(co.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_condition_occurrence` AS co
+               `{}.condition_occurrence` AS co
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -1556,7 +1556,7 @@ condition_occurrence_condition_source_concept_id = pd.io.gbq.read_gbq(
                 mco.src_hpo_id,
                 COUNT(co.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_condition_occurrence` AS co
+               `{}.condition_occurrence` AS co
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -1617,7 +1617,7 @@ condition_occurrence_condition_status_concept_id = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(co.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_condition_occurrence` AS co
+               `{}.condition_occurrence` AS co
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1638,7 +1638,7 @@ condition_occurrence_condition_status_concept_id = pd.io.gbq.read_gbq(
                 mco.src_hpo_id,
                 COUNT(co.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_condition_occurrence` AS co
+               `{}.condition_occurrence` AS co
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1702,9 +1702,9 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (de.person_id is null or de.person_id=0) then 1 else 0 end) as missing
     FROM
-       `{}.unioned_ehr_drug_exposure` AS de
+       `{}.drug_exposure` AS de
     INNER JOIN
-        `{}.unioned_ehr_observation` AS o
+        `{}.observation` AS o
         ON
             de.person_id=o.person_id
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -1738,7 +1738,7 @@ drug_exposure_drug_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(de.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1759,7 +1759,7 @@ drug_exposure_drug_concept_id = pd.io.gbq.read_gbq('''
                 mde.src_hpo_id,
                 COUNT(de.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1820,7 +1820,7 @@ drug_exposure_drug_type_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(de.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1841,7 +1841,7 @@ drug_exposure_drug_type_concept_id = pd.io.gbq.read_gbq('''
                 mde.src_hpo_id,
                 COUNT(de.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1902,7 +1902,7 @@ drug_exposure_route_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(de.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1923,7 +1923,7 @@ drug_exposure_route_concept_id = pd.io.gbq.read_gbq('''
                 mde.src_hpo_id,
                 COUNT(de.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -1983,7 +1983,7 @@ drug_exposure_provider_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(de.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2000,7 +2000,7 @@ drug_exposure_provider_id = pd.io.gbq.read_gbq('''
                 mde.src_hpo_id,
                 COUNT(de.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2056,7 +2056,7 @@ drug_exposure_visit_occurrence_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(de.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2073,7 +2073,7 @@ drug_exposure_visit_occurrence_id = pd.io.gbq.read_gbq('''
                 mde.src_hpo_id,
                 COUNT(de.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2130,7 +2130,7 @@ drug_exposure_drug_source_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(de.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2147,7 +2147,7 @@ drug_exposure_drug_source_concept_id = pd.io.gbq.read_gbq('''
                 mde.src_hpo_id,
                 COUNT(de.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_drug_exposure` AS de
+               `{}.drug_exposure` AS de
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2206,7 +2206,7 @@ measurement_measurement_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(me.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2227,7 +2227,7 @@ measurement_measurement_concept_id = pd.io.gbq.read_gbq('''
                 mm.src_hpo_id,
                 COUNT(me.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2289,7 +2289,7 @@ measurement_measurement_type_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(me.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2310,7 +2310,7 @@ measurement_measurement_type_concept_id = pd.io.gbq.read_gbq('''
                 mm.src_hpo_id,
                 COUNT(me.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2371,7 +2371,7 @@ measurement_operator_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(me.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2392,7 +2392,7 @@ measurement_operator_concept_id = pd.io.gbq.read_gbq('''
                 mm.src_hpo_id,
                 COUNT(me.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2453,7 +2453,7 @@ measurement_value_as_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(me.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2474,7 +2474,7 @@ measurement_value_as_concept_id = pd.io.gbq.read_gbq('''
                 mm.src_hpo_id,
                 COUNT(me.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2535,7 +2535,7 @@ measurement_unit_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(me.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2556,7 +2556,7 @@ measurement_unit_concept_id = pd.io.gbq.read_gbq('''
                 mm.src_hpo_id,
                 COUNT(me.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2617,7 +2617,7 @@ measurement_provider_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(me.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2634,7 +2634,7 @@ measurement_provider_id = pd.io.gbq.read_gbq('''
                 mm.src_hpo_id,
                 COUNT(me.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2691,7 +2691,7 @@ measurement_visit_occurrence_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(me.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2708,7 +2708,7 @@ measurement_visit_occurrence_id = pd.io.gbq.read_gbq('''
                 mm.src_hpo_id,
                 COUNT(me.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2766,7 +2766,7 @@ measurement_measurement_source_concept_id = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(me.person_id) as total_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2783,7 +2783,7 @@ measurement_measurement_source_concept_id = pd.io.gbq.read_gbq(
                 mm.src_hpo_id,
                 COUNT(me.person_id) as missing_counts
             FROM
-               `{}.unioned_ehr_measurement` AS me
+               `{}.measurement` AS me
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -2843,7 +2843,7 @@ procedure_occurrence_procedure_concept_id = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2864,7 +2864,7 @@ procedure_occurrence_procedure_concept_id = pd.io.gbq.read_gbq(
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2926,7 +2926,7 @@ procedure_occurrence_procedure_type_concept_id = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -2947,7 +2947,7 @@ procedure_occurrence_procedure_type_concept_id = pd.io.gbq.read_gbq(
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -3010,7 +3010,7 @@ procedure_occurrence_modifier_concept_id = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -3031,7 +3031,7 @@ procedure_occurrence_modifier_concept_id = pd.io.gbq.read_gbq(
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -3092,7 +3092,7 @@ procedure_occurrence_provider_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3109,7 +3109,7 @@ procedure_occurrence_provider_id = pd.io.gbq.read_gbq('''
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3167,7 +3167,7 @@ procedure_occurrence_visit_occurrence_id = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3184,7 +3184,7 @@ procedure_occurrence_visit_occurrence_id = pd.io.gbq.read_gbq(
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3242,7 +3242,7 @@ procedure_occurrence_procedure_source_concept_id = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3259,7 +3259,7 @@ procedure_occurrence_procedure_source_concept_id = pd.io.gbq.read_gbq(
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_procedure_occurrence` AS t1
+                `{}.procedure_occurrence` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3321,7 +3321,7 @@ device_exposure_device_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_device_exposure` AS t1
+                `{}.device_exposure` AS t1
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -3342,7 +3342,7 @@ device_exposure_device_concept_id = pd.io.gbq.read_gbq('''
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_device_exposure` AS t1
+                `{}.device_exposure` AS t1
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -3404,7 +3404,7 @@ device_exposure_device_type_concept_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_device_exposure` AS t1
+                `{}.device_exposure` AS t1
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -3425,7 +3425,7 @@ device_exposure_device_type_concept_id = pd.io.gbq.read_gbq('''
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_device_exposure` AS t1
+                `{}.device_exposure` AS t1
             INNER JOIN
                 `{}.concept` AS c
                 ON
@@ -3486,7 +3486,7 @@ device_exposure_provider_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_device_exposure` AS t1
+                `{}.device_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3503,7 +3503,7 @@ device_exposure_provider_id = pd.io.gbq.read_gbq('''
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_device_exposure` AS t1
+                `{}.device_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3560,7 +3560,7 @@ device_exposure_visit_occurrence_id = pd.io.gbq.read_gbq('''
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_device_exposure` AS t1
+                `{}.device_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3577,7 +3577,7 @@ device_exposure_visit_occurrence_id = pd.io.gbq.read_gbq('''
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_device_exposure` AS t1
+                `{}.device_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3636,7 +3636,7 @@ device_exposure_device_source_concept_id = pd.io.gbq.read_gbq(
                 src_hpo_id,
                 COUNT(t1.person_id) as total_counts
             FROM
-                `{}.unioned_ehr_device_exposure` AS t1
+                `{}.device_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3653,7 +3653,7 @@ device_exposure_device_source_concept_id = pd.io.gbq.read_gbq(
                 t2.src_hpo_id,
                 COUNT(t1.person_id) as missing_counts
             FROM
-                `{}.unioned_ehr_device_exposure` AS t1
+                `{}.device_exposure` AS t1
             INNER JOIN
                 (SELECT
                     DISTINCT * 
@@ -3739,4 +3739,6 @@ master_df
 master_df = master_df.fillna("No Data")
 master_df
 
-master_df.to_csv("data\\foreign.csv")
+master_df.to_csv("C://Users//ne2310//PycharmProjects//curation//data_steward//analytics//table_metrics//foreign.csv")
+
+
