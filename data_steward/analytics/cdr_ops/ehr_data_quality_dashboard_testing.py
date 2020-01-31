@@ -22,6 +22,7 @@ from notebooks import bq, render, parameters
 import matplotlib.pyplot as plt
 import numpy as np
 from pandas.plotting import table 
+# %matplotlib inline
 import pandas as pd
 import six
 
