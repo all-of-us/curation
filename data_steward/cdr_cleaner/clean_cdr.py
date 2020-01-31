@@ -113,7 +113,7 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
             project_id, dataset_id))
     query_list.extend(
         drop_mult_meas.get_drop_multiple_measurement_queries(
-            project_id, dataset_id))
+            project_id, dataset_id, sandbox_dataset_id))
     return query_list
 
 
