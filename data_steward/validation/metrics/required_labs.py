@@ -35,6 +35,48 @@ MEASUREMENT_CONCEPT_SETS_FIELDS = [{
     "description": ""
 }]
 
+MEASUREMENT_CONCEPT_SETS_DESCENDANTS_FIELDS = [{
+    "type": "integer",
+    "name": "panel_omop_id",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "panel_name",
+    "mode": "nullable"
+}, {
+    "type": "integer",
+    "name": "measurement_concept_id",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "measurement_concept_name",
+    "mode": "nullable"
+}, {
+    "type": "integer",
+    "name": "ancestor_concept_id",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "ancestor_concept_name",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "classification",
+    "mode": "nullable"
+}, {
+    "type": "integer",
+    "name": "descendant_concept_id",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "descendant_concept_name",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "descendant_concept_class_id",
+    "mode": "nullable"
+}]
+
 
 def load_required_lab_table(project_id, dataset_id):
     """
@@ -72,7 +114,7 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
         project_id=project_id,
         ehr_ops_dataset_id=dataset_id,
         vocab_dataset_id=dataset_id,
-    )
+        measurement_concept_sets=MEASUREMENT_CONCEPT_SETS_TABLE)
 
     try:
         LOGGER.info("Running query %s", identify_labs_query)

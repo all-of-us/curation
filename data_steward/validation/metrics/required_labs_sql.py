@@ -23,15 +23,15 @@ get_direct_parents_loinc_group AS
   SELECT DISTINCT
     m.Panel_OMOP_ID,
     m.Panel_Name,
-    c1.concept_id AS measurement_concept_id,
-    c1.concept_name AS measurement_concept_name,
+    COALESCE(c1.concept_id, m.measurement_omop_id) AS measurement_concept_id,
+    COALESCE(c1.concept_name, m.measurement_name) AS measurement_concept_name,
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_id, NULL) AS parent_concept_id,
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_name, NULL) AS parent_concept_name,
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_class_id, NULL) AS parent_concept_class_id,
     IF(ex.excluded_ancestor_concept_id IS NULL, COALESCE(ca.min_levels_of_separation, -1), -1) AS distance
   FROM
     `{project_id}.{ehr_ops_dataset_id}.{measurement_concept_sets}` AS m
-  JOIN 
+  LEFT JOIN 
     `{project_id}.{vocab_dataset_id}.concept` AS c1
   ON 
     m.Measurement_OMOP_ID = c1.concept_id
@@ -57,15 +57,15 @@ get_ancestors_loinc_hierarchy AS
   SELECT DISTINCT
     m.Panel_OMOP_ID,
     m.Panel_Name,
-    c1.concept_id AS measurement_concept_id,
-    c1.concept_name AS measurement_concept_name,
+    COALESCE(c1.concept_id, m.measurement_omop_id) AS measurement_concept_id,
+    COALESCE(c1.concept_name, m.measurement_name) AS measurement_concept_name,
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_id, NULL) AS ancestor_concept_id,
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_name, NULL) AS ancestor_concept_name,
     IF(ex.excluded_ancestor_concept_id IS NULL, c2.concept_class_id, NULL) AS ancestor_concept_class_id,
     IF(ex.excluded_ancestor_concept_id IS NULL, COALESCE(ca.min_levels_of_separation, -1), -1) AS distance
   FROM
     `{project_id}.{ehr_ops_dataset_id}.{measurement_concept_sets}` AS m
-  JOIN 
+  LEFT JOIN 
     `{project_id}.{vocab_dataset_id}.concept` AS c1
   ON 
     m.Measurement_OMOP_ID = c1.concept_id
@@ -138,11 +138,11 @@ get_loinc_group_descendant_concept_ids AS
     COALESCE(ca1.min_levels_of_separation, -1) AS distance
   FROM get_direct_parents_loinc_group AS lg
   LEFT JOIN 
-    {project_id}.{vocab_dataset_id}.concept_ancestor AS ca1
+    `{project_id}.{vocab_dataset_id}.concept_ancestor` AS ca1
   ON
     lg.parent_concept_id = ca1.ancestor_concept_id 
       AND ca1.min_levels_of_separation <> 0
-  LEFT JOIN {project_id}.{vocab_dataset_id}.concept AS c1
+  LEFT JOIN `{project_id}.{vocab_dataset_id}.concept` AS c1
     ON ca1.descendant_concept_id = c1.concept_id 
 ),
 
@@ -164,13 +164,13 @@ get_loinc_hierarchy_descendant_concept_ids AS
     COALESCE(ca1.min_levels_of_separation, -1) AS distance
   FROM get_ancestors_loinc_hierarchy_distinct AS lh
   LEFT JOIN 
-    {project_id}.{vocab_dataset_id}.concept_ancestor AS ca1
+    `{project_id}.{vocab_dataset_id}.concept_ancestor` AS ca1
   ON
     lh.ancestor_concept_id = ca1.ancestor_concept_id
       AND ca1.min_levels_of_separation <> 0
-  LEFT JOIN {project_id}.{vocab_dataset_id}.concept AS c1
+  LEFT JOIN `{project_id}.{vocab_dataset_id}.concept` AS c1
     ON ca1.descendant_concept_id = c1.concept_id  
-),
+)
 
 -- We use a full outer join between the loinc_hierarchy descendants and loinc_group descendants 
 -- in order to maximize the number of descendants retrieved by both classficiation systems. 
@@ -194,7 +194,7 @@ FROM get_loinc_hierarchy_descendant_concept_ids AS lh
 FULL OUTER JOIN 
   get_loinc_group_descendant_concept_ids AS lg
 ON
-  lh.loinc_hierarchy_descendant_concept_id = lg.loinc_groupy_descendant_concept_i 
+  lh.loinc_hierarchy_descendant_concept_id = lg.loinc_groupy_descendant_concept_id 
 '''
 
 CHECK_REQUIRED_LAB_QUERY = '''
