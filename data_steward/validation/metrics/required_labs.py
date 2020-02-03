@@ -1,6 +1,7 @@
 import app_identity
 import bq_utils
 import logging
+import common
 import oauth2client
 import googleapiclient
 from constants import bq_utils as bq_consts
@@ -9,7 +10,6 @@ from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
 
 LOGGER = logging.getLogger(__name__)
 
-MEASUREMENT = 'measurement'
 MEASUREMENT_CONCEPT_SETS_TABLE = 'measurement_concept_sets'
 MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = 'measurement_concept_sets_descendants'
 
@@ -144,7 +144,7 @@ def get_lab_concept_summary_query(hpo_id):
 
     project_id = app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
-    hpo_measurement_table = bq_utils.get_table_id(hpo_id, MEASUREMENT)
+    hpo_measurement_table = bq_utils.get_table_id(hpo_id, common.MEASUREMENT)
 
     return CHECK_REQUIRED_LAB_QUERY.format(
         project_id=project_id,

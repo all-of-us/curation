@@ -24,20 +24,35 @@ class RequiredLabsTest(unittest.TestCase):
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(self.dataset_id)
+        self._load_data()
 
+    def tearDown(self):
+        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.empty_bucket(self.hpo_bucket)
+
+    def _load_data(self):
+
+        # Load measurement_concept_sets
         required_labs.load_required_lab_table(
             project_id=app_identity.get_application_id(),
             dataset_id=bq_utils.get_dataset_id())
+        # Load measurement_concept_sets_descendants
+        required_labs.load_measurement_concept_sets_descendants_table(
+            project_id=self.project_id, dataset_id=self.dataset_id)
 
+        # Create concept and concept_ancestor empty tables if not exist
         if not bq_utils.table_exists(common.CONCEPT, self.dataset_id):
             bq_utils.create_standard_table(common.CONCEPT, common.CONCEPT)
         if not bq_utils.table_exists(common.CONCEPT, self.dataset_id):
             bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
                                            common.CONCEPT_ANCESTOR)
 
-    def tearDown(self):
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
-        test_util.empty_bucket(self.hpo_bucket)
+        # Load the test measurement data
+        test_util.write_cloud_file(self.hpo_bucket,
+                                   test_util.TEST_MEASUREMENT_CSV)
+        results = bq_utils.load_cdm_csv(FAKE_HPO_ID, common.MEASUREMENT)
+        query_job_id = results['jobReference']['jobId']
+        bq_utils.wait_on_jobs([query_job_id])
 
     def test_load_required_lab_table(self):
 
@@ -67,9 +82,6 @@ class RequiredLabsTest(unittest.TestCase):
 
     def test_load_measurement_concept_sets_descendants_table(self):
 
-        required_labs.load_measurement_concept_sets_descendants_table(
-            project_id=self.project_id, dataset_id=self.dataset_id)
-
         query = sql_wrangle.qualify_tables(
             """SELECT * FROM {table_id}""".format(
                 table_id=required_labs.
@@ -90,4 +102,21 @@ class RequiredLabsTest(unittest.TestCase):
         self.assertListEqual(expected_fields, actual_fields)
 
     def test_get_lab_concept_summary_query(self):
-        pass
+        summary_query = required_labs.get_lab_concept_summary_query(FAKE_HPO_ID)
+        response = bq_utils.query(summary_query)
+        rows = bq_utils.response2rows(response)
+        submitted_labs = [
+            row for row in rows if row['measurement_concept_id_exists'] == 1
+        ]
+        actual_total_labs = response['totalRows']
+
+        unique_ancestor_concept_query = sql_wrangle.qualify_tables(
+            """SELECT DISTINCT ancestor_concept_id FROM {table_id}""".format(
+                table_id=required_labs.
+                MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE))
+        unique_ancestor_cocnept_response = bq_utils.query(
+            unique_ancestor_concept_query)
+        expected_total_labs = unique_ancestor_cocnept_response['totalRows']
+
+        self.assertEqual(int(expected_total_labs), int(actual_total_labs))
+        self.assertEqual(int(expected_total_labs), len(submitted_labs))
