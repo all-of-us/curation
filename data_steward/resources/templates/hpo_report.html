@@ -456,7 +456,7 @@ This report may be incomplete because the submission is still being processed. P
 
 <h2><a name="lab_concept_metrics">Lab Concept Summary</a></h2>
 {% if lab_concept_metrics %}
-<table class="table table-striped table-hover">
+<table class="table table-striped table-hover required-lab">
     <thead class="thead-dark">
         <tr>
             <th>Ancestor Concept ID</th>
@@ -466,11 +466,11 @@ This report may be incomplete because the submission is still being processed. P
     </thead>
     <tbody>
     {% set symbol = {0: "&cross;", 1: "&check;"} %}
-    {% for panel_name, ancestor_concept_id, ancestor_concept_name, measurement_concept_id_exists in lab_submission_metrics %}
+    {% for row in lab_concept_metrics %}
         <tr>
-            <td>{{ ancestor_concept_id }}</td>
-            <td>{{ ancestor_concept_name }}</td>
-            <td class="symbol result-{{ measurement_concept_id_exists }} w-25">{{ symbol[measurement_concept_id_exists] }}</td>
+            <td>{{ row["ancestor_concept_id"] }}</td>
+            <td>{{ row["ancestor_concept_name"] }}</td>
+            <td class="symbol result-{{ row["measurement_concept_id_exists"] }} w-25">{{ symbol[row["measurement_concept_id_exists"]] }}</td>
         </tr>
     {% endfor %}
     </tbody>

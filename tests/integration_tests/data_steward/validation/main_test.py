@@ -4,6 +4,7 @@ Unit test components of data_steward.validation.main
 from __future__ import print_function
 import json
 import os
+import re
 import unittest
 from io import open
 
@@ -41,14 +42,18 @@ class ValidationMainTest(unittest.TestCase):
         self.folder_prefix = '2019-01-01/'
         self._empty_bucket()
         test_util.delete_all_tables(self.bigquery_dataset_id)
-        self._create_drug_class_table()
+        self.create_drug_class_table()
 
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         for bucket_item in bucket_items:
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
 
-    def _create_drug_class_table(self):
+    @staticmethod
+    def create_drug_class_table():
+
+        bigquery_dataset_id = bq_utils.get_dataset_id()
+
         table_name = 'drug_class'
         fields = [{
             "type": "integer",
@@ -66,15 +71,15 @@ class ValidationMainTest(unittest.TestCase):
         bq_utils.create_table(table_id=table_name,
                               fields=fields,
                               drop_existing=True,
-                              dataset_id=self.bigquery_dataset_id)
+                              dataset_id=bigquery_dataset_id)
 
-        bq_utils.query(q=main_consts.DRUG_CLASS_QUERY.format(
-            dataset_id=self.bigquery_dataset_id),
+        bq_utils.query(q=main_constants.DRUG_CLASS_QUERY.format(
+            dataset_id=bigquery_dataset_id),
                        use_legacy_sql=False,
                        destination_table_id='drug_class',
                        retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
                        write_disposition='WRITE_TRUNCATE',
-                       destination_dataset_id=self.bigquery_dataset_id)
+                       destination_dataset_id=bigquery_dataset_id)
 
         # ensure concept ancestor table exists
         if not bq_utils.table_exists(common.CONCEPT_ANCESTOR):
