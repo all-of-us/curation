@@ -8,11 +8,12 @@ import unittest
 from io import open
 
 import mock
+from bs4 import BeautifulSoup as bs
 
 import bq_utils
 import common
 from constants import bq_utils as bq_consts
-from constants.validation import main as main_constants
+from constants.validation import main as main_consts
 import gcs_utils
 import resources
 from tests import test_util as test_util
@@ -67,7 +68,7 @@ class ValidationMainTest(unittest.TestCase):
                               drop_existing=True,
                               dataset_id=self.bigquery_dataset_id)
 
-        bq_utils.query(q=main_constants.DRUG_CLASS_QUERY.format(
+        bq_utils.query(q=main_consts.DRUG_CLASS_QUERY.format(
             dataset_id=self.bigquery_dataset_id),
                        use_legacy_sql=False,
                        destination_table_id='drug_class',
@@ -262,7 +263,12 @@ class ValidationMainTest(unittest.TestCase):
             c.get(test_util.VALIDATE_HPO_FILES_URL)
             actual_result = test_util.read_cloud_file(
                 self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-        # print(actual_result)
+
+        # parse html
+        soup = bs(actual_result, parser='lxml')
+        h2_tags = soup.find_all('h2')
+        h2_tag_texts = [tag.text for tag in h2_tags]
+        self.assertIn('Missing PII Records', h2_tag_texts)
 
     def tearDown(self):
         self._empty_bucket()

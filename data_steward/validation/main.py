@@ -520,7 +520,6 @@ def get_hpo_missing_pii_query(hpo_id):
         ehr_no_rdr=ehr_no_rdr_with_date,
         pii_no_ehr=consts.PII_NO_EHR,
         ehr_no_participant_match=consts.EHR_NO_PARTICIPANT_MATCH,
-        rdr_date=rdr_date,
         pii_name_table_id=pii_name_table_id,
         pii_wildcard=pii_wildcard,
         participant_match_table_id=participant_match_table_id)

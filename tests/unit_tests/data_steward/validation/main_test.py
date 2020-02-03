@@ -10,7 +10,7 @@ import mock
 
 import common
 from constants.validation import hpo_report as report_consts
-from constants.validation import main as main_constants
+from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
 import resources
 from validation import main
@@ -27,13 +27,12 @@ class ValidationMainTest(unittest.TestCase):
     def setUp(self):
         self.hpo_id = 'fake_hpo_id'
         self.hpo_bucket = 'fake_aou_000'
+        self.project_id = 'fake_project_id'
+        self.bigquery_dataset_id = 'fake_dataset_id'
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
-
         self.mock_get_hpo_name = mock_get_hpo_name.start()
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
-
-        self.bigquery_dataset_id = 'fake_dataset_id'
         self.folder_prefix = '2019-01-01/'
 
     def test_retention_checks_list_submitted_bucket_items(self):
@@ -223,7 +222,7 @@ class ValidationMainTest(unittest.TestCase):
         mock_list_bucket.side_effect = googleapiclient.errors.HttpError(
             'fake http error', b'fake http error')
         with main.app.test_client() as c:
-            c.get(main_constants.PREFIX + 'ValidateAllHpoFiles')
+            c.get(main_consts.PREFIX + 'ValidateAllHpoFiles')
         expected_call = mock.call(
             'Failed to process hpo_id `{}` due to the following '
             'HTTP error: fake http error'.format(self.hpo_id))

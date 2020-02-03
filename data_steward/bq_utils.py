@@ -418,7 +418,8 @@ def query(q,
           retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
           write_disposition=bq_consts.WRITE_EMPTY,
           destination_dataset_id=None,
-          batch=None):
+          batch=None,
+          dry_run=False):
     """
     Execute a SQL query on BigQuery dataset
 
@@ -430,6 +431,7 @@ def query(q,
     :param destination_dataset_id: dataset ID of destination table (EHR dataset by default)
     :param batch: whether the query should be run in INTERACTIVE or BATCH mode.
         Defaults to INTERACTIVE.
+    :param dry_run: Boolean. If true, validates query without running it. Helps with testing
     :return: if destination_table_id is supplied then job info, otherwise job query response
              (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
     """
@@ -470,6 +472,7 @@ def query(q,
             'query': q,
             'timeoutMs': bq_consts.SOCKET_TIMEOUT,
             'useLegacySql': use_legacy_sql,
+            'dryRun': dry_run,
             bq_consts.PRIORITY_TAG: priority_mode,
         }
         return bq_service.jobs().query(
