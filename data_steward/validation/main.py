@@ -477,6 +477,24 @@ def get_drug_class_counts_query(hpo_id):
     return render_query(consts.DRUG_CHECKS_QUERY_VALIDATION, table_id=table_id)
 
 
+def extract_date_from_rdr_dataset_id(rdr_dataset_id):
+    """
+    Uses the rdr dataset id (string, rdrYYYYMMDD) to extract the date (string, YYYY-MM-DD format)
+    
+    :param rdr_dataset_id: identifies the rdr dataset
+    :return: date formatted in string as YYYY-MM-DD
+    """
+    # verify input is of the format rdrYYYYMMDD
+    rdr_regex = re.compile(r'rdr\d{8}')
+    if not re.match(rdr_regex, rdr_dataset_id):
+        raise ValueError('%s is not a valid rdr_dataset_id' % rdr_dataset_id)
+    # remove 'rdr' prefix
+    rdr_date = rdr_dataset_id[3:]
+    # TODO remove dependence on date string in RDR dataset id
+    rdr_date = rdr_date[:4] + '-' + rdr_date[4:6] + '-' + rdr_date[6:]
+    return rdr_date
+
+
 def get_hpo_missing_pii_query(hpo_id):
     """
     Query to retrieve counts of drug classes in an HPO site's drug_exposure table
@@ -490,9 +508,8 @@ def get_hpo_missing_pii_query(hpo_id):
     participant_match_table_id = bq_utils.get_table_id(hpo_id,
                                                        common.PARTICIPANT_MATCH)
     rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-    rdr_date = rdr_dataset_id[3:]
-    # TODO remove dependence on date string in RDR dataset id
-    rdr_date = rdr_date[:4] + '-' + rdr_date[4:6] + '-' + rdr_date[6:]
+    rdr_date = extract_date_from_rdr_dataset_id(rdr_dataset_id)
+    ehr_no_rdr_with_date = consts.EHR_NO_RDR.format(date=rdr_date)
     rdr_person_table_id = common.PERSON
     return render_query(
         consts.MISSING_PII_QUERY,
@@ -500,7 +517,7 @@ def get_hpo_missing_pii_query(hpo_id):
         rdr_dataset_id=rdr_dataset_id,
         rdr_person_table_id=rdr_person_table_id,
         ehr_no_pii=consts.EHR_NO_PII,
-        ehr_no_rdr=consts.EHR_NO_RDR,
+        ehr_no_rdr=ehr_no_rdr_with_date,
         pii_no_ehr=consts.PII_NO_EHR,
         ehr_no_participant_match=consts.EHR_NO_PARTICIPANT_MATCH,
         rdr_date=rdr_date,
