@@ -24,6 +24,7 @@ class RequiredLabsTest(unittest.TestCase):
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(self.dataset_id)
+        test_util.empty_bucket(self.hpo_bucket)
         self._load_data()
 
     def tearDown(self):
