@@ -98,13 +98,14 @@ class RetractDataGcsTest(unittest.TestCase):
             else:
                 self.assertEqual(total_lines_prior[key], total_lines_post[key])
 
-        lines_to_keep = dict()
         # metadata for each updated file is returned
-        for key, val in lines_to_remove.items():
-            if val != 0:
-                lines_to_keep[key] = val
+        lines_to_remove = {
+            key: lines_to_remove[key]
+            for key in lines_to_remove
+            if lines_to_remove[key] > 0
+        }
         self.assertEqual(len(retract_result[self.folder_prefix_1]),
-                         len(lines_to_keep))
+                         len(lines_to_remove))
 
     @mock.patch('tools.retract_data_gcs.extract_pids_from_table')
     @mock.patch('gcs_utils.get_drc_bucket')
@@ -165,6 +166,11 @@ class RetractDataGcsTest(unittest.TestCase):
             else:
                 self.assertEqual(total_lines_prior[key], total_lines_post[key])
 
+        lines_to_remove = {
+            key: lines_to_remove[key]
+            for key in lines_to_remove
+            if lines_to_remove[key] > 0
+        }
         # metadata for each updated file is returned
         self.assertEqual(len(retract_result[self.folder_prefix_1]),
                          len(lines_to_remove.keys()))
