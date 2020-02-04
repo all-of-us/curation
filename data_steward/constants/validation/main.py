@@ -133,6 +133,53 @@ DUPLICATE_IDS_SUBQUERY = '''
         COUNT({table_name}_id) > 1)
     '''
 
+EHR_NO_PII = 'EHR person record exists but no PII Name record'
+EHR_NO_RDR = 'EHR person record exists but no consent record as of {date}'
+PII_NO_EHR = 'PII record exists but no EHR person record'
+EHR_NO_PARTICIPANT_MATCH = 'EHR record exists but no participant match record'
+
+MISSING_PII_QUERY = '''
+WITH ehr_persons AS
+(SELECT person_id
+FROM `{project_id}.{dataset_id}.{person_table_id}`),
+rdr_persons AS
+(SELECT person_id
+FROM `{project_id}.{rdr_dataset_id}.{rdr_person_table_id}`),
+pii_names AS
+(SELECT person_id
+FROM `{project_id}.{dataset_id}.{pii_name_table_id}`),
+all_pii AS
+(SELECT DISTINCT person_id
+FROM `{project_id}.{dataset_id}.{pii_wildcard}`),
+participant_records AS
+(SELECT person_id
+FROM `{project_id}.{dataset_id}.{participant_match_table_id}`)
+(SELECT DISTINCT '{ehr_no_pii}' AS missingness_type,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM ehr_persons
+    EXCEPT DISTINCT
+    SELECT person_id FROM pii_names))
+UNION ALL
+(SELECT DISTINCT '{ehr_no_rdr}' AS missingness_type,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM ehr_persons
+    EXCEPT DISTINCT
+    SELECT person_id FROM rdr_persons))
+UNION ALL
+(SELECT DISTINCT '{pii_no_ehr}' AS missingness_type,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM all_pii
+    EXCEPT DISTINCT
+    SELECT person_id FROM ehr_persons))
+UNION ALL
+(SELECT DISTINCT '{ehr_no_participant_match}' AS missingness_type,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM ehr_persons
+    EXCEPT DISTINCT
+    SELECT person_id FROM participant_records))
+ORDER BY count DESC
+'''
+
 PREFIX = '/data_steward/v1/'
 
 # Cron URLs

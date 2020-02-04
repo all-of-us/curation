@@ -10,7 +10,7 @@ import mock
 
 import common
 from constants.validation import hpo_report as report_consts
-from constants.validation import main as main_constants
+from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
 import resources
 from validation import main
@@ -27,13 +27,12 @@ class ValidationMainTest(unittest.TestCase):
     def setUp(self):
         self.hpo_id = 'fake_hpo_id'
         self.hpo_bucket = 'fake_aou_000'
+        self.project_id = 'fake_project_id'
+        self.bigquery_dataset_id = 'fake_dataset_id'
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
-
         self.mock_get_hpo_name = mock_get_hpo_name.start()
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
-
-        self.bigquery_dataset_id = 'fake_dataset_id'
         self.folder_prefix = '2019-01-01/'
 
     def test_retention_checks_list_submitted_bucket_items(self):
@@ -223,11 +222,20 @@ class ValidationMainTest(unittest.TestCase):
         mock_list_bucket.side_effect = googleapiclient.errors.HttpError(
             'fake http error', b'fake http error')
         with main.app.test_client() as c:
-            c.get(main_constants.PREFIX + 'ValidateAllHpoFiles')
+            c.get(main_consts.PREFIX + 'ValidateAllHpoFiles')
         expected_call = mock.call(
             'Failed to process hpo_id `{}` due to the following '
             'HTTP error: fake http error'.format(self.hpo_id))
         self.assertIn(expected_call, mock_logging_error.mock_calls)
+
+    def test_extract_date_from_rdr(self):
+        rdr_dataset_id = 'rdr20200201'
+        bad_rdr_dataset_id = 'ehr2019-02-01'
+        expected_date = '2020-02-01'
+        rdr_date = main.extract_date_from_rdr_dataset_id(rdr_dataset_id)
+        self.assertEqual(rdr_date, expected_date)
+        self.assertRaises(ValueError, main.extract_date_from_rdr_dataset_id,
+                          bad_rdr_dataset_id)
 
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
@@ -238,11 +246,12 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('validation.main._write_string_to_file')
     @mock.patch('validation.main.get_hpo_name')
     @mock.patch('validation.main.validate_submission')
+    @mock.patch('validation.main.is_valid_rdr')
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_process_hpo_ignore_dirs(
-        self, mock_hpo_bucket, mock_bucket_list, mock_validation,
-        mock_get_hpo_name, mock_write_string_to_file,
+        self, mock_hpo_bucket, mock_bucket_list, mock_valid_rdr,
+        mock_validation, mock_get_hpo_name, mock_write_string_to_file,
         mock_get_duplicate_counts_query, mock_query_rows,
         mock_all_required_files_loaded, mock_upload, mock_run_achilles,
         mock_export):
@@ -260,6 +269,7 @@ class ValidationMainTest(unittest.TestCase):
         :param mock_bucket_list: mocks the list of items in the hpo bucket.
         :param mock_validation: mock performing validation
         :param mock_validation: mock generate metrics
+        :param mock_valid_rdr: mock valid rdr dataset
         :param mock_upload: mock uploading to a bucket
         :param mock_run_achilles: mock running the achilles reports
         :param mock_export: mock exporting the files
@@ -271,6 +281,7 @@ class ValidationMainTest(unittest.TestCase):
         mock_get_duplicate_counts_query.return_value = ''
         mock_get_hpo_name.return_value = 'noob'
         mock_write_string_to_file.return_value = ''
+        mock_valid_rdr.return_value = True
         yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
         yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         moment = datetime.datetime.now()
@@ -453,12 +464,16 @@ class ValidationMainTest(unittest.TestCase):
         def get_duplicate_counts_query(hpo_id):
             return ''
 
+        def is_valid_rdr(rdr_dataset_id):
+            return True
+
         with mock.patch.multiple(
                 'validation.main',
                 all_required_files_loaded=all_required_files_loaded,
                 query_rows=query_rows,
                 get_duplicate_counts_query=get_duplicate_counts_query,
-                _write_string_to_file=_write_string_to_file):
+                _write_string_to_file=_write_string_to_file,
+                is_valid_rdr=is_valid_rdr):
             result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
                                            self.folder_prefix, summary)
             self.assertIn(report_consts.RESULTS_REPORT_KEY, result)
@@ -476,7 +491,8 @@ class ValidationMainTest(unittest.TestCase):
                 all_required_files_loaded=all_required_files_loaded,
                 query_rows=query_rows_error,
                 get_duplicate_counts_query=get_duplicate_counts_query,
-                _write_string_to_file=_write_string_to_file):
+                _write_string_to_file=_write_string_to_file,
+                is_valid_rdr=is_valid_rdr):
             with self.assertRaises(googleapiclient.errors.HttpError):
                 result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
                                                self.folder_prefix, summary)
