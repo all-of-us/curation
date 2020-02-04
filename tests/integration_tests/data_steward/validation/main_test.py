@@ -249,11 +249,13 @@ class ValidationMainTest(unittest.TestCase):
                                      self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
+    @mock.patch('validation.main.is_valid_rdr')
     @mock.patch('api_util.check_cron')
-    def test_html_report_five_person(self, mock_check_cron):
+    def test_html_report_five_person(self, mock_check_cron, mock_valid_rdr):
         # Not sure this test is still relevant (see hpo_report module and tests)
         # TODO refactor or remove this test
         folder_prefix = '2019-01-01/'
+        mock_valid_rdr.return_value = True
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket,
                                        cdm_file,
@@ -265,10 +267,10 @@ class ValidationMainTest(unittest.TestCase):
                 self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
 
         # parse html
-        soup = bs(actual_result, parser='lxml')
+        soup = bs(actual_result, parser="lxml", features="lxml")
         h2_tags = soup.find_all('h2')
         h2_tag_texts = [tag.text for tag in h2_tags]
-        self.assertIn('Missing PII Records', h2_tag_texts)
+        self.assertIn('Missing Participant Records', h2_tag_texts)
 
     def tearDown(self):
         self._empty_bucket()

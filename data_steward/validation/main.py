@@ -477,22 +477,34 @@ def get_drug_class_counts_query(hpo_id):
     return render_query(consts.DRUG_CHECKS_QUERY_VALIDATION, table_id=table_id)
 
 
+def is_valid_rdr(rdr_dataset_id):
+    """
+    Verifies whether the rdr_dataset_id follows the rdrYYYYMMDD naming convention
+    
+    :param rdr_dataset_id: identifies the rdr dataset
+    :return: Boolean indicating if the rdr_dataset_id conforms to rdrYYYYMMDD
+    """
+    rdr_regex = re.compile(r'rdr\d{8}')
+    return re.match(rdr_regex, rdr_dataset_id)
+
+
 def extract_date_from_rdr_dataset_id(rdr_dataset_id):
     """
     Uses the rdr dataset id (string, rdrYYYYMMDD) to extract the date (string, YYYY-MM-DD format)
     
     :param rdr_dataset_id: identifies the rdr dataset
     :return: date formatted in string as YYYY-MM-DD
+    :raises: ValueError if the rdr_dataset_id does not conform to rdrYYYYMMDD
     """
     # verify input is of the format rdrYYYYMMDD
-    rdr_regex = re.compile(r'rdr\d{8}')
-    if not re.match(rdr_regex, rdr_dataset_id):
+    if is_valid_rdr(rdr_dataset_id):
+        # remove 'rdr' prefix
+        rdr_date = rdr_dataset_id[3:]
+        # TODO remove dependence on date string in RDR dataset id
+        rdr_date = rdr_date[:4] + '-' + rdr_date[4:6] + '-' + rdr_date[6:]
+        return rdr_date
+    else:
         raise ValueError('%s is not a valid rdr_dataset_id' % rdr_dataset_id)
-    # remove 'rdr' prefix
-    rdr_date = rdr_dataset_id[3:]
-    # TODO remove dependence on date string in RDR dataset id
-    rdr_date = rdr_date[:4] + '-' + rdr_date[4:6] + '-' + rdr_date[6:]
-    return rdr_date
 
 
 def get_hpo_missing_pii_query(hpo_id):
