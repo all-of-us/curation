@@ -64,7 +64,9 @@ class RequiredLabsTest(unittest.TestCase):
         test_util.write_cloud_file(self.hpo_bucket,
                                    test_util.TEST_MEASUREMENT_CSV,
                                    prefix=self.folder_prefix)
-        results = bq_utils.load_cdm_csv(FAKE_HPO_ID, common.MEASUREMENT, source_folder_prefix=self.folder_prefix)
+        results = bq_utils.load_cdm_csv(FAKE_HPO_ID,
+                                        common.MEASUREMENT,
+                                        source_folder_prefix=self.folder_prefix)
         query_job_id = results['jobReference']['jobId']
         bq_utils.wait_on_jobs([query_job_id])
 
@@ -123,7 +125,8 @@ class RequiredLabsTest(unittest.TestCase):
         summary_response = bq_utils.query(summary_query)
         summary_rows = bq_utils.response2rows(summary_response)
         submitted_labs = [
-            row for row in summary_rows if row['measurement_concept_id_exists'] == 1
+            row for row in summary_rows
+            if row['measurement_concept_id_exists'] == 1
         ]
         actual_total_labs = summary_response['totalRows']
 
@@ -141,14 +144,16 @@ class RequiredLabsTest(unittest.TestCase):
         # submitted by the fake site
         unique_measurement_concept_id_query = sql_wrangle.qualify_tables(
             """SELECT DISTINCT measurement_concept_id FROM {table_id}""".format(
-                table_id=bq_utils.get_table_id(FAKE_HPO_ID, common.MEASUREMENT)
-                ))
+                table_id=bq_utils.get_table_id(FAKE_HPO_ID,
+                                               common.MEASUREMENT)))
         unique_measurement_concept_id_response = bq_utils.query(
             unique_measurement_concept_id_query)
-        unique_measurement_concept_id_total_labs = unique_measurement_concept_id_response['totalRows']
+        unique_measurement_concept_id_total_labs = unique_measurement_concept_id_response[
+            'totalRows']
 
         self.assertEqual(int(expected_total_labs), int(actual_total_labs))
-        self.assertEqual(int(unique_measurement_concept_id_total_labs), len(submitted_labs))
+        self.assertEqual(int(unique_measurement_concept_id_total_labs),
+                         len(submitted_labs))
 
     @mock.patch('api_util.check_cron')
     def test_required_labs_html_page(self, mock_check_cron):
@@ -158,17 +163,28 @@ class RequiredLabsTest(unittest.TestCase):
             actual_result = test_util.read_cloud_file(
                 self.hpo_bucket, self.folder_prefix + common.RESULTS_HTML)
             soup = BeautifulSoup(actual_result, 'html.parser')
-            required_lab_html_table = soup.find_all('table', class_='required-lab')[0]
+            required_lab_html_table = soup.find_all('table',
+                                                    class_='required-lab')[0]
             table_headers = required_lab_html_table.find_all('th')
             self.assertEqual(3, len(table_headers))
             self.assertEqual('Ancestor Concept ID', table_headers[0].get_text())
-            self.assertEqual('Ancestor Concept Name', table_headers[1].get_text())
+            self.assertEqual('Ancestor Concept Name',
+                             table_headers[1].get_text())
             self.assertEqual('Found', table_headers[2].get_text())
 
-            table_rows = required_lab_html_table.find_next('tbody').find_all('tr')
-            table_rows_last_column = [table_row.find_all('td')[-1] for table_row in table_rows]
-            submitted_labs = [row for row in table_rows_last_column if 'result-1' in row.attrs['class']]
-            missing_labs = [row for row in table_rows_last_column if 'result-0' in row.attrs['class']]
+            table_rows = required_lab_html_table.find_next('tbody').find_all(
+                'tr')
+            table_rows_last_column = [
+                table_row.find_all('td')[-1] for table_row in table_rows
+            ]
+            submitted_labs = [
+                row for row in table_rows_last_column
+                if 'result-1' in row.attrs['class']
+            ]
+            missing_labs = [
+                row for row in table_rows_last_column
+                if 'result-0' in row.attrs['class']
+            ]
             self.assertTrue(len(table_rows) > 0)
             self.assertTrue(len(submitted_labs) > 0)
             self.assertTrue(len(missing_labs) > 0)
