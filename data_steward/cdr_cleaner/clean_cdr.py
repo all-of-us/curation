@@ -371,7 +371,7 @@ def clean_combined_de_identified_dataset(project_id=None, dataset_id=None):
                                                         sandbox_dataset_id)
 
     LOGGER.info("Cleaning de-identified dataset")
-    clean_engine.clean_dataset(project_id, query_list, stage.DEID)
+    clean_engine.clean_dataset(project_id, query_list, stage.DEID_BASE)
 
 
 def clean_combined_de_identified_clean_dataset(project_id=None,
@@ -398,7 +398,7 @@ def clean_combined_de_identified_clean_dataset(project_id=None,
         project_id, dataset_id, sandbox_dataset_id)
 
     LOGGER.info("Cleaning de-identified dataset")
-    clean_engine.clean_dataset(project_id, query_list, stage.DEID)
+    clean_engine.clean_dataset(project_id, query_list, stage.DEID_CLEAN)
 
 
 def clean_all_cdr():
