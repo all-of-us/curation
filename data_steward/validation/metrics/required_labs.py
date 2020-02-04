@@ -110,6 +110,15 @@ def load_required_lab_table(project_id, dataset_id):
 
 
 def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
+    """
+    Loads the measurement_concept_sets_descendants table using LOINC group and LOINC hierarchy
+    into project_id.ehr_ops
+
+    :param project_id: Project where the dataset resides
+    :param dataset_id: Dataset where the required lab table needs to be created
+    :return: None
+    """
+
     identify_labs_query = IDENTIFY_LABS_QUERY.format(
         project_id=project_id,
         ehr_ops_dataset_id=dataset_id,
@@ -141,7 +150,11 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
 
 
 def get_lab_concept_summary_query(hpo_id):
-
+    """
+    Get the query that checks if the HPO site has submitted the required labs
+    :param hpo_id: 
+    :return: 
+    """
     project_id = app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
     hpo_measurement_table = bq_utils.get_table_id(hpo_id, common.MEASUREMENT)
