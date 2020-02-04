@@ -59,6 +59,7 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 DEID_DIR="${DATA_STEWARD_DIR}/deid"
+CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 
 #------Create de-id virtual environment----------
 virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
@@ -132,7 +133,7 @@ export COMBINED_DEID_CLEAN_DATASET_ID="${cdr_deid_clean_staging}"
 data_stage='deid_clean'
 
 # run cleaning_rules on a dataset
-python "${CLEANER_DIR}clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee deid_clean_cleaning_log.txt
+python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee deid_clean_cleaning_log.txt
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" -p "${APP_ID}" -d "${cdr_deid_clean_staging}" -n "${cdr_deid_clean}"
