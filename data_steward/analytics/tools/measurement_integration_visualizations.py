@@ -18,22 +18,23 @@
 
 # # Measurement usage across different sites
 
-import matplotlib.pyplot as plt
 import pandas as pd
+import matplotlib.pyplot as plt
 import seaborn as sns
+from math import pi
 
 # +
 sheets = []
 
-fn1 = 'integration_measurement_concept_table_sheets_data_analytics.xlsx'
+fn1 = 'sites_measurement_table_sheets_data_analytics.xlsx'
 file_names = [fn1]
 
-s1 = 'bmp'
-s2 = 'cbc'
-s3 = 'cbc_diff'
-s4 = 'cmp'
-s5 = 'lipid'
-s6 = 'phy_mea'
+s1 = 'CBC'
+s2 = 'CBCwDiff'
+s3 = 'CMP'
+s4 = 'Lipid'
+s5 = 'Physical_Measurement'
+s6 = 'All_Measurements'
 
 sheet_names = [s1, s2, s3, s4, s5, s6]
 
@@ -54,16 +55,16 @@ date_cols = table_sheets[0].columns[2:]
 for idx, table_id in enumerate(sheet_names):
     under_encountered = False
     start_idx, end_idx = 0, 0
-
+    
     for c_idx, character in enumerate(table_id):
         if character == '_' and not under_encountered:
             start_idx = c_idx
             under_encountered = True
         elif character == '_' and under_encountered:
             end_idx = c_idx
-
+    
     in_between_str = table_id[start_idx:end_idx + 1]
-
+    
     if in_between_str == '_succes_':
         new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
         sheet_names[idx] = new_string
@@ -88,25 +89,16 @@ for name, sheet in zip(sheet_names, table_sheets):
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['bmp'], annot=True, annot_kws={"size": 10},
-            fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
-            xticklabels=date_cols, cmap="RdYlGn")
-
-ax.set_title("Basic Metabolic Panel (BMP) Measurement Integration", size=14)
-plt.savefig("bmp_measurement_integration.jpg")
-
-# +
-fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['cbc'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['CBC'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="RdYlGn")
 
 ax.set_title("Complete Blood Count (CBC) Measurement Integration", size=14)
-plt.savefig("cbc_measurement_integration.jpg")
+plt.savefig("bmp_measurement_integration.jpg")
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['cbc_diff'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['CBCwDiff'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="RdYlGn")
 
@@ -115,7 +107,7 @@ plt.savefig("cbc_diff_measurement_integration.jpg")
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['cmp'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['CMP'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="RdYlGn")
 
@@ -124,7 +116,7 @@ plt.savefig("cmp_measurement_integration.jpg")
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['lipid'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['Lipid'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="RdYlGn")
 
@@ -133,12 +125,21 @@ plt.savefig("lipid_measurement_integration.jpg")
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['phy_mea'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['Physical_Measurement'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="RdYlGn")
 
 ax.set_title("Physical Measurement Integration", size=14)
 plt.savefig("physical_measurement_integration.jpg")
+
+# +
+fig, ax = plt.subplots(figsize=(18, 12))
+sns.heatmap(new_table_sheets["All_Measurements"], annot=True, annot_kws={"size": 10},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
+            xticklabels=date_cols, cmap="RdYlGn")
+
+ax.set_title("Total Measurement Integration", size=14)
+plt.savefig("total_measurement_integration.jpg")
 # -
 
 # ## Creating a box-and-whisker plot for the different table types across all sites
@@ -157,7 +158,7 @@ plt.savefig("physical_measurement_integration.jpg")
 #
 # july_15_df = pd.DataFrame.from_dict(date_info)
 #
-# sns.boxplot(data=july_15_df,
+# sns.boxplot(data=july_15_df, 
 #             whis = "range", palette="vlag")
 #
 # sns.swarmplot(data=july_15_df,
@@ -168,27 +169,28 @@ plt.savefig("physical_measurement_integration.jpg")
 # plt.title("Concept Table Success Rates for {}".format(date), size = 18)
 # sns.despine(trim=True, left=True)
 
-# # Now let's look at the metrics for particular sites with respect to Concept population;
-# # this will allow us to send them the same information
+# # Now let's look at the metrics for particular sites with respect to Concept population; this will allow us to send them the same information
 
 # +
-unit_file_hpo_sheet_name = 'integration_measurement_concept_hpo_sheets_data_analytics.xlsx'
-
-site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders',
+site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders', 
                   'cpmc_ucd', 'cpmc_uci', 'cpmc_ucsd', 'cpmc_ucsf', 'cpmc_usc', 'ecchc',
                   'hrhc', 'ipmc_northshore', 'ipmc_nu', 'ipmc_rush', 'ipmc_uchicago',
                   'ipmc_uic', 'jhchc', 'nec_bmc', 'nec_phs', 'nyc_cornell', 'nyc_cu',
-                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_uab', 'saou_ummc', 'seec_emory',
-                  'seec_miami', 'seec_morehouse', 'seec_ufl', 'syhc', 'tach_hfhs',
-                  'trans_am_baylor', 'trans_am_essentia', 'trans_am_spectrum', 'uamc_banner',
+                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_lsu', 'saou_uab',
+                  'saou_uab_hunt', 'saou_uab_selma',
+                  'saou_ummc', 'seec_emory', 'seec_miami', 'seec_morehouse',
+                  'seec_ufl', 'syhc', 'tach_hfhs', 'trans_am_baylor',
+                  'trans_am_essentia', 'trans_am_meyers', 'trans_am_spectrum', 'uamc_banner', 
                   'aggregate_info']
+
+print(len(site_name_list))
 # -
 
 # #### Cell for the CDR; trans_am_essentia and saou_ummc taken out
 
 # concept_file_hpo_sheet_name = 'cdr_concept_hpo_sheets_data_analytics.xlsx'
 #
-# site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders',
+# site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders', 
 #                   'cpmc_ucd', 'cpmc_uci', 'cpmc_ucsd', 'cpmc_ucsf', 'cpmc_usc', 'ecchc',
 #                   'hrhc', 'ipmc_northshore', 'ipmc_nu', 'ipmc_rush', 'ipmc_uchicago',
 #                   'ipmc_uic', 'jhchc', 'nec_bmc', 'nec_phs', 'nyc_cornell', 'nyc_cu',
@@ -198,17 +200,17 @@ site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_cede
 #                   'poorly_defined_rows_total', 'total_rows']
 
 # +
-name_of_interest = 'aouw_uwh'
+name_of_interest = 'ipmc_uchicago'
 
 if name_of_interest not in site_name_list:
-    raise ValueError("Name not found in the list of HPO site names.")
+    raise ValueError("Name not found in the list of HPO site names.")    
 
 for idx, site in enumerate(site_name_list):
     if site == name_of_interest:
         idx_of_interest = idx
 
 # +
-fn1_hpo_sheets = 'integration_measurement_concept_hpo_sheets_data_analytics.xlsx'
+fn1_hpo_sheets = 'sites_measurement_hpo_sheets_data_analytics.xlsx'
 file_names_hpo_sheets = [fn1_hpo_sheets]
 
 s1, s2 = site_name_list[0], site_name_list[1]
@@ -230,13 +232,15 @@ s31, s32 = site_name_list[30], site_name_list[31]
 s33, s34 = site_name_list[32], site_name_list[33]
 s35, s36 = site_name_list[34], site_name_list[35]
 s37, s38 = site_name_list[36], site_name_list[37]
-s39 = site_name_list[38]
+s39, s40 = site_name_list[38], site_name_list[39]
+s41, s42 = site_name_list[40], site_name_list[41]
+s43 = site_name_list[42]
 
 hpo_sheet_names = [
-    s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14,
+    s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, 
     s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26,
     s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
-    s39]
+    s39, s40, s41, s42, s43]
 
 # +
 hpo_sheets = []
@@ -251,16 +255,16 @@ date_cols = hpo_sheets[0].columns[2:]
 for idx, table_id in enumerate(table_id_cols):
     under_encountered = False
     start_idx, end_idx = 0, 0
-
+    
     for c_idx, character in enumerate(table_id):
         if character == '_' and not under_encountered:
             start_idx = c_idx
             under_encountered = True
         elif character == '_' and under_encountered:
             end_idx = c_idx
-
+    
     in_between_str = table_id[start_idx:end_idx + 1]
-
+    
     if in_between_str == '_succes_':
         new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
         table_id_cols[idx] = new_string
@@ -356,7 +360,7 @@ dates = new_hpo_sheets[idx_of_interest].columns
 
 # ## Want a line chart over time.
 
-times = new_hpo_sheets[idx_of_interest].columns.tolist()
+times=new_hpo_sheets[idx_of_interest].columns.tolist()
 
 # +
 success_rates = {}
@@ -365,7 +369,7 @@ for table_num, table_type in enumerate(table_id_cols):
     try:
         table_metrics_over_time = new_hpo_sheets[idx_of_interest].iloc[table_num]
         success_rates[table_type] = table_metrics_over_time.values.tolist()
-    except IndexError:  # currently a 'total' placeholder; cannot calculate right now
+    except IndexError: #currently a 'total' placeholder; cannot calculate right now
         pass
 
 date_idxs = []
@@ -377,27 +381,36 @@ for table, values_over_time in success_rates.items():
     sample_list = [x for x in success_rates[table] if str(x) != 'nan']
     if len(sample_list) > 1:
         plt.plot(date_idxs, success_rates[table], '--', label=table)
-
+    
 for table, values_over_time in success_rates.items():
     non_nan_idx = 0
     new_lst = []
-
+    
     for idx, x in enumerate(success_rates[table]):
         if str(x) != 'nan':
             new_lst.append(x)
             non_nan_idx = idx
-
+    
     if len(new_lst) == 1:
         plt.plot(date_idxs[non_nan_idx], new_lst, 'o', label=table)
 
-plt.legend(loc="upper left", bbox_to_anchor=(1, 1))
+plt.legend(loc="upper left", bbox_to_anchor=(1,1))
 plt.title("{} measurement integration over time".format(name_of_interest))
 plt.ylabel("Measurement Integration (%)")
 plt.xlabel("")
-plt.xticks(date_idxs, times, rotation='vertical')
+plt.xticks(date_idxs, times, rotation = 'vertical')
 
 handles, labels = ax.get_legend_handles_labels()
-lgd = ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, -0.1))
+lgd = ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5,-0.1))
 
 img_name = name_of_interest + "_measurement_integration_line_graph.jpg"
 # plt.savefig(img_name, bbox_extraartist=(lgd,), bbox_inches='tight')
+# -
+
+
+
+
+
+
+
+
