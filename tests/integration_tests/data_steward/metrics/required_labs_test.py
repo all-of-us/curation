@@ -60,20 +60,18 @@ class RequiredLabsTest(unittest.TestCase):
             bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
                                            common.CONCEPT_ANCESTOR)
 
-        # Load the test measurement data
+        # Upload the NYC measurement data
         test_util.write_cloud_file(self.hpo_bucket,
                                    test_util.NYC_FIVE_PERSONS_MEASUREMENT_CSV,
                                    prefix=self.folder_prefix)
         results = bq_utils.load_cdm_csv(FAKE_HPO_ID, common.MEASUREMENT, source_folder_prefix=self.folder_prefix)
         query_job_id = results['jobReference']['jobId']
         bq_utils.wait_on_jobs([query_job_id])
-
+        
+        # Upload drug_exposure to the bucket otherwise the drug_class metrics will fail
         test_util.write_cloud_file(self.hpo_bucket,
                                    test_util.NYC_FIVE_PERSONS_DRUG_EXPOSURE_CSV,
                                    prefix=self.folder_prefix)
-        results = bq_utils.load_cdm_csv(FAKE_HPO_ID, common.MEASUREMENT, source_folder_prefix=self.folder_prefix)
-        query_job_id = results['jobReference']['jobId']
-        bq_utils.wait_on_jobs([query_job_id])
 
         # Load the drug_class.csv dependency otherwise the generate_metrics in main.py will fail
         main_test.ValidationMainTest.create_drug_class_table()
