@@ -63,24 +63,10 @@ class RequiredLabsTest(unittest.TestCase):
             bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
                                            common.CONCEPT_ANCESTOR)
 
-        test_dependencies = [
-            test_util.FIVE_PERSONS_DRUG_EXPOSURE_CSV,
-            test_util.FIVE_PERSONS_MEASUREMENT_CSV,
-            test_util.FIVE_PERSONS_PII_NAME_CSV,
-            test_util.FIVE_PERSONS_PARTICIPANT_MATCH_CSV
-        ]
-        for cdm_file in test_dependencies:
-            test_util.write_cloud_file(self.hpo_bucket,
-                                       cdm_file,
-                                       prefix=self.folder_prefix)
-
-        # Load the ehr person.csv into dataset_id from the local file to skip achilles
-        ehr_person_result = bq_utils.load_table_from_csv(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            table_name=common.PERSON,
-            csv_path=test_util.FIVE_PERSONS_PERSON_CSV)
-        bq_utils.wait_on_jobs([ehr_person_result['jobReference']['jobId']])
+        # Need to upload a submission folder to enable validation
+        test_util.write_cloud_file(self.hpo_bucket,
+                                   test_util.FIVE_PERSONS_MEASUREMENT_CSV,
+                                   prefix=self.folder_prefix)
 
         # Load measurement.csv into bigquery_dataset_id from the bucket for the integration tests below
         ehr_measurement_result = bq_utils.load_cdm_csv(
@@ -96,20 +82,6 @@ class RequiredLabsTest(unittest.TestCase):
             table_name=common.PERSON,
             csv_path=test_util.RDR_PERSON_PATH)
         bq_utils.wait_on_jobs([rdr_person_result['jobReference']['jobId']])
-        # # Upload the NYC measurement data
-        # test_util.write_cloud_file(self.hpo_bucket,
-        #                            test_util.NYC_FIVE_PERSONS_MEASUREMENT_CSV,
-        #                            prefix=self.folder_prefix)
-        # results = bq_utils.load_cdm_csv(FAKE_HPO_ID,
-        #                                 common.MEASUREMENT,
-        #                                 source_folder_prefix=self.folder_prefix)
-        # query_job_id = results['jobReference']['jobId']
-        # bq_utils.wait_on_jobs([query_job_id])
-        #
-        # # Upload drug_exposure to the bucket otherwise the drug_class metrics will fail
-        # test_util.write_cloud_file(self.hpo_bucket,
-        #                            test_util.NYC_FIVE_PERSONS_DRUG_EXPOSURE_CSV,
-        #                            prefix=self.folder_prefix)
 
         # Load the drug_class.csv dependency otherwise the drug_class coverage metric will fail
         main_test.ValidationMainTest._create_drug_class_table(self.dataset_id)
