@@ -42,7 +42,7 @@ class ValidationMainTest(unittest.TestCase):
         self.folder_prefix = '2019-01-01/'
         self._empty_bucket()
         test_util.delete_all_tables(self.bigquery_dataset_id)
-        self.create_drug_class_table()
+        self._create_drug_class_table(self.bigquery_dataset_id)
 
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
@@ -50,9 +50,7 @@ class ValidationMainTest(unittest.TestCase):
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
 
     @staticmethod
-    def create_drug_class_table():
-
-        bigquery_dataset_id = bq_utils.get_dataset_id()
+    def _create_drug_class_table(bigquery_dataset_id):
 
         table_name = 'drug_class'
         fields = [{
@@ -73,7 +71,7 @@ class ValidationMainTest(unittest.TestCase):
                               drop_existing=True,
                               dataset_id=bigquery_dataset_id)
 
-        bq_utils.query(q=main_constants.DRUG_CLASS_QUERY.format(
+        bq_utils.query(q=main_consts.DRUG_CLASS_QUERY.format(
             dataset_id=bigquery_dataset_id),
                        use_legacy_sql=False,
                        destination_table_id='drug_class',
@@ -87,8 +85,7 @@ class ValidationMainTest(unittest.TestCase):
                                            common.CONCEPT_ANCESTOR)
             q = """INSERT INTO {dataset}.concept_ancestor
             SELECT * FROM {vocab}.concept_ancestor""".format(
-                dataset=self.bigquery_dataset_id,
-                vocab=common.VOCABULARY_DATASET)
+                dataset=bigquery_dataset_id, vocab=common.VOCABULARY_DATASET)
             bq_utils.query(q)
 
     def table_has_clustering(self, table_info):
