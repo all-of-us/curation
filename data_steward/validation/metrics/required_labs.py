@@ -27,7 +27,7 @@ def load_measurement_concept_sets_table(project_id, dataset_id):
     try:
         LOGGER.info(
             'Upload {measurement_concept_sets_table}.csv to {dataset_id} in {project_id}'
-                .format(
+            .format(
                 measurement_concept_sets_table=MEASUREMENT_CONCEPT_SETS_TABLE,
                 dataset_id=dataset_id,
                 project_id=project_id))
@@ -97,7 +97,8 @@ def get_lab_concept_summary_query(hpo_id):
         load_measurement_concept_sets_table(project_id, dataset_id)
 
     # Create measurement_concept_sets_descendants_table if not exist
-    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE, dataset_id):
+    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE,
+                                 dataset_id):
         load_measurement_concept_sets_descendants_table(project_id, dataset_id)
 
     return CHECK_REQUIRED_LAB_QUERY.format(

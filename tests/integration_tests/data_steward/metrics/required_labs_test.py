@@ -66,7 +66,9 @@ class RequiredLabsTest(unittest.TestCase):
         # Need to upload a submission folder to enable validation
         for cdm_table in [common.MEASUREMENT, common.DRUG_EXPOSURE]:
             test_util.write_cloud_file(bucket=self.hpo_bucket,
-                                       f=os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv'),
+                                       f=os.path.join(
+                                           test_util.FIVE_PERSONS_PATH,
+                                           cdm_table + '.csv'),
                                        prefix=self.folder_prefix)
 
         # Although the measurement.csv will be loaded into biquery by hpo_process in test_required_labs_html_page,
@@ -74,8 +76,7 @@ class RequiredLabsTest(unittest.TestCase):
         ehr_measurement_result = bq_utils.load_from_csv(
             hpo_id=FAKE_HPO_ID,
             table_name=common.MEASUREMENT,
-            source_folder_prefix=self.folder_prefix
-        )
+            source_folder_prefix=self.folder_prefix)
         bq_utils.wait_on_jobs([ehr_measurement_result['jobReference']['jobId']])
 
         # Load the rdr person.csv into rdr_dataset_id from the local file otherwise the missing_pii metric will fail
