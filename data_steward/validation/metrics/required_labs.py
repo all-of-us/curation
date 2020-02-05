@@ -13,70 +13,6 @@ LOGGER = logging.getLogger(__name__)
 MEASUREMENT_CONCEPT_SETS_TABLE = 'measurement_concept_sets'
 MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = 'measurement_concept_sets_descendants'
 
-MEASUREMENT_CONCEPT_SETS_FIELDS = [{
-    "type": "string",
-    "name": "panel_name",
-    "mode": "nullable",
-    "description": ""
-}, {
-    "type": "integer",
-    "name": "panel_omop_id",
-    "mode": "nullable",
-    "description": ""
-}, {
-    "type": "string",
-    "name": "measurement_name",
-    "mode": "required",
-    "description": ""
-}, {
-    "type": "integer",
-    "name": "measurement_omop_id",
-    "mode": "required",
-    "description": ""
-}]
-
-MEASUREMENT_CONCEPT_SETS_DESCENDANTS_FIELDS = [{
-    "type": "integer",
-    "name": "panel_omop_id",
-    "mode": "nullable"
-}, {
-    "type": "string",
-    "name": "panel_name",
-    "mode": "nullable"
-}, {
-    "type": "integer",
-    "name": "measurement_concept_id",
-    "mode": "nullable"
-}, {
-    "type": "string",
-    "name": "measurement_concept_name",
-    "mode": "nullable"
-}, {
-    "type": "integer",
-    "name": "ancestor_concept_id",
-    "mode": "nullable"
-}, {
-    "type": "string",
-    "name": "ancestor_concept_name",
-    "mode": "nullable"
-}, {
-    "type": "string",
-    "name": "classification",
-    "mode": "nullable"
-}, {
-    "type": "integer",
-    "name": "descendant_concept_id",
-    "mode": "nullable"
-}, {
-    "type": "string",
-    "name": "descendant_concept_name",
-    "mode": "nullable"
-}, {
-    "type": "string",
-    "name": "descendant_concept_class_id",
-    "mode": "nullable"
-}]
-
 
 def load_required_lab_table(project_id, dataset_id):
     """
@@ -96,11 +32,8 @@ def load_required_lab_table(project_id, dataset_id):
                 dataset_id=dataset_id,
                 project_id=project_id))
 
-        bq_utils.load_table_from_csv(project_id,
-                                     dataset_id,
-                                     MEASUREMENT_CONCEPT_SETS_TABLE,
-                                     csv_path=None,
-                                     fields=MEASUREMENT_CONCEPT_SETS_FIELDS)
+        bq_utils.load_table_from_csv(project_id, dataset_id,
+                                     MEASUREMENT_CONCEPT_SETS_TABLE)
 
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):

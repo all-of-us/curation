@@ -1,0 +1,52 @@
+[
+  {
+    "type": "integer",
+    "name": "panel_omop_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "panel_name",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "measurement_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "measurement_concept_name",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "ancestor_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "ancestor_concept_name",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "classification",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "descendant_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "descendant_concept_name",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "descendant_concept_class_id",
+    "mode": "nullable"
+  }
+]

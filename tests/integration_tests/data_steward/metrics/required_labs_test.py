@@ -9,6 +9,8 @@ import resources
 from tests import test_util
 from tests.test_util import (FAKE_HPO_ID)
 from validation.metrics import required_labs as required_labs
+from validation.metrics.required_labs import (
+    MEASUREMENT_CONCEPT_SETS_TABLE, MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)
 import validation.sql_wrangle as sql_wrangle
 from validation import main
 from tests.integration_tests.data_steward.validation import main_test as main_test
@@ -81,8 +83,9 @@ class RequiredLabsTest(unittest.TestCase):
     def test_load_required_lab_table(self):
 
         query = sql_wrangle.qualify_tables(
-            """SELECT * FROM {table_id}""".format(
-                table_id=required_labs.MEASUREMENT_CONCEPT_SETS_TABLE))
+            '''SELECT * FROM {dataset_id}.{table_id}'''.format(
+                dataset_id=self.dataset_id,
+                table_id=MEASUREMENT_CONCEPT_SETS_TABLE))
         response = bq_utils.query(query)
 
         actual_fields = [{
@@ -93,13 +96,12 @@ class RequiredLabsTest(unittest.TestCase):
         expected_fields = [{
             'name': field['name'].lower(),
             'type': field['type'].lower()
-        } for field in required_labs.MEASUREMENT_CONCEPT_SETS_FIELDS]
+        } for field in resources.fields_for(MEASUREMENT_CONCEPT_SETS_TABLE)]
 
         self.assertListEqual(expected_fields, actual_fields)
 
         measurement_concept_sets_table_path = os.path.join(
-            resources.resource_path,
-            required_labs.MEASUREMENT_CONCEPT_SETS_TABLE + '.csv')
+            resources.resource_path, MEASUREMENT_CONCEPT_SETS_TABLE + '.csv')
         expected_total_rows = len(
             resources.csv_to_list(measurement_concept_sets_table_path))
         self.assertEqual(expected_total_rows, int(response['totalRows']))
@@ -107,9 +109,9 @@ class RequiredLabsTest(unittest.TestCase):
     def test_load_measurement_concept_sets_descendants_table(self):
 
         query = sql_wrangle.qualify_tables(
-            """SELECT * FROM {table_id}""".format(
-                table_id=required_labs.
-                MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE))
+            """SELECT * FROM {dataset_id}.{table_id}""".format(
+                dataset_id=self.dataset_id,
+                table_id=MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE))
         response = bq_utils.query(query)
 
         actual_fields = [{
@@ -120,8 +122,8 @@ class RequiredLabsTest(unittest.TestCase):
         expected_fields = [{
             'name': field['name'].lower(),
             'type': field['type'].lower()
-        } for field in required_labs.MEASUREMENT_CONCEPT_SETS_DESCENDANTS_FIELDS
-                          ]
+        } for field in resources.fields_for(
+            MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)]
 
         self.assertListEqual(expected_fields, actual_fields)
 
@@ -141,8 +143,7 @@ class RequiredLabsTest(unittest.TestCase):
             """SELECT DISTINCT ancestor_concept_id FROM `{project_id}.{dataset_id}.{table_id}`"""
             .format(project_id=self.project_id,
                     dataset_id=self.dataset_id,
-                    table_id=required_labs.
-                    MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE))
+                    table_id=MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE))
         unique_ancestor_cocnept_response = bq_utils.query(
             unique_ancestor_concept_query)
         expected_total_labs = unique_ancestor_cocnept_response['totalRows']
@@ -160,7 +161,7 @@ class RequiredLabsTest(unittest.TestCase):
                   c.descendant_concept_id = m.measurement_concept_id
                 '''.format(project_id=self.project_id,
                            dataset_id=self.dataset_id,
-                           measurement_concept_sets_descendants=required_labs.
+                           measurement_concept_sets_descendants=
                            MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE,
                            measurement=bq_utils.get_table_id(
                                FAKE_HPO_ID, common.MEASUREMENT))
