@@ -29,6 +29,7 @@ class RequiredLabsTest(unittest.TestCase):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
+        self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         self.folder_prefix = '2019-01-01/'
         test_util.delete_all_tables(self.dataset_id)
         test_util.empty_bucket(self.hpo_bucket)
@@ -62,22 +63,55 @@ class RequiredLabsTest(unittest.TestCase):
             bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
                                            common.CONCEPT_ANCESTOR)
 
-        # Upload the NYC measurement data
-        test_util.write_cloud_file(self.hpo_bucket,
-                                   test_util.NYC_FIVE_PERSONS_MEASUREMENT_CSV,
-                                   prefix=self.folder_prefix)
-        results = bq_utils.load_cdm_csv(FAKE_HPO_ID,
-                                        common.MEASUREMENT,
-                                        source_folder_prefix=self.folder_prefix)
-        query_job_id = results['jobReference']['jobId']
-        bq_utils.wait_on_jobs([query_job_id])
+        test_dependencies = [
+            test_util.FIVE_PERSONS_DRUG_EXPOSURE_CSV,
+            test_util.FIVE_PERSONS_MEASUREMENT_CSV,
+            test_util.FIVE_PERSONS_PII_NAME_CSV,
+            test_util.FIVE_PERSONS_PARTICIPANT_MATCH_CSV
+        ]
+        for cdm_file in test_dependencies:
+            test_util.write_cloud_file(self.hpo_bucket,
+                                       cdm_file,
+                                       prefix=self.folder_prefix)
 
-        # Upload drug_exposure to the bucket otherwise the drug_class metrics will fail
-        test_util.write_cloud_file(self.hpo_bucket,
-                                   test_util.NYC_FIVE_PERSONS_DRUG_EXPOSURE_CSV,
-                                   prefix=self.folder_prefix)
+        # Load the ehr person.csv into dataset_id from the local file to skip achilles
+        ehr_person_result = bq_utils.load_table_from_csv(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            table_name=common.PERSON,
+            csv_path=test_util.FIVE_PERSONS_PERSON_CSV)
+        bq_utils.wait_on_jobs([ehr_person_result['jobReference']['jobId']])
 
-        # Load the drug_class.csv dependency otherwise the generate_metrics in main.py will fail
+        # Load measurement.csv into bigquery_dataset_id from the bucket for the integration tests below
+        ehr_measurement_result = bq_utils.load_cdm_csv(
+            hpo_id=FAKE_HPO_ID,
+            cdm_table_name=common.MEASUREMENT,
+            source_folder_prefix=self.folder_prefix)
+        bq_utils.wait_on_jobs([ehr_measurement_result['jobReference']['jobId']])
+
+        # Load the rdr person.csv into rdr_dataset_id from the local file otherwise the missing_pii metric will fail
+        rdr_person_result = bq_utils.load_table_from_csv(
+            project_id=self.project_id,
+            dataset_id=self.rdr_dataset_id,
+            table_name=common.PERSON,
+            csv_path=test_util.RDR_PERSON_PATH)
+        bq_utils.wait_on_jobs([rdr_person_result['jobReference']['jobId']])
+        # # Upload the NYC measurement data
+        # test_util.write_cloud_file(self.hpo_bucket,
+        #                            test_util.NYC_FIVE_PERSONS_MEASUREMENT_CSV,
+        #                            prefix=self.folder_prefix)
+        # results = bq_utils.load_cdm_csv(FAKE_HPO_ID,
+        #                                 common.MEASUREMENT,
+        #                                 source_folder_prefix=self.folder_prefix)
+        # query_job_id = results['jobReference']['jobId']
+        # bq_utils.wait_on_jobs([query_job_id])
+        #
+        # # Upload drug_exposure to the bucket otherwise the drug_class metrics will fail
+        # test_util.write_cloud_file(self.hpo_bucket,
+        #                            test_util.NYC_FIVE_PERSONS_DRUG_EXPOSURE_CSV,
+        #                            prefix=self.folder_prefix)
+
+        # Load the drug_class.csv dependency otherwise the drug_class coverage metric will fail
         main_test.ValidationMainTest._create_drug_class_table(self.dataset_id)
 
     def test_load_required_lab_table(self):
@@ -180,8 +214,10 @@ class RequiredLabsTest(unittest.TestCase):
                          'of labs submitted '
                          'in the measurement')
 
+    @mock.patch('validation.main.is_valid_rdr')
     @mock.patch('api_util.check_cron')
-    def test_required_labs_html_page(self, mock_check_cron):
+    def test_required_labs_html_page(self, mock_check_cron, mock_is_valid_rdr):
+        mock_is_valid_rdr.reture_value = True
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)

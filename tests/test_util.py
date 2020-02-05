@@ -103,6 +103,7 @@ PITT_FIVE_PERSONS_FILES = [
 ]
 
 RDR_PATH = os.path.join(TEST_DATA_PATH, 'rdr')
+RDR_PERSON_PATH = os.path.join(RDR_PATH, 'person.csv')
 
 TEST_DATA_EXPORT_PATH = os.path.join(TEST_DATA_PATH, 'export')
 TEST_DATA_EXPORT_SYNPUF_PATH = os.path.join(TEST_DATA_EXPORT_PATH, 'synpuf')
