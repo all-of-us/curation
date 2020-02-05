@@ -14,7 +14,7 @@ MEASUREMENT_CONCEPT_SETS_TABLE = 'measurement_concept_sets'
 MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = 'measurement_concept_sets_descendants'
 
 
-def load_required_lab_table(project_id, dataset_id):
+def load_measurement_concept_sets_table(project_id, dataset_id):
     """
     Loads the required lab table from resources/measurement_concept_sets.csv
     into project_id.ehr_ops
@@ -27,7 +27,7 @@ def load_required_lab_table(project_id, dataset_id):
     try:
         LOGGER.info(
             'Upload {measurement_concept_sets_table}.csv to {dataset_id} in {project_id}'
-            .format(
+                .format(
                 measurement_concept_sets_table=MEASUREMENT_CONCEPT_SETS_TABLE,
                 dataset_id=dataset_id,
                 project_id=project_id))
@@ -92,6 +92,14 @@ def get_lab_concept_summary_query(hpo_id):
     dataset_id = bq_utils.get_dataset_id()
     hpo_measurement_table = bq_utils.get_table_id(hpo_id, common.MEASUREMENT)
 
+    # Create measurement_concept_sets_table if not exist
+    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_TABLE, dataset_id):
+        load_measurement_concept_sets_table(project_id, dataset_id)
+
+    # Create measurement_concept_sets_descendants_table if not exist
+    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE, dataset_id):
+        load_measurement_concept_sets_descendants_table(project_id, dataset_id)
+
     return CHECK_REQUIRED_LAB_QUERY.format(
         project_id=project_id,
         ehr_ops_dataset_id=dataset_id,
@@ -105,8 +113,8 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
     # Upload the required lab lookup table
-    load_required_lab_table(project_id=ARGS.project_id,
-                            dataset_id=ARGS.dataset_id)
+    load_measurement_concept_sets_table(project_id=ARGS.project_id,
+                                        dataset_id=ARGS.dataset_id)
     # Create the measurement concept sets descendant table
     load_measurement_concept_sets_descendants_table(project_id=ARGS.project_id,
                                                     dataset_id=ARGS.dataset_id)

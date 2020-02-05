@@ -49,7 +49,7 @@ class RequiredLabsTest(unittest.TestCase):
     def _load_data(self):
 
         # Load measurement_concept_sets
-        required_labs.load_required_lab_table(
+        required_labs.load_measurement_concept_sets_table(
             project_id=app_identity.get_application_id(),
             dataset_id=bq_utils.get_dataset_id())
         # Load measurement_concept_sets_descendants
@@ -64,15 +64,18 @@ class RequiredLabsTest(unittest.TestCase):
                                            common.CONCEPT_ANCESTOR)
 
         # Need to upload a submission folder to enable validation
-        test_util.write_cloud_file(self.hpo_bucket,
-                                   test_util.FIVE_PERSONS_MEASUREMENT_CSV,
-                                   prefix=self.folder_prefix)
+        for cdm_table in [common.MEASUREMENT, common.DRUG_EXPOSURE]:
+            test_util.write_cloud_file(bucket=self.hpo_bucket,
+                                       f=os.path.join(test_util.FIVE_PERSONS_PATH, cdm_table + '.csv'),
+                                       prefix=self.folder_prefix)
 
-        # Load measurement.csv into bigquery_dataset_id from the bucket for the integration tests below
-        ehr_measurement_result = bq_utils.load_cdm_csv(
+        # Although the measurement.csv will be loaded into biquery by hpo_process in test_required_labs_html_page,
+        # we need to load measurement.csv into bigquery_dataset_id in advance for the other integration tests
+        ehr_measurement_result = bq_utils.load_from_csv(
             hpo_id=FAKE_HPO_ID,
-            cdm_table_name=common.MEASUREMENT,
-            source_folder_prefix=self.folder_prefix)
+            table_name=common.MEASUREMENT,
+            source_folder_prefix=self.folder_prefix
+        )
         bq_utils.wait_on_jobs([ehr_measurement_result['jobReference']['jobId']])
 
         # Load the rdr person.csv into rdr_dataset_id from the local file otherwise the missing_pii metric will fail
@@ -86,7 +89,7 @@ class RequiredLabsTest(unittest.TestCase):
         # Load the drug_class.csv dependency otherwise the drug_class coverage metric will fail
         main_test.ValidationMainTest._create_drug_class_table(self.dataset_id)
 
-    def test_load_required_lab_table(self):
+    def test_measurement_concept_sets_table(self):
 
         query = sql_wrangle.qualify_tables(
             '''SELECT * FROM {dataset_id}.{table_id}'''.format(
