@@ -11,7 +11,7 @@ import validation.sql_wrangle as sql_wrangle
 
 # This may change if we strip out unused analyses
 ACHILLES_LOOKUP_COUNT = 215
-ACHILLES_RESULTS_COUNT = 2497
+ACHILLES_RESULTS_COUNT = 2779
 
 
 class AchillesTest(unittest.TestCase):

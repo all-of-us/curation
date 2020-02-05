@@ -24,6 +24,7 @@ import resources
 from validation import achilles as achilles
 from validation import achilles_heel as achilles_heel
 from validation.metrics import completeness as completeness
+from validation.metrics import required_labs as required_labs
 from validation import ehr_union as ehr_union
 from validation import export as export
 from validation.participants import identity_match as matching
@@ -353,6 +354,13 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(
             completeness_query)
 
+        # lab concept metrics
+        logging.info('Getting lab concepts for %s...' % hpo_id)
+        lab_concept_metrics_query = required_labs.get_lab_concept_summary_query(
+            hpo_id)
+        report_data[report_consts.LAB_CONCEPT_METRICS_REPORT_KEY] = query_rows(
+            lab_concept_metrics_query)
+
         logging.info(
             'Processing complete. Saving timestamp %s to `gs://%s/%s`.',
             processed_datetime_str, bucket,
@@ -480,7 +488,7 @@ def get_drug_class_counts_query(hpo_id):
 def is_valid_rdr(rdr_dataset_id):
     """
     Verifies whether the rdr_dataset_id follows the rdrYYYYMMDD naming convention
-    
+
     :param rdr_dataset_id: identifies the rdr dataset
     :return: Boolean indicating if the rdr_dataset_id conforms to rdrYYYYMMDD
     """
@@ -491,7 +499,7 @@ def is_valid_rdr(rdr_dataset_id):
 def extract_date_from_rdr_dataset_id(rdr_dataset_id):
     """
     Uses the rdr dataset id (string, rdrYYYYMMDD) to extract the date (string, YYYY-MM-DD format)
-    
+
     :param rdr_dataset_id: identifies the rdr dataset
     :return: date formatted in string as YYYY-MM-DD
     :raises: ValueError if the rdr_dataset_id does not conform to rdrYYYYMMDD

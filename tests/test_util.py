@@ -103,6 +103,7 @@ PITT_FIVE_PERSONS_FILES = [
 ]
 
 RDR_PATH = os.path.join(TEST_DATA_PATH, 'rdr')
+RDR_PERSON_PATH = os.path.join(RDR_PATH, 'person.csv')
 
 TEST_DATA_EXPORT_PATH = os.path.join(TEST_DATA_PATH, 'export')
 TEST_DATA_EXPORT_SYNPUF_PATH = os.path.join(TEST_DATA_EXPORT_PATH, 'synpuf')
@@ -127,6 +128,7 @@ TEST_VOCABULARY_VOCABULARY_CSV = os.path.join(TEST_VOCABULARY_PATH,
 
 TEST_DATA_METRICS_PATH = os.path.join(TEST_DATA_PATH, 'metrics')
 TEST_NYC_CU_COLS_CSV = os.path.join(TEST_DATA_METRICS_PATH, 'nyc_cu_cols.csv')
+TEST_MEASUREMENT_CSV = os.path.join(TEST_DATA_METRICS_PATH, 'measurement.csv')
 
 
 def _create_five_persons_success_result():

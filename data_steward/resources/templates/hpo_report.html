@@ -453,6 +453,33 @@ This report may be incomplete because the submission is still being processed. P
   Drug concept mapping statistics are not (yet) available for this submission.
 </div>
 {% endif %}
+
+<h2><a name="lab_concept_metrics">Lab Concept Summary</a></h2>
+{% if lab_concept_metrics %}
+<table class="table table-striped table-hover required-lab">
+    <thead class="thead-dark">
+        <tr>
+            <th>Ancestor Concept ID</th>
+            <th>Ancestor Concept Name</th>
+            <th>Found</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% set symbol = {0: "&cross;", 1: "&check;"} %}
+    {% for row in lab_concept_metrics %}
+        <tr>
+            <td>{{ row["ancestor_concept_id"] }}</td>
+            <td>{{ row["ancestor_concept_name"] }}</td>
+            <td class="symbol result-{{ row["measurement_concept_id_exists"] }} w-25">{{ symbol[row["measurement_concept_id_exists"]] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" role="alert">
+  Lab concept summary is not (yet) available for this submission.
+</div>
+{% endif %}
 </main>
 </body>
 </html>
