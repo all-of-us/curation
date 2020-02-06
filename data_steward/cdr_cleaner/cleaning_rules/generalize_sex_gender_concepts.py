@@ -1,4 +1,6 @@
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from cdr_cleaner import clean_cdr
+from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import get_src_concept_id_update_queries
 
 GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE = '''
 UPDATE
@@ -95,10 +97,18 @@ def get_generalized_concept_id_queries(project_id, dataset_id):
 if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
     import cdr_cleaner.args_parser as parser
+    # ARGS = parser.parse_args()
+    #
+    # clean_engine.add_console_logging(ARGS.console_log)
+    # query_list = get_generalized_concept_id_queries(ARGS.project_id,
+    #                                                 ARGS.dataset_id)
+    # clean_engine.clean_dataset(ARGS.project_id, query_list)
+    # print(
+    #     inspect.getmodule(
+    #         domain_alignment.parse_domain_mapping_query_cross_domain).__name__)
+    #
 
-    ARGS = parser.parse_args()
-
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_generalized_concept_id_queries(ARGS.project_id,
-                                                    ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    print(
+        clean_cdr.add_module_info_decorator(get_src_concept_id_update_queries,
+                                            'project_id', 'dataset_id',
+                                            'sandbox_dataset_id'))

@@ -20,6 +20,9 @@ DESTINATION_DATASET = 'destination_dataset_id'
 BATCH = 'batch'
 PROCEDURE_OCCURRENCE = 'procedure_occurrence'
 QUALIFIER_SOURCE_VALUE = 'qualifier_source_value'
+MODULE_NAME = 'module_name'
+FUNCTION_NAME = 'function_name'
+LINE_NO = 'line_no'
 
 
 @unique
