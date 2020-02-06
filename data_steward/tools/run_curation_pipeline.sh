@@ -96,11 +96,11 @@ export BUCKET_NAME_NYC="test-bucket"
 
 # Running Achilles analysis on Combined dataset
 export BIGQUERY_DATASET_ID="${combined_backup}"
-"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_backup} --key_file ${key_file} --result_bucket ${result_bucket}
+"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_backup} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset}
 
 # Running Achilles analysis on combined clean datased
 export BIGQUERY_DATASET_ID="${combined_dataset}"
-"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_dataset} --key_file ${key_file} --result_bucket ${result_bucket}
+"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_dataset} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset}
 
 #--------------------------------------------------------
 # Step 5 Run deid on cdr
@@ -118,11 +118,11 @@ export BUCKET_NAME_NYC="test-bucket"
 
 # Running Achilles analysis on deid_base dataset
 export BIGQUERY_DATASET_ID="${cdr_deid_base}"
-"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${cdr_deid_base} --key_file ${key_file} --result_bucket ${result_bucket}
+"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${cdr_deid_base} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset}
 
 # Running Achilles analysis on deid_clean dataset
 export BIGQUERY_DATASET_ID="${cdr_deid_clean}"
-"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${cdr_deid_clean} --key_file ${key_file} --result_bucket ${result_bucket}
+"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${cdr_deid_clean} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset}
 
 #---------------------------------------------------------
 # Step 7 Snapshot result datasets for cohort builder team to use
