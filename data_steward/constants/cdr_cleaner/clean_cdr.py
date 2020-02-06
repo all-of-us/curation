@@ -24,6 +24,11 @@ MODULE_NAME = 'module_name'
 FUNCTION_NAME = 'function_name'
 LINE_NO = 'line_no'
 
+# Query dictionary default_values
+MODULE_NAME_DEFAULT_VALUE = 'Unknown module'
+FUNCTION_NAME_DEFAULT_VALUE = 'Unknown function'
+LINE_NO_DEFAULT_VALUE = 'Unknown line number'
+
 
 @unique
 class DataStage(Enum):
