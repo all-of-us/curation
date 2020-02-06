@@ -124,45 +124,57 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     query_list = []
     query_list.extend(
-        maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries(
-            project_id, dataset_id))
+        add_module_info_decorator(
+            maps_to_value_vocab_update.
+            get_maps_to_value_ppi_vocab_update_queries, project_id, dataset_id))
     query_list.extend(
-        back_fill_pmi_skip.get_run_pmi_fix_queries(project_id, dataset_id))
+        add_module_info_decorator(back_fill_pmi_skip.get_run_pmi_fix_queries,
+                                  project_id, dataset_id))
     query_list.extend(
-        ppi_numeric_fields.get_clean_ppi_num_fields_using_parameters_queries(
-            project_id, dataset_id))
+        add_module_info_decorator(
+            ppi_numeric_fields.
+            get_clean_ppi_num_fields_using_parameters_queries, project_id,
+            dataset_id))
     query_list.extend(
-        remove_multiple_race_answers.
-        get_remove_multiple_race_ethnicity_answers_queries(
-            project_id, dataset_id))
+        add_module_info_decorator(
+            remove_multiple_race_answers.
+            get_remove_multiple_race_ethnicity_answers_queries, project_id,
+            dataset_id))
     query_list.extend(
-        negative_ppi.get_update_ppi_queries(project_id, dataset_id,
-                                            sandbox_dataset_id))
+        add_module_info_decorator(negative_ppi.get_update_ppi_queries,
+                                  project_id, dataset_id, sandbox_dataset_id))
     query_list.extend(
-        smoking.get_queries_clean_smoking(project_id, dataset_id,
-                                          sandbox_dataset_id))
+        add_module_info_decorator(smoking.get_queries_clean_smoking, project_id,
+                                  dataset_id, sandbox_dataset_id))
     query_list.extend(
-        ppi_drop_duplicates.
-        get_remove_duplicate_set_of_responses_to_same_questions_queries(
+        add_module_info_decorator(
+            ppi_drop_duplicates.
+            get_remove_duplicate_set_of_responses_to_same_questions_queries,
             project_id, dataset_id, sandbox_dataset_id))
     query_list.extend(
-        operational_pii_fields.get_remove_operational_pii_fields_query(
+        add_module_info_decorator(
+            operational_pii_fields.get_remove_operational_pii_fields_query,
             project_id, dataset_id, sandbox_dataset_id))
     query_list.extend(
-        map_questions_answers_to_omop.
-        get_update_questions_answers_not_mapped_to_omop(project_id, dataset_id,
-                                                        sandbox_dataset_id))
+        add_module_info_decorator(
+            map_questions_answers_to_omop.
+            get_update_questions_answers_not_mapped_to_omop, project_id,
+            dataset_id, sandbox_dataset_id))
     query_list.extend(
-        round_ppi_values.get_round_ppi_values_queries(project_id, dataset_id))
+        add_module_info_decorator(round_ppi_values.get_round_ppi_values_queries,
+                                  project_id, dataset_id))
     query_list.extend(
-        update_family_history.get_update_family_history_qa_queries(
+        add_module_info_decorator(
+            update_family_history.get_update_family_history_qa_queries,
             project_id, dataset_id))
     query_list.extend(
-        extreme_measurements.get_drop_extreme_measurement_queries(
+        add_module_info_decorator(
+            extreme_measurements.get_drop_extreme_measurement_queries,
             project_id, dataset_id))
     query_list.extend(
-        drop_mult_meas.get_drop_multiple_measurement_queries(
-            project_id, dataset_id, sandbox_dataset_id))
+        add_module_info_decorator(
+            drop_mult_meas.get_drop_multiple_measurement_queries, project_id,
+            dataset_id, sandbox_dataset_id))
     return query_list
 
 
@@ -176,42 +188,59 @@ def _gather_combined_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     query_list = []
     query_list.extend(
-        replace_standard_concept_ids.replace_standard_id_in_domain_tables(
-            project_id, dataset_id))
-    query_list.extend(domain_alignment.domain_alignment(project_id, dataset_id))
-    query_list.extend(
-        drop_participants_without_ppi_or_ehr.get_queries(
+        add_module_info_decorator(
+            replace_standard_concept_ids.replace_standard_id_in_domain_tables,
             project_id, dataset_id))
     query_list.extend(
-        id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
+        add_module_info_decorator(domain_alignment.domain_alignment, project_id,
+                                  dataset_id))
     query_list.extend(
-        clean_years.get_year_of_birth_queries(project_id, dataset_id))
-    query_list.extend(neg_ages.get_negative_ages_queries(
-        project_id, dataset_id))
+        add_module_info_decorator(
+            drop_participants_without_ppi_or_ehr.get_queries, project_id,
+            dataset_id))
     query_list.extend(
-        bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
+        add_module_info_decorator(id_dedup.get_id_deduplicate_queries,
+                                  project_id, dataset_id))
     query_list.extend(
-        no_data_30days_after_death.no_data_30_days_after_death(
+        add_module_info_decorator(clean_years.get_year_of_birth_queries,
+                                  project_id, dataset_id))
+    query_list.extend(
+        add_module_info_decorator(neg_ages.get_negative_ages_queries,
+                                  project_id, dataset_id))
+    query_list.extend(
+        add_module_info_decorator(bad_end_dates.get_bad_end_date_queries,
+                                  project_id, dataset_id))
+    query_list.extend(
+        add_module_info_decorator(
+            no_data_30days_after_death.no_data_30_days_after_death, project_id,
+            dataset_id))
+    query_list.extend(
+        add_module_info_decorator(
+            valid_death_dates.get_valid_death_date_queries, project_id,
+            dataset_id))
+    query_list.extend(
+        add_module_info_decorator(
+            drug_refills_supply.get_days_supply_refills_queries, project_id,
+            dataset_id))
+    query_list.extend(
+        add_module_info_decorator(populate_routes.get_route_mapping_queries,
+                                  project_id, dataset_id))
+    query_list.extend(
+        add_module_info_decorator(
+            fix_datetimes.get_fix_incorrect_datetime_to_date_queries,
             project_id, dataset_id))
     query_list.extend(
-        valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
+        add_module_info_decorator(
+            remove_records_with_wrong_date.
+            get_remove_records_with_wrong_date_queries, project_id, dataset_id))
     query_list.extend(
-        drug_refills_supply.get_days_supply_refills_queries(
-            project_id, dataset_id))
-    query_list.extend(
-        populate_routes.get_route_mapping_queries(project_id, dataset_id))
-    query_list.extend(
-        fix_datetimes.get_fix_incorrect_datetime_to_date_queries(
-            project_id, dataset_id))
-    query_list.extend(
-        remove_records_with_wrong_date.
-        get_remove_records_with_wrong_date_queries(project_id, dataset_id))
-    query_list.extend(
-        drop_duplicate_states.get_drop_duplicate_states_queries(
-            project_id, dataset_id, sandbox_dataset_id))
+        add_module_info_decorator(
+            drop_duplicate_states.get_drop_duplicate_states_queries, project_id,
+            dataset_id, sandbox_dataset_id))
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     query_list.extend(
-        null_foreign_key.null_invalid_foreign_keys(project_id, dataset_id))
+        add_module_info_decorator(null_foreign_key.null_invalid_foreign_keys,
+                                  project_id, dataset_id))
     return query_list
 
 
