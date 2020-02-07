@@ -108,7 +108,7 @@ def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
             failures += 1
             raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
-        # check if the job is complete because an error has occurred
+        # check if the job is complete and an error has occurred
         is_errored, error_message = bq_utils.job_status_errored(query_job_id)
 
         if is_errored:

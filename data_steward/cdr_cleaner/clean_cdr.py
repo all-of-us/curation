@@ -531,7 +531,3 @@ if __name__ == '__main__':
         raise EnvironmentError(
             f'Dataset selection should be from [{stage.EHR}, {stage.UNIONED}, {stage.RDR}, {stage.COMBINED},'
             f' {stage.DEID_BASE}, {stage.DEID_CLEAN}]')
-    # print(
-    #     add_module_info_decorator(
-    #         replace_standard_concept_ids.get_src_concept_id_update_queries,
-    #         'project_id', 'dataset_id', 'sandbox_dataset_id'))
