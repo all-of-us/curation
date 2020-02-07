@@ -832,10 +832,11 @@ def run_retraction_cron():
     dataset_ids = bq_utils.get_retraction_dataset_ids()
     logging.info('Dataset id/s to target from env variable: %s' % dataset_ids)
     logging.info('Running retraction on BQ datasets')
-    # retract from output dataset
-    retract_data_bq.run_bq_retraction(output_project_id, sandbox_dataset_id,
-                                      project_id, pid_table_id, hpo_id,
-                                      dataset_ids)
+    if output_project_id:
+        # retract from output dataset
+        retract_data_bq.run_bq_retraction(output_project_id, sandbox_dataset_id,
+                                          project_id, pid_table_id, hpo_id,
+                                          dataset_ids)
     # retract from default dataset
     retract_data_bq.run_bq_retraction(project_id, sandbox_dataset_id,
                                       project_id, pid_table_id, hpo_id,
