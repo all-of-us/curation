@@ -95,9 +95,9 @@ def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
                 googleapiclient.errors.HttpError) as exp:
 
             LOGGER.error(
-                _format_failure_message(project_id=project,
-                                        statement=statement,
-                                        exception=exp))
+                format_failure_message(project_id=project,
+                                       statement=statement,
+                                       exception=exp))
             failures += 1
             continue
 
@@ -108,15 +108,15 @@ def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
             failures += 1
             raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
+        # check if the job is complete because an error has occurred
         is_errored, error_message = bq_utils.job_status_errored(query_job_id)
 
         if is_errored:
             LOGGER.error(
-                _format_failure_message(project_id=project,
-                                        statement=statement,
-                                        exception=error_message))
+                format_failure_message(project_id=project,
+                                       statement=statement,
+                                       exception=error_message))
             failures += 1
-
         else:
             if destination_table is not None:
                 updated_rows = results.get("totalRows")
@@ -135,13 +135,11 @@ def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
                        data_stage)
 
     if failures > 0:
-        print("Failed to apply {} clean rules for {}.{}".format(
-            failures, project, data_stage))
         LOGGER.warning("Failed to apply %d clean rules for %s.%s", failures,
                        project, data_stage)
 
 
-def _format_failure_message(project_id, statement, exception):
+def format_failure_message(project_id, statement, exception):
 
     query = statement.get(cdr_consts.QUERY, '')
     destination_table = statement.get(cdr_consts.DESTINATION_TABLE, None)
