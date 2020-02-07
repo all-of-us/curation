@@ -228,7 +228,6 @@ class ValidationMainTest(unittest.TestCase):
             'HTTP error: fake http error'.format(self.hpo_id))
         self.assertIn(expected_call, mock_logging_error.mock_calls)
 
-    @mock.patch('validation.main.run_export_dashboard_bucket')
     def test_extract_date_from_rdr(self):
         rdr_dataset_id = 'rdr20200201'
         bad_rdr_dataset_id = 'ehr2019-02-01'
@@ -238,6 +237,7 @@ class ValidationMainTest(unittest.TestCase):
         self.assertRaises(ValueError, main.extract_date_from_rdr_dataset_id,
                           bad_rdr_dataset_id)
 
+    @mock.patch('validation.main.run_export_dashboard_bucket')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
     @mock.patch('gcs_utils.upload_object')
@@ -361,13 +361,14 @@ class ValidationMainTest(unittest.TestCase):
         fake_hpo_id = 'fake'
         datasource_name = fake_hpo_id
         folder_prefix = fake_hpo_id + '/'
-        reports_prefix = datasource_name + '/'
+        reports_prefix = folder_prefix + datasource_name + '/'
+        datasources_json_reports_prefix = folder_prefix + 'datasources.json'
+
         main.run_export_dashboard_bucket(fake_hpo_id)
 
-        mock_run_achilles_export.assert_called_with(fake_hpo_id,
-                                                    expected_bucket_name,
-                                                    folder_prefix,
-                                                    reports_prefix)
+        mock_run_achilles_export.assert_called_with(
+            fake_hpo_id, expected_bucket_name, reports_prefix,
+            datasources_json_reports_prefix)
 
     @mock.patch('gcs_utils.copy_object')
     @mock.patch('gcs_utils.list_bucket')

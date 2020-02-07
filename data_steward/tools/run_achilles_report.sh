@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 set -ex
 
+# The 'transfer_bucket' parameter should be passed while running achilles on combined because, the achilles
+# reports for combined dataset are required for the health pro dashboards.
+
 USAGE="
 Usage: run_achilles_report.sh
   --key_file <path to key file>
   --vocab_dataset <vocab dataset>
   --dataset <Dataset ID>
   --result_bucket <Internal bucket>
+  [--data_stage <Datasetage in pipeline: default is "none">]
+  [--transfer_bucket <Achilles Dashboard transfer bucket: default is "achilles-dashboard">]
 "
 
 while true; do
@@ -27,6 +32,14 @@ while true; do
     result_bucket=$2
     shift 2
     ;;
+  --data_stage)
+    data_stage=$2
+    shift 2
+    ;;
+  --transfer_bucket)
+    transfer_bucket=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -35,12 +48,13 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${result_bucket}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${result_bucket}" ]] ||
+  [[ -z "${data_stage}" ]] || [[ -z "${transfer_bucket}" ]]; then
   echo "$USAGE"
   exit 1
 fi
 
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
 
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
@@ -51,6 +65,8 @@ echo "key_file --> ${key_file}"
 echo "dataset --> ${dataset}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "result_bucket --> ${result_bucket}"
+echo "data_stage --> ${data_stage}"
+echo "transfer_bucket --> ${transfer_bucket}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
@@ -73,13 +89,12 @@ source "${TOOLS_DIR}/set_path.sh"
 #------------------------------------------------------
 
 export BIGQUERY_DATASET_ID="${dataset}"
-export BUCKET_NAME_NYC="test-bucket"
 
 # copy vocabulary tables to the rdr dataset to run the achilles analysis.
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${dataset}
 
 # Run Achilles analysis
-python "${TOOLS_DIR}/run_achilles_and_export.py" --bucket=${result_bucket} --folder=${dataset}
+python "${TOOLS_DIR}/run_achilles_and_export.py" --bucket=${result_bucket} --folder=${dataset} --transfer_bucket=${transfer_bucket} --data_stage=${data_stage}
 
 # Deactivate venv and unset PYTHONPATH
 unset PYTHONPATH

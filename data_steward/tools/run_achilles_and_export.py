@@ -11,18 +11,27 @@ Note: Any missing CDM tables will be created and will remain empty
 """
 import argparse
 
-from gcs_utils import get_hpo_bucket
+from bq_utils import get_dataset_id
 from validation.main import _upload_achilles_files
 from validation.main import run_achilles as _run_achilles
 from validation.main import run_export as _run_export
+from validation.main import run_export_dashboard_bucket as _run_export_dashboard_bucket
 
 
 def main(args):
     folder = args.folder
+    dataset_id = get_dataset_id()
     target_bucket = args.bucket
+    achilles_transfer_bucket = args.transfer_bucket
+    data_stage = args.data_stage
     folder_prefix = folder + '/'
     _run_achilles()
-    _run_export(folder_prefix=folder_prefix, target_bucket=target_bucket)
+    _run_export(hpo_id=dataset_id,
+                folder_prefix=folder_prefix,
+                target_bucket=target_bucket)
+    if data_stage == 'combined':
+        _run_export_dashboard_bucket(hpo_id=dataset_id,
+                                     target_bucket=achilles_transfer_bucket)
     _upload_achilles_files(folder_prefix=folder_prefix,
                            target_bucket=target_bucket)
 
@@ -32,15 +41,23 @@ if __name__ == '__main__':
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         '--bucket',
-        default=get_hpo_bucket('nyc'),
-        help=
-        'Identifier for the bucket. Output tables will be prepended with {hpo_id}_.'
+        default='',
+        help='Identifier for the bucket where, achilles files will be copied to'
     )
     parser.add_argument(
         '--folder',
         default='',
-        help=
-        'Identifier for the folder in which achilles results sit. Output tables will be '
-        'prepended with {hpo_id}_.')
+        help='Identifier for the folder in which achilles results sit.',
+        required=True)
+    parser.add_argument(
+        '--transfer_bucket',
+        default='',
+        help='Achilles Transfer bucket name',
+    )
+    parser.add_argument(
+        '--data_stage',
+        default='',
+        help='Stage of the data step in the ETL',
+    )
     args = parser.parse_args()
     main(args)

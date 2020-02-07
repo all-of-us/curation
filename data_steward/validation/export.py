@@ -55,6 +55,8 @@ def export_from_path(p, hpo_id=None):
     :return: `dict` structured for report render
     """
     result = dict()
+    if hpo_id not in [item['hpo_id'] for item in resources.hpo_csv()]:
+        hpo_id = None
     for f in list_files_only(p):
         name = f[0:-4].upper()
         abs_path = os.path.join(p, f)

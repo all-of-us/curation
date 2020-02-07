@@ -4,6 +4,9 @@ set -ex
 # This script automates the curation playbook (https://docs.google.com/document/d/1QnwUhJmrVc9JNt64goeRw-K7490gbaF7DsYhTTt9tUo/edit#heading=h.k24j7tgoprtn)
 # It assuming steps 1-3 are already done via a daily cron job. This script automates 4-7.
 
+# The 'transfer_bucket' parameter should be passed while running achilles on combined because, the achilles
+# reports for combined dataset are required for the health pro dashboards.
+
 USAGE="
 Usage: run_curation_pipeline.sh
   --key_file <path to key file>
@@ -12,6 +15,7 @@ Usage: run_curation_pipeline.sh
   --rdr_dataset <RDR dataset ID>
   --result_bucket <Internal bucket name>
   --dataset_release_tag <release tag for the CDR>
+  --transfer_bucket <Achilles Dashboard transfer bucket>
 "
 
 while true; do
@@ -40,6 +44,10 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
+  --transfer_bucket)
+    transfer_bucket=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -49,7 +57,8 @@ while true; do
 done
 
 if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_dataset}" ]] ||
-  [[ -z "${rdr_dataset}" ]] || [[ -z "${result_bucket}" ]] || [[ -z "${dataset_release_tag}" ]]; then
+  [[ -z "${rdr_dataset}" ]] || [[ -z "${result_bucket}" ]] || [[ -z "${dataset_release_tag}" ]] ||
+  [[ -z "${transfer_bucket}" ]]; then
   echo "Specify the key file location, vocabulary and dataset release tag. $USAGE"
   exit 1
 fi
@@ -58,7 +67,7 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
 
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
@@ -67,6 +76,7 @@ echo "rdr_dataset --> ${rdr_dataset}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "result_bucket --> ${result_bucket}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
+echo "transfer_bucket --> ${transfer_bucket}"
 
 #---------------------------------------------------------
 # Step 1 create EHR and RDR snapshot
@@ -92,7 +102,7 @@ echo "unioned_ehr_dataset --> $unioned_ehr_dataset"
 echo "-------------------------->Run achilles on identified CDR"
 combined_dataset="${dataset_release_tag}_combined"
 combined_backup="${combined_dataset}_backup"
-export BUCKET_NAME_NYC="test-bucket"
+data_stage="combined"
 
 # Running Achilles analysis on Combined dataset
 export BIGQUERY_DATASET_ID="${combined_backup}"
@@ -100,7 +110,7 @@ export BIGQUERY_DATASET_ID="${combined_backup}"
 
 # Running Achilles analysis on combined clean datased
 export BIGQUERY_DATASET_ID="${combined_dataset}"
-"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_dataset} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset}
+"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_dataset} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset} --transfer_bucket=${transfer_bucket} --data_stage=${data_stage}
 
 #--------------------------------------------------------
 # Step 5 Run deid on cdr

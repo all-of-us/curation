@@ -61,7 +61,7 @@ def all_required_files_loaded(result_items):
     return True
 
 
-def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
+def save_datasources_json(hpo_id, folder_prefix, target_bucket=None):
     """
     Generate and save datasources.json (from curation report) in a GCS bucket
 
@@ -83,9 +83,8 @@ def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
     datasource = dict(name=hpo_id, folder=hpo_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO(json.dumps(datasources))
-    result = gcs_utils.upload_object(
-        target_bucket, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON,
-        datasources_fp)
+    result = gcs_utils.upload_object(target_bucket, folder_prefix,
+                                     datasources_fp)
     return result
 
 
@@ -116,39 +115,44 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
 
     # Run export queries and store json payloads in specified folder in the target bucket
     reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
-    results = run_achilles_export(hpo_id, target_bucket, folder_prefix,
-                                  reports_prefix)
+    datasources_json_reports_prefix = folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON
+    results = run_achilles_export(hpo_id, target_bucket, reports_prefix,
+                                  datasources_json_reports_prefix)
     return results
 
 
-def run_export_dashboard_bucket(hpo_id):
+def run_export_dashboard_bucket(hpo_id, target_bucket=None):
     """
     Uploads achilles files to a bucket for dashboards access
 
     :param hpo_id: which hpo bucket do these files go into
+    :param target_bucket: Name of the achilles metrics transfer board
     :return:
     """
     datasource_name = hpo_id
-    target_bucket = gcs_utils.get_achilles_transfer_bucket()
+    if target_bucket is None:
+        target_bucket = gcs_utils.get_achilles_transfer_bucket()
 
     logging.info(
         f'Exporting {datasource_name} report to bucket {target_bucket}')
 
     # Run export queries and store json payloads in specified folder in the target bucket
     folder_prefix = hpo_id + '/'
-    reports_prefix = datasource_name + '/'
-    results = run_achilles_export(hpo_id, target_bucket, folder_prefix,
-                                  reports_prefix)
+    reports_prefix = folder_prefix + datasource_name + '/'
+    datasources_json_reports_prefix = folder_prefix + 'datasources.json'
+    results = run_achilles_export(hpo_id, target_bucket, reports_prefix,
+                                  datasources_json_reports_prefix)
     return results
 
 
-def run_achilles_export(hpo_id, target_bucket, folder_prefix, report_prefix):
+def run_achilles_export(hpo_id, target_bucket, report_prefix,
+                        datasources_json_reports_prefix):
     """
         :param hpo_id: which hpo bucket do these files go into
         :param target_bucket: Name of the bucket where the files need to be dumped
-        :param folder_prefix: 
-        :param report_prefix: 
-        :return: 
+        :param report_prefix: path to the reports folder
+        :param datasources_json_reports_prefix: path to the datasources file
+        :return:
     """
     results = []
     for report_name in common.ALL_REPORTS:
@@ -160,9 +164,10 @@ def run_achilles_export(hpo_id, target_bucket, folder_prefix, report_prefix):
                                          report_prefix + report_name + '.json',
                                          fp)
         results.append(result)
-    result = save_datasources_json(hpo_id=hpo_id,
-                                   folder_prefix=folder_prefix,
-                                   target_bucket=target_bucket)
+    result = save_datasources_json(
+        hpo_id=hpo_id,
+        folder_prefix=datasources_json_reports_prefix,
+        target_bucket=target_bucket)
     results.append(result)
     return results
 
