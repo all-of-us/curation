@@ -825,6 +825,7 @@ def run_retraction_cron():
     project_id = bq_utils.app_identity.get_application_id()
     output_project_id = bq_utils.get_output_project_id()
     hpo_id = bq_utils.get_retraction_hpo_id()
+    retraction_type = bq_utils.get_retraction_type()
     pid_table_id = bq_utils.get_retraction_pid_table_id()
     sandbox_dataset_id = bq_utils.get_retraction_sandbox_dataset_id()
 
@@ -836,11 +837,11 @@ def run_retraction_cron():
         # retract from output dataset
         retract_data_bq.run_bq_retraction(output_project_id, sandbox_dataset_id,
                                           project_id, pid_table_id, hpo_id,
-                                          dataset_ids)
+                                          dataset_ids, retraction_type)
     # retract from default dataset
     retract_data_bq.run_bq_retraction(project_id, sandbox_dataset_id,
                                       project_id, pid_table_id, hpo_id,
-                                      dataset_ids)
+                                      dataset_ids, retraction_type)
     logging.info('Completed retraction on BQ datasets')
 
     # retract from gcs

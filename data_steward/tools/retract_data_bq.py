@@ -400,10 +400,9 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id,
     return unioned_mapping_queries, unioned_queries
 
 
-def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id,
-                                                     pid_project_id,
-                                                     sandbox_dataset_id,
-                                                     pid_table_id, deid_flag):
+def queries_to_retract_from_combined_or_deid_dataset(
+    project_id, dataset_id, pid_project_id, sandbox_dataset_id, pid_table_id,
+    retraction_type, deid_flag):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
@@ -412,12 +411,23 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id,
     :param pid_project_id: identifies the project containing the sandbox dataset
     :param sandbox_dataset_id: identifies the dataset containing the pid table
     :param pid_table_id: table containing the person_ids and research_ids
+    :param retraction_type: string indicating whether all data needs to be removed, including RDR,
+        or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :param deid_flag: flag indicating if running on a deid dataset
     :return: list of dict with keys query, dataset, table
     """
     logging.info('Checking existing tables for %s.%s' %
                  (project_id, dataset_id))
     existing_tables = list_existing_tables(project_id, dataset_id)
+
+    # retract from ehr and rdr or only ehr
+    if retraction_type == 'rdr_and_ehr':
+        constant_factor_rdr = 0
+    elif retraction_type == 'only_ehr':
+        constant_factor_rdr = common.RDR_ID_CONSTANT + common.ID_CONSTANT_FACTOR
+    else:
+        raise ValueError('%s is not a valid retraction type' % retraction_type)
+
     combined_mapping_queries = []
     combined_queries = []
     for table in TABLES_FOR_RETRACTION:
@@ -436,8 +446,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id,
                         table=table,
                         pid_table_id=pid_table_id,
                         sandbox_dataset_id=sandbox_dataset_id,
-                        CONSTANT_FACTOR=common.RDR_ID_CONSTANT +
-                        common.ID_CONSTANT_FACTOR,
+                        CONSTANT_FACTOR=constant_factor_rdr,
                         person_research_id=RESEARCH_ID
                         if deid_flag else PERSON_ID)
                 combined_mapping_queries.append(q_combined_mapping)
@@ -454,8 +463,7 @@ def queries_to_retract_from_combined_or_deid_dataset(project_id, dataset_id,
                 pid_table_id=pid_table_id,
                 table_id=get_table_id(table),
                 sandbox_dataset_id=sandbox_dataset_id,
-                CONSTANT_FACTOR=common.RDR_ID_CONSTANT +
-                common.ID_CONSTANT_FACTOR,
+                CONSTANT_FACTOR=constant_factor_rdr,
                 person_research_id=RESEARCH_ID if deid_flag else PERSON_ID)
             combined_queries.append(q_combined)
 
@@ -533,7 +541,7 @@ def is_ehr_dataset(dataset_id):
 
 
 def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
-                      pid_table_id, hpo_id, dataset_ids):
+                      pid_table_id, hpo_id, dataset_ids, retraction_type):
     """
     Main function to perform retraction
     pid table must follow schema described above in PID_TABLE_FIELDS and must reside in sandbox_dataset_id
@@ -545,6 +553,9 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
     :param pid_table_id: table containing the person_ids and research_ids
     :param hpo_id: hpo_id of the site to retract from
     :param dataset_ids: datasets to retract from. If set to 'all_datasets', retracts from all datasets
+        If set to 'none', skips retraction from BigQuery datasets
+    :param retraction_type: string indicating whether all data needs to be removed, including RDR,
+        or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :return:
     """
     # initialize list of all datasets in project
@@ -584,6 +595,10 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
         elif is_ehr_dataset(dataset):
             ehr_datasets.append(dataset)
 
+    # skip ehr datasets if hpo_id is indicated as none
+    if hpo_id == 'none':
+        ehr_datasets = []
+
     logging.info('Retracting from EHR datasets: %s' % ', '.join(ehr_datasets))
     for dataset in ehr_datasets:
         ehr_mapping_queries, ehr_queries = queries_to_retract_from_ehr_dataset(
@@ -612,6 +627,7 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
             pid_project_id,
             sandbox_dataset_id,
             pid_table_id,
+            retraction_type,
             deid_flag=False)
         retraction_query_runner(combined_mapping_queries)
         retraction_query_runner(combined_queries)
@@ -626,6 +642,7 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
             pid_project_id,
             sandbox_dataset_id,
             pid_table_id,
+            retraction_type,
             deid_flag=True)
         retraction_query_runner(deid_mapping_queries)
         retraction_query_runner(deid_queries)
@@ -682,11 +699,20 @@ if __name__ == '__main__':
         dest='dataset_ids',
         help='Identifies the datasets to retract from, separated by spaces'
         'Format: "dataset_id_1 dataset_id_2 dataset_id_3" and so on'
+        'If set to "none", skips retraction from BigQuery datasets'
         'If set to "all_datasets", retracts from all datasets in project',
+        required=True)
+    parser.add_argument(
+        '-r',
+        '--retraction_type',
+        action='store',
+        dest='retraction_type',
+        help='Identifies whether all data needs to be removed, including RDR,'
+        'or if RDR data needs to be kept intact. Can take the values "rdr_and_ehr" or "only_ehr"',
         required=True)
     args = parser.parse_args()
 
     run_bq_retraction(args.project_id, args.sandbox_dataset_id,
                       args.pid_project_id, args.pid_table_id, args.hpo_id,
-                      args.dataset_ids)
+                      args.dataset_ids, args.retraction_type)
     logging.info('Retraction complete')
