@@ -59,6 +59,8 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
     result_dict = {}
     if folder == 'all_folders':
         to_process_folder_list = folder_prefixes
+    elif folder == 'none':
+        to_process_folder_list = []
     else:
         folder_path = full_bucket_path + '/' + folder if folder[
             -1] == '/' else full_bucket_path + '/' + folder + '/'

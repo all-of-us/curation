@@ -547,18 +547,28 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
     :param dataset_ids: datasets to retract from. If set to 'all_datasets', retracts from all datasets
     :return:
     """
+    # initialize list of all datasets in project
+    dataset_objs = bq_utils.list_datasets(project_id)
+    all_dataset_ids = []
+    for dataset_obj in dataset_objs:
+        dataset = bq_utils.get_dataset_id_from_obj(dataset_obj)
+        all_dataset_ids.append(dataset)
+
     if dataset_ids == 'all_datasets':
-        dataset_objs = bq_utils.list_datasets(project_id)
+        dataset_ids = all_dataset_ids
+    elif dataset_ids == 'none':
         dataset_ids = []
-        for dataset_obj in dataset_objs:
-            dataset = bq_utils.get_dataset_id_from_obj(dataset_obj)
-            dataset_ids.append(dataset)
-        logging.info('Found datasets to retract from: %s' %
-                     ', '.join(dataset_ids))
-        # retract from latest datasets first
-        dataset_ids.sort(reverse=True)
     else:
         dataset_ids = dataset_ids.split()
+        # only consider datasets that exist in the project
+        dataset_ids = [
+            dataset_id for dataset_id in dataset_ids
+            if dataset_id in all_dataset_ids
+        ]
+
+    logging.info('Found datasets to retract from: %s' % ', '.join(dataset_ids))
+    # retract from latest datasets first
+    dataset_ids.sort(reverse=True)
 
     deid_datasets = []
     combined_datasets = []
