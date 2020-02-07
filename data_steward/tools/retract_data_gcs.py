@@ -17,10 +17,6 @@ import common
 import gcs_utils
 import resources
 
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('Data retraction from buckets logger')
-# logger.setLevel(logging.INFO)
-
 EXTRACT_PIDS_QUERY = """
 SELECT person_id
 FROM `{project_id}.{sandbox_dataset_id}.{pid_table_id}`
@@ -52,7 +48,7 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
     pids = extract_pids_from_table(project_id, sandbox_dataset_id, pid_table_id)
 
     bucket = gcs_utils.get_drc_bucket()
-    logger.info('Retracting from bucket %s' % bucket)
+    logging.info('Retracting from bucket %s' % bucket)
 
     site_bucket = gcs_utils.get_hpo_bucket(hpo_id)
     full_bucket_path = bucket + '/' + hpo_id + '/' + site_bucket
@@ -70,17 +66,17 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
         if folder_path in folder_prefixes:
             to_process_folder_list = [folder_path]
         else:
-            logger.info('Folder %s does not exist in %s. Exiting' %
-                        (folder, full_bucket_path))
+            logging.info('Folder %s does not exist in %s. Exiting' %
+                         (folder, full_bucket_path))
             return result_dict
 
-    logger.info("Retracting data from the following folders:")
-    logger.info([
+    logging.info("Retracting data from the following folders:")
+    logging.info([
         bucket + '/' + folder_prefix for folder_prefix in to_process_folder_list
     ])
 
     for folder_prefix in to_process_folder_list:
-        logger.info('Processing gs://%s/%s' % (bucket, folder_prefix))
+        logging.info('Processing gs://%s/%s' % (bucket, folder_prefix))
         # separate cdm from the unknown (unexpected) files
         bucket_items = gcs_utils.list_bucket_dir(bucket + '/' +
                                                  folder_prefix[:-1])
@@ -96,15 +92,15 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
             if item in resources.CDM_FILES or item in common.PII_FILES:
                 found_files.append(item)
 
-        logger.info('Found the following files to retract data from:')
-        logger.info([
+        logging.info('Found the following files to retract data from:')
+        logging.info([
             bucket + '/' + folder_prefix + file_name
             for file_name in found_files
         ])
 
-        logger.info("Proceed?")
+        logging.info("Proceed?")
         if force_flag:
-            logger.info(
+            logging.info(
                 "Attempting to force retract for folder %s in bucket %s" %
                 (folder_prefix, bucket))
             response = "Y"
@@ -115,11 +111,11 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
             folder_upload_output = retract(pids, bucket, found_files,
                                            folder_prefix, force_flag)
             result_dict[folder_prefix] = folder_upload_output
-            logger.info("Retraction completed for folder %s/%s " %
-                        (bucket, folder_prefix))
+            logging.info("Retraction completed for folder %s/%s " %
+                         (bucket, folder_prefix))
         elif response.lower() == "n":
-            logger.info("Skipping folder %s" % folder_prefix)
-    logger.info("Retraction from GCS complete")
+            logging.info("Skipping folder %s" % folder_prefix)
+    logging.info("Retraction from GCS complete")
     return result_dict
 
 
@@ -143,13 +139,13 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
         lines_removed = 0
         file_gcs_path = '%s/%s%s' % (bucket, folder_prefix, file_name)
         if force_flag:
-            logger.info(
+            logging.info(
                 "Attempting to force retract for person_ids %s in path %s/%s%s"
                 % (pids, bucket, folder_prefix, file_name))
             response = "Y"
         else:
             # Make sure user types Y to proceed
-            logger.info(
+            logging.info(
                 "Are you sure you want to retract rows for person_ids %s from path %s/%s%s?"
                 % (pids, bucket, folder_prefix, file_name))
             response = get_response()
@@ -163,8 +159,8 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
             input_header = input_file_lines[0]
             input_contents = input_file_lines[1:]
             retracted_file_string.write(input_header + b'\n')
-            logger.info("Checking for person_ids %s in path %s" %
-                        (pids, file_gcs_path))
+            logging.info("Checking for person_ids %s in path %s" %
+                         (pids, file_gcs_path))
 
             # Check if file has person_id in first or second column
             for input_line in input_contents:
@@ -195,17 +191,18 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
 
             # Write result back to bucket
             if lines_removed > 0:
-                logger.info("%d rows retracted from %s, overwriting..." %
-                            (lines_removed, file_gcs_path))
+                logging.info("%d rows retracted from %s, overwriting..." %
+                             (lines_removed, file_gcs_path))
                 upload_result = gcs_utils.upload_object(
                     bucket, folder_prefix + file_name, retracted_file_string)
                 result_list.append(upload_result)
-                logger.info("Retraction successful for file %s" % file_gcs_path)
+                logging.info("Retraction successful for file %s" %
+                             file_gcs_path)
             else:
-                logger.info("Not updating file %s since pids %s not found" %
-                            (file_gcs_path, pids))
+                logging.info("Not updating file %s since pids %s not found" %
+                             (file_gcs_path, pids))
         elif response.lower() == "n":
-            logger.info("Skipping file %s" % file_gcs_path)
+            logging.info("Skipping file %s" % file_gcs_path)
     return result_list
 
 
