@@ -39,7 +39,6 @@ class CleanCDRTest(unittest.TestCase):
     @mock.patch('inspect.getmodule')
     def test_add_module_info_decorator(self, mock_get_module,
                                        mock_getsourcelines, mock_signature):
-
         mock_function = mock.Mock(__name__=self.function_name)
         mock_function.return_value = [self.query_dict]
         mock_get_module.return_value = mock.Mock(__name__=self.model_name)
@@ -69,3 +68,32 @@ class CleanCDRTest(unittest.TestCase):
 
         mock_get_module.assert_called_once_with(mock_function)
         mock_getsourcelines.assert_called_once_with(mock_function)
+
+    @mock.patch('inspect.signature')
+    @mock.patch('inspect.getsourcelines')
+    @mock.patch('inspect.getmodule')
+    def test_add_module_info_decorator_raise_exception(self, mock_get_module,
+                                                       mock_getsourcelines,
+                                                       mock_signature):
+        mock_function = mock.Mock(__name__=self.function_name)
+        mock_get_module.return_value = mock.Mock(__name__=self.model_name)
+        mock_getsourcelines.return_value = (dict(), self.line_no)
+
+        mock_project_id_parameter = mock.Mock(name=clean_cdr.PROJECT_ID)
+        type(mock_project_id_parameter).name = mock.PropertyMock(
+            return_value='parameter1')
+
+        mock_dataset_id_parameter = mock.Mock(name=clean_cdr.DATASET_ID)
+        type(mock_dataset_id_parameter).name = mock.PropertyMock(
+            return_value='parameter1')
+
+        type(mock_signature.return_value).parameters = mock.PropertyMock(
+            return_value={
+                clean_cdr.PROJECT_ID: mock_project_id_parameter,
+                clean_cdr.DATASET_ID: mock_dataset_id_parameter
+            })
+
+        with self.assertRaises(clean_cdr.CleanCdrIllegalArgumentError):
+            clean_cdr.add_module_info_decorator(mock_function, self.project_id,
+                                                self.dataset_id,
+                                                self.sandbox_dataset_id)

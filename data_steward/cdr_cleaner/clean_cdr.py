@@ -56,6 +56,10 @@ DATASET_ID = 'dataset_id'
 SANDBOX_DATASET_ID = 'sandbox_dataset_id'
 
 
+class CleanCdrIllegalArgumentError(ValueError):
+    pass
+
+
 def add_module_info_decorator(query_function,
                               project_id,
                               dataset_id,
@@ -72,6 +76,9 @@ def add_module_info_decorator(query_function,
     function_name = query_function.__name__
     module_name = inspect.getmodule(query_function).__name__
     _, line_no = inspect.getsourcelines(query_function)
+    function_parameter_names = [
+        p.name for p in inspect.signature(query_function).parameters.values()
+    ]
 
     module_info_dict = {
         cdr_consts.MODULE_NAME: module_name,
@@ -87,9 +94,17 @@ def add_module_info_decorator(query_function,
     }
 
     filtered_argument_list = {
-        k: v for k, v in argument_list.items() if k in
-        [p.name for p in inspect.signature(query_function).parameters.values()]
+        k: v for k, v in argument_list.items() if k in function_parameter_names
     }
+
+    # Check if the mandatory arguments are present
+    if len(filtered_argument_list) != len(function_parameter_names):
+        raise CleanCdrIllegalArgumentError(
+            'Arguments {function_parameter_names} need to be provided for the function {'
+            'module_name}.{function_name}'.format(
+                function_parameter_names=function_parameter_names,
+                function_name=function_name,
+                module_name=module_name))
 
     # Expand the query dictionary with the module_info_dict
     return [
