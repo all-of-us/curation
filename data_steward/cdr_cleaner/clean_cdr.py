@@ -279,29 +279,41 @@ def _gather_unioned_ehr_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     query_list = []
     query_list.extend(
-        id_dedup.get_id_deduplicate_queries(project_id, dataset_id))
+        add_module_info_decorator(id_dedup.get_id_deduplicate_queries,
+                                  project_id, dataset_id))
     query_list.extend(
-        clean_years.get_year_of_birth_queries(project_id, dataset_id))
-    query_list.extend(neg_ages.get_negative_ages_queries(
-        project_id, dataset_id))
+        add_module_info_decorator(clean_years.get_year_of_birth_queries,
+                                  project_id, dataset_id))
     query_list.extend(
-        bad_end_dates.get_bad_end_date_queries(project_id, dataset_id))
+        add_module_info_decorator(neg_ages.get_negative_ages_queries,
+                                  project_id, dataset_id))
     query_list.extend(
-        valid_death_dates.get_valid_death_date_queries(project_id, dataset_id))
+        add_module_info_decorator(bad_end_dates.get_bad_end_date_queries,
+                                  project_id, dataset_id))
     query_list.extend(
-        drug_refills_supply.get_days_supply_refills_queries(
+        add_module_info_decorator(
+            valid_death_dates.get_valid_death_date_queries, project_id,
+            dataset_id))
+    query_list.extend(
+        add_module_info_decorator(
+            drug_refills_supply.get_days_supply_refills_queries, project_id,
+            dataset_id))
+    query_list.extend(
+        add_module_info_decorator(populate_routes.get_route_mapping_queries,
+                                  project_id, dataset_id))
+    query_list.extend(
+        add_module_info_decorator(
+            fix_datetimes.get_fix_incorrect_datetime_to_date_queries,
             project_id, dataset_id))
     query_list.extend(
-        populate_routes.get_route_mapping_queries(project_id, dataset_id))
+        add_module_info_decorator(
+            remove_records_with_wrong_date.
+            get_remove_records_with_wrong_date_queries, project_id, dataset_id))
     query_list.extend(
-        fix_datetimes.get_fix_incorrect_datetime_to_date_queries(
-            project_id, dataset_id))
-    query_list.extend(
-        remove_records_with_wrong_date.
-        get_remove_records_with_wrong_date_queries(project_id, dataset_id))
-    query_list.extend(
-        invalid_procedure_source.get_remove_invalid_procedure_source_queries(
-            project_id, dataset_id))
+        add_module_info_decorator(
+            invalid_procedure_source.
+            get_remove_invalid_procedure_source_queries, project_id,
+            dataset_id))
     return query_list
 
 
