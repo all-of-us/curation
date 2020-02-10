@@ -23,14 +23,17 @@ import yaml
 from google.datalab import storage
 from notebooks import parameters
 
-with open ('env.yaml') as f:
+with open('env.yaml') as f:
     app_env = yaml.safe_load(f)
 
 OUTPUT_DIR = 'output'
 KEY_PREFIX = 'BUCKET_NAME_'
 DRC_BUCKET_NAME = parameters.DRC_BUCKET_NAME
 
-bucket_keys = [key for key in app_env.keys() if key.startswith(KEY_PREFIX) and not app_env[key].startswith('test') and not app_env[key] == DRC_BUCKET_NAME]
+bucket_keys = [
+    key for key in app_env.keys() if key.startswith(KEY_PREFIX) and
+    not app_env[key].startswith('test') and not app_env[key] == DRC_BUCKET_NAME
+]
 
 hpo_buckets = dict()
 for bucket_key in bucket_keys:
@@ -40,11 +43,13 @@ for bucket_key in bucket_keys:
 
 drc_bucket = storage.Bucket(name=DRC_BUCKET_NAME)
 
+
 # +
 def hpo_ls(hpo_id, bucket):
     prefix = '%s/%s/' % (hpo_id, bucket)
     objs = list(drc_bucket.objects(prefix))
     return objs
+
 
 def scan_obj(obj):
     comps = obj.key.split('/')
@@ -61,6 +66,7 @@ def scan_obj(obj):
         with open(local_file_path, 'w') as local_fp:
             local_fp.write(obj.download())
 
+
 def download_output(hpo_id, bucket):
     """
     Download all archived pipeline output for an hpo and save it locally.
@@ -70,10 +76,12 @@ def download_output(hpo_id, bucket):
     objs = hpo_ls(hpo_id, bucket)
     for obj in objs:
         scan_obj(obj)
+
+
 # -
 
 for hpo_id, bucket in hpo_buckets.items():
-    print 'Processing %s...' % hpo_id
+    print('Processing %s...' % hpo_id)
     download_output(hpo_id, bucket)
 
 # +
