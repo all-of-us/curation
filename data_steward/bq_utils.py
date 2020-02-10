@@ -315,12 +315,24 @@ def table_exists(table_id, dataset_id=None):
 
 
 def job_status_done(job_id):
+    """
+    Check if the job is complete
+    
+    :param job_id: the job id
+    :return: a bool indicating whether the job is done
+    """
     job_details = get_job_details(job_id)
     job_running_status = job_details['status']['state']
     return job_running_status == 'DONE'
 
 
 def job_status_errored(job_id):
+    """
+    Check if the job is complete with an error
+    
+    :param job_id: the job id
+    :return: a tuple that contains a bool indicating whether the job is errored and its corresponding error message
+    """
     job_details = get_job_details(job_id)
     job_status = job_details['status']
     job_running_state = job_status['state']
