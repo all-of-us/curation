@@ -14,14 +14,14 @@
 
 import warnings
 from notebooks import parameters
-import google.datalab.bigquery as bq
+import notebooks.bq as bq
 warnings.filterwarnings('ignore')
 dataset = parameters.EHR_DATASET_ID
 
 
 def get_hpo_ids():
     query = "SELECT distinct hpo_id FROM lookup_tables.hpo_site_id_mappings where hpo_id<>''"
-    df = bq.Query(query).execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
+    df = bq.query(query)
     return df['hpo_id']
 
 
@@ -52,7 +52,7 @@ def get_hpo_table_columns(hpo_id):
                   table_id like '%care_site' OR
                   table_id like '%note'
                   )""".format(hpo_id=hpo_id, dataset=dataset)
-    df = bq.Query(query).execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
+    df = bq.query(query)
     return df
 
 
@@ -79,21 +79,23 @@ def create_hpo_completeness_query(table_columns, hpo_id):
     """
     queries = []
     for i, row in table_columns.iterrows():
-        if row['column_name']=='_PARTITIONTIME':
+        if row['column_name'] == '_PARTITIONTIME':
             continue
 
         if row['column_name'].endswith('concept_id'):
-            x = query_with_concept_id.format(table_name=row['table_name'],
-                                             column_name=row['column_name'],
-                                             hpo_id=hpo_id.lower(),
-                                             table_row_count=row['table_row_count'],
-                                             dataset=dataset)
+            x = query_with_concept_id.format(
+                table_name=row['table_name'],
+                column_name=row['column_name'],
+                hpo_id=hpo_id.lower(),
+                table_row_count=row['table_row_count'],
+                dataset=dataset)
         else:
-            x = query_without_concept_id.format(table_name=row['table_name'],
-                                                column_name=row['column_name'],
-                                                hpo_id=hpo_id.lower(),
-                                                table_row_count=row['table_row_count'],
-                                                dataset=dataset)
+            x = query_without_concept_id.format(
+                table_name=row['table_name'],
+                column_name=row['column_name'],
+                hpo_id=hpo_id.lower(),
+                table_row_count=row['table_row_count'],
+                dataset=dataset)
         queries.append(x)
 
     return " union all ".join(queries)
@@ -106,10 +108,13 @@ for i, hpo_id in hpo_ids.items():
     table_columns = get_hpo_table_columns(hpo_id)
     query = create_hpo_completeness_query(table_columns, hpo_id)
     try:
-        df = bq.Query(query).execute(output_options=bq.QueryOutput.dataframe(use_cache=False)).result()
-        df.to_csv("{hpo_id}_omop_tables_coverage.csv".format(hpo_id=hpo_id), sep=',', encoding='utf-8')
+        df = bq.query(query)
+        df.to_csv("{hpo_id}_omop_tables_coverage.csv".format(hpo_id=hpo_id),
+                  sep=',',
+                  encoding='utf-8')
     except:
         print("hpo-->{hpo_id}".format(hpo_id=hpo_id))
         print("query-->{q}".format(q=query))
-        print("table_columns-->{table_columns}".format(table_columns=table_columns))
+        print("table_columns-->{table_columns}".format(
+            table_columns=table_columns))
         break
