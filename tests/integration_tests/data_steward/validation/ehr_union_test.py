@@ -81,12 +81,10 @@ class EhrUnionTest(unittest.TestCase):
         Load five persons data for each test hpo
         # expected_tables is for testing output
         # it maps table name to list of expected records ex: "unioned_ehr_visit_occurrence" -> [{}, {}, ...]
-        :param pto: Flag indicating whether load is for person_to_observation tests
         """
         expected_tables = dict()
         running_jobs = []
-        cdm_tables = resources.CDM_TABLES
-        for cdm_table in cdm_tables:
+        for cdm_table in resources.CDM_TABLES:
             output_table = ehr_union.output_table_for(cdm_table)
             expected_tables[output_table] = []
             for hpo_id in self.hpo_ids:
@@ -456,7 +454,6 @@ class EhrUnionTest(unittest.TestCase):
         obs_rows = bq_utils.response2rows(obs_response)
         actual = obs_rows
 
-        self.assertEqual(len(expected), len(actual))
         self.assertCountEqual(expected, actual)
 
     @mock.patch('resources.CDM_TABLES', [

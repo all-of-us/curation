@@ -130,11 +130,8 @@ class ValidationMainTest(unittest.TestCase):
                                      self.folder_prefix)
         self.assertCountEqual(expected_warnings, r['warnings'])
 
-    @mock.patch('validation.main.all_required_files_loaded')
     @mock.patch('api_util.check_cron')
-    def test_validate_five_persons_success(self, mock_check_cron,
-                                           mock_required_files_loaded):
-        mock_required_files_loaded.return_value = False
+    def test_validate_five_persons_success(self, mock_check_cron):
         expected_results = []
         test_file_names = [
             os.path.basename(f) for f in test_util.FIVE_PERSONS_FILES
