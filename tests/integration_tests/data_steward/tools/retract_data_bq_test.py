@@ -39,6 +39,7 @@ class RetractDataBqTest(unittest.TestCase):
         self.pid_table_id = 'pid_table'
         self.bq_dataset_id = bq_utils.get_unioned_dataset_id()
         self.dataset_ids = 'all_datasets'
+        self.retraction_type = 'only_ehr'
         self.person_research_ids = [(1, 6890173), (2, 858761),
                                     (1234567, 4589763)]
 
@@ -121,7 +122,8 @@ class RetractDataBqTest(unittest.TestCase):
                                           self.bq_dataset_id,
                                           self.test_project_id,
                                           self.pid_table_id, self.hpo_id,
-                                          self.dataset_ids)
+                                          self.dataset_ids,
+                                          self.retraction_type)
 
         # find actual deleted rows
         q_result = bq_utils.query(q)
