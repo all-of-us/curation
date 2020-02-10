@@ -1,6 +1,7 @@
 import os
 import unittest
 import mock
+import logging
 
 import app_identity
 
@@ -10,7 +11,7 @@ from tests import test_util
 from tools import retract_data_bq
 from io import open
 
-TABLE_ROWS_QUERY = ('SELECT * ' 'FROM {dataset_id}.__TABLES__ ')
+TABLE_ROWS_QUERY = 'SELECT * FROM {dataset_id}.__TABLES__ '
 
 EXPECTED_ROWS_QUERY = ('SELECT * '
                        'FROM {dataset_id}.{table_id} '
@@ -84,22 +85,22 @@ class RetractDataBqTest(unittest.TestCase):
                 dataset_id=self.bq_dataset_id,
                 table_id=hpo_table,
                 pid_table_id=self.pid_table_id)
-            retract_data_bq.logger.info('Preparing to load table %s.%s' %
-                                        (self.bq_dataset_id, hpo_table))
+            logging.info('Preparing to load table %s.%s' %
+                         (self.bq_dataset_id, hpo_table))
             with open(cdm_file, 'rb') as f:
                 gcs_utils.upload_object(gcs_utils.get_hpo_bucket(self.hpo_id),
                                         cdm_file_name, f)
             result = bq_utils.load_cdm_csv(self.hpo_id,
                                            cdm_table,
                                            dataset_id=self.bq_dataset_id)
-            retract_data_bq.logger.info('Loading table %s.%s' %
-                                        (self.bq_dataset_id, hpo_table))
+            logging.info('Loading table %s.%s' %
+                         (self.bq_dataset_id, hpo_table))
             job_id = result['jobReference']['jobId']
             job_ids.append(job_id)
         incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
         self.assertEqual(len(incomplete_jobs), 0,
                          'NYC five person load job did not complete')
-        retract_data_bq.logger.info('All tables loaded successfully')
+        logging.info('All tables loaded successfully')
 
         # use query results to count number of expected row deletions
         expected_row_count = {}
