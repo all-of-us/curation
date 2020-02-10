@@ -40,7 +40,7 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
     :param pid_table_id: table containing the person_ids whose data needs to be retracted
     :param hpo_id: hpo_id of the site to run retraction on
     :param folder: the site's submission folder; if set to 'all_folders', retract from all folders by the site
-        if set to none, skip retraction from bucket folders
+        if set to 'none', skip retraction from bucket folders
     :param force_flag: if False then prompt for each file
     :return: metadata for each object updated in order to retract as a list of lists
     """
@@ -52,6 +52,7 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
     logging.info('Retracting from bucket %s' % bucket)
 
     if hpo_id == 'none':
+        logging.info('"RETRACTION_HPO_ID" set to "none", skipping retraction')
         full_bucket_path = ''
         folder_prefixes = []
     else:
@@ -65,6 +66,8 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
     if folder == 'all_folders':
         to_process_folder_list = folder_prefixes
     elif folder == 'none':
+        logging.info(
+            '"RETRACTION_SUBMISSION_FOLDER" set to "none", skipping retraction')
         to_process_folder_list = []
     else:
         folder_path = full_bucket_path + '/' + folder if folder[
@@ -284,8 +287,8 @@ if __name__ == '__main__':
         action='store',
         dest='folder_name',
         help='Name of the folder to retract from'
-        'If set to none, skips retraction'
-        'If retracting from all folders by the site, set to "all_folders"',
+        'If set to "none", skips retraction'
+        'If set to "all_folders", retracts from all folders by the site',
         required=True)
     parser.add_argument(
         '-f',

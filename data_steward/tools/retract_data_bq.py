@@ -422,8 +422,11 @@ def queries_to_retract_from_combined_or_deid_dataset(
 
     # retract from ehr and rdr or only ehr
     if retraction_type == 'rdr_and_ehr':
+        logging.info('Retracting from RDR and EHR data for %s' % dataset_id)
         constant_factor_rdr = 0
     elif retraction_type == 'only_ehr':
+        logging.info('Retracting from EHR data while retaining RDR for %s' %
+                     dataset_id)
         constant_factor_rdr = common.RDR_ID_CONSTANT + common.ID_CONSTANT_FACTOR
     else:
         raise ValueError('%s is not a valid retraction type' % retraction_type)
@@ -597,6 +600,9 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
 
     # skip ehr datasets if hpo_id is indicated as none
     if hpo_id == 'none':
+        logging.info(
+            '"RETRACTION_HPO_ID" set to "none", skipping retraction from EHR datasets'
+        )
         ehr_datasets = []
 
     logging.info('Retracting from EHR datasets: %s' % ', '.join(ehr_datasets))
