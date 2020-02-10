@@ -12,6 +12,7 @@ import mock
 from bs4 import BeautifulSoup as bs
 
 import bq_utils
+import app_identity
 import common
 from constants import bq_utils as bq_consts
 from constants.validation import main as main_consts
@@ -32,6 +33,8 @@ class ValidationMainTest(unittest.TestCase):
     def setUp(self):
         self.hpo_id = test_util.FAKE_HPO_ID
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
+        self.project_id = app_identity.get_application_id()
+        self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
 
         self.mock_get_hpo_name = mock_get_hpo_name.start()
@@ -251,28 +254,46 @@ class ValidationMainTest(unittest.TestCase):
                                      self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
-    @mock.patch('validation.main.is_valid_rdr')
+    @mock.patch('validation.main.all_required_files_loaded')
+    @mock.patch('validation.main.extract_date_from_rdr_dataset_id')
     @mock.patch('api_util.check_cron')
-    def test_html_report_five_person(self, mock_check_cron, mock_valid_rdr):
-        # Not sure this test is still relevant (see hpo_report module and tests)
-        # TODO refactor or remove this test
-        folder_prefix = '2019-01-01/'
-        mock_valid_rdr.return_value = True
+    def test_html_report_five_person(self, mock_check_cron, mock_rdr_date,
+                                     mock_required_files_loaded):
+        mock_required_files_loaded.return_value = False
+        rdr_date = '2020-01-01'
+        mock_rdr_date.return_value = rdr_date
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket,
                                        cdm_file,
-                                       prefix=folder_prefix)
+                                       prefix=self.folder_prefix)
+        # load person table in RDR
+        bq_utils.load_table_from_csv(self.project_id, self.rdr_dataset_id,
+                                     common.PERSON,
+                                     test_util.FIVE_PERSONS_PERSON_CSV)
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
             actual_result = test_util.read_cloud_file(
-                self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
+                self.hpo_bucket, self.folder_prefix + common.RESULTS_HTML)
 
         # parse html
         soup = bs(actual_result, parser="lxml", features="lxml")
-        h2_tags = soup.find_all('h2')
-        h2_tag_texts = [tag.text for tag in h2_tags]
-        self.assertIn('Missing Participant Records', h2_tag_texts)
+        missing_pii_html_table = soup.find('table', id='missing_pii')
+        table_headers = missing_pii_html_table.find_all('th')
+        self.assertEqual('Missing Participant Record Type',
+                         table_headers[0].get_text())
+        self.assertEqual('Count', table_headers[1].get_text())
+
+        table_rows = missing_pii_html_table.find_next('tbody').find_all('tr')
+        missing_record_types = [
+            table_row.find('td').text for table_row in table_rows
+        ]
+        self.assertIn(main_consts.EHR_NO_PII, missing_record_types)
+        self.assertIn(main_consts.PII_NO_EHR, missing_record_types)
+        self.assertIn(main_consts.EHR_NO_RDR.format(date=rdr_date),
+                      missing_record_types)
+        self.assertIn(main_consts.EHR_NO_PARTICIPANT_MATCH,
+                      missing_record_types)
 
     def tearDown(self):
         self._empty_bucket()
