@@ -19,7 +19,7 @@
 
 from google.cloud import bigquery
 
-client=bigquery.Client()
+client = bigquery.Client()
 
 # %load_ext google.cloud.bigquery
 
@@ -31,8 +31,9 @@ print('Setting everything up...')
 #######################################
 
 import warnings
+
 warnings.filterwarnings('ignore')
-import pandas_gbq 
+import pandas_gbq
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -47,8 +48,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 # %matplotlib inline
 
-
-
 import os
 import sys
 from datetime import datetime
@@ -58,7 +57,7 @@ from datetime import timedelta
 import time
 
 DATASET = ''
- 
+
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
@@ -66,21 +65,53 @@ pd.options.display.max_colwidth = 999
 
 from IPython.display import HTML as html_print
 
+
 def cstr(s, color='black'):
     return "<text style=color:{}>{}</text>".format(color, s)
 
 
 print('done.')
 
-
 # +
-dic={'src_hpo_id':["saou_uab_selma","saou_uab_hunt","saou_tul","pitt_temple","saou_lsu","trans_am_meyers","trans_am_essentia","saou_ummc","seec_miami","seec_morehouse","seec_emory","uamc_banner","pitt","nyc_cu","ipmc_uic","trans_am_spectrum","tach_hfhs","nec_bmc","cpmc_uci","nec_phs","nyc_cornell","ipmc_nu","nyc_hh","ipmc_uchicago","aouw_mcri","syhc","cpmc_ceders","seec_ufl","saou_uab","trans_am_baylor","cpmc_ucsd","ecchc","chci","aouw_uwh","cpmc_usc","hrhc","ipmc_northshore","chs","cpmc_ucsf","jhchc","aouw_mcw","cpmc_ucd","ipmc_rush"],
-    'HPO':["UAB Selma","UAB Huntsville","Tulane University","Temple University","Louisiana State University","Reliant Medical Group (Meyers Primary Care)","Essentia Health Superior Clinic","University of Mississippi","SouthEast Enrollment Center Miami","SouthEast Enrollment Center Morehouse","SouthEast Enrollment Center Emory","Banner Health","University of Pittsburgh","Columbia University Medical Center","University of Illinois Chicago","Spectrum Health","Henry Ford Health System","Boston Medical Center","UC Irvine","Partners HealthCare","Weill Cornell Medical Center","Northwestern Memorial Hospital","Harlem Hospital","University of Chicago","Marshfield Clinic","San Ysidro Health Center","Cedars-Sinai","University of Florida","University of Alabama at Birmingham","Baylor","UC San Diego","Eau Claire Cooperative Health Center","Community Health Center, Inc.","UW Health (University of Wisconsin Madison)","University of Southern California","HRHCare","NorthShore University Health System","Cherokee Health Systems","UC San Francisco","Jackson-Hinds CHC","Medical College of Wisconsin","UC Davis","Rush University"]}
+dic = {
+    'src_hpo_id': [
+        "saou_uab_selma", "saou_uab_hunt", "saou_tul", "pitt_temple",
+        "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc",
+        "seec_miami", "seec_morehouse", "seec_emory", "uamc_banner", "pitt",
+        "nyc_cu", "ipmc_uic", "trans_am_spectrum", "tach_hfhs", "nec_bmc",
+        "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
+        "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl",
+        "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh",
+        "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc",
+        "aouw_mcw", "cpmc_ucd", "ipmc_rush"
+    ],
+    'HPO': [
+        "UAB Selma", "UAB Huntsville", "Tulane University", "Temple University",
+        "Louisiana State University",
+        "Reliant Medical Group (Meyers Primary Care)",
+        "Essentia Health Superior Clinic", "University of Mississippi",
+        "SouthEast Enrollment Center Miami",
+        "SouthEast Enrollment Center Morehouse",
+        "SouthEast Enrollment Center Emory", "Banner Health",
+        "University of Pittsburgh", "Columbia University Medical Center",
+        "University of Illinois Chicago", "Spectrum Health",
+        "Henry Ford Health System", "Boston Medical Center", "UC Irvine",
+        "Partners HealthCare", "Weill Cornell Medical Center",
+        "Northwestern Memorial Hospital", "Harlem Hospital",
+        "University of Chicago", "Marshfield Clinic",
+        "San Ysidro Health Center", "Cedars-Sinai", "University of Florida",
+        "University of Alabama at Birmingham", "Baylor", "UC San Diego",
+        "Eau Claire Cooperative Health Center", "Community Health Center, Inc.",
+        "UW Health (University of Wisconsin Madison)",
+        "University of Southern California", "HRHCare",
+        "NorthShore University Health System", "Cherokee Health Systems",
+        "UC San Francisco", "Jackson-Hinds CHC", "Medical College of Wisconsin",
+        "UC Davis", "Rush University"
+    ]
+}
 
-
-site_df=pd.DataFrame(data=dic)
+site_df = pd.DataFrame(data=dic)
 site_df
-
 
 # +
 ######################################
@@ -176,24 +207,25 @@ site_map = pd.io.gbq.read_gbq('''
     FROM
          `{}._mapping_visit_occurrence`   
     )     
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET, DATASET,DATASET,DATASET,DATASET,DATASET
-              , DATASET,DATASET,DATASET,DATASET,DATASET, DATASET,DATASET,DATASET,DATASET,DATASET, DATASET
-               ,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                              dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
 
-site_df=pd.merge(site_map,site_df,how='outer',on='src_hpo_id')
+site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
 
 site_df
-
-
 
 # # Foreign key references (i.e. visit_occurrence_id in the condition table) should be valid.
 
 # ## Person
 
-print(("There is no _mapping table for person table so I could not separete results by sites "))
+print((
+    "There is no _mapping table for person table so I could not separete results by sites "
+))
 
 # ### gender_concept_id
 
@@ -215,18 +247,18 @@ foreign_key_df = pd.io.gbq.read_gbq('''
             p.gender_concept_id=c.concept_id
     GROUP BY
         1,2
-    '''.format(DATASET, DATASET,DATASET,DATASET, DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
 foreign_key_df
 
-foreign_key_df.loc[foreign_key_df["gender_concept_id"]==0,["cnt"]]
+foreign_key_df.loc[foreign_key_df["gender_concept_id"] == 0, ["cnt"]]
 
 # +
-#success_rate=100-round(100*(foreign_key_df.loc[foreign_key_df["gender_concept_id"]==0,["cnt"]])/sum(foreign_key_df.iloc[:,2]),1)
-#print("success rate for gender_concept_id is: ", success_rate.iloc[0,0]) 
+# success_rate=100-round(100*(foreign_key_df.loc[foreign_key_df["gender_concept_id"]==0,["cnt"]])/sum(foreign_key_df.iloc[:,2]),1)
+# print("success rate for gender_concept_id is: ", success_rate.iloc[0,0])
 # -
 
 foreign_key_df
@@ -251,8 +283,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
             p.race_concept_id=c.concept_id
     GROUP BY
         1,2
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -261,8 +293,8 @@ print(foreign_key_df.shape[0], 'records received.')
 foreign_key_df
 
 # +
-#success_rate=100-round(100*(foreign_key_df.loc[foreign_key_df["race_concept_id"]==0,["cnt"]])/sum(foreign_key_df.iloc[:,2]),1)
-#print("success rate for race_concept_id is: ", success_rate.iloc[0,0]) 
+# success_rate=100-round(100*(foreign_key_df.loc[foreign_key_df["race_concept_id"]==0,["cnt"]])/sum(foreign_key_df.iloc[:,2]),1)
+# print("success rate for race_concept_id is: ", success_rate.iloc[0,0])
 # -
 
 # ### ethnicity_concept_id
@@ -285,8 +317,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
             p.ethnicity_concept_id=c.concept_id
     GROUP BY
         1,2
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -295,8 +327,8 @@ print(foreign_key_df.shape[0], 'records received.')
 foreign_key_df
 
 # +
-#success_rate=100-round(100*(foreign_key_df.loc[foreign_key_df["ethnicity_concept_id"]==0,["cnt"]])/sum(foreign_key_df.iloc[:,2]),1)
-#print("success rate for ethnicity_concept_id is: ", round(success_rate.iloc[0,0],1)) 
+# success_rate=100-round(100*(foreign_key_df.loc[foreign_key_df["ethnicity_concept_id"]==0,["cnt"]])/sum(foreign_key_df.iloc[:,2]),1)
+# print("success rate for ethnicity_concept_id is: ", round(success_rate.iloc[0,0],1))
 # -
 
 # ### location_id
@@ -314,8 +346,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
        `{}.unioned_ehr_person` AS p
     GROUP BY
         1
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -325,7 +357,7 @@ foreign_key_df.head()
 
 # +
 
-print("location_id is NULL ") 
+print("location_id is NULL ")
 # -
 
 # ### provider_id
@@ -343,8 +375,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
        `{}.unioned_ehr_person` AS p
     GROUP BY
         1
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -354,7 +386,7 @@ foreign_key_df.head()
 
 # +
 
-print("provider_id is NULL ") 
+print("provider_id is NULL ")
 # -
 
 # ### care_site_id
@@ -372,8 +404,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
        `{}.unioned_ehr_person` AS p
     GROUP BY
         1
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -383,7 +415,7 @@ foreign_key_df.head()
 
 # +
 
-print("care_site_id is NULL ") 
+print("care_site_id is NULL ")
 # -
 
 # ### gender_source_concept_id
@@ -401,8 +433,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
        `{}.unioned_ehr_person` AS p
     GROUP BY
         1
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -412,7 +444,7 @@ foreign_key_df
 
 # +
 
-print("gender_source_concept_id is NULL ") 
+print("gender_source_concept_id is NULL ")
 # -
 
 # ### race_source_concept_id
@@ -435,8 +467,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
             p.race_source_concept_id=c.concept_id
     GROUP BY
         1,2
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -446,7 +478,7 @@ foreign_key_df
 
 # +
 
-print("race_source_concept_id is NULL ") 
+print("race_source_concept_id is NULL ")
 # -
 
 # ### ethnicity_source_concept_id
@@ -464,8 +496,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
        `{}.unioned_ehr_person` AS p
     GROUP BY
         1
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -475,7 +507,7 @@ foreign_key_df
 
 # +
 
-print("ethnicity_source_concept_id is NULL ") 
+print("ethnicity_source_concept_id is NULL ")
 # -
 
 # ## VISIT_OCCURANCE TABLE
@@ -499,8 +531,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
             vo.person_id=o.person_id
     WHERE 
         o.observation_source_concept_id=1586099 and o.value_as_concept_id=45877994
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -530,8 +562,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         1,2
     ORDER BY
         2
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -605,8 +637,9 @@ visit_occurrence_visit_concept_id_df = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                          dialect='standard')
 visit_occurrence_visit_concept_id_df.shape
 
 print(visit_occurrence_visit_concept_id_df.shape[0], 'records received.')
@@ -614,9 +647,13 @@ print(visit_occurrence_visit_concept_id_df.shape[0], 'records received.')
 
 visit_occurrence_visit_concept_id_df
 
-visit_occurrence_visit_concept_id_df=visit_occurrence_visit_concept_id_df.rename(columns={"success_rate":"visit_occurrence_visit_concept_id"})
-visit_occurrence_visit_concept_id_df=visit_occurrence_visit_concept_id_df[["src_hpo_id","visit_occurrence_visit_concept_id"]]
-visit_occurrence_visit_concept_id_df=visit_occurrence_visit_concept_id_df.fillna(100)
+visit_occurrence_visit_concept_id_df = visit_occurrence_visit_concept_id_df.rename(
+    columns={"success_rate": "visit_occurrence_visit_concept_id"})
+visit_occurrence_visit_concept_id_df = visit_occurrence_visit_concept_id_df[[
+    "src_hpo_id", "visit_occurrence_visit_concept_id"
+]]
+visit_occurrence_visit_concept_id_df = visit_occurrence_visit_concept_id_df.fillna(
+    100)
 visit_occurrence_visit_concept_id_df
 
 # ### visit_type_concept_id
@@ -639,8 +676,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
             vo.visit_type_concept_id=c.concept_id
     GROUP BY
         1,2
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -648,8 +685,10 @@ print(foreign_key_df.shape[0], 'records received.')
 
 foreign_key_df
 
-success_rate=100-round(100*(foreign_key_df.loc[foreign_key_df["visit_type_concept_id"]==0,["f0_"]])/sum(foreign_key_df.iloc[:,2]),1)
-print("success rate for visit_concept_id is: ", success_rate.iloc[0,0]) 
+success_rate = 100 - round(
+    100 * (foreign_key_df.loc[foreign_key_df["visit_type_concept_id"] == 0,
+                              ["f0_"]]) / sum(foreign_key_df.iloc[:, 2]), 1)
+print("success rate for visit_concept_id is: ", success_rate.iloc[0, 0])
 
 # #### visit_type_concept_id BY SITE
 
@@ -717,8 +756,9 @@ visit_occurrence_visit_type_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                            dialect='standard')
 visit_occurrence_visit_type_concept_id.shape
 
 print(visit_occurrence_visit_type_concept_id.shape[0], 'records received.')
@@ -726,9 +766,12 @@ print(visit_occurrence_visit_type_concept_id.shape[0], 'records received.')
 
 visit_occurrence_visit_type_concept_id
 
-visit_occurrence_visit_type_concept_id=visit_occurrence_visit_type_concept_id.rename(columns={"success_rate":"visit_occurrence_visit_type_concept_id"})
-visit_occurrence_visit_type_concept_id=visit_occurrence_visit_type_concept_id[["src_hpo_id","visit_occurrence_visit_type_concept_id"]]
-visit_occurrence_visit_type_concept_id=visit_occurrence_visit_type_concept_id.fillna(100)
+visit_occurrence_visit_type_concept_id = visit_occurrence_visit_type_concept_id.rename(
+    columns={"success_rate": "visit_occurrence_visit_type_concept_id"})
+visit_occurrence_visit_type_concept_id = visit_occurrence_visit_type_concept_id[
+    ["src_hpo_id", "visit_occurrence_visit_type_concept_id"]]
+visit_occurrence_visit_type_concept_id = visit_occurrence_visit_type_concept_id.fillna(
+    100)
 visit_occurrence_visit_type_concept_id
 
 # ### provider_id
@@ -748,8 +791,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         1
     ORDER BY
         2    
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -757,10 +800,15 @@ print(foreign_key_df.shape[0], 'records received.')
 
 foreign_key_df.tail(10)
 
-100-round(100*(foreign_key_df.loc[foreign_key_df["provider_id"].isnull(),["cnt"]].iloc[0,0]
-+foreign_key_df.loc[(foreign_key_df["provider_id"]==0),["cnt"]].iloc[0,0])/sum(foreign_key_df.iloc[:,1]),1)
+100 - round(
+    100 *
+    (foreign_key_df.loc[foreign_key_df["provider_id"].isnull(), ["cnt"]].iloc[
+        0, 0] + foreign_key_df.loc[
+            (foreign_key_df["provider_id"] == 0), ["cnt"]].iloc[0, 0]) /
+    sum(foreign_key_df.iloc[:, 1]), 1)
 
-total_missing=foreign_key_df.loc[foreign_key_df["provider_id"].isnull(),["cnt"]].iloc[0,0]+foreign_key_df.loc[(foreign_key_df["provider_id"]==0),["cnt"]].iloc[0,0]
+total_missing = foreign_key_df.loc[foreign_key_df["provider_id"].isnull(), ["cnt"]].iloc[0, 0] + \
+                foreign_key_df.loc[(foreign_key_df["provider_id"] == 0), ["cnt"]].iloc[0, 0]
 total_missing
 
 # #### provider_id by sites
@@ -819,8 +867,9 @@ visit_occurrence_provider_id_df = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                     dialect='standard')
 visit_occurrence_provider_id_df.shape
 
 print(visit_occurrence_provider_id_df.shape[0], 'records received.')
@@ -828,9 +877,12 @@ print(visit_occurrence_provider_id_df.shape[0], 'records received.')
 
 visit_occurrence_provider_id_df
 
-visit_occurrence_provider_id_df=visit_occurrence_provider_id_df.rename(columns={"success_rate":"visit_occurrence_provider_id"})
-visit_occurrence_provider_id_df=visit_occurrence_provider_id_df[["src_hpo_id","visit_occurrence_provider_id"]]
-visit_occurrence_provider_id_df=visit_occurrence_provider_id_df.fillna(100)
+visit_occurrence_provider_id_df = visit_occurrence_provider_id_df.rename(
+    columns={"success_rate": "visit_occurrence_provider_id"})
+visit_occurrence_provider_id_df = visit_occurrence_provider_id_df[[
+    "src_hpo_id", "visit_occurrence_provider_id"
+]]
+visit_occurrence_provider_id_df = visit_occurrence_provider_id_df.fillna(100)
 visit_occurrence_provider_id_df
 
 # #### care_site_id BY SITE
@@ -891,16 +943,20 @@ visit_occurrence_care_site_id_df = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                      dialect='standard')
 foreign_key_df.shape
 
 print(visit_occurrence_care_site_id_df.shape[0], 'records received.')
 # -
 
-visit_occurrence_care_site_id_df=visit_occurrence_care_site_id_df.rename(columns={"success_rate":"visit_occurrence_care_site_id"})
-visit_occurrence_care_site_id_df=visit_occurrence_care_site_id_df[["src_hpo_id","visit_occurrence_care_site_id"]]
-visit_occurrence_care_site_id_df=visit_occurrence_care_site_id_df.fillna(100)
+visit_occurrence_care_site_id_df = visit_occurrence_care_site_id_df.rename(
+    columns={"success_rate": "visit_occurrence_care_site_id"})
+visit_occurrence_care_site_id_df = visit_occurrence_care_site_id_df[[
+    "src_hpo_id", "visit_occurrence_care_site_id"
+]]
+visit_occurrence_care_site_id_df = visit_occurrence_care_site_id_df.fillna(100)
 visit_occurrence_care_site_id_df
 
 # #### visit_source_concept_id BY SITE
@@ -910,7 +966,8 @@ visit_occurrence_care_site_id_df
 print('Getting the data from the database...')
 ######################################
 
-visit_occurrence_visit_source_concept_id_df = pd.io.gbq.read_gbq('''
+visit_occurrence_visit_source_concept_id_df = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT
@@ -961,16 +1018,20 @@ visit_occurrence_visit_source_concept_id_df = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 visit_occurrence_visit_source_concept_id_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
-visit_occurrence_visit_source_concept_id_df=visit_occurrence_visit_source_concept_id_df.rename(columns={"success_rate":"visit_occurrence_visit_source_concept_id"})
-visit_occurrence_visit_source_concept_id_df=visit_occurrence_visit_source_concept_id_df[["src_hpo_id","visit_occurrence_visit_source_concept_id"]]
-visit_occurrence_visit_source_concept_id_df=visit_occurrence_visit_source_concept_id_df.fillna(100)
+visit_occurrence_visit_source_concept_id_df = visit_occurrence_visit_source_concept_id_df.rename(
+    columns={"success_rate": "visit_occurrence_visit_source_concept_id"})
+visit_occurrence_visit_source_concept_id_df = visit_occurrence_visit_source_concept_id_df[
+    ["src_hpo_id", "visit_occurrence_visit_source_concept_id"]]
+visit_occurrence_visit_source_concept_id_df = visit_occurrence_visit_source_concept_id_df.fillna(
+    100)
 visit_occurrence_visit_source_concept_id_df
 
 # #### admitting_source_concept_id BY SITE
@@ -980,7 +1041,8 @@ visit_occurrence_visit_source_concept_id_df
 print('Getting the data from the database...')
 ######################################
 
-visit_occurrence_admitting_source_concept_id_df = pd.io.gbq.read_gbq('''
+visit_occurrence_admitting_source_concept_id_df = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT
@@ -1031,16 +1093,20 @@ visit_occurrence_admitting_source_concept_id_df = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 visit_occurrence_admitting_source_concept_id_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
-visit_occurrence_admitting_source_concept_id_df=visit_occurrence_admitting_source_concept_id_df.rename(columns={"success_rate":"visit_occurrence_admitting_source_concept_id"})
-visit_occurrence_admitting_source_concept_id_df=visit_occurrence_admitting_source_concept_id_df[["src_hpo_id","visit_occurrence_admitting_source_concept_id"]]
-visit_occurrence_admitting_source_concept_id_df=visit_occurrence_admitting_source_concept_id_df.fillna(100)
+visit_occurrence_admitting_source_concept_id_df = visit_occurrence_admitting_source_concept_id_df.rename(
+    columns={"success_rate": "visit_occurrence_admitting_source_concept_id"})
+visit_occurrence_admitting_source_concept_id_df = visit_occurrence_admitting_source_concept_id_df[
+    ["src_hpo_id", "visit_occurrence_admitting_source_concept_id"]]
+visit_occurrence_admitting_source_concept_id_df = visit_occurrence_admitting_source_concept_id_df.fillna(
+    100)
 visit_occurrence_admitting_source_concept_id_df
 
 # #### discharge_to_concept_id BY SITE
@@ -1050,7 +1116,8 @@ visit_occurrence_admitting_source_concept_id_df
 print('Getting the data from the database...')
 ######################################
 
-visit_occurrence_discharge_to_concept_id_df = pd.io.gbq.read_gbq('''
+visit_occurrence_discharge_to_concept_id_df = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT
@@ -1109,16 +1176,20 @@ visit_occurrence_discharge_to_concept_id_df = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 visit_occurrence_discharge_to_concept_id_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
-visit_occurrence_discharge_to_concept_id_df=visit_occurrence_discharge_to_concept_id_df.rename(columns={"success_rate":"visit_occurrence_discharge_to_concept_id"})
-visit_occurrence_discharge_to_concept_id_df=visit_occurrence_discharge_to_concept_id_df[["src_hpo_id","visit_occurrence_discharge_to_concept_id"]]
-visit_occurrence_discharge_to_concept_id_df=visit_occurrence_discharge_to_concept_id_df.fillna(100)
+visit_occurrence_discharge_to_concept_id_df = visit_occurrence_discharge_to_concept_id_df.rename(
+    columns={"success_rate": "visit_occurrence_discharge_to_concept_id"})
+visit_occurrence_discharge_to_concept_id_df = visit_occurrence_discharge_to_concept_id_df[
+    ["src_hpo_id", "visit_occurrence_discharge_to_concept_id"]]
+visit_occurrence_discharge_to_concept_id_df = visit_occurrence_discharge_to_concept_id_df.fillna(
+    100)
 visit_occurrence_discharge_to_concept_id_df
 
 # #### preceding_visit_occurrence_id BY SITE
@@ -1128,7 +1199,8 @@ visit_occurrence_discharge_to_concept_id_df
 print('Getting the data from the database...')
 ######################################
 
-visit_occurrence_preceding_visit_occurrence_id_df = pd.io.gbq.read_gbq('''
+visit_occurrence_preceding_visit_occurrence_id_df = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT
@@ -1179,16 +1251,20 @@ visit_occurrence_preceding_visit_occurrence_id_df = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 visit_occurrence_preceding_visit_occurrence_id_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
-visit_occurrence_preceding_visit_occurrence_id_df=visit_occurrence_preceding_visit_occurrence_id_df.rename(columns={"success_rate":"visit_occurrence_preceding_visit_occurrence_id"})
-visit_occurrence_preceding_visit_occurrence_id_df=visit_occurrence_preceding_visit_occurrence_id_df[["src_hpo_id","visit_occurrence_preceding_visit_occurrence_id"]]
-visit_occurrence_preceding_visit_occurrence_id_df=visit_occurrence_preceding_visit_occurrence_id_df.fillna(100)
+visit_occurrence_preceding_visit_occurrence_id_df = visit_occurrence_preceding_visit_occurrence_id_df.rename(
+    columns={"success_rate": "visit_occurrence_preceding_visit_occurrence_id"})
+visit_occurrence_preceding_visit_occurrence_id_df = visit_occurrence_preceding_visit_occurrence_id_df[
+    ["src_hpo_id", "visit_occurrence_preceding_visit_occurrence_id"]]
+visit_occurrence_preceding_visit_occurrence_id_df = visit_occurrence_preceding_visit_occurrence_id_df.fillna(
+    100)
 visit_occurrence_preceding_visit_occurrence_id_df
 
 # ## Condition Occurrence Table
@@ -1200,7 +1276,8 @@ visit_occurrence_preceding_visit_occurrence_id_df
 print('Getting the data from the database...')
 ######################################
 
-condition_occurrence_condition_concept_id_df = pd.io.gbq.read_gbq('''
+condition_occurrence_condition_concept_id_df = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT
@@ -1259,16 +1336,21 @@ condition_occurrence_condition_concept_id_df = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 condition_occurrence_condition_concept_id_df.shape
 
-print(condition_occurrence_condition_concept_id_df.shape[0], 'records received.')
+print(condition_occurrence_condition_concept_id_df.shape[0],
+      'records received.')
 # -
 
-condition_occurrence_condition_concept_id_df=condition_occurrence_condition_concept_id_df.rename(columns={"success_rate":"condition_occurrence_condition_concept_id"})
-condition_occurrence_condition_concept_id_df=condition_occurrence_condition_concept_id_df[["src_hpo_id","condition_occurrence_condition_concept_id"]]
-condition_occurrence_condition_concept_id_df=condition_occurrence_condition_concept_id_df.fillna(100)
+condition_occurrence_condition_concept_id_df = condition_occurrence_condition_concept_id_df.rename(
+    columns={"success_rate": "condition_occurrence_condition_concept_id"})
+condition_occurrence_condition_concept_id_df = condition_occurrence_condition_concept_id_df[
+    ["src_hpo_id", "condition_occurrence_condition_concept_id"]]
+condition_occurrence_condition_concept_id_df = condition_occurrence_condition_concept_id_df.fillna(
+    100)
 condition_occurrence_condition_concept_id_df
 
 # #### condition_type_concept_id BY SITE
@@ -1278,7 +1360,8 @@ condition_occurrence_condition_concept_id_df
 print('Getting the data from the database...')
 ######################################
 
-condition_occurrence_condition_type_concept_id = pd.io.gbq.read_gbq('''
+condition_occurrence_condition_type_concept_id = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT
@@ -1337,16 +1420,21 @@ condition_occurrence_condition_type_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 condition_occurrence_condition_type_concept_id.shape
 
-print(condition_occurrence_condition_type_concept_id.shape[0], 'records received.')
+print(condition_occurrence_condition_type_concept_id.shape[0],
+      'records received.')
 # -
 
-condition_occurrence_condition_type_concept_id=condition_occurrence_condition_type_concept_id.rename(columns={"success_rate":"condition_occurrence_condition_type_concept_id"})
-condition_occurrence_condition_type_concept_id=condition_occurrence_condition_type_concept_id[["src_hpo_id","condition_occurrence_condition_type_concept_id"]]
-condition_occurrence_condition_type_concept_id=condition_occurrence_condition_type_concept_id.fillna(100)
+condition_occurrence_condition_type_concept_id = condition_occurrence_condition_type_concept_id.rename(
+    columns={"success_rate": "condition_occurrence_condition_type_concept_id"})
+condition_occurrence_condition_type_concept_id = condition_occurrence_condition_type_concept_id[
+    ["src_hpo_id", "condition_occurrence_condition_type_concept_id"]]
+condition_occurrence_condition_type_concept_id = condition_occurrence_condition_type_concept_id.fillna(
+    100)
 condition_occurrence_condition_type_concept_id
 
 # ### Provider_id
@@ -1367,8 +1455,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         1
     ORDER BY
         2
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -1393,8 +1481,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         1
     ORDER BY
         2
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -1419,8 +1507,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         1
     ORDER BY
         2
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -1428,9 +1516,15 @@ print(foreign_key_df.shape[0], 'records received.')
 
 foreign_key_df.tail()
 
-success_rate=100-round(100*(foreign_key_df.loc[foreign_key_df["condition_source_concept_id"].isnull(),["cnt"]].iloc[0,0]
-+foreign_key_df.loc[(foreign_key_df["condition_source_concept_id"]==0),["cnt"]].iloc[0,0])/sum(foreign_key_df.iloc[:,1]),1)
-print("success rate for condition_source_concept_id is: ", round(success_rate,1)) 
+success_rate = 100 - round(
+    100 *
+    (foreign_key_df.loc[foreign_key_df["condition_source_concept_id"].isnull(),
+                        ["cnt"]].iloc[0, 0] +
+     foreign_key_df.loc[(foreign_key_df["condition_source_concept_id"] == 0),
+                        ["cnt"]].iloc[0, 0]) / sum(foreign_key_df.iloc[:, 1]),
+    1)
+print("success rate for condition_source_concept_id is: ",
+      round(success_rate, 1))
 
 # #### condition_source_concept_id BY SITE
 
@@ -1439,7 +1533,8 @@ print("success rate for condition_source_concept_id is: ", round(success_rate,1)
 print('Getting the data from the database...')
 ######################################
 
-condition_occurrence_condition_source_concept_id = pd.io.gbq.read_gbq('''
+condition_occurrence_condition_source_concept_id = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT
@@ -1490,16 +1585,23 @@ condition_occurrence_condition_source_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 condition_occurrence_condition_source_concept_id.shape
 
-print(condition_occurrence_condition_source_concept_id.shape[0], 'records received.')
+print(condition_occurrence_condition_source_concept_id.shape[0],
+      'records received.')
 # -
 
-condition_occurrence_condition_source_concept_id=condition_occurrence_condition_source_concept_id.rename(columns={"success_rate":"condition_occurrence_condition_source_concept_id"})
-condition_occurrence_condition_source_concept_id=condition_occurrence_condition_source_concept_id[["src_hpo_id","condition_occurrence_condition_source_concept_id"]]
-condition_occurrence_condition_source_concept_id=condition_occurrence_condition_source_concept_id.fillna(100)
+condition_occurrence_condition_source_concept_id = condition_occurrence_condition_source_concept_id.rename(
+    columns={
+        "success_rate": "condition_occurrence_condition_source_concept_id"
+    })
+condition_occurrence_condition_source_concept_id = condition_occurrence_condition_source_concept_id[
+    ["src_hpo_id", "condition_occurrence_condition_source_concept_id"]]
+condition_occurrence_condition_source_concept_id = condition_occurrence_condition_source_concept_id.fillna(
+    100)
 condition_occurrence_condition_source_concept_id
 
 # #### condition_status_concept_id BY SITE
@@ -1509,7 +1611,8 @@ condition_occurrence_condition_source_concept_id
 print('Getting the data from the database...')
 ######################################
 
-condition_occurrence_condition_status_concept_id = pd.io.gbq.read_gbq('''
+condition_occurrence_condition_status_concept_id = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT
@@ -1568,16 +1671,23 @@ condition_occurrence_condition_status_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 condition_occurrence_condition_status_concept_id.shape
 
-print(condition_occurrence_condition_status_concept_id.shape[0], 'records received.')
+print(condition_occurrence_condition_status_concept_id.shape[0],
+      'records received.')
 # -
 
-condition_occurrence_condition_status_concept_id=condition_occurrence_condition_status_concept_id.rename(columns={"success_rate":"condition_occurrence_condition_status_concept_id"})
-condition_occurrence_condition_status_concept_id=condition_occurrence_condition_status_concept_id[["src_hpo_id","condition_occurrence_condition_status_concept_id"]]
-condition_occurrence_condition_status_concept_id=condition_occurrence_condition_status_concept_id.fillna(100)
+condition_occurrence_condition_status_concept_id = condition_occurrence_condition_status_concept_id.rename(
+    columns={
+        "success_rate": "condition_occurrence_condition_status_concept_id"
+    })
+condition_occurrence_condition_status_concept_id = condition_occurrence_condition_status_concept_id[
+    ["src_hpo_id", "condition_occurrence_condition_status_concept_id"]]
+condition_occurrence_condition_status_concept_id = condition_occurrence_condition_status_concept_id.fillna(
+    100)
 condition_occurrence_condition_status_concept_id
 
 # ## Drug Exposure Table
@@ -1599,8 +1709,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         `{}.unioned_ehr_observation` AS o
         ON
             de.person_id=o.person_id
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+                                    dialect='standard')
 foreign_key_df.shape
 
 print(foreign_key_df.shape[0], 'records received.')
@@ -1610,7 +1720,10 @@ foreign_key_df
 
 # +
 
-print("success rate for person_id is: ",round(100-100*(foreign_key_df.iloc[0,1]/foreign_key_df.iloc[0,0]),1))
+print(
+    "success rate for person_id is: ",
+    round(100 - 100 * (foreign_key_df.iloc[0, 1] / foreign_key_df.iloc[0, 0]),
+          1))
 # -
 
 # #### drug_concept_id BY SITE
@@ -1679,16 +1792,20 @@ drug_exposure_drug_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                   dialect='standard')
 drug_exposure_drug_concept_id.shape
 
 print(drug_exposure_drug_concept_id.shape[0], 'records received.')
 # -
 
-drug_exposure_drug_concept_id=drug_exposure_drug_concept_id.rename(columns={"success_rate":"drug_exposure_drug_concept_id"})
-drug_exposure_drug_concept_id=drug_exposure_drug_concept_id[["src_hpo_id","drug_exposure_drug_concept_id"]]
-drug_exposure_drug_concept_id=drug_exposure_drug_concept_id.fillna(100)
+drug_exposure_drug_concept_id = drug_exposure_drug_concept_id.rename(
+    columns={"success_rate": "drug_exposure_drug_concept_id"})
+drug_exposure_drug_concept_id = drug_exposure_drug_concept_id[[
+    "src_hpo_id", "drug_exposure_drug_concept_id"
+]]
+drug_exposure_drug_concept_id = drug_exposure_drug_concept_id.fillna(100)
 drug_exposure_drug_concept_id
 
 # #### drug_type_concept_id BY SITE
@@ -1756,16 +1873,21 @@ drug_exposure_drug_type_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                        dialect='standard')
 drug_exposure_drug_type_concept_id.shape
 
 print(drug_exposure_drug_type_concept_id.shape[0], 'records received.')
 # -
 
-drug_exposure_drug_type_concept_id=drug_exposure_drug_type_concept_id.rename(columns={"success_rate":"condition_occurrence_drug_type_concept_id"})
-drug_exposure_drug_type_concept_id=drug_exposure_drug_type_concept_id[["src_hpo_id","condition_occurrence_drug_type_concept_id"]]
-drug_exposure_drug_type_concept_id=drug_exposure_drug_type_concept_id.fillna(100)
+drug_exposure_drug_type_concept_id = drug_exposure_drug_type_concept_id.rename(
+    columns={"success_rate": "condition_occurrence_drug_type_concept_id"})
+drug_exposure_drug_type_concept_id = drug_exposure_drug_type_concept_id[[
+    "src_hpo_id", "condition_occurrence_drug_type_concept_id"
+]]
+drug_exposure_drug_type_concept_id = drug_exposure_drug_type_concept_id.fillna(
+    100)
 drug_exposure_drug_type_concept_id
 
 # #### route_concept_id BY SITE
@@ -1775,7 +1897,7 @@ drug_exposure_drug_type_concept_id
 print('Getting the data from the database...')
 ######################################
 
-drug_exposure_route_concept_id= pd.io.gbq.read_gbq('''
+drug_exposure_route_concept_id = pd.io.gbq.read_gbq('''
     WITH
         hpo_counts AS (
             SELECT
@@ -1833,16 +1955,20 @@ drug_exposure_route_concept_id= pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                    dialect='standard')
 drug_exposure_route_concept_id.shape
 
 print(drug_exposure_route_concept_id.shape[0], 'records received.')
 # -
 
-drug_exposure_route_concept_id=drug_exposure_route_concept_id.rename(columns={"success_rate":"drug_exposure_route_concept_id"})
-drug_exposure_route_concept_id=drug_exposure_route_concept_id[["src_hpo_id","drug_exposure_route_concept_id"]]
-drug_exposure_route_concept_id=drug_exposure_route_concept_id.fillna(100)
+drug_exposure_route_concept_id = drug_exposure_route_concept_id.rename(
+    columns={"success_rate": "drug_exposure_route_concept_id"})
+drug_exposure_route_concept_id = drug_exposure_route_concept_id[[
+    "src_hpo_id", "drug_exposure_route_concept_id"
+]]
+drug_exposure_route_concept_id = drug_exposure_route_concept_id.fillna(100)
 drug_exposure_route_concept_id
 
 # #### provider_id BY SITE
@@ -1902,16 +2028,20 @@ drug_exposure_provider_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                               dialect='standard')
 drug_exposure_provider_id.shape
 
 print(drug_exposure_provider_id.shape[0], 'records received.')
 # -
 
-drug_exposure_provider_id=drug_exposure_provider_id.rename(columns={"success_rate":"drug_exposure_provider_id"})
-drug_exposure_provider_id=drug_exposure_provider_id[["src_hpo_id","drug_exposure_provider_id"]]
-drug_exposure_provider_id=drug_exposure_provider_id.fillna(100)
+drug_exposure_provider_id = drug_exposure_provider_id.rename(
+    columns={"success_rate": "drug_exposure_provider_id"})
+drug_exposure_provider_id = drug_exposure_provider_id[[
+    "src_hpo_id", "drug_exposure_provider_id"
+]]
+drug_exposure_provider_id = drug_exposure_provider_id.fillna(100)
 drug_exposure_provider_id
 
 # #### visit_occurrence_id BY SITE
@@ -1971,16 +2101,21 @@ drug_exposure_visit_occurrence_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                       dialect='standard')
 drug_exposure_visit_occurrence_id.shape
 
 print(drug_exposure_visit_occurrence_id.shape[0], 'records received.')
 # -
 
-drug_exposure_visit_occurrence_id=drug_exposure_visit_occurrence_id.rename(columns={"success_rate":"drug_exposure_visit_occurrence_id"})
-drug_exposure_visit_occurrence_id=drug_exposure_visit_occurrence_id[["src_hpo_id","drug_exposure_visit_occurrence_id"]]
-drug_exposure_visit_occurrence_id=drug_exposure_visit_occurrence_id.fillna(100)
+drug_exposure_visit_occurrence_id = drug_exposure_visit_occurrence_id.rename(
+    columns={"success_rate": "drug_exposure_visit_occurrence_id"})
+drug_exposure_visit_occurrence_id = drug_exposure_visit_occurrence_id[[
+    "src_hpo_id", "drug_exposure_visit_occurrence_id"
+]]
+drug_exposure_visit_occurrence_id = drug_exposure_visit_occurrence_id.fillna(
+    100)
 drug_exposure_visit_occurrence_id
 
 # #### drug_source_concept_id BY SITE
@@ -1990,7 +2125,7 @@ drug_exposure_visit_occurrence_id
 print('Getting the data from the database...')
 ######################################
 
-drug_exposure_drug_source_concept_id= pd.io.gbq.read_gbq('''
+drug_exposure_drug_source_concept_id = pd.io.gbq.read_gbq('''
     WITH
         hpo_counts AS (
             SELECT
@@ -2040,16 +2175,21 @@ drug_exposure_drug_source_concept_id= pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                          dialect='standard')
 drug_exposure_drug_source_concept_id.shape
 
 print(drug_exposure_drug_source_concept_id.shape[0], 'records received.')
 # -
 
-drug_exposure_drug_source_concept_id=drug_exposure_drug_source_concept_id.rename(columns={"success_rate":"drug_exposure_drug_source_concept_id"})
-drug_exposure_drug_source_concept_id=drug_exposure_drug_source_concept_id[["src_hpo_id","drug_exposure_drug_source_concept_id"]]
-drug_exposure_drug_source_concept_id=drug_exposure_drug_source_concept_id.fillna(100)
+drug_exposure_drug_source_concept_id = drug_exposure_drug_source_concept_id.rename(
+    columns={"success_rate": "drug_exposure_drug_source_concept_id"})
+drug_exposure_drug_source_concept_id = drug_exposure_drug_source_concept_id[[
+    "src_hpo_id", "drug_exposure_drug_source_concept_id"
+]]
+drug_exposure_drug_source_concept_id = drug_exposure_drug_source_concept_id.fillna(
+    100)
 drug_exposure_drug_source_concept_id
 
 # ## Measurement table
@@ -2120,16 +2260,21 @@ measurement_measurement_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                        dialect='standard')
 measurement_measurement_concept_id.shape
 
 print(measurement_measurement_concept_id.shape[0], 'records received.')
 # -
 
-measurement_measurement_concept_id=measurement_measurement_concept_id.rename(columns={"success_rate":"measurement_measurement_concept_id"})
-measurement_measurement_concept_id=measurement_measurement_concept_id[["src_hpo_id","measurement_measurement_concept_id"]]
-measurement_measurement_concept_id=measurement_measurement_concept_id.fillna(100)
+measurement_measurement_concept_id = measurement_measurement_concept_id.rename(
+    columns={"success_rate": "measurement_measurement_concept_id"})
+measurement_measurement_concept_id = measurement_measurement_concept_id[[
+    "src_hpo_id", "measurement_measurement_concept_id"
+]]
+measurement_measurement_concept_id = measurement_measurement_concept_id.fillna(
+    100)
 measurement_measurement_concept_id
 
 # #### measurement_type_concept_id BY SITE
@@ -2198,16 +2343,20 @@ measurement_measurement_type_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                             dialect='standard')
 measurement_measurement_type_concept_id.shape
 
 print(measurement_measurement_type_concept_id.shape[0], 'records received.')
 # -
 
-measurement_measurement_type_concept_id=measurement_measurement_type_concept_id.rename(columns={"success_rate":"measurement_measurement_type_concept_id"})
-measurement_measurement_type_concept_id=measurement_measurement_type_concept_id[["src_hpo_id","measurement_measurement_type_concept_id"]]
-measurement_measurement_type_concept_id=measurement_measurement_type_concept_id.fillna(100)
+measurement_measurement_type_concept_id = measurement_measurement_type_concept_id.rename(
+    columns={"success_rate": "measurement_measurement_type_concept_id"})
+measurement_measurement_type_concept_id = measurement_measurement_type_concept_id[
+    ["src_hpo_id", "measurement_measurement_type_concept_id"]]
+measurement_measurement_type_concept_id = measurement_measurement_type_concept_id.fillna(
+    100)
 measurement_measurement_type_concept_id
 
 # #### operator_concept_id BY SITE
@@ -2217,7 +2366,7 @@ measurement_measurement_type_concept_id
 print('Getting the data from the database...')
 ######################################
 
-measurement_operator_concept_id= pd.io.gbq.read_gbq('''
+measurement_operator_concept_id = pd.io.gbq.read_gbq('''
     WITH
         hpo_counts AS (
             SELECT 
@@ -2276,16 +2425,20 @@ measurement_operator_concept_id= pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                     dialect='standard')
 measurement_operator_concept_id.shape
 
 print(measurement_operator_concept_id.shape[0], 'records received.')
 # -
 
-measurement_operator_concept_id=measurement_operator_concept_id.rename(columns={"success_rate":"measurement_operator_concept_id"})
-measurement_operator_concept_id=measurement_operator_concept_id[["src_hpo_id","measurement_operator_concept_id"]]
-measurement_operator_concept_id=measurement_operator_concept_id.fillna(100)
+measurement_operator_concept_id = measurement_operator_concept_id.rename(
+    columns={"success_rate": "measurement_operator_concept_id"})
+measurement_operator_concept_id = measurement_operator_concept_id[[
+    "src_hpo_id", "measurement_operator_concept_id"
+]]
+measurement_operator_concept_id = measurement_operator_concept_id.fillna(100)
 measurement_operator_concept_id
 
 # #### value_as_concept_id BY SITE
@@ -2354,16 +2507,20 @@ measurement_value_as_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                     dialect='standard')
 measurement_value_as_concept_id.shape
 
 print(measurement_value_as_concept_id.shape[0], 'records received.')
 # -
 
-measurement_value_as_concept_id=measurement_value_as_concept_id.rename(columns={"success_rate":"measurement_value_as_concept_id"})
-measurement_value_as_concept_id=measurement_value_as_concept_id[["src_hpo_id","measurement_value_as_concept_id"]]
-measurement_value_as_concept_id=measurement_value_as_concept_id.fillna(100)
+measurement_value_as_concept_id = measurement_value_as_concept_id.rename(
+    columns={"success_rate": "measurement_value_as_concept_id"})
+measurement_value_as_concept_id = measurement_value_as_concept_id[[
+    "src_hpo_id", "measurement_value_as_concept_id"
+]]
+measurement_value_as_concept_id = measurement_value_as_concept_id.fillna(100)
 measurement_value_as_concept_id
 
 # #### unit_concept_id BY SITE
@@ -2432,16 +2589,20 @@ measurement_unit_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                 dialect='standard')
 measurement_unit_concept_id.shape
 
 print(measurement_unit_concept_id.shape[0], 'records received.')
 # -
 
-measurement_unit_concept_id=measurement_unit_concept_id.rename(columns={"success_rate":"measurement_unit_concept_id"})
-measurement_unit_concept_id=measurement_unit_concept_id[["src_hpo_id","measurement_unit_concept_id"]]
-measurement_unit_concept_id=measurement_unit_concept_id.fillna(100)
+measurement_unit_concept_id = measurement_unit_concept_id.rename(
+    columns={"success_rate": "measurement_unit_concept_id"})
+measurement_unit_concept_id = measurement_unit_concept_id[[
+    "src_hpo_id", "measurement_unit_concept_id"
+]]
+measurement_unit_concept_id = measurement_unit_concept_id.fillna(100)
 measurement_unit_concept_id
 
 # #### provider_id BY SITE
@@ -2502,16 +2663,20 @@ measurement_provider_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         3
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                             dialect='standard')
 measurement_provider_id.shape
 
 print(measurement_provider_id.shape[0], 'records received.')
 # -
 
-measurement_provider_id=measurement_provider_id.rename(columns={"success_rate":"measurement_provider_id"})
-measurement_provider_id=measurement_provider_id[["src_hpo_id","measurement_provider_id"]]
-measurement_provider_id=measurement_provider_id.fillna(100)
+measurement_provider_id = measurement_provider_id.rename(
+    columns={"success_rate": "measurement_provider_id"})
+measurement_provider_id = measurement_provider_id[[
+    "src_hpo_id", "measurement_provider_id"
+]]
+measurement_provider_id = measurement_provider_id.fillna(100)
 measurement_provider_id
 
 # #### visit_occurrence_id BY SITE
@@ -2572,16 +2737,20 @@ measurement_visit_occurrence_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         3
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                     dialect='standard')
 measurement_visit_occurrence_id.shape
 
 print(measurement_visit_occurrence_id.shape[0], 'records received.')
 # -
 
-measurement_visit_occurrence_id=measurement_visit_occurrence_id.rename(columns={"success_rate":"measurement_visit_occurrence_id"})
-measurement_visit_occurrence_id=measurement_visit_occurrence_id[["src_hpo_id","measurement_visit_occurrence_id"]]
-measurement_visit_occurrence_id=measurement_visit_occurrence_id.fillna(100)
+measurement_visit_occurrence_id = measurement_visit_occurrence_id.rename(
+    columns={"success_rate": "measurement_visit_occurrence_id"})
+measurement_visit_occurrence_id = measurement_visit_occurrence_id[[
+    "src_hpo_id", "measurement_visit_occurrence_id"
+]]
+measurement_visit_occurrence_id = measurement_visit_occurrence_id.fillna(100)
 measurement_visit_occurrence_id
 
 # #### measurement_source_concept_id BY SITE
@@ -2591,7 +2760,8 @@ measurement_visit_occurrence_id
 print('Getting the data from the database...')
 ######################################
 
-measurement_measurement_source_concept_id= pd.io.gbq.read_gbq('''
+measurement_measurement_source_concept_id = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT 
@@ -2642,16 +2812,20 @@ measurement_measurement_source_concept_id= pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         3
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 measurement_measurement_source_concept_id.shape
 
 print(measurement_measurement_source_concept_id.shape[0], 'records received.')
 # -
 
-measurement_measurement_source_concept_id=measurement_measurement_source_concept_id.rename(columns={"success_rate":"measurement_measurement_source_concept_id"})
-measurement_measurement_source_concept_id=measurement_measurement_source_concept_id[["src_hpo_id","measurement_measurement_source_concept_id"]]
-measurement_measurement_source_concept_id=measurement_measurement_source_concept_id.fillna(100)
+measurement_measurement_source_concept_id = measurement_measurement_source_concept_id.rename(
+    columns={"success_rate": "measurement_measurement_source_concept_id"})
+measurement_measurement_source_concept_id = measurement_measurement_source_concept_id[
+    ["src_hpo_id", "measurement_measurement_source_concept_id"]]
+measurement_measurement_source_concept_id = measurement_measurement_source_concept_id.fillna(
+    100)
 measurement_measurement_source_concept_id
 
 # ## Procedure Occurrence
@@ -2663,7 +2837,8 @@ measurement_measurement_source_concept_id
 print('Getting the data from the database...')
 ######################################
 
-procedure_occurrence_procedure_concept_id = pd.io.gbq.read_gbq('''
+procedure_occurrence_procedure_concept_id = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT 
@@ -2722,16 +2897,20 @@ procedure_occurrence_procedure_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 procedure_occurrence_procedure_concept_id.shape
 
 print(procedure_occurrence_procedure_concept_id.shape[0], 'records received.')
 # -
 
-procedure_occurrence_procedure_concept_id=procedure_occurrence_procedure_concept_id.rename(columns={"success_rate":"procedure_occurrence_procedure_concept_id"})
-procedure_occurrence_procedure_concept_id=procedure_occurrence_procedure_concept_id[["src_hpo_id","procedure_occurrence_procedure_concept_id"]]
-procedure_occurrence_procedure_concept_id=procedure_occurrence_procedure_concept_id.fillna(100)
+procedure_occurrence_procedure_concept_id = procedure_occurrence_procedure_concept_id.rename(
+    columns={"success_rate": "procedure_occurrence_procedure_concept_id"})
+procedure_occurrence_procedure_concept_id = procedure_occurrence_procedure_concept_id[
+    ["src_hpo_id", "procedure_occurrence_procedure_concept_id"]]
+procedure_occurrence_procedure_concept_id = procedure_occurrence_procedure_concept_id.fillna(
+    100)
 procedure_occurrence_procedure_concept_id
 
 # #### procedure_type_concept_id BY SITE
@@ -2741,7 +2920,8 @@ procedure_occurrence_procedure_concept_id
 print('Getting the data from the database...')
 ######################################
 
-procedure_occurrence_procedure_type_concept_id = pd.io.gbq.read_gbq('''
+procedure_occurrence_procedure_type_concept_id = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT 
@@ -2800,16 +2980,21 @@ procedure_occurrence_procedure_type_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 procedure_occurrence_procedure_type_concept_id.shape
 
-print(procedure_occurrence_procedure_type_concept_id.shape[0], 'records received.')
+print(procedure_occurrence_procedure_type_concept_id.shape[0],
+      'records received.')
 # -
 
-procedure_occurrence_procedure_type_concept_id=procedure_occurrence_procedure_type_concept_id.rename(columns={"success_rate":"procedure_occurrence_procedure_type_concept_id"})
-procedure_occurrence_procedure_type_concept_id=procedure_occurrence_procedure_type_concept_id[["src_hpo_id","procedure_occurrence_procedure_type_concept_id"]]
-procedure_occurrence_procedure_type_concept_id=procedure_occurrence_procedure_type_concept_id.fillna(100)
+procedure_occurrence_procedure_type_concept_id = procedure_occurrence_procedure_type_concept_id.rename(
+    columns={"success_rate": "procedure_occurrence_procedure_type_concept_id"})
+procedure_occurrence_procedure_type_concept_id = procedure_occurrence_procedure_type_concept_id[
+    ["src_hpo_id", "procedure_occurrence_procedure_type_concept_id"]]
+procedure_occurrence_procedure_type_concept_id = procedure_occurrence_procedure_type_concept_id.fillna(
+    100)
 procedure_occurrence_procedure_type_concept_id
 
 # #### modifier_concept_id BY SITE
@@ -2819,7 +3004,8 @@ procedure_occurrence_procedure_type_concept_id
 print('Getting the data from the database...')
 ######################################
 
-procedure_occurrence_modifier_concept_id = pd.io.gbq.read_gbq('''
+procedure_occurrence_modifier_concept_id = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT 
@@ -2878,16 +3064,20 @@ procedure_occurrence_modifier_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 procedure_occurrence_modifier_concept_id.shape
 
 print(procedure_occurrence_modifier_concept_id.shape[0], 'records received.')
 # -
 
-procedure_occurrence_modifier_concept_id=procedure_occurrence_modifier_concept_id.rename(columns={"success_rate":"procedure_occurrence_modifier_concept_id"})
-procedure_occurrence_modifier_concept_id=procedure_occurrence_modifier_concept_id[["src_hpo_id","procedure_occurrence_modifier_concept_id"]]
-procedure_occurrence_modifier_concept_id=procedure_occurrence_modifier_concept_id.fillna(100)
+procedure_occurrence_modifier_concept_id = procedure_occurrence_modifier_concept_id.rename(
+    columns={"success_rate": "procedure_occurrence_modifier_concept_id"})
+procedure_occurrence_modifier_concept_id = procedure_occurrence_modifier_concept_id[
+    ["src_hpo_id", "procedure_occurrence_modifier_concept_id"]]
+procedure_occurrence_modifier_concept_id = procedure_occurrence_modifier_concept_id.fillna(
+    100)
 procedure_occurrence_modifier_concept_id
 
 # #### provider_id BY SITE
@@ -2948,16 +3138,20 @@ procedure_occurrence_provider_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                      dialect='standard')
 procedure_occurrence_provider_id.shape
 
 print(procedure_occurrence_provider_id.shape[0], 'records received.')
 # -
 
-procedure_occurrence_provider_id=procedure_occurrence_provider_id.rename(columns={"success_rate":"procedure_occurrence_provider_id"})
-procedure_occurrence_provider_id=procedure_occurrence_provider_id[["src_hpo_id","procedure_occurrence_provider_id"]]
-procedure_occurrence_provider_id=procedure_occurrence_provider_id.fillna(100)
+procedure_occurrence_provider_id = procedure_occurrence_provider_id.rename(
+    columns={"success_rate": "procedure_occurrence_provider_id"})
+procedure_occurrence_provider_id = procedure_occurrence_provider_id[[
+    "src_hpo_id", "procedure_occurrence_provider_id"
+]]
+procedure_occurrence_provider_id = procedure_occurrence_provider_id.fillna(100)
 procedure_occurrence_provider_id
 
 # #### visit_occurrence_id BY SITE
@@ -2967,7 +3161,8 @@ procedure_occurrence_provider_id
 print('Getting the data from the database...')
 ######################################
 
-procedure_occurrence_visit_occurrence_id = pd.io.gbq.read_gbq('''
+procedure_occurrence_visit_occurrence_id = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT 
@@ -3018,16 +3213,20 @@ procedure_occurrence_visit_occurrence_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 procedure_occurrence_visit_occurrence_id.shape
 
 print(procedure_occurrence_visit_occurrence_id.shape[0], 'records received.')
 # -
 
-procedure_occurrence_visit_occurrence_id=procedure_occurrence_visit_occurrence_id.rename(columns={"success_rate":"procedure_occurrence_visit_occurrence_id"})
-procedure_occurrence_visit_occurrence_id=procedure_occurrence_visit_occurrence_id[["src_hpo_id","procedure_occurrence_visit_occurrence_id"]]
-procedure_occurrence_visit_occurrence_id=procedure_occurrence_visit_occurrence_id.fillna(100)
+procedure_occurrence_visit_occurrence_id = procedure_occurrence_visit_occurrence_id.rename(
+    columns={"success_rate": "procedure_occurrence_visit_occurrence_id"})
+procedure_occurrence_visit_occurrence_id = procedure_occurrence_visit_occurrence_id[
+    ["src_hpo_id", "procedure_occurrence_visit_occurrence_id"]]
+procedure_occurrence_visit_occurrence_id = procedure_occurrence_visit_occurrence_id.fillna(
+    100)
 procedure_occurrence_visit_occurrence_id
 
 # #### procedure_source_concept_id BY SITE
@@ -3037,7 +3236,8 @@ procedure_occurrence_visit_occurrence_id
 print('Getting the data from the database...')
 ######################################
 
-procedure_occurrence_procedure_source_concept_id= pd.io.gbq.read_gbq('''
+procedure_occurrence_procedure_source_concept_id = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT 
@@ -3088,16 +3288,23 @@ procedure_occurrence_procedure_source_concept_id= pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 procedure_occurrence_procedure_source_concept_id.shape
 
-print(procedure_occurrence_procedure_source_concept_id.shape[0], 'records received.')
+print(procedure_occurrence_procedure_source_concept_id.shape[0],
+      'records received.')
 # -
 
-procedure_occurrence_procedure_source_concept_id=procedure_occurrence_procedure_source_concept_id.rename(columns={"success_rate":"procedure_occurrence_procedure_source_concept_id"})
-procedure_occurrence_procedure_source_concept_id=procedure_occurrence_procedure_source_concept_id[["src_hpo_id","procedure_occurrence_procedure_source_concept_id"]]
-procedure_occurrence_procedure_source_concept_id=procedure_occurrence_procedure_source_concept_id.fillna(100)
+procedure_occurrence_procedure_source_concept_id = procedure_occurrence_procedure_source_concept_id.rename(
+    columns={
+        "success_rate": "procedure_occurrence_procedure_source_concept_id"
+    })
+procedure_occurrence_procedure_source_concept_id = procedure_occurrence_procedure_source_concept_id[
+    ["src_hpo_id", "procedure_occurrence_procedure_source_concept_id"]]
+procedure_occurrence_procedure_source_concept_id = procedure_occurrence_procedure_source_concept_id.fillna(
+    100)
 procedure_occurrence_procedure_source_concept_id
 
 # ## Device Exposure
@@ -3168,16 +3375,21 @@ device_exposure_device_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                       dialect='standard')
 device_exposure_device_concept_id.shape
 
 print(device_exposure_device_concept_id.shape[0], 'records received.')
 # -
 
-device_exposure_device_concept_id=device_exposure_device_concept_id.rename(columns={"success_rate":"device_exposure_device_concept_id"})
-device_exposure_device_concept_id=device_exposure_device_concept_id[["src_hpo_id","device_exposure_device_concept_id"]]
-device_exposure_device_concept_id=device_exposure_device_concept_id.fillna(100)
+device_exposure_device_concept_id = device_exposure_device_concept_id.rename(
+    columns={"success_rate": "device_exposure_device_concept_id"})
+device_exposure_device_concept_id = device_exposure_device_concept_id[[
+    "src_hpo_id", "device_exposure_device_concept_id"
+]]
+device_exposure_device_concept_id = device_exposure_device_concept_id.fillna(
+    100)
 device_exposure_device_concept_id
 
 # #### device_type_concept_id BY SITE
@@ -3246,16 +3458,20 @@ device_exposure_device_type_concept_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                            dialect='standard')
 device_exposure_device_type_concept_id.shape
 
 print(device_exposure_device_type_concept_id.shape[0], 'records received.')
 # -
 
-device_exposure_device_type_concept_id=device_exposure_device_type_concept_id.rename(columns={"success_rate":"device_exposure_device_type_concept_id"})
-device_exposure_device_type_concept_id=device_exposure_device_type_concept_id[["src_hpo_id","device_exposure_device_type_concept_id"]]
-device_exposure_device_type_concept_id=device_exposure_device_type_concept_id.fillna(100)
+device_exposure_device_type_concept_id = device_exposure_device_type_concept_id.rename(
+    columns={"success_rate": "device_exposure_device_type_concept_id"})
+device_exposure_device_type_concept_id = device_exposure_device_type_concept_id[
+    ["src_hpo_id", "device_exposure_device_type_concept_id"]]
+device_exposure_device_type_concept_id = device_exposure_device_type_concept_id.fillna(
+    100)
 device_exposure_device_type_concept_id
 
 # #### provider_id BY SITE
@@ -3316,16 +3532,20 @@ device_exposure_provider_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                 dialect='standard')
 device_exposure_provider_id.shape
 
 print(device_exposure_provider_id.shape[0], 'records received.')
 # -
 
-device_exposure_provider_id=device_exposure_provider_id.rename(columns={"success_rate":"device_exposure_provider_id"})
-device_exposure_provider_id=device_exposure_provider_id[["src_hpo_id","device_exposure_provider_id"]]
-device_exposure_provider_id=device_exposure_provider_id.fillna(100)
+device_exposure_provider_id = device_exposure_provider_id.rename(
+    columns={"success_rate": "device_exposure_provider_id"})
+device_exposure_provider_id = device_exposure_provider_id[[
+    "src_hpo_id", "device_exposure_provider_id"
+]]
+device_exposure_provider_id = device_exposure_provider_id.fillna(100)
 device_exposure_provider_id
 
 # #### visit_occurrence_id BY SITE
@@ -3386,16 +3606,21 @@ device_exposure_visit_occurrence_id = pd.io.gbq.read_gbq('''
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
     ORDER BY
         4
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                                                         dialect='standard')
 device_exposure_visit_occurrence_id.shape
 
 print(device_exposure_visit_occurrence_id.shape[0], 'records received.')
 # -
 
-device_exposure_visit_occurrence_id=device_exposure_visit_occurrence_id.rename(columns={"success_rate":"device_exposure_visit_occurrence_id"})
-device_exposure_visit_occurrence_id=device_exposure_visit_occurrence_id[["src_hpo_id","device_exposure_visit_occurrence_id"]]
-device_exposure_visit_occurrence_id=device_exposure_visit_occurrence_id.fillna(100)
+device_exposure_visit_occurrence_id = device_exposure_visit_occurrence_id.rename(
+    columns={"success_rate": "device_exposure_visit_occurrence_id"})
+device_exposure_visit_occurrence_id = device_exposure_visit_occurrence_id[[
+    "src_hpo_id", "device_exposure_visit_occurrence_id"
+]]
+device_exposure_visit_occurrence_id = device_exposure_visit_occurrence_id.fillna(
+    100)
 device_exposure_visit_occurrence_id
 
 # #### device_source_concept_id BY SITE
@@ -3405,7 +3630,8 @@ device_exposure_visit_occurrence_id
 print('Getting the data from the database...')
 ######################################
 
-device_exposure_device_source_concept_id= pd.io.gbq.read_gbq('''
+device_exposure_device_source_concept_id = pd.io.gbq.read_gbq(
+    '''
     WITH
         hpo_counts AS (
             SELECT 
@@ -3454,8 +3680,9 @@ device_exposure_device_source_concept_id= pd.io.gbq.read_gbq('''
         hpo_missing_counts
             ON
                 hpo_missing_counts.src_hpo_id=hpo_counts.src_hpo_id
-    '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET,DATASET),
-                    dialect='standard')
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+    dialect='standard')
 device_exposure_device_source_concept_id.shape
 
 print(device_exposure_device_source_concept_id.shape[0], 'records received.')
@@ -3463,65 +3690,55 @@ print(device_exposure_device_source_concept_id.shape[0], 'records received.')
 
 device_exposure_device_source_concept_id
 
-device_exposure_device_source_concept_id=device_exposure_device_source_concept_id.rename(columns={"success_rate":"device_exposure_device_source_concept_id"})
-device_exposure_device_source_concept_id=device_exposure_device_source_concept_id[["src_hpo_id","device_exposure_device_source_concept_id"]]
-device_exposure_device_source_concept_id=device_exposure_device_source_concept_id.fillna(100)
+device_exposure_device_source_concept_id = device_exposure_device_source_concept_id.rename(
+    columns={"success_rate": "device_exposure_device_source_concept_id"})
+device_exposure_device_source_concept_id = device_exposure_device_source_concept_id[
+    ["src_hpo_id", "device_exposure_device_source_concept_id"]]
+device_exposure_device_source_concept_id = device_exposure_device_source_concept_id.fillna(
+    100)
 device_exposure_device_source_concept_id
 
-datas=[visit_occurrence_visit_type_concept_id,
-visit_occurrence_provider_id_df,
-visit_occurrence_care_site_id_df,
-visit_occurrence_visit_source_concept_id_df,
-visit_occurrence_admitting_source_concept_id_df,
-visit_occurrence_discharge_to_concept_id_df,
-visit_occurrence_preceding_visit_occurrence_id_df,
-condition_occurrence_condition_concept_id_df,
-condition_occurrence_condition_type_concept_id,
-condition_occurrence_condition_source_concept_id,
-condition_occurrence_condition_status_concept_id,
-drug_exposure_drug_concept_id,
-drug_exposure_drug_type_concept_id,
-drug_exposure_route_concept_id,
-drug_exposure_provider_id,
-drug_exposure_visit_occurrence_id,
-drug_exposure_drug_source_concept_id,
-measurement_measurement_concept_id,
-measurement_measurement_type_concept_id,
-measurement_operator_concept_id,
-measurement_value_as_concept_id,
-measurement_unit_concept_id,
-measurement_provider_id,
-measurement_visit_occurrence_id,
-measurement_measurement_source_concept_id,
-procedure_occurrence_procedure_concept_id,
-procedure_occurrence_procedure_type_concept_id,
-procedure_occurrence_modifier_concept_id,
-procedure_occurrence_provider_id,
-procedure_occurrence_visit_occurrence_id,
-procedure_occurrence_procedure_source_concept_id,
-device_exposure_device_concept_id,
-device_exposure_device_type_concept_id,
-device_exposure_provider_id,
-device_exposure_visit_occurrence_id,
-device_exposure_device_source_concept_id]
+datas = [
+    visit_occurrence_visit_type_concept_id, visit_occurrence_provider_id_df,
+    visit_occurrence_care_site_id_df,
+    visit_occurrence_visit_source_concept_id_df,
+    visit_occurrence_admitting_source_concept_id_df,
+    visit_occurrence_discharge_to_concept_id_df,
+    visit_occurrence_preceding_visit_occurrence_id_df,
+    condition_occurrence_condition_concept_id_df,
+    condition_occurrence_condition_type_concept_id,
+    condition_occurrence_condition_source_concept_id,
+    condition_occurrence_condition_status_concept_id,
+    drug_exposure_drug_concept_id, drug_exposure_drug_type_concept_id,
+    drug_exposure_route_concept_id, drug_exposure_provider_id,
+    drug_exposure_visit_occurrence_id, drug_exposure_drug_source_concept_id,
+    measurement_measurement_concept_id, measurement_measurement_type_concept_id,
+    measurement_operator_concept_id, measurement_value_as_concept_id,
+    measurement_unit_concept_id, measurement_provider_id,
+    measurement_visit_occurrence_id, measurement_measurement_source_concept_id,
+    procedure_occurrence_procedure_concept_id,
+    procedure_occurrence_procedure_type_concept_id,
+    procedure_occurrence_modifier_concept_id, procedure_occurrence_provider_id,
+    procedure_occurrence_visit_occurrence_id,
+    procedure_occurrence_procedure_source_concept_id,
+    device_exposure_device_concept_id, device_exposure_device_type_concept_id,
+    device_exposure_provider_id, device_exposure_visit_occurrence_id,
+    device_exposure_device_source_concept_id
+]
 
-master_df=visit_occurrence_visit_concept_id_df
+master_df = visit_occurrence_visit_concept_id_df
 
 for filename in datas:
-    master_df = pd.merge(master_df,filename,on='src_hpo_id',how='outer')
+    master_df = pd.merge(master_df, filename, on='src_hpo_id', how='outer')
 
 # +
 
-master_df = pd.merge(master_df,site_df,on='src_hpo_id',how='outer')
+master_df = pd.merge(master_df, site_df, on='src_hpo_id', how='outer')
 # -
 
 master_df
 
-master_df=master_df.fillna("No Data")
+master_df = master_df.fillna("No Data")
 master_df
 
 master_df.to_csv("data\\foreign.csv")
-
-
-
-
