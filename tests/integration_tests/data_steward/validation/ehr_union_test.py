@@ -4,10 +4,12 @@ import re
 import unittest
 
 import dpath
+import mock
 import moz_sql_parser
 
 import bq_utils
 import cdm
+import common
 from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
 import gcs_utils
@@ -77,9 +79,9 @@ class EhrUnionTest(unittest.TestCase):
     def _load_datasets(self):
         """
         Load five persons data for each test hpo
-        """
         # expected_tables is for testing output
         # it maps table name to list of expected records ex: "unioned_ehr_visit_occurrence" -> [{}, {}, ...]
+        """
         expected_tables = dict()
         running_jobs = []
         for cdm_table in resources.CDM_TABLES:
@@ -317,7 +319,6 @@ class EhrUnionTest(unittest.TestCase):
     def test_mapping_query(self):
         table = 'measurement'
         hpo_ids = ['nyc', 'pitt']
-        mapping_msg = 'Expected mapping subquery count %s but got %s for hpo_id %s'
         project_id = bq_utils.app_identity.get_application_id()
         dataset_id = bq_utils.get_dataset_id()
         created_tables = []
@@ -392,9 +393,18 @@ class EhrUnionTest(unittest.TestCase):
         obs_rows.extend([dob_row, gender_row, race_row, ethnicity_row])
         return obs_rows
 
-    def test_ehr_person_to_observation(self):
+    @mock.patch('resources.CDM_TABLES', [
+        common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
+        common.VISIT_OCCURRENCE
+    ])
+    @mock.patch('cdm.tables_to_map')
+    def test_ehr_person_to_observation(self, mock_tables_map):
         # ehr person table converts to observation records
         self._load_datasets()
+        mock_tables_map.return_value = [
+            common.OBSERVATION, common.LOCATION, common.CARE_SITE,
+            common.VISIT_OCCURRENCE
+        ]
 
         # perform ehr union
         ehr_union.main(self.input_dataset_id, self.output_dataset_id,
@@ -444,11 +454,19 @@ class EhrUnionTest(unittest.TestCase):
         obs_rows = bq_utils.response2rows(obs_response)
         actual = obs_rows
 
-        self.assertEqual(len(expected), len(actual))
         self.assertCountEqual(expected, actual)
 
-    def test_ehr_person_to_observation_counts(self):
+    @mock.patch('resources.CDM_TABLES', [
+        common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
+        common.VISIT_OCCURRENCE
+    ])
+    @mock.patch('cdm.tables_to_map')
+    def test_ehr_person_to_observation_counts(self, mock_tables_map):
         self._load_datasets()
+        mock_tables_map.return_value = [
+            common.OBSERVATION, common.LOCATION, common.CARE_SITE,
+            common.VISIT_OCCURRENCE
+        ]
 
         # perform ehr union
         ehr_union.main(self.input_dataset_id, self.output_dataset_id,

@@ -74,17 +74,19 @@ print('done.')
 # +
 dic = {
     'src_hpo_id': [
-        "pitt_temple", "saou_lsu", "trans_am_meyers", "trans_am_essentia",
-        "saou_ummc", "seec_miami", "seec_morehouse", "seec_emory",
-        "uamc_banner", "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum",
-        "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu",
-        "nyc_hh", "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders",
-        "seec_ufl", "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci",
-        "aouw_uwh", "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf",
-        "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"
+        "saou_uab_selma", "saou_uab_hunt", "saou_tul", "pitt_temple",
+        "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc",
+        "seec_miami", "seec_morehouse", "seec_emory", "uamc_banner", "pitt",
+        "nyc_cu", "ipmc_uic", "trans_am_spectrum", "tach_hfhs", "nec_bmc",
+        "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
+        "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl",
+        "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh",
+        "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc",
+        "aouw_mcw", "cpmc_ucd", "ipmc_rush"
     ],
     'HPO': [
-        "Temple University", "Louisiana State University",
+        "UAB Selma", "UAB Huntsville", "Tulane University", "Temple University",
+        "Louisiana State University",
         "Reliant Medical Group (Meyers Primary Care)",
         "Essentia Health Superior Clinic", "University of Mississippi",
         "SouthEast Enrollment Center Miami",
@@ -108,6 +110,7 @@ dic = {
 }
 
 site_df = pd.DataFrame(data=dic)
+site_df
 
 # +
 ######################################
@@ -202,7 +205,8 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    ) 
+    order by 1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -210,6 +214,8 @@ site_map = pd.io.gbq.read_gbq('''
                               dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
+
+site_map
 
 site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
 
@@ -1901,12 +1907,12 @@ master_df = observation_concept_df
 
 for filename in datas:
     master_df = pd.merge(master_df, filename, on='src_hpo_id', how='outer')
+# -
 
 master_df
 
 success_rate = pd.merge(master_df, site_df, how='outer', on='src_hpo_id')
 success_rate
-# -
 
 success_rate = success_rate.fillna("No Data")
 success_rate
