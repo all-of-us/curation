@@ -362,7 +362,7 @@ class ValidationMainTest(unittest.TestCase):
         datasource_name = fake_hpo_id
         folder_prefix = fake_hpo_id + '/'
         reports_prefix = folder_prefix + datasource_name + '/'
-        datasources_json_reports_prefix = folder_prefix + 'datasources.json'
+        datasources_json_reports_prefix = folder_prefix + common.DATASOURCES_FILE
 
         main.run_export_dashboard_bucket(fake_hpo_id)
 

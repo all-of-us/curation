@@ -28,7 +28,7 @@ from validation.metrics import required_labs as required_labs
 from validation import ehr_union as ehr_union
 from validation import export as export
 from validation.participants import identity_match as matching
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, DATASOURCES_FILE
 from validation import hpo_report
 from tools import retract_data_bq, retract_data_gcs
 from io import open
@@ -80,8 +80,8 @@ def save_datasources_json(hpo_id, folder_prefix, target_bucket=None):
         if target_bucket is None:
             target_bucket = gcs_utils.get_hpo_bucket(hpo_id)
 
-    datasource = dict(name=hpo_id, folder=hpo_id, cdmVersion=5)
-    datasources = dict(datasources=[datasource])
+    datasources = dict(
+        datasources=[dict(name=hpo_id, folder=hpo_id, cdmVersion=5)])
     datasources_fp = StringIO(json.dumps(datasources))
     result = gcs_utils.upload_object(target_bucket, folder_prefix,
                                      datasources_fp)
@@ -139,7 +139,7 @@ def run_export_dashboard_bucket(hpo_id, target_bucket=None):
     # Run export queries and store json payloads in specified folder in the target bucket
     folder_prefix = hpo_id + '/'
     reports_prefix = folder_prefix + datasource_name + '/'
-    datasources_json_reports_prefix = folder_prefix + 'datasources.json'
+    datasources_json_reports_prefix = folder_prefix + DATASOURCES_FILE
     results = run_achilles_export(hpo_id, target_bucket, reports_prefix,
                                   datasources_json_reports_prefix)
     return results

@@ -5,6 +5,7 @@ import bq_utils
 import resources
 from io import open
 
+FAKE_HPO_ID = 'fake'
 EXPORT_PATH = os.path.join(resources.resource_path, 'export')
 RESULTS_SCHEMA_PLACEHOLDER = '@results_database_schema.'
 VOCAB_SCHEMA_PLACEHOLDER = '@vocab_database_schema.'
@@ -55,7 +56,8 @@ def export_from_path(p, hpo_id=None):
     :return: `dict` structured for report render
     """
     result = dict()
-    if hpo_id not in [item['hpo_id'] for item in resources.hpo_csv()]:
+    if hpo_id not in [item['hpo_id'] for item in resources.hpo_csv()]\
+            and hpo_id != FAKE_HPO_ID:
         hpo_id = None
     for f in list_files_only(p):
         name = f[0:-4].upper()

@@ -41,23 +41,18 @@ if __name__ == '__main__':
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         '--bucket',
-        default='',
         help='Identifier for the bucket where, achilles files will be copied to'
     )
     parser.add_argument(
         '--folder',
-        default='',
         help='Identifier for the folder in which achilles results sit.',
         required=True)
     parser.add_argument(
         '--transfer_bucket',
-        default='',
         help='Achilles Transfer bucket name',
     )
-    parser.add_argument(
-        '--data_stage',
-        default='',
-        help='Stage of the data step in the ETL',
-    )
+    parser.add_argument('--data_stage',
+                        required=True,
+                        help='Specify the dataset')
     args = parser.parse_args()
     main(args)

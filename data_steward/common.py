@@ -96,6 +96,7 @@ REQUIRED_FILES = [table + '.csv' for table in REQUIRED_TABLES]
 ACHILLES_EXPORT_PREFIX_STRING = "curation_report/data/"
 IGNORE_STRING_LIST = [ACHILLES_EXPORT_PREFIX_STRING]
 ACHILLES_EXPORT_DATASOURCES_JSON = ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json'
+DATASOURCES_FILE = 'datasources.json'
 
 # latest vocabulary dataset name in test and prod
 VOCABULARY_DATASET = 'vocabulary20190423'
