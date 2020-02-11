@@ -1,4 +1,7 @@
-LOG_FILENAME = '/tmp/cleaner.log'
+import os
+import tempfile
+
+FILENAME = os.path.join(tempfile.gettempdir(), 'cleaner.log')
 
 FAILURE_MESSAGE_TEMPLATE = '''
 The failed query was generated from the below module:
