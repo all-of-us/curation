@@ -34,11 +34,10 @@ class CleanCDRTest(unittest.TestCase):
             cdr_consts.LINE_NO: self.line_no
         }
 
-    @mock.patch('inspect.signature')
     @mock.patch('inspect.getsourcelines')
     @mock.patch('inspect.getmodule')
     def test_add_module_info_decorator(self, mock_get_module,
-                                       mock_getsourcelines, mock_signature):
+                                       mock_getsourcelines):
         mock_function = mock.Mock(__name__=self.function_name)
         mock_function.return_value = [self.query_dict]
         mock_get_module.return_value = mock.Mock(__name__=self.model_name)
