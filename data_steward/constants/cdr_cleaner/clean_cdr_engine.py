@@ -1,3 +1,5 @@
+LOG_FILENAME = '/tmp/cleaner.log'
+
 FAILURE_MESSAGE_TEMPLATE = '''
 The failed query was generated from the below module:
     module_name={module_name}

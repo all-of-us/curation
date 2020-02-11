@@ -6,14 +6,13 @@ import googleapiclient
 import oauth2client
 import app_identity
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
-from constants.cdr_cleaner.clean_cdr_engine import FAILURE_MESSAGE_TEMPLATE
+from constants.cdr_cleaner.clean_cdr_engine import LOG_FILENAME, FAILURE_MESSAGE_TEMPLATE
 
 import bq_utils
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
-FILENAME = '/tmp/cleaner.log'
 
 
 def add_console_logging(add_handler):
@@ -25,7 +24,7 @@ def add_console_logging(add_handler):
     """
     logging.basicConfig(
         level=logging.INFO,
-        filename=FILENAME,
+        filename=LOG_FILENAME,
         filemode='a',
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
