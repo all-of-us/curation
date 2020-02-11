@@ -71,17 +71,19 @@ print('done.')
 # +
 dic = {
     'src_hpo_id': [
-        "pitt_temple", "saou_lsu", "trans_am_meyers", "trans_am_essentia",
-        "saou_ummc", "seec_miami", "seec_morehouse", "seec_emory",
-        "uamc_banner", "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum",
-        "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu",
-        "nyc_hh", "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders",
-        "seec_ufl", "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci",
-        "aouw_uwh", "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf",
-        "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"
+        "saou_uab_selma", "saou_uab_hunt", "saou_tul", "pitt_temple",
+        "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc",
+        "seec_miami", "seec_morehouse", "seec_emory", "uamc_banner", "pitt",
+        "nyc_cu", "ipmc_uic", "trans_am_spectrum", "tach_hfhs", "nec_bmc",
+        "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
+        "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl",
+        "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh",
+        "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc",
+        "aouw_mcw", "cpmc_ucd", "ipmc_rush"
     ],
     'HPO': [
-        "Temple University", "Louisiana State University",
+        "UAB Selma", "UAB Huntsville", "Tulane University", "Temple University",
+        "Louisiana State University",
         "Reliant Medical Group (Meyers Primary Care)",
         "Essentia Health Superior Clinic", "University of Mississippi",
         "SouthEast Enrollment Center Miami",
@@ -859,7 +861,7 @@ succes_rate = succes_rate.fillna("No Data")
 
 succes_rate
 
-succes_rate.to_csv("data\\data_after_date.csv")
+succes_rate.to_csv("data\\data_after_death.csv")
 
 # # Age of participant should NOT be below 18 and should NOT be too high (Achilles rule_id #20 and 21)
 
@@ -1364,4 +1366,4 @@ combined = pd.merge(combined, site_df, how='outer', on='src_hpo_id')
 combined = combined.fillna("No Data")
 combined
 
-combined.to_csv("data\\diabets.csv")
+combined.to_csv("data\\diabetes.csv")

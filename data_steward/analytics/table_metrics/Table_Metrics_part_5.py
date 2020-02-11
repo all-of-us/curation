@@ -27,7 +27,6 @@ print('Setting everything up...')
 #######################################
 
 import warnings
-
 warnings.filterwarnings('ignore')
 import pandas_gbq
 import pandas as pd
@@ -42,7 +41,6 @@ import matplotlib.cm as cm
 import matplotlib as mpl
 
 import matplotlib.pyplot as plt
-
 # %matplotlib inline
 
 DATASET = ''
@@ -72,17 +70,19 @@ print('done.')
 # +
 dic = {
     'src_hpo_id': [
-        "pitt_temple", "saou_lsu", "trans_am_meyers", "trans_am_essentia",
-        "saou_ummc", "seec_miami", "seec_morehouse", "seec_emory",
-        "uamc_banner", "pitt", "nyc_cu", "ipmc_uic", "trans_am_spectrum",
-        "tach_hfhs", "nec_bmc", "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu",
-        "nyc_hh", "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders",
-        "seec_ufl", "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci",
-        "aouw_uwh", "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf",
-        "jhchc", "aouw_mcw", "cpmc_ucd", "ipmc_rush"
+        "saou_uab_selma", "saou_uab_hunt", "saou_tul", "pitt_temple",
+        "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc",
+        "seec_miami", "seec_morehouse", "seec_emory", "uamc_banner", "pitt",
+        "nyc_cu", "ipmc_uic", "trans_am_spectrum", "tach_hfhs", "nec_bmc",
+        "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
+        "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl",
+        "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh",
+        "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc",
+        "aouw_mcw", "cpmc_ucd", "ipmc_rush"
     ],
     'HPO': [
-        "Temple University", "Louisiana State University",
+        "UAB Selma", "UAB Huntsville", "Tulane University", "Temple University",
+        "Louisiana State University",
         "Reliant Medical Group (Meyers Primary Care)",
         "Essentia Health Superior Clinic", "University of Mississippi",
         "SouthEast Enrollment Center Miami",
@@ -244,7 +244,7 @@ painnsaids = (1177480, 1125315, 1112807, 1115008, 45660697, 45787568, 36156482,
 
 ace_inhibitors = (1308216, 1341927, 1335471, 1331235, 1334456, 1340128, 1363749)
 
-all_drugs = antibiotics + ccb + diuretics + opioids + statins + msknsaids + oralhypoglycemics + painnsaids + vaccine + ace_inhibitors
+all_drugs = diuretics + ccb + vaccine + oralhypoglycemics + opioids + antibiotics + statins + msknsaids + painnsaids + ace_inhibitors
 
 # ## Diuretics
 
@@ -698,12 +698,8 @@ sites_drug_success = pd.merge(sites_drug_success,
 sites_drug_success = sites_drug_success.fillna("No Data")
 sites_drug_success
 
-sites_drug_success[
-    ["ace_inhibitors", "painnsaids", "msknsaids", "statins", "antibiotics", "opioids", "oralhypoglycemics", "vaccine",
-     "ccb", "diuretics", "all_drugs"]] \
-    = sites_drug_success[
-    ["ace_inhibitors", "painnsaids", "msknsaids", "statins", "antibiotics", "opioids", "oralhypoglycemics", "vaccine",
-     "ccb", "diuretics", "all_drugs"]]
+sites_drug_success[["ace_inhibitors","painnsaids","msknsaids","statins","antibiotics","opioids","oralhypoglycemics","vaccine","ccb","diuretics","all_drugs"]]\
+    =sites_drug_success[["ace_inhibitors","painnsaids","msknsaids","statins","antibiotics","opioids","oralhypoglycemics","vaccine","ccb","diuretics","all_drugs"]]
 sites_drug_success
 
 sites_drug_success = pd.merge(sites_drug_success,
