@@ -46,7 +46,6 @@ import matplotlib.pyplot as plt
 
 DATASET = ''
 
-
 import os
 import sys
 from datetime import datetime
@@ -72,12 +71,13 @@ print('done.')
 
 
 # +
-dic={'src_hpo_id':["pitt_temple","saou_lsu","trans_am_meyers","trans_am_essentia","saou_ummc","seec_miami","seec_morehouse","seec_emory","uamc_banner","pitt","nyc_cu","ipmc_uic","trans_am_spectrum","tach_hfhs","nec_bmc","cpmc_uci","nec_phs","nyc_cornell","ipmc_nu","nyc_hh","ipmc_uchicago","aouw_mcri","syhc","cpmc_ceders","seec_ufl","saou_uab","trans_am_baylor","cpmc_ucsd","ecchc","chci","aouw_uwh","cpmc_usc","hrhc","ipmc_northshore","chs","cpmc_ucsf","jhchc","aouw_mcw","cpmc_ucd","ipmc_rush"],
-    'HPO':["Temple University","Louisiana State University","Reliant Medical Group (Meyers Primary Care)","Essentia Health Superior Clinic","University of Mississippi","SouthEast Enrollment Center Miami","SouthEast Enrollment Center Morehouse","SouthEast Enrollment Center Emory","Banner Health","University of Pittsburgh","Columbia University Medical Center","University of Illinois Chicago","Spectrum Health","Henry Ford Health System","Boston Medical Center","UC Irvine","Partners HealthCare","Weill Cornell Medical Center","Northwestern Memorial Hospital","Harlem Hospital","University of Chicago","Marshfield Clinic","San Ysidro Health Center","Cedars-Sinai","University of Florida","University of Alabama at Birmingham","Baylor","UC San Diego","Eau Claire Cooperative Health Center","Community Health Center, Inc.","UW Health (University of Wisconsin Madison)","University of Southern California","HRHCare","NorthShore University Health System","Cherokee Health Systems","UC San Francisco","Jackson-Hinds CHC","Medical College of Wisconsin","UC Davis","Rush University"]}
+dic={'src_hpo_id':["saou_uab_selma","saou_uab_hunt","saou_tul","pitt_temple","saou_lsu","trans_am_meyers","trans_am_essentia","saou_ummc","seec_miami","seec_morehouse","seec_emory","uamc_banner","pitt","nyc_cu","ipmc_uic","trans_am_spectrum","tach_hfhs","nec_bmc","cpmc_uci","nec_phs","nyc_cornell","ipmc_nu","nyc_hh","ipmc_uchicago","aouw_mcri","syhc","cpmc_ceders","seec_ufl","saou_uab","trans_am_baylor","cpmc_ucsd","ecchc","chci","aouw_uwh","cpmc_usc","hrhc","ipmc_northshore","chs","cpmc_ucsf","jhchc","aouw_mcw","cpmc_ucd","ipmc_rush"],
+    'HPO':["UAB Selma","UAB Huntsville","Tulane University","Temple University","Louisiana State University","Reliant Medical Group (Meyers Primary Care)","Essentia Health Superior Clinic","University of Mississippi","SouthEast Enrollment Center Miami","SouthEast Enrollment Center Morehouse","SouthEast Enrollment Center Emory","Banner Health","University of Pittsburgh","Columbia University Medical Center","University of Illinois Chicago","Spectrum Health","Henry Ford Health System","Boston Medical Center","UC Irvine","Partners HealthCare","Weill Cornell Medical Center","Northwestern Memorial Hospital","Harlem Hospital","University of Chicago","Marshfield Clinic","San Ysidro Health Center","Cedars-Sinai","University of Florida","University of Alabama at Birmingham","Baylor","UC San Diego","Eau Claire Cooperative Health Center","Community Health Center, Inc.","UW Health (University of Wisconsin Madison)","University of Southern California","HRHCare","NorthShore University Health System","Cherokee Health Systems","UC San Francisco","Jackson-Hinds CHC","Medical College of Wisconsin","UC Davis","Rush University"]}
 
 
 site_df=pd.DataFrame(data=dic)
 site_df
+
 
 # +
 ######################################
@@ -188,35 +188,27 @@ site_df
 
 # # Improve the Definitions of Drug Ingredient 
 
-diuretics=(974166,956874,970250,1395058,904542,942350,932745,907013,978555,991382,
-1309799)
+diuretics=(974166,956874,970250,1395058,904542,942350,932745,907013,978555,991382,1309799)
 
 ccb=(1332418,1328165,1318853,1307863,1353776,1318137)
 
-vaccine=(45637323,529411,529303,42800027,45658522,45628027,529218,36212685,40163692,528323,528986,792777,
-596876)
+vaccine=(45637323,529411,529303,42800027,45658522,45628027,529218,36212685,40163692,528323,528986,792777,596876)
 
 oralhypoglycemics=(1503297,1560171,1580747,1559684,1525215,1597756,45774751,40239216,40166035,1516766,1529331)
 
-opioids=(1124957,1103314,1201620,1174888,1126658,1110410,1154029,1103640,
-1102527)
+opioids=(1124957,1103314,1201620,1174888,1126658,1110410,1154029,1103640,1102527)
 
-antibiotics=(1734104,1836430,1713332,1797513,1705674,1786621,1742253,997881,1707164,1738521,1759842,1746940,902722,45892419,1717327,1777806,1836948,1746114,
-1775741)
+antibiotics=(1734104,1836430,1713332,1797513,1705674,1786621,1742253,997881,1707164,1738521,1759842,1746940,902722,45892419,1717327,1777806,1836948,1746114,1775741)
 
-statins=(1551860,1545958,1539403,1510813,1592085,1549686,
-40165636)
+statins=(1551860,1545958,1539403,1510813,1592085,1549686,40165636)
 
-msknsaids=(1115008,1177480,1124300,1178663,1136980,1118084,1150345,1236607,1395573,
-1146810)
+msknsaids=(1115008,1177480,1124300,1178663,1136980,1118084,1150345,1236607,1395573,1146810)
 
-painnsaids=(1177480,1125315,1112807,1115008,45660697,45787568,36156482,45696636,
-45696805)
+painnsaids=(1177480,1125315,1112807,1115008,45660697,45787568,36156482,45696636,45696805)
 
-ace_inhibitors=(1308216,1341927,1335471,1331235,1334456,1340128,
-1363749)
+ace_inhibitors=(1308216,1341927,1335471,1331235,1334456,1340128,1363749)
 
-all_drugs =antibiotics+ccb+diuretics+opioids+statins+msknsaids+oralhypoglycemics+painnsaids+vaccine+ace_inhibitors
+all_drugs = diuretics+ccb+vaccine+oralhypoglycemics+opioids+antibiotics+statins+msknsaids+painnsaids+ace_inhibitors
 
 # ## Diuretics
 
