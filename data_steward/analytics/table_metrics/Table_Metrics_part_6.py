@@ -70,11 +70,12 @@ print('done.')
 
 
 # +
-dic={'src_hpo_id':["pitt_temple","saou_lsu","trans_am_meyers","trans_am_essentia","saou_ummc","seec_miami","seec_morehouse","seec_emory","uamc_banner","pitt","nyc_cu","ipmc_uic","trans_am_spectrum","tach_hfhs","nec_bmc","cpmc_uci","nec_phs","nyc_cornell","ipmc_nu","nyc_hh","ipmc_uchicago","aouw_mcri","syhc","cpmc_ceders","seec_ufl","saou_uab","trans_am_baylor","cpmc_ucsd","ecchc","chci","aouw_uwh","cpmc_usc","hrhc","ipmc_northshore","chs","cpmc_ucsf","jhchc","aouw_mcw","cpmc_ucd","ipmc_rush"],
-    'HPO':["Temple University","Louisiana State University","Reliant Medical Group (Meyers Primary Care)","Essentia Health Superior Clinic","University of Mississippi","SouthEast Enrollment Center Miami","SouthEast Enrollment Center Morehouse","SouthEast Enrollment Center Emory","Banner Health","University of Pittsburgh","Columbia University Medical Center","University of Illinois Chicago","Spectrum Health","Henry Ford Health System","Boston Medical Center","UC Irvine","Partners HealthCare","Weill Cornell Medical Center","Northwestern Memorial Hospital","Harlem Hospital","University of Chicago","Marshfield Clinic","San Ysidro Health Center","Cedars-Sinai","University of Florida","University of Alabama at Birmingham","Baylor","UC San Diego","Eau Claire Cooperative Health Center","Community Health Center, Inc.","UW Health (University of Wisconsin Madison)","University of Southern California","HRHCare","NorthShore University Health System","Cherokee Health Systems","UC San Francisco","Jackson-Hinds CHC","Medical College of Wisconsin","UC Davis","Rush University"]}
+dic={'src_hpo_id':["saou_uab_selma","saou_uab_hunt","saou_tul","pitt_temple","saou_lsu","trans_am_meyers","trans_am_essentia","saou_ummc","seec_miami","seec_morehouse","seec_emory","uamc_banner","pitt","nyc_cu","ipmc_uic","trans_am_spectrum","tach_hfhs","nec_bmc","cpmc_uci","nec_phs","nyc_cornell","ipmc_nu","nyc_hh","ipmc_uchicago","aouw_mcri","syhc","cpmc_ceders","seec_ufl","saou_uab","trans_am_baylor","cpmc_ucsd","ecchc","chci","aouw_uwh","cpmc_usc","hrhc","ipmc_northshore","chs","cpmc_ucsf","jhchc","aouw_mcw","cpmc_ucd","ipmc_rush"],
+    'HPO':["UAB Selma","UAB Huntsville","Tulane University","Temple University","Louisiana State University","Reliant Medical Group (Meyers Primary Care)","Essentia Health Superior Clinic","University of Mississippi","SouthEast Enrollment Center Miami","SouthEast Enrollment Center Morehouse","SouthEast Enrollment Center Emory","Banner Health","University of Pittsburgh","Columbia University Medical Center","University of Illinois Chicago","Spectrum Health","Henry Ford Health System","Boston Medical Center","UC Irvine","Partners HealthCare","Weill Cornell Medical Center","Northwestern Memorial Hospital","Harlem Hospital","University of Chicago","Marshfield Clinic","San Ysidro Health Center","Cedars-Sinai","University of Florida","University of Alabama at Birmingham","Baylor","UC San Diego","Eau Claire Cooperative Health Center","Community Health Center, Inc.","UW Health (University of Wisconsin Madison)","University of Southern California","HRHCare","NorthShore University Health System","Cherokee Health Systems","UC San Francisco","Jackson-Hinds CHC","Medical College of Wisconsin","UC Davis","Rush University"]}
 
 
 site_df=pd.DataFrame(data=dic)
+site_df
 
 
 # +
@@ -182,18 +183,15 @@ site_df=pd.merge(site_map,site_df,how='outer',on='src_hpo_id')
 
 site_df
 
-Lipid=(40772590, 40782589, 40795800, 40772572)
+Lipid=(40782589,40795800,40772572)
 
-CBC=(40789356,40789120,40789179,40782521,40772748,40782735,40789182,40786033,
-40779159)
+CBC=(40789356,40789120,40789179,40772748,40782735,40789182,40786033,40779159)
 
 CBCwDiff=(40785788,40785796,40779195,40795733,40795725,40772531,40779190,40785793,40779191,40782561,40789266)
 
-CMP=(3049187,3053283,40775801,40779224,40779250,40782562,40782579,40785850,40785861,40785869,40789180,40789190,40789527,40791227,40792413,40792440,40795730,40795740,
-40795754)
+CMP=(3049187,3053283,40775801,40779224,40782562,40782579,40785850,40785861,40785869,40789180,40789190,40789527,40791227,40792413,40792440,40795730,40795740,40795754)
 
-Physical_Measurement=(45875982,45876161,45876166,45876171,45876174,
-45876226)
+Physical_Measurement=(40654163,40655804,40654162,40655805,40654167,40654164)
 
 all_measurements = Lipid+ CBC+CBCwDiff+CMP+Physical_Measurement
 
