@@ -470,6 +470,22 @@ def queries_to_retract_from_combined_or_deid_dataset(
                 person_research_id=RESEARCH_ID if deid_flag else PERSON_ID)
             combined_queries.append(q_combined)
 
+    if retraction_type == 'rdr_and_ehr':
+        # retract from person
+        q_combined_person = dict()
+        q_combined_person[DEST_DATASET] = dataset_id
+        q_combined_person[DEST_TABLE] = common.PERSON
+        if q_combined_person[DEST_TABLE] in existing_tables:
+            q_combined_person[QUERY] = RETRACT_DATA_UNIONED_QUERY.format(
+                project=project_id,
+                pid_project=pid_project_id,
+                dataset=q_combined_person[DEST_DATASET],
+                table=q_combined_person[DEST_TABLE],
+                pid_table_id=pid_table_id,
+                sandbox_dataset_id=sandbox_dataset_id,
+                person_research_id=RESEARCH_ID if deid_flag else PERSON_ID)
+            combined_queries.append(q_combined_person)
+
     # fix death query to exclude constant
     for q in combined_queries:
         if q[DEST_TABLE] is common.DEATH:
