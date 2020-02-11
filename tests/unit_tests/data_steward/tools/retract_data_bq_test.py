@@ -25,6 +25,7 @@ class RetractDataBqTest(unittest.TestCase):
         self.combined_dataset_id = 'combined20190801'
         self.sandbox_dataset_id = 'sandbox_dataset'
         self.pid_table_id = 'pid_table'
+        self.retraction_type = 'only_ehr'
         self.tables_to_retract_unioned = retract_data_bq.TABLES_FOR_RETRACTION | {
             common.FACT_RELATIONSHIP, common.PERSON
         }
@@ -144,6 +145,7 @@ class RetractDataBqTest(unittest.TestCase):
             self.project_id,
             self.sandbox_dataset_id,
             self.pid_table_id,
+            self.retraction_type,
             deid_flag=False)
         actual_dest_tables = set(
             q[retract_data_bq.DEST_TABLE] for q in qs + mqs)

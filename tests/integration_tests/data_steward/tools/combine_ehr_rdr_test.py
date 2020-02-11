@@ -1,7 +1,5 @@
 # Python imports
-import logging
 import os
-import sys
 import unittest
 from io import open
 
@@ -12,7 +10,7 @@ import resources
 from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
-                                   mapping_table_for, create_cdm_tables, logger)
+                                   mapping_table_for, create_cdm_tables)
 
 UNCONSENTED_EHR_COUNTS_QUERY = (
     '  select \'{domain_table}\' as table_id, count(1) as n from (SELECT DISTINCT'
@@ -34,9 +32,6 @@ class CombineEhrRdrTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
         # TODO base class this
-        logger.level = logging.INFO
-        stream_handler = logging.StreamHandler(sys.stdout)
-        logger.addHandler(stream_handler)
         ehr_dataset_id = bq_utils.get_dataset_id()
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
@@ -333,4 +328,3 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        logger.handlers = []
