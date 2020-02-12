@@ -449,17 +449,14 @@ def get_gcp_logger() -> GCPStackDriverLogger:
 
 class GCPLoggingHandler(logging.Handler):
 
-    def __init__(self, _logger):
-        super().__init__()
-        self._logger = _logger
-
     def emit(self, record: logging.LogRecord):
         """
         Capture and store a log event record.
         :param record: Python log record
         """
-        if self._logger:
-            self._logger.log_event(record)
+        _logger = get_gcp_logger()
+        if _logger:
+            _logger.log_event(record)
             return
 
         line = setup_log_line(record)
@@ -476,7 +473,7 @@ def initialize_logging(log_level=logging.INFO):
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
         # Configure StackDriver logging handler
-        log_handler = GCPLoggingHandler(get_gcp_logger())
+        log_handler = GCPLoggingHandler()
         log_handler.setLevel(log_level)
 
         # Add StackDriver logging handler to root logger.
