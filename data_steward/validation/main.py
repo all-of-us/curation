@@ -8,7 +8,7 @@ import re
 from io import StringIO
 
 # Third party imports
-from flask import Flask
+from flask import Flask, Response
 import app_identity
 from googleapiclient.errors import HttpError
 
@@ -419,6 +419,9 @@ def process_hpo(hpo_id, force_run=False):
         message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (
             hpo_id, http_error.content.decode())
         logging.error(message)
+    except ValueError as value_error:
+        logging.exception(value_error)
+        raise value_error
 
 
 def get_hpo_name(hpo_id):
@@ -947,4 +950,6 @@ app.add_url_rule(consts.PREFIX + 'RetractPids',
 app.before_request(
     begin_request_logging)  # Must be first before_request() call.
 
-app.after_request(end_request_logging)  # Must be last after_request() call.
+app.teardown_request(
+    end_request_logging
+)  # teardown_request to be called regardless if there is an exception thrown

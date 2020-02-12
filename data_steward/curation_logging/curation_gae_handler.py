@@ -14,7 +14,7 @@ from enum import IntEnum
 import random
 
 import requests
-from flask import request
+from flask import request, Response
 
 from google.api.monitored_resource_pb2 import MonitoredResource
 from google.cloud import logging as gcp_logging
@@ -336,9 +336,13 @@ class GCPStackDriverLogger(object):
             self._operation_pb2 = update_long_operation(
                 self._request_log_id, self.log_completion_status)
 
-        if _response:
+        # _response could be of the exception type if an exception is raised
+        if isinstance(_response, Response):
             self._response_status_code = _response.status_code
             self._response_size = len(_response.data)
+        else:
+            self._response_status_code = None
+            self._response_size = None
 
         self.publish_to_stackdriver()
         self._reset()
