@@ -29,11 +29,32 @@ def create_empty_cdm_tables(snapshot_dataset_id):
     cdm.create_vocabulary_tables(snapshot_dataset_id)
 
 
+def get_field_cast_expr(field, data_type):
+    """
+    generates cast expression based on data_type for the field
+
+    :param field: field name
+    :param data_type: data type of the field
+    :return:  col string
+    """
+    bigquery_int_float = {'integer': 'INT64', 'float': 'FLOAT64'}
+
+    if data_type not in ['integer', 'float']:
+        col = f'CAST({field} AS {data_type.upper()}) AS {field}'
+    else:
+        col = f'CAST({field} AS {bigquery_int_float[data_type]}) AS {field}'
+
+    return col
+
+
 def get_copy_table_query(project_id, dataset_id, table_id):
     try:
         fields = resources.fields_for(table_id)
-        field_names = [field['name'] for field in fields]
-        col_expr = ', '.join(field_names)
+        fields_with_datatypes = [
+            get_field_cast_expr(field['name'], field['type'])
+            for field in fields
+        ]
+        col_expr = ', '.join(fields_with_datatypes)
     except (OSError, IOError) as e:
         # default to select *
         col_expr = '*'
