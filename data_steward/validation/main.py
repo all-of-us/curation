@@ -8,7 +8,7 @@ import re
 from io import StringIO
 
 # Third party imports
-from flask import Flask, Response
+from flask import Flask
 import app_identity
 from googleapiclient.errors import HttpError
 
