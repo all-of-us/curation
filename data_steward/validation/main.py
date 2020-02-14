@@ -419,9 +419,6 @@ def process_hpo(hpo_id, force_run=False):
         message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (
             hpo_id, http_error.content.decode())
         logging.error(message)
-    except ValueError as value_error:
-        logging.exception(value_error)
-        raise value_error
 
 
 def get_hpo_name(hpo_id):
