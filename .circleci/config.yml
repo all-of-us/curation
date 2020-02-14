@@ -79,9 +79,10 @@ jobs:
       - run:
           name: Run unit tests
           working_directory: ~/curation
-          # TODO: This should not be required to run the unit tests.
+          # TODO: These env vars should not be required to run the unit tests.
           environment:
             BUCKET_NAME_FAKE: curation-fake
+            RDR_DATASET_ID: curation_fake_rdr
           command: |
             mkdir -p tests/results/coverage/unit/xml
             mkdir -p tests/results/coverage/unit/html
