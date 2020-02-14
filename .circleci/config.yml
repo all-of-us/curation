@@ -126,22 +126,22 @@ jobs:
 
 workflows:
   version: 2
-    test:
-      jobs:
-        - unit_test
-        - integration_test:
-            filters:
-              branches:
-                # This would cause too much noise to run on commit, run nightly
-                # instead per below workflow.
-                ignore: develop
-    nightly:
-      triggers:
-        - schedule:
-            cron: "0 6 * * *" # midnight CST
-            filters:
-              branches:
-                only: develop
-      jobs:
-        - unit_test
-        - integration_test
+  test:
+    jobs:
+      - unit_test
+      - integration_test:
+          filters:
+            branches:
+              # This would cause too much noise to run on commit, run nightly
+              # instead per below workflow.
+              ignore: develop
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 6 * * *" # midnight CST
+          filters:
+            branches:
+              only: develop
+    jobs:
+      - unit_test
+      - integration_test
