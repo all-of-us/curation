@@ -79,6 +79,9 @@ jobs:
       - run:
           name: Run unit tests
           working_directory: ~/curation
+          # TODO: This should not be required to run the unit tests.
+          environment:
+            BUCKET_NAME_FAKE: curation-fake
           command: |
             mkdir -p tests/results/coverage/unit/xml
             mkdir -p tests/results/coverage/unit/html
@@ -106,9 +109,6 @@ jobs:
       - run:
           name: Run integration tests
           working_directory: ~/curation
-          # TODO: This should not be required to run the unit tests.
-          environment:
-            BUCKET_NAME_FAKE: curation-fake
           command: |
             t=$(git log -1 --pretty=%B)
             # If this gets triggered on develop or master, let it run. Note
