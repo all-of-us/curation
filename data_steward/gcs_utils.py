@@ -23,7 +23,7 @@ def get_drc_bucket():
 
 
 def get_achilles_transfer_bucket():
-    return os.environ.get('ACHILLES_TRANSFER_BUCKET')
+    return os.environ.get('BUCKET_NAME_ACHILLES_TRANSFER')
 
 
 def get_hpo_bucket(hpo_id):

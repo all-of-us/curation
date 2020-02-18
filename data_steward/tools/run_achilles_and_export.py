@@ -39,10 +39,8 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument(
-        '--bucket',
-        help='Identifier for the bucket where, achilles files will be copied to'
-    )
+    parser.add_argument('--bucket',
+                        help='Identifier for the Achilles Transfer Bucket')
     parser.add_argument(
         '--folder',
         help='Identifier for the folder in which achilles results sit.',
@@ -53,6 +51,6 @@ if __name__ == '__main__':
     )
     parser.add_argument('--data_stage',
                         required=True,
-                        help='Specify the dataset')
+                        help='Specify the data stage')
     args = parser.parse_args()
     main(args)

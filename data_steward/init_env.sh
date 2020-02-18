@@ -36,7 +36,7 @@ BUCKET_PREFIX="${USERNAME_PREFIX}_${CURRENT_BRANCH}"
 
 # GCS buckets are globally unique, so we prefix with project id and username
 export DRC_BUCKET_NAME="${BUCKET_PREFIX}_drc"
-export ACHILLES_TRANSFER_BUCKET="${BUCKET_PREFIX}_achilles_transfer"
+export BUCKET_NAME_ACHILLES_TRANSFER="${BUCKET_PREFIX}_achilles_transfer"
 export BUCKET_NAME_FAKE="${BUCKET_PREFIX}_fake"
 export BUCKET_NAME_NYC="${BUCKET_PREFIX}_nyc"
 export BUCKET_NAME_PITT="${BUCKET_PREFIX}_pitt"
@@ -61,7 +61,7 @@ then
   echo "export GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" >> ${BASH_ENV}
   echo "export USERNAME=${USERNAME}" >> ${BASH_ENV}
   echo "export DRC_BUCKET_NAME=${DRC_BUCKET_NAME}" >> ${BASH_ENV}
-  exho "export ACHILLES_TRANSFER_BUCKET=${ACHILLES_TRANSFER_BUCKET}">> ${BASH_ENV}
+  echo "export BUCKET_NAME_ACHILLES_TRANSFER=${BUCKET_NAME_ACHILLES_TRANSFER}">> ${BASH_ENV}
   echo "export BUCKET_NAME_FAKE=${BUCKET_NAME_FAKE}" >> ${BASH_ENV}
   echo "export BUCKET_NAME_NYC=${BUCKET_NAME_NYC}" >> ${BASH_ENV}
   echo "export BUCKET_NAME_PITT=${BUCKET_NAME_PITT}" >> ${BASH_ENV}
