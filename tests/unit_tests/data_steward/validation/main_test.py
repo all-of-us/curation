@@ -33,7 +33,7 @@ class ValidationMainTest(unittest.TestCase):
         self.mock_get_hpo_name = mock_get_hpo_name.start()
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
-        self.folder_prefix = '2019-01-01/'
+        self.folder_prefix = '2019-01-01-v1/'
 
     def test_retention_checks_list_submitted_bucket_items(self):
         outside_retention = datetime.datetime.today() - datetime.timedelta(
@@ -239,6 +239,7 @@ class ValidationMainTest(unittest.TestCase):
 
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
     @mock.patch('bq_utils.query')
+    @mock.patch('validation.main.is_valid_folder_prefix_name')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
     @mock.patch('gcs_utils.upload_object')
@@ -256,7 +257,7 @@ class ValidationMainTest(unittest.TestCase):
         mock_validation, mock_get_hpo_name, mock_write_string_to_file,
         mock_get_duplicate_counts_query, mock_query_rows,
         mock_all_required_files_loaded, mock_upload, mock_run_achilles,
-        mock_export, mock_query):
+        mock_export, mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -277,6 +278,7 @@ class ValidationMainTest(unittest.TestCase):
         :param mock_export: mock exporting the files
         """
         # pre-conditions
+        mock_valid_folder_name.return_value = True
         mock_hpo_bucket.return_value = 'noob'
         mock_all_required_files_loaded.return_value = True
         mock_query.return_value = {}
@@ -504,3 +506,24 @@ class ValidationMainTest(unittest.TestCase):
                 error_occurred = result.get(
                     report_consts.ERROR_OCCURRED_REPORT_KEY)
                 self.assertEqual(error_occurred, True)
+
+    @mock.patch('resources.hpo_csv')
+    @mock.patch('validation.main._write_string_to_file')
+    def test_html_incorrect_folder_name(self, mock_string_to_file,
+                                        mock_hpo_csv):
+        mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
+
+        # validate folder name
+        self.assertEqual(
+            bool(main.is_valid_folder_prefix_name(self.folder_prefix)), True)
+        incorrect_folder_prefix = '2020-01-01/'
+        self.assertEqual(
+            bool(main.is_valid_folder_prefix_name(incorrect_folder_prefix)),
+            False)
+
+        # validate report data
+        report_data = main.generate_empty_report(self.hpo_id, self.hpo_bucket,
+                                                 incorrect_folder_prefix)
+        self.assertIn(report_consts.SUBMISSION_ERROR_REPORT_KEY, report_data)
+        self.assertIn(incorrect_folder_prefix,
+                      report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY])

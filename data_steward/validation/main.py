@@ -386,6 +386,55 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
     return report_data
 
 
+def generate_empty_report(hpo_id, bucket, folder_prefix):
+    """
+    Generate an empty report with a "validation failed" error 
+    Also write processed.txt to folder to prevent processing in the future
+
+    :param hpo_id: identifies the HPO site
+    :param bucket: name of the bucket with the submission
+    :param folder_prefix: folder containing the submission
+    :return: report_data: dict whose keys are params in resources/templates/hpo_report.html
+    """
+    report_data = dict()
+    processed_datetime_str = datetime.datetime.now().strftime(
+        '%Y-%m-%dT%H:%M:%S')
+    logging.info(
+        'Folder %s does not follow naming convention %s',
+        folder_prefix,
+    )
+    report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
+    report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
+    report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_datetime_str
+    report_data[
+        report_consts.
+        SUBMISSION_ERROR_REPORT_KEY] = f'Submission folder name {folder_prefix} does not follow the ' \
+                                       f'naming convention YYYY-MM-DD-vN/, where vN represents the version number ' \
+                                       f'for the day, starting at v1 each day. Please resubmit the files in a new ' \
+                                       f'folder with the correct naming convention'
+    logging.info('Processing skipped. Saving timestamp %s to `gs://%s/%s`.',
+                 processed_datetime_str, bucket,
+                 folder_prefix + common.PROCESSED_TXT)
+    _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
+                          processed_datetime_str)
+    results_html = hpo_report.render(report_data)
+    _write_string_to_file(bucket, folder_prefix + common.RESULTS_HTML,
+                          results_html)
+    return report_data
+
+
+def is_valid_folder_prefix_name(folder_prefix):
+    """
+    Verifies whether folder name follows naming convention YYYY-MM-DD-vN, where vN is the submission version number,
+    starting at v1 every day
+    
+    :param folder_prefix: folder containing the submission
+    :return: Boolean indicating whether the input folder follows the aforementioned naming convention
+    """
+    folder_name_format = re.compile(consts.FOLDER_NAME_REGEX)
+    return folder_name_format.match(folder_prefix)
+
+
 def process_hpo(hpo_id, force_run=False):
     """
     runs validation for a single hpo_id
@@ -408,9 +457,14 @@ def process_hpo(hpo_id, force_run=False):
             logging.info('No submissions to process in %s bucket %s', hpo_id,
                          bucket)
         else:
-            summary = validate_submission(hpo_id, bucket, bucket_items,
-                                          folder_prefix)
-            generate_metrics(hpo_id, bucket, folder_prefix, summary)
+            if is_valid_folder_prefix_name(folder_prefix):
+                # perform validation
+                summary = validate_submission(hpo_id, bucket, bucket_items,
+                                              folder_prefix)
+                generate_metrics(hpo_id, bucket, folder_prefix, summary)
+            else:
+                # do not perform validation. Generate empty report and processed.txt
+                generate_empty_report(hpo_id, bucket, folder_prefix)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         logging.warning('Bucket `%s` configured for hpo_id `%s` does not exist',
