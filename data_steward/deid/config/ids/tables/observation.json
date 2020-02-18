@@ -117,7 +117,7 @@
         {   "comment": "removing ethnic groups, alternative race and fields (data has redundancies)",
              "on": "observation_concept_id in (4013886, 4271761, 4135376)"
         },
-    {
+        {
             "comment": "remove nullable rows based observation_source_concept_id",
             "qualifier": " EXISTS ",
             "on": {
@@ -158,6 +158,9 @@
                     1585913,43529731,43529729,43529730,1585933,1585929,1585965,1585259
                 ]
             }
-    }
+        },
+        {   "comment": "removing ehr date of birth based on observation_concept_id",
+             "on": "observation_concept_id = 4083587"
+        }
     ]
 }
