@@ -156,5 +156,4 @@ workflows:
             branches:
               only: develop
     jobs:
-      - unit_test
       - integration_test
