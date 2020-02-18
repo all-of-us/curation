@@ -947,4 +947,6 @@ app.add_url_rule(consts.PREFIX + 'RetractPids',
 app.before_request(
     begin_request_logging)  # Must be first before_request() call.
 
-app.after_request(end_request_logging)  # Must be last after_request() call.
+app.teardown_request(
+    end_request_logging
+)  # teardown_request to be called regardless if there is an exception thrown

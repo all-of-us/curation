@@ -14,7 +14,7 @@ from enum import IntEnum
 import random
 
 import requests
-from flask import request
+from flask import request, Response
 
 from google.api.monitored_resource_pb2 import MonitoredResource
 from google.cloud import logging as gcp_logging
@@ -336,9 +336,13 @@ class GCPStackDriverLogger(object):
             self._operation_pb2 = update_long_operation(
                 self._request_log_id, self.log_completion_status)
 
-        if _response:
+        # _response could be of the exception type if an exception is raised
+        if isinstance(_response, Response):
             self._response_status_code = _response.status_code
             self._response_size = len(_response.data)
+        else:
+            self._response_status_code = None
+            self._response_size = None
 
         self.publish_to_stackdriver()
         self._reset()
@@ -449,17 +453,14 @@ def get_gcp_logger() -> GCPStackDriverLogger:
 
 class GCPLoggingHandler(logging.Handler):
 
-    def __init__(self, _logger):
-        super().__init__()
-        self._logger = _logger
-
     def emit(self, record: logging.LogRecord):
         """
         Capture and store a log event record.
         :param record: Python log record
         """
-        if self._logger:
-            self._logger.log_event(record)
+        _logger = get_gcp_logger()
+        if _logger:
+            _logger.log_event(record)
             return
 
         line = setup_log_line(record)
@@ -476,7 +477,7 @@ def initialize_logging(log_level=logging.INFO):
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
         # Configure StackDriver logging handler
-        log_handler = GCPLoggingHandler(get_gcp_logger())
+        log_handler = GCPLoggingHandler()
         log_handler.setLevel(log_level)
 
         # Add StackDriver logging handler to root logger.
