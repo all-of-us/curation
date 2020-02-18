@@ -237,6 +237,8 @@ class ValidationMainTest(unittest.TestCase):
         self.assertRaises(ValueError, main.extract_date_from_rdr_dataset_id,
                           bad_rdr_dataset_id)
 
+    @mock.patch('bq_utils.table_exists', mock.MagicMock())
+    @mock.patch('bq_utils.query')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
     @mock.patch('gcs_utils.upload_object')
@@ -254,7 +256,7 @@ class ValidationMainTest(unittest.TestCase):
         mock_validation, mock_get_hpo_name, mock_write_string_to_file,
         mock_get_duplicate_counts_query, mock_query_rows,
         mock_all_required_files_loaded, mock_upload, mock_run_achilles,
-        mock_export):
+        mock_export, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -277,6 +279,7 @@ class ValidationMainTest(unittest.TestCase):
         # pre-conditions
         mock_hpo_bucket.return_value = 'noob'
         mock_all_required_files_loaded.return_value = True
+        mock_query.return_value = {}
         mock_query_rows.return_value = []
         mock_get_duplicate_counts_query.return_value = ''
         mock_get_hpo_name.return_value = 'noob'
@@ -437,6 +440,8 @@ class ValidationMainTest(unittest.TestCase):
                 raise AssertionError(
                     "Unexpected call in mock_copy calls:  {}".format(call))
 
+    @mock.patch('bq_utils.table_exists', mock.MagicMock())
+    @mock.patch('bq_utils.query', mock.MagicMock())
     def test_generate_metrics(self):
         summary = {
             report_consts.RESULTS_REPORT_KEY: [{
