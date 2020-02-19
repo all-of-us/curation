@@ -19,8 +19,16 @@ export USERNAME=$(echo "${GH_USERNAME:-${CIRCLE_USERNAME:-}}" | tr '[:upper:]' '
 
 if [ -z "${USERNAME}" ]
 then
-    echo "Please set environment variable GH_USERNAME or CIRCLE_USERNAME";
+  if [ -n "${CIRCLECI}" ]
+  then
+    # If we're on circle without a CIRCLE_NAME, fallback to a default username.
+    # This can happen if a Circle job is triggered outside the context of a
+    # specific user interaction, e.g. during automated nightly cron runs.
+    export USERNAME="circleci"
+  else
+    echo "Please set environment variable GH_USERNAME, CIRCLE_USERNAME, or CIRCLECI";
     exit 1;
+  fi
 fi
 
 # Dataset IDs must be alphanumeric (plus underscores) and <= 1024 characters
