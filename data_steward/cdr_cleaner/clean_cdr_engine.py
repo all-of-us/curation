@@ -34,7 +34,7 @@ def add_console_logging(add_handler):
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(name)s - %(message)s')
         handler.setFormatter(formatter)
-        LOGGER.addHandler(handler)
+        logging.getLogger('').addHandler(handler)
 
 
 def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
