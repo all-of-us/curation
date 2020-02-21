@@ -46,10 +46,31 @@ import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_drop_duplicates
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
 import cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import ObservationSourceConceptIDRowSuppression
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
+
+RDR_CLASSES = [
+    ObservationSourceConceptIDRowSuppression,
+    maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,
+    back_fill_pmi_skip.get_run_pmi_fix_queries,
+    ppi_numeric_fields.get_clean_ppi_num_fields_using_parameters_queries,
+    remove_multiple_race_answers.
+    get_remove_multiple_race_ethnicity_answers_queries,
+    negative_ppi.get_update_ppi_queries, smoking.get_queries_clean_smoking,
+    ppi_drop_duplicates.
+    get_remove_duplicate_set_of_responses_to_same_questions_queries,
+    operational_pii_fields.get_remove_operational_pii_fields_query,
+    map_questions_answers_to_omop.
+    get_update_questions_answers_not_mapped_to_omop,
+    round_ppi_values.get_round_ppi_values_queries,
+    update_family_history.get_update_family_history_qa_queries,
+    extreme_measurements.get_drop_extreme_measurement_queries,
+    drop_mult_meas.get_drop_multiple_measurement_queries
+]
 
 
 def add_module_info_decorator(query_function, *positional_args, **keyword_args):
@@ -102,58 +123,33 @@ def _gather_rdr_queries(project_id, dataset_id, sandbox_dataset_id):
     :return: returns list of queries
     """
     query_list = []
-    query_list.extend(
-        add_module_info_decorator(
-            maps_to_value_vocab_update.
-            get_maps_to_value_ppi_vocab_update_queries, project_id, dataset_id))
-    query_list.extend(
-        add_module_info_decorator(back_fill_pmi_skip.get_run_pmi_fix_queries,
-                                  project_id, dataset_id))
-    query_list.extend(
-        add_module_info_decorator(
-            ppi_numeric_fields.
-            get_clean_ppi_num_fields_using_parameters_queries, project_id,
-            dataset_id))
-    query_list.extend(
-        add_module_info_decorator(
-            remove_multiple_race_answers.
-            get_remove_multiple_race_ethnicity_answers_queries, project_id,
-            dataset_id))
-    query_list.extend(
-        add_module_info_decorator(negative_ppi.get_update_ppi_queries,
-                                  project_id, dataset_id, sandbox_dataset_id))
-    query_list.extend(
-        add_module_info_decorator(smoking.get_queries_clean_smoking, project_id,
-                                  dataset_id, sandbox_dataset_id))
-    query_list.extend(
-        add_module_info_decorator(
-            ppi_drop_duplicates.
-            get_remove_duplicate_set_of_responses_to_same_questions_queries,
-            project_id, dataset_id, sandbox_dataset_id))
-    query_list.extend(
-        add_module_info_decorator(
-            operational_pii_fields.get_remove_operational_pii_fields_query,
-            project_id, dataset_id, sandbox_dataset_id))
-    query_list.extend(
-        add_module_info_decorator(
-            map_questions_answers_to_omop.
-            get_update_questions_answers_not_mapped_to_omop, project_id,
-            dataset_id, sandbox_dataset_id))
-    query_list.extend(
-        add_module_info_decorator(round_ppi_values.get_round_ppi_values_queries,
-                                  project_id, dataset_id))
-    query_list.extend(
-        add_module_info_decorator(
-            update_family_history.get_update_family_history_qa_queries,
-            project_id, dataset_id))
-    query_list.extend(
-        add_module_info_decorator(
-            extreme_measurements.get_drop_extreme_measurement_queries,
-            project_id, dataset_id))
-    query_list.extend(
-        add_module_info_decorator(
-            drop_mult_meas.get_drop_multiple_measurement_queries, project_id,
-            dataset_id, sandbox_dataset_id))
+
+    for clazz in RDR_CLASSES:
+        try:
+            instance = clazz()
+        except TypeError:
+            # is raised when a function is called without all the required variables
+            try:
+                query_list.extend(
+                    add_module_info_decorator(clazz, project_id, dataset_id,
+                                              sandbox_dataset_id))
+            except TypeError:
+                # is raised when called with the 3 parameters and only 2 are needed
+                query_list.extend(
+                    add_module_info_decorator(clazz, project_id, dataset_id))
+        else:
+            # should eventually be the main component of this function.  Everything should transition to using a common base class.
+            if isinstance(instance, BaseCleaningRule):
+                query_list.extend(
+                    add_module_info_decorator(
+                        instance.get_query_dictionary_list, project_id,
+                        dataset_id, sandbox_dataset_id))
+            else:
+                # if the class is not of the common base class, raise an error
+                raise TypeError(
+                    '{} is not an instance of BaseCleaningRule'.format(
+                        instance.__class__.__name__))
+
     return query_list
 
 
@@ -522,3 +518,12 @@ if __name__ == '__main__':
         raise EnvironmentError(
             f'Dataset selection should be from [{stage.EHR}, {stage.UNIONED}, {stage.RDR}, {stage.COMBINED},'
             f' {stage.DEID_BASE}, {stage.DEID_CLEAN}]')
+
+    res = gather_test_query()
+    #res = _gather_combined_de_identified_queries('aou-res-curation-prod', 'R2019Q3R4_combined_deid_base_staging_1', 'R2019Q3R4_combined_deid_base_staging_1_sandbox')
+    res = _gather_unioned_ehr_queries('foo', 'bar', 'baz')
+    res = _gather_rdr_queries('foo', 'bar', 'baz')
+    for item in res:
+        for k, v in item.items():
+            print('{}\t\t\t{}'.format(k, v))
+        print('--------------------------------------------------------\n\n')
