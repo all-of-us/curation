@@ -518,12 +518,3 @@ if __name__ == '__main__':
         raise EnvironmentError(
             f'Dataset selection should be from [{stage.EHR}, {stage.UNIONED}, {stage.RDR}, {stage.COMBINED},'
             f' {stage.DEID_BASE}, {stage.DEID_CLEAN}]')
-
-    res = gather_test_query()
-    #res = _gather_combined_de_identified_queries('aou-res-curation-prod', 'R2019Q3R4_combined_deid_base_staging_1', 'R2019Q3R4_combined_deid_base_staging_1_sandbox')
-    res = _gather_unioned_ehr_queries('foo', 'bar', 'baz')
-    res = _gather_rdr_queries('foo', 'bar', 'baz')
-    for item in res:
-        for k, v in item.items():
-            print('{}\t\t\t{}'.format(k, v))
-        print('--------------------------------------------------------\n\n')
