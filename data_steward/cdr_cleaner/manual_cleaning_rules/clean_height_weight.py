@@ -328,7 +328,7 @@ WITH
   -- Easier to reference this table for later
   -- add some basic cleaning in here
   -- Drop anything over 16000
-  -- calculate min, mean and max value_as_number for measurement_concept_id = 3025315 over each unit_concept_id, 
+  -- calculate min, mean and max value_as_number for measurement_concept_id = 3025315 over each unit_concept_id,
   -- including NULL. If there are discrepancies, plot the distribution of value_as_number
   -- if multiple peaks exist, it is presumably due to multiple units being used with the same unit_concept_id/NULL
   -- In such cases,
@@ -542,7 +542,7 @@ LEFT JOIN `{project_id}.{dataset_id}.concept` u_c ON (adj_unit=concept_id)
 DELETE_WEIGHT_ROWS_QUERY = """
 DELETE
 FROM `{project_id}.{dataset_id}.measurement`
-WHERE measurement_id IN 
+WHERE measurement_id IN
 (SELECT measurement_id
 FROM `{project_id}.{dataset_id}.measurement` m
 LEFT JOIN `{project_id}.{dataset_id}.measurement_ext` me
@@ -699,4 +699,4 @@ if __name__ == '__main__':
     query_list = get_queries_clean_height_weight(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)
