@@ -274,12 +274,10 @@ class ValidationMainTest(unittest.TestCase):
 
         # Load measurement_concept_sets
         required_labs.load_measurement_concept_sets_table(
-            project_id=app_identity.get_application_id(),
-            dataset_id=bq_utils.get_dataset_id())
+            project_id=self.project_id, dataset_id=self.bigquery_dataset_id)
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
-            project_id=app_identity.get_application_id(),
-            dataset_id=bq_utils.get_dataset_id())
+            project_id=self.project_id, dataset_id=self.bigquery_dataset_id)
 
         main.app.testing = True
         with main.app.test_client() as c:
