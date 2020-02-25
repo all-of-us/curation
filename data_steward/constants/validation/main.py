@@ -199,3 +199,4 @@ ERRORS = 'errors'
 REASON = 'reason'
 
 FOLDER_NAME_REGEX = r'\d{4}-\d{2}-\d{2}-v\d+'
+FOLDER_NAMING_CONVENTION = 'YYYY-MM-DD-vN/'

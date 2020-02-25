@@ -399,22 +399,20 @@ def generate_empty_report(hpo_id, bucket, folder_prefix):
     report_data = dict()
     processed_datetime_str = datetime.datetime.now().strftime(
         '%Y-%m-%dT%H:%M:%S')
-    logging.info(
-        'Folder %s does not follow naming convention %s',
-        folder_prefix,
-    )
     report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
     report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
     report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_datetime_str
     report_data[
         report_consts.
         SUBMISSION_ERROR_REPORT_KEY] = f'Submission folder name {folder_prefix} does not follow the ' \
-                                       f'naming convention YYYY-MM-DD-vN/, where vN represents the version number ' \
-                                       f'for the day, starting at v1 each day. Please resubmit the files in a new ' \
-                                       f'folder with the correct naming convention'
-    logging.info('Processing skipped. Saving timestamp %s to `gs://%s/%s`.',
-                 processed_datetime_str, bucket,
-                 folder_prefix + common.PROCESSED_TXT)
+                                       f'naming convention {consts.FOLDER_NAMING_CONVENTION}, where vN represents ' \
+                                       f'the version number for the day, starting at v1 each day. ' \
+                                       f'Please resubmit the files in a new folder with the correct naming convention'
+    logging.info(
+        'Processing skipped. Reason: Folder %s does not follow naming convention %s. '
+        'Saving timestamp %s to `gs://%s/%s`.', folder_prefix,
+        consts.FOLDER_NAMING_CONVENTION, processed_datetime_str, bucket,
+        folder_prefix + common.PROCESSED_TXT)
     _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
                           processed_datetime_str)
     results_html = hpo_report.render(report_data)
