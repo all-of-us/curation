@@ -430,7 +430,13 @@ def is_valid_folder_prefix_name(folder_prefix):
     :return: Boolean indicating whether the input folder follows the aforementioned naming convention
     """
     folder_name_format = re.compile(consts.FOLDER_NAME_REGEX)
-    return folder_name_format.match(folder_prefix)
+    if not folder_name_format.match(folder_prefix):
+        return False
+    try:
+        datetime.datetime.strptime(folder_prefix[:10], '%Y-%m-%d')
+    except ValueError:
+        return False
+    return True
 
 
 def process_hpo(hpo_id, force_run=False):
