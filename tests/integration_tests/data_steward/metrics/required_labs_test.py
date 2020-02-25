@@ -12,9 +12,6 @@ from validation.metrics import required_labs as required_labs
 from validation.metrics.required_labs import (
     MEASUREMENT_CONCEPT_SETS_TABLE, MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)
 import validation.sql_wrangle as sql_wrangle
-from validation import main
-from tests.integration_tests.data_steward.validation import main_test as main_test
-from bs4 import BeautifulSoup
 
 
 class RequiredLabsTest(unittest.TestCase):
@@ -50,8 +47,7 @@ class RequiredLabsTest(unittest.TestCase):
 
         # Load measurement_concept_sets
         required_labs.load_measurement_concept_sets_table(
-            project_id=app_identity.get_application_id(),
-            dataset_id=bq_utils.get_dataset_id())
+            project_id=self.project_id, dataset_id=self.dataset_id)
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
             project_id=self.project_id, dataset_id=self.dataset_id)
@@ -63,32 +59,14 @@ class RequiredLabsTest(unittest.TestCase):
             bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
                                            common.CONCEPT_ANCESTOR)
 
-        # Need to upload a submission folder to enable validation
-        for cdm_table in [common.MEASUREMENT, common.DRUG_EXPOSURE]:
-            test_util.write_cloud_file(bucket=self.hpo_bucket,
-                                       f=os.path.join(
-                                           test_util.FIVE_PERSONS_PATH,
-                                           cdm_table + '.csv'),
-                                       prefix=self.folder_prefix)
-
-        # Although the measurement.csv will be loaded into biquery by hpo_process in test_required_labs_html_page,
         # we need to load measurement.csv into bigquery_dataset_id in advance for the other integration tests
-        ehr_measurement_result = bq_utils.load_from_csv(
-            hpo_id=FAKE_HPO_ID,
-            table_name=common.MEASUREMENT,
-            source_folder_prefix=self.folder_prefix)
-        bq_utils.wait_on_jobs([ehr_measurement_result['jobReference']['jobId']])
-
-        # Load the rdr person.csv into rdr_dataset_id from the local file otherwise the missing_pii metric will fail
-        rdr_person_result = bq_utils.load_table_from_csv(
+        ehr_measurement_result = bq_utils.load_table_from_csv(
             project_id=self.project_id,
-            dataset_id=self.rdr_dataset_id,
-            table_name=common.PERSON,
-            csv_path=test_util.RDR_PERSON_PATH)
-        bq_utils.wait_on_jobs([rdr_person_result['jobReference']['jobId']])
-
-        # Load the drug_class.csv dependency otherwise the drug_class coverage metric will fail
-        main_test.ValidationMainTest._create_drug_class_table(self.dataset_id)
+            dataset_id=self.dataset_id,
+            table_name=bq_utils.get_table_id(FAKE_HPO_ID, common.MEASUREMENT),
+            csv_path=test_util.FIVE_PERSONS_MEASUREMENT_CSV,
+            fields=resources.fields_for(common.MEASUREMENT))
+        bq_utils.wait_on_jobs([ehr_measurement_result['jobReference']['jobId']])
 
     def test_measurement_concept_sets_table(self):
 
@@ -189,39 +167,3 @@ class RequiredLabsTest(unittest.TestCase):
                          msg='Compare the number '
                          'of labs submitted '
                          'in the measurement')
-
-    @mock.patch('validation.main.is_valid_rdr')
-    @mock.patch('api_util.check_cron')
-    def test_required_labs_html_page(self, mock_check_cron, mock_is_valid_rdr):
-        mock_is_valid_rdr.reture_value = True
-        main.app.testing = True
-        with main.app.test_client() as c:
-            c.get(test_util.VALIDATE_HPO_FILES_URL)
-            actual_result = test_util.read_cloud_file(
-                self.hpo_bucket, self.folder_prefix + common.RESULTS_HTML)
-            soup = BeautifulSoup(actual_result, 'html.parser')
-            required_lab_html_table = soup.find_all('table',
-                                                    class_='required-lab')[0]
-            table_headers = required_lab_html_table.find_all('th')
-            self.assertEqual(3, len(table_headers))
-            self.assertEqual('Ancestor Concept ID', table_headers[0].get_text())
-            self.assertEqual('Ancestor Concept Name',
-                             table_headers[1].get_text())
-            self.assertEqual('Found', table_headers[2].get_text())
-
-            table_rows = required_lab_html_table.find_next('tbody').find_all(
-                'tr')
-            table_rows_last_column = [
-                table_row.find_all('td')[-1] for table_row in table_rows
-            ]
-            submitted_labs = [
-                row for row in table_rows_last_column
-                if 'result-1' in row.attrs['class']
-            ]
-            missing_labs = [
-                row for row in table_rows_last_column
-                if 'result-0' in row.attrs['class']
-            ]
-            self.assertTrue(len(table_rows) > 0)
-            self.assertTrue(len(submitted_labs) > 0)
-            self.assertTrue(len(missing_labs) > 0)

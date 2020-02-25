@@ -20,6 +20,7 @@ import gcs_utils
 import resources
 from tests import test_util as test_util
 from validation import main
+from validation.metrics import required_labs as required_labs
 
 
 class ValidationMainTest(unittest.TestCase):
@@ -270,6 +271,14 @@ class ValidationMainTest(unittest.TestCase):
         bq_utils.load_table_from_csv(self.project_id, self.rdr_dataset_id,
                                      common.PERSON,
                                      test_util.FIVE_PERSONS_PERSON_CSV)
+
+        # Load measurement_concept_sets
+        required_labs.load_measurement_concept_sets_table(
+            project_id=self.project_id, dataset_id=self.bigquery_dataset_id)
+        # Load measurement_concept_sets_descendants
+        required_labs.load_measurement_concept_sets_descendants_table(
+            project_id=self.project_id, dataset_id=self.bigquery_dataset_id)
+
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
@@ -294,6 +303,29 @@ class ValidationMainTest(unittest.TestCase):
                       missing_record_types)
         self.assertIn(main_consts.EHR_NO_PARTICIPANT_MATCH,
                       missing_record_types)
+
+        required_lab_html_table = soup.find('table', id='required-lab')
+        table_headers = required_lab_html_table.find_all('th')
+        self.assertEqual(3, len(table_headers))
+        self.assertEqual('Ancestor Concept ID', table_headers[0].get_text())
+        self.assertEqual('Ancestor Concept Name', table_headers[1].get_text())
+        self.assertEqual('Found', table_headers[2].get_text())
+
+        table_rows = required_lab_html_table.find_next('tbody').find_all('tr')
+        table_rows_last_column = [
+            table_row.find_all('td')[-1] for table_row in table_rows
+        ]
+        submitted_labs = [
+            row for row in table_rows_last_column
+            if 'result-1' in row.attrs['class']
+        ]
+        missing_labs = [
+            row for row in table_rows_last_column
+            if 'result-0' in row.attrs['class']
+        ]
+        self.assertTrue(len(table_rows) > 0)
+        self.assertTrue(len(submitted_labs) > 0)
+        self.assertTrue(len(missing_labs) > 0)
 
     def tearDown(self):
         self._empty_bucket()
