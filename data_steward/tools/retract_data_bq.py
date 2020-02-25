@@ -37,11 +37,13 @@ PERSON_DOMAIN = 56
 NON_PID_TABLES = [
     common.CARE_SITE, common.LOCATION, common.FACT_RELATIONSHIP, common.PROVIDER
 ]
+OTHER_PID_TABLES = [common.OBSERVATION_PERIOD]
+
 # person from RDR should not be removed, but person from EHR must be
 NON_EHR_TABLES = [common.PERSON]
-TABLES_FOR_RETRACTION = set(common.PII_TABLES +
-                            common.AOU_REQUIRED) - set(NON_PID_TABLES +
-                                                       NON_EHR_TABLES)
+TABLES_FOR_RETRACTION = set(common.PII_TABLES + common.AOU_REQUIRED +
+                            OTHER_PID_TABLES) - set(NON_PID_TABLES +
+                                                    NON_EHR_TABLES)
 
 RETRACT_DATA_SITE_QUERY = """
 DELETE
