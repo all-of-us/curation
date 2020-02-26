@@ -10,11 +10,17 @@ an adequate amount of information.  This is useful for things like, reporting
 features.
 """
 # Python imports
+import logging
 from typing import List
 
 # Third party imports
+import googleapiclient
+import oauth2client
 
 # Project imports
+import constants.cdr_cleaner.clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 
 class BaseCleaningRule:
@@ -26,13 +32,16 @@ class BaseCleaningRule:
     def __init__(self,
                  jira_issue_numbers: string_list = None,
                  description: str = None,
-                 affected_datasets: string_list = None):
+                 affected_datasets: string_list = None,
+                 project_id: str = None,
+                 dataset_id: str = None,
+                 sandbox_dataset_id: str = None):
         """
         Instantiate a cleaning rule with basic attributes.
 
         Inheriting classes must set issue numbers, description and affected
         datasets.  As other tickets may affect the SQL of a cleaning rule,
-        add them to the list of Jira Issues.
+        append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
 
         :param jira_issue_numbers:  a list of strings inidcating jira issues
@@ -45,6 +54,9 @@ class BaseCleaningRule:
         self._jira_issue_numbers = jira_issue_numbers
         self._description = description
         self._affected_datasets = affected_datasets
+        self._project_id = project_id
+        self._dataset_id = dataset_id
+        self._sandbox_dataset_id = sandbox_dataset_id
 
         self.__validate_arguments()
 
@@ -71,8 +83,30 @@ class BaseCleaningRule:
             for list_item in arg:
                 if not isinstance(list_item, str):
                     raise TypeError(
-                        '{} is expected to be a list of strings.  offending list item {} is of type:  {}'
-                        .format(arg_name, list_item, type(list_item)))
+                        ('{} is expected to be a list of strings.  '
+                         'offending list item {} is of type:  {}').format(
+                             arg_name, list_item, type(list_item)))
+
+    def __validate_string(self, arg, arg_name):
+        """
+        Validate string parameters.
+
+        :param arg:  The actual argument value to validate is a string.
+        :param arg_name:  The name of the variable being validated.  Used
+            in error messages, if needed.
+
+        :raises NotImplementedError if arguments are not set.
+        :raises TypeError if arguments are not set to expected types
+        """
+        if arg is None:
+            raise NotImplementedError(
+                '{} cleaning rule must set {} variable'.format(
+                    self.__class__.__name__, arg_name))
+
+        if not isinstance(arg, str):
+            raise TypeError(
+                '{0} is expected to be a string.  offending {0}: <{1}> is of type:  {2}'
+                .format(arg_name, arg, type(arg)))
 
     def __validate_arguments(self):
         """
@@ -85,22 +119,23 @@ class BaseCleaningRule:
         self.__validate_list_of_strings(self._jira_issue_numbers,
                                         'jira_issue_numbers')
 
-        # validate description is a string
-        if self._description is None:
-            raise NotImplementedError(
-                '{} cleaning rule must set description variable'.format(
-                    self.__class__.__name__))
-
-        if not isinstance(self._description, str):
-            raise TypeError(
-                'description is expected to be a string.  offending description: <{}> is of type:  {}'
-                .format(self._description, type(self._description)))
-
         # validate affected datasets is a list of strings.
         self.__validate_list_of_strings(self._affected_datasets,
                                         'affected_datasets')
 
-    def get_issue_numbers(self):
+        # validate description is a string
+        self.__validate_string(self._description, 'description')
+
+        # validate project_id is a string
+        self.__validate_string(self._project_id, 'project_id')
+
+        # validate dataset_id is a string
+        self.__validate_string(self._dataset_id, 'dataset_id')
+
+        # validate sandbox_dataset_id is a string
+        self.__validate_string(self._sandbox_dataset_id, 'sandbox_dataset_id')
+
+    def get_jira_issue_numbers(self):
         """
         Return the jira_issue_numbers instance variable.
         """
@@ -118,6 +153,24 @@ class BaseCleaningRule:
         """
         return self._affected_datasets
 
+    def get_project_id(self):
+        """
+        Get the project id for this class instance.
+        """
+        return self._project_id
+
+    def get_dataset_id(self):
+        """
+        Get the dataset id for this class instance.
+        """
+        return self._dataset_id
+
+    def get_sandbox_dataset_id(self):
+        """
+        Get the sandbox dataset id for this class instance.
+        """
+        return self._sandbox_dataset_id
+
     def get_query_dictionary_list(self, *args, **keyword_args):
         """
         Interface to return a list of query dictionaries.
@@ -132,3 +185,29 @@ class BaseCleaningRule:
         raise NotImplementedError(
             '{} has not implemented get_query_dictionary_list.  Must be implemented.'
             .format(self.__class__.__name__))
+
+    def print_queries(self):
+        """
+        Helper function to print the SQL a class geenerates.
+
+        If the inheriting class builds tables inside the
+        get_query_dictionary_list function, the inheriting class will need
+        to override this function.
+        """
+        try:
+            query_list = self.get_query_dictionary_list()
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError, KeyError):
+            LOGGER.exception("Cannot list queries for %s",
+                             self.__class__.__name__)
+            raise
+
+        for query in query_list:
+            LOGGER.info('Generated SQL Query:\n%s',
+                        query.get(cdr_consts.QUERY, 'NO QUERY FOUND'))
+
+    def setup_query_execution(self):
+        """
+        Function to run any data upload options before executing a query.
+        """
+        pass
