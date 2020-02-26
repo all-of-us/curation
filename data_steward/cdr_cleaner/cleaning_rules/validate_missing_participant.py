@@ -62,12 +62,17 @@ def exist_participant_match(ehr_dataset_id, hpo_id):
     :param hpo_id: 
     :return: 
     """
-
     return bq_utils.table_exists(
         bq_utils.get_table_id(hpo_id, common.PARTICIPANT_MATCH), ehr_dataset_id)
 
 
 def get_missing_criterion(field_names):
+    """
+    This function generates a bigquery column expression for missing criteria
+    
+    :param field_names: a list of field names for counting `missing`s 
+    :return: 
+    """
     joined_column_expr = ' + '.join([
         CAST_MISSING_COLUMN.format(column=field_name)
         for field_name in field_names
@@ -85,7 +90,7 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
     :return: 
     """
 
-    # If any of the two of first_name, last_name and birthday are missing, this is a non-match
+    # if any of the two of first_name, last_name and birthday are missing, this is a non-match
     criterion_one_expr = CRITERION_COLUMN_TEMPLATE.format(
         column_expr=get_missing_criterion(
             [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]),
@@ -98,12 +103,14 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
         if field['name'] not in PARTICIPANT_MATCH_EXCLUDED_FIELD
     ]
 
-    # if any of the
+    # if the total number of missings is equal to and bigger than 4, this is a non-match
     criterion_two_expr = CRITERION_COLUMN_TEMPLATE.format(
         column_expr=participant_match_fields, num_of_missing=4)
 
+    # get the the hpo specific <hpo_id>_participant_match
     participant_match_table = bq_utils.get_table_id(hpo_id, PARTICIPANT_MATCH)
 
+    # instantiate the query for identifying the non-match participants in the validation_dataset
     select_non_match_participants_query = SELECT_NON_MATCH_PARTICIPANTS_QUERY.format(
         project_id=project_id,
         validation_dataset_id=validation_dataset_id,
@@ -126,12 +133,13 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
         LOGGER.exception('Could not execute the query \n{query}'.format(
             query=select_non_match_participants_query))
 
-        # wait for job to finish
-    query_job_id = results['jobReference']['jobId']
+    # wait for job to finish
+    query_job_id = results['jobReference']['jopartitionBybId']
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
     if incomplete_jobs:
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
+    # return the person_ids only
     return [row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)]
 
 
