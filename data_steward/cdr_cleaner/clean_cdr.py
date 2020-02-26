@@ -63,8 +63,10 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (neg_ages.get_negative_ages_queries,),
     (bad_end_dates.get_bad_end_date_queries,),
     (drug_refills_supply.get_days_supply_refills_queries,),
-    # trying to load a table, won't work with mocked strings
-    #    (populate_routes.get_route_mapping_queries,),
+    # trying to load a table while creating query strings,
+    # won't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
+    # (populate_routes.get_route_mapping_queries,),
     (
         fix_datetimes.get_fix_incorrect_datetime_to_date_queries,),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
@@ -81,14 +83,20 @@ RDR_CLEANING_CLASSES = [
     (remove_multiple_race_answers.
      get_remove_multiple_race_ethnicity_answers_queries,),
     (negative_ppi.get_update_ppi_queries,),
-    # trying to load a table, won't work with mocked strings
+    # trying to load a table while creating query strings,
+    # won't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
     #(smoking.get_queries_clean_smoking,),
     (
         ppi_drop_duplicates.
         get_remove_duplicate_set_of_responses_to_same_questions_queries,),
-    # trying to load a table, won't work with mocked strings
+    # trying to load a table while creating query strings,
+    # won't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
     #(operational_pii_fields.get_remove_operational_pii_fields_query,),
-    # trying to load a table, won't work with mocked strings
+    # trying to load a table while creating query strings,
+    # won't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
     #map_questions_answers_to_omop.
     #(get_update_questions_answers_not_mapped_to_omop,),
     (
@@ -99,9 +107,13 @@ RDR_CLEANING_CLASSES = [
 ]
 
 COMBINED_CLEANING_CLASSES = [
-    # trying to load a table, won't work with mocked strings
+    # trying to load a table while creating query strings,
+    # won't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
     #    (replace_standard_concept_ids.replace_standard_id_in_domain_tables,),
-    # trying to load a table, won't work with mocked strings
+    # trying to load a table while creating query strings,
+    # won't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
     #    (domain_alignment.domain_alignment,),
     (
         drop_participants_without_ppi_or_ehr.get_queries,),
@@ -112,7 +124,9 @@ COMBINED_CLEANING_CLASSES = [
     (no_data_30days_after_death.no_data_30_days_after_death,),
     (valid_death_dates.get_valid_death_date_queries,),
     (drug_refills_supply.get_days_supply_refills_queries,),
-    # trying to load a table, won't work with mocked strings
+    # trying to load a table while creating query strings,
+    # won't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
     #    (populate_routes.get_route_mapping_queries,),
     (
         fix_datetimes.get_fix_incorrect_datetime_to_date_queries,),
