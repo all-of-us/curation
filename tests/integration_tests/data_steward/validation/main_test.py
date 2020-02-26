@@ -4,7 +4,6 @@ Unit test components of data_steward.validation.main
 from __future__ import print_function
 import json
 import os
-import re
 import unittest
 from io import open
 
@@ -43,7 +42,7 @@ class ValidationMainTest(unittest.TestCase):
         self.addCleanup(mock_get_hpo_name.stop)
 
         self.bigquery_dataset_id = bq_utils.get_dataset_id()
-        self.folder_prefix = '2019-01-01/'
+        self.folder_prefix = '2019-01-01-v1/'
         self._empty_bucket()
         test_util.delete_all_tables(self.bigquery_dataset_id)
         self._create_drug_class_table(self.bigquery_dataset_id)
