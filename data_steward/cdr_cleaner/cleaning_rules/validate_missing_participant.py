@@ -90,48 +90,25 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
     :return: 
     """
 
-    # if any of the two of first_name, last_name and birthday are missing, this is a non-match
-    criterion_one_expr = CRITERION_COLUMN_TEMPLATE.format(
-        column_expr=get_missing_criterion(
-            [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]),
-        num_of_missing=2)
-
-    participant_match_fields = [
-        field['name']
-        for field in resources.fields_for(
-            bq_utils.get_table_id(hpo_id, PARTICIPANT_MATCH))
-        if field['name'] not in PARTICIPANT_MATCH_EXCLUDED_FIELD
-    ]
-
-    # if the total number of missings is equal to and bigger than 4, this is a non-match
-    criterion_two_expr = CRITERION_COLUMN_TEMPLATE.format(
-        column_expr=participant_match_fields, num_of_missing=4)
-
     # get the the hpo specific <hpo_id>_participant_match
     participant_match_table = bq_utils.get_table_id(hpo_id, PARTICIPANT_MATCH)
 
-    # instantiate the query for identifying the non-match participants in the validation_dataset
-    select_non_match_participants_query = SELECT_NON_MATCH_PARTICIPANTS_QUERY.format(
-        project_id=project_id,
-        validation_dataset_id=validation_dataset_id,
-        participant_match=participant_match_table,
-        criterion_one_expr=criterion_one_expr,
-        criterion_two_expr=criterion_two_expr)
+    non_match_participants_query = get_non_match_participant_query(
+        project_id, validation_dataset_id, participant_match_table)
 
     try:
-
         LOGGER.info(
             'Identifying non-match participants in {dataset_id}.{participant_match_table}'
             .format(dataset_id=validation_dataset_id,
                     participant_match_table=participant_match_table))
 
-        results = bq_utils.query(q=select_non_match_participants_query)
+        results = bq_utils.query(q=non_match_participants_query)
 
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError) as exp:
 
         LOGGER.exception('Could not execute the query \n{query}'.format(
-            query=select_non_match_participants_query))
+            query=non_match_participants_query))
 
     # wait for job to finish
     query_job_id = results['jobReference']['jopartitionBybId']
@@ -141,6 +118,41 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
 
     # return the person_ids only
     return [row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)]
+
+
+def get_non_match_participant_query(project_id, validation_dataset_id,
+                                    participant_match_table):
+    """
+    This function generates the query for identifying non_match participants query flagged by the DRC match algorithm
+    
+    :param project_id: 
+    :param validation_dataset_id: 
+    :param participant_match_table: 
+    :return: 
+    """
+
+    # if any of the two of first_name, last_name and birthday are missing, this is a non-match
+    criterion_one_expr = CRITERION_COLUMN_TEMPLATE.format(
+        column_expr=get_missing_criterion(
+            [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]),
+        num_of_missing=2)
+    participant_match_fields = [
+        field['name']
+        for field in resources.fields_for(PARTICIPANT_MATCH)
+        if field['name'] not in PARTICIPANT_MATCH_EXCLUDED_FIELD
+    ]
+    # if the total number of missings is equal to and bigger than 4, this is a non-match
+    criterion_two_expr = CRITERION_COLUMN_TEMPLATE.format(
+        column_expr=participant_match_fields, num_of_missing=4)
+    # instantiate the query for identifying the non-match participants in the validation_dataset
+    select_non_match_participants_query = SELECT_NON_MATCH_PARTICIPANTS_QUERY.format(
+        project_id=project_id,
+        validation_dataset_id=validation_dataset_id,
+        participant_match=participant_match_table,
+        criterion_one_expr=criterion_one_expr,
+        criterion_two_expr=criterion_two_expr)
+
+    return select_non_match_participants_query
 
 
 def get_delete_persons_query(project_id, combined_dataset_id, person_ids):
