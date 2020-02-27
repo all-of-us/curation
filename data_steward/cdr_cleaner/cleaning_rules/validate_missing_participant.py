@@ -16,6 +16,13 @@ from common import PARTICIPANT_MATCH
 
 LOGGER = logging.getLogger(__name__)
 
+NUM_OF_MISSING_KEY_FIELDS = 2
+NUM_OF_MISSING_ALL_FIELDS = 4
+
+KEY_FIELDS = [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]
+
+PARTICIPANT_MATCH_EXCLUDED_FIELD = [PERSON_ID_FIELD, ALGORITHM_FIELD]
+
 DELETE_PERSON_IDS_QUERY = """
 DELETE
 FROM
@@ -36,9 +43,9 @@ WITH non_match_participants AS
 (
 SELECT 
     *,
-    ({match_criterion_one}) AS criterion_one,
-    ({match_criterion_two}) AS criterion_two
-FROM {project_id}.{dataset_id}.{participant_match}
+    ({criterion_one_expr}) AS criterion_one,
+    ({criterion_two_expr}) AS criterion_two
+FROM {project_id}.{validation_dataset_id}.{participant_match}
 )
 
 SELECT
@@ -50,8 +57,6 @@ WHERE criterion_one IS TRUE OR criterion_two IS TRUE
 CRITERION_COLUMN_TEMPLATE = """
 ({column_expr}) >= {num_of_missing})
 """
-
-PARTICIPANT_MATCH_EXCLUDED_FIELD = [PERSON_ID_FIELD, ALGORITHM_FIELD]
 
 
 def exist_participant_match(ehr_dataset_id, hpo_id):
@@ -132,25 +137,26 @@ def get_non_match_participant_query(project_id, validation_dataset_id,
     """
 
     # if any of the two of first_name, last_name and birthday are missing, this is a non-match
-    criterion_one_expr = CRITERION_COLUMN_TEMPLATE.format(
-        column_expr=get_missing_criterion(
-            [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]),
-        num_of_missing=2)
+    num_of_missing_key_fields = CRITERION_COLUMN_TEMPLATE.format(
+        column_expr=get_missing_criterion(KEY_FIELDS),
+        num_of_missing=NUM_OF_MISSING_KEY_FIELDS)
+
     participant_match_fields = [
         field['name']
         for field in resources.fields_for(PARTICIPANT_MATCH)
         if field['name'] not in PARTICIPANT_MATCH_EXCLUDED_FIELD
     ]
     # if the total number of missings is equal to and bigger than 4, this is a non-match
-    criterion_two_expr = CRITERION_COLUMN_TEMPLATE.format(
-        column_expr=participant_match_fields, num_of_missing=4)
+    num_of_missing_all_fields = CRITERION_COLUMN_TEMPLATE.format(
+        column_expr=get_missing_criterion(participant_match_fields),
+        num_of_missing=NUM_OF_MISSING_ALL_FIELDS)
     # instantiate the query for identifying the non-match participants in the validation_dataset
     select_non_match_participants_query = SELECT_NON_MATCH_PARTICIPANTS_QUERY.format(
         project_id=project_id,
         validation_dataset_id=validation_dataset_id,
         participant_match=participant_match_table,
-        criterion_one_expr=criterion_one_expr,
-        criterion_two_expr=criterion_two_expr)
+        criterion_one_expr=num_of_missing_key_fields,
+        criterion_two_expr=num_of_missing_all_fields)
 
     return select_non_match_participants_query
 
