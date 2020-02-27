@@ -37,10 +37,13 @@ commands:
             sudo apt-get install dpkg
             sudo apt-get install google-cloud-sdk
       # Dependencies
+      - restore_cache:
+          keys:
+          - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+          - pip-cache-
       - run:
           name: Add virtual environment activation to bash startup
           command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
-      # TODO(calbach): Setup a caching step here for pip deps.
       - run:
           name: Upgrade pip and install requirements
           command: |
@@ -53,6 +56,10 @@ commands:
           command: cat ${BASH_ENV}
   test_teardown:
     steps:
+      - save_cache:
+          paths:
+            ~/curation_venv
+          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
       - run:
           name: Combine Coverage Results
           working_directory: ~/curation
@@ -149,5 +156,4 @@ workflows:
             branches:
               only: develop
     jobs:
-      - unit_test
       - integration_test
