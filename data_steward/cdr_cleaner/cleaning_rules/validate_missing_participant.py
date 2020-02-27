@@ -116,7 +116,7 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
             query=non_match_participants_query))
 
     # wait for job to finish
-    query_job_id = results['jobReference']['jopartitionBybId']
+    query_job_id = results['jobReference']['jobId']
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
     if incomplete_jobs:
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
@@ -175,9 +175,8 @@ def get_delete_persons_query(project_id, combined_dataset_id, person_ids):
     delete_query[cdr_consts.QUERY] = DELETE_PERSON_IDS_QUERY.format(
         project_id=project_id,
         dataset_id=combined_dataset_id,
-        person_ids=','.join(person_ids))
+        person_ids=','.join(map(str, person_ids)))
     delete_query[cdr_consts.BATCH] = True
-
     return delete_query
 
 
@@ -201,7 +200,7 @@ def delete_records_for_non_matching_participants(project_id, ehr_dataset_id,
     # Retrieving all hpo_ids
     for hpo_id in readers.get_hpo_site_names():
         if not exist_participant_match(project_id, ehr_dataset_id, hpo_id):
-            LOGGER.log(
+            LOGGER.info(
                 'The hpo site {hpo_id} is missing the participant_match data'.
                 format(hpo_id=hpo_id))
 
@@ -209,19 +208,19 @@ def delete_records_for_non_matching_participants(project_id, ehr_dataset_id,
                 get_list_non_match_participants(project_id,
                                                 validation_dataset_id, hpo_id))
         else:
-            LOGGER.log(
+            LOGGER.info(
                 'The hpo site {hpo_id} submitted the participant_match data'.
                 format(hpo_id=hpo_id))
 
     queries = []
 
     if non_matching_person_ids:
-        LOGGER.log(
+        LOGGER.info(
             'Participants: {person_ids} and their data will be dropped from {combined_dataset_id}'
             .format(person_ids=non_matching_person_ids,
                     combined_dataset_id=combined_dataset_id))
 
-        queries.extend(
+        queries.append(
             get_delete_persons_query(project_id, combined_dataset_id,
                                      non_matching_person_ids))
         queries.extend(
