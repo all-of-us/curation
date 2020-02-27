@@ -20,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 SAVE_TABLE_NAME = 'dc_529_obs_rows_dropped'
 
 DROP_SELECTION_QUERY = (
-    'CREATE OR REPLACE TABLE `{project}.{sandbox}.{drop_table}` '
+    'CREATE OR REPLACE TABLE `{project}.{sandbox}.{drop_table}` AS '
     'SELECT * '
     'FROM `{project}.{dataset}.observation` '
     'WHERE observation_source_concept_id IN (43530490, 43528818, 43530333)')
