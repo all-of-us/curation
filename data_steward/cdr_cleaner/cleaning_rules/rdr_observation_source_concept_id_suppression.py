@@ -51,13 +51,12 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         desc = (
             'Remove records from the rdr dataset where '
             'observation_source_concept_id in (43530490, 43528818, 43530333)')
-        BaseCleaningRule.__init__(self,
-                                  jira_issue_numbers=['DC-529'],
-                                  description=desc,
-                                  affected_datasets=[cdr_consts.RDR],
-                                  project_id=project_id,
-                                  dataset_id=dataset_id,
-                                  sandbox_dataset_id=sandbox_dataset_id)
+        super().__init__(jira_issue_numbers=['DC-529'],
+                         description=desc,
+                         affected_datasets=[cdr_consts.RDR],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
 
     def get_query_dictionary_list(self):
         """
@@ -93,6 +92,12 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         }
 
         return [save_dropped_rows, drop_rows_query]
+
+    def setup_query_execution(self):
+        """
+        Function to run any data upload options before executing a query.
+        """
+        pass
 
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ features.
 """
 # Python imports
 import logging
+from abc import ABC, abstractmethod
 from typing import List
 
 # Third party imports
@@ -23,11 +24,41 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 LOGGER = logging.getLogger(__name__)
 
 
-class BaseCleaningRule:
+class AbstractBaseCleaningRule(ABC):
     """
     Contains attributes and functions relevant to all cleaning rules.
     """
     string_list = List[str]
+
+    def __init__(self):
+        """
+        Instantiate a cleaning rule with basic attributes.
+        """
+        super().__init__()
+
+    @abstractmethod
+    def get_query_dictionary_list(self, *args, **keyword_args):
+        """
+        Interface to return a list of query dictionaries.
+
+        :returns:  a list of query dictionaries
+        """
+        pass
+
+    @abstractmethod
+    def print_queries(self, *args, **keyword_args):
+        """
+        Helper function to print the SQL a class geenerates.
+        """
+        pass
+
+
+class BaseCleaningRule(AbstractBaseCleaningRule):
+    """
+    Contains attributes and functions relevant to all cleaning rules.
+    """
+    string_list = List[str]
+    cleaning_class_list = List[AbstractBaseCleaningRule]
 
     def __init__(self,
                  jira_issue_numbers: string_list = None,
@@ -35,7 +66,8 @@ class BaseCleaningRule:
                  affected_datasets: string_list = None,
                  project_id: str = None,
                  dataset_id: str = None,
-                 sandbox_dataset_id: str = None):
+                 sandbox_dataset_id: str = None,
+                 depends_on: cleaning_class_list = None):
         """
         Instantiate a cleaning rule with basic attributes.
 
@@ -57,6 +89,9 @@ class BaseCleaningRule:
         self._project_id = project_id
         self._dataset_id = dataset_id
         self._sandbox_dataset_id = sandbox_dataset_id
+        self._depends_on_classes = depends_on if depends_on else []
+
+        super().__init__()
 
         self.__validate_arguments()
 
@@ -135,6 +170,20 @@ class BaseCleaningRule:
         # validate sandbox_dataset_id is a string
         self.__validate_string(self._sandbox_dataset_id, 'sandbox_dataset_id')
 
+        # depends_on_classes is allowed to be null,
+        # so is not validated against None
+        for clazz in self._depends_on_classes:
+            if not isinstance(clazz, BaseCleaningRule):
+                raise TypeError(
+                    '{} is expected to inherit from BaseCleaningRule'.format(
+                        self.__class__.__name__))
+
+    def get_depends_on_classes(self):
+        """
+        Return the names of classes the rule depends on.
+        """
+        return self._depends_on_classes
+
     def get_jira_issue_numbers(self):
         """
         Return the jira_issue_numbers instance variable.
@@ -171,21 +220,6 @@ class BaseCleaningRule:
         """
         return self._sandbox_dataset_id
 
-    def get_query_dictionary_list(self, *args, **keyword_args):
-        """
-        Interface to return a list of query dictionaries.
-
-        Interface function each inheriting class should override.  Returns a
-        list of query dictionaries to describe each query that should
-        execute.
-
-        :returns:  a list of query dictionaries
-        :raises: NotImplementedError
-        """
-        raise NotImplementedError(
-            '{} has not implemented get_query_dictionary_list.  Must be implemented.'
-            .format(self.__class__.__name__))
-
     def print_queries(self):
         """
         Helper function to print the SQL a class geenerates.
@@ -206,7 +240,8 @@ class BaseCleaningRule:
             LOGGER.info('Generated SQL Query:\n%s',
                         query.get(cdr_consts.QUERY, 'NO QUERY FOUND'))
 
-    def setup_query_execution(self):
+    @abstractmethod
+    def setup_query_execution(self, *args, **keyword_args):
         """
         Function to run any data upload options before executing a query.
         """
