@@ -297,6 +297,23 @@ def delete_table(table_id, dataset_id=None):
     return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
+def delete_dataset(project_id, dataset_id):
+    """
+    Delete BigQuery dataset by id
+
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset to delete
+    :return:
+    """
+    bq_service = create_service()
+    # deleteContents=True deletes the dataset even if tables exist inside of it
+    delete_job = bq_service.datasets().delete(projectId=project_id,
+                                              datasetId=dataset_id,
+                                              deleteContents=True)
+    logging.info('Deleting {dataset_id}'.format(dataset_id=dataset_id))
+    return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
+
+
 def table_exists(table_id, dataset_id=None):
     """
     Determine whether a bigquery table exists
