@@ -10,14 +10,14 @@ SANDBOX_QUERY = """
 CREATE OR REPLACE TABLE `{project}.{sandbox_dataset}.{intermediary_table}` AS (
 SELECT *
 FROM `{project}.{dataset}.{table}`
-WHERE person_id IN({pid_query}))
+WHERE person_id IN({pids}))
 """
 
 # Query to truncate existing tables to remove PIDs based on cleaning rule criteria
 CLEAN_QUERY = """
 SELECT *
 FROM `{project}.{dataset}.{table}`
-WHERE person_id NOT IN({pid_query})
+WHERE person_id NOT IN({pids})
 """
 
 # Query to list all tables within a dataset that contains person_id in the schema
@@ -57,7 +57,10 @@ def get_sandbox_queries(project_id, dataset_id, pids_query, ticket_number):
     :return: list of CREATE OR REPLACE queries to create tables in sandbox
     """
     person_tables_list = get_tables_with_person_id(project_id, dataset_id)
-    pid_query = pids_query.format(project=project_id, dataset=dataset_id)
+    # take pids_query and generate list of pids
+    pid_list = bq.query(
+        pids_query.format(project=project_id,
+                          dataset=dataset_id))['person_id'].tolist()
     queries_list = []
 
     for table in person_tables_list:
@@ -68,7 +71,7 @@ def get_sandbox_queries(project_id, dataset_id, pids_query, ticket_number):
             table=table,
             sandbox_dataset=get_sandbox_dataset_id(dataset_id),
             intermediary_table=table + '_' + ticket_number,
-            pid_query=pid_query)
+            pids=pid_list)
         queries_list.append(sandbox_queries)
 
     return queries_list
@@ -85,14 +88,17 @@ def get_remove_personid_queries(project_id, dataset_id, pids_query):
     :return: list of select statements that will truncate the existing tables with clean data
     """
     person_tables_list = get_tables_with_person_id(project_id, dataset_id)
-    pid_query = pids_query.format(project=project_id, dataset=dataset_id)
+    # take pids_query and generate list of pids
+    pid_list = bq.query(
+        pids_query.format(project=project_id,
+                          dataset=dataset_id))['person_id'].tolist()
     queries_list = []
 
     for table in person_tables_list:
         delete_queries = CLEAN_QUERY.format(project=project_id,
                                             dataset=dataset_id,
                                             table=table,
-                                            pid_query=pid_query)
+                                            pids=pid_list)
         queries_list.append({
             clean_consts.QUERY: delete_queries,
             clean_consts.DESTINATION_TABLE: table,
