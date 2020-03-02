@@ -12,7 +12,7 @@
 #     name: python3
 # ---
 
-import notebooks.bq as bq
+import bq as bq
 from notebooks import parameters
 
 bigquery_dataset_id = parameters.SUBMISSION_DATASET_ID

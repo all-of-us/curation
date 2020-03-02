@@ -14,21 +14,14 @@
 # ---
 
 # +
-from notebooks import bq, render, parameters
+from notebooks import parameters
+import bq
 
 # %matplotlib inline
 import matplotlib.pyplot as plt
 import numpy as np
-from pandas.plotting import table 
 import six
-import scipy.stats
-import math
-import seaborn as sns
-import pandas as pd
-import matplotlib
-from os import path
-from PIL import Image
-from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+from wordcloud import WordCloud
 
 # +
 DATASET = parameters.LATEST_DATASET
@@ -74,20 +67,21 @@ def create_dicts_w_info(df, column_label):
         converted to the keys of the dictionary
     """
     hpos = df['src_hpo_id'].unique().tolist()
-    
+
     site_dictionaries = {}
 
-    for hpo in hpos:   
+    for hpo in hpos:
         sample_df = df.loc[df['src_hpo_id'] == hpo]
-        
+
         data = sample_df.iloc[0][column_label]
 
         site_dictionaries[hpo] = data
-    
+
     return site_dictionaries
 
 
-def create_graphs(info_dict, xlabel, ylabel, title, img_name, colour, total_diff_colour):
+def create_graphs(info_dict, xlabel, ylabel, title, img_name, colour,
+                  total_diff_colour):
     """
     Function is used to create a bar graph for a particular dictionary with information about
     data quality
@@ -113,26 +107,35 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, colour, total_diff
         value of the dictionary is of particular important (e.g. representing an 'aggregate' metric
         across all of the sites)
     """
-    bar_list = plt.bar(range(len(info_dict)), list(info_dict.values()), align='center', color = colour)
-    
+    bar_list = plt.bar(range(len(info_dict)),
+                       list(info_dict.values()),
+                       align='center',
+                       color=colour)
+
     # used to change the color of the 'aggregate' column; usually implemented for an average
     if total_diff_colour:
         bar_list[len(info_dict) - 1].set_color('r')
-    
-    
-    plt.xticks(range(len(info_dict)), list(info_dict.keys()), rotation='vertical')
+
+    plt.xticks(range(len(info_dict)),
+               list(info_dict.keys()),
+               rotation='vertical')
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(title)
     #plt.show()
     plt.savefig(img_name, bbox_inches="tight")
 
+
 # +
 gen_note_dictionary = create_dicts_w_info(note_df, 'num_notes')
 
-create_graphs(info_dict=gen_note_dictionary, xlabel='Site', ylabel='Number of Notes', 
-              title='Number of General Notes By Site', img_name='gen_notes_by_site.jpg',
-              colour='b', total_diff_colour=False)
+create_graphs(info_dict=gen_note_dictionary,
+              xlabel='Site',
+              ylabel='Number of Notes',
+              title='Number of General Notes By Site',
+              img_name='gen_notes_by_site.jpg',
+              colour='b',
+              total_diff_colour=False)
 # -
 
 # ### May want to differentiate notes that have titles (that are not '0')
@@ -161,9 +164,13 @@ note_title_df = bq.query(general_notes_query)
 # +
 gen_note_title_dictionary = create_dicts_w_info(note_title_df, 'num_notes')
 
-create_graphs(info_dict=gen_note_title_dictionary, xlabel='Site', ylabel='Number of Notes', 
-              title='Number of Notes with Titles By Site', img_name='notes_w_titles_by_site.jpg',
-              colour='b', total_diff_colour=False)
+create_graphs(info_dict=gen_note_title_dictionary,
+              xlabel='Site',
+              ylabel='Number of Notes',
+              title='Number of Notes with Titles By Site',
+              img_name='notes_w_titles_by_site.jpg',
+              colour='b',
+              total_diff_colour=False)
 
 # +
 zero_titles_query = """
@@ -182,15 +189,18 @@ GROUP BY 1
 ORDER BY mn.src_hpo_id, num_notes DESC
 """.format(DATASET, DATASET)
 
-
 zero_df = bq.query(zero_titles_query)
 
 # +
 zero_note_title_dictionary = create_dicts_w_info(zero_df, 'num_notes')
 
-create_graphs(info_dict=zero_note_title_dictionary, xlabel='Site', ylabel='Number of Notes', 
-              title='Number of Notes with "0" Titles By Site', img_name='notes_w_zero_titles_by_site.jpg',
-              colour='b', total_diff_colour=False)
+create_graphs(info_dict=zero_note_title_dictionary,
+              xlabel='Site',
+              ylabel='Number of Notes',
+              title='Number of Notes with "0" Titles By Site',
+              img_name='notes_w_zero_titles_by_site.jpg',
+              colour='b',
+              total_diff_colour=False)
 # -
 
 # ### Only want to take notes with > 10000
@@ -226,35 +236,46 @@ titles_df = bq.query(note_titles_query)
 
 titles_df
 
-
 # #### NOTE: the cell below is adapted largely from [this GitHub link](https://stackoverflow.com/questions/19726663/how-to-save-the-pandas-dataframe-series-data-as-a-figure)
 
-def render_mpl_table(data, col_width=15, row_height=0.625, font_size=12,
-                     header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
-                     bbox=[0, 0, 1, 1], header_columns=0,
-                     ax=None, **kwargs):
+
+def render_mpl_table(data,
+                     col_width=15,
+                     row_height=0.625,
+                     font_size=12,
+                     header_color='#40466e',
+                     row_colors=['#f1f1f2', 'w'],
+                     edge_color='w',
+                     bbox=[0, 0, 1, 1],
+                     header_columns=0,
+                     ax=None,
+                     **kwargs):
     """
     Function is used to improve the formatting / image quality of the output. The
     parameters can be changed as needed/desired.
     """
-    
+
     if ax is None:
-        size = (np.array(data.shape[::-1]) + np.array([2, 1])) * np.array([col_width, row_height])
+        size = (np.array(data.shape[::-1]) + np.array([2, 1])) * np.array(
+            [col_width, row_height])
         fig, ax = plt.subplots(figsize=size)
         ax.axis('off')
 
-    mpl_table = ax.table(cellText=data.values, bbox=bbox, colLabels=data.columns, **kwargs)
+    mpl_table = ax.table(cellText=data.values,
+                         bbox=bbox,
+                         colLabels=data.columns,
+                         **kwargs)
 
     mpl_table.auto_set_font_size(False)
     mpl_table.set_fontsize(font_size)
 
-    for k, cell in  six.iteritems(mpl_table._cells):
+    for k, cell in six.iteritems(mpl_table._cells):
         cell.set_edgecolor(edge_color)
         if k[0] == 0 or k[1] < header_columns:
             cell.set_text_props(weight='bold', color='w')
             cell.set_facecolor(header_color)
         else:
-            cell.set_facecolor(row_colors[k[0]%len(row_colors) ])
+            cell.set_facecolor(row_colors[k[0] % len(row_colors)])
     return ax
 
 
@@ -263,7 +284,7 @@ ax = render_mpl_table(titles_df, header_columns=0, col_width=2.0)
 
 plt.tight_layout()
 
-plt.savefig('note_frequencies_desc', bbox_inches ="tight")
+plt.savefig('note_frequencies_desc', bbox_inches="tight")
 
 # +
 titles_dict = {}
@@ -271,13 +292,15 @@ titles_dict = {}
 for index, row in titles_df.iterrows():
     title = row['note_title']
     cnt = row['num_notes']
-    
+
     title_words = title.split()
-    
+
     ## creating a list with all of the words
-    title_lst = [word for word in title_words if word.lower() not in ['note', 'notes']]
+    title_lst = [
+        word for word in title_words if word.lower() not in ['note', 'notes']
+    ]
     title = ' '.join(title_lst)
-    
+
     if title in titles_dict:
         titles_dict[title.lower()] += cnt
     else:
@@ -291,11 +314,11 @@ novel = ""
 
 for title, num in titles_dict.items():
     new_string = title + " "
-    
+
     # NOTE divide by 10,000 to ensure that the wordcloud is not overloaded
     num = int(round(num / 10000, 0))
     tot_string = new_string * num
-    
+
     novel += tot_string
 # -
 
@@ -309,6 +332,3 @@ plt.axis("off")
 plt.savefig('word_cloud_note_titles.png', bbox_inches="tight")
 plt.show()
 # -
-
-
-

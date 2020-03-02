@@ -1,5 +1,6 @@
 # +
-from notebooks import bq, render, parameters
+from notebooks import render, parameters
+import bq
 
 COMBINED = parameters.COMBINED_DATASET_ID
 DEID = parameters.DEID_DATASET_ID
@@ -35,7 +36,9 @@ render.dataframe(row_counts_df)
 
 # ## Side by side comparison of row counts
 
-compare_df = row_counts_df.pivot(index='mapped_table', columns='dataset_id', values='row_count')
+compare_df = row_counts_df.pivot(index='mapped_table',
+                                 columns='dataset_id',
+                                 values='row_count')
 render.dataframe(compare_df)
 
 # ## Row count differences

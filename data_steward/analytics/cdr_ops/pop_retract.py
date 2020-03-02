@@ -1,7 +1,8 @@
 # +
 from jinja2 import Template
 
-from notebooks import bq, render
+from notebooks import render
+import bq
 from notebooks.defaults import is_deid_dataset
 from notebooks.parameters import SANDBOX, RDR_DATASET_ID, COMBINED_DATASET_ID, DEID_DATASET_ID
 
@@ -16,7 +17,8 @@ INPUT_DATASET = COMBINED
 OUTPUT_DATASET = ''
 
 # table containing the research IDs whose records must be retracted
-ID_TABLE = '{SANDBOX}.{COMBINED}_aian_ids'.format(SANDBOX=SANDBOX, COMBINED=COMBINED)
+ID_TABLE = '{SANDBOX}.{COMBINED}_aian_ids'.format(SANDBOX=SANDBOX,
+                                                  COMBINED=COMBINED)
 
 IS_INPUT_DATASET_DEID = is_deid_dataset(INPUT_DATASET)
 
@@ -24,7 +26,9 @@ print("""
 INPUT_DATASET={INPUT_DATASET}
 OUTPUT_DATASET={OUTPUT_DATASET}
 ID_TABLE={ID_TABLE}
-""".format(INPUT_DATASET=INPUT_DATASET, OUTPUT_DATASET=OUTPUT_DATASET, ID_TABLE=ID_TABLE))
+""".format(INPUT_DATASET=INPUT_DATASET,
+           OUTPUT_DATASET=OUTPUT_DATASET,
+           ID_TABLE=ID_TABLE))
 # -
 
 # # IDs whose records must be retracted
@@ -56,6 +60,8 @@ SELECT table_name
 FROM `{INPUT_DATASET}.INFORMATION_SCHEMA.COLUMNS`
 WHERE COLUMN_NAME = 'person_id'
 """
+
+
 def get_tables_with_person_id(input_dataset):
     """
     Get list of tables that have a person_id column
@@ -63,6 +69,7 @@ def get_tables_with_person_id(input_dataset):
     person_table_query = PERSON_TABLE_QUERY.format(INPUT_DATASET=input_dataset)
     person_tables_df = bq.query(person_table_query)
     return list(person_tables_df.table_name.get_values())
+
 
 person_tables = get_tables_with_person_id(INPUT_DATASET)
 # -
@@ -96,10 +103,11 @@ FROM delete_row_counts d
 JOIN {{ OUTPUT_DATASET }}.__TABLES__ t
  ON d.table_name = t.table_id
 """
-query = Template(ROW_COUNTS_QUERY_TPL).render(OUTPUT_DATASET=OUTPUT_DATASET,
-                                              INPUT_DATASET=INPUT_DATASET,
-                                              ID_TABLE=ID_TABLE,
-                                              TABLES=person_tables,
-                                              IS_INPUT_DATASET_DEID=IS_INPUT_DATASET_DEID)
+query = Template(ROW_COUNTS_QUERY_TPL).render(
+    OUTPUT_DATASET=OUTPUT_DATASET,
+    INPUT_DATASET=INPUT_DATASET,
+    ID_TABLE=ID_TABLE,
+    TABLES=person_tables,
+    IS_INPUT_DATASET_DEID=IS_INPUT_DATASET_DEID)
 row_counts_df = bq.query(query)
 render.dataframe(row_counts_df)

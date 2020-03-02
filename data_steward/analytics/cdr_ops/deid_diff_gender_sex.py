@@ -1,4 +1,5 @@
-from notebooks import bq, render, parameters
+from notebooks import render, parameters
+import bq
 
 DEID = parameters.DEID_DATASET_ID
 RDR = parameters.RDR_DATASET_ID
@@ -50,7 +51,8 @@ WHERE
 
 q = GENDER_SEX_DIFF_QUERY.format(DATASET=DEID)
 deid_gender_sex_diff_df = bq.query(q)
-deid_has_diff_obs = len(deid_gender_sex_diff_df.query('row_count > 0').index) > 0
+deid_has_diff_obs = len(
+    deid_gender_sex_diff_df.query('row_count > 0').index) > 0
 render.dataframe(deid_gender_sex_diff_df)
 
 # Show number of person_ids associated with each combination (person.gender, ppi)

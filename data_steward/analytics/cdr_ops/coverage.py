@@ -14,7 +14,7 @@
 
 import warnings
 from notebooks import parameters
-import notebooks.bq as bq
+import bq
 warnings.filterwarnings('ignore')
 dataset = parameters.EHR_DATASET_ID
 

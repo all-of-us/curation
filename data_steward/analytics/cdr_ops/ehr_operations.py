@@ -16,7 +16,7 @@
 
 # +
 import datetime
-from notebooks import bq
+import bq
 from notebooks.parameters import RDR_PROJECT_ID, RDR_DATASET_ID, EHR_DATASET_ID
 
 UPLOADED_SINCE_DAYS = 30
@@ -57,7 +57,8 @@ GROUP BY
   m.Site_Name,
   resource.labels.bucket_name,
   protopayload_auditlog.authenticationInfo.principalEmail
-ORDER BY MAX(timestamp) ASC""".format(rdr_project=RDR_PROJECT_ID, end_suffix=end_suffix)
+ORDER BY MAX(timestamp) ASC""".format(rdr_project=RDR_PROJECT_ID,
+                                      end_suffix=end_suffix)
 bq.query(query)
 
 # ## EHR Site Submission Counts

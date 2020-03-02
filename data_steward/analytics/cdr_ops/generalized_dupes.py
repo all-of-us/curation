@@ -1,5 +1,6 @@
 # +
-from notebooks import bq, parameters
+from notebooks import parameters
+import bq
 
 DEID = parameters.DEID_DATASET_ID
 # -

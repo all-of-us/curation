@@ -1,7 +1,8 @@
 import argparse
 
 import cdm
-from bq_utils import *
+import resources
+from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError
 
 
 def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
@@ -55,7 +56,7 @@ def get_copy_table_query(project_id, dataset_id, table_id):
             for field in fields
         ]
         col_expr = ', '.join(fields_with_datatypes)
-    except (OSError, IOError) as e:
+    except (OSError, IOError):
         # default to select *
         col_expr = '*'
     select_all_query = 'SELECT {col_expr} FROM `{project_id}.{dataset_id}.{table_id}`'

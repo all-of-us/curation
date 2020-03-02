@@ -17,7 +17,7 @@
 # %matplotlib inline
 import warnings
 
-import notebooks.bq as bq
+import bq as bq
 import seaborn as sns
 
 from notebooks.defaults import DEFAULT_DATASETS

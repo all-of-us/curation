@@ -333,7 +333,7 @@ def job_status_done(job_id):
 def job_status_errored(job_id):
     """
     Check if the job is complete with an error
-    
+
     :param job_id: the job id
     :return: a tuple that contains a bool indicating whether the job is errored and its corresponding error message
     """
@@ -680,6 +680,31 @@ def response2rows(r):
     return [_transform_row(row, schema) for row in rows]
 
 
+def _recurse_on_row(col_dict, nested_value):
+    """
+    Apply the schema specified by the given dict to the nested value by recursing on it.
+
+        :param col_dict: the schema to apply to the nested value.
+        :param nested_value: A value nested in a BigQuery row.
+        :returns: Union[dict, list] objects from applied schema.
+        """
+
+    row_value = None
+
+    # Multiple nested records
+    if col_dict['mode'] == 'REPEATED' and isinstance(nested_value, list):
+        row_value = [
+            _transform_row(record['v'], col_dict['fields'])
+            for record in nested_value
+        ]
+
+    # A single nested record
+    else:
+        row_value = _transform_row(nested_value, col_dict['fields'])
+
+    return row_value
+
+
 def _transform_row(row, schema):
     """
     Apply the given schema to the given BigQuery data row. Adapted from https://goo.gl/dWszQJ.
@@ -703,7 +728,7 @@ def _transform_row(row, schema):
 
         # Recurse on nested records
         if col_dict['type'] == 'RECORD':
-            row_value = self._recurse_on_row(col_dict, row_value)
+            row_value = _recurse_on_row(col_dict, row_value)
 
         # Otherwise just cast the value
         elif col_dict['type'] == 'INTEGER':

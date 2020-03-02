@@ -16,7 +16,7 @@
 # ## Notebook is intended to show the efficacy of [cleaning rule #540](https://precisionmedicineinitiative.atlassian.net/browse/DC-540)
 #
 # #### Cleaning rule:
-# - Created 
+# - Created
 #     - sex_at_birth_concept_id: value_as_concept_id
 #     - sex_at_birth_source_value: concept_code associated with the value_source_concept_id
 #     - sex_at_birth_source_concept_id: value_source_concept_id for the row
@@ -29,11 +29,10 @@
 #     - gender_source_value = concept_code associated with value_source_concept_id
 #     - gender_source_concept_id = value_source_concept_id
 
-from notebooks import bq, render, parameters
+from notebooks import render, parameters
+import bq
 import pandas as pd
 import matplotlib.pyplot as plt
-import json
-import numpy as np
 
 # +
 pd.set_option('display.max_colwidth', -1)
@@ -44,22 +43,21 @@ COMBINED_ONLY = parameters.COMBINED_ONLY
 
 # +
 # Tables
-PERSON_TABLE_BEFORE_CLEANING_RULE = '{DATASET}.person'.format(DATASET = DEID_DATASET_ID)
+PERSON_TABLE_BEFORE_CLEANING_RULE = '{DATASET}.person'.format(
+    DATASET=DEID_DATASET_ID)
 
 PERSON_TABLE_AFTER_CLEANING_RULE = '{SANDBOX}.{COMBINED_ONLY}_dc540_person'.format(
-    SANDBOX = SANDBOX, COMBINED_ONLY = COMBINED_ONLY)
+    SANDBOX=SANDBOX, COMBINED_ONLY=COMBINED_ONLY)
 
-CONCEPT_TABLE = '{DATASET}.concept'.format(DATASET = DEID_DATASET_ID)
-
+CONCEPT_TABLE = '{DATASET}.concept'.format(DATASET=DEID_DATASET_ID)
 
 print("""
 DEID_DATASET = {DEID_DATASET_ID}
 PERSON_TABLE_BEFORE_CLEANING_RULE = {PERSON_TABLE_BEFORE_CLEANING_RULE}
 PERSON_TABLE_AFTER_CLEANING_RULE = {PERSON_TABLE_AFTER_CLEANING_RULE}
-""".format(
-    DEID_DATASET_ID = DEID_DATASET_ID,
-    PERSON_TABLE_BEFORE_CLEANING_RULE = PERSON_TABLE_BEFORE_CLEANING_RULE,
-    PERSON_TABLE_AFTER_CLEANING_RULE = PERSON_TABLE_AFTER_CLEANING_RULE))
+""".format(DEID_DATASET_ID=DEID_DATASET_ID,
+           PERSON_TABLE_BEFORE_CLEANING_RULE=PERSON_TABLE_BEFORE_CLEANING_RULE,
+           PERSON_TABLE_AFTER_CLEANING_RULE=PERSON_TABLE_AFTER_CLEANING_RULE))
 # -
 
 # ### Before the cleaning rule - get the counts for the gender concept
@@ -92,8 +90,9 @@ ORDER BY count DESC
 """
 
 # +
-gender = gender.format(DEID_DATASET_ID = DEID_DATASET_ID,
-    PERSON_TABLE_BEFORE_CLEANING_RULE = PERSON_TABLE_BEFORE_CLEANING_RULE)
+gender = gender.format(
+    DEID_DATASET_ID=DEID_DATASET_ID,
+    PERSON_TABLE_BEFORE_CLEANING_RULE=PERSON_TABLE_BEFORE_CLEANING_RULE)
 
 gender_output = bq.query(gender)
 render.dataframe(gender_output)
@@ -127,11 +126,9 @@ o.observation_concept_id = 1585838
 
 GROUP BY 1, 2
 ORDER BY count DESC
-""".format(
-    PERSON_TABLE_AFTER_CLEANING_RULE = PERSON_TABLE_AFTER_CLEANING_RULE,
-    CONCEPT_TABLE = CONCEPT_TABLE,
-    DEID_DATASET_ID = DEID_DATASET_ID
-)
+""".format(PERSON_TABLE_AFTER_CLEANING_RULE=PERSON_TABLE_AFTER_CLEANING_RULE,
+           CONCEPT_TABLE=CONCEPT_TABLE,
+           DEID_DATASET_ID=DEID_DATASET_ID)
 
 gender_cleaned_output = bq.query(gender_cleaned)
 render.dataframe(gender_cleaned_output)
@@ -143,11 +140,14 @@ count_pre_cr = gender_output['count'].tolist()
 
 count_post_cr = gender_cleaned_output['count'].tolist()
 
-df = pd.DataFrame({'before-cr': count_pre_cr,
-                   'post-cr': count_post_cr}, index = indexes)
+df = pd.DataFrame({
+    'before-cr': count_pre_cr,
+    'post-cr': count_post_cr
+},
+                  index=indexes)
 
-ax = df.plot.bar(rot=0, color = ['orange', 'blue'])
-plt.xticks(rotation = 45)
+ax = df.plot.bar(rot=0, color=['orange', 'blue'])
+plt.xticks(rotation=45)
 
 plt.title("Gender Concepts By Cleaning Rule")
 plt.ylabel("Count")
@@ -156,7 +156,7 @@ plt.xlabel('concept_name')
 # +
 a = gender_cleaned_output['count'].tolist()
 b = gender_output['count'].tolist()
-    
+
 cr_difference = []
 
 for x, y in zip(a, b):
@@ -200,7 +200,7 @@ o.observation_concept_id = 1585838  -- want to see "Sex at Birth PPI"
 
 GROUP BY 1, 2, 3, 4, 5, 6, 7
 ORDER BY count DESC
-""".format(DATASET = DEID_DATASET_ID)
+""".format(DATASET=DEID_DATASET_ID)
 
 gender_from_observation = bq.query(gender_from_observation)
 render.dataframe(gender_from_observation)
@@ -212,11 +212,15 @@ count_from_person = gender_cleaned_output['count'].tolist()
 
 count_from_observation = gender_from_observation['count'].tolist()
 
-df = pd.DataFrame({'from person': count_from_person,
-                   'from observation': count_from_observation}, index = indexes)
+df = pd.DataFrame(
+    {
+        'from person': count_from_person,
+        'from observation': count_from_observation
+    },
+    index=indexes)
 
-ax = df.plot.bar(rot=0, color = ['orange', 'blue'])
-plt.xticks(rotation = 45)
+ax = df.plot.bar(rot=0, color=['orange', 'blue'])
+plt.xticks(rotation=45)
 
 plt.title("Gender Concepts - from Observation (pre-CR) and Person (post-Cr)")
 plt.ylabel("Count")
@@ -225,7 +229,7 @@ plt.xlabel('concept_name')
 # +
 a = gender_cleaned_output['count'].tolist()
 b = gender_from_observation['count'].tolist()
-    
+
 cr_difference = []
 
 for x, y in zip(a, b):
@@ -269,7 +273,7 @@ o.observation_concept_id = 1585845  -- want to see "Sex at Birth PPI"
 
 GROUP BY 1, 2, 3, 4, 5, 6, 7
 ORDER BY count DESC
-""".format(DATASET = DEID_DATASET_ID)
+""".format(DATASET=DEID_DATASET_ID)
 
 # +
 observation_ppi = bq.query(sex_at_birth_pre_cr)
@@ -319,7 +323,8 @@ o.observation_concept_id = 1585845
 
 GROUP BY 1, 2, 3, 4, 5
 ORDER BY count DESC
-""".format(DEID_DATASET_ID = DEID_DATASET_ID, PERSON = PERSON_TABLE_AFTER_CLEANING_RULE)
+""".format(DEID_DATASET_ID=DEID_DATASET_ID,
+           PERSON=PERSON_TABLE_AFTER_CLEANING_RULE)
 
 person_sab = bq.query(sex_at_birth_post_cr)
 render.dataframe(person_sab)
@@ -331,11 +336,15 @@ count_pre_cr = observation_ppi['count'].tolist()
 
 count_post_cr = person_sab['count'].tolist()
 
-df = pd.DataFrame({'Observation Table PPI': count_pre_cr,
-                   'Person Table Post-Cleaning Rule': count_post_cr}, index = indexes)
+df = pd.DataFrame(
+    {
+        'Observation Table PPI': count_pre_cr,
+        'Person Table Post-Cleaning Rule': count_post_cr
+    },
+    index=indexes)
 
-ax = df.plot.bar(rot=0, color = ['orange', 'blue'])
-plt.xticks(rotation = 45)
+ax = df.plot.bar(rot=0, color=['orange', 'blue'])
+plt.xticks(rotation=45)
 
 plt.title("Sex at Birth Distribution - Observation to Person Mapping")
 plt.ylabel("Count")
@@ -344,7 +353,7 @@ plt.xlabel('concept_name')
 # +
 a = person_sab['count'].tolist()
 b = observation_ppi['count'].tolist()
-    
+
 cr_difference = []
 
 for x, y in zip(a, b):
@@ -402,11 +411,10 @@ o.observation_concept_id = 1585845
 GROUP BY 1, 2, 3, 4, 5, 6
 HAVING count > 1
 ORDER BY count DESC
-""".format(DEID_DATASET_ID = DEID_DATASET_ID, PERSON = PERSON_TABLE_AFTER_CLEANING_RULE)
+""".format(DEID_DATASET_ID=DEID_DATASET_ID,
+           PERSON=PERSON_TABLE_AFTER_CLEANING_RULE)
 
 duplicate_sab = bq.query(duplicate_sab_concepts)
 render.dataframe(duplicate_sab)
 
 # ## As you can see, bringing the PPI from the observation table over to the person table created artificial duplicates
-
-
