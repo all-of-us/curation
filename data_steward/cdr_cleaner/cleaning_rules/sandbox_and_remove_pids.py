@@ -45,22 +45,18 @@ def get_tables_with_person_id(project_id, dataset_id):
     return person_table_list
 
 
-def get_sandbox_queries(project_id, dataset_id, pids_query, ticket_number):
+def get_sandbox_queries(project_id, dataset_id, pids, ticket_number):
     """
     Returns a list of queries of all tables to be added to the datasets sandbox. These tables include all rows from all
     effected tables that include PIDs that will be removed by a specific cleaning rule.
 
     :param project_id: bq project_id
     :param dataset_id: bq dataset_id
-    :param pids_query: query from cleaning rule that lists all PIDs that need to be sandboxed and removed
+    :param pids: list of person_ids from cleaning rule that need to be sandboxed and removed
     :param ticket_number: ticket number from jira that will be appended to the end of the sandbox table names
     :return: list of CREATE OR REPLACE queries to create tables in sandbox
     """
     person_tables_list = get_tables_with_person_id(project_id, dataset_id)
-    # take pids_query and generate list of pids
-    pid_list = bq.query(
-        pids_query.format(project=project_id,
-                          dataset=dataset_id))['person_id'].tolist()
     queries_list = []
 
     for table in person_tables_list:
@@ -71,34 +67,30 @@ def get_sandbox_queries(project_id, dataset_id, pids_query, ticket_number):
             table=table,
             sandbox_dataset=get_sandbox_dataset_id(dataset_id),
             intermediary_table=table + '_' + ticket_number,
-            pids=pid_list)
+            pids=pids)
         queries_list.append(sandbox_queries)
 
     return queries_list
 
 
-def get_remove_personid_queries(project_id, dataset_id, pids_query):
+def get_remove_personid_queries(project_id, dataset_id, pids):
     """
     Returns a list of queries in which the table will be truncated with clean data, ie: all removed PIDs from all
     datasets based on a cleaning rule.
 
     :param project_id: b1 project_id
     :param dataset_id: bq dataset_id
-    :param pids_query: query from cleaning rule that lists all PIDs that need to be sandboxed and removed
+    :param pids: list of person_ids from cleaning rule that need to be sandboxed and removed
     :return: list of select statements that will truncate the existing tables with clean data
     """
     person_tables_list = get_tables_with_person_id(project_id, dataset_id)
-    # take pids_query and generate list of pids
-    pid_list = bq.query(
-        pids_query.format(project=project_id,
-                          dataset=dataset_id))['person_id'].tolist()
     queries_list = []
 
     for table in person_tables_list:
         delete_queries = CLEAN_QUERY.format(project=project_id,
                                             dataset=dataset_id,
                                             table=table,
-                                            pids=pid_list)
+                                            pids=pids)
         queries_list.append({
             clean_consts.QUERY: delete_queries,
             clean_consts.DESTINATION_TABLE: table,
