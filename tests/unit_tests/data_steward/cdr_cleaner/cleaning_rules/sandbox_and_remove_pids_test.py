@@ -42,7 +42,7 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
         ]
 
         mock_bq_query_patcher = patch(
-            'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.bq')
+            'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.bq.query')
         self.mock_bq_query = mock_bq_query_patcher.start()
         self.mock_bq_query.return_value = pd.DataFrame()
         self.addCleanup(mock_bq_query_patcher.stop)
