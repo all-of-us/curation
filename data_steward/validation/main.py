@@ -198,7 +198,7 @@ def validate_all_hpos():
     """
     validation end point for all hpo_ids
     """
-    for item in resources.hpo_csv():
+    for item in bq_utils.get_hpo_info():
         hpo_id = item['hpo_id']
         process_hpo(hpo_id)
     return 'validation done!'
@@ -480,7 +480,7 @@ def process_hpo(hpo_id, force_run=False):
 
 
 def get_hpo_name(hpo_id):
-    hpo_list_of_dicts = resources.hpo_csv()
+    hpo_list_of_dicts = bq_utils.get_hpo_info()
     for hpo_dict in hpo_list_of_dicts:
         if hpo_dict['hpo_id'].lower() == hpo_id.lower():
             return hpo_dict['name']

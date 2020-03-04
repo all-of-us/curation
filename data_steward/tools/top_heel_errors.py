@@ -10,10 +10,9 @@ import app_identity
 
 import bq_utils
 import common
-import resources
 from io import open
 
-HPO_ID_LIST = [item['hpo_id'] for item in resources.hpo_csv()]
+HPO_ID_LIST = [item['hpo_id'] for item in bq_utils.get_hpo_info()]
 JSON = 'json'
 CSV = 'csv'
 OUTPUT_FORMATS = [CSV, JSON]

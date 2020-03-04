@@ -10,7 +10,7 @@ def get_hpo_ids():
 
     :return: A list of HPO ids
     """
-    return [hpo_item[consts.HPO_ID] for hpo_item in resources.hpo_csv()]
+    return [hpo_item[consts.HPO_ID] for hpo_item in bq_utils.get_hpo_info()]
 
 
 def get_cols(dataset_id):

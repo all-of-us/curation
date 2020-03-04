@@ -731,7 +731,7 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     """
     logging.info('EHR union started')
     if hpo_ids is None:
-        hpo_ids = [item['hpo_id'] for item in resources.hpo_csv()]
+        hpo_ids = [item['hpo_id'] for item in bq_utils.get_hpo_info()]
 
     # Create empty output tables to ensure proper schema, clustering, etc.
     for table in resources.CDM_TABLES:

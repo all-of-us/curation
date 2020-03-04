@@ -2,10 +2,10 @@ import unittest
 
 import mock
 
+import bq_utils
 import common
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import resources
 import tools.generate_ext_tables as gen_ext
 
 
@@ -35,7 +35,7 @@ class GenerateExtTablesTest(unittest.TestCase):
             "description":
                 "The provenance of the data associated with the observation_id."
         }]
-        self.hpo_list = resources.hpo_csv()
+        self.hpo_list = bq_utils.get_hpo_info()
         self.mapping_tables = [
             gen_ext.MAPPING_PREFIX + cdm_table
             for cdm_table in common.AOU_REQUIRED
@@ -90,7 +90,7 @@ class GenerateExtTablesTest(unittest.TestCase):
     def test_convert_to_bq_string(self):
         hpo_rdr_mapping_list = gen_ext.get_hpo_and_rdr_mappings()
         hpo_bq_list = []
-        for hpo in resources.hpo_csv():
+        for hpo in bq_utils.get_hpo_info():
             hpo_bq_list.append(self.bq_string.format(hpo_name=hpo["hpo_id"]))
         hpo_bq_list.append('("{rdr}", "{ppi_pm}")'.format(
             rdr=gen_ext.RDR, ppi_pm=gen_ext.PPI_PM))

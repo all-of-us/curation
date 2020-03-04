@@ -1,7 +1,6 @@
 import random
 
 import bq_utils
-import resources
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
@@ -86,7 +85,7 @@ def generate_site_mappings():
     Generates the mapping table for the site names and the masked names
     :return: returns dict with key: hpo_id, value: rand int
     """
-    hpo_list = resources.hpo_csv()
+    hpo_list = bq_utils.get_hpo_info()
     rand_list = random.sample(range(100, 999), len(hpo_list))
     mapping_dict = dict()
     for i, hpo_dict in enumerate(hpo_list):

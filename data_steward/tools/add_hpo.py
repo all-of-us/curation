@@ -3,6 +3,7 @@ import logging
 from googleapiclient.errors import HttpError
 
 import bq_utils
+import constants.bq_utils as bq_consts
 from tools import cli_util
 import gcs_utils
 import resources
@@ -16,7 +17,6 @@ Note: GAE environment must still be set manually
 LOOKUP_TABLES_DATASET_ID = 'lookup_tables'
 HPO_SITE_ID_MAPPINGS_TABLE_ID = 'hpo_site_id_mappings'
 HPO_ID_BUCKET_NAME_TABLE_ID = 'hpo_id_bucket_name'
-HPO_CSV_LINE_FMT = '"{hpo_id}","{hpo_name}"\n'
 
 DEFAULT_DISPLAY_ORDER = """
 SELECT MAX(Display_Order) + 1 AS display_order FROM {hpo_site_id_mappings_table_id}
@@ -39,12 +39,12 @@ SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
 
 def find_hpo(hpo_id, hpo_name):
     """
-    Finds if the HPO  are already available in hpo.csv
+    Finds if the HPO is already available in lookup_tables.hpo_site_id_mappings
     :param hpo_id: hpo identifier
     :param hpo_name: HPO name
     :return:
     """
-    hpos = resources.hpo_csv()
+    hpos = bq_utils.get_hpo_info()
     for hpo in hpos:
         if hpo['hpo_id'] == hpo_id or hpo['name'] == hpo_name:
             return hpo
@@ -136,22 +136,6 @@ def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
     add_hpo_bucket(hpo_id, bucket_name)
 
 
-def add_hpo_csv(hpo_id, hpo_name):
-    """
-    Add an entry to the hpo csv file
-
-    :return:
-    """
-    if find_hpo(hpo_id, hpo_name):
-        raise IOError(
-            'Entry not added. A site with hpo_id {hpo_id} and name {name} already exists.'
-        )
-    logging.info('Adding new entry for hpo_id %s to hpo.csv...' % hpo_id)
-    line = HPO_CSV_LINE_FMT.format(hpo_id=hpo_id, hpo_name=hpo_name)
-    with open(resources.hpo_csv_path, 'a') as hpo_fp:
-        hpo_fp.writelines([line])
-
-
 def bucket_access_configured(bucket_name):
     """
     Determine if the service account has appropriate permissions on the bucket
@@ -181,7 +165,6 @@ def main(hpo_id, org_id, hpo_name, bucket_name, display_order):
         logging.info(
             'Accessing bucket %s successful. Proceeding to add site...' %
             bucket_name)
-        add_hpo_csv(hpo_id, hpo_name)
         add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order)
 
 

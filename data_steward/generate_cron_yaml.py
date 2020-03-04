@@ -1,6 +1,7 @@
 import jinja2
 import os
 
+import bq_utils
 import resources
 import datetime
 from io import open
@@ -31,7 +32,7 @@ def render():
         loader=jinja2.FileSystemLoader(resources.TEMPLATES_PATH))
     tpl = j2_env.get_template(resources.CRON_TPL_YAML)
     # TODO obtain cron urls from validation.main/app_base.yaml instead of through template
-    hpos = resources.hpo_csv()
+    hpos = bq_utils.get_hpo_info()
     yesterday = get_yesterday_expr()
     result = tpl.render(hpos=hpos, yesterday=yesterday)
     return result
