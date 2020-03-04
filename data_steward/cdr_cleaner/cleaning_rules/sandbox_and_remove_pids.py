@@ -73,7 +73,7 @@ def get_sandbox_queries(project_id, dataset_id, pids, ticket_number):
     return queries_list
 
 
-def get_remove_personid_queries(project_id, dataset_id, pids):
+def get_remove_pids_queries(project_id, dataset_id, pids):
     """
     Returns a list of queries in which the table will be truncated with clean data, ie: all removed PIDs from all
     datasets based on a cleaning rule.
