@@ -2,9 +2,8 @@ import unittest
 
 import mock
 
-import cdr_cleaner.cleaning_rules.sandbox_and_remove_pids as sandbox_and_remove_pids
+from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import bq_utils
 
 
 class SandboxAndRemovePidsTest(unittest.TestCase):
