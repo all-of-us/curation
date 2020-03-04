@@ -67,7 +67,8 @@ def get_sandbox_queries(project_id, dataset_id, pids, ticket_number):
             table=table,
             sandbox_dataset=get_sandbox_dataset_id(dataset_id),
             intermediary_table=table + '_' + ticket_number,
-            pids=pids)
+            # need to convert list of pids to string of pids
+            pids=','.join([str(i) for i in pids]))
         queries_list.append(sandbox_queries)
 
     return queries_list
@@ -87,10 +88,12 @@ def get_remove_pids_queries(project_id, dataset_id, pids):
     queries_list = []
 
     for table in person_tables_list:
-        delete_queries = CLEAN_QUERY.format(project=project_id,
-                                            dataset=dataset_id,
-                                            table=table,
-                                            pids=pids)
+        delete_queries = CLEAN_QUERY.format(
+            project=project_id,
+            dataset=dataset_id,
+            table=table,
+            # need to convert list of pids to string of pids
+            pids=','.join([str(i) for i in pids]))
         queries_list.append({
             clean_consts.QUERY: delete_queries,
             clean_consts.DESTINATION_TABLE: table,
