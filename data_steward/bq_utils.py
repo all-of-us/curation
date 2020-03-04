@@ -904,8 +904,8 @@ def get_hpo_info():
     project_id = app_identity.get_application_id()
     hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
         project_id=project_id,
-        LOOKUP_TABLES_DATASET=bq_consts.LOOKUP_TABLES_DATASET,
-        HPO_MAPPINGS_TABLE=bq_consts.HPO_MAPPINGS_TABLE)
+        LOOKUP_TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
+        HPO_SITE_ID_MAPPINGS_TABLE_ID=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
     hpo_response = query(hpo_table_query)
     hpo_table_contents = response2rows(hpo_response)
     for hpo_table_row in hpo_table_contents:

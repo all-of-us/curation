@@ -18,9 +18,10 @@ tools_path = os.path.join(base_path, 'tools')
 # resources/*
 DEID_PATH = os.path.join(base_path, 'deid')
 resource_path = os.path.join(base_path, 'resources')
-hpo_csv_path = os.path.join(resource_path, 'hpo.csv')
+config_path = os.path.join(base_path, 'config')
 fields_path = os.path.join(resource_path, 'fields')
 cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
+hpo_site_mappings_path = os.path.join(config_path, 'hpo_site_mappings.csv')
 achilles_index_path = os.path.join(resource_path, 'curation_report')
 AOU_VOCAB_PATH = os.path.join(resource_path, 'aou_vocab')
 AOU_VOCAB_CONCEPT_CSV_PATH = os.path.join(AOU_VOCAB_PATH, 'concept.csv')
@@ -80,11 +81,6 @@ def value_mappings_csv():
 
 def cdm_csv():
     return csv_to_list(cdm_csv_path)
-
-
-def hpo_csv():
-    # TODO get this from file; currently limited for pre- alpha release
-    return csv_to_list(hpo_csv_path)
 
 
 def achilles_index_files():

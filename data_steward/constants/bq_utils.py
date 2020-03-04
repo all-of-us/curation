@@ -38,8 +38,9 @@ TRUE = 'true'
 FALSE = 'false'
 
 # HPO table info
-LOOKUP_TABLES_DATASET = 'lookup_tables'
-HPO_MAPPINGS_TABLE = 'hpo_site_id_mappings'
+LOOKUP_TABLES_DATASET_ID = 'lookup_tables'
+HPO_SITE_ID_MAPPINGS_TABLE_ID = 'hpo_site_id_mappings'
+HPO_ID_BUCKET_NAME_TABLE_ID = 'hpo_id_bucket_name'
 
 HPO_ID = 'HPO_ID'
 SITE_NAME = 'Site_Name'
@@ -59,5 +60,5 @@ VALUES {mapping_list}
 
 GET_HPO_CONTENTS_QUERY = """
 SELECT *
-FROM `{project_id}.{LOOKUP_TABLES_DATASET}.{HPO_MAPPINGS_TABLE}`
+FROM `{project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_SITE_ID_MAPPINGS_TABLE_ID}`
 """
