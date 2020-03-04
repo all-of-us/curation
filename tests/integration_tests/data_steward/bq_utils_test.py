@@ -346,6 +346,10 @@ class BqUtilsTest(unittest.TestCase):
         for i, _ in enumerate(expected):
             self.assertCountEqual(expected[i], actual[i])
 
+    def test_get_hpo_info(self):
+        hpo_info = bq_utils.get_hpo_info()
+        self.assertGreater(len(hpo_info), 0)
+
     def test_csv_line_to_sql_row_expr(self):
         fields = [{
             'name': 'nullable_date_col',
