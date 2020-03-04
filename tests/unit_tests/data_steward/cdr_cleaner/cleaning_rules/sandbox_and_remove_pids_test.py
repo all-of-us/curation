@@ -8,7 +8,9 @@ import pandas as pd
 
 # Project imports
 from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids
+from constants.cdr_cleaner import clean_cdr as clean_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants import bq_utils as bq_consts
 
 
 class SandboxAndRemovePidsTest(unittest.TestCase):
@@ -59,14 +61,20 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
     @mock.patch(
         'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.get_tables_with_person_id'
     )
-    def test_sandbox_query_generation(self, mock_get_tables_with_person_id):
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.get_sandbox_dataset_id'
+    )
+    def test_sandbox_query_generation(self, mock_get_sandbox_dataset_id,
+                                      mock_get_tables_with_person_id):
+
+        mock_get_tables_with_person_id.return_value = self.person_table_list
+        mock_get_sandbox_dataset_id.return_value = self.sandbox_dataset
+
         result = sandbox_and_remove_pids.get_sandbox_queries(
             self.project_id, self.dataset_id, self.pids, self.ticket_number)
         expected = list()
-        person_table_list = mock_get_tables_with_person_id(
-            self.project_id, self.dataset_id)
 
-        for table in person_table_list:
+        for table in self.person_table_list:
             expected.append({
                 cdr_consts.QUERY:
                     sandbox_and_remove_pids.SANDBOX_QUERY.format(
@@ -75,7 +83,7 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
                         table=table,
                         sandbox_dataset=self.sandbox_dataset,
                         intermediary_table=table + '_' + self.ticket_number,
-                        pids=self.pids)
+                        pids=','.join([str(i) for i in self.pids]))
             })
         self.assertEquals(result, expected)
 
@@ -83,19 +91,26 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
         'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.get_tables_with_person_id'
     )
     def test_remove_pids_query_generation(self, mock_get_tables_with_person_id):
+
+        mock_get_tables_with_person_id.return_value = self.person_table_list
+
         result = sandbox_and_remove_pids.get_remove_pids_queries(
             self.project_id, self.dataset_id, self.pids)
         expected = list()
-        person_table_list = mock_get_tables_with_person_id(
-            self.project_id, self.dataset_id)
 
-        for table in person_table_list:
+        for table in self.person_table_list:
             expected.append({
                 cdr_consts.QUERY:
                     sandbox_and_remove_pids.CLEAN_QUERY.format(
                         project=self.project_id,
                         dataset=self.dataset_id,
                         table=table,
-                        pids=self.pids)
+                        pids=','.join([str(i) for i in self.pids])),
+                clean_consts.DESTINATION_TABLE:
+                    table,
+                clean_consts.DESTINATION_DATASET:
+                    self.dataset_id,
+                clean_consts.DISPOSITION:
+                    bq_consts.WRITE_TRUNCATE
             })
         self.assertEquals(result, expected)
