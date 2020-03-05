@@ -3,7 +3,6 @@ import unittest
 
 # Third party imports
 import mock
-from mock import patch
 import pandas as pd
 
 # Project imports
