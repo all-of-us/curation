@@ -61,7 +61,7 @@ def create_on_string(item):
 
 def _get_boolean(value):
     """
-    Return a boolean for a given sgring value.
+    Return a boolean for a given string value.
 
     :param value:  The value to interpret as a boolean
 
@@ -71,7 +71,7 @@ def _get_boolean(value):
 
     if isinstance(value, bool):
         return value
-    elif isinstance(value, (str, unicode)):
+    elif isinstance(value, (str)):
         if value.lower() in true_bools:
             return True
 

@@ -1,12 +1,13 @@
 """
-    This class applies rules and meta data to yield a certain outpout
+This class applies rules and meta data to yield a certain output
 """
 # Python imports
 import codecs
-from datetime import datetime
 import json
 import logging
 import os
+from abc import ABC, abstractmethod
+from datetime import datetime
 
 # Third party imports
 import pandas as pd
@@ -57,7 +58,7 @@ def set_up_logging(log_path, idataset):
                             format=file_format)
 
 
-class Press(object):
+class Press(ABC):
 
     def __init__(self, **args):
         """
@@ -136,23 +137,26 @@ class Press(object):
 
         return field_names
 
+    @abstractmethod
     def get_dataframe(self, sql=None, limit=None):
         """
         This function will execute an SQL statement and return the meta data for a given table
         """
-        return None
+        pass
 
+    @abstractmethod
     def submit(self, sql, create, dml=None):
         """
         Should be overridden by subclasses.
         """
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def update_rules(self):
         """
         Should be overridden by subclasses.
         """
-        raise NotImplementedError()
+        pass
 
     def do(self):
         """
