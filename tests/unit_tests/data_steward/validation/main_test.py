@@ -213,7 +213,7 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('validation.main.gcs_utils.get_hpo_bucket')
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('validation.main.list_bucket')
-    @mock.patch('logging.error')
+    @mock.patch('logging.exception')
     @mock.patch('api_util.check_cron')
     def test_validate_all_hpos_exception(self, check_cron, mock_logging_error,
                                          mock_list_bucket, mock_hpo_csv,
@@ -223,10 +223,10 @@ class ValidationMainTest(unittest.TestCase):
             'fake http error', b'fake http error')
         with main.app.test_client() as c:
             c.get(main_consts.PREFIX + 'ValidateAllHpoFiles')
-        expected_call = mock.call(
-            'Failed to process hpo_id `{}` due to the following '
-            'HTTP error: fake http error'.format(self.hpo_id))
-        self.assertIn(expected_call, mock_logging_error.mock_calls)
+            expected_call = mock.call(
+                'Failed to process hpo_id `{}` due to the following '
+                'HTTP error: fake http error'.format(self.hpo_id))
+            self.assertIn(expected_call, mock_logging_error.mock_calls)
 
     def test_extract_date_from_rdr(self):
         rdr_dataset_id = 'rdr20200201'

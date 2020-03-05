@@ -1,17 +1,19 @@
+"""
+A module for the basic `admin` endpoint.
+
+Its solely responsible for automating service key deletions and notifications.
+"""
 import logging
-import os
+#Project Imports
 
+# Third party imports
 from flask import Flask
-import app_identity
 
-import slack
+# Project imports
 import api_util
+import app_identity
 from admin import key_rotation
-
-SLACK_TOKEN = 'SLACK_TOKEN'
-SLACK_CHANNEL = 'SLACK_CHANNEL'
-UNSET_SLACK_TOKEN_MSG = 'Slack token not set in environment variable %s' % SLACK_TOKEN
-UNSET_SLACK_CHANNEL_MSG = 'Slack channel not set in environment variable %s' % SLACK_CHANNEL
+from utils.slack_alerts import post_message
 
 PREFIX = '/admin/v1/'
 REMOVE_EXPIRED_KEYS_RULE = PREFIX + 'RemoveExpiredServiceAccountKeys'
@@ -25,66 +27,6 @@ BODY_TEMPLATE = ('service_account_email={service_account_email}\n'
                  'created_at={created_at}\n')
 
 app = Flask(__name__)
-
-
-class AdminConfigurationError(RuntimeError):
-    """
-    Raised when the Admin API is not properly configured
-    """
-
-    def __init__(self, msg):
-        super(AdminConfigurationError, self).__init__()
-        self.msg = msg
-
-
-def get_slack_token():
-    """
-    Get the token used to interact with the Slack API
-
-    :raises:
-      AdminConfigurationError: token is not configured
-    :return: configured Slack API token as str
-    """
-    if SLACK_TOKEN not in os.environ.keys():
-        raise AdminConfigurationError(UNSET_SLACK_TOKEN_MSG)
-    return os.environ[SLACK_TOKEN]
-
-
-def get_slack_channel_name():
-    """
-    Get name of the Slack channel to post notifications to
-
-    :raises:
-      AdminConfigurationError: channel name is not configured
-    :return: the configured Slack channel name as str
-    """
-    if SLACK_CHANNEL not in os.environ.keys():
-        raise AdminConfigurationError(UNSET_SLACK_CHANNEL_MSG)
-    return os.environ[SLACK_CHANNEL]
-
-
-def get_slack_client():
-    """
-    Get web client for Slack
-
-    :return: WebClient object to communicate with Slack
-    """
-    slack_token = get_slack_token()
-    return slack.WebClient(slack_token)
-
-
-def post_message(text):
-    """
-    Post a system notification
-
-    :param text: the message to post
-    :return:
-    """
-    slack_client = get_slack_client()
-    slack_channel_name = get_slack_channel_name()
-    return slack_client.chat_postMessage(channel=slack_channel_name,
-                                         text=text,
-                                         verify=False)
 
 
 # TODO Use jinja templates
