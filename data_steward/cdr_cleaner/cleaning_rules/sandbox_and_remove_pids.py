@@ -27,6 +27,8 @@ FROM `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
 WHERE COLUMN_NAME = 'person_id'
 """
 
+TABLE_NAME_COLUMN = 'table_name'
+
 
 def get_tables_with_person_id(project_id, dataset_id):
     """
@@ -34,13 +36,13 @@ def get_tables_with_person_id(project_id, dataset_id):
     """
     person_table_query = PERSON_TABLE_QUERY.format(project=project_id,
                                                    dataset=dataset_id)
-    person_table_list = list(
-        bq.query(person_table_query).table_name.get_values())
-
+    person_tables = bq.query(person_table_query).get(
+        TABLE_NAME_COLUMN).to_list()
     # exclude mapping tables from list, to be removed after all cleaning rules
-    for item in person_table_list:
-        if item.startswith('_mapping'):
-            person_table_list.remove(item)
+    return [
+        table_name for table_name in person_tables
+        if '_mapping' not in table_name
+    ]
 
     return person_table_list
 

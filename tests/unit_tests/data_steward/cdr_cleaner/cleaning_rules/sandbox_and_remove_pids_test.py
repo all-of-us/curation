@@ -49,14 +49,19 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
         self.mock_bq_query.return_value = pd.DataFrame()
         self.addCleanup(mock_bq_query_patcher.stop)
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.get_tables_with_person_id'
-    )
-    def test_get_tables_with_pids(self, mock_get_tables_with_person_id):
+        self.mapping_table_list = [
+            '_mapping_measurement', '_mapping_condition_occurrence',
+            '_mapping_procedure_occurrence'
+        ]
 
-        result = []
-        mock_get_tables_with_person_id.return_value = (result,
-                                                       self.person_table_list)
+    @mock.patch('cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.bq.query')
+    def test_get_tables_with_pids(self, mock_query):
+        mock_query.return_value = pd.DataFrame(
+            self.person_table_list + self.mapping_table_list,
+            columns=[sandbox_and_remove_pids.TABLE_NAME_COLUMN])
+        actual = sandbox_and_remove_pids.get_tables_with_person_id(
+            self.project_id, self.dataset_id)
+        self.assertListEqual(self.person_table_list, actual)
 
     @mock.patch(
         'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.get_tables_with_person_id'
