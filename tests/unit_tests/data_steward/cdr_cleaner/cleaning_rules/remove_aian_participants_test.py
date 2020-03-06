@@ -61,7 +61,7 @@ class RemoveAIANParticipantsTest(unittest.TestCase):
         result = remove_aian.get_queries(self.project_id, self.dataset_id)
 
         expected = list()
-        expected.append(mock_get_remove_pids_queries.return_value)
-        expected.append(mock_get_sandbox_queries.return_value)
+        expected.extend(mock_get_remove_pids_queries.return_value)
+        expected.extend(mock_get_sandbox_queries.return_value)
 
         self.assertEquals(result, expected)

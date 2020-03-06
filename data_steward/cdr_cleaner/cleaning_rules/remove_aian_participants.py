@@ -1,6 +1,8 @@
 """
 Background
-DC-685
+
+DC-685 - removing participants who identified as AI/AN in PPI.
+
 There is a requirement from the NIH that participants who identified as AI/AN in PPI cannot have ANY of their data
 included in released datasets for the Data Browser or Workbench/Cohort Builder. These participants have had their data
 retracted non-programmatically previously. However, since this is expected to be a long-term policy, this should be a
@@ -19,7 +21,7 @@ TICKET_NUMBER = 'DC685'
 PIDS_QUERY = """
 SELECT person_id
 FROM `{project}.{dataset}.observation`
-WHERE observation_source_concept_id IN(1586140) AND value_source_concept_id IN(1586141)
+WHERE observation_source_concept_id IN (1586140) AND value_source_concept_id IN (1586141)
 """
 
 
@@ -50,11 +52,11 @@ def get_queries(project_id, dataset_id):
 
     queries_list = []
 
-    queries_list.append(
+    queries_list.extend(
         sandbox_and_remove_pids.get_sandbox_queries(
             project_id, dataset_id,
             get_pids_list(project_id, dataset_id, PIDS_QUERY), TICKET_NUMBER))
-    queries_list.append(
+    queries_list.extend(
         sandbox_and_remove_pids.get_remove_pids_queries(
             project_id, dataset_id,
             get_pids_list(project_id, dataset_id, PIDS_QUERY)))
