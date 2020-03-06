@@ -7,7 +7,6 @@ import sys
 from googleapiclient.errors import HttpError
 
 # Project imports
-import app_identity
 import bq_utils
 
 logging.basicConfig(
@@ -100,7 +99,6 @@ if __name__ == '__main__':
     parser.add_argument(
         '-n',
         '--name_substrings',
-        action='append',
         nargs='+',
         dest='name_substrings',
         help='Identifies substrings that help identify datasets to delete. '
