@@ -70,6 +70,11 @@ def cstr(s, color='black'):
 
 
 print('done.')
+# -
+
+cwd = os.getcwd()
+cwd = str(cwd)
+print(cwd)
 
 # +
 dic = {
@@ -82,7 +87,7 @@ dic = {
         "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl",
         "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh",
         "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc",
-        "aouw_mcw", "cpmc_ucd", "ipmc_rush"
+        "aouw_mcw", "cpmc_ucd", "ipmc_rush", "va", "saou_umc"
     ],
     'HPO': [
         "UAB Selma", "UAB Huntsville", "Tulane University", "Temple University",
@@ -105,7 +110,9 @@ dic = {
         "University of Southern California", "HRHCare",
         "NorthShore University Health System", "Cherokee Health Systems",
         "UC San Francisco", "Jackson-Hinds CHC", "Medical College of Wisconsin",
-        "UC Davis", "Rush University"
+        "UC Davis", "Rush University", 
+        "United States Department of Veterans Affairs - Boston",
+        "University Medical Center (UA Tuscaloosa)"
     ]
 }
 
@@ -713,7 +720,6 @@ foreign_key_df.head()
 
 # ## Sites combined
 
-# +
 sites_success = pd.merge(visit_occurrence,
                          condition_occurrence,
                          how='outer',
@@ -739,7 +745,6 @@ sites_success = pd.merge(sites_success,
                          how='outer',
                          on='src_hpo_id')
 
-# -
 
 sites_success = sites_success.fillna(0)
 sites_success[["visit_occurrence", "condition_occurrence", "drug_exposure", "measurement", "procedure_occurrence",
@@ -755,9 +760,13 @@ sites_success = sites_success.fillna(0)
 
 sites_success
 
-sites_success.to_csv("data\\duplicates.csv")
+sites_success.to_csv("{cwd}\duplicates.csv".format(cwd = cwd))
 
-# # 20.Dataframe (row for each hpo_id) Condition_occurrence table, condition_source_concept_id field
+# # Below is used to define the 'concept success rate' of the source_concept_ids
+#
+# ### NOTE: This is not a useful metric for most sites but has 'fringe' cases of utility. Source concept IDs are NOT expected to be of standard concept.
+
+# ### 20.Dataframe (row for each hpo_id) Condition_occurrence table, condition_source_concept_id field
 
 condition_concept_df = pd.io.gbq.read_gbq('''
     WITH
@@ -1191,7 +1200,10 @@ master_df
 
 source = pd.merge(master_df, site_df, how='outer', on='src_hpo_id')
 source = source.fillna("No Data")
-source.to_csv("data\\source.csv")
+source.to_csv("{cwd}\source_concept_success_rate.csv".format(cwd = cwd))
+
+# # Below is how we calculate **true** concept_success_rate. This involves concept_id fields that are of Standard Concept = 'S' and of the correct domain.
+# #### NOTE: Domain enforcement is not necessary for the Observation table
 
 # # 16.Dataframe (row for each hpo_id) Condition_occurrence table, condition_concept_id field
 
@@ -1917,4 +1929,4 @@ success_rate
 success_rate = success_rate.fillna("No Data")
 success_rate
 
-success_rate.to_csv("data\\concept.csv")
+success_rate.to_csv("{cwd}\concept.csv".format(cwd = cwd))
