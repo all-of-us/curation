@@ -16,8 +16,8 @@
 # ## Notebook is intended to compare the EHR data in the latest AoU dataset to the thresholds established by the [OHDSI DataQualityDashboard](https://github.com/OHDSI/DataQualityDashboard)
 
 # +
+import bq_utils
 from notebooks import parameters
-import bq
 
 # %matplotlib inline
 import matplotlib.pyplot as plt
@@ -151,7 +151,7 @@ ORDER BY percent_implausible_vals DESC
 """.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, \
            DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET)
 
-measurement_df = bq.query(measurement_df_query)
+measurement_df = bq_utils.query_to_df(measurement_df_query)
 # -
 
 # ##### Creating copies of the measurement dataframe. Enables further exploration/manipulation without needing to re-run the above query.
@@ -283,7 +283,7 @@ ORDER BY percent_implaus DESC
 """.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, \
            DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET)
 
-hpo_df = bq.query(hpo_query)
+hpo_df = bq_utils.query_to_df(hpo_query)
 # -
 
 # ##### Creating copies of the HPO dataframe. Enables further exploration/manipulation without needing to re-run the above query.

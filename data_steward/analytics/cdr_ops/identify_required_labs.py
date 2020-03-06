@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
+import bq_utils
 from notebooks import render
-import bq
 
 # ## Strategy for getting all related lab concepts
 #
@@ -254,7 +254,7 @@ ORDER BY
   1,2
 """
 
-identify_labs_query_results = bq.query(
+identify_labs_query_results = bq_utils.query_to_df(
     IDENTIFY_LABS_QUERY.format(VOCAB_DATASET_ID=VOCAB_DATASET_ID,
                                DATASET_ID=DATASET_ID))
 render.dataframe(identify_labs_query_results)

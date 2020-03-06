@@ -20,9 +20,8 @@
 #     - example (as of 02/26/2020): a site is reporting >97% 'Unknown' racial concepts. this site would be expected to be fairly homogenous
 #     - this information could be provided to sites so they could better assess whether or not their EHR matches the demographics that they might encounter in HealthPro
 # - See if the data being provided by AoU recapitulates existing findings with respect to healthcare disparities (e.g. which groups are more likely to seek care)
-
+import bq_utils
 from notebooks import parameters
-import bq
 import matplotlib.pyplot as plt
 from operator import add
 import math
@@ -57,7 +56,7 @@ GROUP BY 1, 2
 ORDER BY cnt DESC
 """.format(DATASET=DATASET)
 
-race_popularity = bq.query(race_popularity_query)
+race_popularity = bq_utils.query_to_df(race_popularity_query)
 
 most_popular_race_cnames = race_popularity['race_concept_name'].to_list()
 most_popular_race_cids = race_popularity['race_concept_id'].to_list()
@@ -77,7 +76,7 @@ p.race_concept_id = c.concept_id
 GROUP BY 1, 2
 """.format(DATASET=DATASET)
 
-race_df = bq.query(race_id_and_name_query)
+race_df = bq_utils.query_to_df(race_id_and_name_query)
 race_dict = race_df.set_index('race_concept_id').to_dict()
 
 race_dict = race_dict['concept_name']  # get rid of unnecessary nesting
@@ -123,7 +122,8 @@ a.src_hpo_id = b.src_hpo_id
 ORDER BY b.number_from_site DESC, number_of_demographic DESC
 """.format(DATASET=DATASET)
 
-racial_distribution_by_site = bq.query(racial_distribution_by_site_query)
+racial_distribution_by_site = bq_utils.query_to_df(
+    racial_distribution_by_site_query)
 
 # ### Now we want to put this information into a format that can be easily converted into a bar graph
 
@@ -470,7 +470,7 @@ def create_query_for_particular_table(dataset, percent_of_table, table_name):
                percent_of_table=percent_of_table,
                table_name=table_name)
 
-    dataframe = bq.query(query)
+    dataframe = bq_utils.query_to_df(query)
 
     return dataframe
 

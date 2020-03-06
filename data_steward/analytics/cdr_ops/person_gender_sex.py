@@ -7,9 +7,8 @@
 #   * `sex_at_birth_concept_id` contains the associated `value_as_concept_id`
 #   * `sex_at_birth_source_concept_id` contains the associated `value_source_concept_id`
 #   * `sex_at_birth_source_value` contains the `concept_code` associated with `sex_at_birth_source_concept_id`
-
+import bq_utils
 from notebooks import render
-import bq
 from notebooks.parameters import SANDBOX, DEID_DATASET_ID
 import resources
 print("""
@@ -57,11 +56,11 @@ JOIN `{DATASET}.concept` c
 """
 
 q = SEX_AT_BIRTH_QUERY.format(DATASET=DEID_DATASET_ID)
-sex_at_birth_df = bq.query(q)
+sex_at_birth_df = bq_utils.query_to_df(q)
 render.dataframe(sex_at_birth_df)
 
 q = GENDER_QUERY.format(DATASET=DEID_DATASET_ID)
-gender_df = bq.query(q)
+gender_df = bq_utils.query_to_df(q)
 render.dataframe(gender_df)
 
 # +
@@ -119,7 +118,7 @@ JOIN `{SEX_AT_BIRTH_LOG}` s ON p.person_id = s.person_id
 
 person_schema = resources.fields_for('person')
 
-person_df = bq.query(UPDATED_PERSON_QUERY)
+person_df = bq_utils.query_to_df(UPDATED_PERSON_QUERY)
 person_log_table = '{SANDBOX}.{DATASET}_dc540_person'.format(
     SANDBOX=SANDBOX, DATASET=DEID_DATASET_ID)
 df_to_gbq(person_df,
@@ -152,5 +151,5 @@ ORDER BY
  p.sex_at_birth_source_value,
  p.sex_at_birth_source_concept_id
 """.format(PERSON_LOG=person_log_table)
-person_hist_df = bq.query(PERSON_HIST_QUERY)
+person_hist_df = bq_utils.query_to_df(PERSON_HIST_QUERY)
 render.dataframe(person_hist_df)

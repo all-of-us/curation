@@ -10,6 +10,7 @@ from datetime import datetime
 import app_identity
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from google.cloud import bigquery
 
 # Project imports
 import common
@@ -19,6 +20,12 @@ from constants import bq_utils as bq_consts
 from io import open
 
 socket.setdefaulttimeout(bq_consts.SOCKET_TIMEOUT)
+
+
+def query_to_df(q, use_cache=False):
+    client = bigquery.Client()
+    query_job_config = bigquery.job.QueryJobConfig(use_query_cache=use_cache)
+    return client.query(q, job_config=query_job_config).to_dataframe()
 
 
 class InvalidOperationError(RuntimeError):

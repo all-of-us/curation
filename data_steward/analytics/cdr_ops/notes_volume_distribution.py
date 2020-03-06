@@ -14,8 +14,8 @@
 # ---
 
 # +
+import bq_utils
 from notebooks import parameters
-import bq
 
 # %matplotlib inline
 import matplotlib.pyplot as plt
@@ -48,7 +48,7 @@ GROUP BY 1
 ORDER BY mn.src_hpo_id
 """.format(DATASET, DATASET)
 
-note_df = bq.query(general_notes_query)
+note_df = bq_utils.query_to_df(general_notes_query)
 # -
 
 note_df
@@ -159,7 +159,7 @@ GROUP BY 1
 ORDER BY mn.src_hpo_id, num_notes DESC
 """.format(DATASET, DATASET)
 
-note_title_df = bq.query(general_notes_query)
+note_title_df = bq_utils.query_to_df(general_notes_query)
 
 # +
 gen_note_title_dictionary = create_dicts_w_info(note_title_df, 'num_notes')
@@ -189,7 +189,7 @@ GROUP BY 1
 ORDER BY mn.src_hpo_id, num_notes DESC
 """.format(DATASET, DATASET)
 
-zero_df = bq.query(zero_titles_query)
+zero_df = bq_utils.query_to_df(zero_titles_query)
 
 # +
 zero_note_title_dictionary = create_dicts_w_info(zero_df, 'num_notes')
@@ -231,7 +231,7 @@ ORDER BY a.num_notes DESC
 LIMIT 30
 """.format(DATASET, DATASET)
 
-titles_df = bq.query(note_titles_query)
+titles_df = bq_utils.query_to_df(note_titles_query)
 # -
 
 titles_df

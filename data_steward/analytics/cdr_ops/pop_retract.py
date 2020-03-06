@@ -1,8 +1,8 @@
 # +
 from jinja2 import Template
 
+import bq_utils
 from notebooks import render
-import bq
 from notebooks.defaults import is_deid_dataset
 from notebooks.parameters import SANDBOX, RDR_DATASET_ID, COMBINED_DATASET_ID, DEID_DATASET_ID
 
@@ -46,7 +46,7 @@ WHERE
 AND rdr.value_source_concept_id       = 1586141
 """
 q = AIAN_PID_QUERY.format(RDR=RDR, COMBINED=COMBINED)
-aian_pid_df = bq.query(q)
+aian_pid_df = bq_utils.query_to_df(q)
 render.dataframe(aian_pid_df)
 
 # Save research IDs to a table in the sandbox
@@ -67,7 +67,7 @@ def get_tables_with_person_id(input_dataset):
     Get list of tables that have a person_id column
     """
     person_table_query = PERSON_TABLE_QUERY.format(INPUT_DATASET=input_dataset)
-    person_tables_df = bq.query(person_table_query)
+    person_tables_df = bq_utils.query_to_df(person_table_query)
     return list(person_tables_df.table_name.get_values())
 
 
@@ -109,5 +109,5 @@ query = Template(ROW_COUNTS_QUERY_TPL).render(
     ID_TABLE=ID_TABLE,
     TABLES=person_tables,
     IS_INPUT_DATASET_DEID=IS_INPUT_DATASET_DEID)
-row_counts_df = bq.query(query)
+row_counts_df = bq_utils.query_to_df(query)
 render.dataframe(row_counts_df)

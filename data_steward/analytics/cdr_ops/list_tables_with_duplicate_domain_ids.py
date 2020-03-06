@@ -12,7 +12,7 @@
 #     name: python3
 # ---
 
-import bq as bq
+import bq_utils
 from notebooks import parameters
 
 bigquery_dataset_id = parameters.SUBMISSION_DATASET_ID
@@ -28,7 +28,7 @@ FROM `{bq_dataset_id}.__TABLES__`
 WHERE table_id LIKE '%person' 
 AND table_id NOT LIKE '%unioned_ehr_%' AND table_id NOT LIKE '\\\_%'
 """.format(bq_dataset_id=bigquery_dataset_id)
-hpo_ids = bq.query(query).tolist()
+hpo_ids = bq_utils.query_to_df(query).tolist()
 
 domains = [
     'care_site', 'condition_occurrence', 'device_cost', 'device_exposure',
@@ -61,5 +61,5 @@ for hpo_id in hpo_ids:
         subqueries.append(
             subquery.format(h=hpo_id, d=d, bq_dataset_id=bigquery_dataset_id))
     q = '\n\nUNION ALL\n'.join(subqueries)
-    x = bq.query(q)
+    x = bq_utils.query_to_df(q)
     df = df.append(x.drop_duplicates())

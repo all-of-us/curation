@@ -28,9 +28,8 @@
 #     - gender_concept_id = value_as_concept_id
 #     - gender_source_value = concept_code associated with value_source_concept_id
 #     - gender_source_concept_id = value_source_concept_id
-
+import bq_utils
 from notebooks import render, parameters
-import bq
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -94,7 +93,7 @@ gender = gender.format(
     DEID_DATASET_ID=DEID_DATASET_ID,
     PERSON_TABLE_BEFORE_CLEANING_RULE=PERSON_TABLE_BEFORE_CLEANING_RULE)
 
-gender_output = bq.query(gender)
+gender_output = bq_utils.query_to_df(gender)
 render.dataframe(gender_output)
 # -
 
@@ -130,7 +129,7 @@ ORDER BY count DESC
            CONCEPT_TABLE=CONCEPT_TABLE,
            DEID_DATASET_ID=DEID_DATASET_ID)
 
-gender_cleaned_output = bq.query(gender_cleaned)
+gender_cleaned_output = bq_utils.query_to_df(gender_cleaned)
 render.dataframe(gender_cleaned_output)
 
 # +
@@ -202,7 +201,7 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7
 ORDER BY count DESC
 """.format(DATASET=DEID_DATASET_ID)
 
-gender_from_observation = bq.query(gender_from_observation)
+gender_from_observation = bq_utils.query_to_df(gender_from_observation)
 render.dataframe(gender_from_observation)
 
 # +
@@ -276,7 +275,7 @@ ORDER BY count DESC
 """.format(DATASET=DEID_DATASET_ID)
 
 # +
-observation_ppi = bq.query(sex_at_birth_pre_cr)
+observation_ppi = bq_utils.query_to_df(sex_at_birth_pre_cr)
 
 render.dataframe(observation_ppi)
 # -
@@ -326,7 +325,7 @@ ORDER BY count DESC
 """.format(DEID_DATASET_ID=DEID_DATASET_ID,
            PERSON=PERSON_TABLE_AFTER_CLEANING_RULE)
 
-person_sab = bq.query(sex_at_birth_post_cr)
+person_sab = bq_utils.query_to_df(sex_at_birth_post_cr)
 render.dataframe(person_sab)
 
 # +
@@ -414,7 +413,7 @@ ORDER BY count DESC
 """.format(DEID_DATASET_ID=DEID_DATASET_ID,
            PERSON=PERSON_TABLE_AFTER_CLEANING_RULE)
 
-duplicate_sab = bq.query(duplicate_sab_concepts)
+duplicate_sab = bq_utils.query_to_df(duplicate_sab_concepts)
 render.dataframe(duplicate_sab)
 
 # ## As you can see, bringing the PPI from the observation table over to the person table created artificial duplicates

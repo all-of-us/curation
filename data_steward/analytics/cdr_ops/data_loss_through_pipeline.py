@@ -22,9 +22,8 @@
 # The dimensions of 'data volume' are as follows (for each table):
 # - number of participants
 # - number of records
-
+import bq_utils
 from notebooks import parameters
-import bq
 import pandas as pd
 import numpy as np
 import six
@@ -280,7 +279,7 @@ def generate_query(dataset, person_var, record_var, table_name, field_name):
                record_var=record_var,
                dataset=dataset)
 
-    dataframe = bq.query(query)
+    dataframe = bq_utils.query_to_df(query)
 
     return (dataframe)
 
@@ -811,7 +810,7 @@ def generate_site_level_query(id_name, unioned, table_name, combined):
                table_name=table_name,
                combined=combined)
 
-    dataframe = bq.query(site_level_query)
+    dataframe = bq_utils.query_to_df(site_level_query)
 
     return dataframe
 
