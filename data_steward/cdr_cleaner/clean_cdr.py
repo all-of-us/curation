@@ -222,8 +222,8 @@ def _gather_combined_queries(project_id, dataset_id, sandbox_dataset_id):
         add_module_info_decorator(null_foreign_key.null_invalid_foreign_keys,
                                   project_id, dataset_id))
     query_list.extend(
-        add_module_info_decorator(remove_aian_participants.get_queries(project_id, dataset_id))
-    )
+        add_module_info_decorator(
+            remove_aian_participants.get_queries(project_id, dataset_id)))
     return query_list
 
 
