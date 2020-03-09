@@ -27,7 +27,7 @@ class ValidateMissingParticipantTest(unittest.TestCase):
         self.project_id = 'project_id'
         self.hpo_id_1 = 'hpo_fake_1'
         self.hpo_id_2 = 'hpo_fake_2'
-        self.participant_match_table = 'hpo_fake_1_participant_match'
+        self.identity_match_table = 'hpo_fake_1_participant_match'
         self.non_match_participant_query = 'query'
         self.biqquery_job_id = 'job-id-1'
         self.query_results = {'jobReference': {'jobId': self.biqquery_job_id}}
@@ -127,14 +127,14 @@ class ValidateMissingParticipantTest(unittest.TestCase):
         expected = SELECT_NON_MATCH_PARTICIPANTS_QUERY.format(
             project_id=self.project_id,
             validation_dataset_id=self.validation_dataset_id,
-            participant_match=self.participant_match_table,
+            identity_match_table=self.identity_match_table,
             criterion_one_expr=expected_criterion_one,
             criterion_two_expr=expected_criterion_two)
 
         actual = validate_missing_participant.get_non_match_participant_query(
             project_id=self.project_id,
             validation_dataset_id=self.validation_dataset_id,
-            participant_match_table=self.participant_match_table)
+            identity_match_table=self.identity_match_table)
 
         self.assertEqual(expected, actual)
 
@@ -156,7 +156,7 @@ class ValidateMissingParticipantTest(unittest.TestCase):
     def test_get_list_non_match_participants(
         self, mock_get_table_id, mock_get_non_match_participant_query,
         mock_query, mock_wait_on_jobs, mock_response2rows):
-        mock_get_table_id.return_value = self.participant_match_table
+        mock_get_table_id.return_value = self.identity_match_table
         mock_get_non_match_participant_query.return_value = self.non_match_participant_query
         mock_query.return_value = self.query_results
         mock_wait_on_jobs.side_effect = [[], [self.biqquery_job_id]]
@@ -168,11 +168,11 @@ class ValidateMissingParticipantTest(unittest.TestCase):
         self.assertListEqual(self.person_ids, actual)
 
         mock_get_table_id.assert_called_with(
-            self.hpo_id_1, validate_missing_participant.PARTICIPANT_MATCH)
+            self.hpo_id_1, validate_missing_participant.IDENTITY_MATCH)
 
         mock_get_non_match_participant_query.assert_called_with(
             self.project_id, self.validation_dataset_id,
-            self.participant_match_table)
+            self.identity_match_table)
 
         mock_query.assert_called_with(q=self.non_match_participant_query)
         mock_wait_on_jobs.assert_called_with([self.biqquery_job_id])
@@ -213,12 +213,10 @@ class ValidateMissingParticipantTest(unittest.TestCase):
 
         self.assertListEqual(expected, actual)
 
-        mock_exist_participant_match.assert_any_call(self.project_id,
-                                                     self.ehr_dataset_id,
+        mock_exist_participant_match.assert_any_call(self.ehr_dataset_id,
                                                      self.hpo_id_1)
 
-        mock_exist_participant_match.assert_called_with(self.project_id,
-                                                        self.ehr_dataset_id,
+        mock_exist_participant_match.assert_called_with(self.ehr_dataset_id,
                                                         self.hpo_id_2)
 
         mock_get_list_non_match_participants.assert_called_with(

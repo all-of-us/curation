@@ -13,6 +13,8 @@ from constants.validation.participants.identity_match import (PERSON_ID_FIELD,
 from constants.validation.participants.writers import ALGORITHM_FIELD
 from common import PARTICIPANT_MATCH
 
+IDENTITY_MATCH = 'identity_match'
+
 LOGGER = logging.getLogger(__name__)
 
 TICKET_NUMBER = 'DC-468'
@@ -24,9 +26,7 @@ KEY_FIELDS = [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]
 
 PARTICIPANT_MATCH_EXCLUDED_FIELD = [PERSON_ID_FIELD, ALGORITHM_FIELD]
 
-CAST_MISSING_COLUMN = """
-CAST({column} = 'missing' AS int64)
-"""
+CAST_MISSING_COLUMN = """CAST({column} = 'missing' AS int64)"""
 
 SELECT_NON_MATCH_PARTICIPANTS_QUERY = """
 WITH non_match_participants AS
@@ -35,7 +35,7 @@ SELECT
     *,
     ({criterion_one_expr}) AS criterion_one,
     ({criterion_two_expr}) AS criterion_two
-FROM {project_id}.{validation_dataset_id}.{participant_match}
+FROM `{project_id}.{validation_dataset_id}.{identity_match_table}`
 )
 
 SELECT
@@ -45,7 +45,7 @@ WHERE criterion_one IS TRUE OR criterion_two IS TRUE
 """
 
 CRITERION_COLUMN_TEMPLATE = """
-({column_expr}) >= {num_of_missing})
+({column_expr}) >= {num_of_missing}
 """
 
 
@@ -86,16 +86,16 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
     """
 
     # get the the hpo specific <hpo_id>_participant_match
-    participant_match_table = bq_utils.get_table_id(hpo_id, PARTICIPANT_MATCH)
+    identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
 
     non_match_participants_query = get_non_match_participant_query(
-        project_id, validation_dataset_id, participant_match_table)
+        project_id, validation_dataset_id, identity_match_table)
 
     try:
         LOGGER.info(
-            'Identifying non-match participants in {dataset_id}.{participant_match_table}'
+            'Identifying non-match participants in {dataset_id}.{identity_match_table}'
             .format(dataset_id=validation_dataset_id,
-                    participant_match_table=participant_match_table))
+                    identity_match_table=identity_match_table))
 
         results = bq_utils.query(q=non_match_participants_query)
 
@@ -104,6 +104,7 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
 
         LOGGER.exception('Could not execute the query \n{query}'.format(
             query=non_match_participants_query))
+        raise exp
 
     # wait for job to finish
     query_job_id = results['jobReference']['jobId']
@@ -116,13 +117,13 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
 
 
 def get_non_match_participant_query(project_id, validation_dataset_id,
-                                    participant_match_table):
+                                    identity_match_table):
     """
     This function generates the query for identifying non_match participants query flagged by the DRC match algorithm
     
     :param project_id: 
     :param validation_dataset_id: 
-    :param participant_match_table: 
+    :param identity_match_table: 
     :return: 
     """
 
@@ -133,7 +134,7 @@ def get_non_match_participant_query(project_id, validation_dataset_id,
 
     participant_match_fields = [
         field['name']
-        for field in resources.fields_for(PARTICIPANT_MATCH)
+        for field in resources.fields_for(IDENTITY_MATCH)
         if field['name'] not in PARTICIPANT_MATCH_EXCLUDED_FIELD
     ]
     # if the total number of missings is equal to and bigger than 4, this is a non-match
@@ -144,7 +145,7 @@ def get_non_match_participant_query(project_id, validation_dataset_id,
     select_non_match_participants_query = SELECT_NON_MATCH_PARTICIPANTS_QUERY.format(
         project_id=project_id,
         validation_dataset_id=validation_dataset_id,
-        participant_match=participant_match_table,
+        identity_match_table=identity_match_table,
         criterion_one_expr=num_of_missing_key_fields,
         criterion_two_expr=num_of_missing_all_fields)
 
@@ -170,7 +171,7 @@ def delete_records_for_non_matching_participants(project_id, ehr_dataset_id,
 
     # Retrieving all hpo_ids
     for hpo_id in readers.get_hpo_site_names():
-        if not exist_participant_match(project_id, ehr_dataset_id, hpo_id):
+        if not exist_participant_match(ehr_dataset_id, hpo_id):
             LOGGER.info(
                 'The hpo site {hpo_id} is missing the participant_match data'.
                 format(hpo_id=hpo_id))
@@ -200,3 +201,10 @@ def delete_records_for_non_matching_participants(project_id, ehr_dataset_id,
                                                 non_matching_person_ids))
 
     return queries
+
+
+if __name__ == '__main__':
+    person_id = delete_records_for_non_matching_participants(
+        'aou-res-curation-test', 'chao_dataset',
+        'lrwb_participant_validation_20190830', 'calbach_ch_dev_setup_combined')
+    print(f'{person_id}')
