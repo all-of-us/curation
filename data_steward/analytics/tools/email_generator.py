@@ -8,12 +8,8 @@ Assumptions
 2. Script also stored with introduction.txt, great_job.txt, and contact_list.py
 Code was developed with respect to PEP8 standards
 """
-from __future__ import print_function
 import os
-from io import open
-
 import pandas as pd
-
 from contact_list import recipient_dict
 
 
@@ -44,7 +40,7 @@ def determine_row(sheet, site_hpo_id):
     return row_num
 
 
-def get_info(sheet, row_num, percentage, succ_rate):
+def get_info(sheet, row_num, percentage, succ_rate, sheet_name):
     """
     Function is used to create a dictionary that contains
     the number of flawed records for a particular site.
@@ -64,6 +60,9 @@ def get_info(sheet, row_num, percentage, succ_rate):
         be looking for the columns of the analytics
         report that end with "success_rate"
 
+    sheet_name (string): sheet that is being indexed. used to
+        differentiate concept_success_rate
+
     :return:
     err_dictionary (dictionary): key:value pairs represent the
         column and and number that represents the quality of the data
@@ -71,14 +70,17 @@ def get_info(sheet, row_num, percentage, succ_rate):
     data_info = sheet.iloc[row_num, :]  # series, row labels and values
     err_dictionary = {}
 
-    for col_label, number in data_info.items():
+    for col_label, number in data_info.iteritems():
         if succ_rate:
             if len(col_label) > 12:
                 if col_label[-12:] == 'success_rate':
                     try:
                         number = float(number)
-                        if number < 100:  # concept rate is below 100%
+                        if number < 100 and sheet_name != 'concept':  # success rate is below 100%
                             err_dictionary[col_label] = round(100 - number, 1)
+                        elif sheet_name == 'concept' and number < 90:  # only log if below 90%
+                            err_dictionary[col_label] = round(100 - number, 1)
+
                     except TypeError:  # failed to convert to float
                         pass
                     except ValueError:  # 'no info' case
@@ -125,9 +127,7 @@ def determine_parameters(sheet_name):
         perc = False
         succ_rate_string = False
 
-    # NOTE: below would also have 'drug_concept_integration' and
-    # 'integration_measurement_concept'
-    elif sheet_name in ['end_before_begin']:
+    elif sheet_name in ['end_before_begin', 'drug_success', 'sites_measurement']:
         perc = True
         succ_rate_string = False
 
@@ -197,8 +197,7 @@ def make_print_msg_specific(
             'properly mapped),')
 
         starting_msg = starting_msg.replace(
-            'of data', 'of concept_ids are not '
-            'properly mapped')
+            'of data', 'of concept_ids')
 
     elif err_type in ['drug_routes']:
         starting_msg = starting_msg.replace(
@@ -223,6 +222,36 @@ def make_print_msg_specific(
         starting_msg = starting_msg.replace(
             'of data),^', 'of end dates precede '
                           'start dates')
+
+    elif err_type in ['drug_success']:
+        starting_msg = starting_msg.replace(
+            'of data)^', 'of drug ingredients '
+            'are properly populated)'
+        )
+
+        starting_msg = starting_msg.replace(
+            'of data),^', 'of drug ingredients '
+            'are properly populated),'
+        )
+
+        starting_msg = starting_msg.replace(
+            'of data', 'of drugs'
+        )
+
+    elif err_type in ['sites_measurement']:
+        starting_msg = starting_msg.replace(
+            'of data)^', 'of measurement concepts '
+            'are properly populated)'
+        )
+
+        starting_msg = starting_msg.replace(
+            'of data),^', 'of measurement concepts '
+            'are properly populated),'
+        )
+
+        starting_msg = starting_msg.replace(
+            'of data', 'of measurements'
+        )
 
     # get rid of lingering underscores
     starting_msg = starting_msg.replace('^', '')
@@ -297,15 +326,15 @@ def print_error_info(error_dict, starting_msg, percent,
 ###########################################################################
 # No longer defining functions                                            #
 # We are now doing everything that comes BEFORE we print the message      #
-# ##########################################################################
+###########################################################################
 
 
 # 1. Loading the files
 cwd = os.getcwd()
-excel_file_name = cwd + "\\november_04_2019.xlsx"  # change for each email date
+excel_file_name = cwd + "\\february_10_2020.xlsx"  # change for each email date
 
 sheet_names = ['duplicates', 'end_before_begin', 'concept', 'unit_integration',
-               'drug_routes']
+               'drug_routes', 'drug_success', 'sites_measurement']
 
 # currently excluded from the script
 # 'integration_measurement_concept', 'drug_concept_integration'
@@ -339,7 +368,7 @@ for sheet_name, df in zip(sheet_names, sheets):
         percentage, succ_rate = determine_parameters(sheet_name)
 
         err_dict = get_info(df, row_idx, percentage=percentage,
-                            succ_rate=succ_rate)
+                            succ_rate=succ_rate, sheet_name=sheet_name)
 
         err_dictionaries[sheet_name] = err_dict
     except ValueError:  # HPO ID not found
@@ -352,7 +381,7 @@ row_idx = determine_row(sample_df, hpo_id)
 hpo_full_name = 9999  # should be reset
 row_info = sample_df.iloc[row_idx, :]  # series, row labels and values
 
-for col_name, val in row_info.items():
+for col_name, val in row_info.iteritems():
     if col_name == 'HPO':
         hpo_full_name = val
 
@@ -372,13 +401,13 @@ for _, err_dict in err_dictionaries.items():
 # Now we are actually printing out the 'problem' information for the site #
 # This is admittedly clunky but I decided to not implement a standard     #
 # function in order to allow the text feel more 'natural.'                #
-# ##########################################################################
+###########################################################################
 
 
 # same for all of the sites
 intro = open('introduction.txt', 'r', encoding='utf-8')
 intro_txt = intro.read()
-intro_txt = intro_txt.replace("[EHR site]", hpo_full_name)
+# intro_txt = intro_txt.replace("[EHR site]", hpo_full_name)
 intro_txt = intro_txt.replace("{}", "Noah Engel")
 print(intro_txt)
 
@@ -391,17 +420,18 @@ if num_prob_sheets == 0:
 else:
     starting_number = 1  # value for the 'problem number'
 
-    print("We found the following with your most recent "
+    print("\nWe found the following with your most recent "
           "submission: \n")
 
     dups = 'duplicates'
     if err_dictionaries[dups]:
+
+        tot_dups = sum(err_dictionaries[dups].values())
+
         duplicates_err = str(starting_number) + \
-                         ". There are duplicate rows in the " \
-                         "following table(s):"
-        duplicates_err = print_error_info(
-            err_dictionaries[dups], duplicates_err,
-            percent=False, err_type=dups, integration_rate=False)
+            ". There are {} duplicate rows across all of the " \
+            "submitted tables.".format(tot_dups)
+
         starting_number += 1  # increment for future texts if applicable
         print(duplicates_err + "\n")
 
@@ -420,22 +450,11 @@ else:
     if err_dictionaries[c]:
         concept_err = str(starting_number) + \
             ". The concept success rates for some of the tables are " \
-            "below 100%. This affects the following table(s):"
+            "below 90%. This affects the following table(s):"
 
         concept_err = print_error_info(
             err_dictionaries[c], concept_err, percent=True,
             err_type=c, integration_rate=False)
-
-        follow_up = "\n\nPlease note that the DRC does NOT expect " \
-                    "concept success rates of 100% at this time. We " \
-                    "expect a concept success rate of 90% or " \
-                    "higher for each table. If you find that a particular " \
-                    "table (or set of tables) has a concept success rate " \
-                    "below 80%, it may be worth investigating your " \
-                    "ETL to see how you can improve your mapping. We " \
-                    "at the DRC can help with some mapping issues you might face."
-
-        concept_err += follow_up
 
         print(concept_err + "\n")
         starting_number += 1
@@ -443,83 +462,66 @@ else:
     unit = 'unit_integration'
     if err_dictionaries[unit]:
         unit_err = str(starting_number) + \
-            ". Several vital measurements do not have the 'unit' " \
+            ". There are measurements that do not have the 'unit' " \
             "field populated with a standard 'unit_concept_id'. " \
-            "This affects {}% of the instances of the selected " \
-            "measurements. Please see the data quality description " \
-            "link at the bottom of this e-mail to find the list of " \
-            "specified measurements.".format(err_dictionaries[unit][
-                    'unit_success_rate'])
+            "This affects {}% of the instances of measurements.".format(
+                err_dictionaries[unit]['unit_success_rate'])
 
         print(unit_err + "\n")
         starting_number += 1
 
     dr = 'drug_routes'
     if err_dictionaries[dr]:
-        dr_err = str(starting_number) + \
-            ". Several vital drugs do not have the 'route' " \
-            "field populated with a standard 'route_concept_id'. " \
-            "This affects the following classes of drugs:"
 
-        dr_err = print_error_info(
-            err_dictionaries[dr], dr_err, percent=True,
-            err_type=dr, integration_rate=False)
+        overall_success = err_dictionaries[dr]['drugs_overall_success_rate']
+        err_dictionaries[dr] = {}  # reset; only want the 'overall' rate
+        err_dictionaries[dr]['overall_success_rate'] = overall_success
+
+        dr_err = str(starting_number) + \
+            ". There are drugs that do not have the 'route' " \
+            "field populated with a standard 'route_concept_id'. " \
+            "This affects {}% of all drugs.".format(overall_success)
 
         starting_number += 1
         print(dr_err + "\n")
 
+    meas = 'sites_measurement'
+    if err_dictionaries[meas]:
+        meas_err = str(starting_number) + \
+            ". Several expected measurement concepts do not exist in " \
+            "your 'measurement' table. The following measurement " \
+            "classes have 'gaps' in that not all of the expected " \
+            "measurements are found:"
 
-"""
-NOTE: The section below is used to populate information about the
-'integration' of ingredients from various drug classes and measurements.
-These are currently excluded from the e-mail, however, because the
-means we are calculating these metrics right now are not necesssarily
-efficient and are potentially deflating our perception of a site's
-data completeness.
+        meas_err = print_error_info(
+            err_dictionaries[meas], meas_err, percent=True,
+            err_type=meas, integration_rate=True)
 
-We will continue to improve the upstream analysis script to improve
-these metrics. When we are more confident in these statistics, we
-can use them to understand a site's data completeness and
-re-integrate these comments into the script.
-"""
+        print(meas_err + "\n")
+        starting_number += 1
 
-# meas = 'integration_measurement_concept'
-# if err_dictionaries[meas]:
-#     meas_err = str(starting_number) + \
-#         ". Several expected measurement concepts do not exist in " \
-#         "your 'measurement' table. The following measurement " \
-#         "classes have 'gaps' in that not all of the expected " \
-#         "measurements are found:"
-#
-#     meas_err = print_error_info(
-#         err_dictionaries[meas], meas_err, percent=True,
-#         err_type=meas, integration_rate=True)
-#
-#     print(meas_err + "\n")
-#     starting_number += 1
-#
-# drug = 'drug_concept_integration'
-# if err_dictionaries[drug]:
-#     drug_err = str(starting_number) + \
-#         ". Several expected drug ingredients do not exist " \
-#         "in your 'drug exposure' table. The following drug " \
-#         "classes have 'gaps' in that not all of the expected " \
-#         "drug ingredients are found:"
-#
-#     drug_err = print_error_info(
-#         err_dictionaries[drug], drug_err, percent=True,
-#         err_type=drug, integration_rate=True)
-#
-#     print(drug_err + "\n")
-#     starting_number += 1
+    drug = 'drug_success'
+    if err_dictionaries[drug]:
+        drug_err = str(starting_number) + \
+            ". Several expected drug ingredients do not exist " \
+            "in your 'drug exposure' table. The following drug " \
+            "classes have 'gaps' in that not all of the expected " \
+            "drug ingredients are found:"
+
+        drug_err = print_error_info(
+            err_dictionaries[drug], drug_err, percent=True,
+            err_type=drug, integration_rate=True)
+
+        print(drug_err + "\n")
+        starting_number += 1
 
 
-dq_description_link = 'https://docs.google.com/document/d/1Jq0n' \
-                      'pMH9fOqpM7zMeXkddjFDZVVL7TrWOism0Ld4lAY/edit#'
+dq_description_link = 'https://sites.google.com/view/ehrupload'
 
 gh_prompt = "If have questions about our metrics, " \
-            "please consult the information sheet at the " \
-            "following website: {}\n".format(dq_description_link)
+            "please consult the AoU EHR website at this link: {}. " \
+            "This site contains descriptions, videos, and SQL queries that can " \
+            "help you troubleshoot your data quality.\n".format(dq_description_link)
 
 
 # NOTE: this is a back-up
@@ -537,21 +539,11 @@ gh_prompt = "If have questions about our metrics, " \
 #            "please use this as a 'baseline' and do not feel " \
 #            "obligated to address the issue in the immediate future. \n"
 
-
-github_link = 'https://github.com/all-of-us/curation/' \
-              'tree/develop/data_steward/analytics'
-
-
-query_p = "Finally, if you would like to see the queries that generate " \
-          "these analytics, please visit the following site: {}\n".format(
-            github_link)
-
 sign_off = "Please do not hesitate to reach out to the DRC if you have any " \
            "questions related to All of Us at " \
            "datacuration@researchallofus.org."
 
 print(gh_prompt)
-print(query_p)
 print(sign_off)
 
 # now let's print the contacts
