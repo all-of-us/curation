@@ -12,11 +12,11 @@ features.
 # Python imports
 import logging
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, NewType
 
 # Third party imports
-import googleapiclient
-import oauth2client
+from googleapiclient.errors import HttpError
+from oauth2client.client import HttpAccessTokenRefreshError
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -27,8 +27,12 @@ LOGGER = logging.getLogger(__name__)
 class AbstractBaseCleaningRule(ABC):
     """
     Contains attributes and functions relevant to all cleaning rules.
+
+    Anything that should be applied to all cleaning rules can be defined here.
     """
     string_list = List[str]
+    query_spec = NewType('QuerySpec', {})
+    query_spec_list = List[query_spec]
 
     def __init__(self):
         """
@@ -37,18 +41,33 @@ class AbstractBaseCleaningRule(ABC):
         super().__init__()
 
     @abstractmethod
-    def get_query_dictionary_list(self, *args, **keyword_args):
+    def setup_rule(cls, *args, **keyword_args):
         """
-        Interface to return a list of query dictionaries.
+        Load required resources prior to executing cleaning rule queries.
 
-        :returns:  a list of query dictionaries
+        Method to run data upload options before executing the first cleaning
+        rule of a class.  For example, if your class requires loading a static
+        table, that load operation should be defined here.  It SHOULD NOT BE
+        defined as part of get_query_specs().
         """
         pass
 
     @abstractmethod
-    def print_queries(self, *args, **keyword_args):
+    def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
-        Helper function to print the SQL a class geenerates.
+        Interface to return a list of query dictionaries.
+
+        :returns:  a list of query dictionaries.  Each dictionary specifies
+            the query to execute and how to execute.  The dictionaries are
+            stored in list order and returned in list order to maintain
+            an ordering.
+        """
+        pass
+
+    @abstractmethod
+    def log_queries(self, *args, **keyword_args):
+        """
+        Helper function to print the SQL a class generates.
         """
         pass
 
@@ -61,7 +80,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
     cleaning_class_list = List[AbstractBaseCleaningRule]
 
     def __init__(self,
-                 jira_issue_numbers: string_list = None,
+                 issue_numbers: string_list = None,
+                 issue_urls: string_list = None,
                  description: str = None,
                  affected_datasets: string_list = None,
                  project_id: str = None,
@@ -76,19 +96,37 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
 
-        :param jira_issue_numbers:  a list of strings inidcating jira issues
-            impacting a cleaning rule.
-        :param description:  a written description of the cleaning rule.
-            describes why the rule exists and what it hopes to accomplish.
-        :param affected_datasets:  a list of strings describing the types of
-            datasets this rule is expected to impact, (e.g. rdr, unioned_ehr, combined)
+        :param issue_numbers:  a list of strings indicating jira issues
+            that impact the SQL a cleaning rule creates.  If the issue is to
+            fix a bug that doesn't impact the SQL, this would not need to be
+            updated.  If the issue is to change the SQL to do more, less, or
+            behave differently, that jira issue number should be appended as a
+            string to this list.  DO NOT REMOVE ORIGINAL ISSUE NUMBERS!  THEY
+            ARE HISTORY AND USED FOR REPORTS!
+        :param issue_urls:  a list of string urls connecting to tickets.  They
+            identify issues that impact the SQL a cleaning rule creates.  If the
+            issue is to fix a bug that doesn't impact the created SQL, this should
+            not be updated.  If the issue is to change the SQL to do more, less,
+            or behave differently, the issue url should be appended as a string
+            to this list.  DO NOT REMOVE ORIGINAL URLS!  THEY ARE HISTORY AND
+            USED FOR REPORTS!
+        :param description:  An explanation describing the intent of the
+            cleaning rule. i.e. why does the rule exist, what does it accomplish.
+        :param affected_datasets:  a list of strings naming the types of
+            datasets this rule is expected to impact, (e.g. rdr, unioned_ehr,
+            combined).  This info can be used as part of a report to ensure
+            cleaning rules are running when and where they were designed to run.
+        :param depends_on:  a list of rules a cleaning rule depends on when
+            running.  Right now, it is used for reporting purposes, but the
+            scope may expand in the future.  Default is an empty list.
         """
-        self._jira_issue_numbers = jira_issue_numbers
+        self._issue_numbers = issue_numbers
         self._description = description
         self._affected_datasets = affected_datasets
         self._project_id = project_id
         self._dataset_id = dataset_id
         self._sandbox_dataset_id = sandbox_dataset_id
+        self._issue_urls = issue_urls if issue_urls else []
         self._depends_on_classes = depends_on if depends_on else []
 
         super().__init__()
@@ -150,9 +188,11 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         :raises NotImplementedError if arguments are not set.
         :raises TypeError if arguments are not set to expected types
         """
-        # validate jira_issue_numbers is a list of strings
-        self.__validate_list_of_strings(self._jira_issue_numbers,
-                                        'jira_issue_numbers')
+        # validate issue_numbers is a list of strings
+        self.__validate_list_of_strings(self._issue_numbers, 'issue_numbers')
+
+        # validate issue_numbers is a list of strings
+        self.__validate_list_of_strings(self._issue_urls, 'issue_urls')
 
         # validate affected datasets is a list of strings.
         self.__validate_list_of_strings(self._affected_datasets,
@@ -170,13 +210,22 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         # validate sandbox_dataset_id is a string
         self.__validate_string(self._sandbox_dataset_id, 'sandbox_dataset_id')
 
-        # depends_on_classes is allowed to be null,
-        # so is not validated against None
+        # depends_on_classes is allowed to be unset,  defaults to empty list
         for clazz in self._depends_on_classes:
-            if not isinstance(clazz, BaseCleaningRule):
-                raise TypeError(
-                    '{} is expected to inherit from BaseCleaningRule'.format(
-                        self.__class__.__name__))
+            message = None
+            try:
+                if not issubclass(clazz, BaseCleaningRule):
+                    message = ('{} is expected to inherit from BaseCleaningRule'
+                               .format(clazz.__name__))
+                    raise TypeError(message)
+            except TypeError:
+                if message:
+                    raise TypeError(message)
+                else:
+                    message = ('{} is not a class.  depends_on takes a list of '
+                               'classes that inherit from BaseCleaningRule'.
+                               format(clazz))
+                    raise TypeError(message)
 
     def get_depends_on_classes(self):
         """
@@ -184,15 +233,21 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         """
         return self._depends_on_classes
 
-    def get_jira_issue_numbers(self):
+    def get_issue_urls(self):
         """
-        Return the jira_issue_numbers instance variable.
+        Return the issue_urls instance variable.
         """
-        return self._jira_issue_numbers
+        return self._issue_urls
+
+    def get_issue_numbers(self):
+        """
+        Return the issue_numbers instance variable.
+        """
+        return self._issue_numbers
 
     def get_description(self):
         """
-        Get the common language description of a cleaning rule.
+        Get the common language explanation of the intent of a cleaning rule.
         """
         return self._description
 
@@ -220,18 +275,17 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         """
         return self._sandbox_dataset_id
 
-    def print_queries(self):
+    def log_queries(self):
         """
-        Helper function to print the SQL a class geenerates.
+        Helper function to print the SQL a class generates.
 
         If the inheriting class builds tables inside the
-        get_query_dictionary_list function, the inheriting class will need
+        get_query_specs function, the inheriting class will need
         to override this function.
         """
         try:
-            query_list = self.get_query_dictionary_list()
-        except (oauth2client.client.HttpAccessTokenRefreshError,
-                googleapiclient.errors.HttpError, KeyError):
+            query_list = self.get_query_specs()
+        except (KeyError, HttpAccessTokenRefreshError, HttpError) as err:
             LOGGER.exception("Cannot list queries for %s",
                              self.__class__.__name__)
             raise
@@ -239,10 +293,3 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         for query in query_list:
             LOGGER.info('Generated SQL Query:\n%s',
                         query.get(cdr_consts.QUERY, 'NO QUERY FOUND'))
-
-    @abstractmethod
-    def setup_query_execution(self, *args, **keyword_args):
-        """
-        Function to run any data upload options before executing a query.
-        """
-        pass
