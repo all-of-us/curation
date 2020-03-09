@@ -146,18 +146,6 @@ class ValidateMissingParticipantTest(unittest.TestCase):
             if field['name'] not in PARTICIPANT_MATCH_EXCLUDED_FIELD
         ])
 
-    def test_get_delete_persons_query(self):
-        expected_query = validate_missing_participant.DELETE_PERSON_IDS_QUERY.format(
-            project_id=self.project_id,
-            dataset_id=self.combined_dataset_id,
-            person_ids=','.join(map(str, self.person_ids)))
-        expected = {cdr_consts.QUERY: expected_query, cdr_consts.BATCH: True}
-
-        actual = validate_missing_participant.get_delete_persons_query(
-            self.project_id, self.combined_dataset_id, self.person_ids)
-
-        self.assertEqual(expected, actual)
-
     @mock.patch('bq_utils.response2rows')
     @mock.patch('bq_utils.wait_on_jobs')
     @mock.patch('bq_utils.query')
@@ -194,9 +182,10 @@ class ValidateMissingParticipantTest(unittest.TestCase):
                 self.project_id, self.validation_dataset_id, self.hpo_id_1)
 
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.drop_rows_for_missing_persons.get_queries')
+        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.get_remove_pids_queries'
+    )
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.validate_missing_participant.get_delete_persons_query'
+        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.get_sandbox_queries'
     )
     @mock.patch(
         'cdr_cleaner.cleaning_rules.validate_missing_participant.get_list_non_match_participants'
@@ -207,14 +196,14 @@ class ValidateMissingParticipantTest(unittest.TestCase):
     @mock.patch('validation.participants.readers.get_hpo_site_names')
     def test_delete_records_for_non_matching_participants(
         self, mock_get_hpo_site_names, mock_exist_participant_match,
-        mock_get_list_non_match_participants, mock_get_delete_persons_query,
-        mock_get_queries):
+        mock_get_list_non_match_participants, mock_get_sandbox_queries,
+        mock_get_remove_pids_queries):
 
         mock_get_hpo_site_names.return_value = [self.hpo_id_1, self.hpo_id_2]
         mock_exist_participant_match.side_effect = [True, False]
         mock_get_list_non_match_participants.return_value = self.person_ids
-        mock_get_delete_persons_query.return_value = self.drop_participant_query_dict
-        mock_get_queries.return_value = self.drop_domain_records_query_dicts
+        mock_get_sandbox_queries.return_value = self.drop_participant_query_dict
+        mock_get_remove_pids_queries.return_value = self.drop_domain_records_query_dicts
 
         expected = [self.drop_participant_query_dict
                    ] + self.drop_domain_records_query_dicts
@@ -235,7 +224,9 @@ class ValidateMissingParticipantTest(unittest.TestCase):
         mock_get_list_non_match_participants.assert_called_with(
             self.project_id, self.validation_dataset_id, self.hpo_id_2)
 
-        mock_get_delete_persons_query.assert_called_with(
+        mock_get_sandbox_queries.assert_called_with(
+            self.project_id, self.combined_dataset_id, self.person_ids,
+            validate_missing_participant.TICKET_NUMBER)
+
+        mock_get_remove_pids_queries.assert_called_with(
             self.project_id, self.combined_dataset_id, self.person_ids)
-        mock_get_queries.assert_called_with(self.project_id,
-                                            self.combined_dataset_id)

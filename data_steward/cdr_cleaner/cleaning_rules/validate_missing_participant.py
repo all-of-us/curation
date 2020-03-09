@@ -5,8 +5,7 @@ import resources
 import oauth2client
 import googleapiclient
 from validation.participants import readers
-from constants.cdr_cleaner import clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules import drop_rows_for_missing_persons as missing_persons
+from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids as remove_pids
 from constants.validation.participants.identity_match import (PERSON_ID_FIELD,
                                                               FIRST_NAME_FIELD,
                                                               LAST_NAME_FIELD,
@@ -16,23 +15,14 @@ from common import PARTICIPANT_MATCH
 
 LOGGER = logging.getLogger(__name__)
 
+TICKET_NUMBER = 'DC-468'
+
 NUM_OF_MISSING_KEY_FIELDS = 2
 NUM_OF_MISSING_ALL_FIELDS = 4
 
 KEY_FIELDS = [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]
 
 PARTICIPANT_MATCH_EXCLUDED_FIELD = [PERSON_ID_FIELD, ALGORITHM_FIELD]
-
-DELETE_PERSON_IDS_QUERY = """
-DELETE
-FROM
-  `{project_id}.{dataset_id}.person`
-WHERE
-  person_id IN 
-  (
-    {person_ids} 
-  )
-"""
 
 CAST_MISSING_COLUMN = """
 CAST({column} = 'missing' AS int64)
@@ -161,25 +151,6 @@ def get_non_match_participant_query(project_id, validation_dataset_id,
     return select_non_match_participants_query
 
 
-def get_delete_persons_query(project_id, combined_dataset_id, person_ids):
-    """
-    This function generates a query to delete a list of person_ids from the person table in the combined dataset
-    
-    :param project_id: 
-    :param combined_dataset_id: 
-    :param person_ids: 
-    :return: 
-    """
-
-    delete_query = dict()
-    delete_query[cdr_consts.QUERY] = DELETE_PERSON_IDS_QUERY.format(
-        project_id=project_id,
-        dataset_id=combined_dataset_id,
-        person_ids=','.join(map(str, person_ids)))
-    delete_query[cdr_consts.BATCH] = True
-    return delete_query
-
-
 def delete_records_for_non_matching_participants(project_id, ehr_dataset_id,
                                                  validation_dataset_id,
                                                  combined_dataset_id):
@@ -221,9 +192,11 @@ def delete_records_for_non_matching_participants(project_id, ehr_dataset_id,
                     combined_dataset_id=combined_dataset_id))
 
         queries.append(
-            get_delete_persons_query(project_id, combined_dataset_id,
-                                     non_matching_person_ids))
+            remove_pids.get_sandbox_queries(project_id, combined_dataset_id,
+                                            non_matching_person_ids,
+                                            TICKET_NUMBER))
         queries.extend(
-            missing_persons.get_queries(project_id, combined_dataset_id))
+            remove_pids.get_remove_pids_queries(project_id, combined_dataset_id,
+                                                non_matching_person_ids))
 
     return queries
