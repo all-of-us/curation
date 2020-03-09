@@ -201,10 +201,3 @@ def delete_records_for_non_matching_participants(project_id, ehr_dataset_id,
                                                 non_matching_person_ids))
 
     return queries
-
-
-if __name__ == '__main__':
-    person_id = delete_records_for_non_matching_participants(
-        'aou-res-curation-test', 'chao_dataset',
-        'lrwb_participant_validation_20190830', 'calbach_ch_dev_setup_combined')
-    print(f'{person_id}')
