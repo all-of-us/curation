@@ -20,7 +20,7 @@ import warnings
 import seaborn as sns
 
 import bq_utils
-from notebooks.defaults import DEFAULT_DATASETS
+from notebooks import parameters
 
 warnings.filterwarnings('ignore')
 sns.set()
@@ -51,7 +51,7 @@ def row_counts(dataset_ids):
 
 # # RDR data volume over time
 
-rdr_df = row_counts(DEFAULT_DATASETS.trend.rdr)
+rdr_df = row_counts(parameters.RDR_TREND)
 rdr_df = rdr_df.pivot(index='table_id',
                       columns='dataset_id',
                       values='row_count')
@@ -59,7 +59,7 @@ rdr_df.to_csv('%s.csv' % 'rdr_diff')
 
 # # EHR data volume over time
 
-unioned_df = row_counts(DEFAULT_DATASETS.trend.unioned)
+unioned_df = row_counts(parameters.UNIONED_TREND)
 unioned_df = unioned_df.pivot(index='table_id',
                               columns='dataset_id',
                               values='row_count')
@@ -67,7 +67,7 @@ unioned_df.to_csv('%s.csv' % 'unioned_diff')
 
 # ## Combined data volume over time
 
-combined_df = row_counts(DEFAULT_DATASETS.trend.combined)
+combined_df = row_counts(parameters.COMBINED_TREND)
 combined_df = combined_df.pivot(index='table_id',
                                 columns='dataset_id',
                                 values='row_count')
@@ -82,17 +82,19 @@ SELECT
   rc.concept_name AS race,
   ec.concept_name AS ethnicity,
   CASE WHEN e.person_id IS NULL THEN 'no' ELSE 'yes' END AS has_ehr_data
-FROM {latest.rdr}.person r
-  LEFT JOIN `{latest.unioned}.person` e 
+FROM {latest_rdr}.person r
+  LEFT JOIN `{latest_unioned}.person` e 
     ON r.person_id = e.person_id
-JOIN `{latest.vocabulary}.concept` gc 
+JOIN `{latest_vocabulary}.concept` gc 
   ON r.gender_concept_id = gc.concept_id
-JOIN `{latest.vocabulary}.concept` rc
+JOIN `{latest_vocabulary}.concept` rc
   ON r.race_concept_id = rc.concept_id
-JOIN `{latest.vocabulary}.concept` ec
+JOIN `{latest_vocabulary}.concept` ec
   ON r.ethnicity_concept_id = ec.concept_id
 ORDER BY age, gender, race
-""".format(latest=DEFAULT_DATASETS.latest)
+""".format(latest_rdr=parameters.latest_rdr,
+           latest_vocabulary=parameters.latest_vocabulary,
+           latest_unioned=parameters.latest_unioned)
 df = bq_utils.query_to_df(q)
 
 # ## Presence of EHR data by race
@@ -131,15 +133,17 @@ SELECT
   gc.concept_name AS gender,
   rc.concept_name AS race,
   ec.concept_name AS ethnicity
-FROM `{latest.unioned}.person` p
-JOIN `{latest.vocabulary}.concept` gc 
+FROM `{latest_unioned}.person` p
+JOIN `{latest_vocabulary}.concept` gc 
   ON p.gender_concept_id = gc.concept_id
-JOIN `{latest.vocabulary}.concept` rc
+JOIN `{latest_vocabulary}.concept` rc
   ON p.race_concept_id = rc.concept_id
-JOIN `{latest.vocabulary}.concept` ec
+JOIN `{latest_vocabulary}.concept` ec
   ON p.ethnicity_concept_id = ec.concept_id
 ORDER BY age, gender, race
-'''.format(latest=DEFAULT_DATASETS.latest))
+'''.format(latest_rdr=parameters.latest_rdr,
+           latest_vocabulary=parameters.latest_vocabulary,
+           latest_unioned=parameters.latest_unioned))
 
 # ## Distribution of participant age stratified by gender
 
@@ -179,12 +183,13 @@ def gender_by_race(dataset_id):
      c2.concept_name AS race,
      COUNT(1) AS `count`
     FROM `{dataset_id}.person` p
-    JOIN `{latest.vocabulary}.concept` c1 
+    JOIN `{latest_vocabulary}.concept` c1 
       ON p.gender_concept_id = c1.concept_id
-    JOIN `{latest.vocabulary}.concept` c2
+    JOIN `{latest_vocabulary}.concept` c2
       ON p.race_concept_id = c2.concept_id
     GROUP BY c2.concept_name, c1.concept_name
-    '''.format(dataset_id=dataset_id, latest=DEFAULT_DATASETS.latest))
+    '''.format(dataset_id=dataset_id,
+               latest_vocabulary=parameters.latest_vocabulary))
     df['race'] = df['race'].astype('category')
     df['gender'] = df['gender'].astype('category')
     g = sns.FacetGrid(df, col='race', hue='gender', col_wrap=5)
@@ -196,12 +201,12 @@ def gender_by_race(dataset_id):
 
 # ## RDR
 
-gender_by_race(DEFAULT_DATASETS.latest.rdr)
+gender_by_race(parameters.latest_rdr)
 
 # ## EHR
 
-gender_by_race(DEFAULT_DATASETS.latest.unioned)
+gender_by_race(parameters.latest_unioned)
 
 # ## CDR
 
-gender_by_race(DEFAULT_DATASETS.latest.combined)
+gender_by_race(parameters.latest_combined)
