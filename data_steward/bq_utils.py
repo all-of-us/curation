@@ -124,6 +124,35 @@ def get_validation_results_dataset_id():
     return dataset_id
 
 
+def is_validation_dataset_id(dataset_id):
+    """
+    Check if "
+    return bq_consts.VALIDATION_PREFIX is in the dataset_id
+    :param dataset_id: 
+    :return: 
+    """
+    return bq_consts.VALIDATION_PREFIX in dataset_id
+
+
+def get_latest_validation_dataset_id(project_id):
+
+    validation_datasets = []
+    for dataset in list_datasets(project_id):
+        dataset_id = dataset['datasetReference']['datasetId']
+        if is_validation_dataset_id(dataset_id):
+            validation_datasets.append(get_dataset(project_id, dataset_id))
+
+    if validation_datasets:
+        dataset_time_tuple = [(v['datasetReference']['datasetId'],
+                               int(v['creationTime']))
+                              for v in validation_datasets]
+        validation_datasets = sorted(dataset_time_tuple,
+                                     key=lambda x: x[1],
+                                     reverse=True)
+        return validation_datasets[0][0]
+    return None
+
+
 def create_service():
     return build('bigquery', 'v2', cache={})
 
@@ -632,6 +661,20 @@ def list_datasets(project_id):
         all_datasets.extend(items or [])
         req = service.datasets().list_next(req, resp)
     return all_datasets
+
+
+def get_dataset(project_id, dataset_id):
+    """
+    Get the dataset information 
+    :param project_id: 
+    :param dataset_id: 
+    :return: 
+    """
+    service = create_service()
+    req = service.datasets().get(projectId=project_id, datasetId=dataset_id)
+    while req:
+        return req.execute()
+    return None
 
 
 def get_dataset_id_from_obj(dataset_obj):
