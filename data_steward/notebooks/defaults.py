@@ -1,7 +1,7 @@
 import collections
 import re
 
-import google.cloud.bigquery as bq
+from google.cloud import bigquery as bq
 
 client = bq.Client()
 
