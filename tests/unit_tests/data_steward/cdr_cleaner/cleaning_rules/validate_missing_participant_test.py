@@ -7,7 +7,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.validate_missing_participant import (
     NUM_OF_MISSING_KEY_FIELDS, NUM_OF_MISSING_ALL_FIELDS, PERSON_ID_FIELD,
     SELECT_NON_MATCH_PARTICIPANTS_QUERY, CRITERION_COLUMN_TEMPLATE, KEY_FIELDS,
-    PARTICIPANT_MATCH_EXCLUDED_FIELD)
+    IDENTITY_MATCH_EXCLUDED_FIELD)
 from cdr_cleaner.cleaning_rules import validate_missing_participant
 from constants.validation.participants import identity_match
 
@@ -143,7 +143,7 @@ class ValidateMissingParticipantTest(unittest.TestCase):
         mock_get_missing_criterion.assert_called_with([
             field['name']
             for field in fields
-            if field['name'] not in PARTICIPANT_MATCH_EXCLUDED_FIELD
+            if field['name'] not in IDENTITY_MATCH_EXCLUDED_FIELD
         ])
 
     @mock.patch('bq_utils.response2rows')

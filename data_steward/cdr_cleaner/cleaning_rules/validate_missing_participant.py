@@ -1,5 +1,4 @@
 import logging
-import common
 import bq_utils
 import resources
 import oauth2client
@@ -24,9 +23,11 @@ NUM_OF_MISSING_ALL_FIELDS = 4
 
 KEY_FIELDS = [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]
 
-PARTICIPANT_MATCH_EXCLUDED_FIELD = [PERSON_ID_FIELD, ALGORITHM_FIELD]
+IDENTITY_MATCH_EXCLUDED_FIELD = [PERSON_ID_FIELD, ALGORITHM_FIELD]
 
-CAST_MISSING_COLUMN = """CAST({column} = 'missing' AS int64)"""
+CAST_MISSING_COLUMN = "CAST({column} = 'missing' AS int64)"
+
+CRITERION_COLUMN_TEMPLATE = "({column_expr}) >= {num_of_missing}"
 
 SELECT_NON_MATCH_PARTICIPANTS_QUERY = """
 WITH non_match_participants AS
@@ -44,10 +45,6 @@ FROM non_match_participants
 WHERE criterion_one IS TRUE OR criterion_two IS TRUE
 """
 
-CRITERION_COLUMN_TEMPLATE = """
-({column_expr}) >= {num_of_missing}
-"""
-
 
 def exist_participant_match(ehr_dataset_id, hpo_id):
     """
@@ -58,7 +55,7 @@ def exist_participant_match(ehr_dataset_id, hpo_id):
     :return: 
     """
     return bq_utils.table_exists(
-        bq_utils.get_table_id(hpo_id, common.PARTICIPANT_MATCH), ehr_dataset_id)
+        bq_utils.get_table_id(hpo_id, PARTICIPANT_MATCH), ehr_dataset_id)
 
 
 def get_missing_criterion(field_names):
@@ -85,7 +82,7 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
     :return: 
     """
 
-    # get the the hpo specific <hpo_id>_participant_match
+    # get the the hpo specific <hpo_id>_identity_match
     identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
 
     non_match_participants_query = get_non_match_participant_query(
@@ -132,14 +129,14 @@ def get_non_match_participant_query(project_id, validation_dataset_id,
         column_expr=get_missing_criterion(KEY_FIELDS),
         num_of_missing=NUM_OF_MISSING_KEY_FIELDS)
 
-    participant_match_fields = [
+    identity_match_fields = [
         field['name']
         for field in resources.fields_for(IDENTITY_MATCH)
-        if field['name'] not in PARTICIPANT_MATCH_EXCLUDED_FIELD
+        if field['name'] not in IDENTITY_MATCH_EXCLUDED_FIELD
     ]
     # if the total number of missings is equal to and bigger than 4, this is a non-match
     num_of_missing_all_fields = CRITERION_COLUMN_TEMPLATE.format(
-        column_expr=get_missing_criterion(participant_match_fields),
+        column_expr=get_missing_criterion(identity_match_fields),
         num_of_missing=NUM_OF_MISSING_ALL_FIELDS)
     # instantiate the query for identifying the non-match participants in the validation_dataset
     select_non_match_participants_query = SELECT_NON_MATCH_PARTICIPANTS_QUERY.format(
