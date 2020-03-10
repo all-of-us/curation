@@ -126,16 +126,19 @@ def get_validation_results_dataset_id():
 
 def is_validation_dataset_id(dataset_id):
     """
-    Check if "
-    return bq_consts.VALIDATION_PREFIX is in the dataset_id
+    Check if  bq_consts.VALIDATION_PREFIX is in the dataset_id
     :param dataset_id: 
-    :return: 
+    :return: a bool indicating whether dataset is a validation_dataset
     """
     return bq_consts.VALIDATION_PREFIX in dataset_id
 
 
 def get_latest_validation_dataset_id(project_id):
-
+    """
+    Get the latest validation_dataset_id based on most recent creationTime. 
+    :param project_id: 
+    :return: the most recent validatioN_dataset_id
+    """
     validation_datasets = []
     for dataset in list_datasets(project_id):
         dataset_id = dataset['datasetReference']['datasetId']
