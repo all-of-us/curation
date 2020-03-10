@@ -139,21 +139,23 @@ def get_latest_validation_dataset_id(project_id):
     :param project_id: 
     :return: the most recent validatioN_dataset_id
     """
-    validation_datasets = []
-    for dataset in list_datasets(project_id):
-        dataset_id = dataset['datasetReference']['datasetId']
-        if is_validation_dataset_id(dataset_id):
-            validation_datasets.append(get_dataset(project_id, dataset_id))
+    dataset_id = os.environ.get(bq_consts.MATCH_DATASET, bq_consts.BLANK)
+    if dataset_id == bq_consts.BLANK:
+        validation_datasets = []
+        for dataset in list_datasets(project_id):
+            dataset_id = dataset['datasetReference']['datasetId']
+            if is_validation_dataset_id(dataset_id):
+                validation_datasets.append(get_dataset(project_id, dataset_id))
 
-    if validation_datasets:
-        dataset_time_tuple = [(v['datasetReference']['datasetId'],
-                               int(v['creationTime']))
-                              for v in validation_datasets]
-        validation_datasets = sorted(dataset_time_tuple,
-                                     key=lambda x: x[1],
-                                     reverse=True)
-        return validation_datasets[0][0]
-    return None
+        if validation_datasets:
+            validation_datasets = sorted(
+                [(dataset['datasetReference']['datasetId'],
+                  int(dataset['creationTime']))
+                 for dataset in validation_datasets],
+                key=lambda x: x[1],
+                reverse=True)
+            dataset_id = validation_datasets[0][0]
+    return dataset_id
 
 
 def create_service():
