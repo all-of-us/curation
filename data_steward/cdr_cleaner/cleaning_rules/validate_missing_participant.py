@@ -25,7 +25,7 @@ KEY_FIELDS = [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]
 
 IDENTITY_MATCH_EXCLUDED_FIELD = [PERSON_ID_FIELD, ALGORITHM_FIELD]
 
-CAST_MISSING_COLUMN = "CAST({column} = 'missing' AS int64)"
+CAST_MISSING_COLUMN = "CAST({column} <> 'match' AS int64)"
 
 CRITERION_COLUMN_TEMPLATE = "({column_expr}) >= {num_of_missing}"
 
@@ -149,16 +149,17 @@ def get_non_match_participant_query(project_id, validation_dataset_id,
     return select_non_match_participants_query
 
 
-def delete_records_for_non_matching_participants(project_id, ehr_dataset_id,
-                                                 validation_dataset_id,
-                                                 combined_dataset_id):
+def delete_records_for_non_matching_participants(project_id,
+                                                 combined_dataset_id,
+                                                 ehr_dataset_id,
+                                                 validation_dataset_id):
     """
     This function generates the queries that delete participants and their corresponding data points, for which the 
     participant_match data is missing and DRC matching algorithm flags it as a no match 
     
     :param project_id: 
-    :param ehr_dataset_id: 
     :param combined_dataset_id: 
+    :param ehr_dataset_id: 
     :param validation_dataset_id:
 
     :return: 
@@ -198,3 +199,49 @@ def delete_records_for_non_matching_participants(project_id, ehr_dataset_id,
                                                 non_matching_person_ids))
 
     return queries
+
+
+def parse_args():
+    """
+    This function expands the default argument list defined in cdr_cleaner.args_parser
+    :return: an expanded argument list object
+    """
+
+    import cdr_cleaner.args_parser as parser
+
+    additional_arguments = [{
+        parser.SHORT_ARGUMENT: '-a',
+        parser.LONG_ARGUMENT: '--sandbox_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'sandbox_dataset_id',
+        parser.HELP: 'sandbox_dataset_id',
+        parser.REQUIRED: True
+    }, {
+        parser.SHORT_ARGUMENT: '-e',
+        parser.LONG_ARGUMENT: '--ehr_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'ehr_dataset_id',
+        parser.HELP: 'ehr_dataset_id',
+        parser.REQUIRED: True
+    }, {
+        parser.SHORT_ARGUMENT: '-v',
+        parser.LONG_ARGUMENT: '--validation_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'validation_dataset_id',
+        parser.HELP: 'validation_dataset_id',
+        parser.REQUIRED: True
+    }]
+    args = parser.default_parse_args(additional_arguments)
+    return args
+
+
+if __name__ == '__main__':
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    ARGS = parse_args()
+    # Uncomment this line if testing locally
+    clean_engine.add_console_logging(ARGS.console_log)
+    query_list = delete_records_for_non_matching_participants(
+        ARGS.project_id, ARGS.dataset_id, ARGS.ehr_dataset_id,
+        ARGS.validation_dataset_id)
+    clean_engine.clean_dataset(ARGS.project_id, query_list)

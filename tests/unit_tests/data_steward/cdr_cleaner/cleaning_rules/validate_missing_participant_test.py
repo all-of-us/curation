@@ -208,8 +208,8 @@ class ValidateMissingParticipantTest(unittest.TestCase):
         expected = [self.drop_participant_query_dict
                    ] + self.drop_domain_records_query_dicts
         actual = validate_missing_participant.delete_records_for_non_matching_participants(
-            self.project_id, self.ehr_dataset_id, self.validation_dataset_id,
-            self.combined_dataset_id)
+            self.project_id, self.combined_dataset_id, self.ehr_dataset_id,
+            self.validation_dataset_id)
 
         self.assertListEqual(expected, actual)
 
