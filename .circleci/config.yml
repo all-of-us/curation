@@ -75,14 +75,27 @@ commands:
           destination: test_results
 
 jobs:
-  unit_test:
+  linting_checks:
     <<: *job_defaults
     steps:
       - test_setup
       - run:
-          name: Check Python lint
+          name: Check Python lint with yapf
           working_directory: ~/curation
           command: tools/yapf_lint.sh
+      - run:
+          name: Pylint in data_steward
+          working _directory: ~/curation
+          command: pylint -E data_steward/
+      - run:
+          name: Pylint on tests
+          working_directory: ~/curation
+          command: pylint -E tests/
+      - test_teardown
+  unit_test:
+    <<: *job_defaults
+    steps:
+      - test_setup
       - run:
           name: Run unit tests
           working_directory: ~/curation
@@ -141,6 +154,7 @@ workflows:
   version: 2
   test:
     jobs:
+      - linting_checks
       - unit_test
       - integration_test:
           filters:
