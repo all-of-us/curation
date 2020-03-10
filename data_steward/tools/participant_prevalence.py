@@ -3,18 +3,30 @@ import argparse
 import logging
 import sys
 
+# Third party imports
+from googleapiclient.errors import HttpError
+
 # Project imports
 import bq_utils
+import common
 
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.WARNING,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-PARTICIPANT_COUNTS = """
-SELECT COUNT(*) as n
+PARTICIPANT_ROWS = """
+SELECT '{table}' AS table_id, COUNT(*) AS count
 FROM `{project}.{dataset}.{table}`
 WHERE person_id IN ({pids_string})
+"""
+
+EHR_QUALIFIER = """
+AND {table_id} > {const}
+"""
+
+UNION_ALL = """
+UNION ALL
 """
 
 PID_QUERY = """
@@ -28,12 +40,18 @@ COUNT = 'count'
 
 # Query to list all tables within a dataset that contains person_id in the schema
 PERSON_TABLE_QUERY = """
-SELECT table_name
+SELECT table_name, column_name
+FROM `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
+WHERE table_name IN
+(SELECT table_name
 FROM `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
 WHERE COLUMN_NAME = 'person_id'
+AND ordinal_position = 2)
+AND ordinal_position = 1
 """
 
 TABLE_NAME_COLUMN = 'table_name'
+COLUMN_NAME = 'column_name'
 
 
 def get_tables_with_person_id(project_id, dataset_id):
@@ -45,10 +63,11 @@ def get_tables_with_person_id(project_id, dataset_id):
     response = bq_utils.query(person_table_query)
     person_tables = bq_utils.response2rows(response)
     # exclude mapping tables from list, to be removed after all cleaning rules
-    return [table_row[TABLE_NAME_COLUMN] for table_row in person_tables]
+    return [[table_row[TABLE_NAME_COLUMN], table_row[COLUMN_NAME]]
+            for table_row in person_tables]
 
 
-def get_pid_counts(project_id, dataset_id, pids_string):
+def get_pid_counts(project_id, dataset_id, hpo_id, pids_string):
     """
     Returns a list of queries in which the table will be truncated with clean data, ie: all removed PIDs from all
     datasets based on a cleaning rule.
@@ -59,28 +78,52 @@ def get_pid_counts(project_id, dataset_id, pids_string):
     :return: list of select statements that will get counts of participant data
     """
     person_tables_list = get_tables_with_person_id(project_id, dataset_id)
-    count_summaries = []
+    pid_query_list = []
+    pid_query_ehr_list = []
+    count_list = []
 
-    for table in person_tables_list:
-        count_pid_query = PARTICIPANT_COUNTS.format(project=project_id,
-                                                    dataset=dataset_id,
-                                                    table=table,
-                                                    pids_string=pids_string)
-        count = run_count_pid_query(count_pid_query)
-        count_summaries.append({TABLE_ID: table, COUNT: count})
-    return count_summaries
+    for table, table_id in person_tables_list:
+        pid_table_query = PARTICIPANT_ROWS.format(project=project_id,
+                                                  dataset=dataset_id,
+                                                  table=table,
+                                                  pids_string=pids_string)
+        pid_table_query_ehr = pid_table_query + EHR_QUALIFIER.format(
+            table_id=table_id,
+            const=common.ID_CONSTANT_FACTOR + common.RDR_ID_CONSTANT)
+        pid_query_list.append(pid_table_query)
+        pid_query_ehr_list.append(pid_table_query_ehr)
+
+    if len(pid_query_list) > 20:
+        pid_query_list = [
+            pid_query for pid_query in pid_query_list if hpo_id in pid_query
+        ]
+        pid_query_ehr_list = [
+            pid_query for pid_query in pid_query_ehr_list if hpo_id in pid_query
+        ]
+    unioned_query = UNION_ALL.join(pid_query_list)
+    unioned_ehr_query = UNION_ALL.join(pid_query_ehr_list)
+    if unioned_query:
+        count_list = run_count_pid_query(unioned_query)
+        count_list_ehr = run_count_pid_query(unioned_ehr_query)
+        count_list.sort(key=lambda table_row: table_row[0])
+        count_list_ehr.sort(key=lambda ehr_table_row: ehr_table_row[0])
+        for idx, ehr_table_row in enumerate(count_list_ehr):
+            count_list[idx].append(ehr_table_row[1])
+    return count_list
 
 
 def run_count_pid_query(query):
+    result_list = []
     query_response = bq_utils.query(query)
-    result = bq_utils.response2rows(query_response)
-    count = int(result[0]['n'])
-    return count
+    results = bq_utils.response2rows(query_response)
+    for result_row in results:
+        result_list.append([result_row[TABLE_ID], result_row[COUNT]])
+    return result_list
 
 
-def estimate_prevalence(project_id, pids_string):
+def estimate_prevalence(project_id, hpo_id, pids_string):
     """
-    
+
     :param project_id: 
     :param pids_string: 
     :return: 
@@ -91,15 +134,18 @@ def estimate_prevalence(project_id, pids_string):
         bq_utils.get_dataset_id_from_obj(dataset) for dataset in all_datasets
     ]
     for dataset_id in all_dataset_ids:
-        count_summaries = get_pid_counts(project_id, dataset_id, pids_string)
-        dataset_count = sum([table_row[COUNT] for table_row in count_summaries])
-        if dataset_count > 0:
-            logging.info(f'{dataset_id} {dataset_count}')
-            for table_row in count_summaries:
-                logging.warning(
-                    f'{dataset_id} {table_row[TABLE_ID]} {table_row[COUNT]}')
-        else:
-            logging.warning(f'{dataset_id} {dataset_count}')
+        try:
+            count_summaries = get_pid_counts(project_id, dataset_id, hpo_id,
+                                             pids_string)
+            dataset_count = sum([table_row[1] for table_row in count_summaries])
+            if dataset_count > 0:
+                for table_row in count_summaries:
+                    if table_row[1] > 0:
+                        print(
+                            f'DATASET: {dataset_id} TABLE: {table_row[0]} RDR+EHR: {table_row[1]} EHR: {table_row[2]}'
+                        )
+        except HttpError:
+            logging.exception('Dataset %s could not be analyzed' % dataset_id)
     return
 
 
@@ -129,6 +175,12 @@ if __name__ == '__main__':
                         action='store',
                         dest='project_id',
                         help='Identifies the project to retract data from',
+                        required=True)
+    parser.add_argument('-o',
+                        '--hpo_id',
+                        action='store',
+                        dest='hpo_id',
+                        help='Identifies the site submitting the person_ids',
                         required=True)
     parser.add_argument(
         '-q',
@@ -161,4 +213,4 @@ if __name__ == '__main__':
     pids_string = get_pids(args.pid_list, args.pid_project_id,
                            args.sandbox_dataset_id, args.pid_table_id)
 
-    estimate_prevalence(args.project_id, pids_string)
+    estimate_prevalence(args.project_id, args.hpo_id, pids_string)
