@@ -5,24 +5,22 @@ import sys
 
 # Third party imports
 from googleapiclient.errors import HttpError
+import pandas as pd
 
 # Project imports
-import bq_utils
+from notebooks import bq
 import common
 
 logging.basicConfig(
     stream=sys.stdout,
-    level=logging.WARNING,
+    level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 PARTICIPANT_ROWS = """
-SELECT '{table}' AS table_id, COUNT(*) AS count
+SELECT '{table}' AS table_id, COUNT(*) AS all_count, 
+COUNT(IF({table_id} > {const}, 1, NULL)) as ehr_count
 FROM `{project}.{dataset}.{table}`
 WHERE person_id IN ({pids_string})
-"""
-
-EHR_QUALIFIER = """
-AND {table_id} > {const}
 """
 
 UNION_ALL = """
@@ -56,94 +54,76 @@ COLUMN_NAME = 'column_name'
 
 def get_tables_with_person_id(project_id, dataset_id):
     """
-    Get list of tables that have a person_id column, excluding mapping tables
+    Get df of table_ids(first column) and table names that have a person_id column as the second column
+    
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset
+    :return dataframe containing table_id, table_name
     """
     person_table_query = PERSON_TABLE_QUERY.format(project=project_id,
                                                    dataset=dataset_id)
-    response = bq_utils.query(person_table_query)
-    person_tables = bq_utils.response2rows(response)
-    # exclude mapping tables from list, to be removed after all cleaning rules
-    return [[table_row[TABLE_NAME_COLUMN], table_row[COLUMN_NAME]]
-            for table_row in person_tables]
+    result_df = bq.query(person_table_query)
+    return result_df
 
 
 def get_pid_counts(project_id, dataset_id, hpo_id, pids_string):
     """
-    Returns a list of queries in which the table will be truncated with clean data, ie: all removed PIDs from all
-    datasets based on a cleaning rule.
+    Returns dataframe with table_name, all_counts and ehr_counts of rows pertaining to the participants
 
     :param project_id: identifies the project
     :param dataset_id: identifies the dataset
+    :param hpo_id: identifies the hpo site that submitted the pids
     :param pids_string: string containing pids or pid_query
-    :return: list of select statements that will get counts of participant data
+    :return: df containing table_name, all_counts and ehr_counts
     """
-    person_tables_list = get_tables_with_person_id(project_id, dataset_id)
+    person_tables = get_tables_with_person_id(project_id,
+                                              dataset_id).get_values()
     pid_query_list = []
-    pid_query_ehr_list = []
-    count_list = []
+    count_df = pd.DataFrame(columns=['table_id', 'all_count', 'ehr_count'])
 
-    for table, table_id in person_tables_list:
-        pid_table_query = PARTICIPANT_ROWS.format(project=project_id,
-                                                  dataset=dataset_id,
-                                                  table=table,
-                                                  pids_string=pids_string)
-        pid_table_query_ehr = pid_table_query + EHR_QUALIFIER.format(
+    for table, table_id in person_tables:
+        pid_table_query = PARTICIPANT_ROWS.format(
+            project=project_id,
+            dataset=dataset_id,
+            table=table,
             table_id=table_id,
-            const=common.ID_CONSTANT_FACTOR + common.RDR_ID_CONSTANT)
+            const=common.ID_CONSTANT_FACTOR + common.RDR_ID_CONSTANT,
+            pids_string=pids_string)
         pid_query_list.append(pid_table_query)
-        pid_query_ehr_list.append(pid_table_query_ehr)
 
     if len(pid_query_list) > 20:
         pid_query_list = [
             pid_query for pid_query in pid_query_list if hpo_id in pid_query
         ]
-        pid_query_ehr_list = [
-            pid_query for pid_query in pid_query_ehr_list if hpo_id in pid_query
-        ]
     unioned_query = UNION_ALL.join(pid_query_list)
-    unioned_ehr_query = UNION_ALL.join(pid_query_ehr_list)
     if unioned_query:
-        count_list = run_count_pid_query(unioned_query)
-        count_list_ehr = run_count_pid_query(unioned_ehr_query)
-        count_list.sort(key=lambda table_row: table_row[0])
-        count_list_ehr.sort(key=lambda ehr_table_row: ehr_table_row[0])
-        for idx, ehr_table_row in enumerate(count_list_ehr):
-            count_list[idx].append(ehr_table_row[1])
-    return count_list
-
-
-def run_count_pid_query(query):
-    result_list = []
-    query_response = bq_utils.query(query)
-    results = bq_utils.response2rows(query_response)
-    for result_row in results:
-        result_list.append([result_row[TABLE_ID], result_row[COUNT]])
-    return result_list
+        count_df = bq.query(unioned_query)
+    return count_df
 
 
 def estimate_prevalence(project_id, hpo_id, pids_string):
     """
+    Logs dataset_name, table_name, all_count and ehr_count to count rows pertaining to pids
 
-    :param project_id: 
-    :param pids_string: 
+    :param project_id: identifies the project
+    :param hpo_id: Identifies the hpo site that submitted the pids
+    :param pids_string: string containing query or pids in bq string format
     :return: 
     """
 
-    all_datasets = bq_utils.list_datasets(project_id)
-    all_dataset_ids = [
-        bq_utils.get_dataset_id_from_obj(dataset) for dataset in all_datasets
-    ]
-    for dataset_id in all_dataset_ids:
+    all_datasets = bq.list_datasets()
+    for dataset in all_datasets:
+        dataset_id = dataset.dataset_id
         try:
             count_summaries = get_pid_counts(project_id, dataset_id, hpo_id,
                                              pids_string)
-            dataset_count = sum([table_row[1] for table_row in count_summaries])
-            if dataset_count > 0:
-                for table_row in count_summaries:
-                    if table_row[1] > 0:
-                        print(
-                            f'DATASET: {dataset_id} TABLE: {table_row[0]} RDR+EHR: {table_row[1]} EHR: {table_row[2]}'
-                        )
+            non_zero_counts = count_summaries[
+                count_summaries['all_count'] > 0].get_values()
+            if non_zero_counts.size > 0:
+                for count_row in non_zero_counts:
+                    logging.info(
+                        'DATASET_ID: {}\tTABLE_ID: {}\tALL_COUNT: {}\tEHR_COUNT: {}'
+                        .format(dataset_id, *count_row))
         except HttpError:
             logging.exception('Dataset %s could not be analyzed' % dataset_id)
     return
@@ -153,6 +133,17 @@ def get_pids(pid_list=None,
              pid_project_id=None,
              sandbox_dataset_id=None,
              pid_table_id=None):
+    """
+    Converts either 
+     - a list of integer pids into a bq-compatible string containing the pids or
+     - a project_id, dataset_id and table_id into a SELECT query that selects pids from the table
+    
+    :param pid_list: list of pids
+    :param pid_project_id: identifies project containing the sandbox dataset
+    :param sandbox_dataset_id: identifies dataset containing the pid table
+    :param pid_table_id: identifies the table containing pids to consider
+    :return: bq-compatible string or SELECT query that selects pids from table
+    """
     if pid_list:
         # convert to string and trim the brackets off
         pid_list = [int(pid) for pid in pid_list]
