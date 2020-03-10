@@ -16,9 +16,9 @@ ignore-patterns=
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
 init-hook="from pylint.config import find_pylintrc; import os, sys;
- sys.path.append('data_steward');
- sys.path.append('tests');
- sys.path.append(os.path.dirname(find_pylintrc()))"
+ base_dir = os.path.dirname(find_pylintrc());
+ sys.path.append(os.path.join(base_dir, 'data_steward'));
+ sys.path.append(os.path.join(base_dir, 'tests'))"
 
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use.
