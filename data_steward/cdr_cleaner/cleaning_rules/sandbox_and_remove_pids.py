@@ -39,7 +39,7 @@ def get_tables_with_person_id(project_id, dataset_id):
     person_tables = bq_utils.query_to_df(person_table_query).get(
         TABLE_NAME_COLUMN).to_list()
     # exclude mapping tables from list, to be removed after all cleaning rules
-    return [
+    person_table_list = [
         table_name for table_name in person_tables
         if '_mapping' not in table_name
     ]
