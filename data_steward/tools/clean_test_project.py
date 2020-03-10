@@ -7,17 +7,17 @@ import sys
 from googleapiclient.errors import HttpError
 
 # Project imports
-import bq_utils
+from notebooks import bq
 
 logging.basicConfig(
     stream=sys.stdout,
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
 def get_datasets_with_substrings(datasets_list, name_substrings):
     """
-    Filters list of datasets with github usernames in them
+    Filters list of datasets with specified substrings (e.g. github usernames) in them
 
     :param datasets_list: list of dataset_ids
     :param name_substrings: identifies substrings that help identify datasets to delete
@@ -41,7 +41,7 @@ def delete_datasets(project_id, datasets_to_delete_list):
     failed_to_delete = []
     for dataset in datasets_to_delete_list:
         try:
-            bq_utils.delete_dataset(project_id, dataset)
+            bq.delete_dataset(project_id, dataset)
             logging.info('Deleted dataset %s' % dataset)
         except HttpError:
             logging.exception('Could not delete dataset %s' % dataset)
@@ -60,11 +60,7 @@ def run_deletion(project_id, name_substrings):
     :param name_substrings: Identifies substrings that help identify datasets to delete
     :return: 
     """
-    all_dataset_objs = bq_utils.list_datasets(project_id)
-    all_datasets = [
-        bq_utils.get_dataset_id_from_obj(dataset_obj)
-        for dataset_obj in all_dataset_objs
-    ]
+    all_datasets = [dataset.dataset_id for dataset in bq.list_datasets()]
     datasets_with_substrings = get_datasets_with_substrings(
         all_datasets, name_substrings)
     logging.info('Datasets marked for deletion: %s' % datasets_with_substrings)
