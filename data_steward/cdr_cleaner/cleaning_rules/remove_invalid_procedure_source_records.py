@@ -22,7 +22,7 @@ INTERMEDIARY_TABLE_NAME = 'procedure_occurrence_dc583'
 
 INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = """
 CREATE OR REPLACE TABLE
-`{project}.{sandbox_dataset}.{intermediary_table}`
+`{project}.{sandbox_dataset}.{intermediary_table}` AS
 SELECT *
 FROM
   `{project}.{dataset}.procedure_occurrence` p
