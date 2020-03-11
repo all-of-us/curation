@@ -60,10 +60,8 @@ pd.options.display.max_colwidth = 999
 
 from IPython.display import HTML as html_print
 
-
 def cstr(s, color='black'):
     return "<text style=color:{}>{}</text>".format(color, s)
-
 
 print('done.')
 
