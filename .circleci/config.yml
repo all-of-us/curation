@@ -84,7 +84,7 @@ jobs:
           working_directory: ~/curation
           command: tools/yapf_lint.sh
       - run:
-          name: Pylint in data_steward
+          name: Pylint on data_steward
           working _directory: ~/curation
           command: pylint -E data_steward/
       - run:
