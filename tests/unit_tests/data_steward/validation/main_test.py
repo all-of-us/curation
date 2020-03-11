@@ -211,7 +211,7 @@ class ValidationMainTest(unittest.TestCase):
         self.assertCountEqual(expected_warnings, actual_result.get('warnings'))
 
     @mock.patch('validation.main.gcs_utils.get_hpo_bucket')
-    @mock.patch('resources.hpo_csv')
+    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('validation.main.list_bucket')
     @mock.patch('logging.error')
     @mock.patch('api_util.check_cron')
@@ -507,7 +507,7 @@ class ValidationMainTest(unittest.TestCase):
                     report_consts.ERROR_OCCURRED_REPORT_KEY)
                 self.assertEqual(error_occurred, True)
 
-    @mock.patch('resources.hpo_csv')
+    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('validation.main._write_string_to_file')
     def test_html_incorrect_folder_name(self, mock_string_to_file,
                                         mock_hpo_csv):

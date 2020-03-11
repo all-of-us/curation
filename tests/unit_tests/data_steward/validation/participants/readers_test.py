@@ -17,7 +17,7 @@ class ReadersTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    @patch('validation.participants.readers.rc.hpo_csv')
+    @patch('bq_utils.get_hpo_info')
     def test_get_hpo_site_names(self, mock_csv_list):
         # pre-conditions
         mock_csv_list.return_value = [

@@ -201,7 +201,7 @@ def get_hpo_site_names():
     :return:  A list of string hpo site ids
     """
     hpo_ids = []
-    for site in rc.hpo_csv():
+    for site in bq_utils.get_hpo_info():
         hpo_ids.append(site[consts.HPO_ID])
     return hpo_ids
 

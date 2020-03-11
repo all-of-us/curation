@@ -899,6 +899,24 @@ def load_table_from_csv(project_id,
     return result
 
 
+def get_hpo_info():
+    hpo_list = []
+    project_id = app_identity.get_application_id()
+    hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
+        project_id=project_id,
+        LOOKUP_TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
+        HPO_SITE_ID_MAPPINGS_TABLE_ID=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+    hpo_response = query(hpo_table_query)
+    hpo_table_contents = response2rows(hpo_response)
+    for hpo_table_row in hpo_table_contents:
+        hpo_id = hpo_table_row[bq_consts.HPO_ID].lower()
+        hpo_name = hpo_table_row[bq_consts.SITE_NAME]
+        if hpo_id and hpo_name:
+            hpo_dict = {"hpo_id": hpo_id, "name": hpo_name}
+            hpo_list.append(hpo_dict)
+    return hpo_list
+
+
 def has_primary_key(table):
     """
     Determines if a CDM table contains a numeric primary key field

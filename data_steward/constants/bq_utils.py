@@ -37,6 +37,14 @@ DATASET_ID = 'datasetId'
 TRUE = 'true'
 FALSE = 'false'
 
+# HPO table info
+LOOKUP_TABLES_DATASET_ID = 'lookup_tables'
+HPO_SITE_ID_MAPPINGS_TABLE_ID = 'hpo_site_id_mappings'
+HPO_ID_BUCKET_NAME_TABLE_ID = 'hpo_id_bucket_name'
+
+HPO_ID = 'HPO_ID'
+SITE_NAME = 'Site_Name'
+
 # Dataset Environment variable names
 MATCH_DATASET = 'VALIDATION_RESULTS_DATASET_ID'
 
@@ -48,4 +56,9 @@ INSERT_QUERY = """
 INSERT INTO `{project_id}.{dataset_id}.{table_id}`
   ({columns})
 VALUES {mapping_list}
+"""
+
+GET_HPO_CONTENTS_QUERY = """
+SELECT *
+FROM `{project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_SITE_ID_MAPPINGS_TABLE_ID}`
 """
