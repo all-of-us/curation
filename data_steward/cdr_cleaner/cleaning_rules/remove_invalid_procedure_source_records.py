@@ -53,8 +53,7 @@ VALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = """
 SELECT * FROM
 `{project}.{dataset}.procedure_occurrence`
 WHERE
-procedure_occurrence_id
-IN (SELECT procedure_occurrence_id FROM `{project}.{sandbox_dataset}.{intermediary_table}`)
+NOT EXISTS (SELECT procedure_occurrence_id FROM `{project}.{sandbox_dataset}.{intermediary_table}`)
 """
 
 
