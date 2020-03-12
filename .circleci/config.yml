@@ -16,7 +16,7 @@ commands:
   lint_setup:
     steps:
       - checkout:
-          path: ~/curation/data_steward
+          path: ~/curation
       # Dependencies
       - restore_cache:
           keys:
@@ -26,6 +26,7 @@ commands:
           name: Add virtual environment activation to bash startup
           command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
       - run:
+          working_directory: ~/curation/data_steward
           name: Upgrade pip and install requirements
           command: |
             pip install --upgrade pip setuptools
