@@ -16,8 +16,11 @@ AND
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants.cdr_cleaner import clean_cdr as clean_consts
+from constants import bq_utils as bq_consts
 from sandbox import get_sandbox_dataset_id
 
+TABLE = 'procedure_occurrence'
 INTERMEDIARY_TABLE_NAME = 'procedure_occurrence_dc583'
 
 INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = """
@@ -25,8 +28,7 @@ CREATE OR REPLACE TABLE
 `{project}.{sandbox_dataset}.{intermediary_table}` AS
 SELECT *
 FROM
-  `{project}.{dataset}.procedure_occurrence` p
--- procedure_concept_id is not a standard concept in the procedure domain
+  `{project}.{dataset}.{table}` p
 WHERE p.procedure_concept_id NOT IN (
   SELECT
     concept_id
@@ -38,7 +40,6 @@ WHERE p.procedure_concept_id NOT IN (
     AND standard_concept = 'S'
 )
 AND
--- procedure_source_concept_id is not in the procedure domain
 p.procedure_source_concept_id IN (
  SELECT
     concept_id
@@ -50,10 +51,10 @@ p.procedure_source_concept_id IN (
 """
 
 VALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = """
-SELECT * FROM
-`{project}.{dataset}.procedure_occurrence`
-WHERE
-NOT EXISTS (SELECT procedure_occurrence_id FROM `{project}.{sandbox_dataset}.{intermediary_table}`)
+SELECT * FROM `{project}.{dataset}.{table}` as p0
+WHERE NOT EXISTS (
+SELECT p1.procedure_occurrence_id FROM `{project}.{sandbox_dataset}.{intermediary_table}` AS p1
+WHERE p0.procedure_occurrence_id = p1.procedure_occurrence_id)
 """
 
 
@@ -75,6 +76,7 @@ def get_remove_invalid_procedure_source_queries(project_id, dataset_id):
         cdr_consts.QUERY] = INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.format(
             project=project_id,
             dataset=dataset_id,
+            table=TABLE,
             sandbox_dataset=get_sandbox_dataset_id(dataset_id),
             intermediary_table=INTERMEDIARY_TABLE_NAME)
     queries_list.append(invalid_records)
@@ -85,9 +87,15 @@ def get_remove_invalid_procedure_source_queries(project_id, dataset_id):
         cdr_consts.QUERY] = VALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.format(
             project=project_id,
             dataset=dataset_id,
+            table=TABLE,
             sandbox_dataset=get_sandbox_dataset_id(dataset_id),
             intermediary_table=INTERMEDIARY_TABLE_NAME)
-    queries_list.append(valid_records)
+    queries_list.append({
+        clean_consts.QUERY: valid_records,
+        clean_consts.DESTINATION_TABLE: TABLE,
+        clean_consts.DESTINATION_DATASET: dataset_id,
+        clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
+    })
 
     return queries_list
 
