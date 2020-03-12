@@ -77,8 +77,7 @@ def get_user_analysis_choice():
         "A. Duplicates\n" \
         "B. Amount of data following death dates\n" \
         "C. Amount of data with end dates preceding start dates\n" \
-        "D. Success rate for source tables\n" \
-        "E. Success rate for concept tables\n" \
+        "D. Success rate for concept_id field\n" \
         "F. Population of the 'unit' field in the measurement table (" \
         "only for specified measurements)\n" \
         "G. Population of the 'route' field in the drug exposure table\n" \
@@ -92,9 +91,8 @@ def get_user_analysis_choice():
         'a': 'duplicates',
         'b': 'data_after_death',
         'c': 'end_before_begin',
-        'd': 'source',
-        'e': 'concept',
-        'f': 'unit_integration',
+        'd': 'concept',
+        'f': 'measurement_units',
         'g': 'drug_routes',
         'h': 'drug_success',
         'i': 'sites_measurement'}
@@ -109,9 +107,8 @@ def get_user_analysis_choice():
         'duplicates': False,
         'data_after_death': True,
         'end_before_begin': True,
-        'source': True,
         'concept': True,
-        'unit_integration': True,
+        'measurement_units': True,
         'drug_routes': True,
         'drug_success': True,
         'sites_measurement': True
@@ -122,9 +119,8 @@ def get_user_analysis_choice():
         'duplicates': True,
         'data_after_death': True,
         'end_before_begin': True,
-        'source': False,  # table success rates
         'concept': False,
-        'unit_integration': False,
+        'measurement_units': False,
         'drug_routes': False,
         'drug_success': False,
         'sites_measurement': False
@@ -159,7 +155,7 @@ def load_files(user_choice, file_names):
     sheets (list): list of pandas dataframes. each dataframe contains
         info about data quality for all of the sites for a date.
 
-    NOTE: I recognize that the same 'skip sheet' protocol is implemented
+    NOTE: I recognize that the 'skip sheet' protocol is implemented
     twice but - since it was only implemented twice - I do not believe
     it warrants its own separate function.
     """
@@ -168,21 +164,28 @@ def load_files(user_choice, file_names):
     sheets = []
 
     while num_files_indexed < len(file_names):
-        try:  # looking for the file
-            file_name = file_names[num_files_indexed]
+        file_name = file_names[num_files_indexed]
 
-            try:  # looking for the sheet
-                sheet = pd.read_excel(file_name, sheet_name=user_choice)
+        try:  # looking for the sheet
+            sheet = pd.read_excel(file_name, sheet_name=user_choice)
 
-                if sheet.empty:
-                    print("WARNING: No data found in the {} sheet "
-                          "in dataframe {}".format(
-                           user_choice, file_name))
-                    del file_names[num_files_indexed]
-                    num_files_indexed -= 1  # skip over the date
-                else:
-                    sheets.append(sheet)
-            except Exception as ex:  # sheet not in specified excel file
+            if sheet.empty:
+                print("WARNING: No data found in the {} sheet "
+                      "in dataframe {}".format(
+                       user_choice, file_name))
+                del file_names[num_files_indexed]
+                num_files_indexed -= 1  # skip over the date
+            else:
+                sheets.append(sheet)
+        except Exception as ex:  # sheet not in specified excel file
+            if type(ex).__name__ == "FileNotFoundError":
+                print("{} not found in the current directory: {}. Please "
+                      "ensure that the file names are consistent between "
+                      "the Python script and the file name in your current "
+                      "directory. ".format(file_names[num_files_indexed], cwd))
+                sys.exit(0)
+
+            else:
                 print("WARNING: No {} sheet found in dataframe {}. "
                       "This is a(n) {}.".format(
                         user_choice, file_name, type(ex).__name__))
@@ -190,14 +193,7 @@ def load_files(user_choice, file_names):
                 del file_names[num_files_indexed]
                 num_files_indexed -= 1  # skip over the date
 
-            num_files_indexed += 1
-
-        except FileNotFoundError:
-            print("{} not found in the current directory: {}. Please "
-                  "ensure that the file names are consistent between "
-                  "the Python script and the file name in your current "
-                  "directory. ".format(file_names[num_files_indexed], cwd))
-            sys.exit(0)
+        num_files_indexed += 1
 
     return sheets
 
@@ -224,9 +220,10 @@ def get_comprehensive_tables(dataframes, analytics_type):
 
     undocumented_cols = ['Unnamed: 0', 'src_hpo_id', 'HPO',
                          'total', 'device_exposure',
-                         'unit_well_defined_row', 'unit_total_row']
+                         'number_valid_units', 'number_total_units',
+                         'number_sel_meas', 'number_valid_units_sel_meas']
 
-    rate_focused_inputs = ['source', 'concept']
+    rate_focused_inputs = ['source_concept_success_rate', 'concept']
     final_tables = []
 
     for sheet in dataframes:  # for each date
@@ -239,8 +236,7 @@ def get_comprehensive_tables(dataframes, analytics_type):
         # get all of the columns; ensure the columns are only logged once
         if analytics_type in rate_focused_inputs:
             for col_label, _ in data_info.iteritems():
-                if col_label[-5:] != '_rate' and \
-                        col_label[-7:] != '_rate_y':
+                if col_label[-5:] != '_rate':
                     undocumented_cols.append(col_label)
 
         final_tables = [x for x in column_names if x not in
@@ -275,7 +271,7 @@ def get_info(sheet, row_num, percentage, sheet_name,
     mandatory_tables (lst): contains the tables that should be
         documented for every table and at every date.
 
-        target_low (bool): determines whether the number displayed
+    target_low (bool): determines whether the number displayed
         should be considered a positive or negative metric
 
     :return:
@@ -314,16 +310,16 @@ def get_info(sheet, row_num, percentage, sheet_name,
                         raise ValueError(
                             "Negative number detected in sheet {} for column "
                             "{}".format(sheet_name, col_label))
-                    elif percentage and number > 100:  # just in case
-                        raise ValueError(
-                            "Percentage value > 100 detected in sheet {} for "
-                            "column {}".format(sheet_name, col_label))
+                    # elif percentage and number > 100:  # just in case
+                    #     raise ValueError(
+                    #         "Percentage value > 100 detected in sheet {} for "
+                    #         "column {}".format(sheet_name, col_label))
 
                     # actual info to be logged if sensible data
                     elif percentage and target_low:  # proportion w/ errors
-                        err_dictionary[col_label] = round(100 - number, 1)
+                        err_dictionary[col_label] = round(100 - number, 2)
                     elif percentage and not target_low:  # effective
-                        err_dictionary[col_label] = round(number, 1)
+                        err_dictionary[col_label] = round(number, 2)
                     elif not percentage and number > -1:
                         err_dictionary[col_label] = int(number)
         else:
@@ -821,20 +817,14 @@ def determine_means_to_calculate_weighted_avg(
     underscore_idx = 0
 
     # need to specify the table to use as a reference
-    if analytics_type in ['unit_integration']:
+    if analytics_type in ['measurement_units']:
         table = 'measurement'
     elif analytics_type in ['drug_routes']:
-        if table == 'drugs_overall_success_rate':
-            table = 'drug_expousure'
-        # cannot calculate an aggregate statistic based on a specific
-        # drug class; we do not know how many of a particular drug
-        # class each site contributes
-        else:
-            return None
+        table = 'drug_exposure'
 
     # just a simple average; all sites contribute equally
     # since 'integration' only means having one instance
-    elif analytics_type in ['drug_routes', 'drug_success']:
+    elif analytics_type in ['sites_measurement', 'drug_success']:
         return np.nanmean(new_col_info)
 
     # ASSUMPTION: table naming convention (see #6 in the header)
@@ -903,7 +893,7 @@ def generate_weighted_average_table_sheet(
     if table_tot is None:
         return None
     elif isinstance(table_tot, float):  # mean was returned; the aggregate info
-        return round(table_tot, 1)
+        return round(table_tot, 2)
 
     hpo_total_rows_by_date, valid_cols_tot = generate_hpo_contribution(
         file_names, 'total')
@@ -939,7 +929,8 @@ def generate_weighted_average_table_sheet(
 
 def generate_column_for_table_df(
         site_and_date_info, date, sorted_names, table,
-        percentage, file_names, analytics_type):
+        percentage, file_names, analytics_type,
+        ordered_dates_str, dataframes):
     """
     Function is used to generate a column for each dataframe
     in the case where
@@ -972,6 +963,13 @@ def generate_column_for_table_df(
     analytics_type (str): the data quality metric the user wants to
         investigate
 
+    ordered_dates_str (lst): list of the different dates for
+        the data analysis outputs. goes from oldest to most
+        recent
+
+    dataframes (list): list of pandas dataframes. each dataframe contains
+        info about data quality for all of the sites for a date.
+
     :return:
     new_col_info (lst): list containing the data quality for each
         of the HPOs. Each index represents the data quality for a
@@ -1002,8 +1000,21 @@ def generate_column_for_table_df(
 
         if analytics_type in ['sites_measurement', 'drug_success']:
             arith_avg = np.nanmean(new_col_info)
-            arith_avg = round(arith_avg, 1)
+            arith_avg = round(arith_avg, 2)
             new_col_info.append(arith_avg)
+
+        elif analytics_type in ['measurement_units']:
+            weighted_avg = calculate_unit_aggregate_information(
+                dataframes, date, ordered_dates_str, table)
+
+            new_col_info.append(weighted_avg)
+
+        elif analytics_type in ['drug_routes']:
+            agg_info = calculate_route_aggregate_information(
+                dataframes, date, ordered_dates_str, table)
+
+            new_col_info.append(agg_info)
+
         else:
             # need to weight sites' relative contributions when
             # calculating an aggregate 'end' value
@@ -1018,9 +1029,130 @@ def generate_column_for_table_df(
     return new_col_info
 
 
-def generate_table_dfs(sorted_names, sorted_tables,
-                       ordered_dates_str, site_and_date_info,
-                       percentage, file_names, analytics_type):
+def calculate_route_aggregate_information(
+        dataframes, date, ordered_dates_str, table):
+    """
+    Function is used to calculate the 'aggregate' statistic
+    for the 'route_concept_id integration sheet.' This necessitates its own
+    function because it references columns that are specific to
+    the route integration sheet.
+
+    :param
+    dataframes (list): list of pandas dataframes. each dataframe contains
+        info about data quality for all of the sites for a date.
+
+    date (str): date to investigate for populating the column
+
+    ordered_dates_str (lst): list of the different dates for
+        the data analysis outputs. goes from oldest to most
+        recent
+
+    :return:
+    agg_info (float): represents the aggregate information
+        statistic - either a sum of all the drugs/applicable
+        drugs - or an 'overall success rate'
+    """
+
+    for date_idx, date_from_list in enumerate(ordered_dates_str):
+        if date == date_from_list:
+            df = dataframes[date_idx]
+
+    try:
+        all_routes = df['number_total_routes'].tolist()
+        valid_routes = df['number_valid_routes'].tolist()
+
+        all_routes = sum_df_column(all_routes)
+        valid_routes = sum_df_column(valid_routes)
+
+        if table == 'number_total_routes':
+            agg_info = all_routes
+
+        elif table == 'number_valid_routes':
+            agg_info = valid_routes
+
+        elif table == 'total_route_success_rate':
+            weighted_avg = round(
+                valid_routes / all_routes * 100, 2)
+
+            agg_info = weighted_avg
+
+        else:
+            raise ValueError("Unexpected table found in the route sheet.")
+    except:
+        raise ValueError("Dataframe for the unit sheet not found.")
+
+    return agg_info
+
+
+def calculate_unit_aggregate_information(
+        dataframes, date, ordered_dates_str, table):
+    """
+    Function is used to calculate the 'aggregate' statistic
+    for the 'unit integration sheet.' This necessitates its own
+    function because it references columns that are specific to
+    the unit integration sheet.
+
+    :param
+    dataframes (list): list of pandas dataframes. each dataframe contains
+        info about data quality for all of the sites for a date.
+
+    date (str): date to investigate for populating the column
+
+    ordered_dates_str (lst): list of the different dates for
+        the data analysis outputs. goes from oldest to most
+        recent
+
+    :return:
+    weighted_avg (float): represents the weighted 'unit'
+        rate for the particular dimension of data quality
+        being evaluated
+    """
+
+    for date_idx, date_from_list in enumerate(ordered_dates_str):
+        if date == date_from_list:
+            df = dataframes[date_idx]
+
+    try:
+        # FIXME: This is a duplicated code fragment - could be improved
+        all_units = df['number_total_units'].tolist()
+        valid_selected_meas = df['number_valid_units_sel_meas'].tolist()
+        valid_all_meas = df['number_valid_units'].tolist()
+        selected_meas = df['number_sel_meas'].tolist()
+
+        all_units = sum_df_column(all_units)
+        valid_selected_meas = sum_df_column(valid_selected_meas)
+        valid_all_meas = sum_df_column(valid_all_meas)
+        selected_meas = sum_df_column(selected_meas)
+
+        if table == 'sel_meas_unit_success_rate':
+            selected_success_rate = round(
+                valid_selected_meas / selected_meas * 100, 2)
+
+            weighted_avg = selected_success_rate
+
+        elif table == 'total_unit_success_rate':
+            total_success_rate = round(
+                valid_all_meas / all_units * 100, 2)
+
+            weighted_avg = total_success_rate
+
+        elif table == 'proportion_sel_meas':
+            proportion_selected_measurements = round(
+                selected_meas / all_units * 100, 2)
+
+            weighted_avg = proportion_selected_measurements
+
+        else:
+            raise ValueError("Unexpected table found in the unit sheet.")
+    except:
+        raise ValueError("Dataframe for the unit sheet not found.")
+
+    return weighted_avg
+
+
+def generate_table_dfs(
+        sorted_names, sorted_tables, ordered_dates_str, site_and_date_info,
+        percentage, file_names, analytics_type, dataframes):
     """
     Function generates a unique dataframe containing data quality
     metrics. Each dataframe should match to the metrics for a
@@ -1055,6 +1187,9 @@ def generate_table_dfs(sorted_names, sorted_tables,
     analytics_type (str): the data quality metric the user wants to
         investigate
 
+    dataframes (list): list of pandas dataframes. each dataframe contains
+        info about data quality for all of the sites for a date.
+
     :return:
     df_dictionary_by_table (dict): dictionary with key:value
         of table type: pandas df with the format described above
@@ -1079,7 +1214,8 @@ def generate_table_dfs(sorted_names, sorted_tables,
             # alphabetical order followed by an 'aggregate' value.
             df_in_question[date] = new_col_info(
                 site_and_date_info, date, sorted_names, table,
-                percentage, file_names, analytics_type)
+                percentage, file_names, analytics_type,
+                ordered_dates_str, dataframes)
 
     df_dictionary_by_table = dict(zip(sorted_tables, total_dfs))
     return df_dictionary_by_table
@@ -1119,10 +1255,16 @@ def standardize_column_types(sorted_tables, valid_cols_tot):
     sorted_tables_before_udscr = []
     new_valid_cols = []
 
+    tables_with_no_underscore = ['measurement', 'observation', 'total']
+
     # for comparison down the line
     for idx, table_type in enumerate(sorted_tables):
         under_encountered = False
-        end_idx = 0
+
+        if table_type not in tables_with_no_underscore:
+            end_idx = 0
+        else:  # want a different ending index
+            end_idx = len(table_type)
 
         for c_idx, char in enumerate(table_type):
             if char == '_' and not under_encountered:
@@ -1135,7 +1277,11 @@ def standardize_column_types(sorted_tables, valid_cols_tot):
     # ensure we are only looking for columns that appear in the sheet
     for idx, column_type in enumerate(valid_cols_tot):
         under_encountered = False
-        end_idx = 0
+
+        if table_type not in tables_with_no_underscore:
+            end_idx = 0
+        else:
+            end_idx = len(table_type) - 1
 
         for c_idx, char in enumerate(column_type):
             if char == '_' and not under_encountered:
@@ -1194,6 +1340,7 @@ def determine_dq_for_hpo_on_date(
         file_names, 'total')
 
     # tables that have 'total_row' and data quality metrics available
+    # should basically be the 'sorted tables' without any totals
     valid_cols_tot = standardize_column_types(sorted_tables, valid_cols_tot)
 
     incidence_for_site = site_and_date_info[date]  # data quality
@@ -1201,11 +1348,11 @@ def determine_dq_for_hpo_on_date(
     tot_rows_for_date, tot_errors_for_date = 0, 0
 
     # iterated first b/c rows per site parallels alphabetical site names
+    # also take off the last 'total_row' for both of the lists
     for table, table_row_total in zip(sorted_tables[:-1], valid_cols_tot):
         total_rows_per_site = hpo_total_rows_by_date[date][table_row_total]
 
         for site_name, site_rows in zip(sorted_names, total_rows_per_site):
-
             # found the site in question
             if site == site_name and not math.isnan(site_rows):
                 site_err_rate = incidence_for_site[site][table]
@@ -1279,12 +1426,15 @@ def generate_column_for_hpo_df(
     new_col_info = []
     site_info = site_and_date_info[date][site]
 
+    no_need_for_total = ['sites_measurement', 'drug_success',
+                         'measurement_units', 'drug_routes']
+
     for table in tables_only:  # populating each row in the col
         new_col_info.append(site_info[table])
         tot_errs_date += site_info[table]
 
     # creating the 'aggregate' statistic for the bottom of the col
-    if analytics_type in ['sites_measurement', 'drug_success']:
+    if analytics_type in no_need_for_total:
         pass
     elif not percentage:
         new_col_info.append(tot_errs_date)
@@ -1347,14 +1497,16 @@ def generate_site_dfs(sorted_names, sorted_tables,
     """
     total_dfs = []
 
-    no_total_needed = ['sites_measurement', 'drug_success']
+    no_need_for_total = ['sites_measurement', 'drug_success',
+                         'measurement_units', 'drug_routes']
 
-    if analytics_type not in no_total_needed:
+    if analytics_type not in no_need_for_total:
         sorted_tables.append('total')
         # ignoring 'total'
         tables_only = sorted_tables[:-1]
     else:
-        # integration metric - the 'aggregate' statistic is already in place
+        # integration/field metric
+        # the 'aggregate' statistic is already in place
         tables_only = sorted_tables
 
     # ignoring 'aggregate_info'
@@ -1791,7 +1943,7 @@ def determine_table_dq_for_date(
     # now all the error rates for each table type; append to list
     if tot_rows_for_table > 0:
         err_rate_table = tot_errors_for_table / tot_rows_for_table
-        err_rate_table = round(err_rate_table, 3)
+        err_rate_table = round(err_rate_table * 100, 2)
         error_amounts_for_date.append(err_rate_table)
     else:
         error_amounts_for_date.append(float('NaN'))
@@ -1869,7 +2021,7 @@ def determine_weighted_average_of_percent(
         # aggregate data quality for a date
         if tot_rows_for_date > 0:
             tot_errors_for_date = tot_errors_for_date / tot_rows_for_date
-            tot_errors_for_date = round(tot_errors_for_date, 3)
+            tot_errors_for_date = round(tot_errors_for_date * 100, 2)
             error_amounts_for_date.append(tot_errors_for_date)
         else:
             error_amounts_for_date.append(float('NaN'))
@@ -1878,6 +2030,33 @@ def determine_weighted_average_of_percent(
         aggregate_df_weighted[date] = error_amounts_for_date
 
     return [aggregate_df_weighted]
+
+
+def sum_df_column(column):
+    """
+    Function is used to take the column of a dataframe (presumably
+    from a analytics report Excel sheet) and returns the total.)
+    This is intentionally designed to avoid errors caused by
+    non-integer values.
+
+    :param
+    column (list): column from a dataframe that should be
+        traversed
+
+    :return:
+    total (int) value that represents the sum of the entire column
+    """
+    total = 0
+
+    for site_val in column:
+        try:
+            site_val = float(site_val)
+            if not math.isnan(site_val):
+                total += site_val
+        except ValueError:
+            pass
+
+    return total
 
 
 def unit_integration_aggregate_sheet(
@@ -1891,7 +2070,7 @@ def unit_integration_aggregate_sheet(
     any given table).
 
     One must use the original dataframe because the
-    unit_integration success rate ONLY looks at particular
+    measurement_units success rate ONLY looks at particular
     rows in the measurement table (namely rows where the
     concept_id is in a list of concept_ids that we are
     looking at as the DRC). This means that the 'total
@@ -1912,35 +2091,34 @@ def unit_integration_aggregate_sheet(
         for each date investigated.
     """
     aggregate_df = pd.DataFrame(
-        index=['integration rate', 'total rows'], columns=ordered_dates_str)
+        index=['selected_units_success_rate', 'total_units_success_rate',
+               'proportion_selected_measurements'], columns=ordered_dates_str)
 
     # populating column-by-column
     for date_idx, date in enumerate(ordered_dates_str):
         df = dataframes[date_idx]
 
-        wd_col = df['unit_well_defined_row'].tolist()
-        tot_col = df['unit_total_row'].tolist()
+        # FIXME: This is a duplicated code fragment - could be improved
+        all_units = df['number_total_units'].tolist()
+        valid_selected_meas = df['number_valid_units_sel_meas'].tolist()
+        valid_all_meas = df['number_valid_units'].tolist()
+        selected_meas = df['number_sel_meas'].tolist()
 
-        tot_wd_units, tot_units = 0, 0
+        all_units = sum_df_column(all_units)
+        valid_selected_meas = sum_df_column(valid_selected_meas)
+        valid_all_meas = sum_df_column(valid_all_meas)
+        selected_meas = sum_df_column(selected_meas)
 
-        for site_val in wd_col:
-            try:
-                site_val = float(site_val)
-                if not math.isnan(site_val):
-                    tot_wd_units += site_val
-            except ValueError:
-                pass
+        selected_success_rate = round(
+            valid_selected_meas / selected_meas * 100, 2)
+        total_success_rate = round(
+            valid_all_meas / all_units * 100, 2)
+        proportion_selected_measurements = round(
+            selected_meas / all_units * 100, 2)
 
-        for site_val in tot_col:
-            try:
-                site_val = float(site_val)
-                if not math.isnan(site_val):
-                    tot_units += site_val
-            except ValueError:
-                pass
-
-        tot_success_rate = round(tot_wd_units / tot_units * 100, 1)
-        aggregate_df[date] = [tot_success_rate, tot_units]
+        aggregate_df[date] = [
+            selected_success_rate, total_success_rate,
+            proportion_selected_measurements]
 
     return [aggregate_df]  # list so it can be easily appended
 
@@ -1986,35 +2164,36 @@ def aggregate_sheet_route_population(
     doing so would merely be a 'guestimate.'
     """
     aggregate_df_weighted = pd.DataFrame(
-        index=['drug_route_overall_success_rate'],
+        index=[
+            'number_total_routes', 'number_valid_routes',
+            'total_route_success_rate'],
         columns=ordered_dates_str)
 
     hpo_total_rows_by_date, _ = generate_hpo_contribution(
         file_names, 'total')
 
     for date in ordered_dates_str:
+        rows_w_unit_date, rows_total_date = 0, 0
         drug_rows = hpo_total_rows_by_date[date]['drug_total_row']
-        total_drug_rows_for_date = np.nansum(drug_rows)  # ignoring nan
-
-        rows_w_unit_date = 0
 
         # gathering data from all of the sites
         for site_name, total_drug_rows in zip(sorted_names, drug_rows):
-            site_succ_rate = site_and_date_info[date][site_name][
-                'drugs_overall_success_rate']
+            site_successful_rows = site_and_date_info[date][site_name][
+                'number_valid_routes']
+            drug_rows = site_and_date_info[date][site_name][
+                'number_total_routes']
 
-            if not math.isnan(total_drug_rows) and \
-                not math.isnan(site_succ_rate) and \
-                not math.isnan(site_succ_rate):
-                    site_succ_rows = site_succ_rate * total_drug_rows
-                    rows_w_unit_date += site_succ_rows
+            if not math.isnan(drug_rows) and not math.isnan(site_successful_rows):
+                rows_w_unit_date += site_successful_rows
+                rows_total_date += drug_rows
 
-        if total_drug_rows_for_date > 0:
-            quality_for_date = round(rows_w_unit_date / total_drug_rows_for_date, 1)
+        if rows_total_date > 0:
+            quality_for_date = round(rows_w_unit_date / rows_total_date * 100, 2)
         else:
             quality_for_date = np.nan
 
-        aggregate_df_weighted[date] = quality_for_date
+        aggregate_df_weighted[date] = [
+            rows_total_date, rows_w_unit_date, quality_for_date]
 
     # putting in list to make it easy to append
     return [aggregate_df_weighted]
@@ -2047,6 +2226,8 @@ def aggregate_sheet_integration(
         a. columns that are dates
         b. rows that are the different classes of
         drugs/measurements (e.g. ACE Inhibitor, lipids)
+        this include an 'all measurements' class that spans
+        all of the aforementioned classes
 
     each point within the dataframe shows the average
     integration across all sites for the particular
@@ -2079,7 +2260,7 @@ def aggregate_sheet_integration(
                 except ValueError:  # 'No Data' logged
                     pass
 
-            average_for_drug_int = round(tot / iterated, 1)
+            average_for_drug_int = round(tot / iterated, 2)
             means_for_dates.append(average_for_drug_int)
 
         aggregate_df_weighted[date] = means_for_dates
@@ -2132,12 +2313,12 @@ def generate_aggregate_sheets(file_names, sorted_tables, site_and_date_info,
     total_dfs (lst): list of pandas dataframes that document the
         data quality of the various data types
     """
-    if analytics_type in ['source', 'concept']:
+    if analytics_type in ['source_concept_success_rate', 'concept']:
         # three additional dataframes
         total_dfs = generate_additional_aggregate_dq_sheets(
             file_names, ordered_dates_str)
 
-    elif analytics_type in ['unit_integration']:
+    elif analytics_type in ['measurement_units']:
         # warrants unique approach since units
         # are only for selected measurements
         total_dfs = unit_integration_aggregate_sheet(
@@ -2234,7 +2415,6 @@ and quantify the data.
 # report1 = 'july_15_2019.xlsx'
 # report2 = 'july_23_2019.xlsx'
 # report3 = 'august_05_2019.xlsx'
-
 # report4 = 'august_13_2019.xlsx'
 # report5 = 'august_19_2019.xlsx'
 # report6 = 'august_26_2019.xlsx'
@@ -2253,17 +2433,20 @@ and quantify the data.
 # report19 = 'november_27_2019.xlsx'
 # report20 = 'december_02_2019.xlsx'
 # report21 = 'december_09_2019.xlsx'
-report22 = 'december_16_2019.xlsx'
-report23 = 'december_23_2019.xlsx'
-report24 = 'january_21_2020.xlsx'
-report25 = 'january_27_2020.xlsx'
-report26 = 'february_03_2020.xlsx'
+# report22 = 'december_16_2019.xlsx'
+# report23 = 'december_23_2019.xlsx'
+# report24 = 'january_21_2020.xlsx'
+# report25 = 'january_27_2020.xlsx'
+# report26 = 'february_03_2020.xlsx'
+# report27 = 'february_10_2020.xlsx'
+# report28 = 'february_17_2020.xlsx'
+# report29 = 'february_24_2020.xlsx'
 
 # UNIONED EHR COMPARISON
-# report1 = 'may_10_2019.xlsx'
-# report2 = 'september_12_2019.xlsx'
-# report3 = 'december_09_2019.xlsx'
-# report4 = 'january_27_2020.xlsx'
+report1 = 'may_10_2019.xlsx'
+report2 = 'july_15_2019.xlsx'
+report3 = 'october_04_2019.xlsx'
+report4 = 'march_16_2020.xlsx'
 
 # DEID versus DEID_clean
 # report17 = 'october_05_2019.xlsx'
@@ -2276,7 +2459,7 @@ report26 = 'february_03_2020.xlsx'
 # report4 = 'october_10_2019.xlsx'
 # report5 = 'december_16_2019.xlsx'
 
-report_titles = [report22, report23, report24, report25, report26]
+report_titles = [report1, report2, report3, report4]
 
 metric_choice, metric_is_percent, ideal_low = get_user_analysis_choice()
 
@@ -2309,7 +2492,7 @@ if output_choice == 'table_sheets':
     df_dict = generate_table_dfs(
         ordered_names, ordered_tables, ordered_dates,
         date_site_table_info, metric_is_percent, report_titles,
-        metric_choice)
+        metric_choice, data_frames)
 elif output_choice == 'hpo_sheets':
     df_dict = generate_site_dfs(
         ordered_names, ordered_tables, ordered_dates,
