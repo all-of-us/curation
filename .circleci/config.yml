@@ -80,17 +80,13 @@ jobs:
     steps:
       - test_setup
       - run:
-          name: Check Python lint with yapf
+          name: Checking Python lint with yapf
           working_directory: ~/curation
           command: tools/yapf_lint.sh
       - run:
-          name: Pylint on data_steward
+          name: Checking Python lint with Pylint
           working _directory: ~/curation
-          command: pylint -E data_steward/
-      - run:
-          name: Pylint on tests
-          working_directory: ~/curation
-          command: pylint -E tests/
+          command: pylint -E data_steward tests
       - test_teardown
   unit_test:
     <<: *job_defaults
