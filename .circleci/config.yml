@@ -13,6 +13,29 @@ job_defaults: &job_defaults
 
 commands:
   # Define reusable sets of steps to be run within the testing jobs.
+  lint_setup:
+    steps:
+      - checkout:
+          path: ~/curation/data_steward
+      # Dependencies
+      - restore_cache:
+          keys:
+            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+            - pip-cache-
+      - run:
+          name: Add virtual environment activation to bash startup
+          command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
+      - run:
+          name: Upgrade pip and install requirements
+          command: |
+            pip install --upgrade pip setuptools
+            pip install -r requirements.txt
+            pip install -r dev_requirements.txt
+            pip install -r deid/requirements.txt
+      - run:
+          name: Show bashrc file
+          command: cat ${BASH_ENV}
+
   test_setup:
     steps:
       - checkout:
@@ -78,7 +101,7 @@ jobs:
   linting_checks:
     <<: *job_defaults
     steps:
-      - test_setup
+      - lint_setup
       - run:
           name: Checking Python lint with yapf
           working_directory: ~/curation
@@ -87,7 +110,7 @@ jobs:
           name: Checking Python lint with Pylint
           working _directory: ~/curation
           command: pylint -E data_steward tests
-      - test_teardown
+
   unit_test:
     <<: *job_defaults
     steps:
