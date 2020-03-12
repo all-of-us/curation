@@ -24,12 +24,16 @@ sex_at_birth_source_concept_id (extension)
 sex_at_birth_source_value (extension)
 """
 
+from jinja2 import Template
+
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 PERSON_TABLE = 'person'
+GENDER_CONCEPT_ID = 1585838
+SEX_AT_BIRTH_CONCEPT_ID = 1585845
 
-REPOPULATE_PERSON_QUERY = """
+REPOPULATE_PERSON_QUERY = Template("""
 WITH
   gender AS (
   SELECT
@@ -37,10 +41,10 @@ WITH
     COALESCE(o.value_as_concept_id, 0) AS gender_concept_id,
     COALESCE(o.value_source_concept_id, 0) AS gender_source_concept_id,
     COALESCE(c.concept_code, "No matching concept") AS gender_source_value
-  FROM `{project}.{dataset}.person` p
-  LEFT JOIN `{project}.{dataset}.observation` o
-    ON p.person_id = o.person_id AND observation_source_concept_id = 1585838
-  LEFT JOIN `{project}.{dataset}.concept` c
+  FROM `{{project}}.{{dataset}}.person` p
+  LEFT JOIN `{{project}}.{{dataset}}.observation` o
+    ON p.person_id = o.person_id AND observation_source_concept_id = {{gender_concept_id}}
+  LEFT JOIN `{{project}}.{{dataset}}.concept` c
     ON value_source_concept_id = concept_id
   ),
   sex_at_birth AS (
@@ -49,10 +53,10 @@ WITH
     COALESCE(o.value_as_concept_id, 0) AS sex_at_birth_concept_id,
     COALESCE(o.value_source_concept_id, 0) AS sex_at_birth_source_concept_id,
     COALESCE(c.concept_code, "No matching concept") AS sex_at_birth_source_value
-  FROM `{project}.{dataset}.person` p
-  LEFT JOIN `{project}.{dataset}.observation` o
-    ON p.person_id = o.person_id AND observation_source_concept_id = 1585845
-  LEFT JOIN `{project}.{dataset}.concept` c
+  FROM `{{project}}.{{dataset}}.person` p
+  LEFT JOIN `{{project}}.{{dataset}}.observation` o
+    ON p.person_id = o.person_id AND observation_source_concept_id = {{sex_at_birth_concept_id}}
+  LEFT JOIN `{{project}}.{{dataset}}.concept` c
     ON value_source_concept_id = concept_id
   ),
   repopulate_person_from_observation AS (
@@ -105,7 +109,7 @@ WITH
     ,"No matching concept") AS ethnicity_source_value,
     coalesce(ethnicity_ob.value_source_concept_id, 0) AS ethnicity_source_concept_id
   FROM
-    `{project}.{dataset}.person` AS per
+    `{{project}}.{{dataset}}.person` AS per
   LEFT JOIN gender
   ON
     per.person_id = gender.person_id
@@ -113,13 +117,13 @@ WITH
   ON
     per.person_id = sex_at_birth.person_id
   LEFT JOIN
-    `{project}.{dataset}.observation` race_ob
+    `{{project}}.{{dataset}}.observation` race_ob
   ON
     per.person_id = race_ob.person_id
     AND race_ob.observation_concept_id = 1586140
     AND race_ob.value_source_concept_id != 1586147
   LEFT JOIN
-    `{project}.{dataset}.observation` ethnicity_ob
+    `{{project}}.{{dataset}}.observation` ethnicity_ob
   ON
     per.person_id = ethnicity_ob.person_id
     AND ethnicity_ob.observation_concept_id=1586140
@@ -159,7 +163,7 @@ END
   sex_at_birth_source_value
 FROM
   repopulate_person_from_observation
-"""
+""")
 
 
 def get_repopulate_person_post_deid_queries(project_id, dataset_id):
@@ -172,8 +176,11 @@ def get_repopulate_person_post_deid_queries(project_id, dataset_id):
     """
     queries_list = []
     query = dict()
-    query[cdr_consts.QUERY] = REPOPULATE_PERSON_QUERY.format(dataset=dataset_id,
-                                                             project=project_id)
+    query[cdr_consts.QUERY] = REPOPULATE_PERSON_QUERY.render(
+        project=project_id,
+        dataset=dataset_id,
+        gender_concept_id=GENDER_CONCEPT_ID,
+        sex_at_birth_concept_id=SEX_AT_BIRTH_CONCEPT_ID)
     query[cdr_consts.DESTINATION_TABLE] = PERSON_TABLE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
