@@ -4,6 +4,8 @@ import unittest
 # Project imports
 import cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as remove_invalid_procedure_source
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants.cdr_cleaner import clean_cdr as clean_consts
+from constants import bq_utils as bq_consts
 
 
 class RemoveInvalidProcedureSourceRecordsTest(unittest.TestCase):
@@ -29,6 +31,7 @@ class RemoveInvalidProcedureSourceRecordsTest(unittest.TestCase):
                 INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.format(
                     project=self.project_id,
                     dataset=self.dataset_id,
+                    table=remove_invalid_procedure_source.TABLE,
                     sandbox_dataset=remove_invalid_procedure_source.
                     get_sandbox_dataset_id(self.dataset_id),
                     intermediary_table=remove_invalid_procedure_source.
@@ -40,9 +43,16 @@ class RemoveInvalidProcedureSourceRecordsTest(unittest.TestCase):
                 VALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.format(
                     project=self.project_id,
                     dataset=self.dataset_id,
+                    table=remove_invalid_procedure_source.TABLE,
                     sandbox_dataset=remove_invalid_procedure_source.
                     get_sandbox_dataset_id(self.dataset_id),
                     intermediary_table=remove_invalid_procedure_source.
-                    INTERMEDIARY_TABLE_NAME)
+                    INTERMEDIARY_TABLE_NAME),
+            clean_consts.DESTINATION_TABLE:
+                remove_invalid_procedure_source.TABLE,
+            clean_consts.DESTINATION_DATASET:
+                self.dataset_id,
+            clean_consts.DISPOSITION:
+                bq_consts.WRITE_TRUNCATE
         })
         self.assertEquals(result, expected)

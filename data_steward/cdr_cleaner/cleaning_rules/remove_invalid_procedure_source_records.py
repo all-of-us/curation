@@ -82,14 +82,12 @@ def get_remove_invalid_procedure_source_queries(project_id, dataset_id):
     queries_list.append(invalid_records)
 
     # queries to delete invalid procedure source records
-    valid_records = dict()
-    valid_records[
-        cdr_consts.QUERY] = VALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.format(
-            project=project_id,
-            dataset=dataset_id,
-            table=TABLE,
-            sandbox_dataset=get_sandbox_dataset_id(dataset_id),
-            intermediary_table=INTERMEDIARY_TABLE_NAME)
+    valid_records = VALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.format(
+        project=project_id,
+        dataset=dataset_id,
+        table=TABLE,
+        sandbox_dataset=get_sandbox_dataset_id(dataset_id),
+        intermediary_table=INTERMEDIARY_TABLE_NAME)
     queries_list.append({
         clean_consts.QUERY: valid_records,
         clean_consts.DESTINATION_TABLE: TABLE,
