@@ -67,6 +67,11 @@ def cstr(s, color='black'):
 
 
 print('done.')
+# -
+
+cwd = os.getcwd()
+cwd = str(cwd)
+print(cwd)
 
 # +
 dic = {
@@ -79,7 +84,7 @@ dic = {
         "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl",
         "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh",
         "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc",
-        "aouw_mcw", "cpmc_ucd", "ipmc_rush"
+        "aouw_mcw", "cpmc_ucd", "ipmc_rush", "va", "saou_umc"
     ],
     'HPO': [
         "UAB Selma", "UAB Huntsville", "Tulane University", "Temple University",
@@ -102,7 +107,9 @@ dic = {
         "University of Southern California", "HRHCare",
         "NorthShore University Health System", "Cherokee Health Systems",
         "UC San Francisco", "Jackson-Hinds CHC", "Medical College of Wisconsin",
-        "UC Davis", "Rush University"
+        "UC Davis", "Rush University", 
+        "United States Department of Veterans Affairs - Boston",
+        "University Medical Center (UA Tuscaloosa)"
     ]
 }
 
@@ -232,1117 +239,330 @@ Physical_Measurement = (40654163, 40655804, 40654162, 40655805, 40654167,
 
 measurement_codes = Lipid + CBC + CBCwDiff + CMP + Physical_Measurement
 
-# # Integration of Units for Select Measurements:
+# # Integration of Units for All Measurements:
 #
 
-unit_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS unit_total_row
-            FROM
-               `{}.unioned_ehr_measurement` AS t1
-            JOIN -- ensuring you 'navigate up' the hierarchy
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.measurement_concept_id = ca.descendant_concept_id
-            INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_measurement`)  AS t2
-            ON
-                t1.measurement_id=t2.measurement_id
-            WHERE ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS unit_well_defined_row
-            FROM
-               `{}.unioned_ehr_measurement` AS t1
-            INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_measurement`)  AS t2
-            ON
-                t1.measurement_id=t2.measurement_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.unit_concept_id
-            JOIN -- ensuring you 'navigate up' the hierarchy
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.measurement_concept_id = ca.descendant_concept_id
-            WHERE 
-                 t3.domain_id="Unit"
-                 and
-                 t3.standard_concept="S"
-                 and
-                 t3.concept_id!=0
-                 and
-                 ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        unit_well_defined_row,
-        unit_total_row,
-        round(100*(unit_well_defined_row/unit_total_row),1) as unit_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, measurement_codes, DATASET, DATASET,
-               DATASET, DATASET, measurement_codes, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET),
-                                      dialect='standard')
-unit_standard_df.shape
-
-unit_standard_df
+# #### Getting the numbers for all of the unit concept IDs by site
 
 # +
+unit_concept_ids_by_site_query = """
+CREATE TABLE `{DATASET}.sites_unit_counts`
+OPTIONS (
+expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
+)
+AS
+SELECT
+DISTINCT
+mm.src_hpo_id, COUNT(m.measurement_id) as number_total_rows
+FROM
+`{DATASET}.unioned_ehr_measurement` m
+JOIN
+`{DATASET}._mapping_measurement` mm
+ON
+m.measurement_id = mm.measurement_id 
+JOIN
+`{DATASET}.concept` c
+ON
+m.unit_concept_id = c.concept_id 
+GROUP BY 1
+ORDER BY number_total_rows DESC
+""".format(DATASET = DATASET)
 
-unit_standard_df = unit_standard_df.fillna(0)
+unit_concept_ids_by_site = pd.io.gbq.read_gbq(unit_concept_ids_by_site_query, dialect='standard')
+
+# +
+unit_concept_ids_by_site_query = """
+SELECT
+*
+FROM
+`{DATASET}.sites_unit_counts`
+""".format(DATASET = DATASET)
+
+unit_concept_ids_by_site = pd.io.gbq.read_gbq(unit_concept_ids_by_site_query, dialect='standard')
 # -
 
-unit_standard_df = pd.merge(unit_standard_df,
-                            site_df,
-                            how='outer',
-                            on='src_hpo_id')
+unit_concept_ids_by_site
 
-unit_standard_df = unit_standard_df.fillna("No Data")
+# #### Below are the "successful" unit concept IDs
 
-unit_standard_df
+# +
+successful_unit_concept_ids_by_site_query = """
+CREATE TABLE `{DATASET}.sites_successful_unit_counts`
+OPTIONS (
+expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
+)
+AS
+SELECT
+DISTINCT
+mm.src_hpo_id, COUNT(m.measurement_id) as number_valid_units
+FROM
+`{DATASET}.unioned_ehr_measurement` m
+JOIN
+`{DATASET}._mapping_measurement` mm
+ON
+m.measurement_id = mm.measurement_id 
+JOIN
+`{DATASET}.concept` c
+ON
+m.unit_concept_id = c.concept_id 
+WHERE
+c.standard_concept IN ('S')
+AND
+LOWER(c.domain_id) LIKE '%unit%'
+GROUP BY 1
+ORDER BY number_valid_units DESC
+""".format(DATASET = DATASET)
 
-unit_standard_df.to_csv("data\\unit_integration.csv")
+successful_unit_concept_ids_by_site = pd.io.gbq.read_gbq(successful_unit_concept_ids_by_site_query, dialect='standard')
+
+# +
+successful_unit_concept_ids_by_site_query = """
+SELECT
+*
+FROM
+`{DATASET}.sites_successful_unit_counts`
+""".format(DATASET = DATASET)
+
+successful_unit_concept_ids_by_site = pd.io.gbq.read_gbq(successful_unit_concept_ids_by_site_query, dialect='standard')
+# -
+
+successful_unit_concept_ids_by_site
+
+final_all_units_df = pd.merge(site_df, unit_concept_ids_by_site, on = 'src_hpo_id', how = 'left')
+
+final_all_units_df = pd.merge(final_all_units_df, successful_unit_concept_ids_by_site, on = 'src_hpo_id', how = 'left')
+
+final_all_units_df['total_unit_success_rate'] = round(final_all_units_df['number_valid_units'] / final_all_units_df['number_total_rows'] * 100, 2)
+
+final_all_units_df = final_all_units_df.fillna(0)
+
+final_all_units_df = final_all_units_df.sort_values(by='total_unit_success_rate', ascending = False)
+
+final_all_units_df
+
+# # Integration of Units for Selected Measurements
+#
+# #### making the distinction because - according to the [AoU EHR Operations](https://sites.google.com/view/ehrupload/omop-tables/measurement?authuser=0)  page (as of 03/11/2020) - the unit_concept_id are only required for the 'required labs'
+
+# +
+selected_unit_concept_ids_by_site_query = """
+CREATE TABLE `{DATASET}.sites_unit_counts_selected_measurements`
+OPTIONS (
+expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
+)
+AS
+SELECT
+DISTINCT
+mm.src_hpo_id, COUNT(m.measurement_id) as number_total_units_selected_measurements
+FROM
+`{DATASET}.unioned_ehr_measurement` m
+JOIN
+`{DATASET}._mapping_measurement` mm
+ON
+m.measurement_id = mm.measurement_id 
+JOIN
+`{DATASET}.concept_ancestor` ca
+ON
+ca.descendant_concept_id = m.measurement_concept_id
+JOIN
+`{DATASET}.concept` c
+ON
+m.unit_concept_id = c.concept_id
+WHERE
+ca.ancestor_concept_id IN {selected_measurements}
+GROUP BY 1
+ORDER BY number_total_units_selected_measurements DESC
+""".format(DATASET = DATASET, selected_measurements = measurement_codes)
+
+selected_unit_concept_ids_by_site = pd.io.gbq.read_gbq(selected_unit_concept_ids_by_site_query, dialect='standard')
+
+# +
+selected_unit_concept_ids_by_site_query = """
+SELECT
+*
+FROM
+`{DATASET}.sites_unit_counts_selected_measurements`
+""".format(DATASET = DATASET)
+
+selected_unit_concept_ids_by_site = pd.io.gbq.read_gbq(selected_unit_concept_ids_by_site_query, dialect='standard')
+# -
+
+selected_unit_concept_ids_by_site
+
+# #### Below are the 'successful' unit_concept_ids
+
+# +
+successful_selected_unit_concept_ids_by_site_query = """
+CREATE TABLE `{DATASET}.sites_successful_unit_counts_selected_measurements`
+OPTIONS (
+expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
+)
+AS
+SELECT
+DISTINCT
+mm.src_hpo_id, COUNT(m.unit_concept_id) as number_valid_units_selected_measurements
+FROM
+`{DATASET}.unioned_ehr_measurement` m
+JOIN
+`{DATASET}._mapping_measurement` mm
+ON
+m.measurement_id = mm.measurement_id 
+JOIN
+`{DATASET}.concept_ancestor` ca
+ON
+ca.descendant_concept_id = m.measurement_concept_id
+JOIN
+`{DATASET}.concept` c
+ON
+m.unit_concept_id = c.concept_id
+WHERE
+c.standard_concept IN ('S')
+AND
+LOWER(c.domain_id) LIKE '%unit%'
+AND
+ca.ancestor_concept_id IN {selected_measurements}
+GROUP BY 1
+ORDER BY number_valid_units_selected_measurements DESC
+""".format(DATASET = DATASET, selected_measurements = measurement_codes)
+
+successful_selected_unit_concept_ids_by_site = pd.io.gbq.read_gbq(successful_selected_unit_concept_ids_by_site_query, dialect='standard')
+
+# +
+successful_selected_unit_concept_ids_by_site_query = """
+SELECT
+*
+FROM
+`{DATASET}.sites_successful_unit_counts_selected_measurements`
+""".format(DATASET = DATASET)
+
+successful_selected_unit_concept_ids_by_site = pd.io.gbq.read_gbq(successful_selected_unit_concept_ids_by_site_query, dialect='standard')
+# -
+
+successful_selected_unit_concept_ids_by_site
+
+# +
+final_all_units_df = pd.merge(final_all_units_df, selected_unit_concept_ids_by_site, on = 'src_hpo_id', how = 'left')
+
+final_all_units_df = pd.merge(final_all_units_df, successful_selected_unit_concept_ids_by_site, on = 'src_hpo_id', how = 'left')
+# -
+
+final_all_units_df
+
+final_all_units_df['total_proportion_of_units_that_are_selected'] = round(final_all_units_df['number_total_rows'] / final_all_units_df['number_total_units_selected_measurements'] * 100, 2)
+
+
+final_all_units_df['selected_unit_success_rate'] = round(final_all_units_df['number_valid_units_selected_measurements'] / final_all_units_df['number_total_units_selected_measurements'] * 100, 2)
+
+
+# +
+final_all_units_df = final_all_units_df.fillna(0)
+
+final_all_units_df = final_all_units_df.sort_values(by='total_unit_success_rate', ascending = False)
+
+final_all_units_df
+# -
+
+final_all_units_df.to_csv("{cwd}\measurement_units.csv".format(cwd = cwd))
 
 # #  Integration of Routes for Select Drugs:
-#
+# #### This is required for all drugs according to the [AoU EHR Operations Page](https://sites.google.com/view/ehrupload/omop-tables/drug_exposure?authuser=0) 
 
-diuretics = (974166, 956874, 970250, 1395058, 904542, 942350, 932745, 907013,
-             978555, 991382, 1309799)
-
-ccb = (1332418, 1328165, 1318853, 1307863, 1353776, 1318137)
-
-vaccine = (45637323, 529411, 529303, 42800027, 45658522, 45628027, 529218,
-           36212685, 40163692, 528323, 528986, 792777, 596876)
-
-oralhypoglycemics = (1503297, 1560171, 1580747, 1559684, 1525215, 1597756,
-                     45774751, 40239216, 40166035, 1516766, 1529331)
-
-opioids = (1124957, 1103314, 1201620, 1174888, 1126658, 1110410, 1154029,
-           1103640, 1102527)
-
-antibiotics = (1734104, 1836430, 1713332, 1797513, 1705674, 1786621, 1742253,
-               997881, 1707164, 1738521, 1759842, 1746940, 902722, 45892419,
-               1717327, 1777806, 1836948, 1746114, 1775741)
-
-statins = (1551860, 1545958, 1539403, 1510813, 1592085, 1549686, 40165636)
-
-msknsaids = (1115008, 1177480, 1124300, 1178663, 1136980, 1118084, 1150345,
-             1236607, 1395573, 1146810)
-
-painnsaids = (1177480, 1125315, 1112807, 1115008, 45660697, 45787568, 36156482,
-              45696636, 45696805)
-
-ace_inhibitors = (1308216, 1341927, 1335471, 1331235, 1334456, 1340128, 1363749)
-
-drugs = diuretics + ccb + vaccine + oralhypoglycemics + opioids + antibiotics + statins + msknsaids + painnsaids + ace_inhibitors
-
-# ## Antibiotics
-
-antibiotics_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-            INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-            INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-                 ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, antibiotics, DATASET, DATASET,
-               DATASET, DATASET, antibiotics, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET),
-                                             dialect='standard')
-antibiotics_standard_df.shape
-
-antibiotics_standard_df
+# #### Getting the numbers for all of the route concept IDs by site
 
 # +
-# antibiotics_standard_df.to_csv("data\\antibiotics_standard_df.csv")
-# -
+route_concept_ids_by_site_query = """
+CREATE TABLE `{DATASET}.sites_route_counts`
+OPTIONS (
+expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
+)
+AS
+SELECT
+DISTINCT
+mde.src_hpo_id, COUNT(de.drug_exposure_id) as number_total_routes
+FROM
+`{DATASET}.unioned_ehr_drug_exposure` de
+JOIN
+`{DATASET}._mapping_drug_exposure` mde
+ON
+de.drug_exposure_id = mde.drug_exposure_id 
+JOIN
+`{DATASET}.concept` c
+ON
+de.route_concept_id = c.concept_id 
+GROUP BY 1
+ORDER BY number_total_routes DESC
+""".format(DATASET = DATASET)
 
-# ## Ccb
-
-ccb_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-            INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-            INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-                 ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, ccb, DATASET, DATASET, DATASET,
-               DATASET, ccb, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                     dialect='standard')
-ccb_standard_df.shape
-
-ccb_standard_df
+route_concept_ids_by_site = pd.io.gbq.read_gbq(route_concept_ids_by_site_query, dialect='standard')
 
 # +
-# cbc_standard_df.to_csv("data\\cbc_standard_df.csv")
+route_concept_ids_by_site_query = """
+SELECT
+*
+FROM
+`{DATASET}.sites_route_counts`
+""".format(DATASET = DATASET)
+
+route_concept_ids_by_site = pd.io.gbq.read_gbq(route_concept_ids_by_site_query, dialect='standard')
 # -
 
-# ## Diuretics
+route_concept_ids_by_site
 
-diuretics_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-                      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, diuretics, DATASET, DATASET, DATASET,
-               DATASET, diuretics, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                           dialect='standard')
-diuretics_standard_df.shape
-
-diuretics_standard_df
+# #### Below are the "successful" route concept IDs
 
 # +
-# diuretics_standard_df.to_csv("data\\diuretics_standard_df.csv")
-# -
+successful_route_concept_ids_by_site_query = """
+CREATE TABLE `{DATASET}.sites_successful_route_counts`
+OPTIONS (
+expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
+)
+AS
+SELECT
+DISTINCT
+mde.src_hpo_id, COUNT(de.drug_exposure_id) as number_valid_routes
+FROM
+`{DATASET}.unioned_ehr_drug_exposure` de
+JOIN
+`{DATASET}._mapping_drug_exposure` mde
+ON
+de.drug_exposure_id = mde.drug_exposure_id 
+JOIN
+`{DATASET}.concept` c
+ON
+de.route_concept_id = c.concept_id
+WHERE
+c.standard_concept IN ('S')
+AND
+LOWER(c.domain_id) LIKE '%route%'
+GROUP BY 1
+ORDER BY number_valid_routes DESC
+""".format(DATASET = DATASET)
 
-# ## Opioids
-
-opioids_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-                      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, opioids, DATASET, DATASET, DATASET,
-               DATASET, opioids, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                         dialect='standard')
-opioids_standard_df.shape
-
-opioids_standard_df
+successful_route_concept_ids_by_site = pd.io.gbq.read_gbq(successful_route_concept_ids_by_site_query, dialect='standard')
 
 # +
-# opioids_standard_df.to_csv("data\\opioids_standard_df.csv")
+successful_route_concept_ids_by_site_query = """
+SELECT
+*
+FROM
+`{DATASET}.sites_successful_route_counts`
+""".format(DATASET = DATASET)
+
+successful_route_concept_ids_by_site = pd.io.gbq.read_gbq(successful_route_concept_ids_by_site_query, dialect='standard')
 # -
 
-# ## Statins
+successful_route_concept_ids_by_site
 
-statins_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
+final_all_routes_df = pd.merge(site_df, route_concept_ids_by_site, on = 'src_hpo_id', how = 'left')
 
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-                      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
+final_all_routes_df = pd.merge(final_all_routes_df, successful_route_concept_ids_by_site, on = 'src_hpo_id', how = 'left')
 
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, statins, DATASET, DATASET, DATASET,
-               DATASET, statins, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                         dialect='standard')
-statins_standard_df.shape
+final_all_routes_df['total_route_success_rate'] = round(final_all_routes_df['number_valid_routes'] / final_all_routes_df['number_total_routes'] * 100, 2)
 
-statins_standard_df
+final_all_routes_df = final_all_routes_df.fillna(0)
 
-# +
-# statins_standard_df.to_csv("data\\statins_standard_df.csv")
-# -
+final_all_routes_df = final_all_routes_df.sort_values(by='total_route_success_rate', ascending = False)
 
-# ## msknsaids
+final_all_routes_df
 
-msknsaids_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-                      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, msknsaids, DATASET, DATASET, DATASET,
-               DATASET, msknsaids, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                           dialect='standard')
-msknsaids_standard_df.shape
-
-msknsaids_standard_df
-
-# +
-# msknsaids_standard_df.to_csv("data\\msknsaids_standard_df.csv")
-# -
-
-# ## oralhypoglycemics
-
-oralhypoglycemics_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-                ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, oralhypoglycemics, DATASET, DATASET,
-               DATASET, DATASET, oralhypoglycemics, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET),
-                                                   dialect='standard')
-oralhypoglycemics_standard_df.shape
-
-oralhypoglycemics_standard_df
-
-# +
-# oralhypoglycemics_standard_df.to_csv("data\\oralhypoglycemics_standard_df.csv")
-# -
-
-# ## painnsaids
-
-painnsaids_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-                      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, painnsaids, DATASET, DATASET, DATASET,
-               DATASET, painnsaids, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                            dialect='standard')
-painnsaids_standard_df.shape
-
-painnsaids_standard_df
-
-# +
-# painnsaids_standard_df.to_csv("data\\painnsaids_standard_df.csv")
-# -
-
-# ## vaccine
-
-vaccine_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-                      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, vaccine, DATASET, DATASET, DATASET,
-               DATASET, vaccine, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                         dialect='standard')
-vaccine_standard_df.shape
-
-vaccine_standard_df
-
-# +
-# vaccine_standard_df.to_csv("data\\vaccine_standard_df.csv")
-# -
-
-# ## ace_inhibitors
-
-ace_inhibitors_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE      ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-     ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, ace_inhibitors, DATASET, DATASET,
-               DATASET, DATASET, ace_inhibitors, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET),
-                                                dialect='standard')
-ace_inhibitors_standard_df.shape
-
-ace_inhibitors_standard_df
-
-# +
-# ace_inhibitors_standard_df.to_csv("data\\ace_inhibitors_standard_df.csv")
-# -
-
-# ## Drugs
-
-drugs_standard_df = pd.io.gbq.read_gbq('''
-    WITH
-        data1 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_total_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-            INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            WHERE ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        ),
-
-        data2 AS (
-            SELECT
-                src_hpo_id,
-                COUNT(*) AS route_well_defined_row
-            FROM
-               `{}.unioned_ehr_drug_exposure` AS t1
-             INNER JOIN
-                 `{}.concept_ancestor` ca
-             ON
-                 t1.drug_concept_id = ca.descendant_concept_id
-            INNER JOIN
-                (SELECT
-                    DISTINCT * 
-                FROM
-                     `{}._mapping_drug_exposure`)  AS t2
-            ON
-                t1.drug_exposure_id=t2.drug_exposure_id
-            INNER JOIN
-                `{}.concept` as t3
-            ON
-                t3.concept_id = t1.route_concept_id
-            WHERE 
-                 t3.standard_concept="S"
-                 and
-                 t3.domain_id="Route"
-                 and
-                 ca.ancestor_concept_id in {}
-            GROUP BY
-                1
-        )
-
-    SELECT
-        data1.src_hpo_id,
-        route_well_defined_row,
-        route_total_row,
-        round(100*(route_well_defined_row/route_total_row),1) as route_success_rate
-    FROM
-        data1
-    LEFT OUTER JOIN
-        data2
-    ON
-        data1.src_hpo_id=data2.src_hpo_id
-    ORDER BY
-        1 DESC
-    '''.format(DATASET, DATASET, DATASET, drugs, DATASET, DATASET, DATASET,
-               DATASET, drugs, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET),
-                                       dialect='standard')
-drugs_standard_df.shape
-
-drugs_standard_df
-
-# +
-# drugs_standard_df.to_csv("data\\drugs_standard_df.csv")
-# -
-
-antibiotics_standard_df = antibiotics_standard_df.fillna(0)
-ccb_standard_df = ccb_standard_df.fillna(0)
-diuretics_standard_df = diuretics_standard_df.fillna(0)
-opioids_standard_df = opioids_standard_df.fillna(0)
-statins_standard_df = statins_standard_df.fillna(0)
-msknsaids_standard_df = msknsaids_standard_df.fillna(0)
-oralhypoglycemics_standard_df = oralhypoglycemics_standard_df.fillna(0)
-painnsaids_standard_df = painnsaids_standard_df.fillna(0)
-vaccine_standard_df = vaccine_standard_df.fillna(0)
-ace_inhibitors_standard_df = ace_inhibitors_standard_df.fillna(0)
-drugs_standard_df = drugs_standard_df.fillna(0)
-
-antibiotics_standard_df = antibiotics_standard_df[[
-    "src_hpo_id", "route_success_rate"
-]]
-ccb_standard_df = ccb_standard_df[["src_hpo_id", "route_success_rate"]]
-diuretics_standard_df = diuretics_standard_df[[
-    "src_hpo_id", "route_success_rate"
-]]
-opioids_standard_df = opioids_standard_df[["src_hpo_id", "route_success_rate"]]
-statins_standard_df = statins_standard_df[["src_hpo_id", "route_success_rate"]]
-msknsaids_standard_df = msknsaids_standard_df[[
-    "src_hpo_id", "route_success_rate"
-]]
-oralhypoglycemics_standard_df = oralhypoglycemics_standard_df[[
-    "src_hpo_id", "route_success_rate"
-]]
-painnsaids_standard_df = painnsaids_standard_df[[
-    "src_hpo_id", "route_success_rate"
-]]
-vaccine_standard_df = vaccine_standard_df[["src_hpo_id", "route_success_rate"]]
-ace_inhibitors_standard_df = ace_inhibitors_standard_df[[
-    "src_hpo_id", "route_success_rate"
-]]
-drugs_standard_df = drugs_standard_df[["src_hpo_id", "route_success_rate"]]
-
-antibiotics_standard_df = antibiotics_standard_df.rename(
-    columns={"route_success_rate": "antibiotics_success_rate"})
-ccb_standard_df = ccb_standard_df.rename(
-    columns={"route_success_rate": "ccb_success_rate"})
-diuretics_standard_df = diuretics_standard_df.rename(
-    columns={"route_success_rate": "diuretics_success_rate"})
-opioids_standard_df = opioids_standard_df.rename(
-    columns={"route_success_rate": "opioids_success_rate"})
-statins_standard_df = statins_standard_df.rename(
-    columns={"route_success_rate": "statins_success_rate"})
-msknsaids_standard_df = msknsaids_standard_df.rename(
-    columns={"route_success_rate": "msknsaids_success_rate"})
-oralhypoglycemics_standard_df = oralhypoglycemics_standard_df.rename(
-    columns={"route_success_rate": "oralhypoglycemics_success_rate"})
-painnsaids_standard_df = painnsaids_standard_df.rename(
-    columns={"route_success_rate": "painnsaids_success_rate"})
-vaccine_standard_df = vaccine_standard_df.rename(
-    columns={"route_success_rate": "vaccine_success_rate"})
-ace_inhibitors_standard_df = ace_inhibitors_standard_df.rename(
-    columns={"route_success_rate": "ace_inhibitors_success_rate"})
-drugs_standard_df = drugs_standard_df.rename(
-    columns={"route_success_rate": "drugs_overall_success_rate"})
-liste = [
-    antibiotics_standard_df, ccb_standard_df, diuretics_standard_df,
-    opioids_standard_df, statins_standard_df, msknsaids_standard_df,
-    oralhypoglycemics_standard_df, painnsaids_standard_df, vaccine_standard_df,
-    ace_inhibitors_standard_df
-]
-
-for i in liste:
-    drugs_standard_df = pd.merge(drugs_standard_df,
-                                 i,
-                                 how="outer",
-                                 on="src_hpo_id")
-
-# +
-
-drugs_standard_df = pd.merge(drugs_standard_df,
-                             site_df,
-                             how='outer',
-                             on='src_hpo_id')
-drugs_standard_df = drugs_standard_df.fillna("No Data")
-drugs_standard_df
-# -
-
-drugs_standard_df.to_csv("data\\drug_routes.csv")
+final_all_routes_df.to_csv("{cwd}\drug_routes.csv".format(cwd = cwd))
