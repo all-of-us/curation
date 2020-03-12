@@ -4,12 +4,13 @@ import logging
 import sys
 
 # Third party imports
-from googleapiclient.errors import HttpError
+from google.api_core.exceptions import BadRequest
 import pandas as pd
 
 # Project imports
 from notebooks import bq
 import common
+from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids as srp
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -17,11 +18,14 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 PARTICIPANT_ROWS = """
-SELECT '{table}' AS table_id, COUNT(*) AS all_count, 
-COUNT(IF({table_id} > {const}, 1, NULL)) as ehr_count
+SELECT '{table}' AS table_id, {count_types}
 FROM `{project}.{dataset}.{table}`
 WHERE person_id IN ({pids_string})
 """
+
+ALL_COUNTS = "COUNT(*) AS all_count"
+EHR_COUNTS = "COUNT(IF({table_id} > {const}, 1, NULL)) as ehr_count"
+ZERO_COUNTS = "0 AS ehr_count"
 
 UNION_ALL = """
 UNION ALL
@@ -38,7 +42,7 @@ COUNT = 'count'
 
 # Query to list all tables within a dataset that contains person_id in the schema
 PERSON_TABLE_QUERY = """
-SELECT table_name, column_name
+SELECT table_name
 FROM `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
 WHERE table_name IN
 (SELECT table_name
@@ -52,7 +56,7 @@ TABLE_NAME_COLUMN = 'table_name'
 COLUMN_NAME = 'column_name'
 
 
-def get_tables_with_person_id(project_id, dataset_id):
+def get_cdm_tables_with_person_id(project_id, dataset_id):
     """
     Get df of table_ids(first column) and table names that have a person_id column as the second column
     
@@ -66,7 +70,7 @@ def get_tables_with_person_id(project_id, dataset_id):
     return result_df
 
 
-def get_pid_counts(project_id, dataset_id, hpo_id, pids_string):
+def get_pid_counts(project_id, dataset_id, hpo_id, pids_string, for_cdm):
     """
     Returns dataframe with table_name, all_counts and ehr_counts of rows pertaining to the participants
 
@@ -74,23 +78,30 @@ def get_pid_counts(project_id, dataset_id, hpo_id, pids_string):
     :param dataset_id: identifies the dataset
     :param hpo_id: identifies the hpo site that submitted the pids
     :param pids_string: string containing pids or pid_query
+    :param for_cdm: Boolean indicating if counting only cdm tables
     :return: df containing table_name, all_counts and ehr_counts
     """
-    person_tables = get_tables_with_person_id(project_id,
-                                              dataset_id).get_values()
-    pid_query_list = []
+    cdm_person_tables = get_cdm_tables_with_person_id(project_id,
+                                                      dataset_id).get_values()
+    all_person_tables = srp.get_tables_with_person_id(project_id, dataset_id)
+    if for_cdm:
+        person_tables = cdm_person_tables
+    else:
+        person_tables = list(set(all_person_tables) - set(cdm_person_tables))
     count_df = pd.DataFrame(columns=['table_id', 'all_count', 'ehr_count'])
-
-    for table, table_id in person_tables:
-        pid_table_query = PARTICIPANT_ROWS.format(
-            project=project_id,
-            dataset=dataset_id,
-            table=table,
-            table_id=table_id,
-            const=common.ID_CONSTANT_FACTOR + common.RDR_ID_CONSTANT,
-            pids_string=pids_string)
+    pid_query_list = []
+    for table in person_tables:
+        count_types = ALL_COUNTS + ',' + ZERO_COUNTS
+        if for_cdm:
+            count_types = ALL_COUNTS + ',' + EHR_COUNTS.format(
+                table_id=table + '_id',
+                const=common.ID_CONSTANT_FACTOR + common.RDR_ID_CONSTANT)
+        pid_table_query = PARTICIPANT_ROWS.format(project=project_id,
+                                                  dataset=dataset_id,
+                                                  table=table,
+                                                  count_types=count_types,
+                                                  pids_string=pids_string)
         pid_query_list.append(pid_table_query)
-
     if len(pid_query_list) > 20:
         pid_query_list = [
             pid_query for pid_query in pid_query_list if hpo_id in pid_query
@@ -115,8 +126,21 @@ def estimate_prevalence(project_id, hpo_id, pids_string):
     for dataset in all_datasets:
         dataset_id = dataset.dataset_id
         try:
-            count_summaries = get_pid_counts(project_id, dataset_id, hpo_id,
-                                             pids_string)
+            count_df_cdm = get_pid_counts(project_id,
+                                          dataset_id,
+                                          hpo_id,
+                                          pids_string,
+                                          for_cdm=True)
+            count_df_all = get_pid_counts(project_id,
+                                          dataset_id,
+                                          hpo_id,
+                                          pids_string,
+                                          for_cdm=False)
+            count_summaries = pd.concat([count_df_cdm, count_df_all])
+
+            if 'ehr' in dataset_id:
+                count_summaries['ehr_count'] = count_summaries['all_count']
+
             non_zero_counts = count_summaries[
                 count_summaries['all_count'] > 0].get_values()
             if non_zero_counts.size > 0:
@@ -124,7 +148,7 @@ def estimate_prevalence(project_id, hpo_id, pids_string):
                     logging.info(
                         'DATASET_ID: {}\tTABLE_ID: {}\tALL_COUNT: {}\tEHR_COUNT: {}'
                         .format(dataset_id, *count_row))
-        except HttpError:
+        except BadRequest:
             logging.exception('Dataset %s could not be analyzed' % dataset_id)
     return
 
