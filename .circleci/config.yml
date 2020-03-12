@@ -36,7 +36,12 @@ commands:
       - run:
           name: Show bashrc file
           command: cat ${BASH_ENV}
-
+  lint_teardown:
+    steps:
+      - save_cache:
+          paths:
+            ~/curation_venv
+          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
   test_setup:
     steps:
       - checkout:
@@ -111,6 +116,7 @@ jobs:
           name: Checking Python lint with Pylint
           working _directory: ~/curation
           command: pylint -E data_steward tests
+      - lint_teardown
 
   unit_test:
     <<: *job_defaults
@@ -133,6 +139,7 @@ jobs:
           no_output_timeout: 300s
           when:  always
       - test_teardown
+
   integration_test:
     <<: *job_defaults
     steps:
