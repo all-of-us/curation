@@ -23,9 +23,9 @@ FROM `{project}.{dataset}.{table}`
 WHERE person_id IN ({pids_string})
 """
 
-ALL_COUNTS = "COUNT(*) AS all_count"
-EHR_COUNTS = "COUNT(IF({table_id} > {const}, 1, NULL)) as ehr_count"
-ZERO_COUNTS = "0 AS ehr_count"
+SELECT_ALL_COUNT = "COUNT(*) AS all_count"
+SELECT_EHR_COUNT = "COUNT(IF({table_id} > {const}, 1, NULL)) as ehr_count"
+SELECT_ZERO_COUNT = "0 AS ehr_count"
 
 UNION_ALL = """
 UNION ALL
@@ -39,17 +39,15 @@ FROM `{pid_project}.{sandbox_dataset}.{pid_table}`
 DATASET_ID = 'dataset_id'
 TABLE_ID = 'table_id'
 COUNT = 'count'
+EHR_COUNT = 'ehr_count'
+ALL_COUNT = 'all_count'
 
 # Query to list all tables within a dataset that contains person_id in the schema
 PERSON_TABLE_QUERY = """
 SELECT table_name
 FROM `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
-WHERE table_name IN
-(SELECT table_name
-FROM `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
 WHERE COLUMN_NAME = 'person_id'
-AND ordinal_position = 2)
-AND ordinal_position = 1
+AND ordinal_position = 2
 """
 
 TABLE_NAME_COLUMN = 'table_name'
@@ -62,12 +60,13 @@ def get_cdm_tables_with_person_id(project_id, dataset_id):
     
     :param project_id: identifies the project
     :param dataset_id: identifies the dataset
-    :return dataframe containing table_id, table_name
+    :return list containing tables
     """
     person_table_query = PERSON_TABLE_QUERY.format(project=project_id,
                                                    dataset=dataset_id)
     result_df = bq.query(person_table_query)
-    return result_df
+    tables_list = result_df.get(TABLE_NAME_COLUMN).to_list()
+    return tables_list
 
 
 def get_pid_counts(project_id, dataset_id, hpo_id, pids_string, for_cdm):
@@ -78,22 +77,21 @@ def get_pid_counts(project_id, dataset_id, hpo_id, pids_string, for_cdm):
     :param dataset_id: identifies the dataset
     :param hpo_id: identifies the hpo site that submitted the pids
     :param pids_string: string containing pids or pid_query
-    :param for_cdm: Boolean indicating if counting only cdm tables
+    :param for_cdm: Boolean indicating if counting only cdm tables (excl. person)
     :return: df containing table_name, all_counts and ehr_counts
     """
-    cdm_person_tables = get_cdm_tables_with_person_id(project_id,
-                                                      dataset_id).get_values()
+    cdm_person_tables = get_cdm_tables_with_person_id(project_id, dataset_id)
     all_person_tables = srp.get_tables_with_person_id(project_id, dataset_id)
     if for_cdm:
         person_tables = cdm_person_tables
     else:
         person_tables = list(set(all_person_tables) - set(cdm_person_tables))
-    count_df = pd.DataFrame(columns=['table_id', 'all_count', 'ehr_count'])
+    count_df = pd.DataFrame(columns=[TABLE_ID, ALL_COUNT, EHR_COUNT])
     pid_query_list = []
     for table in person_tables:
-        count_types = ALL_COUNTS + ',' + ZERO_COUNTS
+        count_types = SELECT_ALL_COUNT + ',' + SELECT_ZERO_COUNT
         if for_cdm:
-            count_types = ALL_COUNTS + ',' + EHR_COUNTS.format(
+            count_types = SELECT_ALL_COUNT + ',' + SELECT_EHR_COUNT.format(
                 table_id=table + '_id',
                 const=common.ID_CONSTANT_FACTOR + common.RDR_ID_CONSTANT)
         pid_table_query = PARTICIPANT_ROWS.format(project=project_id,
@@ -139,10 +137,10 @@ def estimate_prevalence(project_id, hpo_id, pids_string):
             count_summaries = pd.concat([count_df_cdm, count_df_all])
 
             if 'ehr' in dataset_id:
-                count_summaries['ehr_count'] = count_summaries['all_count']
+                count_summaries[EHR_COUNT] = count_summaries[ALL_COUNT]
 
             non_zero_counts = count_summaries[
-                count_summaries['all_count'] > 0].get_values()
+                count_summaries[ALL_COUNT] > 0].get_values()
             if non_zero_counts.size > 0:
                 for count_row in non_zero_counts:
                     logging.info(
