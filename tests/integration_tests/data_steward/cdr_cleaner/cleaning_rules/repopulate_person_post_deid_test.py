@@ -7,7 +7,6 @@ from googleapiclient.errors import HttpError
 
 # Project imports
 import bq_utils
-import common
 from cdr_cleaner import clean_cdr_engine
 from cdr_cleaner.cleaning_rules import repopulate_person_post_deid
 from tests import test_util
@@ -48,7 +47,7 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
         print('**************************************************************')
 
     def assertPersonFields(self, person, want):
-        for (k, v) in want.items():
+        for k in want.keys():
             self.assertIn(k, person)
             self.assertEqual(person[k], want[k])
 

@@ -36,7 +36,10 @@ class SnapshotByQueryTest(unittest.TestCase):
   CAST(race_source_value AS STRING) AS race_source_value,
   CAST(race_source_concept_id AS INT64) AS race_source_concept_id,
   CAST(ethnicity_source_value AS STRING) AS ethnicity_source_value,
-  CAST(ethnicity_source_concept_id AS INT64) AS ethnicity_source_concept_id
+  CAST(ethnicity_source_concept_id AS INT64) AS ethnicity_source_concept_id,
+  CAST(sex_at_birth_concept_id AS INT64) AS sex_at_birth_concept_id,
+  CAST(sex_at_birth_source_concept_id AS INT64) AS sex_at_birth_source_concept_id,
+  CAST(sex_at_birth_source_value AS STRING) AS sex_at_birth_source_value
 FROM
   `test-project.test-dataset.person`"""
         expected_query = re.sub(WHITESPACE, SPACE, expected_query)
