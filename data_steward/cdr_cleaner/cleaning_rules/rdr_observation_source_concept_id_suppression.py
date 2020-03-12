@@ -1,5 +1,5 @@
 """
-Removing three irrelevant observation_source_concept_ids from the RDR dataset.
+Removing irrelevant observation records from the RDR dataset.
 
 Original Issue:  DC-529
 
@@ -13,18 +13,21 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
 SAVE_TABLE_NAME = 'dc_529_obs_rows_dropped'
 
+# Save rows that will be dropped to a sandboxed dataset.
 DROP_SELECTION_QUERY = (
     'CREATE OR REPLACE TABLE `{project}.{sandbox}.{drop_table}` AS '
     'SELECT * '
     'FROM `{project}.{dataset}.observation` '
     'WHERE observation_source_concept_id IN (43530490, 43528818, 43530333)')
 
+# Query uses 'NOT EXISTS' because the observation_source_concept_id field
+# is nullable.
 DROP_QUERY = (
     'SELECT * FROM `{project}.{dataset}.observation` AS o '
     'WHERE NOT EXISTS ( '
@@ -51,24 +54,20 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         desc = (
             'Remove records from the rdr dataset where '
             'observation_source_concept_id in (43530490, 43528818, 43530333)')
-        super().__init__(jira_issue_numbers=['DC-529'],
+        super().__init__(issue_numbers=['DC-529'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
 
-    def get_query_dictionary_list(self):
+    def get_query_specs(self):
         """
-        Get dictionary list of queries to execute.
+        Return a list of dictionary query specifications.
 
-        :param project_id:  The project to query.
-        :param dataset_id:  The dataset to query.
-        :param sandbox_id:  The sandbox dataset id to store intermediate
-            results in.
-
-        :return:  A list of dictionaries.  Each contains a single query.
-            They may contain optional parameters describing the query.
+        :return:  A list of dictionaries.  Each dictionary contains a
+            single query and a specification for how to execute that query.
+            They specifications are optional but the query is required.
         """
         save_dropped_rows = {
             cdr_consts.QUERY:
@@ -93,7 +92,7 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
 
         return [save_dropped_rows, drop_rows_query]
 
-    def setup_query_execution(self):
+    def setup_rule(self):
         """
         Function to run any data upload options before executing a query.
         """
@@ -108,9 +107,9 @@ if __name__ == '__main__':
     clean_engine.add_console_logging(ARGS.console_log)
     rdr_cleaner = ObservationSourceConceptIDRowSuppression(
         ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
-    query_list = rdr_cleaner.get_query_dictionary_list()
+    query_list = rdr_cleaner.get_query_specs()
 
     if ARGS.list_queries:
-        rdr_cleaner.print_queries()
+        rdr_cleaner.log_queries()
     else:
         clean_engine.clean_dataset(ARGS.project_id, query_list)
