@@ -1,7 +1,6 @@
 # Python imports
 import argparse
 import logging
-import sys
 
 # Third party imports
 from google.api_core.exceptions import BadRequest
@@ -11,11 +10,6 @@ import pandas as pd
 from notebooks import bq
 import common
 from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids as srp
-
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 PARTICIPANT_ROWS = """
 SELECT '{table}' AS table_id, {count_types}
@@ -169,11 +163,14 @@ def get_pids(pid_list=None,
     if pid_list:
         # convert to string and trim the brackets off
         pid_list = [int(pid) for pid in pid_list]
-        return str(pid_list)[1:-1]
+        bq_pid_str = str(pid_list)[1:-1]
+        logging.info(f"Generated BQ pid string: {bq_pid_str}")
+        return bq_pid_str
     elif pid_project_id and sandbox_dataset_id and pid_table_id:
         pid_query = PID_QUERY.format(pid_project=pid_project_id,
                                      sandbox_dataset=sandbox_dataset_id,
                                      pid_table=pid_table_id)
+        logging.info(f"Generated pid query: {pid_query}")
         return pid_query
     else:
         raise ValueError('Please specify pids or pid_table')
