@@ -17,49 +17,49 @@
 # - They may be using a unit_concept_id that does not have a correspondining 'conversion' in '[unit_mapping.csv](https://github.com/all-of-us/curation/blob/develop/data_steward/resources/unit_mapping.csv)'.
 
 # +
-from notebooks import bq, render, parameters
+import bq_utils
+from notebooks import parameters
 
 # %matplotlib inline
 import matplotlib.pyplot as plt
 import numpy as np
-from pandas.plotting import table 
 import six
 import scipy.stats
-import math
-import seaborn as sns
 import pandas as pd
-import matplotlib
 
 # +
 measurement_ancestors = [
-# lipids
-# 40782589, 40795800, 40772572
+    # lipids
+    # 40782589, 40795800, 40772572
 
-# #cbc
-# 40789356, 40789120, 40789179, 40772748,
-# 40782735, 40789182, 40786033, 40779159
+    # #cbc
+    # 40789356, 40789120, 40789179, 40772748,
+    # 40782735, 40789182, 40786033, 40779159
 
-# #cbc w diff
-# 40785788, 40785796, 40779195, 40795733,
-# 40795725, 40772531, 40779190, 40785793,
-# 40779191, 40782561, 40789266
+    # #cbc w diff
+    # 40785788, 40785796, 40779195, 40795733,
+    # 40795725, 40772531, 40779190, 40785793,
+    # 40779191, 40782561, 40789266
 
-#cmp
-# 3049187, 3053283, 40775801, 40779224,
-# 40782562, 40782579, 40785850, 40785861,
-# 40785869, 40789180, 40789190, 40789527,
-# 40791227, 40792413, 40792440, 40795730,
-# 40795740, 40795754
-    
-#physical measurement
-40654163, 40655804, 40654162, 40655805,
-40654167, 40654164
+    #cmp
+    # 3049187, 3053283, 40775801, 40779224,
+    # 40782562, 40782579, 40785850, 40785861,
+    # 40785869, 40789180, 40789190, 40789527,
+    # 40791227, 40792413, 40792440, 40795730,
+    # 40795740, 40795754
+
+    #physical measurement
+    40654163,
+    40655804,
+    40654162,
+    40655805,
+    40654167,
+    40654164
 ]
 # -
 
 DATASET = parameters.LATEST_DATASET
-print(
-"""
+print("""
 DATASET TO USE: {}
 """.format(DATASET))
 
@@ -100,10 +100,10 @@ def find_descendants(DATASET, ancestor_concept):
     ca.ancestor_concept_id IN ({})
     GROUP BY 1)""".format(DATASET, DATASET, ancestor_concept)
 
-    desc_concepts_df = bq.query(descendant_concepts)
-    
+    desc_concepts_df = bq_utils.query_to_df(descendant_concepts)
+
     descendant_concept_ids = desc_concepts_df['measurement_concept_id'].tolist()
-    
+
     string_desc_concepts = "("
     num_descs = len(descendant_concept_ids)
 
@@ -113,7 +113,7 @@ def find_descendants(DATASET, ancestor_concept):
             string_desc_concepts += ", "
         else:
             string_desc_concepts += ")"
-    
+
     return string_desc_concepts
 
 
@@ -138,7 +138,7 @@ def find_total_number_of_units_for_lab_type(DATASET, string_desc_concepts):
     tot_units (int): represents the total number of recoreds for the particular
         measurement set that have a unit_concept ID
     """
-    
+
     total_unit_concept_names = """
     SELECT SUM(a.count) as tot_concepts
     FROM
@@ -161,7 +161,7 @@ def find_total_number_of_units_for_lab_type(DATASET, string_desc_concepts):
         ORDER BY count DESC) a
     """.format(DATASET, DATASET, string_desc_concepts)
 
-    tot_units_df = bq.query(total_unit_concept_names)
+    tot_units_df = bq_utils.query_to_df(total_unit_concept_names)
     tot_units = tot_units_df['tot_concepts'].iloc[0]
 
     return tot_units
@@ -209,16 +209,17 @@ def find_most_popular_unit_type(tot_units, DATASET, string_desc_concepts):
     ORDER BY count DESC
     """.format(tot_units, DATASET, DATASET, string_desc_concepts)
 
-    units_for_lab_df = bq.query(units_for_lab)
-    
+    units_for_lab_df = bq_utils.query_to_df(units_for_lab)
+
     desc_concept_ids = units_for_lab_df['unit_name'].tolist()
 
     most_pop_unit = desc_concept_ids[0]
-    
+
     return most_pop_unit
 
 
-def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ancestor_concept):
+def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts,
+                              ancestor_concept):
     """
     Function is used to determine select metrics for the whole dataset for all
     of the measurement concept IDs that represent a particular measurement set.
@@ -267,7 +268,7 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ance
     concept_name (string): string representing the concept name (cluster of measurements)
         that is being investigated
     """
-    
+
     find_range_overall = """
     SELECT
     m.value_as_number
@@ -291,10 +292,10 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ance
     m.value_as_number ASC
     """.format(DATASET, DATASET, most_pop_unit, string_desc_concepts)
 
-    measurements_for_lab_and_unit = bq.query(find_range_overall)
+    measurements_for_lab_and_unit = bq_utils.query_to_df(find_range_overall)
 
     values = measurements_for_lab_and_unit['value_as_number'].tolist()
-    
+
     find_ancestor_lab = """
     SELECT
     DISTINCT
@@ -304,11 +305,11 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ance
     WHERE
     c.concept_id = {}
     """.format(DATASET, ancestor_id)
-    
-    concept_name = bq.query(find_ancestor_lab)
+
+    concept_name = bq_utils.query_to_df(find_ancestor_lab)
     concept_name = concept_name['concept_name'].tolist()
     concept_name = str(concept_name[0].lower())  # actual name
-    
+
     num_records = len(values)
     mean = np.mean(values)
 
@@ -322,7 +323,8 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ance
 
     stdev = np.std(np.asarray(values))
 
-    print("There are {} records for concept: {}\n".format(num_records, concept_name))
+    print("There are {} records for concept: {}\n".format(
+        num_records, concept_name))
     print("The 10th percentile is: {}".format(decile1))
     print("The 25th percentile is: {}".format(quartile1))
     print("The 50th percentile is: {}".format(median))
@@ -331,12 +333,11 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts, ance
 
     print("The mean is: {}".format(round(mean, 2)))
     print("The standard deviation is: {}".format(round(stdev, 2)))
-    
+
     return median, stdev, num_records, mean, decile1, quartile1, median, quartile3, decile9, concept_name
 
 
-def create_site_distribution_df(
-    DATASET, string_desc_concepts, most_pop_unit):
+def create_site_distribution_df(DATASET, string_desc_concepts, most_pop_unit):
     """
     Function is used to create and return a dataframe that shows the mean and standard deviation
     for a site's values (of a particular measurement set, for the most popular unit_concept)
@@ -359,7 +360,7 @@ def create_site_distribution_df(
         each site's values (of a particular measurement set, for the most popular unit_concept)
         compared to the values for the entire dataset.
     """
-    
+
     find_site_distribution = """
     SELECT
     DISTINCT
@@ -407,13 +408,13 @@ def create_site_distribution_df(
     ORDER BY median DESC
     """.format(DATASET, DATASET, DATASET, string_desc_concepts, most_pop_unit)
 
-    site_value_distribution_df = bq.query(find_site_distribution)
-    
+    site_value_distribution_df = bq_utils.query_to_df(find_site_distribution)
+
     return site_value_distribution_df
 
 
-def generate_aggregate_df(median, decile1, quartile1, quartile3, decile9,
-        stdev, num_records, mean):
+def generate_aggregate_df(median, decile1, quartile1, quartile3, decile9, stdev,
+                          num_records, mean):
     """
     Function is used to generate a dataframe that contains information about the
     measurement values (of a particular measurement set, for the most popular unit)
@@ -448,22 +449,25 @@ def generate_aggregate_df(median, decile1, quartile1, quartile3, decile9,
         the values (of a particular measurement set, for the most popular unit_concept)
         across all of the sites
     """
-    
-    data = [{'total_tenth_perc': round(decile1, 2),
-             'total_first_quartile': round(quartile1, 2),
-             'total_median': round(median, 2),
-             'total_third_quartile': round(quartile3, 2),
-             'total_ninetieth_perc': round(decile9, 2),
-             'total_mean': round(mean, 2),
-             'total_stdev': round(stdev, 2),
-             'total_records': round(num_records, 2)}]
-    
+
+    data = [{
+        'total_tenth_perc': round(decile1, 2),
+        'total_first_quartile': round(quartile1, 2),
+        'total_median': round(median, 2),
+        'total_third_quartile': round(quartile3, 2),
+        'total_ninetieth_perc': round(decile9, 2),
+        'total_mean': round(mean, 2),
+        'total_stdev': round(stdev, 2),
+        'total_records': round(num_records, 2)
+    }]
+
     aggregate_df = pd.DataFrame(data)
-    
+
     return aggregate_df
 
 
 # ## Below is the 'main' function that dictates most of the 'flow' of the analysis
+
 
 def run_statistics(ancestor_concept, DATASET):
     """
@@ -495,54 +499,68 @@ def run_statistics(ancestor_concept, DATASET):
         the values (of a particular measurement set, for the most popular unit_concept)
         across all of the sites
     """
-    
+
     descendant_concepts = find_descendants(DATASET, ancestor_concept)
-    
-    tot_units = find_total_number_of_units_for_lab_type(DATASET, descendant_concepts)
-    
-    most_popular_unit = find_most_popular_unit_type(tot_units, DATASET, descendant_concepts)
-    
+
+    tot_units = find_total_number_of_units_for_lab_type(DATASET,
+                                                        descendant_concepts)
+
+    most_popular_unit = find_most_popular_unit_type(tot_units, DATASET,
+                                                    descendant_concepts)
+
     median, stdev, num_records, mean, decile1, quartile1, median, quartile3, decile9, concept_name = \
         metrics_for_whole_dataset(DATASET, most_popular_unit, descendant_concepts, ancestor_concept)
-    
+
     site_value_distribution_df = create_site_distribution_df(
         DATASET, descendant_concepts, most_popular_unit)
-    
-    aggregate_df = generate_aggregate_df(median, decile1, quartile1, quartile3, decile9,
-        stdev, num_records, mean)
-    
+
+    aggregate_df = generate_aggregate_df(median, decile1, quartile1, quartile3,
+                                         decile9, stdev, num_records, mean)
+
     return site_value_distribution_df, most_popular_unit, concept_name, aggregate_df
 
 
 # #### Below cell modified from this [StackOverflow](https://stackoverflow.com/questions/26678467/export-a-pandas-dataframe-as-a-table-image)
 
-def render_mpl_table(data, col_width=15, row_height=0.625, font_size=12,
-                     header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
-                     bbox=[0, 0, 1, 1], header_columns=0,
-                     ax=None, **kwargs):
+
+def render_mpl_table(data,
+                     col_width=15,
+                     row_height=0.625,
+                     font_size=12,
+                     header_color='#40466e',
+                     row_colors=['#f1f1f2', 'w'],
+                     edge_color='w',
+                     bbox=[0, 0, 1, 1],
+                     header_columns=0,
+                     ax=None,
+                     **kwargs):
     """
     Function is used to improve the formatting / image quality of the output. The
     parameters can be changed as needed/desired.
     """
-    
+
     # the np.array added to size is the main determinant for column dimensions
     if ax is None:
-        size = (np.array(data.shape[::-1]) + np.array([2, 1])) * np.array([col_width, row_height])
+        size = (np.array(data.shape[::-1]) + np.array([2, 1])) * np.array(
+            [col_width, row_height])
         fig, ax = plt.subplots(figsize=size)
         ax.axis('off')
 
-    mpl_table = ax.table(cellText=data.values, bbox=bbox, colLabels=data.columns, **kwargs)
+    mpl_table = ax.table(cellText=data.values,
+                         bbox=bbox,
+                         colLabels=data.columns,
+                         **kwargs)
 
     mpl_table.auto_set_font_size(False)
     mpl_table.set_fontsize(font_size)
 
-    for k, cell in  six.iteritems(mpl_table._cells):
+    for k, cell in six.iteritems(mpl_table._cells):
         cell.set_edgecolor(edge_color)
         if k[0] == 0 or k[1] < header_columns:
             cell.set_text_props(weight='bold', color='w')
             cell.set_facecolor(header_color)
         else:
-            cell.set_facecolor(row_colors[k[0]%len(row_colors) ])
+            cell.set_facecolor(row_colors[k[0] % len(row_colors)])
     return ax
 
 
@@ -560,20 +578,20 @@ def replace_name(name):
     name (str): string representing either the concept or unit name (now without
         characters that could mess up the saving process)
     """
-    
+
     bad_chars = [" ", "/", ".", "-", "[", "]", ",", "(", ")", "|", ":"]
-    
+
     for ch in bad_chars:
         name = name.replace(ch, "_")
-    
+
     if name[-1:] == "_":
         name = name[:-1]  # chop off the final underscore
-        
+
     num_underscores = 0
     for char in name:
         if char == "_":
             num_underscores += 1
-    
+
     # now we want to get rid of excessively long strings
     new_name = ''
     if num_underscores > 2:
@@ -583,11 +601,11 @@ def replace_name(name):
                 x += 1
             if x < 3:
                 new_name += char
-        
+
         name = new_name
-        
+
     print(name)
-    
+
     return name
 
 
@@ -614,7 +632,7 @@ def add_significance_cols(df, aggregate_df):
         to the data of the entire dataset (using Welch's t-test)
     """
     t_vals, degrees_freedom, p_vals, sig_diff = [], [], [], []
-    
+
     tot_mean = aggregate_df['total_mean'].iloc[0]
     tot_stdev = aggregate_df['total_stdev'].iloc[0]
     tot_rows = aggregate_df['total_records'].iloc[0]
@@ -626,8 +644,8 @@ def add_significance_cols(df, aggregate_df):
 
         numerator = tot_mean - hpo_mean
 
-        denom = ((tot_stdev ** 2) / tot_rows) + ((hpo_stdev ** 2) / hpo_rows)
-        denominator = denom ** (1/2)
+        denom = ((tot_stdev**2) / tot_rows) + ((hpo_stdev**2) / hpo_rows)
+        denominator = denom**(1 / 2)
 
         try:
             t_val = numerator / denominator
@@ -639,11 +657,11 @@ def add_significance_cols(df, aggregate_df):
 
         t_vals.append(round(t_val, 2))
 
-        num = ( (tot_stdev ** 2) / tot_rows + (hpo_stdev ** 2) / hpo_rows ) ** 2
-        denom_pt1 = (tot_stdev ** 2 / tot_rows) ** 2 / (tot_rows - 1)
+        num = ((tot_stdev**2) / tot_rows + (hpo_stdev**2) / hpo_rows)**2
+        denom_pt1 = (tot_stdev**2 / tot_rows)**2 / (tot_rows - 1)
 
         try:
-            denom_pt2 = (hpo_stdev ** 2 / hpo_rows) ** 2  / (hpo_rows - 1)
+            denom_pt2 = (hpo_stdev**2 / hpo_rows)**2 / (hpo_rows - 1)
             denom = denom_pt1 + denom_pt2
         except ZeroDivisionError:
             denom = denom_pt1
@@ -665,7 +683,7 @@ def add_significance_cols(df, aggregate_df):
     df['degrees_freedom'] = degrees_freedom
     df['p_val'] = p_vals
     df['sig_diff'] = sig_diff
-    
+
     return df
 
 
@@ -696,7 +714,7 @@ def process_image(concept_name, df, most_popular_unit, aggregate_df):
     
     concept_name (string): string that represents the concept name (cluster of measurements)
         after formatting
-    """    
+    """
     concept_name = replace_name(concept_name)
     unit_name = replace_name(most_popular_unit)
 
@@ -704,10 +722,10 @@ def process_image(concept_name, df, most_popular_unit, aggregate_df):
         img_name = concept_name + "_" + unit_name + "_site_value_distributions.png"
     else:
         img_name = concept_name + "_" + unit_name + "_aggregate_df.png"
-    
+
     ax = render_mpl_table(df, header_columns=0, col_width=2.0)
-    plt.savefig(img_name, bbox_inches ="tight")
-    
+    plt.savefig(img_name, bbox_inches="tight")
+
     return img_name, concept_name
 
 
@@ -762,16 +780,17 @@ def create_statistics_dictionary(df, aggregate_df):
     stats['aggregate_info']['q1'] = aggregate_df['total_first_quartile'].iloc[0]
     stats['aggregate_info']['med'] = aggregate_df['total_median'].iloc[0]
     stats['aggregate_info']['q3'] = aggregate_df['total_third_quartile'].iloc[0]
-    stats['aggregate_info']['whishi'] = aggregate_df['total_ninetieth_perc'].iloc[0]
+    stats['aggregate_info']['whishi'] = aggregate_df[
+        'total_ninetieth_perc'].iloc[0]
     stats['aggregate_info']['fliers'] = np.array([minimum, maximum])
-    
+
     lst = []
     names = []
 
     for key, value in stats.items():
         names.append(key)
         lst.append(value)
-    
+
     return lst, names
 
 
@@ -792,16 +811,16 @@ def format_title(title):
     
     """
     s = list(title)
-    
+
     for idx, char in enumerate(s):
         if idx == 0:
             s[idx] = s[idx].capitalize()
         elif s[idx] == '_':
             s[idx] = ' '
             s[idx + 1] = s[idx + 1].capitalize()
-    
+
     title = "".join(s)
-    
+
     return title
 
 
@@ -822,34 +841,35 @@ def display_boxplot(lst, img_name, names):
     
     names (list): list of the HPO names that make up the rows of the dataframe
     """
-    
+
     fig, ax = plt.subplots()
 
     ticks = []
 
     for x in range(len(names)):
-        ticks.append(x+1)
+        ticks.append(x + 1)
 
     ax.bxp(lst, showfliers=False, vert=False, showmeans=True)
     ax.legend()
-    plt.yticks(ticks = ticks, labels=names)
+    plt.yticks(ticks=ticks, labels=names)
 
-    x_label = format_title(img_name[:-29])  # get rid of site_value_distributions.png
+    x_label = format_title(
+        img_name[:-29])  # get rid of site_value_distributions.png
 
     plt.title(x_label + " By Site")
     plt.xlabel(x_label)
     plt.ylabel('Site')
     plt.legend()
-    
+
     end = '_box_and_whisker.png'
-    
+
     if img_name[:-30] == '_':
         img_name = img_name[:-30] + end
     else:
         img_name = img_name[:-29] + end
-    
+
     plt.savefig(img_name, bbox_inches="tight")
-    
+
     plt.show()
 
 
@@ -858,16 +878,20 @@ def display_boxplot(lst, img_name, names):
 for ancestor_id in measurement_ancestors:
     site_value_distribution_df, most_popular_unit, concept_name, aggregate_df = \
         run_statistics(ancestor_id, DATASET)
-    
-    df = add_significance_cols(site_value_distribution_df, aggregate_df)
-    
-    img_name, concept_name = process_image(concept_name, df, most_popular_unit,
-                                           aggregate_df = False)
-    
-    # returns are not used much
-    x, a = process_image(concept_name, aggregate_df, most_popular_unit, aggregate_df = True)
-    
-    info, hpo_names = create_statistics_dictionary(df, aggregate_df)
-    
-    display_boxplot(info, img_name, hpo_names)
 
+    df = add_significance_cols(site_value_distribution_df, aggregate_df)
+
+    img_name, concept_name = process_image(concept_name,
+                                           df,
+                                           most_popular_unit,
+                                           aggregate_df=False)
+
+    # returns are not used much
+    x, a = process_image(concept_name,
+                         aggregate_df,
+                         most_popular_unit,
+                         aggregate_df=True)
+
+    info, hpo_names = create_statistics_dictionary(df, aggregate_df)
+
+    display_boxplot(info, img_name, hpo_names)

@@ -1,5 +1,6 @@
 # +
-from notebooks import bq, parameters
+import bq_utils
+from notebooks import parameters
 
 DEID = parameters.DEID_DATASET_ID
 # -
@@ -44,5 +45,5 @@ JOIN
 ON o.observation_id = unique_observation_ids.observation_id
 """
 q = DUPLICATE_GEN_RACE_QUERY.format(DEID=DEID, COMBINED=COMBINED)
-df = bq.query(q)
+df = bq_utils.query_to_df(q)
 df

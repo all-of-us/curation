@@ -24,18 +24,12 @@
 # This complication, however, **only** affects date/datetime discrepancies by +/-1. If a date is more than 1 day different from its datetime date, there must be an error on the site's end.
 
 # +
-from notebooks import bq, render, parameters
+import bq_utils
+from notebooks import parameters
 
 # %matplotlib inline
 import matplotlib.pyplot as plt
-import numpy as np
-from pandas.plotting import table 
-import six
-import scipy.stats
-import math
-import seaborn as sns
-import pandas as pd
-import matplotlib
+
 # +
 DATASET = parameters.LATEST_DATASET
 
@@ -43,7 +37,6 @@ print("""
 DATASET TO USE: {}
 """.format(DATASET))
 # -
-
 
 # ### The below query is used to generate a 'procedure/visit dataframe'. This dataframe shows the difference between the start/end times for the same visit_occurrence_id with respect to the procedure table.
 #
@@ -161,7 +154,7 @@ a.procedure_dt_vis_end_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-procedure_visit_df = bq.query(p_v_query)
+procedure_visit_df = bq_utils.query_to_df(p_v_query)
 # -
 
 # ##### Creating copies of the procedure_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -170,7 +163,9 @@ c1 = procedure_visit_df
 c2 = procedure_visit_df
 
 
-def create_dicts_w_info(df, table_visit_diff_string, bad_records_string = 'num_bad_records'):
+def create_dicts_w_info(df,
+                        table_visit_diff_string,
+                        bad_records_string='num_bad_records'):
     """
     This function is used to create a dictionary that can be easily converted to a
     graphical representation based on the values for a particular dataframe
@@ -203,47 +198,48 @@ def create_dicts_w_info(df, table_visit_diff_string, bad_records_string = 'num_b
             is ONLY for the erroneous records (and is not swayed by records where
             the two dates are concordant)
     """
-    
+
     hpos = df['src_hpo_id'].unique().tolist()
-    
+
     site_dictionaries = {}
 
-    for hpo in hpos:   
+    for hpo in hpos:
         sample_df = df.loc[df['src_hpo_id'] == hpo]
 
-        sample_df.loc["Total"] = sample_df.sum(numeric_only = True)
+        sample_df.loc["Total"] = sample_df.sum(numeric_only=True)
 
         hpo_dict = sample_df.loc["Total"].to_dict()
 
         site_dictionaries[hpo] = hpo_dict
-    
+
     tot = 0
 
     num_bad_records = {}
 
     for hpo, info in site_dictionaries.items():
         num_bad_records[hpo] = info[bad_records_string]
-        
+
     table_visit_diff_dict = {}
     tot_rec, tot_diff = 0, 0
 
     for hpo, info in site_dictionaries.items():
         bad_records = info[bad_records_string]
         difference = info[table_visit_diff_string]
-    
+
         tot_rec += bad_records
         tot_diff += difference
-    
+
         avg = round(difference / bad_records, 2)
-    
+
         table_visit_diff_dict[hpo] = avg
 
     table_visit_diff_dict['Total'] = round(tot_diff / tot_rec, 2)
-    
+
     return num_bad_records, table_visit_diff_dict
 
 
-def create_graphs(info_dict, xlabel, ylabel, title, img_name, colour, total_diff_colour):
+def create_graphs(info_dict, xlabel, ylabel, title, img_name, colour,
+                  total_diff_colour):
     """
     Function is used to create a bar graph for a particular dictionary with information about
     data quality
@@ -269,14 +265,18 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, colour, total_diff
         value of the dictionary is of particular important (e.g. representing an 'aggregate' metric
         across all of the sites)    
     """
-    bar_list = plt.bar(range(len(info_dict)), list(info_dict.values()), align='center', color = colour)
-    
+    bar_list = plt.bar(range(len(info_dict)),
+                       list(info_dict.values()),
+                       align='center',
+                       color=colour)
+
     # used to change the color of the 'aggregate' column; usually implemented for an average
     if total_diff_colour:
         bar_list[len(info_dict) - 1].set_color('r')
-    
-    
-    plt.xticks(range(len(info_dict)), list(info_dict.keys()), rotation='vertical')
+
+    plt.xticks(range(len(info_dict)),
+               list(info_dict.keys()),
+               rotation='vertical')
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(title)
@@ -286,13 +286,24 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, colour, total_diff
 procedure_bad_records, procedure_vis_start_diff = \
 create_dicts_w_info(procedure_visit_df, 'procedure_vis_start_diff', bad_records_string = 'num_bad_records')
 
-create_graphs(info_dict=procedure_bad_records, xlabel='Site', ylabel='Number of Discrepant Dates',
+create_graphs(
+    info_dict=procedure_bad_records,
+    xlabel='Site',
+    ylabel='Number of Discrepant Dates',
     title='Number of Discrepant Dates Records: Procedure Versus Visit Tables',
-    img_name='procedure_visit_num_discrepant_records.jpg', colour = 'b', total_diff_colour = False)
+    img_name='procedure_visit_num_discrepant_records.jpg',
+    colour='b',
+    total_diff_colour=False)
 
-create_graphs(info_dict=procedure_vis_start_diff, xlabel='Site', ylabel='Procedure / Visit Start Date - Avg Diff',
-    title='Average Difference Between Procedure Date and Visit Start Date For Applicable Records',
-    img_name='procedure_visit_start_discrepancy.jpg', colour = 'g', total_diff_colour = True)
+create_graphs(
+    info_dict=procedure_vis_start_diff,
+    xlabel='Site',
+    ylabel='Procedure / Visit Start Date - Avg Diff',
+    title=
+    'Average Difference Between Procedure Date and Visit Start Date For Applicable Records',
+    img_name='procedure_visit_start_discrepancy.jpg',
+    colour='g',
+    total_diff_colour=True)
 
 # ### The below query is used to generate a 'observation/visit dataframe'. This dataframe shows the difference between the start/end times for the same visit_occurrence_id with respect to the observation table.
 #
@@ -410,7 +421,7 @@ a.observation_dt_vis_end_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-observation_visit_df = bq.query(observation_visit_query)
+observation_visit_df = bq_utils.query_to_df(observation_visit_query)
 # -
 
 # ##### Creating copies of the observation_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -422,14 +433,25 @@ c4 = observation_visit_df
 observation_bad_records, observation_vis_start_diff = \
 create_dicts_w_info(observation_visit_df, 'observation_vis_start_diff', bad_records_string = 'num_bad_records')
 
-create_graphs(info_dict=observation_bad_records, xlabel='Site', ylabel='Number of Discrepant Dates',
+create_graphs(
+    info_dict=observation_bad_records,
+    xlabel='Site',
+    ylabel='Number of Discrepant Dates',
     title='Number of Discrepant Dates Records: Observation Versus Visit Tables',
-    img_name='observation_visit_num_discrepant_records.jpg', colour = 'b', total_diff_colour = False)
+    img_name='observation_visit_num_discrepant_records.jpg',
+    colour='b',
+    total_diff_colour=False)
 # -
 
-create_graphs(info_dict=observation_vis_start_diff, xlabel='Site', ylabel='Observation / Visit Start Date - Avg Diff',
-    title='Average Difference Between Observation Date and Visit Start Date For Applicable Records',
-    img_name='observation_visit_start_discrepancy.jpg', colour = 'g', total_diff_colour = True)
+create_graphs(
+    info_dict=observation_vis_start_diff,
+    xlabel='Site',
+    ylabel='Observation / Visit Start Date - Avg Diff',
+    title=
+    'Average Difference Between Observation Date and Visit Start Date For Applicable Records',
+    img_name='observation_visit_start_discrepancy.jpg',
+    colour='g',
+    total_diff_colour=True)
 
 # ### The below query is used to generate a 'measurement/visit dataframe'. This dataframe shows the difference between the start/end times for the same visit_occurrence_id with respect to the measurement table.
 #
@@ -547,7 +569,7 @@ a.measurement_dt_vis_end_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-measurement_visit_df = bq.query(measurement_visit_query)
+measurement_visit_df = bq_utils.query_to_df(measurement_visit_query)
 # -
 
 # ##### Creating copies of the measurement_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -559,14 +581,25 @@ c6 = procedure_visit_df
 measurement_bad_records, measurement_vis_start_diff = \
 create_dicts_w_info(measurement_visit_df, 'measurement_vis_start_diff', bad_records_string = 'num_bad_records')
 
-create_graphs(info_dict=measurement_bad_records, xlabel='Site', ylabel='Number of Discrepant Dates',
+create_graphs(
+    info_dict=measurement_bad_records,
+    xlabel='Site',
+    ylabel='Number of Discrepant Dates',
     title='Number of Discrepant Dates Records: Measurement Versus Visit Tables',
-    img_name='measurement_visit_num_discrepant_records.jpg', colour = 'b', total_diff_colour = False)
+    img_name='measurement_visit_num_discrepant_records.jpg',
+    colour='b',
+    total_diff_colour=False)
 # -
 
-create_graphs(info_dict=measurement_vis_start_diff, xlabel='Site', ylabel='Measurement / Visit Start Date - Avg Diff',
-    title='Average Difference Between Measurement Date and Visit Start Date For Applicable Records',
-    img_name='measurement_visit_start_discrepancy.jpg', colour = 'g', total_diff_colour = True)
+create_graphs(
+    info_dict=measurement_vis_start_diff,
+    xlabel='Site',
+    ylabel='Measurement / Visit Start Date - Avg Diff',
+    title=
+    'Average Difference Between Measurement Date and Visit Start Date For Applicable Records',
+    img_name='measurement_visit_start_discrepancy.jpg',
+    colour='g',
+    total_diff_colour=True)
 
 # ### NOTE: For the following cells, we are only using the 'start' dates for the visit table. This is because for the selected tables - condition_occurrence and drug_exposure - the relevant finding may extend past the visit.
 
@@ -656,7 +689,7 @@ a.condition_dt_vis_start_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-condition_visit_df = bq.query(condition_visit_query)
+condition_visit_df = bq_utils.query_to_df(condition_visit_query)
 # -
 
 # ##### Creating copies of the condition_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -668,14 +701,25 @@ c8 = condition_visit_df
 condition_bad_records, condition_vis_start_diff = \
 create_dicts_w_info(condition_visit_df, 'condition_vis_start_diff', bad_records_string = 'num_bad_records')
 
-create_graphs(info_dict=condition_bad_records, xlabel='Site', ylabel='Number of Discrepant Dates',
+create_graphs(
+    info_dict=condition_bad_records,
+    xlabel='Site',
+    ylabel='Number of Discrepant Dates',
     title='Number of Discrepant Dates Records: Condition Versus Visit Tables',
-    img_name='condition_visit_num_discrepant_records.jpg', colour = 'b', total_diff_colour = False)
+    img_name='condition_visit_num_discrepant_records.jpg',
+    colour='b',
+    total_diff_colour=False)
 # -
 
-create_graphs(info_dict=condition_vis_start_diff, xlabel='Site', ylabel='Condition / Visit Start Date - Avg Diff',
-    title='Average Difference Between Condition Date and Visit Start Date For Applicable Records',
-    img_name='condition_visit_start_discrepancy.jpg', colour = 'g', total_diff_colour = True)
+create_graphs(
+    info_dict=condition_vis_start_diff,
+    xlabel='Site',
+    ylabel='Condition / Visit Start Date - Avg Diff',
+    title=
+    'Average Difference Between Condition Date and Visit Start Date For Applicable Records',
+    img_name='condition_visit_start_discrepancy.jpg',
+    colour='g',
+    total_diff_colour=True)
 
 # ### The below query is used to generate a 'drug/visit dataframe'. This dataframe shows the difference between the start/end times for the same drug_exposure_id with respect to the measurement table.
 #
@@ -763,7 +807,7 @@ a.drug_dt_vis_start_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-drug_visit_df = bq.query(drug_visit_query)
+drug_visit_df = bq_utils.query_to_df(drug_visit_query)
 # -
 
 # ##### Creating copies of the drug_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -775,13 +819,22 @@ c8 = drug_visit_df
 drug_bad_records, drug_vis_start_diff = \
 create_dicts_w_info(drug_visit_df, 'drug_vis_start_diff', bad_records_string = 'num_bad_records')
 
-create_graphs(info_dict=drug_bad_records, xlabel='Site', ylabel='Number of Discrepant Dates',
+create_graphs(
+    info_dict=drug_bad_records,
+    xlabel='Site',
+    ylabel='Number of Discrepant Dates',
     title='Number of Discrepant Dates Records: Drug Versus Visit Tables',
-    img_name='drug_visit_num_discrepant_records.jpg', colour = 'b', total_diff_colour = False)
+    img_name='drug_visit_num_discrepant_records.jpg',
+    colour='b',
+    total_diff_colour=False)
 # -
 
-create_graphs(info_dict=drug_vis_start_diff, xlabel='Site', ylabel='Drug / Visit Start Date - Avg Diff',
-    title='Average Difference Between Drug Date and Visit Start Date For Applicable Records',
-    img_name='drug_visit_start_discrepancy.jpg', colour = 'g', total_diff_colour = True)
-
-
+create_graphs(
+    info_dict=drug_vis_start_diff,
+    xlabel='Site',
+    ylabel='Drug / Visit Start Date - Avg Diff',
+    title=
+    'Average Difference Between Drug Date and Visit Start Date For Applicable Records',
+    img_name='drug_visit_start_discrepancy.jpg',
+    colour='g',
+    total_diff_colour=True)

@@ -1,7 +1,9 @@
 import collections
 import re
 
-import google.datalab.bigquery as bq
+from google.cloud import bigquery
+
+client = bigquery.Client()
 
 VOCABULARY_DATASET_RE = re.compile(r'^vocabulary\d{8}$')
 RDR_DATASET_RE = re.compile(r'^rdr\d{8}$')
@@ -33,8 +35,8 @@ def is_deid_dataset(dataset_id):
 
 def _datasets():
     DefaultDatasets = collections.namedtuple('DefaultDatasets', 'latest trend')
-    dataset_list = list(bq.Datasets())
-    dataset_list.sort(key=lambda d: d.name.dataset_id, reverse=True)
+    dataset_list = list(client.list_datasets())
+    dataset_list.sort(key=lambda d: d.dataset_id, reverse=True)
     vocabulary = []
     rdr = []
     unioned = []
@@ -42,7 +44,7 @@ def _datasets():
     deid = []
 
     for dataset in dataset_list:
-        dataset_id = dataset.name.dataset_id
+        dataset_id = dataset.dataset_id
         if is_vocabulary_dataset(dataset_id):
             vocabulary.append(dataset_id)
         elif is_rdr_dataset(dataset_id):

@@ -22,8 +22,8 @@
 # The dimensions of 'data volume' are as follows (for each table):
 # - number of participants
 # - number of records
-
-from notebooks import bq, render, parameters
+import bq_utils
+from notebooks import parameters
 import pandas as pd
 import numpy as np
 import six
@@ -39,12 +39,12 @@ print("""
 Unioned Dataset: {unioned}
 Combined Dataset: {combined}
 De-ID Dataset: {deid}
-""".format(unioned = unioned, combined = combined, deid = deid))
-
+""".format(unioned=unioned, combined=combined, deid=deid))
 
 # -
 
 # ## Below are the functions that can be used to create graphs for visualization purposes
+
 
 def create_dicts_w_info(df, x_label, column_label):
     """
@@ -72,20 +72,21 @@ def create_dicts_w_info(df, x_label, column_label):
         values: the data quality metric being compared
     """
     rows = df[x_label].unique().tolist()
-    
+
     data_qual_info = {}
 
-    for row in rows:   
+    for row in rows:
         sample_df = df.loc[df[x_label] == row]
-        
+
         data = sample_df.iloc[0][column_label]
 
         data_qual_info[row] = data
-    
+
     return data_qual_info
 
 
-def create_graphs(info_dict, xlabel, ylabel, title, img_name, color, total_diff_color, turnoff_x):
+def create_graphs(info_dict, xlabel, ylabel, title, img_name, color,
+                  total_diff_color, turnoff_x):
     """
     Function is used to create a bar graph for a particular dictionary with information about
     data quality
@@ -114,17 +115,22 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, color, total_diff_
     turnoff_x (bool): used to disable the x-axis labels (for each of the bars). This is typically used
         when there are so many x-axis labels that they overlap and obscure legibility
     """
-    bar_list = plt.bar(range(len(info_dict)), list(info_dict.values()), align='center', color = color)
-    
+    bar_list = plt.bar(range(len(info_dict)),
+                       list(info_dict.values()),
+                       align='center',
+                       color=color)
+
     # used to change the color of the 'aggregate' column; usually implemented for an average
     if total_diff_color:
         bar_list[len(info_dict) - 1].set_color('r')
-    
+
     if not turnoff_x:
-        plt.xticks(range(len(info_dict)), list(info_dict.keys()), rotation='vertical')
+        plt.xticks(range(len(info_dict)),
+                   list(info_dict.keys()),
+                   rotation='vertical')
     else:
         plt.xticks([])
-        
+
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(title)
@@ -132,33 +138,44 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, color, total_diff_
     plt.savefig(img_name, bbox_inches="tight")
 
 
-def render_mpl_table(data, col_width=15, row_height=0.625, font_size=12,
-                     header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
-                     bbox=[0, 0, 1, 1], header_columns=0,
-                     ax=None, **kwargs):
+def render_mpl_table(data,
+                     col_width=15,
+                     row_height=0.625,
+                     font_size=12,
+                     header_color='#40466e',
+                     row_colors=['#f1f1f2', 'w'],
+                     edge_color='w',
+                     bbox=[0, 0, 1, 1],
+                     header_columns=0,
+                     ax=None,
+                     **kwargs):
     """
     Function is used to improve the formatting / image quality of the output. The
     parameters can be changed as needed/desired.
     """
-    
+
     # the np.array added to size is the main determinant for column dimensions
     if ax is None:
-        size = (np.array(data.shape[::-1]) + np.array([2, 1])) * np.array([col_width, row_height])
+        size = (np.array(data.shape[::-1]) + np.array([2, 1])) * np.array(
+            [col_width, row_height])
         fig, ax = plt.subplots(figsize=size)
         ax.axis('off')
 
-    mpl_table = ax.table(cellText=data.values, bbox=bbox, colLabels=data.columns, **kwargs)
+    mpl_table = ax.table(cellText=data.values,
+                         bbox=bbox,
+                         colLabels=data.columns,
+                         **kwargs)
 
     mpl_table.auto_set_font_size(False)
     mpl_table.set_fontsize(font_size)
 
-    for k, cell in  six.iteritems(mpl_table._cells):
+    for k, cell in six.iteritems(mpl_table._cells):
         cell.set_edgecolor(edge_color)
         if k[0] == 0 or k[1] < header_columns:
             cell.set_text_props(weight='bold', color='w')
             cell.set_facecolor(header_color)
         else:
-            cell.set_facecolor(row_colors[k[0]%len(row_colors) ])
+            cell.set_facecolor(row_colors[k[0] % len(row_colors)])
     return ax
 
 
@@ -187,7 +204,7 @@ def create_pie_chart(dataframe, title, img_name):
     """
     hpo_list = dataframe['source_hpo'].tolist()[1:]  # do not take 'total'
     percent_of_drop = dataframe['percent_of_drop'].tolist()[1:]
-    
+
     labels = []
 
     # creating the labels for the graph
@@ -197,11 +214,15 @@ def create_pie_chart(dataframe, title, img_name):
 
     wedges = [0.1] * len(labels)
 
-    plt.pie(percent_of_drop, labels=None, shadow=True, startangle=140, explode=wedges)
+    plt.pie(percent_of_drop,
+            labels=None,
+            shadow=True,
+            startangle=140,
+            explode=wedges)
 
     plt.axis('equal')
     plt.title(title)
-    plt.legend(bbox_to_anchor = (0.5, 0.75, 1.0, 0.85), labels = labels)
+    plt.legend(bbox_to_anchor=(0.5, 0.75, 1.0, 0.85), labels=labels)
 
     plt.savefig(img_name, bbox_inches="tight")
 
@@ -209,6 +230,7 @@ def create_pie_chart(dataframe, title, img_name):
 
 
 # ## Below are functions that can be used to create 'aggregate' dataframes for different tables
+
 
 def generate_query(dataset, person_var, record_var, table_name, field_name):
     """
@@ -251,12 +273,15 @@ def generate_query(dataset, person_var, record_var, table_name, field_name):
         ON
         x.person_id = p.person_id
         ORDER BY {person_var} DESC
-    """.format(person_var = person_var, field_name = field_name,
-               table_name = table_name, record_var = record_var, dataset = dataset)
-    
-    dataframe = bq.query(query)
-    
-    return(dataframe)
+    """.format(person_var=person_var,
+               field_name=field_name,
+               table_name=table_name,
+               record_var=record_var,
+               dataset=dataset)
+
+    dataframe = bq_utils.query_to_df(query)
+
+    return (dataframe)
 
 
 def extract_first_int_from_series(series):
@@ -271,17 +296,19 @@ def extract_first_int_from_series(series):
     -------
     integer (int): the first integer from a Pandas series object
     """
-    
+
     series_as_list = series.tolist()
-    
+
     first_int = series_as_list[0]
-    
+
     return first_int
 
 
-def create_aggregate_table_df(
-    unioned, combined, deid, unioned_persons_string, combined_persons_string, deid_persons_string,
-    unioned_records_string, combined_records_string, deid_records_string, person_string, record_string):
+def create_aggregate_table_df(unioned, combined, deid, unioned_persons_string,
+                              combined_persons_string, deid_persons_string,
+                              unioned_records_string, combined_records_string,
+                              deid_records_string, person_string,
+                              record_string):
     """
     Function is used to create a dataframe that can display the 'drop off' of records across multiple
     stages of the pipeline. 
@@ -321,41 +348,56 @@ def create_aggregate_table_df(
     df (dataframe): contains information about the record and person count drop across each stage of
                     the pipeline
     """
-    
 
-    unioned_num_persons = extract_first_int_from_series(unioned[unioned_persons_string])
-    combined_num_persons = extract_first_int_from_series(combined[combined_persons_string])
+    unioned_num_persons = extract_first_int_from_series(
+        unioned[unioned_persons_string])
+    combined_num_persons = extract_first_int_from_series(
+        combined[combined_persons_string])
     deid_num_persons = extract_first_int_from_series(deid[deid_persons_string])
 
-    unioned_num_records = extract_first_int_from_series(unioned[unioned_records_string])
-    combined_num_records = extract_first_int_from_series(combined[combined_records_string])
+    unioned_num_records = extract_first_int_from_series(
+        unioned[unioned_records_string])
+    combined_num_records = extract_first_int_from_series(
+        combined[combined_records_string])
     deid_num_records = extract_first_int_from_series(deid[deid_records_string])
 
     unioned_combined_person_drop = unioned_num_persons - combined_num_persons
     combined_deid_person_drop = combined_num_persons - deid_num_persons
     total_person_drop = unioned_combined_person_drop + combined_deid_person_drop
-    total_person_drop_percent = round(total_person_drop / unioned_num_persons * 100, 2)
+    total_person_drop_percent = round(
+        total_person_drop / unioned_num_persons * 100, 2)
 
     unioned_combined_record_drop = unioned_num_records - combined_num_records
     combined_deid_record_drop = combined_num_records - deid_num_records
     total_record_drop = unioned_combined_record_drop + combined_deid_record_drop
-    total_record_drop_percent = round(total_record_drop / unioned_num_records * 100, 2)
+    total_record_drop_percent = round(
+        total_record_drop / unioned_num_records * 100, 2)
 
-    data = [[unioned_combined_person_drop, combined_deid_person_drop, total_person_drop, total_person_drop_percent],
-            [unioned_combined_record_drop, combined_deid_record_drop, total_record_drop, total_record_drop_percent]]
+    data = [[
+        unioned_combined_person_drop, combined_deid_person_drop,
+        total_person_drop, total_person_drop_percent
+    ],
+            [
+                unioned_combined_record_drop, combined_deid_record_drop,
+                total_record_drop, total_record_drop_percent
+            ]]
 
-    df = pd.DataFrame(data, columns = ['Unioned/Combined Drop', 'Combined/De-ID Drop', 'Total Drop', 'Total Drop (%)'],
-                               index = [person_string, record_string])
+    df = pd.DataFrame(data,
+                      columns=[
+                          'Unioned/Combined Drop', 'Combined/De-ID Drop',
+                          'Total Drop', 'Total Drop (%)'
+                      ],
+                      index=[person_string, record_string])
 
     return df
+
 
 # ## Let's keep a dictionary so we can log the percent drop across all of the tables
 
 # +
 table_order = ['Condition', 'Visit', 'Procedure', 'Observation', 'Drug']
 
-percent_drops = {'person_drop': [],
-                 'record_drop': []}
+percent_drops = {'person_drop': [], 'record_drop': []}
 # -
 
 # ## Looking at how volume varies in the condition_occurrence table
@@ -363,34 +405,42 @@ percent_drops = {'person_drop': [],
 condition_table_name = 'condition_occurrence'
 condition_field_name = 'condition_occurrence_id'
 
-condition_unioned = generate_query(
-    dataset = unioned, person_var = 'unioned_condition_num_persons', record_var = 'unioned_condition_num_records', 
-    table_name = condition_table_name, field_name = condition_field_name)
+condition_unioned = generate_query(dataset=unioned,
+                                   person_var='unioned_condition_num_persons',
+                                   record_var='unioned_condition_num_records',
+                                   table_name=condition_table_name,
+                                   field_name=condition_field_name)
 
 condition_unioned
 
-condition_combined = generate_query(
-    dataset = combined, person_var = 'combined_condition_num_persons', record_var = 'combined_condition_num_records', 
-    table_name = condition_table_name, field_name = condition_field_name)
+condition_combined = generate_query(dataset=combined,
+                                    person_var='combined_condition_num_persons',
+                                    record_var='combined_condition_num_records',
+                                    table_name=condition_table_name,
+                                    field_name=condition_field_name)
 
 condition_combined
 
-condition_deid = generate_query(
-    dataset = deid, person_var = 'deid_condition_num_persons', record_var = 'deid_condition_num_records', 
-    table_name = condition_table_name, field_name = condition_field_name)
+condition_deid = generate_query(dataset=deid,
+                                person_var='deid_condition_num_persons',
+                                record_var='deid_condition_num_records',
+                                table_name=condition_table_name,
+                                field_name=condition_field_name)
 
 condition_deid
 
 condition_df = create_aggregate_table_df(
-    unioned = condition_unioned, combined = condition_combined, deid = condition_deid, 
-    unioned_persons_string = 'unioned_condition_num_persons', 
-    combined_persons_string = 'combined_condition_num_persons', 
-    deid_persons_string = 'deid_condition_num_persons',
-    unioned_records_string = 'unioned_condition_num_records', 
-    combined_records_string = 'combined_condition_num_records', 
-    deid_records_string = 'deid_condition_num_records', 
-    person_string = 'Condition - Person', 
-    record_string = 'Condition - Record')
+    unioned=condition_unioned,
+    combined=condition_combined,
+    deid=condition_deid,
+    unioned_persons_string='unioned_condition_num_persons',
+    combined_persons_string='combined_condition_num_persons',
+    deid_persons_string='deid_condition_num_persons',
+    unioned_records_string='unioned_condition_num_records',
+    combined_records_string='combined_condition_num_records',
+    deid_records_string='deid_condition_num_records',
+    person_string='Condition - Person',
+    record_string='Condition - Record')
 
 condition_df
 
@@ -401,15 +451,13 @@ ax = render_mpl_table(condition_df, header_columns=0, col_width=2.0)
 
 plt.tight_layout()
 
-plt.savefig('condition_dropoff.jpg', bbox_inches ="tight")
-
+plt.savefig('condition_dropoff.jpg', bbox_inches="tight")
 
 # +
 person_idx, record_idx = 0, 1
 
 cp_drop = condition_df.at[person_idx, 'Total Drop (%)']
 cr_drop = condition_df.at[record_idx, 'Total Drop (%)']
-
 
 percent_drops['person_drop'].append(cp_drop)
 percent_drops['record_drop'].append(cr_drop)
@@ -420,34 +468,42 @@ percent_drops['record_drop'].append(cr_drop)
 visit_table_name = 'visit_occurrence'
 visit_field_name = 'visit_occurrence_id'
 
-visit_unioned = generate_query(
-    dataset = unioned, person_var = 'unioned_visit_num_persons', record_var = 'unioned_visit_num_records', 
-    table_name = visit_table_name, field_name = visit_field_name)
+visit_unioned = generate_query(dataset=unioned,
+                               person_var='unioned_visit_num_persons',
+                               record_var='unioned_visit_num_records',
+                               table_name=visit_table_name,
+                               field_name=visit_field_name)
 
 visit_unioned
 
-visit_combined = generate_query(
-    dataset = combined, person_var = 'combined_visit_num_persons', record_var = 'combined_visit_num_records', 
-    table_name = visit_table_name, field_name = visit_field_name)
+visit_combined = generate_query(dataset=combined,
+                                person_var='combined_visit_num_persons',
+                                record_var='combined_visit_num_records',
+                                table_name=visit_table_name,
+                                field_name=visit_field_name)
 
 visit_combined
 
-visit_deid = generate_query(
-    dataset = deid, person_var = 'deid_visit_num_persons', record_var = 'deid_visit_num_records', 
-    table_name = visit_table_name, field_name = visit_field_name)
+visit_deid = generate_query(dataset=deid,
+                            person_var='deid_visit_num_persons',
+                            record_var='deid_visit_num_records',
+                            table_name=visit_table_name,
+                            field_name=visit_field_name)
 
 visit_deid
 
 visit_df = create_aggregate_table_df(
-    unioned = visit_unioned, combined = visit_combined, deid = visit_deid, 
-    unioned_persons_string = 'unioned_visit_num_persons', 
-    combined_persons_string = 'combined_visit_num_persons', 
-    deid_persons_string = 'deid_visit_num_persons',
-    unioned_records_string = 'unioned_visit_num_records', 
-    combined_records_string = 'combined_visit_num_records', 
-    deid_records_string = 'deid_visit_num_records', 
-    person_string = 'Visit - Person', 
-    record_string = 'Visit - Record')
+    unioned=visit_unioned,
+    combined=visit_combined,
+    deid=visit_deid,
+    unioned_persons_string='unioned_visit_num_persons',
+    combined_persons_string='combined_visit_num_persons',
+    deid_persons_string='deid_visit_num_persons',
+    unioned_records_string='unioned_visit_num_records',
+    combined_records_string='combined_visit_num_records',
+    deid_records_string='deid_visit_num_records',
+    person_string='Visit - Person',
+    record_string='Visit - Record')
 
 visit_df
 # +
@@ -457,14 +513,13 @@ ax = render_mpl_table(visit_df, header_columns=0, col_width=2.0)
 
 plt.tight_layout()
 
-plt.savefig('visit_dropoff.jpg', bbox_inches ="tight")
+plt.savefig('visit_dropoff.jpg', bbox_inches="tight")
 
 # +
 person_idx, record_idx = 0, 1
 
 vp_drop = visit_df.at[person_idx, 'Total Drop (%)']
 vr_drop = visit_df.at[record_idx, 'Total Drop (%)']
-
 
 percent_drops['person_drop'].append(vp_drop)
 percent_drops['record_drop'].append(vr_drop)
@@ -475,34 +530,42 @@ percent_drops['record_drop'].append(vr_drop)
 procedure_table_name = 'procedure_occurrence'
 procedure_field_name = 'procedure_occurrence_id'
 
-procedure_unioned = generate_query(
-    dataset = unioned, person_var = 'unioned_procedure_num_persons', record_var = 'unioned_procedure_num_records', 
-    table_name = procedure_table_name, field_name = procedure_field_name)
+procedure_unioned = generate_query(dataset=unioned,
+                                   person_var='unioned_procedure_num_persons',
+                                   record_var='unioned_procedure_num_records',
+                                   table_name=procedure_table_name,
+                                   field_name=procedure_field_name)
 
 procedure_unioned
 
-procedure_combined = generate_query(
-    dataset = combined, person_var = 'combined_procedure_num_persons', record_var = 'combined_procedure_num_records', 
-    table_name = procedure_table_name, field_name = procedure_field_name)
+procedure_combined = generate_query(dataset=combined,
+                                    person_var='combined_procedure_num_persons',
+                                    record_var='combined_procedure_num_records',
+                                    table_name=procedure_table_name,
+                                    field_name=procedure_field_name)
 
 procedure_combined
 
-procedure_deid = generate_query(
-    dataset = deid, person_var = 'deid_procedure_num_persons', record_var = 'deid_procedure_num_records', 
-    table_name = procedure_table_name, field_name = procedure_field_name)
+procedure_deid = generate_query(dataset=deid,
+                                person_var='deid_procedure_num_persons',
+                                record_var='deid_procedure_num_records',
+                                table_name=procedure_table_name,
+                                field_name=procedure_field_name)
 
 procedure_deid
 
 procedure_df = create_aggregate_table_df(
-    unioned = procedure_unioned, combined = procedure_combined, deid = procedure_deid, 
-    unioned_persons_string = 'unioned_procedure_num_persons', 
-    combined_persons_string = 'combined_procedure_num_persons', 
-    deid_persons_string = 'deid_procedure_num_persons',
-    unioned_records_string = 'unioned_procedure_num_records', 
-    combined_records_string = 'combined_procedure_num_records', 
-    deid_records_string = 'deid_procedure_num_records', 
-    person_string = 'Procedure - Person', 
-    record_string = 'Procedure - Record')
+    unioned=procedure_unioned,
+    combined=procedure_combined,
+    deid=procedure_deid,
+    unioned_persons_string='unioned_procedure_num_persons',
+    combined_persons_string='combined_procedure_num_persons',
+    deid_persons_string='deid_procedure_num_persons',
+    unioned_records_string='unioned_procedure_num_records',
+    combined_records_string='combined_procedure_num_records',
+    deid_records_string='deid_procedure_num_records',
+    person_string='Procedure - Person',
+    record_string='Procedure - Record')
 
 procedure_df
 
@@ -513,14 +576,13 @@ ax = render_mpl_table(procedure_df, header_columns=0, col_width=2.0)
 
 plt.tight_layout()
 
-plt.savefig('procedure_dropoff.jpg', bbox_inches ="tight")
+plt.savefig('procedure_dropoff.jpg', bbox_inches="tight")
 
 # +
 person_idx, record_idx = 0, 1
 
 pp_drop = procedure_df.at[person_idx, 'Total Drop (%)']
 pr_drop = procedure_df.at[record_idx, 'Total Drop (%)']
-
 
 percent_drops['person_drop'].append(pp_drop)
 percent_drops['record_drop'].append(pr_drop)
@@ -534,33 +596,43 @@ observation_table_name = 'observation'
 observation_field_name = 'observation_id'
 
 observation_unioned = generate_query(
-    dataset = unioned, person_var = 'unioned_observation_num_persons', record_var = 'unioned_observation_num_records', 
-    table_name = observation_table_name, field_name = observation_field_name)
+    dataset=unioned,
+    person_var='unioned_observation_num_persons',
+    record_var='unioned_observation_num_records',
+    table_name=observation_table_name,
+    field_name=observation_field_name)
 
 observation_unioned
 
 observation_combined = generate_query(
-    dataset = combined, person_var = 'combined_observation_num_persons', record_var = 'combined_observation_num_records', 
-    table_name = observation_table_name, field_name = observation_field_name)
+    dataset=combined,
+    person_var='combined_observation_num_persons',
+    record_var='combined_observation_num_records',
+    table_name=observation_table_name,
+    field_name=observation_field_name)
 
 observation_combined
 
-observation_deid = generate_query(
-    dataset = deid, person_var = 'deid_observation_num_persons', record_var = 'deid_observation_num_records', 
-    table_name = observation_table_name, field_name = observation_field_name)
+observation_deid = generate_query(dataset=deid,
+                                  person_var='deid_observation_num_persons',
+                                  record_var='deid_observation_num_records',
+                                  table_name=observation_table_name,
+                                  field_name=observation_field_name)
 
 observation_deid
 
 observation_df = create_aggregate_table_df(
-    unioned = observation_unioned, combined = observation_combined, deid = observation_deid, 
-    unioned_persons_string = 'unioned_observation_num_persons', 
-    combined_persons_string = 'combined_observation_num_persons', 
-    deid_persons_string = 'deid_observation_num_persons',
-    unioned_records_string = 'unioned_observation_num_records', 
-    combined_records_string = 'combined_observation_num_records', 
-    deid_records_string = 'deid_observation_num_records', 
-    person_string = 'Observation - Person', 
-    record_string = 'Observation - Record')
+    unioned=observation_unioned,
+    combined=observation_combined,
+    deid=observation_deid,
+    unioned_persons_string='unioned_observation_num_persons',
+    combined_persons_string='combined_observation_num_persons',
+    deid_persons_string='deid_observation_num_persons',
+    unioned_records_string='unioned_observation_num_records',
+    combined_records_string='combined_observation_num_records',
+    deid_records_string='deid_observation_num_records',
+    person_string='Observation - Person',
+    record_string='Observation - Record')
 
 observation_df
 
@@ -571,14 +643,13 @@ ax = render_mpl_table(observation_df, header_columns=0, col_width=2.0)
 
 plt.tight_layout()
 
-plt.savefig('observation_dropoff.jpg', bbox_inches ="tight")
+plt.savefig('observation_dropoff.jpg', bbox_inches="tight")
 
 # +
 person_idx, record_idx = 0, 1
 
 op_drop = observation_df.at[person_idx, 'Total Drop (%)']
 or_drop = observation_df.at[record_idx, 'Total Drop (%)']
-
 
 percent_drops['person_drop'].append(op_drop)
 percent_drops['record_drop'].append(or_drop)
@@ -589,34 +660,42 @@ percent_drops['record_drop'].append(or_drop)
 drug_table_name = 'drug_exposure'
 drug_field_name = 'drug_exposure_id'
 
-drug_unioned = generate_query(
-    dataset = unioned, person_var = 'unioned_drug_num_persons', record_var = 'unioned_drug_num_records', 
-    table_name = drug_table_name, field_name = drug_field_name)
+drug_unioned = generate_query(dataset=unioned,
+                              person_var='unioned_drug_num_persons',
+                              record_var='unioned_drug_num_records',
+                              table_name=drug_table_name,
+                              field_name=drug_field_name)
 
 drug_unioned
 
-drug_combined = generate_query(
-    dataset = combined, person_var = 'combined_drug_num_persons', record_var = 'combined_drug_num_records', 
-    table_name = drug_table_name, field_name = drug_field_name)
+drug_combined = generate_query(dataset=combined,
+                               person_var='combined_drug_num_persons',
+                               record_var='combined_drug_num_records',
+                               table_name=drug_table_name,
+                               field_name=drug_field_name)
 
 drug_combined
 
-drug_deid = generate_query(
-    dataset = deid, person_var = 'deid_drug_num_persons', record_var = 'deid_drug_num_records', 
-    table_name = drug_table_name, field_name = drug_field_name)
+drug_deid = generate_query(dataset=deid,
+                           person_var='deid_drug_num_persons',
+                           record_var='deid_drug_num_records',
+                           table_name=drug_table_name,
+                           field_name=drug_field_name)
 
 drug_deid
 
 drug_df = create_aggregate_table_df(
-    unioned = drug_unioned, combined = drug_combined, deid = drug_deid, 
-    unioned_persons_string = 'unioned_drug_num_persons', 
-    combined_persons_string = 'combined_drug_num_persons', 
-    deid_persons_string = 'deid_drug_num_persons',
-    unioned_records_string = 'unioned_drug_num_records', 
-    combined_records_string = 'combined_drug_num_records', 
-    deid_records_string = 'deid_drug_num_records', 
-    person_string = 'Drug - Person', 
-    record_string = 'Drug - Record')
+    unioned=drug_unioned,
+    combined=drug_combined,
+    deid=drug_deid,
+    unioned_persons_string='unioned_drug_num_persons',
+    combined_persons_string='combined_drug_num_persons',
+    deid_persons_string='deid_drug_num_persons',
+    unioned_records_string='unioned_drug_num_records',
+    combined_records_string='combined_drug_num_records',
+    deid_records_string='deid_drug_num_records',
+    person_string='Drug - Person',
+    record_string='Drug - Record')
 
 drug_df
 
@@ -627,13 +706,12 @@ ax = render_mpl_table(drug_df, header_columns=0, col_width=2.0)
 
 plt.tight_layout()
 
-plt.savefig('drug_dropoff.jpg', bbox_inches ="tight")
+plt.savefig('drug_dropoff.jpg', bbox_inches="tight")
 # +
 person_idx, record_idx = 0, 1
 
 dp_drop = drug_df.at[person_idx, 'Total Drop (%)']
 dr_drop = drug_df.at[record_idx, 'Total Drop (%)']
-
 
 percent_drops['person_drop'].append(dp_drop)
 percent_drops['record_drop'].append(dr_drop)
@@ -646,11 +724,13 @@ person_drops = percent_drops['person_drop']
 record_drops = percent_drops['record_drop']
 final_dict = {}
 
-for table_name, person_drop, record_drop in zip(table_order, person_drops, record_drops):
+for table_name, person_drop, record_drop in zip(table_order, person_drops,
+                                                record_drops):
     final_dict[table_name] = [person_drop, record_drop]
 # -
 
-overall_drop_df = pd.DataFrame(data=final_dict, index = ['Person Drop (%)', 'Record Drop (%)'])
+overall_drop_df = pd.DataFrame(data=final_dict,
+                               index=['Person Drop (%)', 'Record Drop (%)'])
 
 # +
 overall_drop_df.reset_index(level=0, inplace=True)
@@ -659,12 +739,12 @@ ax = render_mpl_table(overall_drop_df, header_columns=0, col_width=2.0)
 
 plt.tight_layout()
 
-plt.savefig('overall_percent_dropoff.jpg', bbox_inches ="tight")
-
+plt.savefig('overall_percent_dropoff.jpg', bbox_inches="tight")
 
 # -
 
 # ## Now we are going to look at the dropoff across the different sites
+
 
 def generate_site_level_query(id_name, unioned, table_name, combined):
     """
@@ -725,10 +805,13 @@ def generate_site_level_query(id_name, unioned, table_name, combined):
       a.src_hpo_id = b.src_hpo_id
     ORDER BY
       percent_unioned_rows_dropped DESC
-    """.format(id_name = id_name, unioned = unioned, table_name = table_name, combined = combined)
-    
-    dataframe = bq.query(site_level_query)
-    
+    """.format(id_name=id_name,
+               unioned=unioned,
+               table_name=table_name,
+               combined=combined)
+
+    dataframe = bq_utils.query_to_df(site_level_query)
+
     return dataframe
 
 
@@ -751,8 +834,9 @@ def add_total_drop_row(dataframe):
     --------
     dataframe (df): the inputted dataframe with an additional 'total' row at the end
     """
-    
-    dataframe = dataframe.append(dataframe.sum(numeric_only=True).rename('Total'))
+
+    dataframe = dataframe.append(
+        dataframe.sum(numeric_only=True).rename('Total'))
 
     hpo_names = dataframe['source_hpo'].to_list()
 
@@ -764,10 +848,11 @@ def add_total_drop_row(dataframe):
 
     combined_total = dataframe.loc['Total']['num_rows_combined']
 
-    total_drop_percent = round((unioned_total - combined_total) / unioned_total * 100, 2)
+    total_drop_percent = round(
+        (unioned_total - combined_total) / unioned_total * 100, 2)
 
     dataframe.at['Total', 'percent_unioned_rows_dropped'] = total_drop_percent
-    
+
     return dataframe
 
 
@@ -807,130 +892,153 @@ def add_percent_of_drop_column(dataframe):
     percent_of_drop = [round(x / total_drop * 100, 2) for x in subtracted_list]
 
     dataframe['percent_of_drop'] = percent_of_drop
-    
+
     return dataframe
 
 
 # ### Lets see the dropoff in the measurement table
 
-measurement_info = generate_site_level_query(
-    id_name = 'measurement_id', 
-    unioned = unioned, 
-    table_name = 'measurement', 
-    combined = combined)
+measurement_info = generate_site_level_query(id_name='measurement_id',
+                                             unioned=unioned,
+                                             table_name='measurement',
+                                             combined=combined)
 
 measurement_info = add_total_drop_row(measurement_info)
 
 measurement_info = add_percent_of_drop_column(measurement_info)
 
 # +
-measurement_info_dict = create_dicts_w_info(df = measurement_info, x_label = 'source_hpo', 
-                                            column_label = 'percent_unioned_rows_dropped')
+measurement_info_dict = create_dicts_w_info(
+    df=measurement_info,
+    x_label='source_hpo',
+    column_label='percent_unioned_rows_dropped')
 
-create_graphs(info_dict = measurement_info_dict,
-              xlabel = 'HPO', ylabel = '% Rows Dropped from Unioned to Combined', 
-              title = 'Measurement Drop (Unioned to Combined) By Site', img_name = 'unioned_combined_measurement_drop.jpg', 
-              color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(info_dict=measurement_info_dict,
+              xlabel='HPO',
+              ylabel='% Rows Dropped from Unioned to Combined',
+              title='Measurement Drop (Unioned to Combined) By Site',
+              img_name='unioned_combined_measurement_drop.jpg',
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 # -
 
-measurement_info = measurement_info.sort_values(by='percent_of_drop', ascending=False)
+measurement_info = measurement_info.sort_values(by='percent_of_drop',
+                                                ascending=False)
 
-create_pie_chart(measurement_info, 
-                 title = 'Unioned to Combined Drop \n (Measurement) Contributions', 
-                 img_name = 'measurement_unioned_combined_drop_site_contribution.jpg')
+create_pie_chart(
+    measurement_info,
+    title='Unioned to Combined Drop \n (Measurement) Contributions',
+    img_name='measurement_unioned_combined_drop_site_contribution.jpg')
 
 # ### Drug Exposure Table
 
-drug_info = generate_site_level_query(
-    id_name = 'drug_exposure_id', 
-    unioned = unioned, 
-    table_name = 'drug_exposure', 
-    combined = combined)
+drug_info = generate_site_level_query(id_name='drug_exposure_id',
+                                      unioned=unioned,
+                                      table_name='drug_exposure',
+                                      combined=combined)
 
 drug_info = add_total_drop_row(drug_info)
 
 drug_info = add_percent_of_drop_column(drug_info)
 
 # +
-drug_info_dict = create_dicts_w_info(df = drug_info, x_label = 'source_hpo', 
-                                     column_label = 'percent_unioned_rows_dropped')
+drug_info_dict = create_dicts_w_info(
+    df=drug_info,
+    x_label='source_hpo',
+    column_label='percent_unioned_rows_dropped')
 
-create_graphs(info_dict = drug_info_dict,
-              xlabel = 'HPO', ylabel = '% Rows Dropped from Unioned to Combined', 
-              title = 'Drug Drop (Unioned to Combined) By Site', img_name = 'unioned_combined_drug_drop.jpg', 
-              color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(info_dict=drug_info_dict,
+              xlabel='HPO',
+              ylabel='% Rows Dropped from Unioned to Combined',
+              title='Drug Drop (Unioned to Combined) By Site',
+              img_name='unioned_combined_drug_drop.jpg',
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 # -
 
 drug_info = drug_info.sort_values(by='percent_of_drop', ascending=False)
 
-create_pie_chart(drug_info, 
-                 title = 'Unioned to Combined Drop \n (Drug) Contributions', 
-                 img_name = 'drug_unioned_combined_drop_site_contribution.jpg')
+create_pie_chart(drug_info,
+                 title='Unioned to Combined Drop \n (Drug) Contributions',
+                 img_name='drug_unioned_combined_drop_site_contribution.jpg')
 
 # ### Procedure Occurrence Table
 
-procedure_info = generate_site_level_query(
-    id_name = 'procedure_occurrence_id', 
-    unioned = unioned, 
-    table_name = 'procedure_occurrence', 
-    combined = combined)
+procedure_info = generate_site_level_query(id_name='procedure_occurrence_id',
+                                           unioned=unioned,
+                                           table_name='procedure_occurrence',
+                                           combined=combined)
 
 procedure_info = add_total_drop_row(procedure_info)
 
 procedure_info = add_percent_of_drop_column(procedure_info)
 
 # +
-procedure_info_dict = create_dicts_w_info(df = procedure_info, x_label = 'source_hpo', 
-                                     column_label = 'percent_unioned_rows_dropped')
+procedure_info_dict = create_dicts_w_info(
+    df=procedure_info,
+    x_label='source_hpo',
+    column_label='percent_unioned_rows_dropped')
 
-create_graphs(info_dict = procedure_info_dict,
-              xlabel = 'HPO', ylabel = '% Rows Dropped from Unioned to Combined', 
-              title = 'Procedure Drop (Unioned to Combined) By Site', img_name = 'unioned_combined_procedure_drop.jpg', 
-              color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(info_dict=procedure_info_dict,
+              xlabel='HPO',
+              ylabel='% Rows Dropped from Unioned to Combined',
+              title='Procedure Drop (Unioned to Combined) By Site',
+              img_name='unioned_combined_procedure_drop.jpg',
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 # -
 
-procedure_info = procedure_info.sort_values(by='percent_of_drop', ascending=False)
+procedure_info = procedure_info.sort_values(by='percent_of_drop',
+                                            ascending=False)
 
-create_pie_chart(procedure_info, 
-                 title = 'Unioned to Combined Drop \n (Procedure) Contributions', 
-                 img_name = 'procedure_unioned_combined_drop_site_contribution.jpg')
+create_pie_chart(
+    procedure_info,
+    title='Unioned to Combined Drop \n (Procedure) Contributions',
+    img_name='procedure_unioned_combined_drop_site_contribution.jpg')
 
 # ### Visit Occurrence Table
 
-visit_info = generate_site_level_query(
-    id_name = 'visit_occurrence_id', 
-    unioned = unioned, 
-    table_name = 'visit_occurrence', 
-    combined = combined)
+visit_info = generate_site_level_query(id_name='visit_occurrence_id',
+                                       unioned=unioned,
+                                       table_name='visit_occurrence',
+                                       combined=combined)
 
 visit_info = add_total_drop_row(visit_info)
 
 visit_info = add_percent_of_drop_column(visit_info)
 
 # +
-visit_info_dict = create_dicts_w_info(df = visit_info, x_label = 'source_hpo', 
-                                     column_label = 'percent_unioned_rows_dropped')
+visit_info_dict = create_dicts_w_info(
+    df=visit_info,
+    x_label='source_hpo',
+    column_label='percent_unioned_rows_dropped')
 
-create_graphs(info_dict = visit_info_dict,
-              xlabel = 'HPO', ylabel = '% Rows Dropped from Unioned to Combined', 
-              title = 'Visit Drop (Unioned to Combined) By Site', img_name = 'unioned_combined_visit_drop.jpg', 
-              color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(info_dict=visit_info_dict,
+              xlabel='HPO',
+              ylabel='% Rows Dropped from Unioned to Combined',
+              title='Visit Drop (Unioned to Combined) By Site',
+              img_name='unioned_combined_visit_drop.jpg',
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 
 # +
 visit_info = visit_info.sort_values(by='percent_of_drop', ascending=False)
 
-create_pie_chart(visit_info, 
-                 title = 'Unioned to Combined Drop \n (Visit) Contributions', 
-                 img_name = 'visit_unioned_combined_drop_site_contribution.jpg')
+create_pie_chart(visit_info,
+                 title='Unioned to Combined Drop \n (Visit) Contributions',
+                 img_name='visit_unioned_combined_drop_site_contribution.jpg')
 # -
 
 # ### Observation Table
 
-observation_info = generate_site_level_query(
-    id_name = 'observation_id', 
-    unioned = unioned, 
-    table_name = 'observation', 
-    combined = combined)
+observation_info = generate_site_level_query(id_name='observation_id',
+                                             unioned=unioned,
+                                             table_name='observation',
+                                             combined=combined)
 
 # +
 observation_info = add_total_drop_row(observation_info)
@@ -938,22 +1046,26 @@ observation_info = add_total_drop_row(observation_info)
 observation_info = add_percent_of_drop_column(observation_info)
 
 # +
-observation_info_dict = create_dicts_w_info(df = observation_info, x_label = 'source_hpo', 
-                                     column_label = 'percent_unioned_rows_dropped')
+observation_info_dict = create_dicts_w_info(
+    df=observation_info,
+    x_label='source_hpo',
+    column_label='percent_unioned_rows_dropped')
 
-create_graphs(info_dict = observation_info_dict,
-              xlabel = 'HPO', ylabel = '% Rows Dropped from Unioned to Combined', 
-              title = 'Observation Drop (Unioned to Combined) By Site', img_name = 'unioned_combined_observation_drop.jpg', 
-              color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(info_dict=observation_info_dict,
+              xlabel='HPO',
+              ylabel='% Rows Dropped from Unioned to Combined',
+              title='Observation Drop (Unioned to Combined) By Site',
+              img_name='unioned_combined_observation_drop.jpg',
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 
 # +
-observation_info = observation_info.sort_values(by='percent_of_drop', ascending=False)
+observation_info = observation_info.sort_values(by='percent_of_drop',
+                                                ascending=False)
 
-create_pie_chart(observation_info, 
-                 title = 'Unioned to Combined Drop \n (Observation) Contributions', 
-                 img_name = 'observation_unioned_combined_drop_site_contribution.jpg')
+create_pie_chart(
+    observation_info,
+    title='Unioned to Combined Drop \n (Observation) Contributions',
+    img_name='observation_unioned_combined_drop_site_contribution.jpg')
 # -
-
-
-
-

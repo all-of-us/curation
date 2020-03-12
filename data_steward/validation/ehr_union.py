@@ -234,6 +234,7 @@ def query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND'):
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
     if len(incomplete_jobs) > 0:
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+    return query_job_result
 
 
 def fact_relationship_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id):

@@ -21,9 +21,8 @@
 #     - Record count (condition_occurrence)
 #
 # - We want to determine if these fluctations are potentially caused by OMOP vocabulary issues. If this is the case, we should be able to determine similar trends in AoU data.
-
-from notebooks import bq, render, parameters
-import numpy as np
+import bq_utils
+from notebooks import parameters
 
 # #### Starting Cohort Instructions:
 #
@@ -33,12 +32,10 @@ import numpy as np
 Q4_2018 = parameters.Q4_2018
 Q2_2019 = parameters.Q2_2019
 
-
-print(
-"""
+print("""
 Quarter 4 2018 Dataset: {Q4_2018}
 Quarter 2 2019 Dataset: {Q2_2019}
-""".format(Q4_2018 = Q4_2018, Q2_2019 = Q2_2019))
+""".format(Q4_2018=Q4_2018, Q2_2019=Q2_2019))
 # -
 
 q4_2018_hypo_obs_card_query = """
@@ -181,10 +178,10 @@ co.condition_concept_id IN (46273025,
 
 GROUP BY 1, 2
 ORDER BY num_persons DESC
-""".format(Q4_2018 = Q4_2018)
+""".format(Q4_2018=Q4_2018)
 
 # +
-q4_2018_hypo_obs_card = bq.query(q4_2018_hypo_obs_card_query)
+q4_2018_hypo_obs_card = bq_utils.query_to_df(q4_2018_hypo_obs_card_query)
 
 q4_2018_hypo_obs_card
 # -
@@ -329,10 +326,10 @@ co.condition_concept_id IN (46273025,
 
 GROUP BY 1, 2
 ORDER BY num_persons DESC
-""".format(Q2_2019 = Q2_2019)
+""".format(Q2_2019=Q2_2019)
 
 # +
-q2_2019_hypo_obs_card = bq.query(q2_2019_hypo_obs_card_query)
+q2_2019_hypo_obs_card = bq_utils.query_to_df(q2_2019_hypo_obs_card_query)
 
 q2_2019_hypo_obs_card
 # -
@@ -425,18 +422,18 @@ FROM
     GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     ORDER BY old_num_persons DESC
 
-""".format(Q2_2019 = Q2_2019, Q4_2018 = Q4_2018)
-
+""".format(Q2_2019=Q2_2019, Q4_2018=Q4_2018)
 
 # +
-combo = bq.query(combination_query)
+combo = bq_utils.query_to_df(combination_query)
 
 combo.append(combo.sum().rename('Total'))
 
 # +
-show = combo[['condition_concept_id', 'concept_name', 'person_difference', 'record_difference']]
+show = combo[[
+    'condition_concept_id', 'concept_name', 'person_difference',
+    'record_difference'
+]]
 
 show.append(show.sum().rename('Total'))
 # -
-
-

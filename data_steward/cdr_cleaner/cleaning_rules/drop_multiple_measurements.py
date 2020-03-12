@@ -78,9 +78,15 @@ def get_drop_multiple_measurement_queries(project_id, dataset_id,
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
+    import sandbox
 
     ARGS = parser.parse_args()
+
+    # Uncomment these lines if running locally
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(
+        project_id=ARGS.project_id, dataset_id=ARGS.dataset_id)
     clean_engine.add_console_logging(ARGS.console_log)
     query_list = get_drop_multiple_measurement_queries(ARGS.project_id,
-                                                       ARGS.dataset_id)
+                                                       ARGS.dataset_id,
+                                                       sandbox_dataset_id)
     clean_engine.clean_dataset(ARGS.project_id, query_list)

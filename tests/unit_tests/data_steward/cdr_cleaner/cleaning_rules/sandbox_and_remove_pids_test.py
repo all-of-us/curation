@@ -47,7 +47,9 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
             '_mapping_procedure_occurrence'
         ]
 
-    @mock.patch('cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.bq.query')
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.bq_utils.query_to_df'
+    )
     def test_get_tables_with_pids(self, mock_query):
         mock_query.return_value = pd.DataFrame(
             self.person_table_list + self.mapping_table_list,

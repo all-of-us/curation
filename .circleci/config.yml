@@ -13,6 +13,35 @@ job_defaults: &job_defaults
 
 commands:
   # Define reusable sets of steps to be run within the testing jobs.
+  lint_setup:
+    steps:
+      - checkout:
+          path: ~/curation
+      # Dependencies
+      - restore_cache:
+          keys:
+            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+            - pip-cache-
+      - run:
+          name: Add virtual environment activation to bash startup
+          command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
+      - run:
+          working_directory: ~/curation/data_steward
+          name: Upgrade pip and install requirements
+          command: |
+            pip install --upgrade pip setuptools
+            pip install -r requirements.txt
+            pip install -r dev_requirements.txt
+            pip install -r deid/requirements.txt
+      - run:
+          name: Show bashrc file
+          command: cat ${BASH_ENV}
+  lint_teardown:
+    steps:
+      - save_cache:
+          paths:
+            ~/curation_venv
+          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
   test_setup:
     steps:
       - checkout:
@@ -75,14 +104,24 @@ commands:
           destination: test_results
 
 jobs:
+  linting_checks:
+    <<: *job_defaults
+    steps:
+      - lint_setup
+      - run:
+          name: Checking Python lint with yapf
+          working_directory: ~/curation
+          command: tools/yapf_lint.sh
+      - run:
+          name: Checking Python lint with Pylint
+          working _directory: ~/curation
+          command: pylint -E data_steward tests
+      - lint_teardown
+
   unit_test:
     <<: *job_defaults
     steps:
       - test_setup
-      - run:
-          name: Check Python lint
-          working_directory: ~/curation
-          command: tools/yapf_lint.sh
       - run:
           name: Run unit tests
           working_directory: ~/curation
@@ -100,6 +139,7 @@ jobs:
           no_output_timeout: 300s
           when:  always
       - test_teardown
+
   integration_test:
     <<: *job_defaults
     steps:
@@ -141,6 +181,7 @@ workflows:
   version: 2
   test:
     jobs:
+      - linting_checks
       - unit_test
       - integration_test:
           filters:

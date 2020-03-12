@@ -16,13 +16,12 @@
 # ## Notebook is intended to compare the EHR data in the latest AoU dataset to the thresholds established by the [OHDSI DataQualityDashboard](https://github.com/OHDSI/DataQualityDashboard)
 
 # +
-from notebooks import bq, render, parameters
+import bq_utils
+from notebooks import parameters
 
 # %matplotlib inline
 import matplotlib.pyplot as plt
 import numpy as np
-from pandas.plotting import table 
-import pandas as pd
 import six
 
 # +
@@ -152,7 +151,7 @@ ORDER BY percent_implausible_vals DESC
 """.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, \
            DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET)
 
-measurement_df = bq.query(measurement_df_query)
+measurement_df = bq_utils.query_to_df(measurement_df_query)
 # -
 
 # ##### Creating copies of the measurement dataframe. Enables further exploration/manipulation without needing to re-run the above query.
@@ -284,7 +283,7 @@ ORDER BY percent_implaus DESC
 """.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, \
            DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET)
 
-hpo_df = bq.query(hpo_query)
+hpo_df = bq_utils.query_to_df(hpo_query)
 # -
 
 # ##### Creating copies of the HPO dataframe. Enables further exploration/manipulation without needing to re-run the above query.
@@ -293,7 +292,8 @@ c3 = hpo_df
 c4 = hpo_df
 
 
-def create_graphs(info_dict, xlabel, ylabel, title, img_name, color, total_diff_color, turnoff_x):
+def create_graphs(info_dict, xlabel, ylabel, title, img_name, color,
+                  total_diff_color, turnoff_x):
     """
     Function is used to create a bar graph for a particular dictionary with information about
     data quality
@@ -322,17 +322,22 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, color, total_diff_
     turnoff_x (bool): used to disable the x-axis labels (for each of the bars). This is typically used
         when there are so many x-axis labels that they overlap and obscure legibility
     """
-    bar_list = plt.bar(range(len(info_dict)), list(info_dict.values()), align='center', color = color)
-    
+    bar_list = plt.bar(range(len(info_dict)),
+                       list(info_dict.values()),
+                       align='center',
+                       color=color)
+
     # used to change the color of the 'aggregate' column; usually implemented for an average
     if total_diff_color:
         bar_list[len(info_dict) - 1].set_color('r')
-    
+
     if not turnoff_x:
-        plt.xticks(range(len(info_dict)), list(info_dict.keys()), rotation='vertical')
+        plt.xticks(range(len(info_dict)),
+                   list(info_dict.keys()),
+                   rotation='vertical')
     else:
         plt.xticks([])
-        
+
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(title)
@@ -366,16 +371,16 @@ def create_dicts_w_info(df, x_label, column_label):
         values: the data quality metric being compared
     """
     rows = df[x_label].unique().tolist()
-    
+
     data_qual_info = {}
 
-    for row in rows:   
+    for row in rows:
         sample_df = df.loc[df[x_label] == row]
-        
+
         data = sample_df.iloc[0][column_label]
 
         data_qual_info[row] = data
-    
+
     return data_qual_info
 
 
@@ -384,9 +389,10 @@ def create_dicts_w_info(df, x_label, column_label):
 # NOTE: exclude the end of the 'tot_implaus' column in the denominator to avoid the existing 'total' value
 
 # +
-hpo_df['percent_of_implaus'] = round(hpo_df['tot_implaus'] / sum(hpo_df['tot_implaus'].to_list()[:-1]) * 100, 2)
+hpo_df['percent_of_implaus'] = round(
+    hpo_df['tot_implaus'] / sum(hpo_df['tot_implaus'].to_list()[:-1]) * 100, 2)
 
-hpo_df = hpo_df.sort_values(by=['percent_of_implaus'], ascending = False)
+hpo_df = hpo_df.sort_values(by=['percent_of_implaus'], ascending=False)
 # -
 
 # #### Below adds a 'total' row to the bottom of the HPO dataframe
@@ -403,42 +409,55 @@ hpo_df['src_hpo_id'] = hpo_names
 
 # #### redo the 'percent_implaus' column for the total row
 
-hpo_df['percent_implaus'] = round(hpo_df['tot_implaus'] / hpo_df['tot_values'] * 100, 2)
+hpo_df['percent_implaus'] = round(
+    hpo_df['tot_implaus'] / hpo_df['tot_values'] * 100, 2)
 
 # #### redo the 'percent_of_implaus' column for the total row
 
-hpo_df['percent_of_implaus'] = round(hpo_df['tot_implaus'] / sum(hpo_df['tot_implaus'].to_list()[:-1]) * 100, 2)
-
+hpo_df['percent_of_implaus'] = round(
+    hpo_df['tot_implaus'] / sum(hpo_df['tot_implaus'].to_list()[:-1]) * 100, 2)
 
 # #### NOTE: the cell below is adapted largely from [this GitHub link](https://stackoverflow.com/questions/19726663/how-to-save-the-pandas-dataframe-series-data-as-a-figure)
 
-def render_mpl_table(data, col_width=15, row_height=0.625, font_size=12,
-                     header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
-                     bbox=[0, 0, 1, 1], header_columns=0,
-                     ax=None, **kwargs):
+
+def render_mpl_table(data,
+                     col_width=15,
+                     row_height=0.625,
+                     font_size=12,
+                     header_color='#40466e',
+                     row_colors=['#f1f1f2', 'w'],
+                     edge_color='w',
+                     bbox=[0, 0, 1, 1],
+                     header_columns=0,
+                     ax=None,
+                     **kwargs):
     """
     Function is used to improve the formatting / image quality of the output. The
     parameters can be changed as needed/desired.
     """
-    
+
     # the np.array added to size is the main determinant for column dimensions
     if ax is None:
-        size = (np.array(data.shape[::-1]) + np.array([2, 1])) * np.array([col_width, row_height])
+        size = (np.array(data.shape[::-1]) + np.array([2, 1])) * np.array(
+            [col_width, row_height])
         fig, ax = plt.subplots(figsize=size)
         ax.axis('off')
 
-    mpl_table = ax.table(cellText=data.values, bbox=bbox, colLabels=data.columns, **kwargs)
+    mpl_table = ax.table(cellText=data.values,
+                         bbox=bbox,
+                         colLabels=data.columns,
+                         **kwargs)
 
     mpl_table.auto_set_font_size(False)
     mpl_table.set_fontsize(font_size)
 
-    for k, cell in  six.iteritems(mpl_table._cells):
+    for k, cell in six.iteritems(mpl_table._cells):
         cell.set_edgecolor(edge_color)
         if k[0] == 0 or k[1] < header_columns:
             cell.set_text_props(weight='bold', color='w')
             cell.set_facecolor(header_color)
         else:
-            cell.set_facecolor(row_colors[k[0]%len(row_colors) ])
+            cell.set_facecolor(row_colors[k[0] % len(row_colors)])
     return ax
 
 
@@ -447,15 +466,20 @@ ax = render_mpl_table(hpo_df, header_columns=0, col_width=2.0)
 
 plt.tight_layout()
 
-plt.savefig('site_implausibility_totals.jpg', bbox_inches ="tight")
+plt.savefig('site_implausibility_totals.jpg', bbox_inches="tight")
 
 # +
-percent_imp_dictionary = create_dicts_w_info(hpo_df, 'src_hpo_id', 'percent_implaus')
+percent_imp_dictionary = create_dicts_w_info(hpo_df, 'src_hpo_id',
+                                             'percent_implaus')
 
-create_graphs(info_dict = percent_imp_dictionary, xlabel = 'Site', ylabel = '% of Values that are Implausible',
-             title = 'Percentage of Values that are Implausible by Site',
-             img_name = 'percentage_of_implausible_values_distribution.png',
-             color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(info_dict=percent_imp_dictionary,
+              xlabel='Site',
+              ylabel='% of Values that are Implausible',
+              title='Percentage of Values that are Implausible by Site',
+              img_name='percentage_of_implausible_values_distribution.png',
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 
 # +
 hpo_list = hpo_df['src_hpo_id'].tolist()[:-1]  # take off the total
@@ -470,28 +494,35 @@ for hpo, perc in zip(hpo_list, implaus_perc_by_hpo):
     labels.append(string)
 
 wedges = [0.1] * len(labels)
-    
-plt.pie(implaus_perc_by_hpo, labels=None, shadow=True, startangle=140, explode=wedges)
+
+plt.pie(implaus_perc_by_hpo,
+        labels=None,
+        shadow=True,
+        startangle=140,
+        explode=wedges)
 
 plt.axis('equal')
 plt.title("Percentage of Total 'Implausible' Records by Site")
-plt.legend(bbox_to_anchor = (0.5, 0.75, 1.0, 0.85), labels = labels)
+plt.legend(bbox_to_anchor=(0.5, 0.75, 1.0, 0.85), labels=labels)
 
 img_name = 'percent_implausible_by_site.jpg'
 plt.savefig(img_name, bbox_inches="tight")
 
 plt.show()
 
-
 # +
 hpo_dict = create_dicts_w_info(hpo_df, 'src_hpo_id', 'percent_of_implaus')
 
 del hpo_dict["Total"]  # want to get rid of the total (which will be ~100%)
 
-create_graphs(info_dict = hpo_dict, xlabel = 'Site', ylabel = 'Percentage of Implausible Values',
-              title = "Spread of Implausible Values by Site",
-              img_name = 'spread_implausible_values.jpg',
-              color = 'b', total_diff_color = False, turnoff_x = False)
+create_graphs(info_dict=hpo_dict,
+              xlabel='Site',
+              ylabel='Percentage of Implausible Values',
+              title="Spread of Implausible Values by Site",
+              img_name='spread_implausible_values.jpg',
+              color='b',
+              total_diff_color=False,
+              turnoff_x=False)
 # -
 
 measurement_df
@@ -502,7 +533,8 @@ c2 = measurement_df
 # #### Below is used to add an 'aggregate' row that shows data quality across all of the different measurement/unit combinations specified by the data quality dashboard
 
 # +
-measurement_df = measurement_df.append(measurement_df.sum(numeric_only=True).rename('Total'))
+measurement_df = measurement_df.append(
+    measurement_df.sum(numeric_only=True).rename('Total'))
 
 measurement_names = measurement_df['measurement_name'].to_list()
 
@@ -513,14 +545,21 @@ measurement_df['measurement_name'] = measurement_names
 
 # #### Recreating the 'percent_implausbile_vals' column (mostly for the final aggregate row)
 
-measurement_df['percent_implausible_vals'] = round(measurement_df['num_implausible_vals'] / measurement_df['num_values_tot'] * 100, 2)
+measurement_df['percent_implausible_vals'] = round(
+    measurement_df['num_implausible_vals'] / measurement_df['num_values_tot'] *
+    100, 2)
 
 measurement_df
 
 # +
-meas_dict = create_dicts_w_info(measurement_df, 'measurement_name', 'percent_implausible_vals')
+meas_dict = create_dicts_w_info(measurement_df, 'measurement_name',
+                                'percent_implausible_vals')
 
-create_graphs(info_dict = meas_dict, xlabel = 'Measurement / Unit Combination', ylabel = 'Proportion of Values that are Implausible',
-              title = "Proportion of Implausible Values by Measurement/Unit",
-              img_name = 'proportion_implausible_by_measurement.png',
-              color = 'b', total_diff_color = True, turnoff_x = True)
+create_graphs(info_dict=meas_dict,
+              xlabel='Measurement / Unit Combination',
+              ylabel='Proportion of Values that are Implausible',
+              title="Proportion of Implausible Values by Measurement/Unit",
+              img_name='proportion_implausible_by_measurement.png',
+              color='b',
+              total_diff_color=True,
+              turnoff_x=True)

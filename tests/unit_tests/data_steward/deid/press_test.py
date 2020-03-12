@@ -8,6 +8,18 @@ from mock import patch
 from deid.press import Press
 
 
+class BasePass(Press):
+
+    def get_dataframe(self, sql=None, limit=None):
+        pass
+
+    def submit(self, sql, create, dml=None):
+        pass
+
+    def update_rules(self):
+        pass
+
+
 class PressTest(unittest.TestCase):
 
     @classmethod
@@ -40,12 +52,12 @@ class PressTest(unittest.TestCase):
         self.pipeline = None
         self.action = 'submit'
 
-        self.press_obj = Press(idataset=self.input_dataset,
-                               table=self.tablename,
-                               logs=self.log_path,
-                               rules=self.rules_path,
-                               pipeline=self.pipeline,
-                               action=self.action)
+        self.press_obj = BasePass(idataset=self.input_dataset,
+                                  table=self.tablename,
+                                  logs=self.log_path,
+                                  rules=self.rules_path,
+                                  pipeline=self.pipeline,
+                                  action=self.action)
 
     def test_gather_dml_queries(self):
         # pre-conditions

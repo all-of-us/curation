@@ -1,7 +1,7 @@
 # # Person
 # ## Person ID validation
 
-from notebooks import bq
+import bq_utils
 from notebooks.parameters import RDR_DATASET_ID, EHR_DATASET_ID
 
 # Report sites where the number of invalid / total participant IDs
@@ -9,7 +9,7 @@ from notebooks.parameters import RDR_DATASET_ID, EHR_DATASET_ID
 INVALID_THRESHOLD = 0.5
 
 # Get list of all hpo_ids
-hpo_ids = bq.query("""
+hpo_ids = bq_utils.query_to_df("""
 SELECT REPLACE(table_id, '_person', '') AS hpo_id
 FROM `{EHR_DATASET_ID}.__TABLES__`
 WHERE table_id LIKE '%person' 
@@ -41,9 +41,12 @@ LEFT JOIN
  ON TRUE
 WHERE T.table_id = '{h}_person'"""
 for hpo_id in hpo_ids:
-    subqueries.append(subquery.format(h=hpo_id, EHR_DATASET_ID=EHR_DATASET_ID, RDR_DATASET_ID=RDR_DATASET_ID))
+    subqueries.append(
+        subquery.format(h=hpo_id,
+                        EHR_DATASET_ID=EHR_DATASET_ID,
+                        RDR_DATASET_ID=RDR_DATASET_ID))
 q = '\n\nUNION ALL\n'.join(subqueries)
-df = bq.query(q)
+df = bq_utils.query_to_df(q)
 df
 
 # ## HPO sites where proportion of invalid person_ids exceeds threshold
@@ -100,7 +103,9 @@ WITH
 
 
 def get_rdr_ehr_name_match_hpo_query(hpo_id):
-    return RDR_EHR_NAME_MATCH_QUERY.format(RDR_DATASET_ID=RDR_DATASET_ID, EHR_DATASET_ID=EHR_DATASET_ID, HPO_ID=hpo_id)
+    return RDR_EHR_NAME_MATCH_QUERY.format(RDR_DATASET_ID=RDR_DATASET_ID,
+                                           EHR_DATASET_ID=EHR_DATASET_ID,
+                                           HPO_ID=hpo_id)
 
 
 def get_rdr_ehr_name_match_query(hpo_ids):
@@ -108,12 +113,13 @@ def get_rdr_ehr_name_match_query(hpo_ids):
     for hpo_id in hpo_ids:
         subquery = get_rdr_ehr_name_match_hpo_query(hpo_id)
         subqueries.append(subquery)
-    return '\n\nUNION ALL\n\n'.join(map(lambda subquery: '(' + subquery + ')', subqueries))
+    return '\n\nUNION ALL\n\n'.join(
+        map(lambda subquery: '(' + subquery + ')', subqueries))
 
 
 def rdr_ehr_name_match(hpo_ids):
     q = get_rdr_ehr_name_match_query(hpo_ids)
-    return bq.query(q)
+    return bq_utils.query_to_df(q)
 
 
 # -

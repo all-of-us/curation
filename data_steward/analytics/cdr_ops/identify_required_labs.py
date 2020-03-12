@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
-from notebooks import bq, render
+import bq_utils
+from notebooks import render
 
 # ## Strategy for getting all related lab concepts
 #
-# We are going to use a combination of LOINC Group and LOINC Hierarchy because both classification systems cover some concepts the other does not cover. In general, LOINC Hierarchy provides generalized concepts that cover more descendants except for **physical measurements**, in which case we want to use LOINC Group. 
+# We are going to use a combination of LOINC Group and LOINC Hierarchy because both classification systems cover some concepts the other does not cover. In general, LOINC Hierarchy provides generalized concepts that cover more descendants except for **physical measurements**, in which case we want to use LOINC Group.
 #
 # <ul>
 #     <li>LONIC Group: going up 1 level is sufficient for getting the generalized lab concept ids. </li>
@@ -14,8 +14,8 @@ from notebooks import bq, render
 #     <li>We are going to union the descendants of the generalized lab concepts using LOINC Group and LOINC Hierarchy in order to identify whether or not the HPO sites have submitted the required labs. If a site submits data on any one of the labs, we will flag it as yes otherwise flag it as no. </li>
 # </ul>
 
-DATASET_ID = '' # the dataset_id for which we are checking the require labs
-VOCAB_DATASET_ID = '' # the latest vocabulary dataset_id
+DATASET_ID = ''  # the dataset_id for which we are checking the require labs
+VOCAB_DATASET_ID = ''  # the latest vocabulary dataset_id
 
 IDENTIFY_LABS_QUERY = """
 WITH get_excluded_ancestor_ids AS
@@ -254,8 +254,7 @@ ORDER BY
   1,2
 """
 
-identify_labs_query_results = bq.query(IDENTIFY_LABS_QUERY.format(VOCAB_DATASET_ID=VOCAB_DATASET_ID,
-                                                                  DATASET_ID=DATASET_ID))
+identify_labs_query_results = bq_utils.query_to_df(
+    IDENTIFY_LABS_QUERY.format(VOCAB_DATASET_ID=VOCAB_DATASET_ID,
+                               DATASET_ID=DATASET_ID))
 render.dataframe(identify_labs_query_results)
-
-

@@ -2,21 +2,21 @@ import json
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from notebooks import bq, render
+import bq_utils
+from notebooks import render
 from notebooks.parameters import SANDBOX, VOCAB_DATASET_ID
-
 
 pd.set_option('display.max_colwidth', -1)
 VOCAB = VOCAB_DATASET_ID
 
 # Fully qualified tables
-TABLE_BEFORE_CONVERSION = '' # e.g. deid.measurement
+TABLE_BEFORE_CONVERSION = ''  # e.g. deid.measurement
 TABLE_AFTER_CONVERSION = ''  # e.g. deid_clean.measurement
 UNIT_MAPPING = '{SANDBOX}.unit_mapping'.format(SANDBOX=SANDBOX)
 print("""TABLE_BEFORE_CONVERSION = {TABLE_BEFORE_CONVERSION}
 TABLE_AFTER_CONVERSION = {TABLE_AFTER_CONVERSION}
 UNIT_MAPPING = {UNIT_MAPPING}""".format(
-    TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION, 
+    TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION,
     TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
     UNIT_MAPPING=UNIT_MAPPING))
 
@@ -251,49 +251,50 @@ ORDER BY
 # Check the number of records associated with the units before and after the unit transformation. Theoretically the number of records units should be same as before after the unit transformation.
 
 unit_conversion_count_query = UNIT_CONVERSION_COUNT_TEMPLATE.format(
-                            TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION,
-                            TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
-                            UNIT_MAPPING=UNIT_MAPPING,
-                            VOCAB=VOCAB)
-unit_conversion_count = bq.query(unit_conversion_count_query)
+    TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION,
+    TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
+    UNIT_MAPPING=UNIT_MAPPING,
+    VOCAB=VOCAB)
+unit_conversion_count = bq_utils.query_to_df(unit_conversion_count_query)
 render.dataframe(unit_conversion_count)
 
 # Compute the first, median and third quartiles before and after the unit transformation
 
 unit_conversion_stats_query = UNIT_CONVERSION_STATS_TEMPLATE.format(
-                            TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION,
-                            TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
-                            UNIT_MAPPING=UNIT_MAPPING,
-                            VOCAB=VOCAB)
-unit_conversion_stats = bq.query(unit_conversion_stats_query)
-unit_conversion_stats.measurement_concept_id = unit_conversion_stats.measurement_concept_id.apply(str)
+    TABLE_BEFORE_CONVERSION=TABLE_BEFORE_CONVERSION,
+    TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
+    UNIT_MAPPING=UNIT_MAPPING,
+    VOCAB=VOCAB)
+unit_conversion_stats = bq_utils.query_to_df(unit_conversion_stats_query)
+unit_conversion_stats.measurement_concept_id = unit_conversion_stats.measurement_concept_id.apply(
+    str)
 render.dataframe(unit_conversion_stats)
 
 # +
 before_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
-                            TABLE=TABLE_BEFORE_CONVERSION,
-                            VOCAB=VOCAB,
-                            UNIT_MAPPING=UNIT_MAPPING,
-                            UNIT_CONCEPT_ID_COLUMN='unit_concept_id')
+    TABLE=TABLE_BEFORE_CONVERSION,
+    VOCAB=VOCAB,
+    UNIT_MAPPING=UNIT_MAPPING,
+    UNIT_CONCEPT_ID_COLUMN='unit_concept_id')
 
-
-before_unit_conversion_dist = bq.query(before_unit_conversion_dist_query)
+before_unit_conversion_dist = bq_utils.query_to_df(
+    before_unit_conversion_dist_query)
 render.dataframe(before_unit_conversion_dist)
 
 # +
 after_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
-                            TABLE=TABLE_AFTER_CONVERSION,
-                            VOCAB=VOCAB,
-                            UNIT_MAPPING=UNIT_MAPPING,
-                            UNIT_CONCEPT_ID_COLUMN='set_unit_concept_id')
+    TABLE=TABLE_AFTER_CONVERSION,
+    VOCAB=VOCAB,
+    UNIT_MAPPING=UNIT_MAPPING,
+    UNIT_CONCEPT_ID_COLUMN='set_unit_concept_id')
 
-
-after_unit_conversion_dist = bq.query(after_unit_conversion_dist_query)
+after_unit_conversion_dist = bq_utils.query_to_df(
+    after_unit_conversion_dist_query)
 render.dataframe(after_unit_conversion_dist)
-
 
 # -
 # ### Define functions for plotting
+
 
 # +
 def init_histogram(axis, sub_dataframe):
@@ -302,9 +303,12 @@ def init_histogram(axis, sub_dataframe):
     weights = sub_dataframe['bin_count']
     min_bin = sub_dataframe['bin_lower_bound'].min()
     max_bin = sub_dataframe['bin_upper_bound'].max()
-    counts_, bins_, _ = axis.hist(centroids, bins=bins,
-                             weights=weights, range=(min_bin, max_bin))
-    
+    counts_, bins_, _ = axis.hist(centroids,
+                                  bins=bins,
+                                  weights=weights,
+                                  range=(min_bin, max_bin))
+
+
 def get_measurement_concept_ids(df):
     """
     Retrieve a unique set of measurement_concept_ids from the given df
@@ -314,6 +318,7 @@ def get_measurement_concept_ids(df):
     """
     return df['measurement_concept_id'].unique()
 
+
 def get_unit_concept_ids(df, measurement_concept_id=None):
     """
     Retrieve a unique set of unit concept ids for a given df
@@ -322,13 +327,16 @@ def get_unit_concept_ids(df, measurement_concept_id=None):
     :param measurement_concept_id: an option measurement_concept_id
     :return: a unique set of unit_concept_ids
     """
-    
+
     unit_concept_ids = []
     if measurement_concept_id is None:
         unit_concept_ids = df['unit_concept_id'].unique()
     else:
-        unit_concept_ids = df.loc[df['measurement_concept_id'] == measurement_concept_id, 'unit_concept_id'].unique()
+        unit_concept_ids = df.loc[df['measurement_concept_id'] ==
+                                  measurement_concept_id,
+                                  'unit_concept_id'].unique()
     return unit_concept_ids
+
 
 def get_sub_dataframe(df, measurement_concept_id, unit_concept_id):
     """
@@ -339,10 +347,11 @@ def get_sub_dataframe(df, measurement_concept_id, unit_concept_id):
     :param unit_concept_id: the unit_concept_id for which the subset is extracted
     :return: a subset of the dataframe
     """
-    
+
     indexes = (df['measurement_concept_id'] == measurement_concept_id) \
         & (df['unit_concept_id'] == unit_concept_id)
     return df[indexes]
+
 
 def get_measurement_concept_dict(df):
     """
@@ -351,8 +360,9 @@ def get_measurement_concept_dict(df):
     :param df: dataframe
     :return: a ictionary containing the measurement_concept_id and its corresponding measurement_concept_name
     """
-    
+
     return dict(zip(df.measurement_concept_id, df.measurement_concept_name))
+
 
 def get_unit_concept_id_dict(df):
     """
@@ -361,12 +371,13 @@ def get_unit_concept_id_dict(df):
     :param df: dataframe
     :return: a dictionary containing the unit_concept_id and its corresponding unit_concept_name
     """
-    
+
     return dict(zip(df.unit_concept_id, df.unit_concept_name))
+
 
 def generate_plot(measurement_concept_id,
                   measurement_concept_dict,
-                  value_dists_1, 
+                  value_dists_1,
                   value_dists_2,
                   unit_dict_1,
                   unit_dict_2,
@@ -386,43 +397,49 @@ def generate_plot(measurement_concept_id,
     :param sharey a boolean indicating whether subplots share the y-axis
     :return: a list of query dicts for rerouting the records to the corresponding destination table
     """
-    
+
     measurement_concept_id = str(measurement_concept_id)
-    
+
     units_before = get_unit_concept_ids(value_dists_1, measurement_concept_id)
     units_after = get_unit_concept_ids(value_dists_2, measurement_concept_id)
-    
+
     #Automatically adjusting the height of the plot
     plt.rcParams['figure.figsize'] = [18, 4 * len(units_before)]
-    
+
     for unit_after in units_after:
-        
+
         unit_after_name = unit_dict_2[unit_after]
         #Generate the n * 2 grid to display the side by side distributions
-        fig, axs = plt.subplots(len(units_before), 2, sharex=sharex, sharey=sharey)
-        measurement_concept_name = measurement_concept_dict[measurement_concept_id]
+        fig, axs = plt.subplots(len(units_before),
+                                2,
+                                sharex=sharex,
+                                sharey=sharey)
+        measurement_concept_name = measurement_concept_dict[
+            measurement_concept_id]
         unit_concept_after = unit_dict_2[unit_after]
-        
-        fig.suptitle('Measurement: {measurement}\n standard unit: {unit}'.format(
-            measurement=measurement_concept_name, 
-            unit=unit_concept_after)
-        )
-        
+
+        fig.suptitle(
+            'Measurement: {measurement}\n standard unit: {unit}'.format(
+                measurement=measurement_concept_name, unit=unit_concept_after))
+
         counter = 0
-        
-        sub_df_after = get_sub_dataframe(value_dists_2, measurement_concept_id, unit_after)
+
+        sub_df_after = get_sub_dataframe(value_dists_2, measurement_concept_id,
+                                         unit_after)
 
         for unit_before in units_before:
-            sub_df_before = get_sub_dataframe(value_dists_1, measurement_concept_id, unit_before)
+            sub_df_before = get_sub_dataframe(value_dists_1,
+                                              measurement_concept_id,
+                                              unit_before)
             unit_before_name = unit_dict_1[unit_before]
-            
+
             if len(units_before) == 1:
                 axs_before = axs[0]
                 axs_after = axs[1]
             else:
                 axs_before = axs[counter][0]
                 axs_after = axs[counter][1]
-            
+
             init_histogram(axs_before, sub_df_before)
             axs_before.set_title('before unit: {}'.format(unit_before_name))
             init_histogram(axs_after, sub_df_after)
@@ -435,8 +452,10 @@ def generate_plot(measurement_concept_id,
 
 # ### Generate the dictionaries for plotting
 
-measurement_concept_ids = get_measurement_concept_ids(before_unit_conversion_dist)
-measurement_concept_dict = get_measurement_concept_dict(before_unit_conversion_dist)
+measurement_concept_ids = get_measurement_concept_ids(
+    before_unit_conversion_dist)
+measurement_concept_dict = get_measurement_concept_dict(
+    before_unit_conversion_dist)
 before_unit_dict = get_unit_concept_id_dict(before_unit_conversion_dist)
 after_unit_dict = get_unit_concept_id_dict(after_unit_conversion_dist)
 
@@ -444,32 +463,20 @@ print(json.dumps(measurement_concept_dict, indent=1))
 
 # ### Distribution comparison for Systolic blood pressure (measurement_concept_id = 3004249)
 
-generate_plot(3004249,
-              measurement_concept_dict,
-              before_unit_conversion_dist, 
-              after_unit_conversion_dist,
-              before_unit_dict,
-              after_unit_dict,
+generate_plot(3004249, measurement_concept_dict, before_unit_conversion_dist,
+              after_unit_conversion_dist, before_unit_dict, after_unit_dict,
               False, False)
 
 # ### Distribution comparison for Heart rate (measurement_concept_id = 3027018)
 
-generate_plot(3027018,
-              measurement_concept_dict,
-              before_unit_conversion_dist, 
-              after_unit_conversion_dist,
-              before_unit_dict,
-              after_unit_dict,
+generate_plot(3027018, measurement_concept_dict, before_unit_conversion_dist,
+              after_unit_conversion_dist, before_unit_dict, after_unit_dict,
               False, False)
 
 # ### Distribution comparison for the first 20 measurement_concept_ids in the entire measurement_concept_ids
 # The retreived 20 measurement_concept_ids are in random order. Only 20 plots are printed in this example because there is a limition of 20 plots being printed at the same time
 
 for measurement_concept_id in measurement_concept_ids[0:20]:
-    generate_plot(measurement_concept_id,
-                  measurement_concept_dict,
-                  before_unit_conversion_dist, 
-                  after_unit_conversion_dist,
-                  before_unit_dict,
-                  after_unit_dict,
-                  False, False)
+    generate_plot(measurement_concept_id, measurement_concept_dict,
+                  before_unit_conversion_dist, after_unit_conversion_dist,
+                  before_unit_dict, after_unit_dict, False, False)

@@ -1,7 +1,7 @@
 # Project imports
 from constants.cdr_cleaner import clean_cdr as clean_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from notebooks import bq
+import bq_utils
 from constants import bq_utils as bq_consts
 from sandbox import get_sandbox_dataset_id
 
@@ -36,10 +36,10 @@ def get_tables_with_person_id(project_id, dataset_id):
     """
     person_table_query = PERSON_TABLE_QUERY.format(project=project_id,
                                                    dataset=dataset_id)
-    person_tables = bq.query(person_table_query).get(
+    person_tables = bq_utils.query_to_df(person_table_query).get(
         TABLE_NAME_COLUMN).to_list()
     # exclude mapping tables from list, to be removed after all cleaning rules
-    return [
+    person_table_list = [
         table_name for table_name in person_tables
         if '_mapping' not in table_name
     ]
