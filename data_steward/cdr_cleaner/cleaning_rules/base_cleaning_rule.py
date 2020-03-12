@@ -41,7 +41,7 @@ class AbstractBaseCleaningRule(ABC):
         super().__init__()
 
     @abstractmethod
-    def setup_rule(cls, *args, **keyword_args):
+    def setup_rule(self, *args, **keyword_args):
         """
         Load required resources prior to executing cleaning rule queries.
 
@@ -53,7 +53,7 @@ class AbstractBaseCleaningRule(ABC):
         pass
 
     @abstractmethod
-    def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
+    def get_query_specs(self, *args, **keyword_args) -> self.query_spec_list:
         """
         Interface to return a list of query dictionaries.
 
