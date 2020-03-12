@@ -44,9 +44,21 @@ def get_argument_parser():
                         dest='dataset_id',
                         help='Dataset where cleaning rules are to be applied',
                         required=True)
+    parser.add_argument(
+        '-b',
+        '--sandbox_dataset_id',
+        action='store',
+        dest='sandbox_dataset_id',
+        help='Dataset to store intermediate results or changes in',
+        required=True)
     parser.add_argument('-s',
                         '--console_log',
                         dest='console_log',
                         action='store_true',
                         help='Send logs to console')
+    parser.add_argument('-l',
+                        '--list_queries',
+                        dest='list_queries',
+                        action='store_true',
+                        help='List the generated SQL without executing')
     return parser
