@@ -26,6 +26,7 @@ LOGGER = logging.getLogger(__name__)
 query_spec = NewType('QuerySpec', {})
 query_spec_list = List[query_spec]
 
+
 class AbstractBaseCleaningRule(ABC):
     """
     Contains attributes and functions relevant to all cleaning rules.
