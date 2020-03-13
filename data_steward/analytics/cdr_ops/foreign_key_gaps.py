@@ -25,6 +25,7 @@
 
 # +
 import bq_utils
+import utils.bq
 from notebooks import parameters
 
 # %matplotlib inline
@@ -154,7 +155,7 @@ a.procedure_dt_vis_end_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-procedure_visit_df = bq_utils.query_to_df(p_v_query)
+procedure_visit_df = utils.bq.query(p_v_query)
 # -
 
 # ##### Creating copies of the procedure_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -421,7 +422,7 @@ a.observation_dt_vis_end_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-observation_visit_df = bq_utils.query_to_df(observation_visit_query)
+observation_visit_df = utils.bq.query(observation_visit_query)
 # -
 
 # ##### Creating copies of the observation_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -569,7 +570,7 @@ a.measurement_dt_vis_end_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-measurement_visit_df = bq_utils.query_to_df(measurement_visit_query)
+measurement_visit_df = utils.bq.query(measurement_visit_query)
 # -
 
 # ##### Creating copies of the measurement_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -689,7 +690,7 @@ a.condition_dt_vis_start_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-condition_visit_df = bq_utils.query_to_df(condition_visit_query)
+condition_visit_df = utils.bq.query(condition_visit_query)
 # -
 
 # ##### Creating copies of the condition_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -807,7 +808,7 @@ a.drug_dt_vis_start_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-drug_visit_df = bq_utils.query_to_df(drug_visit_query)
+drug_visit_df = utils.bq.query(drug_visit_query)
 # -
 
 # ##### Creating copies of the drug_visit_df. Enables further exploration/manipulation without needing to re-run the above query.

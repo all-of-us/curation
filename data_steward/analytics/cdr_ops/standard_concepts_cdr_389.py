@@ -34,6 +34,7 @@
 #
 # #### This notebook also does not exclude instances where the concept_id = 0.
 import bq_utils
+import utils.bq
 from notebooks import parameters
 
 # +
@@ -87,7 +88,7 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7
 ORDER BY count DESC
 """.format(combined=combined, ref=ref)
 
-co_results = bq_utils.query_to_df(co_query)
+co_results = utils.bq.query(co_query)
 # -
 
 co_results
@@ -161,7 +162,7 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7
 ORDER BY count DESC
 """.format(combined=combined, ref=ref)
 
-de_results = bq_utils.query_to_df(de_query)
+de_results = utils.bq.query(de_query)
 # -
 
 print(de_query)
@@ -237,7 +238,7 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7
 ORDER BY count DESC
 """.format(combined=combined, ref=ref)
 
-m_results = bq_utils.query_to_df(m_query)
+m_results = utils.bq.query(m_query)
 # -
 
 m_results
@@ -307,7 +308,7 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7
 ORDER BY count DESC
 """.format(combined=combined, ref=ref)
 
-v_results = bq_utils.query_to_df(v_query)
+v_results = utils.bq.query(v_query)
 # -
 
 v_results
@@ -376,7 +377,7 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7
 ORDER BY count DESC
 """.format(combined=combined, ref=ref)
 
-p_results = bq_utils.query_to_df(p_query)
+p_results = utils.bq.query(p_query)
 # -
 
 p_results
@@ -445,7 +446,7 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7
 ORDER BY count DESC
 """.format(combined=combined, ref=ref)
 
-o_results = bq_utils.query_to_df(o_query)
+o_results = utils.bq.query(o_query)
 # -
 
 o_results

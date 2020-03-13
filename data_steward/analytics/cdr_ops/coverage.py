@@ -15,6 +15,7 @@
 import warnings
 
 import bq_utils
+import utils.bq
 from notebooks import parameters
 warnings.filterwarnings('ignore')
 dataset = parameters.EHR_DATASET_ID
@@ -22,7 +23,7 @@ dataset = parameters.EHR_DATASET_ID
 
 def get_hpo_ids():
     query = "SELECT distinct hpo_id FROM lookup_tables.hpo_site_id_mappings where hpo_id<>''"
-    df = bq_utils.query_to_df(query)
+    df = utils.bq.query(query)
     return df['hpo_id']
 
 
@@ -53,7 +54,7 @@ def get_hpo_table_columns(hpo_id):
                   table_id like '%care_site' OR
                   table_id like '%note'
                   )""".format(hpo_id=hpo_id, dataset=dataset)
-    df = bq_utils.query_to_df(query)
+    df = utils.bq.query(query)
     return df
 
 
@@ -109,7 +110,7 @@ for i, hpo_id in hpo_ids.items():
     table_columns = get_hpo_table_columns(hpo_id)
     query = create_hpo_completeness_query(table_columns, hpo_id)
     try:
-        df = bq_utils.query_to_df(query)
+        df = utils.bq.query(query)
         df.to_csv("{hpo_id}_omop_tables_coverage.csv".format(hpo_id=hpo_id),
                   sep=',',
                   encoding='utf-8')

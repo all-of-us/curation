@@ -1,5 +1,6 @@
 # +
 import bq_utils
+import utils.bq
 from notebooks import render, parameters
 
 COMBINED = parameters.COMBINED_DATASET_ID
@@ -31,7 +32,7 @@ FROM
 ORDER BY REPLACE(REPLACE(table_id, '_mapping_', ''), '_ext', ''), dataset_id
 """
 q = ROW_COUNTS_QUERY.format(COMBINED=COMBINED, DEID=DEID)
-row_counts_df = bq_utils.query_to_df(q)
+row_counts_df = utils.bq.query(q)
 render.dataframe(row_counts_df)
 
 # ## Side by side comparison of row counts
@@ -45,5 +46,5 @@ render.dataframe(compare_df)
 # The combined mapping tables and deid ext tables are expected to have the same number of rows. Below we find where the row counts differ.
 
 query_str = '{DEID} <> {COMBINED}'.format(COMBINED=COMBINED, DEID=DEID)
-diff_row_counts_df = bq_utils.query_to_df(query_str)
+diff_row_counts_df = utils.bq.query(query_str)
 render.dataframe(diff_row_counts_df)

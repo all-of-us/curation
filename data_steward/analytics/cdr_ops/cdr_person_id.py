@@ -2,6 +2,7 @@
 # ## Person ID validation
 
 import bq_utils
+import utils.bq
 from notebooks.parameters import RDR_DATASET_ID, EHR_DATASET_ID
 
 # Report sites where the number of invalid / total participant IDs
@@ -9,7 +10,7 @@ from notebooks.parameters import RDR_DATASET_ID, EHR_DATASET_ID
 INVALID_THRESHOLD = 0.5
 
 # Get list of all hpo_ids
-hpo_ids = bq_utils.query_to_df("""
+hpo_ids = utils.bq.query("""
 SELECT REPLACE(table_id, '_person', '') AS hpo_id
 FROM `{EHR_DATASET_ID}.__TABLES__`
 WHERE table_id LIKE '%person' 
@@ -46,7 +47,7 @@ for hpo_id in hpo_ids:
                         EHR_DATASET_ID=EHR_DATASET_ID,
                         RDR_DATASET_ID=RDR_DATASET_ID))
 q = '\n\nUNION ALL\n'.join(subqueries)
-df = bq_utils.query_to_df(q)
+df = utils.bq.query(q)
 df
 
 # ## HPO sites where proportion of invalid person_ids exceeds threshold
@@ -119,7 +120,7 @@ def get_rdr_ehr_name_match_query(hpo_ids):
 
 def rdr_ehr_name_match(hpo_ids):
     q = get_rdr_ehr_name_match_query(hpo_ids)
-    return bq_utils.query_to_df(q)
+    return utils.bq.query(q)
 
 
 # -

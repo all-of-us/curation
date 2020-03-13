@@ -18,6 +18,7 @@
 
 # +
 import bq_utils
+import utils.bq
 from notebooks import parameters
 
 # %matplotlib inline
@@ -100,7 +101,7 @@ def find_descendants(DATASET, ancestor_concept):
     ca.ancestor_concept_id IN ({})
     GROUP BY 1)""".format(DATASET, DATASET, ancestor_concept)
 
-    desc_concepts_df = bq_utils.query_to_df(descendant_concepts)
+    desc_concepts_df = utils.bq.query(descendant_concepts)
 
     descendant_concept_ids = desc_concepts_df['measurement_concept_id'].tolist()
 
@@ -161,7 +162,7 @@ def find_total_number_of_units_for_lab_type(DATASET, string_desc_concepts):
         ORDER BY count DESC) a
     """.format(DATASET, DATASET, string_desc_concepts)
 
-    tot_units_df = bq_utils.query_to_df(total_unit_concept_names)
+    tot_units_df = utils.bq.query(total_unit_concept_names)
     tot_units = tot_units_df['tot_concepts'].iloc[0]
 
     return tot_units
@@ -209,7 +210,7 @@ def find_most_popular_unit_type(tot_units, DATASET, string_desc_concepts):
     ORDER BY count DESC
     """.format(tot_units, DATASET, DATASET, string_desc_concepts)
 
-    units_for_lab_df = bq_utils.query_to_df(units_for_lab)
+    units_for_lab_df = utils.bq.query(units_for_lab)
 
     desc_concept_ids = units_for_lab_df['unit_name'].tolist()
 
@@ -292,7 +293,7 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts,
     m.value_as_number ASC
     """.format(DATASET, DATASET, most_pop_unit, string_desc_concepts)
 
-    measurements_for_lab_and_unit = bq_utils.query_to_df(find_range_overall)
+    measurements_for_lab_and_unit = utils.bq.query(find_range_overall)
 
     values = measurements_for_lab_and_unit['value_as_number'].tolist()
 
@@ -306,7 +307,7 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts,
     c.concept_id = {}
     """.format(DATASET, ancestor_id)
 
-    concept_name = bq_utils.query_to_df(find_ancestor_lab)
+    concept_name = utils.bq.query(find_ancestor_lab)
     concept_name = concept_name['concept_name'].tolist()
     concept_name = str(concept_name[0].lower())  # actual name
 
@@ -408,7 +409,7 @@ def create_site_distribution_df(DATASET, string_desc_concepts, most_pop_unit):
     ORDER BY median DESC
     """.format(DATASET, DATASET, DATASET, string_desc_concepts, most_pop_unit)
 
-    site_value_distribution_df = bq_utils.query_to_df(find_site_distribution)
+    site_value_distribution_df = utils.bq.query(find_site_distribution)
 
     return site_value_distribution_df
 

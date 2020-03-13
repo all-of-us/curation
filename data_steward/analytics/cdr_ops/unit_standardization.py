@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import bq_utils
+import utils.bq
 from notebooks import render
 from notebooks.parameters import SANDBOX, VOCAB_DATASET_ID
 
@@ -255,7 +256,7 @@ unit_conversion_count_query = UNIT_CONVERSION_COUNT_TEMPLATE.format(
     TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
     UNIT_MAPPING=UNIT_MAPPING,
     VOCAB=VOCAB)
-unit_conversion_count = bq_utils.query_to_df(unit_conversion_count_query)
+unit_conversion_count = utils.bq.query(unit_conversion_count_query)
 render.dataframe(unit_conversion_count)
 
 # Compute the first, median and third quartiles before and after the unit transformation
@@ -265,7 +266,7 @@ unit_conversion_stats_query = UNIT_CONVERSION_STATS_TEMPLATE.format(
     TABLE_AFTER_CONVERSION=TABLE_AFTER_CONVERSION,
     UNIT_MAPPING=UNIT_MAPPING,
     VOCAB=VOCAB)
-unit_conversion_stats = bq_utils.query_to_df(unit_conversion_stats_query)
+unit_conversion_stats = utils.bq.query(unit_conversion_stats_query)
 unit_conversion_stats.measurement_concept_id = unit_conversion_stats.measurement_concept_id.apply(
     str)
 render.dataframe(unit_conversion_stats)
@@ -277,8 +278,7 @@ before_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
     UNIT_MAPPING=UNIT_MAPPING,
     UNIT_CONCEPT_ID_COLUMN='unit_concept_id')
 
-before_unit_conversion_dist = bq_utils.query_to_df(
-    before_unit_conversion_dist_query)
+before_unit_conversion_dist = utils.bq.query(before_unit_conversion_dist_query)
 render.dataframe(before_unit_conversion_dist)
 
 # +
@@ -288,8 +288,7 @@ after_unit_conversion_dist_query = UNIT_DISTRIBUTION_QUERY.format(
     UNIT_MAPPING=UNIT_MAPPING,
     UNIT_CONCEPT_ID_COLUMN='set_unit_concept_id')
 
-after_unit_conversion_dist = bq_utils.query_to_df(
-    after_unit_conversion_dist_query)
+after_unit_conversion_dist = utils.bq.query(after_unit_conversion_dist_query)
 render.dataframe(after_unit_conversion_dist)
 
 # -

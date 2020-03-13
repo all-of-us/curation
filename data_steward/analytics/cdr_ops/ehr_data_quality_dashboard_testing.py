@@ -17,6 +17,7 @@
 
 # +
 import bq_utils
+import utils.bq
 from notebooks import parameters
 
 # %matplotlib inline
@@ -151,7 +152,7 @@ ORDER BY percent_implausible_vals DESC
 """.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, \
            DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET)
 
-measurement_df = bq_utils.query_to_df(measurement_df_query)
+measurement_df = utils.bq.query(measurement_df_query)
 # -
 
 # ##### Creating copies of the measurement dataframe. Enables further exploration/manipulation without needing to re-run the above query.
@@ -283,7 +284,7 @@ ORDER BY percent_implaus DESC
 """.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, \
            DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET)
 
-hpo_df = bq_utils.query_to_df(hpo_query)
+hpo_df = utils.bq.query(hpo_query)
 # -
 
 # ##### Creating copies of the HPO dataframe. Enables further exploration/manipulation without needing to re-run the above query.

@@ -13,6 +13,7 @@ value_source_concept_id = 1586141
 """
 
 # Project imports
+import utils.bq
 from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids
 import bq_utils
 
@@ -34,7 +35,7 @@ def get_pids_list(project_id, dataset_id, pids_query):
     :return: list of person_ids
     """
 
-    pid_list = bq_utils.query_to_df(
+    pid_list = utils.bq.query(
         pids_query.format(project=project_id,
                           dataset=dataset_id))['person_id'].tolist()
 

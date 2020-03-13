@@ -22,6 +22,7 @@
 #
 # - We want to determine if these fluctations are potentially caused by OMOP vocabulary issues. If this is the case, we should be able to determine similar trends in AoU data.
 import bq_utils
+import utils.bq
 from notebooks import parameters
 
 # #### Starting Cohort Instructions:
@@ -181,7 +182,7 @@ ORDER BY num_persons DESC
 """.format(Q4_2018=Q4_2018)
 
 # +
-q4_2018_hypo_obs_card = bq_utils.query_to_df(q4_2018_hypo_obs_card_query)
+q4_2018_hypo_obs_card = utils.bq.query(q4_2018_hypo_obs_card_query)
 
 q4_2018_hypo_obs_card
 # -
@@ -329,7 +330,7 @@ ORDER BY num_persons DESC
 """.format(Q2_2019=Q2_2019)
 
 # +
-q2_2019_hypo_obs_card = bq_utils.query_to_df(q2_2019_hypo_obs_card_query)
+q2_2019_hypo_obs_card = utils.bq.query(q2_2019_hypo_obs_card_query)
 
 q2_2019_hypo_obs_card
 # -
@@ -425,7 +426,7 @@ FROM
 """.format(Q2_2019=Q2_2019, Q4_2018=Q4_2018)
 
 # +
-combo = bq_utils.query_to_df(combination_query)
+combo = utils.bq.query(combination_query)
 
 combo.append(combo.sum().rename('Total'))
 

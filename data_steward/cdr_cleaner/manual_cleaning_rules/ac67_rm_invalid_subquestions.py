@@ -12,7 +12,7 @@
 
 import pandas as pd
 import os
-from bq_utils import query_to_df
+from utils.bq import query
 
 PROJECT_ID = os.environ.get('APPLICATION_ID')
 SANDBOX_DATASET_ID = ''  # dataset where intermediary tables are stored
@@ -70,7 +70,7 @@ def csv_file_updates(csv_file):
                                  COMBINED=COMBINED,
                                  OBSERVATION_SOURCE_VALUE=col,
                                  PERSON_IDS=', '.join(person_ids))
-        num_rows_result = query_to_df(q)
+        num_rows_result = query(q)
         q = obs_query_fmt.format(PROJECT_ID=PROJECT_ID,
                                  TARGET_DATASET_ID=TARGET_DATASET_ID,
                                  COMBINED=COMBINED,

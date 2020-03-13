@@ -20,10 +20,12 @@ import warnings
 import seaborn as sns
 
 import bq_utils
+import utils.bq
 from notebooks.defaults import DEFAULT_DATASETS
 
 warnings.filterwarnings('ignore')
 sns.set()
+
 
 # -
 def row_counts(dataset_ids):
@@ -36,7 +38,7 @@ def row_counts(dataset_ids):
     WHERE table_id NOT LIKE '%union%' 
       AND table_id NOT LIKE '%ipmc%'
     ORDER BY table_id, dataset_id""".format(iq=iq)
-    df = bq_utils.query_to_df(q)
+    df = utils.bq.query(q)
     df['load_date'] = df.dataset_id.str[-8:]
     df['load_date'] = df['load_date'].astype('category')
     df['dataset_id'] = df['dataset_id'].astype('category')
@@ -91,7 +93,7 @@ JOIN `{latest.vocabulary}.concept` ec
   ON r.ethnicity_concept_id = ec.concept_id
 ORDER BY age, gender, race
 """.format(latest=DEFAULT_DATASETS.latest)
-df = bq_utils.query_to_df(q)
+df = utils.bq.query(q)
 
 # ## Presence of EHR data by race
 
@@ -123,7 +125,7 @@ g = sns.factorplot('ethnicity',
 # # Characterization of CDR data
 # The following statistics describe the candidate CDR dataset. This dataset is formed by combining the unioned EHR data submitted by HPOs with the PPI data we receive from the RDR.
 
-df = bq_utils.query_to_df('''
+df = utils.bq.query('''
 SELECT 
   (EXTRACT(YEAR FROM CURRENT_DATE()) - p.year_of_birth) AS age,
   gc.concept_name AS gender,
@@ -171,7 +173,7 @@ g.set_xticklabels(rotation=45, ha='right')
 
 
 def gender_by_race(dataset_id):
-    df = bq_utils.query_to_df('''
+    df = utils.bq.query('''
     SELECT 
      c1.concept_name AS gender,
      c2.concept_name AS race,

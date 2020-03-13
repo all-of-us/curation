@@ -17,6 +17,7 @@
 # +
 import datetime
 import bq_utils
+import utils.bq
 from notebooks.parameters import RDR_PROJECT_ID, RDR_DATASET_ID, EHR_DATASET_ID
 
 UPLOADED_SINCE_DAYS = 30
@@ -59,11 +60,11 @@ GROUP BY
   protopayload_auditlog.authenticationInfo.principalEmail
 ORDER BY MAX(timestamp) ASC""".format(rdr_project=RDR_PROJECT_ID,
                                       end_suffix=end_suffix)
-bq_utils.query_to_df(query)
+utils.bq.query(query)
 
 # ## EHR Site Submission Counts
 
-bq_utils.query_to_df('''
+utils.bq.query('''
 SELECT 
   l.Org_ID AS org_id,
   l.HPO_ID AS hpo_id,
@@ -80,7 +81,7 @@ ORDER BY Display_Order
 '''.format(EHR_DATASET_ID=EHR_DATASET_ID))
 
 # get list of all hpo_ids
-hpo_ids = bq_utils.query_to_df("""
+hpo_ids = utils.bq.query("""
 SELECT REPLACE(table_id, '_person', '') AS hpo_id
 FROM `{EHR_DATASET_ID}.__TABLES__`
 WHERE table_id LIKE '%person' 
@@ -111,4 +112,4 @@ WHERE n > 0
 ORDER BY n DESC
 """.format(q=q)
 
-bq_utils.query_to_df(cte)
+utils.bq.query(cte)
