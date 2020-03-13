@@ -1,4 +1,5 @@
 import bq_utils
+import utils.bq
 from notebooks import render, parameters
 
 DEID = parameters.DEID_DATASET_ID
@@ -50,8 +51,8 @@ WHERE
 # How many rows in the deid dataset **do not** have the appropriate generalization applied for each scenario?
 
 q = GENDER_SEX_DIFF_QUERY.format(DATASET=DEID)
-deid_gender_sex_diff_df = bq_utils.query_to_df(q)
-deid_has_diff_obs = len(bq_utils.query_to_df('row_count > 0').index) > 0
+deid_gender_sex_diff_df = utils.bq.query(q)
+deid_has_diff_obs = len(utils.bq.query('row_count > 0').index) > 0
 render.dataframe(deid_gender_sex_diff_df)
 
 # Show number of person_ids associated with each combination (person.gender, ppi)
@@ -113,12 +114,12 @@ ORDER BY person_count DESC,
   person_gender_source_value
 """
 q = GENDER_SEX_HIST_QUERY.format(DATASET=DEID)
-deid_gender_sex_hist_df = bq_utils.query_to_df(q)
+deid_gender_sex_hist_df = utils.bq.query(q)
 render.dataframe(deid_gender_sex_hist_df)
 
 # ## RDR dataset
 # How many rows in the rdr dataset are described by each scenario?
 
 q = GENDER_SEX_DIFF_QUERY.format(DATASET=RDR)
-rdr_gender_sex_diff_df = bq_utils.query_to_df(q)
+rdr_gender_sex_diff_df = utils.bq.query(q)
 render.dataframe(rdr_gender_sex_diff_df)

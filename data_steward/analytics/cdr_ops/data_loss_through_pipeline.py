@@ -23,6 +23,7 @@
 # - number of participants
 # - number of records
 import bq_utils
+import utils.bq
 from notebooks import parameters
 import pandas as pd
 import numpy as np
@@ -279,7 +280,7 @@ def generate_query(dataset, person_var, record_var, table_name, field_name):
                record_var=record_var,
                dataset=dataset)
 
-    dataframe = bq_utils.query_to_df(query)
+    dataframe = utils.bq.query(query)
 
     return (dataframe)
 
@@ -810,7 +811,7 @@ def generate_site_level_query(id_name, unioned, table_name, combined):
                table_name=table_name,
                combined=combined)
 
-    dataframe = bq_utils.query_to_df(site_level_query)
+    dataframe = utils.bq.query(site_level_query)
 
     return dataframe
 

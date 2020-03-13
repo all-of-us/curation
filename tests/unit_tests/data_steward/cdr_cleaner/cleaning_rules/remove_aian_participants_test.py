@@ -31,15 +31,13 @@ class RemoveAIANParticipantsTest(unittest.TestCase):
             348834424, 325536292, 360363123
         ]
         mock_bq_query_patcher = patch(
-            'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.bq_utils.query_to_df'
-        )
+            'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.utils.bq.query')
         self.mock_bq_query = mock_bq_query_patcher.start()
         self.mock_bq_query.return_value = pd.DataFrame()
         self.addCleanup(mock_bq_query_patcher.stop)
 
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.bq_utils.query_to_df'
-    )
+        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.utils.bq.query')
     def test_get_pids_list(self, mock_query):
         mock_query.return_value = pd.DataFrame(self.pids_list,
                                                columns=['person_id'])

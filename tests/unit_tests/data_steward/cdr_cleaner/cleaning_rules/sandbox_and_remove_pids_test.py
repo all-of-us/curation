@@ -48,8 +48,7 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
         ]
 
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.bq_utils.query_to_df'
-    )
+        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.utils.bq.query')
     def test_get_tables_with_pids(self, mock_query):
         mock_query.return_value = pd.DataFrame(
             self.person_table_list + self.mapping_table_list,
