@@ -23,6 +23,9 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
+query_spec = NewType('QuerySpec', {})
+query_spec_list = List[query_spec]
+
 
 class AbstractBaseCleaningRule(ABC):
     """
@@ -31,8 +34,6 @@ class AbstractBaseCleaningRule(ABC):
     Anything that should be applied to all cleaning rules can be defined here.
     """
     string_list = List[str]
-    query_spec = NewType('QuerySpec', {})
-    query_spec_list = List[query_spec]
 
     def __init__(self):
         """
@@ -41,7 +42,7 @@ class AbstractBaseCleaningRule(ABC):
         super().__init__()
 
     @abstractmethod
-    def setup_rule(cls, *args, **keyword_args):
+    def setup_rule(self, *args, **keyword_args):
         """
         Load required resources prior to executing cleaning rule queries.
 

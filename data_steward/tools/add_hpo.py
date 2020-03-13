@@ -239,4 +239,4 @@ if __name__ == '__main__':
     cli_util.activate_creds(creds_path)
     cli_util.set_default_dataset_id(bq_consts.LOOKUP_TABLES_DATASET_ID)
     main(args.hpo_id, args.org_id, args.hpo_name, args.bucket_name,
-         args.display_order)
+         args.display_order, args.addition_type)
