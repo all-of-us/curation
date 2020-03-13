@@ -66,6 +66,11 @@ def cstr(s, color='black'):
 
 
 print('done.')
+# -
+
+cwd = os.getcwd()
+cwd = str(cwd)
+print(cwd)
 
 # +
 dic = {
@@ -78,7 +83,7 @@ dic = {
         "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl",
         "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh",
         "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc",
-        "aouw_mcw", "cpmc_ucd", "ipmc_rush"
+        "aouw_mcw", "cpmc_ucd", "ipmc_rush", "va", "saou_umc"
     ],
     'HPO': [
         "UAB Selma", "UAB Huntsville", "Tulane University", "Temple University",
@@ -101,7 +106,9 @@ dic = {
         "University of Southern California", "HRHCare",
         "NorthShore University Health System", "Cherokee Health Systems",
         "UC San Francisco", "Jackson-Hinds CHC", "Medical College of Wisconsin",
-        "UC Davis", "Rush University"
+        "UC Davis", "Rush University", 
+        "United States Department of Veterans Affairs - Boston",
+        "University Medical Center (UA Tuscaloosa)"
     ]
 }
 
@@ -124,12 +131,6 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_care_site`
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
          `{}._mapping_condition_occurrence`  
          
     UNION ALL
@@ -142,66 +143,34 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`
+         `{}._mapping_drug_exposure`      
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_location`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_measurement`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_note`        
-         
+         `{}._mapping_measurement`               
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_observation`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_person`         
+                  
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_procedure_occurrence`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_provider`
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_specimen`
     
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    ) 
+    order by 1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -216,37 +185,36 @@ site_df
 
 # # Improve the Definitions of Drug Ingredient
 
-diuretics = (974166, 956874, 970250, 1395058, 904542, 942350, 932745, 907013,
-             978555, 991382, 1309799)
+diuretics = (974166, 956874, 970250, 1395058, 904542, 942350, 932745,
+            907013, 978555, 991382, 1309799)
 
 ccb = (1332418, 1328165, 1318853, 1307863, 1353776, 1318137)
 
-vaccine = (45637323, 529411, 529303, 42800027, 45658522, 45628027, 529218,
-           36212685, 40163692, 528323, 528986, 792777, 596876)
+vaccine = (45637323, 529411, 529303, 42800027, 45658522, 45628027, 529218, 36212685, 40163692,
+           528323, 528986, 792777, 596876)
 
-oralhypoglycemics = (1503297, 1560171, 1580747, 1559684, 1525215, 1597756,
-                     45774751, 40239216, 40166035, 1516766, 1529331)
+oralhypoglycemics = (1503297, 1560171, 1580747, 1559684, 1525215, 1597756, 45774751,
+                    40239216, 40166035, 1516766, 1529331)
 
-opioids = (1124957, 1103314, 1201620, 1174888, 1126658, 1110410, 1154029,
-           1103640, 1102527)
+opioids = (1124957, 1103314, 1201620, 1174888, 1126658, 1110410, 1154029, 1103640, 1102527)
 
-antibiotics = (1734104, 1836430, 1713332, 1797513, 1705674, 1786621, 1742253,
-               997881, 1707164, 1738521, 1759842, 1746940, 902722, 45892419,
-               1717327, 1777806, 1836948, 1746114, 1775741)
+antibiotics = (1734104, 1836430, 1713332, 1797513, 1705674, 1786621,
+1742253, 997881, 1707164, 1738521, 1759842, 1746940, 902722, 45892419,
+1717327, 1777806, 1836948, 1746114, 1775741)
 
 statins = (1551860, 1545958, 1539403, 1510813, 1592085, 1549686, 40165636)
 
-msknsaids = (1115008, 1177480, 1124300, 1178663, 1136980, 1118084, 1150345,
-             1236607, 1395573, 1146810)
+msknsaids = (1115008, 1177480, 1124300, 1178663, 1136980, 1118084, 1150345, 1236607, 1395573, 1146810)
 
-painnsaids = (1177480, 1125315, 1112807, 1115008, 45660697, 45787568, 36156482,
-              45696636, 45696805)
+painnsaids = (1177480, 1125315, 1112807, 1115008, 45660697, 45787568, 36156482, 45696636, 45696805)
 
 ace_inhibitors = (1308216, 1341927, 1335471, 1331235, 1334456, 1340128, 1363749)
 
 all_drugs = diuretics + ccb + vaccine + oralhypoglycemics + opioids + antibiotics + statins + msknsaids + painnsaids + ace_inhibitors
 
 # ## Diuretics
+
+print(len(all_drugs))
 
 len(diuretics)
 
@@ -695,7 +663,7 @@ sites_drug_success = pd.merge(sites_drug_success,
                               how='outer',
                               on='src_hpo_id')
 
-sites_drug_success = sites_drug_success.fillna("No Data")
+sites_drug_success = sites_drug_success.fillna(0)
 sites_drug_success
 
 sites_drug_success[["ace_inhibitors","painnsaids","msknsaids","statins","antibiotics","opioids","oralhypoglycemics","vaccine","ccb","diuretics","all_drugs"]]\
@@ -706,10 +674,10 @@ sites_drug_success = pd.merge(sites_drug_success,
                               site_df,
                               how='outer',
                               on='src_hpo_id')
-sites_drug_success = sites_drug_success.fillna("No Data")
+sites_drug_success = sites_drug_success.fillna(0)
+
+sites_drug_success = sites_drug_success.sort_values(by='all_drugs', ascending = False)
 
 sites_drug_success
 
-sites_drug_success.to_csv("data\drug_success.csv")
-
-
+sites_drug_success.to_csv("{cwd}\drug_success.csv".format(cwd = cwd))

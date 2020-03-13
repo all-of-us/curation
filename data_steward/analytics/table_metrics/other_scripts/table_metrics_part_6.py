@@ -66,6 +66,11 @@ def cstr(s, color='black'):
 
 
 print('done.')
+# -
+
+cwd = os.getcwd()
+cwd = str(cwd)
+print(cwd)
 
 # +
 dic = {
@@ -78,7 +83,7 @@ dic = {
         "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl",
         "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh",
         "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc",
-        "aouw_mcw", "cpmc_ucd", "ipmc_rush"
+        "aouw_mcw", "cpmc_ucd", "ipmc_rush", "va", "saou_umc"
     ],
     'HPO': [
         "UAB Selma", "UAB Huntsville", "Tulane University", "Temple University",
@@ -101,7 +106,9 @@ dic = {
         "University of Southern California", "HRHCare",
         "NorthShore University Health System", "Cherokee Health Systems",
         "UC San Francisco", "Jackson-Hinds CHC", "Medical College of Wisconsin",
-        "UC Davis", "Rush University"
+        "UC Davis", "Rush University", 
+        "United States Department of Veterans Affairs - Boston",
+        "University Medical Center (UA Tuscaloosa)"
     ]
 }
 
@@ -124,12 +131,6 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_care_site`
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
          `{}._mapping_condition_occurrence`  
          
     UNION ALL
@@ -142,66 +143,34 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`
+         `{}._mapping_drug_exposure`      
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_location`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_measurement`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_note`        
-         
+         `{}._mapping_measurement`               
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_observation`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_person`       
+                  
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_procedure_occurrence`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_provider`
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_specimen`
     
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    ) 
+    order by 1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -216,18 +185,17 @@ site_df
 
 Lipid = (40782589, 40795800, 40772572)
 
-CBC = (40789356, 40789120, 40789179, 40772748, 40782735, 40789182, 40786033,
-       40779159)
+CBC = (40789356, 40789120, 40789179, 40772748, 40782735,
+40789182, 40786033, 40779159)
 
-CBCwDiff = (40785788, 40785796, 40779195, 40795733, 40795725, 40772531,
-            40779190, 40785793, 40779191, 40782561, 40789266)
+CBCwDiff = (40785788, 40785796, 40779195, 40795733, 40795725,
+40772531, 40779190, 40785793, 40779191, 40782561, 40789266)
 
 CMP = (3049187, 3053283, 40775801, 40779224, 40782562, 40782579, 40785850,
-       40785861, 40785869, 40789180, 40789190, 40789527, 40791227, 40792413,
-       40792440, 40795730, 40795740, 40795754)
+40785861, 40785869, 40789180, 40789190, 40789527, 40791227, 40792413, 40792440,
+40795730, 40795740, 40795754)
 
-Physical_Measurement = (40654163, 40655804, 40654162, 40655805, 40654167,
-                        40654164)
+Physical_Measurement = (40654163, 40655804, 40654162, 40655805, 40654167, 40654164)
 
 all_measurements = Lipid + CBC + CBCwDiff + CMP + Physical_Measurement
 
@@ -518,8 +486,14 @@ sites_measurement = pd.merge(sites_measurement,
                              site_df,
                              how='outer',
                              on='src_hpo_id')
-sites_measurement = sites_measurement.fillna("No Data")
+sites_measurement = sites_measurement.fillna(0)
 
 sites_measurement
 
-sites_measurement.to_csv("data\sites_measurement.csv")
+sites_measurement = sites_measurement.sort_values(by='All_Measurements', ascending = False)
+
+sites_measurement
+
+sites_measurement.to_csv("{cwd}\sites_measurement.csv".format(cwd = cwd))
+
+
