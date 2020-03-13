@@ -25,7 +25,7 @@ client = bigquery.Client()
 
 # %load_ext google.cloud.bigquery
 
-# +
+# + endofcell="--"
 #######################################
 print('Setting everything up...')
 #######################################
@@ -76,7 +76,7 @@ cwd = os.getcwd()
 cwd = str(cwd)
 print(cwd)
 
-# +
+# # +
 dic = {
     'src_hpo_id': [
         "saou_uab_selma", "saou_uab_hunt", "saou_tul", "pitt_temple",
@@ -119,7 +119,7 @@ dic = {
 site_df = pd.DataFrame(data=dic)
 site_df
 
-# +
+# # +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -232,7 +232,7 @@ site_df
 
 # ## visit_occurrence table
 
-# +
+# # +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -279,7 +279,7 @@ visit_occurrence
 
 # ## condition_occurrence table
 
-# +
+# # +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -323,13 +323,13 @@ condition_occurrence = foreign_key_df.groupby(
 condition_occurrence = condition_occurrence.reset_index()
 condition_occurrence
 
-# +
+# # +
 # test=foreign_key_df.loc[foreign_key_df["src_hpo_id"]=="cpmc_usc",:]
 # -
 
 # test.head()
 
-# +
+# # +
 # ######################################
 # print('Getting the data from the database...')
 # ######################################
@@ -362,6 +362,7 @@ condition_occurrence
 #     '''.format(DATASET, DATASET,DATASET,DATASET,DATASET,DATASET),
 #                     dialect='standard')
 # print(foreign_key_df.shape[0], 'records received.')
+# --
 
 # +
 # foreign_key_df
