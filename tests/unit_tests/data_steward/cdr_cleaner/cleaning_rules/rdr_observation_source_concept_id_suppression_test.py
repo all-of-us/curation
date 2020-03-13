@@ -43,10 +43,9 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
 
     def test_setup_rule(self):
         # test
-        alpha = self.query_class.setup_rule()
+        self.query_class.setup_rule()
 
-        # post conditions
-        self.assertEqual(alpha, None)
+        # no errors are raised, nothing happens
 
     def test_get_query_specs(self):
         # pre-conditions
