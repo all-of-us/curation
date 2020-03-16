@@ -4,19 +4,19 @@ import logging
 import os
 import socket
 import time
+from io import open
 from datetime import datetime
 
 # Third party imports
-import app_identity
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # Project imports
+import app_identity
 import common
 import gcs_utils
 import resources
 from constants import bq_utils as bq_consts
-from io import open
 
 socket.setdefaulttimeout(bq_consts.SOCKET_TIMEOUT)
 
@@ -271,8 +271,7 @@ def load_from_csv(hpo_id, table_name, source_folder_prefix=""):
     """
     if resources.is_pii_table(table_name):
         return load_pii_csv(hpo_id, table_name, source_folder_prefix)
-    else:
-        return load_cdm_csv(hpo_id, table_name, source_folder_prefix)
+    return load_cdm_csv(hpo_id, table_name, source_folder_prefix)
 
 
 def delete_table(table_id, dataset_id=None):
