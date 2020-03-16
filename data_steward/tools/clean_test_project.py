@@ -7,7 +7,7 @@ import sys
 from googleapiclient.errors import HttpError
 
 # Project imports
-from notebooks import bq
+from utils import bq
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -36,18 +36,18 @@ def delete_datasets(project_id, datasets_to_delete_list):
 
     :param project_id: identifies the project
     :param datasets_to_delete_list: list of dataset_ids to delete
-    :return: 
+    :return:
     """
     failed_to_delete = []
     for dataset in datasets_to_delete_list:
         try:
             bq.delete_dataset(project_id, dataset)
-            logging.info('Deleted dataset %s' % dataset)
+            logging.info(f'Deleted dataset {dataset}')
         except HttpError:
-            logging.exception('Could not delete dataset %s' % dataset)
+            logging.exception(f'Could not delete dataset {dataset}')
             failed_to_delete.append(dataset)
-    logging.info('The following datasets could not be deleted: %s' %
-                 failed_to_delete)
+    logging.info(
+        f'The following datasets could not be deleted: {failed_to_delete}')
 
 
 def run_deletion(project_id, name_substrings):
@@ -58,12 +58,14 @@ def run_deletion(project_id, name_substrings):
 
     :param project_id: identifies the project
     :param name_substrings: Identifies substrings that help identify datasets to delete
-    :return: 
+    :return:
     """
-    all_datasets = [dataset.dataset_id for dataset in bq.list_datasets()]
+    all_datasets = [
+        dataset.dataset_id for dataset in bq.list_datasets(project_id)
+    ]
     datasets_with_substrings = get_datasets_with_substrings(
         all_datasets, name_substrings)
-    logging.info('Datasets marked for deletion: %s' % datasets_with_substrings)
+    logging.info(f'Datasets marked for deletion: {datasets_with_substrings}')
     logging.info('Proceed?')
     response = get_response()
     if response == "Y":
