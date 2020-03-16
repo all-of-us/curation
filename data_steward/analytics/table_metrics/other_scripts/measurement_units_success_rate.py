@@ -128,11 +128,6 @@ site_map = pd.io.gbq.read_gbq('''
     FROM
          `{}._mapping_visit_occurrence`
          
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_care_site`
          
     UNION ALL
     SELECT
@@ -150,27 +145,14 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_location`         
+         `{}._mapping_drug_exposure`        
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_measurement`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_note`        
+         `{}._mapping_measurement`            
          
          
     UNION ALL
@@ -178,31 +160,13 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_observation`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_person`         
+                
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_procedure_occurrence`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_provider`
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_specimen`
     
     UNION ALL
     SELECT
@@ -255,7 +219,7 @@ SELECT
 DISTINCT
 mm.src_hpo_id, COUNT(m.measurement_id) as number_total_units
 FROM
-`{DATASET}.unioned_ehr_measurement` m
+`{DATASET}.measurement` m
 JOIN
 `{DATASET}._mapping_measurement` mm
 ON
@@ -296,7 +260,7 @@ SELECT
 DISTINCT
 mm.src_hpo_id, COUNT(m.measurement_id) as number_valid_units
 FROM
-`{DATASET}.unioned_ehr_measurement` m
+`{DATASET}.measurement` m
 JOIN
 `{DATASET}._mapping_measurement` mm
 ON
@@ -355,7 +319,7 @@ SELECT
 DISTINCT
 mm.src_hpo_id, COUNT(m.measurement_id) as number_sel_meas
 FROM
-`{DATASET}.unioned_ehr_measurement` m
+`{DATASET}.measurement` m
 JOIN
 `{DATASET}._mapping_measurement` mm
 ON
@@ -402,7 +366,7 @@ SELECT
 DISTINCT
 mm.src_hpo_id, COUNT(m.unit_concept_id) as number_valid_units_sel_meas
 FROM
-`{DATASET}.unioned_ehr_measurement` m
+`{DATASET}.measurement` m
 JOIN
 `{DATASET}._mapping_measurement` mm
 ON
