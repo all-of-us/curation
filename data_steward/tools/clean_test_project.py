@@ -52,9 +52,7 @@ def delete_datasets(project_id, datasets_to_delete_list):
 
 def run_deletion(project_id, name_substrings):
     """
-    1. Retrieves all datasets in project,
-    2. Filters the list based on criteria (eg. github username to identify circle datasets)
-    3. Deletes the filtered datasets
+    Deletes datasets from project containing any of the name_substrings
 
     :param project_id: identifies the project
     :param name_substrings: Identifies substrings that help identify datasets to delete
@@ -76,6 +74,7 @@ def run_deletion(project_id, name_substrings):
 
 # Make sure user types Y to proceed
 def get_response():
+    """Return input from user denoting yes/no"""
     prompt_text = 'Please press Y/n\n'
     response = input(prompt_text)
     while response not in ('Y', 'n', 'N'):

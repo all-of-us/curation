@@ -42,12 +42,14 @@ def delete_dataset(project_id,
                    delete_contents=True,
                    not_found_ok=True):
     """
-    Delete a dataset in a project
+    Delete a dataset in a project. Delete all contents and ignore not found error by default
 
     :param project_id: Identifies the project the containing the dataset
     :param dataset_id: Identifies the dataset to delete
     :param delete_contents: If set True, deletes all contents within the dataset
+            Defaults to True
     :param not_found_ok: If set True, does not raise error if dataset cannot be found
+            Defaults to True
     :return:
     """
     client = get_client(project_id)

@@ -4,19 +4,19 @@ import logging
 import os
 import socket
 import time
+from io import open
 from datetime import datetime
 
 # Third party imports
-import app_identity
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # Project imports
+import app_identity
 import common
 import gcs_utils
 import resources
 from constants import bq_utils as bq_consts
-from io import open
 
 socket.setdefaulttimeout(bq_consts.SOCKET_TIMEOUT)
 
@@ -271,8 +271,7 @@ def load_from_csv(hpo_id, table_name, source_folder_prefix=""):
     """
     if resources.is_pii_table(table_name):
         return load_pii_csv(hpo_id, table_name, source_folder_prefix)
-    else:
-        return load_cdm_csv(hpo_id, table_name, source_folder_prefix)
+    return load_cdm_csv(hpo_id, table_name, source_folder_prefix)
 
 
 def delete_table(table_id, dataset_id=None):
@@ -294,23 +293,6 @@ def delete_table(table_id, dataset_id=None):
                                             tableId=table_id)
     logging.info('Deleting {dataset_id}.{table_id}'.format(
         dataset_id=dataset_id, table_id=table_id))
-    return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-
-
-def delete_dataset(project_id, dataset_id):
-    """
-    Delete BigQuery dataset by id
-
-    :param project_id: identifies the project
-    :param dataset_id: identifies the dataset to delete
-    :return:
-    """
-    bq_service = create_service()
-    # deleteContents=True deletes the dataset even if tables exist inside of it
-    delete_job = bq_service.datasets().delete(projectId=project_id,
-                                              datasetId=dataset_id,
-                                              deleteContents=True)
-    logging.info('Deleting {dataset_id}'.format(dataset_id=dataset_id))
     return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
