@@ -13,7 +13,7 @@
 #     name: python3
 # ---
 
-# ## Notebook is used to complete with [EDQ-383](https://precisionmedicineinitiative.atlassian.net/browse/EDQ-383) 
+# ## Notebook is used to complete with [EDQ-383](https://precisionmedicineinitiative.atlassian.net/browse/EDQ-383)
 #
 #
 # #### Background
@@ -21,7 +21,8 @@
 #
 # In an attempt to start ‘benchmarking’ sites, we want to understand how many ‘records per participant' and ‘records per participant per year’ there are for each site. This kind of information could enable us to better understand which sites may benefit from ETL changes.
 
-from notebooks import bq, render, parameters
+from notebooks import render, parameters
+from utils import bq
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,8 +34,8 @@ print("""
 DATASET TO USE: {}
 """.format(DATASET))
 
-
 # -
+
 
 def get_records_per_capita(table_name, number_records, capita_string, dataset):
     """
@@ -69,7 +70,7 @@ def get_records_per_capita(table_name, number_records, capita_string, dataset):
     -------
     dataframe (df): contains the information specified in the top of the docstring
     """
-    
+
     query = """
     SELECT
     DISTINCT
@@ -89,13 +90,13 @@ def get_records_per_capita(table_name, number_records, capita_string, dataset):
     x.{table_name}_id = mx.{table_name}_id
     GROUP BY 1
     ORDER BY {capita_string} DESC
-    """.format(
-        table_name = table_name, number_records = number_records,
-        capita_string = capita_string, dataset = dataset
-    )
-    
+    """.format(table_name=table_name,
+               number_records=number_records,
+               capita_string=capita_string,
+               dataset=dataset)
+
     dataframe = bq.query(query)
-    
+
     return dataframe
 
 
@@ -124,8 +125,9 @@ def add_total_records_per_capita_row(dataframe, number_records, capita_string):
     --------
     dataframe (df): the inputted dataframe with an additional 'total' row at the end
     """
-    
-    dataframe = dataframe.append(dataframe.sum(numeric_only=True).rename('Total'))
+
+    dataframe = dataframe.append(
+        dataframe.sum(numeric_only=True).rename('Total'))
 
     hpo_names = dataframe['src_hpo_id'].to_list()
 
@@ -140,11 +142,12 @@ def add_total_records_per_capita_row(dataframe, number_records, capita_string):
     total_records_per_capita = round((records_total) / persons_total, 2)
 
     dataframe.at['Total', capita_string] = total_records_per_capita
-    
+
     return dataframe
 
 
 # ### Graphing Functions
+
 
 def create_dicts_w_info(df, x_label, column_label):
     """
@@ -172,20 +175,21 @@ def create_dicts_w_info(df, x_label, column_label):
         values: the data quality metric being compared
     """
     rows = df[x_label].unique().tolist()
-    
+
     data_qual_info = {}
 
-    for row in rows:   
+    for row in rows:
         sample_df = df.loc[df[x_label] == row]
-        
+
         data = sample_df.iloc[0][column_label]
 
         data_qual_info[row] = data
-    
+
     return data_qual_info
 
 
-def create_graphs(info_dict, xlabel, ylabel, title, img_name, color, total_diff_color, turnoff_x):
+def create_graphs(info_dict, xlabel, ylabel, title, img_name, color,
+                  total_diff_color, turnoff_x):
     """
     Function is used to create a bar graph for a particular dictionary with information about
     data quality
@@ -214,17 +218,22 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, color, total_diff_
     turnoff_x (bool): used to disable the x-axis labels (for each of the bars). This is typically used
         when there are so many x-axis labels that they overlap and obscure legibility
     """
-    bar_list = plt.bar(range(len(info_dict)), list(info_dict.values()), align='center', color = color)
-    
+    bar_list = plt.bar(range(len(info_dict)),
+                       list(info_dict.values()),
+                       align='center',
+                       color=color)
+
     # used to change the color of the 'aggregate' column; usually implemented for an average
     if total_diff_color:
         bar_list[len(info_dict) - 1].set_color('r')
-    
+
     if not turnoff_x:
-        plt.xticks(range(len(info_dict)), list(info_dict.keys()), rotation='vertical')
+        plt.xticks(range(len(info_dict)),
+                   list(info_dict.keys()),
+                   rotation='vertical')
     else:
         plt.xticks([])
-        
+
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(title)
@@ -237,22 +246,28 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, color, total_diff_
 number_records = 'number_of_drugs'
 capita_string = 'drugs_per_capita'
 
-drug_exposure_results = get_records_per_capita(
-    table_name = 'drug_exposure',
-    number_records = number_records,
-    capita_string = capita_string,
-    dataset = DATASET
-)
+drug_exposure_results = get_records_per_capita(table_name='drug_exposure',
+                                               number_records=number_records,
+                                               capita_string=capita_string,
+                                               dataset=DATASET)
 
 drug_exposure_results = add_total_records_per_capita_row(
-    dataframe = drug_exposure_results, number_records = number_records, capita_string = capita_string)
+    dataframe=drug_exposure_results,
+    number_records=number_records,
+    capita_string=capita_string)
 
-drug_exposure_dict = create_dicts_w_info(
-    df = drug_exposure_results, x_label = 'src_hpo_id', column_label = 'drugs_per_capita')
+drug_exposure_dict = create_dicts_w_info(df=drug_exposure_results,
+                                         x_label='src_hpo_id',
+                                         column_label='drugs_per_capita')
 
-create_graphs(drug_exposure_dict, xlabel = 'HPO', ylabel = 'Drug Records Per Capita', 
-              title = 'Drugs Per Capita', img_name = '{}.jpg'.format(capita_string), 
-              color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(drug_exposure_dict,
+              xlabel='HPO',
+              ylabel='Drug Records Per Capita',
+              title='Drugs Per Capita',
+              img_name='{}.jpg'.format(capita_string),
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 
 # #### Looking at the visit occurrence table
 
@@ -260,22 +275,28 @@ create_graphs(drug_exposure_dict, xlabel = 'HPO', ylabel = 'Drug Records Per Cap
 number_records = 'number_of_visits'
 capita_string = 'visits_per_capita'
 
-drug_exposure_results = get_records_per_capita(
-    table_name = 'visit_occurrence',
-    number_records = number_records,
-    capita_string = capita_string,
-    dataset = DATASET
-)
+drug_exposure_results = get_records_per_capita(table_name='visit_occurrence',
+                                               number_records=number_records,
+                                               capita_string=capita_string,
+                                               dataset=DATASET)
 
 drug_exposure_results = add_total_records_per_capita_row(
-    dataframe = drug_exposure_results, number_records = number_records, capita_string = capita_string)
+    dataframe=drug_exposure_results,
+    number_records=number_records,
+    capita_string=capita_string)
 
-drug_exposure_dict = create_dicts_w_info(
-    df = drug_exposure_results, x_label = 'src_hpo_id', column_label = 'visits_per_capita')
+drug_exposure_dict = create_dicts_w_info(df=drug_exposure_results,
+                                         x_label='src_hpo_id',
+                                         column_label='visits_per_capita')
 
-create_graphs(drug_exposure_dict, xlabel = 'HPO', ylabel = 'Visit Records Per Capita', 
-              title = 'Visits Per Capita', img_name = '{}.jpg'.format(capita_string), 
-              color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(drug_exposure_dict,
+              xlabel='HPO',
+              ylabel='Visit Records Per Capita',
+              title='Visits Per Capita',
+              img_name='{}.jpg'.format(capita_string),
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 # -
 
 # #### Looking at the measurement table
@@ -284,22 +305,28 @@ create_graphs(drug_exposure_dict, xlabel = 'HPO', ylabel = 'Visit Records Per Ca
 number_records = 'number_of_measurements'
 capita_string = 'measurements_per_capita'
 
-drug_exposure_results = get_records_per_capita(
-    table_name = 'measurement',
-    number_records = number_records,
-    capita_string = capita_string,
-    dataset = DATASET
-)
+drug_exposure_results = get_records_per_capita(table_name='measurement',
+                                               number_records=number_records,
+                                               capita_string=capita_string,
+                                               dataset=DATASET)
 
 drug_exposure_results = add_total_records_per_capita_row(
-    dataframe = drug_exposure_results, number_records = number_records, capita_string = capita_string)
+    dataframe=drug_exposure_results,
+    number_records=number_records,
+    capita_string=capita_string)
 
-drug_exposure_dict = create_dicts_w_info(
-    df = drug_exposure_results, x_label = 'src_hpo_id', column_label = capita_string)
+drug_exposure_dict = create_dicts_w_info(df=drug_exposure_results,
+                                         x_label='src_hpo_id',
+                                         column_label=capita_string)
 
-create_graphs(drug_exposure_dict, xlabel = 'HPO', ylabel = 'Measurement Records Per Capita', 
-              title = 'Measurements Per Capita', img_name = '{}.jpg'.format(capita_string), 
-              color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(drug_exposure_dict,
+              xlabel='HPO',
+              ylabel='Measurement Records Per Capita',
+              title='Measurements Per Capita',
+              img_name='{}.jpg'.format(capita_string),
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 # -
 
 # #### Looking at the procedure occurrence table
@@ -309,21 +336,28 @@ number_records = 'number_of_procedures'
 capita_string = 'procedures_per_capita'
 
 drug_exposure_results = get_records_per_capita(
-    table_name = 'procedure_occurrence',
-    number_records = number_records,
-    capita_string = capita_string,
-    dataset = DATASET
-)
+    table_name='procedure_occurrence',
+    number_records=number_records,
+    capita_string=capita_string,
+    dataset=DATASET)
 
 drug_exposure_results = add_total_records_per_capita_row(
-    dataframe = drug_exposure_results, number_records = number_records, capita_string = capita_string)
+    dataframe=drug_exposure_results,
+    number_records=number_records,
+    capita_string=capita_string)
 
-drug_exposure_dict = create_dicts_w_info(
-    df = drug_exposure_results, x_label = 'src_hpo_id', column_label = capita_string)
+drug_exposure_dict = create_dicts_w_info(df=drug_exposure_results,
+                                         x_label='src_hpo_id',
+                                         column_label=capita_string)
 
-create_graphs(drug_exposure_dict, xlabel = 'HPO', ylabel = 'Procedure Records Per Capita', 
-              title = 'Procedures Per Capita', img_name = '{}.jpg'.format(capita_string), 
-              color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(drug_exposure_dict,
+              xlabel='HPO',
+              ylabel='Procedure Records Per Capita',
+              title='Procedures Per Capita',
+              img_name='{}.jpg'.format(capita_string),
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 # -
 
 # #### Looking at the condition occurrence table
@@ -333,21 +367,26 @@ number_records = 'number_of_conditions'
 capita_string = 'conditions_per_capita'
 
 drug_exposure_results = get_records_per_capita(
-    table_name = 'condition_occurrence',
-    number_records = number_records,
-    capita_string = capita_string,
-    dataset = DATASET
-)
+    table_name='condition_occurrence',
+    number_records=number_records,
+    capita_string=capita_string,
+    dataset=DATASET)
 
 drug_exposure_results = add_total_records_per_capita_row(
-    dataframe = drug_exposure_results, number_records = number_records, capita_string = capita_string)
+    dataframe=drug_exposure_results,
+    number_records=number_records,
+    capita_string=capita_string)
 
-drug_exposure_dict = create_dicts_w_info(
-    df = drug_exposure_results, x_label = 'src_hpo_id', column_label = capita_string)
+drug_exposure_dict = create_dicts_w_info(df=drug_exposure_results,
+                                         x_label='src_hpo_id',
+                                         column_label=capita_string)
 
-create_graphs(drug_exposure_dict, xlabel = 'HPO', ylabel = 'Condition Records Per Capita', 
-              title = 'Conditions Per Capita', img_name = '{}.jpg'.format(capita_string), 
-              color = 'b', total_diff_color = True, turnoff_x = False)
+create_graphs(drug_exposure_dict,
+              xlabel='HPO',
+              ylabel='Condition Records Per Capita',
+              title='Conditions Per Capita',
+              img_name='{}.jpg'.format(capita_string),
+              color='b',
+              total_diff_color=True,
+              turnoff_x=False)
 # -
-
-
