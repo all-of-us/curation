@@ -93,7 +93,7 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.validate_missing_participant.get_missing_criterion'
+        'cdr_cleaner.cleaning_rules.remove_non_matching_participant.get_missing_criterion'
     )
     @mock.patch('resources.fields_for')
     def test_get_non_match_participant_query(self, mock_fields_for,
@@ -116,11 +116,11 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
         returned_missing_criteria = ['criterion_1', 'criterion_2']
         mock_get_missing_criterion.side_effect = returned_missing_criteria
 
-        expected_criterion_one = CRITERION_COLUMN_TEMPLATE.format(
+        key_fields_criteria = CRITERION_COLUMN_TEMPLATE.format(
             column_expr=returned_missing_criteria[0],
             num_of_missing=NUM_OF_MISSING_KEY_FIELDS)
 
-        expected_criterion_two = CRITERION_COLUMN_TEMPLATE.format(
+        all_fields_criteria = CRITERION_COLUMN_TEMPLATE.format(
             column_expr=returned_missing_criteria[1],
             num_of_missing=NUM_OF_MISSING_ALL_FIELDS)
 
@@ -128,8 +128,8 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
             project_id=self.project_id,
             validation_dataset_id=self.validation_dataset_id,
             identity_match_table=self.identity_match_table,
-            criterion_one_expr=expected_criterion_one,
-            criterion_two_expr=expected_criterion_two)
+            key_fields_criteria=key_fields_criteria,
+            all_fields_criteria=all_fields_criteria)
 
         actual = remove_non_matching_participant.get_non_match_participant_query(
             project_id=self.project_id,
@@ -150,7 +150,7 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
     @mock.patch('bq_utils.wait_on_jobs')
     @mock.patch('bq_utils.query')
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.validate_missing_participant.get_non_match_participant_query'
+        'cdr_cleaner.cleaning_rules.remove_non_matching_participant.get_non_match_participant_query'
     )
     @mock.patch('bq_utils.get_table_id')
     def test_get_list_non_match_participants(
@@ -188,10 +188,10 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
         'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.get_sandbox_queries'
     )
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.validate_missing_participant.get_list_non_match_participants'
+        'cdr_cleaner.cleaning_rules.remove_non_matching_participant.get_list_non_match_participants'
     )
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.validate_missing_participant.exist_participant_match'
+        'cdr_cleaner.cleaning_rules.remove_non_matching_participant.exist_participant_match'
     )
     @mock.patch('validation.participants.readers.get_hpo_site_names')
     def test_delete_records_for_non_matching_participants(
