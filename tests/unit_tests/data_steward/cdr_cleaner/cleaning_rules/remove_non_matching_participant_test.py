@@ -4,15 +4,15 @@ import bq_utils
 import common
 
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules.validate_missing_participant import (
+from cdr_cleaner.cleaning_rules.remove_non_matching_participant import (
     NUM_OF_MISSING_KEY_FIELDS, NUM_OF_MISSING_ALL_FIELDS, PERSON_ID_FIELD,
     SELECT_NON_MATCH_PARTICIPANTS_QUERY, CRITERION_COLUMN_TEMPLATE, KEY_FIELDS,
     IDENTITY_MATCH_EXCLUDED_FIELD)
-from cdr_cleaner.cleaning_rules import validate_missing_participant
+from cdr_cleaner.cleaning_rules import remove_non_matching_participant
 from constants.validation.participants import identity_match
 
 
-class ValidateMissingParticipantTest(unittest.TestCase):
+class RemoveNonMatchingParticipantTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -61,20 +61,20 @@ class ValidateMissingParticipantTest(unittest.TestCase):
     @mock.patch('bq_utils.get_table_id')
     def test_exist_participant_match(self, mock_get_table_id,
                                      mock_table_exists):
-        table_id_1 = self.hpo_id_1 + validate_missing_participant.PARTICIPANT_MATCH
-        table_id_2 = self.hpo_id_2 + validate_missing_participant.PARTICIPANT_MATCH
+        table_id_1 = self.hpo_id_1 + remove_non_matching_participant.PARTICIPANT_MATCH
+        table_id_2 = self.hpo_id_2 + remove_non_matching_participant.PARTICIPANT_MATCH
         mock_get_table_id.side_effect = [table_id_1, table_id_2]
         mock_table_exists.side_effect = [True, False]
 
         self.assertTrue(
-            validate_missing_participant.exist_participant_match(
+            remove_non_matching_participant.exist_participant_match(
                 self.combined_dataset_id, self.hpo_id_1))
 
         mock_table_exists.assert_called_with(table_id_1,
                                              self.combined_dataset_id)
 
         self.assertFalse(
-            validate_missing_participant.exist_participant_match(
+            remove_non_matching_participant.exist_participant_match(
                 self.combined_dataset_id, self.hpo_id_1))
 
         mock_table_exists.assert_called_with(table_id_2,
@@ -82,14 +82,14 @@ class ValidateMissingParticipantTest(unittest.TestCase):
 
     def test_get_missing_criterion(self):
         fields = [
-            validate_missing_participant.FIRST_NAME_FIELD,
-            validate_missing_participant.LAST_NAME_FIELD
+            remove_non_matching_participant.FIRST_NAME_FIELD,
+            remove_non_matching_participant.LAST_NAME_FIELD
         ]
-        expected = validate_missing_participant.CAST_MISSING_COLUMN.format(
+        expected = remove_non_matching_participant.CAST_MISSING_COLUMN.format(
             column=fields[0]
-        ) + ' + ' + validate_missing_participant.CAST_MISSING_COLUMN.format(
+        ) + ' + ' + remove_non_matching_participant.CAST_MISSING_COLUMN.format(
             column=fields[1])
-        actual = validate_missing_participant.get_missing_criterion(fields)
+        actual = remove_non_matching_participant.get_missing_criterion(fields)
         self.assertEqual(expected, actual)
 
     @mock.patch(
@@ -109,7 +109,7 @@ class ValidateMissingParticipantTest(unittest.TestCase):
         }, {
             'name': identity_match.EMAIL_FIELD
         }, {
-            'name': validate_missing_participant.ALGORITHM_FIELD
+            'name': remove_non_matching_participant.ALGORITHM_FIELD
         }]
         mock_fields_for.return_value = fields
 
@@ -131,7 +131,7 @@ class ValidateMissingParticipantTest(unittest.TestCase):
             criterion_one_expr=expected_criterion_one,
             criterion_two_expr=expected_criterion_two)
 
-        actual = validate_missing_participant.get_non_match_participant_query(
+        actual = remove_non_matching_participant.get_non_match_participant_query(
             project_id=self.project_id,
             validation_dataset_id=self.validation_dataset_id,
             identity_match_table=self.identity_match_table)
@@ -162,13 +162,13 @@ class ValidateMissingParticipantTest(unittest.TestCase):
         mock_wait_on_jobs.side_effect = [[], [self.biqquery_job_id]]
         mock_response2rows.return_value = self.query_results_rows
 
-        actual = validate_missing_participant.get_list_non_match_participants(
+        actual = remove_non_matching_participant.get_list_non_match_participants(
             self.project_id, self.validation_dataset_id, self.hpo_id_1)
 
         self.assertListEqual(self.person_ids, actual)
 
         mock_get_table_id.assert_called_with(
-            self.hpo_id_1, validate_missing_participant.IDENTITY_MATCH)
+            self.hpo_id_1, remove_non_matching_participant.IDENTITY_MATCH)
 
         mock_get_non_match_participant_query.assert_called_with(
             self.project_id, self.validation_dataset_id,
@@ -178,7 +178,7 @@ class ValidateMissingParticipantTest(unittest.TestCase):
         mock_wait_on_jobs.assert_called_with([self.biqquery_job_id])
 
         with self.assertRaises(bq_utils.BigQueryJobWaitError):
-            validate_missing_participant.get_list_non_match_participants(
+            remove_non_matching_participant.get_list_non_match_participants(
                 self.project_id, self.validation_dataset_id, self.hpo_id_1)
 
     @mock.patch(
@@ -207,7 +207,7 @@ class ValidateMissingParticipantTest(unittest.TestCase):
 
         expected = [self.drop_participant_query_dict
                    ] + self.drop_domain_records_query_dicts
-        actual = validate_missing_participant.delete_records_for_non_matching_participants(
+        actual = remove_non_matching_participant.delete_records_for_non_matching_participants(
             self.project_id, self.combined_dataset_id, self.ehr_dataset_id,
             self.validation_dataset_id)
 
@@ -224,7 +224,7 @@ class ValidateMissingParticipantTest(unittest.TestCase):
 
         mock_get_sandbox_queries.assert_called_with(
             self.project_id, self.combined_dataset_id, self.person_ids,
-            validate_missing_participant.TICKET_NUMBER)
+            remove_non_matching_participant.TICKET_NUMBER)
 
         mock_get_remove_pids_queries.assert_called_with(
             self.project_id, self.combined_dataset_id, self.person_ids)

@@ -47,6 +47,7 @@ import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_dro
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
 import cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
 import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
+import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -135,7 +136,9 @@ COMBINED_CLEANING_CLASSES = [
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     (
         null_foreign_key.null_invalid_foreign_keys,),
-    (remove_aian_participants.get_queries,)
+    (remove_aian_participants.get_queries,),
+    (validate_missing_participants.delete_records_for_non_matching_participants,
+    )
 ]
 
 DEID_BASE_CLEANING_CLASSES = [

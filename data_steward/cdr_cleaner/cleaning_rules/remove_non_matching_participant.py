@@ -1,3 +1,11 @@
+"""Participant ID validation must be performed on site submission data for it to be included in the CDR. Ideally, 
+sites conduct participant matching and only submit data for matched participants, along with a table detailing their 
+matching process. The DRC also performs a matching process on data received to validate matching done at the site 
+level. 
+
+Some sites may not provide participant matching tables for the launch dataset. In these cases, the DRC matching 
+algorithm should run and any non-matching PIDs identified by the algorithm should be dropped from the launch dataset. 
+This will ensure at least one level of identity validation is occurring. """
 import logging
 import bq_utils
 import resources
