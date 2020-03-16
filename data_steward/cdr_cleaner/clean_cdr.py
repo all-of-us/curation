@@ -412,9 +412,7 @@ def clean_combined_dataset(project_id=None, dataset_id=None):
                                                         dataset_id=dataset_id)
 
     query_list = _gather_combined_queries(project_id, dataset_id,
-                                          sandbox_dataset_id,
-                                          unioned_dataset_id,
-                                          validation_dataset_id)
+                                          sandbox_dataset_id)
 
     LOGGER.info("Cleaning combined_dataset")
     clean_engine.clean_dataset(project_id, query_list, stage.COMBINED)
