@@ -34,15 +34,15 @@ WITH non_match_participants AS
 (
 SELECT 
     *,
-    ({criterion_one_expr}) AS criterion_one,
-    ({criterion_two_expr}) AS criterion_two
+    ({key_fields_criteria}) AS key_fields_criteria,
+    ({all_fields_criteria}) AS all_fields_criteria
 FROM `{project_id}.{validation_dataset_id}.{identity_match_table}`
 )
 
 SELECT
     person_id
 FROM non_match_participants
-WHERE criterion_one IS TRUE OR criterion_two IS TRUE
+WHERE key_fields_criteria IS TRUE OR all_fields_criteria IS TRUE
 """
 
 
@@ -143,16 +143,16 @@ def get_non_match_participant_query(project_id, validation_dataset_id,
         project_id=project_id,
         validation_dataset_id=validation_dataset_id,
         identity_match_table=identity_match_table,
-        criterion_one_expr=num_of_missing_key_fields,
-        criterion_two_expr=num_of_missing_all_fields)
+        key_fields_criteria=num_of_missing_key_fields,
+        all_fields_criteria=num_of_missing_all_fields)
 
     return select_non_match_participants_query
 
 
 def delete_records_for_non_matching_participants(project_id,
                                                  combined_dataset_id,
-                                                 ehr_dataset_id,
-                                                 validation_dataset_id):
+                                                 ehr_dataset_id=None,
+                                                 validation_dataset_id=None):
     """
     This function generates the queries that delete participants and their corresponding data points, for which the 
     participant_match data is missing and DRC matching algorithm flags it as a no match 
@@ -164,6 +164,13 @@ def delete_records_for_non_matching_participants(project_id,
 
     :return: 
     """
+
+    if ehr_dataset_id is None:
+        ehr_dataset_id = bq_utils.get_unioned_dataset_id()
+
+    if validation_dataset_id is None:
+        validation_dataset_id = bq_utils.get_latest_validation_dataset_id(
+            project_id)
 
     non_matching_person_ids = []
 
