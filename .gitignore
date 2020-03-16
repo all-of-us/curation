@@ -135,3 +135,4 @@ data_steward/analytics/cdr_ops/*.jpg
 # csvs that result from the table_metrics scripts
 data_steward/analytics/table_metrics/other_scripts/*.csv
 data_steward/analytics/table_metrics/weekly_scripts/*.csv
+data_steward/analytics/table_metrics/*.xlsx
