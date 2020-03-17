@@ -19,41 +19,69 @@ race_source_value
 race_source_concept_id
 ethnicity_source_value
 ethnicity_source_concept_id
+sex_at_birth_concept_id (extension)
+sex_at_birth_source_concept_id (extension)
+sex_at_birth_source_value (extension)
 """
+
+from jinja2 import Template
 
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 PERSON_TABLE = 'person'
+GENDER_CONCEPT_ID = 1585838
+SEX_AT_BIRTH_CONCEPT_ID = 1585845
 
-REPOPULATE_PERSON_QUERY = """
+REPOPULATE_PERSON_QUERY = Template("""
 WITH
+  gender AS (
+  SELECT
+    p.person_id,
+    COALESCE(o.value_as_concept_id, 0) AS gender_concept_id,
+    COALESCE(o.value_source_concept_id, 0) AS gender_source_concept_id,
+    COALESCE(c.concept_code, "No matching concept") AS gender_source_value
+  FROM `{{project}}.{{dataset}}.person` p
+  LEFT JOIN `{{project}}.{{dataset}}.observation` o
+    ON p.person_id = o.person_id AND observation_source_concept_id = {{gender_concept_id}}
+  LEFT JOIN `{{project}}.{{dataset}}.concept` c
+    ON value_source_concept_id = concept_id
+  ),
+  sex_at_birth AS (
+  SELECT
+    p.person_id,
+    COALESCE(o.value_as_concept_id, 0) AS sex_at_birth_concept_id,
+    COALESCE(o.value_source_concept_id, 0) AS sex_at_birth_source_concept_id,
+    COALESCE(c.concept_code, "No matching concept") AS sex_at_birth_source_value
+  FROM `{{project}}.{{dataset}}.person` p
+  LEFT JOIN `{{project}}.{{dataset}}.observation` o
+    ON p.person_id = o.person_id AND observation_source_concept_id = {{sex_at_birth_concept_id}}
+  LEFT JOIN `{{project}}.{{dataset}}.concept` c
+    ON value_source_concept_id = concept_id
+  ),
   repopulate_person_from_observation AS (
   select DISTINCT * 
   from 
     (SELECT
     per.person_id,
-    case ob.value_source_concept_id
-      when 1585846 then 8507 --male
-      when 1585847 then 8532 --female
-      else 2000000009 --generalized
-      end  AS gender_concept_id,
+    gender.gender_concept_id,
+    sex_at_birth.sex_at_birth_concept_id,
     EXTRACT(YEAR from birth_datetime) as year_of_birth,
     EXTRACT(MONTH from birth_datetime) as month_of_birth,
     EXTRACT(DAY from birth_datetime) as day_of_birth,
     birth_datetime,
     --Case statement to get proper race domain matches
-    case ob2.value_source_concept_id
+    case race_ob.value_source_concept_id
       when 1586142 then 8515 --asian
       when 1586143 then 8516 --black/aa
       when 1586146 then 8527 --white
       --otherwise, just use the standard mapped answer (or 0)
-      else coalesce(ob2.value_as_concept_id, 0) 
+      else coalesce(race_ob.value_as_concept_id, 0) 
       end AS race_concept_id,
     --Hardcode to the standard non-hispanic or hispanic code as applicable.
-    if(ob3.value_as_concept_id is null, 
-    --Case this out based on the ob2 (race) values, ie if it's a skip/pna respect that.
-    case ob2.value_source_concept_id
+    if(ethnicity_ob.value_as_concept_id is null, 
+    --Case this out based on the race_ob (race) values, ie if it's a skip/pna respect that.
+    case race_ob.value_source_concept_id
       when 0 then 0 --missing answer
       when null then 0 --missing answer
       when 903079 then 903079 --PNA
@@ -68,36 +96,38 @@ WITH
     per.provider_id,
     care_site_id,
     cast(per.person_id as STRING) as person_source_value,
-    coalesce(ob.value_source_value, "No matching concept") AS gender_source_value,
-    coalesce(ob.value_source_concept_id, 0) AS gender_source_concept_id,
-    coalesce(ob2.value_source_value, "No matching concept") AS race_source_value,
-    coalesce(ob2.value_source_concept_id, 0) AS race_source_concept_id,
-    coalesce(ob3.value_source_value, 
+    gender.gender_source_value,
+    gender.gender_source_concept_id,
+    sex_at_birth.sex_at_birth_source_value,
+    sex_at_birth.sex_at_birth_source_concept_id,
+    coalesce(race_ob.value_source_value, "No matching concept") AS race_source_value,
+    coalesce(race_ob.value_source_concept_id, 0) AS race_source_concept_id,
+    coalesce(ethnicity_ob.value_source_value, 
     --fill in the skip/pna/none of these if needed
-    if(ob2.value_source_concept_id in (903079,903096,1586148),ob2.value_source_value,null)
+    if(race_ob.value_source_concept_id in (903079,903096,1586148),race_ob.value_source_value,null)
     --otherwise it is no matching
     ,"No matching concept") AS ethnicity_source_value,
-    coalesce(ob3.value_source_concept_id, 0) AS ethnicity_source_concept_id
+    coalesce(ethnicity_ob.value_source_concept_id, 0) AS ethnicity_source_concept_id
   FROM
-    `{project}.{dataset}.person` AS per
-  LEFT JOIN
-    `{project}.{dataset}.observation` ob
+    `{{project}}.{{dataset}}.person` AS per
+  LEFT JOIN gender
   ON
-    per.person_id = ob.person_id
-    --Updated to sex at birth, not gender
-    AND ob.observation_source_concept_id =1585845
-  LEFT JOIN
-    `{project}.{dataset}.observation` ob2
+    per.person_id = gender.person_id
+  LEFT JOIN sex_at_birth
   ON
-    per.person_id = ob2.person_id
-    AND ob2.observation_concept_id = 1586140
-    AND ob2.value_source_concept_id != 1586147
+    per.person_id = sex_at_birth.person_id
   LEFT JOIN
-    `{project}.{dataset}.observation` ob3
+    `{{project}}.{{dataset}}.observation` race_ob
   ON
-    per.person_id = ob3.person_id
-    AND ob3.observation_concept_id=1586140
-    AND ob3.value_source_concept_id = 1586147)
+    per.person_id = race_ob.person_id
+    AND race_ob.observation_concept_id = 1586140
+    AND race_ob.value_source_concept_id != 1586147
+  LEFT JOIN
+    `{{project}}.{{dataset}}.observation` ethnicity_ob
+  ON
+    per.person_id = ethnicity_ob.person_id
+    AND ethnicity_ob.observation_concept_id=1586140
+    AND ethnicity_ob.value_source_concept_id = 1586147)
     )
 SELECT
   person_id,
@@ -127,10 +157,13 @@ END
   AS race_source_value,
   race_source_concept_id,
   ethnicity_source_value,
-  ethnicity_source_concept_id
+  ethnicity_source_concept_id,
+  sex_at_birth_concept_id,
+  sex_at_birth_source_concept_id,
+  sex_at_birth_source_value
 FROM
   repopulate_person_from_observation
-"""
+""")
 
 
 def get_repopulate_person_post_deid_queries(project_id, dataset_id):
@@ -143,8 +176,11 @@ def get_repopulate_person_post_deid_queries(project_id, dataset_id):
     """
     queries_list = []
     query = dict()
-    query[cdr_consts.QUERY] = REPOPULATE_PERSON_QUERY.format(dataset=dataset_id,
-                                                             project=project_id)
+    query[cdr_consts.QUERY] = REPOPULATE_PERSON_QUERY.render(
+        project=project_id,
+        dataset=dataset_id,
+        gender_concept_id=GENDER_CONCEPT_ID,
+        sex_at_birth_concept_id=SEX_AT_BIRTH_CONCEPT_ID)
     query[cdr_consts.DESTINATION_TABLE] = PERSON_TABLE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
