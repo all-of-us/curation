@@ -1,6 +1,5 @@
 #!/bin/bash -e
 USAGE="delete_bucket.sh <bucket-name>"
-SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 BUCKET_NAME="$1"
 if [ -z "${APPLICATION_ID}" ]
 then

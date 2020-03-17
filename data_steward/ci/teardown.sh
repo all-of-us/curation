@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Delete buckets
 for b in ${DRC_BUCKET_NAME} ${BUCKET_NAME_FAKE} ${BUCKET_NAME_NYC} ${BUCKET_NAME_PITT} ${BUCKET_NAME_CHS} ${BUCKET_NAME_UNIONED_EHR}; do
   $(git rev-parse --show-toplevel)/data_steward/ci/delete_bucket.sh ${b}
