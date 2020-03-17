@@ -32,11 +32,11 @@ def get_pids(pid_list=None,
              sandbox_dataset_id=None,
              pid_table_id=None):
     """
-    Converts either 
-     - a list of integer pids into a bq-compatible string containing the pids or
+    Converts either
+     - a list of integer pids in string form into a bq-compatible string containing the pids or
      - a project_id, dataset_id and table_id into a SELECT query that selects pids from the table
 
-    :param pid_list: list of pids
+    :param pid_list: list of pids as strings
     :param pid_project_id: identifies project containing the sandbox dataset
     :param sandbox_dataset_id: identifies dataset containing the pid table
     :param pid_table_id: identifies the table containing pids to consider
@@ -44,7 +44,6 @@ def get_pids(pid_list=None,
     """
     if pid_list:
         # convert to string and trim the brackets off
-        pid_list = [int(pid) for pid in pid_list]
         bq_pid_str = str(pid_list)[1:-1]
         logging.info(f"Generated BQ pid string: {bq_pid_str}")
         return bq_pid_str
@@ -55,13 +54,13 @@ def get_pids(pid_list=None,
         logging.info(f"Generated pid query: {pid_query}")
         return pid_query
     else:
-        raise ValueError('Please specify pids or pid_table')
+        raise ValueError('Please specify pids or pid_table parameters')
 
 
 def get_cdm_tables_with_person_id(project_id, dataset_id):
     """
     Get df of table_ids(first column) and table names that have a person_id column as the second column
-    
+
     :param project_id: identifies the project
     :param dataset_id: identifies the dataset
     :return list containing tables
@@ -73,25 +72,26 @@ def get_cdm_tables_with_person_id(project_id, dataset_id):
     return tables_list
 
 
-def get_pid_counts(project_id, dataset_id, hpo_id, pids_string, for_cdm):
+def get_pid_counts_query(project_id, dataset_id, hpo_id, pids_string, for_cdm):
     """
-    Returns dataframe with table_name, all_counts and ehr_counts of rows pertaining to the participants
+    Returns query to fetch table_name, all_counts and ehr_counts of rows pertaining to the participants
 
     :param project_id: identifies the project
     :param dataset_id: identifies the dataset
     :param hpo_id: identifies the hpo site that submitted the pids
     :param pids_string: string containing pids or pid_query
     :param for_cdm: Boolean indicating if counting only cdm tables (excl. person)
-    :return: df containing table_name, all_counts and ehr_counts
+    :return: query selecting table_name, all_counts and ehr_counts
     """
     cdm_person_tables = get_cdm_tables_with_person_id(project_id, dataset_id)
     all_person_tables = srp.get_tables_with_person_id(project_id, dataset_id)
     if for_cdm:
+        # cdm_person_tables does not include person, but includes
+        # cdm tables where the pid column is in ordinal position 2
         person_tables = cdm_person_tables
     else:
+        # consider all tables with pid column but exclude the ones considered above
         person_tables = list(set(all_person_tables) - set(cdm_person_tables))
-    count_df = pd.DataFrame(
-        columns=[consts.TABLE_ID, consts.ALL_COUNT, consts.EHR_COUNT])
     pid_query_list = []
     for table in person_tables:
         count_types = consts.SELECT_ALL_COUNT + ',' + consts.SELECT_ZERO_COUNT
@@ -111,50 +111,86 @@ def get_pid_counts(project_id, dataset_id, hpo_id, pids_string, for_cdm):
             pid_query for pid_query in pid_query_list if hpo_id in pid_query
         ]
     unioned_query = consts.UNION_ALL.join(pid_query_list)
+    return unioned_query
+
+
+def get_pid_counts(project_id, dataset_id, hpo_id, pids_string, for_cdm):
+    """
+    Returns dataframe with table_name, all_counts and ehr_counts of rows pertaining to the participants
+
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset
+    :param hpo_id: identifies the hpo site that submitted the pids
+    :param pids_string: string containing pids or pid_query
+    :param for_cdm: Boolean indicating if counting only cdm tables (excl. person)
+    :return: df containing table_name, all_counts and ehr_counts
+    """
+    count_df = pd.DataFrame(
+        columns=[consts.TABLE_ID, consts.ALL_COUNT, consts.EHR_COUNT])
+    unioned_query = get_pid_counts_query(project_id, dataset_id, hpo_id,
+                                         pids_string, for_cdm)
     if unioned_query:
         count_df = bq.query(unioned_query)
     return count_df
 
 
+def get_non_zero_counts(project_id, dataset_id, hpo_id, pids_string):
+    """
+    Returns df containing tables which have non-zero counts of participant rows for pids in pids_string
+
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset
+    :param hpo_id: Identifies the hpo site that submitted the pids
+    :param pids_string: string containing query or pids in bq string format
+    :return: df with headers table_name, all_counts and ehr_counts
+    """
+    # count_df_cdm does not include person, but includes cdm tables where the pid column is in ordinal position 2
+    count_df_cdm = get_pid_counts(project_id,
+                                  dataset_id,
+                                  hpo_id,
+                                  pids_string,
+                                  for_cdm=True)
+    # count_df_non_cdm also includes person
+    count_df_non_cdm = get_pid_counts(project_id,
+                                      dataset_id,
+                                      hpo_id,
+                                      pids_string,
+                                      for_cdm=False)
+    count_summaries = pd.concat([count_df_cdm, count_df_non_cdm])
+
+    if 'ehr' in dataset_id:
+        # if dataset is ehr/unioned_ehr, all counts must be considered to be ehr counts (incl. non_cdm)
+        # ehr counts here will be zero since the RDR ID constant only applies to combined, deid onwards
+        count_summaries[consts.EHR_COUNT] = count_summaries[consts.ALL_COUNT]
+
+    non_zero_counts = count_summaries[count_summaries[consts.ALL_COUNT] > 0]
+    return non_zero_counts
+
+
 def estimate_prevalence(project_id, hpo_id, pids_string):
     """
-    Logs dataset_name, table_name, all_count and ehr_count to count rows pertaining to pids
+    Logs dataset_name, table_name, non_cdm_count and ehr_count to count rows pertaining to pids
 
     :param project_id: identifies the project
     :param hpo_id: Identifies the hpo site that submitted the pids
     :param pids_string: string containing query or pids in bq string format
-    :return: 
+    :return:
     """
-
-    all_datasets = bq.list_datasets(project_id)
-    for dataset in all_datasets:
+    datasets = bq.list_datasets(project_id)
+    for dataset in datasets:
         dataset_id = dataset.dataset_id
         try:
-            count_df_cdm = get_pid_counts(project_id,
-                                          dataset_id,
-                                          hpo_id,
-                                          pids_string,
-                                          for_cdm=True)
-            count_df_all = get_pid_counts(project_id,
-                                          dataset_id,
-                                          hpo_id,
-                                          pids_string,
-                                          for_cdm=False)
-            count_summaries = pd.concat([count_df_cdm, count_df_all])
+            non_zero_counts_df = get_non_zero_counts(project_id, dataset_id,
+                                                     hpo_id, pids_string)
+            non_zero_counts = non_zero_counts_df.get_values()
 
-            if 'ehr' in dataset_id:
-                count_summaries[consts.EHR_COUNT] = count_summaries[
-                    consts.ALL_COUNT]
-
-            non_zero_counts = count_summaries[
-                count_summaries[consts.ALL_COUNT] > 0].get_values()
             if non_zero_counts.size > 0:
                 for count_row in non_zero_counts:
                     logging.info(
                         'DATASET_ID: {}\tTABLE_ID: {}\tALL_COUNT: {}\tEHR_COUNT: {}'
                         .format(dataset_id, *count_row))
         except BadRequest:
-            logging.exception('Dataset %s could not be analyzed' % dataset_id)
+            logging.exception(f'Dataset {dataset_id} could not be analyzed')
 
 
 if __name__ == '__main__':
@@ -195,6 +231,7 @@ if __name__ == '__main__':
     parser.add_argument('-i',
                         '--pid_list',
                         nargs='+',
+                        type=int,
                         dest='pid_list',
                         help='Person_ids to check for',
                         required=False)
