@@ -11,6 +11,7 @@ import bq_utils
 import resources
 import oauth2client
 import googleapiclient
+from utils import bq
 from validation.participants import readers
 from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids as remove_pids
 from constants.validation.participants.identity_match import (PERSON_ID_FIELD,
@@ -177,8 +178,7 @@ def delete_records_for_non_matching_participants(project_id,
         ehr_dataset_id = bq_utils.get_unioned_dataset_id()
 
     if validation_dataset_id is None:
-        validation_dataset_id = bq_utils.get_latest_validation_dataset_id(
-            project_id)
+        validation_dataset_id = bq.get_latest_validation_dataset_id(project_id)
 
     non_matching_person_ids = []
 
@@ -225,13 +225,6 @@ def parse_args():
     import cdr_cleaner.args_parser as parser
 
     additional_arguments = [{
-        parser.SHORT_ARGUMENT: '-a',
-        parser.LONG_ARGUMENT: '--sandbox_dataset_id',
-        parser.ACTION: 'store',
-        parser.DEST: 'sandbox_dataset_id',
-        parser.HELP: 'sandbox_dataset_id',
-        parser.REQUIRED: True
-    }, {
         parser.SHORT_ARGUMENT: '-e',
         parser.LONG_ARGUMENT: '--ehr_dataset_id',
         parser.ACTION: 'store',
@@ -251,6 +244,7 @@ def parse_args():
 
 
 if __name__ == '__main__':
+
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parse_args()
