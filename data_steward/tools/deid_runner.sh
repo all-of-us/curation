@@ -60,6 +60,7 @@ DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 DEID_DIR="${DATA_STEWARD_DIR}/deid"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
+HANDOFF_DATE=$(date --date='1 day' '+%Y-%m-%d')
 
 #------Create de-id virtual environment----------
 virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
@@ -97,6 +98,9 @@ cdr_deid_base="${cdr_deid}_base"
 cdr_deid_clean_staging="${cdr_deid}_clean_staging"
 cdr_deid_clean="${cdr_deid}_clean"
 
+# Copy cdr_metadata table
+python "${TOOLS_DIR}/add_cdr_metadata.py" --component "copy" --project_id ${app_id} --target_dataset ${cdr_deid} --source_dataset ${cdr_id}
+
 # create empty de-id_clean dataset to apply cleaning rules
 bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${cdr_deid}" ${APP_ID}:${cdr_deid_base_staging}
 
@@ -114,6 +118,9 @@ python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee de
 python "${TOOLS_DIR}/snapshot_by_query.py" -p "${APP_ID}" -d "${cdr_deid_base_staging}" -n "${cdr_deid_base}"
 
 bq update --description "${version} De-identified Base version of ${cdr_id}" ${APP_ID}:${cdr_deid_base}
+
+# Add qa_handoff_date to cdr_metadata table 
+python "${TOOLS_DIR}/add_cdr_metadata.py" --component "insert" --project_id ${app_id} --target_dataset ${cdr_deid_base} --qa_handoff_date ${HANDOFF_DATE}
 
 #copy sandbox dataset
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${cdr_deid_base_staging}_sandbox" --target_dataset "${cdr_deid_base}_sandbox"

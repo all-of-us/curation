@@ -9,6 +9,8 @@ Usage: generate_combined_dataset.sh
   --unioned_ehr_dataset <unioned dataset>
   --rdr_dataset <RDR dataset>
   --dataset_release_tag <release tag for the CDR>
+  --ehr_cutoff <ehr_cut_off date format yyyy-mm-dd>
+  --rdr_export_date <date RDR export is run format yyyy-mm-dd>
 "
 
 while true; do
@@ -33,6 +35,14 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
+  --ehr_cutoff)
+    ehr_cutoff=$2
+    shift 2
+    ;;
+  --rdr_export_date)
+    rdr_export_date=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -41,7 +51,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${unioned_ehr_dataset}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${dataset_release_tag}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${unioned_ehr_dataset}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]]; then
   echo "$USAGE"
   exit 1
 fi
@@ -50,12 +60,16 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
+today=$(date '+%Y-%m-%d')
 
 echo "unioned_ehr_dataset --> ${unioned_ehr_dataset}"
 echo "rdr_dataset --> ${rdr_dataset}"
 echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
+echo "ehr_cutoff_date --> ${ehr_cutoff}"
+echo "rdr_export_date --> ${rdr_export_date}"
+echo "cdr generation date --> ${today}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
@@ -102,6 +116,13 @@ python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary ${combined_backup}
 
 #Combine EHR and PPI data sets
 python "${TOOLS_DIR}/combine_ehr_rdr.py"
+
+# Add cdr_meta data table
+python "${TOOLS_DIR}/add_cdr_metadata.py" --component "create" --project_id ${app_id} --target_dataset ${combined_backup}
+
+# Add data to cdr_metadata table
+python "${TOOLS_DIR}/add_cdr_metadata.py" --component "insert" --project_id ${app_id} --target_dataset ${combined_backup} \
+--etl_version ${version} --ehr_source ${unioned_ehr_dataset} --ehr_cutoff_date ${ehr_cutoff} --rdr_source ${rdr_dataset} --cdr_generation_date ${today} --vocabulary_version ${vocab_dataset}
 
 # create an intermediary table to apply cleaning rules on
 bq mk --dataset --description "intermediary dataset to apply cleaning rules on ${combined_backup}" ${app_id}:${combined_staging}
