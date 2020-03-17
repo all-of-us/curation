@@ -79,8 +79,6 @@ def get_latest_validation_dataset_id(project_id):
     :return: the most recent validatioN_dataset_id
     """
 
-    # client = get_client(project_id)
-    # client.list_datasets(project=project_id)
     pattern = re.compile(bq_consts.VALIDATION_DATASET_REGEX)
     dataset_id = os.environ.get(bq_consts.MATCH_DATASET, bq_consts.BLANK)
     if dataset_id == bq_consts.BLANK:

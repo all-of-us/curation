@@ -244,7 +244,6 @@ def parse_args():
 
 
 if __name__ == '__main__':
-
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parse_args()
