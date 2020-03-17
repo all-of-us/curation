@@ -60,10 +60,8 @@ pd.options.display.max_colwidth = 999
 
 from IPython.display import HTML as html_print
 
-
 def cstr(s, color='black'):
     return "<text style=color:{}>{}</text>".format(color, s)
-
 
 print('done.')
 # -
@@ -127,6 +125,7 @@ site_map = pd.io.gbq.read_gbq('''
     FROM
          `{}._mapping_visit_occurrence`
          
+         
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
@@ -143,20 +142,22 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`      
+         `{}._mapping_drug_exposure`        
+         
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_measurement`               
+         `{}._mapping_measurement`            
+         
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_observation`         
-                  
+                
          
     UNION ALL
     SELECT
@@ -169,8 +170,7 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    ) 
-    order by 1
+    )     
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,

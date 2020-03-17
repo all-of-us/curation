@@ -129,11 +129,6 @@ site_map = pd.io.gbq.read_gbq('''
     FROM
          `{}._mapping_visit_occurrence`
          
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_care_site`
          
     UNION ALL
     SELECT
@@ -151,27 +146,14 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_location`         
+         `{}._mapping_drug_exposure`        
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_measurement`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_note`        
+         `{}._mapping_measurement`            
          
          
     UNION ALL
@@ -179,31 +161,13 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_observation`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_person`         
+                
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_procedure_occurrence`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_provider`
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_specimen`
     
     UNION ALL
     SELECT
@@ -239,7 +203,7 @@ birth_df = pd.io.gbq.read_gbq('''
         sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18) then 1 else 0 end) as minors_in_dataset
          
     FROM
-       `{}.unioned_ehr_person` AS t1
+       `{}.person` AS t1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
@@ -256,7 +220,7 @@ birth_df = pd.io.gbq.read_gbq('''
     SELECT
         person_id          
     FROM
-       `{}.unioned_ehr_person` AS t1
+       `{}.person` AS t1
     where 
         (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18)
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -278,7 +242,7 @@ birth_df = pd.io.gbq.read_gbq('''
         sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)>120) then 1 else 0 end) as over_120_in_dataset
          
     FROM
-       `{}.unioned_ehr_person` AS t1
+       `{}.person` AS t1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
@@ -292,7 +256,7 @@ birth_df = pd.io.gbq.read_gbq('''
     SELECT
         person_id          
     FROM
-       `{}.unioned_ehr_person` AS t1
+       `{}.person` AS t1
     where 
         DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)>120
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -314,7 +278,7 @@ birth_df = pd.io.gbq.read_gbq('''
     SELECT
         DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR) as AGE    
     FROM
-       `{}.unioned_ehr_person` AS t1
+       `{}.person` AS t1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
@@ -338,9 +302,9 @@ SELECT
 DISTINCT
 mco.src_hpo_id, p.person_id
 FROM
-`{DATASET}.unioned_ehr_person` p
+`{DATASET}.person` p
 JOIN
-`{DATASET}.unioned_ehr_condition_occurrence` co
+`{DATASET}.condition_occurrence` co
 ON
 p.person_id = co.person_id
 JOIN
@@ -432,7 +396,7 @@ p.src_hpo_id, COUNT(DISTINCT p.person_id) as num_with_diab_and_drugs
 FROM
 `{DATASET}.persons_with_diabetes_according_to_condition_table` p
 RIGHT JOIN
-`{DATASET}.unioned_ehr_drug_exposure` de  -- get the relevant drugs
+`{DATASET}.drug_exposure` de  -- get the relevant drugs
 ON
 p.person_id = de.person_id
 RIGHT JOIN
@@ -486,7 +450,7 @@ p.src_hpo_id, COUNT(DISTINCT p.person_id) as num_with_diab_and_glucose
 FROM
 `{DATASET}.persons_with_diabetes_according_to_condition_table` p
 RIGHT JOIN
-`{DATASET}.unioned_ehr_measurement` m
+`{DATASET}.measurement` m
 ON
 p.person_id = m.person_id -- get the persons with measurements
 RIGHT JOIN
@@ -527,7 +491,7 @@ p.src_hpo_id, COUNT(DISTINCT p.person_id) as num_with_diab_and_a1c
 FROM
 `{DATASET}.persons_with_diabetes_according_to_condition_table` p
 RIGHT JOIN
-`{DATASET}.unioned_ehr_measurement` m
+`{DATASET}.measurement` m
 ON
 p.person_id = m.person_id -- get the persons with measurements
 RIGHT JOIN
@@ -558,7 +522,7 @@ p.src_hpo_id, COUNT(DISTINCT p.person_id) as num_with_diab_and_insulin
 FROM
 `{DATASET}.persons_with_diabetes_according_to_condition_table` p
 RIGHT JOIN
-`{DATASET}.unioned_ehr_drug_exposure` de
+`{DATASET}.drug_exposure` de
 ON
 de.person_id = p.person_id -- get the persons with measurements
 RIGHT JOIN

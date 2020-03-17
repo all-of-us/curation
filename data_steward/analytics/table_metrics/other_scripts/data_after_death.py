@@ -117,168 +117,71 @@ dic = {
 site_df = pd.DataFrame(data=dic)
 site_df
 
-# + endofcell="--"
-#######################################
-print('Setting everything up...')
-#######################################
-
-import warnings
-
-warnings.filterwarnings('ignore')
-import pandas_gbq
-import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-from matplotlib.lines import Line2D
-
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib as mpl
-
-import matplotlib.pyplot as plt
-
-DATASET = 'aou-res-curation-prod.ehr_ops'
-
-import os
-import sys
-from datetime import datetime
-from datetime import date
-from datetime import time
-from datetime import timedelta
-import time
-
-plt.style.use('ggplot')
-pd.options.display.max_rows = 999
-pd.options.display.max_columns = 999
-pd.options.display.max_colwidth = 999
-
-from IPython.display import HTML as html_print
-
-
-def cstr(s, color='black'):
-    return "<text style=color:{}>{}</text>".format(color, s)
-
-
-print('done.')
-# -
-
-cwd = os.getcwd()
-cwd = str(cwd)
-print(cwd)
-
-# # +
-dic = {
-    'src_hpo_id': [
-        "saou_uab_selma", "saou_uab_hunt", "saou_tul", "pitt_temple",
-        "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc",
-        "seec_miami", "seec_morehouse", "seec_emory", "uamc_banner", "pitt",
-        "nyc_cu", "ipmc_uic", "trans_am_spectrum", "tach_hfhs", "nec_bmc",
-        "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
-        "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl",
-        "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh",
-        "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc",
-        "aouw_mcw", "cpmc_ucd", "ipmc_rush", "va", "saou_umc"
-    ],
-    'HPO': [
-        "UAB Selma", "UAB Huntsville", "Tulane University", "Temple University",
-        "Louisiana State University",
-        "Reliant Medical Group (Meyers Primary Care)",
-        "Essentia Health Superior Clinic", "University of Mississippi",
-        "SouthEast Enrollment Center Miami",
-        "SouthEast Enrollment Center Morehouse",
-        "SouthEast Enrollment Center Emory", "Banner Health",
-        "University of Pittsburgh", "Columbia University Medical Center",
-        "University of Illinois Chicago", "Spectrum Health",
-        "Henry Ford Health System", "Boston Medical Center", "UC Irvine",
-        "Partners HealthCare", "Weill Cornell Medical Center",
-        "Northwestern Memorial Hospital", "Harlem Hospital",
-        "University of Chicago", "Marshfield Clinic",
-        "San Ysidro Health Center", "Cedars-Sinai", "University of Florida",
-        "University of Alabama at Birmingham", "Baylor", "UC San Diego",
-        "Eau Claire Cooperative Health Center", "Community Health Center, Inc.",
-        "UW Health (University of Wisconsin Madison)",
-        "University of Southern California", "HRHCare",
-        "NorthShore University Health System", "Cherokee Health Systems",
-        "UC San Francisco", "Jackson-Hinds CHC", "Medical College of Wisconsin",
-        "UC Davis", "Rush University", 
-        "United States Department of Veterans Affairs - Boston",
-        "University Medical Center (UA Tuscaloosa)"
-    ]
-}
-
-site_df = pd.DataFrame(data=dic)
-site_df
-
-# # +
+# +
 ######################################
 print('Getting the data from the database...')
+######################################
 
-site_construct_query = """
-select distinct * from (
+site_map = pd.io.gbq.read_gbq('''
+    select distinct * from (
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{DATASET}._mapping_visit_occurrence`
+         `{}._mapping_visit_occurrence`
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{DATASET}._mapping_condition_occurrence`  
+         `{}._mapping_condition_occurrence`  
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{DATASET}._mapping_device_exposure`
+         `{}._mapping_device_exposure`
 
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{DATASET}._mapping_drug_exposure`
+         `{}._mapping_drug_exposure`        
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{DATASET}._mapping_measurement`               
+         `{}._mapping_measurement`            
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{DATASET}._mapping_observation`           
+         `{}._mapping_observation`         
+                
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{DATASET}._mapping_procedure_occurrence`         
-         
+         `{}._mapping_procedure_occurrence`         
     
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{DATASET}._mapping_visit_occurrence`   
-    ) 
-""".format(DATASET = DATASET)
-
-######################################
-
-site_map = pd.io.gbq.read_gbq(site_construct_query,
-            dialect='standard')
+         `{}._mapping_visit_occurrence`   
+    )     
+    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
+               DATASET, DATASET, DATASET, DATASET, DATASET),
+                              dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
-
-site_map
-# --
 
 site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
 
@@ -299,9 +202,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(visit_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_visit_occurrence` AS t1
+       `{}.visit_occurrence` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -345,9 +248,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(condition_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_condition_occurrence` AS t1
+       `{}.condition_occurrence` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -391,9 +294,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(drug_exposure_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_drug_exposure` AS t1
+       `{}.drug_exposure` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -434,9 +337,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(measurement_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_measurement` AS t1
+       `{}.measurement` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -477,9 +380,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(procedure_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_procedure_occurrence` AS t1
+       `{}.procedure_occurrence` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -523,9 +426,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(observation_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_observation` AS t1
+       `{}.observation` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
@@ -566,9 +469,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(device_exposure_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.unioned_ehr_device_exposure` AS t1
+       `{}.device_exposure` AS t1
     INNER JOIN
-        `{}.unioned_ehr_death` AS t2
+        `{}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
