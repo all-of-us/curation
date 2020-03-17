@@ -15,14 +15,18 @@ from gcs_utils import get_hpo_bucket
 from validation.main import _upload_achilles_files
 from validation.main import run_achilles as _run_achilles
 from validation.main import run_export as _run_export
+from bq_utils import get_dataset_id
 
 
 def main(args):
     folder = args.folder
+    dataset_id = get_dataset_id()
     target_bucket = args.bucket
     folder_prefix = folder + '/'
     _run_achilles()
-    _run_export(folder_prefix=folder_prefix, target_bucket=target_bucket)
+    _run_export(hpo_id=dataset_id,
+                folder_prefix=folder_prefix,
+                target_bucket=target_bucket)
     _upload_achilles_files(folder_prefix=folder_prefix,
                            target_bucket=target_bucket)
 
@@ -32,7 +36,6 @@ if __name__ == '__main__':
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         '--bucket',
-        default=get_hpo_bucket('nyc'),
         help=
         'Identifier for the bucket. Output tables will be prepended with {hpo_id}_.'
     )

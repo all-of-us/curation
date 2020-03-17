@@ -73,7 +73,6 @@ source "${TOOLS_DIR}/set_path.sh"
 #------------------------------------------------------
 
 export BIGQUERY_DATASET_ID="${dataset}"
-export BUCKET_NAME_NYC="test-bucket"
 
 # copy vocabulary tables to the rdr dataset to run the achilles analysis.
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${vocab_dataset} --target_dataset ${dataset}

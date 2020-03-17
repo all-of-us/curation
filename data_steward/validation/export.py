@@ -47,7 +47,12 @@ def list_dirs_only(root):
         return dirnames
 
 
-def export_from_path(p, hpo_id=None):
+def is_hpo_id(hpo_id):
+    return hpo_id in [item['hpo_id'] for item in resources.hpo_csv()]
+
+
+# TODO Make this function more generic.
+def export_from_path(p, hpo_id):
     """
     Export results
     :param p: path to SQL file
@@ -55,6 +60,8 @@ def export_from_path(p, hpo_id=None):
     :return: `dict` structured for report render
     """
     result = dict()
+    if not is_hpo_id(hpo_id):
+        hpo_id = None
     for f in list_files_only(p):
         name = f[0:-4].upper()
         abs_path = os.path.join(p, f)
