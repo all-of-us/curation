@@ -46,36 +46,46 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
+    def setUp(self):
+        self.project_id = bq_utils.app_identity.get_application_id()
+        self.dataset_id = bq_utils.get_combined_dataset_id()
+        if not self.project_id or not self.dataset_id:
+            # TODO: Fix handling of globals, push these assertions down if they are required.
+            raise ValueError(
+                f"missing configuration for project ('{self.project_id}') " +
+                f"and/or dataset ('{self.dataset_id}')")
+
+        # TODO: Reconcile this with a consistent integration testing model. Ideally each test should
+        # clean up after itself so that we don't need this defensive check.
+        test_util.delete_all_tables(self.dataset_id)
+
+        create_tables = ['person', 'observation']
+        for tbl in ['concept']:
+            if not bq_utils.table_exists(tbl, dataset_id=self.dataset_id):
+                create_tables.append(tbl)
+        for tbl in create_tables:
+            bq_utils.create_standard_table(tbl,
+                                           tbl,
+                                           dataset_id=self.dataset_id,
+                                           force_all_nullable=True)
+
+    def tearDown(self):
+        test_util.delete_all_tables(self.dataset_id)
+
     def assertPersonFields(self, person, want):
         for k in want.keys():
             self.assertIn(k, person)
             self.assertEqual(person[k], want[k])
 
     def test_execute_queries(self):
-        project_id = bq_utils.app_identity.get_application_id()
-        dataset_id = bq_utils.get_combined_dataset_id()
-        self.assertIsNotNone(project_id)
-        self.assertIsNotNone(dataset_id)
-        test_util.delete_all_tables(dataset_id)
-
-        create_tables = ['person', 'observation']
-        for tbl in ['concept']:
-            if not bq_utils.table_exists(tbl, dataset_id=dataset_id):
-                create_tables.append(tbl)
-        for tbl in create_tables:
-            bq_utils.create_standard_table(tbl,
-                                           tbl,
-                                           dataset_id=dataset_id,
-                                           force_all_nullable=True)
-
         gender_nonbinary_concept_id = 1585841
         gender_nonbinary_source_concept_id = 123
         sex_female_concept_id = 1585847
         sex_female_source_concept_id = 45878463
         for tmpl in INSERT_FAKE_PARTICIPANTS_TMPLS:
             query = tmpl.render(
-                project_id=project_id,
-                dataset_id=dataset_id,
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
                 gender_concept_id=repopulate_person_post_deid.GENDER_CONCEPT_ID,
                 gender_nonbinary_concept_id=gender_nonbinary_concept_id,
                 gender_nonbinary_source_concept_id=
@@ -92,12 +102,12 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
             self.assertTrue(resp["jobComplete"])
 
         queries = repopulate_person_post_deid.get_repopulate_person_post_deid_queries(
-            project_id, dataset_id)
-        clean_cdr_engine.clean_dataset(project_id, queries)
+            self.project_id, self.dataset_id)
+        clean_cdr_engine.clean_dataset(self.project_id, queries)
 
         rows = bq_utils.response2rows(
             bq_utils.query("SELECT * FROM `{}.{}.person`".format(
-                project_id, dataset_id)))
+                self.project_id, self.dataset_id)))
         self.assertEquals(len(rows), 2)
 
         by_participant = {r["person_id"]: r for r in rows}
