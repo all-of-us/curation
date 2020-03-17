@@ -175,6 +175,10 @@ jobs:
                 echo "Skipping integration tests"
             fi
           no_output_timeout: 3000s
+      - run:
+          name: Delete buckets and datasets
+          command: ./ci/teardown.sh
+          when: on_success
       - test_teardown
 
 workflows:
