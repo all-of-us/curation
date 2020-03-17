@@ -48,7 +48,7 @@ def list_dirs_only(root):
 
 
 def is_hpo_id(hpo_id):
-    return hpo_id in [item['hpo_id'] for item in resources.hpo_csv()]
+    return hpo_id in [item['hpo_id'] for item in bq_utils.get_hpo_info()]
 
 
 # TODO Make this function more generic.
