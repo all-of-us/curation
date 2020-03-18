@@ -1,5 +1,4 @@
 # Python imports
-import re
 import json
 import logging
 import os
