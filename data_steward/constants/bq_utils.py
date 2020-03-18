@@ -51,6 +51,7 @@ MATCH_DATASET = 'VALIDATION_RESULTS_DATASET_ID'
 # Dataset name formats
 VALIDATION_DATASET_FORMAT = 'validation_{}'
 VALIDATION_DATASET_REGEX = 'validation_\d{8}'
+VALIDATION_DATE_FORMAT = '%Y%m%d'
 
 INSERT_QUERY = """
 INSERT INTO `{project_id}.{dataset_id}.{table_id}`
