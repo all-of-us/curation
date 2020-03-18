@@ -7,6 +7,7 @@ from google.cloud import bigquery
 
 # Project Imports
 from app_identity import GOOGLE_CLOUD_PROJECT
+from constants import bq_utils as bq_utils_consts
 from constants.utils import bq as bq_consts
 
 
@@ -87,8 +88,9 @@ def get_latest_validation_dataset_id(project_id):
     :return: the most recent validatioN_dataset_id
     """
 
-    dataset_id = os.environ.get(bq_consts.MATCH_DATASET, bq_consts.BLANK)
-    if dataset_id == bq_consts.BLANK:
+    dataset_id = os.environ.get(bq_utils_consts.MATCH_DATASET,
+                                bq_utils_consts.BLANK)
+    if dataset_id == bq_utils_consts.BLANK:
         validation_datasets = []
         for dataset in list_datasets(project_id):
             dataset_id = dataset.dataset_id
