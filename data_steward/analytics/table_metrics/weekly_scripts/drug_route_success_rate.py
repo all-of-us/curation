@@ -243,10 +243,6 @@ JOIN
 `{DATASET}._mapping_drug_exposure` mde
 ON
 de.drug_exposure_id = mde.drug_exposure_id 
-JOIN
-`{DATASET}.concept` c
-ON
-de.route_concept_id = c.concept_id 
 GROUP BY 1
 ORDER BY number_total_routes DESC
 """.format(DATASET = DATASET)

@@ -260,10 +260,6 @@ JOIN
 `{DATASET}._mapping_measurement` mm
 ON
 m.measurement_id = mm.measurement_id 
-JOIN
-`{DATASET}.concept` c
-ON
-m.unit_concept_id = c.concept_id 
 GROUP BY 1
 ORDER BY number_total_units DESC
 """.format(DATASET = DATASET)
