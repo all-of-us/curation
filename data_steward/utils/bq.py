@@ -1,15 +1,13 @@
 # Python Imports
-from datetime import datetime
 import logging
 import os
-import re
 
 # Third-party imports
 from google.cloud import bigquery
 
 # Project Imports
 from app_identity import GOOGLE_CLOUD_PROJECT
-from constants import bq_utils as bq_consts
+from constants.utils import bq as bq_consts
 
 
 def get_client(project_id=None):
@@ -40,6 +38,17 @@ def list_datasets(project_id):
     return datasets
 
 
+def get_dataset(project_id, dataset_id):
+    """
+    Return the dataset object
+    :param project_id: 
+    :param dataset_id: 
+    :return: the dataset object
+    """
+    client = get_client(project_id)
+    return client.get_dataset(dataset_id)
+
+
 def delete_dataset(project_id,
                    dataset_id,
                    delete_contents=True,
@@ -68,8 +77,7 @@ def is_validation_dataset_id(dataset_id):
     :param dataset_id: 
     :return: a bool indicating whether dataset is a validation_dataset
     """
-    compiled_exp = re.compile(bq_consts.VALIDATION_DATASET_REGEX)
-    return compiled_exp.match(dataset_id)
+    return bq_consts.VALIDATION_PREFIX in dataset_id
 
 
 def get_latest_validation_dataset_id(project_id):
@@ -79,18 +87,14 @@ def get_latest_validation_dataset_id(project_id):
     :return: the most recent validatioN_dataset_id
     """
 
-    pattern = re.compile(bq_consts.VALIDATION_DATASET_REGEX)
     dataset_id = os.environ.get(bq_consts.MATCH_DATASET, bq_consts.BLANK)
     if dataset_id == bq_consts.BLANK:
         validation_datasets = []
         for dataset in list_datasets(project_id):
             dataset_id = dataset.dataset_id
-            match = pattern.match(dataset_id)
-            if match:
-                validation_creation_date = datetime.strptime(
-                    match.group(1), bq_consts.VALIDATION_DATE_FORMAT)
-                validation_datasets.append(
-                    (validation_creation_date, dataset_id))
+            if is_validation_dataset_id(dataset_id):
+                dataset = get_dataset(project_id, dataset_id)
+                validation_datasets.append((dataset.created, dataset_id))
 
         if validation_datasets:
             return sorted(validation_datasets, key=lambda x: x[0],

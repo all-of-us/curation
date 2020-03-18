@@ -125,42 +125,6 @@ def get_validation_results_dataset_id():
     return dataset_id
 
 
-def is_validation_dataset_id(dataset_id):
-    """
-    Check if  bq_consts.VALIDATION_PREFIX is in the dataset_id
-    :param dataset_id: 
-    :return: a bool indicating whether dataset is a validation_dataset
-    """
-    compiled_exp = re.compile(bq_consts.VALIDATION_DATASET_REGEX)
-    return compiled_exp.match(dataset_id)
-
-
-def get_latest_validation_dataset_id(project_id):
-    """
-    Get the latest validation_dataset_id based on most recent creationTime. 
-    :param project_id: 
-    :return: the most recent validatioN_dataset_id
-    """
-
-    pattern = re.compile(bq_consts.VALIDATION_DATASET_REGEX)
-    dataset_id = os.environ.get(bq_consts.MATCH_DATASET, bq_consts.BLANK)
-    if dataset_id == bq_consts.BLANK:
-        validation_datasets = []
-        for dataset in list_datasets(project_id):
-            dataset_id = dataset['id']
-            match = pattern.match(dataset_id)
-            if match:
-                validation_creation_date = datetime.strptime(
-                    match.group(0), bq_consts.VALIDATION_DATE_FORMAT)
-                validation_datasets.append(
-                    (validation_creation_date, dataset_id))
-
-        if validation_datasets:
-            return sorted(validation_datasets, lambda x: x[0],
-                          reverse=True)[0][1]
-    return None
-
-
 def create_service():
     return build('bigquery', 'v2', cache={})
 
