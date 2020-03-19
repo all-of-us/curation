@@ -172,7 +172,8 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    )
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -238,6 +239,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+ AND
+     mde.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 
      1
  ORDER BY 
@@ -275,6 +278,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+ AND
+     mde.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 
      1
  ORDER BY 
@@ -311,6 +316,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+AND 
+    mde.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 
      1
  ORDER BY 
@@ -347,6 +354,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+ AND
+    mde.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 
      1
  ORDER BY 
@@ -385,6 +394,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+ AND
+     mde.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 
      1
  ORDER BY 
@@ -421,6 +432,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+ AND
+     mde.src_hpo_id NOT LIKE '%rdr'
  GROUP BY 
      1
  ORDER BY 
@@ -459,6 +472,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+ AND
+     mde.src_hpo_id NOT LIKE '%rdr'
  GROUP BY 
      1
  ORDER BY 
@@ -495,6 +510,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+ AND
+     mde.src_hpo_id NOT LIKE '%rdr'
  GROUP BY 
      1
  ORDER BY 
@@ -532,6 +549,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+ AND
+     mde.src_hpo_id NOT LIKE '%rdr'
  GROUP BY 
      1
  ORDER BY 
@@ -569,6 +588,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+ AND
+     mde.src_hpo_id NOT LIKE '%rdr'
  GROUP BY 
      1
  ORDER BY 
@@ -607,6 +628,8 @@ SELECT
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
      ca.ancestor_concept_id IN {}
+ AND
+     mde.src_hpo_id NOT LIKE '%rdr'
  GROUP BY 
      1
  ORDER BY 

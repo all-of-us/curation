@@ -174,7 +174,9 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    )
+    WHERE src_hpo_id NOT LIKE '%rdr%'
+    order by 1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -214,6 +216,7 @@ temporal_df = pd.io.gbq.read_gbq('''
              `{}._mapping_visit_occurrence`)  AS t3
     ON
         t1.visit_occurrence_id=t3.visit_occurrence_id
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -260,6 +263,7 @@ temporal_df = pd.io.gbq.read_gbq('''
              `{}._mapping_condition_occurrence`)  AS t3
     ON
         t1.condition_occurrence_id=t3.condition_occurrence_id
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -306,6 +310,7 @@ temporal_df = pd.io.gbq.read_gbq('''
              `{}._mapping_drug_exposure`)  AS t3
     ON
         t1.drug_exposure_id=t3.drug_exposure_id
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -349,6 +354,7 @@ temporal_df = pd.io.gbq.read_gbq('''
              `{}._mapping_measurement`)  AS t3
     ON
         t1.measurement_id=t3.measurement_id
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -392,6 +398,7 @@ temporal_df = pd.io.gbq.read_gbq('''
              `{}._mapping_procedure_occurrence`)  AS t3
     ON
         t1.procedure_occurrence_id=t3.procedure_occurrence_id
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -438,6 +445,7 @@ temporal_df = pd.io.gbq.read_gbq('''
              `{}._mapping_observation`)  AS t3
     ON
         t1.observation_id=t3.observation_id
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
@@ -481,6 +489,7 @@ temporal_df = pd.io.gbq.read_gbq('''
              `{}._mapping_device_exposure`)  AS t3
     ON
         t1.device_exposure_id=t3.device_exposure_id
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),

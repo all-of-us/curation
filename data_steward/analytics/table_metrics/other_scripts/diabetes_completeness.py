@@ -174,7 +174,8 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    )
+    WHERE src_hpo_id NOT LIKE '%rdr'
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -319,6 +320,8 @@ WHERE
 LOWER(c.concept_name) LIKE '%diabetes%'
 AND
 (invalid_reason is null or invalid_reason = '')
+AND
+mco.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1, 2
 ORDER BY 1, 2 DESC
 """.format(DATASET = DATASET)
@@ -348,6 +351,8 @@ DISTINCT
 p.src_hpo_id, COUNT(DISTINCT p.person_id) as num_with_diab
 FROM
 `{DATASET}.persons_with_diabetes_according_to_condition_table` p
+WHERE
+p.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_with_diab DESC
 """.format(DATASET = DATASET)
@@ -402,7 +407,8 @@ p.person_id = de.person_id
 RIGHT JOIN
 `{DATASET}.substantiating_diabetic_drug_concept_ids` t2drugs  -- only focus on the drugs that substantiate diabetes
 ON
-de.drug_concept_id = t2drugs.descendant_concept_id 
+de.drug_concept_id = t2drugs.descendant_concept_id
+WHERE p.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_with_diab_and_drugs DESC
 """.format(DATASET = DATASET)
@@ -457,6 +463,8 @@ RIGHT JOIN
 `{DATASET}.valid_glucose_labs` vgl
 ON
 vgl.concept_id = m.measurement_concept_id -- only get those with the substantiating labs
+WHERE
+p.src_hpo_id NOT LIKE '%rdr'
 GROUP BY 1
 ORDER BY num_with_diab_and_glucose DESC
 """.format(DATASET = DATASET)
@@ -498,6 +506,8 @@ RIGHT JOIN
 `{DATASET}.a1c_descendants` a1c
 ON
 a1c.concept_id = m.measurement_concept_id -- only get those with the substantiating labs
+WHERE
+p.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_with_diab_and_a1c DESC
 """.format(DATASET = DATASET)
@@ -531,6 +541,8 @@ ON
 de.drug_concept_id = c.concept_id
 WHERE
 LOWER(c.concept_name) LIKE '%insulin%'  -- generous for detecting insulin
+AND
+p.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_with_diab_and_insulin DESC
 """.format(DATASET = DATASET)
