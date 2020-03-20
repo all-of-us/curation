@@ -173,7 +173,8 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    )
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -224,6 +225,7 @@ JOIN
 `{DATASET}._mapping_measurement` mm
 ON
 m.measurement_id = mm.measurement_id 
+WHERE mm.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY number_total_units DESC
 """.format(DATASET = DATASET)
@@ -269,6 +271,8 @@ WHERE
 c.standard_concept IN ('S')
 AND
 LOWER(c.domain_id) LIKE '%unit%'
+AND
+mm.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY number_valid_units DESC
 """.format(DATASET = DATASET)
@@ -330,6 +334,7 @@ ON
 m.unit_concept_id = c.concept_id
 WHERE
 ca.ancestor_concept_id IN {selected_measurements}
+AND mm.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY number_sel_meas DESC
 """.format(DATASET = DATASET, selected_measurements = measurement_codes)
@@ -381,6 +386,7 @@ AND
 LOWER(c.domain_id) LIKE '%unit%'
 AND
 ca.ancestor_concept_id IN {selected_measurements}
+AND mm.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY number_valid_units_sel_meas DESC
 """.format(DATASET = DATASET, selected_measurements = measurement_codes)

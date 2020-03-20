@@ -176,7 +176,8 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    )
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -219,7 +220,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         t1.visit_occurrence_id=t2.visit_occurrence_id
     WHERE
         t1.visit_concept_id!=0 AND t1.visit_concept_id IS NOT NULL AND
-        t1.person_id!=0 and t1.person_id IS NOT NULL 
+        t1.person_id!=0 and t1.person_id IS NOT NULL AND
+        t2.src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
     HAVING 
@@ -265,7 +267,8 @@ condition_source_value, condition_source_concept_id, condition_status_source_val
         t1.condition_occurrence_id=t2.condition_occurrence_id
     WHERE
         t1.condition_concept_id!=0 AND t1.condition_concept_id IS NOT NULL AND
-        t1.person_id!=0 and t1.person_id IS NOT NULL 
+        t1.person_id!=0 and t1.person_id IS NOT NULL AND
+        t2.src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
     HAVING 
@@ -389,7 +392,8 @@ drug_source_concept_id, route_source_value, dose_unit_source_value,
         t1.drug_exposure_id=t2.drug_exposure_id
     WHERE
         t1.drug_concept_id!=0 AND t1.drug_concept_id IS NOT NULL AND
-        t1.person_id!=0 and t1.person_id IS NOT NULL 
+        t1.person_id!=0 and t1.person_id IS NOT NULL AND
+        t2.src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22
     HAVING 
@@ -437,7 +441,8 @@ measurement_source_value, measurement_source_concept_id, unit_source_value, valu
         t1.measurement_id=t2.measurement_id
     WHERE
         t1.measurement_concept_id!=0 AND t1.measurement_concept_id IS NOT NULL AND
-        t1.person_id!=0 and t1.person_id IS NOT NULL 
+        t1.person_id!=0 and t1.person_id IS NOT NULL AND
+        t2.src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
     HAVING 
@@ -483,7 +488,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         t1.procedure_occurrence_id=t2.procedure_occurrence_id
     WHERE
         t1.procedure_concept_id!=0 AND t1.procedure_concept_id IS NOT NULL AND
-        t1.person_id!=0 and t1.person_id IS NOT NULL 
+        t1.person_id!=0 and t1.person_id IS NOT NULL AND
+        t2.src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1,2,3,4,5,6,7,8,9,10,11,12,13
     HAVING 
@@ -530,7 +536,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         t1.observation_id=t2.observation_id
     WHERE
         t1.observation_concept_id!=0 AND t1.observation_concept_id IS NOT NULL AND
-        t1.person_id!=0 and t1.person_id IS NOT NULL 
+        t1.person_id!=0 and t1.person_id IS NOT NULL AND
+        t2.src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20
     HAVING 
@@ -605,7 +612,8 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         t1.device_exposure_id=t2.device_exposure_id
     WHERE
         t1.device_concept_id!=0 AND t1.device_concept_id IS NOT NULL AND
-        t1.person_id!=0 and t1.person_id IS NOT NULL 
+        t1.person_id!=0 and t1.person_id IS NOT NULL AND
+        t2.src_hpo_id NOT LIKE '%rdr%'
     GROUP BY
         1,2,3,4,5,6,7,8,9,10,11,12,13,14
     HAVING 

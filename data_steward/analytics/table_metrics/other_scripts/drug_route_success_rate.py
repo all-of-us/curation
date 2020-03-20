@@ -173,7 +173,8 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    )
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -207,6 +208,7 @@ JOIN
 `{DATASET}._mapping_drug_exposure` mde
 ON
 de.drug_exposure_id = mde.drug_exposure_id 
+WHERE mde.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY number_total_routes DESC
 """.format(DATASET = DATASET)
@@ -250,6 +252,8 @@ ON
 de.route_concept_id = c.concept_id
 WHERE
 c.standard_concept IN ('S')
+AND
+src_hpo_id NOT LIKE '%rdr%'
 AND
 LOWER(c.domain_id) LIKE '%route%'
 GROUP BY 1

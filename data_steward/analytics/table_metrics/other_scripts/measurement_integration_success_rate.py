@@ -170,7 +170,8 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    )
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -232,6 +233,7 @@ FROM
      WHERE
          ca.ancestor_concept_id IN {}
      ) a
+ WHERE a.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
     '''.format(len(set(Lipid)), DATASET, DATASET, DATASET, DATASET, Lipid,
@@ -274,6 +276,7 @@ FROM
      WHERE
          ca.ancestor_concept_id IN {}
      ) a
+ WHERE a.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
     '''.format(len(set(CBC)), DATASET, DATASET, DATASET, DATASET, CBC, DATASET,
@@ -316,6 +319,7 @@ FROM
      WHERE
          ca.ancestor_concept_id IN {}
      ) a
+ WHERE a.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
     '''.format(len(set(CBCwDiff)), DATASET, DATASET, DATASET, DATASET, CBCwDiff,
@@ -358,6 +362,7 @@ FROM
      WHERE
          ca.ancestor_concept_id IN {}
      ) a
+ WHERE a.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
     '''.format(len(set(CMP)), DATASET, DATASET, DATASET, DATASET, CMP, DATASET,
@@ -400,6 +405,7 @@ FROM
      WHERE
          ca.ancestor_concept_id IN {}
      ) a
+ WHERE a.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
     '''.format(len(set(Physical_Measurement)), DATASET, DATASET, DATASET,
@@ -444,6 +450,7 @@ FROM
      WHERE
          ca.ancestor_concept_id IN {}
      ) a
+ WHERE a.src_hpo_id NOT LIKE '%rdr%'
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
     '''.format(len(set(all_measurements)), DATASET, DATASET, DATASET, DATASET,

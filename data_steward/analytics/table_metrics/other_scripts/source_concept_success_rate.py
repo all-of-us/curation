@@ -175,7 +175,8 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{}._mapping_visit_occurrence`   
-    )     
+    )
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
                DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -277,6 +278,7 @@ condition_concept_df = pd.io.gbq.read_gbq('''
         data3
     ON
         data1.src_hpo_id=data3.src_hpo_id
+    WHERE data1.src_hpo_id NOT LIKE '%rdr%'
     ORDER BY
         1 DESC
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -342,6 +344,7 @@ procedure_concept_df = pd.io.gbq.read_gbq('''
         data2
     ON
         data1.src_hpo_id=data2.src_hpo_id
+    WHERE data1.src_hpo_id NOT LIKE '%rdr%'
     ORDER BY
         1 DESC
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -407,6 +410,7 @@ drug_concept_df = pd.io.gbq.read_gbq('''
         data2
     ON
         data1.src_hpo_id=data2.src_hpo_id
+    WHERE data1.src_hpo_id NOT LIKE '%rdr%'
     ORDER BY
         1 DESC
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -474,6 +478,7 @@ observation_concept_df = pd.io.gbq.read_gbq('''
         data2
     ON
         data1.src_hpo_id=data2.src_hpo_id
+    WHERE data1.src_hpo_id NOT LIKE '%rdr%'
     ORDER BY
         1 DESC
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -539,6 +544,7 @@ measurement_concept_df = pd.io.gbq.read_gbq('''
         data2
     ON
         data1.src_hpo_id=data2.src_hpo_id
+    WHERE data1.src_hpo_id NOT LIKE '%rdr%'
     ORDER BY
         1 DESC
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -604,6 +610,7 @@ visit_concept_df = pd.io.gbq.read_gbq('''
         data2
     ON
         data1.src_hpo_id=data2.src_hpo_id
+    WHERE data1.src_hpo_id NOT LIKE '%rdr%'
     ORDER BY
         1 DESC
     '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
@@ -627,5 +634,5 @@ for filename in datas:
 master_df
 
 source = pd.merge(master_df, site_df, how='outer', on='src_hpo_id')
-source = source.fillna("No Data")
+source = source.fillna(0)
 source.to_csv("{cwd}\source_concept_success_rate.csv".format(cwd = cwd))
