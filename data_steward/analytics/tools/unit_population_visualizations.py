@@ -28,10 +28,10 @@ from math import pi
 # +
 sheets = []
 
-fn1 = 'unit_integration_table_sheets_data_analytics.xlsx'
+fn1 = 'measurement_units_table_sheets_data_analytics.xlsx'
 file_names = [fn1]
 
-s1 = 'unit_success_rate'
+s1 = 'total_unit_success_rate'
 
 sheet_names = [s1]
 
@@ -86,7 +86,7 @@ for name, sheet in zip(sheet_names, table_sheets):
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['unit_success_rate'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['total_unit_success_rate'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="RdYlGn")
 
@@ -124,18 +124,16 @@ plt.savefig("unit_integration_table_all_sites.jpg")
 # # Now let's look at the metrics for particular sites with respect to unit integration; this will allow us to send them the same information
 
 # +
-unit_file_hpo_sheet_name = 'unit_integration_hpo_sheets_data_analytics.xlsx'
-
 site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders', 
                   'cpmc_ucd', 'cpmc_uci', 'cpmc_ucsd', 'cpmc_ucsf', 'cpmc_usc', 'ecchc',
                   'hrhc', 'ipmc_northshore', 'ipmc_nu', 'ipmc_rush', 'ipmc_uchicago',
                   'ipmc_uic', 'jhchc', 'nec_bmc', 'nec_phs', 'nyc_cornell', 'nyc_cu',
-                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_lsu', 'saou_uab',
-                  'saou_uab_hunt', 'saou_uab_selma',
+                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_lsu', 'saou_tul', 'saou_uab',
+                  'saou_uab_hunt', 'saou_uab_selma', 'saou_umc',
                   'saou_ummc', 'seec_emory', 'seec_miami', 'seec_morehouse',
                   'seec_ufl', 'syhc', 'tach_hfhs', 'trans_am_baylor',
-                  'trans_am_essentia', 'trans_am_meyers', 'trans_am_spectrum', 'uamc_banner', 
-                  'aggregate_info']
+                  'trans_am_essentia', 'trans_am_meyers', 'trans_am_spectrum', 'uamc_banner',
+                  'va', 'aggregate_info']
 
 print(len(site_name_list))
 # -
@@ -152,7 +150,7 @@ print(len(site_name_list))
 #                   'poorly_defined_rows_total', 'total_rows']
 
 # +
-name_of_interest = 'ipmc_uchicago'
+name_of_interest = 'hrhc'
 
 if name_of_interest not in site_name_list:
     raise ValueError("Name not found in the list of HPO site names.")    
@@ -165,7 +163,7 @@ for idx, site in enumerate(site_name_list):
 idx_of_interest
 
 # +
-fn1_hpo_sheets = 'unit_integration_hpo_sheets_data_analytics.xlsx'
+fn1_hpo_sheets = 'measurement_units_hpo_sheets_data_analytics.xlsx'
 file_names_hpo_sheets = [fn1_hpo_sheets]
 
 s1, s2 = site_name_list[0], site_name_list[1]
@@ -189,13 +187,14 @@ s35, s36 = site_name_list[34], site_name_list[35]
 s37, s38 = site_name_list[36], site_name_list[37]
 s39, s40 = site_name_list[38], site_name_list[39]
 s41, s42 = site_name_list[40], site_name_list[41]
-s43 = site_name_list[42]
+s43, s44 = site_name_list[42], site_name_list[43]
+s45, s46 = site_name_list[44], site_name_list[45] 
 
 hpo_sheet_names = [
     s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, 
     s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26,
     s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
-    s39, s40, s41, s42, s43]
+    s39, s40, s41, s42, s43, s44, s45, s46]
 
 # +
 hpo_sheets = []
@@ -224,13 +223,19 @@ for idx, table_id in enumerate(table_id_cols):
     if in_between_str == '_succes_':
         new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
         table_id_cols[idx] = new_string
+# -
+
+if name_of_interest == 'aggregate_info':
+    start_idx = 1
+else:
+    start_idx = 2
 
 # +
 new_hpo_sheets = []
 
 for sheet in hpo_sheets:
     sheet_cols = sheet.columns
-    sheet_cols = sheet_cols[2:]  # first does not have data
+    sheet_cols = sheet_cols[start_idx:]  # first does not have data
         
     new_df = pd.DataFrame(columns=sheet_cols)
 
@@ -242,21 +247,18 @@ for sheet in hpo_sheets:
     new_hpo_sheets.append(new_df)
 # -
 
-# #### THIS makes it so the dataframe only contains the unit success rates. If you want to see the total number of rows over time, you should drop df.head(1) instead
-
-for idx, sheet in enumerate(new_hpo_sheets):
-    sheet = sheet.drop(sheet.tail(1).index, inplace=True)
-
 # ### Showing for one particular site
 #
 # #### NOTE: you need to change the y-label based on what value you choose to drop above
+#
+# #### NOTE: You can change whether you are looking at total or selected unit success rate by changing the first parameter of the sns.heatmap function
 
 # +
-y_axis_labels = ['unit_success_rate']
+y_axis_labels = ['total_unit_success_rate']
 
 fig, ax = plt.subplots(figsize=(9, 6))
-sns.heatmap(new_hpo_sheets[idx_of_interest], annot=True, annot_kws={"size": 14},
-            fmt='g', linewidths=.5, ax=ax, yticklabels=['unit_integration_rate'],
+sns.heatmap(new_hpo_sheets[idx_of_interest].iloc[[2]], annot=True, annot_kws={"size": 14},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=['total_unit_success_rate'],
             xticklabels=date_cols, cmap="RdYlGn")
 
 ax.set_title("Unit Integration Rates for {}".format(name_of_interest), size=14)
@@ -334,7 +336,7 @@ times=new_hpo_sheets[idx_of_interest].columns.tolist()
 success_rates = {}
 
 for table_num, table_type in enumerate(table_id_cols):
-    if table_type == 'unit_success_rate':
+    if table_type == 'total_unit_success_rate':
         table_metrics_over_time = new_hpo_sheets[idx_of_interest].iloc[table_num]
         success_rates[table_type] = table_metrics_over_time.values.tolist()
 

@@ -131,7 +131,7 @@ def determine_parameters(sheet_name):
         perc = True
         succ_rate_string = False
 
-    elif sheet_name in ['unit_integration', 'concept', 'drug_routes']:
+    elif sheet_name in ['measurement_units', 'concept', 'drug_routes']:
         perc = True
         succ_rate_string = True
 
@@ -331,9 +331,9 @@ def print_error_info(error_dict, starting_msg, percent,
 
 # 1. Loading the files
 cwd = os.getcwd()
-excel_file_name = cwd + "\\february_10_2020.xlsx"  # change for each email date
+excel_file_name = cwd + "\\march_19_2020.xlsx"  # change for each email date
 
-sheet_names = ['duplicates', 'end_before_begin', 'concept', 'unit_integration',
+sheet_names = ['duplicates', 'end_before_begin', 'concept', 'measurement_units',
                'drug_routes', 'drug_success', 'sites_measurement']
 
 # currently excluded from the script
@@ -407,7 +407,7 @@ for _, err_dict in err_dictionaries.items():
 # same for all of the sites
 intro = open('introduction.txt', 'r', encoding='utf-8')
 intro_txt = intro.read()
-# intro_txt = intro_txt.replace("[EHR site]", hpo_full_name)
+intro_txt = intro_txt.replace("[EHR site]", hpo_full_name)
 intro_txt = intro_txt.replace("{}", "Noah Engel")
 print(intro_txt)
 
@@ -459,21 +459,22 @@ else:
         print(concept_err + "\n")
         starting_number += 1
 
-    unit = 'unit_integration'
+    unit = 'measurement_units'
     if err_dictionaries[unit]:
-        unit_err = str(starting_number) + \
-            ". There are measurements that do not have the 'unit' " \
-            "field populated with a standard 'unit_concept_id'. " \
-            "This affects {}% of the instances of measurements.".format(
-                err_dictionaries[unit]['unit_success_rate'])
+        if 'total_unit_success_rate' in err_dictionaries[unit].keys():
+            unit_err = str(starting_number) + \
+                ". There are measurements that do not have the 'unit' " \
+                "field populated with a standard 'unit_concept_id'. " \
+                "This affects {}% of the instances of measurements.".format(
+                    err_dictionaries[unit]['total_unit_success_rate'])
 
-        print(unit_err + "\n")
-        starting_number += 1
+            print(unit_err + "\n")
+            starting_number += 1
 
     dr = 'drug_routes'
     if err_dictionaries[dr]:
 
-        overall_success = err_dictionaries[dr]['drugs_overall_success_rate']
+        overall_success = err_dictionaries[dr]['total_route_success_rate']
         err_dictionaries[dr] = {}  # reset; only want the 'overall' rate
         err_dictionaries[dr]['overall_success_rate'] = overall_success
 
