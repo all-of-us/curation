@@ -2,13 +2,14 @@ import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
 from utils import bq
+import sandbox
 
 SELECT_RECORDS_QUERY = """
 SELECT m.*
 FROM `{project}.{dataset}.{table}` m
 LEFT JOIN `{project}.{dataset}.{cdm_table}` c
 USING ({table_id})
-WHERE c.{table_id} IS NOT NULL
+WHERE c.{table_id} IS {value}
 """
 
 GET_TABLES_QUERY = """
@@ -22,6 +23,9 @@ MAPPING = 'mapping'
 MAPPING_PREFIX = '_{}_'.format(MAPPING)
 EXT = 'ext'
 EXT_SUFFIX = '_{}'.format(EXT)
+
+NULL = 'NULL'
+NOT_NULL = 'NOT NULL'
 
 
 def get_cdm_table(table, table_type):
@@ -60,7 +64,7 @@ def get_tables(project_id, dataset_id, table_type):
 
 def get_clean_queries(project_id, dataset_id, table_type):
     """
-    Collect queries for cleaning either mapping or ext tables
+    Collect queries for sandboxing and cleaning either mapping or ext tables
 
     :param project_id: identifies the project
     :param dataset_id: identifies the dataset
@@ -74,14 +78,31 @@ def get_clean_queries(project_id, dataset_id, table_type):
 
     for table in tables:
         cdm_table = get_cdm_table(table, table_type)
-        query = dict()
         table_id = cdm_table + '_id'
+
+        sandbox_query = dict()
+        sandbox_query[cdr_consts.QUERY] = SELECT_RECORDS_QUERY.format(
+            project=project_id,
+            dataset=dataset_id,
+            table=table,
+            cdm_table=cdm_table,
+            table_id=table_id,
+            value=NULL)
+        sandbox_query[
+            cdr_consts.DESTINATION_DATASET] = sandbox.get_sandbox_dataset_id(
+                dataset_id)
+        sandbox_query[cdr_consts.DESTINATION_TABLE] = table
+        sandbox_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
+        query_list.append(sandbox_query)
+
+        query = dict()
         query[cdr_consts.QUERY] = SELECT_RECORDS_QUERY.format(
             project=project_id,
             dataset=dataset_id,
             table=table,
             cdm_table=cdm_table,
-            table_id=table_id)
+            table_id=table_id,
+            value=NOT_NULL)
         query[cdr_consts.DESTINATION_DATASET] = dataset_id
         query[cdr_consts.DESTINATION_TABLE] = table
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
