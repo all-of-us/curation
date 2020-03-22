@@ -78,11 +78,12 @@ def get_user_analysis_choice():
         "B. Amount of data following death dates\n" \
         "C. Amount of data with end dates preceding start dates\n" \
         "D. Success rate for concept_id field\n" \
-        "F. Population of the 'unit' field in the measurement table (" \
+        "E. Population of the 'unit' field in the measurement table (" \
         "only for specified measurements)\n" \
-        "G. Population of the 'route' field in the drug exposure table\n" \
-        "H. Percentage of expected drug ingredients observed\n" \
-        "I. Percentage of expected measurements observed\n\n" \
+        "F. Population of the 'route' field in the drug exposure table\n" \
+        "G. Percentage of expected drug ingredients observed\n" \
+        "H. Percentage of expected measurements observed\n" \
+        "I. Date consistency across tables \n\n" \
         "Please specify your choice by typing the corresponding letter."
 
     user_command = input(analysis_type_prompt).lower()
@@ -92,10 +93,11 @@ def get_user_analysis_choice():
         'b': 'data_after_death',
         'c': 'end_before_begin',
         'd': 'concept',
-        'f': 'measurement_units',
-        'g': 'drug_routes',
-        'h': 'drug_success',
-        'i': 'sites_measurement'}
+        'e': 'measurement_units',
+        'f': 'drug_routes',
+        'g': 'drug_success',
+        'h': 'sites_measurement',
+        'i': 'visit_date_disparity'}
 
     while user_command not in choice_dict.keys():
         print("\nInvalid choice. Please specify a letter that corresponds "
@@ -111,7 +113,8 @@ def get_user_analysis_choice():
         'measurement_units': True,
         'drug_routes': True,
         'drug_success': True,
-        'sites_measurement': True
+        'sites_measurement': True,
+        'visit_date_disparity': True
     }
 
     # dictionary indicates if the target is to minimize or maximize number
@@ -123,7 +126,8 @@ def get_user_analysis_choice():
         'measurement_units': False,
         'drug_routes': False,
         'drug_success': False,
-        'sites_measurement': False
+        'sites_measurement': False,
+        'visit_date_disparity': False
     }
 
     analytics_type = choice_dict[user_command]
@@ -189,6 +193,8 @@ def load_files(user_choice, file_names):
                 print("WARNING: No {} sheet found in dataframe {}. "
                       "This is a(n) {}.".format(
                         user_choice, file_name, type(ex).__name__))
+
+                print(ex)
 
                 del file_names[num_files_indexed]
                 num_files_indexed -= 1  # skip over the date
@@ -2446,7 +2452,7 @@ and quantify the data.
 report1 = 'may_10_2019.xlsx'
 report2 = 'july_15_2019.xlsx'
 report3 = 'october_04_2019.xlsx'
-report4 = 'march_16_2020.xlsx'
+report4 = 'march_19_2020.xlsx'
 
 # DEID versus DEID_clean
 # report17 = 'october_05_2019.xlsx'
