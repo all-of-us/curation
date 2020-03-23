@@ -27,6 +27,8 @@ EXT_SUFFIX = '_{}'.format(EXT)
 NULL = 'NULL'
 NOT_NULL = 'NOT NULL'
 
+ISSUE_NUMBER = 'DC-715'
+
 
 def get_cdm_table(table, table_type):
     """
@@ -52,7 +54,8 @@ def get_tables(project_id, dataset_id, table_type):
     :return: list of tables in the dataset which are mapping or ext tables of cdm_tables
     """
     tables_query = GET_TABLES_QUERY.format(project=project_id,
-                                           dataset=dataset_id)
+                                           dataset=dataset_id,
+                                           table_type=table_type)
     tables = bq.query(tables_query).get(TABLE_NAME).to_list()
     cdm_tables = set(resources.CDM_TABLES)
     tables = [

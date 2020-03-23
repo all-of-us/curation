@@ -1,5 +1,8 @@
 import unittest
 
+import mock
+import pandas as pd
+
 import cdr_cleaner.cleaning_rules.clean_mapping as cm
 import common
 
@@ -27,3 +30,30 @@ class CleanMappingTest(unittest.TestCase):
         for table in ext_tables:
             cdm_table = cm.get_cdm_table(table, cm.EXT)
             self.assertIn(cdm_table, cdm_tables)
+
+    @mock.patch('utils.bq.query')
+    def test_get_tables(self, mock_tables):
+        tables = [
+            '_mapping_observation', '_site_mappings', 'measurement_ext',
+            '_mapping_drug', 'extension_observation'
+        ]
+        mock_tables.return_value = pd.DataFrame({cm.TABLE_NAME: tables})
+        expected = ['_mapping_observation']
+        actual = cm.get_tables(self.project_id, self.dataset_id, cm.MAPPING)
+        self.assertEqual(expected, actual)
+
+        expected = ['measurement_ext']
+        actual = cm.get_tables(self.project_id, self.dataset_id, cm.EXT)
+        self.assertEqual(expected, actual)
+
+    @mock.patch('cdr_cleaner.cleaning_rules.clean_mapping.get_tables')
+    def test_get_clean_mapping_queries(self, mock_tables):
+        cdm_tables = [
+            common.OBSERVATION, common.MEASUREMENT, common.NOTE,
+            common.PROCEDURE_OCCURRENCE, common.CONDITION_OCCURRENCE
+        ]
+        mock_tables.side_effect = [[
+            cm.MAPPING_PREFIX + cdm_table for cdm_table in cdm_tables
+        ], [cdm_table + cm.EXT_SUFFIX for cdm_table in cdm_tables]]
+        actual = cm.get_clean_mapping_queries(self.project_id, self.dataset_id)
+        self.assertEqual(len(actual), len(cdm_tables) * 4)
