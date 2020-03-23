@@ -35,7 +35,7 @@ file_names = [fn1]
 # ## We can use different sheets below to delineate among different drug classes if desired
 
 # +
-s1 = 'drugs_overall_success_rate'
+s1 = 'total_route_success_rate'
 
 sheet_names = [s1]
 
@@ -90,7 +90,7 @@ for name, sheet in zip(sheet_names, table_sheets):
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['drugs_overall_success_rate'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['total_route_success_rate'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="RdYlGn")
 
@@ -132,12 +132,12 @@ site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_cede
                   'cpmc_ucd', 'cpmc_uci', 'cpmc_ucsd', 'cpmc_ucsf', 'cpmc_usc', 'ecchc',
                   'hrhc', 'ipmc_northshore', 'ipmc_nu', 'ipmc_rush', 'ipmc_uchicago',
                   'ipmc_uic', 'jhchc', 'nec_bmc', 'nec_phs', 'nyc_cornell', 'nyc_cu',
-                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_lsu', 'saou_uab',
-                  'saou_uab_hunt', 'saou_uab_selma',
+                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_lsu', 'saou_tul', 'saou_uab',
+                  'saou_uab_hunt', 'saou_uab_selma', 'saou_umc',
                   'saou_ummc', 'seec_emory', 'seec_miami', 'seec_morehouse',
                   'seec_ufl', 'syhc', 'tach_hfhs', 'trans_am_baylor',
-                  'trans_am_essentia', 'trans_am_meyers', 'trans_am_spectrum', 'uamc_banner', 
-                  'aggregate_info']
+                  'trans_am_essentia', 'trans_am_meyers', 'trans_am_spectrum', 'uamc_banner',
+                  'va', 'aggregate_info']
 
 print(len(site_name_list))
 # -
@@ -154,7 +154,7 @@ print(len(site_name_list))
 #                   'poorly_defined_rows_total', 'total_rows']
 
 # +
-name_of_interest = 'ipmc_uchicago'
+name_of_interest = 'hrhc'
 
 if name_of_interest not in site_name_list:
     raise ValueError("Name not found in the list of HPO site names.")    
@@ -191,13 +191,14 @@ s35, s36 = site_name_list[34], site_name_list[35]
 s37, s38 = site_name_list[36], site_name_list[37]
 s39, s40 = site_name_list[38], site_name_list[39]
 s41, s42 = site_name_list[40], site_name_list[41]
-s43 = site_name_list[42]
+s43, s44 = site_name_list[42], site_name_list[43]
+s45, s46 = site_name_list[44], site_name_list[45] 
 
 hpo_sheet_names = [
     s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, 
     s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26,
     s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
-    s39, s40, s41, s42, s43]
+    s39, s40, s41, s42, s43, s44, s45, s46]
 
 # +
 hpo_sheets = []
@@ -226,13 +227,19 @@ for idx, table_id in enumerate(table_id_cols):
     if in_between_str == '_succes_':
         new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
         table_id_cols[idx] = new_string
+# -
+
+if name_of_interest == 'aggregate_info':
+    start_idx = 1
+else:
+    start_idx = 2
 
 # +
 new_hpo_sheets = []
 
 for sheet in hpo_sheets:
     sheet_cols = sheet.columns
-    sheet_cols = sheet_cols[2:]  # first does not have data
+    sheet_cols = sheet_cols[start_idx:]  # first does not have data
         
     new_df = pd.DataFrame(columns=sheet_cols)
 
@@ -250,10 +257,10 @@ for sheet in hpo_sheets:
 
 # +
 fig, ax = plt.subplots(figsize=(9, 6))
-sns.heatmap(new_hpo_sheets[idx_of_interest], annot=True, annot_kws={"size": 14},
+sns.heatmap(new_hpo_sheets[idx_of_interest].iloc[[2]], annot=True, annot_kws={"size": 14},
             fmt='g', linewidths=.5, ax=ax,
-            yticklabels= table_id_cols, 
-#             yticklabels=['drugs_overall_success_rate'],
+           # yticklabels= table_id_cols, 
+              yticklabels=['total_route_success_rate'],
             xticklabels=date_cols, cmap="RdYlGn")
 
 ax.set_title("Route Population Rates for {}".format(name_of_interest), size=14)

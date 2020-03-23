@@ -181,12 +181,12 @@ site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_cede
                   'cpmc_ucd', 'cpmc_uci', 'cpmc_ucsd', 'cpmc_ucsf', 'cpmc_usc', 'ecchc',
                   'hrhc', 'ipmc_northshore', 'ipmc_nu', 'ipmc_rush', 'ipmc_uchicago',
                   'ipmc_uic', 'jhchc', 'nec_bmc', 'nec_phs', 'nyc_cornell', 'nyc_cu',
-                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_lsu', 'saou_uab',
-                  'saou_uab_hunt', 'saou_uab_selma',
+                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_lsu', 'saou_tul', 'saou_uab',
+                  'saou_uab_hunt', 'saou_uab_selma', 'saou_umc',
                   'saou_ummc', 'seec_emory', 'seec_miami', 'seec_morehouse',
                   'seec_ufl', 'syhc', 'tach_hfhs', 'trans_am_baylor',
-                  'trans_am_essentia', 'trans_am_meyers', 'trans_am_spectrum', 'uamc_banner', 
-                  'aggregate_info']
+                  'trans_am_essentia', 'trans_am_meyers', 'trans_am_spectrum', 'uamc_banner',
+                  'va', 'aggregate_info']
 
 print(len(site_name_list))
 # -
@@ -201,16 +201,6 @@ print(len(site_name_list))
 #                   'seec_morehouse', 'seec_ufl', 'syhc', 'tach_hfhs', 'trans_am_baylor',
 #                   'trans_am_spectrum', 'uamc_banner', 'aggregate_info',
 #                   'poorly_defined_rows_total', 'total_rows']
-
-# +
-name_of_interest = 'ipmc_uchicago'
-
-if name_of_interest not in site_name_list:
-    raise ValueError("Name not found in the list of HPO site names.")    
-
-for idx, site in enumerate(site_name_list):
-    if site == name_of_interest:
-        idx_of_interest = idx
 
 # +
 fn1_hpo_sheets = 'data_after_death_hpo_sheets_data_analytics.xlsx'
@@ -237,13 +227,24 @@ s35, s36 = site_name_list[34], site_name_list[35]
 s37, s38 = site_name_list[36], site_name_list[37]
 s39, s40 = site_name_list[38], site_name_list[39]
 s41, s42 = site_name_list[40], site_name_list[41]
-s43 = site_name_list[42]
+s43, s44 = site_name_list[42], site_name_list[43]
+s45, s46 = site_name_list[44], site_name_list[45] 
 
 hpo_sheet_names = [
     s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, 
     s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26,
     s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
-    s39, s40, s41, s42, s43]
+    s39, s40, s41, s42, s43, s44, s45, s46]
+
+# +
+name_of_interest = 'hrhc'
+
+if name_of_interest not in site_name_list:
+    raise ValueError("Name not found in the list of HPO site names.")    
+
+for idx, site in enumerate(site_name_list):
+    if site == name_of_interest:
+        idx_of_interest = idx
 
 # +
 hpo_sheets = []
@@ -255,13 +256,19 @@ for file in file_names_hpo_sheets:
 
 table_id_cols = list(hpo_sheets[0]['table_type'])
 date_cols = hpo_sheets[0].columns[2:]
+# -
+
+if name_of_interest == 'aouw_mcri':
+    start_idx = 2
+else:
+    start_idx = 2
 
 # +
 new_hpo_sheets = []
 
 for sheet in hpo_sheets:
     sheet_cols = sheet.columns
-    sheet_cols = sheet_cols[2:]  # first two do not have data
+    sheet_cols = sheet_cols[start_idx:]  # first two do not have data
     new_df = pd.DataFrame(columns=sheet_cols)
 
     for col in sheet_cols:
