@@ -68,7 +68,9 @@ thresholds = {
     'measurement_integration_min': 90,
 
     'unit_success_min': 85,
-    'route_success_min': 85
+    'route_success_min': 85,
+
+    'date_datetime_disparity_max': 0
 }
 
 
@@ -81,7 +83,8 @@ choice_dict = {
     'f': 'drug_routes',
     'g': 'drug_success',
     'h': 'sites_measurement',
-    'i': 'visit_date_disparity'}
+    'i': 'visit_date_disparity',
+    'j': 'date_datetime_disparity'}
 
 percentage_dict = {
     'duplicates': False,
@@ -92,7 +95,8 @@ percentage_dict = {
     'drug_routes': True,
     'drug_success': True,
     'sites_measurement': True,
-    'visit_date_disparity': True
+    'visit_date_disparity': True,
+    'date_datetime_disparity': True
 }
 
 target_low_dict = {
@@ -104,7 +108,8 @@ target_low_dict = {
     'drug_routes': False,
     'drug_success': False,
     'sites_measurement': False,
-    'visit_date_disparity': False
+    'visit_date_disparity': False,
+    'date_datetime_disparity': True
 }
 
 columns_to_document_for_sheet = {
@@ -145,7 +150,13 @@ columns_to_document_for_sheet = {
     'concept': [
         'observation_success_rate', 'drug_success_rate',
         'procedure_success_rate', 'condition_success_rate',
-        'measurement_success_rate', 'visit_success_rate']
+        'measurement_success_rate', 'visit_success_rate'],
+
+    'date_datetime_disparity': [
+        'visit_occurrence', 'condition_occurrence',
+        'drug_exposure', 'measurement',
+        'procedure_occurrence', 'observation'
+    ]
 }
 
 
@@ -201,7 +212,8 @@ data_quality_dimension_dict = {
     'sites_measurement': 'Completeness',
     'drug_success': 'Completeness',
     'drug_routes': 'Completeness',
-    'measurement_units': 'Completeness'
+    'measurement_units': 'Completeness',
+    'date_datetime_disparity': 'Conformance'
 }
 
 metric_type_to_english_dict = {
@@ -216,6 +228,7 @@ metric_type_to_english_dict = {
     # ACHILLES errors
     'end_before_begin': 'End Dates Preceding Start Dates',
     'data_after_death': 'Data After Death',
+    'date_datetime_disparity': 'Date/Datetime Disparity',
 
     # other metrics
     'concept': 'Concept ID Success Rate',
@@ -225,7 +238,8 @@ metric_type_to_english_dict = {
 metrics_to_weight = [
     'measurement_units', 'drug_routes',
     'end_before_begin', 'data_after_death',
-    'concept', 'duplicates']
+    'concept', 'duplicates',
+    'date_datetime_disparity']
 
 full_names = {
     "saou_uab_selma": "UAB Selma",

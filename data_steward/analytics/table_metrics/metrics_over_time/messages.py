@@ -39,7 +39,8 @@ analysis_type_prompt = \
         "F. Population of the 'route' field in the drug exposure table\n" \
         "G. Percentage of expected drug ingredients observed\n" \
         "H. Percentage of expected measurements observed\n" \
-        "I. Date consistency across tables \n\n" \
+        "I. Date consistency across tables \n" \
+        "J. Date/datetime inconsistencies \n\n" \
         "Please specify your choice by typing the corresponding letter."
 
 output_prompt = \
