@@ -22,43 +22,29 @@ client = bigquery.Client()
 # %reload_ext google.cloud.bigquery
 
 # +
+from notebooks import parameters
+DATASET = parameters.LATEST_DATASET
+
+print("Dataset to use: {DATASET}".format(DATASET = DATASET))
+
+# +
 #######################################
 print('Setting everything up...')
 #######################################
 
 import warnings
 warnings.filterwarnings('ignore')
-import pandas_gbq
 import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-from matplotlib.lines import Line2D
-
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib as mpl
 
 import matplotlib.pyplot as plt
 # %matplotlib inline
 
-DATASET = ''
-
 import os
-import sys
-from datetime import datetime
-from datetime import date
-from datetime import time
-from datetime import timedelta
-import time
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
-
-from IPython.display import HTML as html_print
 
 
 def cstr(s, color='black'):
@@ -70,7 +56,7 @@ print('done.')
 
 cwd = os.getcwd()
 cwd = str(cwd)
-print(cwd)
+print("Current working directory is: {cwd}".format(cwd=cwd))
 
 # +
 dic = {
@@ -125,95 +111,91 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`
+         `{DATASET}._mapping_visit_occurrence`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_care_site`
+         `{DATASET}._mapping_care_site`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_condition_occurrence`  
+         `{DATASET}._mapping_condition_occurrence`  
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_device_exposure`
+         `{DATASET}._mapping_device_exposure`
 
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`
+         `{DATASET}._mapping_drug_exposure`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_location`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_measurement`         
+         `{DATASET}._mapping_location`         
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_note`        
+         `{DATASET}._mapping_measurement`         
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_observation`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_person`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_procedure_occurrence`         
+         `{DATASET}._mapping_note`        
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_provider`
+         `{DATASET}._mapping_observation`         
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_specimen`
+         `{DATASET}._mapping_person`         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_procedure_occurrence`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_provider`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_specimen`
     
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`   
+         `{DATASET}._mapping_visit_occurrence`   
     )     
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
+    '''.format(DATASET=DATASET), dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
 
@@ -256,32 +238,30 @@ print(len(all_drugs))
 
 len(diuretics)
 
-len(set(diuretics))
+num_diuretics = len(set(diuretics))
 
 df_diuretics = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_diuretics} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {diuretics}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(diuretics)), DATASET, DATASET, DATASET, diuretics,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(num_diuretics = num_diuretics, DATASET=DATASET, diuretics=diuretics),
                                   dialect='standard')
 df_diuretics.shape
 
@@ -293,31 +273,30 @@ df_diuretics.head(100)
 
 len(ccb)
 
-len(set(ccb))
+num_ccbs = len(set(ccb))
 
 df_ccb = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_ccbs} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {ccbs}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(ccb)), DATASET, DATASET, DATASET, ccb, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(num_ccbs=num_ccbs, ccbs=ccb, DATASET=DATASET),
                             dialect='standard')
 df_ccb.shape
 
@@ -329,31 +308,30 @@ df_ccb.head(100)
 
 len(vaccine)
 
-len(set(vaccine))
+num_vaccines = len(set(vaccine))
 
 df_vaccine = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_vaccines} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {vaccine}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(vaccine)), DATASET, DATASET, DATASET, vaccine, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(num_vaccines = num_vaccines, DATASET=DATASET, vaccine=vaccine),
                                 dialect='standard')
 df_vaccine.shape
 
@@ -365,33 +343,32 @@ df_vaccine.head(100)
 
 len(oralhypoglycemics)
 
-len(set(oralhypoglycemics))
+num_oralhypoglycemics = len(set(oralhypoglycemics))
 
 df_oralhypoglycemics = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_oralhypoglycemics} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {oralhypoglycemics}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(oralhypoglycemics)), DATASET, DATASET, DATASET,
-               oralhypoglycemics, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET),
-                                          dialect='standard')
+    '''.format(num_oralhypoglycemics=num_oralhypoglycemics,
+              DATASET=DATASET, oralhypoglycemics=oralhypoglycemics),
+              dialect='standard')
 df_oralhypoglycemics.shape
 
 df_oralhypoglycemics = df_oralhypoglycemics.rename(
@@ -403,31 +380,30 @@ df_oralhypoglycemics.head(100)
 
 len(opioids)
 
-len(set(opioids))
+num_opioids = len(set(opioids))
 
 df_opioids = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_opioids} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {opioids}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(opioids)), DATASET, DATASET, DATASET, opioids, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(num_opioids=num_opioids, DATASET=DATASET, opioids=opioids),
                                 dialect='standard')
 df_opioids.shape
 
@@ -439,34 +415,35 @@ df_opioids.head(100)
 
 len(antibiotics)
 
-len(set(antibiotics))
+num_antibiotics = len(set(antibiotics))
 
+# +
 df_antibiotics = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_antibiotics} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {antibiotics}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(antibiotics)), DATASET, DATASET, DATASET, antibiotics,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
-                                    dialect='standard')
+    '''.format(num_antibiotics=num_antibiotics, DATASET=DATASET, antibiotics=antibiotics),
+                dialect='standard')
+
 df_antibiotics.shape
+# -
 
 df_antibiotics = df_antibiotics.rename(
     columns={"ancestor_usage": 'antibiotics'})
@@ -477,32 +454,31 @@ df_antibiotics.head(100)
 
 len(statins)
 
-len(set(statins))
+num_statins = len(set(statins))
 
 df_statins = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_statins} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {statins}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(statins)), DATASET, DATASET, DATASET, statins, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                dialect='standard')
+    '''.format(num_statins=num_statins, DATASET=DATASET, statins=statins),
+               dialect='standard')
 df_statins.shape
 
 df_statins = df_statins.rename(columns={"ancestor_usage": 'statins'})
@@ -513,33 +489,31 @@ df_statins.head(100)
 
 len(msknsaids)
 
-len(set(msknsaids))
+num_msknsaids = len(set(msknsaids))
 
 df_msknsaids = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_msknsaids} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {msknsaids}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(msknsaids)), DATASET, DATASET, DATASET, msknsaids,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
-                                  dialect='standard')
+    '''.format(num_msknsaids=num_msknsaids, DATASET=DATASET, msknsaids=msknsaids),
+                dialect='standard')
 df_msknsaids.shape
 
 df_msknsaids = df_msknsaids.rename(columns={"ancestor_usage": 'msknsaids'})
@@ -550,33 +524,31 @@ df_msknsaids.head(100)
 
 len(painnsaids)
 
-len(set(painnsaids))
+num_painnsaids = len(set(painnsaids))
 
 df_painnsaids = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_painnsaids} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {painnsaids}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(painnsaids)), DATASET, DATASET, DATASET, painnsaids,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
-                                   dialect='standard')
+    '''.format(DATASET=DATASET, num_painnsaids=num_painnsaids,
+              painnsaids=painnsaids), dialect='standard')
 df_painnsaids.shape
 
 df_painnsaids = df_painnsaids.rename(columns={"ancestor_usage": 'painnsaids'})
@@ -587,32 +559,31 @@ df_painnsaids.head(100)
 
 len(ace_inhibitors)
 
-len(set(ace_inhibitors))
+num_ace_inhib = len(set(ace_inhibitors))
 
 df_ace_inhibitors = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_ace_inhib} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {ace_inhibitors}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(ace_inhibitors)), DATASET, DATASET, DATASET,
-               ace_inhibitors, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET),
+    '''.format(num_ace_inhib=num_ace_inhib, DATASET=DATASET,
+              ace_inhibitors=ace_inhibitors),
                                        dialect='standard')
 df_ace_inhibitors.shape
 
@@ -625,32 +596,30 @@ df_ace_inhibitors.head(100)
 
 len(all_drugs)
 
-len(set(all_drugs))
+num_drugs = len(set(all_drugs))
 
 df_all_drugs = pd.io.gbq.read_gbq('''
 SELECT
      mde.src_hpo_id, 
-     round(COUNT(DISTINCT ca.ancestor_concept_id) / {} * 100, 0) as ancestor_usage
+     round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_drugs} * 100, 0) as ancestor_usage
  FROM
-     `{}.unioned_ehr_drug_exposure` de
+     `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{}.concept_ancestor` ca
+     `{DATASET}.concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
-     `{}._mapping_drug_exposure` mde
+     `{DATASET}._mapping_drug_exposure` mde
  ON
      de.drug_exposure_id = mde.drug_exposure_id
  WHERE
-     ca.ancestor_concept_id IN {}
+     ca.ancestor_concept_id IN {all_drugs}
  GROUP BY 
      1
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(len(set(all_drugs)), DATASET, DATASET, DATASET, all_drugs,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(num_drugs=num_drugs, DATASET=DATASET, all_drugs=all_drugs),
                                   dialect='standard')
 df_all_drugs.shape
 
@@ -718,4 +687,4 @@ sites_drug_success = sites_drug_success.sort_values(by='all_drugs', ascending = 
 
 sites_drug_success
 
-sites_drug_success.to_csv("{cwd}\drug_success.csv".format(cwd = cwd))
+sites_drug_success.to_csv("{cwd}/drug_success.csv".format(cwd = cwd))

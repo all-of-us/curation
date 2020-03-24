@@ -13,6 +13,14 @@
 #     name: python3
 # ---
 
+# ### NOTE: This notebook only looks at the following three tables:
+# - Visit Occurrence, Condition Occurrence, and Measurement
+#
+# ### The following three tables are excluded:
+# - Observation, Procedure Occurrence, Measurement
+#
+# ### The aforementioned three tables are excluded because there is neither a "start" nor an "end" date fields in this table. There is only a single "date" and "datetime" field. This prevents the 'end date' from preceding the 'start date' since neither exists.
+
 from google.cloud import bigquery
 
 client = bigquery.Client()
@@ -22,6 +30,12 @@ client = bigquery.Client()
 # %reload_ext google.cloud.bigquery
 
 # +
+from notebooks import parameters
+DATASET = parameters.LATEST_DATASET
+
+print("Dataset to use: {DATASET}".format(DATASET = DATASET))
+
+# +
 #######################################
 print('Setting everything up...')
 #######################################
@@ -29,38 +43,16 @@ print('Setting everything up...')
 import warnings
 
 warnings.filterwarnings('ignore')
-import pandas_gbq
 import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-from matplotlib.lines import Line2D
-
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib as mpl
-
 import matplotlib.pyplot as plt
 # %matplotlib inline
-
 import os
-import sys
-from datetime import datetime
-from datetime import date
-from datetime import time
-from datetime import timedelta
-import time
-import math
 
-DATASET = ''
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
-
-from IPython.display import HTML as html_print
 
 
 def cstr(s, color='black'):
@@ -72,7 +64,7 @@ print('done.')
 
 cwd = os.getcwd()
 cwd = str(cwd)
-print(cwd)
+print("Current working directory is: {cwd}".format(cwd=cwd))
 
 # +
 dic = {
@@ -127,94 +119,91 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`
+         `{DATASET}._mapping_visit_occurrence`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_care_site`
+         `{DATASET}._mapping_care_site`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_condition_occurrence`  
+         `{DATASET}._mapping_condition_occurrence`  
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_device_exposure`
+         `{DATASET}._mapping_device_exposure`
 
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`
+         `{DATASET}._mapping_drug_exposure`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_location`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_measurement`         
+         `{DATASET}._mapping_location`         
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_note`        
+         `{DATASET}._mapping_measurement`         
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_observation`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_person`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_procedure_occurrence`         
+         `{DATASET}._mapping_note`        
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_provider`
+         `{DATASET}._mapping_observation`         
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_specimen`
+         `{DATASET}._mapping_person`         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_procedure_occurrence`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_provider`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_specimen`
     
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`   
+         `{DATASET}._mapping_visit_occurrence`   
     )     
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET=DATASET),
                               dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
@@ -237,9 +226,9 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (t1.visit_start_date>t1.visit_end_date) then 1 else 0 end) as wrong_date
     FROM
-       `{}.unioned_ehr_visit_occurrence` AS t1
+       `{DATASET}.unioned_ehr_visit_occurrence` AS t1
 
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET=DATASET),
                                  dialect='standard')
 temporal_df.shape
 
@@ -261,19 +250,19 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total_rows,
         sum(case when (t1.visit_start_date>t1.visit_end_date) then 1 else 0 end) as wrong_date_rows
     FROM
-       `{}.unioned_ehr_visit_occurrence` AS t1
+       `{DATASET}.unioned_ehr_visit_occurrence` AS t1
     INNER JOIN
         (SELECT
             DISTINCT * 
         FROM
-             `{}._mapping_visit_occurrence`)  AS t2
+             `{DATASET}._mapping_visit_occurrence`)  AS t2
     ON
         t1.visit_occurrence_id=t2.visit_occurrence_id
     GROUP BY
         1
     ORDER BY
         3
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET=DATASET),
                                  dialect='standard')
 
 print(temporal_df.shape[0], 'records received.')
@@ -308,8 +297,8 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (t1.condition_start_date>t1.condition_end_date) then 1 else 0 end) as wrong_date
     FROM
-       `{}.unioned_ehr_condition_occurrence` AS t1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+       `{DATASET}.unioned_ehr_condition_occurrence` AS t1
+    '''.format(DATASET=DATASET),
                                  dialect='standard')
 temporal_df.shape
 
@@ -335,19 +324,19 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total_rows,
         sum(case when (t1.condition_start_date>t1.condition_end_date) then 1 else 0 end) as wrong_date_rows
     FROM
-       `{}.unioned_ehr_condition_occurrence` AS t1
+       `{DATASET}.unioned_ehr_condition_occurrence` AS t1
     INNER JOIN
         (SELECT
             DISTINCT * 
         FROM
-             `{}._mapping_condition_occurrence`)  AS t2
+             `{DATASET}._mapping_condition_occurrence`)  AS t2
     ON
         t1.condition_occurrence_id=t2.condition_occurrence_id
     GROUP BY
         1
     ORDER BY
         3
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET=DATASET),
                                  dialect='standard')
 temporal_df.shape
 
@@ -385,8 +374,8 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (t1.drug_exposure_start_date>t1.drug_exposure_end_date) then 1 else 0 end) as wrong_date
     FROM
-       `{}.unioned_ehr_drug_exposure` AS t1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+       `{DATASET}.unioned_ehr_drug_exposure` AS t1
+    '''.format(DATASET=DATASET),
                                  dialect='standard')
 temporal_df.shape
 
@@ -412,17 +401,17 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total_rows,
         sum(case when (t1.drug_exposure_start_date>t1.drug_exposure_end_date) then 1 else 0 end) as wrong_date_rows
     FROM
-       `{}.unioned_ehr_drug_exposure` AS t1
+       `{DATASET}.unioned_ehr_drug_exposure` AS t1
     INNER JOIN
         (SELECT
             DISTINCT * 
         FROM
-             `{}._mapping_drug_exposure`)  AS t2
+             `{DATASET}._mapping_drug_exposure`)  AS t2
     ON
         t1.drug_exposure_id=t2.drug_exposure_id
     GROUP BY
         1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET=DATASET),
                                  dialect='standard')
 temporal_df.shape
 
@@ -445,79 +434,6 @@ total_row = temporal_df['total_rows'].sum()
 percent = round(100 - 100 * (total_wrong / (total_row)), 1)
 percent
 
-# ## Device Exposure Table
-
-# +
-######################################
-print('Getting the data from the database...')
-######################################
-
-temporal_df = pd.io.gbq.read_gbq('''
-    SELECT
-        COUNT(*) AS total,
-        sum(case when (t1.device_exposure_start_date>t1.device_exposure_end_date) then 1 else 0 end) as wrong_date
-    FROM
-       `{}.unioned_ehr_device_exposure` AS t1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                 dialect='standard')
-temporal_df.shape
-
-print(temporal_df.shape[0], 'records received.')
-# -
-
-temporal_df
-
-print("success rate for device is: ",
-      round(100 - 100 * (temporal_df.iloc[0, 1] / temporal_df.iloc[0, 0]), 1))
-
-# ### Device Exposure Table By Site
-
-# +
-######################################
-print('Getting the data from the database...')
-######################################
-
-temporal_df = pd.io.gbq.read_gbq('''
-    SELECT
-        src_hpo_id,
-        COUNT(*) AS total_rows,
-        sum(case when (t1.device_exposure_start_date>t1.device_exposure_end_date) then 1 else 0 end) as wrong_date_rows
-    FROM
-       `{}.unioned_ehr_device_exposure` AS t1
-    INNER JOIN
-        (SELECT
-            DISTINCT * 
-        FROM
-             `{}._mapping_device_exposure`)  AS t2
-    ON
-        t1.device_exposure_id=t2.device_exposure_id
-    GROUP BY
-        1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                 dialect='standard')
-temporal_df.shape
-
-print(temporal_df.shape[0], 'records received.')
-# -
-
-temporal_df['success_rate'] = 100 - round(
-    100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
-temporal_df
-
-device_exposure = temporal_df.rename(columns={"success_rate": "device_exposure"})
-device_exposure = device_exposure[["src_hpo_id", "device_exposure"]]
-device_exposure = device_exposure.fillna(100)
-device_exposure
-
-total_wrong = temporal_df['wrong_date_rows'].sum()
-total_wrong
-
-total_row = temporal_df['total_rows'].sum()
-percent = round(100 - 100 * (total_wrong / (total_row)), 1)
-percent
-
-temporal_df
-
 # ## Temporal Data Points - End Dates Before Start Dates
 
 # +
@@ -527,13 +443,12 @@ success_rate = pd.merge(visit_occurrence,
                        how='outer',
                        on='src_hpo_id')
 success_rate = pd.merge(success_rate, drug_exposure, how='outer', on='src_hpo_id')
-success_rate = pd.merge(success_rate,
-                       device_exposure,
-                       how='outer',
-                       on='src_hpo_id')
+
+
+
 success_rate = pd.merge(success_rate, site_df, how='outer', on='src_hpo_id')
 success_rate = success_rate.fillna(100)
 success_rate
 # -
 
-success_rate.to_csv("{cwd}\end_before_begin.csv".format(cwd = cwd))
+success_rate.to_csv("{cwd}/end_before_begin.csv".format(cwd = cwd))

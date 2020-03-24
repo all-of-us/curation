@@ -22,53 +22,41 @@ client = bigquery.Client()
 # %reload_ext google.cloud.bigquery
 
 # +
+from notebooks import parameters
+DATASET = parameters.LATEST_DATASET
+
+print("Dataset to use: {DATASET}".format(DATASET = DATASET))
+
+# +
 #######################################
 print('Setting everything up...')
 #######################################
 
 import warnings
+
 warnings.filterwarnings('ignore')
-import pandas_gbq
 import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-from matplotlib.lines import Line2D
-
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib as mpl
-
 import matplotlib.pyplot as plt
 # %matplotlib inline
-
-DATASET = ''
-
 import os
-import sys
-from datetime import datetime
-from datetime import date
-from datetime import time
-from datetime import timedelta
-import time
+
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
 
-from IPython.display import HTML as html_print
 
 def cstr(s, color='black'):
     return "<text style=color:{}>{}</text>".format(color, s)
+
 
 print('done.')
 # -
 
 cwd = os.getcwd()
 cwd = str(cwd)
-print(cwd)
+print("Current working directory is: {cwd}".format(cwd=cwd))
 
 # +
 dic = {
@@ -123,94 +111,91 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`
+         `{DATASET}._mapping_visit_occurrence`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_care_site`
+         `{DATASET}._mapping_care_site`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_condition_occurrence`  
+         `{DATASET}._mapping_condition_occurrence`  
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_device_exposure`
+         `{DATASET}._mapping_device_exposure`
 
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`
+         `{DATASET}._mapping_drug_exposure`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_location`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_measurement`         
+         `{DATASET}._mapping_location`         
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_note`        
+         `{DATASET}._mapping_measurement`         
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_observation`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_person`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_procedure_occurrence`         
+         `{DATASET}._mapping_note`        
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_provider`
+         `{DATASET}._mapping_observation`         
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_specimen`
+         `{DATASET}._mapping_person`         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_procedure_occurrence`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_provider`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_specimen`
     
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`   
+         `{DATASET}._mapping_visit_occurrence`   
     )     
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET=DATASET),
                               dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
@@ -241,37 +226,36 @@ all_measurements = Lipid + CBC + CBCwDiff + CMP + Physical_Measurement
 
 len(Lipid)
 
-len(set(Lipid))
+num_lipids = len(set(Lipid))
 
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {num_lipids} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{DATASET}.unioned_ehr_measurement` m
      JOIN -- to get the site info
-         `{}._mapping_measurement` mm
+         `{DATASET}._mapping_measurement` mm
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `{}.concept` c
+         `{DATASET}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{}.concept_ancestor` ca
+         `{DATASET}.concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
-         ca.ancestor_concept_id IN {}
+         ca.ancestor_concept_id IN {Lipid}
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(len(set(Lipid)), DATASET, DATASET, DATASET, DATASET, Lipid,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET=DATASET, num_lipids=num_lipids,Lipid=Lipid),
                         dialect='standard')
 df.shape
 
@@ -283,37 +267,36 @@ df_Lipid.head(100)
 
 len(CBC)
 
-len(set(CBC))
+num_cbc = len(set(CBC))
 
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {num_cbc} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{DATASET}.unioned_ehr_measurement` m
      JOIN -- to get the site info
-         `{}._mapping_measurement` mm
+         `{DATASET}._mapping_measurement` mm
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `{}.concept` c
+         `{DATASET}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{}.concept_ancestor` ca
+         `{DATASET}.concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
-         ca.ancestor_concept_id IN {}
+         ca.ancestor_concept_id IN {CBC}
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(len(set(CBC)), DATASET, DATASET, DATASET, DATASET, CBC, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(num_cbc=num_cbc, DATASET=DATASET, CBC=CBC),
                         dialect='standard')
 df.shape
 
@@ -325,37 +308,37 @@ df_CBC.head(100)
 
 len(CBCwDiff)
 
-len(set(CBCwDiff))
+num_cbc_w_diff = len(set(CBCwDiff))
 
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {num_cbc_w_diff} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{DATASET}.unioned_ehr_measurement` m
      JOIN -- to get the site info
-         `{}._mapping_measurement` mm
+         `{DATASET}._mapping_measurement` mm
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `{}.concept` c
+         `{DATASET}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{}.concept_ancestor` ca
+         `{DATASET}.concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
-         ca.ancestor_concept_id IN {}
+         ca.ancestor_concept_id IN {CBCwDiff}
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(len(set(CBCwDiff)), DATASET, DATASET, DATASET, DATASET, CBCwDiff,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(num_cbc_w_diff=num_cbc_w_diff, DATASET=DATASET, 
+               CBCwDiff=CBCwDiff),
                         dialect='standard')
 df.shape
 
@@ -367,37 +350,36 @@ df_CBCwDiff.head(100)
 
 len(CMP)
 
-len(set(CMP))
+num_cmp = len(set(CMP))
 
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {num_cmp} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{DATASET}.unioned_ehr_measurement` m
      JOIN -- to get the site info
-         `{}._mapping_measurement` mm
+         `{DATASET}._mapping_measurement` mm
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `{}.concept` c
+         `{DATASET}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{}.concept_ancestor` ca
+         `{DATASET}.concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
-         ca.ancestor_concept_id IN {}
+         ca.ancestor_concept_id IN {CMP}
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(len(set(CMP)), DATASET, DATASET, DATASET, DATASET, CMP, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(num_cmp=num_cmp, DATASET=DATASET, CMP=CMP),
                         dialect='standard')
 df.shape
 
@@ -409,38 +391,36 @@ df_CMP.head(100)
 
 len(Physical_Measurement)
 
-len(set(Physical_Measurement))
+num_pms = len(set(Physical_Measurement))
 
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {num_pms} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{DATASET}.unioned_ehr_measurement` m
      JOIN -- to get the site info
-         `{}._mapping_measurement` mm
+         `{DATASET}._mapping_measurement` mm
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `{}.concept` c
+         `{DATASET}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{}.concept_ancestor` ca
+         `{DATASET}.concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
-         ca.ancestor_concept_id IN {}
+         ca.ancestor_concept_id IN {Physical_Measurement}
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(len(set(Physical_Measurement)), DATASET, DATASET, DATASET,
-               DATASET, Physical_Measurement, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET),
+    '''.format(num_pms=num_pms, DATASET=DATASET, Physical_Measurement=Physical_Measurement),
                         dialect='standard')
 df.shape
 
@@ -453,38 +433,37 @@ df_Physical_Measurement.head(100)
 
 len(all_measurements)
 
-len(set(all_measurements))
+num_all_measurements = len(set(all_measurements))
 
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / {} * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {num_all_measurements} * 100, 2) perc_ancestors
 FROM
      (
      SELECT
          DISTINCT mm.src_hpo_id, ca.ancestor_concept_id -- logs an ancestor_concept if it is found
      FROM
-         `{}.unioned_ehr_measurement` m
+         `{DATASET}.unioned_ehr_measurement` m
      JOIN -- to get the site info
-         `{}._mapping_measurement` mm
+         `{DATASET}._mapping_measurement` mm
      ON
          m.measurement_id = mm.measurement_id
      JOIN
-         `{}.concept` c
+         `{DATASET}.concept` c
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{}.concept_ancestor` ca
+         `{DATASET}.concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
-         ca.ancestor_concept_id IN {}
+         ca.ancestor_concept_id IN {all_measurements}
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(len(set(all_measurements)), DATASET, DATASET, DATASET, DATASET,
-               all_measurements, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET),
+    '''.format(num_all_measurements=num_all_measurements, DATASET=DATASET,
+              all_measurements=all_measurements),
                         dialect='standard')
 df.shape
 
@@ -530,6 +509,6 @@ sites_measurement = sites_measurement.sort_values(by='All_Measurements', ascendi
 
 sites_measurement
 
-sites_measurement.to_csv("{cwd}\sites_measurement.csv".format(cwd = cwd))
+sites_measurement.to_csv("{cwd}/sites_measurement.csv".format(cwd = cwd))
 
 
