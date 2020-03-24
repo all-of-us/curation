@@ -33,7 +33,7 @@ class HPO:
             concept_success, duplicates,
             end_before_begin, data_after_death,
             route_success, unit_success, measurement_integration,
-            ingredient_integration,
+            ingredient_integration, date_datetime_disp,
 
             # number of rows for the 6 canonical tables
             num_measurement_rows=0,
@@ -77,6 +77,11 @@ class HPO:
             to the percentage of data points that follow a
             patient's death date. each index should also
             represent a different table
+
+        date_datetime_disp (list): list of the DataQualityMetric
+            objects that have the metric_type relating the
+            percentage of rows where the date and datetime
+            objects are not in agreement
 
         route_success (list): list of DataQuality metric objects
             that should all have the metric_type relating
@@ -130,6 +135,7 @@ class HPO:
         self.duplicates = duplicates
         self.end_before_begin = end_before_begin
         self.data_after_death = data_after_death
+        self.date_datetime_disp = date_datetime_disp
 
         # only relates to one table
         self.route_success = route_success
@@ -166,6 +172,7 @@ class HPO:
         \t Unit Success: {unit_success}\n
         \t Measurement Integration: {measurement_integration}\n
         \t Ingredient Integration: {ingredient_integration}\n
+        \t Date/Datetime Disagreement: {date_datetime} \n
         \n
         Number of Rows:\n
         \t Measurement: {measurement}\n
@@ -184,6 +191,7 @@ class HPO:
             unit_success=len(self.unit_success),
             measurement_integration=len(self.measurement_integration),
             ingredient_integration=len(self.ingredient_integration),
+            date_datetime=len(self.date_datetime_disp),
             measurement=self.num_measurement_rows,
             visit=self.num_visit_rows,
             procedure=self.num_procedure_rows,
@@ -236,6 +244,9 @@ class HPO:
 
         elif metric == 'Unit Concept ID Success Rate':
             self.unit_success.append(dq_object)
+
+        elif metric == 'Date/Datetime Disparity':
+            self.date_datetime_disp.append(dq_object)
 
         else:
             print("Unrecognized metric input: {metric} for {hpo}".format(
@@ -340,6 +351,11 @@ class HPO:
 
         elif metric == 'Unit Concept ID Success Rate':
             for obj in self.unit_success:
+                if obj.table_or_class == table_or_class:
+                    succ_rate = obj.value
+
+        elif metric == 'Date/Datetime Disparity':
+            for obj in self.date_datetime_disp:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
@@ -466,6 +482,9 @@ class HPO:
         elif metric == 'Unit Concept ID Success Rate':
             relevant_objects = self.unit_success
 
+        elif metric == 'Date/Datetime Disparity':
+            relevant_objects = self.date_datetime_disp
+
         else:
             raise Exception(
                 "The following was identified as a metric: "
@@ -572,6 +591,11 @@ class HPO:
             if ingredient_integration_obj.value < \
                     thresholds['route_success_min']:
                 failing_metrics.append(ingredient_integration_obj)
+
+        for date_datetime_obj in self.date_datetime_disp:
+            if date_datetime_obj.value > \
+                    thresholds['date_datetime_disparity_max']:
+                failing_metrics.append(date_datetime_obj)
 
         if not failing_metrics:  # no errors logged
             return None

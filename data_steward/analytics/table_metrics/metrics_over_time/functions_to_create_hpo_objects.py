@@ -59,7 +59,8 @@ def establish_hpo_objects(dqm_objects):
               concept_success=[], duplicates=[],
               end_before_begin=[], data_after_death=[],
               route_success=[], unit_success=[],
-              measurement_integration=[], ingredient_integration=[])
+              measurement_integration=[], ingredient_integration=[],
+              date_datetime_disp=[])
 
             blank_hpo_objects.append(hpo)
 
