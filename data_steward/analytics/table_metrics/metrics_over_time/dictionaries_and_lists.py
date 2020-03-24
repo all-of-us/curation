@@ -70,7 +70,8 @@ thresholds = {
     'unit_success_min': 85,
     'route_success_min': 85,
 
-    'date_datetime_disparity_max': 0
+    'date_datetime_disparity_max': 0,
+    'erroneous_dates_max': 0
 }
 
 
@@ -84,7 +85,8 @@ choice_dict = {
     'g': 'drug_success',
     'h': 'sites_measurement',
     'i': 'visit_date_disparity',
-    'j': 'date_datetime_disparity'}
+    'j': 'date_datetime_disparity',
+    'k': 'erroneous_dates'}
 
 percentage_dict = {
     'duplicates': False,
@@ -96,7 +98,8 @@ percentage_dict = {
     'drug_success': True,
     'sites_measurement': True,
     'visit_date_disparity': True,
-    'date_datetime_disparity': True
+    'date_datetime_disparity': True,
+    'erroneous_dates': True
 }
 
 target_low_dict = {
@@ -109,7 +112,8 @@ target_low_dict = {
     'drug_success': False,
     'sites_measurement': False,
     'visit_date_disparity': False,
-    'date_datetime_disparity': True
+    'date_datetime_disparity': True,
+    'erroneous_dates': True
 }
 
 columns_to_document_for_sheet = {
@@ -153,6 +157,12 @@ columns_to_document_for_sheet = {
         'measurement_success_rate', 'visit_success_rate'],
 
     'date_datetime_disparity': [
+        'visit_occurrence', 'condition_occurrence',
+        'drug_exposure', 'measurement',
+        'procedure_occurrence', 'observation'
+    ],
+
+    'erroneous_dates': [
         'visit_occurrence', 'condition_occurrence',
         'drug_exposure', 'measurement',
         'procedure_occurrence', 'observation'
@@ -213,7 +223,8 @@ data_quality_dimension_dict = {
     'drug_success': 'Completeness',
     'drug_routes': 'Completeness',
     'measurement_units': 'Completeness',
-    'date_datetime_disparity': 'Conformance'
+    'date_datetime_disparity': 'Conformance',
+    'erroneous_dates': 'Plausibility'
 }
 
 metric_type_to_english_dict = {
@@ -232,14 +243,16 @@ metric_type_to_english_dict = {
 
     # other metrics
     'concept': 'Concept ID Success Rate',
-    'duplicates': 'Duplicate Records'
+    'duplicates': 'Duplicate Records',
+    'erroneous_dates': 'Erroneous Dates'
 }
 
 metrics_to_weight = [
     'measurement_units', 'drug_routes',
     'end_before_begin', 'data_after_death',
     'concept', 'duplicates',
-    'date_datetime_disparity']
+    'date_datetime_disparity',
+    'erroneous_dates']
 
 full_names = {
     "saou_uab_selma": "UAB Selma",
