@@ -74,19 +74,20 @@ import argparse
 import logging
 
 import app_identity
-
 import bq_utils
 import cdm
 import common
-from constants.validation import ehr_union as eu_constants
 import resources
-from constants.tools.combine_ehr_rdr import PERSON_TABLE, OBSERVATION_TABLE
+from constants.tools.combine_ehr_rdr import OBSERVATION_TABLE
+from constants.validation import ehr_union as eu_constants
 
 UNION_ALL = '''
 
         UNION ALL
         
 '''
+
+DEATH = 'death'
 
 
 def get_hpo_offsets(hpo_ids):
@@ -236,6 +237,36 @@ def query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND'):
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
 
+def death_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id):
+    table_id = bq_utils.get_table_id(hpo_id, DEATH)
+    death_query = '''
+    SELECT
+  mp.person_id,
+  death_date,
+  death_datetime,
+  death_type_concept_id,
+  cause_concept_id,
+  cause_source_value,
+  cause_source_concept_id
+FROM (
+  SELECT
+    *,
+    ROW_NUMBER() OVER (PARTITION BY nm.person_id) AS row_num
+  FROM
+    {input_dataset_id}.{table_id} AS nm) AS t
+JOIN
+  {output_dataset_id}._mapping_person AS mp
+ON
+  t.person_id = mp.src_person_id
+  AND mp.src_table_id = '{hpo_id}_person'
+WHERE
+  row_num = 1'''.format(input_dataset_id=input_dataset_id,
+                        output_dataset_id=output_dataset_id,
+                        table_id=table_id,
+                        hpo_id=hpo_id)
+    return death_query
+
+
 def fact_relationship_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id):
     """
     Get query for all fact_relationship records with mapped fact_id
@@ -315,6 +346,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         # NOTE: Assumes that besides person_id foreign keys exist only for visit_occurrence, location, care_site
         mapping_table = mapping_table_for(table_name) if is_id_mapped else None
         has_visit_occurrence_id = False
+        has_person_id = False
         has_care_site_id = False
         has_location_id = False
         id_col = '{table_name}_id'.format(table_name=table_name)
@@ -326,7 +358,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                 # Use mapping for record ID column
                 # m is an alias that should resolve to the associated mapping table
                 if field_name == eu_constants.PERSON_ID:
-                    col_expr = '{field_name}'.format(field_name=field_name)
+                    col_expr = 'm.{field_name}'.format(field_name=field_name)
                 else:
                     col_expr = 'm.{field_name}'.format(field_name=field_name)
             elif field_name == eu_constants.VISIT_OCCURRENCE_ID:
@@ -335,6 +367,12 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                 # Note: This is only reached when table_name != visit_occurrence
                 col_expr = 'mv.' + eu_constants.VISIT_OCCURRENCE_ID
                 has_visit_occurrence_id = True
+            elif field_name == eu_constants.PERSON_ID:
+                # Replace with mapped visit_occurrence_id
+                # mv is an alias that should resolve to the mapping visit table
+                # Note: This is only reached when table_name != visit_occurrence
+                col_expr = 'mp.' + eu_constants.PERSON_ID
+                has_person_id = True
             elif field_name == eu_constants.CARE_SITE_ID:
                 # Replace with mapped care_site_id
                 # cs is an alias that should resolve to the mapping care_site table
@@ -355,6 +393,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         visit_join_expr = ''
         location_join_expr = ''
         care_site_join_expr = ''
+        person_join_expr = ''
 
         if has_visit_occurrence_id:
             # Include a join to mapping visit table
@@ -369,6 +408,20 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             '''.format(output_dataset_id=output_dataset_id,
                        mapping_visit_occurrence=mv,
                        src_visit_table_id=src_visit_table_id)
+
+        if has_person_id:
+            # Include a join to mapping visit table
+            # Note: Using left join in order to keep records that aren't mapped to visits
+            mp = mapping_table_for(eu_constants.PERSON)
+            src_person_table_id = bq_utils.get_table_id(hpo_id,
+                                                        eu_constants.PERSON)
+            person_join_expr = '''
+            LEFT JOIN {output_dataset_id}.{mapping_person} mp
+              ON t.person_id = mp.src_person_id
+             AND mp.src_table_id = '{src_person_table_id}'
+            '''.format(output_dataset_id=output_dataset_id,
+                       mapping_person=mp,
+                       src_person_table_id=src_person_table_id)
 
         if has_care_site_id:
             # Include a join to mapping visit table
@@ -398,22 +451,21 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                                    mapping_location=lc,
                                    src_location_id=src_location_table_id)
 
-        if table_name == eu_constants.PERSON:
-            return '''
-                    SELECT {cols} 
-                    FROM {ehr_dataset_id}.{table_id} t
-                       {location_join_expr}
-                       {care_site_join_expr} 
-                    '''.format(cols=cols,
-                               table_id=table_id,
-                               ehr_dataset_id=input_dataset_id,
-                               visit_join_expr=visit_join_expr,
-                               care_site_join_expr=care_site_join_expr,
-                               location_join_expr=location_join_expr,
-                               hpo_id=hpo_id)
+            # if table_name == eu_constants.PERSON:
+            #     return '''
+            #             SELECT {cols}
+            #             FROM {ehr_dataset_id}.{table_id} t
+            #                {location_join_expr}
+            #                {care_site_join_expr}
+            #             '''.format(cols=cols,
+            #                        table_id=table_id,
+            #                        ehr_dataset_id=input_dataset_id,
+            #                        visit_join_expr=visit_join_expr,
+            #                        care_site_join_expr=care_site_join_expr,
+            #                        location_join_expr=location_join_expr,
+            #                        hpo_id=hpo_id)
 
-        else:
-            return '''
+        return '''
             SELECT
                 {cols}
             FROM (
@@ -428,6 +480,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                 t.{table_name}_id = m.src_{table_name}_id
             AND m.src_table_id = '{table_id}'
             {visit_join_expr}
+            {person_join_expr}
             {care_site_join_expr}
             {location_join_expr}
             WHERE
@@ -438,6 +491,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                            output_dataset_id=output_dataset_id,
                            mapping_table=mapping_table,
                            visit_join_expr=visit_join_expr,
+                           person_join_expr=person_join_expr,
                            care_site_join_expr=care_site_join_expr,
                            location_join_expr=location_join_expr,
                            table_name=table_name)
@@ -462,6 +516,10 @@ def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
             if table_name == eu_constants.FACT_RELATIONSHIP:
                 subquery = fact_relationship_hpo_subquery(
                     hpo_id, input_dataset_id, output_dataset_id)
+                result.append(subquery)
+            elif table_name == DEATH:
+                subquery = death_hpo_subquery(hpo_id, input_dataset_id,
+                                              output_dataset_id)
                 result.append(subquery)
             else:
                 subquery = table_hpo_subquery(table_name, hpo_id,
@@ -488,6 +546,13 @@ def table_union_query(table_name, hpo_ids, input_dataset_id, output_dataset_id):
     subqueries = _union_subqueries(table_name, hpo_ids, input_dataset_id,
                                    output_dataset_id)
     return UNION_ALL.join(subqueries)
+
+
+def death_union_query(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
+    union_query = table_union_query(cdm_table, hpo_ids, input_dataset_id,
+                                    output_dataset_id)
+
+    return union_query
 
 
 def fact_table_union_query(cdm_table, hpo_ids, input_dataset_id,
@@ -528,6 +593,9 @@ def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
     if cdm_table == eu_constants.FACT_RELATIONSHIP:
         q = fact_table_union_query(cdm_table, hpo_ids, input_dataset_id,
                                    output_dataset_id)
+    if cdm_table == "death":
+        q = death_union_query(cdm_table, hpo_ids, input_dataset_id,
+                              output_dataset_id)
     else:
         q = table_union_query(cdm_table, hpo_ids, input_dataset_id,
                               output_dataset_id)
@@ -757,12 +825,6 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
         load(table_name, hpo_ids, input_dataset_id, output_dataset_id)
 
     logging.info('Creation of Unioned EHR complete')
-
-    # create person mapping table
-    domain_table = PERSON_TABLE
-    logging.info('Mapping {domain_table}...'.format(domain_table=domain_table))
-    mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
-            project_id)
 
     logging.info('Starting process for Person to Observation')
     # Map and move EHR person records into four rows in observation, one each for race, ethnicity, dob and gender

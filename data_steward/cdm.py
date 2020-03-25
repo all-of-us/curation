@@ -20,7 +20,7 @@ def tables_to_map():
     """
     result = []
     for table in resources.CDM_TABLES:
-        if table != 'person' and bq_utils.has_primary_key(table):
+        if bq_utils.has_primary_key(table):
             result.append(table)
     return result
 
