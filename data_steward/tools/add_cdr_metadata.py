@@ -15,8 +15,6 @@ DATE = 'date'
 DESCRIPTION = 'description'
 
 JOB_COMPONENTS = [COPY, CREATE, INSERT]
-
-fields = resources.fields_for(METADATA_TABLE)
 UPDATE_STRING_COLUMNS = "{field} = \'{field_value}\'"
 UPDATE_DATE_COLUMNS = "{field} = cast(\'{field_value}\' as DATE)"
 
@@ -24,15 +22,15 @@ ETL_VERSION_CHECK = """
 select {etl} from `{dataset}.{table}`
 """
 ADD_ETL_METADATA_QUERY = """
-insert into `{dataset}.cdr_metadata` ({etl_version}) values(\'{field_value}\')
+insert into `{project}.{dataset}.cdr_metadata` ({etl_version}) values(\'{field_value}\')
 """
 
 UPDATE_QUERY = """
-update `{dataset}.{table}` set {statement} where {etl_version} = \'{etl_value}\'
+update `{project}.{dataset}.{table}` set {statement} where {etl_version} = \'{etl_value}\'
 """
 
 COPY_QUERY = """
-select * from `{dataset}.cdr_metadata`
+select * from `{project}.{dataset}.cdr_metadata`
 """
 
 
@@ -49,43 +47,27 @@ def create_metadata_table(dataset_id, fields_list):
                               dataset_id=dataset_id)
 
 
-def copy_metadata_table(source_dataset_id, target_dataset_id, fields):
+def copy_metadata_table(project_id, source_dataset_id, target_dataset_id,
+                        table_fields):
     """
 
+    :param project_id:
     :param source_dataset_id:
     :param target_dataset_id:
-    :param fields:
+    :param table_fields:
     :return:
     """
-    create_metadata_table(target_dataset_id, fields)
-    query = COPY_QUERY.format(datset=source_dataset_id)
+    create_metadata_table(target_dataset_id, table_fields)
+    query = COPY_QUERY.format(project=project_id, datset=source_dataset_id)
     bq_utils.query(query,
                    destination_dataset_id=target_dataset_id,
                    destination_table_id=METADATA_TABLE)
 
 
-def add_metadata(dataset_id, project_id, field_values=None):
-    """
-    Adds the metadata value passed in as parameters to the medatadata table
-
-    :param dataset_id: Name of the dataset
-    :param project_id: Name of the project
-    :param field_values: dictionary of field values passed as parameters
-    :return: None
-    """
-    q = ETL_VERSION_CHECK.format(etl=ETL_VERSION,
-                                 dataset=dataset_id,
-                                 table=METADATA_TABLE)
-    etl_check = bq.query(q, project_id=project_id)[ETL_VERSION].tolist()
-    if not etl_check:
-        add_etl_query = ADD_ETL_METADATA_QUERY.format(
-            dataset=dataset_id,
-            etl_version=ETL_VERSION,
-            field_value=field_values[ETL_VERSION])
-        bq.query(add_etl_query, project_id=project_id)
+def parse_update_statement(table_fields, field_values):
     statement_list = []
     field_types = dict()
-    for field_name in fields:
+    for field_name in table_fields:
         field_types[field_name[NAME]] = field_name[TYPE]
     for field_name in field_values:
         if field_name != ETL_VERSION and field_values[field_name] is not None:
@@ -98,9 +80,43 @@ def add_metadata(dataset_id, project_id, field_values=None):
                     UPDATE_STRING_COLUMNS.format(
                         field=field_name, field_value=field_values[field_name]))
     if len(statement_list) != 0:
-        update_statement = ' ,'.join(statement_list)
-        print(update_statement)
-        q = UPDATE_QUERY.format(dataset=dataset_id,
+        return ', '.join(statement_list)
+    else:
+        return ''
+
+
+def get_etl_version(dataset_id, project_id):
+    etl_version = bq.query(ETL_VERSION_CHECK.format(etl=ETL_VERSION,
+                                                    project=project_id,
+                                                    dataset=dataset_id,
+                                                    table=METADATA_TABLE),
+                           project_id=project_id)[ETL_VERSION].tolist()
+    return etl_version
+
+
+def add_metadata(dataset_id, project_id, table_fields, field_values=None):
+    """
+    Adds the metadata value passed in as parameters to the medatadata table
+
+    :param dataset_id: Name of the dataset
+    :param project_id: Name of the project
+    :param table_fields: field list of a table
+    :param field_values: dictionary of field values passed as parameters
+    :return: None
+    """
+    etl_check = get_etl_version(dataset_id, project_id)
+    if not etl_check:
+        add_etl_query = ADD_ETL_METADATA_QUERY.format(
+            project=project_id,
+            dataset=dataset_id,
+            etl_version=ETL_VERSION,
+            field_value=field_values[ETL_VERSION])
+        bq.query(add_etl_query, project_id=project_id)
+
+    update_statement = parse_update_statement(table_fields, field_values)
+    if update_statement != '':
+        q = UPDATE_QUERY.format(project=project_id,
+                                dataset=dataset_id,
                                 table=METADATA_TABLE,
                                 statement=update_statement,
                                 etl_version=ETL_VERSION,
@@ -109,7 +125,7 @@ def add_metadata(dataset_id, project_id, field_values=None):
 
 
 if __name__ == '__main__':
-
+    fields = resources.fields_for(METADATA_TABLE)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
@@ -135,7 +151,8 @@ if __name__ == '__main__':
     if args.component == CREATE:
         create_metadata_table(args.target_dataset, fields)
     if args.component == COPY:
-        copy_metadata_table(args.source_dataset, args.target_dataset, fields)
+        copy_metadata_table(args.project_id, args.source_dataset,
+                            args.target_dataset, fields)
     field_values_dict = dict(
         zip([field[NAME] for field in fields], [
             args.etl_version, args.ehr_source, args.ehr_cutoff_date,
@@ -144,4 +161,5 @@ if __name__ == '__main__':
         ]))
     print(field_values_dict)
     if args.component == INSERT:
-        add_metadata(args.target_dataset, args.project_id, field_values_dict)
+        add_metadata(args.target_dataset, args.project_id, fields,
+                     field_values_dict)
