@@ -58,9 +58,6 @@ class ParticipantPrevalenceTest(unittest.TestCase):
         self.table_df = pd.DataFrame(self.list_of_dicts)
 
         self.pids_list = [1, 2, 3, 4]
-        self.cdm_counts = [0, 0, 0, 5, 0]
-        self.non_cdm_counts = [0, 0, 6, 8]
-        self.zero_counts = [0 for _ in self.cdm_counts + self.non_cdm_counts]
 
     def test_get_pid_sql_expr(self):
         expected = '({pids})'.format(

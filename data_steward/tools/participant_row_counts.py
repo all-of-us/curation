@@ -25,6 +25,7 @@ from jinja2 import Template
 from utils import bq
 import common
 from constants.tools import participant_row_counts as consts
+from tools.retract_data_bq import is_deid_dataset
 
 
 def get_table_information_for_dataset(project_id, dataset_id):
@@ -37,7 +38,7 @@ def get_table_information_for_dataset(project_id, dataset_id):
     """
     person_table_query = consts.TABLE_INFO_QUERY.format(project=project_id,
                                                         dataset=dataset_id)
-    result_df = bq.query(person_table_query)
+    result_df = bq.query(person_table_query, project_id)
     return result_df
 
 
@@ -173,12 +174,12 @@ def get_cdm_table(mapping_ext_table):
 def get_dataset_type(dataset_id):
     if common.COMBINED in dataset_id and common.DEID not in dataset_id:
         return common.COMBINED
-    if common.DEID in dataset_id:
-        return common.DEID
     if common.UNIONED_EHR in dataset_id:
         return common.UNIONED_EHR
     if common.EHR in dataset_id and common.UNIONED_EHR not in dataset_id:
         return common.EHR
+    if common.DEID in dataset_id or is_deid_dataset(dataset_id):
+        return common.DEID
     return common.OTHER
 
 
@@ -246,7 +247,7 @@ def count_pid_rows_in_dataset(project_id, dataset_id, hpo_id, pid_source):
                                   table_df)
 
     if query:
-        counts_df = bq.query(query)
+        counts_df = bq.query(query, project_id)
         # ignore zero counts
         counts_df = counts_df[counts_df[consts.ALL_COUNT] > 0]
     return counts_df
@@ -278,8 +279,8 @@ def count_pid_rows_in_project(project_id, hpo_id, pid_source):
     :return: dataframe containing 
     """
     datasets = bq.list_datasets(project_id)
-    for dataset in datasets:
-        dataset_id = dataset.dataset_id
+    dataset_ids = [dataset.dataset_id for dataset in datasets]
+    for dataset_id in dataset_ids:
         try:
             counts_df = count_pid_rows_in_dataset(project_id, dataset_id,
                                                   hpo_id, pid_source)
