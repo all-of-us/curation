@@ -1,6 +1,6 @@
+import re
 import unittest
 
-import mock
 import pandas as pd
 
 import common
@@ -20,135 +20,192 @@ class ParticipantPrevalenceTest(unittest.TestCase):
         self.project_id = 'project_id'
         self.dataset_id = 'dataset_id'
         self.ehr_dataset_id = 'ehr_dataset_id'
-        self.pid_project_id = 'pid_project_id'
-        self.sandbox_dataset_id = 'sandbox_dataset_id'
-        self.pid_table_id = 'pid_table_id'
+        self.pid_table_str = 'pid_project_id.sandbox_dataset_id.pid_table_id'
         self.hpo_id = 'fake'
-        self.cdm_pid_tables = [
+        self.TABLE_REGEX = re.compile(
+            r'`' + self.project_id + r'\.' + self.dataset_id + r'\.(.*)`',
+            re.MULTILINE | re.IGNORECASE)
+
+        # common tables across datasets
+        self.mapped_cdm_tables = [
             common.OBSERVATION, common.VISIT_OCCURRENCE, common.MEASUREMENT,
             common.OBSERVATION_PERIOD, common.CONDITION_OCCURRENCE
         ]
-        self.pid_tables = [
-            common.PERSON, common.PII_NAME, common.PARTICIPANT_MATCH,
-            common.DEATH
+        self.unmapped_cdm_tables = [common.PERSON, common.DEATH]
+        self.mapping_tables = [
+            common.MAPPING_PREFIX + table for table in self.mapped_cdm_tables
         ]
+        self.ext_tables = [
+            table + common.EXT_SUFFIX for table in self.mapped_cdm_tables
+        ]
+        self.cdm_tables = self.mapped_cdm_tables + self.unmapped_cdm_tables
+        self.other_tables = [
+            common.MAPPING_PREFIX + 'drug_source',
+            'site' + common.MAPPING_PREFIX
+        ]
+
+        self.list_of_dicts = [{
+            consts.TABLE_NAME: table,
+            consts.COLUMN_NAME: consts.PERSON_ID
+        } for table in self.cdm_tables] + [{
+            consts.TABLE_NAME: table,
+            consts.COLUMN_NAME: consts.TABLE_ID
+        } for table in self.mapping_tables + self.ext_tables] + [{
+            consts.TABLE_NAME: table,
+            consts.COLUMN_NAME: consts.TABLE_ID
+        } for table in self.other_tables]
+
+        self.table_df = pd.DataFrame(self.list_of_dicts)
+
         self.pids_list = [1, 2, 3, 4]
-        self.pids_string = str(self.pids_list)[1:-1]
         self.cdm_counts = [0, 0, 0, 5, 0]
         self.non_cdm_counts = [0, 0, 6, 8]
         self.zero_counts = [0 for _ in self.cdm_counts + self.non_cdm_counts]
 
-    def test_get_pids(self):
-        expected = ', '.join([str(pid) for pid in self.pids_list])
-        actual = prc.get_pids(self.pids_list)
+    def test_get_pid_sql_expr(self):
+        expected = '({pids})'.format(
+            pids=', '.join([str(pid) for pid in self.pids_list]))
+        actual = prc.get_pid_sql_expr(self.pids_list)
         self.assertEqual(expected, actual)
 
-        self.assertRaises(ValueError, prc.get_pids)
-        self.assertRaises(ValueError, prc.get_pids, None, self.pid_project_id,
-                          self.sandbox_dataset_id)
+        self.assertRaises(ValueError, prc.get_pid_sql_expr, self.project_id)
+        self.assertRaises(ValueError, prc.get_pid_sql_expr,
+                          self.project_id + '.' + self.dataset_id)
 
-        actual = prc.get_pids(None, self.pid_project_id,
-                              self.sandbox_dataset_id, self.pid_table_id)
-        self.assertIn(self.pid_project_id, actual)
-        self.assertIn(self.sandbox_dataset_id, actual)
-        self.assertIn(self.pid_table_id, actual)
+    def test_get_cdm_table(self):
+        expected = common.AOU_REQUIRED
+        mapping_tables = [
+            common.MAPPING_PREFIX + table for table in common.AOU_REQUIRED
+        ]
+        ext_tables = [
+            table + common.EXT_SUFFIX for table in common.AOU_REQUIRED
+        ]
+        for table in mapping_tables:
+            cdm_table = prc.get_cdm_table(table)
+            self.assertIn(cdm_table, expected)
+        for table in ext_tables:
+            cdm_table = prc.get_cdm_table(table)
+            self.assertIn(cdm_table, expected)
 
-    @mock.patch('utils.bq.query')
-    def test_get_cdm_tables_with_person_id(self, mock_bq_query):
-        expected = self.cdm_pid_tables
-        columns_dict = {consts.TABLE_NAME_COLUMN: self.cdm_pid_tables}
-        mock_bq_query.return_value = pd.DataFrame(data=columns_dict)
-        actual = prc.get_cdm_tables_with_person_id(self.project_id,
-                                                   self.dataset_id)
-        self.assertEqual(actual, expected)
+    def test_get_combined_deid_query(self):
+        pid_sql_expr = prc.get_pid_sql_expr(self.pids_list)
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.get_tables_with_person_id'
-    )
-    @mock.patch('tools.participant_prevalence.get_cdm_tables_with_person_id')
-    def test_get_pid_counts_query(self, mock_pid_cdm_tables, mock_pid_tables):
-        mock_pid_cdm_tables.return_value = self.cdm_pid_tables
-        mock_pid_tables.return_value = self.pid_tables + self.cdm_pid_tables
+        actual = prc.get_combined_deid_query(self.project_id, self.dataset_id,
+                                             pid_sql_expr, self.table_df)
+        queries = actual.split(consts.UNION_ALL)
 
-        actual = prc.get_pid_counts_query(self.project_id,
-                                          self.dataset_id,
-                                          self.hpo_id,
-                                          self.pids_string,
-                                          for_cdm=True)
-        self.assertEqual(len(self.cdm_pid_tables),
-                         len(actual.split(consts.UNION_ALL)))
-        for table in self.cdm_pid_tables:
-            self.assertIn(table, actual)
+        for query in queries:
+            tables = self.TABLE_REGEX.findall(query)
+            self.assertLessEqual(len(tables), 2)
+            self.assertGreaterEqual(len(tables), 1)
+            if len(tables) == 2:
+                table = tables[0]
+                map_table = tables[1]
+                self.assertIn(table, self.mapped_cdm_tables)
+                self.assertNotIn(table, self.unmapped_cdm_tables)
+                self.assertIn(map_table, self.mapping_tables + self.ext_tables)
+            elif len(tables) == 1:
+                table = tables[0]
+                self.assertIn(table, self.unmapped_cdm_tables)
+                self.assertNotIn(table, self.mapped_cdm_tables)
+                if table == common.PERSON:
+                    self.assertIn('0 AS ehr_count', query)
+                elif table == common.DEATH:
+                    self.assertIn('COUNT(*) AS ehr_count', query)
 
-        actual = prc.get_pid_counts_query(self.project_id,
-                                          self.dataset_id,
-                                          self.hpo_id,
-                                          self.pids_string,
-                                          for_cdm=False)
-        self.assertEqual(len(self.pid_tables),
-                         len(actual.split(consts.UNION_ALL)))
-        for table in self.pid_tables:
-            self.assertIn(table, actual)
+    def test_get_dataset_query(self):
+        pid_sql_expr = prc.get_pid_sql_expr(self.pid_table_str)
 
-    @mock.patch('tools.participant_prevalence.get_pid_counts_query')
-    def test_get_pid_counts(self, mock_pids_query):
-        mock_pids_query.return_value = None
-        expected = pd.DataFrame(
-            columns=[consts.TABLE_ID, consts.ALL_COUNT, consts.EHR_COUNT])
+        actual = prc.get_dataset_query(self.project_id, self.dataset_id,
+                                       pid_sql_expr, self.table_df)
+        queries = actual.split(consts.UNION_ALL)
 
-        actual = prc.get_pid_counts(self.project_id,
-                                    self.dataset_id,
-                                    self.hpo_id,
-                                    self.pids_string,
-                                    for_cdm=False)
-        pd.testing.assert_frame_equal(actual, expected)
+        for query in queries:
+            tables = self.TABLE_REGEX.findall(query)
+            self.assertEqual(len(tables), 1)
+            table = tables[0]
+            self.assertIn(table, self.cdm_tables)
+            self.assertIn('COUNT(*) AS ehr_count', query)
 
-    @mock.patch('tools.participant_prevalence.get_pid_counts')
-    def test_get_non_zero_counts(self, mock_pid_counts):
-        cdm_counts_dict = {
-            consts.TABLE_ID: self.cdm_pid_tables,
-            consts.EHR_COUNT: self.zero_counts[:5],
-            consts.ALL_COUNT: self.cdm_counts
-        }
-        non_cdm_counts_dict = {
-            consts.TABLE_ID: self.pid_tables,
-            consts.EHR_COUNT: self.zero_counts[:4],
-            consts.ALL_COUNT: self.non_cdm_counts
-        }
-        cdm_counts_df = pd.DataFrame(data=cdm_counts_dict)
-        non_cdm_counts_df = pd.DataFrame(data=non_cdm_counts_dict)
+    def test_get_ehr_query(self):
+        pid_sql_expr = prc.get_pid_sql_expr(self.pid_table_str)
 
-        expected_dict = {
-            consts.TABLE_ID: self.cdm_pid_tables + self.pid_tables,
-            consts.EHR_COUNT: self.zero_counts,
-            consts.ALL_COUNT: self.cdm_counts + self.non_cdm_counts
-        }
-        expected = pd.DataFrame(data=expected_dict)
-        expected = expected[expected[consts.ALL_COUNT] > 0]
+        # ehr dataset tables
+        participant_tables = [
+            common.PII_NAME, common.PARTICIPANT_MATCH, common.PII_ADDRESS
+        ]
+        unioned_ehr_tables = [
+            common.UNIONED_EHR + '_' + table for table in self.cdm_tables
+        ]
+        hpo_tables = [
+            self.hpo_id + '_' + table
+            for table in self.cdm_tables + participant_tables
+        ]
+        ehr_tables = hpo_tables + unioned_ehr_tables
 
-        mock_pid_counts.side_effect = [cdm_counts_df, non_cdm_counts_df]
-        actual = prc.count_pid_rows_in_dataset(self.project_id, self.dataset_id,
-                                               self.hpo_id, self.pids_string)
-        pd.testing.assert_frame_equal(actual.reset_index(drop=True),
-                                      expected.reset_index(drop=True))
+        ehr_list_of_dicts = [{
+            consts.TABLE_NAME: table,
+            consts.COLUMN_NAME: consts.PERSON_ID
+        } for table in ehr_tables]
+        ehr_table_df = pd.DataFrame(ehr_list_of_dicts)
 
-        expected_dict = {
-            consts.TABLE_ID: self.cdm_pid_tables + self.pid_tables,
-            consts.EHR_COUNT: self.cdm_counts + self.non_cdm_counts,
-            consts.ALL_COUNT: self.cdm_counts + self.non_cdm_counts
-        }
-        expected = pd.DataFrame(data=expected_dict)
-        expected = expected[expected[consts.ALL_COUNT] > 0]
+        actual = prc.get_ehr_query(self.project_id, self.dataset_id,
+                                   pid_sql_expr, self.hpo_id, ehr_table_df)
+        queries = actual.split(consts.UNION_ALL)
 
-        mock_pid_counts.side_effect = [cdm_counts_df, non_cdm_counts_df]
-        actual = prc.count_pid_rows_in_dataset(self.project_id,
-                                               self.ehr_dataset_id, self.hpo_id,
-                                               self.pids_string)
-        pd.testing.assert_series_equal(actual.get(consts.EHR_COUNT),
-                                       actual.get(consts.ALL_COUNT),
-                                       check_names=False)
-        pd.testing.assert_frame_equal(actual.reset_index(drop=True),
-                                      expected.reset_index(drop=True))
+        for query in queries:
+            tables = self.TABLE_REGEX.findall(query)
+            self.assertEqual(len(tables), 1)
+            table = tables[0]
+            self.assertIn(table, ehr_tables)
+            self.assertIn('COUNT(*) AS ehr_count', query)
+
+    def test_get_dataset_type(self):
+        self.assertEqual(prc.get_dataset_type('unioned_ehr_4023498'),
+                         common.UNIONED_EHR)
+        self.assertNotEqual(prc.get_dataset_type('unioned_ehr_4023498'),
+                            common.COMBINED)
+        self.assertNotEqual(prc.get_dataset_type('unioned_ehr_4023498'),
+                            common.DEID)
+        self.assertNotEqual(prc.get_dataset_type('unioned_ehr_4023498'),
+                            common.EHR)
+        self.assertNotEqual(prc.get_dataset_type('unioned_ehr_4023498'),
+                            common.OTHER)
+
+        self.assertEqual(prc.get_dataset_type('5349850'), common.OTHER)
+        self.assertNotEqual(prc.get_dataset_type('5349850'), common.COMBINED)
+        self.assertNotEqual(prc.get_dataset_type('5349850'), common.DEID)
+        self.assertNotEqual(prc.get_dataset_type('5349850'), common.EHR)
+        self.assertNotEqual(prc.get_dataset_type('5349850'), common.UNIONED_EHR)
+
+        self.assertEqual(prc.get_dataset_type('combined_deid_53521'),
+                         common.DEID)
+        self.assertNotEqual(prc.get_dataset_type('combined_deid_53521'),
+                            common.COMBINED)
+        self.assertNotEqual(prc.get_dataset_type('combined_deid_53521'),
+                            common.UNIONED_EHR)
+        self.assertNotEqual(prc.get_dataset_type('combined_deid_53521'),
+                            common.EHR)
+        self.assertNotEqual(prc.get_dataset_type('combined_deid_53521'),
+                            common.OTHER)
+
+        self.assertEqual(prc.get_dataset_type('combined_dbrowser_562'),
+                         common.COMBINED)
+        self.assertNotEqual(prc.get_dataset_type('combined_dbrowser_562'),
+                            common.DEID)
+        self.assertNotEqual(prc.get_dataset_type('combined_dbrowser_562'),
+                            common.UNIONED_EHR)
+        self.assertNotEqual(prc.get_dataset_type('combined_dbrowser_562'),
+                            common.EHR)
+        self.assertNotEqual(prc.get_dataset_type('combined_dbrowser_562'),
+                            common.OTHER)
+
+        self.assertEqual(prc.get_dataset_type('ehr_43269'), common.EHR)
+        self.assertNotEqual(prc.get_dataset_type('ehr_43269'), common.DEID)
+        self.assertNotEqual(prc.get_dataset_type('ehr_43269'),
+                            common.UNIONED_EHR)
+        self.assertNotEqual(prc.get_dataset_type('ehr_43269'), common.COMBINED)
+        self.assertNotEqual(prc.get_dataset_type('ehr_43269'), common.OTHER)
 
     def test_fetch_args(self):
         parser = prc.fetch_parser()
@@ -161,12 +218,10 @@ class ParticipantPrevalenceTest(unittest.TestCase):
         actual = args.pid_source
         self.assertEqual(expected, actual)
 
-        pid_table_string = '.'.join(
-            [self.project_id, self.sandbox_dataset_id, self.pid_table_id])
-        expected = pid_table_string
+        expected = self.pid_table_str
         args = parser.parse_args([
             '-p', self.project_id, '-o', self.hpo_id, 'pid_table',
-            pid_table_string
+            self.pid_table_str
         ])
         actual = args.pid_source
         self.assertEqual(expected, actual)

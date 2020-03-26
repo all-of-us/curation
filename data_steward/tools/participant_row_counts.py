@@ -44,6 +44,8 @@ def get_table_information_for_dataset(project_id, dataset_id):
 def get_combined_deid_query(project_id, dataset_id, pid_sql_expr, table_df):
     """
     Get query to determine all row counts and ehr row counts from combined, deid and release datasets
+    Please specify person_ids for combined and research_ids for deid and release datasets
+    # TODO: Use deid_map once the dataset naming convention is complete
 
     :param project_id: identifies the project
     :param dataset_id: identifies the dataset
@@ -51,20 +53,22 @@ def get_combined_deid_query(project_id, dataset_id, pid_sql_expr, table_df):
     :param table_df: dataframe from BQ INFORMATION_SCHEMA.COLUMNS
     :return: query: 
     """
-    tables = table_df.get(consts.TABLE_NAME).unique()
+    query_list = []
+    tables = table_df.get(consts.TABLE_NAME).to_list()
     tables_with_pid = table_df[table_df.get(consts.COLUMN_NAME) ==
-                               'person_id'].get(consts.TABLE_NAME).unique()
+                               consts.PERSON_ID].get(
+                                   consts.TABLE_NAME).to_list()
     mapping_ext_tables = [
         table for table in tables
         if common.MAPPING_PREFIX in table or common.EXT_SUFFIX in table
     ]
 
+    # filters tables which do not exist, also ensures table is valid cdm_table
     cdm_tables_with_mapping = dict((get_cdm_table(table), table)
                                    for table in mapping_ext_tables
                                    if get_cdm_table(table) in tables_with_pid)
 
     # Combined, DEID, Release
-    query_list = []
     for table in tables_with_pid:
         if table in cdm_tables_with_mapping:
             table_id = table + '_id'
@@ -76,6 +80,7 @@ def get_combined_deid_query(project_id, dataset_id, pid_sql_expr, table_df):
                 pids_expr=pid_sql_expr,
                 mapping_table=cdm_tables_with_mapping[table])
         else:
+            # person table comes from RDR, so not counted for EHR counts
             ehr_count = 0
             # death table does not have mapping and could have come from EHR or RDR, needs investigation
             if table == common.DEATH:
@@ -101,10 +106,11 @@ def get_dataset_query(project_id, dataset_id, pid_sql_expr, table_df):
     :param table_df: dataframe from BQ INFORMATION_SCHEMA.COLUMNS
     :return: 
     """
-    tables_with_pid = table_df[table_df.get(consts.COLUMN_NAME) ==
-                               'person_id'].get(consts.TABLE_NAME).unique()
-    # Unioned EHR
     query_list = []
+    tables_with_pid = table_df[table_df.get(consts.COLUMN_NAME) ==
+                               consts.PERSON_ID].get(
+                                   consts.TABLE_NAME).unique()
+    # Unioned EHR or generic dataset
     for table in tables_with_pid:
         ehr_count = "COUNT(*)"
         tmpl = Template(consts.PID_TABLE_COUNT).render(project=project_id,
@@ -119,26 +125,34 @@ def get_dataset_query(project_id, dataset_id, pid_sql_expr, table_df):
 
 def get_ehr_query(project_id, dataset_id, pid_sql_expr, hpo_id, table_df):
     """
-    Get query to determine all row counts and ehr row counts from ehr datasets
+    Get query to determine all row counts and ehr row counts from ehr datasets,
+    returns unioned_ehr query if hpo_id is set to 'none', since ehr datasets also contain unioned tables
 
     :param project_id: identifies the project
     :param dataset_id: identifies the dataset
     :param pid_sql_expr: string containing sql_expression identifying pids
-    :param hpo_id: identifies the hpo site that submitted the pids
+    :param hpo_id: identifies the hpo site that submitted the pids, can be set to 'none' for unioned tables query
     :param table_df: dataframe from BQ INFORMATION_SCHEMA.COLUMNS
     :return: 
     """
-    tables_with_pid = table_df[table_df.get(consts.COLUMN_NAME) ==
-                               'person_id'].get(consts.TABLE_NAME).unique()
-    # EHR
     query_list = []
-    hpo_tables_with_pid = [
-        table for table in tables_with_pid if hpo_id in table
-    ]
+    tables_with_pid = table_df[table_df.get(consts.COLUMN_NAME) ==
+                               consts.PERSON_ID].get(
+                                   consts.TABLE_NAME).unique()
+    # EHR
     unioned_tables = [
         table for table in tables_with_pid if common.UNIONED_EHR in table
     ]
-    for table in hpo_tables_with_pid + unioned_tables:
+
+    tables_to_consider = unioned_tables
+
+    if hpo_id != 'none':
+        hpo_tables_with_pid = [
+            table for table in tables_with_pid if hpo_id in table
+        ]
+        tables_to_consider += hpo_tables_with_pid
+
+    for table in tables_to_consider:
         ehr_count = "COUNT(*)"
         tmpl = Template(consts.PID_TABLE_COUNT).render(project=project_id,
                                                        dataset=dataset_id,
@@ -168,6 +182,26 @@ def get_dataset_type(dataset_id):
     return common.OTHER
 
 
+def get_pid_list_to_sql_expr(pid_source):
+    """
+    Converts list of ints into BQ compatible string of the form '(int_1, int_2, ...)'
+    
+    :param pid_source: list of pids to consider as ints
+    :return: BQ compatible string of ints
+    """
+    return str(tuple(pid_source))
+
+
+def get_pid_table_to_sql_expr(pid_source):
+    """
+    Converts pid table string into BQ statement selecting pids from input table
+    
+    :param pid_source: string of the form 'project.dataset.table' where table contains pids to consider
+    :return: BQ statement selecting pids
+    """
+    return consts.PID_QUERY.format(pid_source=pid_source)
+
+
 def get_pid_sql_expr(pid_source):
     """
     Converts a list of integer pids into a bq-compatible sql expression containing the pids as values
@@ -175,11 +209,12 @@ def get_pid_sql_expr(pid_source):
 
     :param pid_source: can be a list of pids or string of the form 'project.dataset.table', where table contains pids
     :return: bq-compatible string expression of pids or SELECT query that selects pids from table
+    :raises ValueError if pid_source type is incorrect or pid_table string is not specified correctly
     """
     if type(pid_source) == list:
-        return str(tuple(pid_source))
-    if pid_source.count('.') == 2:
-        return consts.PID_QUERY.format(pid_source=pid_source)
+        return get_pid_list_to_sql_expr(pid_source)
+    if type(pid_source) == str and pid_source.count('.') == 2:
+        return get_pid_table_to_sql_expr(pid_source)
     raise ValueError(
         'Please specify pid_table parameters as "project.dataset.table"')
 
@@ -192,7 +227,7 @@ def count_pid_rows_in_dataset(project_id, dataset_id, hpo_id, pid_source):
     :param dataset_id: identifies the dataset
     :param hpo_id: Identifies the hpo site that submitted the pids
     :param pid_source: string containing query or list containing pids
-    :return: df with headers table_name, all_counts and ehr_counts
+    :return: df with headers table_id, all_counts and ehr_counts
     """
     pid_sql_expr = get_pid_sql_expr(pid_source)
     dataset_type = get_dataset_type(dataset_id)
@@ -235,7 +270,7 @@ def log_total_rows(df, dataset_id):
 
 def count_pid_rows_in_project(project_id, hpo_id, pid_source):
     """
-    Logs dataset_name, table_name, non_cdm_count and ehr_count to count rows pertaining to pids
+    Logs dataset_name, table_id, non_cdm_count and ehr_count to count rows pertaining to pids
 
     :param project_id: identifies the project
     :param hpo_id: Identifies the hpo site that submitted the pids
@@ -267,17 +302,19 @@ def fetch_parser():
                         '--hpo_id',
                         action='store',
                         dest='hpo_id',
-                        help='Identifies the site submitting the person_ids',
+                        help='Identifies the site submitting the person_ids, '
+                        'can be "none" if not targeting ehr datasets',
                         required=True)
     subparsers = parser.add_subparsers()
 
     subparser_pid_list = subparsers.add_parser(
         name='pid_list',
         help='Specifies the source of pids in list of int form')
-    subparser_pid_list.add_argument(dest='pid_source',
-                                    nargs='+',
-                                    type=int,
-                                    help='person/research ids to consider')
+    subparser_pid_list.add_argument(
+        dest='pid_source',
+        nargs='+',
+        type=int,
+        help='person/research ids to consider separated by spaces')
 
     subparser_pid_table = subparsers.add_parser(
         name='pid_table', help='Specifies the source of pids in BQ table form')
