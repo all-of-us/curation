@@ -4,8 +4,8 @@ import mock
 import pandas as pd
 
 import common
-from tools import participant_prevalence as ptpr
-from constants.tools import participant_prevalence as consts
+from tools import participant_row_counts as prc
+from constants.tools import participant_row_counts as consts
 
 
 class ParticipantPrevalenceTest(unittest.TestCase):
@@ -40,15 +40,15 @@ class ParticipantPrevalenceTest(unittest.TestCase):
 
     def test_get_pids(self):
         expected = ', '.join([str(pid) for pid in self.pids_list])
-        actual = ptpr.get_pids(self.pids_list)
+        actual = prc.get_pids(self.pids_list)
         self.assertEqual(expected, actual)
 
-        self.assertRaises(ValueError, ptpr.get_pids)
-        self.assertRaises(ValueError, ptpr.get_pids, None, self.pid_project_id,
+        self.assertRaises(ValueError, prc.get_pids)
+        self.assertRaises(ValueError, prc.get_pids, None, self.pid_project_id,
                           self.sandbox_dataset_id)
 
-        actual = ptpr.get_pids(None, self.pid_project_id,
-                               self.sandbox_dataset_id, self.pid_table_id)
+        actual = prc.get_pids(None, self.pid_project_id,
+                              self.sandbox_dataset_id, self.pid_table_id)
         self.assertIn(self.pid_project_id, actual)
         self.assertIn(self.sandbox_dataset_id, actual)
         self.assertIn(self.pid_table_id, actual)
@@ -58,8 +58,8 @@ class ParticipantPrevalenceTest(unittest.TestCase):
         expected = self.cdm_pid_tables
         columns_dict = {consts.TABLE_NAME_COLUMN: self.cdm_pid_tables}
         mock_bq_query.return_value = pd.DataFrame(data=columns_dict)
-        actual = ptpr.get_cdm_tables_with_person_id(self.project_id,
-                                                    self.dataset_id)
+        actual = prc.get_cdm_tables_with_person_id(self.project_id,
+                                                   self.dataset_id)
         self.assertEqual(actual, expected)
 
     @mock.patch(
@@ -70,21 +70,21 @@ class ParticipantPrevalenceTest(unittest.TestCase):
         mock_pid_cdm_tables.return_value = self.cdm_pid_tables
         mock_pid_tables.return_value = self.pid_tables + self.cdm_pid_tables
 
-        actual = ptpr.get_pid_counts_query(self.project_id,
-                                           self.dataset_id,
-                                           self.hpo_id,
-                                           self.pids_string,
-                                           for_cdm=True)
+        actual = prc.get_pid_counts_query(self.project_id,
+                                          self.dataset_id,
+                                          self.hpo_id,
+                                          self.pids_string,
+                                          for_cdm=True)
         self.assertEqual(len(self.cdm_pid_tables),
                          len(actual.split(consts.UNION_ALL)))
         for table in self.cdm_pid_tables:
             self.assertIn(table, actual)
 
-        actual = ptpr.get_pid_counts_query(self.project_id,
-                                           self.dataset_id,
-                                           self.hpo_id,
-                                           self.pids_string,
-                                           for_cdm=False)
+        actual = prc.get_pid_counts_query(self.project_id,
+                                          self.dataset_id,
+                                          self.hpo_id,
+                                          self.pids_string,
+                                          for_cdm=False)
         self.assertEqual(len(self.pid_tables),
                          len(actual.split(consts.UNION_ALL)))
         for table in self.pid_tables:
@@ -96,11 +96,11 @@ class ParticipantPrevalenceTest(unittest.TestCase):
         expected = pd.DataFrame(
             columns=[consts.TABLE_ID, consts.ALL_COUNT, consts.EHR_COUNT])
 
-        actual = ptpr.get_pid_counts(self.project_id,
-                                     self.dataset_id,
-                                     self.hpo_id,
-                                     self.pids_string,
-                                     for_cdm=False)
+        actual = prc.get_pid_counts(self.project_id,
+                                    self.dataset_id,
+                                    self.hpo_id,
+                                    self.pids_string,
+                                    for_cdm=False)
         pd.testing.assert_frame_equal(actual, expected)
 
     @mock.patch('tools.participant_prevalence.get_pid_counts')
@@ -127,8 +127,8 @@ class ParticipantPrevalenceTest(unittest.TestCase):
         expected = expected[expected[consts.ALL_COUNT] > 0]
 
         mock_pid_counts.side_effect = [cdm_counts_df, non_cdm_counts_df]
-        actual = ptpr.get_non_zero_counts(self.project_id, self.dataset_id,
-                                          self.hpo_id, self.pids_string)
+        actual = prc.count_pid_rows_in_dataset(self.project_id, self.dataset_id,
+                                               self.hpo_id, self.pids_string)
         pd.testing.assert_frame_equal(actual.reset_index(drop=True),
                                       expected.reset_index(drop=True))
 
@@ -141,10 +141,32 @@ class ParticipantPrevalenceTest(unittest.TestCase):
         expected = expected[expected[consts.ALL_COUNT] > 0]
 
         mock_pid_counts.side_effect = [cdm_counts_df, non_cdm_counts_df]
-        actual = ptpr.get_non_zero_counts(self.project_id, self.ehr_dataset_id,
-                                          self.hpo_id, self.pids_string)
+        actual = prc.count_pid_rows_in_dataset(self.project_id,
+                                               self.ehr_dataset_id, self.hpo_id,
+                                               self.pids_string)
         pd.testing.assert_series_equal(actual.get(consts.EHR_COUNT),
                                        actual.get(consts.ALL_COUNT),
                                        check_names=False)
         pd.testing.assert_frame_equal(actual.reset_index(drop=True),
                                       expected.reset_index(drop=True))
+
+    def test_fetch_args(self):
+        parser = prc.fetch_parser()
+
+        expected = self.pids_list
+        args = parser.parse_args([
+            '-p', self.project_id, '-o', self.hpo_id, 'pid_list', '1', '2', '3',
+            '4'
+        ])
+        actual = args.pid_source
+        self.assertEqual(expected, actual)
+
+        pid_table_string = '.'.join(
+            [self.project_id, self.sandbox_dataset_id, self.pid_table_id])
+        expected = pid_table_string
+        args = parser.parse_args([
+            '-p', self.project_id, '-o', self.hpo_id, 'pid_table',
+            pid_table_string
+        ])
+        actual = args.pid_source
+        self.assertEqual(expected, actual)
