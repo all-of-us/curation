@@ -1,5 +1,5 @@
 CDM_MAPPING_TABLE_COUNT = """
-SELECT SUM(each_count) AS all_count, COUNT(*) AS ehr_count
+SELECT '{{table}}' AS table_id, SUM(each_count) AS all_count, COUNT(*) AS ehr_count
 FROM (
 SELECT *, COUNT(1) over(partition BY {{table_id}}) AS each_count
 FROM `{{project}}.{{dataset}}.{{table}}`
@@ -10,9 +10,9 @@ WHERE m.src_hpo_id != 'PPI/PM'
 """
 
 PID_TABLE_COUNT = """
-SELECT COUNT(*) AS all_count, {{ehr_count}} AS ehr_count
-FROM `{project}.{dataset}.{table}`
-WHERE person_id IN {pids_expr}
+SELECT '{{table}}' AS table_id, COUNT(*) AS all_count, {{ehr_count}} AS ehr_count
+FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE person_id IN {{pids_expr}}
 """
 
 UNION_ALL = """
@@ -20,12 +20,13 @@ UNION ALL
 """
 
 PID_QUERY = """
-SELECT person_id
-FROM `{pid_source}`
+(SELECT person_id
+FROM `{pid_source}`)
 """
 
 DATASET_ID = 'dataset_id'
 TABLE_ID = 'table_id'
+PERSON_ID = 'person_id'
 COUNT = 'count'
 EHR_COUNT = 'ehr_count'
 ALL_COUNT = 'all_count'
