@@ -1,6 +1,4 @@
 import argparse
-import json
-import os
 
 import bq_utils
 import resources
@@ -18,9 +16,7 @@ DESCRIPTION = 'description'
 
 JOB_COMPONENTS = [COPY, CREATE, INSERT]
 
-fields_filename = os.path.join(resources.fields_path, METADATA_TABLE + '.json')
-with open(fields_filename, 'r') as fields_file:
-    fields = json.load(fields_file)
+fields = resources.fields_for(METADATA_TABLE)
 UPDATE_STRING_COLUMNS = "{field} = \'{field_value}\'"
 UPDATE_DATE_COLUMNS = "{field} = cast(\'{field_value}\' as DATE)"
 
@@ -70,21 +66,23 @@ def copy_metadata_table(source_dataset_id, target_dataset_id, fields):
 
 def add_metadata(dataset_id, project_id, field_values=None):
     """
+    Adds the metadata value passed in as parameters to the medatadata table
 
-    :param dataset_id: 
-    :param project_id: 
-    :param field_values:
-    :return: 
+    :param dataset_id: Name of the dataset
+    :param project_id: Name of the project
+    :param field_values: dictionary of field values passed as parameters
+    :return: None
     """
     q = ETL_VERSION_CHECK.format(etl=ETL_VERSION,
                                  dataset=dataset_id,
                                  table=METADATA_TABLE)
     etl_check = bq.query(q, project_id=project_id)[ETL_VERSION].tolist()
     if not etl_check:
-        q = ADD_ETL_METADATA_QUERY.format(dataset=dataset_id,
-                                          etl_version=ETL_VERSION,
-                                          field_value=field_values[ETL_VERSION])
-        bq_utils.query(q)
+        add_etl_query = ADD_ETL_METADATA_QUERY.format(
+            dataset=dataset_id,
+            etl_version=ETL_VERSION,
+            field_value=field_values[ETL_VERSION])
+        bq.query(add_etl_query, project_id=project_id)
     statement_list = []
     field_types = dict()
     for field_name in fields:
@@ -107,7 +105,7 @@ def add_metadata(dataset_id, project_id, field_values=None):
                                 statement=update_statement,
                                 etl_version=ETL_VERSION,
                                 etl_value=field_values[ETL_VERSION])
-        bq_utils.query(q)
+        bq.query(q, project_id=project_id)
 
 
 if __name__ == '__main__':
