@@ -51,10 +51,14 @@ class AddCdrMetadataTest(unittest.TestCase):
     @mock.patch('tools.add_cdr_metadata.get_etl_version')
     def test_add_metadata(self, mock_get_etl_version, mock_query,
                           mock_update_statement):
-        mock_get_etl_version.return_value = []
+        mock_get_etl_version.return_value = ['test']
         mock_query.return_value = pd.DataFrame(columns=['etl_version'])
         mock_update_statement.return_value = self.update_string_value
+        add_metadata(self.dataset_id, self.project_id, self.fields,
+                     self.field_values)
+        self.assertEqual(mock_query.call_count, 1)
 
+        mock_get_etl_version.return_value = []
         add_metadata(self.dataset_id, self.project_id, self.fields,
                      self.field_values)
         self.assertEqual(mock_query.call_count, 3)
