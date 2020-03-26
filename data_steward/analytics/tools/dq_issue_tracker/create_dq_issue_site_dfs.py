@@ -11,6 +11,10 @@ HPO engagement.
 For a full description of this issue, please see EDQ-427.
 
 Start Date: 03/24/2020 (v1)
+
+NOTE: For 'seed' data_quality_issues/analytics report files,
+please see the 'baseline summary reports' folder in the
+internal DRC drive. This will allow someone to run this script.
 """
 
 from dictionaries_and_lists import relevant_links, full_names, \
@@ -119,11 +123,14 @@ def populate_hpo_objects_with_dq_metrics(
             all_dqds_for_hpo_for_metric = []  # list of objects - to be filled
 
             for column_for_table in desired_columns:
-                err_rate = get_err_rate(sheet, row_num, metric, hpo_name, column_for_table)
+                err_rate = get_err_rate(sheet, row_num, metric,
+                                        hpo_name, column_for_table)
 
                 data_quality_dimension = DataQualityMetric(
-                    hpo=hpo_name, table=table_based_on_column_provided[column_for_table],
-                    metric_type=metric_type_to_english_dict[metric], value=err_rate,
+                    hpo=hpo_name,
+                    table=table_based_on_column_provided[column_for_table],
+                    metric_type=metric_type_to_english_dict[metric],
+                    value=err_rate,
                     first_reported=date,
                     data_quality_dimension=data_quality_dimension_dict[metric],
                     link=relevant_links[metric])
@@ -204,8 +211,6 @@ def create_hpo_problem_dfs(hpo_objects, old_hpo_objects, hpo_id_column,
             failing_metrics, old_failing_metrics,
             prev_dashboards)
 
-        # FIXME: update the 'hpo_objects' accordingly if necessary
-
         # can only iterate if problem exists
         if failing_metrics:
             for row_idx, failed_metric in enumerate(failing_metrics):
@@ -220,7 +225,7 @@ def create_hpo_problem_dfs(hpo_objects, old_hpo_objects, hpo_id_column,
 
 def main():
     """
-    Function that executes the entirety of the program. 
+    Function that executes the entirety of the program.
     """
 
     # getting datetime objects

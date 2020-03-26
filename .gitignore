@@ -141,4 +141,3 @@ data_steward/analytics/table_metrics/*.xlsx
 # that result from site DQ issues
 data_steward/analytics/tools/dq_issue_tracker/__init__.py
 data_steward/analytics/tools/dq_issue_tracker/*.xlsx
-data_steward/analytics/tools/dq_issue_tracker/*.txt

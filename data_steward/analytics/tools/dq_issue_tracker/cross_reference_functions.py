@@ -6,8 +6,7 @@ readability.
 """
 
 from general_functions import load_files
-from dictionaries_and_lists import english_to_metric_type_dict
-import datetime
+import pandas as pd
 
 
 def cross_reference_old_metrics(failing_metrics, old_failing_metrics,
@@ -39,37 +38,36 @@ def cross_reference_old_metrics(failing_metrics, old_failing_metrics,
     failing_metrics (list): now contains the DataQuality objects
         but has the updated first_reported attribute
     """
+    # can only iterate if something to report
+    if failing_metrics is not None:
+        for idx, new_metric in enumerate(failing_metrics):
+            found_in_old = False
 
-    for idx, new_metric in enumerate(failing_metrics):
-        found_in_old = False
+            for old_metric in old_failing_metrics:
 
-        for old_metric in old_failing_metrics:
+                # all attributes except value or first reported
+                metrics_the_same = (
+                    new_metric.hpo == old_metric.hpo and
+                    new_metric.table == old_metric.table and
+                    new_metric.metric_type == old_metric.metric_type and
+                    new_metric.data_quality_dimension ==
+                    old_metric.data_quality_dimension and
+                    new_metric.link == old_metric.link)
 
-            # all attributes except value or first reported
-            metrics_the_same = (
-                new_metric.hpo == old_metric.hpo and
-                new_metric.table == old_metric.table and
-                new_metric.metric_type == old_metric.metric_type and
-                new_metric.data_quality_dimension ==
-                old_metric.data_quality_dimension and
-                    new_metric.link == old_metric.link
+                if metrics_the_same:
+                        found_in_old = True
 
-            )
+            if found_in_old:
+                # found the metric in previous sheet - need to find the
+                # original report date and change accordingly
+                reported_date = find_report_date(
+                    new_metric=new_metric,
+                    prev_dashboards=prev_dashboard)
 
-            if metrics_the_same:
-                    found_in_old = True
+                new_metric.first_reported = reported_date
 
-        if found_in_old:
-            # found the metric in previous sheet - need to find the
-            # original report date and change accordingly
-            reported_date = find_report_date(
-                new_metric=new_metric,
-                prev_dashboards=prev_dashboard)
-
-            new_metric.first_reported = reported_date
-
-            # be sure to replace appropriately
-            failing_metrics[idx] = new_metric
+                # be sure to replace appropriately
+                failing_metrics[idx] = new_metric
 
     return failing_metrics
 
@@ -91,39 +89,39 @@ def find_report_date(prev_dashboards, new_metric):
 
     Returns
     -------
-    date (datetime): date in the previous dashboard for the particular
-        data quality metric that was found to be erroneous
+    report_date (datetime): date in the previous dashboard for the
+        particular data quality metric that was found to be erroneous
     """
     sheet_name = new_metric.hpo
     sheet = load_files(sheet_name=sheet_name, file_name=prev_dashboards)
     # now we have the sheet in question - should be easy to find to row
 
-    date = None  # default - should be changed to datetime object
+    report_date = None  # default - should be changed to datetime object
 
     for index, row in sheet.iterrows():
 
-        # ensure we can compare to teh attribute of a DQM object
-        metric_type_english = row['Metric Type']
-        metric_type_raw = english_to_metric_type_dict[metric_type_english]
-
         # same standards as employed by cross_reference_old_metrics
+        same_hpo = (row['HPO'] == new_metric.hpo)
+        same_table = (row['Table'] == new_metric.table)
+        same_mt = (row['Metric Type'] == new_metric.metric_type)
+        same_dqd = (row['Data Quality Dimension'] ==
+                    new_metric.data_quality_dimension)
+        same_link = (row['Link'] == new_metric.link)
+
         correct_row = (
-            row['HPO'] == new_metric.hpo and
-            row['Table'] == new_metric.table and
-            metric_type_raw == new_metric.metric_type and
-            row['Data Quality Dimension'] == new_metric.data_quality_dimension and
-            row['Link'] == new_metric.link)
+             same_hpo and same_table and same_mt and
+             same_dqd and same_link)
 
         # get the date
         if correct_row:
-            date_string = row['First Reported']
-            date = datetime.strptime(date_string, '%Y-%m-%d')
+            # should be a timestamp
+            report_date = row['First Reported']
 
     # check that it is reassigned - just in case
-    assert isinstance(date, datetime), \
-        "Date now found in the old dashboard. This applies to" \
+    assert isinstance(report_date, pd.Timestamp), \
+        "Date not found in the old dashboard. This applies to" \
         "the following DataQualityMetric object: {dq}".format(
             dq=new_metric.print_dqd_attributes()
         )
 
-    return date
+    return report_date

@@ -268,11 +268,13 @@ class HPO:
                 failing_metrics.append(unit_obj)
 
         for measurement_integration_obj in self.measurement_integration:
-            if measurement_integration_obj.value < thresholds['measurement_integration_min']:
+            if measurement_integration_obj.value < \
+                    thresholds['measurement_integration_min']:
                 failing_metrics.append(measurement_integration_obj)
 
         for ingredient_integration_obj in self.ingredient_integration:
-            if ingredient_integration_obj.value < thresholds['route_success_min']:
+            if ingredient_integration_obj.value < \
+                    thresholds['route_success_min']:
                 failing_metrics.append(ingredient_integration_obj)
 
         if not failing_metrics:  # no errors logged

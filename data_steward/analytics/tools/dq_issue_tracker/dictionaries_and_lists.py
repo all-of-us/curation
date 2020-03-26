@@ -44,28 +44,36 @@ english_to_metric_type_dict: effectively reverse engineers the
 
 relevant_links = {
     "concept":
-    "https://sites.google.com/view/ehrupload/data-quality-metrics/concept-success-rate?authuser=0",
+    "https://sites.google.com/view/ehrupload/"
+    "data-quality-metrics/concept-success-rate?authuser=0",
 
     "duplicates":
-    "https://sites.google.com/view/ehrupload/data-quality-metrics/duplicates?authuser=0",
+    "https://sites.google.com/view/ehrupload/"
+    "data-quality-metrics/duplicates?authuser=0",
 
     "end_before_begin":
-    "https://sites.google.com/view/ehrupload/data-quality-metrics/end-dates-preceding-start-dates?authuser=0",
+    "https://sites.google.com/view/ehrupload/"
+    "data-quality-metrics/end-dates-preceding-start-dates?authuser=0",
 
     "data_after_death":
-    "https://sites.google.com/view/ehrupload/data-quality-metrics/data-after-death?authuser=0",
+    "https://sites.google.com/view/ehrupload/"
+    "data-quality-metrics/data-after-death?authuser=0",
 
     "measurement_units":
-    "https://sites.google.com/view/ehrupload/data-quality-metrics/unit-concept-success-rate?authuser=0",
+    "https://sites.google.com/view/ehrupload/"
+    "data-quality-metrics/unit-concept-success-rate?authuser=0",
 
     "drug_routes":
-    "https://sites.google.com/view/ehrupload/data-quality-metrics/route-concept-success-rate?authuser=0",
+    "https://sites.google.com/view/ehrupload/"
+    "data-quality-metrics/route-concept-success-rate?authuser=0",
 
     "sites_measurement":
-    "https://sites.google.com/view/ehrupload/data-quality-metrics/measurement-integration-rate?authuser=0",
+    "https://sites.google.com/view/ehrupload/"
+    "data-quality-metrics/measurement-integration-rate?authuser=0",
 
     "drug_success":
-    "https://sites.google.com/view/ehrupload/data-quality-metrics/drug-ingredient-integration-rate?authuser=0"
+    "https://sites.google.com/view/ehrupload/"
+    "data-quality-metrics/drug-ingredient-integration-rate?authuser=0"
 }
 
 
@@ -161,17 +169,24 @@ desired_columns_dict = {
     'sites_measurement': ['All_Measurements'],
 
     # ACHILLES errors
-    'end_before_begin': ['visit_occurrence', 'condition_occurrence', 'drug_exposure', 'device_exposure'],
-    'data_after_death': ['visit_occurrence', 'condition_occurrence',
-                         'drug_exposure', 'measurement', 'procedure_occurrence',
-                         'observation',	'device_exposure'],
+    'end_before_begin': [
+        'visit_occurrence', 'condition_occurrence',
+        'drug_exposure', 'device_exposure'],
+    'data_after_death': [
+        'visit_occurrence', 'condition_occurrence',
+        'drug_exposure', 'measurement',
+        'procedure_occurrence', 'observation',
+        'device_exposure'],
 
     # other metrics
-    'concept': ['observation_success_rate', 'drug_success_rate', 'procedure_success_rate',
-                'condition_success_rate', 'measurement_success_rate', 'visit_success_rate'],
+    'concept': ['observation_success_rate', 'drug_success_rate',
+                'procedure_success_rate', 'condition_success_rate',
+                'measurement_success_rate', 'visit_success_rate'],
 
-    'duplicates': ['visit_occurrence', 'condition_occurrence', 'drug_exposure', 'measurement',
-                   'procedure_occurrence', 'device_exposure','observation']
+    'duplicates': ['visit_occurrence', 'condition_occurrence',
+                   'drug_exposure', 'measurement',
+                   'procedure_occurrence', 'device_exposure',
+                   'observation']
 }
 
 table_based_on_column_provided = {
