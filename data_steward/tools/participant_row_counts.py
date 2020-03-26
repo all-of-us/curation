@@ -282,6 +282,7 @@ def count_pid_rows_in_project(project_id, hpo_id, pid_source):
     dataset_ids = [dataset.dataset_id for dataset in datasets]
     for dataset_id in dataset_ids:
         try:
+            # We do not fetch queries for each dataset here and union them since it exceeds BQ query length limits
             counts_df = count_pid_rows_in_dataset(project_id, dataset_id,
                                                   hpo_id, pid_source)
             log_total_rows(counts_df, dataset_id)
