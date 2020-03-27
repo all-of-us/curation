@@ -514,6 +514,6 @@ if __name__ == '__main__':
     elif args.data_stage == stage.DEID_CLEAN:
         clean_combined_de_identified_clean_dataset()
     else:
-        raise EnvironmentError(
+        raise OSError(
             f'Dataset selection should be from [{stage.EHR}, {stage.UNIONED}, {stage.RDR}, {stage.COMBINED},'
             f' {stage.DEID_BASE}, {stage.DEID_CLEAN}]')
