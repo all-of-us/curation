@@ -144,55 +144,11 @@ def get_cdm_and_mapping_tables(mapping_tables, tables_with_pid):
     return cdm_and_mapping_tables
 
 
-def get_combined_query(project_id, dataset_id, pid_source, table_df):
-    """
-    Get query to determine all row counts and ehr row counts from combined datasets
-
-    :param project_id: identifies the project
-    :param dataset_id: identifies the dataset
-    :param pid_source: identifies the source of pids
-    :param table_df: dataframe from BQ INFORMATION_SCHEMA.COLUMNS
-    :return: query:
-    """
-    query_list = []
-    pid_sql_expr = get_pid_sql_expr(pid_source)
-    tables = get_tables(table_df)
-    tables_with_pid = get_pid_tables(table_df)
-    mapping_type = get_mapping_type(tables)
-    mapping_tables = get_mapping_tables(mapping_type, tables)
-    cdm_and_mapping_tables = get_cdm_and_mapping_tables(mapping_tables,
-                                                        tables_with_pid)
-
-    # Combined
-    for table in tables_with_pid:
-        if table in cdm_and_mapping_tables:
-            tmpl = Template(consts.CDM_MAPPING_TABLE_COUNT).render(
-                project=project_id,
-                dataset=dataset_id,
-                table=table,
-                table_id=get_table_id(table),
-                src_id=get_src_id(mapping_type),
-                pids_expr=pid_sql_expr,
-                mapping_table=cdm_and_mapping_tables[table],
-                ID_CONST=common.ID_CONSTANT_FACTOR + common.RDR_ID_CONSTANT)
-        else:
-            # person table comes from RDR, so not counted for EHR counts
-            ehr_count = 0
-            # death table does not have mapping and could have come from EHR or RDR, needs investigation
-            if table == common.DEATH:
-                ehr_count = "COUNT(*)"
-            tmpl = Template(consts.PID_TABLE_COUNT).render(
-                project=project_id,
-                dataset=dataset_id,
-                table=table,
-                pids_expr=pid_sql_expr,
-                ehr_count=ehr_count)
-        query_list.append(tmpl)
-    query = consts.UNION_ALL.join(query_list)
-    return query
-
-
-def get_deid_query(project_id, dataset_id, pid_source, table_df):
+def get_combined_deid_query(project_id,
+                            dataset_id,
+                            pid_source,
+                            table_df,
+                            for_deid=False):
     """
     Get query to determine all row counts and ehr row counts from combined, deid and release datasets
     Please specify person_ids for combined and research_ids for deid and release datasets
@@ -202,10 +158,14 @@ def get_deid_query(project_id, dataset_id, pid_source, table_df):
     :param dataset_id: identifies the dataset
     :param pid_source: identifies the source of pids
     :param table_df: dataframe from BQ INFORMATION_SCHEMA.COLUMNS
+    :param for_deid: indicates whether query is for deid dataset (as opposed to combined)
     :return: query:
     """
     query_list = []
-    pid_sql_expr = get_pid_sql_expr(pid_source, pid=consts.RESEARCH_ID)
+    pid = consts.PERSON_ID
+    if for_deid:
+        pid = consts.RESEARCH_ID
+    pid_sql_expr = get_pid_sql_expr(pid_source, pid)
     tables = get_tables(table_df)
     tables_with_pid = get_pid_tables(table_df)
     mapping_type = get_mapping_type(tables)
@@ -213,7 +173,7 @@ def get_deid_query(project_id, dataset_id, pid_source, table_df):
     cdm_and_mapping_tables = get_cdm_and_mapping_tables(mapping_tables,
                                                         tables_with_pid)
 
-    # DEID, Release
+    # Combined
     for table in tables_with_pid:
         if table in cdm_and_mapping_tables:
             tmpl = Template(consts.CDM_MAPPING_TABLE_COUNT).render(
@@ -379,9 +339,14 @@ def count_pid_rows_in_dataset(project_id, dataset_id, hpo_id, pid_source):
     table_df = get_table_information_for_dataset(project_id, dataset_id)
 
     if dataset_type == common.COMBINED:
-        query = get_combined_query(project_id, dataset_id, pid_source, table_df)
+        query = get_combined_deid_query(project_id, dataset_id, pid_source,
+                                        table_df)
     elif dataset_type == common.DEID or dataset_type == common.RELEASE:
-        query = get_deid_query(project_id, dataset_id, pid_source, table_df)
+        query = get_combined_deid_query(project_id,
+                                        dataset_id,
+                                        pid_source,
+                                        table_df,
+                                        for_deid=True)
     elif dataset_type == common.EHR:
         query = get_ehr_query(project_id, dataset_id, pid_source, hpo_id,
                               table_df)
