@@ -8,7 +8,7 @@ import app_identity
 import bq_utils
 import gcs_utils
 from tests import test_util
-from tools import retract_data_bq
+from retraction import retract_data_bq
 from io import open
 
 TABLE_ROWS_QUERY = 'SELECT * FROM {dataset_id}.__TABLES__ '
@@ -43,10 +43,10 @@ class RetractDataBqTest(unittest.TestCase):
         self.person_research_ids = [(1, 6890173), (2, 858761),
                                     (1234567, 4589763)]
 
-    @mock.patch('tools.retract_data_bq.is_deid_dataset')
-    @mock.patch('tools.retract_data_bq.is_combined_dataset')
-    @mock.patch('tools.retract_data_bq.is_unioned_dataset')
-    @mock.patch('tools.retract_data_bq.is_ehr_dataset')
+    @mock.patch('retraction.retract_data_bq.is_deid_dataset')
+    @mock.patch('retraction.retract_data_bq.is_combined_dataset')
+    @mock.patch('retraction.retract_data_bq.is_unioned_dataset')
+    @mock.patch('retraction.retract_data_bq.is_ehr_dataset')
     @mock.patch('bq_utils.list_datasets')
     def test_integration_queries_to_retract_from_fake_dataset(
         self, mock_list_datasets, mock_is_ehr_dataset, mock_is_unioned_dataset,
