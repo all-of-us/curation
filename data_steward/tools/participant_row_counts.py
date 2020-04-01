@@ -202,7 +202,11 @@ def get_combined_deid_query(project_id,
     return query
 
 
-def get_dataset_query(project_id, dataset_id, pid_source, table_df):
+def get_dataset_query(project_id,
+                      dataset_id,
+                      pid_source,
+                      table_df,
+                      for_rdr=False):
     """
     Get query to determine all row counts and ehr row counts from unioned, rdr and nonconforming datasets
 
@@ -210,6 +214,8 @@ def get_dataset_query(project_id, dataset_id, pid_source, table_df):
     :param dataset_id: identifies the dataset
     :param pid_source: identifies the source of pids
     :param table_df: dataframe from BQ INFORMATION_SCHEMA.COLUMNS
+    :param for_rdr: indicates if query is for an RDR dataset. If True, set ehr_counts = 0,
+        else set ehr_counts to "COUNT(*)" for unioned_ehr and other datasets that need investigation
     :return: query:
     """
     query_list = []
@@ -218,7 +224,7 @@ def get_dataset_query(project_id, dataset_id, pid_source, table_df):
 
     # Unioned EHR or generic dataset
     for table in tables_with_pid:
-        ehr_count = "COUNT(*)"
+        ehr_count = 0 if for_rdr else "COUNT(*)"
         tmpl = Template(consts.PID_TABLE_COUNT).render(project=project_id,
                                                        dataset=dataset_id,
                                                        table=table,
@@ -275,6 +281,8 @@ def get_dataset_type(dataset_id):
         return common.COMBINED
     if common.UNIONED_EHR in dataset_id:
         return common.UNIONED_EHR
+    if common.RDR in dataset_id:
+        return common.RDR
     if common.EHR in dataset_id and common.UNIONED_EHR not in dataset_id:
         return common.EHR
     if common.DEID in dataset_id or is_deid_dataset(dataset_id):
@@ -350,6 +358,12 @@ def count_pid_rows_in_dataset(project_id, dataset_id, hpo_id, pid_source):
     elif dataset_type == common.EHR:
         query = get_ehr_query(project_id, dataset_id, pid_source, hpo_id,
                               table_df)
+    elif dataset_type == common.RDR:
+        query = get_dataset_query(project_id,
+                                  dataset_id,
+                                  pid_source,
+                                  table_df,
+                                  for_rdr=True)
     else:
         query = get_dataset_query(project_id, dataset_id, pid_source, table_df)
 
@@ -374,17 +388,43 @@ def log_total_rows(df, dataset_id):
             logging.info('{}, {}, {}, {}, {}'.format(dataset_id, *count_row))
 
 
-def count_pid_rows_in_project(project_id, hpo_id, pid_source):
+def get_dataset_ids_to_target(project_id, dataset_ids_str):
+    """
+    Returns dataset_ids of interest
+
+    :param project_id: Identifies the project to target
+    :param dataset_ids_str: String of dataset_ids input by the user separated by spaces, or
+        "all_datasets" to target all datasets in project
+    :return: List of dataset_ids in the project to target
+    """
+    all_datasets = bq.list_datasets(project_id)
+    all_dataset_ids = [dataset.dataset_id for dataset in all_datasets]
+    dataset_ids = []
+    if dataset_ids_str == "all_datasets":
+        dataset_ids = all_dataset_ids
+    else:
+        for dataset_id in dataset_ids_str.split():
+            if dataset_id not in all_dataset_ids:
+                logging.exception(
+                    f"Dataset {dataset_id} not found in project {project_id}, skipping"
+                )
+            else:
+                dataset_ids.append(dataset_id)
+    return dataset_ids
+
+
+def count_pid_rows_in_project(project_id, hpo_id, pid_source, dataset_ids_str):
     """
     Logs dataset_name, table_id, all_count, all_ehr_count and map_ehr_count to count rows pertaining to pids
 
     :param project_id: identifies the project
     :param hpo_id: Identifies the hpo site that submitted the pids
     :param pid_source: string containing query or list containing pids
+    :param dataset_ids_str: string containing datasets to target separated by spaces or
+        "all_datasets" to target all datasets in project
     :return:
     """
-    datasets = bq.list_datasets(project_id)
-    dataset_ids = [dataset.dataset_id for dataset in datasets]
+    dataset_ids = get_dataset_ids_to_target(project_id, dataset_ids_str)
     for dataset_id in dataset_ids:
         try:
             # We do not fetch queries for each dataset here and union them since it exceeds BQ query length limits
@@ -412,6 +452,14 @@ def fetch_parser():
                         help='Identifies the site submitting the person_ids, '
                         'can be "none" if not targeting ehr datasets',
                         required=True)
+    parser.add_argument('-d',
+                        '--dataset_ids',
+                        action='store',
+                        dest='dataset_ids',
+                        help='Identifies datasets to target. Set to'
+                        ' "all_datasets" to target all datasets in project '
+                        'or specific datasets as "dataset_1 dataset_2" etc.',
+                        required=True)
     subparsers = parser.add_subparsers()
 
     subparser_pid_list = subparsers.add_parser(
@@ -434,4 +482,5 @@ if __name__ == '__main__':
     parser = fetch_parser()
     args = parser.parse_args()
 
-    count_pid_rows_in_project(args.project_id, args.hpo_id, args.pid_source)
+    count_pid_rows_in_project(args.project_id, args.hpo_id, args.pid_source,
+                              args.dataset_ids)
