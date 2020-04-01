@@ -188,6 +188,7 @@ COMBINED = 'combined'
 UNIONED_EHR = 'unioned_ehr'
 DEID = 'deid'
 EHR = 'ehr'
+RDR = 'rdr'
 RELEASE = 'release'
 OTHER = 'other'
 

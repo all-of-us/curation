@@ -1,6 +1,7 @@
 import re
 import unittest
 
+import mock
 import pandas as pd
 
 import common
@@ -306,6 +307,24 @@ class ParticipantPrevalenceTest(unittest.TestCase):
                             common.UNIONED_EHR)
         self.assertNotEqual(prc.get_dataset_type('ehr_43269'), common.COMBINED)
         self.assertNotEqual(prc.get_dataset_type('ehr_43269'), common.OTHER)
+
+    @mock.patch('utils.bq.list_datasets')
+    def test_get_dataset_ids_to_target(self, mock_datasets_list):
+        dataset_id_1 = 'dataset_id_1'
+        dataset_id_2 = 'dataset_id_2'
+        dataset_1 = mock.Mock(spec=['dataset_1'], dataset_id=dataset_id_1)
+        dataset_2 = mock.Mock(spec=['dataset_2'], dataset_id=dataset_id_2)
+        mock_datasets_list.return_value = [dataset_1, dataset_2]
+
+        dataset_ids_str = "all_datasets"
+        expected = [dataset_id_1, dataset_id_2]
+        actual = prc.get_dataset_ids_to_target(self.project_id, dataset_ids_str)
+        self.assertListEqual(expected, actual)
+
+        dataset_ids_str = dataset_id_1
+        expected = [dataset_id_1]
+        actual = prc.get_dataset_ids_to_target(self.project_id, dataset_ids_str)
+        self.assertListEqual(expected, actual)
 
     def test_fetch_args(self):
         parser = prc.fetch_parser()
