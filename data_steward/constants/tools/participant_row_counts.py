@@ -35,10 +35,13 @@ PID_QUERY = """
 FROM `{pid_source}`)
 """
 
+ALL_DATASETS = 'all_datasets'
+
 DATASET_ID = 'dataset_id'
 TABLE_ID = 'table_id'
 PERSON_ID = 'person_id'
 RESEARCH_ID = 'research_id'
+
 COUNT = 'count'
 ALL_COUNT = 'all_count'
 ALL_EHR_COUNT = 'all_ehr_count'

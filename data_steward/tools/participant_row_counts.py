@@ -400,7 +400,7 @@ def get_dataset_ids_to_target(project_id, dataset_ids_str):
     all_datasets = bq.list_datasets(project_id)
     all_dataset_ids = [dataset.dataset_id for dataset in all_datasets]
     dataset_ids = []
-    if dataset_ids_str == "all_datasets":
+    if dataset_ids_str == consts.ALL_DATASETS:
         dataset_ids = all_dataset_ids
     else:
         for dataset_id in dataset_ids_str.split():
