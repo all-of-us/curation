@@ -1,6 +1,7 @@
 import re
 import unittest
 
+import mock
 import pandas as pd
 
 import common
@@ -218,21 +219,39 @@ class RetractUtilsTest(unittest.TestCase):
         self.assertNotEqual(ru.get_dataset_type('ehr_43269'), common.COMBINED)
         self.assertNotEqual(ru.get_dataset_type('ehr_43269'), common.OTHER)
 
+    @mock.patch('utils.bq.list_datasets')
+    def test_get_dataset_ids_to_target(self, mock_datasets_list):
+        dataset_id_1 = 'dataset_id_1'
+        dataset_id_2 = 'dataset_id_2'
+        dataset_1 = mock.Mock(spec=['dataset_1'], dataset_id=dataset_id_1)
+        dataset_2 = mock.Mock(spec=['dataset_2'], dataset_id=dataset_id_2)
+        mock_datasets_list.return_value = [dataset_1, dataset_2]
+
+        dataset_ids_str = ru_consts.ALL_DATASETS
+        expected = [dataset_id_1, dataset_id_2]
+        actual = ru.get_dataset_ids_to_target(self.project_id, dataset_ids_str)
+        self.assertListEqual(expected, actual)
+
+        dataset_ids_str = dataset_id_1
+        expected = [dataset_id_1]
+        actual = ru.get_dataset_ids_to_target(self.project_id, dataset_ids_str)
+        self.assertListEqual(expected, actual)
+
     def test_fetch_args(self):
         parser = ru.fetch_parser()
 
         expected = self.pids_list
         args = parser.parse_args([
-            '-p', self.project_id, '-o', self.hpo_id, 'pid_list', '1', '2', '3',
-            '4'
+            '-p', self.project_id, '-o', self.hpo_id, '-d', self.dataset_id,
+            'pid_list', '1', '2', '3', '4'
         ])
         actual = args.pid_source
         self.assertEqual(expected, actual)
 
         expected = self.pid_table_str
         args = parser.parse_args([
-            '-p', self.project_id, '-o', self.hpo_id, 'pid_table',
-            self.pid_table_str
+            '-p', self.project_id, '-o', self.hpo_id, '-d',
+            ru_consts.ALL_DATASETS, 'pid_table', self.pid_table_str
         ])
         actual = args.pid_source
         self.assertEqual(expected, actual)

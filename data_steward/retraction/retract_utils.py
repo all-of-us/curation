@@ -1,7 +1,9 @@
 import re
 import argparse
+import logging
 
 import common
+from utils import bq
 from constants.retraction import retract_utils as consts
 from constants.utils import bq as bq_consts
 from retraction import retract_data_bq as rbq  # TODO refactor and remove
@@ -82,6 +84,8 @@ def get_dataset_type(dataset_id):
         return common.COMBINED
     if common.UNIONED_EHR in dataset_id:
         return common.UNIONED_EHR
+    if common.RDR in dataset_id:
+        return common.RDR
     if common.EHR in dataset_id and common.UNIONED_EHR not in dataset_id:
         return common.EHR
     if common.DEID in dataset_id or rbq.is_deid_dataset(dataset_id):
@@ -166,6 +170,31 @@ def get_pid_sql_expr(pid_source, pid=consts.PERSON_ID):
         'Please specify pid_table parameters as "project.dataset.table"')
 
 
+def get_dataset_ids_to_target(project_id, dataset_ids_str):
+    """
+    Returns dataset_ids of interest
+
+    :param project_id: Identifies the project to target
+    :param dataset_ids_str: String of dataset_ids input by the user separated by spaces, or
+        "all_datasets" to target all datasets in project
+    :return: List of dataset_ids in the project to target
+    """
+    all_datasets = bq.list_datasets(project_id)
+    all_dataset_ids = [dataset.dataset_id for dataset in all_datasets]
+    dataset_ids = []
+    if dataset_ids_str == consts.ALL_DATASETS:
+        dataset_ids = all_dataset_ids
+    else:
+        for dataset_id in dataset_ids_str.split():
+            if dataset_id not in all_dataset_ids:
+                logging.info(
+                    f"Dataset {dataset_id} not found in project {project_id}, skipping"
+                )
+            else:
+                dataset_ids.append(dataset_id)
+    return dataset_ids
+
+
 def fetch_parser():
     parser = argparse.ArgumentParser(
         description='Estimates the prevalence of specified pids in the project',
@@ -182,6 +211,14 @@ def fetch_parser():
                         dest='hpo_id',
                         help='Identifies the site submitting the person_ids, '
                         'can be "none" if not targeting ehr datasets',
+                        required=True)
+    parser.add_argument('-d',
+                        '--dataset_ids',
+                        action='store',
+                        dest='dataset_ids',
+                        help='Identifies datasets to target. Set to'
+                        ' "all_datasets" to target all datasets in project '
+                        'or specific datasets as "dataset_1 dataset_2" etc.',
                         required=True)
     subparsers = parser.add_subparsers()
 

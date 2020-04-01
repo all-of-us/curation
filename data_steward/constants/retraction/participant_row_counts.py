@@ -29,7 +29,6 @@ WHERE person_id IN {{pids_expr}}
 UNION_ALL = """
 UNION ALL
 """
-ALL_DATASETS = 'all_datasets'
 
 ALL_COUNT = 'all_count'
 ALL_EHR_COUNT = 'all_ehr_count'
