@@ -331,16 +331,16 @@ class ParticipantPrevalenceTest(unittest.TestCase):
 
         expected = self.pids_list
         args = parser.parse_args([
-            '-p', self.project_id, '-o', self.hpo_id, 'pid_list', '1', '2', '3',
-            '4'
+            '-p', self.project_id, '-o', self.hpo_id, '-d', self.dataset_id,
+            'pid_list', '1', '2', '3', '4'
         ])
         actual = args.pid_source
         self.assertEqual(expected, actual)
 
         expected = self.pid_table_str
         args = parser.parse_args([
-            '-p', self.project_id, '-o', self.hpo_id, 'pid_table',
-            self.pid_table_str
+            '-p', self.project_id, '-o', self.hpo_id, '-d', consts.ALL_DATASETS,
+            'pid_table', self.pid_table_str
         ])
         actual = args.pid_source
         self.assertEqual(expected, actual)
