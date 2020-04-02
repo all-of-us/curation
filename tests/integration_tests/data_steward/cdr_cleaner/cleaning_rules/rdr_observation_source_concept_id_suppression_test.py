@@ -13,7 +13,6 @@ ids are not removed.
 """
 # Python imports
 import os
-import unittest
 
 # Third party imports
 from google.cloud import bigquery
@@ -28,22 +27,23 @@ from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import ObservationSourceConceptIDRowSuppression
 from cdr_cleaner import clean_cdr_engine as engine
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.cleaning_tests_base import BaseTest
 from utils import bq
 
-INSERT_FAKE_PARTICIPANTS_TMPLS = [
-    Template("""
-INSERT INTO `{{fq_table_name}}` (observation_id, person_id, observation_concept_id, observation_date, observation_type_concept_id, observation_source_concept_id)
-VALUES
-  (801, 337361, 1585899, date('2016-05-01'), 45905771, {{age_prediabetes}}),
-  (802, 129884, 1585899, date('2016-05-01'), 45905771, {{meds_prediabetes}}),
-  (803, 337361, 1585899, date('2016-05-01'), 45905771, {{now_prediabetes}}),
-  (804, 129884, 1585899, date('2016-05-01'), 45905771, null),
-  (805, 337361, 1585899, date('2016-05-01'), 45905771, 45)
-""")
-]
 
-
-class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
+class ObservationSourceConceptIDRowSuppressionTest(
+        BaseTest.CleaningRulesTestBase):
+    insert_fake_participants_tmpls = [
+        Template("""
+    INSERT INTO `{{fq_table_name}}` (observation_id, person_id, observation_concept_id, observation_date, observation_type_concept_id, observation_source_concept_id)
+    VALUES
+      (801, 337361, 1585899, date('2016-05-01'), 45905771, {{age_prediabetes}}),
+      (802, 129884, 1585899, date('2016-05-01'), 45905771, {{meds_prediabetes}}),
+      (803, 337361, 1585899, date('2016-05-01'), 45905771, {{now_prediabetes}}),
+      (804, 129884, 1585899, date('2016-05-01'), 45905771, null),
+      (805, 337361, 1585899, date('2016-05-01'), 45905771, 45)
+    """)
+    ]
 
     fq_sandbox_table = ''
 
@@ -53,7 +53,7 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-        print("class setup function\n")
+        print(f"{cls.__name__} class setup function\n")
         # get the test dataset
         cls.project_id = os.environ.get(PROJECT_ID)
         if 'test' not in cls.project_id:
@@ -70,6 +70,9 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         cls.table_name = 'observation'
         cls.client = bq.get_client(cls.project_id)
 
+        cls.fq_table_names = [
+            f'{cls.project_id}.{cls.dataset_id}.{cls.table_name}'
+        ]
         cls.fq_table_name = f'{cls.project_id}.{cls.dataset_id}.{cls.table_name}'
         table_info = {
             # list of fully qualified table names to create with schemas
@@ -79,44 +82,17 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         }
         bq.create_tables(**table_info)
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Remove the test daaset table(s).
-        """
-        cls.client.delete_table(cls.fq_table_name)
-        cls.client.delete_table(cls.fq_sandbox_table)
-
-    def tearDown(self):
-        """
-        Ensure the data is dropped from the table(s).
-        """
-        drop_rows_job = self.client.query(
-            f"delete from {self.fq_table_name} where observation_id > -1")
-        job_status = bq.wait_on_jobs(self.project_id, [drop_rows_job.job_id])
-
-        self.assertFalse(
-            job_status,
-            f"The contents of {self.fq_table_name} could not be cleared")
-
-        drop_rows_job = self.client.query(
-            f"delete from {self.fq_sandbox_table} where observation_id > -1")
-        job_status = bq.wait_on_jobs(self.project_id, [drop_rows_job.job_id])
-
-        self.assertFalse(
-            job_status,
-            f"The contents of {self.fq_sandbox_table} could not be cleared")
-
     def setUp(self):
         """
         Add data to the tables for the rule to run on.
         """
+        print(f"{self.__class__.__name__} test setup function")
         self.age_prediabetes = 43530490
         self.meds_prediabetes = 43528818
         self.now_prediabetes = 43530333
 
         # create the string(s) to load the data
-        for tmpl in INSERT_FAKE_PARTICIPANTS_TMPLS:
+        for tmpl in self.insert_fake_participants_tmpls:
             query = tmpl.render(fq_table_name=self.fq_table_name,
                                 age_prediabetes=self.age_prediabetes,
                                 meds_prediabetes=self.meds_prediabetes,
@@ -130,7 +106,9 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
 
         table_name = self.query_class.get_sandbox_tablenames()[0]
         self.fq_sandbox_table = f'{self.project_id}.{self.sandbox_id}.{table_name}'
-        ObservationSourceConceptIDRowSuppressionTest.fq_sandbox_table = self.fq_sandbox_table
+        ObservationSourceConceptIDRowSuppressionTest.fq_sandbox_table_names = [
+            self.fq_sandbox_table
+        ]
 
         self.sandboxed_ids = [801, 802, 803]
         self.output_ids = [804, 805]
@@ -143,6 +121,8 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         as designed.  The rule should drop only what it is designed to
         drop.  No more and no less.
         """
+
+        print(f"{self.__class__.__name__} test")
         # pre-conditions
         # validate sandbox table doesn't exist yet
         response = bq.query(f"select count(*) from `{self.fq_sandbox_table}`",
