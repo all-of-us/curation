@@ -39,8 +39,8 @@ def job_status_done(project_id, job_id):
     Check if the job is complete without errors
 
     Raises exceptions if they are found while checking the job state
-    
-    :param project_id: project containing the job status we want to check 
+
+    :param project_id: project containing the job status we want to check
     :param job_id: the job id
     :return: a bool indicating whether the job is done
     :raises:  any exceptions the job encounters
@@ -53,6 +53,17 @@ def job_status_done(project_id, job_id):
 
 
 def get_table_schema(table_name):
+    """
+    A helper function to create big query SchemaFields for dictionary definitions.
+
+    Given the table name, reads the schema from the schema definition file
+    and returns a list of SchemaField objects that can be used for table
+    creation.
+
+    :param table_name:  the table name to get BigQuery SchemaField information
+        for.
+    :returns:  a list of SchemaField objects representing the table's schema.
+    """
     fields = fields_for(table_name)
 
     schema = []
@@ -68,14 +79,38 @@ def get_table_schema(table_name):
     return schema
 
 
-def create_table(project_id=None, fq_table_names=None, exists_ok=False):
+def create_tables(project_id=None, fq_table_names=None, exists_ok=False):
+    """
+    Create an empty table(s) in a project.
 
-    if not project_id:
+    Relies on a list of fully qualified table names.  This is a list of
+    strings formatted as 'project-id.dataset-id.table-name`.  This will
+    allow the table to be created using the schema defined in a definition
+    file without requiring the user to read the file or submit the filepath.
+
+    :param project_id:  The project that will contain the created table.
+    :param fq_table_names: A list of fully qualified table names.
+    :param exists_ok: A flag to throw an error if the table already exists.
+        Defaults to raising an error if the table already exists.
+
+    :raises RuntimeError: a runtime error if table creation fails for any
+        table in the list.
+
+    :return: A list of created table objects.
+    """
+
+    if not project_id or not isinstance(project_id, str):
         raise RuntimeError("Must specify the project to create the tables in")
 
     if not fq_table_names:
         raise RuntimeError(
             "Must specify a list of fully qualified table names to create")
+
+    if not isinstance(fq_table_names, list):
+        if not isinstance(fq_table_names, str):
+            raise RuntimeError("fq_table_names expects a list of strings")
+
+        fq_table_names = list(fq_table_names)
 
     client = get_client(project_id=project_id)
 
@@ -199,7 +234,7 @@ def create_dataset(project_id,
 
     :return: a dataset reference object.
 
-    :raises: any GoogleAPIError that is not a 404 error.  
+    :raises: any GoogleAPIError that is not a 404 error.
         google.api_core.exceptions.Conflict if the dataset already exists
     """
     if description.isspace() or not description:

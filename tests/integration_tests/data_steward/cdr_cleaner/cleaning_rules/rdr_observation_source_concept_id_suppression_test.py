@@ -77,7 +77,7 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
             'project_id': cls.project_id,
             'exists_ok': True,
         }
-        bq.create_table(**table_info)
+        bq.create_tables(**table_info)
 
     @classmethod
     def tearDownClass(cls):
@@ -132,6 +132,9 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         self.fq_sandbox_table = f'{self.project_id}.{self.sandbox_id}.{table_name}'
         ObservationSourceConceptIDRowSuppressionTest.fq_sandbox_table = self.fq_sandbox_table
 
+        self.sandboxed_ids = [801, 802, 803]
+        self.output_ids = [804, 805]
+
     def test_expected_cleaning_performance(self):
         """
         Test getting the query specifications.
@@ -147,15 +150,17 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         self.assertRaises(gc_exc.GoogleCloudError, response.result, timeout=15)
 
         # validate only 5 records exist before starting
-        response = bq.query(f"select count(*) from `{self.fq_table_name}`",
-                            self.project_id)
+        response = bq.query(
+            f"select observation_id, observation_source_concept_id from `{self.fq_table_name}`",
+            self.project_id)
+        result_list = list(response.result())
+        self.assertEqual(
+            5, len(result_list),
+            "The pre-condition query did not return expected number of rows")
         # start the job and wait for it to complete
-        for index, item in enumerate(response.result()):
-            self.assertEqual(
-                1, index + 1,
-                "The pre-condition query did not return a single row")
-            self.assertEqual(5, item[0],
-                             "The test data did not load as expected")
+        for item in result_list:
+            self.assertIn(item[0], self.sandboxed_ids + self.output_ids,
+                          "The test data did not load as expected")
 
         # test
         query_list = self.query_class.get_query_specs()
@@ -165,8 +170,9 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
 
         # post conditions
         # validate three records are dropped
-        response = bq.query(f"select * from `{self.fq_table_name}`",
-                            self.project_id)
+        response = bq.query(
+            f"select observation_id from `{self.fq_table_name}`",
+            self.project_id)
         result_list = list(response.result())
         self.assertEqual(2, len(result_list))
 
@@ -175,11 +181,15 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
             rows_kept.append(row[0])
 
         # assert the contents are equal regardless of the order
-        self.assertCountEqual([804, 805], rows_kept)
+        self.assertCountEqual(self.output_ids, rows_kept)
+
+        for row_id in self.sandboxed_ids:
+            self.assertNotIn(row_id, rows_kept)
 
         # validate three records are saved
-        response = bq.query(f"select * from `{self.fq_sandbox_table}`",
-                            self.project_id)
+        response = bq.query(
+            f"select observation_id from `{self.fq_sandbox_table}`",
+            self.project_id)
         result_list = list(response.result())
         self.assertEqual(3, len(result_list))
 
@@ -188,4 +198,7 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
             rows_kept.append(row[0])
 
         # assert the contents are equal regardless of the order
-        self.assertCountEqual([801, 802, 803], rows_kept)
+        self.assertCountEqual(self.sandboxed_ids, rows_kept)
+
+        for row_id in self.output_ids:
+            self.assertNotIn(row_id, rows_kept)
