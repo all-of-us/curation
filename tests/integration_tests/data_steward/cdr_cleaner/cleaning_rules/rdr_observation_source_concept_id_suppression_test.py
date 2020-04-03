@@ -45,51 +45,47 @@ class ObservationSourceConceptIDRowSuppressionTest(
     """)
     ]
 
-    fq_sandbox_table = ''
-
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
 
-        print(f"{cls.__name__} class setup function\n")
-        # get the test dataset
+        # set the test project identifier
         cls.project_id = os.environ.get(PROJECT_ID)
-        if 'test' not in cls.project_id:
-            raise RuntimeError('This should only be run on a test environment')
 
-        cls.dataset_id = os.environ.get('RDR_DATASET_ID')
-        cls.dataset = bq.get_or_create_dataset(cls.project_id, cls.dataset_id)
+        # set the table names, this could also be a list that is zipped and
+        # iterated through.
+        table_name = 'observation'
 
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
-        cls.sandbox_dataset = bq.get_or_create_dataset(cls.project_id,
-                                                       cls.sandbox_id)
+        # set the expected test datasets
+        cls.dataset_ids = [os.environ.get('RDR_DATASET_ID')]
+        for ds_id in cls.dataset_ids:
+            cls.sandbox_ids.append(ds_id + '_sandbox')
+            # create fully qualified table names for easy use
+            cls.fq_table_names.append(f'{cls.project_id}.{ds_id}.{table_name}')
 
-        # create empty table in test environment
-        cls.table_name = 'observation'
-        cls.client = bq.get_client(cls.project_id)
+        # specific to this class for easy testing, this is not setting
+        # a base class variable
+        cls.dataset_id = cls.dataset_ids[0]
+        cls.sandbox_id = cls.sandbox_ids[0]
+        cls.fq_table_name = f'{cls.project_id}.{cls.dataset_id}.{table_name}'
 
-        cls.fq_table_names = [
-            f'{cls.project_id}.{cls.dataset_id}.{cls.table_name}'
-        ]
-        cls.fq_table_name = f'{cls.project_id}.{cls.dataset_id}.{cls.table_name}'
-        table_info = {
-            # list of fully qualified table names to create with schemas
-            'fq_table_names': [cls.fq_table_name],
-            'project_id': cls.project_id,
-            'exists_ok': True,
-        }
-        bq.create_tables(**table_info)
+        # call super to set up the client, create datasets, and create
+        # empty test tables
+        super().setUpClass()
 
     def setUp(self):
         """
         Add data to the tables for the rule to run on.
         """
-        print(f"{self.__class__.__name__} test setup function")
+        print(f"{self.__class__.__name__} test setup extending class function")
         self.age_prediabetes = 43530490
         self.meds_prediabetes = 43528818
         self.now_prediabetes = 43530333
+
+        self.sandboxed_ids = [801, 802, 803]
+        self.output_ids = [804, 805]
 
         # create the string(s) to load the data
         for tmpl in self.insert_fake_participants_tmpls:
@@ -97,9 +93,7 @@ class ObservationSourceConceptIDRowSuppressionTest(
                                 age_prediabetes=self.age_prediabetes,
                                 meds_prediabetes=self.meds_prediabetes,
                                 now_prediabetes=self.now_prediabetes)
-            response = bq.query(query, self.project_id)
-            self.assertIsNotNone(response.result())
-            self.assertIsNone(response.exception())
+            self.sql_load_statements.append(query)
 
         self.query_class = ObservationSourceConceptIDRowSuppression(
             self.project_id, self.dataset_id, self.sandbox_id)
@@ -110,8 +104,7 @@ class ObservationSourceConceptIDRowSuppressionTest(
             self.fq_sandbox_table
         ]
 
-        self.sandboxed_ids = [801, 802, 803]
-        self.output_ids = [804, 805]
+        super().setUp()
 
     def test_expected_cleaning_performance(self):
         """
@@ -137,7 +130,7 @@ class ObservationSourceConceptIDRowSuppressionTest(
         self.assertEqual(
             5, len(result_list),
             "The pre-condition query did not return expected number of rows")
-        # start the job and wait for it to complete
+
         for item in result_list:
             self.assertIn(item[0], self.sandboxed_ids + self.output_ids,
                           "The test data did not load as expected")
