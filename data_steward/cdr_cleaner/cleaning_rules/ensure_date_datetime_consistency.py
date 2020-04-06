@@ -92,7 +92,10 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         )
         super().__init__(issue_numbers=['DC-614', 'DC-509', 'DC-432'],
                          description=desc,
-                         affected_datasets=[cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED],
+                         affected_datasets=[
+                             cdr_consts.RDR, cdr_consts.UNIONED,
+                             cdr_consts.COMBINED
+                         ],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
@@ -111,9 +114,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         for field in table_fields:
             if field in TABLE_DATES[table]:
                 col_expr = FIX_NULL_OR_INCORRECT_DATETIME_QUERY.format(
-                    field=field,
-                    date_field=TABLE_DATES[table][field]
-                )
+                    field=field, date_field=TABLE_DATES[table][field])
             else:
                 col_expr = field
             col_exprs.append(col_expr)
@@ -158,8 +159,8 @@ if __name__ == '__main__':
     clean_engine.add_console_logging(ARGS.console_log)
     date_datetime_cleaner = EnsureDateDatetimeConsistency(
         ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
-    query_list = date_datetime_cleaner.get_query_specs(
-        ARGS.project_id, ARGS.dataset_id)
+    query_list = date_datetime_cleaner.get_query_specs(ARGS.project_id,
+                                                       ARGS.dataset_id)
 
     if ARGS.list_queries:
         date_datetime_cleaner.log_queries()
