@@ -76,6 +76,7 @@ ELSE CAST(DATETIME({date_field}, EXTRACT(TIME FROM {field})) AS TIMESTAMP
 END AS {field}
 """
 
+
 class EnsureDateDatetimeConsistency(BaseCleaningRule):
     """
     Ensure no nulls and consistency in the datetime and date fields
@@ -114,8 +115,8 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         for field in table_fields:
             if field in TABLE_DATES[table]:
                 col_expr = FIX_NULL_DATETIME_IN_GET_COLS_QUERY.format(
-                            field=field,
-                            date_field=TABLE_DATES[table][field]
+                    field=field,
+                    date_field=TABLE_DATES[table][field]
                 )
             else:
                 col_expr = field
@@ -226,8 +227,6 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
 #     return queries
 
 
-
-
 if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
     import cdr_cleaner.args_parser as parser
@@ -244,5 +243,3 @@ if __name__ == '__main__':
         date_datetime_cleaner.log_queries()
     else:
         clean_engine.clean_dataset(ARGS.project_id, query_list)
-
-
