@@ -44,8 +44,9 @@ class EnsureDateDatetime(unittest.TestCase):
 
     def test_get_cols(self):
         # pre conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
+        self.assertEqual(
+            self.query_class.get_affected_datasets(),
+            [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
 
         for table in TABLE_DATES:
             # test
@@ -58,9 +59,7 @@ class EnsureDateDatetime(unittest.TestCase):
             for field in table_fields:
                 if field in TABLE_DATES[table]:
                     expected = FIX_NULL_OR_INCORRECT_DATETIME_QUERY.format(
-                        field=field,
-                        date_field=TABLE_DATES[table][field]
-                    )
+                        field=field, date_field=TABLE_DATES[table][field])
                 else:
                     expected = field
                 expected_list.append(expected)
@@ -71,11 +70,13 @@ class EnsureDateDatetime(unittest.TestCase):
 
     def test_get_query_specs(self):
         # pre conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
+        self.assertEqual(
+            self.query_class.get_affected_datasets(),
+            [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
 
         # test
-        result_list = self.query_class.get_query_specs(self.project_id, self.dataset_id)
+        result_list = self.query_class.get_query_specs(self.project_id,
+                                                       self.dataset_id)
 
         # post conditions
         expected_list = []
