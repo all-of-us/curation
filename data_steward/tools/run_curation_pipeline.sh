@@ -12,6 +12,8 @@ Usage: run_curation_pipeline.sh
   --rdr_dataset <RDR dataset ID>
   --result_bucket <Internal bucket name>
   --dataset_release_tag <release tag for the CDR>
+  --ehr_cutoff <ehr_cut_off date format yyyy-mm-dd>
+  --rdr_export_date <date RDR export is run format yyyy-mm-dd>
 "
 
 while true; do
@@ -40,6 +42,14 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
+    --ehr_cutoff)
+    ehr_cutoff=$2
+    shift 2
+    ;;
+  --rdr_export_date)
+    rdr_export_date=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -48,8 +58,8 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_dataset}" ]] ||
-  [[ -z "${rdr_dataset}" ]] || [[ -z "${result_bucket}" ]] || [[ -z "${dataset_release_tag}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] ||
+ [[ -z "${result_bucket}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]]; then
   echo "Specify the key file location, vocabulary and dataset release tag. $USAGE"
   exit 1
 fi
@@ -67,6 +77,8 @@ echo "rdr_dataset --> ${rdr_dataset}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "result_bucket --> ${result_bucket}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
+echo "ehr_cutoff_date --> ${ehr_cutoff}"
+echo "rdr_export_date --> ${rdr_export_date}"
 
 #---------------------------------------------------------
 # Step 1 create EHR and RDR snapshot
@@ -85,7 +97,8 @@ echo "ehr_snapshot ----> ${ehr_snapshot}"
 echo "-------------------------->Generate combined ehr rdr dataset (step 3)"
 unioned_ehr_dataset="${dataset_release_tag}_unioned_ehr"
 echo "unioned_ehr_dataset --> $unioned_ehr_dataset"
-"${TOOLS_DIR}/generate_combined_dataset.sh" --key_file ${key_file} --vocab_dataset ${vocab_dataset} --unioned_ehr_dataset ${unioned_ehr_dataset} --rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag}
+"${TOOLS_DIR}/generate_combined_dataset.sh" --key_file ${key_file} --vocab_dataset ${vocab_dataset} --unioned_ehr_dataset ${unioned_ehr_dataset} \
+--rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag} --ehr_cutoff_date ${ehr_cutoff_date} --rdr_export_date ${rdr_export_date}
 
 #-------------------------------------------------------
 # Step 4 Run achilles on combined dataset

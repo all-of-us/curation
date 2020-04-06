@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""
+This module is responsible for validating EHR submissions.
+
+This module focuses on preserving and validating
+submission data.
+"""
 # Python imports
 import datetime
 import json
@@ -21,8 +27,11 @@ from constants.validation import main as consts
 from constants.validation import hpo_report as report_consts
 import gcs_utils
 import resources
+from utils.slack_alerts import post_message
 from validation import achilles as achilles
 from validation import achilles_heel as achilles_heel
+from validation.app_errors import (errors_blueprint, InternalValidationError,
+                                   BucketDoesNotExistError)
 from validation.metrics import completeness as completeness
 from validation.metrics import required_labs as required_labs
 from validation import ehr_union as ehr_union
@@ -37,20 +46,8 @@ from curation_logging.curation_gae_handler import begin_request_logging, end_req
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
-
-class InternalValidationError(RuntimeError):
-    """Raised when an internal error occurs during validation"""
-
-    def __init__(self, msg):
-        super(InternalValidationError, self).__init__(msg)
-
-
-class BucketDoesNotExistError(RuntimeError):
-    """Raised when a configured bucket does not exist"""
-
-    def __init__(self, msg, bucket):
-        super(BucketDoesNotExistError, self).__init__(msg)
-        self.bucket = bucket
+# register application error handlers
+app.register_blueprint(errors_blueprint)
 
 
 def all_required_files_loaded(result_items):
@@ -370,7 +367,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
 
     except HttpError as err:
         # cloud error occurred- log details for troubleshooting
-        logging.error(
+        logging.exception(
             'Failed to generate full report due to the following cloud error:\n\n%s'
             % err.content)
         error_occurred = True
@@ -388,7 +385,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
 
 def generate_empty_report(hpo_id, bucket, folder_prefix):
     """
-    Generate an empty report with a "validation failed" error 
+    Generate an empty report with a "validation failed" error
     Also write processed.txt to folder to prevent processing in the future
 
     :param hpo_id: identifies the HPO site
@@ -425,7 +422,7 @@ def is_valid_folder_prefix_name(folder_prefix):
     """
     Verifies whether folder name follows naming convention YYYY-MM-DD-vN, where vN is the submission version number,
     starting at v1 every day
-    
+
     :param folder_prefix: folder containing the submission
     :return: Boolean indicating whether the input folder follows the aforementioned naming convention
     """
@@ -476,7 +473,7 @@ def process_hpo(hpo_id, force_run=False):
     except HttpError as http_error:
         message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (
             hpo_id, http_error.content.decode())
-        logging.error(message)
+        logging.exception(message)
 
 
 def get_hpo_name(hpo_id):

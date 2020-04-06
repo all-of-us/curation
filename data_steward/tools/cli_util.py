@@ -26,8 +26,7 @@ def activate_creds(creds_path):
     creds = get_creds(creds_path)
     project_id = creds.get(PROJECT_ID)
     if not project_id:
-        raise EnvironmentError('%s does not refer to a valid GCP key file' %
-                               creds_path)
+        raise OSError('%s does not refer to a valid GCP key file' % creds_path)
     os.environ[APPLICATION_ID] = project_id
     os.environ[GOOGLE_APPLICATION_CREDENTIALS] = creds_path
     return creds
