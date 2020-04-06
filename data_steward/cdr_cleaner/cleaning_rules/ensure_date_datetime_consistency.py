@@ -100,27 +100,30 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
 
-    def get_cols(self):
+    def get_cols(self, table):
         """
         Generates the fields to choose along with case statements to generate datetime
         And ensure no null datetime values
 
-        :param self: table for which the fields are pulled
+        :param self: instance of EnsureDateDatetimeConsistency class
+        :param table: table for which the fields are pulled
         :return: cols
         """
-        table_fields = field_mapping.get_domain_fields(self)
+        table_fields = field_mapping.get_domain_fields(table)
         col_exprs = []
         for field in table_fields:
-            if field in TABLE_DATES[self]:
+            if field in TABLE_DATES[table]:
                 col_expr = FIX_NULL_DATETIME_IN_GET_COLS_QUERY.format(
-                            field=field, date_field=TABLE_DATES[self][field])
+                            field=field,
+                            date_field=TABLE_DATES[table][field]
+                )
             else:
                 col_expr = field
             col_exprs.append(col_expr)
         cols = ', '.join(col_exprs)
         return cols
 
-    def get_query_specs(self):
+    def get_query_specs(self, project_id, dataset_id):
         """
         This function generates a list of query dicts for ensuring the dates and datetimes are consistent
 
@@ -135,7 +138,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                 project=self.get_project_id(),
                 dataset=self.get_dataset_id(),
                 table_id=table,
-                cols=self.get_cols())
+                cols=self.get_cols(table))
             query[cdr_consts.DESTINATION_TABLE] = table
             query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
             query[cdr_consts.DESTINATION_DATASET] = self.get_dataset_id()
@@ -148,23 +151,23 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         """
         pass
 
-    def log_queries(self):
-        """
-        Helper function to print the SQL a class generates.
-
-        If the inheriting class builds table inside the get_query_specs function,
-        the inheriting class will need to override this function.
-        """
-        try:
-            query_list = self.get_query_specs()
-        except (KeyError, HttpAccessTokenRefreshError, HttpError) as err:
-            LOGGER.exception("cannot list queries for %s",
-                             self.__class__.__name__)
-            raise
-
-        for query in query_list:
-            LOGGER.info('Generated SQL Query:\n%s',
-                        query.get(cdr_consts.QUERY, 'NO QUERY FOUND'))
+    # def log_queries(self):
+    #     """
+    #     Helper function to print the SQL a class generates.
+    #
+    #     If the inheriting class builds table inside the get_query_specs function,
+    #     the inheriting class will need to override this function.
+    #     """
+    #     try:
+    #         query_list = self.get_query_specs()
+    #     except (KeyError, HttpAccessTokenRefreshError, HttpError) as err:
+    #         LOGGER.exception("cannot list queries for %s",
+    #                          self.__class__.__name__)
+    #         raise
+    #
+    #     for query in query_list:
+    #         LOGGER.info('Generated SQL Query:\n%s',
+    #                     query.get(cdr_consts.QUERY, 'NO QUERY FOUND'))
 
 
 # def get_cols(table_id):
@@ -232,7 +235,14 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = EnsureDateDatetimeConsistency(ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
-    # query_list = get_fix_incorrect_datetime_to_date_queries(
-    #     ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    date_datetime_cleaner = EnsureDateDatetimeConsistency(
+        ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
+    query_list = date_datetime_cleaner.get_query_specs(
+        ARGS.project_id, ARGS.dataset_id)
+
+    if ARGS.list_queries:
+        date_datetime_cleaner.log_queries()
+    else:
+        clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+
