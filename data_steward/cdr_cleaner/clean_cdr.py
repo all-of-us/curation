@@ -70,7 +70,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     # (populate_routes.get_route_mapping_queries,),
     (
-        EnsureDateDatetimeConsistency(BaseCleaningRule),),
+        EnsureDateDatetimeConsistency,),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     # DC-698 opened to fix it.
@@ -130,7 +130,7 @@ COMBINED_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     #    (populate_routes.get_route_mapping_queries,),
     (
-        EnsureDateDatetimeConsistency(BaseCleaningRule,)),
+        EnsureDateDatetimeConsistency),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),

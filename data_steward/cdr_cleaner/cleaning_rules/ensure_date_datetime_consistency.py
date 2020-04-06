@@ -4,7 +4,7 @@ Ensuring there are no null datetimes.
 Original Issues: DC-614, DC-509, and DC-432
 
 The intent is to copy the date over to the datetime field if the datetime
-field is null.
+field is null or incorrect.
 """
 
 # Python imports
@@ -16,10 +16,6 @@ from cdr_cleaner.cleaning_rules import field_mapping
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import common
-
-# Third party imports
-from googleapiclient.errors import HttpError
-from oauth2client.client import HttpAccessTokenRefreshError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -66,7 +62,7 @@ SELECT {cols}
 FROM `{project_id}.{dataset_id}.{table_id}`
 """
 
-FIX_NULL_DATETIME_IN_GET_COLS_QUERY = """
+FIX_NULL_OR_INCORRECT_DATETIME_QUERY = """
 CASE
 WHEN {field} IS NULL
 THEN CAST(DATETIME({date_field}, MAKETIME(00,00,00)) AS TIMESTAMP
@@ -114,7 +110,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         col_exprs = []
         for field in table_fields:
             if field in TABLE_DATES[table]:
-                col_expr = FIX_NULL_DATETIME_IN_GET_COLS_QUERY.format(
+                col_expr = FIX_NULL_OR_INCORRECT_DATETIME_QUERY.format(
                     field=field,
                     date_field=TABLE_DATES[table][field]
                 )
@@ -151,80 +147,6 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         Function to run any data upload options before executing a query.
         """
         pass
-
-    # def log_queries(self):
-    #     """
-    #     Helper function to print the SQL a class generates.
-    #
-    #     If the inheriting class builds table inside the get_query_specs function,
-    #     the inheriting class will need to override this function.
-    #     """
-    #     try:
-    #         query_list = self.get_query_specs()
-    #     except (KeyError, HttpAccessTokenRefreshError, HttpError) as err:
-    #         LOGGER.exception("cannot list queries for %s",
-    #                          self.__class__.__name__)
-    #         raise
-    #
-    #     for query in query_list:
-    #         LOGGER.info('Generated SQL Query:\n%s',
-    #                     query.get(cdr_consts.QUERY, 'NO QUERY FOUND'))
-
-
-# def get_cols(table_id):
-#     """
-#     Generates the fields to choose along with case statements to generate datetime
-#
-#     :param table_id: table for which the fields
-#     :return:
-#     """
-#     table_fields = field_mapping.get_domain_fields(table_id)
-#     col_exprs = []
-#     for field in table_fields:
-#         if field in TABLE_DATES[table_id]:
-#             if field_mapping.is_field_required(table_id, field):
-#                 col_expr = (
-#                     ' CASE'
-#                     ' WHEN EXTRACT(DATE FROM {field}) = {date_field}'
-#                     ' THEN {field}'
-#                     ' ELSE CAST(DATETIME({date_field}, EXTRACT(TIME FROM {field})) AS TIMESTAMP)'
-#                     ' END AS {field}').format(
-#                         field=field, date_field=TABLE_DATES[table_id][field])
-#             else:
-#                 col_expr = (' CASE'
-#                             ' WHEN EXTRACT(DATE FROM {field}) = {date_field}'
-#                             ' THEN {field}'
-#                             ' ELSE NULL'
-#                             ' END AS {field}').format(
-#                                 field=field,
-#                                 date_field=TABLE_DATES[table_id][field])
-#         else:
-#             col_expr = field
-#         col_exprs.append(col_expr)
-#     cols = ', '.join(col_exprs)
-#     return cols
-
-# def get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id):
-#     """
-#     This function generates a list of query dicts for ensuring the dates and datetimes are consistent
-#
-#     :param project_id: the project_id in which the query is run
-#     :param dataset_id: the dataset_id in which the query is run
-#     :return: a list of query dicts for ensuring the dates and datetimes are consistent
-#     """
-#     queries = []
-#     for table in TABLE_DATES:
-#         query = dict()
-#         query[cdr_consts.QUERY] = FIX_DATETIME_QUERY.format(
-#             project_id=project_id,
-#             dataset_id=dataset_id,
-#             table_id=table,
-#             cols=get_cols(table))
-#         query[cdr_consts.DESTINATION_TABLE] = table
-#         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-#         query[cdr_consts.DESTINATION_DATASET] = dataset_id
-#         queries.append(query)
-#     return queries
 
 
 if __name__ == '__main__':
