@@ -135,8 +135,8 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         for table in TABLE_DATES:
             query = dict()
             query[cdr_consts.QUERY] = FIX_DATETIME_QUERY.format(
-                project=self.get_project_id(),
-                dataset=self.get_dataset_id(),
+                project_id=self.get_project_id(),
+                dataset_id=self.get_dataset_id(),
                 table_id=table,
                 cols=self.get_cols(table))
             query[cdr_consts.DESTINATION_TABLE] = table

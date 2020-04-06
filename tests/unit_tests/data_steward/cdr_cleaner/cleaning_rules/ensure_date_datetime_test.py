@@ -50,38 +50,40 @@ class EnsureDateDatetime(unittest.TestCase):
 
         # no errors are raised, nothing happens
 
-    def test_get_cols(self, table):
+    def test_get_cols(self):
+        # pre conditions
+        self.assertEqual(self.query_class.get_affected_datasets(),
+                         [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
+
+        for table in TABLE_DATES:
+            # test
+            result_list = self.query_class.get_cols(table)
+
+            # post conditions
+            table_fields = field_mapping.get_domain_fields(table)
+
+            expected_list = []
+            for field in table_fields:
+                if field in TABLE_DATES[table]:
+                    expected = FIX_NULL_DATETIME_IN_GET_COLS_QUERY.format(
+                        field=field,
+                        date_field=TABLE_DATES[table][field]
+                    )
+                else:
+                    expected = field
+                expected_list.append(expected)
+
+            expected_cols = ', '.join(expected_list)
+
+            self.assertEqual(result_list, expected_cols)
+
+    def test_get_query_specs(self):
         # pre conditions
         self.assertEqual(self.query_class.get_affected_datasets(),
                          [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
 
         # test
-        result_list = self.query_class.get_cols(table)
-        print(result_list)
-
-        # post conditions
-        table_fields = field_mapping.get_domain_fields(table)
-
-        expected_list = []
-        for field in table_fields:
-            if field in TABLE_DATES[table]:
-                expected = FIX_NULL_DATETIME_IN_GET_COLS_QUERY.format(
-                    field=field,
-                    date_field=TABLE_DATES[table][field]
-                )
-            else:
-                expected = field
-            expected_list.append(expected)
-
-        self.assertEqual(result_list, expected_list)
-
-    def test_get_query_specs(self, project_id, dataset_id):
-        # pre conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
-
-        # test
-        result_list = self.query_class.get_query_specs(project_id, dataset_id)
+        result_list = self.query_class.get_query_specs(self.project_id, self.dataset_id)
 
         # post conditions
         expected_list = []
@@ -91,10 +93,10 @@ class EnsureDateDatetime(unittest.TestCase):
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
                 table_id=table,
-                cols=self.test_get_cols(table))
+                cols=self.query_class.get_cols(table))
             query[cdr_consts.DESTINATION_TABLE] = table
             query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-            query[cdr_consts.DESTINATION_DATASET] = dataset_id()
+            query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
             expected_list.append(query)
         self.assertEqual(result_list, expected_list)
 
