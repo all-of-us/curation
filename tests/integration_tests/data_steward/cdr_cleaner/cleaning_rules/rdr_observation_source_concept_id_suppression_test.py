@@ -44,14 +44,13 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
 
         # set the test project identifier
         project_id = os.environ.get(PROJECT_ID)
-        cls.parameters['project_id'] = project_id
+        cls.project_id = project_id
 
         # set the expected test datasets
         dataset_id = os.environ.get('RDR_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
-        cls.parameters['test_dataset_id'] = dataset_id
-        cls.parameters['test_dataset_ids'] = [dataset_id]
-        cls.parameters['sandbox_dataset_ids'] = [sandbox_id]
+        cls.test_dataset_ids = [dataset_id]
+        cls.sandbox_dataset_ids = [sandbox_id]
 
         cls.query_class = ObservationSourceConceptIDRowSuppression(
             project_id, dataset_id, sandbox_id)
@@ -61,10 +60,9 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
 
-        cls.parameters['fq_sandbox_table_names'] = cls.fq_sandbox_table_names
         # set the table names and initial expected row counts after loading
         table_name = 'observation'
-        cls.parameters['tables_and_counts'] = [{
+        cls.tables_and_counts = [{
             'name':
                 table_name,
             'fq_table_name':
@@ -77,6 +75,7 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
             'cleaned_ids': [804, 805]
         }]
 
+        cls.fq_table_names = [f"{project_id}.{dataset_id}.{table_name}"]
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -99,6 +98,5 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
                                 now_prediabetes=self.now_prediabetes)
             load_statements.append(query)
 
-        self.parameters['sql_load_statements'] = load_statements
-
+        self.sql_load_statements = load_statements
         super().setUp()

@@ -26,44 +26,36 @@ class BaseTest:
 
     class CleaningRulesTestBase(unittest.TestCase):
 
-        # TODO:  do i really need this parameters variable?
-        parameters = {}
-        sql_load_statements = []
-        datasets = []
-        sandbox_datasets = []
+        project_id = ''
+        test_dataset_ids = []
+        sandbox_dataset_ids = []
         fq_table_names = []
         fq_sandbox_table_names = []
-        insert_fake_participants_tmpls = []
-        project_id = ''
-        dataset_id = ''
-        sandbox_id = ''
+        tables_and_counts = []
+        sql_load_statements = []
         query_class = None
 
         @classmethod
         def setUpClass(cls):
             # get the test project
-            cls.project_id = cls.parameters.get('project_id', '')
             if 'test' not in cls.project_id:
                 raise RuntimeError(
                     'This should only be run on a test environment')
 
             # get or create datasets, most cleaning rules assume the datasets exist
-            cls.dataset_ids = cls.parameters.get('test_dataset_ids', [])
-            for dataset_id in cls.dataset_ids:
-                cls.datasets.append(
-                    bq.get_or_create_dataset(cls.project_id, dataset_id))
+            for dataset_id in cls.test_dataset_ids:
+                bq.get_or_create_dataset(cls.project_id, dataset_id)
 
-            cls.sandbox_ids = cls.parameters.get('sandbox_dataset_ids', [])
-            for dataset_id in cls.sandbox_ids:
-                cls.sandbox_datasets.append(
-                    bq.get_or_create_dataset(cls.project_id, dataset_id))
+            for dataset_id in cls.sandbox_dataset_ids:
+                bq.get_or_create_dataset(cls.project_id, dataset_id)
 
             # create empty table in test environment
             cls.client = bq.get_client(cls.project_id)
 
-            cls.fq_table_names = cls.parameters.get('fq_table_names', [])
+            # the base class will try to determine this from the list of
+            # tables and counts if the list is empty
             if not cls.fq_table_names:
-                for table_info in cls.parameters.get('tables_and_counts', {}):
+                for table_info in cls.tables_and_counts:
                     cls.fq_table_names.append(
                         table_info.get('fq_table_name', ''))
 
@@ -78,7 +70,7 @@ class BaseTest:
         @classmethod
         def tearDownClass(cls):
             """
-            Remove the test daaset table(s).
+            Remove the test dataset table(s).
             """
             for table in cls.fq_table_names + cls.fq_sandbox_table_names:
                 cls.client.delete_table(table)
@@ -104,13 +96,10 @@ class BaseTest:
             Add data to the tables for the rule to run on.
             """
             # load the data from the sql strings and validate it loaded
-            for query in self.parameters['sql_load_statements']:
+            for query in self.sql_load_statements:
                 response = bq.query(query, self.project_id)
                 self.assertIsNotNone(response.result())
                 self.assertIsNone(response.exception())
-
-            self.fq_sandbox_table_names = self.parameters.get(
-                'fq_sandbox_table_names', [])
 
     class DropRowsTestBase(CleaningRulesTestBase):
 
@@ -135,7 +124,7 @@ class BaseTest:
                                   timeout=15)
 
             # validate only anticipated input records exist before starting
-            for table_info in self.parameters.get('tables_and_counts', {}):
+            for table_info in self.tables_and_counts:
                 table_name = table_info.get('name')
                 query = f"select {table_name}_id from `{table_info.get('fq_table_name', '')}`"
                 response = bq.query(query, self.project_id)
@@ -157,7 +146,7 @@ class BaseTest:
             engine.clean_dataset(self.project_id, query_list)
 
             # post conditions
-            for table_info in self.parameters.get('tables_and_counts', {}):
+            for table_info in self.tables_and_counts:
                 # validate three records are dropped
                 table_name = table_info.get('name')
                 query = f"select {table_name}_id from `{table_info.get('fq_table_name', '')}`"
