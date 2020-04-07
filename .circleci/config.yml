@@ -147,7 +147,14 @@ jobs:
       # Setup GCP access and create cloud resources as needed.
       - run:
           name: Activate service account
-          command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
+#          command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
+          command: |
+            echo "01 ---------------------"
+            echo -n ${GCLOUD_CREDENTIALS} | tail -c 3
+            echo "02 ---------------------"
+            echo -n ${GCLOUD_CREDENTIALS_KEY} | tail -c 3
+            echo "03 ---------------------"
+            ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
       - run:
           name: Set up environment variables
           command: ./init_env.sh
