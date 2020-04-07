@@ -8,7 +8,7 @@ import time
 
 # Third-party imports
 from google.cloud import bigquery
-from google.api_core.exceptions import GoogleAPIError
+from google.api_core.exceptions import GoogleAPIError, Conflict, NotFound
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -261,8 +261,8 @@ def create_dataset(project_id,
     try:
         dataset = client.create_dataset(dataset,
                                         exists_ok)  # Make an API request.
-    except google.api_core.exceptions.Conflict as err:
-        logger.exception("Dataset {} already exists.  Returning that dataset",
+    except Conflict as err:
+        LOGGER.exception("Dataset {} already exists.  Returning that dataset",
                          dataset_id)
         return client.get_dataset(dataset_id)
 
@@ -284,7 +284,7 @@ def get_or_create_dataset(project_id, dataset_id):
 
     try:
         return get_dataset(project_id, dataset_id)
-    except GoogleAPIError as err:
+    except NotFound as err:
         if err.code != 404:
             raise err
 

@@ -276,6 +276,10 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         """
         return self._sandbox_dataset_id
 
+    @abstractmethod
+    def get_sandbox_tablenames(self):
+        pass
+
     def log_queries(self):
         """
         Helper function to print the SQL a class generates.
