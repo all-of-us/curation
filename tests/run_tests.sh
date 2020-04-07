@@ -56,13 +56,11 @@ else
   coverage_file=".coveragerc"
 fi
 
-project_id=$(echo $GOOGLE_CLOUD_PROJECT)
-
 if [[ -z ${substring} ]]
 then
-  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --coverage-file ${coverage_file} --project-id ${project_id}"
+  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --coverage-file ${coverage_file}"
 else
-  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --test-pattern $substring --coverage-file ${coverage_file} --project-id ${project_id}"
+  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --test-pattern $substring --coverage-file ${coverage_file}"
 fi
 
 (cd ${BASE_DIR}; PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd})

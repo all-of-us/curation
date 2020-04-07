@@ -27,7 +27,6 @@ import time
 import unittest
 
 # Third party imports
-from google.cloud import bigquery as bq
 try:
     import coverage
 except ImportError:
@@ -57,40 +56,7 @@ def print_unsuccessful(function, trace, msg_type):
     )
 
 
-def get_client(project_id):
-    if 'test' not in project_id:
-        raise RuntimeError(
-            "This is not intended to run outside a test environment")
-
-    return bq.Client(project_id)
-
-
-def create_test_datasets_and_tables(project_id):
-    """
-    create the test dataset in the test project and empty tables.
-    """
-    pass
-
-
-def delete_test_dataset(project_id):
-    """
-    delete the test dataset used by the integration tests
-    """
-    #    client = get_client(project_id)
-    #    dataset_id = '{}.{}'.format(project_id, INTEGRATION_TESTS_DATASET)
-    #
-    #    client.delete_dataset(
-    #        dataset_id, delete_contents=True, not_found_ok=True)
-    pass
-
-
-def main(test_path, test_pattern, coverage_filepath, project_id):
-    # set up bigquery if doing integration testing
-    do_teardown = False
-    if 'integration' in test_path:
-        create_test_datasets_and_tables(project_id)
-        do_teardown = True
-
+def main(test_path, test_pattern, coverage_filepath):
     # Discover and run tests.
     suite = unittest.TestLoader().discover(test_path, pattern=test_pattern)
     all_results = []
@@ -154,9 +120,6 @@ def main(test_path, test_pattern, coverage_filepath, project_id):
 
     print(message)
 
-    if do_teardown:
-        delete_test_dataset(project_id)
-
     return not errors and not failures
 
 
@@ -195,15 +158,10 @@ if __name__ == '__main__':
         'The path to the coverage file to use.  Defaults to \'curation/.coveragerc\'',
         type=config_file_path,
         default='curation/.coveragerc')
-    parser.add_argument('--project-id',
-                        dest='project_id',
-                        help='The project to create integration tests in.',
-                        default='')
 
     args = parser.parse_args()
 
-    result_success = main(args.test_path, args.test_pattern, args.coverage_file,
-                          args.project_id)
+    result_success = main(args.test_path, args.test_pattern, args.coverage_file)
 
     if not result_success:
         sys.exit(1)
