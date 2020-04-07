@@ -37,6 +37,9 @@ class Inheritance(BaseCleaningRule):
     def setup_rule(self):
         pass
 
+    def get_sandbox_tablenames(self):
+        pass
+
 
 class BadIssueNumbers(BaseCleaningRule):
     """
@@ -58,6 +61,9 @@ class BadIssueNumbers(BaseCleaningRule):
         pass
 
     def setup_rule(self):
+        pass
+
+    def get_sandbox_tablenames(self):
         pass
 
 
@@ -82,6 +88,9 @@ class BadIssueUrls(BaseCleaningRule):
     def setup_rule(self):
         pass
 
+    def get_sandbox_tablenames(self):
+        pass
+
 
 class BadDescription(BaseCleaningRule):
     """
@@ -101,6 +110,9 @@ class BadDescription(BaseCleaningRule):
         pass
 
     def setup_rule(self):
+        pass
+
+    def get_sandbox_tablenames(self):
         pass
 
 
@@ -127,6 +139,9 @@ class BadAffectedDatasets(BaseCleaningRule):
     def setup_rule(self):
         pass
 
+    def get_sandbox_tablenames(self):
+        pass
+
 
 class InheritanceWithDependency(BaseCleaningRule):
     """
@@ -150,6 +165,9 @@ class InheritanceWithDependency(BaseCleaningRule):
         pass
 
     def setup_rule(self):
+        pass
+
+    def get_sandbox_tablenames(self):
         pass
 
 
@@ -201,6 +219,9 @@ class InheritanceWithBadDependencyClass(BaseCleaningRule):
     def setup_rule(self):
         pass
 
+    def get_sandbox_tablenames(self):
+        pass
+
 
 class InheritanceWithBadDependencyType(BaseCleaningRule):
     """
@@ -222,6 +243,9 @@ class InheritanceWithBadDependencyType(BaseCleaningRule):
         pass
 
     def setup_rule(self):
+        pass
+
+    def get_sandbox_tablenames(self):
         pass
 
 
@@ -246,6 +270,9 @@ class NoSuperInitialization(BaseCleaningRule):
         _ = self.get_issue_numbers()
         _ = self.get_affected_datasets()
         _ = self.get_issue_urls()
+
+    def get_sandbox_tablenames(self):
+        pass
 
 
 class BaseCleaningRuleTest(unittest.TestCase):

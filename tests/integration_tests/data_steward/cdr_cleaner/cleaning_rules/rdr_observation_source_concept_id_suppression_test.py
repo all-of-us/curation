@@ -50,6 +50,8 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
         dataset_id = os.environ.get('RDR_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
         cls.parameters['test_dataset_id'] = dataset_id
+        cls.parameters['test_dataset_ids'] = [dataset_id]
+        cls.parameters['sandbox_dataset_ids'] = [sandbox_id]
 
         cls.query_class = ObservationSourceConceptIDRowSuppression(
             project_id, dataset_id, sandbox_id)

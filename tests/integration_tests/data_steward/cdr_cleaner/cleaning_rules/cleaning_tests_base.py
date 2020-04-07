@@ -114,7 +114,7 @@ class BaseTest:
 
     class DropRowsTestBase(CleaningRulesTestBase):
 
-        def test_running_get_query_specs(self):
+        def test_execution_of_get_query_specs(self):
             """
             Test passing the query specifications to the clean engine module.
 
