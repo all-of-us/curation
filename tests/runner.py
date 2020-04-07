@@ -198,8 +198,7 @@ if __name__ == '__main__':
     parser.add_argument('--project-id',
                         dest='project_id',
                         help='The project to create integration tests in.',
-                        default='',
-                        required=True)
+                        default='')
 
     args = parser.parse_args()
 

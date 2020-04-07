@@ -262,7 +262,7 @@ def create_dataset(project_id,
         dataset = client.create_dataset(dataset,
                                         exists_ok)  # Make an API request.
     except Conflict as err:
-        LOGGER.exception("Dataset {} already exists.  Returning that dataset",
+        LOGGER.exception("Dataset %s already exists.  Returning that dataset",
                          dataset_id)
         return client.get_dataset(dataset_id)
 
