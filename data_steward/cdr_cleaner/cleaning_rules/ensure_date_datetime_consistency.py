@@ -149,6 +149,12 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         """
         pass
 
+    def get_sandbox_tablenames(self):
+        """
+        Returns an empty list because this rule does not use sandbox tables.
+        """
+        return []
+
 
 if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
