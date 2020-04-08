@@ -4,7 +4,6 @@ A utility to standardize use of the BigQuery python client library.
 # Python Imports
 import logging
 import os
-import time
 
 # Third-party imports
 from google.cloud import bigquery
@@ -28,28 +27,11 @@ def get_client(project_id=None):
         require users to provide the project_id.
     """
     if project_id is None:
-        LOGGER.info(f'You should specify project_id for a reliable experience.'
-                    f'Defaulting to {os.environ.get(PROJECT_ID)}.')
+        LOGGER.info(
+            'You should specify project_id for a reliable experience.'
+            'Defaulting to %s.', os.environ.get(PROJECT_ID))
         return bigquery.Client()
     return bigquery.Client(project=project_id)
-
-
-def job_status_done(project_id, job_id):
-    """
-    Check if the job is complete without errors
-
-    Raises exceptions if they are found while checking the job state
-
-    :param project_id: project containing the job status we want to check
-    :param job_id: the job id
-    :return: a bool indicating whether the job is done
-    :raises:  any exceptions the job encounters
-    """
-    client = get_client(project_id)
-    job = client.get_job(job_id)
-    if job.exception():
-        raise (job.exception())
-    return job.done()
 
 
 def get_table_schema(table_name):
@@ -123,7 +105,7 @@ def create_tables(project_id=None, fq_table_names=None, exists_ok=False):
             table = bigquery.Table(table_name, schema=schema)
             table = client.create_table(table, exists_ok)
         except (GoogleAPIError, OSError, AttributeError, TypeError, ValueError):
-            LOGGER.exception(f'Unable to create table {table_name}')
+            LOGGER.exception('Unable to create table %s', table_name)
             failures.append(table_name)
         else:
             successes.append(table)
@@ -134,45 +116,11 @@ def create_tables(project_id=None, fq_table_names=None, exists_ok=False):
     return successes
 
 
-def wait_on_jobs(project_id, job_ids, retry_count=10, max_poll_interval=300):
-    """
-    Exponential backoff wait for jobs to complete
-
-    :param project_id: project containing the jobs we want to wait on
-    :param job_ids: a list of job ids to check for completion
-    :param retry_count:  the maximum number of retry attempts
-    :param max_poll_interval:  the maximum amount of time to wait on a job to finish
-    :return: list of jobs that failed to complete or empty list if all completed
-    """
-    if not isinstance(job_ids, list):
-        _job_ids = [job_ids]
-
-    _job_ids = job_ids
-    poll_interval = 1
-    for i in range(retry_count):
-        LOGGER.info('Waiting %s seconds for completion of job(s): %s' %
-                    (poll_interval, _job_ids))
-        time.sleep(poll_interval)
-        _job_ids = [
-            job_id for job_id in _job_ids
-            if not job_status_done(project_id, job_id)
-        ]
-
-        if not _job_ids:
-            return []
-
-        if poll_interval < max_poll_interval:
-            poll_interval = 2**i
-
-    LOGGER.info('Job(s) failed to complete: %s' % _job_ids)
-    return _job_ids
-
-
-def query(query, project_id=None, use_cache=False):
+def query(query_str, project_id=None, use_cache=False):
     """
     Run the specified query.
 
-    :param query: the query to execute
+    :param query_str: the query to execute
     :param project_id:  the project identifier to run the query in.
     :param use_cache:  allow using cached query objects.
 
@@ -180,7 +128,7 @@ def query(query, project_id=None, use_cache=False):
     """
     client = get_client(project_id)
     query_job_config = bigquery.job.QueryJobConfig(use_query_cache=use_cache)
-    return client.query(query, job_config=query_job_config)
+    return client.query(query_str, job_config=query_job_config)
 
 
 def list_datasets(project_id):
@@ -255,13 +203,12 @@ def create_dataset(project_id,
     # Construct a full Dataset object to send to the API.
     dataset = bigquery.Dataset(dataset_id)
 
-    # TODO(developer): Specify the geographic location where the dataset should reside.
     dataset.location = "US"
 
     try:
         dataset = client.create_dataset(dataset,
                                         exists_ok)  # Make an API request.
-    except Conflict as err:
+    except Conflict:
         LOGGER.exception("Dataset %s already exists.  Returning that dataset",
                          dataset_id)
         return client.get_dataset(dataset_id)
@@ -311,7 +258,7 @@ def delete_dataset(project_id,
     client.delete_dataset(dataset_id,
                           delete_contents=delete_contents,
                           not_found_ok=not_found_ok)
-    LOGGER.info(f'Deleted dataset {project_id}.{dataset_id}')
+    LOGGER.info('Deleted dataset %s.%s', project_id, dataset_id)
 
 
 def is_validation_dataset_id(dataset_id):

@@ -67,7 +67,7 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
                 table_name,
             'fq_table_name':
                 f"{project_id}.{dataset_id}.{table_name}",
-            # I am using the 0 position here becuase I know there is only one sandbox table
+            # I am using the 0 position here because I know there is only one sandbox table
             'fq_sandbox_table_name':
                 f"{project_id}.{sandbox_id}.{sb_table_names[0]}",
             'loaded_ids': [801, 802, 803, 804, 805],

@@ -25,14 +25,41 @@ from utils import bq
 class BaseTest:
 
     class CleaningRulesTestBase(unittest.TestCase):
+        """
+        A base class for cleaning rules integration tests.
 
+        This class implements setUp, setUpClass, tearDown, and tearDownClass
+        methods that can be inherited and used by all extending classes.  This
+        allows developers to focus more fully on creating a working test rather
+        than setting up or tearing down their test environment.
+        """
+
+        # this should always be for a test project.  a check is implemented to
+        # make sure this is true
         project_id = ''
+        # a list of test dataset(s) that mimic the dataset(s) this rule is
+        # intended to clean.  this is required for data loading
         test_dataset_ids = []
+        # a list of dataset(s) that hold sandboxed table(s) created by the
+        # cleaning rules.   required for rule# execution.  a sandbox table
+        # can only be made in an existing dataset.
         sandbox_dataset_ids = []
+        # a list of fully qualified table names the cleaning rule is targeting.
+        # fq = {project_id}.{dataset_id}.{table_name}.  required for
+        # test setup and cleanup.
         fq_table_names = []
+        # a list of fully qualified sandbox tables the rule may create.
+        # required for cleanup
         fq_sandbox_table_names = []
+        # a list of dictionaries where each dictionary defines table
+        # information for one table upon rule execution, such as the
+        # 'name', 'fq_table_name', 'fq_sanbox_table_name', 'loaded_ids',
+        # 'sandboxed_ids', and 'cleaned_ids'
         tables_and_counts = []
+        # a list of load statements to execute before each test.  This can be
+        # defined in the extending class's 'setUp(self)' function.
         sql_load_statements = []
+        # The query class that is being executed.
         query_class = None
 
         @classmethod
@@ -53,14 +80,15 @@ class BaseTest:
             cls.client = bq.get_client(cls.project_id)
 
             # the base class will try to determine this from the list of
-            # tables and counts if the list is empty
+            # tables_and_counts if the list is empty
             if not cls.fq_table_names:
                 for table_info in cls.tables_and_counts:
                     cls.fq_table_names.append(
                         table_info.get('fq_table_name', ''))
 
             table_info = {
-                # list of fully qualified table names to create with schemas
+                # list of fully qualified table names to create.
+                # will be created with project defined schemas
                 'fq_table_names': cls.fq_table_names,
                 'project_id': cls.project_id,
                 'exists_ok': True,
@@ -75,14 +103,29 @@ class BaseTest:
             for table in cls.fq_table_names + cls.fq_sandbox_table_names:
                 cls.client.delete_table(table)
 
-        def drop_rows(self, tablename):
-            drop_rows_job = self.client.query(
-                f"delete from {tablename} where observation_id > -1")
-            job_status = bq.wait_on_jobs(self.project_id,
-                                         [drop_rows_job.job_id])
+        def drop_rows(self, fq_table_name):
+            """
+            Helper function to drop table rows and assert the drop finished.
 
-            self.assertFalse(
-                job_status, f"The contents of {tablename} could not be cleared")
+            Raises an assertion error if the table records are not dropped.
+            Relies on id fields using values greater than -1.
+
+            :param fq_table_name: a fully qualified table name to drop all
+                records for
+            """
+            table_name = ''
+            for info in self.tables_and_counts:
+                if info.get('fq_table_name', '') == fq_table_name or \
+                    info.get('fq_sandbox_table_name', '') == fq_table_name:
+                    table_name = info.get('name')
+
+            query = f"delete from {fq_table_name} where {table_name}_id > -1"
+
+            response = bq.query(query, self.project_id)
+
+            # start the job and wait for it to complete
+            self.assertIsNotNone(response.result())
+            self.assertIsNone(response.exception())
 
         def tearDown(self):
             """
@@ -132,8 +175,8 @@ class BaseTest:
                 result_list = list(response.result())
                 self.assertEqual(
                     len(table_info.get('loaded_ids', [])), len(result_list),
-                    f"The pre-condition query did not return expected number of rows.  Selection query is:\n{query}"
-                )
+                    (f"The pre-condition query did not return expected number "
+                     f"of rows.  Selection query is:\n{query}"))
 
                 for item in result_list:
                     self.assertIn(item[0], table_info.get('loaded_ids', []),
