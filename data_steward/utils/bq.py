@@ -22,9 +22,10 @@ def get_client(project_id=None):
     Get a client for a specified project.
 
     :param project_id:  Name of the project to create a bigquery library client for
+        It is being nice for now, but will begin to require users to provide
+        the project_id.
 
-    :return:  A bigquery Client object.  It is being nice for now, but will begin to
-        require users to provide the project_id.
+    :return:  A bigquery Client object.
     """
     if project_id is None:
         LOGGER.info(
@@ -61,7 +62,7 @@ def get_table_schema(table_name):
     return schema
 
 
-def create_tables(project_id=None, fq_table_names=None, exists_ok=False):
+def create_tables(project_id, fq_table_names, exists_ok=False):
     """
     Create an empty table(s) in a project.
 
@@ -84,15 +85,8 @@ def create_tables(project_id=None, fq_table_names=None, exists_ok=False):
     if not project_id or not isinstance(project_id, str):
         raise RuntimeError("Must specify the project to create the tables in")
 
-    if not fq_table_names:
-        raise RuntimeError(
-            "Must specify a list of fully qualified table names to create")
-
-    if not isinstance(fq_table_names, list):
-        if not isinstance(fq_table_names, str):
-            raise RuntimeError("fq_table_names expects a list of strings")
-
-        fq_table_names = list(fq_table_names)
+    if not fq_table_names or not isinstance(fq_table_names, list):
+        raise RuntimeError("Must specify a list for fq_table_names to create")
 
     client = get_client(project_id=project_id)
 
