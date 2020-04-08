@@ -181,6 +181,12 @@ class CleanMappingExtTables(BaseCleaningRule):
         """
         pass
 
+    def get_sandbox_tablenames(self):
+        """
+        Returns a list of sandbox table names.
+        """
+        raise NotImplementedError("Please fix me")
+
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
