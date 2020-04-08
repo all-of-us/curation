@@ -65,10 +65,10 @@ FROM `{project_id}.{dataset_id}.{table_id}`
 FIX_NULL_OR_INCORRECT_DATETIME_QUERY = """
 CASE
 WHEN {field} IS NULL
-THEN CAST(DATETIME({date_field}, MAKETIME(00,00,00)) AS TIMESTAMP
+THEN CAST(DATETIME({date_field}, TIME(00,00,00)) AS TIMESTAMP)
 WHEN EXTRACT(DATE FROM {field}) = {date_field}
 THEN {field}
-ELSE CAST(DATETIME({date_field}, EXTRACT(TIME FROM {field})) AS TIMESTAMP
+ELSE CAST(DATETIME({date_field}, EXTRACT(TIME FROM {field})) AS TIMESTAMP)
 END AS {field}
 """
 
