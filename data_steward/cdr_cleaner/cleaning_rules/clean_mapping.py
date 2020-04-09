@@ -184,6 +184,11 @@ class CleanMappingExtTables(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         """
         Returns a list of sandbox table names.
+
+        This abstract method was added to the base class after this rule was
+        authored.  This rule needs to implement returning a list of sandbox
+        table names.  Until done, it is raising an error.  No issue exists for
+        this yet.
         """
         raise NotImplementedError("Please fix me")
 

@@ -62,7 +62,7 @@ def get_table_schema(table_name):
     return schema
 
 
-def create_tables(project_id, fq_table_names, exists_ok=False):
+def create_tables(client, project_id, fq_table_names, exists_ok=False):
     """
     Create an empty table(s) in a project.
 
@@ -71,6 +71,7 @@ def create_tables(project_id, fq_table_names, exists_ok=False):
     allow the table to be created using the schema defined in a definition
     file without requiring the user to read the file or submit the filepath.
 
+    :param client: an instantiated bigquery client object
     :param project_id:  The project that will contain the created table.
     :param fq_table_names: A list of fully qualified table names.
     :param exists_ok: A flag to throw an error if the table already exists.
@@ -81,14 +82,14 @@ def create_tables(project_id, fq_table_names, exists_ok=False):
 
     :return: A list of created table objects.
     """
+    if not client:
+        raise RuntimeError("Specify BigQuery client object")
 
     if not project_id or not isinstance(project_id, str):
-        raise RuntimeError("Must specify the project to create the tables in")
+        raise RuntimeError("Specify the project to create the tables in")
 
     if not fq_table_names or not isinstance(fq_table_names, list):
-        raise RuntimeError("Must specify a list for fq_table_names to create")
-
-    client = get_client(project_id=project_id)
+        raise RuntimeError("Specify a list for fq_table_names to create")
 
     successes = []
     failures = []
@@ -176,44 +177,36 @@ def create_dataset(project_id,
 
     :return: a dataset reference object.
 
-    :raises: any GoogleAPIError that is not a 404 error.
-        google.api_core.exceptions.Conflict if the dataset already exists
+    :raises: google.api_core.exceptions.Conflict if the dataset already exists
     """
     if description.isspace() or not description:
-        raise RuntimeError("you must provide a description.")
+        raise RuntimeError("Provide a description to create a dataset.")
 
     if not project_id:
         raise RuntimeError(
-            "You must specify the project_id for the project containing the dataset"
-        )
+            "Specify the project_id for the project containing the dataset")
 
     if not dataset_id:
-        raise RuntimeError("You must provide a dataset_id")
+        raise RuntimeError("Provide a dataset_id")
 
     client = get_client(project_id)
 
-    dataset_id = "{}.{}".format(client.project, dataset_id)
+    dataset_id = "{}.{}".format(project_id, dataset_id)
 
     # Construct a full Dataset object to send to the API.
     dataset = bigquery.Dataset(dataset_id)
-
+    dataset.description = description
+    dataset.labels = labels
     dataset.location = "US"
 
-    try:
-        dataset = client.create_dataset(dataset,
-                                        exists_ok)  # Make an API request.
-    except Conflict:
-        LOGGER.exception("Dataset %s already exists.  Returning that dataset",
-                         dataset_id)
-        return client.get_dataset(dataset_id)
-
-    return dataset
+    return client.create_dataset(dataset, exists_ok)
 
 
-def get_or_create_dataset(project_id, dataset_id):
+def get_or_create_dataset(client, project_id, dataset_id, desc=None):
     """
     Get the dataset reference if it exists.  Else create it.
 
+    :param client: an instantiated client object
     :param project_id:  string name of the project to search for a dataset
     :param dataset_id:  string name of the dataset id to return a reference of
 
@@ -221,7 +214,8 @@ def get_or_create_dataset(project_id, dataset_id):
 
     :raises: any GoogleAPIError that is not a 404 error
     """
-    client = get_client(project_id)
+    if not client:
+        raise RuntimeError("Provide a valid bigquery client object")
 
     try:
         return get_dataset(project_id, dataset_id)
@@ -229,8 +223,12 @@ def get_or_create_dataset(project_id, dataset_id):
         if err.code != 404:
             raise err
 
-        desc = 'dataset automatically generated because it doesnt exist yet'
-        return create_dataset(project_id, dataset_id, desc)
+        if desc:
+            return create_dataset(project_id, dataset_id, desc)
+        else:
+            raise RuntimeError(
+                f"Dataset {dataset_id} not found and no description was "
+                f"provided to create a new dataset with.")
 
 
 def delete_dataset(project_id,

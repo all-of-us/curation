@@ -20,7 +20,7 @@ from jinja2 import Template
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import ObservationSourceConceptIDRowSuppression
-from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.cleaning_tests_base import BaseTest
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
 class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
@@ -42,6 +42,8 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
         print(cls.__name__)
         print('**************************************************************')
 
+        super().initialize_class_vars()
+
         # set the test project identifier
         project_id = os.environ.get(PROJECT_ID)
         cls.project_id = project_id
@@ -49,8 +51,6 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
         # set the expected test datasets
         dataset_id = os.environ.get('RDR_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
-        cls.test_dataset_ids = [dataset_id]
-        cls.sandbox_dataset_ids = [sandbox_id]
 
         cls.query_class = ObservationSourceConceptIDRowSuppression(
             project_id, dataset_id, sandbox_id)
@@ -85,17 +85,17 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
         """
         Add data to the tables for the rule to run on.
         """
-        self.age_prediabetes = 43530490
-        self.meds_prediabetes = 43528818
-        self.now_prediabetes = 43530333
+        age_prediabetes = 43530490
+        meds_prediabetes = 43528818
+        now_prediabetes = 43530333
 
         load_statements = []
         # create the string(s) to load the data
         for tmpl in self.insert_fake_participants_tmpls:
             query = tmpl.render(fq_table_name=self.fq_table_names[0],
-                                age_prediabetes=self.age_prediabetes,
-                                meds_prediabetes=self.meds_prediabetes,
-                                now_prediabetes=self.now_prediabetes)
+                                age_prediabetes=age_prediabetes,
+                                meds_prediabetes=meds_prediabetes,
+                                now_prediabetes=now_prediabetes)
             load_statements.append(query)
 
         self.sql_load_statements = load_statements

@@ -119,7 +119,6 @@ def main(test_path, test_pattern, coverage_filepath):
         message += "\n{} failure(s).".format(len(failures))
 
     print(message)
-
     return not errors and not failures
 
 
