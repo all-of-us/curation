@@ -87,8 +87,11 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = (
-            'Ensure date and datetime consistency where nulls exist in nullable fields'
-            'by setting date in datetime to the date in date field and time as midnight (00,00,00)'
+            'Ensures consistency when the datetime field is null or when the date and datetime fields are equal by '
+            '(1) If the datetime field is null: Setting the datetime field\'s values to the date field\'s date and '
+            'midnight (00:00:00); or '
+            '(2) If the date and datetime fields are equal: Setting the datetime field\'s values to the date from the '
+            'date field and the time from the datetime field.'
         )
         super().__init__(issue_numbers=['DC-614', 'DC-509', 'DC-432'],
                          description=desc,
@@ -103,7 +106,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
     def get_cols(self, table):
         """
         Generates the fields to choose along with case statements to generate datetime
-        And ensure no null datetime values
+        And ensures no null datetime values
 
         :param self: instance of EnsureDateDatetimeConsistency class
         :param table: table for which the fields are pulled
