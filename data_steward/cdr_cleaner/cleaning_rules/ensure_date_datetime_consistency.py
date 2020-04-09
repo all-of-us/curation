@@ -91,8 +91,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
             '(1) If the datetime field is null: Setting the datetime field\'s values to the date field\'s date and '
             'midnight (00:00:00); or '
             '(2) If the date and datetime fields are equal: Setting the datetime field\'s values to the date from the '
-            'date field and the time from the datetime field.'
-        )
+            'date field and the time from the datetime field.')
         super().__init__(issue_numbers=['DC-614', 'DC-509', 'DC-432'],
                          description=desc,
                          affected_datasets=[
