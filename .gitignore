@@ -140,3 +140,6 @@ data_steward/analytics/table_metrics/*.xlsx
 # want to ignore any files that may be used to generate dfs
 # that result from site DQ issues
 data_steward/analytics/tools/dq_issue_tracker/*.xlsx
+
+# exclude reports for use in metrics_over_time
+data_steward/analytics/table_metrics/metrics_over_time/*.xlsx
