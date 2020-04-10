@@ -107,6 +107,17 @@ def query_priority(priority):
         raise ArgumentTypeError(message)
 
 
+def odataset_name_verification(odataset_name):
+    """
+    Ensures the output dataset name contains _deid
+    """
+    if "_deid" in odataset_name:
+        return odataset_name
+    else:
+        message = '%s: Must include _deid' % odataset_name
+        raise ArgumentTypeError(message)
+
+
 def parse_args(raw_args=None):
     """
     Parse command line arguments.
@@ -122,8 +133,13 @@ def parse_args(raw_args=None):
     parser.add_argument('--idataset',
                         action='store',
                         dest='idataset',
-                        help=('Name of the input dataset (an output dataset '
-                              'with suffix _deid will be generated)'),
+                        help='Name of the input dataset',
+                        required=True)
+    parser.add_argument('--odataset',
+                        action='store',
+                        dest='odataset',
+                        type=odataset_name_verification,
+                        help='Name of the output dataset must include _deid ',
                         required=True)
     parser.add_argument('--private_key',
                         dest='private_key',
