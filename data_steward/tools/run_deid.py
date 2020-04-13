@@ -3,16 +3,21 @@ Deid runner.
 
 A central script to execute deid for each table needing de-identification.
 """
+
+# Python imports
 from datetime import datetime
 import logging
 import os
 from argparse import ArgumentParser
 
+# Third party imports
 import google
 
+# Project imports
 import bq_utils
 import deid.aou as aou
 from resources import fields_for, fields_path, DEID_PATH
+from deid.parser import odataset_name_verification
 
 LOGGER = logging.getLogger(__name__)
 DEID_TABLES = [
@@ -157,6 +162,12 @@ def parse_args(raw_args=None):
                         action='store',
                         required=True,
                         help='Service account file location')
+    parser.add_argument('--odataset',
+                        action='store',
+                        dest='odataset',
+                        type=odataset_name_verification,
+                        help='Name of the output dataset must include _deid ',
+                        required=True)
     parser.add_argument(
         '-a',
         '--action',
@@ -230,7 +241,7 @@ def main(raw_args=None):
             '--rules',
             os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
             '--private_key', args.private_key, '--table', tablepath, '--action',
-            args.action, '--idataset', args.input_dataset, '--log', LOGS_PATH
+            args.action, '--idataset', args.input_dataset, '--log', LOGS_PATH, '--odataset', args.output_dataset
         ]
 
         if args.interactive_mode:
