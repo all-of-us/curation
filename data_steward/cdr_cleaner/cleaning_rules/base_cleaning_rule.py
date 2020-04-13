@@ -192,7 +192,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         # validate issue_numbers is a list of strings
         self.__validate_list_of_strings(self._issue_numbers, 'issue_numbers')
 
-        # validate issue_numbers is a list of strings
+        # validate issue_urls is a list of strings
         self.__validate_list_of_strings(self._issue_urls, 'issue_urls')
 
         # validate affected datasets is a list of strings.
