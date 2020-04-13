@@ -50,6 +50,7 @@ import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_partic
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -69,7 +70,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     # (populate_routes.get_route_mapping_queries,),
     (
-        fix_datetimes.get_fix_incorrect_datetime_to_date_queries,),
+        EnsureDateDatetimeConsistency,),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     # DC-698 opened to fix it.
@@ -130,8 +131,7 @@ COMBINED_CLEANING_CLASSES = [
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
     #    (populate_routes.get_route_mapping_queries,),
-    (
-        fix_datetimes.get_fix_incorrect_datetime_to_date_queries,),
+    (EnsureDateDatetimeConsistency),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),
