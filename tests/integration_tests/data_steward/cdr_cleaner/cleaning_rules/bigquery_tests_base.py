@@ -50,9 +50,6 @@ class BaseTest:
             # a list of fully qualified sandbox tables the rule may create.
             # required for cleanup
             cls.fq_sandbox_table_names = []
-            # a list of load statements to execute before each test.  This can be
-            # defined in the extending class's 'setUp(self)' function.
-            cls.sql_load_statements = []
             # bq client object responsible for creating and tearing down BigQuery resources
             cls.client = None
 
@@ -81,7 +78,7 @@ class BaseTest:
                     f"cleaning rule.  deletion candidate.")
             for dataset_id in set(required_datasets):
                 bq.get_or_create_dataset(cls.client, cls.project_id, dataset_id,
-                                         desc)
+                                         desc, {'test': ''})
 
             bq.create_tables(cls.client, cls.project_id, cls.fq_table_names,
                              True)
@@ -119,12 +116,18 @@ class BaseTest:
             for table in self.fq_table_names + self.fq_sandbox_table_names:
                 self.drop_rows(table)
 
-        def setUp(self):
+        def load_test_data(self, sql_statements=None):
             """
             Add data to the tables for the rule to run on.
+
+            :param sql_statements: a list of sql statements to load for testing.
             """
-            # load the data from the sql strings and validate it loaded
-            for query in self.sql_load_statements:
+
+            if not sql_statements or not isinstance(sql_statements, list):
+                raise RuntimeError("Provide parameter sql_statements.  The "
+                                   "parameter must be list of sql strings.")
+
+            for query in sql_statements:
                 response = self.client.query(query)
                 self.assertIsNotNone(response.result())
                 self.assertIsNone(response.exception())
@@ -162,7 +165,7 @@ class BaseTest:
             # The query class that is being executed.
             cls.query_class = None
 
-        def test_execution_of_get_query_specs(self):
+        def test_execution_default(self):
             """
             Test passing the query specifications to the clean engine module.
 

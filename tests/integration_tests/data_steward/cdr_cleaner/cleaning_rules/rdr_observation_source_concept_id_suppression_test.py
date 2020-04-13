@@ -98,5 +98,4 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
                                 now_prediabetes=now_prediabetes)
             load_statements.append(query)
 
-        self.sql_load_statements = load_statements
-        super().setUp()
+        self.load_test_data(load_statements)

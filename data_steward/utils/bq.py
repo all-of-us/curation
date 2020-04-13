@@ -111,19 +111,10 @@ def create_tables(client, project_id, fq_table_names, exists_ok=False):
     return successes
 
 
-def query(query_str, project_id=None, use_cache=False):
-    """
-    Run the specified query.
-
-    :param query_str: the query to execute
-    :param project_id:  the project identifier to run the query in.
-    :param use_cache:  allow using cached query objects.
-
-    :return:  The results of executing the query in the given project.
-    """
+def query(q, project_id=None, use_cache=False):
     client = get_client(project_id)
     query_job_config = bigquery.job.QueryJobConfig(use_query_cache=use_cache)
-    return client.query(query_str, job_config=query_job_config)
+    return client.query(q, job_config=query_job_config).to_dataframe()
 
 
 def list_datasets(project_id):
@@ -164,13 +155,9 @@ def get_dataset(project_id, dataset_id):
     return client.get_dataset(dataset_id)
 
 
-def create_dataset(project_id,
-                   dataset_id,
-                   description,
-                   labels={},
-                   exists_ok=False):
+def define_dataset(project_id, dataset_id, description, labels={}):
     """
-    Create the dataset reference.
+    Define the dataset reference.
 
     :param project_id:  string name of the project to search for a dataset
     :param dataset_id:  string name of the dataset id to return a reference of
@@ -189,9 +176,7 @@ def create_dataset(project_id,
     if not dataset_id:
         raise RuntimeError("Provide a dataset_id")
 
-    client = get_client(project_id)
-
-    dataset_id = "{}.{}".format(project_id, dataset_id)
+    dataset_id = f"{project_id}.{dataset_id}"
 
     # Construct a full Dataset object to send to the API.
     dataset = bigquery.Dataset(dataset_id)
@@ -199,10 +184,14 @@ def create_dataset(project_id,
     dataset.labels = labels
     dataset.location = "US"
 
-    return client.create_dataset(dataset, exists_ok)
+    return dataset
 
 
-def get_or_create_dataset(client, project_id, dataset_id, desc=None):
+def get_or_create_dataset(client,
+                          project_id,
+                          dataset_id,
+                          desc=None,
+                          labels=None):
     """
     Get the dataset reference if it exists.  Else create it.
 
@@ -218,13 +207,14 @@ def get_or_create_dataset(client, project_id, dataset_id, desc=None):
         raise RuntimeError("Provide a valid bigquery client object")
 
     try:
-        return get_dataset(project_id, dataset_id)
+        return client.get_dataset(dataset_id)
     except NotFound as err:
         if err.code != 404:
             raise err
 
         if desc:
-            return create_dataset(project_id, dataset_id, desc)
+            dataset = define_dataset(project_id, dataset_id, desc, labels)
+            return client.create_dataset(dataset)
         else:
             raise RuntimeError(
                 f"Dataset {dataset_id} not found and no description was "
