@@ -225,18 +225,16 @@ def fetch_parser():
                         help='Identifies the site submitting the person_ids, '
                         'can be "none" if not targeting ehr datasets',
                         required=True)
-    subparsers = parser.add_subparsers()
+    pid_source_group = parser.add_mutually_exclusive_group(required=True)
 
-    subparser_pid_source = subparsers.add_parser(
-        name='pid_source', help='Specifies the source of pids')
-    subparser_pid_source.add_argument(
+    pid_source_group.add_argument(
         '-l',
         '--pid_list',
         dest='pid_source',
         nargs='+',
         type=int,
         help='person/research ids to consider separated by spaces')
-    subparser_pid_source.add_argument(
+    pid_source_group.add_argument(
         '-t',
         '--pid_table',
         dest='pid_source',

@@ -247,7 +247,7 @@ class RetractUtilsTest(unittest.TestCase):
         expected = self.pids_list
         args = parser.parse_args([
             '-p', self.project_id, '-d', self.dataset_id, self.ehr_dataset_id,
-            '-o', self.hpo_id, 'pid_source', '--pid_list', '1', '2', '3', '4'
+            '-o', self.hpo_id, '--pid_list', '1', '2', '3', '4'
         ])
         actual = args.pid_source
         self.assertEqual(expected, actual)
@@ -258,7 +258,7 @@ class RetractUtilsTest(unittest.TestCase):
         expected = self.pid_table_str
         args = parser.parse_args([
             '-p', self.project_id, '-d', ru_consts.ALL_DATASETS, '-o',
-            self.hpo_id, 'pid_source', '--pid_table', self.pid_table_str
+            self.hpo_id, '--pid_table', self.pid_table_str
         ])
         actual = args.pid_source
         self.assertEqual(expected, actual)
@@ -266,7 +266,15 @@ class RetractUtilsTest(unittest.TestCase):
         expected = self.pid_table_str
         args = parser.parse_args([
             '-p', self.project_id, '-d', ru_consts.ALL_DATASETS, '-o',
-            self.hpo_id, 'pid_source', '--pid_table', self.pid_table_str
+            self.hpo_id, '--pid_table', self.pid_table_str
         ])
         actual = args.pid_source
         self.assertEqual(expected, actual)
+
+        args_list = [
+            '-p', self.project_id, '-d', ru_consts.ALL_DATASETS, '-o',
+            self.hpo_id, '--pid_table', self.pid_table_str, '--pid_list', '1',
+            '2', '3', '4'
+        ]
+        self.assertRaises((ru.argparse.ArgumentError, SystemExit),
+                          parser.parse_args, args_list)
