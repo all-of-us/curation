@@ -219,18 +219,17 @@ def log_total_rows(df, dataset_id):
             logging.info('{}, {}, {}, {}, {}'.format(dataset_id, *count_row))
 
 
-def count_pid_rows_in_project(project_id, hpo_id, pid_source, dataset_ids_str):
+def count_pid_rows_in_project(project_id, hpo_id, pid_source, dataset_ids=None):
     """
     Logs dataset_name, table_id, all_count, all_ehr_count and map_ehr_count to count rows pertaining to pids
 
     :param project_id: identifies the project
     :param hpo_id: Identifies the hpo site that submitted the pids
     :param pid_source: string containing query or list containing pids
-    :param dataset_ids_str: string containing datasets to target separated by spaces or
-        "all_datasets" to target all datasets in project
+    :param dataset_ids: list identifying datasets to retract from or None to retract from all datasets
     :return:
     """
-    dataset_ids = ru.get_dataset_ids_to_target(project_id, dataset_ids_str)
+    dataset_ids = ru.get_dataset_ids_to_target(project_id, dataset_ids)
     for dataset_id in dataset_ids:
         try:
             # We do not fetch queries for each dataset here and union them since it exceeds BQ query length limits

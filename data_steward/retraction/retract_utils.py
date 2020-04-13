@@ -170,22 +170,21 @@ def get_pid_sql_expr(pid_source, pid=consts.PERSON_ID):
         'Please specify pid_table parameters as "project.dataset.table"')
 
 
-def get_dataset_ids_to_target(project_id, parsed_dataset_ids):
+def get_dataset_ids_to_target(project_id, dataset_ids=None):
     """
-    Returns dataset_ids of interest
+    Return dataset_ids that are found in the project based on BQ metadata
 
     :param project_id: Identifies the project to target
-    :param parsed_dataset_ids: List of dataset_ids input by the user separated by spaces, or
-        "all_datasets" to target all datasets in project
+    :param dataset_ids: list identifying datasets or None for all datasets
     :return: List of dataset_ids in the project to target
     """
-    dataset_ids = []
     all_datasets = bq.list_datasets(project_id)
     all_dataset_ids = [dataset.dataset_id for dataset in all_datasets]
-    if parsed_dataset_ids == [consts.ALL_DATASETS]:
-        dataset_ids = all_dataset_ids
+    result_dataset_ids = []
+    if dataset_ids is None:
+        result_dataset_ids = all_dataset_ids
     else:
-        for dataset_id in parsed_dataset_ids:
+        for dataset_id in dataset_ids:
             if dataset_id == consts.ALL_DATASETS:
                 raise ValueError(
                     "Please enter 'all_datasets' to target all datasets "
@@ -195,8 +194,8 @@ def get_dataset_ids_to_target(project_id, parsed_dataset_ids):
                     f"Dataset {dataset_id} not found in project {project_id}, skipping"
                 )
             else:
-                dataset_ids.append(dataset_id)
-    return dataset_ids
+                result_dataset_ids.append(dataset_id)
+    return result_dataset_ids
 
 
 def fetch_parser():

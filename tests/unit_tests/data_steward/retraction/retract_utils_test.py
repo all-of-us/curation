@@ -227,9 +227,8 @@ class RetractUtilsTest(unittest.TestCase):
         dataset_2 = mock.Mock(spec=['dataset_2'], dataset_id=dataset_id_2)
         mock_datasets_list.return_value = [dataset_1, dataset_2]
 
-        dataset_ids = [ru_consts.ALL_DATASETS]
         expected = [dataset_id_1, dataset_id_2]
-        actual = ru.get_dataset_ids_to_target(self.project_id, dataset_ids)
+        actual = ru.get_dataset_ids_to_target(self.project_id)
         self.assertListEqual(expected, actual)
 
         dataset_ids = [dataset_id_1]
@@ -240,6 +239,12 @@ class RetractUtilsTest(unittest.TestCase):
         dataset_ids = [ru_consts.ALL_DATASETS, dataset_id_1]
         self.assertRaises(ValueError, ru.get_dataset_ids_to_target,
                           self.project_id, dataset_ids)
+
+        # a dataset which is not found is skipped
+        dataset_ids = [dataset_id_1, dataset_id_2, 'missing_dataset']
+        expected = [dataset_id_1, dataset_id_2]
+        actual = ru.get_dataset_ids_to_target(self.project_id, dataset_ids )
+        self.assertListEqual(expected, actual)
 
     def test_fetch_args(self):
         parser = ru.fetch_parser()
