@@ -170,22 +170,26 @@ def get_pid_sql_expr(pid_source, pid=consts.PERSON_ID):
         'Please specify pid_table parameters as "project.dataset.table"')
 
 
-def get_dataset_ids_to_target(project_id, dataset_ids_str):
+def get_dataset_ids_to_target(project_id, parsed_dataset_ids):
     """
     Returns dataset_ids of interest
 
     :param project_id: Identifies the project to target
-    :param dataset_ids_str: String of dataset_ids input by the user separated by spaces, or
+    :param parsed_dataset_ids: List of dataset_ids input by the user separated by spaces, or
         "all_datasets" to target all datasets in project
     :return: List of dataset_ids in the project to target
     """
+    dataset_ids = []
     all_datasets = bq.list_datasets(project_id)
     all_dataset_ids = [dataset.dataset_id for dataset in all_datasets]
-    dataset_ids = []
-    if dataset_ids_str == consts.ALL_DATASETS:
+    if parsed_dataset_ids == [consts.ALL_DATASETS]:
         dataset_ids = all_dataset_ids
     else:
-        for dataset_id in dataset_ids_str.split():
+        for dataset_id in parsed_dataset_ids:
+            if dataset_id == consts.ALL_DATASETS:
+                raise ValueError(
+                    "Please enter 'all_datasets' to target all datasets "
+                    "or specific datasets without using 'all_datasets'")
             if dataset_id not in all_dataset_ids:
                 logging.info(
                     f"Dataset {dataset_id} not found in project {project_id}, skipping"
@@ -205,6 +209,15 @@ def fetch_parser():
                         dest='project_id',
                         help='Identifies the project to retract data from',
                         required=True)
+    parser.add_argument('-d',
+                        '--dataset_ids',
+                        action='store',
+                        nargs='+',
+                        dest='dataset_ids',
+                        help='Identifies datasets to target. Set to'
+                        ' "all_datasets" to target all datasets in project '
+                        'or specific datasets as -d dataset_1 dataset_2 etc.',
+                        required=True)
     parser.add_argument('-o',
                         '--hpo_id',
                         action='store',
@@ -212,27 +225,20 @@ def fetch_parser():
                         help='Identifies the site submitting the person_ids, '
                         'can be "none" if not targeting ehr datasets',
                         required=True)
-    parser.add_argument('-d',
-                        '--dataset_ids',
-                        action='store',
-                        dest='dataset_ids',
-                        help='Identifies datasets to target. Set to'
-                        ' "all_datasets" to target all datasets in project '
-                        'or specific datasets as "dataset_1 dataset_2" etc.',
-                        required=True)
     subparsers = parser.add_subparsers()
 
-    subparser_pid_list = subparsers.add_parser(
-        name='pid_list',
-        help='Specifies the source of pids in list of int form')
-    subparser_pid_list.add_argument(
+    subparser_pid_source = subparsers.add_parser(
+        name='pid_source', help='Specifies the source of pids')
+    subparser_pid_source.add_argument(
+        '-l',
+        '--pid_list',
         dest='pid_source',
         nargs='+',
         type=int,
         help='person/research ids to consider separated by spaces')
-
-    subparser_pid_table = subparsers.add_parser(
-        name='pid_table', help='Specifies the source of pids in BQ table form')
-    subparser_pid_table.add_argument(
-        dest='pid_source', help='Specify table as "project.dataset.table"')
+    subparser_pid_source.add_argument(
+        '-t',
+        '--pid_table',
+        dest='pid_source',
+        help='Specify table as "project.dataset.table"')
     return parser
