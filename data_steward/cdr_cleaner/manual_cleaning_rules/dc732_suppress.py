@@ -1,21 +1,21 @@
 # # DC-732 Retract Rows with Suppressed Concepts
 #
-# Identify, log and remove all rows from all tables in specified deid datasets where at least one concept_id field references a concept which must be suppressed.
+# Identify, log and remove all rows from all tables in specified deid datasets where at least one
+# concept_id field references a concept which must be suppressed.
 #
 # ## Notes
-#  * Prior to running the table identified by `CONCEPT_LOOKUP_TABLE` must be loaded with concepts to suppress. At minimum this table should have the field `concept_id`.
+#
+#  * Prior to running the table identified by `CONCEPT_LOOKUP_TABLE` must be loaded with concepts to
+#    suppress. At minimum this table should have the field `concept_id`.
 #  * This can safely be re-run (e.g. if a new concept is added to the lookup).
-# <style>
-# /* make tables look less bad in jupyter */
-# table {margin-left: 0 !important;}
-# </style>
+
 # +
 from google.cloud import bigquery
 import jinja2
 import pandas as pd
 
-
 from utils import bq
+
 # -
 
 ISSUE_NUMBER = 'DC-732'
@@ -36,12 +36,14 @@ CLIENT = bq.get_client()
 
 # # Identify and Log Records
 #
-# The following is to help ensure generation of valid queries (account for missing tables, changes to our ext
-# table conventions). For supplied datasets, retrieve all OMOP clinical tables (those with a person_id and primary key column) and their associated ext table.
+# The following is to help ensure generation of valid queries (account for missing tables, changes
+# to our ext table conventions). For supplied datasets, retrieve all OMOP clinical tables (those
+# with a person_id and primary key column) and their associated ext table.
 #
 # ## Rows
-# For each target dataset, compose a query which identifies all rows from all tables where at least one concept_id
-# field contains one of the concept_ids to suppress. Log these results to a csv file and to a sandbox table with the below schema:
+# For each target dataset, compose a query which identifies all rows from all tables where at least
+# one concept_id field contains one of the concept_ids to suppress. Log these results to a csv file
+# and to a sandbox table with the below schema:
 #
 # | Field name            | Type    | Description                                      |
 # |-----------------------|---------|--------------------------------------------------|
@@ -53,7 +55,8 @@ CLIENT = bq.get_client()
 # | source                | STRING  | The source of the record (EHR site or PPI/PM)    |
 #
 # ## Summary
-# In memory, compute the total number of rows, number of participants, number of sources (i.e. EHR sites, PPI/PM). Log these results to a csv file and to a sandbox table with the below schema.
+# In memory, compute the total number of rows, number of participants, number of sources (i.e. EHR
+# sites, PPI/PM). Log these results to a csv file and to a sandbox table with the below schema.
 #
 # | Field name            | Type    | Description                                      |
 # |-----------------------|---------|--------------------------------------------------|
@@ -65,8 +68,7 @@ CLIENT = bq.get_client()
 # | n_source              | INTEGER | Number of unique sources                         |
 # | ppi_pm                | INTEGER | 1 if found in PPI/PM records, 0 otherwise        |
 
-TABLES_TO_SUPPRESS_QUERY = JINJA_ENV.from_string(
-    """
+TABLES_TO_SUPPRESS_QUERY = JINJA_ENV.from_string("""
     -- Columns for all tables in all datasets --
     WITH all_columns AS (
     {% for dataset_id in dataset_ids %}
@@ -124,7 +126,8 @@ def get_tables_to_suppress_df(project_id, target_dataset_ids):
     :param target_dataset_ids: list of dataset_ids of datasets to suppress
     :return: dataframe with dataset_id, table_name, ext_table_name, columns
     """
-    query = TABLES_TO_SUPPRESS_QUERY.render(project_id=project_id, dataset_ids=target_dataset_ids)
+    query = TABLES_TO_SUPPRESS_QUERY.render(project_id=project_id,
+                                            dataset_ids=target_dataset_ids)
     query_job = CLIENT.query(query)
     tables_to_wipe_df = query_job.to_dataframe()
     return tables_to_wipe_df
@@ -196,7 +199,11 @@ def get_rows_to_suppress_queries(tables_to_suppress_df, concept_lookup_table):
         sub_queries = []
         for _, table_info in table_info_df.iterrows():
             cols = table_info['columns']
-            concept_fields = [dict(name=col, alias=col.replace('_id', '')) for col in cols if is_concept_id_col(col)]
+            concept_fields = [
+                dict(name=col, alias=col.replace('_id', ''))
+                for col in cols
+                if is_concept_id_col(col)
+            ]
             if concept_fields:
                 # Otherwise there are no rows to remove
                 sub_query = ROWS_TO_SUPPRESS_QUERY.render(
@@ -217,10 +224,14 @@ def get_rows_to_suppress_df(tables_to_suppress_df, concept_lookup_table):
 
     :param tables_to_suppress_df: dataframe with dataset_id, table_name, ext_table_name, columns
     :param concept_lookup_table: identifies the lookup table with concepts to suppress
-    :return: dataframe with dataset_id, disallowed_concept_id, table, n_person_id, n_row_id, n_source, ppi_pm
+    :return: dataframe with dataset_id, disallowed_concept_id, table, n_person_id, n_row_id,
+             n_source, ppi_pm
     """
-    dataset_queries = get_rows_to_suppress_queries(tables_to_suppress_df, concept_lookup_table)
-    return pd.concat(CLIENT.query(dataset_query).to_dataframe() for dataset_query in dataset_queries)
+    dataset_queries = get_rows_to_suppress_queries(tables_to_suppress_df,
+                                                   concept_lookup_table)
+    return pd.concat(
+        CLIENT.query(dataset_query).to_dataframe()
+        for dataset_query in dataset_queries)
 
 
 def ppi_pm(g):
@@ -237,16 +248,24 @@ def get_suppress_summary_df(rows_to_suppress_df):
     :param rows_to_suppress_df: info on rows to suppress from target datasets
     :return: dataframe with dataset_id, table, disallowed_concept_id, person_id, row_id, source
     """
-    summary_cols = ['dataset_id', 'table', 'disallowed_concept_id', 'person_id', 'row_id', 'source']
-    group_by_concept = rows_to_suppress_df[summary_cols].groupby(['dataset_id', 'table', 'disallowed_concept_id'])
-    summary_df = group_by_concept.nunique().drop(columns=['dataset_id', 'table', 'disallowed_concept_id'])
+    summary_cols = [
+        'dataset_id', 'table', 'disallowed_concept_id', 'person_id', 'row_id',
+        'source'
+    ]
+    group_by_concept = rows_to_suppress_df[summary_cols].groupby(
+        ['dataset_id', 'table', 'disallowed_concept_id'])
+    summary_df = group_by_concept.nunique().drop(
+        columns=['dataset_id', 'table', 'disallowed_concept_id'])
     summary_df = summary_df.add_prefix('n_')
     summary_df['ppi_pm'] = group_by_concept.apply(ppi_pm)
-    return summary_df.sort_values(by=['dataset_id', 'table', 'n_person_id'], ascending=False)
+    return summary_df.sort_values(by=['dataset_id', 'table', 'n_person_id'],
+                                  ascending=False)
 
 
 # # Backup Rows
-# Backup rows are stored in tables whose structure is identical to domain tables except for the addition of fields to distinguish the dataset and table the original row came from. For example, `visit_occurrence` rows would be backed up in a table with the below schema.
+# Backup rows are stored in tables whose structure is identical to domain tables except for the
+# addition of fields to distinguish the dataset and table the original row came from. For example,
+# `visit_occurrence` rows would be backed up in a table with the below schema.
 #
 # | Field name                    | Type    |
 # |-------------------------------|---------|
@@ -304,24 +323,35 @@ def backup_rows_to_suppress(tables_to_suppress_df, suppress_rows_table):
     :param suppress_rows_table: identifies the table where suppress rows are loaded
     :return: list of query jobs
     """
-    tables_group_df = tables_to_suppress_df.groupby(by=['table_name', 'ext_table_name'])
+    tables_group_df = tables_to_suppress_df.groupby(
+        by=['table_name', 'ext_table_name'])
     query_jobs = []
     for (table_name, ext_table_name), table_info in tables_group_df:
         dataset_ids = table_info.dataset_id.unique()
         if table_name != 'observation':
             backup_rows_dest_table = f'{PROJECT_ID}.{SANDBOX_DATASET_ID}.{ISSUE_PREFIX}{table_name}'
-            job_config = bigquery.QueryJobConfig(destination=backup_rows_dest_table)
+            job_config = bigquery.QueryJobConfig(
+                destination=backup_rows_dest_table)
             job_config.write_disposition = 'WRITE_APPEND'
-            backup_table_rows_query = BACKUP_TABLE_ROWS_QUERY.render(dataset_ids=dataset_ids, table=table_name, suppress_rows_table=suppress_rows_table)
-            backup_table_query_job = CLIENT.query(backup_table_rows_query, job_config=job_config)
+            backup_table_rows_query = BACKUP_TABLE_ROWS_QUERY.render(
+                dataset_ids=dataset_ids,
+                table=table_name,
+                suppress_rows_table=suppress_rows_table)
+            backup_table_query_job = CLIENT.query(backup_table_rows_query,
+                                                  job_config=job_config)
             query_jobs.append(backup_table_query_job)
-            
+
             if ext_table_name:
                 backup_ext_dest_table = f'{PROJECT_ID}.{SANDBOX_DATASET_ID}.{ISSUE_PREFIX}{ext_table_name}'
-                job_config = bigquery.QueryJobConfig(destination=backup_ext_dest_table)
+                job_config = bigquery.QueryJobConfig(
+                    destination=backup_ext_dest_table)
                 job_config.write_disposition = 'WRITE_APPEND'
-                backup_ext_table_rows_query = BACKUP_EXT_TABLE_ROWS_QUERY.render(dataset_ids=dataset_ids, table=table_name, suppress_rows_table=suppress_rows_table)
-                backup_ext_table_query_job = CLIENT.query(backup_ext_table_rows_query, job_config=job_config)
+                backup_ext_table_rows_query = BACKUP_EXT_TABLE_ROWS_QUERY.render(
+                    dataset_ids=dataset_ids,
+                    table=table_name,
+                    suppress_rows_table=suppress_rows_table)
+                backup_ext_table_query_job = CLIENT.query(
+                    backup_ext_table_rows_query, job_config=job_config)
                 query_jobs.append(backup_ext_table_query_job)
     return query_jobs
 
@@ -329,7 +359,8 @@ def backup_rows_to_suppress(tables_to_suppress_df, suppress_rows_table):
 # -
 
 # # Execute Deletion
-# Use a meta-query to generate the minimal set of DELETE statements needed to delete rows in domain and \_ext tables.
+# Use a meta-query to generate the minimal set of DELETE statements needed to delete rows in
+# domain and \_ext tables.
 
 # +
 GET_DELETE_QUERIES = JINJA_ENV.from_string("""
@@ -339,10 +370,12 @@ FROM `{{suppress_rows_table}}`)
 SELECT CONCAT('DELETE FROM `', 
  dataset_id, '.', table, '` t', 
  ' WHERE EXISTS', 
- '(SELECT 1 FROM {{suppress_rows_table}} WHERE dataset_id = "', dataset_id, '" AND table = "', table, '" AND t.', table, '_id = row_id)')
+ '(SELECT 1 FROM {{suppress_rows_table}} WHERE dataset_id = "', 
+ dataset_id, '" AND table = "', table, '" AND t.', table, '_id = row_id)')
 AS query_string
 FROM table_ids
 """)
+
 
 def get_delete_queries(suppress_rows_table):
     """
@@ -350,7 +383,8 @@ def get_delete_queries(suppress_rows_table):
     
     :param suppress_rows_table: identifies the table where suppress rows are loaded
     """
-    get_delete_query = GET_DELETE_QUERIES.render(suppress_rows_table=suppress_rows_table)
+    get_delete_query = GET_DELETE_QUERIES.render(
+        suppress_rows_table=suppress_rows_table)
     delete_query_job = CLIENT.query(get_delete_query)
     delete_query_results = list(delete_query_job.result())
     all_delete_queries = []
@@ -364,6 +398,7 @@ def get_delete_queries(suppress_rows_table):
 
 # -
 
+
 def run_delete_queries(delete_queries):
     """
     Execute list of queries which delete rows
@@ -374,7 +409,8 @@ def run_delete_queries(delete_queries):
     delete_query_jobs = []
     for delete_query in delete_queries:
         print(delete_query + '\n')
-        job_config = bigquery.QueryJobConfig(priority=bigquery.QueryPriority.BATCH)
+        job_config = bigquery.QueryJobConfig(
+            priority=bigquery.QueryPriority.BATCH)
         delete_query_job = CLIENT.query(delete_query, job_config=job_config)
         delete_query_jobs.append(delete_query_job)
     return delete_query_jobs
@@ -384,10 +420,13 @@ def print_jobs(delete_query_jobs):
     # Manually checking if jobs are all done...
     for delete_query_job in delete_query_jobs:
         delete_query_job.reload()
-        print("{j.job_id},{j.destination.dataset_id},{j.destination.table_id},{j.num_dml_affected_rows}".format(j=delete_query_job))
+        print(
+            "{j.job_id},{j.destination.dataset_id},{j.destination.table_id},{j.num_dml_affected_rows}"
+            .format(j=delete_query_job))
 
 
-def main(project_id, sandbox_dataset_id, concept_lookup_table, target_dataset_ids):
+def main(project_id, sandbox_dataset_id, concept_lookup_table,
+         target_dataset_ids):
     """
     Identify, log and remove rows with suppresed concepts
     Note: Rows are appended to log and backup tables if they already exist
@@ -400,21 +439,25 @@ def main(project_id, sandbox_dataset_id, concept_lookup_table, target_dataset_id
     """
     # get suppress row info
     rows_dest_table = f'{sandbox_dataset_id}.{ROWS_RESOURCE_NAME}'
-    tables_to_suppress_df = get_tables_to_suppress_df(project_id, target_dataset_ids)
-    suppress_rows_df = get_rows_to_suppress_df(tables_to_suppress_df, concept_lookup_table)
+    tables_to_suppress_df = get_tables_to_suppress_df(project_id,
+                                                      target_dataset_ids)
+    suppress_rows_df = get_rows_to_suppress_df(tables_to_suppress_df,
+                                               concept_lookup_table)
     suppress_rows_df.to_csv(f'{ROWS_RESOURCE_NAME}.csv')
-    suppress_rows_df.to_gbq(destination_table=rows_dest_table, if_exists='append')
+    suppress_rows_df.to_gbq(destination_table=rows_dest_table,
+                            if_exists='append')
 
     # get suppress summary
     summary_dest_table = f'{sandbox_dataset_id}.{SUMMARY_RESOURCE_NAME}'
     suppress_summary_df = get_suppress_summary_df(suppress_rows_df)
     suppress_summary_df.to_csv(f'{SUMMARY_RESOURCE_NAME}.csv')
     suppress_summary_df.reset_index(inplace=True)
-    suppress_summary_df.to_gbq(destination_table=summary_dest_table, if_exists='append')
-    
+    suppress_summary_df.to_gbq(destination_table=summary_dest_table,
+                               if_exists='append')
+
     # backup rows
     backup_rows_to_suppress(tables_to_suppress_df, rows_dest_table)
-    
+
     # delete rows
     all_delete_queries = get_delete_queries(rows_dest_table)
     delete_query_jobs = run_delete_queries(all_delete_queries)
@@ -427,19 +470,22 @@ if __name__ == '__main__':
     CONCEPT_LOOKUP_TABLE = f'{SANDBOX_DATASET_ID}.expanded_deid_concepts_20200331'
     SUPPRESS_ROWS_DEST_TABLE = f'{SANDBOX_DATASET_ID}.{ROWS_RESOURCE_NAME}'
     SUMMARY_DEST_TABLE = f'{SANDBOX_DATASET_ID}.{SUMMARY_RESOURCE_NAME}'
-    TARGET_DATASETS = [
-    ]
-    TABLES_TO_SUPPRESS_DF = get_tables_to_suppress_df(PROJECT_ID, TARGET_DATASETS)
-    SUPPRESS_ROWS_DF = get_rows_to_suppress_df(TABLES_TO_SUPPRESS_DF, CONCEPT_LOOKUP_TABLE)
+    TARGET_DATASETS = []
+    TABLES_TO_SUPPRESS_DF = get_tables_to_suppress_df(PROJECT_ID,
+                                                      TARGET_DATASETS)
+    SUPPRESS_ROWS_DF = get_rows_to_suppress_df(TABLES_TO_SUPPRESS_DF,
+                                               CONCEPT_LOOKUP_TABLE)
     SUPPRESS_ROWS_DF.to_csv(f'{ROWS_RESOURCE_NAME}.csv')
-    SUPPRESS_ROWS_DF.to_gbq(destination_table=SUPPRESS_ROWS_DEST_TABLE, if_exists='append')
+    SUPPRESS_ROWS_DF.to_gbq(destination_table=SUPPRESS_ROWS_DEST_TABLE,
+                            if_exists='append')
     SUPPRESS_SUMMARY_DF = get_suppress_summary_df(SUPPRESS_ROWS_DF)
     SUPPRESS_SUMMARY_DF.to_csv(f'{SUMMARY_RESOURCE_NAME}.csv')
     SUPPRESS_SUMMARY_DF.reset_index(inplace=True)
-    SUPPRESS_SUMMARY_DF.to_gbq(destination_table=SUMMARY_DEST_TABLE, if_exists='append')
-    
+    SUPPRESS_SUMMARY_DF.to_gbq(destination_table=SUMMARY_DEST_TABLE,
+                               if_exists='append')
+
     backup_rows_to_suppress(TABLES_TO_SUPPRESS_DF, SUPPRESS_ROWS_DEST_TABLE)
-    
+
     ALL_DELETE_QUERIES = get_delete_queries(SUPPRESS_ROWS_DEST_TABLE)
     DELETE_QUERY_JOBS = run_delete_queries(ALL_DELETE_QUERIES)
     print_jobs(DELETE_QUERY_JOBS)
