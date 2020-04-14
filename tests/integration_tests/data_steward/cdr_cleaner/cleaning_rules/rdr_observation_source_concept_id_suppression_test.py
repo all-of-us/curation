@@ -101,3 +101,12 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
             load_statements.append(query)
 
         self.load_test_data(load_statements)
+
+    def test(self):
+        """
+        Use the default drop rows test function.
+
+        Validates pre-conditions, test execution and post conditions based on
+        the load statements and the tables_and_counts variable.
+        """
+        self.default_test(self.tables_and_counts)

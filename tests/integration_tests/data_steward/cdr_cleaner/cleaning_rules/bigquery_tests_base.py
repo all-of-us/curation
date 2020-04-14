@@ -159,6 +159,60 @@ class BaseTest:
                               response.result,
                               timeout=15)
 
+        def assertSandboxTableContentsMatch(self, fq_table_name, field, values,
+                                            message):
+            """
+            Helper function to assert a  sandbox tables contents.
+
+            :param fq_table_name: table to query
+            :param field: the field to retrieve data for
+            :param values: a list of values to expect back from the query
+            :param message: a failure message for this type of assertion
+            """
+            query = f"select {field} from `{fq_table_name}`"
+            response = self.client.query(query)
+            # start the job and wait for it to complete
+            result_list = list(response.result())
+
+            result_id_list = self.create_values_list(result_list, 0)
+
+            self.assertCountEqual(values, result_id_list, message)
+
+        def assertOMOPTableContentsMatch(self, fq_table_name, values, message):
+            """
+            Helper function to assert a tables contents.
+
+            :param fq_table_name: table to query
+            :param values: a list of values to expect back from the query
+            :param message: a failure message for this type of assertion
+            """
+            table_name = fq_table_name.split('.')[-1]
+            query = f"select {table_name}_id from `{fq_table_name}`"
+            response = self.client.query(query)
+            # start the job and wait for it to complete
+            result_list = list(response.result())
+
+            result_id_list = self.create_values_list(result_list, 0)
+
+            self.assertCountEqual(values, result_id_list, message)
+
+        @staticmethod
+        def create_values_list(result_list, index):
+            """
+            Helper method to create a list of values from a result list.
+
+            :param result_list: a list of a big query response.result() value
+            :param index: the index of the response object to retrieve from
+
+            :returns: a list of values created by iterating the result list and
+                appending the value found at the specified index.
+            """
+            values = []
+            for row in result_list:
+                values.append(row[index])
+
+            return values
+
     class DropRowsTestBase(BigQueryTestBase):
         """
         Class that can be extended and used to test cleaning rules that drop row data.
@@ -176,23 +230,10 @@ class BaseTest:
         @classmethod
         def initialize_class_vars(cls):
             super().initialize_class_vars()
-            # a list of dictionaries where each dictionary defines table
-            # expectations for each table to validate with rule execution:
-            # 'name':  common name of the table being cleaned and defining
-            #          execution expectations for
-            # 'fq_table_name':  the fully qualified name of the table being cleaned
-            # 'fq_sanbox_table_name':  the fully qualified name of the sandbox
-            #                          table the rule will create if one exists
-            # 'loaded_ids':  The list of ids loaded by the sql insert statement
-            # 'sandboxed_ids':  the list of ids that will be in the sandbox if
-            #                   the rule sandboxes information
-            # 'cleaned_ids':  the list of ids that will continue to exist in the
-            #                 input table after running the cleaning rule
-            cls.tables_and_test_values = []
             # The query class that is being executed.
             cls.query_class = None
 
-        def test_execution_default(self):
+        def default_test(self, tables_and_test_values):
             """
             Test passing the query specifications to the clean engine module.
 
@@ -202,65 +243,60 @@ class BaseTest:
             required sandbox tables.  Because it is using the clean_dataset
             function, special setup features do not need to be accounted for
             in this test because they will be executed by the engine.
+
+            :param tables_and_test_values: a list of dictionaries where each 
+                dictionary defines table expectations for each OMOP table to 
+                validate with rule execution.  The dictionaries require:
+             'name':  common name of the table being cleaned and defining
+                      execution expectations for
+             'fq_table_name':  the fully qualified name of the table being cleaned
+             'fq_sanbox_table_name':  the fully qualified name of the sandbox
+                                      table the rule will create if one exists
+             'loaded_ids':  The list of ids loaded by the sql insert statement
+             'sandboxed_ids':  the list of ids that will be in the sandbox if
+                               the rule sandboxes information
+             'cleaned_ids':  the list of ids that will continue to exist in the
+                             input table after running the cleaning rule
             """
             # pre-conditions
-            # validate sandbox table doesn't exist yet
+            # validate sandbox tables don't exist yet
             for fq_table_name in self.fq_sandbox_table_names:
                 self.assertTableDoesNotExist(fq_table_name)
 
             # validate only anticipated input records exist before starting
-            for table_info in self.tables_and_test_values:
-                table_name = table_info.get('name')
-                query = f"select {table_name}_id from `{table_info.get('fq_table_name', '')}`"
-                response = self.client.query(query)
-                # start the job and wait for it to complete
-                result_list = list(response.result())
-                self.assertEqual(
-                    len(table_info.get('loaded_ids', [])), len(result_list),
-                    (f"The pre-condition query did not return expected number "
-                     f"of rows.  Selection query is:\n{query}"))
+            for table_info in tables_and_test_values:
+                fq_table_name = table_info.get('fq_table_name', 'UNSET')
+                values = table_info.get('loaded_ids', [])
+                message = (f"The pre-condition query did not return the "
+                           f"expected number of rows.")
+                self.assertOMOPTableContentsMatch(fq_table_name, values,
+                                                  message)
 
-                for item in result_list:
-                    self.assertIn(item[0], table_info.get('loaded_ids', []),
-                                  "The test data did not load as expected")
+            if self.query_class:
+                # test:  get the queries
+                query_list = self.query_class.get_query_specs()
 
-            # test:  get the queries
-            query_list = self.query_class.get_query_specs()
-
-            # test: run the queries
-            engine.clean_dataset(self.project_id, query_list)
+                # test: run the queries
+                engine.clean_dataset(self.project_id, query_list)
+            else:
+                raise RuntimeError(f"Cannot use the default_test method for "
+                                   f"{self.__class__.__name__} because "
+                                   f"query_class is undefined.")
 
             # post conditions
-            for table_info in self.tables_and_test_values:
+            for table_info in tables_and_test_values:
                 # validate three records are dropped
-                table_name = table_info.get('name')
-                query = f"select {table_name}_id from `{table_info.get('fq_table_name', '')}`"
-                response = self.client.query(query)
-                result_list = list(response.result())
-
-                output_ids = table_info.get('cleaned_ids', [])
-                self.assertEqual(len(output_ids), len(result_list))
-
-                rows_kept = []
-                for row in result_list:
-                    rows_kept.append(row[0])
-
-                # assert the contents are equal regardless of the order
-                self.assertCountEqual(output_ids, rows_kept)
+                fq_table_name = table_info.get('fq_table_name', 'UNSET')
+                values = table_info.get('cleaned_ids', [])
+                message = f"Cleaned table values did not match.  Expected\t{values}"
+                self.assertOMOPTableContentsMatch(fq_table_name, values,
+                                                  message)
 
                 # validate three records are sandboxed
                 fq_sandbox_name = table_info.get('fq_sandbox_table_name')
                 if fq_sandbox_name:
-                    query = f"select {table_name}_id from `{fq_sandbox_name}`"
-                    response = self.client.query(query)
-                    result_list = list(response.result())
-
-                    sandboxed_ids = table_info.get('sandboxed_ids', [])
-                    self.assertEqual(len(sandboxed_ids), len(result_list))
-
-                    rows_kept = []
-                    for row in result_list:
-                        rows_kept.append(row[0])
-
-                    # assert the contents are equal regardless of the order
-                    self.assertCountEqual(sandboxed_ids, rows_kept)
+                    values = table_info.get('sandboxed_ids', [])
+                    field_name = table_info.get('name', 'UNSET') + '_id'
+                    message = f"Sandboxed table values did not match.  Expected\t{values}"
+                    self.assertSandboxTableContentsMatch(
+                        fq_sandbox_name, field_name, values, message)
