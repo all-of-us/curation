@@ -153,8 +153,7 @@ def parse_args(raw_args=None):
                         '--idataset',
                         action='store',
                         dest='input_dataset',
-                        help=('Name of the input dataset (an output dataset '
-                              'with suffix _deid will be generated)'),
+                        help='Name of the input dataset',
                         required=True)
     parser.add_argument('-p',
                         '--private_key',
@@ -162,7 +161,8 @@ def parse_args(raw_args=None):
                         action='store',
                         required=True,
                         help='Service account file location')
-    parser.add_argument('--odataset',
+    parser.add_argument('-o',
+                        '--odataset',
                         action='store',
                         dest='odataset',
                         type=odataset_name_verification,
@@ -209,7 +209,7 @@ def parse_args(raw_args=None):
                         dest='console_log',
                         action='store_true',
                         required=False,
-                        help=('Log to the console as well as to a file.'))
+                        help='Log to the console as well as to a file.')
     parser.add_argument('--version', action='version', version='deid-02')
     return parser.parse_args(raw_args)
 
@@ -239,15 +239,16 @@ def main(raw_args=None):
 
         parameter_list = [
             '--rules',
-            os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
-            '--private_key', args.private_key, '--table', tablepath, '--action',
-            args.action, '--idataset', args.input_dataset, '--log', LOGS_PATH, '--odataset', args.output_dataset
+            os.path.join(DEID_PATH, 'config', 'ids',
+                         'config.json'), '--private_key', args.private_key,
+            '--table', tablepath, '--action', args.action, '--idataset',
+            args.input_dataset, '--log', LOGS_PATH, '--odataset', args.odataset
         ]
 
         if args.interactive_mode:
             parameter_list.append('--interactive')
 
-        field_names = [field.get('name') for field in fields_for(table)]
+        field_names = [field.get('name') for field in fields_for(tablepath)]
         if 'person_id' in field_names:
             parameter_list.append('--cluster')
 
