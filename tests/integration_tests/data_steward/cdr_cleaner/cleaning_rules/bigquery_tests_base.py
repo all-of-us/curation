@@ -42,6 +42,8 @@ class BaseTest:
         @classmethod
         def initialize_class_vars(cls):
             cls.jinja_env = Environment(
+                # help protect against cross-site scripting vulnerabilities
+                autoescape=True,
                 # block tags on their own lines
                 # will not cause extra white space
                 trim_blocks=True,
