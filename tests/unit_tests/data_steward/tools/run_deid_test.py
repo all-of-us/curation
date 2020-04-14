@@ -104,10 +104,7 @@ class RunDeidTest(unittest.TestCase):
         mock_fields.return_value = {}
 
         # Tests if correct parameters are given
-        results_dict = main(self.correct_parameter_list)
-
-        # Post conditions
-        self.assertEqual(results_dict, None)
+        self.assertIsNone(main(self.correct_parameter_list))
 
     @patch('tools.run_deid.os.walk')
     def test_known_tables(self, mock_walk):
