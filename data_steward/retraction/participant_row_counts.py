@@ -201,8 +201,8 @@ def count_pid_rows_in_dataset(project_id, dataset_id, hpo_id, pid_source):
 
     if query:
         counts_df = bq.query(query, project_id)
-        # ignore zero counts
-        counts_df = counts_df[counts_df[consts.ALL_COUNT] > 0]
+        # sort by count desc
+        counts_df = counts_df.sort_values(by=consts.ALL_COUNT, ascending=False)
     return counts_df
 
 
