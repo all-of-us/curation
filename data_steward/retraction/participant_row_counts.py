@@ -245,5 +245,7 @@ if __name__ == '__main__':
     parser = ru.fetch_parser()
     args = parser.parse_args()
 
+    dataset_ids = ru.check_dataset_ids_for_sentinel(args.dataset_ids)
+
     count_pid_rows_in_project(args.project_id, args.hpo_id, args.pid_source,
-                              args.dataset_ids)
+                              dataset_ids)

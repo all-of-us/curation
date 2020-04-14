@@ -185,10 +185,6 @@ def get_dataset_ids_to_target(project_id, dataset_ids=None):
         result_dataset_ids = all_dataset_ids
     else:
         for dataset_id in dataset_ids:
-            if dataset_id == consts.ALL_DATASETS:
-                raise ValueError(
-                    "Please enter 'all_datasets' to target all datasets "
-                    "or specific datasets without using 'all_datasets'")
             if dataset_id not in all_dataset_ids:
                 logging.info(
                     f"Dataset {dataset_id} not found in project {project_id}, skipping"
@@ -196,6 +192,25 @@ def get_dataset_ids_to_target(project_id, dataset_ids=None):
             else:
                 result_dataset_ids.append(dataset_id)
     return result_dataset_ids
+
+
+def check_dataset_ids_for_sentinel(dataset_ids):
+    """
+    Checks if sentinel value "all_datasets" is the only value in the list dataset_ids
+    If so, returns None. If not, raises error if "all_datasets" is in the list of dataset_ids
+
+    :param dataset_ids: list of dataset_ids
+    :return: dataset_ids: list of dataset_ids
+    :raises ValueError
+    """
+    if len(dataset_ids) == 1 and dataset_ids[0] == consts.ALL_DATASETS:
+        return None
+    for dataset_id in dataset_ids:
+        if dataset_id == consts.ALL_DATASETS:
+            raise ValueError(
+                "Please enter 'all_datasets' to target all datasets "
+                "or specific datasets without using 'all_datasets'")
+    return dataset_ids
 
 
 def fetch_parser():
