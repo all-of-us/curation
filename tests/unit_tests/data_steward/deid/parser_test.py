@@ -1,7 +1,7 @@
 """
 Unit Test for parser module
 
-Ensure that the output dataset name includes _deid
+Ensure the output dataset name includes _deid
 
 Original Issue: DC-744
 """
@@ -9,10 +9,10 @@ Original Issue: DC-744
 # Python imports
 import unittest
 import os
-from argparse import ArgumentTypeError, ArgumentError
+from argparse import ArgumentTypeError
 
 # Project imports
-from deid.parser import odataset_name_verification, parse_args, Parse
+from deid.parser import odataset_name_verification, parse_args
 from resources import DEID_PATH
 
 
@@ -37,37 +37,46 @@ class ParserTest(unittest.TestCase):
         self.interactive = 'BATCH'
 
         self.correct_parameter_list = [
-            '--rules', self.rules, '--private_key', self.private_key, '--table', self.tablename,
-            '--action', self.action, '--idataset', self.input_dataset, '--odataset',
-            self.output_dataset, '--log', self.log_path, '--pipeline', self.pipeline,
-            '--interactive', self.interactive, '--interactive', self.interactive
+            '--rules', self.rules, '--private_key', self.private_key, '--table',
+            self.tablename, '--action', self.action, '--idataset',
+            self.input_dataset, '--odataset', self.output_dataset, '--log',
+            self.log_path, '--pipeline', self.pipeline, '--interactive',
+            self.interactive, '--interactive', self.interactive
         ]
         self.incorrect_parameter_list = [
-            '--rules', self.rules, '--private_key', self.private_key, '--table', self.tablename,
-            '--action', self.action, '--idataset', self.input_dataset, '--log', self.log_path
+            '--rules', self.rules, '--private_key', self.private_key, '--table',
+            self.tablename, '--action', self.action, '--idataset',
+            self.input_dataset, '--log', self.log_path
         ]
 
     def test_parse_args(self):
         # Tests if incorrect parameters are given
         self.assertRaises(SystemExit, parse_args, self.incorrect_parameter_list)
 
-        # Tests if correct parameters are given
+        # Preconditions
         it = iter(self.correct_parameter_list)
         correct_parameter_dict = dict(zip(it, it))
-        correct_parameter_dict = {k.strip('--'): v for (k, v) in correct_parameter_dict.items()}
+        correct_parameter_dict = {
+            k.strip('-'): v for (k, v) in correct_parameter_dict.items()
+        }
 
+        # setting correct_parameter_dict values not set in setUp function
+        correct_parameter_dict['cluster'] = False
+        correct_parameter_dict['age-limit'] = 89
+
+        # Test if correct parameters are given
         results_dict = parse_args(self.correct_parameter_list)
-        if 'cluster' in results_dict:
-            del results_dict['cluster']
-            del results_dict['age-limit']
 
+        # Post conditions
         self.assertEqual(correct_parameter_dict, results_dict)
 
     def test_odataset_name_verification(self):
-        # Tests if output dataser name does not contain _deid
-        self.assertRaises(ArgumentTypeError, odataset_name_verification, "foo_output")
+        # Tests if output dataset name does not contain _deid
+        self.assertRaises(ArgumentTypeError, odataset_name_verification,
+                          "foo_output")
 
         # Tests if output dataset name does contain _deid
         result = odataset_name_verification("foo_output_deid")
 
+        # Post conditions
         self.assertEqual(result, self.output_dataset)
