@@ -2,13 +2,15 @@ import json
 import os
 import unittest
 
+import mock
+
 import bq_utils
 import common
 import gcs_utils
 from tests import test_util
 from tests.test_util import FAKE_HPO_ID
 from validation import export, main
-import mock
+
 BQ_TIMEOUT_RETRIES = 3
 
 
@@ -88,7 +90,7 @@ class ExportTest(unittest.TestCase):
         mock_is_hpo_id.return_value = True
         folder_prefix = 'dummy-prefix-2018-03-24/'
         main._upload_achilles_files(FAKE_HPO_ID, folder_prefix)
-        main.run_export(hpo_id=FAKE_HPO_ID, folder_prefix=folder_prefix)
+        main.run_export(datasource_id=FAKE_HPO_ID, folder_prefix=folder_prefix)
         bucket_objects = gcs_utils.list_bucket(self.hpo_bucket)
         actual_object_names = [obj['name'] for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
@@ -110,42 +112,19 @@ class ExportTest(unittest.TestCase):
         }
         self.assertDictEqual(datasources_expected, datasources_actual)
 
+    def test_run_export_without_datasource_id(self):
+        # validation/main.py INTEGRATION TEST
+        with self.assertRaises(RuntimeError):
+            main.run_export(datasource_id=None, target_bucket=None)
+
     @mock.patch('validation.export.is_hpo_id')
-    def test_run_export_with_target_bucket(self, mock_is_hpo_id):
+    def test_run_export_with_target_bucket_and_datasource_id(
+        self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
         folder_prefix = 'dummy-prefix-2018-03-24/'
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
-        test_util.get_synpuf_results_files()
-        test_util.populate_achilles(self.hpo_bucket, hpo_id=None)
-        main.run_export(folder_prefix=folder_prefix, target_bucket=bucket_nyc)
-        bucket_objects = gcs_utils.list_bucket(bucket_nyc)
-        actual_object_names = [obj['name'] for obj in bucket_objects]
-        for report in common.ALL_REPORT_FILES:
-            expected_object_name = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + 'default' + '/' + report
-            self.assertIn(expected_object_name, actual_object_names)
-
-        datasources_json_path = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
-        self.assertIn(datasources_json_path, actual_object_names)
-        datasources_json = gcs_utils.get_object(bucket_nyc,
-                                                datasources_json_path)
-        datasources_actual = json.loads(datasources_json)
-        datasources_expected = {
-            'datasources': [{
-                'name': 'default',
-                'folder': 'default',
-                'cdmVersion': 5
-            }]
-        }
-        self.assertDictEqual(datasources_expected, datasources_actual)
-
-    @mock.patch('validation.export.is_hpo_id')
-    def test_run_export_with_target_bucket_and_hpo_id(self, mock_is_hpo_id):
-        # validation/main.py INTEGRATION TEST
-        mock_is_hpo_id.return_value = True
-        folder_prefix = 'dummy-prefix-2018-03-24/'
-        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
-        main.run_export(hpo_id=FAKE_HPO_ID,
+        main.run_export(datasource_id=FAKE_HPO_ID,
                         folder_prefix=folder_prefix,
                         target_bucket=bucket_nyc)
         bucket_objects = gcs_utils.list_bucket(bucket_nyc)
