@@ -243,7 +243,7 @@ class RetractUtilsTest(unittest.TestCase):
         # a dataset which is not found is skipped
         dataset_ids = [dataset_id_1, dataset_id_2, 'missing_dataset']
         expected = [dataset_id_1, dataset_id_2]
-        actual = ru.get_dataset_ids_to_target(self.project_id, dataset_ids )
+        actual = ru.get_dataset_ids_to_target(self.project_id, dataset_ids)
         self.assertListEqual(expected, actual)
 
     def test_fetch_args(self):
