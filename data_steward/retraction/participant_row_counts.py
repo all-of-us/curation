@@ -162,8 +162,7 @@ def get_ehr_query(project_id, dataset_id, pid_source, hpo_id, table_df):
 
 def count_pid_rows_in_dataset(project_id, dataset_id, hpo_id, pid_source):
     """
-    Returns df containing tables which have non-zero counts of participant rows for pids in pids_source
-    If a dataset/table does not appear in the logs, it does not contain any relevant pid rows
+    Returns df containing tables and counts of participant rows for pids in pids_source
 
     :param project_id: identifies the project
     :param dataset_id: identifies the dataset
