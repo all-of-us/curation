@@ -24,17 +24,6 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 
 
 class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
-    insert_fake_participants_tmpls = [
-        Template("""
-    INSERT INTO `{{fq_table_name}}` (observation_id, person_id, observation_concept_id, observation_date, observation_type_concept_id, observation_source_concept_id)
-    VALUES
-      (801, 337361, 1585899, date('2016-05-01'), 45905771, {{age_prediabetes}}),
-      (802, 129884, 1585899, date('2016-05-01'), 45905771, {{meds_prediabetes}}),
-      (803, 337361, 1585899, date('2016-05-01'), 45905771, {{now_prediabetes}}),
-      (804, 129884, 1585899, date('2016-05-01'), 45905771, null),
-      (805, 337361, 1585899, date('2016-05-01'), 45905771, 45)
-    """)
-    ]
 
     @classmethod
     def setUpClass(cls):
@@ -44,6 +33,19 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
 
         super().initialize_class_vars()
 
+        cls.insert_fake_participants_tmpls = [
+            cls.jinja_env.from_string("""
+        INSERT INTO `{{fq_table_name}}`
+        (observation_id, person_id, observation_concept_id, observation_date,
+         observation_type_concept_id, observation_source_concept_id)
+        VALUES
+          (801, 337361, 1585899, date('2016-05-01'), 45905771, {{age_prediabetes}}),
+          (802, 129884, 1585899, date('2016-05-01'), 45905771, {{meds_prediabetes}}),
+          (803, 337361, 1585899, date('2016-05-01'), 45905771, {{now_prediabetes}}),
+          (804, 129884, 1585899, date('2016-05-01'), 45905771, null),
+          (805, 337361, 1585899, date('2016-05-01'), 45905771, 45)
+        """)
+        ]
         # set the test project identifier
         project_id = os.environ.get(PROJECT_ID)
         cls.project_id = project_id

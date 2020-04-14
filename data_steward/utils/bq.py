@@ -155,7 +155,7 @@ def get_dataset(project_id, dataset_id):
     return client.get_dataset(dataset_id)
 
 
-def define_dataset(project_id, dataset_id, description, labels={}):
+def define_dataset(project_id, dataset_id, description, labels):
     """
     Define the dataset reference.
 
@@ -185,40 +185,6 @@ def define_dataset(project_id, dataset_id, description, labels={}):
     dataset.location = "US"
 
     return dataset
-
-
-def get_or_create_dataset(client,
-                          project_id,
-                          dataset_id,
-                          desc=None,
-                          labels=None):
-    """
-    Get the dataset reference if it exists.  Else create it.
-
-    :param client: an instantiated client object
-    :param project_id:  string name of the project to search for a dataset
-    :param dataset_id:  string name of the dataset id to return a reference of
-
-    :return: a dataset reference object.
-
-    :raises: any GoogleAPIError that is not a 404 error
-    """
-    if not client:
-        raise RuntimeError("Provide a valid bigquery client object")
-
-    try:
-        return client.get_dataset(dataset_id)
-    except NotFound as err:
-        if err.code != 404:
-            raise err
-
-        if desc:
-            dataset = define_dataset(project_id, dataset_id, desc, labels)
-            return client.create_dataset(dataset)
-        else:
-            raise RuntimeError(
-                f"Dataset {dataset_id} not found and no description was "
-                f"provided to create a new dataset with.")
 
 
 def delete_dataset(project_id,

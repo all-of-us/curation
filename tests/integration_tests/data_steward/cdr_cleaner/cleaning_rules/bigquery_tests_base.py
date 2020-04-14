@@ -14,6 +14,7 @@ import unittest
 
 # Third party imports
 import google.cloud.exceptions as gc_exc
+from jinja2 import Environment
 
 # Project imports
 from cdr_cleaner import clean_cdr_engine as engine
@@ -40,6 +41,16 @@ class BaseTest:
 
         @classmethod
         def initialize_class_vars(cls):
+            cls.jinja_env = Environment(
+                # block tags on their own lines
+                # will not cause extra white space
+                trim_blocks=True,
+                lstrip_blocks=True,
+                # syntax highlighting should be better
+                # with these comment delimiters
+                comment_start_string='--',
+                comment_end_string=' --')
+
             # this should always be for a test project.  a check is implemented to
             # make sure this is true
             cls.project_id = ''
@@ -77,8 +88,9 @@ class BaseTest:
             desc = (f"dataset created by {cls.__name__} to test a "
                     f"cleaning rule.  deletion candidate.")
             for dataset_id in set(required_datasets):
-                bq.get_or_create_dataset(cls.client, cls.project_id, dataset_id,
-                                         desc, {'test': ''})
+                dataset = bq.define_dataset(cls.project_id, dataset_id, desc,
+                                            {'test': ''})
+                cls.client.create_dataset(dataset, exists_ok=True)
 
             bq.create_tables(cls.client, cls.project_id, cls.fq_table_names,
                              True)
@@ -132,6 +144,21 @@ class BaseTest:
                 self.assertIsNotNone(response.result())
                 self.assertIsNone(response.exception())
 
+        def assertTableDoesNotExist(self, fq_table_name):
+            """
+            Helper function to assert a table doesn't exist.
+
+            Asserts trying to get a row count from a table that does not
+            exists raises an exception.
+
+            :param fq_table_name: a fully qualified table name
+            """
+            response = self.client.query(
+                f"select count(*) from `{fq_table_name}`")
+            self.assertRaises(gc_exc.GoogleCloudError,
+                              response.result,
+                              timeout=15)
+
     class DropRowsTestBase(BigQueryTestBase):
         """
         Class that can be extended and used to test cleaning rules that drop row data.
@@ -150,7 +177,7 @@ class BaseTest:
         def initialize_class_vars(cls):
             super().initialize_class_vars()
             # a list of dictionaries where each dictionary defines table
-            # expectations for each table to validate with rule execution, such as:
+            # expectations for each table to validate with rule execution:
             # 'name':  common name of the table being cleaned and defining
             #          execution expectations for
             # 'fq_table_name':  the fully qualified name of the table being cleaned
@@ -179,11 +206,7 @@ class BaseTest:
             # pre-conditions
             # validate sandbox table doesn't exist yet
             for fq_table_name in self.fq_sandbox_table_names:
-                response = self.client.query(
-                    f"select count(*) from `{fq_table_name}`")
-                self.assertRaises(gc_exc.GoogleCloudError,
-                                  response.result,
-                                  timeout=15)
+                self.assertTableDoesNotExist(fq_table_name)
 
             # validate only anticipated input records exist before starting
             for table_info in self.tables_and_test_values:
