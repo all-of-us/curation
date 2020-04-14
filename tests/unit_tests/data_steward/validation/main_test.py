@@ -9,10 +9,10 @@ import googleapiclient.errors
 import mock
 
 import common
+import resources
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
-import resources
 from validation import main
 
 
@@ -335,7 +335,7 @@ class ValidationMainTest(unittest.TestCase):
         self.assertTrue(mock_run_achilles.called)
         self.assertTrue(mock_export.called)
         self.assertEqual(
-            mock_export.assert_called_once_with(hpo_id='noob',
+            mock_export.assert_called_once_with(datasource_id='noob',
                                                 folder_prefix='SUBMISSION/'),
             None)
         # make sure upload is called for only the most recent

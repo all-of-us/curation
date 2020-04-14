@@ -12,36 +12,35 @@ import logging
 import os
 import re
 from io import StringIO
+from io import open
 
 # Third party imports
 from flask import Flask
-import app_identity
 from googleapiclient.errors import HttpError
 
 # Project imports
 import api_util
+import app_identity
 import bq_utils
 import cdm
 import common
-from constants.validation import main as consts
-from constants.validation import hpo_report as report_consts
 import gcs_utils
 import resources
-from utils.slack_alerts import post_message
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from constants.validation import hpo_report as report_consts
+from constants.validation import main as consts
+from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, initialize_logging
+from tools import retract_data_bq, retract_data_gcs
 from validation import achilles as achilles
 from validation import achilles_heel as achilles_heel
+from validation import ehr_union as ehr_union
+from validation import export as export
+from validation import hpo_report
 from validation.app_errors import (errors_blueprint, InternalValidationError,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness as completeness
 from validation.metrics import required_labs as required_labs
-from validation import ehr_union as ehr_union
-from validation import export as export
 from validation.participants import identity_match as matching
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
-from validation import hpo_report
-from tools import retract_data_bq, retract_data_gcs
-from io import open
-from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, initialize_logging
 
 PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
@@ -58,26 +57,28 @@ def all_required_files_loaded(result_items):
     return True
 
 
-def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
+def save_datasources_json(datasource_id=None,
+                          folder_prefix="",
+                          target_bucket=None):
     """
     Generate and save datasources.json (from curation report) in a GCS bucket
 
-    :param hpo_id: the ID of the HPO that report should go to
+    :param datasource_id: the ID of the HPO aggregate dataset that report should go to
     :param folder_prefix: relative path in GCS to save to (without 'gs://')
     :param target_bucket: GCS bucket to save to. If not supplied, uses the
         bucket assigned to hpo_id.
     :return:
     """
-    if hpo_id is None:
+    if datasource_id is None:
         if target_bucket is None:
             raise RuntimeError('Cannot save datasources.json if neither hpo_id '
                                'or target_bucket are specified.')
         hpo_id = 'default'
     else:
         if target_bucket is None:
-            target_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+            target_bucket = gcs_utils.get_hpo_bucket(datasource_id)
 
-    datasource = dict(name=hpo_id, folder=hpo_id, cdmVersion=5)
+    datasource = dict(name=datasource_id, folder=datasource_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO(json.dumps(datasources))
     result = gcs_utils.upload_object(
@@ -86,27 +87,24 @@ def save_datasources_json(hpo_id=None, folder_prefix="", target_bucket=None):
     return result
 
 
-def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
+def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
     """
     Run export queries for an HPO and store JSON payloads in specified folder in (optional) target bucket
 
-    :type hpo_id: ID of the HPO to run export for. This is the data source name in the report.
+    :type datasource_id: ID of the HPO or aggregate dataset to run export for. This is the data source name in the report.
     :param folder_prefix: Relative base path to store report. empty by default.
     :param target_bucket: Bucket to save report. If None, use bucket associated with hpo_id.
     """
     results = []
 
     # Using separate var rather than hpo_id here because hpo_id None needed in calls below
-    datasource_name = 'default'
-    if hpo_id is None:
-        if target_bucket is None:
-            raise RuntimeError(
-                'Cannot export if neither hpo_id or target_bucket is specified.'
-            )
+    if datasource_id is None and target_bucket is None:
+        raise RuntimeError(
+            'Cannot export if neither hpo_id or target_bucket is specified.')
     else:
-        datasource_name = hpo_id
+        datasource_name = datasource_id
         if target_bucket is None:
-            target_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+            target_bucket = gcs_utils.get_hpo_bucket(datasource_id)
 
     logging.info('Exporting %s report to bucket %s', datasource_name,
                  target_bucket)
@@ -115,14 +113,14 @@ def run_export(hpo_id=None, folder_prefix="", target_bucket=None):
     reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
     for export_name in common.ALL_REPORTS:
         sql_path = os.path.join(export.EXPORT_PATH, export_name)
-        result = export.export_from_path(sql_path, hpo_id)
+        result = export.export_from_path(sql_path, datasource_id)
         content = json.dumps(result)
         fp = StringIO(content)
         result = gcs_utils.upload_object(target_bucket,
                                          reports_prefix + export_name + '.json',
                                          fp)
         results.append(result)
-    result = save_datasources_json(hpo_id=hpo_id,
+    result = save_datasources_json(datasource_id=datasource_id,
                                    folder_prefix=folder_prefix,
                                    target_bucket=target_bucket)
     results.append(result)
@@ -313,7 +311,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         if all_required_files_loaded(results):
             logging.info('Running achilles on %s.', folder_prefix)
             run_achilles(hpo_id)
-            run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
+            run_export(datasource_id=hpo_id, folder_prefix=folder_prefix)
             logging.info('Uploading achilles index files to `%s`.', gcs_path)
             _upload_achilles_files(hpo_id, folder_prefix)
             heel_error_query = get_heel_error_query(hpo_id)
@@ -868,7 +866,7 @@ def union_ehr():
     run_achilles(hpo_id)
     now_date_string = datetime.datetime.now().strftime('%Y_%m_%d')
     folder_prefix = 'unioned_ehr_' + now_date_string + '/'
-    run_export(hpo_id=hpo_id, folder_prefix=folder_prefix)
+    run_export(datasource_id=hpo_id, folder_prefix=folder_prefix)
     logging.info('uploading achilles index files')
     _upload_achilles_files(hpo_id, folder_prefix)
 

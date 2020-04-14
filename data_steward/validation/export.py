@@ -1,9 +1,9 @@
 import os
 from glob import glob
+from io import open
 
 import bq_utils
 import resources
-from io import open
 
 EXPORT_PATH = os.path.join(resources.resource_path, 'export')
 RESULTS_SCHEMA_PLACEHOLDER = '@results_database_schema.'
@@ -52,23 +52,23 @@ def is_hpo_id(hpo_id):
 
 
 # TODO Make this function more generic.
-def export_from_path(p, hpo_id):
+def export_from_path(p, datasource_id):
     """
     Export results
     :param p: path to SQL file
-    :param hpo_id: HPO to run export for
+    :param datasource_id: HPO or aggregate dataset to run export for
     :return: `dict` structured for report render
     """
     result = dict()
-    if not is_hpo_id(hpo_id):
-        hpo_id = None
+    if not is_hpo_id(datasource_id):
+        datasource_id = None
     for f in list_files_only(p):
         name = f[0:-4].upper()
         abs_path = os.path.join(p, f)
         with open(abs_path, 'r') as fp:
             sql = fp.read()
             sql = render(sql,
-                         hpo_id,
+                         datasource_id,
                          results_schema=bq_utils.get_dataset_id(),
                          vocab_schema='')
             query_result = bq_utils.query(sql)
@@ -79,7 +79,7 @@ def export_from_path(p, hpo_id):
         abs_path = os.path.join(p, d)
         name = d.upper()
         # recursive call
-        dir_result = export_from_path(abs_path, hpo_id)
+        dir_result = export_from_path(abs_path, datasource_id)
         if name in result:
             # a sql file generated the item already
             result[name].update(dir_result)
