@@ -22,6 +22,12 @@ client = bigquery.Client()
 # %reload_ext google.cloud.bigquery
 
 # +
+from notebooks import parameters
+DATASET = parameters.LATEST_DATASET
+
+print("Dataset to use: {DATASET}".format(DATASET = DATASET))
+
+# +
 #######################################
 print('Setting everything up...')
 #######################################
@@ -29,38 +35,16 @@ print('Setting everything up...')
 import warnings
 
 warnings.filterwarnings('ignore')
-import pandas_gbq
 import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-from matplotlib.lines import Line2D
-
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib as mpl
-
 import matplotlib.pyplot as plt
 # %matplotlib inline
 
 import os
-import sys
-from datetime import datetime
-from datetime import date
-from datetime import time
-from datetime import timedelta
-import time
-import math
-
-DATASET = ''
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
-
-from IPython.display import HTML as html_print
 
 
 def cstr(s, color='black'):
@@ -72,7 +56,7 @@ print('done.')
 
 cwd = os.getcwd()
 cwd = str(cwd)
-print(cwd)
+print("Current working directory is: {cwd}".format(cwd=cwd))
 
 # +
 dic = {
@@ -127,95 +111,91 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`
+         `{DATASET}._mapping_visit_occurrence`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_care_site`
+         `{DATASET}._mapping_care_site`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_condition_occurrence`  
+         `{DATASET}._mapping_condition_occurrence`  
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_device_exposure`
+         `{DATASET}._mapping_device_exposure`
 
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`
+         `{DATASET}._mapping_drug_exposure`
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_location`         
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_measurement`         
+         `{DATASET}._mapping_location`         
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_note`        
+         `{DATASET}._mapping_measurement`         
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_observation`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_person`         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{}._mapping_procedure_occurrence`         
+         `{DATASET}._mapping_note`        
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_provider`
+         `{DATASET}._mapping_observation`         
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_specimen`
+         `{DATASET}._mapping_person`         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_procedure_occurrence`         
+         
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_provider`
+         
+    UNION ALL
+    SELECT
+            DISTINCT(src_hpo_id) as src_hpo_id
+    FROM
+         `{DATASET}._mapping_specimen`
     
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`   
+         `{DATASET}._mapping_visit_occurrence`   
     )     
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
+    '''.format(DATASET=DATASET), dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
 
@@ -239,8 +219,8 @@ birth_df = pd.io.gbq.read_gbq('''
         sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18) then 1 else 0 end) as minors_in_dataset
          
     FROM
-       `{}.unioned_ehr_person` AS t1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+       `{DATASET}.unioned_ehr_person` AS t1
+    '''.format(DATASET=DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
 # -
@@ -256,10 +236,10 @@ birth_df = pd.io.gbq.read_gbq('''
     SELECT
         person_id          
     FROM
-       `{}.unioned_ehr_person` AS t1
+       `{DATASET}.unioned_ehr_person` AS t1
     where 
         (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18)
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET=DATASET),
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
 # -
@@ -278,9 +258,8 @@ birth_df = pd.io.gbq.read_gbq('''
         sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)>120) then 1 else 0 end) as over_120_in_dataset
          
     FROM
-       `{}.unioned_ehr_person` AS t1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
+       `{DATASET}.unioned_ehr_person` AS t1
+    '''.format(DATASET=DATASET), dialect='standard')
 print(birth_df.shape[0], 'records received.')
 
 # +
@@ -292,11 +271,11 @@ birth_df = pd.io.gbq.read_gbq('''
     SELECT
         person_id          
     FROM
-       `{}.unioned_ehr_person` AS t1
+       `{DATASET}.unioned_ehr_person` AS t1
     where 
         DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)>120
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
+    '''.format(DATASET=DATASET), dialect='standard')
+
 print(birth_df.shape[0], 'records received.')
 # -
 
@@ -314,9 +293,9 @@ birth_df = pd.io.gbq.read_gbq('''
     SELECT
         DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR) as AGE    
     FROM
-       `{}.unioned_ehr_person` AS t1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
+       `{DATASET}.unioned_ehr_person` AS t1
+    '''.format(DATASET=DATASET), dialect='standard')
+
 print(birth_df.shape[0], 'records received.')
 # -
 
@@ -594,6 +573,6 @@ final_diabetic_df = final_diabetic_df.sort_values(by='diabetics_w_glucose', asce
 
 final_diabetic_df
 
-final_diabetic_df.to_csv("{cwd}\diabetes.csv".format(cwd = cwd))
+final_diabetic_df.to_csv("{cwd}/diabetes.csv".format(cwd = cwd))
 
 

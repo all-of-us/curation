@@ -182,7 +182,8 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{DATASET}._mapping_visit_occurrence`   
-    ) 
+    )
+    WHERE src_hpo_id NOT LIKE '%rdr%'
     order by 1
     '''.format(DATASET = DATASET),
                               dialect='standard')
@@ -303,6 +304,8 @@ a.procedure_dt_vis_start_dt_diff > 0
 OR
 a.procedure_dt_vis_end_dt_diff > 0
 )
+AND
+a.src_hpo_id NOT LIKE '%rdr%'
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET = DATASET)
 
@@ -328,6 +331,7 @@ JOIN
 `{DATASET}._mapping_procedure_occurrence` mp
 ON
 p.procedure_occurrence_id = mp.procedure_occurrence_id
+WHERE mp.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_total_records DESC
 """.format(DATASET = DATASET)
@@ -462,6 +466,8 @@ a.observation_dt_vis_start_dt_diff > 0
 OR
 a.observation_dt_vis_end_dt_diff > 0
 )
+AND
+a.src_hpo_id NOT LIKE '%rdr%'
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET = DATASET)
 
@@ -482,6 +488,7 @@ JOIN
 `{DATASET}._mapping_observation` mo
 ON
 o.observation_id = mo.observation_id
+WHERE mo.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_total_records DESC
 """.format(DATASET = DATASET)
@@ -618,6 +625,7 @@ a.measurement_dt_vis_start_dt_diff > 0
 OR
 a.measurement_dt_vis_end_dt_diff > 0
 )
+AND a.src_hpo_id NOT LIKE '%rdr%'
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET = DATASET)
 
@@ -637,6 +645,7 @@ JOIN
 `{DATASET}._mapping_measurement` mm
 ON
 m.measurement_id = mm.measurement_id
+WHERE mm.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_total_records DESC
 """.format(DATASET = DATASET)
@@ -749,6 +758,7 @@ a.condition_vis_start_diff > 0
 OR
 a.condition_dt_vis_start_dt_diff > 0
 )
+AND a.src_hpo_id NOT LIKE '%rdr%'
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET = DATASET)
 
@@ -768,6 +778,7 @@ JOIN
 `{DATASET}._mapping_condition_occurrence` mco
 ON
 co.condition_occurrence_id = mco.condition_occurrence_id
+WHERE mco.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_total_records DESC
 """.format(DATASET = DATASET)
@@ -880,6 +891,8 @@ a.drug_vis_start_diff > 0
 OR
 a.drug_dt_vis_start_dt_diff > 0
 )
+AND
+a.src_hpo_id NOT LIKE '%rdr%'
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET = DATASET)
 
@@ -899,6 +912,8 @@ JOIN
 `{DATASET}._mapping_drug_exposure` mde
 ON
 de.drug_exposure_id = mde.drug_exposure_id
+AND
+mde.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_total_records DESC
 """.format(DATASET = DATASET)
@@ -949,6 +964,6 @@ final_success_df = pd.merge(final_success_df, short_condition_df, how='outer', o
 final_success_df
 # -
 
-final_success_df.to_csv("{cwd}\\visit_date_disparity.csv".format(cwd = cwd))
+final_success_df.to_csv("{cwd}/visit_date_disparity.csv".format(cwd = cwd))
 
 
