@@ -23,7 +23,8 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
-class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
+class ObservationSourceConceptIDRowSuppressionTest(
+        BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -109,4 +110,4 @@ class ObservationSourceConceptIDRowSuppressionTest(BaseTest.DropRowsTestBase):
         Validates pre-conditions, test execution and post conditions based on
         the load statements and the tables_and_counts variable.
         """
-        self.default_test(self.tables_and_counts)
+        self.default_drop_rows_test(self.tables_and_counts)

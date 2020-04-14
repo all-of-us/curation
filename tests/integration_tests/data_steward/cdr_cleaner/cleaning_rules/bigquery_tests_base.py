@@ -213,18 +213,18 @@ class BaseTest:
 
             return values
 
-    class DropRowsTestBase(BigQueryTestBase):
+    class CleaningRulesTestBase(BigQueryTestBase):
         """
-        Class that can be extended and used to test cleaning rules that drop row data.
+        Class that can be extended and used to test cleaning rules.
 
-        This class defines a basic test that can be used by extending classes
-        in lieu of writing the test function.  The test function can be overridden
-        by extending classes, if desired.  This test will minimally ensure
+        This class defines basic tests that can be used by extending classes
+        to support integration testing.  The test functions can be overridden
+        by extending classes, if desired.  These tests will minimally ensure
         that sandbox tables are empty and all data is loaded prior to test
-        execution.  It will then ensure only expected cleaned data exists in
+        execution.  They will then ensure only expected cleaned data exists in
         the cleaned tables, and defined sandboxed data exists in the sandbox
         table(s).  This class is optional and is not required.  It is here to
-        make testing easier.  All assertions are based on {tablename}_id fields.
+        support testing efforts.  All assertions are based on {tablename}_id fields.
         """
 
         @classmethod
@@ -233,7 +233,7 @@ class BaseTest:
             # The query class that is being executed.
             cls.query_class = None
 
-        def default_test(self, tables_and_test_values):
+        def default_drop_rows_test(self, tables_and_test_values):
             """
             Test passing the query specifications to the clean engine module.
 
