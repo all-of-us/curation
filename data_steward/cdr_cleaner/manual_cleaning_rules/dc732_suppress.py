@@ -9,10 +9,11 @@
 #    suppress. At minimum this table should have the field `concept_id`.
 #  * This can safely be re-run (e.g. if a new concept is added to the lookup).
 
-# +
-from google.cloud import bigquery
+import argparse
+
 import jinja2
 import pandas as pd
+from google.cloud import bigquery
 
 from utils import bq
 
@@ -32,7 +33,6 @@ JINJA_ENV = jinja2.Environment(
     # with these comment delimiters
     comment_start_string='--',
     comment_end_string=' --')
-CLIENT = bq.get_client()
 
 # # Identify and Log Records
 #
@@ -237,6 +237,8 @@ def get_rows_to_suppress_df(tables_to_suppress_df, concept_lookup_table):
 def ppi_pm(g):
     """
     True if any rows in the group have source PPI/PM
+
+    :param g: DataFrameGroupBy instance with a 'source' column
     """
     return g['source'].isin(['PPI/PM']).any()
 
@@ -329,7 +331,7 @@ def backup_rows_to_suppress(tables_to_suppress_df, suppress_rows_table):
     query_jobs = []
     for (table_name, ext_table_name), table_info in tables_group_df:
         dataset_ids = table_info.dataset_id.unique()
-        backup_rows_dest_table = f'{PROJECT_ID}.{SANDBOX_DATASET_ID}.{ISSUE_PREFIX}{table_name}'
+        backup_rows_dest_table = get_backup_table_for(table_name)
         job_config = bigquery.QueryJobConfig(
             destination=backup_rows_dest_table)
         job_config.write_disposition = 'WRITE_APPEND'
@@ -342,7 +344,7 @@ def backup_rows_to_suppress(tables_to_suppress_df, suppress_rows_table):
         query_jobs.append(backup_table_query_job)
 
         if ext_table_name:
-            backup_ext_dest_table = f'{PROJECT_ID}.{SANDBOX_DATASET_ID}.{ISSUE_PREFIX}{ext_table_name}'
+            backup_ext_dest_table = get_backup_table_for(ext_table_name)
             job_config = bigquery.QueryJobConfig(
                 destination=backup_ext_dest_table)
             job_config.write_disposition = 'WRITE_APPEND'
@@ -377,6 +379,17 @@ FROM table_ids
 """)
 
 
+def to_ext_query(delete_query):
+    """
+    From a statement which deletes from a domain table, derive a statement
+    which deletes from the corresponding extension table
+
+    :param delete_query: a statement which deletes from a domain table
+    :return: statement which deletes from an extension table
+    """
+    return delete_query.replace('` t WHERE', '_ext` t WHERE')
+
+
 def get_delete_queries(suppress_rows_table):
     """
     Get list of DELETE statements needed to delete rows in domain and _ext tables
@@ -390,16 +403,7 @@ def get_delete_queries(suppress_rows_table):
     all_delete_queries = []
     for delete_query_result in delete_query_results:
         delete_query = delete_query_result['query_string']
-        # Derive the query to delete the associated extension table rows by adding _ext suffix to
-        # the domain table in the query string. For reference, this is an example query on
-        # condition_occurrence:
-        #
-        # DELETE FROM `project.dataset.condition_occurrence` t WHERE EXISTS(
-        #  SELECT 1 FROM dc732_suppress_rows WHERE
-        #      project.sandbox.dataset_id = "dataset"
-        #  AND table = "condition_occurrence"
-        #  AND t.condition_occurrence_id = row_id)
-        delete_ext_query = delete_query.replace('` t WHERE', '_ext` t WHERE')
+        delete_ext_query = to_ext_query(delete_query)
         all_delete_queries.extend([delete_query, delete_ext_query])
     return all_delete_queries
 
@@ -425,22 +429,21 @@ def run_delete_queries(delete_queries):
 
 def print_jobs(bq_jobs):
     """
-    Determine status of BigQuery jobs and print them
+    Determine the statuses of BigQuery jobs and print them
 
     :param bq_jobs: a list of google.cloud.bigquery.job.QueryJob
     """
-    # Manually checking if jobs are all done...
+    fmt = "{j.job_id},{j.destination.dataset_id},{j.destination.table_id},{j.num_dml_affected_rows}"
     for bq_job in bq_jobs:
         bq_job.reload()
-        print(
-            "{j.job_id},{j.destination.dataset_id},{j.destination.table_id},{j.num_dml_affected_rows}"
-            .format(j=bq_job))
+        print(fmt.format(j=bq_job))
 
 
 def main(project_id, sandbox_dataset_id, concept_lookup_table,
          target_dataset_ids):
     """
     Identify, log and remove rows with suppressed concepts
+
     Note: Rows are appended to log and backup tables if they already exist
     
     :param project_id: Identifies the project containing all associated datasets
@@ -476,9 +479,67 @@ def main(project_id, sandbox_dataset_id, concept_lookup_table,
     print_jobs(delete_query_jobs)
 
 
+def get_arg_parser():
+    """
+    Get the parser for command line arguments
+    :return: the parser
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p',
+                        '--project_id',
+                        action='store',
+                        dest='project_id',
+                        help='Identifies the project containing the datasets to retract from',
+                        required=True)
+
+    parser.add_argument('-s',
+                        '--sandbox_dataset_id',
+                        action='store',
+                        dest='sandbox_dataset_id',
+                        help='Identifies the dataset where output is stored',
+                        required=True)
+
+    parser.add_argument('-c',
+                        '--concept_lookup_table',
+                        action='store',
+                        dest='concept_lookup_table',
+                        help='Table containing the concepts that should be suppressed',
+                        required=True)
+
+    parser.add_argument('-d',
+                        '--dataset_ids',
+                        action='store',
+                        dest='dataset_ids',
+                        nargs='+',
+                        help='Identifies dataset(s) to retract from',
+                        required=True)
+    return parser
+
+
+def parse_args():
+    """
+    Parse command line arguments
+
+    :return: namespace with parsed arguments
+    """
+    parser = get_arg_parser()
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    PROJECT_ID = ''
-    SANDBOX_DATASET_ID = ''
-    CONCEPT_LOOKUP_TABLE = f'{SANDBOX_DATASET_ID}.expanded_deid_concepts_20200331'
-    TARGET_DATASETS = []
-    main(PROJECT_ID, SANDBOX_DATASET_ID, CONCEPT_LOOKUP_TABLE, TARGET_DATASETS)
+    ARGS = parse_args()
+    CLIENT = bq.get_client(ARGS.project_id)
+
+    def get_backup_table_for(table_name):
+        """
+        Helper to get fully qualified table name where backup rows will be stored
+
+        :param table_name: name of table whose rows are to be backed up
+        :return: fully qualified table name
+        """
+        return f'{ARGS.project_id}.{ARGS.sandbox_dataset_id}.{ISSUE_PREFIX}{table_name}'
+
+    main(project_id=ARGS.project_id,
+         sandbox_dataset_id=ARGS.sandbox_dataset_id,
+         concept_lookup_table=ARGS.concept_lookup_table,
+         target_dataset_ids=ARGS.dataset_ids)
