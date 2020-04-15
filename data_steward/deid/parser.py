@@ -109,12 +109,15 @@ def query_priority(priority):
 
 def odataset_name_verification(odataset_name):
     """
-    Ensures the output dataset name contains _deid
+    Ensures the output dataset name ends with _deid
+
+    :param odataset_name: output dataset name
+    :return: output dataset name
     """
-    if "_deid" in odataset_name:
+    if odataset_name.endswith('_deid'):
         return odataset_name
     else:
-        message = '%s: Must include _deid' % odataset_name
+        message = f'{odataset_name} must end with _deid'
         raise ArgumentTypeError(message)
 
 
@@ -139,7 +142,7 @@ def parse_args(raw_args=None):
                         action='store',
                         dest='odataset',
                         type=odataset_name_verification,
-                        help='Name of the output dataset must include _deid ',
+                        help='Name of the output dataset must end with _deid ',
                         required=True)
     parser.add_argument('--private_key',
                         dest='private_key',
