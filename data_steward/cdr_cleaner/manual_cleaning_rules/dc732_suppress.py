@@ -390,7 +390,15 @@ def get_delete_queries(suppress_rows_table):
     all_delete_queries = []
     for delete_query_result in delete_query_results:
         delete_query = delete_query_result['query_string']
-        # HACK to get associated _ext DELETE statement
+        # Derive the query to delete the associated extension table rows by adding _ext suffix to
+        # the domain table in the query string. For reference, this is an example query on
+        # condition_occurrence:
+        #
+        # DELETE FROM `project.dataset.condition_occurrence` t WHERE EXISTS(
+        #  SELECT 1 FROM dc732_suppress_rows WHERE
+        #      project.sandbox.dataset_id = "dataset"
+        #  AND table = "condition_occurrence"
+        #  AND t.condition_occurrence_id = row_id)
         delete_ext_query = delete_query.replace('` t WHERE', '_ext` t WHERE')
         all_delete_queries.extend([delete_query, delete_ext_query])
     return all_delete_queries
