@@ -317,6 +317,7 @@ AND r.table = '{{table}}'
 def backup_rows_to_suppress(tables_to_suppress_df, suppress_rows_table):
     """
     Create a table for each domain and load rows that will be suppressed across all datasets
+
     Note: Rows are appended if tables exist
     
     :param tables_to_suppress_df: dataframe with dataset_id, table_name, ext_table_name, columns
