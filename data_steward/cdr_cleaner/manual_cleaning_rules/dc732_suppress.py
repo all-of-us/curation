@@ -423,13 +423,18 @@ def run_delete_queries(delete_queries):
     return delete_query_jobs
 
 
-def print_jobs(delete_query_jobs):
+def print_jobs(bq_jobs):
+    """
+    Determine status of BigQuery jobs and print them
+
+    :param bq_jobs: a list of google.cloud.bigquery.job.QueryJob
+    """
     # Manually checking if jobs are all done...
-    for delete_query_job in delete_query_jobs:
-        delete_query_job.reload()
+    for bq_job in bq_jobs:
+        bq_job.reload()
         print(
             "{j.job_id},{j.destination.dataset_id},{j.destination.table_id},{j.num_dml_affected_rows}"
-            .format(j=delete_query_job))
+            .format(j=bq_job))
 
 
 def main(project_id, sandbox_dataset_id, concept_lookup_table,
