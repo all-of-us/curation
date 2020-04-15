@@ -61,16 +61,6 @@ export GOOGLE_CLOUD_PROJECT="${app_id}"
 gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
-#---------Create curation virtual environment----------
-# create a new environment in directory curation_venv
-virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
-
-# activate it
-source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
-
-# install the requirements in the virtualenv
-pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
-
 # shellcheck source=src/set_path.sh
 source "${TOOLS_DIR}/set_path.sh"
 #------------------------------------------------------
@@ -112,8 +102,6 @@ bq rm -r -d "${rdr_snapshot_staging}"
 
 echo "Done."
 
-# deactivate venv and unset PYTHONPATH
-deactivate
 unset PYTHONPATH
 
 set +ex

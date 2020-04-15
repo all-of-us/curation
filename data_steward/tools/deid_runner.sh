@@ -62,15 +62,6 @@ DEID_DIR="${DATA_STEWARD_DIR}/deid"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 HANDOFF_DATE=$(date --date='1 day' '+%Y-%m-%d')
 
-#------Create de-id virtual environment----------
-virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
-
-source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
-
-# install the requirements in the virtualenv
-pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
-pip install -r "${DEID_DIR}/requirements.txt"
-
 export BIGQUERY_DATASET_ID="${cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
 
@@ -154,8 +145,6 @@ bq update --description "${version} De-identified Clean version of ${cdr_deid_ba
 bq rm -r -d "${cdr_deid_clean_staging}_sandbox"
 bq rm -r -d "${cdr_deid_clean_staging}"
 
-# deactivate virtual environment
 unset PYTHONPATH
-deactivate
 
 set +ex

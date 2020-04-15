@@ -65,13 +65,6 @@ echo "Creating backup in ${BACKUP_DIR}..."
 mkdir ${BACKUP_DIR}
 cp -a ${IN_DIR}/* ${BACKUP_DIR}
 
-# create a new environment in directory curation_venv
-virtualenv -p $(which python3.7) ${VENV_DIR}
-# activate it
-source ${VENV_DIR}/bin/activate
-# install the requirements in the virtualenv
-pip install -r requirements.txt
-
 # Format dates, standardize line endings
 echo "Transforming the files in ${IN_DIR}..."
 python ${BASE_DIR}/vocabulary.py transform_files --in_dir ${BACKUP_DIR} --out_dir ${IN_DIR}
@@ -84,7 +77,7 @@ echo "Adding AoU_General and AoU_Custom to vocabulary in ${IN_DIR}..."
 cp -a ${IN_DIR}/* ${TEMP_DIR}
 
 python ${BASE_DIR}/vocabulary.py add_aou_vocabs --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
-deactivate
+
 rm -rf ${VENV_DIR}
 rm -rf ${TEMP_DIR}
 

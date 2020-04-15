@@ -58,11 +58,7 @@ if [[ "$OSTYPE" == "msys" ]]; then
     BIN_PATH="${VENV_PATH}/Scripts"
 fi
 
-virtualenv --python=${PYTHON_CMD} ${VENV_PATH}
-source "${BIN_PATH}/activate"
 echo "Which python: $(which python)"
-python -m pip install -U pip
-python -m pip install -U -r "${BASE_DIR}/requirements.txt"
 
 # The path set to /c/path/to/file gets converted to C:\\c\\path\\to\\file
 # instead of C:\\path\\to\\file, requiring the following fix for Git Bash for Windows
