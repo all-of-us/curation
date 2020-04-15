@@ -183,3 +183,16 @@ VOCABULARY_UPDATES = {
         VERSION_TEMPLATE, AOU_CUSTOM_VOCABULARY_REFERENCE
     ]
 }
+
+COMBINED = 'combined'
+UNIONED_EHR = 'unioned_ehr'
+DEID = 'deid'
+EHR = 'ehr'
+RDR = 'rdr'
+RELEASE = 'release'
+OTHER = 'other'
+
+MAPPING = 'mapping'
+MAPPING_PREFIX = '_mapping_'
+EXT = 'ext'
+EXT_SUFFIX = '_ext'

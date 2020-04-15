@@ -11,8 +11,7 @@ import json
 import logging
 import os
 import re
-from io import StringIO
-from io import open
+from io import StringIO, open
 
 # Third party imports
 from flask import Flask
@@ -30,16 +29,11 @@ from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JS
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, initialize_logging
-from tools import retract_data_bq, retract_data_gcs
-from validation import achilles as achilles
-from validation import achilles_heel as achilles_heel
-from validation import ehr_union as ehr_union
-from validation import export as export
-from validation import hpo_report
+from retraction import retract_data_bq, retract_data_gcs
+from validation import achilles, achilles_heel, ehr_union, export, hpo_report
 from validation.app_errors import (errors_blueprint, InternalValidationError,
                                    BucketDoesNotExistError)
-from validation.metrics import completeness as completeness
-from validation.metrics import required_labs as required_labs
+from validation.metrics import completeness, required_labs
 from validation.participants import identity_match as matching
 
 PREFIX = '/data_steward/v1/'

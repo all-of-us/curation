@@ -7,7 +7,7 @@ from google.cloud import bigquery
 
 # Project Imports
 from app_identity import GOOGLE_CLOUD_PROJECT
-from constants.utils import bq as bq_consts
+from constants.utils import bq as consts
 
 
 def get_client(project_id=None):
@@ -38,12 +38,28 @@ def list_datasets(project_id):
     return datasets
 
 
+def get_table_info_for_dataset(project_id, dataset_id):
+    """
+    Get df of INFORMATION_SCHEMA.COLUMNS for a specified dataset
+
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset
+    :return df containing table column information
+    :raises BadRequest
+    """
+    table_info_query = consts.TABLE_INFO_QUERY.format(project=project_id,
+                                                      dataset=dataset_id)
+    result_df = query(table_info_query, project_id)
+    return result_df
+
+
 def get_dataset(project_id, dataset_id):
     """
-    Return the dataset object
-    :param project_id: 
-    :param dataset_id: 
-    :return: the dataset object
+    Returns the dataset object associated with the dataset_id
+
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset
+    :return: dataset object
     """
     client = get_client(project_id)
     return client.get_dataset(dataset_id)
@@ -73,22 +89,24 @@ def delete_dataset(project_id,
 
 def is_validation_dataset_id(dataset_id):
     """
-    Check if  bq_consts.VALIDATION_PREFIX is in the dataset_id
-    :param dataset_id: 
+    Checks if dataset_id is a validation dataset
+
+    :param dataset_id: identifies the dataset
     :return: a bool indicating whether dataset is a validation_dataset
     """
-    return bq_consts.VALIDATION_PREFIX in dataset_id
+    return consts.VALIDATION_PREFIX in dataset_id
 
 
 def get_latest_validation_dataset_id(project_id):
     """
-    Get the latest validation_dataset_id based on most recent creationTime. 
-    :param project_id: 
-    :return: the most recent validatioN_dataset_id
+    Get the latest validation_dataset_id based on most recent creation time
+
+    :param project_id: identifies the project
+    :return: the most recent validation_dataset_id
     """
 
-    dataset_id = os.environ.get(bq_consts.MATCH_DATASET, bq_consts.BLANK)
-    if dataset_id == bq_consts.BLANK:
+    dataset_id = os.environ.get(consts.MATCH_DATASET, consts.BLANK)
+    if dataset_id == consts.BLANK:
         validation_datasets = []
         for dataset in list_datasets(project_id):
             dataset_id = dataset.dataset_id

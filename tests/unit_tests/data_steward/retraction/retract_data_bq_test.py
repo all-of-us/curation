@@ -5,7 +5,7 @@ import bq_utils
 import cdm
 import common
 import resources
-from tools import retract_data_bq
+from retraction import retract_data_bq
 from validation import ehr_union
 
 
@@ -78,7 +78,7 @@ class RetractDataBqTest(unittest.TestCase):
         self.assertTrue(
             retract_data_bq.is_unioned_dataset('unioned_ehr20190801_clean'))
 
-    @mock.patch('tools.retract_data_bq.list_existing_tables')
+    @mock.patch('retraction.retract_data_bq.list_existing_tables')
     def test_queries_to_retract_from_ehr_dataset(self,
                                                  mock_list_existing_tables):
         hpo_person = bq_utils.get_table_id(self.hpo_id, common.PERSON)
@@ -121,7 +121,7 @@ class RetractDataBqTest(unittest.TestCase):
             ignored_tables)
         self.assertSetEqual(expected_dest_tables, actual_dest_tables)
 
-    @mock.patch('tools.retract_data_bq.list_existing_tables')
+    @mock.patch('retraction.retract_data_bq.list_existing_tables')
     def test_queries_to_retract_from_combined_or_deid_dataset(
         self, mock_list_existing_tables):
         existing_table_ids = []
@@ -158,7 +158,7 @@ class RetractDataBqTest(unittest.TestCase):
             if q[retract_data_bq.DEST_TABLE] is common.DEATH:
                 self.assertNotIn(str(constant_factor), q[retract_data_bq.QUERY])
 
-    @mock.patch('tools.retract_data_bq.list_existing_tables')
+    @mock.patch('retraction.retract_data_bq.list_existing_tables')
     def test_queries_to_retract_from_unioned_dataset(self,
                                                      mock_list_existing_tables):
         existing_table_ids = []

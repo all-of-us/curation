@@ -1,4 +1,3 @@
-from __future__ import print_function
 import unittest
 from io import open
 
@@ -7,7 +6,7 @@ import mock
 import bq_utils
 import gcs_utils
 from tests import test_util
-from tools import retract_data_gcs as rd
+from retraction import retract_data_gcs as rd
 
 
 class RetractDataGcsTest(unittest.TestCase):
@@ -38,7 +37,7 @@ class RetractDataGcsTest(unittest.TestCase):
         for bucket_item in bucket_items:
             gcs_utils.delete_object(self.bucket, bucket_item['name'])
 
-    @mock.patch('tools.retract_data_gcs.extract_pids_from_table')
+    @mock.patch('retraction.retract_data_gcs.extract_pids_from_table')
     @mock.patch('gcs_utils.get_drc_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_integration_five_person_data_retraction_skip(
@@ -107,7 +106,7 @@ class RetractDataGcsTest(unittest.TestCase):
         self.assertEqual(len(retract_result[self.folder_prefix_1]),
                          len(lines_to_remove))
 
-    @mock.patch('tools.retract_data_gcs.extract_pids_from_table')
+    @mock.patch('retraction.retract_data_gcs.extract_pids_from_table')
     @mock.patch('gcs_utils.get_drc_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_integration_five_person_data_retraction(self, mock_hpo_bucket,

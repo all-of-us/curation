@@ -16,12 +16,7 @@ import logging
 import common
 import bq_utils
 from validation import ehr_union
-
-UNIONED_REGEX = re.compile('unioned_ehr_?\d{6}')
-COMBINED_REGEX = re.compile('combined\d{6}')
-DEID_REGEX = re.compile('.*deid.*')
-EHR_REGEX = re.compile('ehr_?\d{6}')
-RELEASE_REGEX = re.compile('R\d{4}Q\dR\d')
+from retraction import retract_utils as ru
 
 UNIONED_EHR = 'unioned_ehr_'
 QUERY = 'QUERY'
@@ -542,23 +537,23 @@ def retraction_query_runner(queries):
 
 
 def is_deid_dataset(dataset_id):
-    return bool(re.match(DEID_REGEX, dataset_id)) or bool(
-        re.match(RELEASE_REGEX, dataset_id))
+    return bool(re.match(ru.DEID_REGEX, dataset_id)) or bool(
+        re.match(ru.RELEASE_REGEX, dataset_id))
 
 
 def is_combined_dataset(dataset_id):
     if is_deid_dataset(dataset_id):
         return False
-    return bool(re.match(COMBINED_REGEX, dataset_id))
+    return bool(re.match(ru.COMBINED_REGEX, dataset_id))
 
 
 def is_unioned_dataset(dataset_id):
-    return bool(re.match(UNIONED_REGEX, dataset_id))
+    return bool(re.match(ru.UNIONED_REGEX, dataset_id))
 
 
 def is_ehr_dataset(dataset_id):
     return bool(re.match(
-        EHR_REGEX, dataset_id)) or dataset_id == bq_utils.get_dataset_id()
+        ru.EHR_REGEX, dataset_id)) or dataset_id == bq_utils.get_dataset_id()
 
 
 def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
