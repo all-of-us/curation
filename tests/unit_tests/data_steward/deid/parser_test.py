@@ -51,6 +51,7 @@ class ParserTest(unittest.TestCase):
 
     def test_parse_args(self):
         # Tests if incorrect parameters are given
+        self.incorrect_parameter_list.extend(['--odataset', 'random_deid_tag'])
         self.assertRaises(SystemExit, parse_args, self.incorrect_parameter_list)
 
         # Preconditions

@@ -12,15 +12,13 @@ Original Issue: DC-744
 # Python imports
 import unittest
 import os
-from argparse import Namespace, ArgumentTypeError
 
 # Third party imports
-from mock import mock, patch
+from mock import patch
 
 # Project imports
 from tools import run_deid
 from resources import DEID_PATH
-from tools.run_deid import parse_args, main
 
 
 class RunDeidTest(unittest.TestCase):
@@ -54,7 +52,7 @@ class RunDeidTest(unittest.TestCase):
             self.private_key,
             '--action',
             self.action,
-            '--skip_tables',
+            '--skip-tables',
             self.skip_tables,
             '--tables',
             self.tablename,
@@ -65,7 +63,9 @@ class RunDeidTest(unittest.TestCase):
 
     def test_parse_args(self):
         # Tests if incorrect parameters are given
-        self.assertRaises(SystemExit, parse_args, self.incorrect_parameter_list)
+        self.incorrect_parameter_list.extend(['--odataset', 'random_deid_tag'])
+        self.assertRaises(SystemExit, run_deid.parse_args,
+                          self.incorrect_parameter_list)
 
         # Preconditions
         it = iter(self.correct_parameter_list)
@@ -86,7 +86,7 @@ class RunDeidTest(unittest.TestCase):
             del correct_parameter_dict['idataset']
 
         # Tests if correct parameters are given
-        results_dict = vars(parse_args(self.correct_parameter_list))
+        results_dict = vars(run_deid.parse_args(self.correct_parameter_list))
 
         # Post conditions
         self.assertEqual(correct_parameter_dict, results_dict)
@@ -97,14 +97,22 @@ class RunDeidTest(unittest.TestCase):
     @patch('tools.run_deid.get_output_tables')
     def test_main(self, mock_tables, mock_main, mock_suppressed, mock_fields):
         # Tests if incorrect parameters are given
-        self.assertRaises(SystemExit, main, self.incorrect_parameter_list)
+        self.assertRaises(SystemExit, run_deid.main,
+                          self.incorrect_parameter_list)
 
         # Preconditions
         mock_tables.return_value = ['fake1']
         mock_fields.return_value = {}
+        mock_main.assert_called_once_with([
+            '--rules',
+            os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
+            '--private_key', self.private_key, '--table', 'fake1', '--action',
+            self.action, '--idataset', self.input_dataset, '--log', 'LOGS',
+            '--odataset', self.output_dataset
+        ])
 
         # Tests if correct parameters are given
-        self.assertIsNone(main(self.correct_parameter_list))
+        self.assertEqual(mock_main.call_count, 1)
 
     @patch('tools.run_deid.os.walk')
     def test_known_tables(self, mock_walk):
