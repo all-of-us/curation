@@ -166,7 +166,7 @@ def parse_args(raw_args=None):
                         action='store',
                         dest='odataset',
                         type=odataset_name_verification,
-                        help='Name of the output dataset must include _deid ',
+                        help='Name of the output dataset must end with _deid ',
                         required=True)
     parser.add_argument(
         '-a',
