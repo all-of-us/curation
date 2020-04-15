@@ -409,11 +409,10 @@ def get_delete_queries(suppress_rows_table):
 
 def run_delete_queries(delete_queries):
     """
-    Execute list of queries which delete rows
+    Execute list of queries which delete rows in batch to prevent concurrent request limit
     
     :param delete_queries: list of DELETE statements
     """
-    # Delete rows in batch to prevent concurrent request limit
     delete_query_jobs = []
     for delete_query in delete_queries:
         print(delete_query + '\n')
