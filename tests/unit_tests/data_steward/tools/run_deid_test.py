@@ -103,6 +103,11 @@ class RunDeidTest(unittest.TestCase):
         # Preconditions
         mock_tables.return_value = ['fake1']
         mock_fields.return_value = {}
+
+        # Tests if correct parameters are given
+        run_deid.main(self.correct_parameter_list)
+
+        # Post conditions
         mock_main.assert_called_once_with([
             '--rules',
             os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
@@ -110,8 +115,6 @@ class RunDeidTest(unittest.TestCase):
             self.action, '--idataset', self.input_dataset, '--log', 'LOGS',
             '--odataset', self.output_dataset
         ])
-
-        # Tests if correct parameters are given
         self.assertEqual(mock_main.call_count, 1)
 
     @patch('tools.run_deid.os.walk')
