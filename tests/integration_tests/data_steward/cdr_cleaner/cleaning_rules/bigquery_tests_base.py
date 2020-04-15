@@ -176,7 +176,7 @@ class BaseTest:
             # start the job and wait for it to complete
             result_list = list(response.result())
 
-            result_id_list = self.create_values_list(result_list, 0)
+            result_id_list = [row[0] for row in result_list]
 
             self.assertCountEqual(values, result_id_list, message)
 
@@ -194,26 +194,9 @@ class BaseTest:
             # start the job and wait for it to complete
             result_list = list(response.result())
 
-            result_id_list = self.create_values_list(result_list, 0)
+            result_id_list = [row[0] for row in result_list]
 
             self.assertCountEqual(values, result_id_list, message)
-
-        @staticmethod
-        def create_values_list(result_list, index):
-            """
-            Helper method to create a list of values from a result list.
-
-            :param result_list: a list of a big query response.result() value
-            :param index: the index of the response object to retrieve from
-
-            :returns: a list of values created by iterating the result list and
-                appending the value found at the specified index.
-            """
-            values = []
-            for row in result_list:
-                values.append(row[index])
-
-            return values
 
     class CleaningRulesTestBase(BigQueryTestBase):
         """

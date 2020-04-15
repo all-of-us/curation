@@ -63,22 +63,7 @@ class ObservationSourceConceptIDRowSuppressionTest(
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
 
-        # set the table names and initial expected row counts after loading
-        table_name = 'observation'
-        cls.tables_and_counts = [{
-            'name':
-                table_name,
-            'fq_table_name':
-                f"{project_id}.{dataset_id}.{table_name}",
-            # I am using the 0 position here because I know there is only one sandbox table
-            'fq_sandbox_table_name':
-                f"{project_id}.{sandbox_id}.{sb_table_names[0]}",
-            'loaded_ids': [801, 802, 803, 804, 805],
-            'sandboxed_ids': [801, 802, 803],
-            'cleaned_ids': [804, 805]
-        }]
-
-        cls.fq_table_names = [f"{project_id}.{dataset_id}.{table_name}"]
+        cls.fq_table_names = [f"{project_id}.{dataset_id}.observation"]
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -110,4 +95,15 @@ class ObservationSourceConceptIDRowSuppressionTest(
         Validates pre-conditions, test execution and post conditions based on
         the load statements and the tables_and_counts variable.
         """
-        self.default_drop_rows_test(self.tables_and_counts)
+        # Using the 0 position because there is only one sandbox table and
+        # one affected OMOP table
+        tables_and_counts = [{
+            'name': self.fq_table_names[0].split('.')[-1],
+            'fq_table_name': self.fq_table_names[0],
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
+            'loaded_ids': [801, 802, 803, 804, 805],
+            'sandboxed_ids': [801, 802, 803],
+            'cleaned_ids': [804, 805]
+        }]
+
+        self.default_drop_rows_test(tables_and_counts)
