@@ -248,7 +248,7 @@ def main(raw_args=None):
         if args.interactive_mode:
             parameter_list.append('--interactive')
 
-        field_names = [field.get('name') for field in fields_for(tablepath)]
+        field_names = [field.get('name') for field in fields_for(table)]
         if 'person_id' in field_names:
             parameter_list.append('--cluster')
 
