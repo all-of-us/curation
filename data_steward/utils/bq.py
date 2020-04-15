@@ -1,24 +1,114 @@
+"""
+A utility to standardize use of the BigQuery python client library.
+"""
 # Python Imports
 import logging
 import os
 
 # Third-party imports
 from google.cloud import bigquery
+from google.api_core.exceptions import GoogleAPIError, Conflict, NotFound
 
 # Project Imports
-from app_identity import GOOGLE_CLOUD_PROJECT
+from app_identity import PROJECT_ID
 from constants.utils import bq as consts
+from resources import fields_for
+
+LOGGER = logging.getLogger(__name__)
 
 
 def get_client(project_id=None):
     """
     Get a client for a specified project.
+
+    :param project_id:  Name of the project to create a bigquery library client for
+        It is being nice for now, but will begin to require users to provide
+        the project_id.
+
+    :return:  A bigquery Client object.
     """
     if project_id is None:
-        logging.info(f'You should specify project_id for a reliable experience.'
-                     f'Defaulting to {os.environ.get(GOOGLE_CLOUD_PROJECT)}.')
+        LOGGER.info(
+            'You should specify project_id for a reliable experience.'
+            'Defaulting to %s.', os.environ.get(PROJECT_ID))
         return bigquery.Client()
     return bigquery.Client(project=project_id)
+
+
+def get_table_schema(table_name):
+    """
+    A helper function to create big query SchemaFields for dictionary definitions.
+
+    Given the table name, reads the schema from the schema definition file
+    and returns a list of SchemaField objects that can be used for table
+    creation.
+
+    :param table_name:  the table name to get BigQuery SchemaField information
+        for.
+    :returns:  a list of SchemaField objects representing the table's schema.
+    """
+    fields = fields_for(table_name)
+
+    schema = []
+    for column in fields:
+        name = column.get('name')
+        field_type = column.get('type')
+        mode = column.get('mode')
+        description = column.get('description')
+        column_def = bigquery.SchemaField(name, field_type, mode, description)
+
+        schema.append(column_def)
+
+    return schema
+
+
+def create_tables(client, project_id, fq_table_names, exists_ok=False):
+    """
+    Create an empty table(s) in a project.
+
+    Relies on a list of fully qualified table names.  This is a list of
+    strings formatted as 'project-id.dataset-id.table-name`.  This will
+    allow the table to be created using the schema defined in a definition
+    file without requiring the user to read the file or submit the filepath.
+
+    :param client: an instantiated bigquery client object
+    :param project_id:  The project that will contain the created table.
+    :param fq_table_names: A list of fully qualified table names.
+    :param exists_ok: A flag to throw an error if the table already exists.
+        Defaults to raising an error if the table already exists.
+
+    :raises RuntimeError: a runtime error if table creation fails for any
+        table in the list.
+
+    :return: A list of created table objects.
+    """
+    if not client:
+        raise RuntimeError("Specify BigQuery client object")
+
+    if not project_id or not isinstance(project_id, str):
+        raise RuntimeError("Specify the project to create the tables in")
+
+    if not fq_table_names or not isinstance(fq_table_names, list):
+        raise RuntimeError("Specify a list for fq_table_names to create")
+
+    successes = []
+    failures = []
+    for table_name in fq_table_names:
+        schema = get_table_schema(table_name.split('.')[2])
+
+        try:
+            table = bigquery.Table(table_name, schema=schema)
+            table = client.create_table(table, exists_ok)
+        except (GoogleAPIError, OSError, AttributeError, TypeError, ValueError):
+            LOGGER.exception('Unable to create table %s', table_name)
+            failures.append(table_name)
+        else:
+            successes.append(table)
+
+    if failures:
+        raise RuntimeError(f"Unable to create tables: {failures}")
+
+    return successes
 
 
 def query(q, project_id=None, use_cache=False):
@@ -65,6 +155,38 @@ def get_dataset(project_id, dataset_id):
     return client.get_dataset(dataset_id)
 
 
+def define_dataset(project_id, dataset_id, description, labels):
+    """
+    Define the dataset reference.
+
+    :param project_id:  string name of the project to search for a dataset
+    :param dataset_id:  string name of the dataset id to return a reference of
+
+    :return: a dataset reference object.
+
+    :raises: google.api_core.exceptions.Conflict if the dataset already exists
+    """
+    if description.isspace() or not description:
+        raise RuntimeError("Provide a description to create a dataset.")
+
+    if not project_id:
+        raise RuntimeError(
+            "Specify the project_id for the project containing the dataset")
+
+    if not dataset_id:
+        raise RuntimeError("Provide a dataset_id")
+
+    dataset_id = f"{project_id}.{dataset_id}"
+
+    # Construct a full Dataset object to send to the API.
+    dataset = bigquery.Dataset(dataset_id)
+    dataset.description = description
+    dataset.labels = labels
+    dataset.location = "US"
+
+    return dataset
+
+
 def delete_dataset(project_id,
                    dataset_id,
                    delete_contents=True,
@@ -84,7 +206,7 @@ def delete_dataset(project_id,
     client.delete_dataset(dataset_id,
                           delete_contents=delete_contents,
                           not_found_ok=not_found_ok)
-    logging.info(f'Deleted dataset {project_id}.{dataset_id}')
+    LOGGER.info('Deleted dataset %s.%s', project_id, dataset_id)
 
 
 def is_validation_dataset_id(dataset_id):

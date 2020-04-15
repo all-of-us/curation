@@ -98,6 +98,9 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         """
         pass
 
+    def get_sandbox_tablenames(self):
+        return [SAVE_TABLE_NAME]
+
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
