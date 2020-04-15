@@ -435,7 +435,7 @@ def print_jobs(delete_query_jobs):
 def main(project_id, sandbox_dataset_id, concept_lookup_table,
          target_dataset_ids):
     """
-    Identify, log and remove rows with suppresed concepts
+    Identify, log and remove rows with suppressed concepts
     Note: Rows are appended to log and backup tables if they already exist
     
     :param project_id: Identifies the project containing all associated datasets
