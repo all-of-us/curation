@@ -71,12 +71,14 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(correct_parameter_dict, results_dict)
 
     def test_odataset_name_verification(self):
-        # Tests if output dataset name does not contain _deid
+        # Tests if output dataset name does not end with _deid
         self.assertRaises(ArgumentTypeError, odataset_name_verification,
                           "foo_output")
+        self.assertRaises(ArgumentTypeError, odataset_name_verification,
+                          "foo_deid_output")
 
         # Tests if output dataset name does contain _deid
-        result = odataset_name_verification("foo_output_deid")
+        result = odataset_name_verification(self.output_dataset)
 
         # Post conditions
         self.assertEqual(result, self.output_dataset)
