@@ -329,31 +329,30 @@ def backup_rows_to_suppress(tables_to_suppress_df, suppress_rows_table):
     query_jobs = []
     for (table_name, ext_table_name), table_info in tables_group_df:
         dataset_ids = table_info.dataset_id.unique()
-        if table_name != 'observation':
-            backup_rows_dest_table = f'{PROJECT_ID}.{SANDBOX_DATASET_ID}.{ISSUE_PREFIX}{table_name}'
+        backup_rows_dest_table = f'{PROJECT_ID}.{SANDBOX_DATASET_ID}.{ISSUE_PREFIX}{table_name}'
+        job_config = bigquery.QueryJobConfig(
+            destination=backup_rows_dest_table)
+        job_config.write_disposition = 'WRITE_APPEND'
+        backup_table_rows_query = BACKUP_TABLE_ROWS_QUERY.render(
+            dataset_ids=dataset_ids,
+            table=table_name,
+            suppress_rows_table=suppress_rows_table)
+        backup_table_query_job = CLIENT.query(backup_table_rows_query,
+                                              job_config=job_config)
+        query_jobs.append(backup_table_query_job)
+
+        if ext_table_name:
+            backup_ext_dest_table = f'{PROJECT_ID}.{SANDBOX_DATASET_ID}.{ISSUE_PREFIX}{ext_table_name}'
             job_config = bigquery.QueryJobConfig(
-                destination=backup_rows_dest_table)
+                destination=backup_ext_dest_table)
             job_config.write_disposition = 'WRITE_APPEND'
-            backup_table_rows_query = BACKUP_TABLE_ROWS_QUERY.render(
+            backup_ext_table_rows_query = BACKUP_EXT_TABLE_ROWS_QUERY.render(
                 dataset_ids=dataset_ids,
                 table=table_name,
                 suppress_rows_table=suppress_rows_table)
-            backup_table_query_job = CLIENT.query(backup_table_rows_query,
-                                                  job_config=job_config)
-            query_jobs.append(backup_table_query_job)
-
-            if ext_table_name:
-                backup_ext_dest_table = f'{PROJECT_ID}.{SANDBOX_DATASET_ID}.{ISSUE_PREFIX}{ext_table_name}'
-                job_config = bigquery.QueryJobConfig(
-                    destination=backup_ext_dest_table)
-                job_config.write_disposition = 'WRITE_APPEND'
-                backup_ext_table_rows_query = BACKUP_EXT_TABLE_ROWS_QUERY.render(
-                    dataset_ids=dataset_ids,
-                    table=table_name,
-                    suppress_rows_table=suppress_rows_table)
-                backup_ext_table_query_job = CLIENT.query(
-                    backup_ext_table_rows_query, job_config=job_config)
-                query_jobs.append(backup_ext_table_query_job)
+            backup_ext_table_query_job = CLIENT.query(
+                backup_ext_table_rows_query, job_config=job_config)
+            query_jobs.append(backup_ext_table_query_job)
     return query_jobs
 
 
