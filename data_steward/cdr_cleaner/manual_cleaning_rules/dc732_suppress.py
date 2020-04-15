@@ -475,24 +475,5 @@ if __name__ == '__main__':
     PROJECT_ID = ''
     SANDBOX_DATASET_ID = ''
     CONCEPT_LOOKUP_TABLE = f'{SANDBOX_DATASET_ID}.expanded_deid_concepts_20200331'
-    SUPPRESS_ROWS_DEST_TABLE = f'{SANDBOX_DATASET_ID}.{ROWS_RESOURCE_NAME}'
-    SUMMARY_DEST_TABLE = f'{SANDBOX_DATASET_ID}.{SUMMARY_RESOURCE_NAME}'
     TARGET_DATASETS = []
-    TABLES_TO_SUPPRESS_DF = get_tables_to_suppress_df(PROJECT_ID,
-                                                      TARGET_DATASETS)
-    SUPPRESS_ROWS_DF = get_rows_to_suppress_df(TABLES_TO_SUPPRESS_DF,
-                                               CONCEPT_LOOKUP_TABLE)
-    SUPPRESS_ROWS_DF.to_csv(f'{ROWS_RESOURCE_NAME}.csv')
-    SUPPRESS_ROWS_DF.to_gbq(destination_table=SUPPRESS_ROWS_DEST_TABLE,
-                            if_exists='append')
-    SUPPRESS_SUMMARY_DF = get_suppress_summary_df(SUPPRESS_ROWS_DF)
-    SUPPRESS_SUMMARY_DF.to_csv(f'{SUMMARY_RESOURCE_NAME}.csv')
-    SUPPRESS_SUMMARY_DF.reset_index(inplace=True)
-    SUPPRESS_SUMMARY_DF.to_gbq(destination_table=SUMMARY_DEST_TABLE,
-                               if_exists='append')
-
-    backup_rows_to_suppress(TABLES_TO_SUPPRESS_DF, SUPPRESS_ROWS_DEST_TABLE)
-
-    ALL_DELETE_QUERIES = get_delete_queries(SUPPRESS_ROWS_DEST_TABLE)
-    DELETE_QUERY_JOBS = run_delete_queries(ALL_DELETE_QUERIES)
-    print_jobs(DELETE_QUERY_JOBS)
+    main(PROJECT_ID, SANDBOX_DATASET_ID, CONCEPT_LOOKUP_TABLE, TARGET_DATASETS)
