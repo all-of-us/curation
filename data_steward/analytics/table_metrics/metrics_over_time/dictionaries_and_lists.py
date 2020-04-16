@@ -70,8 +70,9 @@ thresholds = {
     'unit_success_min': 85,
     'route_success_min': 85,
 
-    'date_datetime_disparity_max': 0,
-    'erroneous_dates_max': 0
+    'date_datetime_disparity_max': 0.01,
+    'erroneous_dates_max': 0.01,
+    'person_failure_rate_max': 0.01
 }
 
 
@@ -86,7 +87,8 @@ choice_dict = {
     'h': 'sites_measurement',
     'i': 'visit_date_disparity',
     'j': 'date_datetime_disparity',
-    'k': 'erroneous_dates'}
+    'k': 'erroneous_dates',
+    'l': 'person_id_failure_rate'}
 
 percentage_dict = {
     'duplicates': False,
@@ -99,7 +101,8 @@ percentage_dict = {
     'sites_measurement': True,
     'visit_date_disparity': True,
     'date_datetime_disparity': True,
-    'erroneous_dates': True
+    'erroneous_dates': True,
+    'person_id_failure_rate': True
 }
 
 target_low_dict = {
@@ -113,7 +116,8 @@ target_low_dict = {
     'sites_measurement': False,
     'visit_date_disparity': False,
     'date_datetime_disparity': True,
-    'erroneous_dates': True
+    'erroneous_dates': True,
+    'person_id_failure_rate': True
 }
 
 columns_to_document_for_sheet = {
@@ -166,7 +170,12 @@ columns_to_document_for_sheet = {
         'visit_occurrence', 'condition_occurrence',
         'drug_exposure', 'measurement',
         'procedure_occurrence', 'observation'
-    ]
+    ],
+
+    'person_id_failure_rate': [
+        'visit_occurrence', 'condition_occurrence',
+        'drug_exposure', 'measurement',
+        'procedure_occurrence', 'observation']
 }
 
 
@@ -224,7 +233,8 @@ data_quality_dimension_dict = {
     'drug_routes': 'Completeness',
     'measurement_units': 'Completeness',
     'date_datetime_disparity': 'Conformance',
-    'erroneous_dates': 'Plausibility'
+    'erroneous_dates': 'Plausibility',
+    'person_id_failure_rate': 'Conformance'
 }
 
 metric_type_to_english_dict = {
@@ -244,7 +254,8 @@ metric_type_to_english_dict = {
     # other metrics
     'concept': 'Concept ID Success Rate',
     'duplicates': 'Duplicate Records',
-    'erroneous_dates': 'Erroneous Dates'
+    'erroneous_dates': 'Erroneous Dates',
+    'person_id_failure_rate': 'Person ID Failure Rate'
 }
 
 metrics_to_weight = [
@@ -252,7 +263,7 @@ metrics_to_weight = [
     'end_before_begin', 'data_after_death',
     'concept', 'duplicates',
     'date_datetime_disparity',
-    'erroneous_dates']
+    'erroneous_dates', 'person_id_failure_rate']
 
 full_names = {
     "saou_uab_selma": "UAB Selma",
