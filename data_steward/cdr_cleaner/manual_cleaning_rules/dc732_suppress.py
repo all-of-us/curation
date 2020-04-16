@@ -333,8 +333,7 @@ def backup_rows_to_suppress(tables_to_suppress_df, suppress_rows_table):
     for (table_name, ext_table_name), table_info in tables_group_df:
         dataset_ids = table_info.dataset_id.unique()
         backup_rows_dest_table = get_backup_table_for(table_name)
-        job_config = bigquery.QueryJobConfig(
-            destination=backup_rows_dest_table)
+        job_config = bigquery.QueryJobConfig(destination=backup_rows_dest_table)
         job_config.write_disposition = 'WRITE_APPEND'
         backup_table_rows_query = BACKUP_TABLE_ROWS_QUERY.render(
             dataset_ids=dataset_ids,
@@ -486,31 +485,35 @@ def get_arg_parser():
     :return: the parser
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p',
-                        '--project_id',
-                        action='store',
-                        dest='project_id',
-                        help='Identifies the project containing the datasets to retract from',
-                        required=True)
+    parser.add_argument(
+        '-p',
+        '--project_id',
+        action='store',
+        dest='project_id',
+        help='Identifies the project containing the datasets to retract from',
+        required=True)
     subparsers = parser.add_subparsers(dest='cmd')
     setup_parser = subparsers.add_parser('setup')
-    setup_parser.add_argument('concept_lookup_dest_table',
-                              action='store',
-                              help='Table where suppressed concepts should be loaded')
+    setup_parser.add_argument(
+        'concept_lookup_dest_table',
+        action='store',
+        help='Table where suppressed concepts should be loaded')
     retract_parser = subparsers.add_parser('retract')
-    retract_parser.add_argument('-s',
-                                '--sandbox_dataset_id',
-                                action='store',
-                                dest='sandbox_dataset_id',
-                                help='Identifies the dataset where output is stored',
-                                required=True)
+    retract_parser.add_argument(
+        '-s',
+        '--sandbox_dataset_id',
+        action='store',
+        dest='sandbox_dataset_id',
+        help='Identifies the dataset where output is stored',
+        required=True)
 
-    retract_parser.add_argument('-c',
-                                '--concept_lookup_table',
-                                action='store',
-                                dest='concept_lookup_table',
-                                help='Table where suppressed concepts are loaded',
-                                required=True)
+    retract_parser.add_argument(
+        '-c',
+        '--concept_lookup_table',
+        action='store',
+        dest='concept_lookup_table',
+        help='Table where suppressed concepts are loaded',
+        required=True)
 
     retract_parser.add_argument('-d',
                                 '--dataset_ids',
@@ -537,11 +540,14 @@ def setup(concept_lookup_table):
                                           destination=concept_lookup_table,
                                           job_config=job_config)
         job.result()
-        print("Loaded {} rows into {}.".format(job.output_rows, concept_lookup_table))
+        print("Loaded {} rows into {}.".format(job.output_rows,
+                                               concept_lookup_table))
 
 
-INVALID_TABLE_REF = ("Invalid table reference: '{table}' "
-                     "(qualify with either '<dataset>.<table>' or '<project>.<dataset>.<table>')")
+INVALID_TABLE_REF = (
+    "Invalid table reference: '{table}' "
+    "(qualify with either '<dataset>.<table>' or '<project>.<dataset>.<table>')"
+)
 
 
 def validate_lookup_table_arg(table):
@@ -588,4 +594,5 @@ if __name__ == '__main__':
     if ARGS.cmd == 'setup':
         setup(ARGS.concept_lookup_dest_table)
     elif ARGS.cmd == 'retract':
-        retract(ARGS.project_id, ARGS.dataset_id, ARGS.concept_lookup_table, ARGS.dataset_ids)
+        retract(ARGS.project_id, ARGS.dataset_id, ARGS.concept_lookup_table,
+                ARGS.dataset_ids)
