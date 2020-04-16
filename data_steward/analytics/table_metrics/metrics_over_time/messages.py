@@ -40,7 +40,8 @@ analysis_type_prompt = \
         "G. Percentage of expected drug ingredients observed\n" \
         "H. Percentage of expected measurements observed\n" \
         "I. Date consistency across tables \n" \
-        "J. Date/datetime inconsistencies \n\n" \
+        "J. Date/datetime inconsistencies \n" \
+        "K. Erroneous dates \n\n" \
         "Please specify your choice by typing the corresponding letter."
 
 output_prompt = \

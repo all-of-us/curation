@@ -34,6 +34,7 @@ class HPO:
             end_before_begin, data_after_death,
             route_success, unit_success, measurement_integration,
             ingredient_integration, date_datetime_disp,
+            erroneous_dates,
 
             # number of rows for the 6 canonical tables
             num_measurement_rows=0,
@@ -107,6 +108,11 @@ class HPO:
             should have a length of one (for the drug exposure
             table).
 
+        erroneous_dates (list): list of DataQualityMetric
+            objects that should all have the metric_type
+            relating to the percentage of dates that are before
+            1980 (or before 1900 for the observation table)
+
         num_measurement_rows (float): number of rows in the
             measurement table
 
@@ -136,6 +142,7 @@ class HPO:
         self.end_before_begin = end_before_begin
         self.data_after_death = data_after_death
         self.date_datetime_disp = date_datetime_disp
+        self.erroneous_dates = erroneous_dates
 
         # only relates to one table
         self.route_success = route_success
@@ -173,6 +180,7 @@ class HPO:
         \t Measurement Integration: {measurement_integration}\n
         \t Ingredient Integration: {ingredient_integration}\n
         \t Date/Datetime Disagreement: {date_datetime} \n
+        \t Erroneous Dates: {erroneous_dates}\n
         \n
         Number of Rows:\n
         \t Measurement: {measurement}\n
@@ -192,6 +200,7 @@ class HPO:
             measurement_integration=len(self.measurement_integration),
             ingredient_integration=len(self.ingredient_integration),
             date_datetime=len(self.date_datetime_disp),
+            erroneous_dates=len(self.erroneous_dates),
             measurement=self.num_measurement_rows,
             visit=self.num_visit_rows,
             procedure=self.num_procedure_rows,
@@ -247,6 +256,9 @@ class HPO:
 
         elif metric == 'Date/Datetime Disparity':
             self.date_datetime_disp.append(dq_object)
+
+        elif metric == 'Erroneous Dates':
+            self.erroneous_dates.append(dq_object)
 
         else:
             print("Unrecognized metric input: {metric} for {hpo}".format(
@@ -356,6 +368,11 @@ class HPO:
 
         elif metric == 'Date/Datetime Disparity':
             for obj in self.date_datetime_disp:
+                if obj.table_or_class == table_or_class:
+                    succ_rate = obj.value
+
+        elif metric == 'Erroneous Dates':
+            for obj in self.erroneous_dates:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
@@ -485,6 +502,9 @@ class HPO:
         elif metric == 'Date/Datetime Disparity':
             relevant_objects = self.date_datetime_disp
 
+        elif metric == 'Erroneous Dates':
+            relevant_objects = self.erroneous_dates
+
         else:
             raise Exception(
                 "The following was identified as a metric: "
@@ -596,6 +616,11 @@ class HPO:
             if date_datetime_obj.value > \
                     thresholds['date_datetime_disparity_max']:
                 failing_metrics.append(date_datetime_obj)
+
+        for erroneous_date_obj in self.erroneous_dates:
+            if erroneous_date_obj.value > \
+                    thresholds['erroneous_dates_max']:
+                failing_metrics.append(erroneous_date_obj)
 
         if not failing_metrics:  # no errors logged
             return None

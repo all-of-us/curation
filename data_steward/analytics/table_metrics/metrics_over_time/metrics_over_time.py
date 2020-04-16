@@ -327,7 +327,7 @@ def main():
     create_excel_files(
         metric_choice=user_choice,
         sheet_output=sheet_output,
-        df_dict = dataframes_dict)
+        df_dict=dataframes_dict)
 
 
 if __name__ == "__main__":
