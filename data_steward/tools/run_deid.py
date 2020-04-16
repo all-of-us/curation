@@ -3,16 +3,21 @@ Deid runner.
 
 A central script to execute deid for each table needing de-identification.
 """
+
+# Python imports
 from datetime import datetime
 import logging
 import os
 from argparse import ArgumentParser
 
+# Third party imports
 import google
 
+# Project imports
 import bq_utils
 import deid.aou as aou
 from resources import fields_for, fields_path, DEID_PATH
+from deid.parser import odataset_name_verification
 
 LOGGER = logging.getLogger(__name__)
 DEID_TABLES = [
@@ -148,8 +153,7 @@ def parse_args(raw_args=None):
                         '--idataset',
                         action='store',
                         dest='input_dataset',
-                        help=('Name of the input dataset (an output dataset '
-                              'with suffix _deid will be generated)'),
+                        help='Name of the input dataset',
                         required=True)
     parser.add_argument('-p',
                         '--private_key',
@@ -157,6 +161,13 @@ def parse_args(raw_args=None):
                         action='store',
                         required=True,
                         help='Service account file location')
+    parser.add_argument('-o',
+                        '--odataset',
+                        action='store',
+                        dest='odataset',
+                        type=odataset_name_verification,
+                        help='Name of the output dataset must end with _deid ',
+                        required=True)
     parser.add_argument(
         '-a',
         '--action',
@@ -198,7 +209,7 @@ def parse_args(raw_args=None):
                         dest='console_log',
                         action='store_true',
                         required=False,
-                        help=('Log to the console as well as to a file.'))
+                        help='Log to the console as well as to a file.')
     parser.add_argument('--version', action='version', version='deid-02')
     return parser.parse_args(raw_args)
 
@@ -228,9 +239,10 @@ def main(raw_args=None):
 
         parameter_list = [
             '--rules',
-            os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
-            '--private_key', args.private_key, '--table', tablepath, '--action',
-            args.action, '--idataset', args.input_dataset, '--log', LOGS_PATH
+            os.path.join(DEID_PATH, 'config', 'ids',
+                         'config.json'), '--private_key', args.private_key,
+            '--table', tablepath, '--action', args.action, '--idataset',
+            args.input_dataset, '--log', LOGS_PATH, '--odataset', args.odataset
         ]
 
         if args.interactive_mode:

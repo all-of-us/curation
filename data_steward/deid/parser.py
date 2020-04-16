@@ -107,6 +107,20 @@ def query_priority(priority):
         raise ArgumentTypeError(message)
 
 
+def odataset_name_verification(odataset_name):
+    """
+    Ensures the output dataset name ends with _deid
+
+    :param odataset_name: output dataset name
+    :return: output dataset name
+    """
+    if odataset_name.endswith('_deid'):
+        return odataset_name
+    else:
+        message = f'{odataset_name} must end with _deid'
+        raise ArgumentTypeError(message)
+
+
 def parse_args(raw_args=None):
     """
     Parse command line arguments.
@@ -122,8 +136,13 @@ def parse_args(raw_args=None):
     parser.add_argument('--idataset',
                         action='store',
                         dest='idataset',
-                        help=('Name of the input dataset (an output dataset '
-                              'with suffix _deid will be generated)'),
+                        help='Name of the input dataset',
+                        required=True)
+    parser.add_argument('--odataset',
+                        action='store',
+                        dest='odataset',
+                        type=odataset_name_verification,
+                        help='Name of the output dataset must end with _deid ',
                         required=True)
     parser.add_argument('--private_key',
                         dest='private_key',

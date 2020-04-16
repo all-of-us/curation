@@ -67,6 +67,7 @@ class Press(ABC):
         :pipeline   operations and associated sequence in which they should be performed
         """
         self.idataset = args.get('idataset', '')
+        self.odataset = args.get('odataset', '')
         self.tablepath = args.get('table')
         self.tablename = os.path.basename(
             self.tablepath).split('.json')[0].strip()

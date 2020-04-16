@@ -265,7 +265,6 @@ class AOU(Press):
         self.private_key = args.get('private_key', '')
         self.credentials = service_account.Credentials.from_service_account_file(
             self.private_key)
-        self.odataset = self.idataset + '_deid'
         self.partition = args.get('cluster', False)
         self.priority = args.get('interactive', 'BATCH')
 
