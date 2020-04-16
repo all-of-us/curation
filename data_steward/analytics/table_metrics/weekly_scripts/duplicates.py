@@ -592,9 +592,9 @@ sites_success = pd.merge(sites_success,
 
 sites_success = sites_success.fillna(0)
 sites_success[["visit_occurrence", "condition_occurrence", "drug_exposure", "measurement", "procedure_occurrence",
-               "device_exposure", "observation"]] \
+               "observation"]] \
     = sites_success[["visit_occurrence", "condition_occurrence", "drug_exposure", "measurement", "procedure_occurrence",
-                     "device_exposure", "observation"]].astype(int)
+                     "observation"]].astype(int)
 
 sites_success
 

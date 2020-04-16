@@ -41,7 +41,8 @@ analysis_type_prompt = \
         "H. Percentage of expected measurements observed\n" \
         "I. Date consistency across tables \n" \
         "J. Date/datetime inconsistencies \n" \
-        "K. Erroneous dates \n\n" \
+        "K. Erroneous dates \n" \
+        "L. Person ID failure rate\n" \
         "Please specify your choice by typing the corresponding letter."
 
 output_prompt = \
