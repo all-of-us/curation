@@ -15,6 +15,7 @@ import jinja2
 import pandas as pd
 from google.cloud import bigquery
 
+from resources import DC732_CONCEPT_LOOKUP_CSV_PATH
 from utils import bq
 
 # -
@@ -439,8 +440,8 @@ def print_jobs(bq_jobs):
         print(fmt.format(j=bq_job))
 
 
-def main(project_id, sandbox_dataset_id, concept_lookup_table,
-         target_dataset_ids):
+def retract(project_id, sandbox_dataset_id, concept_lookup_table,
+            target_dataset_ids):
     """
     Identify, log and remove rows with suppressed concepts
 
@@ -491,43 +492,88 @@ def get_arg_parser():
                         dest='project_id',
                         help='Identifies the project containing the datasets to retract from',
                         required=True)
+    subparsers = parser.add_subparsers(dest='cmd')
+    setup_parser = subparsers.add_parser('setup')
+    setup_parser.add_argument('concept_lookup_dest_table',
+                              action='store',
+                              help='Table where suppressed concepts should be loaded')
+    retract_parser = subparsers.add_parser('retract')
+    retract_parser.add_argument('-s',
+                                '--sandbox_dataset_id',
+                                action='store',
+                                dest='sandbox_dataset_id',
+                                help='Identifies the dataset where output is stored',
+                                required=True)
 
-    parser.add_argument('-s',
-                        '--sandbox_dataset_id',
-                        action='store',
-                        dest='sandbox_dataset_id',
-                        help='Identifies the dataset where output is stored',
-                        required=True)
+    retract_parser.add_argument('-c',
+                                '--concept_lookup_table',
+                                action='store',
+                                dest='concept_lookup_table',
+                                help='Table where suppressed concepts are loaded',
+                                required=True)
 
-    parser.add_argument('-c',
-                        '--concept_lookup_table',
-                        action='store',
-                        dest='concept_lookup_table',
-                        help='Table containing the concepts that should be suppressed',
-                        required=True)
-
-    parser.add_argument('-d',
-                        '--dataset_ids',
-                        action='store',
-                        dest='dataset_ids',
-                        nargs='+',
-                        help='Identifies dataset(s) to retract from',
-                        required=True)
+    retract_parser.add_argument('-d',
+                                '--dataset_ids',
+                                action='store',
+                                dest='dataset_ids',
+                                nargs='+',
+                                help='Identifies dataset(s) to retract from',
+                                required=True)
     return parser
 
 
-def parse_args():
+def setup(concept_lookup_table):
+    """
+    Load BQ tables needed before running
+
+    :param concept_lookup_table: destination table to save lookup
+    """
+    with open(DC732_CONCEPT_LOOKUP_CSV_PATH, 'rb') as csv_file:
+        job_config = bigquery.LoadJobConfig()
+        job_config.source_format = bigquery.SourceFormat.CSV
+        job_config.skip_leading_rows = 1
+        job_config.autodetect = True
+        job = CLIENT.load_table_from_file(csv_file,
+                                          destination=concept_lookup_table,
+                                          job_config=job_config)
+        job.result()
+        print("Loaded {} rows into {}.".format(job.output_rows, concept_lookup_table))
+
+
+INVALID_TABLE_REF = ("Invalid table reference: '{table}' "
+                     "(qualify with either '<dataset>.<table>' or '<project>.<dataset>.<table>')")
+
+
+def validate_lookup_table_arg(table):
+    """
+    Raise an error if the table reference is not qualified by dataset or project and dataset
+
+    :param table: reference to a table
+    """
+    dot_count = table.count('.')
+    if dot_count < 1 or dot_count > 2:
+        raise ValueError(INVALID_TABLE_REF.format(table=table))
+
+
+def parse_args(args):
     """
     Parse command line arguments
 
     :return: namespace with parsed arguments
     """
     parser = get_arg_parser()
-    return parser.parse_args()
+    args = parser.parse_args(args)
+    if args.cmd == 'setup':
+        validate_lookup_table_arg(args.concept_lookup_dest_table)
+    elif args.cmd == 'retract':
+        validate_lookup_table_arg(args.concept_lookup_table)
+    return args
 
 
 if __name__ == '__main__':
-    ARGS = parse_args()
+    import sys
+
+    ARGS = parse_args(sys.argv[1:])
     CLIENT = bq.get_client(ARGS.project_id)
 
     def get_backup_table_for(table_name):
@@ -539,7 +585,7 @@ if __name__ == '__main__':
         """
         return f'{ARGS.project_id}.{ARGS.sandbox_dataset_id}.{ISSUE_PREFIX}{table_name}'
 
-    main(project_id=ARGS.project_id,
-         sandbox_dataset_id=ARGS.sandbox_dataset_id,
-         concept_lookup_table=ARGS.concept_lookup_table,
-         target_dataset_ids=ARGS.dataset_ids)
+    if ARGS.cmd == 'setup':
+        setup(ARGS.concept_lookup_dest_table)
+    elif ARGS.cmd == 'retract':
+        retract(ARGS.project_id, ARGS.dataset_id, ARGS.concept_lookup_table, ARGS.dataset_ids)

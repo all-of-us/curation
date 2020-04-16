@@ -15,7 +15,7 @@ class Dc732SuppressTest(unittest.TestCase):
         self.project_id = "project_id"
         self.dataset_id = "dataset_id"
         self.sandbox_dataset_id = "sandbox_dataset_id"
-        self.concept_lookup_table = "concept_lookup_table"
+        self.concept_lookup_table = "dataset_id.concept_lookup_table"
 
     def test_to_ext_query(self):
         delete_query = """
@@ -36,16 +36,33 @@ class Dc732SuppressTest(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_arg_parser(self):
-        parser = dc732_suppress.get_arg_parser()
+        # raise error with invalid table reference
+        with self.assertRaises(ValueError):
+            dc732_suppress.parse_args(['-p', self.project_id, 'setup', 'missing_dataset_qualifier'])
 
-        dataset_id = ['dataset1']
-        parser.parse_args(['-p', self.project_id,
-                           '-s', self.sandbox_dataset_id,
-                           '-c', self.concept_lookup_table,
-                           '-d'] + dataset_id)
-        dataset_ids = ['dataset1', 'dataset2']
-        args = parser.parse_args(['-p', self.project_id,
-                                  '-s', self.sandbox_dataset_id,
-                                  '-c', self.concept_lookup_table,
-                                  '-d'] + dataset_ids)
-        self.assertEqual(args.dataset_ids, dataset_ids)
+        # setup command
+        args = dc732_suppress.parse_args(['-p', self.project_id,
+                                          'setup',
+                                          self.concept_lookup_table])
+        self.assertEqual('setup', args.cmd)
+        self.assertEqual(self.concept_lookup_table, args.concept_lookup_dest_table)
+        self.assertEqual(self.project_id, args.project_id)
+
+        dataset_id_1 = 'dataset1'
+        dataset_id_2 = 'dataset2'
+        # retract command with one target dataset
+        args = dc732_suppress.parse_args(['-p', self.project_id,
+                                          'retract',
+                                          '-s', self.sandbox_dataset_id,
+                                          '-c', self.concept_lookup_table,
+                                          '-d', dataset_id_1])
+        self.assertEqual(self.concept_lookup_table, args.concept_lookup_table)
+        self.assertEqual(self.project_id, args.project_id)
+        self.assertEqual(self.sandbox_dataset_id, args.sandbox_dataset_id)
+        # retract command with multiple target datasets
+        args = dc732_suppress.parse_args(['-p', self.project_id,
+                                          'retract',
+                                          '-s', self.sandbox_dataset_id,
+                                          '-c', self.concept_lookup_table,
+                                          '-d', dataset_id_1, dataset_id_2])
+        self.assertEqual([dataset_id_1, dataset_id_2], args.dataset_ids)

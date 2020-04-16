@@ -38,6 +38,8 @@ field_mappings_replaced_path = os.path.join(domain_mappings_path,
 table_mappings_path = os.path.join(domain_mappings_path, 'table_mappings.csv')
 field_mappings_path = os.path.join(domain_mappings_path, 'field_mappings.csv')
 value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
+CDR_CLEANER_PATH = os.path.join(resource_path, 'cdr_cleaner')
+DC732_CONCEPT_LOOKUP_CSV_PATH = os.path.join(CDR_CLEANER_PATH, 'dc732_concept_lookup.csv')
 
 
 @cachetools.cached(cache={})
