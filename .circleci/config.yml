@@ -109,7 +109,7 @@ jobs:
     steps:
       - lint_setup
       - run:
-          name: Checking commit messages for JIRA tag
+          name: Checking commit messages for Jira tag
           working_directory: ~/curation
           command: tools/validate_commit_message.sh
       - run:
