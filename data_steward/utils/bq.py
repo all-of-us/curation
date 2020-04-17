@@ -211,9 +211,15 @@ def delete_dataset(project_id,
 
 def is_validation_dataset_id(dataset_id):
     """
+<<<<<<< Updated upstream
     Checks if dataset_id is a validation dataset
 
     :param dataset_id: identifies the dataset
+=======
+    Check if  bq_consts.VALIDATION_PREFIX is in the dataset_id
+
+    :param dataset_id: 
+>>>>>>> Stashed changes
     :return: a bool indicating whether dataset is a validation_dataset
     """
     return consts.VALIDATION_PREFIX in dataset_id
@@ -221,9 +227,15 @@ def is_validation_dataset_id(dataset_id):
 
 def get_latest_validation_dataset_id(project_id):
     """
+<<<<<<< Updated upstream
     Get the latest validation_dataset_id based on most recent creation time
 
     :param project_id: identifies the project
+=======
+    Get the latest validation_dataset_id based on most recent creationTime.
+
+    :param project_id: 
+>>>>>>> Stashed changes
     :return: the most recent validation_dataset_id
     """
 
@@ -240,3 +252,35 @@ def get_latest_validation_dataset_id(project_id):
             return sorted(validation_datasets, key=lambda x: x[0],
                           reverse=True)[0][1]
     return None
+
+
+def create_dataset(dataset_id, description, label, tag, project_id, exists_ok=False):
+    """
+    Creates a new dataset
+
+    :param project_id:  name of the project in which to create the dataset
+    :param exists_ok: Defaults to 'False'
+    :param dataset_id:  name to give the new dataset, is required
+    :param description:  dataset description, is required
+    :param label:  dataset label, is required
+    :param tag:  dataset tag, is required
+
+    :raises: RuntimeError if the dataset does not have a label or tag
+    """
+    if project_id is None:
+        raise RuntimeError("Please specify a project in which to create the dataset")
+
+    if dataset_id is None:
+        raise RuntimeError("Cannot create a dataset without a name")
+
+    if description.isspace() or not description:
+        raise RuntimeError("Please provide a description to create a dataset")
+
+    if label or tag is None:
+        raise RuntimeError("Label and/or tag is required to create a dataset")
+
+    client = get_client(project_id)
+    client.create_dataset(dataset_id,
+                          exists_ok=exists_ok)
+
+    LOGGER.info('Created dataset %s.%s', project_id, dataset_id)
