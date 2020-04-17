@@ -244,7 +244,12 @@ def get_latest_validation_dataset_id(project_id):
     return None
 
 
-def create_dataset(dataset_id, description, label, tag, project_id, exists_ok=False):
+def create_dataset(dataset_id,
+                   description,
+                   label,
+                   tag,
+                   project_id,
+                   exists_ok=False):
     """
     Creates a new dataset
 
@@ -258,7 +263,8 @@ def create_dataset(dataset_id, description, label, tag, project_id, exists_ok=Fa
     :raises: RuntimeError if the dataset does not have a label or tag
     """
     if not project_id:
-        raise RuntimeError("Please specify a project in which to create the dataset")
+        raise RuntimeError(
+            "Please specify a project in which to create the dataset")
 
     if not dataset_id:
         raise RuntimeError("Cannot create a dataset without a name")
@@ -270,7 +276,6 @@ def create_dataset(dataset_id, description, label, tag, project_id, exists_ok=Fa
         raise RuntimeError("Label and/or tag is required to create a dataset")
 
     client = get_client(project_id)
-    client.create_dataset(dataset_id,
-                          exists_ok=exists_ok)
+    client.create_dataset(dataset_id, exists_ok=exists_ok)
 
     LOGGER.info('Created dataset %s.%s', project_id, dataset_id)

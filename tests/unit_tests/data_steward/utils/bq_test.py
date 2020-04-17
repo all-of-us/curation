@@ -11,7 +11,6 @@ import unittest
 import logging
 
 # Third-party imports
-from google.cloud import bigquery
 from mock import patch
 
 # Project imports
@@ -40,24 +39,23 @@ class BqTest(unittest.TestCase):
     @patch('utils.bq.get_client')
     def test_create_dataset(self, mock_get_client):
         # Tests if project_id is given
-        self.assertRaises(RuntimeError, create_dataset,
-                          self.dataset_id, self.description, self.label,
-                          self.tag, self.exists_ok)
+        self.assertRaises(RuntimeError, create_dataset, self.dataset_id,
+                          self.description, self.label, self.tag,
+                          self.exists_ok)
 
         # Tests if dataset_id is given
         self.assertRaises(RuntimeError, create_dataset, self.project_id,
-                          self.description, self.label,
-                          self.tag, self.exists_ok)
+                          self.description, self.label, self.tag,
+                          self.exists_ok)
 
         # Tests if description is given
         self.assertRaises(RuntimeError, create_dataset, self.project_id,
-                          self.dataset_id, self.label,
-                          self.tag, self.exists_ok)
+                          self.dataset_id, self.label, self.tag, self.exists_ok)
 
         # Tests if label is given
         self.assertRaises(RuntimeError, create_dataset, self.project_id,
-                          self.dataset_id, self.description,
-                          self.tag, self.exists_ok)
+                          self.dataset_id, self.description, self.tag,
+                          self.exists_ok)
 
         # Tests if tag is given
         self.assertRaises(RuntimeError, create_dataset, self.project_id,
@@ -65,12 +63,10 @@ class BqTest(unittest.TestCase):
                           self.exists_ok)
 
         # Tests if correct parameters are given
-        result = create_dataset(self.dataset_id,
-                                self.description,
-                                self.label,
-                                self.tag,
-                                self.project_id,
-                                self.exists_ok)
+        result = create_dataset(self.dataset_id, self.description, self.label,
+                                self.tag, self.project_id, self.exists_ok)
 
-        self.assertEqual(result, LOGGER.info('Created dataset %s.%s', self.project_id,
-                                             self.dataset_id))
+        self.assertEqual(
+            result,
+            LOGGER.info('Created dataset %s.%s', self.project_id,
+                        self.dataset_id))
