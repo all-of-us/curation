@@ -1,7 +1,7 @@
 """
 Unit Test for bq module
 
-Ensures the created dataset has the required tags and or labels
+Ensures the create_dataset function has the proper parameters passed to it
 
 Original Issue: DC-757
 """
@@ -12,6 +12,7 @@ import logging
 
 # Third-party imports
 from google.cloud import bigquery
+from mock import patch
 
 # Project imports
 from utils.bq import create_dataset
@@ -33,16 +34,37 @@ class BqTest(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.description = 'fake description'
         self.label = {'fake_label': 'label'}
-        self.no_label = {}
-        # is this defined properly?
         self.tag = {'fake_tag': ''}
-        self.no_tag = {}
         self.exists_ok = False
 
-    def test_create_dataset(self):
-        # Tests if tags and or labels do not exist
+    @patch('utils.bq.get_client')
+    def test_create_dataset(self, mock_get_client):
+        # Tests if project_id is given
+        self.assertRaises(RuntimeError, create_dataset,
+                          self.dataset_id, self.description, self.label,
+                          self.tag, self.exists_ok)
 
-        # Tests if tags and or labels exist
+        # Tests if dataset_id is given
+        self.assertRaises(RuntimeError, create_dataset, self.project_id,
+                          self.description, self.label,
+                          self.tag, self.exists_ok)
+
+        # Tests if description is given
+        self.assertRaises(RuntimeError, create_dataset, self.project_id,
+                          self.dataset_id, self.label,
+                          self.tag, self.exists_ok)
+
+        # Tests if label is given
+        self.assertRaises(RuntimeError, create_dataset, self.project_id,
+                          self.dataset_id, self.description,
+                          self.tag, self.exists_ok)
+
+        # Tests if tag is given
+        self.assertRaises(RuntimeError, create_dataset, self.project_id,
+                          self.dataset_id, self.description, self.label,
+                          self.exists_ok)
+
+        # Tests if correct parameters are given
         result = create_dataset(self.dataset_id,
                                 self.description,
                                 self.label,
@@ -50,6 +72,5 @@ class BqTest(unittest.TestCase):
                                 self.project_id,
                                 self.exists_ok)
 
-        # Post conditions
-        self.assertEqual(result, LOGGER.info('Created datsaet %s.%s', self.project_id,
+        self.assertEqual(result, LOGGER.info('Created dataset %s.%s', self.project_id,
                                              self.dataset_id))
