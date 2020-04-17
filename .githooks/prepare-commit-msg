@@ -4,7 +4,7 @@
 # Please copy this file to curation/.git/hooks/
 # Allow it to be executable using "chmod +x curation/.git/hooks/prepare-commit-msg"
 
-TICKET_REGEX="\[(DC|EDQ) - [[:digit:]]+\][[:space:]]"
+TICKET_REGEX="\[(DC|EDQ)-[[:digit:]]+\][[:space:]]"
 ERROR_MSG="The commit message below does not start with the Jira ticket tag, please rename."
 
 set -x
