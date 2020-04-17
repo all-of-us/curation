@@ -63,10 +63,9 @@ class BqTest(unittest.TestCase):
                           self.exists_ok)
 
         # Tests if correct parameters are given
-        result = create_dataset(self.dataset_id, self.description, self.label,
-                                self.tag, self.project_id, self.exists_ok)
+        create_dataset(self.dataset_id, self.description, self.label,
+                       self.tag, self.project_id, self.exists_ok)
 
-        self.assertEqual(
-            result,
-            LOGGER.info('Created dataset %s.%s', self.project_id,
-                        self.dataset_id))
+        # Post conditions
+        mock_get_client.assert_called_once_with(self.project_id)
+        self.assertEqual(mock_get_client.call_count, 1)
