@@ -260,6 +260,9 @@ def create_dataset(dataset_id,
     :param label:  dataset label, is required
     :param tag:  dataset tag, is required
 
+    :raises: RuntimeError if the dataset does not have project_id
+    :raises: RuntimeError if the dataset does not have dataset_id
+    :raises: RuntimeError if the dataset does not have a description
     :raises: RuntimeError if the dataset does not have a label or tag
     """
     if not project_id:
