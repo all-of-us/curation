@@ -107,4 +107,4 @@ class ObservationSourceConceptIDRowSuppressionTest(
             'cleaned_values': [(804,), (805,)]
         }]
 
-        self.default_modify_rows_test(tables_and_counts)
+        self.default_test(tables_and_counts)

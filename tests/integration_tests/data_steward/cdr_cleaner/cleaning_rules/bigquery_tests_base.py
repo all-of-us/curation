@@ -175,7 +175,8 @@ class BaseTest:
             # start the job and wait for it to complete
             response_list = list(response.result())
 
-            message = f"Response returned these values {response_list}"
+            message = (f"Assertion for table {fq_table_name} failed.\n"
+                       f"Response returned these values {response_list}")
             self.assertEqual(len(values), len(response_list), message)
 
             if isinstance(values[0], (tuple, list)):
@@ -185,8 +186,10 @@ class BaseTest:
                         if value[0] == result[0]:
                             value_list = value[1:]
                             result_list = result[1:]
-                            message = (f"The result {result} doesn't match the "
-                                       f"expected value {value}")
+                            message = (
+                                f"Assertion for table {fq_table_name} failed.\n"
+                                f"The result {result} doesn't match the "
+                                f"expected value {value}")
                             self.assertEqual(value_list, result_list, message)
             else:
                 # assert match of single list/tuple data.  e.g., list of ids.
