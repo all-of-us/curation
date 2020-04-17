@@ -7,8 +7,6 @@
 TICKET_REGEX="\[(DC|EDQ)-[[:digit:]]+\][[:space:]]"
 ERROR_MSG="The commit message below does not start with the Jira ticket tag, please rename."
 
-set -x
-
 COMMIT_MSG_FILE=$1
 msg=$(cat "${COMMIT_MSG_FILE}")
 

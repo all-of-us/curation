@@ -9,7 +9,8 @@ ERROR_MSG="The commit message below does not start with the Jira ticket tag, ple
 set -x
 
 CURRENT_REV=$(git rev-parse HEAD)
-BRANCH_ROOT_REV=$(diff --old-line-format='' --new-line-format='' <(git rev-list --first-parent "${1:-develop}") <(git rev-list --first-parent "${2:-HEAD}") | head -1)
+BRANCH_ROOT_REV=$(diff -u <(git rev-list --first-parent "${1:-develop}") <(git rev-list --first-parent "${2:-HEAD}") | sed -ne 's/^ //p' | head -1)
+
 
 for rev in $(git rev-list "${CURRENT_REV}"..."${BRANCH_ROOT_REV}");
   do
