@@ -12,10 +12,6 @@
 #     name: python3
 # ---
 
-# +
-# #!pip install --upgrade google-cloud-bigquery[pandas]
-# -
-
 from google.cloud import bigquery
 
 # %reload_ext google.cloud.bigquery
@@ -24,7 +20,13 @@ client = bigquery.Client()
 
 # %load_ext google.cloud.bigquery
 
-# + endofcell="--"
+# +
+from notebooks import parameters
+DATASET = parameters.OCT_2019
+
+print("Dataset to use: {DATASET}".format(DATASET = DATASET))
+
+# +
 #######################################
 print('Setting everything up...')
 #######################################
@@ -32,53 +34,28 @@ print('Setting everything up...')
 import warnings
 
 warnings.filterwarnings('ignore')
-import pandas_gbq
 import pandas as pd
-import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-from matplotlib.lines import Line2D
-
-from notebooks import parameters
-
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib as mpl
-
-import matplotlib.pyplot as plt
-
+# %matplotlib inline
 import os
-import sys
-from datetime import datetime
-from datetime import date
-from datetime import time
-from datetime import timedelta
-import time
+
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
 
-from IPython.display import HTML as html_print
-
 
 def cstr(s, color='black'):
     return "<text style=color:{}>{}</text>".format(color, s)
 
-cwd = os.getcwd()
-cwd = str(cwd)
-print(cwd)
 
 print('done.')
 # -
-# --
 
-# +
-DATASET = parameters.Q2_2019
-
-print("Dataset to use: {DATASET}".format(DATASET = DATASET))
+cwd = os.getcwd()
+cwd = str(cwd)
+print("Current working directory is: {cwd}".format(cwd=cwd))
 
 # +
 dic = {
@@ -125,11 +102,6 @@ site_df
 
 
 # + endofcell="--"
-# # +
-######################################
-print('Getting additional sites that may not already be in the dataframe')
-######################################
-
 site_map = pd.io.gbq.read_gbq('''
     select distinct * from (
     SELECT
@@ -182,11 +154,9 @@ site_map = pd.io.gbq.read_gbq('''
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
          `{DATASET}._mapping_visit_occurrence`   
-    )
-    WHERE src_hpo_id NOT LIKE '%rdr%'
+    ) 
     order by 1
-    '''.format(DATASET = DATASET),
-                              dialect='standard')
+    '''.format(DATASET=DATASET), dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
 
@@ -305,7 +275,7 @@ OR
 a.procedure_dt_vis_end_dt_diff > 0
 )
 AND
-a.src_hpo_id NOT LIKE '%rdr%'
+LOWER(a.src_hpo_id) NOT LIKE '%rdr%'
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET = DATASET)
 
@@ -331,7 +301,8 @@ JOIN
 `{DATASET}._mapping_procedure_occurrence` mp
 ON
 p.procedure_occurrence_id = mp.procedure_occurrence_id
-WHERE mp.src_hpo_id NOT LIKE '%rdr%'
+WHERE
+LOWER(mp.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_total_records DESC
 """.format(DATASET = DATASET)
@@ -467,7 +438,7 @@ OR
 a.observation_dt_vis_end_dt_diff > 0
 )
 AND
-a.src_hpo_id NOT LIKE '%rdr%'
+LOWER(a.src_hpo_id) NOT LIKE '%rdr%'
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET = DATASET)
 
@@ -488,7 +459,8 @@ JOIN
 `{DATASET}._mapping_observation` mo
 ON
 o.observation_id = mo.observation_id
-WHERE mo.src_hpo_id NOT LIKE '%rdr%'
+AND
+LOWER(mo.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_total_records DESC
 """.format(DATASET = DATASET)
@@ -625,7 +597,8 @@ a.measurement_dt_vis_start_dt_diff > 0
 OR
 a.measurement_dt_vis_end_dt_diff > 0
 )
-AND a.src_hpo_id NOT LIKE '%rdr%'
+AND
+LOWER(a.src_hpo_id) NOT LIKE '%rdr%'
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET = DATASET)
 
@@ -645,7 +618,8 @@ JOIN
 `{DATASET}._mapping_measurement` mm
 ON
 m.measurement_id = mm.measurement_id
-WHERE mm.src_hpo_id NOT LIKE '%rdr%'
+WHERE
+LOWER(mm.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_total_records DESC
 """.format(DATASET = DATASET)
@@ -758,7 +732,8 @@ a.condition_vis_start_diff > 0
 OR
 a.condition_dt_vis_start_dt_diff > 0
 )
-AND a.src_hpo_id NOT LIKE '%rdr%'
+AND
+LOWER(a.src_hpo_id) NOT LIKE '%rdr%'
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET = DATASET)
 
@@ -778,7 +753,8 @@ JOIN
 `{DATASET}._mapping_condition_occurrence` mco
 ON
 co.condition_occurrence_id = mco.condition_occurrence_id
-WHERE mco.src_hpo_id NOT LIKE '%rdr%'
+WHERE
+LOWER(mco.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_total_records DESC
 """.format(DATASET = DATASET)
@@ -892,7 +868,7 @@ OR
 a.drug_dt_vis_start_dt_diff > 0
 )
 AND
-a.src_hpo_id NOT LIKE '%rdr%'
+LOWER(a.src_hpo_id) NOT LIKE '%rdr%'
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET = DATASET)
 
@@ -912,8 +888,8 @@ JOIN
 `{DATASET}._mapping_drug_exposure` mde
 ON
 de.drug_exposure_id = mde.drug_exposure_id
-AND
-mde.src_hpo_id NOT LIKE '%rdr%'
+WHERE
+LOWER(mde.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_total_records DESC
 """.format(DATASET = DATASET)

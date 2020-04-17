@@ -34,7 +34,7 @@ class HPO:
             end_before_begin, data_after_death,
             route_success, unit_success, measurement_integration,
             ingredient_integration, date_datetime_disp,
-            erroneous_dates,
+            erroneous_dates, person_id_failure,
 
             # number of rows for the 6 canonical tables
             num_measurement_rows=0,
@@ -113,6 +113,11 @@ class HPO:
             relating to the percentage of dates that are before
             1980 (or before 1900 for the observation table)
 
+        person_id_failure (list): list of DataQualityMetric
+            objects that relate what percentage of rows in
+            each of the tables have a 'failing' person_id
+            (one that does not exist in the person table)
+
         num_measurement_rows (float): number of rows in the
             measurement table
 
@@ -143,6 +148,7 @@ class HPO:
         self.data_after_death = data_after_death
         self.date_datetime_disp = date_datetime_disp
         self.erroneous_dates = erroneous_dates
+        self.person_id_failure = person_id_failure
 
         # only relates to one table
         self.route_success = route_success
@@ -181,6 +187,7 @@ class HPO:
         \t Ingredient Integration: {ingredient_integration}\n
         \t Date/Datetime Disagreement: {date_datetime} \n
         \t Erroneous Dates: {erroneous_dates}\n
+        \t Person ID Failure: {person_id_failure}\n
         \n
         Number of Rows:\n
         \t Measurement: {measurement}\n
@@ -201,6 +208,7 @@ class HPO:
             ingredient_integration=len(self.ingredient_integration),
             date_datetime=len(self.date_datetime_disp),
             erroneous_dates=len(self.erroneous_dates),
+            person_id_failure=len(self.person_id_failure),
             measurement=self.num_measurement_rows,
             visit=self.num_visit_rows,
             procedure=self.num_procedure_rows,
@@ -259,6 +267,9 @@ class HPO:
 
         elif metric == 'Erroneous Dates':
             self.erroneous_dates.append(dq_object)
+
+        elif metric == 'Person ID Failure Rate':
+            self.person_id_failure.append(dq_object)
 
         else:
             print("Unrecognized metric input: {metric} for {hpo}".format(
@@ -373,6 +384,11 @@ class HPO:
 
         elif metric == 'Erroneous Dates':
             for obj in self.erroneous_dates:
+                if obj.table_or_class == table_or_class:
+                    succ_rate = obj.value
+
+        elif metric == 'Person ID Failure Rate':
+            for obj in self.person_id_failure:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
@@ -505,6 +521,9 @@ class HPO:
         elif metric == 'Erroneous Dates':
             relevant_objects = self.erroneous_dates
 
+        elif metric == 'Person ID Failure Rate':
+            relevant_objects = self.person_id_failure
+
         else:
             raise Exception(
                 "The following was identified as a metric: "
@@ -621,6 +640,11 @@ class HPO:
             if erroneous_date_obj.value > \
                     thresholds['erroneous_dates_max']:
                 failing_metrics.append(erroneous_date_obj)
+
+        for person_id_failure_obj in self.person_id_failure:
+            if person_id_failure_obj > \
+                    thresholds['person_failure_rate_max']:
+                failing_metrics.append(person_id_failure_obj)
 
         if not failing_metrics:  # no errors logged
             return None

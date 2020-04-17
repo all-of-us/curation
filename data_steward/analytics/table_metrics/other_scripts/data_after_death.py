@@ -22,6 +22,12 @@ client = bigquery.Client()
 # %reload_ext google.cloud.bigquery
 
 # +
+from notebooks import parameters
+DATASET = parameters.OCT_2019
+
+print("Dataset to use: {DATASET}".format(DATASET = DATASET))
+
+# +
 #######################################
 print('Setting everything up...')
 #######################################
@@ -29,39 +35,16 @@ print('Setting everything up...')
 import warnings
 
 warnings.filterwarnings('ignore')
-import pandas_gbq
 import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-from matplotlib.lines import Line2D
-
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib as mpl
-
 import matplotlib.pyplot as plt
 # %matplotlib inline
-
 import os
-import sys
-from datetime import datetime
-from datetime import date
-from datetime import time
-from datetime import timedelta
-import time
-import math
-
-DATASET = ''
+import bq_utils
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
-
-from IPython.display import HTML as html_print
-
 
 def cstr(s, color='black'):
     return "<text style=color:{}>{}</text>".format(color, s)
@@ -72,7 +55,7 @@ print('done.')
 
 cwd = os.getcwd()
 cwd = str(cwd)
-print(cwd)
+print("Current working directory is: {cwd}".format(cwd=cwd))
 
 # +
 dic = {
@@ -117,73 +100,75 @@ dic = {
 site_df = pd.DataFrame(data=dic)
 site_df
 
-# +
+# + endofcell="--"
+# # +
 ######################################
 print('Getting the data from the database...')
-######################################
 
-site_map = pd.io.gbq.read_gbq('''
-    select distinct * from (
+site_construct_query = """
+select distinct * from (
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`
+         `{DATASET}._mapping_visit_occurrence`
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_condition_occurrence`  
+         `{DATASET}._mapping_condition_occurrence`  
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_device_exposure`
+         `{DATASET}._mapping_device_exposure`
 
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`        
+         `{DATASET}._mapping_drug_exposure`
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_measurement`            
+         `{DATASET}._mapping_measurement`               
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_observation`         
-                
+         `{DATASET}._mapping_observation`           
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_procedure_occurrence`         
+         `{DATASET}._mapping_procedure_occurrence`         
+         
     
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`   
-    )
-    WHERE src_hpo_id NOT LIKE '%rdr%'
-    order by 1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
+         `{DATASET}._mapping_visit_occurrence`   
+    ) 
+""".format(DATASET = DATASET)
+
+######################################
+
+site_map = pd.io.gbq.read_gbq(site_construct_query,
+            dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
+
+site_map
+# --
 
 site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
 
@@ -204,23 +189,22 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(visit_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.visit_occurrence` AS t1
+       `{DATASET}.visit_occurrence` AS t1
     INNER JOIN
-        `{}.death` AS t2
+        `{DATASET}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
         (SELECT
             DISTINCT * 
         FROM
-             `{}._mapping_visit_occurrence`)  AS t3
+             `{DATASET}._mapping_visit_occurrence`)  AS t3
     ON
         t1.visit_occurrence_id=t3.visit_occurrence_id
-    WHERE src_hpo_id NOT LIKE '%rdr%'
+    WHERE LOWER(src_hpo_id) NOT LIKE '%rdr%'
     GROUP BY
         1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                 dialect='standard')
+    '''.format(DATASET=DATASET), dialect='standard')
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
@@ -251,22 +235,22 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(condition_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.condition_occurrence` AS t1
+       `{DATASET}.condition_occurrence` AS t1
     INNER JOIN
-        `{}.death` AS t2
+        `{DATASET}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
         (SELECT
             DISTINCT * 
         FROM
-             `{}._mapping_condition_occurrence`)  AS t3
+             `{DATASET}._mapping_condition_occurrence`)  AS t3
     ON
         t1.condition_occurrence_id=t3.condition_occurrence_id
-    WHERE src_hpo_id NOT LIKE '%rdr%'
+    WHERE LOWER(src_hpo_id) NOT LIKE '%rdr%'
     GROUP BY
         1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
+    '''.format(DATASET=DATASET),
                                  dialect='standard')
 temporal_df.shape
 
@@ -298,23 +282,22 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(drug_exposure_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.drug_exposure` AS t1
+       `{DATASET}.drug_exposure` AS t1
     INNER JOIN
-        `{}.death` AS t2
+        `{DATASET}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
         (SELECT
             DISTINCT * 
         FROM
-             `{}._mapping_drug_exposure`)  AS t3
+             `{DATASET}._mapping_drug_exposure`)  AS t3
     ON
         t1.drug_exposure_id=t3.drug_exposure_id
-    WHERE src_hpo_id NOT LIKE '%rdr%'
+    WHERE LOWER(src_hpo_id) NOT LIKE '%rdr%'
     GROUP BY
         1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                 dialect='standard')
+    '''.format(DATASET=DATASET), dialect='standard')
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
@@ -342,23 +325,22 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(measurement_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.measurement` AS t1
+       `{DATASET}.measurement` AS t1
     INNER JOIN
-        `{}.death` AS t2
+        `{DATASET}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
         (SELECT
             DISTINCT * 
         FROM
-             `{}._mapping_measurement`)  AS t3
+             `{DATASET}._mapping_measurement`)  AS t3
     ON
         t1.measurement_id=t3.measurement_id
-    WHERE src_hpo_id NOT LIKE '%rdr%'
+    WHERE LOWER(src_hpo_id) NOT LIKE '%rdr%'
     GROUP BY
         1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                 dialect='standard')
+    '''.format(DATASET=DATASET),dialect='standard')
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
@@ -386,23 +368,22 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(procedure_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.procedure_occurrence` AS t1
+       `{DATASET}.procedure_occurrence` AS t1
     INNER JOIN
-        `{}.death` AS t2
+        `{DATASET}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
         (SELECT
             DISTINCT * 
         FROM
-             `{}._mapping_procedure_occurrence`)  AS t3
+             `{DATASET}._mapping_procedure_occurrence`)  AS t3
     ON
         t1.procedure_occurrence_id=t3.procedure_occurrence_id
-    WHERE src_hpo_id NOT LIKE '%rdr%'
+    WHERE LOWER(src_hpo_id) NOT LIKE '%rdr%'
     GROUP BY
         1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                 dialect='standard')
+    '''.format(DATASET=DATASET), dialect='standard')
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
@@ -433,23 +414,23 @@ temporal_df = pd.io.gbq.read_gbq('''
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(observation_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
     FROM
-       `{}.observation` AS t1
+       `{DATASET}.observation` AS t1
     INNER JOIN
-        `{}.death` AS t2
+        `{DATASET}.death` AS t2
         ON
             t1.person_id=t2.person_id
     INNER JOIN
         (SELECT
             DISTINCT * 
         FROM
-             `{}._mapping_observation`)  AS t3
+             `{DATASET}._mapping_observation`)  AS t3
     ON
         t1.observation_id=t3.observation_id
-    WHERE src_hpo_id NOT LIKE '%rdr%'
+    WHERE LOWER(src_hpo_id) NOT LIKE '%rdr%'
     GROUP BY
         1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                 dialect='standard')
+    '''.format(DATASET=DATASET), dialect='standard')
+
 temporal_df.shape
 
 print(temporal_df.shape[0], 'records received.')
@@ -464,56 +445,11 @@ observation = observation[["src_hpo_id", "observation"]]
 observation = observation.fillna(100)
 observation
 
-# ## Device Exposure Table
-
-# +
-######################################
-print('Getting the data from the database...')
-######################################
-
-temporal_df = pd.io.gbq.read_gbq('''
-    SELECT
-        src_hpo_id,
-        COUNT(*) AS total,
-        sum(case when (DATE_DIFF(device_exposure_start_date, death_date, DAY)>30) then 1 else 0 end) as wrong_death_date
-    FROM
-       `{}.device_exposure` AS t1
-    INNER JOIN
-        `{}.death` AS t2
-        ON
-            t1.person_id=t2.person_id
-    INNER JOIN
-        (SELECT
-            DISTINCT * 
-        FROM
-             `{}._mapping_device_exposure`)  AS t3
-    ON
-        t1.device_exposure_id=t3.device_exposure_id
-    WHERE src_hpo_id NOT LIKE '%rdr%'
-    GROUP BY
-        1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                                 dialect='standard')
-temporal_df.shape
-
-print(temporal_df.shape[0], 'records received.')
-# -
-
-temporal_df['success_rate'] = 100 - round(
-    100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
-temporal_df
-
-device_exposure = temporal_df.rename(columns={"success_rate": "device_exposure"})
-device_exposure = device_exposure[["src_hpo_id", "device_exposure"]]
-device_exposure = device_exposure.fillna(100)
-device_exposure
-
 # ## 4. Success Rate Temporal Data Points - Data After Death Date
 
 datas = [
     condition_occurrence, drug_exposure, measurement, procedure_occurrence,
-    observation, device_exposure
-]
+    observation]
 
 master_df = visit_occurrence
 
@@ -527,6 +463,6 @@ success_rate = success_rate.fillna(100)
 
 success_rate
 
-success_rate.to_csv("{cwd}\data_after_death.csv".format(cwd = cwd))
+success_rate.to_csv("{cwd}/data_after_death.csv".format(cwd = cwd))
 
 

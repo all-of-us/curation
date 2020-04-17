@@ -22,6 +22,12 @@ client = bigquery.Client()
 # %reload_ext google.cloud.bigquery
 
 # +
+from notebooks import parameters
+DATASET = parameters.OCT_2019
+
+print("Dataset to use: {DATASET}".format(DATASET = DATASET))
+
+# +
 #######################################
 print('Setting everything up...')
 #######################################
@@ -29,38 +35,16 @@ print('Setting everything up...')
 import warnings
 
 warnings.filterwarnings('ignore')
-import pandas_gbq
 import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-from matplotlib.lines import Line2D
-
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib as mpl
-
 import matplotlib.pyplot as plt
 # %matplotlib inline
 
 import os
-import sys
-from datetime import datetime
-from datetime import date
-from datetime import time
-from datetime import timedelta
-import time
-import math
-
-DATASET = ''
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
-
-from IPython.display import HTML as html_print
 
 
 def cstr(s, color='black'):
@@ -72,7 +56,7 @@ print('done.')
 
 cwd = os.getcwd()
 cwd = str(cwd)
-print(cwd)
+print("Current working directory is: {cwd}".format(cwd=cwd))
 
 # +
 dic = {
@@ -117,177 +101,79 @@ dic = {
 site_df = pd.DataFrame(data=dic)
 site_df
 
-# +
+# + endofcell="--"
+# # +
 ######################################
 print('Getting the data from the database...')
-######################################
 
-site_map = pd.io.gbq.read_gbq('''
-    select distinct * from (
+site_construct_query = """
+select distinct * from (
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`
+         `{DATASET}._mapping_visit_occurrence`
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_condition_occurrence`  
+         `{DATASET}._mapping_condition_occurrence`  
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_device_exposure`
+         `{DATASET}._mapping_device_exposure`
 
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`        
+         `{DATASET}._mapping_drug_exposure`
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_measurement`            
+         `{DATASET}._mapping_measurement`               
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_observation`         
-                
+         `{DATASET}._mapping_observation`           
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_procedure_occurrence`         
+         `{DATASET}._mapping_procedure_occurrence`         
+         
     
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`   
-    )
-    WHERE src_hpo_id NOT LIKE '%rdr'
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
+         `{DATASET}._mapping_visit_occurrence`   
+    ) 
+""".format(DATASET = DATASET)
+
+######################################
+
+site_map = pd.io.gbq.read_gbq(site_construct_query,
+            dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
+
+site_map
+# --
 
 site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
 
 site_df
-
-# # Age of participant should NOT be below 18 and should NOT be too high (Achilles rule_id #20 and 21)
-
-# ## Count number of unique participants with age <18
-
-# +
-
-######################################
-print('Getting the data from the database...')
-######################################
-
-birth_df = pd.io.gbq.read_gbq('''
-    SELECT
-        COUNT(*) AS total,
-        sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18) then 1 else 0 end) as minors_in_dataset
-         
-    FROM
-       `{}.person` AS t1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
-print(birth_df.shape[0], 'records received.')
-# -
-
-birth_df
-
-# +
-######################################
-print('Getting the data from the database...')
-######################################
-
-birth_df = pd.io.gbq.read_gbq('''
-    SELECT
-        person_id          
-    FROM
-       `{}.person` AS t1
-    where 
-        (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18)
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
-print(birth_df.shape[0], 'records received.')
-# -
-
-# ## Count number of unique participants with age >120
-
-# +
-
-######################################
-print('Getting the data from the database...')
-######################################
-
-birth_df = pd.io.gbq.read_gbq('''
-    SELECT
-        COUNT(*) AS total,
-        sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)>120) then 1 else 0 end) as over_120_in_dataset
-         
-    FROM
-       `{}.person` AS t1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
-print(birth_df.shape[0], 'records received.')
-
-# +
-######################################
-print('Getting the data from the database...')
-######################################
-
-birth_df = pd.io.gbq.read_gbq('''
-    SELECT
-        person_id          
-    FROM
-       `{}.person` AS t1
-    where 
-        DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)>120
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
-print(birth_df.shape[0], 'records received.')
-# -
-
-birth_df
-
-# ## Histogram
-
-# +
-
-######################################
-print('Getting the data from the database...')
-######################################
-
-birth_df = pd.io.gbq.read_gbq('''
-    SELECT
-        DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR) as AGE    
-    FROM
-       `{}.person` AS t1
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
-print(birth_df.shape[0], 'records received.')
-# -
-
-birth_df.head()
-
-birth_df['AGE'].hist(bins=88)
 
 # # Participant should have supporting data in either lab results or drugs if he/she has a condition code for diabetes.
 
@@ -321,7 +207,7 @@ LOWER(c.concept_name) LIKE '%diabetes%'
 AND
 (invalid_reason is null or invalid_reason = '')
 AND
-mco.src_hpo_id NOT LIKE '%rdr%'
+LOWER(mco.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1, 2
 ORDER BY 1, 2 DESC
 """.format(DATASET = DATASET)
@@ -352,7 +238,7 @@ p.src_hpo_id, COUNT(DISTINCT p.person_id) as num_with_diab
 FROM
 `{DATASET}.persons_with_diabetes_according_to_condition_table` p
 WHERE
-p.src_hpo_id NOT LIKE '%rdr%'
+LOWER(p.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_with_diab DESC
 """.format(DATASET = DATASET)
@@ -408,7 +294,8 @@ RIGHT JOIN
 `{DATASET}.substantiating_diabetic_drug_concept_ids` t2drugs  -- only focus on the drugs that substantiate diabetes
 ON
 de.drug_concept_id = t2drugs.descendant_concept_id
-WHERE p.src_hpo_id NOT LIKE '%rdr%'
+WHERE
+LOWER(p.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_with_diab_and_drugs DESC
 """.format(DATASET = DATASET)
@@ -464,7 +351,7 @@ RIGHT JOIN
 ON
 vgl.concept_id = m.measurement_concept_id -- only get those with the substantiating labs
 WHERE
-p.src_hpo_id NOT LIKE '%rdr'
+LOWER(p.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_with_diab_and_glucose DESC
 """.format(DATASET = DATASET)
@@ -541,8 +428,6 @@ ON
 de.drug_concept_id = c.concept_id
 WHERE
 LOWER(c.concept_name) LIKE '%insulin%'  -- generous for detecting insulin
-AND
-p.src_hpo_id NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY num_with_diab_and_insulin DESC
 """.format(DATASET = DATASET)
@@ -570,6 +455,6 @@ final_diabetic_df = final_diabetic_df.sort_values(by='diabetics_w_glucose', asce
 
 final_diabetic_df
 
-final_diabetic_df.to_csv("{cwd}\diabetes.csv".format(cwd = cwd))
+final_diabetic_df.to_csv("{cwd}/diabetes.csv".format(cwd = cwd))
 
 

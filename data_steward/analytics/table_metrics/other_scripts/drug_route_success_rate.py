@@ -22,6 +22,12 @@ client = bigquery.Client()
 # %reload_ext google.cloud.bigquery
 
 # +
+from notebooks import parameters
+DATASET = parameters.OCT_2019
+
+print("Dataset to use: {DATASET}".format(DATASET = DATASET))
+
+# +
 #######################################
 print('Setting everything up...')
 #######################################
@@ -29,37 +35,16 @@ print('Setting everything up...')
 import warnings
 
 warnings.filterwarnings('ignore')
-import pandas_gbq
 import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-from matplotlib.lines import Line2D
-
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib as mpl
-
 import matplotlib.pyplot as plt
 # %matplotlib inline
-
 import os
-import sys
-from datetime import datetime
-from datetime import date
-from datetime import time
-from datetime import timedelta
-import time
 
-DATASET = ''
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
 pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
-
-from IPython.display import HTML as html_print
 
 
 def cstr(s, color='black'):
@@ -71,9 +56,10 @@ print('done.')
 
 cwd = os.getcwd()
 cwd = str(cwd)
-print(cwd)
+print("Current working directory is: {cwd}".format(cwd=cwd))
 
-# +
+# + endofcell="--"
+# # +
 dic = {
     'src_hpo_id': [
         "saou_uab_selma", "saou_uab_hunt", "saou_tul", "pitt_temple",
@@ -116,7 +102,7 @@ dic = {
 site_df = pd.DataFrame(data=dic)
 site_df
 
-# +
+# # +
 ######################################
 print('Getting the data from the database...')
 ######################################
@@ -126,62 +112,65 @@ site_map = pd.io.gbq.read_gbq('''
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`
+         `{DATASET}._mapping_visit_occurrence`
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_condition_occurrence`  
+         `{DATASET}._mapping_condition_occurrence`  
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_device_exposure`
+         `{DATASET}._mapping_device_exposure`
 
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_drug_exposure`        
+         `{DATASET}._mapping_drug_exposure`
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_measurement`            
+         `{DATASET}._mapping_measurement`               
          
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_observation`         
-                
+         `{DATASET}._mapping_observation`           
          
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_procedure_occurrence`         
+         `{DATASET}._mapping_procedure_occurrence`         
+         
     
     UNION ALL
     SELECT
             DISTINCT(src_hpo_id) as src_hpo_id
     FROM
-         `{}._mapping_visit_occurrence`   
-    )
-    WHERE src_hpo_id NOT LIKE '%rdr%'
-    '''.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET,
-               DATASET, DATASET, DATASET, DATASET, DATASET),
-                              dialect='standard')
+         `{DATASET}._mapping_visit_occurrence`   
+    ) 
+    order by 1
+    '''.format(DATASET=DATASET), dialect='standard')
 print(site_map.shape[0], 'records received.')
 # -
+
+site_map
+
+site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
+
+site_df
+# --
 
 site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
 
@@ -207,8 +196,9 @@ FROM
 JOIN
 `{DATASET}._mapping_drug_exposure` mde
 ON
-de.drug_exposure_id = mde.drug_exposure_id 
-WHERE mde.src_hpo_id NOT LIKE '%rdr%'
+de.drug_exposure_id = mde.drug_exposure_id
+WHERE
+LOWER(mde.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY number_total_routes DESC
 """.format(DATASET = DATASET)
@@ -253,9 +243,9 @@ de.route_concept_id = c.concept_id
 WHERE
 c.standard_concept IN ('S')
 AND
-src_hpo_id NOT LIKE '%rdr%'
-AND
 LOWER(c.domain_id) LIKE '%route%'
+AND
+LOWER(mde.src_hpo_id) NOT LIKE '%rdr%'
 GROUP BY 1
 ORDER BY number_valid_routes DESC
 """.format(DATASET = DATASET)
@@ -287,4 +277,4 @@ final_all_routes_df = final_all_routes_df.sort_values(by='total_route_success_ra
 
 final_all_routes_df
 
-final_all_routes_df.to_csv("{cwd}\drug_routes.csv".format(cwd = cwd))
+final_all_routes_df.to_csv("{cwd}/drug_routes.csv".format(cwd = cwd))
