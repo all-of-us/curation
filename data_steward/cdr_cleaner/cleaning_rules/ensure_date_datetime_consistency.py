@@ -123,12 +123,10 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         cols = ', '.join(col_exprs)
         return cols
 
-    def get_query_specs(self, project_id, dataset_id):
+    def get_query_specs(self):
         """
         This function generates a list of query dicts for ensuring the dates and datetimes are consistent
 
-        :param project_id: the project_id in which the query is run
-        :param dataset_id: the dataset_id in which the query is run
         :return: a list of query dicts for ensuring the dates and datetimes are consistent
         """
         queries = []
@@ -167,8 +165,7 @@ if __name__ == '__main__':
     clean_engine.add_console_logging(ARGS.console_log)
     date_datetime_cleaner = EnsureDateDatetimeConsistency(
         ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
-    query_list = date_datetime_cleaner.get_query_specs(ARGS.project_id,
-                                                       ARGS.dataset_id)
+    query_list = date_datetime_cleaner.get_query_specs()
 
     if ARGS.list_queries:
         date_datetime_cleaner.log_queries()

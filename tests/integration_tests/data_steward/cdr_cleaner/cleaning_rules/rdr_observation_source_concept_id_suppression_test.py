@@ -101,9 +101,10 @@ class ObservationSourceConceptIDRowSuppressionTest(
             'name': self.fq_table_names[0].split('.')[-1],
             'fq_table_name': self.fq_table_names[0],
             'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
+            'fields': ['observation_id'],
             'loaded_ids': [801, 802, 803, 804, 805],
             'sandboxed_ids': [801, 802, 803],
-            'cleaned_ids': [804, 805]
+            'cleaned_values': [(804,), (805,)]
         }]
 
-        self.default_drop_rows_test(tables_and_counts)
+        self.default_modify_rows_test(tables_and_counts)

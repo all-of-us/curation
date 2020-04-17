@@ -161,42 +161,37 @@ class BaseTest:
                               response.result,
                               timeout=15)
 
-        def assertSandboxTableContentsMatch(self, fq_table_name, field, values,
-                                            message):
-            """
-            Helper function to assert a  sandbox tables contents.
-
-            :param fq_table_name: table to query
-            :param field: the field to retrieve data for
-            :param values: a list of values to expect back from the query
-            :param message: a failure message for this type of assertion
-            """
-            query = f"select {field} from `{fq_table_name}`"
-            response = self.client.query(query)
-            # start the job and wait for it to complete
-            result_list = list(response.result())
-
-            result_id_list = [row[0] for row in result_list]
-
-            self.assertCountEqual(values, result_id_list, message)
-
-        def assertOMOPTableContentsMatch(self, fq_table_name, values, message):
+        def assertTableValuesMatch(self, fq_table_name, fields, values):
             """
             Helper function to assert a tables contents.
 
             :param fq_table_name: table to query
+            :param fields: a list of fields to query from the table
             :param values: a list of values to expect back from the query
-            :param message: a failure message for this type of assertion
             """
-            table_name = fq_table_name.split('.')[-1]
-            query = f"select {table_name}_id from `{fq_table_name}`"
+            fields_str = ', '.join(fields)
+            query = f"select {fields_str} from `{fq_table_name}`"
             response = self.client.query(query)
             # start the job and wait for it to complete
-            result_list = list(response.result())
+            response_list = list(response.result())
 
-            result_id_list = [row[0] for row in result_list]
+            message = f"Response returned these values {response_list}"
+            self.assertEqual(len(values), len(response_list), message)
 
-            self.assertCountEqual(values, result_id_list, message)
+            if isinstance(values[0], (tuple, list)):
+                # assert matches for lists of list/tuple data.  e.g. list of returned fields
+                for value in values:
+                    for result in response_list:
+                        if value[0] == result[0]:
+                            value_list = value[1:]
+                            result_list = result[1:]
+                            message = (f"The result {result} doesn't match the "
+                                       f"expected value {value}")
+                            self.assertEqual(value_list, result_list, message)
+            else:
+                # assert match of single list/tuple data.  e.g., list of ids.
+                result_id_list = [row[0] for row in response_list]
+                self.assertCountEqual(values, result_id_list)
 
     class CleaningRulesTestBase(BigQueryTestBase):
         """
@@ -218,7 +213,7 @@ class BaseTest:
             # The query class that is being executed.
             cls.query_class = None
 
-        def default_drop_rows_test(self, tables_and_test_values):
+        def default_test(self, tables_and_test_values):
             """
             Test passing the query specifications to the clean engine module.
 
@@ -232,8 +227,6 @@ class BaseTest:
             :param tables_and_test_values: a list of dictionaries where each 
                 dictionary defines table expectations for each OMOP table to 
                 validate with rule execution.  The dictionaries require:
-             'name':  common name of the table being cleaned and defining
-                      execution expectations for
              'fq_table_name':  the fully qualified name of the table being cleaned
              'fq_sanbox_table_name':  the fully qualified name of the sandbox
                                       table the rule will create if one exists
@@ -252,10 +245,8 @@ class BaseTest:
             for table_info in tables_and_test_values:
                 fq_table_name = table_info.get('fq_table_name', 'UNSET')
                 values = table_info.get('loaded_ids', [])
-                message = (f"The pre-condition query did not return the "
-                           f"expected number of rows.")
-                self.assertOMOPTableContentsMatch(fq_table_name, values,
-                                                  message)
+                fields = [table_info.get('fields', [])[0]]
+                self.assertTableValuesMatch(fq_table_name, fields, values)
 
             if self.query_class:
                 # test:  get the queries
@@ -270,18 +261,15 @@ class BaseTest:
 
             # post conditions
             for table_info in tables_and_test_values:
-                # validate three records are dropped
+                # validate records are dropped
                 fq_table_name = table_info.get('fq_table_name', 'UNSET')
-                values = table_info.get('cleaned_ids', [])
-                message = f"Cleaned table values did not match.  Expected\t{values}"
-                self.assertOMOPTableContentsMatch(fq_table_name, values,
-                                                  message)
+                values = table_info.get('cleaned_values', [])
+                fields = table_info.get('fields', [])
+                self.assertTableValuesMatch(fq_table_name, fields, values)
 
-                # validate three records are sandboxed
+                # validate records are sandboxed
                 fq_sandbox_name = table_info.get('fq_sandbox_table_name')
                 if fq_sandbox_name:
                     values = table_info.get('sandboxed_ids', [])
-                    field_name = table_info.get('name', 'UNSET') + '_id'
-                    message = f"Sandboxed table values did not match.  Expected\t{values}"
-                    self.assertSandboxTableContentsMatch(
-                        fq_sandbox_name, field_name, values, message)
+                    fields = [table_info.get('fields', [])[0]]
+                    self.assertTableValuesMatch(fq_sandbox_name, fields, values)
