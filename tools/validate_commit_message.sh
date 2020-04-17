@@ -8,6 +8,8 @@ ERROR_MSG="The commit message below does not start with the Jira ticket tag, ple
 
 set -x
 
+revs=$(git rev-list develop...HEAD)
+
 for rev in $(git rev-list develop...HEAD);
   do
   msg=$(git cat-file commit "${rev}" | sed '1,/^$/d')
