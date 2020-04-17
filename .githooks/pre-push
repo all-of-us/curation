@@ -5,5 +5,5 @@
 # Allow it to be executable using "chmod +x curation/.git/hooks/pre-push"
 
 pushd $(git rev-parse --show-toplevel) > /dev/null
-tools/validate_commit_message.sh
+tools/validate_commit_message.sh || exit
 popd
