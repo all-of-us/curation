@@ -8,11 +8,7 @@ ERROR_MSG="The commit message below does not start with the Jira ticket tag, ple
 
 set -x
 
-CURRENT_REV=$(git rev-parse HEAD)
-ORIGIN_DEVELOP=$(git remote)
-BRANCH_ROOT_REV=$(diff --old-line-format='' --new-line-format='' <(git rev-list --first-parent "${1:-${ORIGIN_DEVELOP}}") <(git rev-list --first-parent "${2:-HEAD}") | head -1)
-
-for rev in $(git rev-list "${CURRENT_REV}"..."${BRANCH_ROOT_REV}");
+for rev in $(git rev-list origin/develop...HEAD);
   do
   msg=$(git cat-file commit "${rev}" | sed '1,/^$/d')
   if [[ ! $msg =~ $TICKET_REGEX ]];
