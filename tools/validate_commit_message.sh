@@ -6,8 +6,6 @@
 TICKET_REGEX="\[(DC|EDQ)-[[:digit:]]+\][[:space:]]"
 ERROR_MSG="The commit message below does not start with the Jira ticket tag, please rename."
 
-set -x
-
 for rev in $(git rev-list origin/develop...HEAD);
   do
   msg=$(git cat-file commit "${rev}" | sed '1,/^$/d')
