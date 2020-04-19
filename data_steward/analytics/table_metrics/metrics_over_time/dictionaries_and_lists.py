@@ -115,9 +115,16 @@ target_low_dict = {
     'drug_success': False,
     'sites_measurement': False,
     'visit_date_disparity': False,
-    'date_datetime_disparity': True,
-    'erroneous_dates': True,
-    'person_id_failure_rate': True
+
+    # FIXME: the three below - by logic - should
+    # be 'True' but were calculated as showing
+    # the % of errors rather than (100 - % of errors)
+    # in the DQM scripts. This means they should be
+    # logged as 'False' here to make it an effective
+    # double negative.
+    'date_datetime_disparity': False,
+    'erroneous_dates': False,
+    'person_id_failure_rate': False
 }
 
 columns_to_document_for_sheet = {
