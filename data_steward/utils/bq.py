@@ -244,10 +244,29 @@ def get_latest_validation_dataset_id(project_id):
     return None
 
 
+def dataset_exists(dataset_id, project_id):
+    """
+    Checks if the dataset exists via dataset id
+
+    :param dataset_id:  name of the dataset to check
+    :param project_id:  name of the project in which to create the dataset
+
+    :returns:  True if the dataset exists
+    :returns:  False if the dataset does not exist
+    """
+    dataset_exist_check = get_dataset(project_id, dataset_id)
+
+    try:
+        if dataset_exist_check is not None:
+            return True
+    except NotFound:
+        if dataset_exist_check:
+            return False
+
+
 def create_dataset(dataset_id,
                    description,
                    label,
-                   tag,
                    project_id):
     """
     Creates a new dataset
@@ -256,12 +275,11 @@ def create_dataset(dataset_id,
     :param dataset_id:  name to give the new dataset, is required
     :param description:  dataset description, is required
     :param label:  dataset label, is required
-    :param tag:  dataset tag, is required
 
     :raises: RuntimeError if the dataset does not have project_id
     :raises: RuntimeError if the dataset does not have dataset_id
     :raises: RuntimeError if the dataset does not have a description
-    :raises: RuntimeError if the dataset does not have a label or tag
+    :raises: RuntimeError if the dataset does not have a label
     """
     if not project_id:
         raise RuntimeError(
@@ -273,7 +291,7 @@ def create_dataset(dataset_id,
     if description.isspace() or not description:
         raise RuntimeError("Please provide a description to create a dataset")
 
-    if not label or not tag:
+    if not label:
         raise RuntimeError("Label and/or tag is required to create a dataset")
 
     dataset_id = f"{project_id}.{dataset_id}"
@@ -282,6 +300,8 @@ def create_dataset(dataset_id,
     dataset = bigquery.Dataset(dataset_id)
     dataset.description = description
     dataset.labels = label
-    dataset.tag = tag
 
-    return dataset
+    client = get_client(project_id)
+    client.create_dataset(dataset, exists_ok=False)
+
+    return client
