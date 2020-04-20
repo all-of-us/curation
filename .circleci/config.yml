@@ -113,6 +113,10 @@ jobs:
           working_directory: ~/curation
           command: tools/validate_commit_message.sh
       - run:
+          name: Checking PR title for Jira tag
+          working_directory: ~/curation
+          command: tools/validate_pr_title.sh
+      - run:
           name: Checking Python lint with yapf
           working_directory: ~/curation
           command: tools/yapf_lint.sh

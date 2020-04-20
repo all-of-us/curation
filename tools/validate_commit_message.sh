@@ -3,7 +3,7 @@
 # ticket tag in the beginning of the commit message, fails if any don't
 # For commits on develop, also ensure that the Jira title follows the Jira tag
 
-TICKET_REGEX="\[(DC|EDQ)-[[:digit:]]+\][[:space:]]"
+TICKET_REGEX="^\[(DC|EDQ)-[[:digit:]]+\][[:space:]]"
 ERROR_MSG="The commit message below does not start with the Jira ticket tag, please rename."
 
 for rev in $(git rev-list origin/develop...HEAD);
