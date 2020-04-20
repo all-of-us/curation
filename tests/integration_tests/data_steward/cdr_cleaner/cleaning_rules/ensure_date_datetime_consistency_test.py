@@ -47,6 +47,7 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         (procedure_occurrence_id, person_id, procedure_concept_id, 
          procedure_type_concept_id, procedure_date, procedure_datetime)
         VALUES
+        -- procedure_datetime cannot be null --
         -- (501, 111111, 0, 0, date('2016-05-01'), null), --
           (502, 222222, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00')),
           (503, 333333, 0, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00')),
@@ -57,13 +58,15 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         (device_exposure_id, person_id, device_concept_id, device_type_concept_id, device_exposure_start_date,
          device_exposure_start_datetime, device_exposure_end_date, device_exposure_end_datetime)
         VALUES
-          (402, 222222, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (403, 333333, 0, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (404, 444444, 0, 0, date('2016-05-01'), timestamp('2016-04-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (405, 555555, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), null),
-          (406, 666666, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-05-02 08:00:00')),
-          (407, 777777, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-05-10 08:00:00')),
-          (408, 888888, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-04-15 08:00:00'))
+          -- device exposure start datetime cannot be null --
+          -- (401, 111111, 0, 0, date('2016-05-01'), null, date('2016-05-02'), timestamp('2016-05-02 11:00:00')), --
+          (402, 222222, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (403, 333333, 0, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (404, 444444, 0, 0, date('2016-05-01'), timestamp('2016-04-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (405, 555555, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), null),
+          (406, 666666, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (407, 777777, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-10 11:00:00')),
+          (408, 888888, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-04-15 11:00:00'))
         """),
             cls.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.specimen`
@@ -90,26 +93,30 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         (drug_exposure_id, person_id, drug_concept_id, drug_type_concept_id, drug_exposure_start_date,
          drug_exposure_start_datetime, drug_exposure_end_date, drug_exposure_end_datetime)
         VALUES
-          (202, 222222, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (203, 333333, 0, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (204, 444444, 0, 0, date('2016-05-01'), timestamp('2016-04-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (205, 555555, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), null),
-          (206, 666666, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-05-02 08:00:00')),
-          (207, 777777, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-05-10 08:00:00')),
-          (208, 888888, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-04-15 08:00:00'))
+          -- drug_exposure_start_datetime cannot be null --
+          -- (201, 111111, 0, 0, date('2016-05-01'), null, date('2016-05-02'), timestamp('2016-05-02 11:00:00')), --
+          (202, 222222, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (203, 333333, 0, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (204, 444444, 0, 0, date('2016-05-01'), timestamp('2016-04-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (205, 555555, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), null),
+          (206, 666666, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (207, 777777, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-10 11:00:00')),
+          (208, 888888, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-04-15 11:00:00'))
         """),
             cls.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.condition_occurrence`
         (condition_occurrence_id, person_id, condition_concept_id, condition_start_date,
          condition_start_datetime, condition_type_concept_id, condition_end_date, condition_end_datetime)
         VALUES
-          (102, 222222, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (103, 333333, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), 0, date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (104, 444444, 0, date('2016-05-01'), timestamp('2015-05-07 11:00:00'), 0, date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (105, 555555, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), 0, date('2016-05-02'), null),
-          (106, 666666, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), 0, date('2016-05-02'), timestamp('2016-05-02 08:00:00')),
-          (107, 777777, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), 0, date('2016-05-02'), timestamp('2016-05-10 08:00:00')),
-          (108, 888888, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), 0, date('2016-05-02'), timestamp('2016-04-15 08:00:00'))
+          -- condition_start_datetime cannot be null --
+          -- (101, 111111, 0, date('2016-05-01'), null, 0, date('2016-05-02'), timestamp('2016-05-02 11:00:00')), --
+          (102, 222222, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (103, 333333, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), 0, date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (104, 444444, 0, date('2016-05-01'), timestamp('2015-05-07 11:00:00'), 0, date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (105, 555555, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, date('2016-05-02'), null),
+          (106, 666666, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (107, 777777, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, date('2016-05-02'), timestamp('2016-05-10 11:00:00')),
+          (108, 888888, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, date('2016-05-02'), timestamp('2016-04-15 11:00:00'))
         """),
             cls.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.observation`
@@ -117,35 +124,37 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
          observation_type_concept_id, observation_datetime)
         VALUES
           (801, 337361, 0, date('2016-05-01'), 0, null),
-          (802, 129884, 0, date('2016-05-01'), 0, timestamp('2016-05-01 09:00:00')),
-          (803, 337361, 0, date('2016-05-01'), 0, timestamp('2016-05-08 10:00:00')),
-          (804, 129884, 0, date('2016-05-01'), 0, timestamp('2015-05-07 09:00:00'))
+          (802, 129884, 0, date('2016-05-01'), 0, timestamp('2016-05-01 11:00:00')),
+          (803, 337361, 0, date('2016-05-01'), 0, timestamp('2016-05-08 11:00:00')),
+          (804, 129884, 0, date('2016-05-01'), 0, timestamp('2016-04-07 11:00:00'))
         """),
             cls.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.observation_period`
         (observation_period_id, person_id, period_type_concept_id, observation_period_start_date,
          observation_period_start_datetime, observation_period_end_date, observation_period_end_datetime)
         VALUES
-          (902, 222222, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (903, 333333, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (904, 444444, 0, date('2016-05-01'), timestamp('2015-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (905, 555555, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), null),
-          (906, 666666, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-05-02 08:00:00')),
-          (907, 777777, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-05-10 08:00:00')),
-          (908, 888888, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-04-15 08:00:00'))
+          (901, 111111, 0, date('2016-05-01'), null, date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (902, 222222, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (903, 333333, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (904, 444444, 0, date('2016-05-01'), timestamp('2016-04-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (905, 555555, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), null),
+          (906, 666666, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (907, 777777, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-10 11:00:00')),
+          (908, 888888, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-04-15 11:00:00'))
         """),
             cls.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.visit_occurrence`
         (visit_occurrence_id, person_id, visit_concept_id, visit_type_concept_id, 
          visit_start_date, visit_start_datetime, visit_end_date, visit_end_datetime)
         VALUES
-          (112, 222222, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (113, 333333, 0, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (114, 444444, 0, 0, date('2016-05-01'), timestamp('2015-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 00:00:00')),
-          (115, 555555, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), null),
-          (116, 666666, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-05-02 08:00:00')),
-          (117, 777777, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-05-10 08:00:00')),
-          (118, 888888, 0, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-05-02'), timestamp('2016-04-15 08:00:00'))
+          (111, 111111, 0, 0, date('2016-05-01'), null, date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (112, 222222, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (113, 333333, 0, 0, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (114, 444444, 0, 0, date('2016-05-01'), timestamp('2015-05-07 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (115, 555555, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), null),
+          (116, 666666, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-02 11:00:00')),
+          (117, 777777, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-05-10 11:00:00')),
+          (118, 888888, 0, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), date('2016-05-02'), timestamp('2016-04-15 11:00:00'))
         """)
         ]
         # set the test project identifier
@@ -193,6 +202,13 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         Validates pre-conditions, test execution and post conditions based on
         the load statements and the tables_and_counts variable.
         """
+        start_date = parser.parse('2016-05-01').date()
+        start_datetime = parser.parse('2016-05-01 11:00:00 UTC')
+        start_default_datetime = parser.parse('2016-05-01 00:00:00 UTC')
+        end_date = parser.parse('2016-05-02').date()
+        end_datetime = parser.parse('2016-05-02 11:00:00 UTC')
+        end_default_datetime = parser.parse('2016-05-02 00:00:00 UTC')
+
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'specimen']),
@@ -201,14 +217,10 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [701, 702, 703, 704],
             'sandboxed_ids': [],
             'fields': ['specimen_id', 'specimen_date', 'specimen_datetime'],
-            'cleaned_values': [(701, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC')),
-                               (702, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC')),
-                               (703, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC')),
-                               (704, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'))]
+            'cleaned_values': [(701, start_date, start_default_datetime),
+                               (702, start_date, start_datetime),
+                               (703, start_date, start_datetime),
+                               (704, start_date, start_datetime)]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'measurement']),
@@ -219,14 +231,10 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
             'fields': [
                 'measurement_id', 'measurement_date', 'measurement_datetime'
             ],
-            'cleaned_values': [(301, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC')),
-                               (302, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC')),
-                               (303, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC')),
-                               (304, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'))]
+            'cleaned_values': [(301, start_date, start_default_datetime),
+                               (302, start_date, start_datetime),
+                               (303, start_date, start_datetime),
+                               (304, start_date, start_datetime)]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'death']),
@@ -235,14 +243,10 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [601, 602, 603, 604],
             'sandboxed_ids': [],
             'fields': ['person_id', 'death_date', 'death_datetime'],
-            'cleaned_values': [(601, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC')),
-                               (602, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC')),
-                               (603, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC')),
-                               (604, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'))]
+            'cleaned_values': [(601, start_date, start_default_datetime),
+                               (602, start_date, start_datetime),
+                               (603, start_date, start_datetime),
+                               (604, start_date, start_datetime)]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'procedure_occurrence']),
@@ -254,12 +258,9 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                 'procedure_occurrence_id', 'procedure_date',
                 'procedure_datetime'
             ],
-            'cleaned_values': [(502, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC')),
-                               (503, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC')),
-                               (504, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'))]
+            'cleaned_values': [(502, start_date, start_datetime),
+                               (503, start_date, start_datetime),
+                               (504, start_date, start_datetime)]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'observation']),
@@ -270,93 +271,57 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
             'fields': [
                 'observation_id', 'observation_date', 'observation_datetime'
             ],
-            'cleaned_values': [(801, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC')),
-                               (802, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 09:00:00 UTC')),
-                               (803, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 10:00:00 UTC')),
-                               (804, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 09:00:00 UTC'))]
+            'cleaned_values': [(801, start_date, start_default_datetime),
+                               (802, start_date, start_datetime),
+                               (803, start_date, start_datetime),
+                               (804, start_date, start_datetime)]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'observation_period']),
             'fq_sandbox_table_name':
                 '',
-            'loaded_ids': [902, 903, 904, 905, 906, 907, 908],
+            'loaded_ids': [901, 902, 903, 904, 905, 906, 907, 908],
             'sandboxed_ids': [],
             'fields': [
                 'observation_period_id', 'observation_period_start_date',
                 'observation_period_start_datetime',
                 'observation_period_end_date', 'observation_period_end_datetime'
             ],
-            'cleaned_values': [(902, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (903, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (904, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (905, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (906, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC')),
-                               (907, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC')),
-                               (908, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC'))]
+            'cleaned_values': [
+                (901, start_date, start_default_datetime, end_date,
+                 end_datetime),
+                (902, start_date, start_datetime, end_date, end_datetime),
+                (903, start_date, start_datetime, end_date, end_datetime),
+                (904, start_date, start_datetime, end_date, end_datetime),
+                (905, start_date, start_datetime, end_date,
+                 end_default_datetime),
+                (906, start_date, start_datetime, end_date, end_datetime),
+                (907, start_date, start_datetime, end_date, end_datetime),
+                (908, start_date, start_datetime, end_date, end_datetime)
+            ]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'visit_occurrence']),
             'fq_sandbox_table_name':
                 '',
-            'loaded_ids': [112, 113, 114, 115, 116, 117, 118],
+            'loaded_ids': [111, 112, 113, 114, 115, 116, 117, 118],
             'sandboxed_ids': [],
             'fields': [
                 'visit_occurrence_id', 'visit_start_date',
                 'visit_start_datetime', 'visit_end_date', 'visit_end_datetime'
             ],
-            'cleaned_values': [(112, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (113, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (114, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (115, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (116, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC')),
-                               (117, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC')),
-                               (118, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC'))]
+            'cleaned_values': [
+                (111, start_date, start_default_datetime, end_date,
+                 end_datetime),
+                (112, start_date, start_datetime, end_date, end_datetime),
+                (113, start_date, start_datetime, end_date, end_datetime),
+                (114, start_date, start_datetime, end_date, end_datetime),
+                (115, start_date, start_datetime, end_date,
+                 end_default_datetime),
+                (116, start_date, start_datetime, end_date, end_datetime),
+                (117, start_date, start_datetime, end_date, end_datetime),
+                (118, start_date, start_datetime, end_date, end_datetime)
+            ]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'condition_occurrence']),
@@ -369,34 +334,16 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                 'condition_start_datetime', 'condition_end_date',
                 'condition_end_datetime'
             ],
-            'cleaned_values': [(102, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (103, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (104, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (105, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (106, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC')),
-                               (107, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC')),
-                               (108, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC'))]
+            'cleaned_values': [
+                (102, start_date, start_datetime, end_date, end_datetime),
+                (103, start_date, start_datetime, end_date, end_datetime),
+                (104, start_date, start_datetime, end_date, end_datetime),
+                (105, start_date, start_datetime, end_date,
+                 end_default_datetime),
+                (106, start_date, start_datetime, end_date, end_datetime),
+                (107, start_date, start_datetime, end_date, end_datetime),
+                (108, start_date, start_datetime, end_date, end_datetime)
+            ]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'drug_exposure']),
@@ -409,34 +356,16 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                 'drug_exposure_start_datetime', 'drug_exposure_end_date',
                 'drug_exposure_end_datetime'
             ],
-            'cleaned_values': [(202, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (203, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (204, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (205, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (206, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC')),
-                               (207, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC')),
-                               (208, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC'))]
+            'cleaned_values': [
+                (202, start_date, start_datetime, end_date, end_datetime),
+                (203, start_date, start_datetime, end_date, end_datetime),
+                (204, start_date, start_datetime, end_date, end_datetime),
+                (205, start_date, start_datetime, end_date,
+                 end_default_datetime),
+                (206, start_date, start_datetime, end_date, end_datetime),
+                (207, start_date, start_datetime, end_date, end_datetime),
+                (208, start_date, start_datetime, end_date, end_datetime)
+            ]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'device_exposure']),
@@ -449,34 +378,16 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                 'device_exposure_start_datetime', 'device_exposure_end_date',
                 'device_exposure_end_datetime'
             ],
-            'cleaned_values': [(402, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (403, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (404, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 11:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (405, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 00:00:00 UTC')),
-                               (406, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC')),
-                               (407, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC')),
-                               (408, parser.parse('2016-05-01').date(),
-                                parser.parse('2016-05-01 00:00:00 UTC'),
-                                parser.parse('2016-05-02').date(),
-                                parser.parse('2016-05-02 08:00:00 UTC'))]
+            'cleaned_values': [
+                (402, start_date, start_datetime, end_date, end_datetime),
+                (403, start_date, start_datetime, end_date, end_datetime),
+                (404, start_date, start_datetime, end_date, end_datetime),
+                (405, start_date, start_datetime, end_date,
+                 end_default_datetime),
+                (406, start_date, start_datetime, end_date, end_datetime),
+                (407, start_date, start_datetime, end_date, end_datetime),
+                (408, start_date, start_datetime, end_date, end_datetime)
+            ]
         }]
 
         self.default_test(tables_and_counts)
