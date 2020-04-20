@@ -34,37 +34,32 @@ class BqTest(unittest.TestCase):
         self.description = 'fake description'
         self.label = {'fake_label': 'label'}
         self.tag = {'fake_tag': ''}
-        self.exists_ok = False
 
     @patch('utils.bq.get_client')
     def test_create_dataset(self, mock_get_client):
         # Tests if project_id is given
         self.assertRaises(RuntimeError, create_dataset, self.dataset_id,
-                          self.description, self.label, self.tag,
-                          self.exists_ok)
+                          self.description, self.label, self.tag)
 
         # Tests if dataset_id is given
         self.assertRaises(RuntimeError, create_dataset, self.project_id,
-                          self.description, self.label, self.tag,
-                          self.exists_ok)
+                          self.description, self.label, self.tag)
 
         # Tests if description is given
         self.assertRaises(RuntimeError, create_dataset, self.project_id,
-                          self.dataset_id, self.label, self.tag, self.exists_ok)
+                          self.dataset_id, self.label, self.tag)
 
         # Tests if label is given
         self.assertRaises(RuntimeError, create_dataset, self.project_id,
-                          self.dataset_id, self.description, self.tag,
-                          self.exists_ok)
+                          self.dataset_id, self.description, self.tag)
 
         # Tests if tag is given
         self.assertRaises(RuntimeError, create_dataset, self.project_id,
-                          self.dataset_id, self.description, self.label,
-                          self.exists_ok)
+                          self.dataset_id, self.description, self.label)
 
         # Tests if correct parameters are given
         create_dataset(self.dataset_id, self.description, self.label, self.tag,
-                       self.project_id, self.exists_ok)
+                       self.project_id)
 
         # Post conditions
         mock_get_client.assert_called_once_with(self.project_id)

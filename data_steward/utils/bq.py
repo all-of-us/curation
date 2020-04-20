@@ -248,13 +248,11 @@ def create_dataset(dataset_id,
                    description,
                    label,
                    tag,
-                   project_id,
-                   exists_ok=False):
+                   project_id):
     """
     Creates a new dataset
 
     :param project_id:  name of the project in which to create the dataset
-    :param exists_ok: Defaults to 'False'
     :param dataset_id:  name to give the new dataset, is required
     :param description:  dataset description, is required
     :param label:  dataset label, is required
@@ -272,13 +270,18 @@ def create_dataset(dataset_id,
     if not dataset_id:
         raise RuntimeError("Cannot create a dataset without a name")
 
-    if not description:
+    if description.isspace() or not description:
         raise RuntimeError("Please provide a description to create a dataset")
 
     if not label or not tag:
         raise RuntimeError("Label and/or tag is required to create a dataset")
 
-    client = get_client(project_id)
-    client.create_dataset(dataset_id, exists_ok=exists_ok)
+    dataset_id = f"{project_id}.{dataset_id}"
 
-    LOGGER.info('Created dataset %s.%s', project_id, dataset_id)
+    # Construct a full Dataset object to send to the API.
+    dataset = bigquery.Dataset(dataset_id)
+    dataset.description = description
+    dataset.labels = label
+    dataset.tag = tag
+
+    return dataset
