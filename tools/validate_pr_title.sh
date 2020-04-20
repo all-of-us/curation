@@ -9,7 +9,7 @@
 TICKET_REGEX="^\[(DC|EDQ)-[[:digit:]]+\][[:space:]]"
 ERROR_MSG="The PR title below does not start with the Jira ticket tag, please rename."
 
-#pr_url="https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/pulls/${CIRCLE_PR_NUMBER}"
+pr_url="https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/pulls/${CIRCLE_PR_NUMBER}"
 pr_title=$(curl -s "${pr_url}" | grep \<title\> | sed 's/[[:space:]]*<title>\([^·]*\).*/\1/')
 
 if [[ ! $pr_title =~ $TICKET_REGEX ]];
