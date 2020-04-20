@@ -38,11 +38,6 @@ export APPLICATION_ID="${app_id}"
 export DRC_BUCKET_NAME="${bucket_name}"
 export BIGQUERY_DATASET_ID="${dataset}"
 
-VENV_BIN="bin"
-if [[ "$OSTYPE" == "msys" ]]; then
-    VENV_BIN="Scripts"
-fi
-
 gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 

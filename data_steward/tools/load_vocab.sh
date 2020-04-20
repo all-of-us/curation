@@ -12,11 +12,9 @@ tools/load_vocab.sh --app_id app_id --in_dir in_dir [--gcs_path gcs_path --datas
  --in_dir   in_dir   directory where vocabulary files are located
  --gcs_path gcs_path full GCS path to save transformed files
  --dataset  dataset  name of BigQuery dataset to create and load vocabulary
- [--venv_dir venv_dir directory where virtual environment should be created]
 "
 BASE_DIR="$(git rev-parse --show-toplevel)"/data_steward
 TOOLS_PATH=${BASE_DIR}/tools
-VENV_DIR="curation_venv"
 OMOP_VOCABULARY_CONCEPT_ID="44819096"
 while true; do
   case "$1" in
@@ -34,10 +32,6 @@ while true; do
     ;;
   --gcs_path)
     GCS_PATH=$2
-    shift 2
-    ;;
-  --venv_dir)
-    VENV_DIR=$2
     shift 2
     ;;
   --)
@@ -78,7 +72,6 @@ cp -a ${IN_DIR}/* ${TEMP_DIR}
 
 python ${BASE_DIR}/vocabulary.py add_aou_vocabs --in_dir ${TEMP_DIR} --out_dir ${IN_DIR}
 
-rm -rf ${VENV_DIR}
 rm -rf ${TEMP_DIR}
 
 # Upload to bucket
