@@ -33,7 +33,8 @@ JINJA_ENV = jinja2.Environment(
     # syntax highlighting should be better
     # with these comment delimiters
     comment_start_string='--',
-    comment_end_string=' --')
+    comment_end_string=' --',
+    autoescape=True)
 
 # # Identify and Log Records
 #
