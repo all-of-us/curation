@@ -18,8 +18,6 @@ from google.cloud import bigquery
 from resources import DC732_CONCEPT_LOOKUP_CSV_PATH
 from utils import bq
 
-# -
-
 ISSUE_NUMBER = 'DC-732'
 ISSUE_PREFIX = 'dc732_'
 ROWS_RESOURCE_NAME = f'{ISSUE_PREFIX}suppress_rows'
