@@ -1,0 +1,9 @@
+#!/bin/bash
+# Client-side git pre-push hook to ensure all commit messages start
+# with an associated Jira tag as specified in curation/tools/validate_commit_message.sh
+# Please copy this file to curation/.git/hooks/
+# Allow it to be executable using "chmod +x curation/.git/hooks/pre-push"
+
+pushd $(git rev-parse --show-toplevel) > /dev/null
+tools/validate_commit_message.sh || exit
+popd
