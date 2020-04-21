@@ -16,28 +16,28 @@
 # NOTES:
 # 1. matplotlib MUST be in 3.1.0; 3.1.1 ruins the heatmap
 
-# # Across-Site Statistics for End Dates that Precede Start Dates
-#
-# ### NOTE: Aggregate info is weighted by the contribution of each site
+# # Across-Site Statistics for Duplicates
 
 import pandas as pd
+import xlrd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from math import pi
 
-# ## NOTE: The cell below can be expanded; contingent upon updates to the script that generates the weekly reports. The reports *MUST* contain total row values for all of the tables that are going to be investigated.
-
 # +
 sheets = []
 
-fn1 = 'end_before_begin_table_sheets_data_analytics.xlsx'
+fn1 = 'duplicates_table_sheets_analytics_report.xlsx'
 file_names = [fn1]
 
-s1 = 'condition_occurrence'
-s2 = 'drug_exposure'
-s3 = 'visit_occurrence'
+s1 = 'Observation'
+s2 = 'Measurement'
+s3 = 'Visit Occurrence'
+s4 = 'Procedure Occurrence'
+s5 = 'Drug Exposure'
+s6 = 'Condition Occurrence'
 
-sheet_names = [s1, s2, s3]
+sheet_names = [s1, s2, s3, s4, s5, s6]
 
 # +
 table_sheets = []
@@ -47,35 +47,20 @@ for file in file_names:
         s = pd.read_excel(file, sheet)
         table_sheets.append(s)
 
-hpo_id_cols = table_sheets[0]['hpo_ids']
-date_cols = table_sheets[0].columns[2:]
+hpo_id_cols = table_sheets[0]
+hpo_id_cols  = list(hpo_id_cols[hpo_id_cols.columns[0]])  # reset to first column
+
+date_cols = table_sheets[0].columns[1:]
 # -
 
-# ### Fixing typos in the sheets; in some of the earlier reports
-
-for idx, table_id in enumerate(sheet_names):
-    under_encountered = False
-    start_idx, end_idx = 0, 0
-    
-    for c_idx, character in enumerate(table_id):
-        if character == '_' and not under_encountered:
-            start_idx = c_idx
-            under_encountered = True
-        elif character == '_' and under_encountered:
-            end_idx = c_idx
-    
-    in_between_str = table_id[start_idx:end_idx + 1]
-    
-    if in_between_str == '_succes_':
-        new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
-        sheet_names[idx] = new_string
+# ### Converting the numbers as needed and putting into a dictionary
 
 # +
 new_table_sheets = {}
 
 for name, sheet in zip(sheet_names, table_sheets):
     sheet_cols = sheet.columns
-    sheet_cols = sheet_cols[2:]
+    sheet_cols = sheet_cols[1:]
     new_df = pd.DataFrame(columns=sheet_cols)
 
     for col in sheet_cols:
@@ -84,36 +69,61 @@ for name, sheet in zip(sheet_names, table_sheets):
         new_df[col] = new_col
 
     new_table_sheets[name] = new_df
-# -
-
-# ### NOTE: Additional heat maps can be generated when more tables become compatible (e.g. when other tables that also have total_row numbers in the source/concept sheets are put into the 'end_before_begin' sheet)
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['condition_occurrence'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['Condition Occurrence'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="YlGnBu")
 
-ax.set_title("Condition Table End Dates Preceding Start Dates (%)", size=14)
-# plt.savefig("condition_end_before_start.jpg")
+ax.set_title("Condition Table Duplicates", size=14)
+# plt.savefig("condition_table_duplicates.jpg")
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['drug_exposure'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['Drug Exposure'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="YlGnBu")
 
-ax.set_title("Drug Table End Dates Preceding Start Dates (%)", size=14)
-# plt.savefig("drug_end_before_start.jpg")
+ax.set_title("Drug Table Duplicates", size=14)
+# plt.savefig("drug_table_duplicates.jpg")
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['visit_occurrence'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['Measurement'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="YlGnBu")
 
-ax.set_title("Visit Table End Dates Preceding Start Dates (%)", size=14)
-# plt.savefig("visit_end_before_start.jpg")
+ax.set_title("Measurement Table Duplicates", size=14)
+# plt.savefig("measurement_table_duplicates.jpg")
+
+# +
+fig, ax = plt.subplots(figsize=(18, 12))
+sns.heatmap(new_table_sheets['Observation'], annot=True, annot_kws={"size": 10},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
+            xticklabels=date_cols, cmap="YlGnBu")
+
+ax.set_title("Observation Table Duplicates", size=14)
+# plt.savefig("observation_table_duplicates.jpg")
+
+# +
+fig, ax = plt.subplots(figsize=(18, 12))
+sns.heatmap(new_table_sheets['Procedure Occurrence'], annot=True, annot_kws={"size": 10},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
+            xticklabels=date_cols, cmap="YlGnBu")
+
+ax.set_title("Procedure Table Duplicates", size=14)
+# plt.savefig("procedure_table_duplicates.jpg")
+
+# +
+fig, ax = plt.subplots(figsize=(18, 12))
+sns.heatmap(new_table_sheets['Visit Occurrence'], annot=True, annot_kws={"size": 10},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
+            xticklabels=date_cols, cmap="YlGnBu")
+
+
+ax.set_title("Visit Table Duplicates", size=14)
+# plt.savefig("visit_table_duplicates.jpg")
 # -
 
 # ## Creating a box-and-whisker plot for the different table types across all sites
@@ -127,7 +137,6 @@ ax.set_title("Visit Table End Dates Preceding Start Dates (%)", size=14)
 #
 # date_info = {}
 #
-# # need to generate the data from each table for a particular date
 # for table_type in sheet_names:
 #     date_info[table_type] = new_table_sheets[table_type][date].tolist()
 #
@@ -139,12 +148,12 @@ ax.set_title("Visit Table End Dates Preceding Start Dates (%)", size=14)
 # sns.swarmplot(data=july_15_df,
 #               size = 5, color=".3", linewidth=0)
 #
-# plt.ylabel(ylabel="End Dates Preceding Start Dates (%)", size=16)
+# plt.ylabel(ylabel="Success Rate", size=16)
 # plt.xlabel(xlabel="\nTable Type", size=16)
-# plt.title("Percent of End Dates Preceding Start Dates for {}".format(date), size = 18)
+# plt.title("Duplicates for {}".format(date), size = 18)
 # sns.despine(trim=True, left=True)
 
-# # Now let's look at the metrics for particular sites with respect to end dates preceding start dates; this will allow us to send them the same information
+# # Now let's look at the metrics for particular sites with respect to date/datetime disparity; this will allow us to send them the same information
 
 # +
 site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders', 
@@ -159,21 +168,9 @@ site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_cede
                   'va', 'aggregate_info']
 
 print(len(site_name_list))
-# -
-
-# #### Cell for the CDR; trans_am_essentia and saou_ummc taken out
-
-# site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders', 
-#                   'cpmc_ucd', 'cpmc_uci', 'cpmc_ucsd', 'cpmc_ucsf', 'cpmc_usc', 'ecchc',
-#                   'hrhc', 'ipmc_northshore', 'ipmc_nu', 'ipmc_rush', 'ipmc_uchicago',
-#                   'ipmc_uic', 'jhchc', 'nec_bmc', 'nec_phs', 'nyc_cornell', 'nyc_cu',
-#                   'nyc_hh', 'pitt', 'saou_uab', 'seec_emory', 'seec_miami',
-#                   'seec_morehouse', 'seec_ufl', 'syhc', 'tach_hfhs', 'trans_am_baylor',
-#                   'trans_am_spectrum', 'uamc_banner', 'aggregate_info',
-#                   'poorly_defined_rows_total', 'total_rows']
 
 # +
-name_of_interest = 'hrhc'
+name_of_interest = 'aggregate_info'
 
 if name_of_interest not in site_name_list:
     raise ValueError("Name not found in the list of HPO site names.")    
@@ -183,7 +180,7 @@ for idx, site in enumerate(site_name_list):
         idx_of_interest = idx
 
 # +
-fn1_hpo_sheets = 'end_before_begin_hpo_sheets_data_analytics.xlsx'
+fn1_hpo_sheets = 'duplicates_hpo_sheets_analytics_report.xlsx'
 file_names_hpo_sheets = [fn1_hpo_sheets]
 
 s1, s2 = site_name_list[0], site_name_list[1]
@@ -215,7 +212,6 @@ hpo_sheet_names = [
     s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26,
     s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
     s39, s40, s41, s42, s43, s44, s45, s46]
-
 # +
 hpo_sheets = []
 
@@ -223,22 +219,37 @@ for file in file_names_hpo_sheets:
     for sheet in hpo_sheet_names:
         s = pd.read_excel(file, sheet)
         hpo_sheets.append(s)
+        
 
-table_id_cols = list(hpo_sheets[0]['table_type'])
-date_cols = hpo_sheets[0].columns[2:]
-# -
+table_id_cols = hpo_sheets[0]
+table_id_cols  = list(table_id_cols[table_id_cols.columns[0]])  # reset to first column
 
-if name_of_interest == 'aggregate_info':
-    start_idx = 2
-else:
-    start_idx = 2
+date_cols = hpo_sheets[0].columns[1:]
+
+for idx, table_id in enumerate(table_id_cols):
+    under_encountered = False
+    start_idx, end_idx = 0, 0
+    
+    for c_idx, character in enumerate(table_id):
+        if character == '_' and not under_encountered:
+            start_idx = c_idx
+            under_encountered = True
+        elif character == '_' and under_encountered:
+            end_idx = c_idx
+    
+    in_between_str = table_id[start_idx:end_idx + 1]
+    
+    if in_between_str == '_succes_':
+        new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
+        table_id_cols[idx] = new_string
 
 # +
 new_hpo_sheets = []
+start_idx = 1  # first does not have data
 
 for sheet in hpo_sheets:
     sheet_cols = sheet.columns
-    sheet_cols = sheet_cols[start_idx:]  # first two do not have data
+    sheet_cols = sheet_cols[start_idx:]
     new_df = pd.DataFrame(columns=sheet_cols)
 
     for col in sheet_cols:
@@ -251,18 +262,16 @@ for sheet in hpo_sheets:
 
 # ### Showing for one particular site
 
-new_hpo_sheets[idx_of_interest]
-
 # +
 fig, ax = plt.subplots(figsize=(9, 6))
 sns.heatmap(new_hpo_sheets[idx_of_interest], annot=True, annot_kws={"size": 14},
             fmt='g', linewidths=.5, ax=ax, yticklabels=table_id_cols,
             xticklabels=date_cols, cmap="YlGnBu")
 
-ax.set_title("Percent of End Dates Preceding Start Dates for {}".format(name_of_interest), size=14)
+ax.set_title("Duplicates for {}".format(name_of_interest), size=14)
 
 plt.tight_layout()
-img_name = name_of_interest + "_end_before_start_percent.jpg"
+img_name = name_of_interest + "_duplicates.png"
 
 plt.savefig(img_name)
 # -
@@ -274,7 +283,6 @@ dates = new_hpo_sheets[0].columns.tolist()
 # +
 num_tables = len(new_hpo_sheets[0]) - 1  # do not include aggregate
 
-# Angle for the circle; divide by number of variables
 angles = [(angle / num_tables) * (2 * pi) for angle in range(num_tables)]
 angles += angles[:1] # back to the start
 
@@ -323,16 +331,13 @@ for date_idx in range(len(dates)):
     ax.plot(angles, date, linewidth=1, linestyle='solid', label=dates[date_idx])
     ax.fill(angles, date, alpha=0.1)
 
-plt.title("End Before Start Percent Metrics: {}".format(name_of_interest), size=15, y = 1.1)
+plt.title("Duplicates: {}".format(name_of_interest), size=15, y = 1.1)
 plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
 # -
 
 dates = new_hpo_sheets[idx_of_interest].columns
 
 # ## Want a line chart over time.
-
-# +
-new_hpo_sheets[idx_of_interest]
 
 times=new_hpo_sheets[idx_of_interest].columns.tolist()
 
@@ -366,23 +371,15 @@ for table, values_over_time in success_rates.items():
         plt.plot(date_idxs[non_nan_idx], new_lst, 'o', label=table)
 
 plt.legend(loc="upper left", bbox_to_anchor=(1,1))
-plt.title("Percentage of End Dates Preceding Start Dates for {}".format(site_name_list[idx_of_interest]))
-plt.ylabel("End Before Start Date Percent")
+plt.title("{} Duplicates Over Time".format(name_of_interest))
+plt.ylabel("Duplicate #")
 plt.xlabel("")
 plt.xticks(date_idxs, times, rotation = 'vertical')
 
 handles, labels = ax.get_legend_handles_labels()
 lgd = ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5,-0.1))
 
-
-img_name = name_of_interest + "_end_before_start_data_line_graph.jpg"
+img_name = name_of_interest + "_duplicates_line_graph.jpg"
 # plt.savefig(img_name, bbox_extraartist=(lgd,), bbox_inches='tight')
 # -
-
-
-
-
-
-
-
 

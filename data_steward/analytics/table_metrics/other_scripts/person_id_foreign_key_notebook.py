@@ -19,7 +19,7 @@
 #
 # ### An 'invalid' row would be one where the field value ('person_id') either:
 # ###     a. does not exist in the person table
-# ###     b. is seemingly associated with another site in the `unioned_ehr_person` table
+# ###     b. is seemingly associated with another site in the `person` table
 
 # ### The notebook will evaluate the following
 #
@@ -43,7 +43,7 @@ client = bigquery.Client()
 
 # +
 from notebooks import parameters
-DATASET = parameters.UNIONED_EHR_OCT_2019
+DATASET = parameters.UNIONED_Q3_2019
 
 print("Dataset to use: {DATASET}".format(DATASET = DATASET))
 
@@ -208,7 +208,7 @@ FROM
   DISTINCT
   mco.src_hpo_id, COUNT(mco.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_condition_occurrence` co
+  `{DATASET}.condition_occurrence` co
   LEFT JOIN
   `{DATASET}._mapping_condition_occurrence` mco
   ON
@@ -224,7 +224,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_condition_occurrence` co
+  `{DATASET}.condition_occurrence` co
   LEFT JOIN
   `{DATASET}._mapping_condition_occurrence` mco
   ON
@@ -232,7 +232,7 @@ LEFT JOIN
 
   -- to enable person/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_person` p
+  `{DATASET}.person` p
   ON
   co.person_id = p.person_id
   LEFT JOIN
@@ -248,7 +248,7 @@ LEFT JOIN
     SELECT
     DISTINCT p.person_id
     FROM
-    `{DATASET}.unioned_ehr_person` p
+    `{DATASET}.person` p
     )
 
   -- same person_id but traced to different sites
@@ -286,7 +286,7 @@ FROM
   DISTINCT
   mo.src_hpo_id, COUNT(mo.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_observation` o
+  `{DATASET}.observation` o
   LEFT JOIN
   `{DATASET}._mapping_observation` mo
   ON
@@ -302,7 +302,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_observation` o
+  `{DATASET}.observation` o
   LEFT JOIN
   `{DATASET}._mapping_observation` mo
   ON
@@ -310,7 +310,7 @@ LEFT JOIN
 
   -- to enable person/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_person` p
+  `{DATASET}.person` p
   ON
   o.person_id = p.person_id
   LEFT JOIN
@@ -326,7 +326,7 @@ LEFT JOIN
     SELECT
     DISTINCT p.person_id
     FROM
-    `{DATASET}.unioned_ehr_person` p
+    `{DATASET}.person` p
     )
 
   -- same person_id but traced to different sites
@@ -364,7 +364,7 @@ FROM
   DISTINCT
   mde.src_hpo_id, COUNT(mde.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_drug_exposure` de
+  `{DATASET}.drug_exposure` de
   LEFT JOIN
   `{DATASET}._mapping_drug_exposure` mde
   ON
@@ -380,7 +380,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_drug_exposure` de
+  `{DATASET}.drug_exposure` de
   LEFT JOIN
   `{DATASET}._mapping_drug_exposure` mde
   ON
@@ -388,7 +388,7 @@ LEFT JOIN
 
   -- to enable person/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_person` p
+  `{DATASET}.person` p
   ON
   de.person_id = p.person_id
   LEFT JOIN
@@ -404,7 +404,7 @@ LEFT JOIN
     SELECT
     DISTINCT p.person_id
     FROM
-    `{DATASET}.unioned_ehr_person` p
+    `{DATASET}.person` p
     )
 
   -- same person_id but traced to different sites
@@ -443,7 +443,7 @@ FROM
   DISTINCT
   mpo.src_hpo_id, COUNT(mpo.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_procedure_occurrence` po
+  `{DATASET}.procedure_occurrence` po
   LEFT JOIN
   `{DATASET}._mapping_procedure_occurrence` mpo
   ON
@@ -459,7 +459,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_procedure_occurrence` po
+  `{DATASET}.procedure_occurrence` po
   LEFT JOIN
   `{DATASET}._mapping_procedure_occurrence` mpo
   ON
@@ -467,7 +467,7 @@ LEFT JOIN
 
   -- to enable person/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_person` p
+  `{DATASET}.person` p
   ON
   po.person_id = p.person_id
   LEFT JOIN
@@ -483,7 +483,7 @@ LEFT JOIN
     SELECT
     DISTINCT p.person_id
     FROM
-    `{DATASET}.unioned_ehr_person` p
+    `{DATASET}.person` p
     )
 
   -- same person_id but traced to different sites
@@ -521,7 +521,7 @@ FROM
   DISTINCT
   mm.src_hpo_id, COUNT(mm.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_measurement` m
+  `{DATASET}.measurement` m
   LEFT JOIN
   `{DATASET}._mapping_measurement` mm
   ON
@@ -537,7 +537,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_measurement` m
+  `{DATASET}.measurement` m
   LEFT JOIN
   `{DATASET}._mapping_measurement` mm
   ON
@@ -545,7 +545,7 @@ LEFT JOIN
 
   -- to enable person/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_person` p
+  `{DATASET}.person` p
   ON
   m.person_id = p.person_id
   LEFT JOIN
@@ -561,7 +561,7 @@ LEFT JOIN
     SELECT
     DISTINCT p.person_id
     FROM
-    `{DATASET}.unioned_ehr_person` p
+    `{DATASET}.person` p
     )
 
   -- same person_id but traced to different sites
@@ -599,7 +599,7 @@ FROM
   DISTINCT
   mvo.src_hpo_id, COUNT(mvo.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  `{DATASET}.visit_occurrence` vo
   LEFT JOIN
   `{DATASET}._mapping_visit_occurrence` mvo
   ON
@@ -615,7 +615,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  `{DATASET}.visit_occurrence` vo
   LEFT JOIN
   `{DATASET}._mapping_visit_occurrence` mvo
   ON
@@ -623,7 +623,7 @@ LEFT JOIN
 
   -- to enable person/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_person` p
+  `{DATASET}.person` p
   ON
   vo.person_id = p.person_id
   LEFT JOIN
@@ -639,7 +639,7 @@ LEFT JOIN
     SELECT
     DISTINCT p.person_id
     FROM
-    `{DATASET}.unioned_ehr_person` p
+    `{DATASET}.person` p
     )
 
   -- same person_id but traced to different sites

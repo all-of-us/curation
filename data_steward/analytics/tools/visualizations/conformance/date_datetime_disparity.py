@@ -16,11 +16,12 @@
 # NOTES:
 # 1. matplotlib MUST be in 3.1.0; 3.1.1 ruins the heatmap
 
-# # Site statistics for unit integration in the measurement table
+# # Across-Site Statistics for Date/Datetime Disparity Rates
 #
 # ### NOTE: Aggregate info is weighted by the contribution of each site
 
 import pandas as pd
+import xlrd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from math import pi
@@ -28,12 +29,17 @@ from math import pi
 # +
 sheets = []
 
-fn1 = 'measurement_units_table_sheets_data_analytics.xlsx'
+fn1 = 'date_datetime_disparity_table_sheets_analytics_report.xlsx'
 file_names = [fn1]
 
-s1 = 'total_unit_success_rate'
+s1 = 'Observation'
+s2 = 'Measurement'
+s3 = 'Visit Occurrence'
+s4 = 'Procedure Occurrence'
+s5 = 'Drug Exposure'
+s6 = 'Condition Occurrence'
 
-sheet_names = [s1]
+sheet_names = [s1, s2, s3, s4, s5, s6]
 
 # +
 table_sheets = []
@@ -43,35 +49,20 @@ for file in file_names:
         s = pd.read_excel(file, sheet)
         table_sheets.append(s)
 
-hpo_id_cols = table_sheets[0]['hpo_ids']
-date_cols = table_sheets[0].columns[2:]
+hpo_id_cols = table_sheets[0]
+hpo_id_cols  = list(hpo_id_cols[hpo_id_cols.columns[0]])  # reset to first column
+
+date_cols = table_sheets[0].columns[1:]
 # -
 
-# ### Fixing typos in the sheets; in some of the earlire reports
-
-for idx, table_id in enumerate(sheet_names):
-    under_encountered = False
-    start_idx, end_idx = 0, 0
-    
-    for c_idx, character in enumerate(table_id):
-        if character == '_' and not under_encountered:
-            start_idx = c_idx
-            under_encountered = True
-        elif character == '_' and under_encountered:
-            end_idx = c_idx
-    
-    in_between_str = table_id[start_idx:end_idx + 1]
-    
-    if in_between_str == '_succes_':
-        new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
-        sheet_names[idx] = new_string
+# ### Converting the numbers as needed and putting into a dictionary
 
 # +
 new_table_sheets = {}
 
 for name, sheet in zip(sheet_names, table_sheets):
     sheet_cols = sheet.columns
-    sheet_cols = sheet_cols[2:]
+    sheet_cols = sheet_cols[1:]
     new_df = pd.DataFrame(columns=sheet_cols)
 
     for col in sheet_cols:
@@ -86,12 +77,58 @@ for name, sheet in zip(sheet_names, table_sheets):
 
 # +
 fig, ax = plt.subplots(figsize=(18, 12))
-sns.heatmap(new_table_sheets['total_unit_success_rate'], annot=True, annot_kws={"size": 10},
+sns.heatmap(new_table_sheets['Condition Occurrence'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
-            xticklabels=date_cols, cmap="RdYlGn")
+            xticklabels=date_cols, cmap="YlGnBu")
 
-ax.set_title("Unit Integration Rate", size=14)
-plt.savefig("unit_integration_table_all_sites.jpg")
+ax.set_title("Condition Table Date/Datetime Disparity Rate", size=14)
+# plt.savefig("condition_table_date_datetime_disparity.jpg")
+
+# +
+fig, ax = plt.subplots(figsize=(18, 12))
+sns.heatmap(new_table_sheets['Drug Exposure'], annot=True, annot_kws={"size": 10},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
+            xticklabels=date_cols, cmap="YlGnBu")
+
+ax.set_title("Drug Table Date/Datetime Disparity Rate", size=14)
+# plt.savefig("drug_table_date_datetime_disparity.jpg")
+
+# +
+fig, ax = plt.subplots(figsize=(18, 12))
+sns.heatmap(new_table_sheets['Measurement'], annot=True, annot_kws={"size": 10},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
+            xticklabels=date_cols, cmap="YlGnBu")
+
+ax.set_title("Measurement Table Date/Datetime Disparity Rate", size=14)
+# plt.savefig("measurement_table_date_datetime_disparity.jpg")
+
+# +
+fig, ax = plt.subplots(figsize=(18, 12))
+sns.heatmap(new_table_sheets['Observation'], annot=True, annot_kws={"size": 10},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
+            xticklabels=date_cols, cmap="YlGnBu")
+
+ax.set_title("Observation Table Date/Datetime Disparity Rate", size=14)
+# plt.savefig("observation_table_date_datetime_disparity.jpg")
+
+# +
+fig, ax = plt.subplots(figsize=(18, 12))
+sns.heatmap(new_table_sheets['Procedure Occurrence'], annot=True, annot_kws={"size": 10},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
+            xticklabels=date_cols, cmap="YlGnBu")
+
+ax.set_title("Procedure Table Date/Datetime Disparity Rate", size=14)
+# plt.savefig("procedure_table_date_datetime_disparity.jpg")
+
+# +
+fig, ax = plt.subplots(figsize=(18, 12))
+sns.heatmap(new_table_sheets['Visit Occurrence'], annot=True, annot_kws={"size": 10},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
+            xticklabels=date_cols, cmap="YlGnBu")
+
+
+ax.set_title("Visit Table Date/Datetime Disparity Rate", size=14)
+# plt.savefig("visit_table_date_datetime_disparity.jpg")
 # -
 
 # ## Creating a box-and-whisker plot for the different table types across all sites
@@ -118,10 +155,10 @@ plt.savefig("unit_integration_table_all_sites.jpg")
 #
 # plt.ylabel(ylabel="Success Rate", size=16)
 # plt.xlabel(xlabel="\nTable Type", size=16)
-# plt.title("Unit Integration Rates for {}".format(date), size = 18)
+# plt.title("Date/Datetime Disparity Rates for {}".format(date), size = 18)
 # sns.despine(trim=True, left=True)
 
-# # Now let's look at the metrics for particular sites with respect to unit integration; this will allow us to send them the same information
+# # Now let's look at the metrics for particular sites with respect to date/datetime disparity; this will allow us to send them the same information
 
 # +
 site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders', 
@@ -136,21 +173,9 @@ site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_cede
                   'va', 'aggregate_info']
 
 print(len(site_name_list))
-# -
-
-# #### Cell for the CDR; trans_am_essentia and saou_ummc taken out
-
-# site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders', 
-#                   'cpmc_ucd', 'cpmc_uci', 'cpmc_ucsd', 'cpmc_ucsf', 'cpmc_usc', 'ecchc',
-#                   'hrhc', 'ipmc_northshore', 'ipmc_nu', 'ipmc_rush', 'ipmc_uchicago',
-#                   'ipmc_uic', 'jhchc', 'nec_bmc', 'nec_phs', 'nyc_cornell', 'nyc_cu',
-#                   'nyc_hh', 'pitt', 'saou_uab', 'seec_emory', 'seec_miami',
-#                   'seec_morehouse', 'seec_ufl', 'syhc', 'tach_hfhs', 'trans_am_baylor',
-#                   'trans_am_spectrum', 'uamc_banner', 'aggregate_info',
-#                   'poorly_defined_rows_total', 'total_rows']
 
 # +
-name_of_interest = 'hrhc'
+name_of_interest = 'aggregate_info'
 
 if name_of_interest not in site_name_list:
     raise ValueError("Name not found in the list of HPO site names.")    
@@ -158,12 +183,9 @@ if name_of_interest not in site_name_list:
 for idx, site in enumerate(site_name_list):
     if site == name_of_interest:
         idx_of_interest = idx
-# -
-
-idx_of_interest
 
 # +
-fn1_hpo_sheets = 'measurement_units_hpo_sheets_data_analytics.xlsx'
+fn1_hpo_sheets = 'date_datetime_disparity_hpo_sheets_analytics_report.xlsx'
 file_names_hpo_sheets = [fn1_hpo_sheets]
 
 s1, s2 = site_name_list[0], site_name_list[1]
@@ -195,7 +217,6 @@ hpo_sheet_names = [
     s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26,
     s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
     s39, s40, s41, s42, s43, s44, s45, s46]
-
 # +
 hpo_sheets = []
 
@@ -203,9 +224,12 @@ for file in file_names_hpo_sheets:
     for sheet in hpo_sheet_names:
         s = pd.read_excel(file, sheet)
         hpo_sheets.append(s)
+        
 
-table_id_cols = list(hpo_sheets[0]['table_type'])
-date_cols = hpo_sheets[0].columns[2:]
+table_id_cols = hpo_sheets[0]
+table_id_cols  = list(table_id_cols[table_id_cols.columns[0]])  # reset to first column
+
+date_cols = hpo_sheets[0].columns[1:]
 
 for idx, table_id in enumerate(table_id_cols):
     under_encountered = False
@@ -223,20 +247,14 @@ for idx, table_id in enumerate(table_id_cols):
     if in_between_str == '_succes_':
         new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
         table_id_cols[idx] = new_string
-# -
-
-if name_of_interest == 'aggregate_info':
-    start_idx = 1
-else:
-    start_idx = 2
 
 # +
 new_hpo_sheets = []
+start_idx = 1  # first does not have data
 
 for sheet in hpo_sheets:
     sheet_cols = sheet.columns
-    sheet_cols = sheet_cols[start_idx:]  # first does not have data
-        
+    sheet_cols = sheet_cols[start_idx:]
     new_df = pd.DataFrame(columns=sheet_cols)
 
     for col in sheet_cols:
@@ -248,23 +266,17 @@ for sheet in hpo_sheets:
 # -
 
 # ### Showing for one particular site
-#
-# #### NOTE: you need to change the y-label based on what value you choose to drop above
-#
-# #### NOTE: You can change whether you are looking at total or selected unit success rate by changing the first parameter of the sns.heatmap function
 
 # +
-y_axis_labels = ['total_unit_success_rate']
-
 fig, ax = plt.subplots(figsize=(9, 6))
-sns.heatmap(new_hpo_sheets[idx_of_interest].iloc[[2]], annot=True, annot_kws={"size": 14},
-            fmt='g', linewidths=.5, ax=ax, yticklabels=['total_unit_success_rate'],
-            xticklabels=date_cols, cmap="RdYlGn")
+sns.heatmap(new_hpo_sheets[idx_of_interest], annot=True, annot_kws={"size": 14},
+            fmt='g', linewidths=.5, ax=ax, yticklabels=table_id_cols,
+            xticklabels=date_cols, cmap="YlGnBu")
 
-ax.set_title("Unit Integration Rates for {}".format(name_of_interest), size=14)
+ax.set_title("Date/Datetime Disparity Rates for {}".format(name_of_interest), size=14)
 
 plt.tight_layout()
-img_name = name_of_interest + "_unit_integration.jpg"
+img_name = name_of_interest + "_date_datetime_disparity.png"
 
 plt.savefig(img_name)
 # -
@@ -273,56 +285,60 @@ dates = new_hpo_sheets[0].columns.tolist()
 
 # ## NOTE: This is more experimental than anything else; Could be improved upon in the future. This particular graphic is also only quasi-informative.
 
-# num_tables = len(new_hpo_sheets[0]) - 1  # do not include aggregate
-#
-# angles = [(angle / num_tables) * (2 * pi) for angle in range(num_tables)]
-# angles += angles[:1] # back to the start
-#
+# +
+num_tables = len(new_hpo_sheets[0]) - 1  # do not include aggregate
 
-# max_val = 0
-#
-# site = new_hpo_sheets[idx_of_interest]
-# site_name = site_name_list[idx_of_interest]
-#
-# for date in dates:
-#     date_vals = site[date].values
-#     date_vals = date_vals.flatten().tolist()[:-1]  # cut off aggregate
-#     
-#     for value in date_vals:
-#         if value > max_val:
-#             max_val = value
-#
-# y_ticks = [max_val / 5, max_val * 2 / 5, max_val * 3 / 5, max_val * 4 / 5, max_val]
-# y_ticks_str = []
-#
-# for val in y_ticks:
-#     string = str(val)
-#     y_ticks_str.append(string)
+angles = [(angle / num_tables) * (2 * pi) for angle in range(num_tables)]
+angles += angles[:1] # back to the start
 
-# fig, ax = plt.subplots(figsize=(9, 6))
-# ax = plt.subplot(111, polar = True)  # initialize
-#
-# ax.set_theta_offset(pi / 2)  # flip to top
-# ax.set_theta_direction(-1)
-#
-# plt.xticks(angles[:-1],table_id_cols)
-#
-# # Draw ylabels
-# ax.set_rlabel_position(0)
-# plt.yticks(y_ticks, y_ticks_str, color="grey", size=8)
-# plt.ylim(0, max_val)
-#
-#
-# for date_idx in range(len(dates)):
-#     date_vals = site[dates[date_idx]].values
-#     date = date_vals.flatten().tolist()[:-1]  # cut off aggregate
-#     date += date[:1]  # round out the graph
-#     
-#     ax.plot(angles, date, linewidth=1, linestyle='solid', label=dates[date_idx])
-#     ax.fill(angles, date, alpha=0.1)
-#
-# plt.title("Unit Integration Population: {}".format(name_of_interest), size=15, y = 1.1)
-# plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
+
+# +
+max_val = 0
+
+site = new_hpo_sheets[idx_of_interest]
+site_name = site_name_list[idx_of_interest]
+
+for date in dates:
+    date_vals = site[date].values
+    date_vals = date_vals.flatten().tolist()[:-1]  # cut off aggregate
+    
+    for value in date_vals:
+        if value > max_val:
+            max_val = value
+
+y_ticks = [max_val / 5, max_val * 2 / 5, max_val * 3 / 5, max_val * 4 / 5, max_val]
+y_ticks_str = []
+
+for val in y_ticks:
+    string = str(val)
+    y_ticks_str.append(string)
+
+# +
+fig, ax = plt.subplots(figsize=(9, 6))
+ax = plt.subplot(111, polar = True)  # initialize
+
+ax.set_theta_offset(pi / 2)  # flip to top
+ax.set_theta_direction(-1)
+
+plt.xticks(angles[:-1],table_id_cols)
+
+# Draw ylabels
+ax.set_rlabel_position(0)
+plt.yticks(y_ticks, y_ticks_str, color="grey", size=8)
+plt.ylim(0, max_val)
+
+
+for date_idx in range(len(dates)):
+    date_vals = site[dates[date_idx]].values
+    date = date_vals.flatten().tolist()[:-1]  # cut off aggregate
+    date += date[:1]  # round out the graph
+    
+    ax.plot(angles, date, linewidth=1, linestyle='solid', label=dates[date_idx])
+    ax.fill(angles, date, alpha=0.1)
+
+plt.title("Date/Datetime Disparity: {}".format(name_of_interest), size=15, y = 1.1)
+plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
+# -
 
 dates = new_hpo_sheets[idx_of_interest].columns
 
@@ -330,15 +346,12 @@ dates = new_hpo_sheets[idx_of_interest].columns
 
 times=new_hpo_sheets[idx_of_interest].columns.tolist()
 
-# #### NOTE: Can change the below code to show the total number of rows over time as well
-
 # +
 success_rates = {}
 
 for table_num, table_type in enumerate(table_id_cols):
-    if table_type == 'total_unit_success_rate':
-        table_metrics_over_time = new_hpo_sheets[idx_of_interest].iloc[table_num]
-        success_rates[table_type] = table_metrics_over_time.values.tolist()
+    table_metrics_over_time = new_hpo_sheets[idx_of_interest].iloc[table_num]
+    success_rates[table_type] = table_metrics_over_time.values.tolist()
 
 date_idxs = []
 for x in range(len(dates)):
@@ -363,22 +376,15 @@ for table, values_over_time in success_rates.items():
         plt.plot(date_idxs[non_nan_idx], new_lst, 'o', label=table)
 
 plt.legend(loc="upper left", bbox_to_anchor=(1,1))
-plt.title("{} unit integration rates over time".format(name_of_interest))
-plt.ylabel("Success Rate (%)")
+plt.title("{} Date/Datetime Disparity Rates Over Time".format(name_of_interest))
+plt.ylabel("Disparity Rate (%)")
 plt.xlabel("")
 plt.xticks(date_idxs, times, rotation = 'vertical')
 
 handles, labels = ax.get_legend_handles_labels()
 lgd = ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5,-0.1))
 
-img_name = name_of_interest + "_unit_integration_line_graph.jpg"
+img_name = name_of_interest + "_date_datetime_disparity_line_graph.jpg"
 # plt.savefig(img_name, bbox_extraartist=(lgd,), bbox_inches='tight')
 # -
-
-
-
-
-
-
-
 
