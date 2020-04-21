@@ -48,16 +48,23 @@ import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operat
 import cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
 import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
-from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
+from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import ObservationSourceConceptIDRowSuppression
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-EHR_CLEANING_CLASSES = [(id_dedup.get_id_deduplicate_queries,),
-                        CleanMappingExtTables]
+EHR_CLEANING_CLASSES = [
+    (id_dedup.get_id_deduplicate_queries,),
+    # trying to query a table while creating query strings,
+    # can't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
+    (
+        CleanMappingExtTables,)
+]
 
 UNIONED_EHR_CLEANING_CLASSES = [
     (id_dedup.get_id_deduplicate_queries,),
@@ -68,17 +75,21 @@ UNIONED_EHR_CLEANING_CLASSES = [
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
-    # (populate_routes.get_route_mapping_queries,),
     (
-        EnsureDateDatetimeConsistency,),
+        populate_routes.get_route_mapping_queries,),
+    (EnsureDateDatetimeConsistency,),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
-    # DC-698 opened to fix it.
-    #    (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
-    CleanMappingExtTables
+    (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
+    # trying to query a table while creating query strings,
+    # can't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
+    (
+        CleanMappingExtTables,)
 ]
 
 RDR_CLEANING_CLASSES = [
+    (ObservationSourceConceptIDRowSuppression,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
     (ppi_numeric_fields.get_clean_ppi_num_fields_using_parameters_queries,),
@@ -88,38 +99,39 @@ RDR_CLEANING_CLASSES = [
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
-    #(smoking.get_queries_clean_smoking,),
     (
-        ppi_drop_duplicates.
-        get_remove_duplicate_set_of_responses_to_same_questions_queries,),
+        smoking.get_queries_clean_smoking,),
+    (ppi_drop_duplicates.
+     get_remove_duplicate_set_of_responses_to_same_questions_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
-    #(operational_pii_fields.get_remove_operational_pii_fields_query,),
+    (
+        operational_pii_fields.get_remove_operational_pii_fields_query,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
-    #map_questions_answers_to_omop.
-    #(get_update_questions_answers_not_mapped_to_omop,),
     (
-        round_ppi_values.get_round_ppi_values_queries,),
+        map_questions_answers_to_omop.
+        get_update_questions_answers_not_mapped_to_omop,),
+    (round_ppi_values.get_round_ppi_values_queries,),
     (update_family_history.get_update_family_history_qa_queries,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
     (drop_mult_meas.get_drop_multiple_measurement_queries,),
-    CleanMappingExtTables
 ]
 
 COMBINED_CLEANING_CLASSES = [
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
-    #    (replace_standard_concept_ids.replace_standard_id_in_domain_tables,),
+    (
+        replace_standard_concept_ids.replace_standard_id_in_domain_tables,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
-    #    (domain_alignment.domain_alignment,),
     (
-        drop_participants_without_ppi_or_ehr.get_queries,),
+        domain_alignment.domain_alignment,),
+    (drop_participants_without_ppi_or_ehr.get_queries,),
     (id_dedup.get_id_deduplicate_queries,),
     (clean_years.get_year_of_birth_queries,),
     (neg_ages.get_negative_ages_queries,),
@@ -130,7 +142,8 @@ COMBINED_CLEANING_CLASSES = [
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
-    #    (populate_routes.get_route_mapping_queries,),
+    (
+        populate_routes.get_route_mapping_queries,),
     (EnsureDateDatetimeConsistency),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
@@ -141,7 +154,11 @@ COMBINED_CLEANING_CLASSES = [
     (remove_aian_participants.get_queries,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
-    CleanMappingExtTables
+    # trying to query a table while creating query strings,
+    # can't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
+    (
+        CleanMappingExtTables,)
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
@@ -151,10 +168,20 @@ DEID_BASE_CLEANING_CLASSES = [
     (valid_death_dates.get_valid_death_date_queries,),
     (fill_source_value.get_fill_freetext_source_value_fields_queries,),
     (repopulate_person.get_repopulate_person_post_deid_queries,),
-    CleanMappingExtTables
+    # trying to query a table while creating query strings,
+    # can't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
+    (
+        CleanMappingExtTables,)
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = []
+DEID_CLEAN_CLEANING_CLASSES = [
+    # trying to query a table while creating query strings,
+    # can't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
+    (
+        CleanMappingExtTables,)
+]
 
 
 def add_module_info_decorator(query_function, *positional_args, **keyword_args):
@@ -298,9 +325,8 @@ def _get_query_list(cleaning_classes, project_id, dataset_id,
                     positionals = class_info[1:]
 
                 query_list.extend(
-                    add_module_info_decorator(
-                        instance.get_query_dictionary_list, *positionals,
-                        **keywords))
+                    add_module_info_decorator(instance.get_query_specs,
+                                              *positionals, **keywords))
             else:
                 # if the class is not of the common base class, raise an error
                 # will prevent running manual cleaning rules that have not been
