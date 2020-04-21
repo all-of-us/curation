@@ -480,7 +480,18 @@ def retract(project_id, sandbox_dataset_id, concept_lookup_table,
 
 def get_arg_parser():
     """
-    Get the parser for command line arguments
+    Get an argument parser which allows setup and retract sub-commands
+
+    Ex:
+    This loads the lookup in the table my_table located in the dataset my_dataset of
+    the project my_project
+
+        dc732_suppress -p my_project setup my_dataset.my_table
+
+    This retracts rows with concepts in my_dataset.my_table from all tables in datasets d1 and d2
+    of the project my_project and backs up data in my_sandbox
+        dc732_suppress -p my_project retract -s my_sandbox -c my_dataset.my_table -d d1 d2
+
     :return: the parser
     """
     parser = argparse.ArgumentParser()
