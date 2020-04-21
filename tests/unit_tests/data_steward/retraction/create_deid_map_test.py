@@ -8,6 +8,7 @@ import pandas as pd
 # Project imports
 import retraction.create_deid_map as create_deid_map
 import utils.bq
+import common
 
 
 class CreateDeidMapTest(unittest.TestCase):
@@ -22,12 +23,12 @@ class CreateDeidMapTest(unittest.TestCase):
         self.project_id = 'test_project_id'
         self.dataset_id = 'test_dataset_id'
         self.all_datasets = [
-            'R2021Q1R1_combined', 'R2021Q1R1_deid', 'R2021Q1R2_combined',
-            '2021q1r3_combined', 'R2021Q1R3_deid'
+            'R2021q1r1_combined', 'R2021q1r1_deid', 'R2021q1r2_combined',
+            '2021q1r3_combined', 'R2021q1r3_deid'
         ]
-        self.deid_datasets = ['R2021Q1R1_deid', 'R2021Q1R3_deid']
+        self.deid_datasets = ['R2021q1r1_deid', 'R2021q1r3_deid']
         self.combined_datasets = [
-            'R2021Q1R1_combined', 'R2021Q1R2_combined', '2021q1r3_combined'
+            'R2021q1r1_combined', 'R2021q1r2_combined', '2021q1r3_combined'
         ]
 
     @mock.patch('retraction.create_deid_map.utils.bq.list_datasets')
@@ -46,19 +47,7 @@ class CreateDeidMapTest(unittest.TestCase):
     def test_get_corresponding_combined_dataset(self):
         result = create_deid_map.get_corresponding_combined_dataset(
             self.all_datasets, self.deid_datasets)
-        expected = list()
-
-        for d in self.deid_datasets:
-            release = d.split('_')[0]
-            older_release = release[1:]
-            combined, older_combined = release + '_combined', older_release + '_combined'
-
-            if combined in self.all_datasets:
-                expected.append(combined)
-            if older_combined in self.all_datasets:
-                expected.append(older_combined)
-            # Remove duplicates
-        expected = list(set(expected))
+        expected = ['2021q1r3_combined', 'R2021q1r1_combined']
 
         self.assertEquals(expected, result)
 
@@ -68,18 +57,17 @@ class CreateDeidMapTest(unittest.TestCase):
             self.project_id, self.dataset_id)
 
         expected_table_info_df = mock_get_table_info.return_value = pd.DataFrame(
-            columns=[
-                'table_catalog', 'table_schema', 'table_name', 'column_name',
-                'ordinal_position', 'is_nullable', 'data_type', 'is_generated',
-                'generation_expression', 'is_stored', 'is_hidden',
-                'is_updatable', 'is_system_defined', 'is_partitioning_column',
-                'clustering_ordinal_position'
-            ])
+            data={
+                'table_name':
+                    ['_ehr_consent', common.PERSON, common.OBSERVATION]
+            })
         expected_column_list = expected_table_info_df['table_name'].tolist()
 
         if 'deid_map' in expected_column_list:
             self.assertEquals('rename required', result)
         if '_deid_map' in expected_column_list:
+            self.assertEquals(True, result)
+        if 'deid_map' and '_deid_map' in expected_column_list:
             self.assertEquals(True, result)
         if ['deid_map', '_deid_map'] not in expected_column_list:
             self.assertEquals(False, result)
@@ -99,13 +87,31 @@ class CreateDeidMapTest(unittest.TestCase):
         self.assertEquals(result, expected)
 
     @mock.patch('retraction.create_deid_map.utils.bq.list_datasets')
-    def test_create_deid_map_table_queries(self, mock_list_datasets):
-        result = create_deid_map.create_deid_map_table_queries(self.project_id)
-        mock_list_datasets.return_value = utils.bq.list_datasets(
-            self.project_id)
+    @mock.patch('retraction.create_deid_map.utils.bq.get_table_info_for_dataset'
+               )
+    def test_create_deid_map_table_queries(self, mock_table_info,
+                                           mock_list_datasets):
 
-        combined_datasets = create_deid_map.get_combined_datasets_for_deid_map(
-            self.project_id)
+        result = [
+            create_deid_map.CREATE_DEID_MAP_TABLE_QUERY.format(
+                project=self.project_id, dataset='R2021q1r1_combined'),
+            create_deid_map.RENAME_DEID_MAP_TABLE_QUERY.format(
+                project=self.project_id, dataset='2021q1r3_combined')
+        ]
+
+        mock_list_datasets.return_value = self.all_datasets
+        dataframe_1 = pd.DataFrame(data={
+            'table_name': ['_ehr_consent', common.PERSON, common.OBSERVATION]
+        })
+        dataframe_2 = pd.DataFrame(data={
+            'table_name': ['_deid_map', common.PERSON, common.OBSERVATION]
+        })
+        dataframe_3 = pd.DataFrame(data={
+            'table_name': ['deid_map', common.PERSON, common.OBSERVATION]
+        })
+        mock_table_info.side_effect = [dataframe_1, dataframe_2, dataframe_3]
+
+        combined_datasets = self.combined_datasets
         expected_queries = list()
 
         for dataset in combined_datasets:
@@ -118,7 +124,7 @@ class CreateDeidMapTest(unittest.TestCase):
                     create_deid_map.create_deid_map_table_query(
                         self.project_id, dataset))
             if check == 'rename required':
-                expected_queries.extend(
+                expected_queries.append(
                     create_deid_map.rename_deid_map_table_query(
                         self.project_id, dataset))
 

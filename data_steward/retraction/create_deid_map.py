@@ -36,7 +36,7 @@ CREATE_DEID_MAP_TABLE_QUERY = """
 CREATE OR REPLACE TABLE `{project}.{dataset}._deid_map` AS (
 SELECT c.person_id, d.person_id AS research_id
 FROM `{project}.{dataset}.observation` c
-JOIN `{project}.{dataset}.observation` d
+FULL OUTER JOIN `{project}.{dataset}.observation` d
 ON c.observation_id = d.observation_id
 )
 """
@@ -104,6 +104,8 @@ def check_if_deid_map_exists(project_id, dataset):
     if 'deid_map' in column_list:
         return 'rename required'
     if '_deid_map' in column_list:
+        return True
+    if 'deid_map' and '_deid_map' in column_list:
         return True
     if ['deid_map', '_deid_map'] not in column_list:
         return False
