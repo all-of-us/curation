@@ -36,8 +36,9 @@ class BqTest(unittest.TestCase):
 
     def test_create_dataset(self):
         # Tests failure of create_dataset due to dataset already existing
-        self.assertRaises(RuntimeError, create_dataset, self.existing_dataset_id,
-                          self.description, self.label, self.project_id)
+        self.assertRaises(RuntimeError, create_dataset,
+                          self.existing_dataset_id, self.description,
+                          self.label, self.project_id)
 
         # Tests if project_id is given
         self.assertRaises(TypeError, create_dataset, self.existing_dataset_id,
@@ -56,8 +57,8 @@ class BqTest(unittest.TestCase):
                           self.existing_dataset_id, self.description)
 
         # Tests creation of dataset "baz_dataset" is successful
-        create_dataset(self.new_dataset_id, self.description,
-                       self.label, self.project_id)
+        create_dataset(self.new_dataset_id, self.description, self.label,
+                       self.project_id)
 
         # Post conditions
         self.assertTrue(get_dataset(self.project_id, self.new_dataset_id))
