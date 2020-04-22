@@ -573,7 +573,7 @@ def validate_lookup_table_arg(table):
         raise ValueError(INVALID_TABLE_REF.format(table=table))
 
 
-def parse_args(args):
+def parse_args(args=None):
     """
     Parse command line arguments
 
@@ -589,9 +589,8 @@ def parse_args(args):
 
 
 if __name__ == '__main__':
-    import sys
 
-    ARGS = parse_args(sys.argv[1:])
+    ARGS = parse_args()
     CLIENT = bq.get_client(ARGS.project_id)
 
     if ARGS.cmd == 'setup':
