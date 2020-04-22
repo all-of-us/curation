@@ -224,7 +224,7 @@ def get_latest_validation_dataset_id(project_id):
     """
     Get the latest validation_dataset_id based on most recent creationTime.
 
-    :param project_id: 
+    :param project_id:
 
     :return: the most recent validation_dataset_id
     """
@@ -254,14 +254,16 @@ def dataset_exists(dataset_id, project_id):
     :returns:  True if the dataset exists
     :returns:  False if the dataset does not exist
     """
-    dataset_exist_check = get_dataset(project_id, dataset_id)
+
+    client = get_client(project_id)
+    dataset_id = f"{project_id}.{dataset_id}"
+    dataset = bigquery.Dataset(dataset_id)
 
     try:
-        if dataset_exist_check is not None:
-            return True
+        client.get_dataset(dataset)
+        return True
     except NotFound:
-        if dataset_exist_check:
-            return False
+        return False
 
 
 def create_dataset(dataset_id,
@@ -281,27 +283,31 @@ def create_dataset(dataset_id,
     :raises: RuntimeError if the dataset does not have a description
     :raises: RuntimeError if the dataset does not have a label
     """
-    if not project_id:
-        raise RuntimeError(
-            "Please specify a project in which to create the dataset")
+    if not dataset_exists(dataset_id, project_id):
+        if not project_id:
+            raise RuntimeError(
+                "Please specify a project in which to create the dataset")
 
-    if not dataset_id:
-        raise RuntimeError("Cannot create a dataset without a name")
+        if not dataset_id:
+            raise RuntimeError("Cannot create a dataset without a name")
 
-    if description.isspace() or not description:
-        raise RuntimeError("Please provide a description to create a dataset")
+        if description.isspace() or not description:
+            raise RuntimeError("Please provide a description to create a dataset")
 
-    if not label:
-        raise RuntimeError("Label and/or tag is required to create a dataset")
+        if not label:
+            raise RuntimeError("Label and/or tag is required to create a dataset")
 
-    dataset_id = f"{project_id}.{dataset_id}"
+        dataset_id = f"{project_id}.{dataset_id}"
 
-    # Construct a full Dataset object to send to the API.
-    dataset = bigquery.Dataset(dataset_id)
-    dataset.description = description
-    dataset.labels = label
+        # Construct a full Dataset object to send to the API.
+        dataset = bigquery.Dataset(dataset_id)
+        dataset.description = description
+        dataset.labels = label
 
-    client = get_client(project_id)
-    client.create_dataset(dataset, exists_ok=False)
+        client = get_client(project_id)
+        client.create_dataset(dataset, exists_ok=False)
 
-    return client
+        return client
+
+    else:
+        print(f'{dataset_id} already exists')
