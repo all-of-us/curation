@@ -213,7 +213,7 @@ def is_validation_dataset_id(dataset_id):
     """
     Check if  bq_consts.VALIDATION_PREFIX is in the dataset_id
 
-    :param dataset_id:
+    :param dataset_id: ID (name) of the dataset to validate
 
     :return: a bool indicating whether dataset is a validation_dataset
     """
@@ -224,7 +224,7 @@ def get_latest_validation_dataset_id(project_id):
     """
     Get the latest validation_dataset_id based on most recent creationTime.
 
-    :param project_id:
+    :param project_id: ID (name) of the project containing the dataset
 
     :return: the most recent validation_dataset_id
     """
@@ -248,8 +248,8 @@ def dataset_exists(dataset_id, project_id):
     """
     Checks if the dataset exists via dataset id
 
-    :param dataset_id:  name of the dataset to check
-    :param project_id:  name of the project in which to create the dataset
+    :param dataset_id:  ID (name) of the dataset to check
+    :param project_id:  ID (name) of the project to check for the dataset
 
     :returns:  True if the dataset exists
     :returns:  False if the dataset does not exist
@@ -266,24 +266,21 @@ def dataset_exists(dataset_id, project_id):
         return False
 
 
-def create_dataset(dataset_id,
-                   description,
-                   label,
-                   project_id):
+def create_dataset(dataset_id, description, label, project_id):
     """
     Creates a new dataset
 
-    :param project_id:  name of the project in which to create the dataset
-    :param dataset_id:  name to give the new dataset, is required
-    :param description:  dataset description, is required
-    :param label:  dataset label, is required
+    :param project_id:  ID (name) of the project in which to create the dataset, is required
+    :param dataset_id:  ID (name) to give the new dataset, is required
+    :param description:  description of the dataset, is required
+    :param label:  Dict[str,str] labels for the dataset
 
     :raises: RuntimeError if the dataset does not have project_id
     :raises: RuntimeError if the dataset does not have dataset_id
     :raises: RuntimeError if the dataset does not have a description
     :raises: RuntimeError if the dataset does not have a label
     """
-    if not dataset_exists(dataset_id, project_id):
+    if dataset_exists(dataset_id, project_id) == False:
         if not project_id:
             raise RuntimeError(
                 "Please specify a project in which to create the dataset")
@@ -292,10 +289,12 @@ def create_dataset(dataset_id,
             raise RuntimeError("Cannot create a dataset without a name")
 
         if description.isspace() or not description:
-            raise RuntimeError("Please provide a description to create a dataset")
+            raise RuntimeError(
+                "Please provide a description to create a dataset")
 
         if not label:
-            raise RuntimeError("Label and/or tag is required to create a dataset")
+            raise RuntimeError(
+                "Label and/or tag is required to create a dataset")
 
         dataset_id = f"{project_id}.{dataset_id}"
 
