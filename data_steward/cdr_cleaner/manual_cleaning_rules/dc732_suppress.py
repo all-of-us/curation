@@ -316,12 +316,13 @@ AND r.table = '{{table}}'
 """)
 
 
-def backup_rows_to_suppress(tables_to_suppress_df, suppress_rows_table):
+def backup_rows_to_suppress(fq_backup_dataset, tables_to_suppress_df, suppress_rows_table):
     """
     Create a table for each domain and load rows that will be suppressed across all datasets
 
     Note: Rows are appended if tables exist
     
+    :param fq_backup_dataset: fully qualified dataset name where rows should be backed up
     :param tables_to_suppress_df: dataframe with dataset_id, table_name, ext_table_name, columns
     :param suppress_rows_table: identifies the table where suppress rows are loaded
     :return: list of query jobs
@@ -331,7 +332,7 @@ def backup_rows_to_suppress(tables_to_suppress_df, suppress_rows_table):
     query_jobs = []
     for (table_name, ext_table_name), table_info in tables_group_df:
         dataset_ids = table_info.dataset_id.unique()
-        backup_rows_dest_table = get_backup_table_for(table_name)
+        backup_rows_dest_table = f'{fq_backup_dataset}.{ISSUE_PREFIX}{table_name}'
         job_config = bigquery.QueryJobConfig(destination=backup_rows_dest_table)
         job_config.write_disposition = 'WRITE_APPEND'
         backup_table_rows_query = BACKUP_TABLE_ROWS_QUERY.render(
@@ -343,7 +344,7 @@ def backup_rows_to_suppress(tables_to_suppress_df, suppress_rows_table):
         query_jobs.append(backup_table_query_job)
 
         if ext_table_name:
-            backup_ext_dest_table = get_backup_table_for(ext_table_name)
+            backup_ext_dest_table = f'{fq_backup_dataset}.{ISSUE_PREFIX}{ext_table_name}'
             job_config = bigquery.QueryJobConfig(
                 destination=backup_ext_dest_table)
             job_config.write_disposition = 'WRITE_APPEND'
@@ -451,8 +452,9 @@ def retract(project_id, sandbox_dataset_id, concept_lookup_table,
     :param target_dataset_ids: List of datasets to retract data from
     
     """
+    fq_sandbox_dataset = f'{project_id}.{sandbox_dataset_id}'
     # get suppress row info
-    rows_dest_table = f'{sandbox_dataset_id}.{ROWS_RESOURCE_NAME}'
+    rows_dest_table = f'{fq_sandbox_dataset}.{ROWS_RESOURCE_NAME}'
     tables_to_suppress_df = get_tables_to_suppress_df(project_id,
                                                       target_dataset_ids)
     suppress_rows_df = get_rows_to_suppress_df(tables_to_suppress_df,
@@ -462,7 +464,7 @@ def retract(project_id, sandbox_dataset_id, concept_lookup_table,
                             if_exists='append')
 
     # get suppress summary
-    summary_dest_table = f'{sandbox_dataset_id}.{SUMMARY_RESOURCE_NAME}'
+    summary_dest_table = f'{fq_sandbox_dataset}.{SUMMARY_RESOURCE_NAME}'
     suppress_summary_df = get_suppress_summary_df(suppress_rows_df)
     suppress_summary_df.to_csv(f'{SUMMARY_RESOURCE_NAME}.csv')
     suppress_summary_df.reset_index(inplace=True)
@@ -470,7 +472,7 @@ def retract(project_id, sandbox_dataset_id, concept_lookup_table,
                                if_exists='append')
 
     # backup rows
-    backup_rows_to_suppress(tables_to_suppress_df, rows_dest_table)
+    backup_rows_to_suppress(fq_sandbox_dataset, tables_to_suppress_df, rows_dest_table)
 
     # delete rows
     all_delete_queries = get_delete_queries(rows_dest_table)
@@ -591,15 +593,6 @@ if __name__ == '__main__':
 
     ARGS = parse_args(sys.argv[1:])
     CLIENT = bq.get_client(ARGS.project_id)
-
-    def get_backup_table_for(table_name):
-        """
-        Helper to get fully qualified table name where backup rows will be stored
-
-        :param table_name: name of table whose rows are to be backed up
-        :return: fully qualified table name
-        """
-        return f'{ARGS.project_id}.{ARGS.sandbox_dataset_id}.{ISSUE_PREFIX}{table_name}'
 
     if ARGS.cmd == 'setup':
         setup(ARGS.concept_lookup_dest_table)
