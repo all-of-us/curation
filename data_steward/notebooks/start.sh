@@ -39,30 +39,7 @@ echo "Activating service account ${ACCOUNT} for application ID ${APPLICATION_ID}
 gcloud auth activate-service-account ${ACCOUNT} --key-file=${KEY_FILE}
 gcloud config set project "${APPLICATION_ID}"
 
-PYTHON_CMD='python3.7'
-VENV_NAME='cdr_ops_env'
-VENV_PATH="${HOME}/${VENV_NAME}"
-
-echo "Creating virtual environment in ${VENV_PATH}..."
-
-if ! type ${PYTHON_CMD} > /dev/null;
-then
-  PYTHON_CMD=$(which python)
-  PYTHON_VERSION=$(${PYTHON_CMD} --version 2>&1)
-  echo "Command ${PYTHON_CMD} was not found. Attempting to use system default (${PYTHON_VERSION}) which may NOT work..."
-fi
-
-BIN_PATH="${VENV_PATH}/bin"
-if [[ "$OSTYPE" == "msys" ]]; then
-    # Windows
-    BIN_PATH="${VENV_PATH}/Scripts"
-fi
-
-virtualenv --python=${PYTHON_CMD} ${VENV_PATH}
-source "${BIN_PATH}/activate"
 echo "Which python: $(which python)"
-python -m pip install -U pip
-python -m pip install -U -r "${BASE_DIR}/requirements.txt"
 
 # The path set to /c/path/to/file gets converted to C:\\c\\path\\to\\file
 # instead of C:\\path\\to\\file, requiring the following fix for Git Bash for Windows

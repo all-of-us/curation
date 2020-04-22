@@ -38,11 +38,6 @@ export APPLICATION_ID="${app_id}"
 export DRC_BUCKET_NAME="${bucket_name}"
 export BIGQUERY_DATASET_ID="${dataset}"
 
-VENV_BIN="bin"
-if [[ "$OSTYPE" == "msys" ]]; then
-    VENV_BIN="Scripts"
-fi
-
 gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
@@ -53,14 +48,6 @@ then
 fi
 
 set -e
-# create a new environment in directory curation_venv
-virtualenv curation_venv
-
-# activate the report_env virtual environment
-source "curation_venv/${VENV_BIN}/activate"
-
-# install the requirements in the virtualenv
-pip install -t lib -r requirements.txt
 
 # Add the google appengine sdk to the PYTHONPATH
 source tools/set_path.sh
@@ -73,11 +60,7 @@ cd tools/consolidated_reports/
 # Run Query, Gets latest submissions and downloads the curation reports
 python ${REPORT}.py
 
-# Unset the PYTHONPATH set during the venv installation
 unset PYTHONPATH
-
-#deacticate virtual environment
-deactivate
 
 #exit here if reports are for results.html
 if [[ "$report_for" == "results" ]]; then

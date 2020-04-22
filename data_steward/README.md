@@ -27,6 +27,18 @@ the internet. The following environment variables are needed to configure access
 
 ## Installation / Configuration
 
- * Install requirements by running
-
-        pip install -r requirements.txt
+ * Create a virtual environment and install requirements by running
+    ```
+    # create a new environment with python3.7 as the default python
+    virtualenv -p "$(which python3.7)" <path_to_desired_virtualenv_location>
+    
+    # activate it
+    source <path_to_desired_virtualenv_location>/bin/activate
+    
+    # install upgrades and requirements in the virtualenv
+    # these install statements are only necessary on initial install or when requirements change
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    pip install -r deid/requirements.txt
+    pip install -r dev_requirements.txt
+    ```

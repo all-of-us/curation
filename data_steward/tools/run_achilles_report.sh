@@ -59,16 +59,6 @@ export GOOGLE_CLOUD_PROJECT="${app_id}"
 gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
-#---------Create curation virtual environment----------
-# create a new environment in directory curation_venv
-virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
-
-# activate it
-source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
-
-# install the requirements in the virtualenv
-pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
-
 source "${TOOLS_DIR}/set_path.sh"
 #------------------------------------------------------
 
@@ -80,8 +70,6 @@ export BIGQUERY_DATASET_ID="${dataset}"
 # Run Achilles analysis
 python "${TOOLS_DIR}/run_achilles_and_export.py" --bucket=${result_bucket} --folder=${dataset}
 
-# Deactivate venv and unset PYTHONPATH
 unset PYTHONPATH
-deactivate
 
 set +ex

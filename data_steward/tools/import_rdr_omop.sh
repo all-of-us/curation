@@ -60,16 +60,6 @@ export BIGQUERY_DATASET_ID="${OUTPUT_DATASET}"
 today=$(date '+%Y%m%d')
 RDR_DATASET="${today}_rdr"
 
-#---------Create curation virtual environment----------
-# create a new environment in directory curation_venv
-virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
-
-# activate it
-source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
-
-# install the requirements in the virtualenv
-pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
-
 source "${TOOLS_DIR}/set_path.sh"
 
 bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} on ${today}" "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}"
@@ -99,8 +89,6 @@ done
 echo "Copying vocabulary"
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${VOCAB_DATASET} --target_dataset ${RDR_DATASET}
 
-# deactivate venv and unset PYTHON PATH
 unset PYTHONPATH
-deactivate
 
 set +ex
