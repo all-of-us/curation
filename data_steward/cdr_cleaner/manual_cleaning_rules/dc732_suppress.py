@@ -316,7 +316,8 @@ AND r.table = '{{table}}'
 """)
 
 
-def backup_rows_to_suppress(fq_backup_dataset, tables_to_suppress_df, suppress_rows_table):
+def backup_rows_to_suppress(fq_backup_dataset, tables_to_suppress_df,
+                            suppress_rows_table):
     """
     Create a table for each domain and load rows that will be suppressed across all datasets
 
@@ -472,7 +473,8 @@ def retract(project_id, sandbox_dataset_id, concept_lookup_table,
                                if_exists='append')
 
     # backup rows
-    backup_rows_to_suppress(fq_sandbox_dataset, tables_to_suppress_df, rows_dest_table)
+    backup_rows_to_suppress(fq_sandbox_dataset, tables_to_suppress_df,
+                            rows_dest_table)
 
     # delete rows
     all_delete_queries = get_delete_queries(rows_dest_table)
