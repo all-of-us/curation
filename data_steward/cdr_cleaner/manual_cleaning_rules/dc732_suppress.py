@@ -569,7 +569,7 @@ def validate_lookup_table_arg(table):
     :param table: reference to a table
     """
     dot_count = table.count('.')
-    if dot_count < 1 or dot_count > 2:
+    if dot_count not in [1, 2]:
         raise ValueError(INVALID_TABLE_REF.format(table=table))
 
 
