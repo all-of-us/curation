@@ -309,4 +309,4 @@ def create_dataset(dataset_id, description, label, project_id):
         return client
 
     else:
-        print(f'{dataset_id} already exists')
+        raise RuntimeError(f'{dataset_id} already exists')
