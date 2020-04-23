@@ -251,29 +251,35 @@ def dataset_exists(dataset_id, project_id):
     :param dataset_id:  ID (name) of the dataset to check
     :param project_id:  ID (name) of the project to check for the dataset
 
+    :raises:  RuntimeError if a project_id is not supplied
+    :raises:  RuntimeError if a dataset_id is not supplied
     :returns:  True if the dataset exists
     :returns:  False if the dataset does not exist
     """
+    if not project_id:
+        raise RuntimeError("Please specify a project")
+    if not dataset_id:
+        raise RuntimeError("Please specify a dataset to check if exists")
+    else:
+        client = get_client(project_id)
+        dataset_id = f"{project_id}.{dataset_id}"
+        dataset = bigquery.Dataset(dataset_id)
 
-    client = get_client(project_id)
-    dataset_id = f"{project_id}.{dataset_id}"
-    dataset = bigquery.Dataset(dataset_id)
-
-    try:
-        client.get_dataset(dataset)
-        return True
-    except NotFound:
-        return False
+        try:
+            client.get_dataset(dataset)
+            return True
+        except NotFound:
+            return False
 
 
-def create_dataset(dataset_id, description, label, project_id):
+def create_dataset(dataset_id, description, label_or_tag, project_id):
     """
     Creates a new dataset
 
     :param project_id:  ID (name) of the project in which to create the dataset, is required
     :param dataset_id:  ID (name) to give the new dataset, is required
     :param description:  description of the dataset, is required
-    :param label:  Dict[str,str] labels for the dataset
+    :param label_or_tag:  Dict[str,str] labels or tag for the dataset
 
     :raises: RuntimeError if the dataset does not have project_id
     :raises: RuntimeError if the dataset does not have dataset_id
@@ -281,18 +287,11 @@ def create_dataset(dataset_id, description, label, project_id):
     :raises: RuntimeError if the dataset does not have a label
     """
     if dataset_exists(dataset_id, project_id) == False:
-        if not project_id:
-            raise RuntimeError(
-                "Please specify a project in which to create the dataset")
-
-        if not dataset_id:
-            raise RuntimeError("Cannot create a dataset without a name")
-
         if description.isspace() or not description:
             raise RuntimeError(
                 "Please provide a description to create a dataset")
 
-        if not label:
+        if not label_or_tag:
             raise RuntimeError(
                 "Label and/or tag is required to create a dataset")
 
@@ -301,7 +300,7 @@ def create_dataset(dataset_id, description, label, project_id):
         # Construct a full Dataset object to send to the API.
         dataset = bigquery.Dataset(dataset_id)
         dataset.description = description
-        dataset.labels = label
+        dataset.labels = label_or_tag
 
         client = get_client(project_id)
         client.create_dataset(dataset, exists_ok=False)
