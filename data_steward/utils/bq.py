@@ -272,26 +272,29 @@ def dataset_exists(dataset_id, project_id):
             return False
 
 
-def create_dataset(dataset_id, description, label_or_tag, project_id):
+def create_dataset(dataset_id, description, label, tag, project_id):
     """
     Creates a new dataset
 
     :param project_id:  ID (name) of the project in which to create the dataset, is required
     :param dataset_id:  ID (name) to give the new dataset, is required
     :param description:  description of the dataset, is required
-    :param label_or_tag:  Dict[str,str] labels or tag for the dataset
+    :param label:  Dict[str,str] labels for the dataset
+    :param tag: Dict[str, ''] tag for the dataset
 
-    :raises: RuntimeError if the dataset does not have project_id
-    :raises: RuntimeError if the dataset does not have dataset_id
-    :raises: RuntimeError if the dataset does not have a description
-    :raises: RuntimeError if the dataset does not have a label
+    :raises:  RuntimeError if the dataset does not have project_id
+    :raises:  RuntimeError if the dataset does not have dataset_id
+    :raises:  RuntimeError if the dataset does not have a description
+    :raises:  RuntimeError if the dataset does not have a label or table
+
+    :returns:  A bigquery Client object
     """
     if dataset_exists(dataset_id, project_id) == False:
         if description.isspace() or not description:
             raise RuntimeError(
                 "Please provide a description to create a dataset")
 
-        if not label_or_tag:
+        if not label and not tag:
             raise RuntimeError(
                 "Label and/or tag is required to create a dataset")
 
@@ -300,7 +303,18 @@ def create_dataset(dataset_id, description, label_or_tag, project_id):
         # Construct a full Dataset object to send to the API.
         dataset = bigquery.Dataset(dataset_id)
         dataset.description = description
-        dataset.labels = label_or_tag
+
+        if label is None:
+            dataset.labels = tag
+        elif tag is None:
+            dataset.labels = label
+        else:
+            label_and_tag = {}
+
+            for item in [label, tag]:
+                label_and_tag.update(item)
+
+            dataset.labels = label_and_tag
 
         client = get_client(project_id)
         client.create_dataset(dataset, exists_ok=False)
