@@ -30,8 +30,13 @@ class BqTest(unittest.TestCase):
         # input parameters expected by the class
         self.project_id = 'aou-res-curation-test'
         self.dataset_id = "foo_dataset"
+        self.dataset_id_label_only = "bar_dataset"
+        self.dataset_id_tag_only = "baz_dataset"
         self.description = 'fake description'
-        self.label_or_tag = {'fake_label': 'label', 'fake_tag': ''}
+        self.label = {'fake_label': 'label'}
+        self.no_label = None
+        self.tag = {'fake_tag': ''}
+        self.no_tag = None
 
     def test_dataset_exists(self):
         """Only tests whether a dataset_id and or project_id are supplied"""
@@ -44,23 +49,37 @@ class BqTest(unittest.TestCase):
     def test_create_dataset(self):
         # Tests if description is given
         self.assertRaises(TypeError, create_dataset, self.dataset_id,
-                          self.label_or_tag, self.project_id)
+                          self.label, self.tag, self.project_id)
 
         # Tests if no label or tag is given
         self.assertRaises(TypeError, create_dataset, self.dataset_id,
                           self.description, self.project_id)
 
-        # Tests creation of dataset "foo_dataset"
-        create_dataset(self.dataset_id, self.description, self.label_or_tag,
+        # Tests creation of dataset "foo_dataset" with both label and tag
+        create_dataset(self.dataset_id, self.description, self.label, self.tag,
                        self.project_id)
+
+        # Tests creation of dataset "bar_dataset" with only label supplied
+        create_dataset(self.dataset_id_label_only, self.description, self.label,
+                       self.no_tag, self.project_id)
+
+        # Tests creation of dataset "baz_dataset" with only tag supplied
+        create_dataset(self.dataset_id_tag_only, self.description,
+                       self.no_label, self.tag, self.project_id)
 
         # Tests failure of create_dataset since the dataset "foo_dataset" already exists
         self.assertRaises(RuntimeError, create_dataset, self.dataset_id,
-                          self.description, self.label_or_tag, self.project_id)
+                          self.description, self.label, self.tag,
+                          self.project_id)
 
         # Post conditions
         self.assertTrue(get_dataset(self.project_id, self.dataset_id))
+        self.assertTrue(get_dataset(self.project_id,
+                                    self.dataset_id_label_only))
+        self.assertTrue(get_dataset(self.project_id, self.dataset_id_tag_only))
 
     def tearDown(self):
-        # Deletes dataset "foo_dataset"
+        # Deletes the above created datasets
         delete_dataset(self.project_id, self.dataset_id)
+        delete_dataset(self.project_id, self.dataset_id_label_only)
+        delete_dataset(self.project_id, self.dataset_id_tag_only)
