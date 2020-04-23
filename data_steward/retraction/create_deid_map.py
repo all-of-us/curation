@@ -49,6 +49,9 @@ def get_combined_datasets_for_deid_map(project_id):
     # Find corresponding combined dataset for each deid dataset
     deid_and_combined_df = get_corresponding_combined_dataset(
         all_datasets, deid_datasets)
+    df_row_count = len(deid_and_combined_df.index)
+    logging.info('%s datasets with combined and corresponding deid.' %
+                 df_row_count)
     return deid_and_combined_df
 
 
@@ -75,6 +78,8 @@ def get_corresponding_combined_dataset(all_datasets, deid_datasets):
             })
             deid_and_combined_datasets_df = deid_and_combined_datasets_df.append(
                 new_row, ignore_index=True)
+        else:
+            logging.info('combined dataset not found for %s' % d)
 
     return deid_and_combined_datasets_df
 
@@ -97,16 +102,6 @@ def check_if_deid_map_exists(project_id, dataset):
         return consts.CREATE
 
 
-def rename_deid_map_table_query(project_id, dataset):
-    return consts.RENAME_DEID_MAP_TABLE_QUERY.format(project=project_id,
-                                                     dataset=dataset)
-
-
-def create_deid_map_table_query(project, dataset):
-    return consts.CREATE_DEID_MAP_TABLE_QUERY.format(project=project,
-                                                     dataset=dataset)
-
-
 def create_deid_map_table_queries(project):
     """
     Creates a query list to run to create or rename _deid_map tables in each combined dataset that has a deid dataset
@@ -123,9 +118,13 @@ def create_deid_map_table_queries(project):
         if check == 'skip':
             continue
         if check == 'rename':
-            queries.append(rename_deid_map_table_query(project, dataset))
+            queries.append(
+                consts.RENAME_DEID_MAP_TABLE_QUERY.format(project=project,
+                                                          dataset=dataset))
         if check == 'create':
-            queries.append(create_deid_map_table_query(project, dataset))
+            queries.append(
+                consts.CREATE_DEID_MAP_TABLE_QUERY.format(project=project,
+                                                          dataset=dataset))
     return queries
 
 
@@ -140,8 +139,7 @@ def run_queries(queries):
         logging.info('Creating or renaming _deid_map table with query: %s' %
                      (query_dict['query']))
         job_results = bq_utils.query(q=query_dict['query'], batch=True)
-        rows_affected = job_results['numDmlAffectedRows']
-        logging.info('%s rows written to _deid_map table' % rows_affected)
+        logging.info('_deid_map table created.')
         query_job_id = job_results['jobReference']['jobId']
         query_job_ids.append(query_job_id)
 

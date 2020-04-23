@@ -66,20 +66,11 @@ class CreateDeidMapTest(unittest.TestCase):
 
     @mock.patch('utils.bq.get_table_info_for_dataset')
     def test_check_if_deid_map_exists(self, mock_get_table_info):
-
         expected_create_df = mock_get_table_info.return_value = pd.DataFrame(
             data={
                 'table_name':
                     ['_ehr_consent', common.PERSON, common.OBSERVATION]
             })
-        expected_create_column_list = expected_create_df['table_name'].tolist()
-        if '_deid_map' in expected_create_column_list:
-            expected_create_return = consts.SKIP
-        elif 'deid_map' in expected_create_column_list:
-            expected_create_return = consts.RENAME
-        else:
-            expected_create_return = consts.CREATE
-
         expected_skip_df = mock_get_table_info.return_value = pd.DataFrame(
             data={
                 'table_name': [
@@ -87,14 +78,6 @@ class CreateDeidMapTest(unittest.TestCase):
                     common.OBSERVATION
                 ]
             })
-        expected_skip_column_list = expected_skip_df['table_name'].tolist()
-        if '_deid_map' in expected_skip_column_list:
-            expected_skip_return = consts.SKIP
-        elif 'deid_map' in expected_skip_column_list:
-            expected_skip_return = consts.RENAME
-        else:
-            expected_skip_return = consts.CREATE
-
         expected_rename_df = mock_get_table_info.return_value = pd.DataFrame(
             data={
                 'table_name': [
@@ -102,31 +85,20 @@ class CreateDeidMapTest(unittest.TestCase):
                     common.OBSERVATION
                 ]
             })
-        expected_rename_column_list = expected_rename_df['table_name'].tolist()
-        if '_deid_map' in expected_rename_column_list:
-            expected_rename_return = consts.SKIP
-        elif 'deid_map' in expected_rename_column_list:
-            expected_rename_return = consts.RENAME
-        else:
-            expected_rename_return = consts.CREATE
 
-        self.assertEquals(expected_create_return, 'create')
-        self.assertEquals(expected_skip_return, 'skip')
-        self.assertEquals(expected_rename_return, 'rename')
+        mock_get_table_info.side_effect = [
+            expected_create_df, expected_skip_df, expected_rename_df
+        ]
 
-    def test_rename_deid_map_table_query(self):
-        result = create_deid_map.rename_deid_map_table_query(
+        result = create_deid_map.check_if_deid_map_exists(
             self.project_id, self.dataset_id)
-        expected = consts.RENAME_DEID_MAP_TABLE_QUERY.format(
-            project=self.project_id, dataset=self.dataset_id)
-        self.assertEquals(result, expected)
-
-    def test_create_deid_map_table_query(self):
-        result = create_deid_map.create_deid_map_table_query(
+        self.assertEquals(result, consts.CREATE)
+        result = create_deid_map.check_if_deid_map_exists(
             self.project_id, self.dataset_id)
-        expected = consts.CREATE_DEID_MAP_TABLE_QUERY.format(
-            project=self.project_id, dataset=self.dataset_id)
-        self.assertEquals(result, expected)
+        self.assertEquals(result, consts.SKIP)
+        result = create_deid_map.check_if_deid_map_exists(
+            self.project_id, self.dataset_id)
+        self.assertEquals(result, consts.RENAME)
 
     @mock.patch('retraction.create_deid_map.utils.bq.list_datasets')
     @mock.patch('retraction.create_deid_map.utils.bq.get_table_info_for_dataset'
@@ -163,11 +135,11 @@ class CreateDeidMapTest(unittest.TestCase):
                 continue
             if check == 'rename':
                 expected_queries.append(
-                    create_deid_map.rename_deid_map_table_query(
-                        self.project_id, dataset))
+                    consts.RENAME_DEID_MAP_TABLE_QUERY.format(
+                        project=self.project_id, dataset=dataset))
             if check == 'create':
                 expected_queries.append(
-                    create_deid_map.create_deid_map_table_query(
-                        self.project_id, dataset))
+                    consts.CREATE_DEID_MAP_TABLE_QUERY.format(
+                        project=self.project_id, dataset=dataset))
 
         self.assertEquals(expected_queries, result)
