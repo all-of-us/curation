@@ -161,13 +161,21 @@ class BaseTest:
                               response.result,
                               timeout=15)
 
-        def assertTableValuesMatch(self, fq_table_name, fields, values):
+        def assertTableValuesMatch(self, fq_table_name, fields,
+                                   expected_values):
             """
             Helper function to assert a tables contents.
 
+            This method assumes the first value in each row is a uniquely
+            identifiable value, e.g. a primary key.  It relies on this
+            value being unique when performing the assertEquals check.  So, if
+            two expected_values[0] are the same and the rest of the row is
+            different, this function will likely fail when iterating the list
+            of returned tuples.
+
             :param fq_table_name: table to query
             :param fields: a list of fields to query from the table
-            :param values: a list of values to expect back from the query
+            :param expected_values: a list of values to expect back from the query
             """
             fields_str = ', '.join(fields)
             query = f"select {fields_str} from `{fq_table_name}`"
@@ -177,15 +185,13 @@ class BaseTest:
 
             message = (f"Assertion for table {fq_table_name} failed.\n"
                        f"Response returned these values {response_list}")
-            self.assertEqual(len(values), len(response_list), message)
+            self.assertEqual(len(expected_values), len(response_list), message)
 
-            if isinstance(values[0], (tuple, list)):
+            if isinstance(expected_values[0], (tuple, list)):
                 # assert matches for lists of list/tuple data.  e.g. list of returned fields
-                for value in values:
-                    for result in response_list:
-                        if value[0] == result[0]:
-                            value_list = value[1:]
-                            result_list = result[1:]
+                for value_list in expected_values:
+                    for result_list in response_list:
+                        if value_list[0] == result_list[0]:
                             message = (
                                 f"Assertion for table {fq_table_name} failed.\n"
                                 f"The result {result} doesn't match the "
@@ -194,7 +200,7 @@ class BaseTest:
             else:
                 # assert match of single list/tuple data.  e.g., list of ids.
                 result_id_list = [row[0] for row in response_list]
-                self.assertCountEqual(values, result_id_list)
+                self.assertCountEqual(expected_values, result_id_list)
 
     class CleaningRulesTestBase(BigQueryTestBase):
         """
@@ -232,12 +238,16 @@ class BaseTest:
                 validate with rule execution.  The dictionaries require:
              'fq_table_name':  the fully qualified name of the table being cleaned
              'fq_sanbox_table_name':  the fully qualified name of the sandbox
-                                      table the rule will create if one exists
+                                      table the rule will create if one is
+                                      expected.
              'loaded_ids':  The list of ids loaded by the sql insert statement
              'sandboxed_ids':  the list of ids that will be in the sandbox if
                                the rule sandboxes information
-             'cleaned_ids':  the list of ids that will continue to exist in the
-                             input table after running the cleaning rule
+             'cleaned_values':  the list of ids and expected values that will 
+                                continue to exist in the input table after
+                                running the cleaning rule
+             'fields': a list of fields to select from the table after it has
+                       been cleaned
             """
             # pre-conditions
             # validate sandbox tables don't exist yet
