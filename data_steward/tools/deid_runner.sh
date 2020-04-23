@@ -55,7 +55,7 @@ gcloud auth activate-service-account --key-file="${key_file}"
 gcloud config set project "${APP_ID}"
 
 cdr_deid="${dataset_release_tag}_deid"
-registered_cdr_deid="R{cdr_deid}"
+registered_cdr_deid="R${cdr_deid}"
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
