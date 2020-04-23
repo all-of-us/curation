@@ -168,5 +168,5 @@ if __name__ == '__main__':
                         required=True)
     args = parser.parse_args()
     query_list = create_deid_map_table_queries(args.project_id)
-    # run_queries(query_list)
+    run_queries(query_list)
     logging.info('Creation of _deid_maps complete')
