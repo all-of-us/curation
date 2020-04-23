@@ -161,6 +161,29 @@ class BaseTest:
                               response.result,
                               timeout=15)
 
+        def assertRowIDsMatch(self, fq_table_name, fields, expected_values):
+            """
+            Helper function to assert a table's single field values.
+
+            This method should only be used to compare unique identifier
+            fields, e.g. primary key fields.
+
+            :param fq_table_name: table to query
+            :param fields: a list of fields to query from the table.  For this
+                method, this should be a list of one.
+            :param expected_values: a list of values to expect back from the
+                query.  This is turned into a list of tuple values for this use
+                case.  This list is then passed to assertTableValuesMatch
+
+            :raises:  RuntimeError if the length of fields is greater than 1
+            """
+            if len(fields) > 1:
+                raise RuntimeError('Using too many fields to check identifiers')
+
+            expected_tuples = [(value,) for value in expected_values]
+
+            self.assertTableValuesMatch(fq_table_name, fields, expected_tuples)
+
         def assertTableValuesMatch(self, fq_table_name, fields,
                                    expected_values):
             """
@@ -187,20 +210,19 @@ class BaseTest:
                        f"Response returned these values {response_list}")
             self.assertEqual(len(expected_values), len(response_list), message)
 
-            if isinstance(expected_values[0], (tuple, list)):
-                # assert matches for lists of list/tuple data.  e.g. list of returned fields
-                for value_list in expected_values:
-                    for result_list in response_list:
-                        if value_list[0] == result_list[0]:
-                            message = (
-                                f"Assertion for table {fq_table_name} failed.\n"
-                                f"The result {result} doesn't match the "
-                                f"expected value {value}")
-                            self.assertEqual(value_list, result_list, message)
-            else:
-                # assert match of single list/tuple data.  e.g., list of ids.
-                result_id_list = [row[0] for row in response_list]
-                self.assertCountEqual(expected_values, result_id_list)
+            # assert matches for lists of tuple data.  e.g. list of returned fields
+            for value_tuple in expected_values:
+                for result in response_list:
+                    if value_tuple[0] == result[0]:
+                        # have to get the response in this format.  else,
+                        # a comparison of a tuple and a Row object fails
+                        result_tuple = result[:]
+                        message = (
+                            f"Assertion for table {fq_table_name} failed.\n"
+                            f"The result tuple {result_tuple} doesn't match the "
+                            f"expected value tuple {value_tuple}\n{response_list}\n"
+                        )
+                        self.assertEqual(value_tuple, result_tuple, message)
 
     class CleaningRulesTestBase(BigQueryTestBase):
         """
@@ -262,11 +284,11 @@ class BaseTest:
             for table_info in tables_and_test_values:
                 fq_table_name = table_info.get('fq_table_name', 'UNSET')
                 values = table_info.get('loaded_ids', [])
-                # this is assuming the uniquely identified field name is specified
+                # this is assuming the uniquely identifiable field name is specified
                 # first in the fields list.  this check verifies by id field
                 # that the table data loaded correctly.
                 fields = [table_info.get('fields', [])[0]]
-                self.assertTableValuesMatch(fq_table_name, fields, values)
+                self.assertRowIDsMatch(fq_table_name, fields, values)
 
             if self.query_class:
                 # test:  get the queries
@@ -291,8 +313,8 @@ class BaseTest:
                 fq_sandbox_name = table_info.get('fq_sandbox_table_name')
                 if fq_sandbox_name:
                     values = table_info.get('sandboxed_ids', [])
-                    # this is assuming the uniquely identified field name is specified
+                    # this is assuming the uniquely identifiable field name is specified
                     # first in the fields list.  this check verifies by id field
                     # that the table data loaded correctly.
                     fields = [table_info.get('fields', [])[0]]
-                    self.assertTableValuesMatch(fq_sandbox_name, fields, values)
+                    self.assertRowIDsMatch(fq_sandbox_name, fields, values)
