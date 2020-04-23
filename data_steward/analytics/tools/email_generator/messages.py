@@ -24,9 +24,14 @@ great_job = """
 
 sign_off = """
 If have questions about our metrics, please consult the AoU EHR website at this link: {link} under the 'Data Quality Metrics' tab at the top of the page. This site contains descriptions, videos, and SQL queries that can help you troubleshoot your data quality.
+
+Finally, please be sure to visit the 'results.html' file populated in your Google bucket to find other potential errors related to your EHR submissions.
+
+Please also do not hesitate to reach out to the DRC at datacuration@researchallofus.org with any questions.
+
 Best regards,
 Noah Engel
-Data Analyst | Columbia University Medical Center
+Data Analyst | Columbia University Medical Center\n
 """
 
 link = "https://sites.google.com/view/ehrupload"

@@ -2,6 +2,7 @@
 File is intended to establish a 'HPO class' that can be used
 to store data quality metrics for each HPO in an easy and
 identifiable fashion.
+
 Class was used as a means for storing information as the ability
 to add functions could prove useful in future iterations of the
 script.
@@ -18,36 +19,44 @@ class DataQualityMetric:
     """
 
     def __init__(
-        self, hpo='', table='', metric_type='', value=0,
+        self, hpo='', table_or_class='', metric_type='', value=0,
             data_quality_dimension='', first_reported=date.today(),
             link=''):
 
         """
         Used to establish the attributes of the DataQualityMetric
         object being instantiated.
+
         Parameters
         ----------
         hpo (string): name of the HPO being associated with the
             data quality metric in question (e.g. nyc_cu)
-        table (string): name of the table whose data quality metric
-            is being determined (e.g. Measurement)
+
+        table_or_class (string): name of the table or class whose
+            data quality metric is being determined
+            (e.g. Measurement, ACE Inhibitor)
+
         metric_type (string): name of the metric that is being
             determined (e.g. duplicates)
+
         value (float): value that represents the quantitative value
             of the data quality metric being investigated
+
         data_quality_dimension (string): represents whether the
             metric_type being investigated is related to the
             conformance, completeness, or plausibility of data
             quality with respect to the Kahn framework
+
         first_reported (datetime.date): represents the time
             at which this metric (with all of the other parameters
             being exactly the same) was first reported
+
         link (string): link to the AoU EHR Operations page that
             can help the site troubleshoot its data quality
         """
 
         self.hpo = hpo
-        self.table = table
+        self.table_or_class = table_or_class
         self.metric_type = metric_type
         self.value = value
         self.data_quality_dimension = data_quality_dimension
@@ -63,13 +72,13 @@ class DataQualityMetric:
         """
         print(
             "HPO: {hpo}\n"
-            "Table: {table}\n"
+            "Table Or Class: {table_or_class}\n"
             "Metric Type: {metric_type}\n"
             "Value: {value}\n"
             "Data Quality Dimension: {dqd}\n"
             "First Reported: {date}\n"
             "Link: {link}".format(
-                hpo=self.hpo, table=self.table,
+                hpo=self.hpo, table_or_class=self.table_or_class,
                 metric_type=self.metric_type,
                 value=self.value, dqd=self.data_quality_dimension,
                 date=self.first_reported,
@@ -81,6 +90,7 @@ class DataQualityMetric:
         are associated with a DataQualityMetric object. This will
         ultimately be used to populate the columns of a
         pandas dataframe.
+
         Return
         ------
         attribute_names (list): list of the attribute names
@@ -88,7 +98,7 @@ class DataQualityMetric:
         """
 
         attribute_names = [
-            "HPO", "Table", "Metric Type",
+            "HPO", "Table/Class", "Metric Type",
             "Value", "Data Quality Dimension", "First Reported",
             "Link"]
 
@@ -101,6 +111,7 @@ class DataQualityMetric:
         the get_list_of_attribute_names function above. This
         will be used to populate the dataframe with data quality
         issues.
+
         Return
         ------
         attributes (list): list of the attributes (values, strings)
@@ -108,7 +119,7 @@ class DataQualityMetric:
         """
 
         attributes = [
-            self.hpo, self.table, self.metric_type, self.value,
+            self.hpo, self.table_or_class, self.metric_type, self.value,
             self.data_quality_dimension, self.first_reported, self.link]
 
         return attributes
@@ -124,18 +135,23 @@ class HPO:
             self, name, full_name, concept_success, duplicates,
             end_before_begin, data_after_death,
             route_success, unit_success, measurement_integration,
-            ingredient_integration):
+            ingredient_integration, date_datetime_disparity,
+            erroneous_dates, person_id_failure_rate):
 
         """
         Used to establish the attributes of the HPO object being instantiated.
         Parameters
         ----------
         self (HPO object): the object to be created
+
         name (str): name of the HPO ID to create (e.g. nyc_cu)
+
         full_name (str): full name of the HPO
+
         all other optional parameters are intended to be lists. These
         lists should contain DataQualityMetric objects that have all
         of the relevant pieces pertaining to said metric object.
+
         the exact descriptions of the data quality metrics can be found
         on the AoU HPO website at the following link:
             sites.google.com/view/ehrupload
@@ -155,6 +171,10 @@ class HPO:
         self.measurement_integration = measurement_integration
         self.ingredient_integration = ingredient_integration
 
+        self.date_datetime_disparity = date_datetime_disparity
+        self.erroneous_dates = erroneous_dates
+        self.person_id_failure_rate = person_id_failure_rate
+
     def add_attribute_with_string(self, metric, dq_object):
         """
         Function is designed to enable the script to add
@@ -162,10 +182,12 @@ class HPO:
         define an HPO object. This will allow us to easily
         associate an HPO object with its constituent data
         quality metrics
+
         Parameters
         ----------
         metric (string): the name of the sheet that contains the
             dimension of data quality to be investigated
+
         dq_object (DataQualityMetric): object that contains
             the information for a particular aspect of the
             site's data quality (NOTE: dq_object.hpo should
@@ -196,6 +218,15 @@ class HPO:
         elif metric == 'Unit Concept ID Success Rate':
             self.unit_success.append(dq_object)
 
+        elif metric == 'Date/Datetime Disparity':
+            self.date_datetime_disparity.append(dq_object)
+
+        elif metric == 'Erroneous Dates':
+            self.erroneous_dates.append(dq_object)
+
+        elif metric == 'Person ID Failure Rate':
+            self.erroneous_dates.append(dq_object)
+
         else:
             print("Unrecognized metric input: {metric} for {hpo}".format(
                 metric=metric, hpo=self.name))
@@ -206,15 +237,18 @@ class HPO:
         Function is used to create a catalogue of the 'failing' data
         quality metrics at defined by the thresholds established by
         the appropriate dictionary from relevant_dictionaries.
+
         Parameters
         ----------
         self (HPO object): the object whose 'failing metrics' are to
             be determined
+
         Returns
         -------
         failing_metrics (list): has a list of the data quality metrics
             for the HPO that have 'failed' based on the thresholds
             provided
+
         NOTE: if no data quality problems are found, however, the function
         will return 'None' to signify that no issues arose
         """
@@ -256,6 +290,21 @@ class HPO:
             if ingredient_integration_obj.value < \
                     thresholds['route_success_min']:
                 failing_metrics.append(ingredient_integration_obj)
+
+        for date_disparity_obj in self.date_datetime_disparity:
+            if date_disparity_obj.value > \
+                    thresholds['date_datetime_disparity_max']:
+                failing_metrics.append(date_disparity_obj)
+
+        for erroneous_date_obj in self.erroneous_dates:
+            if erroneous_date_obj.value > \
+                    thresholds['erroneous_dates_max']:
+                failing_metrics.append(erroneous_date_obj)
+
+        for person_id_failure_obj in self.person_id_failure_rate:
+            if person_id_failure_obj.value > \
+                    thresholds['person_failure_rate_max']:
+                failing_metrics.append(person_id_failure_obj)
 
         if not failing_metrics:  # no errors logged
             return None

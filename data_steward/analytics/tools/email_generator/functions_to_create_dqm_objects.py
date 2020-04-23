@@ -89,6 +89,7 @@ def get_info(
     data_dictionary = {}
 
     for col_label, number in data_info.iteritems():
+
         if col_label in columns_to_collect:
 
             # data for table for site does not exist
