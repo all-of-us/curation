@@ -233,8 +233,8 @@ class BaseTest:
             function, special setup features do not need to be accounted for
             in this test because they will be executed by the engine.
 
-            :param tables_and_test_values: a list of dictionaries where each 
-                dictionary defines table expectations for each OMOP table to 
+            :param tables_and_test_values: a list of dictionaries where each
+                dictionary defines table expectations for each OMOP table to
                 validate with rule execution.  The dictionaries require:
              'fq_table_name':  the fully qualified name of the table being cleaned
              'fq_sanbox_table_name':  the fully qualified name of the sandbox
@@ -243,11 +243,15 @@ class BaseTest:
              'loaded_ids':  The list of ids loaded by the sql insert statement
              'sandboxed_ids':  the list of ids that will be in the sandbox if
                                the rule sandboxes information
-             'cleaned_values':  the list of ids and expected values that will 
-                                continue to exist in the input table after
-                                running the cleaning rule
+             'cleaned_values':  the list of tupled ids and expected values that will
+                                exist in the cleaned table after
+                                running the cleaning rule.  the order of the
+                                expected values must match the order of the fields
+                                defined in fields.
              'fields': a list of fields to select from the table after it has
-                       been cleaned
+                       been cleaned. the listed order should match the expected
+                       order of the cleaned_values tuples.  the first item in
+                       the list should be a unique identifier, e.g. primary key field
             """
             # pre-conditions
             # validate sandbox tables don't exist yet
@@ -258,6 +262,9 @@ class BaseTest:
             for table_info in tables_and_test_values:
                 fq_table_name = table_info.get('fq_table_name', 'UNSET')
                 values = table_info.get('loaded_ids', [])
+                # this is assuming the uniquely identified field name is specified
+                # first in the fields list.  this check verifies by id field
+                # that the table data loaded correctly.
                 fields = [table_info.get('fields', [])[0]]
                 self.assertTableValuesMatch(fq_table_name, fields, values)
 
@@ -284,5 +291,8 @@ class BaseTest:
                 fq_sandbox_name = table_info.get('fq_sandbox_table_name')
                 if fq_sandbox_name:
                     values = table_info.get('sandboxed_ids', [])
+                    # this is assuming the uniquely identified field name is specified
+                    # first in the fields list.  this check verifies by id field
+                    # that the table data loaded correctly.
                     fields = [table_info.get('fields', [])[0]]
                     self.assertTableValuesMatch(fq_sandbox_name, fields, values)
