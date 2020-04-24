@@ -137,12 +137,12 @@ bq update --description "${version} combined clean version of ${rdr_dataset} + $
 bq rm -r -d "${combined_staging}_sandbox"
 bq rm -r -d "${combined_staging}"
 
-dbrowser="${combined}_dbrowser"
+combined_release="${combined}_release"
 
 # Create a dataset for data browser team
-bq mk --dataset --description "intermediary dataset to apply cleaning rules on ${combined_backup}" ${app_id}:${dbrowser}
+bq mk --dataset --description "${version} Release version of combined dataset with ${rdr_dataset} + ${unioned_ehr_dataset}" ${app_id}:${combined_release}
 
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined} --target_dataset ${dbrowser}
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined} --target_dataset ${combined_release}
 
 unset PYTHOPATH
 

@@ -54,7 +54,8 @@ export GOOGLE_CLOUD_PROJECT="${APP_ID}"
 gcloud auth activate-service-account --key-file="${key_file}"
 gcloud config set project "${APP_ID}"
 
-cdr_deid="${cdr_id}_deid"
+cdr_deid="${dataset_release_tag}_deid"
+registered_cdr_deid="R${cdr_deid}"
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
@@ -69,34 +70,34 @@ export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
 version=$(git describe --abbrev=0 --tags)
 
 # create empty de-id dataset
-bq mk --dataset --description "${version} deidentified version of ${cdr_id}" "${APP_ID}":"${cdr_deid}"
+bq mk --dataset --description "${version} deidentified version of ${cdr_id}" "${APP_ID}":"${registered_cdr_deid}"
 
 # create the clinical tables
-python "${DATA_STEWARD_DIR}/cdm.py" "${cdr_deid}"
+python "${DATA_STEWARD_DIR}/cdm.py" "${registered_cdr_deid}"
 
 # copy OMOP vocabulary
-python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${cdr_deid}"
-"${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${cdr_deid}"
+python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${registered_cdr_deid}"
+"${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${registered_cdr_deid}"
 
 # apply deidentification on combined dataset
 python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive -c
 
 # generate ext tables in deid dataset
-python "${TOOLS_DIR}/generate_ext_tables.py" -p "${APP_ID}" -d "${cdr_deid}" -c "${cdr_id}" -s
+python "${TOOLS_DIR}/generate_ext_tables.py" -p "${APP_ID}" -d "${registered_cdr_deid}" -c "${cdr_id}" -s
 
-cdr_deid_base_staging="${cdr_deid}_base_staging"
-cdr_deid_base="${cdr_deid}_base"
-cdr_deid_clean_staging="${cdr_deid}_clean_staging"
-cdr_deid_clean="${cdr_deid}_clean"
+cdr_deid_base_staging="${registered_cdr_deid}_base_staging"
+cdr_deid_base="${registered_cdr_deid}_base"
+cdr_deid_clean_staging="${registered_cdr_deid}_clean_staging"
+cdr_deid_clean="${registered_cdr_deid}_clean"
 
 # Copy cdr_metadata table
-python "${TOOLS_DIR}/add_cdr_metadata.py" --component "copy" --project_id ${app_id} --target_dataset ${cdr_deid} --source_dataset ${cdr_id}
+python "${TOOLS_DIR}/add_cdr_metadata.py" --component "copy" --project_id ${app_id} --target_dataset ${registered_cdr_deid} --source_dataset ${cdr_id}
 
 # create empty de-id_clean dataset to apply cleaning rules
-bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${cdr_deid}" ${APP_ID}:${cdr_deid_base_staging}
+bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${registered_cdr_deid}" ${APP_ID}:${cdr_deid_base_staging}
 
 # copy de_id dataset to a clean version
-"${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid}" --target_dataset "${cdr_deid_base_staging}"
+"${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${registered_cdr_deid}" --target_dataset "${cdr_deid_base_staging}"
 
 export BIGQUERY_DATASET_ID="${cdr_deid_base_staging}"
 export COMBINED_DEID_DATASET_ID="${cdr_deid_base_staging}"
