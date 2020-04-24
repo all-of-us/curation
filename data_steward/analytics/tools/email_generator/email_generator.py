@@ -130,6 +130,12 @@ def assemble_final_messages(unique_metrics, hpo_id):
     relevant_persons = recipient_dict[hpo_id]
 
     message += """\n
+    Email Title:
+    ------------
+    Data Check Feedback (April 2020) - {site}""".format(
+        site=ehr_site)
+
+    message += """\n
     Contact the following individuals:
     ----------------------------------
     {relevant_persons}

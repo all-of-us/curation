@@ -151,7 +151,7 @@ columns_to_document_for_sheet_email = {
     'measurement_units': ['total_unit_success_rate'],
 
     'sites_measurement': [
-        'Physical_Measurement',	'CMP', ' CBCwDiff',
+        'Physical_Measurement',	'CMP', 'CBCwDiff',
         'CBC', 'Lipid',	'All_Measurements'],
 
     'end_before_begin': [

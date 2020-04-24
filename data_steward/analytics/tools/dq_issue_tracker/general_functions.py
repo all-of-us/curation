@@ -16,16 +16,21 @@ def load_files(sheet_name, file_name):
     """
     Function loads the relevant sheets from all of the
     files in the directory.
+
     'Relevant sheet' is defined by previous user input.
+
     This function is also designed so it skips over instances where
     the user's input only exists in some of the defined sheets.
+
     Parameters
     ----------
     sheet (str): represents the sheet from the analysis reports
         whose metrics will be compared over time
+
     file_name (str): name of the user-specified Excel files in the
         in the current directory. this should be an analytics report
         to be scanned
+
     Returns
     -------
     sheet (df): dataframe contains info about data quality
@@ -66,11 +71,13 @@ def generate_hpo_id_col(current_file):
     """
     Function is used to get the names of all the HPOs in the
     current file.
+
     Parameters
     ----------
     current_file (str): user-specified Excel file that should
         reside in the current directory. Files are analytics
         reports to be scanned.
+
     Returns
     -------
     hpo_id_col (list): list of the strings that should go
@@ -94,13 +101,17 @@ def find_hpo_row(sheet, hpo):
     """
     Finds the row index of a particular HPO site within
     a larger sheet.
+
     Parameters
     ----------
     sheet (dataframe): dataframe with all of the data quality
         metrics for the sites.
+
     hpo (string): represents the HPO site whose row in
         the particular sheet needs to be determined
-    :returns
+
+    Returns
+    -------
     row_num (int): row number where the HPO site of question
         lies within the sheet. returns none if the row is not
         in the sheet in question but exists in other sheets
@@ -126,20 +137,26 @@ def get_err_rate(sheet, row_num, metric, hpo_name, column):
     that we traditionally report out to the sites. This rate
     will be used to ultimately determine if the data quality
     metric is up to part.
+
     Parameters
     ----------
     sheet (df): dataframe contains info about data quality
         for all of the sites on a particular dimension of data
         quality for a particular date
+
     row_num (int): row number where the HPO site of question
         lies within the sheet
+
     metric (string): the name of the sheet that contains the
         dimension of data quality to be investigated
+
     hpo_name (string): ID for the HPO to be investigated
+
     column (string): column to be used to find the relevant
         quantitative metric that captures the data quality
         issue (often includes the metric name and relevant
         table)
+
     Returns
     -------
     val (float): value that represents the quantitative value
@@ -174,10 +191,12 @@ def sort_and_convert_dates(file_names):
     names are then converted into datetime objects so
     they could eventually be assigned to DataQualityMetric
     objects.
+
     Parameters
     ----------
     file_names (list): list of the files for the main
         script
+
     Returns
     -------
     ordered_dates_dt (list) list of ordered dates

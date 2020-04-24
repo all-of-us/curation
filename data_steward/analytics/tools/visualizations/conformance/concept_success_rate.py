@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -25,6 +25,7 @@ import xlrd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from math import pi
+# %matplotlib inline
 
 # +
 sheets = []
@@ -49,10 +50,11 @@ for file in file_names:
         s = pd.read_excel(file, sheet)
         table_sheets.append(s)
 
-hpo_id_cols = table_sheets[0]
-hpo_id_cols  = list(hpo_id_cols[hpo_id_cols.columns[0]])  # reset to first column
+date_cols = table_sheets[0].columns
+date_cols = (list(date_cols))
 
-date_cols = table_sheets[0].columns[1:]
+hpo_id_cols = table_sheets[0].index
+hpo_id_cols = (list(hpo_id_cols))
 # -
 
 # ### Converting the numbers as needed and putting into a dictionary
@@ -62,7 +64,7 @@ new_table_sheets = {}
 
 for name, sheet in zip(sheet_names, table_sheets):
     sheet_cols = sheet.columns
-    sheet_cols = sheet_cols[1:]
+    sheet_cols = sheet_cols[0:]
     new_df = pd.DataFrame(columns=sheet_cols)
 
     for col in sheet_cols:
@@ -175,7 +177,7 @@ site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_cede
 print(len(site_name_list))
 
 # +
-name_of_interest = 'aggregate_info'
+name_of_interest = 'nyc_cu'
 
 if name_of_interest not in site_name_list:
     raise ValueError("Name not found in the list of HPO site names.")    
@@ -226,10 +228,10 @@ for file in file_names_hpo_sheets:
         hpo_sheets.append(s)
         
 
-table_id_cols = hpo_sheets[0]
-table_id_cols  = list(table_id_cols[table_id_cols.columns[0]])  # reset to first column
+table_id_cols = list(hpo_sheets[0].index)
 
-date_cols = hpo_sheets[0].columns[1:]
+date_cols = table_sheets[0].columns
+date_cols = (list(date_cols))
 
 for idx, table_id in enumerate(table_id_cols):
     under_encountered = False
@@ -250,7 +252,7 @@ for idx, table_id in enumerate(table_id_cols):
 
 # +
 new_hpo_sheets = []
-start_idx = 1  # first does not have data
+start_idx = 0
 
 for sheet in hpo_sheets:
     sheet_cols = sheet.columns
@@ -271,7 +273,7 @@ for sheet in hpo_sheets:
 fig, ax = plt.subplots(figsize=(9, 6))
 sns.heatmap(new_hpo_sheets[idx_of_interest], annot=True, annot_kws={"size": 14},
             fmt='g', linewidths=.5, ax=ax, yticklabels=table_id_cols,
-            xticklabels=date_cols, cmap="RdYlGn")
+            xticklabels=date_cols, cmap="RdYlGn", vmin=0, vmax=100)
 
 ax.set_title("Concept Success Rates for {}".format(name_of_interest), size=14)
 
