@@ -197,8 +197,11 @@ class BaseTest:
             of returned tuples.
 
             :param fq_table_name: table to query
-            :param fields: a list of fields to query from the table
-            :param expected_values: a list of values to expect back from the query
+            :param fields: a list of fields to query from the table, the first
+                field should be a uniquely identifying field
+            :param expected_values: a list of values to expect back from the
+                query.  values should be defined in the same order as the
+                listed fields.
             """
             fields_str = ', '.join(fields)
             query = f"select {fields_str} from `{fq_table_name}`"
