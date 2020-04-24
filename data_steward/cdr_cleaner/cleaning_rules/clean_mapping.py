@@ -1,3 +1,14 @@
+"""
+Generic clean up rule to ensure each mapping table contains only the records for
+domain tables existing after the dataset has been fully cleaned.
+
+Original Issue: DC-715
+
+The intent is to ensure the mapping table continues to represent a true record of the
+cleaned domain table by sandboxing the mapping table records and rows dropped
+when the records of the row references have been dropped by a cleaning rule.
+"""
+
 import logging
 
 import constants.bq_utils as bq_consts
@@ -38,7 +49,8 @@ ISSUE_NUMBER = 'DC-715'
 
 class CleanMappingExtTables(BaseCleaningRule):
     """
-    Suppress rows by values in the observation_source_concept_id field.
+    Ensures each domain mapping table only contains records for domain tables
+    that exist after the dataset has been fully cleaned.
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
