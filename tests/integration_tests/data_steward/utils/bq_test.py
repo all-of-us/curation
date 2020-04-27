@@ -59,3 +59,4 @@ class BqTest(unittest.TestCase):
 
         # Post conditions
         self.assertIsInstance(results, bigquery.Dataset)
+        self.assertEqual(results.labels, self.label_or_tag)
