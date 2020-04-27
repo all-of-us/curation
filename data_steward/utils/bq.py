@@ -7,7 +7,7 @@ import os
 
 # Third-party imports
 from google.cloud import bigquery
-from google.api_core.exceptions import GoogleAPIError, Conflict, NotFound
+from google.api_core.exceptions import GoogleAPIError, NotFound
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -155,12 +155,15 @@ def get_dataset(project_id, dataset_id):
     return client.get_dataset(dataset_id)
 
 
-def define_dataset(project_id, dataset_id, description, labels):
+def define_dataset(project_id, dataset_id, description, label_or_tag):
     """
     Define the dataset reference.
 
     :param project_id:  string name of the project to search for a dataset
     :param dataset_id:  string name of the dataset id to return a reference of
+    :param description:  description for the dataset
+    :param label_or_tag:  labels for the dataset = Dict[str, str]
+                          tags for the dataset = Dict[str, '']
 
     :return: a dataset reference object.
 
@@ -176,12 +179,15 @@ def define_dataset(project_id, dataset_id, description, labels):
     if not dataset_id:
         raise RuntimeError("Provide a dataset_id")
 
+    if not label_or_tag:
+        raise RuntimeError("Please provide a label or tag")
+
     dataset_id = f"{project_id}.{dataset_id}"
 
     # Construct a full Dataset object to send to the API.
     dataset = bigquery.Dataset(dataset_id)
     dataset.description = description
-    dataset.labels = labels
+    dataset.labels = label_or_tag
     dataset.location = "US"
 
     return dataset
@@ -211,9 +217,10 @@ def delete_dataset(project_id,
 
 def is_validation_dataset_id(dataset_id):
     """
-    Checks if dataset_id is a validation dataset
+    Check if  bq_consts.VALIDATION_PREFIX is in the dataset_id
 
-    :param dataset_id: identifies the dataset
+    :param dataset_id: ID (name) of the dataset to validate
+
     :return: a bool indicating whether dataset is a validation_dataset
     """
     return consts.VALIDATION_PREFIX in dataset_id
@@ -221,9 +228,10 @@ def is_validation_dataset_id(dataset_id):
 
 def get_latest_validation_dataset_id(project_id):
     """
-    Get the latest validation_dataset_id based on most recent creation time
+    Get the latest validation_dataset_id based on most recent creationTime.
 
-    :param project_id: identifies the project
+    :param project_id: ID (name) of the project containing the dataset
+
     :return: the most recent validation_dataset_id
     """
 
