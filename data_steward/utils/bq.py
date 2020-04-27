@@ -161,6 +161,9 @@ def define_dataset(project_id, dataset_id, description, label_or_tag):
 
     :param project_id:  string name of the project to search for a dataset
     :param dataset_id:  string name of the dataset id to return a reference of
+    :param description:  description for the dataset
+    :param label_or_tag:  labels for the dataset = Dict[str, str]
+                          tags for the dataset = Dict[str, '']
 
     :return: a dataset reference object.
 
