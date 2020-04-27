@@ -7,7 +7,7 @@ import os
 
 # Third-party imports
 from google.cloud import bigquery
-from google.api_core.exceptions import GoogleAPIError, Conflict, NotFound
+from google.api_core.exceptions import GoogleAPIError, NotFound
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -155,7 +155,7 @@ def get_dataset(project_id, dataset_id):
     return client.get_dataset(dataset_id)
 
 
-def define_dataset(project_id, dataset_id, description, labels):
+def define_dataset(project_id, dataset_id, description, label_or_tag):
     """
     Define the dataset reference.
 
@@ -176,12 +176,15 @@ def define_dataset(project_id, dataset_id, description, labels):
     if not dataset_id:
         raise RuntimeError("Provide a dataset_id")
 
+    if not label_or_tag:
+        raise RuntimeError("Please provide a label or tag")
+
     dataset_id = f"{project_id}.{dataset_id}"
 
     # Construct a full Dataset object to send to the API.
     dataset = bigquery.Dataset(dataset_id)
     dataset.description = description
-    dataset.labels = labels
+    dataset.labels = label_or_tag
     dataset.location = "US"
 
     return dataset
@@ -242,84 +245,3 @@ def get_latest_validation_dataset_id(project_id):
             return sorted(validation_datasets, key=lambda x: x[0],
                           reverse=True)[0][1]
     return None
-
-
-def dataset_exists(dataset_id, project_id):
-    """
-    Checks if the dataset exists via dataset id
-
-    :param dataset_id:  ID (name) of the dataset to check
-    :param project_id:  ID (name) of the project to check for the dataset
-
-    :raises:  RuntimeError if a project_id is not supplied
-    :raises:  RuntimeError if a dataset_id is not supplied
-    :returns:  True if the dataset exists
-    :returns:  False if the dataset does not exist
-    """
-    if not project_id:
-        raise RuntimeError("Please specify a project")
-    if not dataset_id:
-        raise RuntimeError("Please specify a dataset to check if exists")
-    else:
-        client = get_client(project_id)
-        dataset_id = f"{project_id}.{dataset_id}"
-        dataset = bigquery.Dataset(dataset_id)
-
-        try:
-            client.get_dataset(dataset)
-            return True
-        except NotFound:
-            return False
-
-
-def create_dataset(dataset_id, description, label, tag, project_id):
-    """
-    Creates a new dataset
-
-    :param project_id:  ID (name) of the project in which to create the dataset, is required
-    :param dataset_id:  ID (name) to give the new dataset, is required
-    :param description:  description of the dataset, is required
-    :param label:  Dict[str,str] labels for the dataset
-    :param tag: Dict[str, ''] tag for the dataset
-
-    :raises:  RuntimeError if the dataset does not have project_id
-    :raises:  RuntimeError if the dataset does not have dataset_id
-    :raises:  RuntimeError if the dataset does not have a description
-    :raises:  RuntimeError if the dataset does not have a label or table
-
-    :returns:  A bigquery Client object
-    """
-    if dataset_exists(dataset_id, project_id) == False:
-        if description.isspace() or not description:
-            raise RuntimeError(
-                "Please provide a description to create a dataset")
-
-        if not label and not tag:
-            raise RuntimeError(
-                "Label and/or tag is required to create a dataset")
-
-        dataset_id = f"{project_id}.{dataset_id}"
-
-        # Construct a full Dataset object to send to the API.
-        dataset = bigquery.Dataset(dataset_id)
-        dataset.description = description
-
-        if label is None:
-            dataset.labels = tag
-        elif tag is None:
-            dataset.labels = label
-        else:
-            label_and_tag = {}
-
-            for item in [label, tag]:
-                label_and_tag.update(item)
-
-            dataset.labels = label_and_tag
-
-        client = get_client(project_id)
-        client.create_dataset(dataset, exists_ok=False)
-
-        return client
-
-    else:
-        raise RuntimeError(f'{dataset_id} already exists')
