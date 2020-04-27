@@ -75,8 +75,7 @@ class EnsureDateDatetime(unittest.TestCase):
             [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
 
         # test
-        result_list = self.query_class.get_query_specs(self.project_id,
-                                                       self.dataset_id)
+        result_list = self.query_class.get_query_specs()
 
         # post conditions
         expected_list = []

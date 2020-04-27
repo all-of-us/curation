@@ -161,42 +161,71 @@ class BaseTest:
                               response.result,
                               timeout=15)
 
-        def assertSandboxTableContentsMatch(self, fq_table_name, field, values,
-                                            message):
+        def assertRowIDsMatch(self, fq_table_name, fields, expected_values):
             """
-            Helper function to assert a  sandbox tables contents.
+            Helper function to assert a table's single field values.
+
+            This method should only be used to compare unique identifier
+            fields, e.g. primary key fields.
 
             :param fq_table_name: table to query
-            :param field: the field to retrieve data for
-            :param values: a list of values to expect back from the query
-            :param message: a failure message for this type of assertion
+            :param fields: a list of fields to query from the table.  For this
+                method, this should be a list of one.
+            :param expected_values: a list of values to expect back from the
+                query.  This is turned into a list of tuple values for this use
+                case.  This list is then passed to assertTableValuesMatch
+
+            :raises:  RuntimeError if the length of fields is greater than 1
             """
-            query = f"select {field} from `{fq_table_name}`"
-            response = self.client.query(query)
-            # start the job and wait for it to complete
-            result_list = list(response.result())
+            if len(fields) > 1:
+                raise RuntimeError('Using too many fields to check identifiers')
 
-            result_id_list = [row[0] for row in result_list]
+            expected_tuples = [(value,) for value in expected_values]
 
-            self.assertCountEqual(values, result_id_list, message)
+            self.assertTableValuesMatch(fq_table_name, fields, expected_tuples)
 
-        def assertOMOPTableContentsMatch(self, fq_table_name, values, message):
+        def assertTableValuesMatch(self, fq_table_name, fields,
+                                   expected_values):
             """
             Helper function to assert a tables contents.
 
+            This method assumes the first value in each row is a uniquely
+            identifiable value, e.g. a primary key.  It relies on this
+            value being unique when performing the assertEquals check.  So, if
+            two expected_values[0] are the same and the rest of the row is
+            different, this function will likely fail when iterating the list
+            of returned tuples.
+
             :param fq_table_name: table to query
-            :param values: a list of values to expect back from the query
-            :param message: a failure message for this type of assertion
+            :param fields: a list of fields to query from the table, the first
+                field should be a uniquely identifying field
+            :param expected_values: a list of values to expect back from the
+                query.  values should be defined in the same order as the
+                listed fields.
             """
-            table_name = fq_table_name.split('.')[-1]
-            query = f"select {table_name}_id from `{fq_table_name}`"
+            fields_str = ', '.join(fields)
+            query = f"select {fields_str} from `{fq_table_name}`"
             response = self.client.query(query)
             # start the job and wait for it to complete
-            result_list = list(response.result())
+            response_list = list(response.result())
 
-            result_id_list = [row[0] for row in result_list]
+            message = (f"Assertion for table {fq_table_name} failed.\n"
+                       f"Response returned these values {response_list}")
+            self.assertEqual(len(expected_values), len(response_list), message)
 
-            self.assertCountEqual(values, result_id_list, message)
+            # assert matches for lists of tuple data.  e.g. list of returned fields
+            for value_tuple in expected_values:
+                for result in response_list:
+                    if value_tuple[0] == result[0]:
+                        # have to get the response in this format.  else,
+                        # a comparison of a tuple and a Row object fails
+                        result_tuple = result[:]
+                        message = (
+                            f"Assertion for table {fq_table_name} failed.\n"
+                            f"The result tuple {result_tuple} doesn't match the "
+                            f"expected value tuple {value_tuple}\n{response_list}\n"
+                        )
+                        self.assertEqual(value_tuple, result_tuple, message)
 
     class CleaningRulesTestBase(BigQueryTestBase):
         """
@@ -218,7 +247,7 @@ class BaseTest:
             # The query class that is being executed.
             cls.query_class = None
 
-        def default_drop_rows_test(self, tables_and_test_values):
+        def default_test(self, tables_and_test_values):
             """
             Test passing the query specifications to the clean engine module.
 
@@ -229,19 +258,25 @@ class BaseTest:
             function, special setup features do not need to be accounted for
             in this test because they will be executed by the engine.
 
-            :param tables_and_test_values: a list of dictionaries where each 
-                dictionary defines table expectations for each OMOP table to 
+            :param tables_and_test_values: a list of dictionaries where each
+                dictionary defines table expectations for each OMOP table to
                 validate with rule execution.  The dictionaries require:
-             'name':  common name of the table being cleaned and defining
-                      execution expectations for
              'fq_table_name':  the fully qualified name of the table being cleaned
              'fq_sanbox_table_name':  the fully qualified name of the sandbox
-                                      table the rule will create if one exists
+                                      table the rule will create if one is
+                                      expected.
              'loaded_ids':  The list of ids loaded by the sql insert statement
              'sandboxed_ids':  the list of ids that will be in the sandbox if
                                the rule sandboxes information
-             'cleaned_ids':  the list of ids that will continue to exist in the
-                             input table after running the cleaning rule
+             'cleaned_values':  the list of tupled ids and expected values that will
+                                exist in the cleaned table after
+                                running the cleaning rule.  the order of the
+                                expected values must match the order of the fields
+                                defined in fields.
+             'fields': a list of fields to select from the table after it has
+                       been cleaned. the listed order should match the expected
+                       order of the cleaned_values tuples.  the first item in
+                       the list should be a unique identifier, e.g. primary key field
             """
             # pre-conditions
             # validate sandbox tables don't exist yet
@@ -252,10 +287,11 @@ class BaseTest:
             for table_info in tables_and_test_values:
                 fq_table_name = table_info.get('fq_table_name', 'UNSET')
                 values = table_info.get('loaded_ids', [])
-                message = (f"The pre-condition query did not return the "
-                           f"expected number of rows.")
-                self.assertOMOPTableContentsMatch(fq_table_name, values,
-                                                  message)
+                # this is assuming the uniquely identifiable field name is specified
+                # first in the fields list.  this check verifies by id field
+                # that the table data loaded correctly.
+                fields = [table_info.get('fields', [])[0]]
+                self.assertRowIDsMatch(fq_table_name, fields, values)
 
             if self.query_class:
                 # test:  get the queries
@@ -270,18 +306,18 @@ class BaseTest:
 
             # post conditions
             for table_info in tables_and_test_values:
-                # validate three records are dropped
+                # validate records are dropped
                 fq_table_name = table_info.get('fq_table_name', 'UNSET')
-                values = table_info.get('cleaned_ids', [])
-                message = f"Cleaned table values did not match.  Expected\t{values}"
-                self.assertOMOPTableContentsMatch(fq_table_name, values,
-                                                  message)
+                values = table_info.get('cleaned_values', [])
+                fields = table_info.get('fields', [])
+                self.assertTableValuesMatch(fq_table_name, fields, values)
 
-                # validate three records are sandboxed
+                # validate records are sandboxed
                 fq_sandbox_name = table_info.get('fq_sandbox_table_name')
                 if fq_sandbox_name:
                     values = table_info.get('sandboxed_ids', [])
-                    field_name = table_info.get('name', 'UNSET') + '_id'
-                    message = f"Sandboxed table values did not match.  Expected\t{values}"
-                    self.assertSandboxTableContentsMatch(
-                        fq_sandbox_name, field_name, values, message)
+                    # this is assuming the uniquely identifiable field name is specified
+                    # first in the fields list.  this check verifies by id field
+                    # that the table data loaded correctly.
+                    fields = [table_info.get('fields', [])[0]]
+                    self.assertRowIDsMatch(fq_sandbox_name, fields, values)
