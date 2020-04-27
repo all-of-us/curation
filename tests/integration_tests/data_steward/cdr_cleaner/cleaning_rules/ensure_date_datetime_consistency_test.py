@@ -3,10 +3,10 @@ Integration Test for the ensure_date_datetime_consistency module.
 
 The intent is to make sure datetime fields are always set if available.
 The date field is considered the authritative field because it is always
-required.  If an unresolved timezone change causes a date difference between 
+required.  If an unresolved timezone change causes a date difference between
 the date and datetime field, the date field value is preferred.  If a time
 is provided in the field, the time is maintained.  If the datetime field
-was null, a default value of midnight is used for the time component. 
+was null, a default value of midnight is used for the time component.
 """
 # Python imports
 from datetime import date
@@ -76,13 +76,7 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
 
     def test_nullable_field_datetime_pair(self):
         """
-        Use the default test function.
-
-        Validates pre-conditions, test execution and post conditions based on
-        the load statements and the tables_and_counts variable.
-
-        Specifically tests a single date/datetime field pair where the
-        datetime fiels is nullable.
+        Tests possible values of a required date and nullable datetime field pair.
         """
 
         tmpl = self.jinja_env.from_string("""
@@ -120,13 +114,11 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
 
     def test_required_field_datetime_pairs(self):
         """
-        Use the default  test function.
+        Tests possible values for date and datetime field pairs.
 
-        Validates pre-conditions, test execution and post conditions based on
-        the load statements and the tables_and_counts variable.
-
-        Specifically tests applying the rule to multiple date/datetime field
-        pairs in the same table.  The datetime for one pair is required.
+        This tests having more than 1 date/datetime field pair in a single record.
+        The datetime is required in one pair and may be nullable in the
+        other comparison pair.
         """
         tmpl = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.condition_occurrence`
