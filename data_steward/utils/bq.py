@@ -193,6 +193,45 @@ def define_dataset(project_id, dataset_id, description, label_or_tag):
     return dataset
 
 
+def update_labels(project_id, dataset_id, label_or_tag, update=True):
+    """
+    Updates labels or tags in dataset if not set or needing to be updated
+    or overwrites existing labels or tags in the dataset
+
+    :param project_id:  string name to identify the project
+    :param dataset_id:  string name to identify the dataset
+    :param label_or_tag:  labels for the dataset = Dict[str, str]
+                          tags for the dataset = Dict[str, '']
+    :param update:  flag to signal if label_or_tag is to be
+                        updated (True as default) or overwritten (False)
+
+    :raises:  RuntimeError if parameters are not specified
+
+    :return:  a dataset reference object
+    """
+    if not project_id:
+        raise RuntimeError(
+            "Specify the project_id for the project containing the dataset")
+
+    if not dataset_id:
+        raise RuntimeError("Provide a dataset_id")
+
+    if not label_or_tag:
+        raise RuntimeError("Please provide a label or tag")
+
+    dataset_id = f"{project_id}.{dataset_id}"
+    dataset = bigquery.Dataset(dataset_id)
+
+    if dataset.labels is None:
+        dataset.labels = label_or_tag
+    elif update == False:
+        dataset.labels = label_or_tag
+    else:
+        dataset.labels.update(label_or_tag)
+
+    return dataset
+
+
 def delete_dataset(project_id,
                    dataset_id,
                    delete_contents=True,
