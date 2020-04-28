@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -15,20 +15,28 @@
 
 # ## This notebook is used to investigate the racial and gender demographics for the EHR data for the AoU program. This notebook will investigate these data completeness metrics based on both the aggregate and site levels.
 #
-# #### Potential use cases:
+# ### Potential use cases:
 # - Understand if sites are uploading incomplete/incorrect datasets
 #     - example (as of 02/26/2020): a site is reporting >97% 'Unknown' racial concepts. this site would be expected to be fairly homogenous
 #     - this information could be provided to sites so they could better assess whether or not their EHR matches the demographics that they might encounter in HealthPro
-# - See if the data being provided by AoU recapitulates existing findings with respect to healthcare disparities (e.g. which groups are more likely to seek care)
+#     - see if the data being provided by AoU recapitulates existing findings with respect to healthcare disparities (e.g. which groups are more likely to seek care)
+
+from google.cloud import bigquery
+# %reload_ext google.cloud.bigquery
+client = bigquery.Client()
+# %load_ext google.cloud.bigquery
+
 import bq_utils
 import utils.bq
 from notebooks import parameters
+# %matplotlib inline
 import matplotlib.pyplot as plt
-from operator import add
-import math
-import pandas as pd
 import numpy as np
 import six
+import scipy.stats
+import pandas as pd
+import math
+from operator import add
 
 # +
 DATASET = parameters.LATEST_DATASET
@@ -57,10 +65,10 @@ GROUP BY 1, 2
 ORDER BY cnt DESC
 """.format(DATASET=DATASET)
 
-race_popularity = utils.bq.query(race_popularity_query)
+race_popularity = pd.io.gbq.read_gbq(race_popularity_query, dialect='standard')
 
-most_popular_race_cnames = race_popularity['race_concept_name'].to_list()
-most_popular_race_cids = race_popularity['race_concept_id'].to_list()
+most_popular_race_cnames = race_popularity['race_concept_name'].tolist()
+most_popular_race_cids = race_popularity['race_concept_id'].tolist()
 
 # #### Want all of the race concept IDs and their names in a dictionary (for storage/access later on)
 
@@ -77,7 +85,7 @@ p.race_concept_id = c.concept_id
 GROUP BY 1, 2
 """.format(DATASET=DATASET)
 
-race_df = utils.bq.query(race_id_and_name_query)
+race_df = pd.io.gbq.read_gbq(race_id_and_name_query, dialect='standard')
 race_dict = race_df.set_index('race_concept_id').to_dict()
 
 race_dict = race_dict['concept_name']  # get rid of unnecessary nesting
@@ -123,7 +131,7 @@ a.src_hpo_id = b.src_hpo_id
 ORDER BY b.number_from_site DESC, number_of_demographic DESC
 """.format(DATASET=DATASET)
 
-racial_distribution_by_site = utils.bq.query(racial_distribution_by_site_query)
+racial_distribution_by_site = pd.io.gbq.read_gbq(racial_distribution_by_site_query, dialect='standard')
 
 # ### Now we want to put this information into a format that can be easily converted into a bar graph
 
@@ -339,7 +347,7 @@ def render_mpl_table(data,
     return ax
 
 
-hpo_names = list(set(racial_distribution_by_site['src_hpo_id'].to_list()))
+hpo_names = list(set(racial_distribution_by_site['src_hpo_id'].tolist()))
 
 # +
 hpo_dfs = {}
@@ -470,7 +478,7 @@ def create_query_for_particular_table(dataset, percent_of_table, table_name):
                percent_of_table=percent_of_table,
                table_name=table_name)
 
-    dataframe = utils.bq.query(query)
+    dataframe = pd.io.gbq.read_gbq(query, dialect='standard')
 
     return dataframe
 
@@ -579,32 +587,32 @@ def find_all_distributions_for_site_race_combo(df, hpo, race,
                             (df['src_hpo_id'] == hpo)]
 
     try:
-        drug_distrib = applicable_row['drug_percent_of_site_persons'].to_list(
+        drug_distrib = applicable_row['drug_percent_of_site_persons'].tolist(
         )[0]
     except IndexError:  # site does not have it
         drug_distrib = np.nan
 
     try:
         observation_distrib = applicable_row[
-            'observation_percent_of_site_persons'].to_list()[0]
+            'observation_percent_of_site_persons'].tolist()[0]
     except IndexError:  # site does not have it
         observation_distrib = np.nan
 
     try:
-        visit_distrib = applicable_row['visit_percent_of_site_persons'].to_list(
+        visit_distrib = applicable_row['visit_percent_of_site_persons'].tolist(
         )[0]
     except IndexError:  # site does not have it
         visit_distrib = np.nan
 
     try:
         procedure_distrib = applicable_row[
-            'procedure_percent_of_site_persons'].to_list()[0]
+            'procedure_percent_of_site_persons'].tolist()[0]
     except IndexError:  # site does not have it
         procedure_distrib = np.nan
 
     try:
         condition_distrib = applicable_row[
-            'condition_percent_of_site_persons'].to_list()[0]
+            'condition_percent_of_site_persons'].tolist()[0]
     except IndexError:  # site does not have it
         condition_distrib = np.nan
 
@@ -654,7 +662,7 @@ for race in most_popular_race_cnames:
 
         try:
             person_distribution = person_distribution[
-                'percent_of_site_persons'].to_list()[0]
+                'percent_of_site_persons'].tolist()[0]
         except IndexError:  # site does not have it
             person_distribution = np.nan
 
@@ -695,3 +703,5 @@ for race_key, df in race_dfs.items():
             save_string = 'key_not_available'
 
         plt.savefig(save_string, bbox_inches="tight")
+
+

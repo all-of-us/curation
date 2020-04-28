@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -14,6 +14,11 @@
 # ---
 
 # ## Notebook is intended to compare the EHR data in the latest AoU dataset to the thresholds established by the [OHDSI DataQualityDashboard](https://github.com/OHDSI/DataQualityDashboard)
+
+from google.cloud import bigquery
+# %reload_ext google.cloud.bigquery
+client = bigquery.Client()
+# %load_ext google.cloud.bigquery
 
 # +
 import bq_utils
@@ -24,6 +29,8 @@ from notebooks import parameters
 import matplotlib.pyplot as plt
 import numpy as np
 import six
+import scipy.stats
+import pandas as pd
 
 # +
 DATASET = parameters.LATEST_DATASET
@@ -152,7 +159,7 @@ ORDER BY percent_implausible_vals DESC
 """.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, \
            DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET)
 
-measurement_df = utils.bq.query(measurement_df_query)
+measurement_df = pd.io.gbq.read_gbq(measurement_df_query, dialect='standard')
 # -
 
 # ##### Creating copies of the measurement dataframe. Enables further exploration/manipulation without needing to re-run the above query.
@@ -284,7 +291,7 @@ ORDER BY percent_implaus DESC
 """.format(DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, \
            DATASET, DATASET, DATASET, DATASET, DATASET, DATASET, DATASET)
 
-hpo_df = utils.bq.query(hpo_query)
+hpo_df = pd.io.gbq.read_gbq(hpo_query, dialect='standard')
 # -
 
 # ##### Creating copies of the HPO dataframe. Enables further exploration/manipulation without needing to re-run the above query.
@@ -391,7 +398,7 @@ def create_dicts_w_info(df, x_label, column_label):
 
 # +
 hpo_df['percent_of_implaus'] = round(
-    hpo_df['tot_implaus'] / sum(hpo_df['tot_implaus'].to_list()[:-1]) * 100, 2)
+    hpo_df['tot_implaus'] / sum(hpo_df['tot_implaus'].tolist()[:-1]) * 100, 2)
 
 hpo_df = hpo_df.sort_values(by=['percent_of_implaus'], ascending=False)
 # -
@@ -401,7 +408,7 @@ hpo_df = hpo_df.sort_values(by=['percent_of_implaus'], ascending=False)
 # +
 hpo_df = hpo_df.append(hpo_df.sum(numeric_only=True).rename('Total'))
 
-hpo_names = hpo_df['src_hpo_id'].to_list()
+hpo_names = hpo_df['src_hpo_id'].tolist()
 
 hpo_names[-1:] = ["Total"]
 
@@ -416,7 +423,7 @@ hpo_df['percent_implaus'] = round(
 # #### redo the 'percent_of_implaus' column for the total row
 
 hpo_df['percent_of_implaus'] = round(
-    hpo_df['tot_implaus'] / sum(hpo_df['tot_implaus'].to_list()[:-1]) * 100, 2)
+    hpo_df['tot_implaus'] / sum(hpo_df['tot_implaus'].tolist()[:-1]) * 100, 2)
 
 # #### NOTE: the cell below is adapted largely from [this GitHub link](https://stackoverflow.com/questions/19726663/how-to-save-the-pandas-dataframe-series-data-as-a-figure)
 
@@ -537,7 +544,7 @@ c2 = measurement_df
 measurement_df = measurement_df.append(
     measurement_df.sum(numeric_only=True).rename('Total'))
 
-measurement_names = measurement_df['measurement_name'].to_list()
+measurement_names = measurement_df['measurement_name'].tolist()
 
 measurement_names[-1:] = ["Total Measurements"]
 

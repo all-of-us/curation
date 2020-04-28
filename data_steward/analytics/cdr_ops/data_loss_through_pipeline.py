@@ -5,23 +5,30 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
 #     name: python3
 # ---
 
-# ### This notebook is used to model how the volume of data changes at different points in the pipeline
+# # This notebook is used to model how the volume of data changes at different points in the pipeline
 #
-# The different datasets are as follows:
+# ### The different datasets are as follows:
 # - unioned_ehr (submitted directly from sites - no cleaning rules applied)
 # - combined datasets
 # - deidentified datasets
-#
-# The dimensions of 'data volume' are as follows (for each table):
+# #
+# ### The dimensions of 'data volume' are as follows (for each table):
 # - number of participants
 # - number of records
+
+from google.cloud import bigquery
+# %reload_ext google.cloud.bigquery
+client = bigquery.Client()
+# %load_ext google.cloud.bigquery
+
+# %matplotlib inline
 import bq_utils
 import utils.bq
 from notebooks import parameters
@@ -32,9 +39,9 @@ import matplotlib.pyplot as plt
 import operator
 
 # +
-unioned = parameters.UNIONED_EHR_DATASET_COMBINED
-combined = parameters.COMBINED_DATASET_ID
-deid = parameters.DEID_DATASET_ID
+unioned = parameters.UNIONED_Q4_2019
+combined = parameters.COMBINED_Q4_2019
+deid = parameters.DEID_Q4_2019
 
 print("""
 Unioned Dataset: {unioned}
@@ -280,7 +287,7 @@ def generate_query(dataset, person_var, record_var, table_name, field_name):
                record_var=record_var,
                dataset=dataset)
 
-    dataframe = utils.bq.query(query)
+    dataframe = pd.io.gbq.read_gbq(query, dialect='standard')
 
     return (dataframe)
 
@@ -452,7 +459,7 @@ ax = render_mpl_table(condition_df, header_columns=0, col_width=2.0)
 
 plt.tight_layout()
 
-plt.savefig('condition_dropoff.jpg', bbox_inches="tight")
+plt.savefig('condition_dropoff.png', bbox_inches="tight")
 
 # +
 person_idx, record_idx = 0, 1
@@ -839,7 +846,7 @@ def add_total_drop_row(dataframe):
     dataframe = dataframe.append(
         dataframe.sum(numeric_only=True).rename('Total'))
 
-    hpo_names = dataframe['source_hpo'].to_list()
+    hpo_names = dataframe['source_hpo'].tolist()
 
     hpo_names[-1:] = ["Total"]
 
@@ -1069,4 +1076,3 @@ create_pie_chart(
     observation_info,
     title='Unioned to Combined Drop \n (Observation) Contributions',
     img_name='observation_unioned_combined_drop_site_contribution.jpg')
-# -

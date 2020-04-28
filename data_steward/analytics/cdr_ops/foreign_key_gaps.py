@@ -6,14 +6,21 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
 #     name: python3
 # ---
 
-# ## Script is used to model different distributions of 'foreign key' discrepancies. These 'foreign key discrepancies' are defined as instances where the start and end dates of the
+# ## Script is used to model different distributions of 'foreign key' discrepancies. These 'foreign key discrepancies' are defined as instances where the date affiliated with a particular row is inconsistent with its associated visit dates.
+#
+# #### The tables evaluated (with respect to visit) are as follows:
+# - Procedure Occurrence
+# - Observation
+# - Measurement
+# - Condition Occurrence
+# - Drug Exposure
 
 # ### NOTE: This notebook is limited in terms of utility until the following problem is addressed:
 #
@@ -23,6 +30,13 @@
 #
 # This complication, however, **only** affects date/datetime discrepancies by +/-1. If a date is more than 1 day different from its datetime date, there must be an error on the site's end.
 
+# ### NOTE: Much of this notebook was repurposed in the visit_date_disparity data quality metric that was imploemented in the 'table_metrics' analyses
+
+from google.cloud import bigquery
+# %reload_ext google.cloud.bigquery
+client = bigquery.Client()
+# %load_ext google.cloud.bigquery
+
 # +
 import bq_utils
 import utils.bq
@@ -30,6 +44,10 @@ from notebooks import parameters
 
 # %matplotlib inline
 import matplotlib.pyplot as plt
+import numpy as np
+import six
+import scipy.stats
+import pandas as pd
 
 # +
 DATASET = parameters.LATEST_DATASET
@@ -155,7 +173,7 @@ a.procedure_dt_vis_end_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-procedure_visit_df = utils.bq.query(p_v_query)
+procedure_visit_df = pd.io.gbq.read_gbq(p_v_query, dialect='standard')
 # -
 
 # ##### Creating copies of the procedure_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -422,7 +440,7 @@ a.observation_dt_vis_end_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-observation_visit_df = utils.bq.query(observation_visit_query)
+observation_visit_df = pd.io.gbq.read_gbq(observation_visit_query, dialect='standard')
 # -
 
 # ##### Creating copies of the observation_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -570,7 +588,7 @@ a.measurement_dt_vis_end_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-measurement_visit_df = utils.bq.query(measurement_visit_query)
+measurement_visit_df = pd.io.gbq.read_gbq(measurement_visit_query, dialect='standard')
 # -
 
 # ##### Creating copies of the measurement_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -690,7 +708,7 @@ a.condition_dt_vis_start_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-condition_visit_df = utils.bq.query(condition_visit_query)
+condition_visit_df = pd.io.gbq.read_gbq(condition_visit_query, dialect='standard')
 # -
 
 # ##### Creating copies of the condition_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -808,7 +826,7 @@ a.drug_dt_vis_start_dt_diff > 0
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
 """.format(DATASET, DATASET, DATASET)
 
-drug_visit_df = utils.bq.query(drug_visit_query)
+drug_visit_df = pd.io.gbq.read_gbq(drug_visit_query, dialect='standard')
 # -
 
 # ##### Creating copies of the drug_visit_df. Enables further exploration/manipulation without needing to re-run the above query.
@@ -839,3 +857,5 @@ create_graphs(
     img_name='drug_visit_start_discrepancy.jpg',
     colour='g',
     total_diff_colour=True)
+
+

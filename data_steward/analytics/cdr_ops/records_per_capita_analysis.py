@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -21,7 +21,13 @@
 #
 # In an attempt to start ‘benchmarking’ sites, we want to understand how many ‘records per participant' and ‘records per participant per year’ there are for each site. This kind of information could enable us to better understand which sites may benefit from ETL changes.
 
-from notebooks import render, parameters
+from google.cloud import bigquery
+# %reload_ext google.cloud.bigquery
+client = bigquery.Client()
+# %load_ext google.cloud.bigquery
+
+# %matplotlib inline
+from notebooks import parameters
 from utils import bq
 import pandas as pd
 import numpy as np
@@ -33,6 +39,7 @@ DATASET = parameters.LATEST_DATASET
 print("""
 DATASET TO USE: {}
 """.format(DATASET))
+
 
 # -
 
@@ -95,7 +102,7 @@ def get_records_per_capita(table_name, number_records, capita_string, dataset):
                capita_string=capita_string,
                dataset=dataset)
 
-    dataframe = bq.query(query)
+    dataframe = pd.io.gbq.read_gbq(query, dialect='standard')
 
     return dataframe
 
@@ -129,7 +136,7 @@ def add_total_records_per_capita_row(dataframe, number_records, capita_string):
     dataframe = dataframe.append(
         dataframe.sum(numeric_only=True).rename('Total'))
 
-    hpo_names = dataframe['src_hpo_id'].to_list()
+    hpo_names = dataframe['src_hpo_id'].tolist()
 
     hpo_names[-1:] = ["Total"]
 
@@ -237,7 +244,7 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, color,
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(title)
-    #plt.show()
+    plt.show()
     plt.savefig(img_name, bbox_inches="tight")
 
 
@@ -389,4 +396,3 @@ create_graphs(drug_exposure_dict,
               color='b',
               total_diff_color=True,
               turnoff_x=False)
-# -
