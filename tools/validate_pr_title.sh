@@ -3,11 +3,12 @@
 # The Jira tag could be [DC-###] or [EDC-###]
 # Since commits on develop are typically generated from the PR title in the Github UI,
 # this check tries to ensure that the Jira tag is formatted correctly in the PR title
-# However, the Jira title also needs to follow the Jira tag for commits on develop
-# This script does not check for that yet due to Jira authentication
 
 TICKET_REGEX="^\[(DC|EDQ)-[[:digit:]]+\][[:space:]]"
-ERROR_MSG="The PR title below does not start with the Jira ticket tag, please rename."
+ERROR_MSG="Jira tag is missing or incorrectly formatted in the PR title below.
+Please rename so it is formatted as '[DC-###] PR title' or '[EDQ-###] PR title'."
+
+set +e
 
 if [[ -n "${CIRCLE_PULL_REQUEST}" ]];
   then
@@ -19,5 +20,7 @@ if [[ -n "${CIRCLE_PULL_REQUEST}" ]];
         echo "${ERROR_MSG}"
         echo "${pr_title}"
         exit 1
+      else
+        echo "Success! PR title contains well formatted Jira tag"
     fi
 fi
