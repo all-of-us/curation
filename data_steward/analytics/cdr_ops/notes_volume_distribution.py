@@ -6,12 +6,19 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
 #     name: python3
 # ---
+
+# # Script is used to assess the number of notes for each site.
+
+from google.cloud import bigquery
+# %reload_ext google.cloud.bigquery
+client = bigquery.Client()
+# %load_ext google.cloud.bigquery
 
 # +
 import bq_utils
@@ -22,6 +29,8 @@ from notebooks import parameters
 import matplotlib.pyplot as plt
 import numpy as np
 import six
+import scipy.stats
+import pandas as pd
 from wordcloud import WordCloud
 
 # +
@@ -49,7 +58,7 @@ GROUP BY 1
 ORDER BY mn.src_hpo_id
 """.format(DATASET, DATASET)
 
-note_df = utils.bq.query(general_notes_query)
+note_df = pd.io.gbq.read_gbq(general_notes_query, dialect='standard')
 # -
 
 note_df
@@ -160,7 +169,7 @@ GROUP BY 1
 ORDER BY mn.src_hpo_id, num_notes DESC
 """.format(DATASET, DATASET)
 
-note_title_df = utils.bq.query(general_notes_query)
+note_title_df = pd.io.gbq.read_gbq(general_notes_query, dialect='standard')
 
 # +
 gen_note_title_dictionary = create_dicts_w_info(note_title_df, 'num_notes')
@@ -190,7 +199,7 @@ GROUP BY 1
 ORDER BY mn.src_hpo_id, num_notes DESC
 """.format(DATASET, DATASET)
 
-zero_df = utils.bq.query(zero_titles_query)
+zero_df = pd.io.gbq.read_gbq(zero_titles_query, dialect='standard')
 
 # +
 zero_note_title_dictionary = create_dicts_w_info(zero_df, 'num_notes')
@@ -232,7 +241,7 @@ ORDER BY a.num_notes DESC
 LIMIT 30
 """.format(DATASET, DATASET)
 
-titles_df = utils.bq.query(note_titles_query)
+titles_df = pd.io.gbq.read_gbq(note_titles_query, dialect='standard')
 # -
 
 titles_df
@@ -333,3 +342,5 @@ plt.axis("off")
 plt.savefig('word_cloud_note_titles.png', bbox_inches="tight")
 plt.show()
 # -
+
+
