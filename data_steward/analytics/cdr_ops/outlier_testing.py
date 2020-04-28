@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -15,6 +15,11 @@
 
 # ## Script is used to determine any potential sites that may be using uploading erroneous measurements. Sites may have 'outlier' values beacuse (running list):
 # - They may be using a unit_concept_id that does not have a correspondining 'conversion' in '[unit_mapping.csv](https://github.com/all-of-us/curation/blob/develop/data_steward/resources/unit_mapping.csv)'.
+
+from google.cloud import bigquery
+# %reload_ext google.cloud.bigquery
+client = bigquery.Client()
+# %load_ext google.cloud.bigquery
 
 # +
 import bq_utils
@@ -27,11 +32,11 @@ import numpy as np
 import six
 import scipy.stats
 import pandas as pd
+# -
 
-# +
 measurement_ancestors = [
     # lipids
-    # 40782589, 40795800, 40772572
+    40782589, 40795800, 40772572
 
     # #cbc
     # 40789356, 40789120, 40789179, 40772748,
@@ -50,14 +55,13 @@ measurement_ancestors = [
     # 40795740, 40795754
 
     #physical measurement
-    40654163,
-    40655804,
-    40654162,
-    40655805,
-    40654167,
-    40654164
+#     40654163,
+#     40655804,
+#     40654162,
+#     40655805,
+#     40654167,
+#     40654164
 ]
-# -
 
 DATASET = parameters.LATEST_DATASET
 print("""
@@ -88,7 +92,7 @@ def find_descendants(DATASET, ancestor_concept):
     """
 
     descendant_concepts = """
-    (SELECT
+    SELECT
     DISTINCT
     m.measurement_concept_id
     FROM
@@ -99,9 +103,13 @@ def find_descendants(DATASET, ancestor_concept):
     m.measurement_concept_id = ca.descendant_concept_id
     WHERE
     ca.ancestor_concept_id IN ({})
-    GROUP BY 1)""".format(DATASET, DATASET, ancestor_concept)
+    GROUP BY 1""".format(DATASET, DATASET, ancestor_concept)
+    
+    print(descendant_concepts)
 
-    desc_concepts_df = utils.bq.query(descendant_concepts)
+    desc_concepts_df = pd.io.gbq.read_gbq(descendant_concepts, dialect='standard')
+    
+    print('success!')
 
     descendant_concept_ids = desc_concepts_df['measurement_concept_id'].tolist()
 
@@ -162,7 +170,7 @@ def find_total_number_of_units_for_lab_type(DATASET, string_desc_concepts):
         ORDER BY count DESC) a
     """.format(DATASET, DATASET, string_desc_concepts)
 
-    tot_units_df = utils.bq.query(total_unit_concept_names)
+    tot_units_df = pd.io.gbq.read_gbq(total_unit_concept_names, dialect='standard')
     tot_units = tot_units_df['tot_concepts'].iloc[0]
 
     return tot_units
@@ -210,7 +218,7 @@ def find_most_popular_unit_type(tot_units, DATASET, string_desc_concepts):
     ORDER BY count DESC
     """.format(tot_units, DATASET, DATASET, string_desc_concepts)
 
-    units_for_lab_df = utils.bq.query(units_for_lab)
+    units_for_lab_df = pd.io.gbq.read_gbq(units_for_lab, dialect='standard')
 
     desc_concept_ids = units_for_lab_df['unit_name'].tolist()
 
@@ -293,7 +301,7 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts,
     m.value_as_number ASC
     """.format(DATASET, DATASET, most_pop_unit, string_desc_concepts)
 
-    measurements_for_lab_and_unit = utils.bq.query(find_range_overall)
+    measurements_for_lab_and_unit = pd.io.gbq.read_gbq(find_range_overall, dialect='standard')
 
     values = measurements_for_lab_and_unit['value_as_number'].tolist()
 
@@ -307,7 +315,7 @@ def metrics_for_whole_dataset(DATASET, most_pop_unit, string_desc_concepts,
     c.concept_id = {}
     """.format(DATASET, ancestor_id)
 
-    concept_name = utils.bq.query(find_ancestor_lab)
+    concept_name = pd.io.gbq.read_gbq(find_ancestor_lab, dialect='standard')
     concept_name = concept_name['concept_name'].tolist()
     concept_name = str(concept_name[0].lower())  # actual name
 
@@ -409,7 +417,7 @@ def create_site_distribution_df(DATASET, string_desc_concepts, most_pop_unit):
     ORDER BY median DESC
     """.format(DATASET, DATASET, DATASET, string_desc_concepts, most_pop_unit)
 
-    site_value_distribution_df = utils.bq.query(find_site_distribution)
+    site_value_distribution_df = pd.io.gbq.read_gbq(find_site_distribution, dialect='standard')
 
     return site_value_distribution_df
 
@@ -844,9 +852,8 @@ def display_boxplot(lst, img_name, names):
     """
 
     fig, ax = plt.subplots()
-
     ticks = []
-
+    
     for x in range(len(names)):
         ticks.append(x + 1)
 
@@ -894,5 +901,13 @@ for ancestor_id in measurement_ancestors:
                          aggregate_df=True)
 
     info, hpo_names = create_statistics_dictionary(df, aggregate_df)
+    
+    print(hpo_names)
 
     display_boxplot(info, img_name, hpo_names)
+
+
+
+
+
+
