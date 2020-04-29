@@ -37,9 +37,16 @@ class BqTest(unittest.TestCase):
         self.dataset_id = "foo_dataset"
         self.description = 'fake description'
         self.label_or_tag = {'fake_label': 'label', 'fake_tag': ''}
-        self.overwritten_label_or_tag = {'new_fake_label': 'label', "new_fake_tag": ''}
-        self.updated_label_or_tag = {'fake_label': 'label', 'fake_tag': '',
-                                     'new_fake_label': 'label', "new_fake_tag": ''}
+        self.overwritten_label_or_tag = {
+            'new_fake_label': 'label',
+            "new_fake_tag": ''
+        }
+        self.updated_label_or_tag = {
+            'fake_label': 'label',
+            'fake_tag': '',
+            'new_fake_label': 'label',
+            "new_fake_tag": ''
+        }
         self.set_or_update_true = True
         self.set_or_update_false = False
 
@@ -88,16 +95,20 @@ class BqTest(unittest.TestCase):
         self.client = bigquery.Client()
         self.dataset = self.client.create_dataset(results)
 
-        update_false_expected = update_labels_and_tags(self.project_id, self.dataset_id,
-                                                       self.overwritten_label_or_tag, self.set_or_update_false)
+        update_false_expected = update_labels_and_tags(
+            self.project_id, self.dataset_id, self.overwritten_label_or_tag,
+            self.set_or_update_false)
 
-        update_true_expected = update_labels_and_tags(self.project_id, self.dataset_id,
-                                                      self.updated_label_or_tag, self.set_or_update_true)
+        update_true_expected = update_labels_and_tags(self.project_id,
+                                                      self.dataset_id,
+                                                      self.updated_label_or_tag,
+                                                      self.set_or_update_true)
 
         # Post conditions
         self.assertIsInstance(results, bigquery.Dataset)
         self.assertEqual(update_true_expected.labels, self.updated_label_or_tag)
-        self.assertEqual(update_false_expected.labels, self.overwritten_label_or_tag)
+        self.assertEqual(update_false_expected.labels,
+                         self.overwritten_label_or_tag)
 
     def tearDown(self):
         # Deletes bar_dataset
@@ -105,4 +116,3 @@ class BqTest(unittest.TestCase):
         self.client.delete_dataset(f'{self.project_id}.{self.dataset_id}',
                                    delete_contents=True,
                                    not_found_ok=True)
-
