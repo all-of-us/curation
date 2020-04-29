@@ -7,7 +7,7 @@ import os
 
 # Third-party imports
 from google.cloud import bigquery
-from google.api_core.exceptions import GoogleAPIError, NotFound
+from google.api_core.exceptions import GoogleAPIError
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -193,7 +193,10 @@ def define_dataset(project_id, dataset_id, description, label_or_tag):
     return dataset
 
 
-def update_labels(project_id, dataset_id, label_or_tag, update=True):
+def update_labels_and_tags(project_id,
+                           dataset_id,
+                           label_or_tag,
+                           set_or_update=True):
     """
     Updates labels or tags in dataset if not set or needing to be updated
     or overwrites existing labels or tags in the dataset
@@ -202,8 +205,8 @@ def update_labels(project_id, dataset_id, label_or_tag, update=True):
     :param dataset_id:  string name to identify the dataset
     :param label_or_tag:  labels for the dataset = Dict[str, str]
                           tags for the dataset = Dict[str, '']
-    :param update:  flag to signal if label_or_tag is to be
-                        updated (True as default) or overwritten (False)
+    :param set_or_update:  flag to signal if label_or_tag is to be either
+                             set or updated (True as default) or overwritten (False)
 
     :raises:  RuntimeError if parameters are not specified
 
@@ -219,17 +222,19 @@ def update_labels(project_id, dataset_id, label_or_tag, update=True):
     if not label_or_tag:
         raise RuntimeError("Please provide a label or tag")
 
+    client = get_client(project_id)
     dataset_id = f"{project_id}.{dataset_id}"
-    dataset = bigquery.Dataset(dataset_id)
+    dataset = client.get_dataset(dataset_id)
 
-    if dataset.labels is None:
+    if set_or_update is True:
+        # will set or update labels and/or tags
         dataset.labels = label_or_tag
-    elif update == False:
+        dataset = client.update_dataset(dataset, ['labels'])
+        return dataset
+    if set_or_update is False:
+        # will overwrite labels and/or tags
         dataset.labels = label_or_tag
-    else:
-        dataset.labels.update(label_or_tag)
-
-    return dataset
+        return dataset
 
 
 def delete_dataset(project_id,
