@@ -20,6 +20,7 @@ from auxillary_aggregate_functions import \
     get_stats_for_unweighted_hpo_aggregate_metric, \
     find_unique_dates_and_metrics
 
+import numpy as np
 
 def create_unweighted_aggregate_metrics_for_tables(
         metric_dictionary, datetimes):
@@ -89,7 +90,7 @@ def create_unweighted_aggregate_metrics_for_tables(
                     total_rows, pertinent_rows = 0, 0
 
                     # 'unweighted' aspect comes in - simple mean
-                    overall_rate = sum(unweighted_metrics_for_hpos) / \
+                    overall_rate = np.nansum(unweighted_metrics_for_hpos) / \
                         len(unweighted_metrics_for_hpos)
 
                     new_uw_agg_metric = AggregateMetricForTableOrClass(

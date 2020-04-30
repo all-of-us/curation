@@ -61,7 +61,7 @@ def establish_hpo_objects(dqm_objects):
               route_success=[], unit_success=[],
               measurement_integration=[], ingredient_integration=[],
               date_datetime_disp=[], erroneous_dates=[],
-              person_id_failure=[])
+              person_id_failure=[], achilles_errors=[])
 
             blank_hpo_objects.append(hpo)
 
