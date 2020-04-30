@@ -34,7 +34,7 @@ class HPO:
             end_before_begin, data_after_death,
             route_success, unit_success, measurement_integration,
             ingredient_integration, date_datetime_disp,
-            erroneous_dates, person_id_failure,
+            erroneous_dates, person_id_failure, achilles_errors,
 
             # number of rows for the 6 canonical tables
             num_measurement_rows=0,
@@ -118,6 +118,10 @@ class HPO:
             each of the tables have a 'failing' person_id
             (one that does not exist in the person table)
 
+        achilles_errors (list): list of DataQualityMetric
+            objects that show the number of ACHILLES errors
+            for the particular date
+
         num_measurement_rows (float): number of rows in the
             measurement table
 
@@ -150,18 +154,19 @@ class HPO:
         self.erroneous_dates = erroneous_dates
         self.person_id_failure = person_id_failure
 
-        # only relates to one table
+        # only relates to one table / entity
         self.route_success = route_success
         self.unit_success = unit_success
         self.measurement_integration = measurement_integration
         self.ingredient_integration = ingredient_integration
+        self.achilles_errors = achilles_errors
 
         # number of rows in each table
-        self.num_measurement_rows = num_measurement_rows,
-        self.num_visit_rows = num_visit_rows,
-        self.num_procedure_rows = num_procedure_rows,
-        self.num_condition_rows = num_condition_rows,
-        self.num_drug_rows = num_drug_rows,
+        self.num_measurement_rows = num_measurement_rows
+        self.num_visit_rows = num_visit_rows
+        self.num_procedure_rows = num_procedure_rows
+        self.num_condition_rows = num_condition_rows
+        self.num_drug_rows = num_drug_rows
         self.num_observation_rows = num_observation_rows
 
     def print_attributes(self):
@@ -188,6 +193,7 @@ class HPO:
         \t Date/Datetime Disagreement: {date_datetime} \n
         \t Erroneous Dates: {erroneous_dates}\n
         \t Person ID Failure: {person_id_failure}\n
+        \t Number of ACHILLES Errors: {achilles_errors}\n
         \n
         Number of Rows:\n
         \t Measurement: {measurement}\n
@@ -209,6 +215,7 @@ class HPO:
             date_datetime=len(self.date_datetime_disp),
             erroneous_dates=len(self.erroneous_dates),
             person_id_failure=len(self.person_id_failure),
+            achilles_errors=len(self.achilles_errors),
             measurement=self.num_measurement_rows,
             visit=self.num_visit_rows,
             procedure=self.num_procedure_rows,
@@ -270,6 +277,9 @@ class HPO:
 
         elif metric == 'Person ID Failure Rate':
             self.person_id_failure.append(dq_object)
+
+        elif metric == 'Number of ACHILLES Errors':
+            self.achilles_errors.append(dq_object)
 
         else:
             print("Unrecognized metric input: {metric} for {hpo}".format(
@@ -389,6 +399,11 @@ class HPO:
 
         elif metric == 'Person ID Failure Rate':
             for obj in self.person_id_failure:
+                if obj.table_or_class == table_or_class:
+                    succ_rate = obj.value
+
+        elif metric == 'Number of ACHILLES Errors':
+            for obj in self.achilles_errors:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
@@ -524,6 +539,9 @@ class HPO:
         elif metric == 'Person ID Failure Rate':
             relevant_objects = self.person_id_failure
 
+        elif metric == 'Number of ACHILLES Errors':
+            relevant_objects = self.achilles_errors
+
         else:
             raise Exception(
                 "The following was identified as a metric: "
@@ -642,9 +660,14 @@ class HPO:
                 failing_metrics.append(erroneous_date_obj)
 
         for person_id_failure_obj in self.person_id_failure:
-            if person_id_failure_obj > \
+            if person_id_failure_obj.value > \
                     thresholds['person_failure_rate_max']:
                 failing_metrics.append(person_id_failure_obj)
+
+        for achilles_error_obj in self.achilles_errors:
+            if achilles_error_obj.value > \
+                    thresholds['achilles_errors_max']:
+                failing_metrics.append(achilles_error_obj)
 
         if not failing_metrics:  # no errors logged
             return None

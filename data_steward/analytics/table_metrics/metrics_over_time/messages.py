@@ -43,6 +43,7 @@ analysis_type_prompt = \
         "J. Date/datetime inconsistencies \n" \
         "K. Erroneous dates \n" \
         "L. Person ID failure rate\n" \
+        "M. Number of ACHILLES Errors\n\n" \
         "Please specify your choice by typing the corresponding letter."
 
 output_prompt = \

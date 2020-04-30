@@ -54,6 +54,9 @@ unweighted_metric_already_integrated_for_hpo: shows which
 
 aggregate_metric_class_names: contains the 'names' of the aggregate
     metric objects that one can use
+
+no_aggregate_metric_needed_for_table_sheets: indicates instances where
+    no 'aggregate' row needs to be calculated for the 'table' sheets
 """
 
 # ---------- Dictionaries ---------- #
@@ -72,7 +75,9 @@ thresholds = {
 
     'date_datetime_disparity_max': 0.01,
     'erroneous_dates_max': 0.01,
-    'person_failure_rate_max': 0.01
+    'person_failure_rate_max': 0.01,
+
+    'achilles_errors_max': 0.01
 }
 
 
@@ -88,7 +93,8 @@ choice_dict = {
     'i': 'visit_date_disparity',
     'j': 'date_datetime_disparity',
     'k': 'erroneous_dates',
-    'l': 'person_id_failure_rate'}
+    'l': 'person_id_failure_rate',
+    'm': 'achilles_errors'}
 
 percentage_dict = {
     'duplicates': False,
@@ -102,7 +108,8 @@ percentage_dict = {
     'visit_date_disparity': True,
     'date_datetime_disparity': True,
     'erroneous_dates': True,
-    'person_id_failure_rate': True
+    'person_id_failure_rate': True,
+    'achilles_errors': False
 }
 
 target_low_dict = {
@@ -124,7 +131,9 @@ target_low_dict = {
     # double negative.
     'date_datetime_disparity': False,
     'erroneous_dates': False,
-    'person_id_failure_rate': False
+    'person_id_failure_rate': False,
+
+    'achilles_errors': True
 }
 
 columns_to_document_for_sheet = {
@@ -182,7 +191,10 @@ columns_to_document_for_sheet = {
     'person_id_failure_rate': [
         'visit_occurrence', 'condition_occurrence',
         'drug_exposure', 'measurement',
-        'procedure_occurrence', 'observation']
+        'procedure_occurrence', 'observation'],
+
+    'achilles_errors': [
+        'num_distinct_ids']
 }
 
 
@@ -227,7 +239,9 @@ table_based_on_column_provided = {
     'CMP': 'Comprehensive Metabolic Panel',
     'CBCwDiff': 'CBC with Differential',
     'CBC': 'Complete Blood Count (CBC)',
-    'Lipid': 'Lipid'
+    'Lipid': 'Lipid',
+
+    'num_distinct_ids': 'All Tables'
 }
 
 data_quality_dimension_dict = {
@@ -241,7 +255,8 @@ data_quality_dimension_dict = {
     'measurement_units': 'Completeness',
     'date_datetime_disparity': 'Conformance',
     'erroneous_dates': 'Plausibility',
-    'person_id_failure_rate': 'Conformance'
+    'person_id_failure_rate': 'Conformance',
+    'achilles_errors': 'Conformance'
 }
 
 metric_type_to_english_dict = {
@@ -262,7 +277,8 @@ metric_type_to_english_dict = {
     'concept': 'Concept ID Success Rate',
     'duplicates': 'Duplicate Records',
     'erroneous_dates': 'Erroneous Dates',
-    'person_id_failure_rate': 'Person ID Failure Rate'
+    'person_id_failure_rate': 'Person ID Failure Rate',
+    'achilles_errors': 'Number of ACHILLES Errors'
 }
 
 metrics_to_weight = [
@@ -332,9 +348,9 @@ row_count_col_names = [
 # ---------- Lists ---------- #
 unweighted_metric_already_integrated_for_hpo = [
     'drug_routes',
-    'measurement_units']
+    'measurement_units', 'achilles_errors']
 
-no_aggregate_metric_needed_for_hpo_sheets = [
+no_aggregate_metric_needed_for_table_sheets = [
     'drug_success', 'sites_measurement']
 
 aggregate_metric_class_names = ['All Measurements', 'All Drugs']

@@ -23,7 +23,7 @@ from aggregate_metric_classes import \
 from dictionaries_and_lists import \
     metric_type_to_english_dict, \
     unweighted_metric_already_integrated_for_hpo, \
-    no_aggregate_metric_needed_for_hpo_sheets
+    no_aggregate_metric_needed_for_table_sheets
 
 from messages import err_message_agg_for_table, \
     err_message_agg_for_date, \
@@ -278,7 +278,7 @@ def create_aggregate_info_df(
     if metric_choice not in \
             unweighted_metric_already_integrated_for_hpo\
             and metric_choice not in \
-            no_aggregate_metric_needed_for_hpo_sheets:
+            no_aggregate_metric_needed_for_table_sheets:
         final_row = make_aggregate_row_for_aggregate_df(
             datetimes=datetimes, metric_choice=metric_choice_eng,
             aggregate_metrics=aggregate_metrics)
