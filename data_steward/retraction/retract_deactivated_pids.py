@@ -269,7 +269,9 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
             if check_pid_exist(pid, date_row) is True:
                 # Get or create sandbox dataset
                 sandbox_dataset = get_sandbox_dataset_id(date_row.dataset_id)
-                if sandbox_dataset not in bq.list_datasets(project_id):
+                datasets_obj = bq.list_datasets(project_id)
+                datasets = [d.dataset_id for d in datasets_obj]
+                if sandbox_dataset not in datasets:
                     logging.info('%s dataset does not exist, creating now' %
                                  sandbox_dataset)
                     create_sandbox_dataset(date_row.project_id,
