@@ -64,7 +64,3 @@ def check_and_create_sandbox_dataset(project_id, dataset_id):
     if sandbox_dataset not in datasets:
         create_sandbox_dataset(project_id, dataset_id)
     return sandbox_dataset
-
-
-check_and_create_sandbox_dataset(project_id='aou-res-curation-test',
-                                 dataset_id='amcgrenera_combined')
