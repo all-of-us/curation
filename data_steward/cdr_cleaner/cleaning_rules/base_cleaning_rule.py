@@ -66,6 +66,16 @@ class AbstractBaseCleaningRule(ABC):
         pass
 
     @abstractmethod
+    def validate_delete_cleaning_rule(self, *args, **keyword_args):
+        """
+        Interface to return if the cleaning rule properly implemented.
+
+        :returns: True if the count 
+        """
+
+        pass
+
+    @abstractmethod
     def log_queries(self, *args, **keyword_args):
         """
         Helper function to print the SQL a class generates.
