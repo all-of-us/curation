@@ -18,6 +18,7 @@ funcsigs==1.0.2
 google-api-core>=1.14.3
 google-api-python-client==1.6.4
 google-auth>=1.9.0
+google-auth-httplib2==0.0.3
 google-auth-oauthlib==0.4.1
 google-cloud-bigquery==1.24.0
 google-cloud-core>=1.1.0
@@ -25,6 +26,7 @@ google-cloud-logging==1.14.0
 google-resumable-media==0.5.0
 googleapis-common-protos==1.6.0
 GoogleAppEngineCloudStorageClient==1.9.22.1
+grpcio==1.25.0
 gunicorn==20.0.2
 httplib2==0.10.3
 idna==2.6
