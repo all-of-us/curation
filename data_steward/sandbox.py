@@ -1,5 +1,6 @@
 from bq_utils import create_dataset
 from constants import bq_utils as bq_consts
+from utils.bq import list_datasets
 import re
 
 SANDBOX_SUFFIX = 'sandbox'
@@ -46,3 +47,20 @@ def get_sandbox_table_name(dataset_id, rule_name):
     return '{dataset_id}_{rule_name}'.format(dataset_id=dataset_id,
                                              rule_name=re.sub(
                                                  r'\W', '_', rule_name))
+
+
+def check_and_create_sandbox_dataset(project_id, dataset_id):
+    """
+    A helper function to check if sandbox dataset exisits. If it does not, it will create.
+
+    :param project_id: the project_id that the dataset is in
+    :param dataset_id: the dataset_id to verify
+    :return: the sandbox dataset_name that either exists or was created
+    """
+    sandbox_dataset = get_sandbox_dataset_id(dataset_id)
+    dataset_objs = list_datasets(project_id)
+    datasets = [d.dataset_id for d in dataset_objs]
+
+    if sandbox_dataset not in datasets:
+        create_sandbox_dataset(project_id, dataset_id)
+    return sandbox_dataset
