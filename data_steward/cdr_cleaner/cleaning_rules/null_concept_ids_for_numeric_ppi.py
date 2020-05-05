@@ -1,50 +1,54 @@
 """
+Nullify concept ids for numeric PPIs from the RDR observation dataset
+
 Original Issues: DC-537, DC-703
+
+The intent is to null concept ids (value_source_concept_id, value_as_concept_id, value_source_value,
+value_as_string) for numeric PPIs from the RDR observation dataset. The changed records should be
+archived in the dataset sandbox.
 """
 
 # Python imports
 import logging
 
 # Project imports
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from sandbox import check_and_create_sandbox_dataset
 
 LOGGER = logging.getLogger(__name__)
-
 
 SAVE_TABLE_NAME = "dc_703_obs_changed_rows_saved"
 
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
 SANDBOX_QUERY = """
 CREATE OR REPLACE TABLE 
-  `{project}.{sandbox_dataset}.{intermediary_table}` AS (
+    `{project}.{sandbox_dataset}.{intermediary_table}` AS (
 SELECT *
 FROM 
-  `{project}.{dataset}.observation`
+    `{project}.{dataset}.observation`
 WHERE
-  questionnaire_response_id IS NOT NULL
+    questionnaire_response_id IS NOT NULL
 AND 
-  value_as_number IS NOT NULL
+    value_as_number IS NOT NULL
 AND 
-  (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL))
+    (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL))
 """
 
-# Query to modify all selected rows
 CLEAN_NUMERIC_PPI_QUERY = """
-UPDATE 
-  `{project}.{dataset}.observation`
-SET
-  value_source_concept_id = NULL,
-  value_as_concept_id = NULL,
-  value_source_value = NULL,
-  value_as_string = NULL
-WHERE
-  questionnaire_response_id IS NOT NULL
+SELECT * REPLACE(
+    NULL AS value_source_concept_id,
+    NULL AS value_as_concept_id,
+    NULL AS value_source_value,
+    NULL AS value_as_string)
+FROM `{project}.{dataset}.observation` AS obs 
+WHERE 
+   questionnaire_response_id IS NOT NULL
 AND
-  value_as_number IS NOT NULL
+   value_as_number IS NOT NULL
 AND
-  (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL)
+   (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL)
 """
 
 
@@ -86,7 +90,8 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
                 SANDBOX_QUERY.format(
                     project=self.get_project_id(),
                     dataset=self.get_dataset_id(),
-                    sandbox_dataset=self.get_sandbox_dataset_id(),
+                    sandbox_dataset=check_and_create_sandbox_dataset(self.get_project_id(),
+                                                                             self.get_dataset_id()),
                     intermediary_table=SAVE_TABLE_NAME),
 
         }
@@ -105,6 +110,12 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
 
         return [save_changed_rows, clean_numeric_ppi_query]
 
+    def setup_rule(self):
+        """
+        Function to run any data upload options before executing a query.
+        """
+        pass
+
     def get_sandbox_tablenames(self):
         return [SAVE_TABLE_NAME]
 
@@ -116,5 +127,11 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    rdr_cleaner = NullAnswerConceptIDForNumericPPI(
+    rdr_cleaner = NullConceptIDForNumericPPI(
         ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
+    query_list = rdr_cleaner.get_query_specs()
+
+    if ARGS.list_queries:
+        rdr_cleaner.log_queries()
+    else:
+        clean_engine.clean_dataset(ARGS.project_id, query_list)
