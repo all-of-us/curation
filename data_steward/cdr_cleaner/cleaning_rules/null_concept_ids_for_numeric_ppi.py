@@ -12,10 +12,9 @@ archived in the dataset sandbox.
 import logging
 
 # Project imports
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
-from sandbox import check_and_create_sandbox_dataset
 
 LOGGER = logging.getLogger(__name__)
 
@@ -90,8 +89,7 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
                 SANDBOX_QUERY.format(
                     project=self.get_project_id(),
                     dataset=self.get_dataset_id(),
-                    sandbox_dataset=check_and_create_sandbox_dataset(self.get_project_id(),
-                                                                             self.get_dataset_id()),
+                    sandbox_dataset=self.get_sandbox_dataset_id(),
                     intermediary_table=SAVE_TABLE_NAME),
 
         }
