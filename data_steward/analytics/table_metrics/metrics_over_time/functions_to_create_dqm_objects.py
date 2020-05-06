@@ -4,6 +4,7 @@ used to create the DataQualityMetric objects throughtout
 the script.
 """
 import pandas as pd
+import constants
 
 
 def find_hpo_row(sheet, hpo):
@@ -90,8 +91,8 @@ def get_info(
         if col_label in columns_to_collect:
 
             # data for table for site does not exist
-            if number is None or number == 'No Data':
-                data_dictionary[col_label] = float('NaN')
+            if number is None or number == constants.no_data:
+                data_dictionary[col_label] = float(constants.nan_string)
 
             else:
                 try:
@@ -107,9 +108,13 @@ def get_info(
 
                     # actual info to be logged if sensible data
                     elif percentage and target_low:  # proportion w/ errors
-                        data_dictionary[col_label] = round(100 - number, 2)
+                        data_dictionary[col_label] = round(
+                            100 - number, constants.rounding_val)
+
                     elif percentage and not target_low:  # effective
-                        data_dictionary[col_label] = round(number, 2)
+                        data_dictionary[col_label] = round(
+                            number, constants.rounding_val)
+
                     elif not percentage and number > -1:
                         data_dictionary[col_label] = int(number)
         else:
@@ -119,6 +124,6 @@ def get_info(
     # HPOs for consistency and versatility
     for table in data_dictionary:
         if table not in data_dictionary.keys():
-            data_dictionary[table] = float('NaN')
+            data_dictionary[table] = float(constants.nan_string)
 
     return data_dictionary

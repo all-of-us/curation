@@ -29,6 +29,8 @@ from messages import err_message_agg_for_table, \
     err_message_agg_for_date, \
     err_message_agg_for_hpo
 
+import constants
+
 
 def add_aggregate_to_end_of_table_class_df(
         datetimes, aggregate_metrics, table_class_name,
@@ -86,7 +88,7 @@ def add_aggregate_to_end_of_table_class_df(
                 agg_metric_found = True
 
                 # duplicates - want the total number of records
-                if metric_choice == 'Duplicate Records':
+                if metric_choice == constants.duplicates_full:
                     aggregate_rate = aggregate_metric.num_pertinent_rows
                 else:
                     aggregate_rate = aggregate_metric.overall_rate
@@ -98,7 +100,7 @@ def add_aggregate_to_end_of_table_class_df(
                 date=date, table_class_name=table_class_name,
                 metric_type=metric_choice)
 
-    df.loc['aggregate_info'] = row_to_place
+    df.loc[constants.aggregate_info] = row_to_place
 
     return df
 
@@ -161,7 +163,7 @@ def add_aggregate_to_end_of_hpo_df(
                 agg_metric_found = True
 
                 # duplicates - want the total number of records
-                if metric_choice == 'Duplicate Records':
+                if metric_choice == constants.duplicates_full:
                     aggregate_rate = aggregate_metric.num_pertinent_rows
                 else:
                     aggregate_rate = aggregate_metric.overall_rate
@@ -174,7 +176,7 @@ def add_aggregate_to_end_of_hpo_df(
                 date=date, hpo_name=hpo_id,
                 metric_type=metric_choice)
 
-    df.loc['aggregate_info'] = row_to_place
+    df.loc[constants.aggregate_info] = row_to_place
 
     return df
 
@@ -225,13 +227,13 @@ def create_aggregate_info_df(
 
     now has the aggregate information dataframe
     """
-    df_of_interest = dataframes_dict['aggregate_info']
+    df_of_interest = dataframes_dict[constants.aggregate_info]
 
     metric_choice_eng = metric_type_to_english_dict[metric_choice]
 
     # will be added later - not an aggregate_metric object
-    if 'aggregate_info' in tables_or_classes_for_metric:
-        tables_or_classes_for_metric.remove('aggregate_info')
+    if constants.aggregate_info in tables_or_classes_for_metric:
+        tables_or_classes_for_metric.remove(constants.aggregate_info)
 
     # each row
     for table_or_class in tables_or_classes_for_metric:
@@ -258,7 +260,7 @@ def create_aggregate_info_df(
                     agg_metric_found = True
 
                     # duplicates - want the total number of records
-                    if metric_choice_eng == 'Duplicate Records':
+                    if metric_choice_eng == constants.duplicates_full:
                         aggregate_rate = aggregate_metric.num_pertinent_rows
                     else:
                         aggregate_rate = aggregate_metric.overall_rate
@@ -283,13 +285,13 @@ def create_aggregate_info_df(
             datetimes=datetimes, metric_choice=metric_choice_eng,
             aggregate_metrics=aggregate_metrics)
 
-        df_of_interest.loc['aggregate_info'] = final_row
+        df_of_interest.loc[constants.aggregate_info] = final_row
     else:
         # no need - already logged
-        df_of_interest = df_of_interest.drop('aggregate_info')
+        df_of_interest = df_of_interest.drop(constants.aggregate_info)
 
     # resetting accordingly
-    dataframes_dict['aggregate_info'] = df_of_interest
+    dataframes_dict[constants.aggregate_info] = df_of_interest
 
     return dataframes_dict
 
@@ -345,7 +347,7 @@ def make_aggregate_row_for_aggregate_df(
                 agg_metric_found = True
 
                 # duplicates - want the total number of records
-                if metric_choice == 'Duplicate Records':
+                if metric_choice == constants.duplicates_full:
                     aggregate_rate = aggregate_metric.num_pertinent_rows
                 else:
                     aggregate_rate = aggregate_metric.overall_rate

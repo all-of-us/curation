@@ -52,7 +52,7 @@ date_cols = table_sheets[0].columns
 date_cols = (list(date_cols))
 
 hpo_id_cols = table_sheets[0].index
-hpo_id_cols = (list(hpo_id_cols))
+hpo_id_cols = (list(hpo_id_cols)[:-1]) # chop off aggregate_info
 # -
 
 # ### Converting the numbers as needed and putting into a dictionary
@@ -66,7 +66,7 @@ for name, sheet in zip(sheet_names, table_sheets):
     new_df = pd.DataFrame(columns=sheet_cols)
 
     for col in sheet_cols:
-        old_col = sheet[col]
+        old_col = sheet[col][:-1]  # chop off aggregate_info
         new_col = pd.to_numeric(old_col, errors='coerce')
         new_df[col] = new_col
 
@@ -128,48 +128,18 @@ ax.set_title("Visit Table Duplicates", size=14)
 # plt.savefig("visit_table_duplicates.jpg")
 # -
 
-# ## Creating a box-and-whisker plot for the different table types across all sites
-#
-# #### NOTE: This doesn't work super well. Not saving as an image. Might be helpful down the line so keeping it for now.
+# # Now let's look at the metrics for particular sites with respect to date/datetime disparity. This will allow us to send them the appropriate information.
 
-# sns.set(style = "ticks")
-# f, ax = plt.subplots(figsize=(18, 12))
-#
-# date = 'september_16_2019'
-#
-# date_info = {}
-#
-# for table_type in sheet_names:
-#     date_info[table_type] = new_table_sheets[table_type][date].tolist()
-#
-# july_15_df = pd.DataFrame.from_dict(date_info)
-#
-# sns.boxplot(data=july_15_df, 
-#             whis = "range", palette="vlag")
-#
-# sns.swarmplot(data=july_15_df,
-#               size = 5, color=".3", linewidth=0)
-#
-# plt.ylabel(ylabel="Success Rate", size=16)
-# plt.xlabel(xlabel="\nTable Type", size=16)
-# plt.title("Duplicates for {}".format(date), size = 18)
-# sns.despine(trim=True, left=True)
+fn1_hpo_sheets = 'duplicates_hpo_sheets_analytics_report.xlsx'
+file_names_hpo_sheets = [fn1_hpo_sheets]
 
-# # Now let's look at the metrics for particular sites with respect to date/datetime disparity; this will allow us to send them the same information
+x1 = pd.ExcelFile(fn1_hpo_sheets)
+site_name_list = x1.sheet_names
 
 # +
-site_name_list = ['aouw_mcri', 'aouw_mcw', 'aouw_uwh', 'chci', 'chs', 'cpmc_ceders', 
-                  'cpmc_ucd', 'cpmc_uci', 'cpmc_ucsd', 'cpmc_ucsf', 'cpmc_usc', 'ecchc',
-                  'hrhc', 'ipmc_northshore', 'ipmc_nu', 'ipmc_rush', 'ipmc_uchicago',
-                  'ipmc_uic', 'jhchc', 'nec_bmc', 'nec_phs', 'nyc_cornell', 'nyc_cu',
-                  'nyc_hh', 'pitt', 'pitt_temple', 'saou_lsu', 'saou_tul', 'saou_uab',
-                  'saou_uab_hunt', 'saou_uab_selma', 'saou_umc',
-                  'saou_ummc', 'seec_emory', 'seec_miami', 'seec_morehouse',
-                  'seec_ufl', 'syhc', 'tach_hfhs', 'trans_am_baylor',
-                  'trans_am_essentia', 'trans_am_meyers', 'trans_am_spectrum', 'uamc_banner',
-                  'va', 'aggregate_info']
+num_hpo_sheets = len(site_name_list)
 
-print(len(site_name_list))
+print(f"There are {num_hpo_sheets} HPO sheets.")
 
 # +
 name_of_interest = 'aggregate_info'
@@ -182,43 +152,10 @@ for idx, site in enumerate(site_name_list):
         idx_of_interest = idx
 
 # +
-fn1_hpo_sheets = 'duplicates_hpo_sheets_analytics_report.xlsx'
-file_names_hpo_sheets = [fn1_hpo_sheets]
-
-s1, s2 = site_name_list[0], site_name_list[1]
-s3, s4 = site_name_list[2], site_name_list[3]
-s5, s6 = site_name_list[4], site_name_list[5]
-s7, s8 = site_name_list[6], site_name_list[7]
-s9, s10 = site_name_list[8], site_name_list[9]
-s11, s12 = site_name_list[10], site_name_list[11]
-s13, s14 = site_name_list[12], site_name_list[13]
-s15, s16 = site_name_list[14], site_name_list[15]
-s17, s18 = site_name_list[16], site_name_list[17]
-s19, s20 = site_name_list[18], site_name_list[19]
-s21, s22 = site_name_list[20], site_name_list[21]
-s23, s24 = site_name_list[22], site_name_list[23]
-s25, s26 = site_name_list[24], site_name_list[25]
-s27, s28 = site_name_list[26], site_name_list[27]
-s29, s30 = site_name_list[28], site_name_list[29]
-s31, s32 = site_name_list[30], site_name_list[31]
-s33, s34 = site_name_list[32], site_name_list[33]
-s35, s36 = site_name_list[34], site_name_list[35]
-s37, s38 = site_name_list[36], site_name_list[37]
-s39, s40 = site_name_list[38], site_name_list[39]
-s41, s42 = site_name_list[40], site_name_list[41]
-s43, s44 = site_name_list[42], site_name_list[43]
-s45, s46 = site_name_list[44], site_name_list[45] 
-
-hpo_sheet_names = [
-    s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, 
-    s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26,
-    s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
-    s39, s40, s41, s42, s43, s44, s45, s46]
-# +
 hpo_sheets = []
 
 for file in file_names_hpo_sheets:
-    for sheet in hpo_sheet_names:
+    for sheet in site_name_list:
         s = pd.read_excel(file, sheet)
         hpo_sheets.append(s)
         
@@ -227,23 +164,6 @@ table_id_cols = list(hpo_sheets[0].index)
 
 date_cols = table_sheets[0].columns
 date_cols = (list(date_cols))
-
-for idx, table_id in enumerate(table_id_cols):
-    under_encountered = False
-    start_idx, end_idx = 0, 0
-    
-    for c_idx, character in enumerate(table_id):
-        if character == '_' and not under_encountered:
-            start_idx = c_idx
-            under_encountered = True
-        elif character == '_' and under_encountered:
-            end_idx = c_idx
-    
-    in_between_str = table_id[start_idx:end_idx + 1]
-    
-    if in_between_str == '_succes_':
-        new_string = table_id[0:start_idx] + '_success' + table_id[end_idx:]
-        table_id_cols[idx] = new_string
 
 # +
 new_hpo_sheets = []
@@ -270,7 +190,7 @@ sns.heatmap(new_hpo_sheets[idx_of_interest], annot=True, annot_kws={"size": 14},
             fmt='g', linewidths=.5, ax=ax, yticklabels=table_id_cols,
             xticklabels=date_cols, cmap="YlGnBu")
 
-ax.set_title("Duplicates for {}".format(name_of_interest), size=14)
+ax.set_title(f"Duplicates for {name_of_interest}", size=14)
 
 plt.tight_layout()
 img_name = name_of_interest + "_duplicates.png"
@@ -280,7 +200,7 @@ plt.savefig(img_name)
 
 dates = new_hpo_sheets[0].columns.tolist()
 
-# ## NOTE: This is more experimental than anything else; Could be improved upon in the future. This particular graphic is also only quasi-informative.
+# ## NOTE: This is more experimental than anything else. Could be improved upon in the future. This particular graphic is also only quasi-informative.
 
 # +
 num_tables = len(new_hpo_sheets[0]) - 1  # do not include aggregate
@@ -333,7 +253,7 @@ for date_idx in range(len(dates)):
     ax.plot(angles, date, linewidth=1, linestyle='solid', label=dates[date_idx])
     ax.fill(angles, date, alpha=0.1)
 
-plt.title("Duplicates: {}".format(name_of_interest), size=15, y = 1.1)
+plt.title(f"Duplicates: {name_of_interest}", size=15, y = 1.1)
 plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
 # -
 
@@ -373,7 +293,7 @@ for table, values_over_time in success_rates.items():
         plt.plot(date_idxs[non_nan_idx], new_lst, 'o', label=table)
 
 plt.legend(loc="upper left", bbox_to_anchor=(1,1))
-plt.title("{} Duplicates Over Time".format(name_of_interest))
+plt.title(f"{name_of_interest} Duplicates Over Time")
 plt.ylabel("Duplicate #")
 plt.xlabel("")
 plt.xticks(date_idxs, times, rotation = 'vertical')

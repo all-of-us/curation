@@ -15,6 +15,7 @@ class before learning more about the HPO class.
 
 from dictionaries_and_lists import thresholds
 import sys
+import constants
 
 
 class HPO:
@@ -178,30 +179,31 @@ class HPO:
         program.
         """
         attributes_str = """
-        HPO ID: {hpo_id}\n
-        Full Name: {full_name}\n
-        Date: {date}\n\n
-        Number of Metrics: \n
-        \t Concept Success Rate: {num_concepts}\n
-        \t Duplicates: {duplicates}\n
-        \t End Dates Preceding Start Dates: {end_before_start}\n
-        \t Data After Death: {d_a_d}\n
-        \t Route Success: {route_success}\n
-        \t Unit Success: {unit_success}\n
-        \t Measurement Integration: {measurement_integration}\n
-        \t Ingredient Integration: {ingredient_integration}\n
-        \t Date/Datetime Disagreement: {date_datetime} \n
-        \t Erroneous Dates: {erroneous_dates}\n
-        \t Person ID Failure: {person_id_failure}\n
-        \t Number of ACHILLES Errors: {achilles_errors}\n
-        \n
-        Number of Rows:\n
-        \t Measurement: {measurement}\n
-        \t Visit Occurrence: {visit}\n
-        \t Procedure Occurrence: {procedure}\n
-        \t Condition Occurrence: {condition}\n
-        \t Drug Exposure: {drug}\n
-        \t Observation: {observation}
+        HPO ID: {hpo_id}
+        Full Name: {full_name}
+        Date: {date}
+        
+        Number of Metrics:
+            Concept Success Rate: {num_concepts}
+            Duplicates: {duplicates}
+            End Dates Preceding Start Dates: {end_before_start}
+            Data After Death: {d_a_d}
+            Route Success: {route_success}
+            Unit Success: {unit_success}
+            Measurement Integration: {measurement_integration}
+            Ingredient Integration: {ingredient_integration}
+            Date/Datetime Disagreement: {date_datetime}
+            Erroneous Dates: {erroneous_dates}
+            Person ID Failure: {person_id_failure}
+            Number of ACHILLES Errors: {achilles_errors}
+        
+        Number of Rows:
+            Measurement: {measurement}
+            Visit Occurrence: {visit}
+            Procedure Occurrence: {procedure}
+            Condition Occurrence: {condition}
+            Drug Exposure: {drug}
+            Observation: {observation}
         """.format(
             hpo_id=self.name, full_name=self.full_name,
             date=self.date, num_concepts=len(self.concept_success),
@@ -245,40 +247,40 @@ class HPO:
             equal self.name whenever this is used)
         """
 
-        if metric == 'Concept ID Success Rate':
+        if metric == constants.concept_full:
             self.concept_success.append(dq_object)
 
-        elif metric == 'Duplicate Records':
+        elif metric == constants.duplicates_full:
             self.duplicates.append(dq_object)
 
-        elif metric == 'End Dates Preceding Start Dates':
+        elif metric == constants.end_before_begin_full:
             self.end_before_begin.append(dq_object)
 
-        elif metric == 'Data After Death':
+        elif metric == constants.data_after_death_full:
             self.data_after_death.append(dq_object)
 
-        elif metric == 'Measurement Integration':
+        elif metric == constants.sites_measurement_full:
             self.measurement_integration.append(dq_object)
 
-        elif metric == 'Drug Ingredient Integration':
+        elif metric == constants.drug_success_full:
             self.ingredient_integration.append(dq_object)
 
-        elif metric == 'Route Concept ID Success Rate':
+        elif metric == constants.drug_routes_full:
             self.route_success.append(dq_object)
 
-        elif metric == 'Unit Concept ID Success Rate':
+        elif metric == constants.measurement_units_full:
             self.unit_success.append(dq_object)
 
-        elif metric == 'Date/Datetime Disparity':
+        elif metric == constants.date_datetime_disparity_full:
             self.date_datetime_disp.append(dq_object)
 
-        elif metric == 'Erroneous Dates':
+        elif metric == constants.erroneous_dates_full:
             self.erroneous_dates.append(dq_object)
 
-        elif metric == 'Person ID Failure Rate':
+        elif metric == constants.person_id_failure_rate_full:
             self.person_id_failure.append(dq_object)
 
-        elif metric == 'Number of ACHILLES Errors':
+        elif metric == constants.achilles_errors_full:
             self.achilles_errors.append(dq_object)
 
         else:
@@ -304,17 +306,17 @@ class HPO:
             table
         """
 
-        if table == 'observation_total_row':
+        if table == constants.observation_total_row:
             self.num_observation_rows = value
-        elif table == 'drug_total_row':
+        elif table == constants.drug_total_row:
             self.num_drug_rows = value
-        elif table == 'procedure_total_row':
+        elif table == constants.procedure_total_row:
             self.num_procedure_rows = value
-        elif table == 'condition_total_row':
+        elif table == constants.condition_total_row:
             self.num_condition_rows = value
-        elif table == 'measurement_total_row':
+        elif table == constants.measurement_total_row:
             self.num_measurement_rows = value
-        elif table == 'visit_total_row':
+        elif table == constants.visit_total_row:
             self.num_visit_rows = value
         else:
             print("Unrecognized table input: {table} for {hpo}".format(
@@ -347,84 +349,84 @@ class HPO:
             table being queried
         """
 
-        if metric == 'Concept ID Success Rate':
+        if metric == constants.concept_full:
             for obj in self.concept_success:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'Duplicate Records':
+        elif metric == constants.duplicates_full:
             for obj in self.duplicates:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'End Dates Preceding Start Dates':
+        elif metric == constants.end_before_begin_full:
             for obj in self.end_before_begin:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'Data After Death':
+        elif metric == constants.data_after_death_full:
             for obj in self.data_after_death:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'Measurement Integration':
+        elif metric == constants.sites_measurement_full:
             for obj in self.measurement_integration:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'Drug Ingredient Integration':
+        elif metric == constants.drug_success_full:
             for obj in self.ingredient_integration:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'Route Concept ID Success Rate':
+        elif metric == constants.drug_routes_full:
             for obj in self.route_success:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'Unit Concept ID Success Rate':
+        elif metric == constants.measurement_units_full:
             for obj in self.unit_success:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'Date/Datetime Disparity':
+        elif metric == constants.date_datetime_disparity_full:
             for obj in self.date_datetime_disp:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'Erroneous Dates':
+        elif metric == constants.erroneous_dates_full:
             for obj in self.erroneous_dates:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'Person ID Failure Rate':
+        elif metric == constants.person_id_failure_rate_full:
             for obj in self.person_id_failure:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == 'Number of ACHILLES Errors':
+        elif metric == constants.achilles_errors_full:
             for obj in self.achilles_errors:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
         else:
-            raise Exception(
-                "Unexpected metric type:"
-                "{metric} found for table or class"
-                "{table_or_class}".format(
+            raise Exception("""
+                Unexpected metric type:
+                {metric} found for table or class
+                {table_or_class}""".format(
                     metric=metric, table_or_class=table_or_class))
 
-        if table_or_class == "Measurement":
+        if table_or_class == constants.measurement_full:
             total_rows = self.num_measurement_rows
-        elif table_or_class == "Visit Occurrence":
+        elif table_or_class == constants.visit_occurrence_full:
             total_rows = self.num_visit_rows
-        elif table_or_class == "Procedure Occurrence":
+        elif table_or_class == constants.procedure_full:
             total_rows = self.num_procedure_rows
-        elif table_or_class == "Condition Occurrence":
+        elif table_or_class == constants.condition_occurrence_full:
             total_rows = self.num_condition_rows
-        elif table_or_class == "Drug Exposure":
+        elif table_or_class == constants.drug_exposure_full:
             total_rows = self.num_drug_rows
-        elif table_or_class == "Observation":
+        elif table_or_class == constants.observation_full:
             total_rows = self.num_observation_rows
         elif table_or_class == "Device Exposure":  # ignore for now
             total_rows = 0
@@ -434,7 +436,7 @@ class HPO:
                 "{table_or_class} found for metric {metric}".format(
                     table_or_class=table_or_class, metric=metric))
 
-        if metric == 'Duplicate Records':
+        if metric == constants.duplicates_full:
             rel_rows = succ_rate  # want to report out the total #
 
         else:
@@ -506,40 +508,40 @@ class HPO:
             objects that are related to both the HPO
             and metric provided
         """
-        if metric == 'Concept ID Success Rate':
+        if metric == constants.concept_full:
             relevant_objects = self.concept_success
 
-        elif metric == 'Duplicate Records':
+        elif metric == constants.duplicates_full:
             relevant_objects = self.duplicates
 
-        elif metric == 'End Dates Preceding Start Dates':
+        elif metric == constants.end_before_begin_full:
             relevant_objects = self.end_before_begin
 
-        elif metric == 'Data After Death':
+        elif metric == constants.data_after_death_full:
             relevant_objects = self.data_after_death
 
-        elif metric == 'Measurement Integration':
+        elif metric == constants.sites_measurement_full:
             relevant_objects = self.measurement_integration
 
-        elif metric == 'Drug Ingredient Integration':
+        elif metric == constants.drug_success_full:
             relevant_objects = self.ingredient_integration
 
-        elif metric == 'Route Concept ID Success Rate':
+        elif metric == constants.drug_routes_full:
             relevant_objects = self.route_success
 
-        elif metric == 'Unit Concept ID Success Rate':
+        elif metric == constants.measurement_units_full:
             relevant_objects = self.unit_success
 
-        elif metric == 'Date/Datetime Disparity':
+        elif metric == constants.date_datetime_disparity_full:
             relevant_objects = self.date_datetime_disp
 
-        elif metric == 'Erroneous Dates':
+        elif metric == constants.erroneous_dates_full:
             relevant_objects = self.erroneous_dates
 
-        elif metric == 'Person ID Failure Rate':
+        elif metric == constants.person_id_failure_rate_full:
             relevant_objects = self.person_id_failure
 
-        elif metric == 'Number of ACHILLES Errors':
+        elif metric == constants.achilles_errors_full:
             relevant_objects = self.achilles_errors
 
         else:
@@ -616,57 +618,57 @@ class HPO:
         # below we can find the data quality metrics for several tables -
         # need to iterate through a list to get the objects for each table
         for concept_success_obj in self.concept_success:
-            if concept_success_obj.value < thresholds['concept_success_min']:
+            if concept_success_obj.value < thresholds[constants.concept_success_min]:
                 failing_metrics.append(concept_success_obj)
 
         for duplicates_obj in self.duplicates:
-            if duplicates_obj.value > thresholds['duplicates_max']:
+            if duplicates_obj.value > thresholds[constants.duplicates_max]:
                 failing_metrics.append(duplicates_obj)
 
         for end_before_begin_obj in self.end_before_begin:
-            if end_before_begin_obj.value > thresholds['end_before_begin_max']:
+            if end_before_begin_obj.value > thresholds[constants.end_before_begin_max]:
                 failing_metrics.append(end_before_begin_obj)
 
         for data_after_death_obj in self.data_after_death:
-            if data_after_death_obj.value > thresholds['data_after_death_max']:
+            if data_after_death_obj.value > thresholds[constants.data_after_death_max]:
                 failing_metrics.append(data_after_death_obj)
 
         for route_obj in self.route_success:
-            if route_obj.value < thresholds['route_success_min']:
+            if route_obj.value < thresholds[constants.route_success_min]:
                 failing_metrics.append(route_obj)
 
         for unit_obj in self.unit_success:
-            if unit_obj.value < thresholds['unit_success_min']:
+            if unit_obj.value < thresholds[constants.unit_success_min]:
                 failing_metrics.append(unit_obj)
 
         for measurement_integration_obj in self.measurement_integration:
             if measurement_integration_obj.value < \
-                    thresholds['measurement_integration_min']:
+                    thresholds[constants.measurement_integration_min]:
                 failing_metrics.append(measurement_integration_obj)
 
         for ingredient_integration_obj in self.ingredient_integration:
             if ingredient_integration_obj.value < \
-                    thresholds['route_success_min']:
+                    thresholds[constants.route_success_min]:
                 failing_metrics.append(ingredient_integration_obj)
 
         for date_datetime_obj in self.date_datetime_disp:
             if date_datetime_obj.value > \
-                    thresholds['date_datetime_disparity_max']:
+                    thresholds[constants.date_datetime_disparity_max]:
                 failing_metrics.append(date_datetime_obj)
 
         for erroneous_date_obj in self.erroneous_dates:
             if erroneous_date_obj.value > \
-                    thresholds['erroneous_dates_max']:
+                    thresholds[constants.erroneous_dates_max]:
                 failing_metrics.append(erroneous_date_obj)
 
         for person_id_failure_obj in self.person_id_failure:
             if person_id_failure_obj.value > \
-                    thresholds['person_failure_rate_max']:
+                    thresholds[constants.person_failure_rate_max]:
                 failing_metrics.append(person_id_failure_obj)
 
         for achilles_error_obj in self.achilles_errors:
             if achilles_error_obj.value > \
-                    thresholds['achilles_errors_max']:
+                    thresholds[constants.achilles_errors_max]:
                 failing_metrics.append(achilles_error_obj)
 
         if not failing_metrics:  # no errors logged

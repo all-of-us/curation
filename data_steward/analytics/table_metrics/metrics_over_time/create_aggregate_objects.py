@@ -25,6 +25,8 @@ from dictionaries_and_lists import \
     unweighted_metric_already_integrated_for_hpo, \
     aggregate_metric_class_names
 
+import constants
+
 
 def create_aggregate_metric_master_function(
         metric_dictionary, hpo_dictionary,
@@ -122,7 +124,7 @@ def create_weighted_aggregate_metrics(
             metric_dictionary=metric_dictionary,
             datetimes=datetimes)
 
-    if sheet_output == 'hpo_sheets':
+    if sheet_output == constants.hpo_sheets:
         hpo_aggregate_metrics = create_weighted_aggregate_metrics_for_hpos(
             hpo_dictionary=hpo_dictionary,
             datetimes=datetimes,
@@ -135,7 +137,7 @@ def create_weighted_aggregate_metrics(
 
         aggregate_metrics.extend(agg_met_for_dates)
 
-    elif sheet_output != 'table_sheets':
+    elif sheet_output != constants.table_sheets:
         raise Exception(
             """Bad parameter input for function
              create_aggregate_master_function. Parameter provided
@@ -188,7 +190,7 @@ def create_unweighted_aggregate_metrics(
     aggregate_metrics = create_unweighted_aggregate_metrics_for_tables(
         metric_dictionary=metric_dictionary, datetimes=datetimes)
 
-    if sheet_output == 'hpo_sheets':
+    if sheet_output == constants.hpo_sheets:
 
         # already includes 'AggregateMetricForDate' objects
         aggregate_metrics_hpos = hpo_sheets_chosen_create_uw_ams(
@@ -199,7 +201,7 @@ def create_unweighted_aggregate_metrics(
 
         aggregate_metrics.extend(aggregate_metrics_hpos)
 
-    elif sheet_output != 'table_sheets':
+    elif sheet_output != constants.table_sheets:
         raise Exception(
             """Bad parameter input for function
              create_aggregate_master_function. Parameter provided

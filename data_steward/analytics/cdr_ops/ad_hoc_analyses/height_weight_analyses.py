@@ -132,10 +132,10 @@ m.measurement_concept_id, c.concept_name as measurement_concept,
 
 ROUND(MIN(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as min,
 ROUND(MAX(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as max,
-
 ROUND(AVG(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as mean,
-
 ROUND(STDDEV_POP(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as stdev,
+
+COUNT(m.measurement_id) OVER (PARTITION BY mm.src_hpo_id) as num_rows
 
 FROM
 `{DATASET}.unioned_ehr_measurement` m
@@ -151,7 +151,7 @@ m.measurement_concept_id = c.concept_id
 
 WHERE
 m.measurement_concept_id IN (3036277, 3023540, 3019171)
-GROUP BY mm.src_hpo_id, m.measurement_concept_id, c.concept_name, m.value_as_number
+GROUP BY mm.src_hpo_id, m.measurement_concept_id, c.concept_name, m.value_as_number, m.measurement_id
 
 ORDER BY measurement_concept_id DESC, mean DESC
 """
@@ -178,10 +178,10 @@ m.measurement_concept_id, c.concept_name as measurement_concept,
 
 ROUND(MIN(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as min,
 ROUND(MAX(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as max,
-
 ROUND(AVG(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as mean,
-
 ROUND(STDDEV_POP(m.value_as_number) OVER (PARTITION BY mm.src_hpo_id), 2) as stdev,
+
+COUNT(m.measurement_id) OVER (PARTITION BY mm.src_hpo_id) as num_rows
 
 FROM
 `{DATASET}.unioned_ehr_measurement` m
@@ -197,7 +197,7 @@ m.measurement_concept_id = c.concept_id
 
 WHERE
 m.measurement_concept_id IN (3025315, 3013762, 3023166)
-GROUP BY mm.src_hpo_id, m.measurement_concept_id, c.concept_name, m.value_as_number
+GROUP BY mm.src_hpo_id, m.measurement_concept_id, c.concept_name, m.value_as_number, m.measurement_id
 
 ORDER BY measurement_concept_id DESC, mean DESC
 """
@@ -229,7 +229,7 @@ sites_per_unit_query = f"""
 SELECT
 DISTINCT
 m.unit_concept_id, c.concept_name as unit_concept_name,
-COUNT(DISTINCT mm.src_hpo_id) as num_sites
+COUNT(DISTINCT mm.src_hpo_id) as num_sites,
 
 FROM
 `{DATASET}.unioned_ehr_measurement` m
@@ -265,10 +265,10 @@ m.measurement_concept_id, c.concept_name as measurement_concept,
 
 ROUND(MIN(m.value_as_number) OVER (PARTITION BY m.unit_concept_id), 2) as min,
 ROUND(MAX(m.value_as_number) OVER (PARTITION BY m.unit_concept_id), 2) as max,
-
 ROUND(AVG(m.value_as_number) OVER (PARTITION BY m.unit_concept_id), 2) as mean,
+ROUND(STDDEV_POP(m.value_as_number) OVER (PARTITION BY m.unit_concept_id), 2) as stdev,
 
-ROUND(STDDEV_POP(m.value_as_number) OVER (PARTITION BY m.unit_concept_id), 2) as stdev
+COUNT(m.measurement_id) OVER (PARTITION BY m.unit_concept_id) as num_rows
 
 FROM
 `{DATASET}.unioned_ehr_measurement` m
@@ -292,7 +292,7 @@ WHERE
 m.measurement_concept_id IN (3036277, 3023540, 3019171)
 
 GROUP BY m.unit_concept_id, c2.concept_name, c2.standard_concept,
-m.measurement_concept_id, c.concept_name, m.value_as_number
+m.measurement_concept_id, c.concept_name, m.value_as_number, m.measurement_id
 
 ORDER BY unit_concept_id DESC, mean DESC
 """
@@ -320,10 +320,10 @@ m.measurement_concept_id, c.concept_name as measurement_concept,
 
 ROUND(MIN(m.value_as_number) OVER (PARTITION BY m.unit_concept_id), 2) as min,
 ROUND(MAX(m.value_as_number) OVER (PARTITION BY m.unit_concept_id), 2) as max,
-
 ROUND(AVG(m.value_as_number) OVER (PARTITION BY m.unit_concept_id), 2) as mean,
+ROUND(STDDEV_POP(m.value_as_number) OVER (PARTITION BY m.unit_concept_id), 2) as stdev,
 
-ROUND(STDDEV_POP(m.value_as_number) OVER (PARTITION BY m.unit_concept_id), 2) as stdev
+COUNT(m.measurement_id) OVER (PARTITION BY m.unit_concept_id) as num_rows
 
 FROM
 `{DATASET}.unioned_ehr_measurement` m
@@ -347,7 +347,8 @@ WHERE
 m.measurement_concept_id IN (3025315, 3013762, 3023166)
 
 GROUP BY m.unit_concept_id, c2.concept_name, c2.standard_concept,
-m.measurement_concept_id, c.concept_name, m.value_as_number
+m.measurement_concept_id, c.concept_name, m.value_as_number,
+m.measurement_id
 
 ORDER BY unit_concept_id DESC, mean DESC
 """

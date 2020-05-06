@@ -67,13 +67,13 @@ class DataQualityMetric:
         all of the information to be displayed in a
         human-readable format.
         """
-        print(
-            "HPO: {hpo}\n"
-            "Table/Class: {table_or_class}\n"
-            "Metric Type: {metric_type}\n"
-            "Value: {value}\n"
-            "Data Quality Dimension: {dqd}\n"
-            "Date: {date}\n\n".format(
+        print("""
+            "HPO: {hpo}
+            "Table/Class: {table_or_class}
+            "Metric Type: {metric_type}
+            "Value: {value}
+            "Data Quality Dimension: {dqd}
+            "Date: {date}""".format(
                 hpo=self.hpo, table_or_class=self.table_or_class,
                 metric_type=self.metric_type,
                 value=self.value, dqd=self.data_quality_dimension,

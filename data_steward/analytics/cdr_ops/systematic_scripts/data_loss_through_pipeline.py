@@ -43,11 +43,11 @@ unioned = parameters.UNIONED_Q4_2019
 combined = parameters.COMBINED_Q4_2019
 deid = parameters.DEID_Q4_2019
 
-print("""
+print(f"""
 Unioned Dataset: {unioned}
 Combined Dataset: {combined}
 De-ID Dataset: {deid}
-""".format(unioned=unioned, combined=combined, deid=deid))
+""")
 
 # -
 
