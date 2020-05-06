@@ -10,6 +10,8 @@ from startup_functions import load_files
 from functions_to_create_dqm_objects import find_hpo_row, \
     get_info
 import datetime
+import constants
+
 
 def establish_hpo_objects(dqm_objects):
     """
@@ -134,7 +136,7 @@ def add_number_total_rows_for_hpo_and_date(
     hpos (list): list of the HPO objects. now should have the
         attributes for the number of rows filled in.
     """
-    sheet_name = 'concept'  # where row count is stored
+    sheet_name = constants.concept  # where row count is stored
     dfs = load_files(
         user_choice=sheet_name, file_names=date_names)
 
@@ -172,8 +174,7 @@ def add_number_total_rows_for_hpo_and_date(
 
             for table_name, value in num_rows_dictionary.items():
                 hpo.add_row_count_with_string(
-                    table=table_name, value=value
-                )
+                    table=table_name, value=value)
 
     return hpos
 

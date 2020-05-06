@@ -19,6 +19,8 @@ from auxillary_aggregate_functions import \
     find_unique_dates_and_metrics, \
     get_stats_for_unweighted_table_aggregate_metric
 
+import constants
+
 
 def create_weighted_aggregate_metrics_for_tables(
         metric_dictionary, datetimes):
@@ -226,7 +228,7 @@ def create_weighted_aggregate_metric_for_dates(aggregate_metrics):
                 date=date, metric_type=metric,
                 num_total_rows=num_total_rows,
                 num_pertinent_rows=num_pertinent_rows,
-                table_or_class='aggregate_info')
+                table_or_class=constants.aggregate_info)
 
             agg_metrics_for_dates.append(amfd)
 

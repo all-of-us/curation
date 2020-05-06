@@ -12,6 +12,8 @@ be able to store information about
 
 from dictionaries_and_lists import full_names
 
+import constants
+
 
 class AggregateMetricForTableOrClass:
     """
@@ -64,15 +66,15 @@ class AggregateMetricForTableOrClass:
         try:
             self.overall_rate = round(
                 num_pertinent_rows/num_total_rows * 100,
-                2)
+                constants.rounding_val)
         except ZeroDivisionError:
             self.overall_rate = 0
 
         if num_pertinent_rows == 0 and \
            num_total_rows == 0:
-            self.unweighted_metric = True
+            self.unweighted_metric = constants.true
         else:
-            self.unweighted_metric = False
+            self.unweighted_metric = constants.false
 
     def print_attributes(self):
         """
@@ -80,15 +82,15 @@ class AggregateMetricForTableOrClass:
         display the components of an AggregateMetricForTable
         object.
         """
-        time = self.date.strftime('%m/%d/%Y')
+        time = self.date.strftime(constants.date_format)
 
         attributes_str = """
-        Table/Class Name: {table_or_class_name}\n
-        Date: {date}\n
-        Metric Type: {metric_type}\n
-        Number of Total Rows: {total_rows}\n
-        Number of Pertinent Rows: {pert_rows}\n
-        Overall Rate: {rate}\n
+        Table/Class Name: {table_or_class_name}
+        Date: {date}
+        Metric Type: {metric_type}
+        Number of Total Rows: {total_rows}
+        Number of Pertinent Rows: {pert_rows}
+        Overall Rate: {rate}
         Unweighted Metric?: {uw_metric}
         """.format(
             table_or_class_name=self.table_or_class_name,
@@ -117,7 +119,7 @@ class AggregateMetricForTableOrClass:
             for the AggregateMetricForTable object
         """
         # round by 2 to create metric consistency
-        self.overall_rate = round(rate, 2)
+        self.overall_rate = round(rate, constants.rounding_val)
 
 
 class AggregateMetricForHPO:
@@ -177,15 +179,15 @@ class AggregateMetricForHPO:
         try:
             self.overall_rate = round(
                 num_pertinent_rows/num_total_rows * 100,
-                2)
+                constants.rounding_val)
         except ZeroDivisionError:
             self.overall_rate = 0
 
         if num_pertinent_rows == 0 and \
            num_total_rows == 0:
-            self.unweighted_metric = True
+            self.unweighted_metric = constants.true
         else:
-            self.unweighted_metric = False
+            self.unweighted_metric = constants.false
 
     def print_attributes(self):
         """
@@ -193,15 +195,15 @@ class AggregateMetricForHPO:
         display the components of an AggregateMetricForHPO
         object.
         """
-        time = self.date.strftime('%m/%d/%Y')
+        time = self.date.strftime(constants.date_format)
 
         attributes_str = """
-        Date: {date}\n
-        HPO Name: {hpo_name}\n
-        Metric Type: {metric_type}\n
-        Number of Total Rows: {total_rows}\n
-        Number of Pertinent Rows: {pert_rows}\n
-        Overall Rate: {rate}\n
+        Date: {date}
+        HPO Name: {hpo_name}
+        Metric Type: {metric_type}
+        Number of Total Rows: {total_rows}
+        Number of Pertinent Rows: {pert_rows}
+        Overall Rate: {rate}
         Unweighted Metric?: {uw_metric}
         """.format(
             hpo_name=self.hpo_name,
@@ -229,7 +231,7 @@ class AggregateMetricForHPO:
             for the AggregateMetricForTable object
         """
         # round by 2 to create metric consistency
-        self.overall_rate = round(rate, 2)
+        self.overall_rate = round(rate, constants.rounding_val)
 
 
 class AggregateMetricForDate:
@@ -290,15 +292,15 @@ class AggregateMetricForDate:
         try:
             self.overall_rate = round(
                 num_pertinent_rows/num_total_rows * 100,
-                2)
+                constants.rounding_val)
         except ZeroDivisionError:
             self.overall_rate = 0
 
         if num_pertinent_rows == 0 and \
            num_total_rows == 0:
-            self.unweighted_metric = True
+            self.unweighted_metric = constants.true
         else:
-            self.unweighted_metric = False
+            self.unweighted_metric = constants.false
 
     def print_attributes(self):
         """
@@ -312,14 +314,14 @@ class AggregateMetricForDate:
             of the AggregateMetricForDate object in an easily-
             readable fashion.
         """
-        time = self.date.strftime('%m/%d/%Y')
+        time = self.date.strftime(constants.date_format)
 
         attributes_str = """
-        Date: {date}\n
-        Metric Type: {metric_type}\n
-        Number of Total Rows: {total_rows}\n
-        Number of Pertinent Rows: {pert_rows}\n
-        Overall Rate: {rate}\n
+        Date: {date}
+        Metric Type: {metric_type}
+        Number of Total Rows: {total_rows}
+        Number of Pertinent Rows: {pert_rows}
+        Overall Rate: {rate}
         Unweighted Metric?: {uw_metric}
         """.format(
             date=time,
@@ -346,4 +348,5 @@ class AggregateMetricForDate:
             for the AggregateMetricForTable object
         """
         # round by 2 to create metric consistency
-        self.overall_rate = round(rate, 2)
+        self.overall_rate = round(
+            rate, constants.rounding_val)

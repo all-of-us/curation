@@ -17,6 +17,7 @@ The rows of the dataframes will be as follows:
 """
 import pandas as pd
 from auxillary_aggregate_functions import find_relevant_tables_or_classes
+import constants
 
 
 def create_dataframe_skeletons(
@@ -65,18 +66,18 @@ def create_dataframe_skeletons(
             datetimes=datetimes, hpo_names=hpo_names,
             metric_dictionary=metric_dictionary)
 
-    if sheet_output == 'table_sheets':
+    if sheet_output == constants.table_sheets:
         for table_or_class_name in tables_or_classes_for_metric:
             df = pd.DataFrame(
                 index=hpo_names, columns=dts_string)
 
             dataframes_dict[table_or_class_name] = df
 
-    elif sheet_output == 'hpo_sheets':
+    elif sheet_output == constants.hpo_sheets:
 
         # for the bottom of the dataframe
         tables_or_classes_for_metric.append(
-            'aggregate_info')
+            constants.aggregate_info)
 
         for hpo_name in hpo_names:
 
@@ -131,10 +132,10 @@ def setup_skeleton_function(
         be populated
     """
     dts_string = [
-        date_obj.strftime('%m/%d/%Y') for date_obj in datetimes]
+        date_obj.strftime(constants.date_format) for date_obj in datetimes]
 
     # for final row or ultimate dataframe
-    hpo_names.append('aggregate_info')
+    hpo_names.append(constants.aggregate_info)
     tables_or_classes_for_metric = []  # start blank
 
     dataframes_dict = {}

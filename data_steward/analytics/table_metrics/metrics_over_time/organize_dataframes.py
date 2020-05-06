@@ -22,6 +22,7 @@ from populate_dfs_with_aggregate_info import \
     add_aggregate_to_end_of_hpo_df
 
 import math
+import constants
 
 def organize_dataframes_master_function(
         sheet_output, metric_dictionary, datetimes, hpo_names,
@@ -82,7 +83,7 @@ def organize_dataframes_master_function(
             datetimes=datetimes,
             hpo_names=hpo_names)
 
-    if sheet_output == 'table_sheets':
+    if sheet_output == constants.table_sheets:
         dataframes_dict = populate_table_df_rows(
             datetimes=datetimes,
             hpo_names=hpo_names,
@@ -190,7 +191,6 @@ def populate_table_df_rows(
 
             df.loc[hpo] = row_to_place
 
-
         df = add_aggregate_to_end_of_table_class_df(
             datetimes=datetimes,
             aggregate_metrics=aggregate_metrics,
@@ -297,7 +297,7 @@ def populate_hpo_df_rows(
                 df=df)
         else:
             # no need - already logged
-            df = df.drop('aggregate_info')
+            df = df.drop(constants.aggregate_info)
 
         # replace
         dataframes_dict[hpo_name] = df

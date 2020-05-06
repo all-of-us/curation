@@ -59,69 +59,71 @@ no_aggregate_metric_needed_for_table_sheets: indicates instances where
     no 'aggregate' row needs to be calculated for the 'table' sheets
 """
 
+import constants
+
 # ---------- Dictionaries ---------- #
 thresholds = {
-    'concept_success_min': 90,
-    'duplicates_max': 5,
+    constants.concept_success_min: 90,
+    constants.duplicates_max: 5,
 
-    'end_before_begin_max': 0,
-    'data_after_death_max': 0,
+    constants.end_before_begin_max: 0,
+    constants.data_after_death_max: 0,
 
-    'drug_ingredient_integration_min': 90,
-    'measurement_integration_min': 90,
+    constants.drug_ingredient_integration_min: constants.integration_minimum,
+    constants.measurement_integration_min: constants.integration_minimum,
 
-    'unit_success_min': 85,
-    'route_success_min': 85,
+    constants.unit_success_min: constants.field_population_minimum,
+    constants.route_success_min: constants.field_population_minimum,
 
-    'date_datetime_disparity_max': 0.01,
-    'erroneous_dates_max': 0.01,
-    'person_failure_rate_max': 0.01,
+    constants.date_datetime_disparity_max: constants.achilles_max_value,
+    constants.erroneous_dates_max: constants.achilles_max_value,
+    constants.person_failure_rate_max: constants.achilles_max_value,
 
-    'achilles_errors_max': 0.01
+    constants.achilles_errors_max: 15
 }
 
 
 choice_dict = {
-    'a': 'duplicates',
-    'b': 'data_after_death',
-    'c': 'end_before_begin',
-    'd': 'concept',
-    'e': 'measurement_units',
-    'f': 'drug_routes',
-    'g': 'drug_success',
-    'h': 'sites_measurement',
-    'i': 'visit_date_disparity',
-    'j': 'date_datetime_disparity',
-    'k': 'erroneous_dates',
-    'l': 'person_id_failure_rate',
-    'm': 'achilles_errors'}
+    'a': constants.duplicates,
+    'b': constants.data_after_death,
+    'c': constants.end_before_begin,
+    'd': constants.concept,
+    'e': constants.measurement_units,
+    'f': constants.drug_routes,
+    'g': constants.drug_success,
+    'h': constants.sites_measurement,
+    'i': constants.visit_date_disparity,
+    'j': constants.date_datetime_disparity,
+    'k': constants.erroneous_dates,
+    'l': constants.person_id_failure_rate,
+    'm': constants.achilles_errors}
 
 percentage_dict = {
-    'duplicates': False,
-    'data_after_death': True,
-    'end_before_begin': True,
-    'concept': True,
-    'measurement_units': True,
-    'drug_routes': True,
-    'drug_success': True,
-    'sites_measurement': True,
-    'visit_date_disparity': True,
-    'date_datetime_disparity': True,
-    'erroneous_dates': True,
-    'person_id_failure_rate': True,
-    'achilles_errors': False
+    constants.duplicates: constants.false,
+    constants.data_after_death: constants.true,
+    constants.end_before_begin: constants.true,
+    constants.concept: constants.true,
+    constants.measurement_units: constants.true,
+    constants.drug_routes: constants.true,
+    constants.drug_success: constants.true,
+    constants.sites_measurement: constants.true,
+    constants.visit_date_disparity: constants.true,
+    constants.date_datetime_disparity: constants.true,
+    constants.erroneous_dates: constants.true,
+    constants.person_id_failure_rate: constants.true,
+    constants.achilles_errors: constants.false
 }
 
 target_low_dict = {
-    'duplicates': True,
-    'data_after_death': True,
-    'end_before_begin': True,
-    'concept': False,
-    'measurement_units': False,
-    'drug_routes': False,
-    'drug_success': False,
-    'sites_measurement': False,
-    'visit_date_disparity': False,
+    constants.duplicates: constants.true,
+    constants.data_after_death: constants.true,
+    constants.end_before_begin: constants.true,
+    constants.concept: constants.false,
+    constants.measurement_units: constants.false,
+    constants.drug_routes: constants.false,
+    constants.drug_success: constants.false,
+    constants.sites_measurement: constants.false,
+    constants.visit_date_disparity: constants.false,
 
     # FIXME: the three below - by logic - should
     # be 'True' but were calculated as showing
@@ -129,164 +131,144 @@ target_low_dict = {
     # in the DQM scripts. This means they should be
     # logged as 'False' here to make it an effective
     # double negative.
-    'date_datetime_disparity': False,
-    'erroneous_dates': False,
-    'person_id_failure_rate': False,
+    constants.date_datetime_disparity: constants.false,
+    constants.erroneous_dates: constants.false,
+    constants.person_id_failure_rate: constants.false,
 
-    'achilles_errors': True
+    constants.achilles_errors: constants.true
 }
 
 columns_to_document_for_sheet = {
-    'measurement_units': ['total_unit_success_rate'],
+    constants.measurement_units: [constants.total_unit_success_rate],
 
-    'sites_measurement': ['Physical_Measurement',
-                          'CMP', 'CBCwDiff', 'CBC',
-                          'Lipid', 'All_Measurements'],
+    constants.sites_measurement:
+        constants.measurement_categories,
 
-    'end_before_begin': [
-        'visit_occurrence', 'condition_occurrence',
-        'drug_exposure', 'device_exposure'],
+    constants.end_before_begin:
+        constants.tables_with_one_date,
 
-    'duplicates': ['visit_occurrence', 'condition_occurrence',
-                   'drug_exposure', 'measurement',
-                   'procedure_occurrence', 'device_exposure',
-                   'observation'],
+    constants.duplicates:
+        constants.all_canonical_tables,
 
-    'drug_routes': ['total_route_success_rate'],
+    constants.drug_routes: [constants.total_route_success_rate],
 
-    'drug_success': [
-        'ace_inhibitors', 'painnsaids',	'msknsaids',
-        'statins', 'antibiotics', 'opioids',
-        'oralhypoglycemics', 'vaccine', 'ccb',
-        'diuretics', 'all_drugs'],
+    constants.drug_success:
+        constants.drug_categories,
 
-    'data_after_death': [
-        'visit_occurrence', 'condition_occurrence',
-        'drug_exposure', 'measurement',
-        'procedure_occurrence', 'observation',
-        'device_exposure'],
+    constants.data_after_death:
+        constants.all_canonical_tables,
 
-    'diabetes': [
+    constants.diabetes: [
         'diabetics_w_drugs', 'diabetics_w_glucose',
-        'diabetics_w_a1c', 'diabetics_w_insulin'
-    ],
+        'diabetics_w_a1c', 'diabetics_w_insulin'],
 
-    'concept': [
-        'observation_success_rate', 'drug_success_rate',
-        'procedure_success_rate', 'condition_success_rate',
-        'measurement_success_rate', 'visit_success_rate'],
+    constants.concept: [
+        constants.observation_success, constants.drug_success_col,
+        constants.procedure_success, constants.condition_success,
+        constants.measurement_success, constants.visit_success],
 
-    'date_datetime_disparity': [
-        'visit_occurrence', 'condition_occurrence',
-        'drug_exposure', 'measurement',
-        'procedure_occurrence', 'observation'
-    ],
+    constants.date_datetime_disparity:
+        constants.all_canonical_tables,
 
-    'erroneous_dates': [
-        'visit_occurrence', 'condition_occurrence',
-        'drug_exposure', 'measurement',
-        'procedure_occurrence', 'observation'
-    ],
+    constants.erroneous_dates:
+        constants.all_canonical_tables,
 
-    'person_id_failure_rate': [
-        'visit_occurrence', 'condition_occurrence',
-        'drug_exposure', 'measurement',
-        'procedure_occurrence', 'observation'],
+    constants.person_id_failure_rate:
+        constants.all_canonical_tables,
 
-    'achilles_errors': [
-        'num_distinct_ids']
+    constants.achilles_errors:
+        ['num_distinct_ids']
 }
 
 
 table_based_on_column_provided = {
     # canonical columns
-    'visit_occurrence': 'Visit Occurrence',
-    'condition_occurrence': 'Condition Occurrence',
-    'drug_exposure': 'Drug Exposure',
-    'device_exposure': 'Device Exposure',
-    'measurement': 'Measurement',
-    'procedure_occurrence': 'Procedure Occurrence',
-    'observation': 'Observation',
+    constants.visit_occurrence: constants.visit_occurrence_full,
+    constants.condition_occurrence: constants.condition_occurrence_full,
+    constants.drug_exposure: constants.drug_exposure_full,
+    constants.measurement: constants.measurement_full,
+    constants.procedure_occurrence: constants.procedure_full,
+    constants.observation: constants.observation_full,
 
     # general concept success rate columns
-    'observation_success_rate': 'Observation',
-    'drug_success_rate': 'Drug Exposure',
-    'procedure_success_rate': 'Procedure Occurrence',
-    'condition_success_rate': 'Condition Occurrence',
-    'measurement_success_rate': 'Measurement',
-    'visit_success_rate': 'Visit Occurrence',
+    constants.observation_success: constants.observation_full,
+    constants.drug_success: constants.drug_exposure_full,
+    constants.procedure_success: constants.procedure_full,
+    constants.condition_success: constants.condition_occurrence_full,
+    constants.measurement_success: constants.measurement_full,
+    constants.visit_success: constants.visit_occurrence_full,
 
     # field concept success rate columns
-    'total_unit_success_rate': 'Measurement',
-    'total_route_success_rate': 'Drug Exposure',
+    constants.total_unit_success_rate: constants.measurement_full,
+    constants.total_route_success_rate: constants.drug_exposure_full,
 
     # drug integration columns
-    'all_drugs': 'All Drugs',
-    'ace_inhibitors': 'ACE Inhibitors',
-    'painnsaids': 'Pain NSAIDS',
-    'msknsaids': 'MSK NSAIDS',
-    'statins': 'Statins',
-    'antibiotics': 'Antibiotics',
-    'opioids': 'Opioids',
-    'oralhypoglycemics': 'Oral Hypoglycemics',
-    'vaccine': 'Vaccine',
-    'ccb': 'Calcium Channel Blockers',
-    'diuretics': 'Diuretics',
+    constants.all_drugs: 'All Drugs',
+    constants.ace_inhibs: 'ACE Inhibitors',
+    constants.pain_nsaids: 'Pain NSAIDS',
+    constants.msk_nsaids: 'MSK NSAIDS',
+    constants.statins: 'Statins',
+    constants.antibiotics: 'Antibiotics',
+    constants.opioids: 'Opioids',
+    constants.oral_hypo: 'Oral Hypoglycemics',
+    constants.vaccine: 'Vaccine',
+    constants.ccb: 'Calcium Channel Blockers',
+    constants.diuretics: 'Diuretics',
 
     # measurement integration columns
-    'All_Measurements': 'All Measurements',
-    "Physical_Measurement": 'Physical Measurements',
-    'CMP': 'Comprehensive Metabolic Panel',
-    'CBCwDiff': 'CBC with Differential',
-    'CBC': 'Complete Blood Count (CBC)',
-    'Lipid': 'Lipid',
+    constants.all_measurements: 'All Measurements',
+    constants.physical_measurement: 'Physical Measurements',
+    constants.cmp: 'Comprehensive Metabolic Panel',
+    constants.cbc_w_diff: 'CBC with Differential',
+    constants.cbc: 'Complete Blood Count (CBC)',
+    constants.lipid: 'Lipid',
 
     'num_distinct_ids': 'All Tables'
 }
 
 data_quality_dimension_dict = {
-    'concept': 'Conformance',
-    'duplicates': 'Plausibility',
-    'end_before_begin': 'Plausibility',
-    'data_after_death': 'Plausibility',
-    'sites_measurement': 'Completeness',
-    'drug_success': 'Completeness',
-    'drug_routes': 'Completeness',
-    'measurement_units': 'Completeness',
-    'date_datetime_disparity': 'Conformance',
-    'erroneous_dates': 'Plausibility',
-    'person_id_failure_rate': 'Conformance',
-    'achilles_errors': 'Conformance'
+    constants.concept: constants.conformance,
+    constants.duplicates: constants.plausibility,
+    constants.end_before_begin: constants.plausibility,
+    constants.data_after_death: constants.plausibility,
+    constants.sites_measurement: constants.completeness,
+    constants.drug_success: constants.completeness,
+    constants.drug_routes: constants.completeness,
+    constants.measurement_units: constants.completeness,
+    constants.date_datetime_disparity: constants.conformance,
+    constants.erroneous_dates: constants.plausibility,
+    constants.person_id_failure_rate: constants.conformance,
+    constants.achilles_errors: constants.conformance
 }
 
 metric_type_to_english_dict = {
     # field population metrics
-    'measurement_units': 'Unit Concept ID Success Rate',
-    'drug_routes': 'Route Concept ID Success Rate',
+    constants.measurement_units: constants.measurement_units_full,
+    constants.drug_routes: constants.drug_routes_full,
 
     # integration metrics
-    'drug_success': 'Drug Ingredient Integration',
-    'sites_measurement': 'Measurement Integration',
+    constants.drug_success: constants.drug_success_full,
+    constants.sites_measurement: constants.sites_measurement_full,
 
     # ACHILLES errors
-    'end_before_begin': 'End Dates Preceding Start Dates',
-    'data_after_death': 'Data After Death',
-    'date_datetime_disparity': 'Date/Datetime Disparity',
+    constants.end_before_begin: constants.end_before_begin_full,
+    constants.data_after_death: constants.data_after_death_full,
+    constants.date_datetime_disparity: constants.date_datetime_disparity_full,
 
     # other metrics
-    'concept': 'Concept ID Success Rate',
-    'duplicates': 'Duplicate Records',
-    'erroneous_dates': 'Erroneous Dates',
-    'person_id_failure_rate': 'Person ID Failure Rate',
-    'achilles_errors': 'Number of ACHILLES Errors'
+    constants.concept: constants.concept_full,
+    constants.duplicates: constants.duplicates_full,
+    constants.erroneous_dates: constants.erroneous_dates_full,
+    constants.person_id_failure_rate: constants.person_id_failure_rate_full,
+    constants.achilles_errors: constants.achilles_errors_full
 }
 
 metrics_to_weight = [
-    'measurement_units', 'drug_routes',
-    'end_before_begin', 'data_after_death',
-    'concept', 'duplicates',
-    'date_datetime_disparity',
-    'erroneous_dates', 'person_id_failure_rate']
+    constants.measurement_units, constants.drug_routes,
+    constants.end_before_begin, constants.data_after_death,
+    constants.concept, constants.duplicates,
+    constants.date_datetime_disparity,
+    constants.erroneous_dates, constants.person_id_failure_rate]
 
 full_names = {
     "saou_uab_selma": "UAB Selma",
@@ -337,20 +319,19 @@ full_names = {
 }
 
 row_count_col_names = [
-    'observation_total_row',
-    'drug_total_row',
-    'procedure_total_row',
-    'condition_total_row',
-    'measurement_total_row',
-    'visit_total_row'
-]
+    constants.observation_total_row,
+    constants.drug_total_row,
+    constants.procedure_total_row,
+    constants.condition_total_row,
+    constants.measurement_total_row,
+    constants.visit_total_row]
 
 # ---------- Lists ---------- #
 unweighted_metric_already_integrated_for_hpo = [
-    'drug_routes',
-    'measurement_units', 'achilles_errors']
+    constants.drug_routes,
+    constants.measurement_units, constants.achilles_errors]
 
 no_aggregate_metric_needed_for_table_sheets = [
-    'drug_success', 'sites_measurement']
+    constants.drug_success, constants.sites_measurement]
 
 aggregate_metric_class_names = ['All Measurements', 'All Drugs']

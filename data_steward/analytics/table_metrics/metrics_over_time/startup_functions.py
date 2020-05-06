@@ -17,6 +17,7 @@ import os
 import pandas as pd
 import sys
 import datetime
+import constants
 
 from dictionaries_and_lists import \
     choice_dict, percentage_dict, \
@@ -169,7 +170,7 @@ def generate_hpo_id_col(file_names):
 
     # use concept sheet; always has all of the HPO IDs
     dataframes = load_files(
-        user_choice='concept', file_names=file_names)
+        user_choice=constants.concept, file_names=file_names)
     hpo_col_name = 'src_hpo_id'
     selective_rows, total_hpo_id_columns = [], []
 
@@ -333,7 +334,7 @@ def understand_sheet_output_type(hpo_objects, hpo_names, analytics_type):
 
     user_input = input(output_txt).lower()
     output_choice_dict = {
-        'a': 'table_sheets', 'b': 'hpo_sheets'}
+        'a': constants.table_sheets, 'b': constants.hpo_sheets}
 
     while user_input not in output_choice_dict.keys():
         print("\nInvalid choice. Please specify a letter that corresponds "

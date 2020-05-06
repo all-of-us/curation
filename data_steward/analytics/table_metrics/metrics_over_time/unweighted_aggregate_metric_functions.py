@@ -21,6 +21,7 @@ from auxillary_aggregate_functions import \
     find_unique_dates_and_metrics
 
 import numpy as np
+import constants
 
 def create_unweighted_aggregate_metrics_for_tables(
         metric_dictionary, datetimes):
@@ -235,7 +236,7 @@ def create_unweighted_aggregate_metric_for_dates(
         find_unique_dates_and_metrics(aggregate_metrics=aggregate_metrics)
 
     # show that this is across all tables and HPOs
-    table_or_class = 'aggregate_info'
+    table_or_class = constants.aggregate_info
 
     # should ultimately be len(dates) x len(metrics) AMFD objects
     for date in dates:
