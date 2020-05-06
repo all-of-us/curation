@@ -92,6 +92,10 @@ def get_pids_datasets_and_tables(project_id):
     """
     Get list of tables that have a person_id column; along with a separate
     list of the datasets containing pids
+
+    :param project_id: bq name of project_id
+    :return: two separate lists; pids_table_list - list of all tables with a person_id field. pids_datset_list - list of
+    all datasets containing pid tables
     """
     dataset_obj = bq.list_datasets(project_id)
     datasets = [d.dataset_id for d in dataset_obj]
@@ -179,16 +183,6 @@ def get_date_info_for_pids_tables(project_id):
     return date_fields_info_df
 
 
-def is_deid_dataset(dataset_id):
-    """
-    Determine if a dataset is deid using regex defined above
-    :param dataset_id: dataset_id to verify if it is deid
-
-    :return: boolean
-    """
-    return bool(re.match(DEID_REGEX, dataset_id))
-
-
 def get_research_id(project, dataset, pid):
     """
     For deid datasets, this function queries the _deid_map table in the associated combined dataset based on the release
@@ -206,10 +200,10 @@ def get_research_id(project, dataset, pid):
     research_id_df = bq.query(
         RESEARCH_ID_QUERY.format(project=project, prefix_regex=prefix, pid=pid))
     if research_id_df.empty:
-        logging.info('no research_id associated with person_id: %s ' % pid)
+        logging.info(f'no research_id associated with person_id: {pid}')
         return None
-    else:
-        return research_id_df.to_string()
+
+    return research_id_df.to_string()
 
 
 def check_pid_exist(pid, date_row):
@@ -248,25 +242,24 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
 
     date_columns_df = get_date_info_for_pids_tables(project_id)
     logging.info(
-        'Dataframe creation complete to loop through to create retraction queries'
+        'Dataframe creation complete. DF to be used for creation of retraction queries.'
     )
 
-    # Loop through the deactivated PIDS df to create queries based on the retractions needed per PID table
     logging.info(
-        'looping through deactivated pids df to create queries based on teh retractions needed per pid table'
+        'Looping through the deactivated PIDS df to create queries based on the retractions needed per PID table'
     )
     for ehr_row in deactivated_ehr_pids_df.itertuples(index=False):
         for date_row in date_columns_df.itertuples(index=False):
             # Determine if dataset is deid to correctly pull pid or research_id and check if ID exists in dataset or if
             # already retracted
-            if is_deid_dataset(date_row.dataset_id) is True:
+            if re.match(DEID_REGEX, date_row.dataset_id):
                 pid = get_research_id(date_row.project_id, date_row.dataset_id,
                                       ehr_row.person_id)
             else:
                 pid = ehr_row.person_id
 
             # Check if PID is in table
-            if check_pid_exist(pid, date_row) is True:
+            if pid is not None and check_pid_exist(pid, date_row) is True:
                 # Get or create sandbox dataset
                 sandbox_dataset = get_sandbox_dataset_id(date_row.dataset_id)
                 datasets_obj = bq.list_datasets(project_id)
@@ -293,7 +286,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                     queries_list.append({
                         clean_consts.QUERY: sandbox_query,
                         clean_consts.DESTINATION_DATASET: sandbox_dataset,
-                        clean_consts.DESTINATION_TABLE: date_row.table
+                        clean_consts.DESTINATION_TABLE: date_row.table,
+                        'type': 'sandbox'
                     })
                     clean_query = CLEAN_QUERY_DATE.format(
                         project=date_row.project_id,
@@ -308,7 +302,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                         clean_consts.QUERY: clean_query,
                         clean_consts.DESTINATION_DATASET: date_row.dataset_id,
                         clean_consts.DESTINATION_TABLE: date_row.table,
-                        clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
+                        clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+                        'type': 'retraction'
                     })
                 else:
                     sandbox_query = SANDBOX_QUERY_END_DATE.format(
@@ -326,7 +321,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                     queries_list.append({
                         clean_consts.QUERY: sandbox_query,
                         clean_consts.DESTINATION_DATASET: sandbox_dataset,
-                        clean_consts.DESTINATION_TABLE: date_row.table
+                        clean_consts.DESTINATION_TABLE: date_row.table,
+                        'type': 'sandbox'
                     })
                     clean_query = CLEAN_QUERY_END_DATE.format(
                         project=date_row.project_id,
@@ -342,14 +338,12 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                         clean_consts.QUERY: clean_query,
                         clean_consts.DESTINATION_DATASET: date_row.dataset_id,
                         clean_consts.DESTINATION_TABLE: date_row.table,
-                        clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
+                        clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+                        'type': 'retraction'
                     })
             else:
                 # break out of loop to create query, if pid does not exist in table
                 continue
-    print(
-        'Query list complete, retracting ehr deactivated PIDS from the following datasets: %s'
-        % date_columns_df['dataset_id'].tolist())
     logging.info(
         'Query list complete, retracting ehr deactivated PIDS from the following datasets: %s'
         % date_columns_df['dataset_id'].tolist())
@@ -364,7 +358,7 @@ def run_queries(queries):
     """
     query_job_ids = []
     for query_dict in queries:
-        if 'sandbox' in query_dict['destination_dataset_id']:
+        if query_dict['type'] == 'sandbox':
             logging.info('Writing rows to be retracted to, using query %s' %
                          (query_dict['query']))
             job_results = bq_utils.query(q=query_dict['query'], batch=True)
@@ -391,51 +385,59 @@ def run_queries(queries):
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
 
-if __name__ == '__main__':
+def parse_args(raw_args=None):
     parser = argparse.ArgumentParser(
         description=
-        'Runs retraction of deactivated EHR participants on all datasets in project. The rows to be retracted'
-        'are based on the date entered and will be retracted if the date entered is before the retraction date'
+        'Runs retraction of deactivated EHR participants on all datasets in project. The rows to be retracted '
+        'are based on the date entered and will be retracted if the date entered is before the retraction. '
         'Uses project_id, deactivated pid_table_id to determine '
         'the pids to retract data for. The pid_table_id needs to contain '
-        'the person_id and research_id and deactivated_date columns specified in the schema above, '
+        'the person_id and deactivated_date columns specified in the schema above, '
         'but research_id can be null if deid has not been run yet. ',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-p',
-                        '--project_id',
+                        '--project-id',
                         action='store',
                         dest='project_id',
                         help='Identifies the project to retract data from',
                         required=True)
     parser.add_argument('-t',
-                        '--ticket_number',
+                        '--ticket-number',
                         action='store',
                         dest='ticket_number',
                         help='Ticket number to append to sandbox table names',
                         required=True)
     parser.add_argument(
-        '-pp',
-        '--pids_project_id',
+        '-i',
+        '--pids-project-id',
         action='store',
         dest='pids_project_id',
         help='Identifies the project where the pids table is stored',
         required=True)
     parser.add_argument(
-        '-pd',
-        '--pids_dataset_id',
+        '-d',
+        '--pids-dataset-id',
         action='store',
         dest='pids_dataset_id',
         help='Identifies the dataset where the pids table is stored',
         required=True)
-    parser.add_argument('-pt',
-                        '--pids_table',
+    parser.add_argument('-s',
+                        '--pids-table',
                         action='store',
                         dest='pids_table',
                         help='Identifies the table where the pids are stored',
                         required=True)
-    args = parser.parse_args()
+    return parser.parse_args(raw_args)
+
+
+def main(args=None):
+    args = parse_args(args)
     query_list = create_queries(args.project_id, args.ticket_number,
                                 args.pids_project_id, args.pids_dataset_id,
                                 args.pids_table)
-    run_queries(query_list)
+    #run_queries(query_list)
     logging.info('Retraction complete')
+
+
+if __name__ == '__main__':
+    main()

@@ -51,12 +51,10 @@ class RetractDataBqTest(unittest.TestCase):
 
     @mock.patch(
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
-    @mock.patch('retraction.retract_deactivated_pids.is_deid_dataset')
     @mock.patch('bq_utils.list_datasets')
     def test_integration_queries_to_retract_from_fake_dataset(
-        self, mock_list_datasets, mock_is_deid_dataset, mock_retraction_info):
+        self, mock_list_datasets, mock_retraction_info):
         mock_list_datasets.return_value = [self.bq_dataset_id]
-        mock_is_deid_dataset.return_value = False
         d = {
             'project_id': [
                 self.project_id, self.project_id, self.project_id,

@@ -1,5 +1,6 @@
 # Python imports
 import unittest
+import re
 
 # Third party imports
 import mock
@@ -14,6 +15,7 @@ from constants.cdr_cleaner import clean_cdr as clean_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from sandbox import get_sandbox_dataset_id
 from constants import bq_utils as bq_consts
+from retraction.retract_utils import DEID_REGEX
 
 
 class RetractDataBqTest(unittest.TestCase):
@@ -133,22 +135,6 @@ class RetractDataBqTest(unittest.TestCase):
 
         assert_frame_equal(date_fields_info_df, returned_df)
 
-    @mock.patch('bq_utils.get_dataset_id')
-    def test_is_deid_dataset(self, mock_get_dataset_id):
-        dataset_id = 'fake_dataset_id'
-        mock_get_dataset_id.return_value = dataset_id
-        self.assertFalse(
-            retract_deactivated_pids.is_deid_dataset('combined20190801'))
-        self.assertTrue(
-            retract_deactivated_pids.is_deid_dataset('combined20190801_deid'))
-        self.assertFalse(
-            retract_deactivated_pids.is_deid_dataset('combined20190801_base'))
-        self.assertFalse(
-            retract_deactivated_pids.is_deid_dataset('combined20190801_clean'))
-        self.assertTrue(
-            retract_deactivated_pids.is_deid_dataset(
-                'combined20190801_deid_v1'))
-
     @mock.patch('utils.bq.query')
     @mock.patch(
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
@@ -188,8 +174,7 @@ class RetractDataBqTest(unittest.TestCase):
                     sandbox_dataset = get_sandbox_dataset_id(
                         retraction_row.dataset_id)
 
-                if retract_deactivated_pids.is_deid_dataset(
-                        retraction_row.dataset_id) is True:
+                if re.match(DEID_REGEX, retraction_row.dataset_id):
                     pid = ehr_row.research_id
                     identifier = 'research_id'
                 else:
