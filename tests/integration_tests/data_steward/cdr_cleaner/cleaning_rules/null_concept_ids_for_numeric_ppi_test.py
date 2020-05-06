@@ -17,7 +17,7 @@ import os
 
 # Project Imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
+from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI, SAVE_TABLE_NAME
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -31,12 +31,80 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
 
         super().initialize_class_vars()
 
-        cls.insert_fake_participants_template = [
-            cls.jinja_env.from_string("""
-        INSERT INTO `{{fake_table_name}}`
-        (""")
-        ]
-
         # Set the test project identifier
         project_id = os.environ.get(PROJECT_ID)
         cls.project_id = project_id
+
+        # Set the expected test datasets
+        dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        sandbox_id = dataset_id + '_sandbox'
+
+        cls.query_class = NullConceptIDForNumericPPI(
+            project_id, dataset_id, sandbox_id)
+
+        sb_table_names = cls.query_class.get_sandbox_tablenames()
+        for table_name in sb_table_names:
+            cls.fq_sandbox_table_names.append(
+                f'{project_id}.{sandbox_id}.{table_name}')
+
+        for key in SAVE_TABLE_NAME:
+            cls.fq_table_names.append(f'{project_id}.{dataset_id}.{key}')
+
+        super().setUpClass()
+
+    def setUp(self):
+        """
+        Create common information for tests.
+
+        Creates common expected parameter types from cleaned tables and a common
+        fully qualified (fq) dataset name string used to load the data.
+        """
+        self.value_source_concept_id = 'NULL'
+        self.value_as_concept_id = 'NULL'
+        self.value_source_value = 'NULL'
+        self.value_as_string = 'NULL'
+
+        fq_dataset_name = self.fq_table_names[0].split('.')
+        self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
+
+    def test_field_cleaning(self):
+        """
+        Tests
+
+        This tests
+        """
+
+        tmpl = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_table_name}}`
+        (observation_id, person_id, observation_concept_id, observation_date, 
+         observation_type_concept_id, questionnaire_response_id, value_as_number,
+         value_source_concept_id, value_as_concept_id)
+        VALUES
+            (123, 111111, 0, date('2015-07-15'), 0, 111, 111, 111, 111),
+            (345, 222222, 0, date('2015-07-15'), 0, 222, 222, 222, 222),
+            (567, 333333, 0, date('2015-07-15'), 0, 333, 333, 333, 333),
+            (789, 444444, 0, date('2015-07-15'), 0, 444, 444, 444, 444)""")
+
+        query = tmpl.render(fq_table_name=self.fq_dataset_name)
+        self.load_test_data([query])
+
+        # Expected results list
+        tables_and_counts = [{
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, 'observation']),
+            'fq_sandbox_table_name': self.fq_sandbox_table_name[0],
+            'loaded_ids': [123, 345, 567, 789],
+            'sandboxed_ids': [123, 345, 567, 789],
+            'fields': ['value_source_concept_id', 'value_as_concept_id',
+                       'value_source_value', 'value_as_string'],
+            'cleaned_values': [(123, self.value_source_concept_id, self.value_as_concept_id,
+                                self.value_source_value, self.value_as_string),
+                               (345, self.value_source_concept_id, self.value_as_concept_id,
+                                self.value_source_value, self.value_as_string),
+                               (567, self.value_source_concept_id, self.value_as_concept_id,
+                                self.value_source_value, self.value_as_string),
+                               (789, self.value_source_concept_id, self.value_as_concept_id,
+                                self.value_source_value, self.value_as_string)]
+        }]
+
+        self.default_test(tables_and_counts)
