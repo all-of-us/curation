@@ -37,8 +37,8 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
         dataset_id = os.environ.get('RDR_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
 
-        cls.query_class = NullConceptIDForNumericPPI(
-            project_id, dataset_id, sandbox_id)
+        cls.query_class = NullConceptIDForNumericPPI(project_id, dataset_id,
+                                                     sandbox_id)
 
         sb_table_names = cls.query_class.get_sandbox_tablenames()
         for table_name in sb_table_names:
@@ -94,19 +94,24 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'observation']),
-            'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[0],
             'loaded_ids': [123, 345, 567, 789],
             'sandboxed_ids': [123, 345, 567, 789],
-            'fields': ['value_source_concept_id', 'value_as_concept_id',
-                       'value_source_value', 'value_as_string'],
-            'cleaned_values': [(123, self.value_source_concept_id, self.value_as_concept_id,
-                                self.value_source_value, self.value_as_string),
-                               (345, self.value_source_concept_id, self.value_as_concept_id,
-                                self.value_source_value, self.value_as_string),
-                               (567, self.value_source_concept_id, self.value_as_concept_id,
-                                self.value_source_value, self.value_as_string),
-                               (789, self.value_source_concept_id, self.value_as_concept_id,
-                                self.value_source_value, self.value_as_string)]
+            'fields': [
+                'value_source_concept_id', 'value_as_concept_id',
+                'value_source_value', 'value_as_string'
+            ],
+            'cleaned_values': [
+                (123, self.value_source_concept_id, self.value_as_concept_id,
+                 self.value_source_value, self.value_as_string),
+                (345, self.value_source_concept_id, self.value_as_concept_id,
+                 self.value_source_value, self.value_as_string),
+                (567, self.value_source_concept_id, self.value_as_concept_id,
+                 self.value_source_value, self.value_as_string),
+                (789, self.value_source_concept_id, self.value_as_concept_id,
+                 self.value_source_value, self.value_as_string)
+            ]
         }]
 
         self.default_test(tables_and_counts)
