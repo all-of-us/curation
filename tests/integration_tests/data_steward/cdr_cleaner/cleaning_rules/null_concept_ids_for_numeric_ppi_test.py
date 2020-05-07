@@ -36,7 +36,7 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
         cls.project_id = project_id
 
         # Set the expected test datasets
-        dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        dataset_id = os.environ.get('RDR_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
 
         cls.query_class = NullConceptIDForNumericPPI(
@@ -47,9 +47,14 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
 
-        for key in SAVE_TABLE_NAME:
-            cls.fq_table_names.append(f'{project_id}.{dataset_id}.{key}')
+        # for key in SAVE_TABLE_NAME:
+        #     cls.fq_table_names.append(f'{project_id}.{dataset_id}.{key}')
 
+        cls.fq_table_names = [f'{project_id}.{dataset_id}.observation']
+
+        # call super to set up the client, create datasets, and create
+        # empty test tables
+        # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
 
     def setUp(self):
@@ -69,13 +74,15 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
 
     def test_field_cleaning(self):
         """
-        Tests
+        Tests that the specifications for the SANDBOX_QUERY and CLEAN_NUMERIC_PPI_QUERY
+        perform as designed.
 
-        This tests
+        Validates pre conditions, tests execution, and post conditions based on the load
+        statements and the tables_and_counts variable.
         """
 
         tmpl = self.jinja_env.from_string("""
-        INSERT INTO `{{fq_table_name}}`
+        INSERT INTO `{{fq_dataset_name}}.observation`
         (observation_id, person_id, observation_concept_id, observation_date, 
          observation_type_concept_id, questionnaire_response_id, value_as_number,
          value_source_concept_id, value_as_concept_id)
@@ -85,14 +92,14 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
             (567, 333333, 0, date('2015-07-15'), 0, 333, 333, 333, 333),
             (789, 444444, 0, date('2015-07-15'), 0, 444, 444, 444, 444)""")
 
-        query = tmpl.render(fq_table_name=self.fq_dataset_name)
+        query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
         self.load_test_data([query])
 
         # Expected results list
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'observation']),
-            'fq_sandbox_table_name': self.fq_sandbox_table_name[0],
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
             'loaded_ids': [123, 345, 567, 789],
             'sandboxed_ids': [123, 345, 567, 789],
             'fields': ['value_source_concept_id', 'value_as_concept_id',
