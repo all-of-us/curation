@@ -54,6 +54,26 @@ class AbstractBaseCleaningRule(ABC):
         pass
 
     @abstractmethod
+    def setup_validation(self, *args, **keyword_args):
+        """
+        Run required steps for validation setup
+
+        Method to run .  For example, if your class requires loading a static
+        table, that load operation should be defined here.  It SHOULD NOT BE
+        defined as part of get_query_specs().
+        """
+        pass
+
+    @abstractmethod
+    def get_affected_tables(self, *args, **keyword_args):
+        """
+        Method to get tables that will be modified by the cleaning rule.
+
+        :return: a list of table names that will be affected by this cleaning rule
+        """
+        pass
+
+    @abstractmethod
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
         Interface to return a list of query dictionaries.
@@ -63,6 +83,26 @@ class AbstractBaseCleaningRule(ABC):
             stored in list order and returned in list order to maintain
             an ordering.
         """
+        pass
+
+    @abstractmethod
+    def validate_rule(self, *args, **keyword_args):
+        """
+        Validates the cleaning rule which deletes the data from the tables
+
+        Method to run validation on cleaning rules that will be updating the values.
+        For example:
+        if your class updates all the datetime fields you should be implementing the
+        validation that checks if the date time values that needs to be updated no
+        longer exists in the table.
+
+        if your class deletes a subset of rows in the tables you should be implementing
+        the validation that checks if the count of final final row counts + deleted rows
+        should equals to initial row counts of the affected tables.
+
+        Raises RunTimeError if the validation fails.
+        """
+
         pass
 
     @abstractmethod
@@ -129,6 +169,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._sandbox_dataset_id = sandbox_dataset_id
         self._issue_urls = issue_urls if issue_urls else []
         self._depends_on_classes = depends_on if depends_on else []
+        self.TABLE_COUNT_QUERY = ''' SELECT COALESCE(COUNT(*), 0) AS row_count FROM `{dataset}.{table}` '''
 
         super().__init__()
 
@@ -275,6 +316,51 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         Get the sandbox dataset id for this class instance.
         """
         return self._sandbox_dataset_id
+
+    def get_table_counts(self, dataset, client, tables):
+        """
+        Method to get the row counts of the list of tables
+
+        :param dataset: dataset identifier
+        :param client: big query client that has been instantiated
+        :param tables: list of tables
+        :return: returns a dictionary with table name as key and row count as value
+                counts_dict -> {'measurement' : 100000000, 'observation': 2000000000000}
+        """
+        counts_dict = dict()
+        for table in tables:
+            query = self.TABLE_COUNT_QUERY.format(dataset=dataset, table=table)
+            count = client.query(query).to_dataframe()
+            counts_dict[table] = count['row_count'][0]
+        return counts_dict
+
+    def validate_delete_rule(self, dataset, sandbox_dataset, sandbox_tables,
+                             tables_affected, initial_counts):
+        """
+        Validates the cleaning rule which deletes the rows in table
+
+        :param dataset: dataset identifier
+        :param sandbox_dataset: sandbox dataset identifier
+        :param sandbox_tables: list of sandbox dataset names for generated for this cleaning rule.
+        :param tables_affected: list of table names affected by this cleaning rule
+        :param initial_counts: dictionary with row counts of tables prior applying the cleaning rule
+        :return: returns success message when the validation is success full else
+        raises a RuntimeError.
+        """
+        final_row_counts = self.get_table_counts(tables_affected, dataset)
+        sandbox_row_counts = self.get_table_counts(
+            list(sandbox_tables.values()), sandbox_dataset)
+
+        for k, v in initial_counts.items():
+            if v == final_row_counts[k] + sandbox_row_counts[sandbox_tables[k]]:
+                return print(
+                    f'{self._issue_numbers[0]} cleaning rule has run successfully on {dataset}.{k} table.'
+                )
+            else:
+                return RuntimeError(
+                    f'{self._issue_numbers[0]} cleaning rule is failed on {dataset}.{k} table.\
+                     There is a discrepancy in no.of records that\'s been deleted'
+                )
 
     @abstractmethod
     def get_sandbox_tablenames(self):
