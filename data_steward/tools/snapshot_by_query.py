@@ -2,7 +2,12 @@ import argparse
 
 import cdm
 import resources
-from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError
+from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError, \
+    create_standard_table
+
+PERSON = 'person'
+PRE_DEID = 'pre_deid'
+POST_DEID = 'post_deid'
 
 
 def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
@@ -20,13 +25,23 @@ def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
         overwrite_existing=True)
 
 
-def create_empty_cdm_tables(snapshot_dataset_id):
+def create_empty_cdm_tables(snapshot_dataset_id, data_stage):
     """
     Copy the table content from the current dataset to the snapshot dataset
     :param snapshot_dataset_id:
     :return:
     """
-    cdm.create_all_tables(snapshot_dataset_id)
+    for table in resources.CDM_TABLES:
+        if table == PERSON and data_stage == PRE_DEID:
+            table_id = table
+            table_name = 'post_deid_person'
+        else:
+            table_id = table
+            table_name = table
+        create_standard_table(table_name,
+                              table_id,
+                              drop_existing=True,
+                              dataset_id=snapshot_dataset_id)
     cdm.create_vocabulary_tables(snapshot_dataset_id)
 
 
@@ -48,9 +63,13 @@ def get_field_cast_expr(field, data_type):
     return col
 
 
-def get_copy_table_query(project_id, dataset_id, table_id):
+def get_copy_table_query(project_id, dataset_id, table_id, data_stage):
     try:
-        fields = resources.fields_for(table_id)
+        if table_id == PERSON and data_stage == POST_DEID:
+            table_name = 'post_deid_person'
+        else:
+            table_name = table_id
+        fields = resources.fields_for(table_name)
         fields_with_datatypes = [
             get_field_cast_expr(field['name'], field['type'])
             for field in fields
@@ -66,7 +85,8 @@ def get_copy_table_query(project_id, dataset_id, table_id):
                                    table_id=table_id)
 
 
-def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
+def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id,
+                               data_stage):
     """
     lists the tables in the dataset and copies each table to a new dataset.
     :param dataset_id:
@@ -76,7 +96,7 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     copy_table_job_ids = []
     for table_id in list_all_table_ids(dataset_id):
-        q = get_copy_table_query(project_id, dataset_id, table_id)
+        q = get_copy_table_query(project_id, dataset_id, table_id, data_stage)
         results = query(q,
                         use_legacy_sql=False,
                         destination_table_id=table_id,
@@ -88,7 +108,8 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
         raise BigQueryJobWaitError(incomplete_jobs)
 
 
-def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
+def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id,
+                            data_stage):
     """
     :param project_id:
     :param dataset_id:
@@ -97,9 +118,10 @@ def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     create_empty_dataset(project_id, dataset_id, snapshot_dataset_id)
 
-    create_empty_cdm_tables(snapshot_dataset_id)
+    create_empty_cdm_tables(snapshot_dataset_id, data_stage)
 
-    copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id)
+    copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id,
+                               data_stage)
 
 
 if __name__ == '__main__':
@@ -125,7 +147,14 @@ if __name__ == '__main__':
                         dest='snapshot_dataset_id',
                         help='Name of the new dataset that needs to be created',
                         required=True)
+    parser.add_argument('-ds',
+                        '--data_stage',
+                        action='store',
+                        dest='data_stage',
+                        help='Stage of the cdr generation',
+                        choices=['pre_deid', 'post_deid'],
+                        required=True)
     args = parser.parse_args()
 
     create_snapshot_dataset(args.project_id, args.dataset_id,
-                            args.snapshot_dataset_id)
+                            args.snapshot_dataset_id, args.data_stage)
