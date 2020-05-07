@@ -91,7 +91,6 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
                     dataset=self.get_dataset_id(),
                     sandbox_dataset=self.get_sandbox_dataset_id(),
                     intermediary_table=SAVE_TABLE_NAME),
-
         }
 
         clean_numeric_ppi_query = {
@@ -125,8 +124,8 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    rdr_cleaner = NullConceptIDForNumericPPI(
-        ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
+    rdr_cleaner = NullConceptIDForNumericPPI(ARGS.project_id, ARGS.dataset_id,
+                                             ARGS.sandbox_dataset_id)
     query_list = rdr_cleaner.get_query_specs()
 
     if ARGS.list_queries:
