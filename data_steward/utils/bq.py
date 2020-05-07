@@ -196,7 +196,7 @@ def define_dataset(project_id, dataset_id, description, label_or_tag):
 def update_labels_and_tags(project_id,
                            dataset_id,
                            label_or_tag,
-                           set_or_update=True):
+                           overwrite_ok=False):
     """
     Updates labels or tags in dataset if not set or needing to be updated
     or overwrites existing labels or tags in the dataset
@@ -205,8 +205,8 @@ def update_labels_and_tags(project_id,
     :param dataset_id:  string name to identify the dataset
     :param label_or_tag:  labels for the dataset = Dict[str, str]
                           tags for the dataset = Dict[str, '']
-    :param set_or_update:  flag to signal if label_or_tag is to be either
-                             set or updated (True as default) or overwritten (False)
+    :param overwrite_ok:  flag to signal if label_or_tag is to be either
+                             overwritten (False as default) or updated (True)
 
     :raises:  RuntimeError if parameters are not specified
 
@@ -226,12 +226,12 @@ def update_labels_and_tags(project_id,
     dataset_id = f"{project_id}.{dataset_id}"
     dataset = client.get_dataset(dataset_id)
 
-    if set_or_update is True:
-        # will set or update labels and/or tags
+    if overwrite_ok is False:
+        # will update labels and/or tags
         dataset.labels = label_or_tag
         dataset = client.update_dataset(dataset, ['labels'])
         return dataset
-    if set_or_update is False:
+    if overwrite_ok is True:
         # will overwrite labels and/or tags
         dataset.labels = label_or_tag
         return dataset
