@@ -35,12 +35,14 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
 
-        self.query_class = NullConceptIDForNumericPPI(
-            self.project_id, self.dataset_id, self.sandbox_id)
+        self.query_class = NullConceptIDForNumericPPI(self.project_id,
+                                                      self.dataset_id,
+                                                      self.sandbox_id)
 
         self.assertEqual(self.query_class.get_project_id(), self.project_id)
         self.assertEqual(self.query_class.get_dataset_id(), self.dataset_id)
-        self.assertEqual(self.query_class.get_sandbox_dataset_id(), self.sandbox_id)
+        self.assertEqual(self.query_class.get_sandbox_dataset_id(),
+                         self.sandbox_id)
 
     def test_setup_rule(self):
         # Test
@@ -67,9 +69,12 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
             clean_consts.QUERY:
                 CLEAN_NUMERIC_PPI_QUERY.format(project=self.project_id,
                                                dataset=self.dataset_id),
-            clean_consts.DESTINATION_TABLE: 'observation',
-            clean_consts.DESTINATION_DATASET: self.dataset_id,
-            clean_consts.DISPOSITION: WRITE_TRUNCATE
+            clean_consts.DESTINATION_TABLE:
+                'observation',
+            clean_consts.DESTINATION_DATASET:
+                self.dataset_id,
+            clean_consts.DISPOSITION:
+                WRITE_TRUNCATE
         }]
 
         self.assertEqual(result_list, expected_list)
@@ -79,13 +84,14 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
         self.assertEqual(self.query_class.get_affected_datasets(),
                          [clean_consts.RDR])
 
-        store_rows_to_be_changed = SANDBOX_QUERY.format(project=self.project_id,
-                                                        dataset=self.dataset_id,
-                                                        sandbox_dataset=self.sandbox_id,
-                                                        intermediary_table=SAVE_TABLE_NAME)
+        store_rows_to_be_changed = SANDBOX_QUERY.format(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_id,
+            intermediary_table=SAVE_TABLE_NAME)
 
-        select_rows_to_be_changed = CLEAN_NUMERIC_PPI_QUERY.format(project=self.project_id,
-                                                                   dataset=self.dataset_id)
+        select_rows_to_be_changed = CLEAN_NUMERIC_PPI_QUERY.format(
+            project=self.project_id, dataset=self.dataset_id)
 
         # Test
         with self.assertLogs(level='INFO') as cm:
