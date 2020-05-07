@@ -13,11 +13,9 @@ dataset sandbox.
 # Python Imports
 import os
 
-# Third Party Imports
-
 # Project Imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI, SAVE_TABLE_NAME
+from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -46,9 +44,6 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
         for table_name in sb_table_names:
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
-
-        # for key in SAVE_TABLE_NAME:
-        #     cls.fq_table_names.append(f'{project_id}.{dataset_id}.{key}')
 
         cls.fq_table_names = [f'{project_id}.{dataset_id}.observation']
 
