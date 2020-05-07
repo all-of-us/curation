@@ -8,8 +8,6 @@ from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, Bi
     create_standard_table
 
 PERSON = 'person'
-PRE_DEID = 'pre_deid'
-POST_DEID = 'post_deid'
 
 
 def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
@@ -97,8 +95,7 @@ def get_copy_table_query(project_id, dataset_id, table_id):
                                    table_id=table_id)
 
 
-def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id,
-                               data_stage):
+def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     lists the tables in the dataset and copies each table to a new dataset.
     :param dataset_id:
@@ -108,7 +105,7 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id,
     """
     copy_table_job_ids = []
     for table_id in list_all_table_ids(dataset_id):
-        q = get_copy_table_query(project_id, dataset_id, table_id, data_stage)
+        q = get_copy_table_query(project_id, dataset_id, table_id)
         results = query(q,
                         use_legacy_sql=False,
                         destination_table_id=table_id,
@@ -120,8 +117,7 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id,
         raise BigQueryJobWaitError(incomplete_jobs)
 
 
-def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id,
-                            data_stage):
+def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     :param project_id:
     :param dataset_id:
@@ -130,10 +126,9 @@ def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id,
     """
     create_empty_dataset(project_id, dataset_id, snapshot_dataset_id)
 
-    create_empty_cdm_tables(snapshot_dataset_id, data_stage)
+    create_empty_cdm_tables(snapshot_dataset_id)
 
-    copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id,
-                               data_stage)
+    copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id)
 
 
 if __name__ == '__main__':
@@ -162,4 +157,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     create_snapshot_dataset(args.project_id, args.dataset_id,
-                            args.snapshot_dataset_id, args.data_stage)
+                            args.snapshot_dataset_id)
