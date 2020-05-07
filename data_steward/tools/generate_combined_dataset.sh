@@ -127,7 +127,7 @@ data_stage='combined'
 python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee combined_cleaning_log_"${combined}".txt
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${combined_staging}" -n "${combined}" -s "pre_deid"
+python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${combined_staging}" -n "${combined}"
 
 bq update --description "${version} combined clean version of ${rdr_dataset} + ${unioned_ehr_dataset}" ${app_id}:${combined}
 

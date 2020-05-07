@@ -1,6 +1,8 @@
 import re
 import unittest
 
+import mock
+
 from tools import snapshot_by_query
 
 WHITESPACE = '[\t\n\\s]+'
@@ -15,9 +17,11 @@ class SnapshotByQueryTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    def test_get_copy_table_query(self):
+    @mock.patch('tools.snapshot_by_query.has_at_birth_column')
+    def test_get_copy_table_query(self, mock_has_at_birth_column):
+        mock_has_at_birth_column.return_value = True
         actual_query = snapshot_by_query.get_copy_table_query(
-            'test-project', 'test-dataset', 'person', 'post_deid')
+            'test-project', 'test-dataset', 'person')
         expected_query = """SELECT
   CAST(person_id AS INT64) AS person_id,
   CAST(gender_concept_id AS INT64) AS gender_concept_id,
@@ -47,6 +51,6 @@ FROM
                          re.sub(WHITESPACE, SPACE, expected_query))
 
         actual_query = snapshot_by_query.get_copy_table_query(
-            'test-project', 'test-dataset', 'non_cdm_table', 'post_deid')
+            'test-project', 'test-dataset', 'non_cdm_table')
         expected_query = '''SELECT * FROM `test-project.test-dataset.non_cdm_table`'''
         self.assertEqual(actual_query, expected_query)

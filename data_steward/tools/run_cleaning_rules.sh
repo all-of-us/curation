@@ -8,7 +8,6 @@ Usage: run_cleaning_rules.sh
   --dataset <dataset name to apply cleaning rules>
   --snapshot_dataset <Dataset name to copy result dataset>
   --data_stage <Dataset stage>
-  --pre_post_deid <Dataset stage choose b/w pre_deid or post_died>
 "
 
 while true; do
@@ -33,10 +32,6 @@ while true; do
     data_stage=$2
     shift 2
     ;;
-  --pre_post_deid)
-    pre_post_deid=$2
-    shift 2
-    ;;
   --)
     shift
     break
@@ -45,7 +40,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${snapshot_dataset}" ]] || [[ -z "${data_stage}" ]] || [[ -z "${pre_post_deid}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${snapshot_dataset}" ]] || [[ -z "${data_stage}" ]]; then
   echo "$USAGE"
   exit 1
 fi
@@ -66,7 +61,6 @@ echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "snapshot_dataset --> ${snapshot_dataset}"
 echo "Data Stage --> ${data_stage}"
-echo "pre_post_deid --> ${pre_post_deid}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
@@ -86,6 +80,6 @@ export BIGQUERY_DATASET_ID="${dataset}"
 python "${CLEANER_DIR}/clean_cdr.py" -d ${data_stage} -s 2>&1 | tee cleaning_rules_log.txt
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${dataset}" -n "${snapshot_dataset}" -s "${pre_post_deid}"
+python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${dataset}" -n "${snapshot_dataset}"
 
 unset PYTHOPATH

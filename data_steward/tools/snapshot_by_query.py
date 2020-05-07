@@ -1,5 +1,7 @@
 import argparse
 
+from google.cloud import bigquery as bq
+
 import cdm
 import resources
 from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError, \
@@ -25,14 +27,24 @@ def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
         overwrite_existing=True)
 
 
-def create_empty_cdm_tables(snapshot_dataset_id, data_stage):
+def has_at_birth_column(dataset_id):
+    query = """SELECT column_name from `{dataset}.INFORMATION_SCHEMA.COLUMNS` where table_name = 'person' """
+    client = bq.Client()
+    result = client.query(query.format(dataset=dataset_id)).to_dataframe()
+    if 'sex_at_birth_concept_id' in result['column_name'].to_list():
+        return True
+    else:
+        return False
+
+
+def create_empty_cdm_tables(snapshot_dataset_id, dataset_id):
     """
     Copy the table content from the current dataset to the snapshot dataset
     :param snapshot_dataset_id:
     :return:
     """
     for table in resources.CDM_TABLES:
-        if table == PERSON and data_stage == PRE_DEID:
+        if table == PERSON and has_at_birth_column(dataset_id):
             table_id = table
             table_name = 'post_deid_person'
         else:
@@ -63,9 +75,9 @@ def get_field_cast_expr(field, data_type):
     return col
 
 
-def get_copy_table_query(project_id, dataset_id, table_id, data_stage):
+def get_copy_table_query(project_id, dataset_id, table_id):
     try:
-        if table_id == PERSON and data_stage == POST_DEID:
+        if table_id == PERSON and has_at_birth_column(dataset_id):
             table_name = 'post_deid_person'
         else:
             table_name = table_id
@@ -146,13 +158,6 @@ if __name__ == '__main__':
                         action='store',
                         dest='snapshot_dataset_id',
                         help='Name of the new dataset that needs to be created',
-                        required=True)
-    parser.add_argument('-s',
-                        '--data_stage',
-                        action='store',
-                        dest='data_stage',
-                        help='Stage of the cdr generation',
-                        choices=['pre_deid', 'post_deid'],
                         required=True)
     args = parser.parse_args()
 
