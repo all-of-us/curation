@@ -39,6 +39,7 @@ def create_empty_cdm_tables(snapshot_dataset_id, dataset_id):
     """
     Copy the table content from the current dataset to the snapshot dataset
     :param snapshot_dataset_id:
+    :param dataset_id
     :return:
     """
     for table in resources.CDM_TABLES:
@@ -126,7 +127,7 @@ def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     create_empty_dataset(project_id, dataset_id, snapshot_dataset_id)
 
-    create_empty_cdm_tables(snapshot_dataset_id)
+    create_empty_cdm_tables(snapshot_dataset_id, dataset_id)
 
     copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id)
 
