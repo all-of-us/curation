@@ -1,6 +1,8 @@
 import re
 import unittest
 
+import mock
+
 from tools import snapshot_by_query
 
 WHITESPACE = '[\t\n\\s]+'
@@ -15,7 +17,9 @@ class SnapshotByQueryTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    def test_get_copy_table_query(self):
+    @mock.patch('tools.snapshot_by_query.has_at_birth_column')
+    def test_get_copy_table_query(self, mock_has_at_birth_column):
+        mock_has_at_birth_column.return_value = True
         actual_query = snapshot_by_query.get_copy_table_query(
             'test-project', 'test-dataset', 'person')
         expected_query = """SELECT

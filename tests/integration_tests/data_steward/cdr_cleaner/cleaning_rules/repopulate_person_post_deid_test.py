@@ -1,9 +1,9 @@
 # Python imports
 import unittest
 
+from googleapiclient.errors import HttpError
 # Third party imports
 from jinja2 import Template
-from googleapiclient.errors import HttpError
 
 # Project imports
 import bq_utils
@@ -60,11 +60,16 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
         test_util.delete_all_tables(self.dataset_id)
 
         create_tables = ['person', 'observation']
+        table_fields = {
+            'person': 'post_deid_person',
+            'observation': 'observation',
+            'concept': 'concept'
+        }
         for tbl in ['concept']:
             if not bq_utils.table_exists(tbl, dataset_id=self.dataset_id):
                 create_tables.append(tbl)
         for tbl in create_tables:
-            bq_utils.create_standard_table(tbl,
+            bq_utils.create_standard_table(table_fields[tbl],
                                            tbl,
                                            dataset_id=self.dataset_id,
                                            force_all_nullable=True)

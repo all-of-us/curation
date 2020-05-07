@@ -106,5 +106,23 @@
         "name": "ethnicity_source_concept_id", 
         "mode": "nullable", 
         "description": "A foreign key to the ethnicity concept that refers to the code used in the source."
+    }, 
+    {
+        "type": "integer", 
+        "name": "sex_at_birth_concept_id", 
+        "mode": "nullable", 
+        "description": "[All of Us OMOP extension] A foreign key to the biological sex at birth concept."
+    }, 
+    {
+        "type": "integer", 
+        "name": "sex_at_birth_source_concept_id", 
+        "mode": "nullable", 
+        "description": "[All of Us OMOP extension] A foreign key to the biological sex at birth source concept."
+    }, 
+    {
+        "type": "string", 
+        "name": "sex_at_birth_source_value", 
+        "mode": "nullable", 
+        "description": "[All of Us OMOP extension] The source code for the biological sex at birth."
     }
 ]
