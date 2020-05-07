@@ -147,7 +147,7 @@ if __name__ == '__main__':
                         dest='snapshot_dataset_id',
                         help='Name of the new dataset that needs to be created',
                         required=True)
-    parser.add_argument('-ds',
+    parser.add_argument('-s',
                         '--data_stage',
                         action='store',
                         dest='data_stage',

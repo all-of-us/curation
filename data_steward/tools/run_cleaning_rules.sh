@@ -86,6 +86,6 @@ export BIGQUERY_DATASET_ID="${dataset}"
 python "${CLEANER_DIR}/clean_cdr.py" -d ${data_stage} -s 2>&1 | tee cleaning_rules_log.txt
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${dataset}" -n "${snapshot_dataset}" -ds "${pre_post_deid}"
+python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${dataset}" -n "${snapshot_dataset}" -s "${pre_post_deid}"
 
 unset PYTHOPATH

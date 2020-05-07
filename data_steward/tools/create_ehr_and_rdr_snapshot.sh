@@ -92,7 +92,7 @@ data_stage="rdr"
 python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${rdr_snapshot_staging}" -n "${rdr_snapshot}" -ds "pre_deid"
+python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${rdr_snapshot_staging}" -n "${rdr_snapshot}" -s "pre_deid"
 
 #copy sandbox dataset
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${rdr_snapshot_staging}_sandbox" --target_dataset "${rdr_snapshot}_sandbox"

@@ -3,11 +3,11 @@ import hashlib
 import inspect
 import json
 import os
+from io import open
 
 import cachetools
 
 from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML
-from io import open
 
 base_path = os.path.dirname(
     os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -156,6 +156,8 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
             elif is_pii_table(table_name):
                 include_table = False
             elif is_id_match(table_name):
+                include_table = False
+            elif table_name == 'post_deid_person':
                 include_table = False
             if include_table:
                 result[table_name] = schema
