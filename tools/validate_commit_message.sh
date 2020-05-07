@@ -11,7 +11,7 @@ set +e
 revs=$(git rev-list origin/develop..HEAD)
 
 # check if single commit on branch
-if [[ $(echo "${revs}" | wc -l ) -eq 1 ]]
+if [[ -n "${revs}" && $(echo "${revs}" | wc -l ) -eq 1 ]]
   then
   msg=$(git cat-file commit "${revs}" | sed '1,/^$/d')
   if [[ ! $msg =~ $TICKET_REGEX ]];
