@@ -92,6 +92,7 @@ PID_TABLE_FIELDS = [{
     "description": "The deactivation date to base retractions on"
 }]
 
+
 def add_console_logging(add_handler):
     """
     This config should be done in a separate module, but that can wait
@@ -116,6 +117,7 @@ def add_console_logging(add_handler):
         formatter = logging.Formatter('%(levelname)s - %(name)s - %(message)s')
         handler.setFormatter(formatter)
         logging.getLogger('').addHandler(handler)
+
 
 def get_pids_datasets_and_tables(project_id):
     """
@@ -229,7 +231,7 @@ def get_research_id(project, dataset, pid):
     research_id_df = bq.query(
         RESEARCH_ID_QUERY.format(project=project, prefix_regex=prefix, pid=pid))
     if research_id_df.empty:
-        LOGGER.info(f'no research_id associated with person_id: {pid}')
+        LOGGER.info('no research_id associated with person_id: %s' % pid)
         return None
 
     return research_id_df.to_string()
@@ -295,7 +297,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 datasets = [d.dataset_id for d in datasets_obj]
                 if sandbox_dataset not in datasets:
                     LOGGER.info('%s dataset does not exist, creating now' %
-                                 sandbox_dataset)
+                                sandbox_dataset)
                     create_sandbox_dataset(date_row.project_id,
                                            date_row.dataset_id)
 
@@ -389,20 +391,20 @@ def run_queries(queries):
     for query_dict in queries:
         if query_dict['type'] == 'sandbox':
             LOGGER.info('Writing rows to be retracted to, using query %s' %
-                         (query_dict['query']))
+                        (query_dict['query']))
             job_results = bq_utils.query(q=query_dict['query'], batch=True)
             LOGGER.info('%s table written to %s' %
-                         (query_dict['destination_table_id'],
-                          query_dict['destination_dataset_id']))
+                        (query_dict['destination_table_id'],
+                         query_dict['destination_dataset_id']))
             query_job_id = job_results['jobReference']['jobId']
             query_job_ids.append(query_job_id)
         else:
             LOGGER.info('Truncating table with clean data, using query %s' %
-                         (query_dict['query']))
+                        (query_dict['query']))
             job_results = bq_utils.query(q=query_dict['query'], batch=True)
             LOGGER.info('%s table updated with clean rows in %s' %
-                         (query_dict['destination_table_id'],
-                          query_dict['destination_dataset_id']))
+                        (query_dict['destination_table_id'],
+                         query_dict['destination_dataset_id']))
             query_job_id = job_results['jobReference']['jobId']
             query_job_ids.append(query_job_id)
 
