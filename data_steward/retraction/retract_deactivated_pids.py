@@ -109,12 +109,12 @@ def add_console_logging(add_handler):
     logging.basicConfig(
         filename=name,
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        format='{asctime} - {name} - {levelname} - {message}', style='{')
 
     if add_handler:
         handler = logging.StreamHandler()
         handler.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(levelname)s - %(name)s - %(message)s')
+        formatter = logging.Formatter('{levelname} - {name} - {message}', style='{')
         handler.setFormatter(formatter)
         logging.getLogger('').addHandler(handler)
 
@@ -152,14 +152,14 @@ def get_date_info_for_pids_tables(project_id):
     :return: filtered dataframe which includes the following columns for each table in each dataset with a person_id
     'project_id', 'dataset_id', 'table', 'date_column', 'start_date_column', 'end_date_column'
     """
-    LOGGER.info('getting all tables with person id in %s' % project_id)
+    LOGGER.info(f"Getting all tables with a person_id field in project {project_id}")
     pids_tables, pids_datasets = get_pids_datasets_and_tables(project_id)
     # Create empty df to append to for final output
     date_fields_info_df = pd.DataFrame()
 
     # Loop through datasets
     LOGGER.info(
-        'Looping through datasets to filter and create dataframe with correct date field to determine retraction'
+        "Looping through datasets to filter and create dataframe with correct date field to determine retraction"
     )
     for dataset in pids_datasets:
         # Get table info
@@ -231,7 +231,7 @@ def get_research_id(project, dataset, pid):
     research_id_df = bq.query(
         RESEARCH_ID_QUERY.format(project=project, prefix_regex=prefix, pid=pid))
     if research_id_df.empty:
-        LOGGER.info('no research_id associated with person_id: %s' % pid)
+        LOGGER.info(f"no research_id associated with person_id {pid}")
         return None
 
     return research_id_df.to_string()
@@ -273,11 +273,11 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
 
     date_columns_df = get_date_info_for_pids_tables(project_id)
     LOGGER.info(
-        'Dataframe creation complete. DF to be used for creation of retraction queries.'
+        "Dataframe creation complete. DF to be used for creation of retraction queries."
     )
 
     LOGGER.info(
-        'Looping through the deactivated PIDS df to create queries based on the retractions needed per PID table'
+        "Looping through the deactivated PIDS df to create queries based on the retractions needed per PID table"
     )
     for ehr_row in deactivated_ehr_pids_df.itertuples(index=False):
         for date_row in date_columns_df.itertuples(index=False):
@@ -296,8 +296,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 datasets_obj = bq.list_datasets(project_id)
                 datasets = [d.dataset_id for d in datasets_obj]
                 if sandbox_dataset not in datasets:
-                    LOGGER.info('%s dataset does not exist, creating now' %
-                                sandbox_dataset)
+                    LOGGER.info(f"{sandbox_dataset} dataset does not exist, creating now")
                     create_sandbox_dataset(date_row.project_id,
                                            date_row.dataset_id)
 
@@ -376,8 +375,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 # break out of loop to create query, if pid does not exist in table
                 continue
     LOGGER.info(
-        'Query list complete, retracting ehr deactivated PIDS from the following datasets: %s'
-        % date_columns_df['dataset_id'].tolist())
+        f"Query list complete, retracting ehr deactivated PIDS from the following datasets: "
+        f"{date_columns_df['dataset_id'].tolist()}")
     return queries_list
 
 
@@ -390,29 +389,24 @@ def run_queries(queries):
     query_job_ids = []
     for query_dict in queries:
         if query_dict['type'] == 'sandbox':
-            LOGGER.info('Writing rows to be retracted to, using query %s' %
-                        (query_dict['query']))
+            LOGGER.info(f"Writing rows to be retracted to, using query {query_dict['query']}")
             job_results = bq_utils.query(q=query_dict['query'], batch=True)
-            LOGGER.info('%s table written to %s' %
-                        (query_dict['destination_table_id'],
-                         query_dict['destination_dataset_id']))
+            LOGGER.info(f"{query_dict['destination_table_id']} table written to {query_dict['destination_dataset_id']}")
             query_job_id = job_results['jobReference']['jobId']
             query_job_ids.append(query_job_id)
         else:
-            LOGGER.info('Truncating table with clean data, using query %s' %
-                        (query_dict['query']))
+            LOGGER.info(f"Truncating table with clean data, using query {query_dict['query']}")
             job_results = bq_utils.query(q=query_dict['query'], batch=True)
-            LOGGER.info('%s table updated with clean rows in %s' %
-                        (query_dict['destination_table_id'],
-                         query_dict['destination_dataset_id']))
+            LOGGER.info(f"{query_dict['destination_table_id']} table updated with clean rows in "
+                        f"{query_dict['destination_dataset_id']}")
             query_job_id = job_results['jobReference']['jobId']
             query_job_ids.append(query_job_id)
 
     incomplete_jobs = bq_utils.wait_on_jobs(query_job_ids)
+    count = len(incomplete_jobs)
     if incomplete_jobs:
-        LOGGER.info('Failed on {count} job ids {ids}'.format(
-            count=len(incomplete_jobs), ids=incomplete_jobs))
-        LOGGER.info('Terminating retraction')
+        LOGGER.info(f"Failed on {count} job ids {incomplete_jobs}")
+        LOGGER.info("Terminating retraction")
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
 
@@ -474,7 +468,7 @@ def main(args=None):
                                 args.pids_project_id, args.pids_dataset_id,
                                 args.pids_table)
     run_queries(query_list)
-    LOGGER.info('Retraction complete')
+    LOGGER.info("Retraction complete")
 
 
 if __name__ == '__main__':
