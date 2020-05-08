@@ -226,7 +226,15 @@ def update_labels_and_tags(dataset_id,
         raise RuntimeError(
             "Cannot overwrite. The provided new label or tag already exists")
 
-    return new_labels_or_tags
+    if overwrite_ok is True and any(new_labels_or_tags.items() &
+                                    existing_labels_or_tags.items()) is False:
+        labels_and_tags = dict(
+            list(existing_labels_or_tags.items()) +
+            list(new_labels_or_tags.items()))
+        return labels_and_tags
+
+    else:
+        return new_labels_or_tags
 
 
 def delete_dataset(project_id,
