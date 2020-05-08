@@ -193,48 +193,40 @@ def define_dataset(project_id, dataset_id, description, label_or_tag):
     return dataset
 
 
-def update_labels_and_tags(project_id,
-                           dataset_id,
-                           label_or_tag,
+def update_labels_and_tags(dataset_id,
+                           existing_labels_or_tags,
+                           new_labels_or_tags,
                            overwrite_ok=False):
     """
     Updates labels or tags in dataset if not set or needing to be updated
     or overwrites existing labels or tags in the dataset
 
-    :param project_id:  string name to identify the project
     :param dataset_id:  string name to identify the dataset
-    :param label_or_tag:  labels for the dataset = Dict[str, str]
-                          tags for the dataset = Dict[str, '']
-    :param overwrite_ok:  flag to signal if label_or_tag is to be either
+    :param existing_labels_or_tags:  labels already existing on the dataset = Dict[str, str]
+                                     tags already existing on the dataset = Dict[str, '']
+    :param new_labels_or_tags:  new labels to add to the dataset = Dict[str, str]
+                                new tags to add to the dataset = Dict[str, '']
+    :param overwrite_ok:  flag to signal if labels or tags are to be either
                              overwritten (False as default) or updated (True)
 
     :raises:  RuntimeError if parameters are not specified
+    :raises:  RuntimeError if overwrite_ok is false and the new labels and tags provided
+                already exist in the existing labels or tags dictionary
 
-    :return:  a dataset reference object
+    :return:  a dictionary of new labels or tags
     """
-    if not project_id:
-        raise RuntimeError(
-            "Specify the project_id for the project containing the dataset")
-
     if not dataset_id:
         raise RuntimeError("Provide a dataset_id")
 
-    if not label_or_tag:
+    if not new_labels_or_tags:
         raise RuntimeError("Please provide a label or tag")
 
-    client = get_client(project_id)
-    dataset_id = f"{project_id}.{dataset_id}"
-    dataset = client.get_dataset(dataset_id)
+    if overwrite_ok is False and any(new_labels_or_tags.items() &
+                                     existing_labels_or_tags.items()) is True:
+        raise RuntimeError(
+            "Cannot overwrite. The provided new label or tag already exists")
 
-    if overwrite_ok is False:
-        # will update labels and/or tags
-        dataset.labels = label_or_tag
-        dataset = client.update_dataset(dataset, ['labels'])
-        return dataset
-    if overwrite_ok is True:
-        # will overwrite labels and/or tags
-        dataset.labels = label_or_tag
-        return dataset
+    return new_labels_or_tags
 
 
 def delete_dataset(project_id,
