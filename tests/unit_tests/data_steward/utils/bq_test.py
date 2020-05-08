@@ -35,6 +35,12 @@ class BqTest(unittest.TestCase):
             'existing_tag': ''
         }
         self.new_labels_or_tags = {'new_label': 'new_value', 'new_tag': ''}
+        self.labels_or_tags = {
+            'existing_label': 'existing_value',
+            'existing_tag': '',
+            'new_label': 'new_value',
+            'new_tag': ''
+        }
 
     def test_update_labels_and_tags(self):
         # Tests if dataset_id param is provided
@@ -51,9 +57,14 @@ class BqTest(unittest.TestCase):
                           self.existing_labels_or_tags)
 
         # Pre-conditions
-        results = update_labels_and_tags(self.dataset_id,
-                                         self.existing_labels_or_tags,
-                                         self.new_labels_or_tags, True)
+        results_1 = update_labels_and_tags(self.dataset_id,
+                                           self.existing_labels_or_tags,
+                                           self.new_labels_or_tags, True)
+
+        results_2 = update_labels_and_tags(self.dataset_id,
+                                           self.existing_labels_or_tags,
+                                           self.new_labels_or_tags, False)
 
         # Post conditions
-        self.assertEqual(results, self.new_labels_or_tags)
+        self.assertEqual(results_1, self.labels_or_tags)
+        self.assertEqual(results_2, self.new_labels_or_tags)
