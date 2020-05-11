@@ -22,16 +22,16 @@ from constants.bq_utils import WRITE_TRUNCATE
 LOGGER = logging.getLogger(__name__)
 
 jinja_env = Environment(
-                # help protect against cross-site scripting vulnerabilities
-                autoescape=True,
-                # block tags on their own lines
-                # will not cause extra white space
-                trim_blocks=True,
-                lstrip_blocks=True,
-                # syntax highlighting should be better
-                # with these comment delimiters
-                comment_start_string='--',
-                comment_end_string=' --')
+    # help protect against cross-site scripting vulnerabilities
+    autoescape=True,
+    # block tags on their own lines
+    # will not cause extra white space
+    trim_blocks=True,
+    lstrip_blocks=True,
+    # syntax highlighting should be better
+    # with these comment delimiters
+    comment_start_string='--',
+    comment_end_string=' --')
 
 SAVE_TABLE_NAME = "dc_703_obs_changed_rows_saved"
 
