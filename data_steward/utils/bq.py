@@ -210,8 +210,7 @@ def update_labels_and_tags(dataset_id,
                              overwritten (False as default) or updated (True)
 
     :raises:  RuntimeError if parameters are not specified
-    :raises:  RuntimeError if overwrite_ok is false and the new labels and tags provided
-                already exist in the existing labels or tags dictionary
+    :raises:  RuntimeError if overwrite_ok is false and new value for label is provided
 
     :return:  a dictionary of new labels or tags
     """
@@ -221,20 +220,16 @@ def update_labels_and_tags(dataset_id,
     if not new_labels_or_tags:
         raise RuntimeError("Please provide a label or tag")
 
-    if overwrite_ok is False and any(new_labels_or_tags.items() &
-                                     existing_labels_or_tags.items()) is True:
-        raise RuntimeError(
-            "Cannot overwrite. The provided new label or tag already exists")
+    # excludes duplicate keys
+    updates = dict(new_labels_or_tags.items() - existing_labels_or_tags.items())
 
-    if overwrite_ok is True and any(new_labels_or_tags.items() &
-                                    existing_labels_or_tags.items()) is False:
-        labels_and_tags = dict(
-            list(existing_labels_or_tags.items()) +
-            list(new_labels_or_tags.items()))
-        return labels_and_tags
+    overwrite_keys = updates.keys() & existing_labels_or_tags.keys()
 
-    else:
-        return new_labels_or_tags
+    if overwrite_keys:
+        if not overwrite_keys and overwrite_ok:
+            raise RuntimeError(f'Cannot update labels on dataset {dataset_id}'
+                               f'without overwriting keys {overwrite_keys}')
+        return {**existing_labels_or_tags, **updates}
 
 
 def delete_dataset(project_id,
