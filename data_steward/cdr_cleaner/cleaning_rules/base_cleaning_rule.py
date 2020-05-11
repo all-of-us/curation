@@ -58,9 +58,14 @@ class AbstractBaseCleaningRule(ABC):
         """
         Run required steps for validation setup
 
-        Method to run .  For example, if your class requires loading a static
-        table, that load operation should be defined here.  It SHOULD NOT BE
-        defined as part of get_query_specs().
+        Method to run to setup validation on cleaning rules that will be updating or deleting the values.
+        For example:
+        if your class updates all the datetime fields you should be implementing the
+        logic to get the initial list of values which adhere to a condition we are looking for.
+
+        if your class deletes a subset of rows in the tables you should be implementing
+        the logic to get the row counts of the tables prior to applying cleaning rule
+
         """
         pass
 
@@ -88,7 +93,7 @@ class AbstractBaseCleaningRule(ABC):
     @abstractmethod
     def validate_rule(self, *args, **keyword_args):
         """
-        Validates the cleaning rule which deletes the data from the tables
+        Validates the cleaning rule which deletes or updates the data from the tables
 
         Method to run validation on cleaning rules that will be updating the values.
         For example:
@@ -355,7 +360,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
 
         for k, v in initial_counts.items():
             if v == final_row_counts[k] + sandbox_row_counts[sandbox_tables[k]]:
-                return print(
+                return LOGGER.info(
                     f'{self._issue_numbers[0]} cleaning rule has run successfully on {dataset}.{k} table.'
                 )
             else:

@@ -205,13 +205,39 @@ class CleanMappingExtTables(BaseCleaningRule):
         raise NotImplementedError("Please fix me")
 
     def get_affected_tables(self):
-        pass
+        """
+        Method to get tables that will be modified by the cleaning rule.
+
+        This abstract method was added to the base class after this rule was authored.This
+        rule needs to implement logic to get the affected tables .
+        Until done, it is raising an error.No issue exists for this yet.
+        """
+        raise NotImplementedError(
+            "Please fix me.  I should be <add description>.")
 
     def setup_validation(self):
-        pass
+        """
+        Run required steps for validation setup
+
+        This abstract method was added to the base class after this rule was authored.
+        This rule needs to implement logic to setup validation on cleaning rules that
+        will be updating or deleting the values.
+        Until done, it is raising an error.No issue exists for this yet.
+        """
+        raise NotImplementedError(
+            "Please fix me.  I should be <add description>.")
 
     def validate_rule(self):
-        pass
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+
+        This abstract method was added to the base class after this rule was authored.
+        This rule needs to implement logic to run validation on cleaning rules that will
+        be updating or deleting the values.
+        Until done, it is raising an error.No issue exists for this yet.
+        """
+        raise NotImplementedError(
+            "Please fix me.  I should be <add description>.")
 
 
 if __name__ == '__main__':
