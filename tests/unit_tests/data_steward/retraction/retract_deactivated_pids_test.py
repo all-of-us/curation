@@ -39,40 +39,30 @@ class RetractDataBqTest(unittest.TestCase):
 
     @mock.patch('utils.bq.list_datasets')
     @mock.patch('utils.bq.query')
-    def test_get_pids_datasets_and_tables(self, mock_query, mock_datasets_list):
+    def test_get_pids_table_info(self, mock_query, mock_datasets_list):
         dataset_1 = mock.Mock(spec=['dataset_1'], dataset_id='dataset_id_1')
         dataset_2 = mock.Mock(spec=['dataset_2'], dataset_id='dataset_id_2')
         expected_dataset_list = mock_datasets_list.return_value = [
             dataset_1, dataset_2
         ]
-
-        table_list = ['table_1', 'table_2', 'table_3']
-        df = pd.DataFrame(data={'table_name': table_list})
-        mock_query.return_value = df
-
-        expected_pids_table_list = []
-        expected_pids_dataset_list = []
         for dataset in expected_dataset_list:
-            pid_tables = sandbox_and_remove_pids.get_tables_with_person_id(
+            expected_result_df = mock_query.return_value = pd.DataFrame(
+                columns=[
+                    'table_catalog', 'table_schema', 'table_name',
+                    'column_name', 'ordinal_position', 'is_nullable',
+                    'data_type', 'is_generated', 'generation_expression',
+                    'is_stored', 'is_hidden', 'is_updatable',
+                    'is_system_defined', 'is_partitioning_column',
+                    'clustering_ordinal_position'
+                ])
+            returned_result_df = retract_deactivated_pids.get_pids_table_info(
                 self.project_id, dataset)
-            if pid_tables:
-                expected_pids_table_list.extend(pid_tables)
-                expected_pids_dataset_list.append(dataset.dataset_id)
+            assert_frame_equal(expected_result_df, returned_result_df)
 
-        returned_pids_table_list, returned_pids_dataset_list = retract_deactivated_pids.get_pids_datasets_and_tables(
-            self.project_id)
+    @mock.patch('retraction.retract_deactivated_pids.get_pids_table_info')
+    def test_get_date_info_for_pids_tables(self, mock_get_pids_table_info):
 
-        self.assertListEqual(returned_pids_dataset_list,
-                             expected_pids_dataset_list)
-        self.assertListEqual(returned_pids_table_list, expected_pids_table_list)
-
-    @mock.patch(
-        'retraction.retract_deactivated_pids.get_pids_datasets_and_tables')
-    @mock.patch('utils.bq.get_table_info_for_dataset')
-    def test_get_date_info_for_pids_tables(self, mock_get_table_info,
-                                           mock_get_pids_datasets_and_tables):
-        mock_get_pids_datasets_and_tables.return_value = self.pids_dataset_list, self.pids_table_list
-        mock_get_table_info.return_value = pd.DataFrame(columns=[
+        mock_get_pids_table_info.return_value = pd.DataFrame(columns=[
             'table_catalog', 'table_schema', 'table_name', 'column_name',
             'ordinal_position', 'is_nullable', 'data_type', 'is_generated',
             'generation_expression', 'is_stored', 'is_hidden', 'is_updatable',
@@ -82,10 +72,8 @@ class RetractDataBqTest(unittest.TestCase):
         retraction_info_df = pd.DataFrame()
 
         for dataset in self.pids_dataset_list:
-            table_info_df = bq.get_table_info_for_dataset(
+            pids_tables_df = retract_deactivated_pids.get_pids_table_info(
                 self.project_id, dataset)
-            pids_tables_df = table_info_df[table_info_df['table_name'].isin(
-                self.pids_table_list)]
 
             # Keep only records with datatype of 'DATE'
             date_fields_df = pids_tables_df[pids_tables_df['data_type'] ==

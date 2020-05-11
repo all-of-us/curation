@@ -12,7 +12,6 @@ import pandas as pd
 from utils import bq
 import bq_utils
 from retraction.retract_utils import DEID_REGEX
-from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from sandbox import get_sandbox_dataset_id, create_sandbox_dataset
 from constants import bq_utils as bq_consts
@@ -20,6 +19,10 @@ from constants import bq_utils as bq_consts
 LOGGER = logging.getLogger(__name__)
 LOGS_PATH = 'LOGS'
 
+PIDS_TABLE_INFORMATION_SCHEMA = """
+SELECT *
+FROM `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
+"""
 DEACTIVATED_PIDS_QUERY = """
 SELECT DISTINCT *
 FROM `{project}.{dataset}.{table}`
@@ -119,29 +122,12 @@ def add_console_logging(add_handler):
         logging.getLogger('').addHandler(handler)
 
 
-def get_pids_datasets_and_tables(project_id):
-    """
-    Get list of tables that have a person_id column; along with a separate
-    list of the datasets containing pids
-
-    :param project_id: bq name of project_id
-    :return: two separate lists; pids_table_list - list of all tables with a person_id field. pids_datset_list - list of
-    all datasets containing pid tables
-    """
-    dataset_obj = bq.list_datasets(project_id)
-    datasets = [d.dataset_id for d in dataset_obj]
-
-    pids_table_list = []
-    pids_dataset_list = []
-    for dataset in datasets:
-        pid_tables = sandbox_and_remove_pids.get_tables_with_person_id(
-            project_id, dataset)
-        if pid_tables:
-            pids_table_list.extend(pid_tables)
-            pids_dataset_list.append(dataset)
-
-    return pids_table_list, pids_dataset_list
-
+def get_pids_table_info(project_id, dataset_id):
+    table_info_query = PIDS_TABLE_INFORMATION_SCHEMA.format(project=project_id, dataset=dataset_id)
+    result_df = bq.query(table_info_query, project_id)
+    # Remove mapping tables
+    result_df = result_df[~result_df.table_name.str.startswith(tuple('_mapping'))]
+    return result_df
 
 def get_date_info_for_pids_tables(project_id):
     """
@@ -152,8 +138,6 @@ def get_date_info_for_pids_tables(project_id):
     :return: filtered dataframe which includes the following columns for each table in each dataset with a person_id
     'project_id', 'dataset_id', 'table', 'date_column', 'start_date_column', 'end_date_column'
     """
-    LOGGER.info(f"Getting all tables with a person_id field in project {project_id}")
-    pids_tables, pids_datasets = get_pids_datasets_and_tables(project_id)
     # Create empty df to append to for final output
     date_fields_info_df = pd.DataFrame()
 
@@ -161,12 +145,13 @@ def get_date_info_for_pids_tables(project_id):
     LOGGER.info(
         "Looping through datasets to filter and create dataframe with correct date field to determine retraction"
     )
-    for dataset in pids_datasets:
-        # Get table info
-        table_info_df = bq.get_table_info_for_dataset(project_id, dataset)
-        # Filter out to only records with pids
-        pids_tables_df = table_info_df[table_info_df['table_name'].isin(
-            pids_tables)]
+
+    dataset_obj = bq.list_datasets(project_id)
+    datasets = [d.dataset_id for d in dataset_obj]
+
+    for dataset in datasets:
+        # Get table info for tables with pids
+        pids_tables_df = get_pids_table_info(project_id, dataset)
 
         # Keep only records with datatype of 'DATE'
         date_fields_df = pids_tables_df[pids_tables_df['data_type'] == 'DATE']
