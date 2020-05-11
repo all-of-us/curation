@@ -61,13 +61,13 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
         # Post conditions
         expected_list = [{
             clean_consts.QUERY:
-                SANDBOX_QUERY.format(project=self.project_id,
+                SANDBOX_QUERY.render(project=self.project_id,
                                      dataset=self.dataset_id,
                                      sandbox_dataset=self.sandbox_id,
                                      intermediary_table=SAVE_TABLE_NAME)
         }, {
             clean_consts.QUERY:
-                CLEAN_NUMERIC_PPI_QUERY.format(project=self.project_id,
+                CLEAN_NUMERIC_PPI_QUERY.render(project=self.project_id,
                                                dataset=self.dataset_id),
             clean_consts.DESTINATION_TABLE:
                 'observation',
@@ -84,13 +84,13 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
         self.assertEqual(self.query_class.get_affected_datasets(),
                          [clean_consts.RDR])
 
-        store_rows_to_be_changed = SANDBOX_QUERY.format(
+        store_rows_to_be_changed = SANDBOX_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_id,
             intermediary_table=SAVE_TABLE_NAME)
 
-        select_rows_to_be_changed = CLEAN_NUMERIC_PPI_QUERY.format(
+        select_rows_to_be_changed = CLEAN_NUMERIC_PPI_QUERY.render(
             project=self.project_id, dataset=self.dataset_id)
 
         # Test
