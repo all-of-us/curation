@@ -11,6 +11,9 @@ archived in the dataset sandbox.
 # Python imports
 import logging
 
+# Third party imports
+from jinja2 import Environment
+
 # Project imports
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
@@ -18,37 +21,71 @@ from constants.bq_utils import WRITE_TRUNCATE
 
 LOGGER = logging.getLogger(__name__)
 
+jinja_env = Environment(
+                # help protect against cross-site scripting vulnerabilities
+                autoescape=True,
+                # block tags on their own lines
+                # will not cause extra white space
+                trim_blocks=True,
+                lstrip_blocks=True,
+                # syntax highlighting should be better
+                # with these comment delimiters
+                comment_start_string='--',
+                comment_end_string=' --')
+
 SAVE_TABLE_NAME = "dc_703_obs_changed_rows_saved"
 
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
-SANDBOX_QUERY = """
+SANDBOX_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE 
-    `{project}.{sandbox_dataset}.{intermediary_table}` AS (
+    `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
 FROM 
-    `{project}.{dataset}.observation`
+    `{{project}}.{{dataset}}.observation`
 WHERE
     questionnaire_response_id IS NOT NULL
 AND 
     value_as_number IS NOT NULL
 AND 
     (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL))
-"""
+""")
 
-CLEAN_NUMERIC_PPI_QUERY = """
-SELECT * REPLACE(
-    NULL AS value_source_concept_id,
-    NULL AS value_as_concept_id,
-    NULL AS value_source_value,
-    NULL AS value_as_string)
-FROM `{project}.{dataset}.observation` AS obs 
-WHERE 
-   questionnaire_response_id IS NOT NULL
-AND
-   value_as_number IS NOT NULL
-AND
-   (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL)
-"""
+CLEAN_NUMERIC_PPI_QUERY = jinja_env.from_string("""
+SELECT
+    observation_id,
+    person_id,
+    observation_concept_id,
+    observation_date,
+    observation_datetime,
+    observation_type_concept_id,
+    value_as_number,
+CASE WHEN 
+    value_as_number IS NOT NULL AND value_source_concept_id IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
+END AS 
+    value_as_string,
+CASE WHEN
+    value_as_number IS NOT NULL AND value_source_concept_id IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
+END AS
+    value_as_concept_id,
+    qualifier_concept_id,
+    unit_concept_id,
+    provider_id,
+    visit_occurrence_id,
+    observation_source_value,
+    observation_source_concept_id,
+    unit_source_value,
+    qualifier_source_value,
+CASE WHEN
+    value_as_number IS NOT NULL AND value_source_concept_id IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
+END AS
+    value_source_concept_id,
+CASE WHEN
+    value_as_number IS NOT NULL AND value_source_concept_id IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
+END AS
+    value_source_value,
+    questionnaire_response_id
+FROM
+    {{project}}.{{dataset}}.observation""")
 
 
 class NullConceptIDForNumericPPI(BaseCleaningRule):
@@ -86,7 +123,7 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
         """
         save_changed_rows = {
             cdr_consts.QUERY:
-                SANDBOX_QUERY.format(
+                SANDBOX_QUERY.render(
                     project=self.get_project_id(),
                     dataset=self.get_dataset_id(),
                     sandbox_dataset=self.get_sandbox_dataset_id(),
@@ -95,7 +132,7 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
 
         clean_numeric_ppi_query = {
             cdr_consts.QUERY:
-                CLEAN_NUMERIC_PPI_QUERY.format(project=self.get_project_id(),
+                CLEAN_NUMERIC_PPI_QUERY.render(project=self.get_project_id(),
                                                dataset=self.get_dataset_id()),
             cdr_consts.DESTINATION_TABLE:
                 'observation',
