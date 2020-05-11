@@ -161,10 +161,9 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
 
         This abstract method was added to the base class after this rule was authored.This
         rule needs to implement logic to get the affected tables .
-        Until done, it is raising an error.No issue exists for this yet.
+        Until done no issue exists for this yet.
         """
-        raise NotImplementedError(
-            "Please fix me.  I should be <add description>.")
+        pass
 
     def setup_validation(self):
         """
@@ -173,10 +172,9 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         This abstract method was added to the base class after this rule was authored.
         This rule needs to implement logic to setup validation on cleaning rules that
         will be updating or deleting the values.
-        Until done, it is raising an error.No issue exists for this yet.
+        Until done no issue exists for this yet.
         """
-        raise NotImplementedError(
-            "Please fix me.  I should be <add description>.")
+        pass
 
     def validate_rule(self):
         """
@@ -185,10 +183,9 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         This abstract method was added to the base class after this rule was authored.
         This rule needs to implement logic to run validation on cleaning rules that will
         be updating or deleting the values.
-        Until done, it is raising an error.No issue exists for this yet.
+        Until done no issue exists for this yet.
         """
-        raise NotImplementedError(
-            "Please fix me.  I should be <add description>.")
+        pass
 
 
 if __name__ == '__main__':
