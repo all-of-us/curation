@@ -1,22 +1,25 @@
 """
 Unit Test for the bq module
 
-Ensures the update_labels_and_tags function has the proper parameters passed to it and
-    no new labels are added that already exist.
+Ensures the define_dataset and update_labels_and_tag functions have the proper parameters passed
+    to them. Ensures update_labels_and_tags function returns a dictionary of either the existing
+    labels and or tags or the labels and or tags that need to be updated.
 
-Original Issue: DC-758
+Original Issues: DC-757, DC-758
 
-The intent is to check that dataset_id and new_labels_or_tag are passed to the
- update_labels_and_tags. Also to make sure an error is raised if overwrite_ok is
- false and any new labels or tags are provided that already exists
- in existing_labels_or_tags dictionary
+The intent is to check the proper parameters are passed to define_dataset and update_labels_and_tags
+    function as well as to check to make sure the right labels and tags are returned in the
+    update_labels_and_tags function.
 """
 
 # Python imports
 import unittest
 
+# Third-party imports
+from google.cloud import bigquery
+
 # Project imports
-from utils.bq import update_labels_and_tags
+from utils.bq import define_dataset, update_labels_and_tags
 
 
 class BqTest(unittest.TestCase):
@@ -29,32 +32,47 @@ class BqTest(unittest.TestCase):
 
     def setUp(self):
         # Input parameters expected by the class
+        self.project_id = 'bar_project'
         self.dataset_id = 'foo_dataset'
-        self.existing_labels_or_tags = {
-            'existing_label': 'existing_value',
-            'existing_tag': ''
-        }
-        self.new_labels_or_tags = {'new_label': 'new_value', 'new_tag': ''}
-        self.labels_or_tags = {
-            'existing_label': 'existing_value',
-            'existing_tag': '',
-            'new_label': 'new_value',
-            'new_tag': ''
-        }
+        self.description = 'fake_description'
+        self.existing_labels_or_tags = {'label': 'value', 'tag': ''}
+        self.new_labels_or_tags = {'label': 'new_value', 'new_tag': ''}
+        self.updated = {'tag': '', 'label': 'new_value', 'new_tag': ''}
+
+    def test_define_dataset(self):
+        # Tests if project_id is given
+        self.assertRaises(RuntimeError, define_dataset, None, self.dataset_id,
+                          self.description, self.existing_labels_or_tags)
+
+        # Tests if dataset_id is given
+        self.assertRaises(RuntimeError, define_dataset, self.project_id, None,
+                          self.description, self.existing_labels_or_tags)
+
+        # Tests if description is given
+        self.assertRaises(RuntimeError, define_dataset, self.project_id,
+                          self.dataset_id, (None or ''),
+                          self.existing_labels_or_tags)
+
+        # Tests if no label or tag is given
+        self.assertRaises(RuntimeError, define_dataset, self.project_id,
+                          self.dataset_id, self.description, None)
+
+        # Pre-conditions
+        results = define_dataset(self.project_id, self.dataset_id,
+                                 self.description, self.existing_labels_or_tags)
+
+        # Post conditions
+        self.assertIsInstance(results, bigquery.Dataset)
+        self.assertEqual(results.labels, self.existing_labels_or_tags)
 
     def test_update_labels_and_tags(self):
         # Tests if dataset_id param is provided
-        self.assertRaises(TypeError, update_labels_and_tags,
+        self.assertRaises(RuntimeError, update_labels_and_tags, None,
                           self.existing_labels_or_tags, self.new_labels_or_tags)
 
         # Tests if new_labels_or_tags param is provided
-        self.assertRaises(TypeError, update_labels_and_tags, self.dataset_id,
-                          self.existing_labels_or_tags)
-
-        # Tests if the same labels and tags are provided
-        self.assertRaises(TypeError, update_labels_and_tags,
-                          self.existing_labels_or_tags,
-                          self.existing_labels_or_tags)
+        self.assertRaises(RuntimeError, update_labels_and_tags, self.dataset_id,
+                          self.existing_labels_or_tags, None)
 
         # Pre-conditions
         results_1 = update_labels_and_tags(self.dataset_id,
@@ -63,8 +81,8 @@ class BqTest(unittest.TestCase):
 
         results_2 = update_labels_and_tags(self.dataset_id,
                                            self.existing_labels_or_tags,
-                                           self.new_labels_or_tags, False)
+                                           self.existing_labels_or_tags, False)
 
         # Post conditions
-        self.assertEqual(results_1, self.labels_or_tags)
-        self.assertEqual(results_2, self.new_labels_or_tags)
+        self.assertEqual(results_1, self.updated)
+        self.assertRaises(RuntimeError, results_2)
