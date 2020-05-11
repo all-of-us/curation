@@ -12,12 +12,13 @@ The records for removal should be archived in the dataset sandbox.
 # Python imports
 import unittest
 
-# Third party imports
-
+from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import \
+    ObservationSourceConceptIDRowSuppression, SAVE_TABLE_NAME, DROP_SELECTION_QUERY, DROP_QUERY
 # Project imports
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
-from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import ObservationSourceConceptIDRowSuppression, SAVE_TABLE_NAME, DROP_SELECTION_QUERY, DROP_QUERY
+
+# Third party imports
 
 
 class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
@@ -45,7 +46,16 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         # test
         self.query_class.setup_rule()
 
-        # no errors are raised, nothing happens
+    def test_get_affected_tables(self):
+        self.query_class.get_affected_tables()
+
+    def test_setup_validation(self):
+        self.query_class.setup_validation()
+
+    def test_validate_rule(self):
+        self.query_class.validate_rule()
+
+    # no errors are raised, nothing happens
 
     def test_get_query_specs(self):
         # pre-conditions

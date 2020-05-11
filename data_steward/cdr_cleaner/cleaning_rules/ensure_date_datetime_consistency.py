@@ -10,12 +10,12 @@ field is null or incorrect.
 # Python imports
 import logging
 
-# Project imports
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from cdr_cleaner.cleaning_rules import field_mapping
+import common
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import common
+from cdr_cleaner.cleaning_rules import field_mapping
+# Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
@@ -154,6 +154,15 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         Returns an empty list because this rule does not use sandbox tables.
         """
         return []
+
+    def get_affected_tables(self):
+        pass
+
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
+        pass
 
 
 if __name__ == '__main__':

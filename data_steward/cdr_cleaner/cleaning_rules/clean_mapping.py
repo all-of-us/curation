@@ -14,8 +14,8 @@ import logging
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
-from utils import bq
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from utils import bq
 
 LOGGER = logging.getLogger(__name__)
 
@@ -203,6 +203,15 @@ class CleanMappingExtTables(BaseCleaningRule):
         this yet.
         """
         raise NotImplementedError("Please fix me")
+
+    def get_affected_tables(self):
+        pass
+
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
+        pass
 
 
 if __name__ == '__main__':

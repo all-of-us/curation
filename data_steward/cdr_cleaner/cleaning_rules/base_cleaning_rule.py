@@ -317,7 +317,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         """
         return self._sandbox_dataset_id
 
-    def get_table_counts(self, dataset, client, tables):
+    def get_table_counts(self, dataset, tables, client=None):
         """
         Method to get the row counts of the list of tables
 
@@ -335,7 +335,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         return counts_dict
 
     def validate_delete_rule(self, dataset, sandbox_dataset, sandbox_tables,
-                             tables_affected, initial_counts):
+                             tables_affected, initial_counts, client):
         """
         Validates the cleaning rule which deletes the rows in table
 
@@ -344,12 +344,14 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         :param sandbox_tables: list of sandbox dataset names for generated for this cleaning rule.
         :param tables_affected: list of table names affected by this cleaning rule
         :param initial_counts: dictionary with row counts of tables prior applying the cleaning rule
+        :param client: Bigquery client
         :return: returns success message when the validation is success full else
         raises a RuntimeError.
         """
-        final_row_counts = self.get_table_counts(tables_affected, dataset)
+        final_row_counts = self.get_table_counts(dataset, tables_affected,
+                                                 client)
         sandbox_row_counts = self.get_table_counts(
-            list(sandbox_tables.values()), sandbox_dataset)
+            sandbox_dataset, list(sandbox_tables.values()), client)
 
         for k, v in initial_counts.items():
             if v == final_row_counts[k] + sandbox_row_counts[sandbox_tables[k]]:

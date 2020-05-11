@@ -98,6 +98,15 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         """
         pass
 
+    def get_affected_tables(self):
+        pass
+
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
+        pass
+
     def get_sandbox_tablenames(self):
         return [SAVE_TABLE_NAME]
 
