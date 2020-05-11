@@ -1,5 +1,5 @@
 """
-Unit Test for the null_concept_ids_for_numeric_ppi module.
+Integration test for the null_concept_ids_for_numeric_ppi module.
 
 Nullify concept ids for numeric PPIs from the RDR observation dataset
 
