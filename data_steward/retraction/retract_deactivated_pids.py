@@ -108,15 +108,16 @@ def add_console_logging(add_handler):
 
     name = datetime.now().strftime(
         os.path.join(LOGS_PATH, 'ehr_deactivated_retraction-%Y-%m-%d.log'))
-    logging.basicConfig(
-        filename=name,
-        level=logging.INFO,
-        format='{asctime} - {name} - {levelname} - {message}', style='{')
+    logging.basicConfig(filename=name,
+                        level=logging.INFO,
+                        format='{asctime} - {name} - {levelname} - {message}',
+                        style='{')
 
     if add_handler:
         handler = logging.StreamHandler()
         handler.setLevel(logging.INFO)
-        formatter = logging.Formatter('{levelname} - {name} - {message}', style='{')
+        formatter = logging.Formatter('{levelname} - {name} - {message}',
+                                      style='{')
         handler.setFormatter(formatter)
         logging.getLogger('').addHandler(handler)
 
@@ -127,7 +128,7 @@ def get_pids_table_info(project_id, dataset_id):
     result_df = bq.query(table_info_query, project_id)
     # Remove mapping tables
     result_df = result_df[~result_df.table_name.str.startswith(tuple('_mapping')
-                                                               )]
+                                                              )]
     return result_df
 
 def get_date_info_for_pids_tables(project_id):
