@@ -10,7 +10,6 @@ from pandas.util.testing import assert_frame_equal
 # Project imports
 from retraction import retract_deactivated_pids
 from utils import bq
-from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids
 from constants.cdr_cleaner import clean_cdr as clean_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from sandbox import get_sandbox_dataset_id
@@ -59,9 +58,18 @@ class RetractDataBqTest(unittest.TestCase):
                 self.project_id, dataset)
             assert_frame_equal(expected_result_df, returned_result_df)
 
+    @mock.patch('utils.bq.get_table_info_for_dataset')
+    @mock.patch('utils.bq.list_datasets')
     @mock.patch('retraction.retract_deactivated_pids.get_pids_table_info')
-    def test_get_date_info_for_pids_tables(self, mock_get_pids_table_info):
+    def test_get_date_info_for_pids_tables(self, mock_get_pids_table_info,
+                                           mock_datasets_list,
+                                           mock_get_table_info):
 
+        retraction_info_df = pd.DataFrame()
+
+        dataset_1 = mock.Mock(spec=['dataset_1'], dataset_id='dataset_id_1')
+        dataset_2 = mock.Mock(spec=['dataset_2'], dataset_id='dataset_id_2')
+        mock_datasets_list.return_value = [dataset_1, dataset_2]
         mock_get_pids_table_info.return_value = pd.DataFrame(columns=[
             'table_catalog', 'table_schema', 'table_name', 'column_name',
             'ordinal_position', 'is_nullable', 'data_type', 'is_generated',
@@ -69,11 +77,17 @@ class RetractDataBqTest(unittest.TestCase):
             'is_system_defined', 'is_partitioning_column',
             'clustering_ordinal_position'
         ])
-        retraction_info_df = pd.DataFrame()
 
         for dataset in self.pids_dataset_list:
-            pids_tables_df = retract_deactivated_pids.get_pids_table_info(
-                self.project_id, dataset)
+            pids_tables_df = mock_get_table_info.return_value = pd.DataFrame(
+                columns=[
+                    'table_catalog', 'table_schema', 'table_name',
+                    'column_name', 'ordinal_position', 'is_nullable',
+                    'data_type', 'is_generated', 'generation_expression',
+                    'is_stored', 'is_hidden', 'is_updatable',
+                    'is_system_defined', 'is_partitioning_column',
+                    'clustering_ordinal_position'
+                ])
 
             # Keep only records with datatype of 'DATE'
             date_fields_df = pids_tables_df[pids_tables_df['data_type'] ==
