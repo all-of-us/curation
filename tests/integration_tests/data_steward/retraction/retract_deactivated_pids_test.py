@@ -10,6 +10,7 @@ import mock
 
 # Project Imports
 import bq_utils
+from utils.bq import get_client
 import gcs_utils
 from tests import test_util
 from retraction import retract_deactivated_pids
@@ -146,30 +147,31 @@ class RetractDataBqTest(unittest.TestCase):
 
         # Use query results to count number of expected row deletions
         expected_row_count = {}
+        client = get_client(self.project_id)
         for query_dict in row_count_queries:
-            result = bq_utils.query(query_dict['query'])
-            expected_row_count[query_dict['destination_table_id']] = int(
-                result['totalRows'])
+            response = client.query(query_dict['query'])
+            result = response.result()
+            expected_row_count[
+                query_dict['destination_table_id']] = result.total_rows
 
         # Separate check to find number of actual deleted rows
         q = TABLE_ROWS_QUERY.format(dataset_id=self.bq_dataset_id)
-        q_result = bq_utils.query(q)
-        result = bq_utils.response2rows(q_result)
+        q_result = client.query(q)
         row_count_before_retraction = {}
-        for row in result:
+        for row in q_result:
             row_count_before_retraction[row['table_id']] = row['row_count']
 
         # Perform retraction
         query_list = retract_deactivated_pids.create_queries(
             self.project_id, self.ticket_number, self.project_id,
             self.bq_dataset_id, self.pid_table_id)
-        retract_deactivated_pids.run_queries(query_list)
+        retract_deactivated_pids.run_queries(query_list, client)
 
         # Find actual deleted rows
-        q_result = bq_utils.query(q)
-        result = bq_utils.response2rows(q_result)
+        q_result = client.query(q)
+        results = q_result.result()
         row_count_after_retraction = {}
-        for row in result:
+        for row in results:
             row_count_after_retraction[row['table_id']] = row['row_count']
         for table in expected_row_count:
             self.assertEqual(

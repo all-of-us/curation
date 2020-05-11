@@ -10,7 +10,6 @@ import pandas as pd
 
 # Project imports
 from utils import bq
-import bq_utils
 from retraction.retract_utils import DEID_REGEX
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from sandbox import get_sandbox_dataset_id, create_sandbox_dataset
@@ -123,10 +122,12 @@ def add_console_logging(add_handler):
 
 
 def get_pids_table_info(project_id, dataset_id):
-    table_info_query = PIDS_TABLE_INFORMATION_SCHEMA.format(project=project_id, dataset=dataset_id)
+    table_info_query = PIDS_TABLE_INFORMATION_SCHEMA.format(project=project_id,
+                                                            dataset=dataset_id)
     result_df = bq.query(table_info_query, project_id)
     # Remove mapping tables
-    result_df = result_df[~result_df.table_name.str.startswith(tuple('_mapping'))]
+    result_df = result_df[~result_df.table_name.str.startswith(tuple('_mapping')
+                                                               )]
     return result_df
 
 def get_date_info_for_pids_tables(project_id):
@@ -281,7 +282,9 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 datasets_obj = bq.list_datasets(project_id)
                 datasets = [d.dataset_id for d in datasets_obj]
                 if sandbox_dataset not in datasets:
-                    LOGGER.info(f"{sandbox_dataset} dataset does not exist, creating now")
+                    LOGGER.info(
+                        f"{sandbox_dataset} dataset does not exist, creating now"
+                    )
                     create_sandbox_dataset(date_row.project_id,
                                            date_row.dataset_id)
 
@@ -365,7 +368,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
     return queries_list
 
 
-def run_queries(queries):
+def run_queries(queries, client):
     """
     Function that will perform the retraction.
 
@@ -374,25 +377,33 @@ def run_queries(queries):
     query_job_ids = []
     for query_dict in queries:
         if query_dict['type'] == 'sandbox':
-            LOGGER.info(f"Writing rows to be retracted to, using query {query_dict['query']}")
-            job_results = bq_utils.query(q=query_dict['query'], batch=True)
-            LOGGER.info(f"{query_dict['destination_table_id']} table written to {query_dict['destination_dataset_id']}")
-            query_job_id = job_results['jobReference']['jobId']
+            LOGGER.info(
+                f"Writing rows to be retracted to, using query {query_dict['query']}"
+            )
+            response = client.query(query_dict['query'])
+            LOGGER.info(
+                f"{query_dict['destination_table_id']} table written to {query_dict['destination_dataset_id']}"
+            )
+            query_job_id = response.job_id
             query_job_ids.append(query_job_id)
         else:
-            LOGGER.info(f"Truncating table with clean data, using query {query_dict['query']}")
-            job_results = bq_utils.query(q=query_dict['query'], batch=True)
-            LOGGER.info(f"{query_dict['destination_table_id']} table updated with clean rows in "
-                        f"{query_dict['destination_dataset_id']}")
-            query_job_id = job_results['jobReference']['jobId']
+            LOGGER.info(
+                f"Truncating table with clean data, using query {query_dict['query']}"
+            )
+            response = client.query(query_dict['query'])
+            LOGGER.info(
+                f"{query_dict['destination_table_id']} table updated with clean rows in "
+                f"{query_dict['destination_dataset_id']}")
+            query_job_id = response.job_id
             query_job_ids.append(query_job_id)
 
-    incomplete_jobs = bq_utils.wait_on_jobs(query_job_ids)
-    count = len(incomplete_jobs)
-    if incomplete_jobs:
-        LOGGER.info(f"Failed on {count} job ids {incomplete_jobs}")
-        LOGGER.info("Terminating retraction")
-        raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+    incomplete_jobs = response.exception()
+    if incomplete_jobs is not None:
+        count = len(incomplete_jobs)
+        if incomplete_jobs:
+            LOGGER.info(f"Failed on {count} job ids {incomplete_jobs}")
+            LOGGER.info("Terminating retraction")
+            raise incomplete_jobs
 
 
 def parse_args(raw_args=None):
@@ -452,7 +463,8 @@ def main(args=None):
     query_list = create_queries(args.project_id, args.ticket_number,
                                 args.pids_project_id, args.pids_dataset_id,
                                 args.pids_table)
-    run_queries(query_list)
+    client = bq.get_client(args.project_id)
+    run_queries(query_list, client)
     LOGGER.info("Retraction complete")
 
 
