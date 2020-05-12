@@ -187,7 +187,7 @@ class RetractDataBqTest(unittest.TestCase):
                     sandbox_queries = dict()
                     sandbox_queries[
                         cdr_consts.
-                        QUERY] = retract_deactivated_pids.SANDBOX_QUERY_DATE.format(
+                        QUERY] = retract_deactivated_pids.SANDBOX_QUERY_DATE.render(
                             project=retraction_row.project_id,
                             sandbox_dataset=sandbox_dataset,
                             intermediary_table=self.ticket_number + '_' +
@@ -201,7 +201,7 @@ class RetractDataBqTest(unittest.TestCase):
                             deactivated_pids_table=self.pids_table,
                             date_column=retraction_row.date_column)
                     expected_queries_list.append(sandbox_queries)
-                    clean_query = retract_deactivated_pids.CLEAN_QUERY_DATE.format(
+                    clean_query = retract_deactivated_pids.CLEAN_QUERY_DATE.render(
                         project=retraction_row.project_id,
                         dataset=retraction_row.dataset_id,
                         table=retraction_row.table,
@@ -225,7 +225,7 @@ class RetractDataBqTest(unittest.TestCase):
                     sandbox_queries = dict()
                     sandbox_queries[
                         cdr_consts.
-                        QUERY] = retract_deactivated_pids.SANDBOX_QUERY_END_DATE.format(
+                        QUERY] = retract_deactivated_pids.SANDBOX_QUERY_END_DATE.render(
                             project=retraction_row.project_id,
                             sandbox_dataset=sandbox_dataset,
                             intermediary_table=self.ticket_number + '_' +
@@ -240,7 +240,7 @@ class RetractDataBqTest(unittest.TestCase):
                             end_date_column=retraction_row.end_date_column,
                             start_date_column=retraction_row.start_date_column)
                     expected_queries_list.append(sandbox_queries)
-                    clean_query = retract_deactivated_pids.CLEAN_QUERY_END_DATE.format(
+                    clean_query = retract_deactivated_pids.CLEAN_QUERY_END_DATE.render(
                         project=retraction_row.project_id,
                         dataset=retraction_row.dataset_id,
                         table=retraction_row.table,
