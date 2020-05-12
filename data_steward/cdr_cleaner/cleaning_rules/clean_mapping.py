@@ -212,7 +212,7 @@ class CleanMappingExtTables(BaseCleaningRule):
         rule needs to implement logic to get the affected tables .
         Until done no issue exists for this yet.
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def setup_validation(self):
         """
@@ -223,7 +223,7 @@ class CleanMappingExtTables(BaseCleaningRule):
         will be updating or deleting the values.
         Until done no issue exists for this yet.
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def validate_rule(self):
         """
@@ -234,7 +234,7 @@ class CleanMappingExtTables(BaseCleaningRule):
         be updating or deleting the values.
         Until done no issue exists for this yet.
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
 
 if __name__ == '__main__':

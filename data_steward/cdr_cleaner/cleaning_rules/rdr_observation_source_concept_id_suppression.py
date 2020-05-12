@@ -106,7 +106,7 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         rule needs to implement logic to get the affected tables .
         Until done no issue exists for this yet.
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def setup_validation(self):
         """
@@ -117,7 +117,7 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         will be updating or deleting the values.
         Until done no issue exists for this yet.
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def validate_rule(self):
         """
@@ -128,7 +128,7 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         be updating or deleting the values.
         Until done no issue exists for this yet.
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
         return [SAVE_TABLE_NAME]

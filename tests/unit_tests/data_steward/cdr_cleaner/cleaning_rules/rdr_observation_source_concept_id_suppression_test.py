@@ -46,15 +46,6 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         # test
         self.query_class.setup_rule()
 
-    def test_get_affected_tables(self):
-        self.query_class.get_affected_tables()
-
-    def test_setup_validation(self):
-        self.query_class.setup_validation()
-
-    def test_validate_rule(self):
-        self.query_class.validate_rule()
-
     # no errors are raised, nothing happens
 
     def test_get_query_specs(self):
