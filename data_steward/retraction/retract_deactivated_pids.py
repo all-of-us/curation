@@ -311,7 +311,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                                                    project_id) is True:
                 dataset_list.add(date_row.dataset_id)
                 # Get or create sandbox dataset
-                sandbox_dataset = check_and_create_sandbox_dataset(date_row.project_id, date_row.dataset_id)
+                sandbox_dataset = check_and_create_sandbox_dataset(
+                    date_row.project_id, date_row.dataset_id)
 
                 # Create queries based on if the date field is null, if True, will create query based on end_date/start_date
                 if not pd.isnull(date_row.date_column):
