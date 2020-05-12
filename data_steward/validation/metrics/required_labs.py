@@ -38,7 +38,8 @@ def load_measurement_concept_sets_table(project_id, dataset_id):
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
 
-        LOGGER.exception(f"FAILED:  CSV file could not be uploaded:\n{app_identity}")
+        LOGGER.exception(
+            f"FAILED:  CSV file could not be uploaded:\n{app_identity}")
 
 
 def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
@@ -77,7 +78,9 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
 
     updated_rows = results.get("totalRows")
     if updated_rows is not None:
-        LOGGER.info(f"Query returned {updated_rows} rows for {dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}")
+        LOGGER.info(
+            f"Query returned {updated_rows} rows for {dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}"
+        )
 
 
 def get_lab_concept_summary_query(hpo_id):

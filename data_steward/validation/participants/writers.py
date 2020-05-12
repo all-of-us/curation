@@ -71,7 +71,8 @@ def write_to_result_table(project, dataset, site, match_values):
     gcs_utils.upload_object(bucket, path, results)
     results.close()
 
-    LOGGER.info(f"Wrote {len(match_values)} items to cloud storage for site: {site}")
+    LOGGER.info(
+        f"Wrote {len(match_values)} items to cloud storage for site: {site}")
 
     # wait on results to be written
 
@@ -98,7 +99,8 @@ def write_to_result_table(project, dataset, site, match_values):
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
         LOGGER.exception(
-            f"Encountered an exception when loading records from csv for site: {site}")
+            f"Encountered an exception when loading records from csv for site: {site}"
+        )
         raise
 
     LOGGER.info(f"Loaded match values for site: {site}")
