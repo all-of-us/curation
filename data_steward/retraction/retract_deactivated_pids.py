@@ -7,80 +7,93 @@ from datetime import datetime
 
 # Third party imports
 import pandas as pd
+from jinja2 import Environment
 
 # Project imports
 from utils import bq
 from retraction.retract_utils import DEID_REGEX
 from constants.cdr_cleaner import clean_cdr as clean_consts
-from sandbox import get_sandbox_dataset_id, create_sandbox_dataset
+from sandbox import check_and_create_sandbox_dataset, get_sandbox_dataset_id
 from constants import bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
 LOGS_PATH = 'LOGS'
 
-PIDS_TABLE_INFORMATION_SCHEMA = """
+jinja_env = Environment(
+    # help protect against cross-site scripting vulnerabilities
+    autoescape=True,
+    # block tags on their own lines
+    # will not cause extra white space
+    trim_blocks=True,
+    lstrip_blocks=True,
+    # syntax highlighting should be better
+    # with these comment delimiters
+    comment_start_string='--',
+    comment_end_string=' --')
+
+TABLE_INFORMATION_SCHEMA = jinja_env.from_string("""
 SELECT *
-FROM `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
-"""
-DEACTIVATED_PIDS_QUERY = """
+FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
+""")
+DEACTIVATED_PIDS_QUERY = jinja_env.from_string("""
 SELECT DISTINCT *
-FROM `{project}.{dataset}.{table}`
-"""
-RESEARCH_ID_QUERY = """
+FROM `{{project}}.{{dataset}}.{{table}}`
+""")
+RESEARCH_ID_QUERY = jinja_env.from_string("""
 SELECT DISTINCT research_id
-FROM `{project}.{prefix_regex}_combined._deid_map`
-WHERE person_id = {pid}
-"""
-CHECK_PID_EXIST_QUERY = """
+FROM `{{project}}.{{prefix_regex}}_combined._deid_map`
+WHERE person_id = {{pid}}
+""")
+CHECK_PID_EXIST_QUERY = jinja_env.from_string("""
 SELECT
 COUNT(*) AS count
-FROM `{project}.{dataset}.{table}`
-WHERE person_id = {pid}
-"""
+FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE person_id = {{pid}}
+""")
 # Queries to create tables in associated sandbox with rows that will be removed per cleaning rule, two different queries
 # for tables with standard entry dates vs. tables with start and end dates
-SANDBOX_QUERY_DATE = """
-CREATE OR REPLACE TABLE `{project}.{sandbox_dataset}.{intermediary_table}` AS (
+SANDBOX_QUERY_DATE = jinja_env.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
-FROM `{project}.{dataset}.{table}`
+FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id = {pid}
-AND {date_column} >= (SELECT deactivated_date
-FROM `{deactivated_pids_project}.{deactivated_pids_dataset}.{deactivated_pids_table}`
-WHERE person_id = {pid}))
-"""
-SANDBOX_QUERY_END_DATE = """
-CREATE OR REPLACE TABLE `{project}.{sandbox_dataset}.{intermediary_table}` AS (
+AND {{date_column}} >= (SELECT deactivated_date
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
+WHERE person_id = {{pid}}))
+""")
+SANDBOX_QUERY_END_DATE = jinja_env.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
-FROM `{project}.{dataset}.{table}`
-WHERE person_id = {pid}
-AND (CASE WHEN {end_date_column} IS NOT NULL THEN {end_date_column} >= (SELECT deactivated_date
-FROM `{deactivated_pids_project}.{deactivated_pids_dataset}.{deactivated_pids_table}`
-WHERE person_id = {pid} ) ELSE CASE WHEN {end_date_column} IS NULL THEN {start_date_column} >= (
+FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE person_id = {{pid}}
+AND (CASE WHEN {{end_date_column}} IS NOT NULL THEN {{end_date_column}} >= (SELECT deactivated_date
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
+WHERE person_id = {{pid}} ) ELSE CASE WHEN {{end_date_column}} IS NULL THEN {{start_date_column}} >= (
 SELECT deactivated_date
-FROM `{deactivated_pids_project}.{deactivated_pids_dataset}.{deactivated_pids_table}`
-WHERE person_id = {pid}) END END))
-"""
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
+WHERE person_id = {{pid}}) END END))
+""")
 # Queries to truncate existing tables to remove deactivated EHR PIDS, two different queries for
 # tables with standard entry dates vs. tables with start and end dates
-CLEAN_QUERY_DATE = """
+CLEAN_QUERY_DATE = jinja_env.from_string("""
 SELECT *
-FROM `{project}.{dataset}.{table}`
-WHERE person_id != {pid}
-AND {date_column} < (SELECT deactivated_date
-FROM `{deactivated_pids_project}.{deactivated_pids_dataset}.{deactivated_pids_table}`
-WHERE person_id = {pid})
-"""
-CLEAN_QUERY_END_DATE = """
+FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE person_id != {{pid}}
+AND {{date_column}} < (SELECT deactivated_date
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
+WHERE person_id = {{pid}})
+""")
+CLEAN_QUERY_END_DATE = jinja_env.from_string("""
 SELECT *
-FROM `{project}.{dataset}.{table}`
-WHERE person_id != {pid}
-AND (CASE WHEN {end_date_column} IS NOT NULL THEN {end_date_column} < (SELECT deactivated_date
-FROM `{deactivated_pids_project}.{deactivated_pids_dataset}.{deactivated_pids_table}`
-WHERE person_id = {pid} ) ELSE CASE WHEN {end_date_column} IS NULL THEN {start_date_column} < (
+FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE person_id != {{pid}}
+AND (CASE WHEN {{end_date_column}} IS NOT NULL THEN {{end_date_column}} < (SELECT deactivated_date
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
+WHERE person_id = {{pid}} ) ELSE CASE WHEN {{end_date_column}} IS NULL THEN {{start_date_column}} < (
 SELECT deactivated_date
-FROM `{deactivated_pids_project}.{deactivated_pids_dataset}.{deactivated_pids_table}`
-WHERE person_id = {pid}) END END)
-"""
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
+WHERE person_id = {{pid}}) END END)
+""")
 # Deactivated participant table fields to query off of
 PID_TABLE_FIELDS = [{
     "type": "integer",
@@ -123,13 +136,25 @@ def add_console_logging(add_handler):
 
 
 def get_pids_table_info(project_id, dataset_id):
-    table_info_query = PIDS_TABLE_INFORMATION_SCHEMA.format(project=project_id,
-                                                            dataset=dataset_id)
-    result_df = bq.query(table_info_query, project_id)
-    # Remove mapping tables
-    result_df = result_df[~result_df.table_name.str.startswith(tuple('_mapping')
-                                                              )]
-    return result_df
+    """
+    This function gets all table information for the dataset and filters to only retain tables with the field person_id
+
+    :param project_id: bq name of project_id
+    :param dataset_id: ba name of dataset_id
+    :return: dataframe with table information schema from BigQuery
+    """
+    all_table_info_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
+                                                           dataset=dataset_id)
+    result_df = bq.query(q=all_table_info_query, project_id=project_id)
+    # Get list of tables that contain person_id
+    pids_tables = []
+    for i, row in result_df.iterrows():
+        column = getattr(row, 'column_name')
+        table = getattr(row, 'table_name')
+        if 'person_id' in column:
+            pids_tables.append(table)
+    pids_tables_info_df = result_df[result_df['table_name'].isin(pids_tables)]
+    return pids_tables_info_df
 
 def get_date_info_for_pids_tables(project_id):
     """
@@ -148,8 +173,9 @@ def get_date_info_for_pids_tables(project_id):
         "Looping through datasets to filter and create dataframe with correct date field to determine retraction"
     )
 
-    dataset_obj = bq.list_datasets(project_id)
-    datasets = [d.dataset_id for d in dataset_obj]
+    # dataset_obj = bq.list_datasets(project_id)
+    # datasets = [d.dataset_id for d in dataset_obj]
+    datasets = ['R2019q4r4_deid', '2019q4r4_combined', '2019q4r1_combined', 'R2019q4r1_deid', 'R2018q3r2_deid']
 
     for dataset in datasets:
         # Get table info for tables with pids
@@ -215,27 +241,28 @@ def get_research_id(project, dataset, pid):
     prefix = dataset.split('_')[0]
     prefix = prefix.replace('R', '')
 
-    research_id_df = bq.query(
-        RESEARCH_ID_QUERY.format(project=project, prefix_regex=prefix, pid=pid))
+    research_id_df = bq.query(q=RESEARCH_ID_QUERY.render(project=project, prefix_regex=prefix, pid=pid),
+                              project_id=project)
     if research_id_df.empty:
         LOGGER.info(f"no research_id associated with person_id {pid}")
         return None
 
-    return research_id_df.to_string()
+    return research_id_df['research_id'].iloc[0]
 
 
-def check_pid_exist(pid, date_row):
+def check_pid_exist(pid, date_row, project_id):
     """
     Queries the table that retraction will take place, to see if the PID exists before creating query
     :param pid: person_id
-    :param date_row:
-    :return:
+    :param date_row: row that is being iterated through to create query
+    :param project_id: bq name of project_id
+    :return: Boolean if pid exists in table
     """
-    check_pid_df = bq.query(
-        CHECK_PID_EXIST_QUERY.format(project=date_row.project_id,
+    check_pid_df = bq.query(q=CHECK_PID_EXIST_QUERY.render(project=date_row.project_id,
                                      dataset=date_row.dataset_id,
                                      table=date_row.table,
-                                     pid=pid))
+                                     pid=pid),
+                            project_id=project_id)
     return bool(check_pid_df.get_value(0, 'count') > 0)
 
 
@@ -252,11 +279,12 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
     :return: list of queries to run
     """
     queries_list = []
+    dataset_list = set()
     # Hit bq and receive df of deactivated ehr pids and deactivated date
-    deactivated_ehr_pids_df = bq.query(
-        DEACTIVATED_PIDS_QUERY.format(project=pids_project_id,
-                                      dataset=pids_dataset_id,
-                                      table=pids_table), project_id)
+    deactivated_ehr_pids_df = bq.query(q=DEACTIVATED_PIDS_QUERY.render(project=pids_project_id,
+                                       dataset=pids_dataset_id,
+                                       table=pids_table),
+                                       project_id=project_id)
 
     date_columns_df = get_date_info_for_pids_tables(project_id)
     LOGGER.info(
@@ -277,21 +305,15 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 pid = ehr_row.person_id
 
             # Check if PID is in table
-            if pid is not None and check_pid_exist(pid, date_row) is True:
+            if pid is not None and check_pid_exist(pid, date_row, project_id) is True:
+                dataset_list.add(date_row.dataset_id)
                 # Get or create sandbox dataset
                 sandbox_dataset = get_sandbox_dataset_id(date_row.dataset_id)
-                datasets_obj = bq.list_datasets(project_id)
-                datasets = [d.dataset_id for d in datasets_obj]
-                if sandbox_dataset not in datasets:
-                    LOGGER.info(
-                        f"{sandbox_dataset} dataset does not exist, creating now"
-                    )
-                    create_sandbox_dataset(date_row.project_id,
-                                           date_row.dataset_id)
+                #sandbox_dataset = check_and_create_sandbox_dataset(date_row.project_id, date_row.dataset_id)
 
                 # Create queries based on if the date field is null, if True, will create query based on end_date/start_date
                 if not pd.isnull(date_row.date_column):
-                    sandbox_query = SANDBOX_QUERY_DATE.format(
+                    sandbox_query = SANDBOX_QUERY_DATE.render(
                         project=date_row.project_id,
                         sandbox_dataset=sandbox_dataset,
                         intermediary_table=ticket_number + '_' + date_row.table,
@@ -308,7 +330,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                         clean_consts.DESTINATION_TABLE: date_row.table,
                         'type': 'sandbox'
                     })
-                    clean_query = CLEAN_QUERY_DATE.format(
+                    clean_query = CLEAN_QUERY_DATE.render(
                         project=date_row.project_id,
                         dataset=date_row.dataset_id,
                         table=date_row.table,
@@ -325,7 +347,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                         'type': 'retraction'
                     })
                 else:
-                    sandbox_query = SANDBOX_QUERY_END_DATE.format(
+                    sandbox_query = SANDBOX_QUERY_END_DATE.render(
                         project=date_row.project_id,
                         sandbox_dataset=sandbox_dataset,
                         intermediary_table=ticket_number + '_' + date_row.table,
@@ -343,7 +365,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                         clean_consts.DESTINATION_TABLE: date_row.table,
                         'type': 'sandbox'
                     })
-                    clean_query = CLEAN_QUERY_END_DATE.format(
+                    clean_query = CLEAN_QUERY_END_DATE.render(
                         project=date_row.project_id,
                         dataset=date_row.dataset_id,
                         table=date_row.table,
@@ -365,7 +387,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 continue
     LOGGER.info(
         f"Query list complete, retracting ehr deactivated PIDS from the following datasets: "
-        f"{date_columns_df['dataset_id'].tolist()}")
+        f"{dataset_list}")
     return queries_list
 
 
@@ -465,7 +487,7 @@ def main(args=None):
                                 args.pids_project_id, args.pids_dataset_id,
                                 args.pids_table)
     client = bq.get_client(args.project_id)
-    run_queries(query_list, client)
+    #run_queries(query_list, client)
     LOGGER.info("Retraction complete")
 
 
