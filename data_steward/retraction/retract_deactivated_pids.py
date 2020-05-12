@@ -46,7 +46,7 @@ WHERE person_id = {{pid}}
 """)
 CHECK_PID_EXIST_QUERY = jinja_env.from_string("""
 SELECT
-COUNT(*) AS count
+COALESCE(COUNT(*), 0) AS count
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id = {{pid}}
 """)
@@ -266,7 +266,7 @@ def check_pid_exist(pid, date_row, project_id):
         table=date_row.table,
         pid=pid),
                             project_id=project_id)
-    return bool(check_pid_df.get_value(0, 'count') > 0)
+    return check_pid_df.get_value(0, 'count')
 
 
 def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
@@ -308,7 +308,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
 
             # Check if PID is in table
             if pid is not None and check_pid_exist(pid, date_row,
-                                                   project_id) is True:
+                                                   project_id) > 0:
                 dataset_list.add(date_row.dataset_id)
                 # Get or create sandbox dataset
                 sandbox_dataset = check_and_create_sandbox_dataset(
