@@ -291,8 +291,7 @@ def delete_table(table_id, dataset_id=None):
     delete_job = bq_service.tables().delete(projectId=app_id,
                                             datasetId=dataset_id,
                                             tableId=table_id)
-    logging.info('Deleting {dataset_id}.{table_id}'.format(
-        dataset_id=dataset_id, table_id=table_id))
+    logging.info(f"Deleting {dataset_id}.{table_id}")
     return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
@@ -805,7 +804,7 @@ def create_dataset(project_id=None,
     try:
         insert_result = insert_dataset.execute(
             num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-        logging.info('Created dataset:\t%s.%s', app_id, dataset_id)
+        logging.info(f"Created dataset:\t{app_id}.{dataset_id}")
     except HttpError as error:
         # dataset exists.  try deleting if deleteContents is set and try again.
         if error.resp.status == 409:
@@ -817,23 +816,21 @@ def create_dataset(project_id=None,
                 rm_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
                 insert_result = insert_dataset.execute(
                     num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-                logging.info('Overwrote dataset %s.%s', app_id, dataset_id)
+                logging.info(f"Overwrote dataset {app_id}.{dataset_id}")
             else:
                 logging.exception(
-                    'Trying to create a duplicate dataset without overwriting '
-                    'the existing dataset.  Cannot be done!\n\ncreate_dataset '
-                    'called with values:\n'
-                    'project_id:\t%s\n'
-                    'dataset_id:\t%s\n'
-                    'description:\t%s\n'
-                    'friendly_name:\t%s\n'
-                    'overwrite_existing:\t%s\n\n', project_id, dataset_id,
-                    description, friendly_name, overwrite_existing)
+                    f"Trying to create a duplicate dataset without overwriting "
+                    f"the existing dataset.  Cannot be done!\n\ncreate_dataset "
+                    f"called with values:\n"
+                    f"project_id:\t{project_id}\n"
+                    f"dataset_id:\t{dataset_id}\n"
+                    f"description:\t{description}\n"
+                    f"friendly_name:\t{friendly_name}\n"
+                    f"overwrite_existing:\t{overwrite_existing}\n\n")
                 raise
         else:
-            logging.exception(
-                'Encountered an HttpError when trying to create '
-                'dataset: %s.%s', app_id, dataset_id)
+            logging.exception(f"Encountered an HttpError when trying to create "
+                              f"dataset: {app_id}.{dataset_id}")
             raise
 
     return insert_result

@@ -290,11 +290,8 @@ class Deid(Rules):
             rule = rule.replace(':idataset', self.parent.idataset)
 
             # log values inserted into the query
-            LOGGER.info(
-                'generalized_values causing duplicates: %s    in table:  %s',
-                generalized_values_string, tablename)
-            LOGGER.info('key_values causing duplicates: %s    in table:  %s',
-                        key_values_string, tablename)
+            LOGGER.info(f"generalized_values causing duplicates: {generalized_values_string}    in table:  %s", tablename)
+            LOGGER.info(f"key_values causing duplicates: {key_values_string}    in table:  %s", tablename)
             dml_statements.append({
                 'apply': rule,
                 'name': rule_dict.get('name', 'NAME_UNSET'),
@@ -552,8 +549,7 @@ class Deid(Rules):
                             value = "0 AS " + name
 
                     out.append({"name": name, "apply": value, "label": label})
-                    LOGGER.info('suppress fields(columns) for:\t%s',
-                                label.split('.')[1])
+                    LOGGER.info(f"suppress fields(columns) for:\t{label.split('.')[1]}")
                 else:
                     #
                     # If we have alist of fields to be removed, The following code will figure out which ones apply
@@ -579,8 +575,7 @@ class Deid(Rules):
                                     "apply": (value),
                                     "label": label
                                 })
-            LOGGER.info('suppress fields(columns):\t%s\t\tfor:\t%s',
-                        label.split('.')[1], fields)
+            LOGGER.info(f"suppress fields(columns):\t{label.split('.')[1]}\t\tfor:\t{fields}")
 
         else:
             #

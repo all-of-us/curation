@@ -291,10 +291,11 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         try:
             query_list = self.get_query_specs()
         except (KeyError, HttpAccessTokenRefreshError, HttpError) as err:
-            LOGGER.exception("Cannot list queries for %s",
-                             self.__class__.__name__)
+            LOGGER.exception(
+                f"Cannot list queries for {self.__class__.__name__}")
             raise
 
         for query in query_list:
-            LOGGER.info('Generated SQL Query:\n%s',
-                        query.get(cdr_consts.QUERY, 'NO QUERY FOUND'))
+            LOGGER.info(
+                f"Generated SQL Query:\n{query.get(cdr_consts.QUERY, 'NO QUERY FOUND')}"
+            )

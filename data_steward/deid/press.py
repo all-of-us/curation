@@ -169,8 +169,7 @@ class Press(ABC):
         p = d.apply(self.table_info, self.store, self.get_tablename())
 
         is_meta = np.sum([1 * ('on' in _item) for _item in p]) != 0
-        LOGGER.info('table:\t%s\t\tis a meta table:\t%s', self.get_tablename(),
-                    is_meta)
+        LOGGER.info(f"table:\t{self.get_tablename()}\t\tis a meta table:\t{is_meta}")
         if not is_meta:
             sql = [self.to_sql(p)]
             _rsql = None
@@ -243,7 +242,7 @@ class Press(ABC):
                 # Make this threaded if there is a submit action that is associated with it
                 self.simulate(p)
 
-        LOGGER.info('FINISHED de-identification on table:\t%s', self.tablename)
+        LOGGER.info(f"FINISHED de-identification on table:\t{self.tablename}")
 
     def get_tablename(self):
         return self.idataset + "." + self.tablename if self.idataset else self.tablename
@@ -276,8 +275,7 @@ class Press(ABC):
             labels = item['label'].split('.')
 
             if not (set(labels) & set(self.pipeline)):
-                LOGGER.info('Skipping simulation for table:\t%s\t\tvalues:\t%s',
-                            table_name, labels)
+                LOGGER.info(f"Skipping simulation for table:\t{table_name}\t\tvalues:\t{labels}")
                 continue
 
             if labels[0] not in counts:
@@ -322,9 +320,7 @@ class Press(ABC):
                     sql=" ".join(sql_list).replace(':idataset', self.idataset))
 
             if data_frame.shape[0] == 0:
-                LOGGER.info(
-                    'no data-found for simulation of table:\t%s\t\tfield:\t%s\t\ttype:\t%s',
-                    table_name, field, item['label'])
+                LOGGER.info(f"no data-found for simulation of table:\t{table_name}\t\tfield:\t{field}\t\ttype:\t{item['label']}")
                 continue
 
             data_frame.columns = ['original', 'transformed']
@@ -386,8 +382,7 @@ class Press(ABC):
             _data_frame = _map[path]
             _data_frame.to_csv(path)
 
-        LOGGER.info('simulation completed for table:\t%s\t\tvalue:\t%s',
-                    table_name, root)
+        LOGGER.info(f"simulation completed for table:\t{table_name}\t\tvalue:\t{root}")
 
     def to_sql(self, info):
         """
@@ -401,8 +396,7 @@ class Press(ABC):
         fields = self.get_table_columns(self.tablename)
         columns = list(fields)
         sql_list = []
-        LOGGER.info('generating-sql for table:\t%s\t\tfields:\t%s', table_name,
-                    fields)
+        LOGGER.info(f"generating-sql for table:\t{table_name}\t\tfields:\t{fields}")
 
         for rule_id in self.pipeline:
             for row in info:
@@ -413,8 +407,7 @@ class Press(ABC):
 
                 index = fields.index(name)
                 fields[index] = row['apply']
-                LOGGER.info('creating SQL for field:\t%s\t\twith:\t%s', name,
-                            row['apply'])
+                LOGGER.info(f"creating SQL for field:\t{name}\t\twith:\t{row['apply']}")
 
         sql_list = ['SELECT', ",".join(fields), 'FROM ', table_name]
 
@@ -513,7 +506,7 @@ class Press(ABC):
         for rule in info:
             if rule.get('dml_statement', False):
                 query = rule.get('apply')
-                LOGGER.info('adding dml statement:  %s', rule.get('name'))
+                LOGGER.info(f"adding dml statement:  {rule.get('name')}")
                 sql_list.append(query)
 
         return sql_list

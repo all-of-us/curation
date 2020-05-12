@@ -353,13 +353,13 @@ def clean_rdr_dataset(project_id=None, dataset_id=None):
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
-                    project_id)
+        LOGGER.info(
+            f"Project is unspecified.  Using default value of:\t{project_id}")
 
     if dataset_id is None:
         dataset_id = bq_utils.get_rdr_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
-                    dataset_id)
+        LOGGER.info(
+            f"Dataset is unspecified.  Using default value of:\t{dataset_id}")
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
                                                         dataset_id=dataset_id)
@@ -379,13 +379,13 @@ def clean_ehr_dataset(project_id=None, dataset_id=None):
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
-                    project_id)
+        LOGGER.info(
+            f"Project is unspecified.  Using default value of:\t{project_id}")
 
     if dataset_id is None:
         dataset_id = bq_utils.get_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
-                    dataset_id)
+        LOGGER.info(
+            f"Dataset is unspecified.  Using default value of:\t{dataset_id}")
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
                                                         dataset_id=dataset_id)
@@ -405,13 +405,13 @@ def clean_unioned_ehr_dataset(project_id=None, dataset_id=None):
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
-                    project_id)
+        LOGGER.info(
+            f"Project is unspecified.  Using default value of:\t{project_id}")
 
     if dataset_id is None:
         dataset_id = bq_utils.get_unioned_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
-                    dataset_id)
+        LOGGER.info(
+            f"Dataset is unspecified.  Using default value of:\t{dataset_id}")
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
                                                         dataset_id=dataset_id)
@@ -432,13 +432,13 @@ def clean_combined_dataset(project_id=None, dataset_id=None):
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
-                    project_id)
+        LOGGER.info(
+            f"Project is unspecified.  Using default value of:\t{project_id}")
 
     if dataset_id is None:
         dataset_id = bq_utils.get_combined_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
-                    dataset_id)
+        LOGGER.info(
+            f"Dataset is unspecified.  Using default value of:\t{dataset_id}")
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
                                                         dataset_id=dataset_id)
@@ -459,13 +459,13 @@ def clean_combined_de_identified_dataset(project_id=None, dataset_id=None):
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
-                    project_id)
+        LOGGER.info(
+            f"Project is unspecified.  Using default value of:\t{project_id}")
 
     if dataset_id is None:
         dataset_id = bq_utils.get_combined_deid_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
-                    dataset_id)
+        LOGGER.info(
+            f"Dataset is unspecified.  Using default value of:\t{dataset_id}")
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
                                                         dataset_id=dataset_id)
@@ -486,13 +486,13 @@ def clean_combined_de_identified_clean_dataset(project_id=None,
     """
     if project_id is None:
         project_id = app_identity.get_application_id()
-        LOGGER.info('Project is unspecified.  Using default value of:\t%s',
-                    project_id)
+        LOGGER.info(
+            f"Project is unspecified.  Using default value of:\t{project_id}")
 
     if dataset_id is None:
         dataset_id = bq_utils.get_combined_deid_clean_dataset_id()
-        LOGGER.info('Dataset is unspecified.  Using default value of:\t%s',
-                    dataset_id)
+        LOGGER.info(
+            f"Dataset is unspecified.  Using default value of:\t{dataset_id}")
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
                                                         dataset_id=dataset_id)

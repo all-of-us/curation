@@ -82,7 +82,7 @@ def delete_key(key):
         LOGGER.info(
             '{full_key_name} is deleted'.format(full_key_name=full_key_name))
     except (HttpError):
-        LOGGER.exception("Unable to delete the key:\t%s", full_key_name)
+        LOGGER.exception(f"Unable to delete the key:\t{full_key_name}")
 
 
 def delete_expired_keys(project_id):
