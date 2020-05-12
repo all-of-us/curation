@@ -356,7 +356,9 @@ class AOU(Press):
                "ORDER BY 1")
         job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
         observation_table = self.get_dataframe(sql=sql, query_config=job_config)
-        LOGGER.info(f"total of distinct questionnaire_response_ids:\t{observation_table.shape[0]}")
+        LOGGER.info(
+            f"total of distinct questionnaire_response_ids:\t{observation_table.shape[0]}"
+        )
         map_table = pd.DataFrame()
 
         if observation_table.shape[0] > 0:
@@ -399,7 +401,9 @@ class AOU(Press):
         else:
             LOGGER.error("No questionnaire_response_ids found.")
 
-        LOGGER.info(f"questionnaire response mapping table contains {map_table.shape[0]} records")
+        LOGGER.info(
+            f"questionnaire response mapping table contains {map_table.shape[0]} records"
+        )
 
     def get_dataframe(self, sql=None, limit=None, query_config=None):
         """
@@ -634,7 +638,9 @@ class AOU(Press):
             # create a copy of the job config to use if the dry-run passes
             dml_job = copy(job)
 
-        LOGGER.info(f"submitting a dry-run for:\t{self.get_tablename(}\t\tpriority:\t%s\t\tpartition:\t%s"), self.priority, self.partition)
+        LOGGER.info(
+            f"submitting a dry-run for:\t{self.get_tablename()}\t\tpriority:\t%s\t\tpartition:\t%s",
+            self.priority, self.partition)
 
         logpath = os.path.join(self.logpath, self.idataset)
         try:
@@ -647,9 +653,9 @@ class AOU(Press):
             response = client.query(sql, location='US', job_config=job)
         except Exception:
             LOGGER.exception(
-                'dry run query failed for:\t%s\n'
-                '\t\tSQL:\t%s\n'
-                '\t\tjob config:\t%s', self.get_tablename(), sql, job)
+                f"dry run query failed for:\t{self.get_tablename()}\n"
+                f"\t\tSQL:\t{sql}\n"
+                f"\t\tjob config:\t{job}")
         else:
 
             if response.state == 'DONE':
@@ -661,7 +667,9 @@ class AOU(Press):
                 LOGGER.info('dry-run passed.  submitting query for execution.')
 
                 response = client.query(sql, location='US', job_config=job)
-                LOGGER.info(f"submitted a bigquery job for table:\t{table_name}\t\tstatus:\t'pending'\t\tvalue:\t{response.job_id}")
+                LOGGER.info(
+                    f"submitted a bigquery job for table:\t{table_name}\t\tstatus:\t'pending'\t\tvalue:\t{response.job_id}"
+                )
                 self.wait(client, response.job_id)
 
     def wait(self, client, job_id):
@@ -671,7 +679,8 @@ class AOU(Press):
         :param client:  The BigQuery client object.
         :param job_id:  job_id to verify finishes.
         """
-        LOGGER.info(f"sleeping for table:\t{self.get_tablename()}\t\tjob_id:\t{job_id}")
+        LOGGER.info(
+            f"sleeping for table:\t{self.get_tablename()}\t\tjob_id:\t{job_id}")
         status = 'NONE'
 
         while True:

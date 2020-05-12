@@ -100,7 +100,8 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         if target_bucket is None:
             target_bucket = gcs_utils.get_hpo_bucket(datasource_id)
 
-    logging.info(f"Exporting {datasource_name} report to bucket {target_bucket}")
+    logging.info(
+        f"Exporting {datasource_name} report to bucket {target_bucket}")
 
     # Run export queries and store json payloads in specified folder in the target bucket
     reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
@@ -158,7 +159,8 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
             raise RuntimeError(
                 'either hpo_id or target_bucket must be specified')
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    logging.info(f"Uploading achilles index files to `gs://{bucket}/{folder_prefix}`...")
+    logging.info(
+        f"Uploading achilles index files to `gs://{bucket}/{folder_prefix}`...")
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info('Uploading achilles file `%s` to bucket `%s`' %
                      (filename, bucket))
@@ -236,7 +238,8 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
       results is list of tuples (file_name, found, parsed, loaded)
       errors and warnings are both lists of tuples (file_name, message)
     """
-    logging.info(f"Validating {hpo_id} submission in gs://{bucket}/{folder_prefix}")
+    logging.info(
+        f"Validating {hpo_id} submission in gs://{bucket}/{folder_prefix}")
     # separate cdm from the unknown (unexpected) files
     folder_items = [item['name'][len(folder_prefix):] \
                     for item in bucket_items if item['name'].startswith(folder_prefix)]
@@ -312,7 +315,8 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             report_data[
                 report_consts.
                 SUBMISSION_ERROR_REPORT_KEY] = 'Required files are missing'
-            logging.info(f"Required files are missing in {gcs_path}. Skipping achilles.")
+            logging.info(
+                f"Required files are missing in {gcs_path}. Skipping achilles.")
 
         # non-unique key metrics
         logging.info('Getting non-unique key stats for %s...' % hpo_id)
@@ -346,7 +350,9 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         report_data[report_consts.LAB_CONCEPT_METRICS_REPORT_KEY] = query_rows(
             lab_concept_metrics_query)
 
-        logging.info(f"Processing complete. Saving timestamp {processed_datetime_str} to `gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`.")
+        logging.info(
+            f"Processing complete. Saving timestamp {processed_datetime_str} to `gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`."
+        )
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
                               processed_datetime_str)
 
@@ -391,10 +397,9 @@ def generate_empty_report(hpo_id, bucket, folder_prefix):
                                        f'the version number for the day, starting at v1 each day. ' \
                                        f'Please resubmit the files in a new folder with the correct naming convention'
     logging.info(
-        'Processing skipped. Reason: Folder %s does not follow naming convention %s. '
-        'Saving timestamp %s to `gs://%s/%s`.', folder_prefix,
-        consts.FOLDER_NAMING_CONVENTION, processed_datetime_str, bucket,
-        folder_prefix + common.PROCESSED_TXT)
+        f"Processing skipped. Reason: Folder {folder_prefix} does not follow naming convention {consts.FOLDER_NAMING_CONVENTION}. "
+        f"Saving timestamp {processed_datetime_str} to `gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`."
+    )
     _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
                           processed_datetime_str)
     results_html = hpo_report.render(report_data)
@@ -440,7 +445,8 @@ def process_hpo(hpo_id, force_run=False):
         bucket_items = list_bucket(bucket)
         folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
         if folder_prefix is None:
-            logging.info(f"No submissions to process in {hpo_id} bucket {bucket}")
+            logging.info(
+                f"No submissions to process in {hpo_id} bucket {bucket}")
         else:
             if is_valid_folder_prefix_name(folder_prefix):
                 # perform validation
@@ -452,7 +458,9 @@ def process_hpo(hpo_id, force_run=False):
                 generate_empty_report(hpo_id, bucket, folder_prefix)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
-        logging.warning(f"Bucket `{bucket}` configured for hpo_id `{hpo_id}` does not exist")
+        logging.warning(
+            f"Bucket `{bucket}` configured for hpo_id `{hpo_id}` does not exist"
+        )
     except HttpError as http_error:
         message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (
             hpo_id, http_error.content.decode())
@@ -616,7 +624,9 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
                 # These are issues (which we report back) as opposed to internal errors
                 issues = [item['message'] for item in job_status['errors']]
                 errors.append((file_name, ' || '.join(issues)))
-                logging.info(f"Issues found in gs://{bucket}/{folder_prefix}/{file_name}")
+                logging.info(
+                    f"Issues found in gs://{bucket}/{folder_prefix}/{file_name}"
+                )
                 for issue in issues:
                     logging.info(issue)
             else:
@@ -735,8 +745,8 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
             compiled_exp = re.compile(exp)
             if compiled_exp.match(folder_name.lower()):
                 logging.info(
-                    "Skipping %s directory.  It is not a submission "
-                    "directory.", folder_name)
+                    f"Skipping {folder_name} directory.  It is not a submission directory."
+                )
                 ignore_folder = True
 
         if ignore_folder:

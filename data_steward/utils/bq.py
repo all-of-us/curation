@@ -28,9 +28,8 @@ def get_client(project_id=None):
     :return:  A bigquery Client object.
     """
     if project_id is None:
-        LOGGER.info(
-            'You should specify project_id for a reliable experience.'
-            'Defaulting to %s.', os.environ.get(PROJECT_ID))
+        LOGGER.info(f"You should specify project_id for a reliable experience."
+                    f"Defaulting to {os.environ.get(PROJECT_ID)}.")
         return bigquery.Client()
     return bigquery.Client(project=project_id)
 

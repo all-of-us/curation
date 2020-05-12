@@ -290,8 +290,12 @@ class Deid(Rules):
             rule = rule.replace(':idataset', self.parent.idataset)
 
             # log values inserted into the query
-            LOGGER.info(f"generalized_values causing duplicates: {generalized_values_string}    in table:  %s", tablename)
-            LOGGER.info(f"key_values causing duplicates: {key_values_string}    in table:  %s", tablename)
+            LOGGER.info(
+                f"generalized_values causing duplicates: {generalized_values_string}    in table:  %s",
+                tablename)
+            LOGGER.info(
+                f"key_values causing duplicates: {key_values_string}    in table:  %s",
+                tablename)
             dml_statements.append({
                 'apply': rule,
                 'name': rule_dict.get('name', 'NAME_UNSET'),
@@ -330,9 +334,8 @@ class Deid(Rules):
                     # This will call a built-in SQL function (non-aggregate)'
                     fillter = args.get('filter', name)
                     LOGGER.info(
-                        'generalizing with SQL aggregates label:\t%s\t\t'
-                        'on:\t%s\t\ttype:\t%s\t\t',
-                        label.split('.')[1], name, rule['apply'])
+                        f"generalizing with SQL aggregates label:\t{label.split('.')[1]}\t\t"
+                        f"on:\t{name}\t\ttype:\t{rule['apply']}\t\t")
 
                     if 'apply' not in self.store_syntax[store_id]:
                         regex = [
@@ -444,9 +447,8 @@ class Deid(Rules):
                     #   - An if or else type of generalization given a list of values or function
                     #   - IF <filter> IN <values>, THEN <generalized-value> else <attribute>
                     LOGGER.info(
-                        'generalizing inline arguments label:\t%s\t\t'
-                        'on:\t%s\t\ttype:\tinline',
-                        label.split('.')[1], name)
+                        f"generalizing inline arguments label:\t{{label.split('.')[1]}}\t\t"
+                        f"on:\t{name}\t\ttype:\tinline")
                     fillter = args.get('filter', name)
                     qualifier = rule.get('qualifier', '')
                     gen_value = args.get('into', rule.get('into', ''))
@@ -549,7 +551,8 @@ class Deid(Rules):
                             value = "0 AS " + name
 
                     out.append({"name": name, "apply": value, "label": label})
-                    LOGGER.info(f"suppress fields(columns) for:\t{label.split('.')[1]}")
+                    LOGGER.info(
+                        f"suppress fields(columns) for:\t{label.split('.')[1]}")
                 else:
                     #
                     # If we have alist of fields to be removed, The following code will figure out which ones apply
@@ -575,7 +578,9 @@ class Deid(Rules):
                                     "apply": (value),
                                     "label": label
                                 })
-            LOGGER.info(f"suppress fields(columns):\t{label.split('.')[1]}\t\tfor:\t{fields}")
+            LOGGER.info(
+                f"suppress fields(columns):\t{label.split('.')[1]}\t\tfor:\t{fields}"
+            )
 
         else:
             #
