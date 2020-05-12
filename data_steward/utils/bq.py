@@ -226,7 +226,7 @@ def update_labels_and_tags(dataset_id,
     overwrite_keys = updates.keys() & existing_labels_or_tags.keys()
 
     if overwrite_keys:
-        if not overwrite_keys and overwrite_ok:
+        if not overwrite_ok:
             raise RuntimeError(f'Cannot update labels on dataset {dataset_id}'
                                f'without overwriting keys {overwrite_keys}')
         return {**existing_labels_or_tags, **updates}
