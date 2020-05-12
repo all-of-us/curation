@@ -75,14 +75,14 @@ class BqTest(unittest.TestCase):
                           self.existing_labels_or_tags, None)
 
         # Pre-conditions
-        results_1 = update_labels_and_tags(self.dataset_id,
-                                           self.existing_labels_or_tags,
-                                           self.new_labels_or_tags, True)
-
-        results_2 = update_labels_and_tags(self.dataset_id,
-                                           self.existing_labels_or_tags,
-                                           self.existing_labels_or_tags, False)
+        results = update_labels_and_tags(self.dataset_id,
+                                         self.existing_labels_or_tags,
+                                         self.new_labels_or_tags, True)
 
         # Post conditions
-        self.assertEqual(results_1, self.updated)
-        self.assertRaises(RuntimeError, results_2)
+        self.assertEqual(results, self.updated)
+        with self.assertRaises(RuntimeError):
+            update_labels_and_tags(self.dataset_id,
+                                   existing_labels_or_tags={'label': 'apples'},
+                                   new_labels_or_tags={'label': 'oranges'},
+                                   overwrite_ok=False)
