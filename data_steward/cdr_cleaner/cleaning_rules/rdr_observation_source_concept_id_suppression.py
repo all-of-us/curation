@@ -67,7 +67,7 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
 
         :return:  A list of dictionaries.  Each dictionary contains a
             single query and a specification for how to execute that query.
-            They specifications are optional but the query is required.
+            The specifications are optional but the query is required.
         """
         save_dropped_rows = {
             cdr_consts.QUERY:

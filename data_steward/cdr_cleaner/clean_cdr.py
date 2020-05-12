@@ -52,6 +52,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import ObservationSourceConceptIDRowSuppression
+from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -93,6 +94,7 @@ RDR_CLEANING_CLASSES = [
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
     (ppi_numeric_fields.get_clean_ppi_num_fields_using_parameters_queries,),
+    (NullConceptIDForNumericPPI,),
     (remove_multiple_race_answers.
      get_remove_multiple_race_ethnicity_answers_queries,),
     (negative_ppi.get_update_ppi_queries,),
