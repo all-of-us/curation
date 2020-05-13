@@ -351,8 +351,8 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             lab_concept_metrics_query)
 
         logging.info(
-            f"Processing complete. Saving timestamp {processed_datetime_str} to `gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`."
-        )
+            f"Processing complete. Saving timestamp {processed_datetime_str} to "
+            f"`gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`.")
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
                               processed_datetime_str)
 
@@ -390,16 +390,16 @@ def generate_empty_report(hpo_id, bucket, folder_prefix):
     report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
     report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
     report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_datetime_str
-    report_data[
-        report_consts.
-        SUBMISSION_ERROR_REPORT_KEY] = f'Submission folder name {folder_prefix} does not follow the ' \
-                                       f'naming convention {consts.FOLDER_NAMING_CONVENTION}, where vN represents ' \
-                                       f'the version number for the day, starting at v1 each day. ' \
-                                       f'Please resubmit the files in a new folder with the correct naming convention'
-    logging.info(
-        f"Processing skipped. Reason: Folder {folder_prefix} does not follow naming convention {consts.FOLDER_NAMING_CONVENTION}. "
-        f"Saving timestamp {processed_datetime_str} to `gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`."
+    report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY] = (
+        f"Submission folder name {folder_prefix} does not follow the "
+        f"naming convention {consts.FOLDER_NAMING_CONVENTION}, where vN represents "
+        f"the version number for the day, starting at v1 each day. "
+        f"Please resubmit the files in a new folder with the correct naming convention"
     )
+    logging.info(
+        f"Processing skipped. Reason: Folder {folder_prefix} does not follow naming convention "
+        f"{consts.FOLDER_NAMING_CONVENTION}. Saving timestamp {processed_datetime_str} to "
+        f"`gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`.")
     _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
                           processed_datetime_str)
     results_html = hpo_report.render(report_data)

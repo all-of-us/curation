@@ -668,8 +668,8 @@ class AOU(Press):
 
                 response = client.query(sql, location='US', job_config=job)
                 LOGGER.info(
-                    f"submitted a bigquery job for table:\t{table_name}\t\tstatus:\t'pending'\t\tvalue:\t{response.job_id}"
-                )
+                    f"submitted a bigquery job for table:\t{table_name}\t\t"
+                    f"status:\t'pending'\t\tvalue:\t{response.job_id}")
                 self.wait(client, response.job_id)
 
     def wait(self, client, job_id):

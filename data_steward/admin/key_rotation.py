@@ -79,8 +79,7 @@ def delete_key(key):
     try:
         get_iam_service().projects().serviceAccounts().keys().delete(
             name=full_key_name).execute()
-        LOGGER.info(
-            '{full_key_name} is deleted'.format(full_key_name=full_key_name))
+        LOGGER.info(f"{full_key_name} is deleted")
     except (HttpError):
         LOGGER.exception(f"Unable to delete the key:\t{full_key_name}")
 

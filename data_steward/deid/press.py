@@ -324,8 +324,8 @@ class Press(ABC):
 
             if data_frame.shape[0] == 0:
                 LOGGER.info(
-                    f"no data-found for simulation of table:\t{table_name}\t\tfield:\t{field}\t\ttype:\t{item['label']}"
-                )
+                    f"no data-found for simulation of table:\t{table_name}\t\t"
+                    f"field:\t{field}\t\ttype:\t{item['label']}")
                 continue
 
             data_frame.columns = ['original', 'transformed']
