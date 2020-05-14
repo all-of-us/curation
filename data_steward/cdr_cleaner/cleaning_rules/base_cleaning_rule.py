@@ -42,7 +42,7 @@ class AbstractBaseCleaningRule(ABC):
         super().__init__()
 
     @abstractmethod
-    def setup_rule(self, *args, **keyword_args):
+    def setup_rule(self, client, *args, **keyword_args):
         """
         Load required resources prior to executing cleaning rule queries.
 
@@ -54,7 +54,7 @@ class AbstractBaseCleaningRule(ABC):
         pass
 
     @abstractmethod
-    def setup_validation(self, *args, **keyword_args):
+    def setup_validation(self, client, *args, **keyword_args):
         """
         Run required steps for validation setup
 
@@ -91,7 +91,7 @@ class AbstractBaseCleaningRule(ABC):
         pass
 
     @abstractmethod
-    def validate_rule(self, *args, **keyword_args):
+    def validate_rule(self, client, *args, **keyword_args):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
 
@@ -124,6 +124,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
     """
     string_list = List[str]
     cleaning_class_list = List[AbstractBaseCleaningRule]
+    TABLE_COUNT_QUERY = ''' SELECT COALESCE(COUNT(*), 0) AS row_count FROM `{dataset}.{table}` '''
 
     def __init__(self,
                  issue_numbers: string_list = None,
@@ -174,7 +175,6 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._sandbox_dataset_id = sandbox_dataset_id
         self._issue_urls = issue_urls if issue_urls else []
         self._depends_on_classes = depends_on if depends_on else []
-        self.TABLE_COUNT_QUERY = ''' SELECT COALESCE(COUNT(*), 0) AS row_count FROM `{dataset}.{table}` '''
 
         super().__init__()
 
@@ -322,7 +322,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         """
         return self._sandbox_dataset_id
 
-    def get_table_counts(self, dataset, tables, client=None):
+    def get_table_counts(self, client, dataset, tables):
         """
         Method to get the row counts of the list of tables
 
