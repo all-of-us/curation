@@ -59,20 +59,6 @@ cwd = str(cwd)
 print("Current working directory is: {cwd}".format(cwd=cwd))
 
 # ### Get the list of HPO IDs
-#
-# ### NOTE: This assumes that all of the relevant HPOs have a person table.
-
-hpo_id_query = f"""
-SELECT REPLACE(table_id, '_person', '') AS src_hpo_id
-FROM
-`{DATASET}.__TABLES__`
-WHERE table_id LIKE '%person' 
-AND table_id 
-NOT LIKE '%unioned_ehr_%' 
-AND table_id NOT LIKE '\\\_%'
-"""
-
-site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
 
 get_full_names = f"""
 select * from {LOOKUP_TABLES}
@@ -90,7 +76,7 @@ full_names_df['src_hpo_id'] = full_names_df['src_hpo_id'].str.lower()
 # +
 cols_to_join = ['src_hpo_id']
 
-site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
+site_df = full_names_df
 # -
 
 # # All temporal data points should be consistent such that end dates should NOT be before a start date.
@@ -151,14 +137,14 @@ temporal_df = pd.io.gbq.read_gbq('''
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['success_rate'] = 100 - round(
+temporal_df['failure_rate'] = round(
     100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
 visit_occurrence = temporal_df.rename(
-    columns={"success_rate": "visit_occurrence"})
+    columns={"failure_rate": "visit_occurrence"})
 visit_occurrence = visit_occurrence[["src_hpo_id", "visit_occurrence"]]
-visit_occurrence = visit_occurrence.fillna(100)
+visit_occurrence = visit_occurrence.fillna(0)
 visit_occurrence
 
 total_wrong = temporal_df['wrong_date_rows'].sum()
@@ -228,16 +214,16 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['success_rate'] = 100 - round(
+temporal_df['failure_rate'] = round(
     100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
 condition_occurrence = temporal_df.rename(
-    columns={"success_rate": "condition_occurrence"})
+    columns={"failure_rate": "condition_occurrence"})
 condition_occurrence = condition_occurrence[[
     "src_hpo_id", "condition_occurrence"
 ]]
-condition_occurrence = condition_occurrence.fillna(100)
+condition_occurrence = condition_occurrence.fillna(0)
 condition_occurrence
 
 total_wrong = temporal_df['wrong_date_rows'].sum()
@@ -305,13 +291,13 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['success_rate'] = 100 - round(
+temporal_df['failure_rate'] = round(
     100 * temporal_df['wrong_date_rows'] / temporal_df['total_rows'], 1)
 temporal_df
 
-drug_exposure = temporal_df.rename(columns={"success_rate": "drug_exposure"})
+drug_exposure = temporal_df.rename(columns={"failure_rate": "drug_exposure"})
 drug_exposure = drug_exposure[["src_hpo_id", "drug_exposure"]]
-drug_exposure = drug_exposure.fillna(100)
+drug_exposure = drug_exposure.fillna(0)
 drug_exposure
 
 total_wrong = temporal_df['wrong_date_rows'].sum()
@@ -334,7 +320,7 @@ success_rate = pd.merge(success_rate, drug_exposure, how='outer', on='src_hpo_id
 
 
 success_rate = pd.merge(success_rate, site_df, how='outer', on='src_hpo_id')
-success_rate = success_rate.fillna(100)
+success_rate = success_rate.fillna(0)
 success_rate
 # -
 

@@ -27,10 +27,10 @@ from cross_reference_functions import cross_reference_old_metrics
 
 import pandas as pd
 
-old_dashboards = 'march_26_2020_data_quality_issues.xlsx'
+old_dashboards = 'april_17_2020_data_quality_issues.xlsx'
 
-old_excel_file_name = 'march_19_2020.xlsx'
-excel_file_name = 'april_17_2020.xlsx'
+old_excel_file_name = 'april_17_2020.xlsx'
+excel_file_name = 'may_11_2020.xlsx'
 
 metric_names = list(metric_names.keys())  # sheets to be investigated
 
