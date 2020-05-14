@@ -114,28 +114,28 @@ percentage_dict = {
     constants.achilles_errors: constants.false
 }
 
+
+# FIXME: for errors, we want target_low value to be true
+
 target_low_dict = {
+    # non-percentage values
     constants.duplicates: constants.true,
-    constants.data_after_death: constants.true,
-    constants.end_before_begin: constants.true,
+    constants.achilles_errors: constants.true,
+
+    # success rates
     constants.concept: constants.false,
     constants.measurement_units: constants.false,
     constants.drug_routes: constants.false,
     constants.drug_success: constants.false,
     constants.sites_measurement: constants.false,
+
+    constants.data_after_death: constants.true,
+    constants.end_before_begin: constants.true,
     constants.visit_date_disparity: constants.false,
 
-    # FIXME: the three below - by logic - should
-    # be 'True' but were calculated as showing
-    # the % of errors rather than (100 - % of errors)
-    # in the DQM scripts. This means they should be
-    # logged as 'False' here to make it an effective
-    # double negative.
-    constants.date_datetime_disparity: constants.false,
-    constants.erroneous_dates: constants.false,
-    constants.person_id_failure_rate: constants.false,
-
-    constants.achilles_errors: constants.true
+    constants.date_datetime_disparity: constants.true,
+    constants.erroneous_dates: constants.true,
+    constants.person_id_failure_rate: constants.true,
 }
 
 columns_to_document_for_sheet = {
@@ -192,7 +192,7 @@ table_based_on_column_provided = {
 
     # general concept success rate columns
     constants.observation_success: constants.observation_full,
-    constants.drug_success: constants.drug_exposure_full,
+    constants.drug_success_col: constants.drug_exposure_full,
     constants.procedure_success: constants.procedure_full,
     constants.condition_success: constants.condition_occurrence_full,
     constants.measurement_success: constants.measurement_full,

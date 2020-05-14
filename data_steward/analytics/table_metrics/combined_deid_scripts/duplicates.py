@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -14,32 +14,25 @@
 # ---
 
 from google.cloud import bigquery
-
 # %reload_ext google.cloud.bigquery
-
 client = bigquery.Client()
-
 # %load_ext google.cloud.bigquery
 
 # +
 from notebooks import parameters
-DATASET = parameters.UNIONED_Q4_2019
+DATASET = parameters.UNIONED_Q4_2018
+LOOKUP_TABLES = parameters.LOOKUP_TABLES
 
-print("Dataset to use: {DATASET}".format(DATASET = DATASET))
+print(f"Dataset to use: {DATASET}")
+print(f"Lookup tables: {LOOKUP_TABLES}")
 
 # +
-#######################################
-print('Setting everything up...')
-#######################################
-
 import warnings
 
 warnings.filterwarnings('ignore')
 import pandas as pd
 import matplotlib.pyplot as plt
-# %matplotlib inline
 import os
-
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
@@ -51,132 +44,32 @@ def cstr(s, color='black'):
     return "<text style=color:{}>{}</text>".format(color, s)
 
 
-print('done.')
 # -
 
 cwd = os.getcwd()
 cwd = str(cwd)
 print("Current working directory is: {cwd}".format(cwd=cwd))
 
-# + endofcell="--"
-# # +
-dic = {
-    'src_hpo_id': [
-        "saou_uab_selma", "saou_uab_hunt", "saou_tul", "pitt_temple",
-        "saou_lsu", "trans_am_meyers", "trans_am_essentia", "saou_ummc",
-        "seec_miami", "seec_morehouse", "seec_emory", "uamc_banner", "pitt",
-        "nyc_cu", "ipmc_uic", "trans_am_spectrum", "tach_hfhs", "nec_bmc",
-        "cpmc_uci", "nec_phs", "nyc_cornell", "ipmc_nu", "nyc_hh",
-        "ipmc_uchicago", "aouw_mcri", "syhc", "cpmc_ceders", "seec_ufl",
-        "saou_uab", "trans_am_baylor", "cpmc_ucsd", "ecchc", "chci", "aouw_uwh",
-        "cpmc_usc", "hrhc", "ipmc_northshore", "chs", "cpmc_ucsf", "jhchc",
-        "aouw_mcw", "cpmc_ucd", "ipmc_rush", "va", "saou_umc"
-    ],
-    'HPO': [
-        "UAB Selma", "UAB Huntsville", "Tulane University", "Temple University",
-        "Louisiana State University",
-        "Reliant Medical Group (Meyers Primary Care)",
-        "Essentia Health Superior Clinic", "University of Mississippi",
-        "SouthEast Enrollment Center Miami",
-        "SouthEast Enrollment Center Morehouse",
-        "SouthEast Enrollment Center Emory", "Banner Health",
-        "University of Pittsburgh", "Columbia University Medical Center",
-        "University of Illinois Chicago", "Spectrum Health",
-        "Henry Ford Health System", "Boston Medical Center", "UC Irvine",
-        "Partners HealthCare", "Weill Cornell Medical Center",
-        "Northwestern Memorial Hospital", "Harlem Hospital",
-        "University of Chicago", "Marshfield Clinic",
-        "San Ysidro Health Center", "Cedars-Sinai", "University of Florida",
-        "University of Alabama at Birmingham", "Baylor", "UC San Diego",
-        "Eau Claire Cooperative Health Center", "Community Health Center, Inc.",
-        "UW Health (University of Wisconsin Madison)",
-        "University of Southern California", "HRHCare",
-        "NorthShore University Health System", "Cherokee Health Systems",
-        "UC San Francisco", "Jackson-Hinds CHC", "Medical College of Wisconsin",
-        "UC Davis", "Rush University", 
-        "United States Department of Veterans Affairs - Boston",
-        "University Medical Center (UA Tuscaloosa)"
-    ]
-}
+# ### Get the list of HPO IDs
 
-site_df = pd.DataFrame(data=dic)
-site_df
+get_full_names = f"""
+select * from {LOOKUP_TABLES}
+"""
 
-# # +
-######################################
-print('Getting the data from the database...')
-######################################
+full_names_df = pd.io.gbq.read_gbq(get_full_names, dialect='standard')
 
-site_map = pd.io.gbq.read_gbq('''
-    select distinct * from (
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{DATASET}._mapping_visit_occurrence`
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{DATASET}._mapping_condition_occurrence`  
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{DATASET}._mapping_device_exposure`
+# +
+full_names_df.columns = ['org_id', 'src_hpo_id', 'site_name', 'display_order']
+columns_to_use = ['src_hpo_id', 'site_name']
 
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{DATASET}._mapping_drug_exposure`
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{DATASET}._mapping_measurement`               
-         
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{DATASET}._mapping_observation`           
-         
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{DATASET}._mapping_procedure_occurrence`         
-         
-    
-    UNION ALL
-    SELECT
-            DISTINCT(src_hpo_id) as src_hpo_id
-    FROM
-         `{DATASET}._mapping_visit_occurrence`   
-    ) 
-    order by 1
-    '''.format(DATASET=DATASET), dialect='standard')
-print(site_map.shape[0], 'records received.')
+full_names_df = full_names_df[columns_to_use]
+full_names_df['src_hpo_id'] = full_names_df['src_hpo_id'].str.lower()
+
+# +
+cols_to_join = ['src_hpo_id']
+
+site_df = full_names_df
 # -
-
-site_map
-
-site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
-
-site_df
-# --
-
-site_map
-
-site_df = pd.merge(site_map, site_df, how='outer', on='src_hpo_id')
-
-site_df
 
 # # There should not be duplicate rows.
 

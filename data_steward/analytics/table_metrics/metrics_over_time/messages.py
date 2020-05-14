@@ -47,7 +47,7 @@ L. Person ID failure rate
 M. Number of ACHILLES Errors
 
 Please specify your choice by typing the corresponding letter.
-        """
+"""
 
 output_prompt = \
     """

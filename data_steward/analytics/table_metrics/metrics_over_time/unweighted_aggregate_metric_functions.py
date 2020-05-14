@@ -22,6 +22,8 @@ from auxillary_aggregate_functions import \
 
 import numpy as np
 import constants
+import math
+
 
 def create_unweighted_aggregate_metrics_for_tables(
         metric_dictionary, datetimes):
@@ -253,7 +255,8 @@ def create_unweighted_aggregate_metric_for_dates(
 
                     value_for_hpo = agg_hpo_metric.overall_rate
 
-                    values.append(value_for_hpo)
+                    if not math.isnan(value_for_hpo):
+                        values.append(value_for_hpo)
 
             # here's where the 'unweighted' aspect comes in - simple mean
             overall_rate = sum(values) / len(values)
