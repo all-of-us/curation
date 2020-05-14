@@ -264,7 +264,7 @@ def main(raw_args=None):
             LOGGER.info('Successfully executed deid on table: %s', table)
             successes.append(table)
 
-    copy_suppressed_table_schemas(known_tables, args.input_dataset + '_deid')
+    copy_suppressed_table_schemas(known_tables, args.odataset)
 
     LOGGER.info('Deid has finished.  Successfully executed on tables:  %s',
                 '\n'.join(successes))
