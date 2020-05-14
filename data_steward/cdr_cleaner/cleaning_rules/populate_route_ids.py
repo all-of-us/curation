@@ -142,7 +142,7 @@ def create_dose_form_route_mappings_table(project_id, dataset_id=None):
 
     dose_form_routes_table_id = DOSE_FORM_ROUTES_TABLE_ID
 
-    LOGGER.info("Creating %s.%s", dataset_id, DOSE_FORM_ROUTES_TABLE_ID)
+    LOGGER.info(f"Creating {dataset_id}.{DOSE_FORM_ROUTES_TABLE_ID}")
 
     # create empty table
     bq_utils.create_table(DOSE_FORM_ROUTES_TABLE_ID,
@@ -160,7 +160,7 @@ def create_dose_form_route_mappings_table(project_id, dataset_id=None):
         routes_table_id=DOSE_FORM_ROUTES_TABLE_ID,
         mapping_list=get_mapping_list(dose_form_route_mappings_list))
     result = bq_utils.query(dose_form_routes_populate_query)
-    LOGGER.info("Created %s.%s", dataset_id, dose_form_routes_table_id)
+    LOGGER.info(f"Created {dataset_id}.{dose_form_routes_table_id}")
     return result
 
 
@@ -181,8 +181,7 @@ def create_drug_route_mappings_table(project_id, route_mapping_dataset_id,
         # Using table created in bq_dataset instead of re-creating in every dataset
         route_mapping_dataset_id = bq_utils.get_dataset_id()
 
-    LOGGER.info("Creating %s.%s", route_mapping_dataset_id,
-                DRUG_ROUTES_TABLE_ID)
+    LOGGER.info(f"Creating {route_mapping_dataset_id}.{DRUG_ROUTES_TABLE_ID}")
 
     # create empty table
     bq_utils.create_table(DRUG_ROUTES_TABLE_ID,
@@ -205,7 +204,7 @@ def create_drug_route_mappings_table(project_id, route_mapping_dataset_id,
     if incomplete_jobs:
         LOGGER.info('Failed job id {id}'.format(id=incomplete_jobs[0]))
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
-    LOGGER.info("Created %s.%s", route_mapping_dataset_id, DRUG_ROUTES_TABLE_ID)
+    LOGGER.info(f"Created {route_mapping_dataset_id}.{DRUG_ROUTES_TABLE_ID}")
     return result
 
 

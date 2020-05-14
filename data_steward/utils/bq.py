@@ -28,9 +28,8 @@ def get_client(project_id=None):
     :return:  A bigquery Client object.
     """
     if project_id is None:
-        LOGGER.info(
-            'You should specify project_id for a reliable experience.'
-            'Defaulting to %s.', os.environ.get(PROJECT_ID))
+        LOGGER.info(f"You should specify project_id for a reliable experience."
+                    f"Defaulting to {os.environ.get(PROJECT_ID)}.")
         return bigquery.Client()
     return bigquery.Client(project=project_id)
 
@@ -100,7 +99,7 @@ def create_tables(client, project_id, fq_table_names, exists_ok=False):
             table = bigquery.Table(table_name, schema=schema)
             table = client.create_table(table, exists_ok)
         except (GoogleAPIError, OSError, AttributeError, TypeError, ValueError):
-            LOGGER.exception('Unable to create table %s', table_name)
+            LOGGER.exception(f"Unable to create table {table_name}")
             failures.append(table_name)
         else:
             successes.append(table)
@@ -251,7 +250,7 @@ def delete_dataset(project_id,
     client.delete_dataset(dataset_id,
                           delete_contents=delete_contents,
                           not_found_ok=not_found_ok)
-    LOGGER.info('Deleted dataset %s.%s', project_id, dataset_id)
+    LOGGER.info(f"Deleted dataset {project_id}.{dataset_id}")
 
 
 def is_validation_dataset_id(dataset_id):

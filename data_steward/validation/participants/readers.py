@@ -79,7 +79,7 @@ def create_match_values_table(project, rdr_dataset, destination_dataset):
         table=consts.OBSERVATION_TABLE,
         pii_list=','.join(consts.PII_CODES_LIST))
 
-    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    LOGGER.info(f"Participant validation ran the query\n{query_string}")
     results = bq_utils.query(query_string,
                              destination_dataset_id=destination_dataset,
                              destination_table_id=consts.ID_MATCH_TABLE,
@@ -122,7 +122,7 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
         field=column_name,
     )
 
-    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    LOGGER.info(f"Participant validation ran the query\n{query_string}")
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
@@ -173,7 +173,7 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
                                                         table=table_name,
                                                         field_value=concept_id)
 
-    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    LOGGER.info(f"Participant validation ran the query\n{query_string}")
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
@@ -228,7 +228,7 @@ def get_pii_values(project, pii_dataset, hpo, table, field):
                                             field=field,
                                             table_suffix=table)
 
-    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    LOGGER.info(f"Participant validation ran the query\n{query_string}")
 
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
@@ -273,7 +273,7 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
         location_id_dict[int(location_id[1])] = location_id[0]
 
     if not location_id_list:
-        LOGGER.info("No location information found for site:\t%s", hpo)
+        LOGGER.info(f"No location information found for site:\t{hpo}")
         return []
 
     location_id_str = ', '.join(location_id_list)
@@ -282,7 +282,7 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
                                                      field=field,
                                                      id_list=location_id_str)
 
-    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    LOGGER.info(f"Participant validation ran the query\n{query_string}")
 
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)

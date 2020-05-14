@@ -204,7 +204,7 @@ def create_person_id_src_hpo_map(input_dataset, credentials):
                    destination_table_id=map_tablename,
                    destination_dataset_id=input_dataset,
                    write_disposition=bq_consts.WRITE_TRUNCATE)
-    LOGGER.info("Created mapping table:\t%s.%s", input_dataset, map_tablename)
+    LOGGER.info(f"Created mapping table:\t{input_dataset}.{map_tablename}")
 
 
 def create_allowed_states_table(input_dataset, credentials):
@@ -282,7 +282,7 @@ class AOU(Press):
 
     def initialize(self, **args):
         Press.initialize(self, **args)
-        LOGGER.info('BEGINNING de-identification on table:\t%s', self.tablename)
+        LOGGER.info(f"BEGINNING de-identification on table:\t{self.tablename}")
 
         age_limit = args['age_limit']
         max_day_shift = args['max_day_shift']
@@ -294,7 +294,7 @@ class AOU(Press):
             "FROM person ORDER BY 2")
         job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
         person_table = self.get_dataframe(sql=sql, query_config=job_config)
-        LOGGER.info('patient count is:\t%s', person_table.shape[0])
+        LOGGER.info(f"patient count is:\t{person_table.shape[0]}")
         map_table = pd.DataFrame()
 
         # only need to create these tables deidentifying the observation table
@@ -340,7 +340,7 @@ class AOU(Press):
             LOGGER.error("Unable to initialize Deid.  Check "
                          "configuration files, parameters, and credentials.")
 
-        LOGGER.info('map table contains %d participants.', map_table.shape[0])
+        LOGGER.info(f"map table contains {map_table.shape[0]} participants.")
         return person_table.shape[0] > 0 or map_table.shape[0] > 0
 
     def map_questionnaire_response_ids(self, lower_bound):
@@ -356,8 +356,9 @@ class AOU(Press):
                "ORDER BY 1")
         job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
         observation_table = self.get_dataframe(sql=sql, query_config=job_config)
-        LOGGER.info('total of distinct questionnaire_response_ids:\t%d',
-                    observation_table.shape[0])
+        LOGGER.info(
+            f"total of distinct questionnaire_response_ids:\t{observation_table.shape[0]}"
+        )
         map_table = pd.DataFrame()
 
         if observation_table.shape[0] > 0:
@@ -400,8 +401,9 @@ class AOU(Press):
         else:
             LOGGER.error("No questionnaire_response_ids found.")
 
-        LOGGER.info('questionnaire response mapping table contains %d records',
-                    map_table.shape[0])
+        LOGGER.info(
+            f"questionnaire response mapping table contains {map_table.shape[0]} records"
+        )
 
     def get_dataframe(self, sql=None, limit=None, query_config=None):
         """
@@ -427,7 +429,7 @@ class AOU(Press):
 
             return df
         except Exception:
-            LOGGER.exception("Unable to execute the query:\t%s", sql)
+            LOGGER.exception(f"Unable to execute the query:\t{sql}")
 
         return pd.DataFrame()
 
@@ -504,7 +506,7 @@ class AOU(Press):
                 self.table_info['shift'] = []
 
             if _toshift:
-                LOGGER.info('shifting fields:\t%s', _toshift)
+                LOGGER.info(f"shifting fields:\t{_toshift}")
                 self.table_info['shift'] += _toshift
 
     def _add_compute_rules(self, columns):
@@ -608,7 +610,7 @@ class AOU(Press):
 
         # create the output table
         if create:
-            LOGGER.info('creating new table:\t%s', self.tablename)
+            LOGGER.info(f"creating new table:\t{self.tablename}")
             bq_utils.create_standard_table(self.tablename,
                                            self.tablename,
                                            drop_existing=True,
@@ -616,7 +618,7 @@ class AOU(Press):
             write_disposition = bq_consts.WRITE_EMPTY
         else:
             write_disposition = bq_consts.WRITE_APPEND
-            LOGGER.info('appending results to table:\t%s', self.tablename)
+            LOGGER.info(f"appending results to table:\t{self.tablename}")
 
         job = bq.QueryJobConfig()
         job.priority = self.priority
@@ -637,8 +639,8 @@ class AOU(Press):
             dml_job = copy(job)
 
         LOGGER.info(
-            'submitting a dry-run for:\t%s\t\tpriority:\t%s\t\tpartition:\t%s',
-            self.get_tablename(), self.priority, self.partition)
+            f"submitting a dry-run for:\t{self.get_tablename()}\t\tpriority:\t%s\t\tpartition:\t%s",
+            self.priority, self.partition)
 
         logpath = os.path.join(self.logpath, self.idataset)
         try:
@@ -651,9 +653,9 @@ class AOU(Press):
             response = client.query(sql, location='US', job_config=job)
         except Exception:
             LOGGER.exception(
-                'dry run query failed for:\t%s\n'
-                '\t\tSQL:\t%s\n'
-                '\t\tjob config:\t%s', self.get_tablename(), sql, job)
+                f"dry run query failed for:\t{self.get_tablename()}\n"
+                f"\t\tSQL:\t{sql}\n"
+                f"\t\tjob config:\t{job}")
         else:
 
             if response.state == 'DONE':
@@ -666,8 +668,8 @@ class AOU(Press):
 
                 response = client.query(sql, location='US', job_config=job)
                 LOGGER.info(
-                    'submitted a %s job for table:\t%s\t\tstatus:\t%s\t\tvalue:\t%s',
-                    'bigquery', table_name, 'pending', response.job_id)
+                    f"submitted a bigquery job for table:\t{table_name}\t\t"
+                    f"status:\t'pending'\t\tvalue:\t{response.job_id}")
                 self.wait(client, response.job_id)
 
     def wait(self, client, job_id):
@@ -677,8 +679,8 @@ class AOU(Press):
         :param client:  The BigQuery client object.
         :param job_id:  job_id to verify finishes.
         """
-        LOGGER.info('sleeping for table:\t%s\t\tjob_id:\t%s',
-                    self.get_tablename(), job_id)
+        LOGGER.info(
+            f"sleeping for table:\t{self.get_tablename()}\t\tjob_id:\t{job_id}")
         status = 'NONE'
 
         while True:
@@ -689,7 +691,7 @@ class AOU(Press):
             else:
                 time.sleep(5)
 
-        LOGGER.info('awake.  status is:\t%s', status)
+        LOGGER.info(f"awake.  status is:\t{status}")
 
 
 def main(raw_args=None):

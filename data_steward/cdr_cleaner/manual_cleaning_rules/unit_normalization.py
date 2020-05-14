@@ -152,7 +152,7 @@ def create_unit_mapping_table(project_id, dataset_id):
         units_table_id=UNIT_MAPPING_TABLE,
         mapping_list=get_mapping_list(unit_mappings_list))
     result = bq_utils.query(unit_mappings_populate_query)
-    LOGGER.info("Created %s.%s", dataset_id, UNIT_MAPPING_TABLE)
+    LOGGER.info(f"Created {dataset_id}.{UNIT_MAPPING_TABLE}")
     return result
 
 

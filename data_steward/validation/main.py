@@ -100,8 +100,8 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         if target_bucket is None:
             target_bucket = gcs_utils.get_hpo_bucket(datasource_id)
 
-    logging.info('Exporting %s report to bucket %s', datasource_name,
-                 target_bucket)
+    logging.info(
+        f"Exporting {datasource_name} report to bucket {target_bucket}")
 
     # Run export queries and store json payloads in specified folder in the target bucket
     reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
@@ -159,8 +159,8 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
             raise RuntimeError(
                 'either hpo_id or target_bucket must be specified')
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    logging.info('Uploading achilles index files to `gs://%s/%s`...', bucket,
-                 folder_prefix)
+    logging.info(
+        f"Uploading achilles index files to `gs://{bucket}/{folder_prefix}`...")
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info('Uploading achilles file `%s` to bucket `%s`' %
                      (filename, bucket))
@@ -238,8 +238,8 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
       results is list of tuples (file_name, found, parsed, loaded)
       errors and warnings are both lists of tuples (file_name, message)
     """
-    logging.info('Validating %s submission in gs://%s/%s', hpo_id, bucket,
-                 folder_prefix)
+    logging.info(
+        f"Validating {hpo_id} submission in gs://{bucket}/{folder_prefix}")
     # separate cdm from the unknown (unexpected) files
     folder_items = [item['name'][len(folder_prefix):] \
                     for item in bucket_items if item['name'].startswith(folder_prefix)]
@@ -303,10 +303,10 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         # TODO modify achilles to run successfully when tables are empty
         # achilles queries will raise exceptions (e.g. division by zero) if files not present
         if all_required_files_loaded(results):
-            logging.info('Running achilles on %s.', folder_prefix)
+            logging.info(f"Running achilles on {folder_prefix}.")
             run_achilles(hpo_id)
             run_export(datasource_id=hpo_id, folder_prefix=folder_prefix)
-            logging.info('Uploading achilles index files to `%s`.', gcs_path)
+            logging.info(f"Uploading achilles index files to `{gcs_path}`.")
             _upload_achilles_files(hpo_id, folder_prefix)
             heel_error_query = get_heel_error_query(hpo_id)
             report_data[report_consts.HEEL_ERRORS_REPORT_KEY] = query_rows(
@@ -315,8 +315,8 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             report_data[
                 report_consts.
                 SUBMISSION_ERROR_REPORT_KEY] = 'Required files are missing'
-            logging.info('Required files are missing in %s. Skipping achilles.',
-                         gcs_path)
+            logging.info(
+                f"Required files are missing in {gcs_path}. Skipping achilles.")
 
         # non-unique key metrics
         logging.info('Getting non-unique key stats for %s...' % hpo_id)
@@ -351,9 +351,8 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             lab_concept_metrics_query)
 
         logging.info(
-            'Processing complete. Saving timestamp %s to `gs://%s/%s`.',
-            processed_datetime_str, bucket,
-            folder_prefix + common.PROCESSED_TXT)
+            f"Processing complete. Saving timestamp {processed_datetime_str} to "
+            f"`gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`.")
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
                               processed_datetime_str)
 
@@ -391,17 +390,16 @@ def generate_empty_report(hpo_id, bucket, folder_prefix):
     report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
     report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
     report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_datetime_str
-    report_data[
-        report_consts.
-        SUBMISSION_ERROR_REPORT_KEY] = f'Submission folder name {folder_prefix} does not follow the ' \
-                                       f'naming convention {consts.FOLDER_NAMING_CONVENTION}, where vN represents ' \
-                                       f'the version number for the day, starting at v1 each day. ' \
-                                       f'Please resubmit the files in a new folder with the correct naming convention'
+    report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY] = (
+        f"Submission folder name {folder_prefix} does not follow the "
+        f"naming convention {consts.FOLDER_NAMING_CONVENTION}, where vN represents "
+        f"the version number for the day, starting at v1 each day. "
+        f"Please resubmit the files in a new folder with the correct naming convention"
+    )
     logging.info(
-        'Processing skipped. Reason: Folder %s does not follow naming convention %s. '
-        'Saving timestamp %s to `gs://%s/%s`.', folder_prefix,
-        consts.FOLDER_NAMING_CONVENTION, processed_datetime_str, bucket,
-        folder_prefix + common.PROCESSED_TXT)
+        f"Processing skipped. Reason: Folder {folder_prefix} does not follow naming convention "
+        f"{consts.FOLDER_NAMING_CONVENTION}. Saving timestamp {processed_datetime_str} to "
+        f"`gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`.")
     _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
                           processed_datetime_str)
     results_html = hpo_report.render(report_data)
@@ -442,13 +440,13 @@ def process_hpo(hpo_id, force_run=False):
       Raised when an internal error is encountered during validation
     """
     try:
-        logging.info('Processing hpo_id %s', hpo_id)
+        logging.info(f"Processing hpo_id {hpo_id}")
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
         bucket_items = list_bucket(bucket)
         folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
         if folder_prefix is None:
-            logging.info('No submissions to process in %s bucket %s', hpo_id,
-                         bucket)
+            logging.info(
+                f"No submissions to process in {hpo_id} bucket {bucket}")
         else:
             if is_valid_folder_prefix_name(folder_prefix):
                 # perform validation
@@ -460,8 +458,9 @@ def process_hpo(hpo_id, force_run=False):
                 generate_empty_report(hpo_id, bucket, folder_prefix)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
-        logging.warning('Bucket `%s` configured for hpo_id `%s` does not exist',
-                        bucket, hpo_id)
+        logging.warning(
+            f"Bucket `{bucket}` configured for hpo_id `{hpo_id}` does not exist"
+        )
     except HttpError as http_error:
         message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (
             hpo_id, http_error.content.decode())
@@ -608,7 +607,7 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
     """
     errors = []
     results = []
-    logging.info('Validating file `%s`', file_name)
+    logging.info(f"Validating file `{file_name}`")
     found = parsed = loaded = 0
     table_name = file_name.split('.')[0]
 
@@ -625,8 +624,9 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
                 # These are issues (which we report back) as opposed to internal errors
                 issues = [item['message'] for item in job_status['errors']]
                 errors.append((file_name, ' || '.join(issues)))
-                logging.info('Issues found in gs://%s/%s/%s', bucket,
-                             folder_prefix, file_name)
+                logging.info(
+                    f"Issues found in gs://{bucket}/{folder_prefix}/{file_name}"
+                )
                 for issue in issues:
                     logging.info(issue)
             else:
@@ -745,8 +745,8 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
             compiled_exp = re.compile(exp)
             if compiled_exp.match(folder_name.lower()):
                 logging.info(
-                    "Skipping %s directory.  It is not a submission "
-                    "directory.", folder_name)
+                    f"Skipping {folder_name} directory.  It is not a submission directory."
+                )
                 ignore_folder = True
 
         if ignore_folder:
@@ -819,7 +819,7 @@ def copy_files(hpo_id):
         else:
             filtered_bucket_items.append(item)
 
-    logging.info("Ignoring %d items in %s", ignored_items, hpo_bucket)
+    logging.info(f"Ignoring {ignored_items} items in {hpo_bucket}")
 
     prefix = hpo_id + '/' + hpo_bucket + '/'
 
