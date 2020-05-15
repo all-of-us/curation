@@ -11,6 +11,41 @@ Original Issue = DC-637
 
 # Python imports
 import unittest
+import logging
 
 # Project imports
-from utils import pipeline_logging
+from utils.pipeline_logging import setup
+
+
+class PipelineLoggingTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
+    def setUp(self):
+        self.log_file_list = {}
+
+    def test_setup(self):
+        handlers_exist = logging.getLogger().hasHandlers()
+
+        # log to specified log file location AND the console
+        results = setup(self.log_file_list, True)
+        logging.shutdown()
+
+        # log to specified log file location NOT the console
+        results = setup(self.log_file_list)
+        logging.shutdown()
+
+        # log to default file location AND the console
+        results = setup(True)
+        logging.shutdown()
+
+        # log to the default file location NOT the console
+        results = setup()
+        logging.shutdown()
+
+
+
