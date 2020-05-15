@@ -70,15 +70,6 @@ class AbstractBaseCleaningRule(ABC):
         pass
 
     @abstractmethod
-    def get_affected_tables(self, *args, **keyword_args):
-        """
-        Method to get tables that will be modified by the cleaning rule.
-
-        :return: a list of table names that will be affected by this cleaning rule
-        """
-        pass
-
-    @abstractmethod
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
         Interface to return a list of query dictionaries.
@@ -125,6 +116,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
     string_list = List[str]
     cleaning_class_list = List[AbstractBaseCleaningRule]
     TABLE_COUNT_QUERY = ''' SELECT COALESCE(COUNT(*), 0) AS row_count FROM `{dataset}.{table}` '''
+    affected_tables_list = List[str]
 
     def __init__(self,
                  issue_numbers: string_list = None,
@@ -134,7 +126,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                  project_id: str = None,
                  dataset_id: str = None,
                  sandbox_dataset_id: str = None,
-                 depends_on: cleaning_class_list = None):
+                 depends_on: cleaning_class_list = None,
+                 affected_tables: affected_tables_list = None):
         """
         Instantiate a cleaning rule with basic attributes.
 
@@ -166,6 +159,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         :param depends_on:  a list of rules a cleaning rule depends on when
             running.  Right now, it is used for reporting purposes, but the
             scope may expand in the future.  Default is an empty list.
+        :param affected_tables: a list of tables that are affected by 
+            running this cleaning rule.
         """
         self._issue_numbers = issue_numbers
         self._description = description
@@ -175,6 +170,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._sandbox_dataset_id = sandbox_dataset_id
         self._issue_urls = issue_urls if issue_urls else []
         self._depends_on_classes = depends_on if depends_on else []
+        self._affected_tables = affected_tables if affected_tables else []
 
         super().__init__()
 
@@ -321,6 +317,21 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         Get the sandbox dataset id for this class instance.
         """
         return self._sandbox_dataset_id
+
+    @abstractmethod
+    def get_affected_tables(self, *args, **keyword_args):
+        """
+        Method to get tables that will be modified by the cleaning rule.
+
+        :return: a list of table names that will be affected by this cleaning rule
+        """
+        pass
+
+    def set_affected_tables(self, value):
+        """
+        set the affected_tables for this class instance
+        """
+        pass
 
     def get_table_counts(self, client, dataset, tables):
         """
