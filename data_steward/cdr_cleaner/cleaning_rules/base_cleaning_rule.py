@@ -116,7 +116,6 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
     string_list = List[str]
     cleaning_class_list = List[AbstractBaseCleaningRule]
     TABLE_COUNT_QUERY = ''' SELECT COALESCE(COUNT(*), 0) AS row_count FROM `{dataset}.{table}` '''
-    affected_tables_list = List[str]
 
     def __init__(self,
                  issue_numbers: string_list = None,
@@ -126,8 +125,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                  project_id: str = None,
                  dataset_id: str = None,
                  sandbox_dataset_id: str = None,
-                 depends_on: cleaning_class_list = None,
-                 affected_tables: affected_tables_list = None):
+                 depends_on: cleaning_class_list = None):
         """
         Instantiate a cleaning rule with basic attributes.
 
@@ -170,7 +168,6 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._sandbox_dataset_id = sandbox_dataset_id
         self._issue_urls = issue_urls if issue_urls else []
         self._depends_on_classes = depends_on if depends_on else []
-        self._affected_tables = affected_tables if affected_tables else []
 
         super().__init__()
 
@@ -318,20 +315,19 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         """
         return self._sandbox_dataset_id
 
-    @abstractmethod
-    def get_affected_tables(self, *args, **keyword_args):
+    def get_affected_tables(self):
         """
         Method to get tables that will be modified by the cleaning rule.
+        """
+        return self.__affected_tables
 
-        :return: a list of table names that will be affected by this cleaning rule
+    def set_affected_tables(self, affected_tables):
         """
-        pass
+        Set the affected_tables for this class instance
+        """
+        self.__affected_tables = affected_tables if affected_tables else []
 
-    def set_affected_tables(self, value):
-        """
-        set the affected_tables for this class instance
-        """
-        pass
+    affected_tables = property(get_affected_tables, set_affected_tables)
 
     def get_table_counts(self, client, dataset, tables):
         """
