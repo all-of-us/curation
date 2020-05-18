@@ -17,7 +17,7 @@ from sandbox import check_and_create_sandbox_dataset
 from constants import bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
-LOGS_PATH = 'LOGS'
+LOGS_PATH = '../logs'
 
 jinja_env = Environment(
     # help protect against cross-site scripting vulnerabilities
@@ -35,23 +35,27 @@ TABLE_INFORMATION_SCHEMA = jinja_env.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 """)
+
 DEACTIVATED_PIDS_QUERY = jinja_env.from_string("""
 SELECT DISTINCT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 """)
+
 RESEARCH_ID_QUERY = jinja_env.from_string("""
 SELECT DISTINCT research_id
 FROM `{{project}}.{{prefix_regex}}_combined._deid_map`
 WHERE person_id = {{pid}}
 """)
+
 CHECK_PID_EXIST_QUERY = jinja_env.from_string("""
 SELECT
 COALESCE(COUNT(*), 0) AS count
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id = {{pid}}
 """)
-# Queries to create tables in associated sandbox with rows that will be removed per cleaning rule, two different queries
-# for tables with standard entry dates vs. tables with start and end dates
+
+# Queries to create tables in associated sandbox with rows that will be removed per cleaning rule.
+# Two different queries 1. tables containing standard entry dates 2. tables with start and end dates
 SANDBOX_QUERY_DATE = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
@@ -61,6 +65,7 @@ AND {{date_column}} >= (SELECT deactivated_date
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
 WHERE person_id = {{pid}}))
 """)
+
 SANDBOX_QUERY_END_DATE = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
@@ -73,6 +78,7 @@ SELECT deactivated_date
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
 WHERE person_id = {{pid}}) END END))
 """)
+
 # Queries to truncate existing tables to remove deactivated EHR PIDS, two different queries for
 # tables with standard entry dates vs. tables with start and end dates
 CLEAN_QUERY_DATE = jinja_env.from_string("""
@@ -83,6 +89,7 @@ AND {{date_column}} < (SELECT deactivated_date
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
 WHERE person_id = {{pid}})
 """)
+
 CLEAN_QUERY_END_DATE = jinja_env.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
@@ -94,6 +101,7 @@ SELECT deactivated_date
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
 WHERE person_id = {{pid}}) END END)
 """)
+
 # Deactivated participant table fields to query off of
 PID_TABLE_FIELDS = [{
     "type": "integer",
@@ -160,7 +168,7 @@ def get_pids_table_info(project_id, dataset_id):
 def get_date_info_for_pids_tables(project_id):
     """
     Loop through tables within all datasets and determine if the table has an end_date date or a date field. Filtering
-    out person and death table and keeping only tables with PID and an upload or start/end date associated.
+    out the person table and keeping only tables with PID and an upload or start/end date associated.
 
     :param project_id: bq name of project_id
     :return: filtered dataframe which includes the following columns for each table in each dataset with a person_id
@@ -202,11 +210,11 @@ def get_date_info_for_pids_tables(project_id):
         df_to_iterate['table'] = date_fields_df['table_name']
         df_to_iterate['column'] = date_fields_df['column_name']
 
-        # Remove person table and death table
+        # Remove person table
         df_to_append = df_to_append[~df_to_append.table.str.
-                                    contains('death', 'person')]
+                                    contains('person')]
         df_to_iterate = df_to_iterate[~df_to_iterate.table.str.
-                                      contains('death', 'person')]
+                                      contains('person')]
 
         # Filter through date columns and append to the appropriate column
         for i, row in df_to_iterate.iterrows():
@@ -400,18 +408,15 @@ def run_queries(queries, client):
 
     :param queries: list of queries to run retraction
     """
-    query_job_ids = []
     for query_dict in queries:
         if query_dict['type'] == 'sandbox':
             LOGGER.info(
-                f"Writing rows to be retracted to, using query {query_dict['query']}"
+                f"Writing rows to be retracted, using query {query_dict['query']}"
             )
             response = client.query(query_dict['query'])
             LOGGER.info(
                 f"{query_dict['destination_table_id']} table written to {query_dict['destination_dataset_id']}"
             )
-            query_job_id = response.job_id
-            query_job_ids.append(query_job_id)
         else:
             LOGGER.info(
                 f"Truncating table with clean data, using query {query_dict['query']}"
@@ -420,8 +425,6 @@ def run_queries(queries, client):
             LOGGER.info(
                 f"{query_dict['destination_table_id']} table updated with clean rows in "
                 f"{query_dict['destination_dataset_id']}")
-            query_job_id = response.job_id
-            query_job_ids.append(query_job_id)
 
     incomplete_jobs = response.exception()
     if incomplete_jobs is not None:
