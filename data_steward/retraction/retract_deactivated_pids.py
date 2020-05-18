@@ -153,7 +153,7 @@ def get_pids_table_info(project_id, dataset_id, client):
     """
     all_table_info_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
                                                            dataset=dataset_id)
-    result_df = client.query(q=all_table_info_query, project_id=project_id).to_dataframe()
+    result_df = client.query(all_table_info_query).to_dataframe()
     # Get list of tables that contain person_id
     pids_tables = []
     for i, row in result_df.iterrows():
@@ -248,10 +248,9 @@ def get_research_id(project, dataset, pid, client):
     prefix = dataset.split('_')[0]
     prefix = prefix.replace('R', '')
 
-    research_id_df = client.query(q=RESEARCH_ID_QUERY.render(project=project,
-                                                             prefix_regex=prefix,
-                                                             pid=pid),
-                                  project_id=project).to_dataframe()
+    research_id_df = client.query(RESEARCH_ID_QUERY.render(project=project,
+                                                           prefix_regex=prefix,
+                                                           pid=pid)).to_dataframe()
     if research_id_df.empty:
         LOGGER.info(f"no research_id associated with person_id {pid}")
         return None
@@ -267,12 +266,11 @@ def check_pid_exist(pid, date_row, project_id, client):
     :param project_id: bq name of project_id
     :return: Boolean if pid exists in table
     """
-    check_pid_df = client.query(q=CHECK_PID_EXIST_QUERY.render(
+    check_pid_df = client.query(CHECK_PID_EXIST_QUERY.render(
         project=date_row.project_id,
         dataset=date_row.dataset_id,
         table=date_row.table,
-        pid=pid),
-                                project_id=project_id).to_dataframe()
+        pid=pid)).to_dataframe()
     return check_pid_df.get_value(0, 'count')
 
 
@@ -291,9 +289,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
     queries_list = []
     dataset_list = set()
     # Hit bq and receive df of deactivated ehr pids and deactivated date
-    deactivated_ehr_pids_df = client.query(q=DEACTIVATED_PIDS_QUERY.render(
-        project=pids_project_id, dataset=pids_dataset_id, table=pids_table),
-                                           project_id=project_id).to_dataframe()
+    deactivated_ehr_pids_df = client.query(DEACTIVATED_PIDS_QUERY.render(
+        project=pids_project_id, dataset=pids_dataset_id, table=pids_table)).to_dataframe()
 
     date_columns_df = get_date_info_for_pids_tables(project_id, client)
     LOGGER.info(
