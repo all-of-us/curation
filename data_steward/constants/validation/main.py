@@ -49,9 +49,9 @@ SELECT
     WHEN ( SELECT COUNT(*) FROM `{project_id}.{dataset_id}.{table_id}`) > 0
     THEN CONCAT(CAST(ROUND(init.count/( SELECT COUNT(*) FROM `{project_id}.{dataset_id}.{table_id}`)*100, 2) AS STRING), '%')
   ELSE
-  '0'
-END
-  AS percentage
+    '0'
+  END
+    AS percentage
 FROM (
   SELECT
     concept_classes.concept_id AS concept_id,
