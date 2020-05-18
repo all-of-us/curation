@@ -85,7 +85,7 @@
                 "apply": "COUNT",
                 "into": 2000000002,
                 "qualifier": "> 1",
-                "values": [1585839, 1585840, 1585841, 1585842, 1585843],
+                "values": [1585839, 1585840, 1585841, 1585842, 1585843, 701374],
                 "drop_duplicates": "True"
             },
             {
@@ -112,7 +112,7 @@
             {
                 "comment": "values that are not male or female will be generalized into other",
                 "qualifier": "IN",
-                "values": [903096, 903079, 1585843, 1585841,1585842],
+                "values": [903096, 903079, 1585843, 1585841, 1585842, 701374],
                 "into": 2000000002
             }
         ],
