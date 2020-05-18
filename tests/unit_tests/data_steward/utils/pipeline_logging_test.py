@@ -46,6 +46,3 @@ class PipelineLoggingTest(unittest.TestCase):
         # log to the default file location NOT the console
         results = setup()
         logging.shutdown()
-
-
-
