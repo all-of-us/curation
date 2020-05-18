@@ -211,10 +211,9 @@ def get_date_info_for_pids_tables(project_id):
         df_to_iterate['column'] = date_fields_df['column_name']
 
         # Remove person table
-        df_to_append = df_to_append[~df_to_append.table.str.
-                                    contains('person')]
-        df_to_iterate = df_to_iterate[~df_to_iterate.table.str.
-                                      contains('person')]
+        df_to_append = df_to_append[~df_to_append.table.str.contains('person')]
+        df_to_iterate = df_to_iterate[~df_to_iterate.table.str.contains('person'
+                                                                       )]
 
         # Filter through date columns and append to the appropriate column
         for i, row in df_to_iterate.iterrows():
