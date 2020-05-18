@@ -18,10 +18,9 @@ from validation.main import run_export as _run_export
 
 
 def main(args):
-    folder = args.folder
     dataset_id = get_dataset_id()
     target_bucket = args.bucket
-    folder_prefix = folder + '/'
+    folder_prefix = args.folder + '/'
     _run_achilles()
     _run_export(datasource_id=dataset_id,
                 folder_prefix=folder_prefix,
