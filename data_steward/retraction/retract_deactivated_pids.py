@@ -143,7 +143,7 @@ def add_console_logging(add_handler):
         logging.getLogger('').addHandler(handler)
 
 
-def get_pids_table_info(project_id, dataset_id):
+def get_pids_table_info(project_id, dataset_id, client):
     """
     This function gets all table information for the dataset and filters to only retain tables with the field person_id
 
@@ -153,7 +153,6 @@ def get_pids_table_info(project_id, dataset_id):
     """
     all_table_info_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
                                                            dataset=dataset_id)
-    client = bq.get_client(project_id)
     result_df = client.query(q=all_table_info_query, project_id=project_id).to_dataframe()
     # Get list of tables that contain person_id
     pids_tables = []
@@ -166,7 +165,7 @@ def get_pids_table_info(project_id, dataset_id):
     return pids_tables_info_df
 
 
-def get_date_info_for_pids_tables(project_id):
+def get_date_info_for_pids_tables(project_id, client):
     """
     Loop through tables within all datasets and determine if the table has an end_date date or a date field. Filtering
     out the person table and keeping only tables with PID and an upload or start/end date associated.
@@ -183,13 +182,12 @@ def get_date_info_for_pids_tables(project_id):
         "Looping through datasets to filter and create dataframe with correct date field to determine retraction"
     )
 
-    client = bq.get_client(project_id)
     dataset_obj = client.list_datasets(project_id)
     datasets = [d.dataset_id for d in dataset_obj]
 
     for dataset in datasets:
         # Get table info for tables with pids
-        pids_tables_df = get_pids_table_info(project_id, dataset)
+        pids_tables_df = get_pids_table_info(project_id, dataset, client)
 
         # Keep only records with datatype of 'DATE'
         date_fields_df = pids_tables_df[pids_tables_df['data_type'] == 'DATE']
@@ -236,7 +234,7 @@ def get_date_info_for_pids_tables(project_id):
     return date_fields_info_df
 
 
-def get_research_id(project, dataset, pid):
+def get_research_id(project, dataset, pid, client):
     """
     For deid datasets, this function queries the _deid_map table in the associated combined dataset based on the release
     regex prefix; to return the research_id for the specific pid passed
@@ -250,7 +248,6 @@ def get_research_id(project, dataset, pid):
     prefix = dataset.split('_')[0]
     prefix = prefix.replace('R', '')
 
-    client = bq.get_client(project)
     research_id_df = client.query(q=RESEARCH_ID_QUERY.render(project=project,
                                                              prefix_regex=prefix,
                                                              pid=pid),
@@ -262,7 +259,7 @@ def get_research_id(project, dataset, pid):
     return research_id_df['research_id'].iloc[0]
 
 
-def check_pid_exist(pid, date_row, project_id):
+def check_pid_exist(pid, date_row, project_id, client):
     """
     Queries the table that retraction will take place, to see if the PID exists before creating query
     :param pid: person_id
@@ -270,7 +267,6 @@ def check_pid_exist(pid, date_row, project_id):
     :param project_id: bq name of project_id
     :return: Boolean if pid exists in table
     """
-    client = bq.get_client(project_id)
     check_pid_df = client.query(q=CHECK_PID_EXIST_QUERY.render(
         project=date_row.project_id,
         dataset=date_row.dataset_id,
@@ -281,7 +277,7 @@ def check_pid_exist(pid, date_row, project_id):
 
 
 def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
-                   pids_table):
+                   pids_table, client):
     """
     Creates sandbox and truncate queries to run for EHR deactivated retraction
 
@@ -295,12 +291,11 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
     queries_list = []
     dataset_list = set()
     # Hit bq and receive df of deactivated ehr pids and deactivated date
-    client = bq.get_client(project_id)
     deactivated_ehr_pids_df = client.query(q=DEACTIVATED_PIDS_QUERY.render(
         project=pids_project_id, dataset=pids_dataset_id, table=pids_table),
                                            project_id=project_id).to_dataframe()
 
-    date_columns_df = get_date_info_for_pids_tables(project_id)
+    date_columns_df = get_date_info_for_pids_tables(project_id, client)
     LOGGER.info(
         "Dataframe creation complete. DF to be used for creation of retraction queries."
     )
@@ -314,13 +309,13 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
             # already retracted
             if re.match(DEID_REGEX, date_row.dataset_id):
                 pid = get_research_id(date_row.project_id, date_row.dataset_id,
-                                      ehr_row.person_id)
+                                      ehr_row.person_id, client)
             else:
                 pid = ehr_row.person_id
 
             # Check if PID is in table
             if pid is not None and check_pid_exist(pid, date_row,
-                                                   project_id) > 0:
+                                                   project_id, client) > 0:
                 dataset_list.add(date_row.dataset_id)
                 # Get or create sandbox dataset
                 sandbox_dataset = check_and_create_sandbox_dataset(
@@ -493,10 +488,11 @@ def parse_args(raw_args=None):
 def main(args=None):
     args = parse_args(args)
     add_console_logging(args.console_log)
+    client = bq.get_client(args.project_id)
     query_list = create_queries(args.project_id, args.ticket_number,
                                 args.pids_project_id, args.pids_dataset_id,
-                                args.pids_table)
-    client = bq.get_client(args.project_id)
+                                args.pids_table, client)
+
     run_queries(query_list, client)
     LOGGER.info("Retraction complete")
 
