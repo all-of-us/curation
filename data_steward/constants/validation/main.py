@@ -43,37 +43,39 @@ HEEL_ERROR_FAIL_ROWS = [(NULL_MESSAGE, HEEL_ERROR_FAIL_MESSAGE, NULL_MESSAGE,
 
 # Used in get_drug_checks_in_results_html()
 DRUG_CHECKS_QUERY_VALIDATION = '''
-    SELECT
-        init.*,
-        CONCAT(CAST(ROUND(init.count/(
-            SELECT
-                COUNT(*)
-            FROM
-                `{project_id}.{dataset_id}.{table_id}`)*100, 2) AS STRING), '%') AS percentage
-    FROM (
-        SELECT
-            concept_classes.concept_id AS concept_id,
-            concept_classes.drug_class_name AS drug_class,
-            concept_classes.concept_name AS concept_name,
-            COUNT(drug_exposure.drug_exposure_id) AS count
-        FROM
-            `{project_id}.{dataset_id}.{table_id}` AS drug_exposure
-        JOIN
-            `{project_id}.{dataset_id}.concept_ancestor` AS ancestor
-        ON
-            ancestor.descendant_concept_id = drug_exposure.drug_concept_id
-        RIGHT JOIN 
-            `{project_id}.{dataset_id}.drug_class` AS concept_classes
-        ON
-            concept_classes.concept_id = ancestor.ancestor_concept_id
-        AND ancestor.min_levels_of_separation != 0
-        GROUP BY
-            concept_classes.concept_id,
-            concept_classes.concept_name,
-            concept_classes.drug_class_name) AS init
-    ORDER BY
-        count DESC,
-        concept_id
+SELECT
+  init.*,
+  CASE
+    WHEN ( SELECT COUNT(*) FROM `{project_id}.{dataset_id}.{table_id}`) > 0
+    THEN CONCAT(CAST(ROUND(init.count/( SELECT COUNT(*) FROM `{project_id}.{dataset_id}.{table_id}`)*100, 2) AS STRING), '%')
+  ELSE
+  '0'
+END
+  AS percentage
+FROM (
+  SELECT
+    concept_classes.concept_id AS concept_id,
+    concept_classes.drug_class_name AS drug_class,
+    concept_classes.concept_name AS concept_name,
+    COUNT(drug_exposure.drug_exposure_id) AS count
+  FROM
+    `{project_id}.{dataset_id}.{table_id}` AS drug_exposure
+  JOIN
+    `{project_id}.{dataset_id}.concept_ancestor` AS ancestor
+  ON
+    ancestor.descendant_concept_id = drug_exposure.drug_concept_id
+  RIGHT JOIN
+    `{project_id}.{dataset_id}.drug_class` AS concept_classes
+  ON
+    concept_classes.concept_id = ancestor.ancestor_concept_id
+    AND ancestor.min_levels_of_separation != 0
+  GROUP BY
+    concept_classes.concept_id,
+    concept_classes.concept_name,
+    concept_classes.drug_class_name) AS init
+ORDER BY
+  count DESC,
+  concept_id
     '''
 
 # Used in _create_drug_class_table()
