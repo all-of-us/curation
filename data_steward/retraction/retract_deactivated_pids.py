@@ -319,41 +319,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                     date_row.project_id, date_row.dataset_id)
 
                 # Create queries based on if the date field is null, if True, will create query based on end_date/start_date
-                if not pd.isnull(date_row.date_column):
-                    sandbox_query = SANDBOX_QUERY_DATE.render(
-                        project=date_row.project_id,
-                        sandbox_dataset=sandbox_dataset,
-                        intermediary_table=ticket_number + '_' + date_row.table,
-                        dataset=date_row.dataset_id,
-                        table=date_row.table,
-                        pid=pid,
-                        deactivated_pids_project=pids_project_id,
-                        deactivated_pids_dataset=pids_dataset_id,
-                        deactivated_pids_table=pids_table,
-                        date_column=date_row.date_column)
-                    queries_list.append({
-                        clean_consts.QUERY: sandbox_query,
-                        clean_consts.DESTINATION_DATASET: sandbox_dataset,
-                        clean_consts.DESTINATION_TABLE: date_row.table,
-                        'type': 'sandbox'
-                    })
-                    clean_query = CLEAN_QUERY_DATE.render(
-                        project=date_row.project_id,
-                        dataset=date_row.dataset_id,
-                        table=date_row.table,
-                        pid=pid,
-                        deactivated_pids_project=pids_project_id,
-                        deactivated_pids_dataset=pids_dataset_id,
-                        deactivated_pids_table=pids_table,
-                        date_column=date_row.date_column)
-                    queries_list.append({
-                        clean_consts.QUERY: clean_query,
-                        clean_consts.DESTINATION_DATASET: date_row.dataset_id,
-                        clean_consts.DESTINATION_TABLE: date_row.table,
-                        clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-                        'type': 'retraction'
-                    })
-                else:
+                if pd.isnull(date_row.date_column):
                     sandbox_query = SANDBOX_QUERY_END_DATE.render(
                         project=date_row.project_id,
                         sandbox_dataset=sandbox_dataset,
@@ -366,12 +332,6 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                         deactivated_pids_table=pids_table,
                         end_date_column=date_row.end_date_column,
                         start_date_column=date_row.start_date_column)
-                    queries_list.append({
-                        clean_consts.QUERY: sandbox_query,
-                        clean_consts.DESTINATION_DATASET: sandbox_dataset,
-                        clean_consts.DESTINATION_TABLE: date_row.table,
-                        'type': 'sandbox'
-                    })
                     clean_query = CLEAN_QUERY_END_DATE.render(
                         project=date_row.project_id,
                         dataset=date_row.dataset_id,
@@ -382,13 +342,40 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                         deactivated_pids_table=pids_table,
                         end_date_column=date_row.end_date_column,
                         start_date_column=date_row.start_date_column)
-                    queries_list.append({
-                        clean_consts.QUERY: clean_query,
-                        clean_consts.DESTINATION_DATASET: date_row.dataset_id,
-                        clean_consts.DESTINATION_TABLE: date_row.table,
-                        clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-                        'type': 'retraction'
-                    })
+                else:
+                    sandbox_query = SANDBOX_QUERY_DATE.render(
+                        project=date_row.project_id,
+                        sandbox_dataset=sandbox_dataset,
+                        intermediary_table=ticket_number + '_' + date_row.table,
+                        dataset=date_row.dataset_id,
+                        table=date_row.table,
+                        pid=pid,
+                        deactivated_pids_project=pids_project_id,
+                        deactivated_pids_dataset=pids_dataset_id,
+                        deactivated_pids_table=pids_table,
+                        date_column=date_row.date_column)
+                    clean_query = CLEAN_QUERY_DATE.render(
+                        project=date_row.project_id,
+                        dataset=date_row.dataset_id,
+                        table=date_row.table,
+                        pid=pid,
+                        deactivated_pids_project=pids_project_id,
+                        deactivated_pids_dataset=pids_dataset_id,
+                        deactivated_pids_table=pids_table,
+                        date_column=date_row.date_column)
+                queries_list.append({
+                    clean_consts.QUERY: sandbox_query,
+                    clean_consts.DESTINATION_DATASET: sandbox_dataset,
+                    clean_consts.DESTINATION_TABLE: date_row.table,
+                    'type': 'sandbox'
+                })
+                queries_list.append({
+                    clean_consts.QUERY: clean_query,
+                    clean_consts.DESTINATION_DATASET: date_row.dataset_id,
+                    clean_consts.DESTINATION_TABLE: date_row.table,
+                    clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+                    'type': 'retraction'
+                })
             else:
                 # break out of loop to create query, if pid does not exist in table
                 continue
