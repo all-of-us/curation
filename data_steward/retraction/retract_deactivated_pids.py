@@ -36,6 +36,7 @@ def get_client(project_id):
 
     return CLIENT
 
+
 jinja_env = Environment(
     # help protect against cross-site scripting vulnerabilities
     autoescape=True,
@@ -336,8 +337,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 pid = ehr_row.person_id
 
             # Check if PID is in table
-            if pid is not None and check_pid_exist(pid, date_row,
-                                                   client) > 0:
+            if pid is not None and check_pid_exist(pid, date_row, client) > 0:
                 dataset_list.add(date_row.dataset_id)
                 # Get or create sandbox dataset
                 sandbox_dataset = check_and_create_sandbox_dataset(
