@@ -144,7 +144,7 @@ class RetractDataBqTest(unittest.TestCase):
             'start_date_column', 'end_date_column'
         ])
         retraction_info_df = retract_deactivated_pids.get_date_info_for_pids_tables(
-            self.project_id)
+            self.project_id, self.mock_bq_client)
 
         for ehr_row in deactivated_ehr_pids_df.itertuples(index=False):
             for retraction_row in retraction_info_df.itertuples(index=False):
