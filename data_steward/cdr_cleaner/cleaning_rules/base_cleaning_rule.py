@@ -125,7 +125,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                  project_id: str = None,
                  dataset_id: str = None,
                  sandbox_dataset_id: str = None,
-                 depends_on: cleaning_class_list = None):
+                 depends_on: cleaning_class_list = None,
+                 affected_tables: List = None):
         """
         Instantiate a cleaning rule with basic attributes.
 
@@ -168,6 +169,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._sandbox_dataset_id = sandbox_dataset_id
         self._issue_urls = issue_urls if issue_urls else []
         self._depends_on_classes = depends_on if depends_on else []
+        self._affected_tables = affected_tables if affected_tables else []
 
         super().__init__()
 
@@ -318,14 +320,19 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
     def get_affected_tables(self):
         """
         Method to get tables that will be modified by the cleaning rule.
+        If getting the tables_affected dynamically logic needs to be
+        implemented in this method.
         """
-        return self.__affected_tables
+        return self._affected_tables
 
     def set_affected_tables(self, affected_tables):
         """
         Set the affected_tables for this class instance
         """
-        self.__affected_tables = affected_tables if affected_tables else []
+        if affected_tables:
+            self._affected_tables = affected_tables
+        else:
+            self._affected_tables = self.get_affected_tables()
 
     affected_tables = property(get_affected_tables, set_affected_tables)
 
