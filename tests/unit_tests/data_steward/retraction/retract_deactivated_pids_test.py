@@ -36,18 +36,13 @@ class RetractDataBqTest(unittest.TestCase):
         ]
         self.pids_table_list = ['fake_table_1', 'fake_table_2', 'fake_table_3']
 
-        mock_bq_client_patcher = patch('utils.bq.get_client')
+        mock_bq_client_patcher = patch(
+            'retraction.retract_deactivated_pids.get_client')
         self.mock_bq_client = mock_bq_client_patcher.start()
         self.addCleanup(mock_bq_client_patcher.stop)
 
-    @mock.patch('utils.bq.list_datasets')
-    def test_get_pids_table_info(self, mock_datasets_list):
-        dataset_1 = mock.Mock(spec=['dataset_1'], dataset_id='dataset_id_1')
-        dataset_2 = mock.Mock(spec=['dataset_2'], dataset_id='dataset_id_2')
-        expected_dataset_list = mock_datasets_list.return_value = [
-            dataset_1, dataset_2
-        ]
-        for dataset in expected_dataset_list:
+    def test_get_pids_table_info(self):
+        for dataset in self.pids_dataset_list:
             result_df = self.mock_bq_client.query(
                 retract_deactivated_pids.TABLE_INFORMATION_SCHEMA.render(
                     project=self.project_id, dataset=dataset)).to_dataframe()
@@ -62,7 +57,6 @@ class RetractDataBqTest(unittest.TestCase):
 
             returned_result_df = retract_deactivated_pids.get_pids_table_info(
                 self.project_id, dataset, self.mock_bq_client)
-
             self.assertEquals(expected_pids_tables_info_df, returned_result_df)
 
     def test_get_date_info_for_pids_tables(self):
@@ -134,7 +128,7 @@ class RetractDataBqTest(unittest.TestCase):
 
         returned = retract_deactivated_pids.create_queries(
             self.project_id, self.ticket_number, self.pids_project_id,
-            self.pids_dataset_id, self.pids_table, self.mock_bq_client)
+            self.pids_dataset_id, self.pids_table)
 
         expected_queries_list = []
         d = {
@@ -150,7 +144,7 @@ class RetractDataBqTest(unittest.TestCase):
             'start_date_column', 'end_date_column'
         ])
         retraction_info_df = retract_deactivated_pids.get_date_info_for_pids_tables(
-            self.project_id, self.mock_bq_client)
+            self.project_id)
 
         for ehr_row in deactivated_ehr_pids_df.itertuples(index=False):
             for retraction_row in retraction_info_df.itertuples(index=False):
@@ -165,60 +159,10 @@ class RetractDataBqTest(unittest.TestCase):
 
                 if re.match(DEID_REGEX, retraction_row.dataset_id):
                     pid = ehr_row.research_id
-                    identifier = 'research_id'
                 else:
                     pid = ehr_row.person_id
-                    identifier = 'person_id'
 
-                if not pd.isnull(retraction_row.date_column):
-                    sandbox_query = retract_deactivated_pids.SANDBOX_QUERY_DATE.render(
-                        project=retraction_row.project_id,
-                        sandbox_dataset=sandbox_dataset,
-                        intermediary_table=self.ticket_number + '_' +
-                        retraction_row.table,
-                        dataset=retraction_row.dataset_id,
-                        table=retraction_row.table,
-                        identifier=identifier,
-                        pid=pid,
-                        deactivated_pids_project=self.pids_project_id,
-                        deactivated_pids_dataset=self.pids_dataset_id,
-                        deactivated_pids_table=self.pids_table,
-                        date_column=retraction_row.date_column)
-                    expected_queries_list.append({
-                        clean_consts.QUERY:
-                            sandbox_query,
-                        clean_consts.DESTINATION_DATASET:
-                            retraction_row.dataset_id,
-                        clean_consts.DESTINATION_TABLE:
-                            retraction_row.table,
-                        clean_consts.DISPOSITION:
-                            bq_consts.WRITE_TRUNCATE,
-                        'type':
-                            'sandbox'
-                    })
-                    clean_query = retract_deactivated_pids.CLEAN_QUERY_DATE.render(
-                        project=retraction_row.project_id,
-                        dataset=retraction_row.dataset_id,
-                        table=retraction_row.table,
-                        identifier=identifier,
-                        pid=pid,
-                        deactivated_pids_project=self.pids_project_id,
-                        deactivated_pids_dataset=self.pids_dataset_id,
-                        deactivated_pids_table=self.pids_table,
-                        date_column=retraction_row.date_column)
-                    expected_queries_list.append({
-                        clean_consts.QUERY:
-                            clean_query,
-                        clean_consts.DESTINATION_DATASET:
-                            retraction_row.dataset_id,
-                        clean_consts.DESTINATION_TABLE:
-                            retraction_row.table,
-                        clean_consts.DISPOSITION:
-                            bq_consts.WRITE_TRUNCATE,
-                        'type':
-                            'retraction'
-                    })
-                else:
+                if pd.isnull(retraction_row.date_column):
                     sandbox_query = retract_deactivated_pids.SANDBOX_QUERY_END_DATE.render(
                         project=retraction_row.project_id,
                         sandbox_dataset=sandbox_dataset,
@@ -226,47 +170,57 @@ class RetractDataBqTest(unittest.TestCase):
                         retraction_row.table,
                         dataset=retraction_row.dataset_id,
                         table=retraction_row.table,
-                        identifier=identifier,
                         pid=pid,
                         deactivated_pids_project=self.pids_project_id,
                         deactivated_pids_dataset=self.pids_dataset_id,
                         deactivated_pids_table=self.pids_table,
                         end_date_column=retraction_row.end_date_column,
                         start_date_column=retraction_row.start_date_column)
-                    expected_queries_list.append({
-                        clean_consts.QUERY:
-                            sandbox_query,
-                        clean_consts.DESTINATION_DATASET:
-                            retraction_row.dataset_id,
-                        clean_consts.DESTINATION_TABLE:
-                            retraction_row.table,
-                        clean_consts.DISPOSITION:
-                            bq_consts.WRITE_TRUNCATE,
-                        'type':
-                            'sandbox'
-                    })
                     clean_query = retract_deactivated_pids.CLEAN_QUERY_END_DATE.render(
                         project=retraction_row.project_id,
                         dataset=retraction_row.dataset_id,
                         table=retraction_row.table,
-                        identifier=identifier,
                         pid=pid,
                         deactivated_pids_project=self.pids_project_id,
                         deactivated_pids_dataset=self.pids_dataset_id,
                         deactivated_pids_table=self.pids_table,
                         end_date_column=retraction_row.end_date_column,
                         start_date_column=retraction_row.start_date_column)
-                    expected_queries_list.append({
-                        clean_consts.QUERY:
-                            clean_query,
-                        clean_consts.DESTINATION_DATASET:
-                            retraction_row.dataset_id,
-                        clean_consts.DESTINATION_TABLE:
-                            retraction_row.table,
-                        clean_consts.DISPOSITION:
-                            bq_consts.WRITE_TRUNCATE,
-                        'type':
-                            'retraction'
-                    })
+                else:
+                    sandbox_query = retract_deactivated_pids.SANDBOX_QUERY_DATE.render(
+                        project=retraction_row.project_id,
+                        sandbox_dataset=sandbox_dataset,
+                        intermediary_table=self.ticket_number + '_' +
+                        retraction_row.table,
+                        dataset=retraction_row.dataset_id,
+                        table=retraction_row.table,
+                        pid=pid,
+                        deactivated_pids_project=self.pids_project_id,
+                        deactivated_pids_dataset=self.pids_dataset_id,
+                        deactivated_pids_table=self.pids_table,
+                        date_column=retraction_row.date_column)
+                    clean_query = retract_deactivated_pids.CLEAN_QUERY_DATE.render(
+                        project=retraction_row.project_id,
+                        dataset=retraction_row.dataset_id,
+                        table=retraction_row.table,
+                        pid=pid,
+                        deactivated_pids_project=self.pids_project_id,
+                        deactivated_pids_dataset=self.pids_dataset_id,
+                        deactivated_pids_table=self.pids_table,
+                        date_column=retraction_row.date_column)
+                expected_queries_list.append({
+                    clean_consts.QUERY: sandbox_query,
+                    clean_consts.DESTINATION_DATASET: retraction_row.dataset_id,
+                    clean_consts.DESTINATION_TABLE: retraction_row.table,
+                    clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+                    'type': 'sandbox'
+                })
+                expected_queries_list.append({
+                    clean_consts.QUERY: clean_query,
+                    clean_consts.DESTINATION_DATASET: retraction_row.dataset_id,
+                    clean_consts.DESTINATION_TABLE: retraction_row.table,
+                    clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+                    'type': 'retraction'
+                })
 
         self.assertEquals(returned, expected_queries_list)

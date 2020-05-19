@@ -164,7 +164,7 @@ class RetractDataBqTest(unittest.TestCase):
         # Perform retraction
         query_list = retract_deactivated_pids.create_queries(
             self.project_id, self.ticket_number, self.project_id,
-            self.bq_dataset_id, self.pid_table_id, client)
+            self.bq_dataset_id, self.pid_table_id)
         retract_deactivated_pids.run_queries(query_list, client)
 
         # Find actual deleted rows

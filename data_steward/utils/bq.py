@@ -16,18 +16,17 @@ from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
-CLIENT = None
-
 
 def get_client(project_id=None):
     """
-    Ensure only one client is created and reused
+    Get a client for a specified project.
 
-    :param project_id:  project to get a client for
-    :returns: a big query client object
+    :param project_id:  Name of the project to create a bigquery library client for
+        It is being nice for now, but will begin to require users to provide
+        the project_id.
+
+    :return:  A bigquery Client object.
     """
-    if CLIENT:
-        return CLIENT
     if project_id is None:
         LOGGER.info(f"You should specify project_id for a reliable experience."
                     f"Defaulting to {os.environ.get(PROJECT_ID)}.")

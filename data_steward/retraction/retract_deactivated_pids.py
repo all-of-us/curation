@@ -11,7 +11,6 @@ from jinja2 import Environment
 from google.cloud import bigquery
 
 # Project imports
-from utils import bq
 from retraction.retract_utils import DEID_REGEX
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from sandbox import check_and_create_sandbox_dataset
@@ -19,6 +18,23 @@ from constants import bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
 LOGS_PATH = '../logs'
+
+CLIENT = None
+
+
+def get_client(project_id):
+    """
+    Ensure only one client is created and reused
+
+    :param project_id:  project to get a client for
+    :returns: a big query client object
+    """
+    global CLIENT
+    LOGGER.info(CLIENT is None)
+    if not CLIENT:
+        CLIENT = bigquery.Client(project=project_id)
+
+    return CLIENT
 
 jinja_env = Environment(
     # help protect against cross-site scripting vulnerabilities
@@ -150,6 +166,7 @@ def get_pids_table_info(project_id, dataset_id, client):
 
     :param project_id: bq name of project_id
     :param dataset_id: ba name of dataset_id
+    :param client: bq client object
     :return: dataframe with table information schema from BigQuery
     """
     all_table_info_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
@@ -172,6 +189,7 @@ def get_date_info_for_pids_tables(project_id, client):
     out the person table and keeping only tables with PID and an upload or start/end date associated.
 
     :param project_id: bq name of project_id
+    :param client: bq client object
     :return: filtered dataframe which includes the following columns for each table in each dataset with a person_id
     'project_id', 'dataset_id', 'table', 'date_column', 'start_date_column', 'end_date_column'
     """
@@ -243,6 +261,7 @@ def get_research_id(project, dataset, pid, client):
     :param project: bq name of project
     :param dataset: bq name of dataset
     :param pid: person_id passed to receive associated research_id
+    :param client: bq client object
     :return: research_id or None if it does not exist for that person_id
     """
     # Get non deid dataset prefix
@@ -259,14 +278,16 @@ def get_research_id(project, dataset, pid, client):
     return research_id_df['research_id'].iloc[0]
 
 
-def check_pid_exist(pid, date_row, project_id, client):
+def check_pid_exist(pid, date_row, client):
     """
     Queries the table that retraction will take place, to see if the PID exists before creating query
     :param pid: person_id
     :param date_row: row that is being iterated through to create query
     :param project_id: bq name of project_id
+    :param client: bq client object
     :return: Boolean if pid exists in table
     """
+
     check_pid_df = client.query(
         CHECK_PID_EXIST_QUERY.render(project=date_row.project_id,
                                      dataset=date_row.dataset_id,
@@ -276,7 +297,7 @@ def check_pid_exist(pid, date_row, project_id, client):
 
 
 def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
-                   pids_table, client):
+                   pids_table):
     """
     Creates sandbox and truncate queries to run for EHR deactivated retraction
 
@@ -290,6 +311,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
     queries_list = []
     dataset_list = set()
     # Hit bq and receive df of deactivated ehr pids and deactivated date
+    client = get_client(project_id)
     deactivated_ehr_pids_df = client.query(
         DEACTIVATED_PIDS_QUERY.render(project=pids_project_id,
                                       dataset=pids_dataset_id,
@@ -314,14 +336,14 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 pid = ehr_row.person_id
 
             # Check if PID is in table
-            if pid is not None and check_pid_exist(pid, date_row, project_id,
+            if pid is not None and check_pid_exist(pid, date_row,
                                                    client) > 0:
                 dataset_list.add(date_row.dataset_id)
                 # Get or create sandbox dataset
                 sandbox_dataset = check_and_create_sandbox_dataset(
                     date_row.project_id, date_row.dataset_id)
 
-                # Create queries based on if the date field is null, if True, will create query based on end_date/start_date
+                # Create queries based on type of date field
                 if pd.isnull(date_row.date_column):
                     sandbox_query = SANDBOX_QUERY_END_DATE.render(
                         project=date_row.project_id,
@@ -393,6 +415,7 @@ def run_queries(queries, client):
     Function that will perform the retraction.
 
     :param queries: list of queries to run retraction
+    :param client: bq client object
     """
     for query_dict in queries:
         # Set configuration.query
@@ -480,11 +503,10 @@ def parse_args(raw_args=None):
 def main(args=None):
     args = parse_args(args)
     add_console_logging(args.console_log)
-    client = bq.get_client(args.project_id)
     query_list = create_queries(args.project_id, args.ticket_number,
                                 args.pids_project_id, args.pids_dataset_id,
-                                args.pids_table, client)
-
+                                args.pids_table)
+    client = get_client(args.project_id)
     run_queries(query_list, client)
     LOGGER.info("Retraction complete")
 
