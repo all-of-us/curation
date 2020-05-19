@@ -382,7 +382,7 @@ def generate_empty_report(hpo_id, bucket, folder_prefix):
     :param hpo_id: identifies the HPO site
     :param bucket: name of the bucket with the submission
     :param folder_prefix: folder containing the submission
-    :return: report_data: dict whose keys are params in resources/templates/hpo_report.html
+    :return: report_data: dict whose keys are params in resource_files/templates/hpo_report.html
     """
     report_data = dict()
     processed_datetime_str = datetime.datetime.now().strftime(

@@ -1,11 +1,10 @@
-import bq_utils
 import utils.bq
 from notebooks import render, parameters
 
 DEID = parameters.DEID_DATASET_ID
 RDR = parameters.RDR_DATASET_ID
 
-# Privacy requirements indicate that in survey responses where reported gender identity (`value_source_concept_id` in observation rows where `observation_source_concept_id` is [1585838](http://athena.ohdsi.org/search-terms/terms/1585838)) differs from sex assigned at birth (`value_source_concept_id` in observation rows where `observation_source_concept_id` is [1585845](http://athena.ohdsi.org/search-terms/terms/1585845)) the gender identity should be generalized using the concept ID [2000000002](https://github.com/all-of-us/curation/blob/develop/data_steward/resources/aou_general/concept.csv#L4).
+# Privacy requirements indicate that in survey responses where reported gender identity (`value_source_concept_id` in observation rows where `observation_source_concept_id` is [1585838](http://athena.ohdsi.org/search-terms/terms/1585838)) differs from sex assigned at birth (`value_source_concept_id` in observation rows where `observation_source_concept_id` is [1585845](http://athena.ohdsi.org/search-terms/terms/1585845)) the gender identity should be generalized using the concept ID [2000000002](https://github.com/all-of-us/curation/blob/develop/data_steward/resource_files/aou_general/concept.csv#L4).
 
 # Determine the number of rows that meet criteria for gender generalization
 GENDER_SEX_DIFF_QUERY = """

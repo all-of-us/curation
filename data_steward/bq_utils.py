@@ -4,8 +4,8 @@ import logging
 import os
 import socket
 import time
-from io import open
 from datetime import datetime
+from io import open
 
 # Third party imports
 from googleapiclient.discovery import build
@@ -887,9 +887,9 @@ def load_table_from_csv(project_id,
     :param dataset_id: dataset where the table needs to be created
     :param table_name: name of the table to be created
     :param csv_path: path to the csv file which needs to be loaded into BQ.
-                     If None, assumes that the file exists in the resources folder with the name table_name.csv
+                     If None, assumes that the file exists in the resource_files folder with the name table_name.csv
     :param fields: fields in list of dicts format. If set to None, assumes that
-                   the fields are stored in a json file in resources/fields named table_name.json
+                   the fields are stored in a json file in resource_files/fields named table_name.json
     :return: BQ response for the load query
     """
     if csv_path is None:

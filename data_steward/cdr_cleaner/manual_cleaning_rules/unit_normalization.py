@@ -133,7 +133,7 @@ def get_mapping_list(unit_mappings_list):
 
 def create_unit_mapping_table(project_id, dataset_id):
     """
-    This function creates the unit_mapping table and populate it with the values from resources/unit_mapping.csv
+    This function creates the unit_mapping table and populate it with the values from resource_files/unit_mapping.csv
     :param project_id:
     :param dataset_id:
     :return:

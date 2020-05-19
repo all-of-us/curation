@@ -1,9 +1,11 @@
+import logging
+
+import googleapiclient
+import oauth2client
+
 import app_identity
 import bq_utils
-import logging
 import common
-import oauth2client
-import googleapiclient
 from constants import bq_utils as bq_consts
 from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
                                                   CHECK_REQUIRED_LAB_QUERY)
@@ -16,7 +18,7 @@ MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = 'measurement_concept_sets_descendan
 
 def load_measurement_concept_sets_table(project_id, dataset_id):
     """
-    Loads the required lab table from resources/measurement_concept_sets.csv
+    Loads the required lab table from resource_files/measurement_concept_sets.csv
     into project_id.ehr_ops
 
     :param project_id: Project where the dataset resides

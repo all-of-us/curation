@@ -17,7 +17,7 @@ tools_path = os.path.join(base_path, 'tools')
 
 # resources/*
 DEID_PATH = os.path.join(base_path, 'deid')
-resource_path = os.path.join(base_path, 'resources')
+resource_path = os.path.join(base_path, 'resource_files')
 config_path = os.path.join(base_path, 'config')
 fields_path = os.path.join(resource_path, 'fields')
 cdm_csv_path = os.path.join(resource_path, 'cdm.csv')

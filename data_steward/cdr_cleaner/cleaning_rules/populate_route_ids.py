@@ -8,9 +8,9 @@ import os
 
 import bq_utils
 import common
+import resources
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-import resources
 
 LOGGER = logging.getLogger(__name__)
 
@@ -130,7 +130,7 @@ def get_mapping_list(route_mappings_list):
 
 def create_dose_form_route_mappings_table(project_id, dataset_id=None):
     """
-    Creates "_logging_dose_form_route_mappings" table with only id columns from resources/dose_form_route_mappings.csv
+    Creates "_logging_dose_form_route_mappings" table with only id columns from resource_files/dose_form_route_mappings.csv
 
     :param project_id:
     :param dataset_id: BQ dataset_id

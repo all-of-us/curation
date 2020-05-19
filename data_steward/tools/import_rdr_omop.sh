@@ -76,14 +76,14 @@ for file in $cdm_files; do
   table_name=${filename%.*}
   echo "Importing ${RDR_DATASET}.${table_name}..."
   CLUSTERING_ARGS=""
-  if grep -q person_id resources/fields/"${table_name}".json; then
+  if grep -q person_id resource_files/fields/"${table_name}".json; then
     CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id"
   fi
   JAGGED_ROWS=""
   if [[ "${filename}" == "observation_period.csv" ]]; then
     JAGGED_ROWS="--allow_jagged_rows"
   fi
-  bq load --project_id ${GOOGLE_CLOUD_PROJECT} --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.${table_name} $file resources/fields/${table_name}.json
+  bq load --project_id ${GOOGLE_CLOUD_PROJECT} --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.${table_name} $file resource_files/fields/${table_name}.json
 done
 
 echo "Copying vocabulary"
