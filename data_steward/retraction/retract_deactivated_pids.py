@@ -8,6 +8,7 @@ from datetime import datetime
 # Third party imports
 import pandas as pd
 from jinja2 import Environment
+from google.cloud import bigquery
 
 # Project imports
 from utils import bq
@@ -60,7 +61,7 @@ SANDBOX_QUERY_DATE = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
-WHERE person_id = {pid}
+WHERE person_id = {{pid}}
 AND {{date_column}} >= (SELECT deactivated_date
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
 WHERE person_id = {{pid}}))
@@ -248,9 +249,9 @@ def get_research_id(project, dataset, pid, client):
     prefix = dataset.split('_')[0]
     prefix = prefix.replace('R', '')
 
-    research_id_df = client.query(RESEARCH_ID_QUERY.render(project=project,
-                                                           prefix_regex=prefix,
-                                                           pid=pid)).to_dataframe()
+    research_id_df = client.query(
+        RESEARCH_ID_QUERY.render(project=project, prefix_regex=prefix,
+                                 pid=pid)).to_dataframe()
     if research_id_df.empty:
         LOGGER.info(f"no research_id associated with person_id {pid}")
         return None
@@ -266,11 +267,11 @@ def check_pid_exist(pid, date_row, project_id, client):
     :param project_id: bq name of project_id
     :return: Boolean if pid exists in table
     """
-    check_pid_df = client.query(CHECK_PID_EXIST_QUERY.render(
-        project=date_row.project_id,
-        dataset=date_row.dataset_id,
-        table=date_row.table,
-        pid=pid)).to_dataframe()
+    check_pid_df = client.query(
+        CHECK_PID_EXIST_QUERY.render(project=date_row.project_id,
+                                     dataset=date_row.dataset_id,
+                                     table=date_row.table,
+                                     pid=pid)).to_dataframe()
     return check_pid_df.get_value(0, 'count')
 
 
@@ -289,8 +290,10 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
     queries_list = []
     dataset_list = set()
     # Hit bq and receive df of deactivated ehr pids and deactivated date
-    deactivated_ehr_pids_df = client.query(DEACTIVATED_PIDS_QUERY.render(
-        project=pids_project_id, dataset=pids_dataset_id, table=pids_table)).to_dataframe()
+    deactivated_ehr_pids_df = client.query(
+        DEACTIVATED_PIDS_QUERY.render(project=pids_project_id,
+                                      dataset=pids_dataset_id,
+                                      table=pids_table)).to_dataframe()
 
     date_columns_df = get_date_info_for_pids_tables(project_id, client)
     LOGGER.info(
@@ -311,8 +314,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 pid = ehr_row.person_id
 
             # Check if PID is in table
-            if pid is not None and check_pid_exist(pid, date_row,
-                                                   project_id, client) > 0:
+            if pid is not None and check_pid_exist(pid, date_row, project_id,
+                                                   client) > 0:
                 dataset_list.add(date_row.dataset_id)
                 # Get or create sandbox dataset
                 sandbox_dataset = check_and_create_sandbox_dataset(
@@ -392,11 +395,14 @@ def run_queries(queries, client):
     :param queries: list of queries to run retraction
     """
     for query_dict in queries:
+        # Set configuration.query
+        job_config = bigquery.QueryJobConfig(use_query_cache=False)
         if query_dict['type'] == 'sandbox':
             LOGGER.info(
                 f"Writing rows to be retracted, using query {query_dict['query']}"
             )
-            response = client.query(query_dict['query'])
+            job = client.query(query_dict['query'], job_config=job_config)
+            job.result()
             LOGGER.info(
                 f"{query_dict['destination_table_id']} table written to {query_dict['destination_dataset_id']}"
             )
@@ -404,12 +410,14 @@ def run_queries(queries, client):
             LOGGER.info(
                 f"Truncating table with clean data, using query {query_dict['query']}"
             )
-            response = client.query(query_dict['query'])
+            job_config.write_disposition = query_dict['write_disposition']
+            job = client.query(query_dict['query'], job_config=job_config)
+            job.result()
             LOGGER.info(
                 f"{query_dict['destination_table_id']} table updated with clean rows in "
                 f"{query_dict['destination_dataset_id']}")
 
-    incomplete_jobs = response.exception()
+    incomplete_jobs = job.exception()
     if incomplete_jobs is not None:
         count = len(incomplete_jobs)
         if incomplete_jobs:

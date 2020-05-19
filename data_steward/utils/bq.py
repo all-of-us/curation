@@ -18,6 +18,7 @@ LOGGER = logging.getLogger(__name__)
 
 CLIENT = None
 
+
 def get_client(project_id=None):
     """
     Ensure only one client is created and reused
