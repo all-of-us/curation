@@ -143,7 +143,7 @@ def create_unit_mapping_table(project_id, dataset_id):
                           drop_existing=True,
                           dataset_id=dataset_id)
 
-    unit_mappings_csv = os.path.join(resources.resource_path,
+    unit_mappings_csv = os.path.join(resources.resource_files_path,
                                      UNIT_MAPPING_FILE + ".csv")
     unit_mappings_list = resources.csv_to_list(unit_mappings_csv)
     unit_mappings_populate_query = INSERT_UNITS_QUERY.format(

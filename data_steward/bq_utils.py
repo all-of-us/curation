@@ -893,7 +893,8 @@ def load_table_from_csv(project_id,
     :return: BQ response for the load query
     """
     if csv_path is None:
-        csv_path = os.path.join(resources.resource_path, table_name + ".csv")
+        csv_path = os.path.join(resources.resource_files_path,
+                                table_name + ".csv")
     table_list = resources.csv_to_list(csv_path)
 
     if fields is None:

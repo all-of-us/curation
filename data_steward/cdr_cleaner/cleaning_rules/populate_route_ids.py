@@ -150,7 +150,7 @@ def create_dose_form_route_mappings_table(project_id, dataset_id=None):
                           drop_existing=True,
                           dataset_id=dataset_id)
 
-    dose_form_route_mappings_csv = os.path.join(resources.resource_path,
+    dose_form_route_mappings_csv = os.path.join(resources.resource_files_path,
                                                 DOSE_FORM_ROUTES_FILE + ".csv")
     dose_form_route_mappings_list = resources.csv_to_list(
         dose_form_route_mappings_csv)

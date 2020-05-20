@@ -17,28 +17,28 @@ tools_path = os.path.join(base_path, 'tools')
 
 # resources/*
 DEID_PATH = os.path.join(base_path, 'deid')
-resource_path = os.path.join(base_path, 'resource_files')
+resource_files_path = os.path.join(base_path, 'resource_files')
 config_path = os.path.join(base_path, 'config')
-fields_path = os.path.join(resource_path, 'fields')
-cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
+fields_path = os.path.join(resource_files_path, 'fields')
+cdm_csv_path = os.path.join(resource_files_path, 'cdm.csv')
 hpo_site_mappings_path = os.path.join(config_path, 'hpo_site_mappings.csv')
-achilles_index_path = os.path.join(resource_path, 'curation_report')
-AOU_VOCAB_PATH = os.path.join(resource_path, 'aou_vocab')
+achilles_index_path = os.path.join(resource_files_path, 'curation_report')
+AOU_VOCAB_PATH = os.path.join(resource_files_path, 'aou_vocab')
 AOU_VOCAB_CONCEPT_CSV_PATH = os.path.join(AOU_VOCAB_PATH, 'concept.csv')
-TEMPLATES_PATH = os.path.join(resource_path, 'templates')
+TEMPLATES_PATH = os.path.join(resource_files_path, 'templates')
 HPO_REPORT_HTML = 'hpo_report.html'
 html_boilerplate_path = os.path.join(TEMPLATES_PATH, HPO_REPORT_HTML)
 CRON_TPL_YAML = 'cron.tpl.yaml'
 
 DATASOURCES_JSON = os.path.join(achilles_index_path, 'data/datasources.json')
 
-domain_mappings_path = os.path.join(resource_path, 'domain_mappings')
+domain_mappings_path = os.path.join(resource_files_path, 'domain_mappings')
 field_mappings_replaced_path = os.path.join(domain_mappings_path,
                                             'field_mappings_replaced.csv')
 table_mappings_path = os.path.join(domain_mappings_path, 'table_mappings.csv')
 field_mappings_path = os.path.join(domain_mappings_path, 'field_mappings.csv')
 value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
-CDR_CLEANER_PATH = os.path.join(resource_path, 'cdr_cleaner')
+CDR_CLEANER_PATH = os.path.join(resource_files_path, 'cdr_cleaner')
 DC732_CONCEPT_LOOKUP_CSV_PATH = os.path.join(CDR_CLEANER_PATH,
                                              'dc732_concept_lookup.csv')
 
@@ -181,7 +181,7 @@ CDM_TABLES = list(cdm_schemas().keys())
 ACHILLES_INDEX_FILES = achilles_index_files()
 CDM_FILES = [table + '.csv' for table in CDM_TABLES]
 ALL_ACHILLES_INDEX_FILES = [
-    name.split(resource_path + os.sep)[1].strip()
+    name.split(resource_files_path + os.sep)[1].strip()
     for name in ACHILLES_INDEX_FILES
 ]
 IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES

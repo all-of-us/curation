@@ -1,17 +1,19 @@
-import unittest
-import mock
 import os
-import gcs_utils
+import unittest
+
+import mock
+
+import app_identity
 import bq_utils
 import common
-import app_identity
+import gcs_utils
 import resources
+import validation.sql_wrangle as sql_wrangle
 from tests import test_util
 from tests.test_util import (FAKE_HPO_ID)
 from validation.metrics import required_labs as required_labs
 from validation.metrics.required_labs import (
     MEASUREMENT_CONCEPT_SETS_TABLE, MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)
-import validation.sql_wrangle as sql_wrangle
 
 
 class RequiredLabsTest(unittest.TestCase):
@@ -89,7 +91,8 @@ class RequiredLabsTest(unittest.TestCase):
         self.assertListEqual(expected_fields, actual_fields)
 
         measurement_concept_sets_table_path = os.path.join(
-            resources.resource_path, MEASUREMENT_CONCEPT_SETS_TABLE + '.csv')
+            resources.resource_files_path,
+            MEASUREMENT_CONCEPT_SETS_TABLE + '.csv')
         expected_total_rows = len(
             resources.csv_to_list(measurement_concept_sets_table_path))
         self.assertEqual(expected_total_rows, int(response['totalRows']))
