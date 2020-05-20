@@ -59,7 +59,8 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
                          affected_datasets=[cdr_consts.RDR],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=['observation'])
 
     def get_query_specs(self):
         """

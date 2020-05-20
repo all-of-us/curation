@@ -169,7 +169,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._sandbox_dataset_id = sandbox_dataset_id
         self._issue_urls = issue_urls if issue_urls else []
         self._depends_on_classes = depends_on if depends_on else []
-        self._affected_tables = affected_tables if affected_tables else []
+        self.set_affected_tables(affected_tables)
 
         super().__init__()
 
@@ -317,7 +317,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         """
         return self._sandbox_dataset_id
 
-    def get_affected_tables(self):
+    def get_affected_tables(self, *kwargs):
         """
         Method to get tables that will be modified by the cleaning rule.
         If getting the tables_affected dynamically logic needs to be

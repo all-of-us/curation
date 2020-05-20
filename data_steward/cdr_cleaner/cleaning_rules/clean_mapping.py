@@ -69,7 +69,8 @@ class CleanMappingExtTables(BaseCleaningRule):
                          affected_datasets=[cdr_consts.RDR],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=['_mapping'])
 
     @staticmethod
     def get_cdm_table(table, table_type):
@@ -203,16 +204,6 @@ class CleanMappingExtTables(BaseCleaningRule):
         this yet.
         """
         raise NotImplementedError("Please fix me")
-
-    def get_affected_tables(self):
-        """
-        Method to get tables that will be modified by the cleaning rule.
-
-        This abstract method was added to the base class after this rule was authored.This
-        rule needs to implement logic to get the affected tables .
-        Until done no issue exists for this yet.
-        """
-        raise NotImplementedError("Please fix me.")
 
     def setup_validation(self):
         """
