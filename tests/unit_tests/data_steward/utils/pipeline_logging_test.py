@@ -14,7 +14,7 @@ import unittest
 import logging
 
 # Project imports
-from utils.pipeline_logging import setup
+from utils.pipeline_logging import setup_logger
 
 
 class PipelineLoggingTest(unittest.TestCase):
@@ -26,23 +26,31 @@ class PipelineLoggingTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.log_file_list = {}
+        self.log_file_list = ['path/fake.log', 'path/']
+        self.stream_handler = logging.StreamHandler()
 
     def test_setup(self):
         handlers_exist = logging.getLogger().hasHandlers()
 
         # log to specified log file location AND the console
-        results = setup(self.log_file_list, True)
+        results = setup_logger(self.log_file_list, True)
+        self.assertEquals(results.hasHandlers(), 2)
         logging.shutdown()
 
         # log to specified log file location NOT the console
-        results = setup(self.log_file_list)
+        results = setup_logger(self.log_file_list, False)
+        self.assertEquals(results.hasHandlers(), 1)
+        self.assertTrue(results.matches(self.stream_handler))
         logging.shutdown()
 
         # log to default file location AND the console
-        results = setup(True)
+        results = setup_logger(True)
+        self.assertEquals(results.hasHandlers(), 2)
         logging.shutdown()
 
         # log to the default file location NOT the console
-        results = setup()
+        results = setup_logger(False)
+        self.assertEquals(results.hasHandlers(), 1)
+        self.assertTrue(results.matches(self.stream_handler))
+
         logging.shutdown()
