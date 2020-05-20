@@ -417,6 +417,7 @@ def run_queries(queries, client):
     :param queries: list of queries to run retraction
     :param client: bq client object
     """
+    incomplete_jobs = []
     for query_dict in queries:
         # Set configuration.query
         job_config = bigquery.QueryJobConfig(use_query_cache=False)
@@ -426,9 +427,12 @@ def run_queries(queries, client):
             )
             job = client.query(query_dict['query'], job_config=job_config)
             job.result()
-            LOGGER.info(
-                f"{query_dict['destination_table_id']} table written to {query_dict['destination_dataset_id']}"
-            )
+            if job.exception():
+                incomplete_jobs.append(job)
+            else:
+                LOGGER.info(
+                    f"{query_dict['destination_table_id']} table written to {query_dict['destination_dataset_id']}"
+                )
         else:
             LOGGER.info(
                 f"Truncating table with clean data, using query {query_dict['query']}"
@@ -436,17 +440,17 @@ def run_queries(queries, client):
             job_config.write_disposition = query_dict['write_disposition']
             job = client.query(query_dict['query'], job_config=job_config)
             job.result()
-            LOGGER.info(
-                f"{query_dict['destination_table_id']} table updated with clean rows in "
-                f"{query_dict['destination_dataset_id']}")
+            if job.exception():
+                incomplete_jobs.append(job)
+            else:
+                LOGGER.info(
+                    f"{query_dict['destination_table_id']} table updated with clean rows in "
+                    f"{query_dict['destination_dataset_id']}")
 
-    incomplete_jobs = job.exception()
-    if incomplete_jobs is not None:
+    if incomplete_jobs:
         count = len(incomplete_jobs)
-        if incomplete_jobs:
-            LOGGER.info(f"Failed on {count} job ids {incomplete_jobs}")
-            LOGGER.info("Terminating retraction")
-            raise incomplete_jobs
+        LOGGER.info(f"Failed on {count} job ids {incomplete_jobs}")
+        LOGGER.info("Terminating retraction")
 
 
 def parse_args(raw_args=None):
