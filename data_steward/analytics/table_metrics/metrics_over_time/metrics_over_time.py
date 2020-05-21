@@ -274,11 +274,11 @@ def create_excel_files(
     writer.save()
 
 
-# UNIONED EHR DATASET COMPARISON
-report1 = 'may_23_2019.xlsx'
-report2 = 'july_15_2019.xlsx'
-report3 = 'october_04_2019.xlsx'
-report4 = 'april_17_2020.xlsx'
+# EHR Ops Dataset Comparisons
+report1 = 'july_15_2019.xlsx'
+report2 = 'october_04_2019.xlsx'
+report3 = 'april_17_2020.xlsx'
+report4 = 'may_14_2020.xlsx'
 
 report_names = [report1, report2, report3, report4]
 
