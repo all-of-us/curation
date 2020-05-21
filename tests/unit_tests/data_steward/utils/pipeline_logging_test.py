@@ -10,8 +10,10 @@ Original Issue = DC-637
 """
 
 # Python imports
+import shutil
 import unittest
 import logging
+import os
 
 # Project imports
 from utils.pipeline_logging import setup_logger
@@ -26,31 +28,25 @@ class PipelineLoggingTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.log_file_list = ['path/fake.log', 'path/']
-        self.stream_handler = logging.StreamHandler()
+        self.log_file_list = ['path/', 'faked.log', 'path/fake.log']
 
-    def test_setup(self):
+    def test_setup_logger(self):
+        # checks if handlers exist before setup_logger function runs
+        # should be false
         handlers_exist = logging.getLogger().hasHandlers()
+        self.assertEquals(handlers_exist, False)
 
-        # log to specified log file location AND the console
+        # log to console and file
         results = setup_logger(self.log_file_list, True)
-        self.assertEquals(results.hasHandlers(), 2)
+        self.assertEquals(results.hasHandlers(), True)
         logging.shutdown()
 
-        # log to specified log file location NOT the console
+        # log to just file
         results = setup_logger(self.log_file_list, False)
-        self.assertEquals(results.hasHandlers(), 1)
-        self.assertTrue(results.matches(self.stream_handler))
+        self.assertEquals(results.hasHandlers(), True)
+        print(results.handlers)
         logging.shutdown()
 
-        # log to default file location AND the console
-        results = setup_logger(True)
-        self.assertEquals(results.hasHandlers(), 2)
-        logging.shutdown()
-
-        # log to the default file location NOT the console
-        results = setup_logger(False)
-        self.assertEquals(results.hasHandlers(), 1)
-        self.assertTrue(results.matches(self.stream_handler))
-
-        logging.shutdown()
+    def tearDown(self):
+        shutil.rmtree('path/')
+        os.remove('logs/faked.log')
