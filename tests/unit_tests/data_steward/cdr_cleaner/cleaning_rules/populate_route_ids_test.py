@@ -6,9 +6,9 @@ import mock
 
 import bq_utils
 import common
-from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 from cdr_cleaner.cleaning_rules import populate_route_ids
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 
 class PopulateRouteIdsTest(unittest.TestCase):
@@ -68,7 +68,7 @@ class PopulateRouteIdsTest(unittest.TestCase):
         # pre conditions
         mock_dataset_id.return_value = self.dataset_id
         route_mappings_csv = os.path.join(
-            resources.resource_path,
+            resources.resource_files_path,
             populate_route_ids.DOSE_FORM_ROUTES_FILE + ".csv")
         dose_form_route_mappings = resources.csv_to_list(route_mappings_csv)
         mapping_list = populate_route_ids.get_mapping_list(
@@ -99,7 +99,7 @@ class PopulateRouteIdsTest(unittest.TestCase):
         self, mock_query, mock_create_table):
         # pre conditions
         route_mappings_csv = os.path.join(
-            resources.resource_path,
+            resources.resource_files_path,
             populate_route_ids.DOSE_FORM_ROUTES_FILE + ".csv")
         dose_form_route_mappings = resources.csv_to_list(route_mappings_csv)
         mapping_list = populate_route_ids.get_mapping_list(

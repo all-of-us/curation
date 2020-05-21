@@ -4,10 +4,10 @@ import unittest
 
 import app_identity
 import bq_utils
+import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as remove_operational_pii_fields
 import resources
 import sandbox
 from tests import test_util
-import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as remove_operational_pii_fields
 
 SELECT_RECORDS = """ SELECT * FROM `{project_id}.{dataset_id}.{table_id}`"""
 
@@ -29,7 +29,7 @@ class RemoveOperationalPiiFieldsTest(unittest.TestCase):
 
     def test_integration_load_smoking_lookup_table(self):
         csv_file = 'operational_pii_fields.csv'
-        csv_path = os.path.join(resources.resource_path, csv_file)
+        csv_path = os.path.join(resources.resource_files_path, csv_file)
         with open(csv_path, 'r') as f:
             expected = list(csv.DictReader(f))
 

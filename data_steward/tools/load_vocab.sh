@@ -95,6 +95,6 @@ for file in $(gsutil ls ${GCS_PATH}); do
   filename_lower=$(echo ${filename} | tr '[:upper:]' '[:lower:]')
   table_name="${filename_lower%.*}"
   echo "Loading ${DATASET}.${table_name}..."
-  bq load --replace=true --project_id ${APP_ID} --source_format CSV --quote "" --field_delimiter "\t" --max_bad_records 500 --skip_leading_rows 1 ${DATASET}.${table_name} ${file} ${BASE_DIR}/resources/fields/${table_name}.json
+  bq load --replace=true --project_id ${APP_ID} --source_format CSV --quote "" --field_delimiter "\t" --max_bad_records 500 --skip_leading_rows 1 ${DATASET}.${table_name} ${file} ${BASE_DIR}/resource_files/fields/${table_name}.json
 done
 set +x

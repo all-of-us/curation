@@ -3,8 +3,8 @@ Several answers to smoking questions were incorrectly coded as questions
 This rule generates corrected rows and deletes incorrect rows
 """
 import bq_utils
-from constants.cdr_cleaner import clean_cdr as cdr_consts
 import sandbox
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 SMOKING_LOOKUP_TABLE = 'smoking_lookup'
 NEW_SMOKING_ROWS = 'new_smoking_rows'
@@ -151,7 +151,7 @@ FROM `{project_id}.{sandbox_dataset_id}.{new_smoking_rows}`
 
 def load_smoking_lookup_table(project_id, sandbox_dataset_id):
     """
-    Loads the smoking lookup table from resources/smoking_lookup.csv
+    Loads the smoking lookup table from resource_files/smoking_lookup.csv
     into project_id.sandbox_dataset_id.smoking_lookup in BQ
 
     :param project_id: Project where the sandbox dataset resides

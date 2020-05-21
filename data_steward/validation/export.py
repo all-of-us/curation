@@ -5,7 +5,7 @@ from io import open
 import bq_utils
 import resources
 
-EXPORT_PATH = os.path.join(resources.resource_path, 'export')
+EXPORT_PATH = os.path.join(resources.resource_files_path, 'export')
 RESULTS_SCHEMA_PLACEHOLDER = '@results_database_schema.'
 VOCAB_SCHEMA_PLACEHOLDER = '@vocab_database_schema.'
 UNIONED_EHR = 'unioned_ehr'

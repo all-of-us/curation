@@ -1,9 +1,9 @@
 import csv
 import json
-from urllib import request
 from collections import OrderedDict
-from os import listdir
 from io import open
+from os import listdir
+from urllib import request
 
 CDM_CSV_URL = "https://raw.githubusercontent.com/OHDSI/CommonDataModel/master/OMOP_CDM_v5_3.csv"
 
@@ -19,14 +19,14 @@ for row in reader:
         table_map[table_name] = table
     table[row['field']] = row['description']
 
-for f in listdir('../resources/fields'):
+for f in listdir('../resource_files/fields'):
     table_name = f[0:f.index('.')]
     description_map = table_map.get(table_name)
     if not description_map:
         print("No descriptions found for %s; skipping." % table_name)
         continue
     print("Updating descriptions for %s..." % table_name)
-    with open('../resources/fields/%s' % f) as json_file:
+    with open('../resource_files/fields/%s' % f) as json_file:
         schema_json = json.load(json_file, object_pairs_hook=OrderedDict)
         for column in schema_json:
             description = description_map.get(column['name'])
@@ -35,5 +35,5 @@ for f in listdir('../resources/fields'):
                       column['name'])
             else:
                 column['description'] = description
-    with open('../resources/fields/%s' % f, 'w') as json_file:
+    with open('../resource_files/fields/%s' % f, 'w') as json_file:
         json.dump(schema_json, json_file, indent=4, ensure_ascii=False)
