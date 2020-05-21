@@ -47,6 +47,13 @@ NOT_NULL = 'NOT NULL'
 ISSUE_NUMBER = 'DC-715'
 
 
+def get_mapping_tables():
+    """
+    Returns list of mapping tables in fields path
+    """
+    return resources.MAPPING_TABLES
+
+
 class CleanMappingExtTables(BaseCleaningRule):
     """
     Ensures each domain mapping table only contains records for domain tables
@@ -70,7 +77,7 @@ class CleanMappingExtTables(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=['_mapping'])
+                         affected_tables=get_mapping_tables())
 
     @staticmethod
     def get_cdm_table(table, table_type):

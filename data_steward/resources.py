@@ -103,12 +103,22 @@ def fields_for(table):
 
 def is_internal_table(table_id):
     """
-    Return True if specified table is an internal table for pipeline (e.g. mapping tables)
+    Return True if specified table is an internal table for pipeline (e.g. logging tables)
 
     :param table_id: identifies the table
     :return: True if specified table is an internal table, False otherwise
     """
     return table_id.startswith('_')
+
+
+def is_mapping_table(table_id):
+    """
+    Return True is specified table is a mapping table
+
+    :param table_id: identifies the table
+    :return: True if specified table is an mapping table, False otherwise
+    """
+    return table_id.startswith('_mapping_')
 
 
 def is_pii_table(table_id):
@@ -151,6 +161,8 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                 include_table = False
             elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
                 include_table = False
+            elif is_mapping_table(table_name):
+                include_table = False
             elif is_internal_table(table_name):
                 include_table = False
             elif is_pii_table(table_name):
@@ -161,6 +173,22 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                 include_table = False
             if include_table:
                 result[table_name] = schema
+    return result
+
+
+def mapping_schemas():
+    result = dict()
+    for f in os.listdir(fields_path):
+        file_path = os.path.join(fields_path, f)
+        with open(file_path, 'r') as fp:
+            file_name = os.path.basename(f)
+            table_name = file_name.split('.')[0]
+            schema = json.load(fp)
+            include_table = True
+        if not is_pii_table(table_name):
+            include_table = False
+        if include_table:
+            result[table_name] = schema
     return result
 
 
@@ -178,6 +206,7 @@ def hash_dir(in_dir):
 
 
 CDM_TABLES = list(cdm_schemas().keys())
+MAPPING_TABLES = list(mapping_schemas().keys())
 ACHILLES_INDEX_FILES = achilles_index_files()
 CDM_FILES = [table + '.csv' for table in CDM_TABLES]
 ALL_ACHILLES_INDEX_FILES = [
