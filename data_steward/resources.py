@@ -103,7 +103,8 @@ def fields_for(table):
 
 def is_internal_table(table_id):
     """
-    Return True if specified table is an internal table for pipeline (e.g. logging tables)
+    Return True if specified table is an internal table or mapping table for
+    pipeline (e.g. logging tables or mapping tables)
 
     :param table_id: identifies the table
     :return: True if specified table is an internal table, False otherwise
@@ -113,7 +114,7 @@ def is_internal_table(table_id):
 
 def is_mapping_table(table_id):
     """
-    Return True is specified table is a mapping table
+    Return True if specified table is a mapping table
 
     :param table_id: identifies the table
     :return: True if specified table is an mapping table, False otherwise
@@ -161,8 +162,6 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                 include_table = False
             elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
                 include_table = False
-            elif is_mapping_table(table_name):
-                include_table = False
             elif is_internal_table(table_name):
                 include_table = False
             elif is_pii_table(table_name):
@@ -180,15 +179,13 @@ def mapping_schemas():
     result = dict()
     for f in os.listdir(fields_path):
         file_path = os.path.join(fields_path, f)
-        with open(file_path, 'r') as fp:
-            file_name = os.path.basename(f)
-            table_name = file_name.split('.')[0]
-            schema = json.load(fp)
-            include_table = True
-        if not is_pii_table(table_name):
-            include_table = False
-        if include_table:
-            result[table_name] = schema
+        table_name = f.split('.')[0]
+
+        if is_mapping_table(table_name):
+            # only open and load mapping tables, instead of all tables
+            with open(file_path, 'r') as fp:
+                result[table_name] = json.load(fp)
+
     return result
 
 

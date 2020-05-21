@@ -6,9 +6,9 @@ The point is to make it explicitly clear what is and is not required.
 # Python imports
 import unittest
 
+# Third party imports
 import googleapiclient
 import oauth2client
-# Third party imports
 from mock import patch
 
 # Project imports
@@ -38,9 +38,6 @@ class Inheritance(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        pass
-
-    def get_affected_tables(self):
         pass
 
     def setup_validation(self):
@@ -75,9 +72,6 @@ class BadIssueNumbers(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
-    def get_affected_tables(self):
-        pass
-
     def setup_validation(self):
         pass
 
@@ -109,9 +103,6 @@ class BadIssueUrls(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
-    def get_affected_tables(self):
-        pass
-
     def setup_validation(self):
         pass
 
@@ -140,9 +131,6 @@ class BadDescription(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        pass
-
-    def get_affected_tables(self):
         pass
 
     def setup_validation(self):
@@ -178,9 +166,6 @@ class BadAffectedDatasets(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
-    def get_affected_tables(self):
-        pass
-
     def setup_validation(self):
         pass
 
@@ -213,9 +198,6 @@ class InheritanceWithDependency(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        pass
-
-    def get_affected_tables(self):
         pass
 
     def setup_validation(self):
@@ -276,9 +258,6 @@ class InheritanceWithBadDependencyClass(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
-    def get_affected_tables(self):
-        pass
-
     def setup_validation(self):
         pass
 
@@ -311,9 +290,6 @@ class InheritanceWithBadDependencyType(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
-    def get_affected_tables(self):
-        pass
-
     def setup_validation(self):
         pass
 
@@ -344,9 +320,6 @@ class NoSuperInitialization(BaseCleaningRule):
         _ = self.get_issue_urls()
 
     def get_sandbox_tablenames(self):
-        pass
-
-    def get_affected_tables(self):
         pass
 
     def setup_validation(self):

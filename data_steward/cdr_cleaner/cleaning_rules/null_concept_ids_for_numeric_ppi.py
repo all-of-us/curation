@@ -14,8 +14,8 @@ import logging
 # Third party imports
 from jinja2 import Environment
 
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 # Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import OBSERVATION
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -166,7 +166,7 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
         """
         raise NotImplementedError("Please fix me.")
 
-    def validate_rule(self):
+    def validate_rule(self, client):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
 

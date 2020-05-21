@@ -99,16 +99,6 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         """
         pass
 
-    def get_affected_tables(self):
-        """
-        Method to get tables that will be modified by the cleaning rule.
-
-        This abstract method was added to the base class after this rule was authored.This
-        rule needs to implement logic to get the affected tables .
-        Until done no issue exists for this yet.
-        """
-        raise NotImplementedError("Please fix me.")
-
     def setup_validation(self):
         """
         Run required steps for validation setup

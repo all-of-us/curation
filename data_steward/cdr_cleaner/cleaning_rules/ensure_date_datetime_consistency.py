@@ -10,49 +10,48 @@ field is null or incorrect.
 # Python imports
 import logging
 
+import common
+# Project imports
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules import field_mapping
-# Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import CONDITION_OCCURRENCE, DRUG_EXPOSURE, DEVICE_EXPOSURE, MEASUREMENT, OBSERVATION, \
-    PROCEDURE_OCCURRENCE, SPECIMEN, DEATH, OBSERVATION_PERIOD, VISIT_OCCURRENCE
 
 LOGGER = logging.getLogger(__name__)
 
 TABLE_DATES = {
-    CONDITION_OCCURRENCE: {
+    common.CONDITION_OCCURRENCE: {
         'condition_start_datetime': 'condition_start_date',
         'condition_end_datetime': 'condition_end_date'
     },
-    DRUG_EXPOSURE: {
+    common.DRUG_EXPOSURE: {
         'drug_exposure_start_datetime': 'drug_exposure_start_date',
         'drug_exposure_end_datetime': 'drug_exposure_end_date'
     },
-    DEVICE_EXPOSURE: {
+    common.DEVICE_EXPOSURE: {
         'device_exposure_start_datetime': 'device_exposure_start_date',
         'device_exposure_end_datetime': 'device_exposure_end_date'
     },
-    MEASUREMENT: {
+    common.MEASUREMENT: {
         'measurement_datetime': 'measurement_date'
     },
-    OBSERVATION: {
+    common.OBSERVATION: {
         'observation_datetime': 'observation_date'
     },
-    PROCEDURE_OCCURRENCE: {
+    common.PROCEDURE_OCCURRENCE: {
         'procedure_datetime': 'procedure_date'
     },
-    DEATH: {
+    common.DEATH: {
         'death_datetime': 'death_date'
     },
-    SPECIMEN: {
+    common.SPECIMEN: {
         'specimen_datetime': 'specimen_date'
     },
-    OBSERVATION_PERIOD: {
+    common.OBSERVATION_PERIOD: {
         'observation_period_start_datetime': 'observation_period_start_date',
         'observation_period_end_datetime': 'observation_period_end_date'
     },
-    VISIT_OCCURRENCE: {
+    common.VISIT_OCCURRENCE: {
         'visit_start_datetime': 'visit_start_date',
         'visit_end_datetime': 'visit_end_date'
     }
@@ -103,14 +102,14 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[
-                             CONDITION_OCCURRENCE, DRUG_EXPOSURE,
-                             DEVICE_EXPOSURE, MEASUREMENT, OBSERVATION,
-                             PROCEDURE_OCCURRENCE, SPECIMEN, DEATH,
-                             OBSERVATION_PERIOD, VISIT_OCCURRENCE
+                             common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE,
+                             common.DEVICE_EXPOSURE, common.MEASUREMENT,
+                             common.OBSERVATION, common.PROCEDURE_OCCURRENCE,
+                             common.SPECIMEN, common.DEATH,
+                             common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE
                          ])
 
-    @staticmethod
-    def get_cols(table):
+    def get_cols(self, table):
         """
         Generates the fields to choose along with case statements to generate datetime
         And ensures no null datetime values
@@ -174,7 +173,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         """
         raise NotImplementedError("Please fix me.")
 
-    def validate_rule(self):
+    def validate_rule(self, client):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
 
