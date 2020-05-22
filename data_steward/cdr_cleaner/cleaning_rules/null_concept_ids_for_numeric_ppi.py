@@ -146,7 +146,7 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
 
         return [save_changed_rows, clean_numeric_ppi_query]
 
-    def setup_rule(self):
+    def setup_rule(self, client):
         """
         Function to run any data upload options before executing a query.
         """
@@ -155,7 +155,7 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         return [SAVE_TABLE_NAME]
 
-    def setup_validation(self):
+    def setup_validation(self, client):
         """
         Run required steps for validation setup
 

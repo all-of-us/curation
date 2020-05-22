@@ -51,7 +51,10 @@ def get_mapping_tables():
     """
     Returns list of mapping tables in fields path
     """
-    return resources.MAPPING_TABLES
+    mapping_tables = resources.MAPPING_TABLES
+    for table in mapping_tables:
+        mapping_tables.append(table.replace('_mapping_', '') + '_ext')
+    return mapping_tables
 
 
 class CleanMappingExtTables(BaseCleaningRule):
@@ -195,7 +198,7 @@ class CleanMappingExtTables(BaseCleaningRule):
             table_type=EXT)
         return mapping_clean_queries + ext_clean_queries
 
-    def setup_rule(self):
+    def setup_rule(self, client):
         """
         Function to run any data upload options before executing a query.
         """
@@ -212,7 +215,7 @@ class CleanMappingExtTables(BaseCleaningRule):
         """
         raise NotImplementedError("Please fix me")
 
-    def setup_validation(self):
+    def setup_validation(self, client):
         """
         Run required steps for validation setup
 

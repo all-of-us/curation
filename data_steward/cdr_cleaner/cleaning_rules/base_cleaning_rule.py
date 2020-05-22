@@ -328,10 +328,13 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
     @affected_tables.setter
     def affected_tables(self, affected_tables):
         """
-        Set the affected_tables for this class instance
+        Set the affected_tables for this class instance, raises error if affected_tables is not a list
         """
         if affected_tables:
-            self._affected_tables = affected_tables
+            if not type(affected_tables) is list:
+                raise TypeError('affected_tables must be of type List')
+            else:
+                self._affected_tables = affected_tables
         else:
             self._affected_tables = []
 

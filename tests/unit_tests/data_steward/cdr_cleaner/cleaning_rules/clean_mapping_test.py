@@ -28,10 +28,11 @@ class CleanMappingTest(unittest.TestCase):
         self.assertEqual(self.query_class.get_dataset_id(), self.dataset_id)
         self.assertEqual(self.query_class.get_sandbox_dataset_id(),
                          self.sandbox_dataset_id)
+        self.client = None
 
     def test_setup_rule(self):
         # test
-        self.query_class.setup_rule()
+        self.query_class.setup_rule(self.client)
 
         # no errors are raised, nothing happens
 

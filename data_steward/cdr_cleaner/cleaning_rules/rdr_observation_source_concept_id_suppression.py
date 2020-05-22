@@ -93,13 +93,13 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
 
         return [save_dropped_rows, drop_rows_query]
 
-    def setup_rule(self):
+    def setup_rule(self, client):
         """
         Function to run any data upload options before executing a query.
         """
         pass
 
-    def setup_validation(self):
+    def setup_validation(self, client):
         """
         Run required steps for validation setup
 

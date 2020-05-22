@@ -32,6 +32,7 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         self.project_id = 'foo'
         self.dataset_id = 'bar'
         self.sandbox_id = 'baz'
+        self.client = None
 
         self.query_class = ObservationSourceConceptIDRowSuppression(
             self.project_id, self.dataset_id, self.sandbox_id)
@@ -43,7 +44,7 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
 
     def test_setup_rule(self):
         # test
-        self.query_class.setup_rule()
+        self.query_class.setup_rule(self.client)
 
         # no errors are raised, nothing happens
 

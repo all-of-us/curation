@@ -150,7 +150,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
             queries.append(query)
         return queries
 
-    def setup_rule(self):
+    def setup_rule(self, client):
         """
         Function to run any data upload options before executing a query.
         """
@@ -162,7 +162,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         """
         return []
 
-    def setup_validation(self):
+    def setup_validation(self, client):
         """
         Run required steps for validation setup
 
