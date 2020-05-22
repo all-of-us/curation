@@ -190,14 +190,14 @@ class CleanMappingExtTables(BaseCleaningRule):
         :return: list of query dicts
         """
         mapping_clean_queries = self.get_clean_queries(
-            project_id=self.get_project_id(),
-            dataset_id=self.get_dataset_id(),
-            sandbox_dataset_id=self.get_sandbox_dataset_id(),
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
             table_type=MAPPING)
         ext_clean_queries = self.get_clean_queries(
-            project_id=self.get_project_id(),
-            dataset_id=self.get_dataset_id(),
-            sandbox_dataset_id=self.get_sandbox_dataset_id(),
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
             table_type=EXT)
         return mapping_clean_queries + ext_clean_queries
 

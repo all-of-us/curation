@@ -323,7 +323,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         return self._dataset_id
 
     @property
-    def get_sandbox_dataset_id(self):
+    def sandbox_dataset_id(self):
         """
         Get the sandbox dataset id for this class instance.
         """

@@ -40,10 +40,9 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
                                                       self.dataset_id,
                                                       self.sandbox_id)
 
-        self.assertEqual(self.query_class.get_project_id(), self.project_id)
-        self.assertEqual(self.query_class.get_dataset_id(), self.dataset_id)
-        self.assertEqual(self.query_class.get_sandbox_dataset_id(),
-                         self.sandbox_id)
+        self.assertEqual(self.query_class.project_id, self.project_id)
+        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
+        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # Test
@@ -53,8 +52,7 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
 
     def test_get_query_spec(self):
         # Pre conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [clean_consts.RDR])
+        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
 
         # Test
         result_list = self.query_class.get_query_specs()
@@ -82,8 +80,7 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [clean_consts.RDR])
+        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
 
         store_rows_to_be_changed = SANDBOX_QUERY.render(
             project=self.project_id,

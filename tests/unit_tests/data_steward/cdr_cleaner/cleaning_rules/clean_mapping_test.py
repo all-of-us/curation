@@ -24,9 +24,9 @@ class CleanMappingTest(unittest.TestCase):
                                                     self.dataset_id,
                                                     self.sandbox_dataset_id)
 
-        self.assertEqual(self.query_class.get_project_id(), self.project_id)
-        self.assertEqual(self.query_class.get_dataset_id(), self.dataset_id)
-        self.assertEqual(self.query_class.get_sandbox_dataset_id(),
+        self.assertEqual(self.query_class.project_id, self.project_id)
+        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
+        self.assertEqual(self.query_class.sandbox_dataset_id,
                          self.sandbox_dataset_id)
         self.client = None
 

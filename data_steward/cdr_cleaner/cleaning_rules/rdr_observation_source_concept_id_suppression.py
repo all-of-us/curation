@@ -88,22 +88,22 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         save_dropped_rows = {
             cdr_consts.QUERY:
                 DROP_SELECTION_QUERY_TMPL.render(
-                    project=self.get_project_id(),
-                    dataset=self.get_dataset_id(),
-                    sandbox=self.get_sandbox_dataset_id(),
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox=self.sandbox_dataset_id,
                     drop_table=self.get_sandbox_tablenames()[0],
                     obs_concepts=OBS_SRC_CONCEPTS),
         }
 
         drop_rows_query = {
             cdr_consts.QUERY:
-                DROP_QUERY_TMPL.render(project=self.get_project_id(),
-                                       dataset=self.get_dataset_id(),
+                DROP_QUERY_TMPL.render(project=self.project_id,
+                                       dataset=self.dataset_id,
                                        obs_concepts=OBS_SRC_CONCEPTS),
             cdr_consts.DESTINATION_TABLE:
                 OBSERVATION,
             cdr_consts.DESTINATION_DATASET:
-                self.get_dataset_id(),
+                self.dataset_id,
             cdr_consts.DISPOSITION:
                 WRITE_TRUNCATE
         }
