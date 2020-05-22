@@ -288,7 +288,11 @@ def get_latest_validation_dataset_id(project_id):
     return None
 
 
-def create_dataset(project_id, dataset_id, description=None, friendly_name=None, overwrite_existing=None):
+def create_dataset(project_id,
+                   dataset_id,
+                   description=None,
+                   friendly_name=None,
+                   overwrite_existing=None):
     """
     Creates a new dataset
 
@@ -331,12 +335,13 @@ def create_dataset(project_id, dataset_id, description=None, friendly_name=None,
 
     failures = []
     try:
-        dataset = client.create_dataset(dataset, exists_ok=overwrite_existing)  # Make an API request.
+        dataset = client.create_dataset(
+            dataset, exists_ok=overwrite_existing)  # Make an API request.
     except (GoogleAPIError, OSError, AttributeError, TypeError, ValueError):
         LOGGER.exception(f"Unable to create dataset {dataset_id}")
         failures.append(dataset_id)
     else:
-        print("Created dataset {}.{}".format(client.project, dataset.dataset_id))
+        print(F"Created dataset {client.project}.{dataset.dataset_id}")
 
     if failures:
         raise RuntimeError(f"Unable to create tables: {failures}")
