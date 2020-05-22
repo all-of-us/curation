@@ -52,9 +52,12 @@ def get_mapping_tables():
     Returns list of mapping tables in fields path
     """
     mapping_tables = resources.MAPPING_TABLES
+    ext_tables = []
     for table in mapping_tables:
-        mapping_tables.append(table.replace('_mapping_', '') + '_ext')
-    return mapping_tables
+        table_name = table.replace('_mapping_', '')
+        table_name = table_name + '_ext'
+        ext_tables.append(table_name)
+    return mapping_tables + ext_tables
 
 
 class CleanMappingExtTables(BaseCleaningRule):
