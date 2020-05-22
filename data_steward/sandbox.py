@@ -1,6 +1,4 @@
-from bq_utils import create_dataset
-from constants import bq_utils as bq_consts
-from utils.bq import list_datasets
+from utils.bq import list_datasets, create_dataset
 import re
 
 SANDBOX_SUFFIX = 'sandbox'
@@ -21,7 +19,7 @@ def create_sandbox_dataset(project_id, dataset_id):
                    dataset_id=sandbox_dataset_id,
                    friendly_name=friendly_name,
                    description=description,
-                   overwrite_existing=bq_consts.FALSE)
+                   overwrite_existing=False)
 
     return sandbox_dataset_id
 
