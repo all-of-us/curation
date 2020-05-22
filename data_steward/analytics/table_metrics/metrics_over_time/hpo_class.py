@@ -268,7 +268,7 @@ class HPO:
         elif metric == constants.drug_routes_full:
             self.route_success.append(dq_object)
 
-        elif metric == constants.measurement_units_full:
+        elif metric == constants.unit_success_full:
             self.unit_success.append(dq_object)
 
         elif metric == constants.date_datetime_disparity_full:
@@ -384,7 +384,7 @@ class HPO:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
-        elif metric == constants.measurement_units_full:
+        elif metric == constants.unit_success_full:
             for obj in self.unit_success:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
@@ -529,7 +529,7 @@ class HPO:
         elif metric == constants.drug_routes_full:
             relevant_objects = self.route_success
 
-        elif metric == constants.measurement_units_full:
+        elif metric == constants.unit_success_full:
             relevant_objects = self.unit_success
 
         elif metric == constants.date_datetime_disparity_full:

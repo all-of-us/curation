@@ -75,7 +75,7 @@ choice_dict = {
     'b': constants.data_after_death,
     'c': constants.end_before_begin,
     'd': constants.concept,
-    'e': constants.measurement_units,
+    'e': constants.unit_success_rate,
     'f': constants.drug_routes,
     'g': constants.drug_success,
     'h': constants.sites_measurement,
@@ -90,7 +90,7 @@ percentage_dict = {
     constants.data_after_death: constants.true,
     constants.end_before_begin: constants.true,
     constants.concept: constants.true,
-    constants.measurement_units: constants.true,
+    constants.unit_success_rate: constants.true,
     constants.drug_routes: constants.true,
     constants.drug_success: constants.true,
     constants.sites_measurement: constants.true,
@@ -111,7 +111,7 @@ target_low_dict = {
 
     # success rates
     constants.concept: constants.false,
-    constants.measurement_units: constants.false,
+    constants.unit_success_rate: constants.false,
     constants.drug_routes: constants.false,
     constants.drug_success: constants.false,
     constants.sites_measurement: constants.false,
@@ -126,7 +126,7 @@ target_low_dict = {
 }
 
 columns_to_document_for_sheet = {
-    constants.measurement_units: [constants.total_unit_success_rate],
+    constants.unit_success_rate: [constants.total_unit_success_rate],
 
     constants.sites_measurement:
         constants.measurement_categories,
@@ -221,7 +221,7 @@ data_quality_dimension_dict = {
     constants.sites_measurement: constants.completeness,
     constants.drug_success: constants.completeness,
     constants.drug_routes: constants.completeness,
-    constants.measurement_units: constants.completeness,
+    constants.unit_success_rate: constants.completeness,
     constants.date_datetime_disparity: constants.conformance,
     constants.erroneous_dates: constants.plausibility,
     constants.person_id_failure_rate: constants.conformance,
@@ -230,7 +230,7 @@ data_quality_dimension_dict = {
 
 metric_type_to_english_dict = {
     # field population metrics
-    constants.measurement_units: constants.measurement_units_full,
+    constants.unit_success_rate: constants.unit_success_full,
     constants.drug_routes: constants.drug_routes_full,
 
     # integration metrics
@@ -251,7 +251,7 @@ metric_type_to_english_dict = {
 }
 
 metrics_to_weight = [
-    constants.measurement_units, constants.drug_routes,
+    constants.unit_success_rate, constants.drug_routes,
     constants.end_before_begin, constants.data_after_death,
     constants.concept, constants.duplicates,
     constants.date_datetime_disparity,
@@ -316,7 +316,7 @@ row_count_col_names = [
 # ---------- Lists ---------- #
 unweighted_metric_already_integrated_for_hpo = [
     constants.drug_routes,
-    constants.measurement_units, constants.achilles_errors]
+    constants.unit_success_rate, constants.achilles_errors]
 
 no_aggregate_metric_needed_for_table_sheets = [
     constants.drug_success, constants.sites_measurement]
