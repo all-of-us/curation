@@ -10,12 +10,12 @@ field is null or incorrect.
 # Python imports
 import logging
 
+import common
 # Project imports
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from cdr_cleaner.cleaning_rules import field_mapping
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import common
+from cdr_cleaner.cleaning_rules import field_mapping
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
@@ -100,7 +100,14 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                          ],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=[
+                             common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE,
+                             common.DEVICE_EXPOSURE, common.MEASUREMENT,
+                             common.OBSERVATION, common.PROCEDURE_OCCURRENCE,
+                             common.SPECIMEN, common.DEATH,
+                             common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE
+                         ])
 
     def get_cols(self, table):
         """
@@ -143,7 +150,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
             queries.append(query)
         return queries
 
-    def setup_rule(self):
+    def setup_rule(self, client):
         """
         Function to run any data upload options before executing a query.
         """
@@ -154,6 +161,28 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         Returns an empty list because this rule does not use sandbox tables.
         """
         return []
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+
+        This abstract method was added to the base class after this rule was authored.
+        This rule needs to implement logic to setup validation on cleaning rules that
+        will be updating or deleting the values.
+        Until done no issue exists for this yet.
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+
+        This abstract method was added to the base class after this rule was authored.
+        This rule needs to implement logic to run validation on cleaning rules that will
+        be updating or deleting the values.
+        Until done no issue exists for this yet.
+        """
+        raise NotImplementedError("Please fix me.")
 
 
 if __name__ == '__main__':

@@ -14,8 +14,8 @@ import logging
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
-from utils import bq
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from utils import bq
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,6 +47,19 @@ NOT_NULL = 'NOT NULL'
 ISSUE_NUMBER = 'DC-715'
 
 
+def get_mapping_tables():
+    """
+    Returns list of mapping tables in fields path
+    """
+    mapping_tables = resources.MAPPING_TABLES
+    ext_tables = []
+    for table in mapping_tables:
+        table_name = table.replace('_mapping_', '')
+        table_name = table_name + '_ext'
+        ext_tables.append(table_name)
+    return mapping_tables + ext_tables
+
+
 class CleanMappingExtTables(BaseCleaningRule):
     """
     Ensures each domain mapping table only contains records for domain tables
@@ -69,7 +82,8 @@ class CleanMappingExtTables(BaseCleaningRule):
                          affected_datasets=[cdr_consts.RDR],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=get_mapping_tables())
 
     @staticmethod
     def get_cdm_table(table, table_type):
@@ -187,7 +201,7 @@ class CleanMappingExtTables(BaseCleaningRule):
             table_type=EXT)
         return mapping_clean_queries + ext_clean_queries
 
-    def setup_rule(self):
+    def setup_rule(self, client):
         """
         Function to run any data upload options before executing a query.
         """
@@ -203,6 +217,28 @@ class CleanMappingExtTables(BaseCleaningRule):
         this yet.
         """
         raise NotImplementedError("Please fix me")
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+
+        This abstract method was added to the base class after this rule was authored.
+        This rule needs to implement logic to setup validation on cleaning rules that
+        will be updating or deleting the values.
+        Until done no issue exists for this yet.
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+
+        This abstract method was added to the base class after this rule was authored.
+        This rule needs to implement logic to run validation on cleaning rules that will
+        be updating or deleting the values.
+        Until done no issue exists for this yet.
+        """
+        raise NotImplementedError("Please fix me.")
 
 
 if __name__ == '__main__':
