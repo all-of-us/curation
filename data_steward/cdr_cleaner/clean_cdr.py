@@ -187,6 +187,15 @@ DEID_CLEAN_CLEANING_CLASSES = [
     (CleanMappingExtTables,)
 ]
 
+DATA_STAGE_RULES_MAPPING = {
+    stage.EHR.value: EHR_CLEANING_CLASSES,
+    stage.UNIONED.value: UNIONED_EHR_CLEANING_CLASSES,
+    stage.RDR.value: RDR_CLEANING_CLASSES,
+    stage.COMBINED.value: COMBINED_CLEANING_CLASSES,
+    stage.DEID_BASE.value: DEID_BASE_CLEANING_CLASSES,
+    stage.DEID_CLEAN.value: DEID_CLEAN_CLEANING_CLASSES,
+}
+
 
 def add_module_info_decorator(query_function, *positional_args, **keyword_args):
     """
