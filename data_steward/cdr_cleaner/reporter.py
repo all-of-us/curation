@@ -71,7 +71,7 @@ def get_stage_elements(data_stage, fields_list):
                         value = getattr(instance, func)
                     else:
                         func = FIELDS_METHODS_MAP[field]
-                        value = getattr(instanct, func)()
+                        value = getattr(instance, func)()
 
                     row.append(value)
                 except AttributeError:
