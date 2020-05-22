@@ -13,9 +13,9 @@ dataset sandbox.
 # Python imports
 import unittest
 
+# Project imports
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI, \
     SAVE_TABLE_NAME, SANDBOX_QUERY, CLEAN_NUMERIC_PPI_QUERY
-# Project imports
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
