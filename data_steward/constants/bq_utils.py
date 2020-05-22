@@ -1,6 +1,7 @@
 # bq_utils default values
 SOCKET_TIMEOUT = 600000
 BQ_DEFAULT_RETRY_COUNT = 10
+MAX_POLL_INTERVAL = 500
 # Maximum results returned by list_tables (API has a low default value)
 LIST_TABLES_MAX_RESULTS = 10000
 DATE_FORMAT = '%Y%m%d'

@@ -343,31 +343,37 @@ def job_status_errored(job_id):
     return is_errored, error_message
 
 
-def wait_on_jobs(job_ids,
-                 retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
-                 max_poll_interval=300):
+def sleeper(poll_interval):
     """
-    Exponential backoff wait for jobs to complete
-    :param job_ids:
-    :param retry_count:
-    :param max_poll_interval:
+    Calls time.sleep, useful for testing purposes
+    :param poll_interval:
+    :return:
+    """
+    time.sleep(poll_interval)
+    return
+
+
+def wait_on_jobs(job_ids, retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT):
+    """
+    Implements exponential backoff to wait for jobs to complete
+    :param job_ids: list of job_id strings
+    :param retry_count: max number of iterations for exponent
     :return: list of jobs that failed to complete or empty list if all completed
     """
-    _job_ids = list(job_ids)
+    job_ids = list(job_ids)
     poll_interval = 1
-    for i in range(retry_count):
-        logging.info('Waiting %s seconds for completion of job(s): %s' %
-                     (poll_interval, _job_ids))
-        time.sleep(poll_interval)
-        _job_ids = [
-            job_id for job_id in _job_ids if not job_status_done(job_id)
-        ]
-        if len(_job_ids) == 0:
-            return []
-        if poll_interval < max_poll_interval:
-            poll_interval = 2**i
-    logging.info('Job(s) failed to complete: %s' % _job_ids)
-    return _job_ids
+    for _ in range(retry_count):
+        logging.info(
+            f'Waiting {poll_interval} seconds for completion of job(s): {job_ids}'
+        )
+        sleeper(poll_interval)
+        job_ids = [job_id for job_id in job_ids if not job_status_done(job_id)]
+        if not job_ids:
+            return job_ids
+        if poll_interval < bq_consts.MAX_POLL_INTERVAL:
+            poll_interval *= 2
+    logging.info(f'Job(s) {job_ids} failed to complete')
+    return job_ids
 
 
 def get_job_details(job_id):
