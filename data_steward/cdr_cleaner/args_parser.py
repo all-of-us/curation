@@ -1,6 +1,7 @@
 import argparse
 
 import constants.cdr_cleaner.clean_cdr as consts
+from cdr_cleaner.reporter import FIELDS_METHODS_MAP, FIELDS_ATTRIBUTES_MAP
 
 SHORT_ARGUMENT = 'argument'
 LONG_ARGUMENT = 'long_argument'
@@ -89,10 +90,9 @@ def get_report_parser():
         'Reporting parameters from the clean rule package.  This utility '
         'will provide a csv style report for project management.'))
 
-    fields = [
-        'jira-issues', 'description', 'affected-datasets', 'sql-module', 'sql',
-        'affected-tables'
-    ]
+    methods = [k for k, _ in FIELDS_METHODS_MAP.items()]
+    attrs = [k for k, _ in FIELDS_ATTRIBUTES_MAP.items()]
+    fields = methods + attrs
 
     parser.add_argument('-d',
                         '--data-stage',

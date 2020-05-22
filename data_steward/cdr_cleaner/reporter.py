@@ -5,14 +5,28 @@ A package to generate a csv file type report for cleaning rules.
 import logging
 
 # Third party imports
+from googleapiclient.errors import HttpError
 
 # Project imports
 import cdr_cleaner.args_parser as cleaning_parser
 import cdr_cleaner.clean_cdr as control
 import cdr_cleaner.clean_cdr_engine as engine
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
+
+FIELDS_ATTRIBUTES_MAP = {
+    'jira-issues': 'issue_numbers',
+    'description': 'description',
+    'affected-datasets': 'affected_datasets',
+    'class-name': 'name',
+    #    'affected-tables': 'affected_tables',
+}
+
+FIELDS_METHODS_MAP = {
+    'sql': 'get_query_specs',
+}
 
 
 def parse_args(raw_args=None):
@@ -28,9 +42,45 @@ def parse_args(raw_args=None):
     return parser.parse_args(raw_args)
 
 
-def get_stage_elements(stage, fields_list):
+def get_stage_elements(data_stage, fields_list):
 
-    pass
+    rows = []
+    for rule in control.DATA_STAGE_RULES_MAPPING.get(data_stage, []):
+        LOGGER.info('\n')
+        clazz = rule[0]
+        try:
+            instance = clazz('foo', 'bar', 'baz')
+            print(instance)
+            LOGGER.info(f"{clazz} is a class")
+
+        except (TypeError, HttpError):
+            LOGGER.info(f"{rule} is not a class")
+            row = []
+            for field in fields_list:
+                row.append('no data')
+
+            rows.append(row)
+
+        else:
+            row = []
+            for field in fields_list:
+                try:
+                    func = FIELDS_ATTRIBUTES_MAP[field]
+
+                    if func:
+                        value = getattr(instance, func)
+                    else:
+                        func = FIELDS_METHODS_MAP[field]
+                        value = getattr(instanct, func)()
+
+                    row.append(value)
+                except AttributeError:
+                    LOGGER.exception('something weird happened here')
+                    row.append('no data')
+
+            rows.append(row)
+
+    return rows
 
 
 def write_csv_report(output_filepath, stages_list, fields_list):
@@ -44,11 +94,13 @@ def write_csv_report(output_filepath, stages_list, fields_list):
     :param fields_list: a list of string fields that will be added to the
         csv file.
     """
-    if output_filepath.endswith('.csv'):
+    if not output_filepath.endswith('.csv'):
         raise RuntimeError(f"This file is not a csv file: {output_filepath}.")
 
     for stage in stages_list:
         required_fields = get_stage_elements(stage, fields_list)
+        for data in required_fields:
+            LOGGER.info(data)
 
 
 def main(raw_args=None):
