@@ -4,6 +4,7 @@ import unittest
 # Project Imports
 from data_steward import sandbox
 from utils.bq import list_datasets, delete_dataset
+import app_identity
 
 
 class RetractDataBqTest(unittest.TestCase):
@@ -15,7 +16,7 @@ class RetractDataBqTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.project_id = 'aou-res-curation-test'
+        self.project_id = app_identity.get_application_id()
         self.dataset_id = 'fake_dataset'
 
     def test_create_sandbox_dataset(self):
