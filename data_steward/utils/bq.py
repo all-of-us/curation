@@ -286,3 +286,64 @@ def get_latest_validation_dataset_id(project_id):
             return sorted(validation_datasets, key=lambda x: x[0],
                           reverse=True)[0][1]
     return None
+
+
+def create_dataset(project_id,
+                   dataset_id,
+                   description=None,
+                   friendly_name=None,
+                   overwrite_existing=None):
+    """
+    Creates a new dataset
+
+    :param project_id: name of the project to create dataset in, defaults to the currently configured project if missing.
+    :param dataset_id: name to give the new dataset - required
+    :param description: dataset description - required
+    :param friendly_name: user friendly name for dataset - optional
+    :param overwrite_existing: determine if dataset should be overwritten if already exists, defaults to true/overwrite
+    :return: a new dataset returned from the API
+    """
+    if dataset_id is None:
+        raise RuntimeError("Cannot create a dataset without a name")
+
+    if description is None:
+        raise RuntimeError("Will not create a dataset without a description")
+
+    if project_id is None:
+        LOGGER.info(f"You should specify project_id for a reliable experience."
+                    f"Defaulting to {os.environ.get(PROJECT_ID)}.")
+        project_id = os.environ.get(PROJECT_ID)
+
+    if overwrite_existing is None:
+        overwrite_existing = True
+    elif not overwrite_existing:
+        overwrite_existing = False
+    else:
+        overwrite_existing = True
+
+    client = get_client(project_id)
+    dataset_id = f"{project_id}.{dataset_id}"
+
+    # Construct a full dataset object to send to the API.
+    dataset = bigquery.Dataset(dataset_id)
+
+    # Set dataset attributes
+    dataset.location = "US"
+    dataset.description = description
+    if friendly_name:
+        dataset.friendly_name = friendly_name
+
+    failures = []
+    try:
+        dataset = client.create_dataset(
+            dataset, exists_ok=overwrite_existing)  # Make an API request.
+    except (GoogleAPIError, OSError, AttributeError, TypeError, ValueError):
+        LOGGER.exception(f"Unable to create dataset {dataset_id}")
+        failures.append(dataset_id)
+    else:
+        print(F"Created dataset {client.project}.{dataset.dataset_id}")
+
+    if failures:
+        raise RuntimeError(f"Unable to create tables: {failures}")
+
+    return dataset
