@@ -341,7 +341,7 @@ def create_dataset(project_id,
         LOGGER.exception(f"Unable to create dataset {dataset_id}")
         failures.append(dataset_id)
     else:
-        print(F"Created dataset {client.project}.{dataset.dataset_id}")
+        LOGGER.info(f"Created dataset {client.project}.{dataset.dataset_id}")
 
     if failures:
         raise RuntimeError(f"Unable to create tables: {failures}")
