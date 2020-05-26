@@ -292,6 +292,7 @@ def create_dataset(project_id,
                    dataset_id,
                    description=None,
                    friendly_name=None,
+                   label_or_tag=None,
                    overwrite_existing=None):
     """
     Creates a new dataset
@@ -300,36 +301,17 @@ def create_dataset(project_id,
     :param dataset_id: name to give the new dataset - required
     :param description: dataset description - required
     :param friendly_name: user friendly name for dataset - optional
+    :param label_or_tag: labels for the dataset = Dict[str, str]
+                          tags for the dataset = Dict[str, '']
     :param overwrite_existing: determine if dataset should be overwritten if already exists, defaults to true/overwrite
     :return: a new dataset returned from the API
     """
-    if dataset_id is None:
-        raise RuntimeError("Cannot create a dataset without a name")
-
-    if description is None:
-        raise RuntimeError("Will not create a dataset without a description")
-
-    if project_id is None:
-        LOGGER.info(f"You should specify project_id for a reliable experience."
-                    f"Defaulting to {os.environ.get(PROJECT_ID)}.")
-        project_id = os.environ.get(PROJECT_ID)
-
-    if overwrite_existing is None:
-        overwrite_existing = True
-    elif not overwrite_existing:
-        overwrite_existing = False
-    else:
-        overwrite_existing = True
-
     client = get_client(project_id)
-    dataset_id = f"{project_id}.{dataset_id}"
 
-    # Construct a full dataset object to send to the API.
-    dataset = bigquery.Dataset(dataset_id)
+    # Construct a full dataset object to send to the API using define_dataset.
+    dataset = define_dataset(project_id, dataset_id, description, label_or_tag)
 
-    # Set dataset attributes
-    dataset.location = "US"
-    dataset.description = description
+    # Set friendly_name
     if friendly_name:
         dataset.friendly_name = friendly_name
 
