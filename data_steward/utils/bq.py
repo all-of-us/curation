@@ -293,7 +293,7 @@ def create_dataset(project_id,
                    description=None,
                    friendly_name=None,
                    label_or_tag=None,
-                   overwrite_existing=None):
+                   overwrite_existing=False):
     """
     Creates a new dataset
 
