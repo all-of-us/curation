@@ -151,7 +151,8 @@ def get_dataset(project_id, dataset_id):
     :return: dataset object
     """
     client = get_client(project_id)
-    return client.get_dataset(dataset_id)
+    dataset = client.get_dataset(dataset_id)
+    return dataset
 
 
 def define_dataset(project_id, dataset_id, description, label_or_tag):
@@ -307,6 +308,11 @@ def create_dataset(project_id,
     :return: a new dataset returned from the API
     """
     client = get_client(project_id)
+
+    # Check to see if dataset already exists if overwrite_existing is False
+    all_datasets = [d.dataset_id for d in list_datasets(project_id)]
+    if overwrite_existing is False and dataset_id in all_datasets:
+        raise RuntimeError("Dataset already exists")
 
     # Construct a full dataset object to send to the API using define_dataset.
     dataset = define_dataset(project_id, dataset_id, description, label_or_tag)
