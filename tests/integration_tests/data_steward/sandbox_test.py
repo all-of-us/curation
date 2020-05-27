@@ -2,7 +2,7 @@
 import unittest
 
 # Project Imports
-from data_steward import sandbox
+import sandbox
 from utils.bq import list_datasets, delete_dataset
 import app_identity
 
