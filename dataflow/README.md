@@ -21,9 +21,18 @@ mkvirtualenv cdr-beam
 pip install apache-beam apache-beam[gcp]
 ```
 
-- Run the pipeline:
+- Run the pipeline, from the dataflow dir locallLIMIT 20:
 
 ```
-dataflow$ python main.py --setup_file $PWD/setup.py --from-bigquery
+python main.py --setup_file $PWD/setup.py --from-bigquery
 ```
 
+- Run the pipeline on Dataflow:
+
+```
+python main.py \
+  --setup_file $PWD/setup.py \
+  --from-bigquery \
+  --to-bigquery aou-res-curation-test:calbach_dataflow_testing \
+  --runner DataflowRunner
+```

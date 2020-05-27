@@ -33,6 +33,11 @@ MAX_AGE = 150
 
 
 class DropNegativeAges(beam.DoFn):
+    """
+    Drops invalid ages.
+
+    Requires a co-grouped input of person table and domain table.
+    """
 
     def __init__(self, tbl):
         self.tbl = tbl
