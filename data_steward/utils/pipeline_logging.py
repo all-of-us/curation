@@ -10,20 +10,16 @@ duplicating code.
 # Python imports
 import logging
 import os
-from pathlib import Path
 from datetime import datetime
 
 
-def setup_logger(log_filepath_list, console_logging=False):
+def generate_paths(log_filepath_list):
     """
-    Sets up python logging to file and or console for use in other modules.
+    Generates filepaths from the list of passed filepaths
 
     :param log_filepath_list:  desired string path and or name of the log file
                                example: ['path/', 'faked.log', 'path/fake.log']
-    :param console_logging:  determines if log should be output to the console
-                             is false by default, if true, will log output to console
     """
-
     default_file_name = datetime.now().strftime('curation%Y%m%d_%H%M%S.log')
 
     # iterates through log_filepath_list and sets path to
@@ -45,7 +41,7 @@ def setup_logger(log_filepath_list, console_logging=False):
 
     # iterates through log_filepath_list and sets path to log files
     output_log_path = [
-        Path(filepath)
+        os.path.join(filepath)
         for filepath in log_filepath_list
         if os.path.dirname(filepath) and 'log' in os.path.basename(filepath)
     ]
@@ -62,6 +58,9 @@ def setup_logger(log_filepath_list, console_logging=False):
                 # directory already exists
                 pass
 
+    return log_path
+
+def create_logger(filename, console_logging):
     # gets new logger, will be created if doesn't exist
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -73,27 +72,90 @@ def setup_logger(log_filepath_list, console_logging=False):
     stream_formatter = logging.Formatter(
         '%(levelname)s - %(name)s - %(message)s')
 
-    if console_logging is False:
-        for filename in log_path:
-            file_handler = logging.FileHandler(filename)
-            file_handler.setLevel(logging.INFO)
-            file_handler.setFormatter(file_formatter)
-            logger.addHandler(file_handler)
-
-        return logger
+    file_handler = logging.FileHandler(filename)
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
 
     if console_logging is True:
-        for filename in log_path:
-            file_handler = logging.FileHandler(filename)
-            stream_handler = logging.StreamHandler()
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.INFO)
+        stream_handler.setFormatter(stream_formatter)
+        logger.addHandler(stream_handler)
 
-            file_handler.setLevel(logging.INFO)
-            stream_handler.setLevel(logging.INFO)
+    return logging.getLogger(filename)
 
-            file_handler.setFormatter(file_formatter)
-            stream_handler.setFormatter(stream_formatter)
+def setup_logger(log_filepath_list, console_logging=True):
+    """
+    Sets up python logging to file and console for use in other modules.
 
-            logger.addHandler(file_handler)
-            logger.addHandler(stream_handler)
+    :param log_filepath_list:  desired string path and or name of the log file
+                               example: ['path/', 'faked.log', 'path/fake.log']
+    :param console_logging:  determines if log is output to desire and/or default file
+                             and console, or just the desired and/or default file
+    """
 
-        return logger
+    log_path = generate_paths(log_filepath_list)
+    print(f'log_path: {log_path}')
+
+    log_list = []
+
+    for filename in log_path:
+        log_list.append(create_logger(filename, console_logging))
+    return log_list
+
+# def console_logger(filename):
+#     """
+#     Sets up python logging to file and console for use in other modules.
+#
+#     :param log_filepath_list:  desired string path and or name of the log file
+#                                example: ['path/', 'faked.log', 'path/fake.log']
+#     """
+#
+#     # gets new logger, will be created if doesn't exist
+#     logger = logging.getLogger(__name__)
+#     logger.setLevel(logging.DEBUG)
+#
+#     # formatters for both FileHandler and StreamHandler
+#     file_formatter = logging.Formatter(
+#         fmt='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+#         datefmt='%(asctime)s')
+#     stream_formatter = logging.Formatter(
+#         '%(levelname)s - %(name)s - %(message)s')
+#
+#     file_handler = logging.FileHandler(filename)
+#     stream_handler = logging.StreamHandler()
+#
+#     file_handler.setLevel(logging.INFO)
+#     stream_handler.setLevel(logging.INFO)
+#
+#     file_handler.setFormatter(file_formatter)
+#     stream_handler.setFormatter(stream_formatter)
+#
+#     logger.addHandler(file_handler)
+#     logger.addHandler(stream_handler)
+#
+#     return logging.getLogger(filename)
+#
+# def file_logger(filename):
+#     """
+#     Sets up python logging to file and or console for use in other modules.
+#
+#     :param log_filepath_list:  desired string path and or name of the log file
+#                                example: ['path/', 'faked.log', 'path/fake.log']
+#     """
+#     logger = logging.getLogger(__name__)
+#     logger.setLevel(logging.DEBUG)
+#
+#     file_formatter = logging.Formatter(
+#         fmt='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+#         datefmt='%(asctime)s')
+#
+#     # delay=True, delays the creation of the file until content
+#     # is written to it
+#     file_handler = logging.FileHandler(filename)
+#     file_handler.setLevel(logging.INFO)
+#     file_handler.setFormatter(file_formatter)
+#     logger.addHandler(file_handler)
+#
+#     return logging.getLogger(filename)
