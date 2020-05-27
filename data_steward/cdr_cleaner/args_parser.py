@@ -1,7 +1,8 @@
 import argparse
 
 import constants.cdr_cleaner.clean_cdr as consts
-from cdr_cleaner.reporter import FIELDS_METHODS_MAP, FIELDS_ATTRIBUTES_MAP
+from cdr_cleaner.reporter import (CLASS_ATTRIBUTES_MAP, FIELDS_METHODS_MAP,
+                                  FIELDS_PROPERTIES_MAP)
 
 SHORT_ARGUMENT = 'argument'
 LONG_ARGUMENT = 'long_argument'
@@ -91,8 +92,9 @@ def get_report_parser():
         'will provide a csv style report for project management.'))
 
     methods = [k for k, _ in FIELDS_METHODS_MAP.items()]
-    attrs = [k for k, _ in FIELDS_ATTRIBUTES_MAP.items()]
-    fields = methods + attrs
+    props = [k for k, _ in FIELDS_PROPERTIES_MAP.items()]
+    class_attrs = [k for k, _ in CLASS_ATTRIBUTES_MAP.items()]
+    fields = methods + props + class_attrs
 
     parser.add_argument('-d',
                         '--data-stage',

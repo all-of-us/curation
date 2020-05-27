@@ -2,30 +2,39 @@
 A package to generate a csv file type report for cleaning rules.
 """
 # Python imports
+import csv
 import logging
+import os
 
 # Third party imports
 from googleapiclient.errors import HttpError
+from google.api_core.exceptions import BadRequest
 
 # Project imports
 import cdr_cleaner.args_parser as cleaning_parser
 import cdr_cleaner.clean_cdr as control
 import cdr_cleaner.clean_cdr_engine as engine
-from constants.cdr_cleaner.clean_cdr import DataStage as stage
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-FIELDS_ATTRIBUTES_MAP = {
+FIELDS_PROPERTIES_MAP = {
     'jira-issues': 'issue_numbers',
     'description': 'description',
     'affected-datasets': 'affected_datasets',
-    'class-name': 'name',
-    #    'affected-tables': 'affected_tables',
+    'affected-tables': 'affected_tables',
+    'issue-urls': 'issue_urls',
+    'dependencies': 'depends_on_classes',
 }
 
 FIELDS_METHODS_MAP = {
     'sql': 'get_query_specs',
+    'sandbox-tables': 'get_sandbox_tablenames',
+}
+
+CLASS_ATTRIBUTES_MAP = {
+    'name': '__class__.__name__',
+    'module': '__class__.__module__',
 }
 
 
@@ -43,44 +52,155 @@ def parse_args(raw_args=None):
 
 
 def get_stage_elements(data_stage, fields_list):
+    """
+    Return the field info for rules defined for this data_stage.
 
-    rows = []
+    For the given data_stage, this will determine the values of the
+    requested fields.  This information will be returned as a list
+    of dictionaries to preserve the information order.  Each dictionary
+    contains values for the report for a single cleaning rule.
+
+    :param data_stage: The data stage to report for.
+    :param fields_list: The user defined fields to report back.
+
+    :returns: a list of dictionaries representing the requested fields.
+    """
+
+    report_rows = []
     for rule in control.DATA_STAGE_RULES_MAPPING.get(data_stage, []):
-        LOGGER.info('\n')
-        clazz = rule[0]
+        rule_info = {}
+
         try:
+            clazz = rule[0]
             instance = clazz('foo', 'bar', 'baz')
-            print(instance)
-            LOGGER.info(f"{clazz} is a class")
+            LOGGER.info(f"{clazz} ducktyped to a class")
 
-        except (TypeError, HttpError):
-            LOGGER.info(f"{rule} is not a class")
-            row = []
-            for field in fields_list:
-                row.append('no data')
+        except (TypeError, HttpError, BadRequest):
+            LOGGER.info(f"{rule} did NOT ducktype to a class")
+            rule_info['name'] = clazz.__name__
+            rule_info['module'] = clazz.__module__
 
-            rows.append(row)
+            report_rows.append(rule_info)
 
         else:
-            row = []
-            for field in fields_list:
+            try:
+                # this is a class
+                _ = instance.get_query_specs()
+                LOGGER.info(f"{clazz} is a class")
+                for field in fields_list:
+                    try:
+                        value = 'NO DATA'
+                        if field in FIELDS_PROPERTIES_MAP:
+                            func = FIELDS_PROPERTIES_MAP[field]
+                            value = getattr(instance, func, 'no data')
+                        elif field in FIELDS_METHODS_MAP:
+                            func = FIELDS_METHODS_MAP[field]
+                            value = getattr(instance, func, 'no data')()
+                        elif field in CLASS_ATTRIBUTES_MAP:
+                            func = CLASS_ATTRIBUTES_MAP[field]
+
+                            value = None
+                            for item in func.split('.'):
+                                if not value:
+                                    value = getattr(instance, item)
+                                else:
+                                    value = getattr(value, item)
+
+                        rule_info[field] = value
+
+                    except AttributeError:
+                        # an error occurred trying to access an expected attribute.
+                        # did the base class definition change recently?
+                        LOGGER.exception(
+                            f'An error occurred trying to get the value for {field}'
+                        )
+                        rule_info[field] = 'unknown'
+            except (TypeError, AttributeError):
+                # an error occurred indicating this is not a rule extending the
+                # base cleaning rule.  provide the info we can and move on.
+                LOGGER.exception(f'{clazz} is not a class')
+                # this is a function
+                rule_info['name'] = clazz.__name__
+                rule_info['module'] = clazz.__module__
+
+            report_rows.append(rule_info)
+
+    return report_rows
+
+
+def separate_sql_statements(rules_values):
+    """
+    Separate SQL statements into items with other identical fields.
+
+    This must maintain the SQL statement order.
+    """
+    separated_rules_values = []
+    for rule_values in rules_values:
+        sql_list = []
+        separated = dict()
+
+        # gather the queries as a list
+        for query_dict in rule_values.get('sql', []):
+            sql_list.append(query_dict.get('query'))
+
+        if sql_list:
+            # generate a dictionary for each query
+            for query in sql_list:
+                separated = dict(rule_values)
+                separated['sql'] = query.strip()
+                separated_rules_values.append(separated)
+        else:
+            # was unable to read any sql, so just add to the list
+            separated = dict(rule_values)
+            separated_rules_values.append(separated)
+
+    return separated_rules_values
+
+
+def format_values(rules_values):
+    """
+    Format the fields' values for input to the DictWriter.
+
+    This formats fields whose values are lists as joined strings.
+    If the sql field is chosen, a line break is used to joing the sql strings.
+
+    :param rules_values: The list of dictionaries containing field/value pairs for
+        each field specified via arguments for each cleaning rule.
+    """
+    formatted_values = []
+
+    if 'sql' in rules_values[0].keys():
+        LOGGER.info("SQL field exists")
+        rules_values = separate_sql_statements(rules_values)
+
+    for rule_values in rules_values:
+        field_values = {}
+        for field, value in rule_values.items():
+            if isinstance(value, list):
                 try:
-                    func = FIELDS_ATTRIBUTES_MAP[field]
+                    value = ', '.join(value)
+                except TypeError:
+                    LOGGER.exception(f"erroneous value is {value}")
+                    raise
 
-                    if func:
-                        value = getattr(instance, func)
-                    else:
-                        func = FIELDS_METHODS_MAP[field]
-                        value = getattr(instance, func)()
+            field_values[field] = value
 
-                    row.append(value)
-                except AttributeError:
-                    LOGGER.exception('something weird happened here')
-                    row.append('no data')
+        formatted_values.append(field_values)
 
-            rows.append(row)
+    return formatted_values
 
-    return rows
+
+def check_field_list_validity(fields_list, required_fields_dict):
+    known_fields = set()
+    for value_dict in required_fields_dict:
+        keys = value_dict.keys()
+        known_fields.update(keys)
+
+    for field in known_fields:
+        if field not in fields_list:
+            fields_list.append(field)
+
+    return fields_list
 
 
 def write_csv_report(output_filepath, stages_list, fields_list):
@@ -90,28 +210,58 @@ def write_csv_report(output_filepath, stages_list, fields_list):
     :param output_filepath: the filepath of a csv file.
     :param stages_list: a list of strings indicating the data stage to
         report for.  Should match to a stage value in
-        curation/data_steward/constants/cdr_cleaner.clean_cdr.py DataStage.
+        curation/data_steward/constants/cdr_cleaner/clean_cdr.py DataStage.
     :param fields_list: a list of string fields that will be added to the
         csv file.
     """
     if not output_filepath.endswith('.csv'):
         raise RuntimeError(f"This file is not a csv file: {output_filepath}.")
 
+    required_fields_dict = [{}]
     for stage in stages_list:
-        required_fields = get_stage_elements(stage, fields_list)
-        for data in required_fields:
-            LOGGER.info(data)
+        # get the fields and values
+        required_fields_dict = get_stage_elements(stage, fields_list)
+        # format dictionaries for writing
+        required_fields_dict = format_values(required_fields_dict)
+
+    fields_list = check_field_list_validity(fields_list, required_fields_dict)
+
+    # write the contents to a csv file
+    with open(output_filepath, 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile,
+                                fields_list,
+                                delimiter=',',
+                                lineterminator=os.linesep,
+                                quoting=csv.QUOTE_ALL)
+        writer.writeheader()
+        for info in required_fields_dict:
+            writer.writerow(info)
 
 
 def main(raw_args=None):
+    """
+    Entry point for the clean rules reporter module.
+
+    If you provide a list of arguments and settings, these will be parsed.
+    If you leave this blank, the command line arguments are parsed.  This allows
+    this module to be easily called from other python modules.
+
+    :param raw_args: The list of arguments to parse.  Defaults to parsing the
+        command line.
+    """
     args = parse_args()
     engine.add_console_logging(args.console_log)
     LOGGER.info(f"{args}")
 
-    if stage.UNSPECIFIED.value in args.data_stage:
-        args.data_stage = [s.value for s in stage if s is not stage.UNSPECIFIED]
-        LOGGER.info(f"Data stage was {stage.UNSPECIFIED.value}, so all stages "
-                    f"will be reported on:  {args.data_stage}")
+    if cdr_consts.DataStage.UNSPECIFIED.value in args.data_stage:
+        args.data_stage = [
+            s.value
+            for s in cdr_consts.DataStage
+            if s is not cdr_consts.DataStage.UNSPECIFIED
+        ]
+        LOGGER.info(
+            f"Data stage was {cdr_consts.DataStage.UNSPECIFIED.value}, so all stages "
+            f"will be reported on:  {args.data_stage}")
 
     write_csv_report(args.output_filepath, args.data_stage, args.fields)
 

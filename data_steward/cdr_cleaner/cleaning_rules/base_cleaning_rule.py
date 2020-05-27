@@ -158,7 +158,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         :param depends_on:  a list of rules a cleaning rule depends on when
             running.  Right now, it is used for reporting purposes, but the
             scope may expand in the future.  Default is an empty list.
-        :param affected_tables: a list of tables that are affected by 
+        :param affected_tables: a list of tables that are affected by
             running this cleaning rule.
         """
         self._issue_numbers = issue_numbers
@@ -268,10 +268,6 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                                'classes that inherit from BaseCleaningRule'.
                                format(clazz))
                     raise TypeError(message)
-
-    @property
-    def name(self):
-        return self.__class__.__name__
 
     @property
     def depends_on_classes(self):
