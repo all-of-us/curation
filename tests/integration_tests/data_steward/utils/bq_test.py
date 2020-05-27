@@ -53,6 +53,6 @@ class BQTest(unittest.TestCase):
                                  self.description, self.label_or_tag)
         self.assertEqual(dataset.dataset_id, self.dataset_id)
 
-    def TearDown(self):
+    def tearDown(self):
         # Remove dataset created in project
         delete_dataset(self.project_id, self.dataset_id)
