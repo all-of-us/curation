@@ -14,9 +14,11 @@ import shutil
 import unittest
 import logging
 import os
+import mock
+from datetime import datetime
 
 # Project imports
-from utils.pipeline_logging import setup_logger
+from utils.pipeline_logging import setup_logger, generate_paths
 
 
 class PipelineLoggingTest(unittest.TestCase):
@@ -29,24 +31,22 @@ class PipelineLoggingTest(unittest.TestCase):
 
     def setUp(self):
         self.log_file_list = ['path/', 'faked.log', 'path/fake.log']
+        self.log_path = [datetime.now().strftime('path/curation%Y%m%d_%H%M%S.log'),
+                         'logs/faked.log', 'path/fake.log']
 
-    def test_setup_logger(self):
-        # checks if handlers exist before setup_logger function runs
-        # should be false
-        handlers_exist = logging.getLogger().hasHandlers()
-        self.assertEquals(handlers_exist, False)
+    @mock.patch('utils.pipeline_logging.generate_paths')
+    def test_generate_paths(self, mock_generate_paths):
+        # checks that log_path is generated properly
+        results = generate_paths(self.log_file_list)
+        self.assertEquals(results, self.log_path)
 
-        # log to console and file
+    @mock.patch('utils.pipeline_logging.logging')
+    def test_setup_logger(self, mock_logging):
+        # checks that console_logger function is called
         results = setup_logger(self.log_file_list, True)
-        self.assertEquals(results.hasHandlers(), True)
-        logging.shutdown()
+        print(f'results: {results}')
+        mock_logging.assert_has_calls(logging.StreamHandler())
 
-        # log to just file
-        results = setup_logger(self.log_file_list, False)
-        self.assertEquals(results.hasHandlers(), True)
-        print(results.handlers)
-        logging.shutdown()
 
     def tearDown(self):
         shutil.rmtree('path/')
-        os.remove('logs/faked.log')
