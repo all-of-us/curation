@@ -20,57 +20,6 @@ from datasteward_df import common
 from datasteward_df import negative_ages
 
 
-class ExtractDobAsMeasurement(beam.DoFn):
-    """Removes DOB from the person table and emit as a measurement row.
-
-  Note: This is just meant to illustrate moving data from person -> another
-  table. More realistically this belongs in the observation table instead, but
-  there was some issues in loading test data for the observation table.
-  """
-
-    OUTPUT_TAG_MEASUREMENT = 'measurement'
-    DOB_CONCEPT_ID = 4083587
-
-    def process(self, person):
-        """Receives a person row and produces a modified person row and measurement row.
-    Args:
-      element: processing element.
-    Yields:
-      person rows as main output, "measurement" as a tagged output
-    """
-
-        if "birth_datetime" in person:
-            # Note: here we're generating a new row sans ID. That has interesting
-            # implications.
-            dob = person["birth_datetime"]
-            yield pvalue.TaggedOutput(
-                self.OUTPUT_TAG_MEASUREMENT, {
-                    "person_id": person["person_id"],
-                    "measurement_concept_id": self.DOB_CONCEPT_ID,
-                    "measurement_datetime": dob
-                })
-
-        for key in [
-                "year_of_birth", "month_of_birth", "day_of_birth",
-                "birth_datetime"
-        ]:
-            person[key] = None
-        yield person
-
-
-def clamp_condition_start_datetime(c):
-    start = datetime.strptime(c["condition_start_datetime"],
-                              "%Y-%m-%d %H:%M:%S.%f %Z")
-    if start > datetime.utcnow():
-        c["condition_start_datetime"] = str(datetime.utcnow())
-
-
-def filter_by_id(p, blacklist):
-    if not p:
-        return False
-    return p["person_id"] not in blacklist
-
-
 def run(argv=None, save_main_session=True):
     """Main entry point; defines and runs the pipeline."""
 
@@ -81,20 +30,19 @@ def run(argv=None, save_main_session=True):
                         default=False,
                         nargs='?',
                         help='Whether to load from BigQuery')
+    parser.add_argument('--to-bigquery',
+                        dest='to_bigquery',
+                        const=True,
+                        default=False,
+                        nargs='?',
+                        help='Whether to load to BigQuery')
     known_args, pipeline_args = parser.parse_known_args(argv)
     pipeline_args.extend([
-        # CHANGE 2/5: (OPTIONAL) Change this to DataflowRunner to
-        # run your pipeline on the Google Cloud Dataflow Service.
-        '--runner=DataflowRunner',
-        # CHANGE 3/5: Your project ID is required in order to run your pipeline on
-        # the Google Cloud Dataflow Service.
         '--project=aou-res-curation-test',
-        # CHANGE 4/5: Your Google Cloud Storage path is required for staging local
-        # files.
+        '--service-account=dataflow-test@aou-res-curation-test.iam.gserviceaccount.com',
         '--staging_location=gs://dataflow-test-dc-864/staging',
         '--temp_location=gs://dataflow-test-dc-864/tmp',
-        '--job_name=curation-prototype',
-        '--region=us-central1',
+        '--job_name=curation-prototype', '--region=us-central1',
         '--network=dataflow-test-dc-864'
     ])
 
@@ -122,57 +70,30 @@ def run(argv=None, save_main_session=True):
                     p | f"read {tbl}" >> ReadFromText(f"test_data/{tbl}.json") |
                     f"{tbl} from JSON" >> beam.Map(json.loads))
 
-        # 1. Move data from person table elsewhere.
-
-        # Transform person rows, generate new measurement rows.
-        combined_by_domain["person"], extracted_meas_rows = (
-            combined_by_domain["person"] |
-            beam.ParDo(ExtractDobAsMeasurement()).with_outputs(
-                ExtractDobAsMeasurement.OUTPUT_TAG_MEASUREMENT, main='person'))
-
-        # Merge the new measurement rows into the larger collection.
-        combined_by_domain["measurement"] = (
-            combined_by_domain["measurement"],
-            extracted_meas_rows) | beam.Flatten()
-
-        # 2. Perform a row-level table transform
-        combined_by_domain["condition_occurrence"] = (
-            combined_by_domain["condition_occurrence"] |
-            beam.Map(clamp_condition_start_datetime))
-
-        # 3. Retract participants by ID.
-        person_id_blacklist = (
-            combined_by_domain['person'] | beam.Map(lambda p: p['person_id'])
-            # Simulates more complex criteria here, likely involving other tables.
-            | "generate the person ID blacklist" >>
-            beam.Filter(lambda pid: int(pid) % 2 == 0) |
-            beam.Map(lambda pid: (pid, True)) | beam.combiners.ToDict())
-
-        # Drop all data for blacklisted participants from all tables.
-        for (domain, data) in combined_by_domain.items():
-            combined_by_domain[domain] = (
-                data | f"blacklist {domain}" >> beam.Filter(
-                    filter_by_id,
-                    blacklist=pvalue.AsSingleton(person_id_blacklist)))
-
-        # 4. Group-by-participant transforms, e.g. remove duplicate measurements
-        combined_by_domain['measurement'] = (
-            combined_by_domain['measurement']
-            # Define unique rows as person+measurement concept ID.
-            | beam.Map(lambda m:
-                       ((m["person_id"], m["measurement_concept_id"]), m))
-            # We don't care which one, just compare the row JSON for a deterministic result.
-            | beam.combiners.Top.PerKey(1, key=lambda a: str(a)) |
-            beam.Values())
-
-        # XXX: Need to figure out how ID generation is meant to work here. That will impact
-        # how we go about creating the mapping tables.
-        # Initial idea is that we likely attach some payload to the in-flight representation
-        # of a row.
+        person_by_key = (
+            combined_by_domain['person'] |
+            'person by key' >> beam.Map(lambda p: (p['person_id'], p)))
+        for tbl in ['measurement', 'condition_occurrence']:
+            by_person = (combined_by_domain[tbl] | f"{tbl} by person id" >>
+                         beam.Map(lambda row: (row['person_id'], row)))
+            combined_by_domain[tbl] = ({
+                tbl: by_person,
+                'person': person_by_key
+            } | f"{tbl} cogrouped" >> beam.CoGroupByKey() | beam.ParDo(
+                negative_ages.DropNegativeAges(tbl)))
 
         for domain, data in combined_by_domain.items():
-            data | f"output for {domain}" >> beam.io.WriteToText(
-                f"out/{domain}.txt")
+            if known_args.to_bigquery:
+                data | f"output for {domain}" >> beam.io.WriteToBigQuery(
+                    table_spec,
+                    schema=table_schema,
+                    write_disposition=beam.io.BigQueryDisposition.
+                    WRITE_TRUNCATE,
+                    create_disposition=beam.io.BigQueryDisposition.
+                    CREATE_IF_NEEDED)
+            else:
+                data | f"output for {domain}" >> beam.io.WriteToText(
+                    f"out/{domain}.txt")
 
 
 if __name__ == '__main__':
