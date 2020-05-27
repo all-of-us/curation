@@ -32,10 +32,8 @@ def run(argv=None, save_main_session=True):
                         help='Whether to load from BigQuery')
     parser.add_argument('--to-bigquery',
                         dest='to_bigquery',
-                        const=True,
-                        default=False,
-                        nargs='?',
-                        help='Whether to load to BigQuery')
+                        default=None,
+                        help='BigQuery dataset to load into, if any')
     known_args, pipeline_args = parser.parse_known_args(argv)
     pipeline_args.extend([
         '--project=aou-res-curation-test',
@@ -62,7 +60,7 @@ def run(argv=None, save_main_session=True):
                 combined_by_domain[tbl] = (p | f"{tbl}" >> beam.io.Read(
                     beam.io.BigQuerySource(
                         query=
-                        f"SELECT * FROM `aou-res-curation-test.synthea_ehr_ops_20200513.{table_prefix}_{tbl}` LIMIT 20",
+                        f"SELECT * FROM `aou-res-curation-test.synthea_ehr_ops_20200513.{table_prefix}_{tbl}` WHERE MOD(person_id, 2500) = 0",
                         use_standard_sql=True)))
             else:
                 # TODO: FIX!
@@ -84,13 +82,14 @@ def run(argv=None, save_main_session=True):
 
         for domain, data in combined_by_domain.items():
             if known_args.to_bigquery:
-                data | f"output for {domain}" >> beam.io.WriteToBigQuery(
-                    table_spec,
-                    schema=table_schema,
-                    write_disposition=beam.io.BigQueryDisposition.
-                    WRITE_TRUNCATE,
-                    create_disposition=beam.io.BigQueryDisposition.
-                    CREATE_IF_NEEDED)
+                with open(f"fields/{domain}.json") as schema_file:
+                    data | f"output for {domain}" >> beam.io.WriteToBigQuery(
+                        f"{known_args.to_bigquery}.{domain}",
+                        schema={'fields': json.load(schema_file)},
+                        write_disposition=beam.io.BigQueryDisposition.
+                        WRITE_TRUNCATE,
+                        create_disposition=beam.io.BigQueryDisposition.
+                        CREATE_IF_NEEDED)
             else:
                 data | f"output for {domain}" >> beam.io.WriteToText(
                     f"out/{domain}.txt")

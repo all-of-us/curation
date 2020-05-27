@@ -24,6 +24,6 @@ pip install apache-beam apache-beam[gcp]
 - Run the pipeline:
 
 ```
-python main.py --setup_file $PWD/setup.py --from-bigquery
+dataflow$ python main.py --setup_file $PWD/setup.py --from-bigquery
 ```
 
