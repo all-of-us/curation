@@ -16,6 +16,9 @@ from apache_beam.io import WriteToText
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
+from datasteward_df import common
+from datasteward_df import negative_ages
+
 
 class ExtractDobAsMeasurement(beam.DoFn):
     """Removes DOB from the person table and emit as a measurement row.
@@ -63,6 +66,8 @@ def clamp_condition_start_datetime(c):
 
 
 def filter_by_id(p, blacklist):
+    if not p:
+        return False
     return p["person_id"] not in blacklist
 
 
@@ -99,31 +104,23 @@ def run(argv=None, save_main_session=True):
     pipeline_options.view_as(SetupOptions).save_main_session = save_main_session
     with beam.Pipeline(options=pipeline_options) as p:
 
-        # Read all of the EHR inputs, into a dictionary of:
-        #   table -> site_name -> PCollection of table rows
-        ehr_inputs = {}
-        for tbl in ['person', 'measurement', 'condition_occurrence']:
-            ehr_inputs[tbl] = {}
-            for site in ['nyc', 'pitt']:
-                if known_args.from_bigquery:
-                    ehr_inputs[tbl][site] = (p | f"{site}_{tbl}" >> beam.io.Read(
-                        beam.io.BigQuerySource(
-                            query=
-                            f"SELECT * FROM `aou-res-curation-test.calbach_prototype.{site}_{tbl}`",
-                            use_standard_sql=True)))
-                else:
-                    ehr_inputs[tbl][site] = (
-                        p | f"read {site}_{tbl}" >>
-                        ReadFromText(f"../test_data/{site}/{tbl}.json") |
-                        f"{site}_{tbl} from JSON" >> beam.Map(json.loads))
+        table_prefix = 'unioned_ehr'
 
-        # Merge tables across all sites, resulting in:
-        #  table -> PCollection of table rows
-        # Question: How should these ID spaces be reconciled?
+        # Read all of the EHR inputs, into a dictionary of:
+        #   table -> PCollection of table rows
         combined_by_domain = {}
-        for tbl, data_by_site in ehr_inputs.items():
-            combined_by_domain[tbl] = data_by_site.values(
-            ) | f"ehr merge for {tbl}" >> beam.Flatten()
+        for tbl in ['person', 'measurement', 'condition_occurrence']:
+            if known_args.from_bigquery:
+                combined_by_domain[tbl] = (p | f"{tbl}" >> beam.io.Read(
+                    beam.io.BigQuerySource(
+                        query=
+                        f"SELECT * FROM `aou-res-curation-test.synthea_ehr_ops_20200513.{table_prefix}_{tbl}` LIMIT 20",
+                        use_standard_sql=True)))
+            else:
+                # TODO: FIX!
+                combined_by_domain[tbl] = (
+                    p | f"read {tbl}" >> ReadFromText(f"test_data/{tbl}.json") |
+                    f"{tbl} from JSON" >> beam.Map(json.loads))
 
         # 1. Move data from person table elsewhere.
 
