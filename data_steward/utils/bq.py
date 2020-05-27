@@ -325,8 +325,7 @@ def create_dataset(project_id,
 
     failures = []
     try:
-        dataset = client.create_dataset(
-            dataset, exists_ok=overwrite_existing)
+        dataset = client.create_dataset(dataset, exists_ok=overwrite_existing)
     except (GoogleAPIError, OSError, AttributeError, TypeError, ValueError):
         LOGGER.exception(f"Unable to create dataset {dataset_id}")
         failures.append(dataset_id)
