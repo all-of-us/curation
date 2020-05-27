@@ -169,7 +169,7 @@ def define_dataset(project_id, dataset_id, description, label_or_tag):
 
     :raises: google.api_core.exceptions.Conflict if the dataset already exists
     """
-    if description.isspace() or not description:
+    if not description or description.isspace():
         raise RuntimeError("Provide a description to create a dataset.")
 
     if not project_id:
@@ -292,8 +292,8 @@ def get_latest_validation_dataset_id(project_id):
 def create_dataset(project_id,
                    dataset_id,
                    description=None,
-                   friendly_name=None,
                    label_or_tag=None,
+                   friendly_name=None,
                    overwrite_existing=False):
     """
     Creates a new dataset
@@ -310,10 +310,12 @@ def create_dataset(project_id,
     """
     client = get_client(project_id)
 
-    # Check to see if dataset already exists if overwrite_existing is False
-    if not overwrite_existing:
-        all_datasets = [d.dataset_id for d in list_datasets(project_id)]
-        if dataset_id in all_datasets:
+    # Check to see if dataset already exists
+    all_datasets = [d.dataset_id for d in list_datasets(project_id)]
+    if dataset_id in all_datasets:
+        if overwrite_existing:
+            delete_dataset(project_id, dataset_id)
+        else:
             raise RuntimeError("Dataset already exists")
 
     # Construct a full dataset object to send to the API using define_dataset.
@@ -333,6 +335,6 @@ def create_dataset(project_id,
         LOGGER.info(f"Created dataset {client.project}.{dataset.dataset_id}")
 
     if failures:
-        raise RuntimeError(f"Unable to create tables: {failures}")
+        raise RuntimeError(f"Unable to create dataset: {failures}")
 
     return dataset

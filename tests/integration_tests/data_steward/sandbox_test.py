@@ -1,4 +1,4 @@
-#Python imports
+# Python imports
 import unittest
 
 # Project Imports
@@ -7,7 +7,7 @@ from utils.bq import list_datasets, delete_dataset
 import app_identity
 
 
-class RetractDataBqTest(unittest.TestCase):
+class SandboxTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -32,5 +32,5 @@ class RetractDataBqTest(unittest.TestCase):
         self.assertRaises(RuntimeError, sandbox.create_sandbox_dataset,
                           self.project_id, self.dataset_id)
 
-        # Remove fake dataset created in aou-res-curation-test
+        # Remove fake dataset created in project
         delete_dataset(self.project_id, dataset)
