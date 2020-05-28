@@ -21,13 +21,19 @@ mkvirtualenv cdr-beam
 pip install apache-beam apache-beam[gcp]
 ```
 
-- Run the pipeline, from the dataflow dir locallLIMIT 20:
+- Copy schema JSON files into this subdir (.gitignored to avoid clutter, just a hack):
+
+```
+cp -r data_steward/resource_files/fields dataflow/fields
+```
+
+- Run the pipeline, from the dataflow dir locally:
 
 ```
 python main.py --setup_file $PWD/setup.py --from-bigquery
 ```
 
-- Run the pipeline on Dataflow:
+- Run the pipeline on Dataflow, from the dataflow dir:
 
 ```
 python main.py \
