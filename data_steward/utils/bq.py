@@ -151,7 +151,8 @@ def get_dataset(project_id, dataset_id):
     :return: dataset object
     """
     client = get_client(project_id)
-    return client.get_dataset(dataset_id)
+    dataset = client.get_dataset(dataset_id)
+    return dataset
 
 
 def define_dataset(project_id, dataset_id, description, label_or_tag):
@@ -168,7 +169,7 @@ def define_dataset(project_id, dataset_id, description, label_or_tag):
 
     :raises: google.api_core.exceptions.Conflict if the dataset already exists
     """
-    if description.isspace() or not description:
+    if not description or description.isspace():
         raise RuntimeError("Provide a description to create a dataset.")
 
     if not project_id:
@@ -286,3 +287,54 @@ def get_latest_validation_dataset_id(project_id):
             return sorted(validation_datasets, key=lambda x: x[0],
                           reverse=True)[0][1]
     return None
+
+
+def create_dataset(project_id,
+                   dataset_id,
+                   description=None,
+                   label_or_tag=None,
+                   friendly_name=None,
+                   overwrite_existing=False):
+    """
+    Creates a new dataset
+
+    :param project_id: name of the project to create dataset in, defaults to the currently configured project if missing.
+    :param dataset_id: name to give the new dataset - required
+    :param description: dataset description - required
+    :param friendly_name: user friendly name for dataset - optional
+    :param label_or_tag: labels for the dataset = Dict[str, str]
+                         tags for the dataset = Dict[str, '']
+    :param overwrite_existing: determine if dataset should be overwritten if already exists, defaults to False.
+                               Overwrites ony if explicitly told to
+    :return: a new dataset returned from the API
+    """
+    client = get_client(project_id)
+
+    # Check to see if dataset already exists
+    all_datasets = [d.dataset_id for d in list_datasets(project_id)]
+    if dataset_id in all_datasets:
+        if overwrite_existing:
+            delete_dataset(project_id, dataset_id)
+        else:
+            raise RuntimeError("Dataset already exists")
+
+    # Construct a full dataset object to send to the API using define_dataset.
+    dataset = define_dataset(project_id, dataset_id, description, label_or_tag)
+
+    # Set friendly_name
+    if friendly_name:
+        dataset.friendly_name = friendly_name
+
+    failures = []
+    try:
+        dataset = client.create_dataset(dataset, exists_ok=overwrite_existing)
+    except (GoogleAPIError, OSError, AttributeError, TypeError, ValueError):
+        LOGGER.exception(f"Unable to create dataset {dataset_id}")
+        failures.append(dataset_id)
+    else:
+        LOGGER.info(f"Created dataset {client.project}.{dataset.dataset_id}")
+
+    if failures:
+        raise RuntimeError(f"Unable to create dataset: {failures}")
+
+    return dataset
