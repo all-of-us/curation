@@ -30,7 +30,6 @@ def get_client(project_id):
     :returns: a big query client object
     """
     global CLIENT
-    LOGGER.info(CLIENT is None)
     if not CLIENT:
         CLIENT = bigquery.Client(project=project_id)
 
@@ -337,7 +336,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 pid = ehr_row.person_id
 
             # Check if PID is in table
-            if pid is not None and check_pid_exist(pid, date_row, client) > 0:
+            if pid and check_pid_exist(pid, date_row, client):
                 dataset_list.add(date_row.dataset_id)
                 # Get or create sandbox dataset
                 sandbox_dataset = check_and_create_sandbox_dataset(
