@@ -42,3 +42,5 @@ the internet. The following environment variables are needed to configure access
     pip install -r deid/requirements.txt
     pip install -r dev_requirements.txt
     ```
+   
+   test
