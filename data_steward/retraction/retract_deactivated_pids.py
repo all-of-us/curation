@@ -102,21 +102,23 @@ CLEAN_QUERY_DATE = jinja_env.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id != {{pid}}
+OR (person_id = {{pid}}
 AND {{date_column}} < (SELECT deactivated_date
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
-WHERE person_id = {{pid}})
+WHERE person_id = {{pid}}))
 """)
 
 CLEAN_QUERY_END_DATE = jinja_env.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id != {{pid}}
+OR (person_id = {{pid}}
 AND (CASE WHEN {{end_date_column}} IS NOT NULL THEN {{end_date_column}} < (SELECT deactivated_date
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
 WHERE person_id = {{pid}} ) ELSE CASE WHEN {{end_date_column}} IS NULL THEN {{start_date_column}} < (
 SELECT deactivated_date
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
-WHERE person_id = {{pid}}) END END)
+WHERE person_id = {{pid}}) END END))
 """)
 
 # Deactivated participant table fields to query off of
