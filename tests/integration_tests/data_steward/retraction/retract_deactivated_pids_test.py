@@ -10,7 +10,7 @@ import mock
 
 # Project Imports
 import bq_utils
-from utils.bq import get_client
+from utils import bq
 import gcs_utils
 from tests import test_util
 from retraction import retract_deactivated_pids
@@ -46,13 +46,16 @@ class RetractDataBqTest(unittest.TestCase):
         self.bq_dataset_id = bq_utils.get_dataset_id()
         self.ticket_number = 'DCXXX'
         self.pid_table_id = 'pid_table'
+        self.pid_table_id_list = [
+            self.project_id + '.' + self.bq_dataset_id + '.' + 'pid_table'
+        ]
         self.deactivated_ehr_participants = [(1, '2007-01-01'),
                                              (2, '2008-02-01'),
                                              (1234567, '2019-01-01')]
 
     @mock.patch(
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
-    @mock.patch('bq_utils.list_datasets')
+    @mock.patch('utils.bq.list_datasets')
     def test_integration_queries_to_retract_from_fake_dataset(
         self, mock_list_datasets, mock_retraction_info):
         mock_list_datasets.return_value = [self.bq_dataset_id]
@@ -78,12 +81,14 @@ class RetractDataBqTest(unittest.TestCase):
         }
         retraction_info = pd.DataFrame(data=d)
         mock_retraction_info.return_value = retraction_info
+        client = bq.get_client(self.project_id)
 
         # Create and load person_ids and deactivated_date to pid table
-        bq_utils.create_table(self.pid_table_id,
-                              retract_deactivated_pids.PID_TABLE_FIELDS,
-                              drop_existing=True,
-                              dataset_id=self.bq_dataset_id)
+        bq.create_tables(client,
+                         self.project_id,
+                         self.pid_table_id_list,
+                         exists_ok=False,
+                         fields=retract_deactivated_pids.PID_TABLE_FIELDS)
         bq_formatted_insert_values = ', '.join([
             '(%s, "%s")' % (person_id, deactivated_date)
             for (person_id,
@@ -93,7 +98,7 @@ class RetractDataBqTest(unittest.TestCase):
             dataset_id=self.bq_dataset_id,
             pid_table_id=self.pid_table_id,
             person_research_ids=bq_formatted_insert_values)
-        bq_utils.query(q)
+        client.query(q)
 
         job_ids = []
         row_count_queries = []
@@ -147,7 +152,6 @@ class RetractDataBqTest(unittest.TestCase):
 
         # Use query results to count number of expected row deletions
         expected_row_count = {}
-        client = get_client(self.project_id)
         for query_dict in row_count_queries:
             response = client.query(query_dict['query'])
             result = response.result()
