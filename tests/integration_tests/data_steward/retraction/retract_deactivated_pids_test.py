@@ -31,7 +31,7 @@ INSERT_PID_TABLE = ('INSERT INTO {dataset_id}.{pid_table_id} '
                     'VALUES{person_research_ids}')
 
 
-class RetractDataBqTest(unittest.TestCase):
+class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):

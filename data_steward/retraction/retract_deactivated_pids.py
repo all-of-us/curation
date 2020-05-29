@@ -295,7 +295,7 @@ def check_pid_exist(pid, date_row, client):
                                      dataset=date_row.dataset_id,
                                      table=date_row.table,
                                      pid=pid)).to_dataframe()
-    return check_pid_df.get_value(0, 'count')
+    return check_pid_df.loc[0, 'count']
 
 
 def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,

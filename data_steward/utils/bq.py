@@ -61,7 +61,7 @@ def get_table_schema(table_name):
     return schema
 
 
-def create_tables(client, project_id, fq_table_names, exists_ok=False, fields=''):
+def create_tables(client, project_id, fq_table_names, exists_ok=False, fields=None):
     """
     Create an empty table(s) in a project.
 
