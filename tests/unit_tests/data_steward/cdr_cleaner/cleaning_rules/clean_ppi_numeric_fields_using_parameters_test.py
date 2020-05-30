@@ -65,12 +65,9 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
             clean_consts.QUERY:
                 CLEAN_PPI_NUMERIC_FIELDS_QUERY.render(project=self.project_id,
                                                       dataset=self.dataset_id),
-            clean_consts.DESTINATION_TABLE:
-                'observation',
-            clean_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            clean_consts.DISPOSITION:
-                WRITE_TRUNCATE
+            clean_consts.DESTINATION_TABLE: 'observation',
+            clean_consts.DESTINATION_DATASET: self.dataset_id,
+            clean_consts.DISPOSITION: WRITE_TRUNCATE
         }]
 
         self.assertEqual(results_list, expected_list)
@@ -87,7 +84,8 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
             intermediary_table=SAVE_TABLE_NAME)
 
         select_rows_to_be_changed = CLEAN_PPI_NUMERIC_FIELDS_QUERY.render(
-            project=self.project_id, dataset=self.dataset_id)
+            project=self.project_id,
+            dataset=self.dataset_id)
 
         # Test
         with self.assertLogs(level='INFO') as cm:
