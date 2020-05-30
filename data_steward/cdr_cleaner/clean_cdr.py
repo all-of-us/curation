@@ -16,13 +16,11 @@ import bq_utils
 import sandbox
 import cdr_cleaner.clean_cdr_engine as clean_engine
 import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
-import cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters as ppi_numeric_fields
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr as drop_participants_without_ppi_or_ehr
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
-import cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency as fix_datetimes
 import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
 import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
@@ -53,6 +51,7 @@ from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import ObservationSourceConceptIDRowSuppression
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
+from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -93,7 +92,7 @@ RDR_CLEANING_CLASSES = [
     (ObservationSourceConceptIDRowSuppression,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
-    (ppi_numeric_fields.get_clean_ppi_num_fields_using_parameters_queries,),
+    (CleanPPINumericFieldsUsingParameters,),
     (NullConceptIDForNumericPPI,),
     (remove_multiple_race_answers.
      get_remove_multiple_race_ethnicity_answers_queries,),
