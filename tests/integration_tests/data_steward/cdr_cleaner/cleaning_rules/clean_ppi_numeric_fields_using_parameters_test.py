@@ -59,7 +59,7 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         Creates common expected parameter types from cleaned tables and a common
         fully qualified (fq) dataset name string to load the data.
         """
-        self.value_as_number = 'NULL'
+        self.value_as_number = None
         self.value_as_concept_id = 2000000010
 
         fq_dataset_name = self.fq_table_names[0].split('.')
@@ -100,11 +100,13 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, 'observation']),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [123, 345, 567, 789, 555, 121, 666, 777, 888, 999, 321],
+            'loaded_ids': [
+                123, 345, 567, 789, 555, 121, 666, 777, 888, 999, 321
+            ],
             'sandboxed_ids': [123, 345, 567, 789, 555, 121, 666, 777],
             'fields': [
-                'observation_id', 'observation_concept_id',
-                'value_as_number', 'value_as_concept_id'
+                'observation_id', 'observation_concept_id', 'value_as_number',
+                'value_as_concept_id'
             ],
             'cleaned_values': [
                 (123, 1585889, self.value_as_number, self.value_as_concept_id),
@@ -115,9 +117,9 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 (121, 1585820, self.value_as_number, self.value_as_concept_id),
                 (666, 1585864, self.value_as_number, self.value_as_concept_id),
                 (777, 1585870, self.value_as_number, self.value_as_concept_id),
-                (888, 1585873, 15, 444),
-                (999, 1586159, 16, 444),
-                (321, 1586162, 17, 444)]
+                (888, 1585873, 15, 444), (999, 1586159, 16, 444),
+                (321, 1586162, 17, 444)
+            ]
         }]
 
         self.default_test(tables_and_counts)
