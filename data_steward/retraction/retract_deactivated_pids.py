@@ -122,7 +122,7 @@ WHERE person_id = {{pid}}) END END))
 """)
 
 # Deactivated participant table fields to query off of
-PID_TABLE_FIELDS = [{
+PID_TABLE_FIELDS = [[{
     "type": "integer",
     "name": "person_id",
     "mode": "required",
@@ -132,7 +132,7 @@ PID_TABLE_FIELDS = [{
     "name": "deactivated_date",
     "mode": "required",
     "description": "The deactivation date to base retractions on"
-}]
+}]]
 
 
 def add_console_logging(add_handler):

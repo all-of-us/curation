@@ -83,9 +83,9 @@ def create_tables(client,
     :param fq_table_names: A list of fully qualified table names.
     :param exists_ok: A flag to throw an error if the table already exists.
         Defaults to raising an error if the table already exists.
-    :param fields: An optional argument to provide fields/schema as a list of JSON objects
+    :param fields: An optional argument to provide a list of a list of JSON objects for the fields/schema
             ex:[
-                    {
+                   [{
                         "type": "integer",
                         "name": "condition_occurrence_id",
                         "mode": "nullable",
@@ -96,7 +96,7 @@ def create_tables(client,
                         "name": "src_dataset_id",
                         "mode": "nullable",
                         "description": ""
-                    }
+                    }]
                 ]
             if not provided resources.get_table_schema will be called to get schema.
 
@@ -116,8 +116,8 @@ def create_tables(client,
 
     successes = []
     failures = []
-    for table_name in fq_table_names:
-        schema = get_table_schema(table_name.split('.')[2], fields)
+    for index, table_name in enumerate(fq_table_names):
+        schema = get_table_schema(table_name.split('.')[2], fields[index] if fields else None)
 
         try:
             table = bigquery.Table(table_name, schema=schema)
