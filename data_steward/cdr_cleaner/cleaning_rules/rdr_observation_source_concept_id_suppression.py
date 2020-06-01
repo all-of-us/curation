@@ -6,36 +6,49 @@ Original Issue:  DC-529
 The intent is to remove PPI records from the observation table in the RDR
 export where observation_source_concept_id in (43530490, 43528818, 43530333).
 The records for removal should be archived in the dataset sandbox.
+
+Subsequent Issue: DC-702
+
+Include the observation_source_concept_id 903079 to the list
+
 """
 # Python Imports
 import logging
 
+# Third party imports
+
 # Project imports
+from common import OBSERVATION
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
+OBS_SRC_CONCEPTS = '43530490,43528818,43530333,903079'
+
 SAVE_TABLE_NAME = 'dc_529_obs_rows_dropped'
 
+ISSUE_NUMBERS = ['DC-529', 'DC-702']
+
 # Save rows that will be dropped to a sandboxed dataset.
-DROP_SELECTION_QUERY = (
-    'CREATE OR REPLACE TABLE `{project}.{sandbox}.{drop_table}` AS '
-    'SELECT * '
-    'FROM `{project}.{dataset}.observation` '
-    'WHERE observation_source_concept_id IN (43530490, 43528818, 43530333)')
+DROP_SELECTION_QUERY = """
+CREATE OR REPLACE TABLE `{project}.{sandbox}.{drop_table}` AS
+SELECT *
+FROM `{project}.{dataset}.observation`
+WHERE observation_source_concept_id IN ({obs_concepts})
+"""
 
 # Query uses 'NOT EXISTS' because the observation_source_concept_id field
 # is nullable.
-DROP_QUERY = (
-    'SELECT * FROM `{project}.{dataset}.observation` AS o '
-    'WHERE NOT EXISTS ( '
-    '  SELECT 1 '
-    '  FROM `{project}.{dataset}.observation` AS n '
-    '  WHERE o.observation_id = n.observation_id AND '
-    '  n.observation_source_concept_id IN (43530490, 43528818, 43530333) '
-    ')')
+DROP_QUERY = """
+SELECT * FROM `{project}.{dataset}.observation` AS o
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `{project}.{dataset}.observation` AS n
+    WHERE o.observation_id = n.observation_id AND
+    n.observation_source_concept_id IN ({obs_concepts})
+)"""
 
 
 class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
@@ -51,16 +64,15 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = (
-            'Remove records from the rdr dataset where '
-            'observation_source_concept_id in (43530490, 43528818, 43530333)')
-        super().__init__(issue_numbers=['DC-529'],
+        desc = (f'Remove records from the rdr dataset where '
+                f'observation_source_concept_id in ({OBS_SRC_CONCEPTS})')
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=['observation'])
+                         affected_tables=[OBSERVATION])
 
     def get_query_specs(self):
         """
@@ -76,15 +88,17 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
                     project=self.get_project_id(),
                     dataset=self.get_dataset_id(),
                     sandbox=self.get_sandbox_dataset_id(),
-                    drop_table=SAVE_TABLE_NAME),
+                    drop_table=SAVE_TABLE_NAME,
+                    obs_concepts=OBS_SRC_CONCEPTS),
         }
 
         drop_rows_query = {
             cdr_consts.QUERY:
                 DROP_QUERY.format(project=self.get_project_id(),
-                                  dataset=self.get_dataset_id()),
+                                  dataset=self.get_dataset_id(),
+                                  obs_concepts=OBS_SRC_CONCEPTS),
             cdr_consts.DESTINATION_TABLE:
-                'observation',
+                OBSERVATION,
             cdr_consts.DESTINATION_DATASET:
                 self.get_dataset_id(),
             cdr_consts.DISPOSITION:
