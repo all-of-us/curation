@@ -44,23 +44,23 @@ FROM
     `{{project}}.{{dataset}}.observation`
 WHERE
     (observation_concept_id = 1585889 AND (value_as_number < 0 OR value_as_number > 20))
-AND
+OR
     (observation_concept_id = 1585890 AND (value_as_number < 0 OR value_as_number > 20))
-AND
+OR
     (observation_concept_id = 1585795 AND (value_as_number < 0 OR value_as_number > 99))
-AND
+OR
     (observation_concept_id = 1585802 AND (value_as_number < 0 OR value_as_number > 99))
-AND
+OR
     (observation_concept_id = 1585820 AND (value_as_number < 0 OR value_as_number > 255))
-AND
+OR
     (observation_concept_id = 1585864 AND (value_as_number < 0 OR value_as_number > 99))
-AND
+OR
     (observation_concept_id = 1585870 AND (value_as_number < 0 OR value_as_number > 99))
-AND 
+OR 
     (observation_concept_id = 1585873 AND (value_as_number < 0 OR value_as_number > 99))
-AND
+OR
     (observation_concept_id = 1586159 AND (value_as_number < 0 OR value_as_number > 99))
-AND
+OR
     (observation_concept_id = 1586162 AND (value_as_number < 0 OR value_as_number > 99)))
 """)
 
@@ -155,110 +155,13 @@ END AS
 FROM
     {{project}}.{{dataset}}.observation""")
 
-# CLEAN_PPI_NUMERIC_FIELDS = """
-# UPDATE
-#   `{project}.{dataset}.observation` u1
-# SET
-#   u1.value_as_number = NULL,
-#   u1.value_as_concept_id = 2000000010
-# FROM
-#   (
-#   SELECT
-#   *
-# FROM
-#   `{project}.{dataset}.observation`
-# WHERE
-#   observation_concept_id = 1585889 AND (value_as_number < 0 OR value_as_number > 20)
-#
-# UNION ALL
-#
-# SELECT
-#   *
-# FROM
-#   `{project}.{dataset}.observation`
-# WHERE
-#   observation_concept_id = 1585890 AND (value_as_number < 0 OR value_as_number > 20)
-#
-# UNION ALL
-#
-# SELECT
-#   *
-# FROM
-#   `{project}.{dataset}.observation`
-# WHERE
-#   observation_concept_id = 1585795 AND (value_as_number < 0 OR value_as_number > 99)
-#
-# UNION ALL
-#
-# SELECT
-#   *
-# FROM
-#   `{project}.{dataset}.observation`
-# WHERE
-#   observation_concept_id = 1585802 AND (value_as_number < 0 OR value_as_number > 99)
-#
-# UNION ALL
-#
-# SELECT
-#   *
-# FROM
-#   `{project}.{dataset}.observation`
-# WHERE
-#   observation_concept_id = 1585820 AND (value_as_number < 0 OR value_as_number > 255)
-#
-# UNION ALL
-#
-# SELECT
-#   *
-# FROM
-#   `{project}.{dataset}.observation`
-# WHERE
-#   observation_concept_id = 1585864 AND (value_as_number < 0 OR value_as_number > 99)
-#
-# UNION ALL
-#
-# SELECT
-#   *
-# FROM
-#   `{project}.{dataset}.observation`
-# WHERE
-#   observation_concept_id = 1585870 AND (value_as_number < 0 OR value_as_number > 99)
-#
-# UNION ALL
-#
-# SELECT
-#   *
-# FROM
-#   `{project}.{dataset}.observation`
-# WHERE
-#   observation_concept_id = 1585873 AND (value_as_number < 0 OR value_as_number > 99)
-#
-# UNION ALL
-#
-# SELECT
-#   *
-# FROM
-#   `{project}.{dataset}.observation`
-# WHERE
-#   observation_concept_id = 1586159 AND (value_as_number < 0 OR value_as_number > 99)
-#
-# UNION ALL
-#
-# SELECT
-#   *
-# FROM
-#   `{project}.{dataset}.observation`
-# WHERE
-#   observation_concept_id = 1586162 AND (value_as_number < 0 OR value_as_number > 99) ) a
-# WHERE
-#   u1.observation_id = a.observation_id
-# """
 
 class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
     """
     Apply value ranges to ensure that values are reasonable and to minimize the likelihood
     of sensitive information (like phone numbers) within the free text fields.
     """
+
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper information.
@@ -296,8 +199,9 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
 
         clean_ppi_numeric_fields_query = {
             cdr_consts.QUERY:
-                CLEAN_PPI_NUMERIC_FIELDS_QUERY.render(project=self.get_project_id(),
-                                                      dataset=self.get_dataset_id()),
+                CLEAN_PPI_NUMERIC_FIELDS_QUERY.render(
+                    project=self.get_project_id(),
+                    dataset=self.get_dataset_id()),
             cdr_consts.DESTINATION_TABLE:
                 'observation',
             cdr_consts.DESTINATION_DATASET:
@@ -325,7 +229,8 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    rdr_cleaner = CleanPPINumericFieldsUsingParameters(ARGS.project_id, ARGS.dataset_id,
+    rdr_cleaner = CleanPPINumericFieldsUsingParameters(ARGS.project_id,
+                                                       ARGS.dataset_id,
                                                        ARGS.sandbox_dataset_id)
     query_list = rdr_cleaner.get_query_specs()
 
