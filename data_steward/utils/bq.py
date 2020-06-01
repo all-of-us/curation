@@ -34,7 +34,7 @@ def get_client(project_id=None):
     return bigquery.Client(project=project_id)
 
 
-def get_table_schema(table_name):
+def get_table_schema(table_name, fields=None):
     """
     A helper function to create big query SchemaFields for dictionary definitions.
 
@@ -44,9 +44,13 @@ def get_table_schema(table_name):
 
     :param table_name:  the table name to get BigQuery SchemaField information
         for.
+    :param fields: An optional argument to provide fields/schema as a list of JSON objects
     :returns:  a list of SchemaField objects representing the table's schema.
     """
-    fields = fields_for(table_name)
+    if fields:
+        fields = fields
+    else:
+        fields = fields_for(table_name)
 
     schema = []
     for column in fields:
@@ -113,10 +117,7 @@ def create_tables(client,
     successes = []
     failures = []
     for table_name in fq_table_names:
-        if fields:
-            schema = fields
-        else:
-            schema = get_table_schema(table_name.split('.')[2])
+        schema = get_table_schema(table_name.split('.')[2], fields)
 
         try:
             table = bigquery.Table(table_name, schema=schema)
