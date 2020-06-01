@@ -18,6 +18,7 @@ from apache_beam.options.pipeline_options import SetupOptions
 
 from datasteward_df import common
 from datasteward_df import negative_ages
+from datasteward_df import temporal_consistency
 
 
 def run(argv=None, save_main_session=True):
@@ -34,6 +35,13 @@ def run(argv=None, save_main_session=True):
                         dest='to_bigquery',
                         default=None,
                         help='BigQuery dataset to load into, if any')
+    parser.add_argument(
+        '--downsample-inverse-prob',
+        dest='downsample_inverse_prob',
+        default=None,
+        type=int,
+        help='Downsample by the inverse probability of this value, ' +
+        'e.g. a value of 1000 downsamples to ~1/1000 rows')
     known_args, pipeline_args = parser.parse_known_args(argv)
     pipeline_args.extend([
         '--project=aou-res-curation-test',
@@ -55,15 +63,27 @@ def run(argv=None, save_main_session=True):
         # Read all of the EHR inputs, into a dictionary of:
         #   table -> PCollection of table rows
         combined_by_domain = {}
+        schema_by_domain = {}
         for tbl in common.AOU_REQUIRED:
+            with open(f"fields/{tbl}.json") as schema_file:
+                schema_by_domain[tbl] = json.load(schema_file)
+            field_names = set(f["name"] for f in schema_by_domain[tbl])
             if known_args.from_bigquery:
-                combined_by_domain[tbl] = (
-                    p | f"{tbl}" >> beam.io.Read(
-                        beam.io.BigQuerySource(
-                            # To downsample:  WHERE MOD(person_id, 2500) = 0; fix for non-person tables
-                            query=
-                            f"SELECT * FROM `aou-res-curation-test.synthea_ehr_ops_20200513.{table_prefix}_{tbl}`",
-                            use_standard_sql=True)))
+                conditional = ''
+                if known_args.downsample_inverse_prob:
+                    sampled_id = None
+                    if "person_id" in field_names:
+                        sampled_id = "person_id"
+                    elif f"{tbl}_id" in field_names:
+                        sampled_id = f"{tbl}_id"
+
+                    if sampled_id:
+                        conditional = f"WHERE MOD({sampled_id}, {known_args.downsample_inverse_prob}) = 0"
+                combined_by_domain[tbl] = (p | f"{tbl}" >> beam.io.Read(
+                    beam.io.BigQuerySource(
+                        query=
+                        f"SELECT * FROM `aou-res-curation-test.synthea_ehr_ops_20200513.{table_prefix}_{tbl}` {conditional}",
+                        use_standard_sql=True)))
             else:
                 # TODO: FIX!
                 combined_by_domain[tbl] = (
@@ -89,17 +109,31 @@ def run(argv=None, save_main_session=True):
             } | f"{tbl} cogrouped" >> beam.CoGroupByKey() | beam.ParDo(
                 negative_ages.DropNegativeAges(tbl)))
 
+        by_visit = {}
+        for tbl in list(
+                temporal_consistency.TABLES) + [common.VISIT_OCCURRENCE]:
+            by_visit[tbl] = (
+                combined_by_domain[tbl] | f"{tbl} by visit occurence" >>
+                beam.Map(lambda row: (row['visit_occurrence_id'], row)))
+
+        cogrouped_by_visit = (by_visit |
+                              "cogrouped by visit for temporal consistency" >>
+                              beam.CoGroupByKey())
+        for tbl in temporal_consistency.TABLES:
+            combined_by_domain[tbl] = (
+                cogrouped_by_visit |
+                temporal_consistency.CleanTemporalConsistency(tbl))
+
         # Write the output.
         for domain, data in combined_by_domain.items():
             if known_args.to_bigquery:
-                with open(f"fields/{domain}.json") as schema_file:
-                    data | f"output for {domain}" >> beam.io.WriteToBigQuery(
-                        f"{known_args.to_bigquery}.{domain}",
-                        schema={'fields': json.load(schema_file)},
-                        write_disposition=beam.io.BigQueryDisposition.
-                        WRITE_TRUNCATE,
-                        create_disposition=beam.io.BigQueryDisposition.
-                        CREATE_IF_NEEDED)
+                data | f"output for {domain}" >> beam.io.WriteToBigQuery(
+                    f"{known_args.to_bigquery}.{domain}",
+                    schema={'fields': schema_by_domain[domain]},
+                    write_disposition=beam.io.BigQueryDisposition.
+                    WRITE_TRUNCATE,
+                    create_disposition=beam.io.BigQueryDisposition.
+                    CREATE_IF_NEEDED)
             else:
                 data | f"output for {domain}" >> beam.io.WriteToText(
                     f"out/{domain}.txt")
