@@ -54,20 +54,6 @@ cwd = str(cwd)
 print("Current working directory is: {cwd}".format(cwd=cwd))
 
 # ### Get the list of HPO IDs
-#
-# ### NOTE: This assumes that all of the relevant HPOs have a person table.
-
-hpo_id_query = f"""
-SELECT REPLACE(table_id, '_person', '') AS src_hpo_id
-FROM
-`{DATASET}.__TABLES__`
-WHERE table_id LIKE '%person' 
-AND table_id 
-NOT LIKE '%unioned_ehr_%' 
-AND table_id NOT LIKE '\\\_%'
-"""
-
-site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
 
 get_full_names = f"""
 select * from {LOOKUP_TABLES}
@@ -85,7 +71,7 @@ full_names_df['src_hpo_id'] = full_names_df['src_hpo_id'].str.lower()
 # +
 cols_to_join = ['src_hpo_id']
 
-site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
+site_df = full_names_df
 # -
 
 # ### NOTE: This next section looks at distinct achilles_heel_warnings - NOT just ACHILLES Heel IDs. This means that NOTIFICATIONS (those that are not logged with an analysis_id) are also included in the count.

@@ -133,7 +133,7 @@ def get_mapping_list(unit_mappings_list):
 
 def create_unit_mapping_table(project_id, dataset_id):
     """
-    This function creates the unit_mapping table and populate it with the values from resources/unit_mapping.csv
+    This function creates the unit_mapping table and populate it with the values from resource_files/unit_mapping.csv
     :param project_id:
     :param dataset_id:
     :return:
@@ -143,7 +143,7 @@ def create_unit_mapping_table(project_id, dataset_id):
                           drop_existing=True,
                           dataset_id=dataset_id)
 
-    unit_mappings_csv = os.path.join(resources.resource_path,
+    unit_mappings_csv = os.path.join(resources.resource_files_path,
                                      UNIT_MAPPING_FILE + ".csv")
     unit_mappings_list = resources.csv_to_list(unit_mappings_csv)
     unit_mappings_populate_query = INSERT_UNITS_QUERY.format(
@@ -152,7 +152,7 @@ def create_unit_mapping_table(project_id, dataset_id):
         units_table_id=UNIT_MAPPING_TABLE,
         mapping_list=get_mapping_list(unit_mappings_list))
     result = bq_utils.query(unit_mappings_populate_query)
-    LOGGER.info("Created %s.%s", dataset_id, UNIT_MAPPING_TABLE)
+    LOGGER.info(f"Created {dataset_id}.{UNIT_MAPPING_TABLE}")
     return result
 
 

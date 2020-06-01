@@ -6,13 +6,12 @@ import app_identity
 import bq_utils
 import resources
 from validation import sql_wrangle
-from constants import bq_utils as bq_consts
 
 ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
 ACHILLES_RESULTS_DIST = 'achilles_results_dist'
 ACHILLES_TABLES = [ACHILLES_ANALYSIS, ACHILLES_RESULTS, ACHILLES_RESULTS_DIST]
-ACHILLES_DML_SQL_PATH = os.path.join(resources.resource_path,
+ACHILLES_DML_SQL_PATH = os.path.join(resources.resource_files_path,
                                      'achilles_dml.sql')
 INSERT_INTO = 'insert into'
 
@@ -36,7 +35,8 @@ def load_analyses(hpo_id):
     else:
         table_prefix = hpo_id + '_'
     table_name = table_prefix + ACHILLES_ANALYSIS
-    csv_path = os.path.join(resources.resource_path, ACHILLES_ANALYSIS + '.csv')
+    csv_path = os.path.join(resources.resource_files_path,
+                            ACHILLES_ANALYSIS + '.csv')
     json_path = os.path.join(resources.fields_path, ACHILLES_ANALYSIS + '.json')
     with open(json_path, 'r') as f:
         schema = json.load(f)

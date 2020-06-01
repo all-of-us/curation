@@ -1,9 +1,11 @@
+import logging
+
+import googleapiclient
+import oauth2client
+
 import app_identity
 import bq_utils
-import logging
 import common
-import oauth2client
-import googleapiclient
 from constants import bq_utils as bq_consts
 from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
                                                   CHECK_REQUIRED_LAB_QUERY)
@@ -16,7 +18,7 @@ MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = 'measurement_concept_sets_descendan
 
 def load_measurement_concept_sets_table(project_id, dataset_id):
     """
-    Loads the required lab table from resources/measurement_concept_sets.csv
+    Loads the required lab table from resource_files/measurement_concept_sets.csv
     into project_id.ehr_ops
 
     :param project_id: Project where the dataset resides
@@ -38,8 +40,8 @@ def load_measurement_concept_sets_table(project_id, dataset_id):
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
 
-        LOGGER.exception("FAILED:  CSV file could not be uploaded:\n%s",
-                         app_identity)
+        LOGGER.exception(
+            f"FAILED:  CSV file could not be uploaded:\n{app_identity}")
 
 
 def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
@@ -59,7 +61,7 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
         measurement_concept_sets=MEASUREMENT_CONCEPT_SETS_TABLE)
 
     try:
-        LOGGER.info("Running query %s", identify_labs_query)
+        LOGGER.info(f"Running query {identify_labs_query}")
         results = bq_utils.query(
             identify_labs_query,
             use_legacy_sql=False,
@@ -71,15 +73,16 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
 
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
-        LOGGER.exception("FAILED:  Clean rule not executed:\n%s", app_identity)
+        LOGGER.exception(f"FAILED:  Clean rule not executed:\n{app_identity}")
 
     query_job_id = results['jobReference']['jobId']
     bq_utils.wait_on_jobs([query_job_id])
 
     updated_rows = results.get("totalRows")
     if updated_rows is not None:
-        LOGGER.info("Query returned %d rows for %s.%s", updated_rows,
-                    dataset_id, MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)
+        LOGGER.info(
+            f"Query returned {updated_rows} rows for {dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}"
+        )
 
 
 def get_lab_concept_summary_query(hpo_id):

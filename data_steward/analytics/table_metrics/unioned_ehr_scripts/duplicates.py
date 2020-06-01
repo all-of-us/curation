@@ -20,7 +20,7 @@ client = bigquery.Client()
 
 # +
 from notebooks import parameters
-DATASET = parameters.LATEST_DATASET
+DATASET = parameters.EHR_OPS_Q4_2019
 LOOKUP_TABLES = parameters.LOOKUP_TABLES
 
 print(f"Dataset to use: {DATASET}")
@@ -135,13 +135,16 @@ visit_occurrence = visit_occurrence.reset_index()
 visit_occurrence
 
 # ## condition_occurrence table
+#
+# #### NOTE: have to cast as date for the datetime objects to avoid a runtime error - temporary fix for a larger issue
 
 # +
 condition_query = f"""
     SELECT
      src_hpo_id,
-person_id, condition_concept_id, condition_start_date, condition_start_datetime, condition_end_date,
-condition_end_datetime, condition_type_concept_id, stop_reason, provider_id, visit_occurrence_id,
+person_id, condition_concept_id, condition_start_date,
+CAST(condition_start_datetime AS DATE) as condition_start_datetime, condition_end_date,
+CAST(condition_end_datetime AS DATE) as condition_end_datetime, condition_type_concept_id, stop_reason, provider_id, visit_occurrence_id,
 condition_source_value, condition_source_concept_id, condition_status_source_value, condition_status_concept_id,
         COUNT(*) as cnt
     FROM
@@ -481,5 +484,3 @@ sites_success = sites_success.fillna(0)
 sites_success
 
 sites_success.to_csv("{cwd}/duplicates.csv".format(cwd = cwd))
-
-

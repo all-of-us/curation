@@ -62,10 +62,14 @@ class BqUtilsTest(unittest.TestCase):
         expected = [1]
         self.assertEqual(actual, expected)
 
-    def test_wait_on_jobs_retry_count(self):
-        # TODO figure out how to count this
-        # self.assertEquals(mock_time_sleep.call_count, bq_utils.BQ_DEFAULT_RETRY_COUNT)
-        pass
+    @mock.patch('bq_utils.sleeper')
+    @mock.patch('bq_utils.job_status_done')
+    def test_wait_on_jobs_retry_count(self, mock_job_status, mock_sleep):
+        max_sleep_interval = 512
+        mock_job_status.return_value = False
+        job_ids = ["job_1", "job_2"]
+        bq_utils.wait_on_jobs(job_ids)
+        mock_sleep.assert_called_with(max_sleep_interval)
 
     @mock.patch('bq_utils.os.environ.get')
     def test_get_validation_results_dataset_id_not_existing(self, mock_env_var):

@@ -59,7 +59,8 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
                          affected_datasets=[cdr_consts.RDR],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=['observation'])
 
     def get_query_specs(self):
         """
@@ -92,11 +93,33 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
 
         return [save_dropped_rows, drop_rows_query]
 
-    def setup_rule(self):
+    def setup_rule(self, client):
         """
         Function to run any data upload options before executing a query.
         """
         pass
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+
+        This abstract method was added to the base class after this rule was authored.
+        This rule needs to implement logic to setup validation on cleaning rules that
+        will be updating or deleting the values.
+        Until done no issue exists for this yet.
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+
+        This abstract method was added to the base class after this rule was authored.
+        This rule needs to implement logic to run validation on cleaning rules that will
+        be updating or deleting the values.
+        Until done no issue exists for this yet.
+        """
+        raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
         return [SAVE_TABLE_NAME]

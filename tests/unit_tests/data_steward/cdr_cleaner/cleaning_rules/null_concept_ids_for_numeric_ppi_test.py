@@ -13,13 +13,13 @@ dataset sandbox.
 # Python imports
 import unittest
 
-# Third party imports
-
 # Project imports
-from constants.bq_utils import WRITE_TRUNCATE
-from constants.cdr_cleaner import clean_cdr as clean_consts
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI, \
     SAVE_TABLE_NAME, SANDBOX_QUERY, CLEAN_NUMERIC_PPI_QUERY
+from constants.bq_utils import WRITE_TRUNCATE
+from constants.cdr_cleaner import clean_cdr as clean_consts
+
+# Third party imports
 
 
 class NullConceptIDForNumericPPITest(unittest.TestCase):
@@ -34,6 +34,7 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
+        self.client = None
 
         self.query_class = NullConceptIDForNumericPPI(self.project_id,
                                                       self.dataset_id,
@@ -46,7 +47,7 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
 
     def test_setup_rule(self):
         # Test
-        self.query_class.setup_rule()
+        self.query_class.setup_rule(self.client)
 
         # No errors are raised, nothing will happen
 

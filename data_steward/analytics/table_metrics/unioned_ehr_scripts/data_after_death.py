@@ -20,7 +20,7 @@ client = bigquery.Client()
 
 # +
 from notebooks import parameters
-DATASET = parameters.LATEST_DATASET
+DATASET = parameters.EHR_OPS_Q1_2019
 LOOKUP_TABLES = parameters.LOOKUP_TABLES
 
 print(f"Dataset to use: {DATASET}")
@@ -120,16 +120,16 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['success_rate'] = 100 - round(
+temporal_df['failure_rate'] = round(
     100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
 # - main reason death date entered as default value ("1890")
 
 visit_occurrence = temporal_df.rename(
-    columns={"success_rate": "visit_occurrence"})
+    columns={"failure_rate": "visit_occurrence"})
 visit_occurrence = visit_occurrence[["src_hpo_id", "visit_occurrence"]]
-visit_occurrence = visit_occurrence.fillna(100)
+visit_occurrence = visit_occurrence.fillna(0)
 visit_occurrence
 
 # ## Condition Occurrence Table
@@ -166,16 +166,16 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['success_rate'] = 100 - round(
+temporal_df['failure_rate'] = round(
     100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
 condition_occurrence = temporal_df.rename(
-    columns={"success_rate": "condition_occurrence"})
+    columns={"failure_rate": "condition_occurrence"})
 condition_occurrence = condition_occurrence[[
     "src_hpo_id", "condition_occurrence"
 ]]
-condition_occurrence = condition_occurrence.fillna(100)
+condition_occurrence = condition_occurrence.fillna(0)
 condition_occurrence
 
 # ## Drug Exposure Table
@@ -211,13 +211,13 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['success_rate'] = 100 - round(
+temporal_df['failure_rate'] = round(
     100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-drug_exposure = temporal_df.rename(columns={"success_rate": "drug_exposure"})
+drug_exposure = temporal_df.rename(columns={"failure_rate": "drug_exposure"})
 drug_exposure = drug_exposure[["src_hpo_id", "drug_exposure"]]
-drug_exposure = drug_exposure.fillna(100)
+drug_exposure = drug_exposure.fillna(0)
 drug_exposure
 
 # ## Measurement Table
@@ -253,13 +253,13 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['success_rate'] = 100 - round(
+temporal_df['failure_rate'] =  round(
     100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-measurement = temporal_df.rename(columns={"success_rate": "measurement"})
+measurement = temporal_df.rename(columns={"failure_rate": "measurement"})
 measurement = measurement[["src_hpo_id", "measurement"]]
-measurement = measurement.fillna(100)
+measurement = measurement.fillna(0)
 measurement
 
 # ## Procedure Occurrence Table
@@ -295,16 +295,16 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['success_rate'] = 100 - round(
+temporal_df['failure_rate'] = round(
     100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
 procedure_occurrence = temporal_df.rename(
-    columns={"success_rate": "procedure_occurrence"})
+    columns={"failure_rate": "procedure_occurrence"})
 procedure_occurrence = procedure_occurrence[[
     "src_hpo_id", "procedure_occurrence"
 ]]
-procedure_occurrence = procedure_occurrence.fillna(100)
+procedure_occurrence = procedure_occurrence.fillna(0)
 procedure_occurrence
 
 # ## Observation Table
@@ -341,13 +341,14 @@ temporal_df.shape
 print(temporal_df.shape[0], 'records received.')
 # -
 
-temporal_df['success_rate'] = 100 - round(
+temporal_df['failure_rate'] = round(
     100 * temporal_df['wrong_death_date'] / temporal_df['total'], 1)
 temporal_df
 
-observation = temporal_df.rename(columns={"success_rate": "observation"})
+observation = temporal_df.rename(columns={"failure_rate": "observation"})
+
 observation = observation[["src_hpo_id", "observation"]]
-observation = observation.fillna(100)
+observation = observation.fillna(0)
 observation
 
 # ## 4. Success Rate Temporal Data Points - Data After Death Date
@@ -364,7 +365,7 @@ for filename in datas:
 master_df
 
 success_rate = pd.merge(master_df, site_df, how='outer', on='src_hpo_id')
-success_rate = success_rate.fillna(100)
+success_rate = success_rate.fillna(0)
 
 success_rate
 

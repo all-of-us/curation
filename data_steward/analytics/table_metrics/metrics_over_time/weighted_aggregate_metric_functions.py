@@ -19,7 +19,7 @@ from auxillary_aggregate_functions import \
     find_unique_dates_and_metrics, \
     get_stats_for_unweighted_table_aggregate_metric
 
-import constants
+import constants, math
 
 
 def create_weighted_aggregate_metrics_for_tables(
@@ -216,7 +216,9 @@ def create_weighted_aggregate_metric_for_dates(aggregate_metrics):
             for agg_hpo_metric in aggregate_metrics:
                 if agg_hpo_metric.date == date \
                         and agg_hpo_metric.metric_type == metric\
-                        and isinstance(agg_hpo_metric, AggregateMetricForHPO):
+                        and isinstance(agg_hpo_metric, AggregateMetricForHPO)\
+                        and not math.isnan(agg_hpo_metric.num_total_rows)\
+                        and not math.isnan(agg_hpo_metric.num_pertinent_rows):
 
                     hpo_total_rows = agg_hpo_metric.num_total_rows
                     hpo_pert_rows = agg_hpo_metric.num_pertinent_rows

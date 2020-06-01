@@ -1,6 +1,4 @@
-from bq_utils import create_dataset
-from constants import bq_utils as bq_consts
-from utils.bq import list_datasets
+from utils.bq import list_datasets, create_dataset
 import re
 
 SANDBOX_SUFFIX = 'sandbox'
@@ -14,14 +12,15 @@ def create_sandbox_dataset(project_id, dataset_id):
     :return: the sandbox dataset_id
     """
     sandbox_dataset_id = get_sandbox_dataset_id(dataset_id)
-    friendly_name = 'Sandbox for {dataset_id}'.format(dataset_id=dataset_id)
-    description = 'Sandbox created for storing records affected by the cleaning rules applied to {dataset_id}'.format(
-        dataset_id=dataset_id)
+    friendly_name = f'Sandbox for {dataset_id}'
+    description = f'Sandbox created for storing records affected by the cleaning rules applied to {dataset_id}'
+    label_or_tag = {'label': '', 'tag': ''}
     create_dataset(project_id=project_id,
                    dataset_id=sandbox_dataset_id,
                    friendly_name=friendly_name,
                    description=description,
-                   overwrite_existing=bq_consts.FALSE)
+                   label_or_tag=label_or_tag,
+                   overwrite_existing=False)
 
     return sandbox_dataset_id
 

@@ -2,59 +2,46 @@
 This file is intended to serve as a 'storing place' for pieces of information
 that may change in the future. This also is a great means to sequester pieces
 of information that may otherwise 'bog down' the regular code.
-
 Dictionaries
 ------------
 thresholds: thresholds: the point at which a data quality metric (whether too
     high or too low) would be flagged as 'erroneous'. not used in the
     metrics_over_time script yet but has potential future implementations.
-
 choice_dict: correlates the user-specified choice to the corresponding
     page on the analytics report
-
 percentage_dict: correlated a particular analysis choice with whether or
     not it is intended to report out a fixed number (as in the case of
-    duplicate records) or a  'percentage' (namely success or failure
+    duplicate records) or a  'percentage' (namely success or failure
     rates)
-
 target_low_dict: indicates whether the metric is intended to be
     minimized (in the case of an 'error') or maximized (in the
     case of a 'success rate')
-
 columns_to_document_for_sheet: indicates which columns contain
     information that should be stored for the particular data
     quality metric that is being analyzed
-
 table_based_on_column_provided: allows us to determine the table that
     should be associated with a particular Data Quality Dimension object
     based upon the column that was used to get the associated 'value'
     float
-
 data_quality_dimension_dict: shows which attribute of Kahn's Data Quality
     framework the particular 'data quality metric' at hand relates to
-
 metric_type_to_english_dict: allows one to translate the 'metric type'
     that is normally associated with a 'DataQualityMetric' object to
     'English'. this is useful for printing the columns on a new
     dashboard
-
 full_names: allows one to use the hpo_id (shorter) name to find
     the longer (more human-readable) name
-
 Lists
 -----
 row_count_col_names: shows the column names where one can find the
     total row count for a particular date for each table
-
 unweighted_metric_already_integrated_for_hpo: shows which
     'unweighted metrics' do not need to be calculated for
     each HPO. these metrics do NOT need to be calculated because
     there already is an appropriate 'aggregate metric'
     established in the sheet.
-
 aggregate_metric_class_names: contains the 'names' of the aggregate
     metric objects that one can use
-
 no_aggregate_metric_needed_for_table_sheets: indicates instances where
     no 'aggregate' row needs to be calculated for the 'table' sheets
 """
@@ -88,7 +75,7 @@ choice_dict = {
     'b': constants.data_after_death,
     'c': constants.end_before_begin,
     'd': constants.concept,
-    'e': constants.measurement_units,
+    'e': constants.unit_success_rate,
     'f': constants.drug_routes,
     'g': constants.drug_success,
     'h': constants.sites_measurement,
@@ -103,7 +90,7 @@ percentage_dict = {
     constants.data_after_death: constants.true,
     constants.end_before_begin: constants.true,
     constants.concept: constants.true,
-    constants.measurement_units: constants.true,
+    constants.unit_success_rate: constants.true,
     constants.drug_routes: constants.true,
     constants.drug_success: constants.true,
     constants.sites_measurement: constants.true,
@@ -114,32 +101,32 @@ percentage_dict = {
     constants.achilles_errors: constants.false
 }
 
+
+# FIXME: for errors, we want target_low value to be true
+
 target_low_dict = {
+    # non-percentage values
     constants.duplicates: constants.true,
-    constants.data_after_death: constants.true,
-    constants.end_before_begin: constants.true,
+    constants.achilles_errors: constants.true,
+
+    # success rates
     constants.concept: constants.false,
-    constants.measurement_units: constants.false,
+    constants.unit_success_rate: constants.false,
     constants.drug_routes: constants.false,
     constants.drug_success: constants.false,
     constants.sites_measurement: constants.false,
+
+    constants.data_after_death: constants.true,
+    constants.end_before_begin: constants.true,
     constants.visit_date_disparity: constants.false,
 
-    # FIXME: the three below - by logic - should
-    # be 'True' but were calculated as showing
-    # the % of errors rather than (100 - % of errors)
-    # in the DQM scripts. This means they should be
-    # logged as 'False' here to make it an effective
-    # double negative.
-    constants.date_datetime_disparity: constants.false,
-    constants.erroneous_dates: constants.false,
-    constants.person_id_failure_rate: constants.false,
-
-    constants.achilles_errors: constants.true
+    constants.date_datetime_disparity: constants.true,
+    constants.erroneous_dates: constants.true,
+    constants.person_id_failure_rate: constants.true,
 }
 
 columns_to_document_for_sheet = {
-    constants.measurement_units: [constants.total_unit_success_rate],
+    constants.unit_success_rate: [constants.total_unit_success_rate],
 
     constants.sites_measurement:
         constants.measurement_categories,
@@ -192,7 +179,7 @@ table_based_on_column_provided = {
 
     # general concept success rate columns
     constants.observation_success: constants.observation_full,
-    constants.drug_success: constants.drug_exposure_full,
+    constants.drug_success_col: constants.drug_exposure_full,
     constants.procedure_success: constants.procedure_full,
     constants.condition_success: constants.condition_occurrence_full,
     constants.measurement_success: constants.measurement_full,
@@ -234,7 +221,7 @@ data_quality_dimension_dict = {
     constants.sites_measurement: constants.completeness,
     constants.drug_success: constants.completeness,
     constants.drug_routes: constants.completeness,
-    constants.measurement_units: constants.completeness,
+    constants.unit_success_rate: constants.completeness,
     constants.date_datetime_disparity: constants.conformance,
     constants.erroneous_dates: constants.plausibility,
     constants.person_id_failure_rate: constants.conformance,
@@ -243,7 +230,7 @@ data_quality_dimension_dict = {
 
 metric_type_to_english_dict = {
     # field population metrics
-    constants.measurement_units: constants.measurement_units_full,
+    constants.unit_success_rate: constants.unit_success_full,
     constants.drug_routes: constants.drug_routes_full,
 
     # integration metrics
@@ -264,7 +251,7 @@ metric_type_to_english_dict = {
 }
 
 metrics_to_weight = [
-    constants.measurement_units, constants.drug_routes,
+    constants.unit_success_rate, constants.drug_routes,
     constants.end_before_begin, constants.data_after_death,
     constants.concept, constants.duplicates,
     constants.date_datetime_disparity,
@@ -329,7 +316,7 @@ row_count_col_names = [
 # ---------- Lists ---------- #
 unweighted_metric_already_integrated_for_hpo = [
     constants.drug_routes,
-    constants.measurement_units, constants.achilles_errors]
+    constants.unit_success_rate, constants.achilles_errors]
 
 no_aggregate_metric_needed_for_table_sheets = [
     constants.drug_success, constants.sites_measurement]

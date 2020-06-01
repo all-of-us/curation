@@ -5,9 +5,10 @@ from io import open
 import bq_utils
 import resources
 
-EXPORT_PATH = os.path.join(resources.resource_path, 'export')
+EXPORT_PATH = os.path.join(resources.resource_files_path, 'export')
 RESULTS_SCHEMA_PLACEHOLDER = '@results_database_schema.'
 VOCAB_SCHEMA_PLACEHOLDER = '@vocab_database_schema.'
+UNIONED_EHR = 'unioned_ehr'
 
 
 def list_files(base_path):
@@ -60,7 +61,7 @@ def export_from_path(p, datasource_id):
     :return: `dict` structured for report render
     """
     result = dict()
-    if not is_hpo_id(datasource_id):
+    if not is_hpo_id(datasource_id) and datasource_id != UNIONED_EHR:
         datasource_id = None
     for f in list_files_only(p):
         name = f[0:-4].upper()

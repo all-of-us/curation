@@ -8,11 +8,11 @@ Original Issues: DC-614, DC-509, and DC-432
 
 import unittest
 
+import constants.bq_utils as bq_consts
+import constants.cdr_cleaner.clean_cdr as cdr_consts
+from cdr_cleaner.cleaning_rules import field_mapping
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency, TABLE_DATES, \
     FIX_DATETIME_QUERY, FIX_NULL_OR_INCORRECT_DATETIME_QUERY
-from cdr_cleaner.cleaning_rules import field_mapping
-import constants.cdr_cleaner.clean_cdr as cdr_consts
-import constants.bq_utils as bq_consts
 
 
 class EnsureDateDatetime(unittest.TestCase):
@@ -27,6 +27,7 @@ class EnsureDateDatetime(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'bar_project'
         self.sandbox_id = 'baz_sandbox'
+        self.client = None
 
         self.query_class = EnsureDateDatetimeConsistency(
             self.project_id, self.dataset_id, self.sandbox_id)
@@ -38,7 +39,7 @@ class EnsureDateDatetime(unittest.TestCase):
 
     def test_setup_rule(self):
         # test
-        self.query_class.setup_rule()
+        self.query_class.setup_rule(self.client)
 
         # no errors are raised, nothing happens
 

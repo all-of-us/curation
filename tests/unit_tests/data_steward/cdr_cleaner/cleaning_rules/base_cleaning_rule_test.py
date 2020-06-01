@@ -7,9 +7,9 @@ The point is to make it explicitly clear what is and is not required.
 import unittest
 
 # Third party imports
-from mock import patch
 import googleapiclient
 import oauth2client
+from mock import patch
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
@@ -40,6 +40,12 @@ class Inheritance(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
+        pass
+
 
 class BadIssueNumbers(BaseCleaningRule):
     """
@@ -64,6 +70,12 @@ class BadIssueNumbers(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
+        pass
+
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
         pass
 
 
@@ -91,6 +103,12 @@ class BadIssueUrls(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
+        pass
+
 
 class BadDescription(BaseCleaningRule):
     """
@@ -113,6 +131,12 @@ class BadDescription(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
+        pass
+
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
         pass
 
 
@@ -142,6 +166,12 @@ class BadAffectedDatasets(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
+        pass
+
 
 class InheritanceWithDependency(BaseCleaningRule):
     """
@@ -168,6 +198,12 @@ class InheritanceWithDependency(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
+        pass
+
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
         pass
 
 
@@ -222,6 +258,12 @@ class InheritanceWithBadDependencyClass(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
+        pass
+
 
 class InheritanceWithBadDependencyType(BaseCleaningRule):
     """
@@ -248,6 +290,12 @@ class InheritanceWithBadDependencyType(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
+        pass
+
 
 class NoSuperInitialization(BaseCleaningRule):
     """
@@ -272,6 +320,12 @@ class NoSuperInitialization(BaseCleaningRule):
         _ = self.get_issue_urls()
 
     def get_sandbox_tablenames(self):
+        pass
+
+    def setup_validation(self):
+        pass
+
+    def validate_rule(self):
         pass
 
 

@@ -77,8 +77,8 @@ def _compare_name_fields(project, rdr_dataset, pii_dataset, hpo, concept_id,
                                                consts.PII_NAME_TABLE, pii_field)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Unable to read PII for: %s\tdata field:\t%s", hpo,
-                             pii_field)
+            LOGGER.exception(
+                f"Unable to read PII for: {hpo}\tdata field:\t{pii_field}")
             raise
 
         for person_id, pii_name in pii_names:
@@ -127,8 +127,8 @@ def _compare_email_addresses(project, rdr_dataset, pii_dataset, hpo, concept_id,
                                                 pii_field)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Unable to read PII for: %s\tdata field:\t%s", hpo,
-                             pii_field)
+            LOGGER.exception(
+                f"Unable to read PII for: {hpo}\tdata field:\t{pii_field}")
             raise
 
         for person_id, pii_email in pii_emails:
@@ -178,8 +178,8 @@ def _compare_phone_numbers(project, rdr_dataset, pii_dataset, hpo, concept_id,
                                                        pii_field)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Unable to read PII for: %s\tdata field:\t%s", hpo,
-                             pii_field)
+            LOGGER.exception(
+                f"Unable to read PII for: {hpo}\tdata field:\t{pii_field}")
             raise
 
         for person_id, pii_number in pii_phone_numbers:
@@ -231,8 +231,8 @@ def _compare_cities(project, validation_dataset, rdr_dataset, pii_dataset, hpo,
                                                   pii_field)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Unable to read PII for: %s\tdata field:\t%s", hpo,
-                             pii_field)
+            LOGGER.exception(
+                f"Unable to read PII for: {hpo}\tdata field:\t{pii_field}")
             raise
 
         for person_id, pii_city in pii_cities:
@@ -284,8 +284,8 @@ def _compare_states(project, validation_dataset, rdr_dataset, pii_dataset, hpo,
                                                   pii_field)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Unable to read PII for: %s\tdata field:\t%s", hpo,
-                             pii_field)
+            LOGGER.exception(
+                f"Unable to read PII for: {hpo}\tdata field:\t{pii_field}")
             raise
 
         for person_id, pii_state in pii_states:
@@ -338,8 +338,8 @@ def _compare_zip_codes(project, validation_dataset, rdr_dataset, pii_dataset,
                                                      pii_field)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Unable to read PII for: %s\tdata field:\t%s", hpo,
-                             pii_field)
+            LOGGER.exception(
+                f"Unable to read PII for: {hpo}\tdata field:\t{pii_field}")
             raise
 
         for person_id, pii_zip_code in pii_zip_codes:
@@ -409,8 +409,8 @@ def _compare_street_addresses(project, validation_dataset, rdr_dataset,
                                                        field_one)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Unable to read PII for: %s\tdata field:\t%s", hpo,
-                             field_one)
+            LOGGER.exception(
+                f"Unable to read PII for: {hpo}\tdata field:\t{field_one}")
             raise
         try:
             pii_street_twos = readers.get_location_pii(project, rdr_dataset,
@@ -419,8 +419,8 @@ def _compare_street_addresses(project, validation_dataset, rdr_dataset,
                                                        field_two)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Unable to read PII for: %s\tdata field:\t%s", hpo,
-                             field_two)
+            LOGGER.exception(
+                f"Unable to read PII for: {hpo}\tdata field:\t{field_two}")
             raise
 
         pii_street_addresses = {}
@@ -511,8 +511,9 @@ def _compare_genders(project, validation_dataset, pii_dataset, hpo,
                                                         consts.GENDER_FIELD)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Unable to read PII for: %s\tdata field:\t%s", hpo,
-                             consts.GENDER_FIELD)
+            LOGGER.exception(
+                f"Unable to read PII for: {hpo}\tdata field:\t{consts.GENDER_FIELD}"
+            )
             raise
 
         # compare gender from ppi info to ehr info and record results.
@@ -566,8 +567,9 @@ def _compare_birth_dates(project, validation_dataset, pii_dataset, site,
                 project, pii_dataset, table_name, consts.BIRTH_DATETIME_FIELD)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
-            LOGGER.exception("Unable to read PII for: %s\tdata field:\t%s",
-                             site, consts.BIRTH_DATETIME_FIELD)
+            LOGGER.exception(
+                f"Unable to read PII for: {site}\tdata field:\t{consts.BIRTH_DATETIME_FIELD}"
+            )
             raise
 
         # compare birth_datetime from ppi info to ehr info and record results.
@@ -645,8 +647,8 @@ def write_results_to_site_buckets(project, validation_dataset=None):
 
         if errors > 0:
             LOGGER.error(
-                "Encountered %d read errors when writing %s site report",
-                errors, site)
+                f"Encountered {errors} read errors when writing {site} site report"
+            )
 
 
 def write_results_to_drc_bucket(project, validation_dataset=None):
@@ -678,8 +680,8 @@ def write_results_to_drc_bucket(project, validation_dataset=None):
                                                       filename)
 
     if errors > 0:
-        LOGGER.error("Encountered %d read errors when writing drc report",
-                     errors)
+        LOGGER.error(
+            f"Encountered {errors} read errors when writing drc report")
 
 
 def _add_matches_to_results(results, matches, field):
@@ -713,13 +715,11 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
 
     :return: results of the field comparison for each hpo
     """
-    LOGGER.info(
-        'Calling match_participants with:\n'
-        'project:\t%s\n'
-        'rdr_dataset:\t%s\n'
-        'ehr_dataset:\t%s\n'
-        'dest_dataset_id:\t%s\n', project, rdr_dataset, ehr_dataset,
-        dest_dataset_id)
+    LOGGER.info(f"Calling match_participants with:\n"
+                f"project:\t{project}\n"
+                f"rdr_dataset:\t{rdr_dataset}\n"
+                f"ehr_dataset:\t{ehr_dataset}\n"
+                f"dest_dataset_id:\t{dest_dataset_id}\n")
 
     ehr_tables = bq_utils.list_dataset_contents(ehr_dataset)
 
@@ -737,8 +737,8 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
 
     validation_dataset = dataset_result.get(bq_consts.DATASET_REF, {})
     validation_dataset = validation_dataset.get(bq_consts.DATASET_ID, '')
-    LOGGER.info('Created new validation results dataset:\t%s',
-                validation_dataset)
+    LOGGER.info(
+        f"Created new validation results dataset:\t{validation_dataset}")
 
     # create intermediate observation table in new dataset
     readers.create_match_values_table(project, rdr_dataset, dest_dataset_id)
@@ -759,7 +759,7 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
 
     # validate first names
     for site in hpo_sites:
-        LOGGER.info('Beginning identity validation for site: %s', site)
+        LOGGER.info(f"Beginning identity validation for site: {site}")
         results = {}
 
         try:
@@ -771,13 +771,14 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
                                                 ehr_tables)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
-            LOGGER.exception("Could not read data for field: %s at site: %s",
-                             consts.FIRST_NAME_FIELD, site)
+            LOGGER.exception(
+                f"Could not read data for field: {consts.FIRST_NAME_FIELD} at site: {site}"
+            )
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values,
                                               consts.FIRST_NAME_FIELD)
-            LOGGER.info('Validated first names for: %s', site)
+            LOGGER.info(f"Validated first names for: {site}")
 
         # validate last names
         try:
@@ -789,13 +790,14 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
                                                 ehr_tables)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
-            LOGGER.exception("Could not read data for field: %s at site: %s",
-                             consts.LAST_NAME_FIELD, site)
+            LOGGER.exception(
+                f"Could not read data for field: {consts.LAST_NAME_FIELD} at site: {site}"
+            )
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values,
                                               consts.LAST_NAME_FIELD)
-            LOGGER.info('Validated last names for: %s', site)
+            LOGGER.info(f"Validated last names for: {site}")
 
         # validate middle names
         try:
@@ -813,13 +815,14 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
 #            )
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
-            LOGGER.exception("Could not read data for field: %s at site: %s",
-                             consts.MIDDLE_NAME_FIELD, site)
+            LOGGER.exception(
+                f"Could not read data for field: {consts.MIDDLE_NAME_FIELD} at site: {site}"
+            ),
             read_errors += 1
         else:
             # write middle name matches for hpo to table
             #            results = _add_matches_to_results(results, match_values, consts.MIDDLE_NAME_FIELD)
-            LOGGER.info('Not validating middle names')
+            LOGGER.info("Not validating middle names")
 
         # validate zip codes
         try:
@@ -830,13 +833,14 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
                                               consts.ZIP_CODE_FIELD, ehr_tables)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
-            LOGGER.exception("Could not read data for field: %s at site: %s",
-                             consts.ZIP_CODE_FIELD, site)
+            LOGGER.exception(
+                f"Could not read data for field: {consts.ZIP_CODE_FIELD} at site: {site}"
+            )
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values,
                                               consts.ZIP_CODE_FIELD)
-            LOGGER.info('Validated zip codes for: %s', site)
+            LOGGER.info(f"Validated zip codes for: {site}")
 
         # validate city
         try:
@@ -847,13 +851,14 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
                                            consts.CITY_FIELD, ehr_tables)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
-            LOGGER.exception("Could not read data for field: %s at site: %s",
-                             consts.CITY_FIELD, site)
+            LOGGER.exception(
+                f"Could not read data for field: {consts.CITY_FIELD} at site: {site}"
+            )
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values,
                                               consts.ZIP_CODE_FIELD)
-            LOGGER.info('Validated city names for: %s', site)
+            LOGGER.info(f"Validated city names for: {site}")
 
         # validate state
         try:
@@ -864,13 +869,14 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
                                            consts.STATE_FIELD, ehr_tables)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
-            LOGGER.exception("Could not read data for field: %s at site: %s",
-                             consts.STATE_FIELD, site)
+            LOGGER.exception(
+                f"Could not read data for field: {consts.STATE_FIELD} at site: {site}"
+            )
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values,
                                               consts.STATE_FIELD)
-            LOGGER.info('Validated states for: %s', site)
+            LOGGER.info(f"Validated states for: {site}")
 
         # validate street addresses
         try:
@@ -885,15 +891,15 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
             LOGGER.exception(
-                "Could not read data for fields: %s, %s at site: %s",
-                consts.ADDRESS_ONE_FIELD, consts.ADDRESS_TWO_FIELD, site)
+                f"Could not read data for fields: {consts.ADDRESS_ONE_FIELD}, {consts.ADDRESS_TWO_FIELD} at site: {site}"
+            )
             read_errors += 1
         else:
             results = _add_matches_to_results(results, address_one_matches,
                                               consts.ADDRESS_ONE_FIELD)
             results = _add_matches_to_results(results, address_two_matches,
                                               consts.ADDRESS_TWO_FIELD)
-            LOGGER.info('Validated street addresses for: %s', site)
+            LOGGER.info(f"Validated street addresses for: {site}")
 
         # validate email addresses
         try:
@@ -903,13 +909,14 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
                 consts.OBS_PII_EMAIL_ADDRESS, consts.EMAIL_FIELD, ehr_tables)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
-            LOGGER.exception("Could not read data for field: %s at site: %s",
-                             consts.EMAIL_FIELD, site)
+            LOGGER.exception(
+                f"Could not read data for field: {consts.EMAIL_FIELD} at site: {site}"
+            )
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values,
                                               consts.EMAIL_FIELD)
-            LOGGER.info('Validated email addresses for: %s', site)
+            LOGGER.info(f"Validated email addresses for: {site}")
 
         # validate phone numbers
         try:
@@ -921,13 +928,14 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
                                                   ehr_tables)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
-            LOGGER.exception("Could not read data for field: %s at site: %s",
-                             consts.PHONE_NUMBER_FIELD, site)
+            LOGGER.exception(
+                f"Could not read data for field: {consts.PHONE_NUMBER_FIELD} at site: {site}"
+            )
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values,
                                               consts.PHONE_NUMBER_FIELD)
-            LOGGER.info('Validated phone numbers for: %s', site)
+            LOGGER.info(f"Validated phone numbers for: {site}")
 
         # validate genders
         try:
@@ -937,13 +945,14 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
                                             consts.OBS_PII_SEX, ehr_tables)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
-            LOGGER.exception("Could not read data for field: %s at site: %s",
-                             consts.SEX_FIELD, site)
+            LOGGER.exception(
+                f"Could not read data for field: {consts.SEX_FIELD} at site: {site}"
+            )
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values,
                                               consts.SEX_FIELD)
-            LOGGER.info('Validated genders for: %s', site)
+            LOGGER.info(f"Validated genders for: {site}")
 
         # validate birth dates
         try:
@@ -954,15 +963,16 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
                                                 ehr_tables)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError, RuntimeError):
-            LOGGER.exception("Could not read data for field: %s at site: %s",
-                             consts.BIRTH_DATETIME_FIELD, site)
+            LOGGER.exception(
+                f"Could not read data for field: {consts.BIRTH_DATETIME_FIELD} at site: {site}"
+            )
             read_errors += 1
         else:
             results = _add_matches_to_results(results, match_values,
                                               consts.BIRTH_DATE_FIELD)
-            LOGGER.info('Validated birth dates for: %s', site)
+            LOGGER.info(f"Validated birth dates for: {site}")
 
-        LOGGER.info('Writing results to BQ table')
+        LOGGER.info(f"Writing results to BQ table")
         # write dictionary to a table
         try:
             writers.write_to_result_table(project, validation_dataset, site,
@@ -970,23 +980,23 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError):
             LOGGER.exception(
-                'Did not write site information to validation dataset:  %s',
-                site)
+                f"Did not write site information to validation dataset:  {site}"
+            )
             write_errors += 1
 
-        LOGGER.info('Wrote validation results for site: %s', site)
+        LOGGER.info(f"Wrote validation results for site: {site}")
 
-    LOGGER.info("FINISHED: Validation dataset created:  %s", validation_dataset)
+    LOGGER.info(f"FINISHED: Validation dataset created:  {validation_dataset}")
 
     if read_errors > 0:
         LOGGER.error(
-            "Encountered %d read errors creating validation dataset:\t%s",
-            read_errors, validation_dataset)
+            f"Encountered {read_errors} read errors creating validation dataset:\t{validation_dataset}"
+        )
 
     if write_errors > 0:
         LOGGER.error(
-            "Encountered %d write errors creating validation dataset:\t%s",
-            write_errors, validation_dataset)
+            f"Encountered {write_errors} write errors creating validation dataset:\t{validation_dataset}"
+        )
 
     return read_errors + write_errors
 

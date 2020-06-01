@@ -11,7 +11,7 @@ from functions_to_create_dqm_objects import find_hpo_row, \
     get_info
 import datetime
 import constants
-
+import math
 
 def establish_hpo_objects(dqm_objects):
     """
@@ -173,6 +173,7 @@ def add_number_total_rows_for_hpo_and_date(
                 target_low=False)
 
             for table_name, value in num_rows_dictionary.items():
+
                 hpo.add_row_count_with_string(
                     table=table_name, value=value)
 

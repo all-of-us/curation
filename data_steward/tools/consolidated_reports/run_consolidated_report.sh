@@ -52,8 +52,8 @@ set -e
 # Add the google appengine sdk to the PYTHONPATH
 source tools/set_path.sh
 
-#Copy the curation report directory from resources to consolidated achilles report
-cp -R resources/curation_report/  tools/consolidated_reports/curation_report/
+#Copy the curation report directory from resource_files to consolidated achilles report
+cp -R resource_files/curation_report/  tools/consolidated_reports/curation_report/
 
 cd tools/consolidated_reports/
 

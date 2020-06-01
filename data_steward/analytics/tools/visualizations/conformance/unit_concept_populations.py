@@ -30,7 +30,7 @@ from math import pi
 # +
 sheets = []
 
-fn1 = 'measurement_units_table_sheets_analytics_report.xlsx'
+fn1 = 'unit_success_rate_table_sheets_analytics_report.xlsx'
 file_names = [fn1]
 
 s1 = 'Measurement'
@@ -81,7 +81,7 @@ ax.set_title("Measurement Table Unit Population Rate", size=14)
 
 # # Now let's look at the metrics for particular sites with respect to unit success rate. This will allow us to send them the appropriate information.
 
-fn1_hpo_sheets = 'measurement_units_hpo_sheets_analytics_report.xlsx'
+fn1_hpo_sheets = 'unit_success_rate_hpo_sheets_analytics_report.xlsx'
 file_names_hpo_sheets = [fn1_hpo_sheets]
 
 x1 = pd.ExcelFile(fn1_hpo_sheets)

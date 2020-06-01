@@ -4,8 +4,8 @@ import logging
 import os
 import socket
 import time
-from io import open
 from datetime import datetime
+from io import open
 
 # Third party imports
 from googleapiclient.discovery import build
@@ -291,8 +291,7 @@ def delete_table(table_id, dataset_id=None):
     delete_job = bq_service.tables().delete(projectId=app_id,
                                             datasetId=dataset_id,
                                             tableId=table_id)
-    logging.info('Deleting {dataset_id}.{table_id}'.format(
-        dataset_id=dataset_id, table_id=table_id))
+    logging.info(f"Deleting {dataset_id}.{table_id}")
     return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
@@ -344,31 +343,37 @@ def job_status_errored(job_id):
     return is_errored, error_message
 
 
-def wait_on_jobs(job_ids,
-                 retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
-                 max_poll_interval=300):
+def sleeper(poll_interval):
     """
-    Exponential backoff wait for jobs to complete
-    :param job_ids:
-    :param retry_count:
-    :param max_poll_interval:
+    Calls time.sleep, useful for testing purposes
+    :param poll_interval:
+    :return:
+    """
+    time.sleep(poll_interval)
+    return
+
+
+def wait_on_jobs(job_ids, retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT):
+    """
+    Implements exponential backoff to wait for jobs to complete
+    :param job_ids: list of job_id strings
+    :param retry_count: max number of iterations for exponent
     :return: list of jobs that failed to complete or empty list if all completed
     """
-    _job_ids = list(job_ids)
+    job_ids = list(job_ids)
     poll_interval = 1
-    for i in range(retry_count):
-        logging.info('Waiting %s seconds for completion of job(s): %s' %
-                     (poll_interval, _job_ids))
-        time.sleep(poll_interval)
-        _job_ids = [
-            job_id for job_id in _job_ids if not job_status_done(job_id)
-        ]
-        if len(_job_ids) == 0:
-            return []
-        if poll_interval < max_poll_interval:
-            poll_interval = 2**i
-    logging.info('Job(s) failed to complete: %s' % _job_ids)
-    return _job_ids
+    for _ in range(retry_count):
+        logging.info(
+            f'Waiting {poll_interval} seconds for completion of job(s): {job_ids}'
+        )
+        sleeper(poll_interval)
+        job_ids = [job_id for job_id in job_ids if not job_status_done(job_id)]
+        if not job_ids:
+            return job_ids
+        if poll_interval < bq_consts.MAX_POLL_INTERVAL:
+            poll_interval *= 2
+    logging.info(f'Job(s) {job_ids} failed to complete')
+    return job_ids
 
 
 def get_job_details(job_id):
@@ -805,7 +810,7 @@ def create_dataset(project_id=None,
     try:
         insert_result = insert_dataset.execute(
             num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-        logging.info('Created dataset:\t%s.%s', app_id, dataset_id)
+        logging.info(f"Created dataset:\t{app_id}.{dataset_id}")
     except HttpError as error:
         # dataset exists.  try deleting if deleteContents is set and try again.
         if error.resp.status == 409:
@@ -817,23 +822,21 @@ def create_dataset(project_id=None,
                 rm_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
                 insert_result = insert_dataset.execute(
                     num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-                logging.info('Overwrote dataset %s.%s', app_id, dataset_id)
+                logging.info(f"Overwrote dataset {app_id}.{dataset_id}")
             else:
                 logging.exception(
-                    'Trying to create a duplicate dataset without overwriting '
-                    'the existing dataset.  Cannot be done!\n\ncreate_dataset '
-                    'called with values:\n'
-                    'project_id:\t%s\n'
-                    'dataset_id:\t%s\n'
-                    'description:\t%s\n'
-                    'friendly_name:\t%s\n'
-                    'overwrite_existing:\t%s\n\n', project_id, dataset_id,
-                    description, friendly_name, overwrite_existing)
+                    f"Trying to create a duplicate dataset without overwriting "
+                    f"the existing dataset.  Cannot be done!\n\ncreate_dataset "
+                    f"called with values:\n"
+                    f"project_id:\t{project_id}\n"
+                    f"dataset_id:\t{dataset_id}\n"
+                    f"description:\t{description}\n"
+                    f"friendly_name:\t{friendly_name}\n"
+                    f"overwrite_existing:\t{overwrite_existing}\n\n")
                 raise
         else:
-            logging.exception(
-                'Encountered an HttpError when trying to create '
-                'dataset: %s.%s', app_id, dataset_id)
+            logging.exception(f"Encountered an HttpError when trying to create "
+                              f"dataset: {app_id}.{dataset_id}")
             raise
 
     return insert_result
@@ -890,13 +893,14 @@ def load_table_from_csv(project_id,
     :param dataset_id: dataset where the table needs to be created
     :param table_name: name of the table to be created
     :param csv_path: path to the csv file which needs to be loaded into BQ.
-                     If None, assumes that the file exists in the resources folder with the name table_name.csv
+                     If None, assumes that the file exists in the resource_files folder with the name table_name.csv
     :param fields: fields in list of dicts format. If set to None, assumes that
-                   the fields are stored in a json file in resources/fields named table_name.json
+                   the fields are stored in a json file in resource_files/fields named table_name.json
     :return: BQ response for the load query
     """
     if csv_path is None:
-        csv_path = os.path.join(resources.resource_path, table_name + ".csv")
+        csv_path = os.path.join(resources.resource_files_path,
+                                table_name + ".csv")
     table_list = resources.csv_to_list(csv_path)
 
     if fields is None:

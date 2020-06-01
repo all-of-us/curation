@@ -60,7 +60,7 @@ FROM
 
 def load_operational_pii_fields_lookup_table(project_id, sandbox_dataset_id):
     """
-        Loads the operational pii fields from resources/operational_pii_fields.csv
+        Loads the operational pii fields from resource_files/operational_pii_fields.csv
         into project_id.sandbox_dataset_id.operational_pii_fields in BQ
 
         :param project_id: Project where the sandbox dataset resides

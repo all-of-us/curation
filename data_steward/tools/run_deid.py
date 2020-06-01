@@ -252,8 +252,9 @@ def main(raw_args=None):
         if 'person_id' in field_names:
             parameter_list.append('--cluster')
 
-        LOGGER.info('Executing deid with:\n\tpython deid/aou.py %s',
-                    ' '.join(parameter_list))
+        LOGGER.info(
+            f"Executing deid with:\n\tpython deid/aou.py {' '.join(parameter_list)}"
+        )
 
         try:
             aou.main(parameter_list)
@@ -261,17 +262,17 @@ def main(raw_args=None):
             LOGGER.exception("Encountered deid exception:\n")
             exceptions.append(table)
         else:
-            LOGGER.info('Successfully executed deid on table: %s', table)
+            LOGGER.info(f"Successfully executed deid on table: {table}")
             successes.append(table)
 
-    copy_suppressed_table_schemas(known_tables, args.input_dataset + '_deid')
+    copy_suppressed_table_schemas(known_tables, args.odataset)
 
-    LOGGER.info('Deid has finished.  Successfully executed on tables:  %s',
-                '\n'.join(successes))
+    LOGGER.info(
+        "Deid has finished.  Successfully executed on tables: {}".format(
+            '\n'.join(successes)))
     for exc in exceptions:
-        LOGGER.error(
-            "Deid encountered exceptions when processing table: %s"
-            ".  Fix problems and re-run deid for table if needed.", exc)
+        LOGGER.error(f"Deid encountered exceptions when processing table: {exc}"
+                     f".  Fix problems and re-run deid for table if needed.")
 
 
 if __name__ == '__main__':

@@ -92,7 +92,7 @@ def get_info(
 
             # data for table for site does not exist
             if number is None or number == constants.no_data:
-                data_dictionary[col_label] = float(constants.nan_string)
+                data_dictionary[col_label] = 0
 
             else:
                 try:
@@ -109,11 +109,11 @@ def get_info(
                     # actual info to be logged if sensible data
                     elif percentage and target_low:  # proportion w/ errors
                         data_dictionary[col_label] = round(
-                            100 - number, constants.rounding_val)
+                            number, constants.rounding_val)
 
                     elif percentage and not target_low:  # effective
                         data_dictionary[col_label] = round(
-                            number, constants.rounding_val)
+                            100 - number, constants.rounding_val)
 
                     elif not percentage and number > -1:
                         data_dictionary[col_label] = int(number)
@@ -124,6 +124,6 @@ def get_info(
     # HPOs for consistency and versatility
     for table in data_dictionary:
         if table not in data_dictionary.keys():
-            data_dictionary[table] = float(constants.nan_string)
+            data_dictionary[table] = 0
 
     return data_dictionary
