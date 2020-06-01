@@ -61,7 +61,11 @@ def get_table_schema(table_name):
     return schema
 
 
-def create_tables(client, project_id, fq_table_names, exists_ok=False, fields=None):
+def create_tables(client,
+                  project_id,
+                  fq_table_names,
+                  exists_ok=False,
+                  fields=None):
     """
     Create an empty table(s) in a project.
 
@@ -113,7 +117,6 @@ def create_tables(client, project_id, fq_table_names, exists_ok=False, fields=No
             schema = fields
         else:
             schema = get_table_schema(table_name.split('.')[2])
-
 
         try:
             table = bigquery.Table(table_name, schema=schema)
