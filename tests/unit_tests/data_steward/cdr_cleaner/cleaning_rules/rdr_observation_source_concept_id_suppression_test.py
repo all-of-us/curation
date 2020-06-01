@@ -18,7 +18,7 @@ import unittest
 from common import OBSERVATION
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression, SAVE_TABLE_NAME,
-    DROP_SELECTION_QUERY, DROP_QUERY, OBS_SRC_CONCEPTS)
+    DROP_SELECTION_QUERY_TMPL, DROP_QUERY_TMPL, OBS_SRC_CONCEPTS)
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
@@ -62,16 +62,16 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         # post conditions
         expected_list = [{
             clean_consts.QUERY:
-                DROP_SELECTION_QUERY.format(project=self.project_id,
-                                            dataset=self.dataset_id,
-                                            sandbox=self.sandbox_id,
-                                            drop_table=SAVE_TABLE_NAME,
-                                            obs_concepts=OBS_SRC_CONCEPTS)
+                DROP_SELECTION_QUERY_TMPL.render(project=self.project_id,
+                                                 dataset=self.dataset_id,
+                                                 sandbox=self.sandbox_id,
+                                                 drop_table=SAVE_TABLE_NAME,
+                                                 obs_concepts=OBS_SRC_CONCEPTS)
         }, {
             clean_consts.QUERY:
-                DROP_QUERY.format(project=self.project_id,
-                                  dataset=self.dataset_id,
-                                  obs_concepts=OBS_SRC_CONCEPTS),
+                DROP_QUERY_TMPL.render(project=self.project_id,
+                                       dataset=self.dataset_id,
+                                       obs_concepts=OBS_SRC_CONCEPTS),
             clean_consts.DESTINATION_TABLE:
                 OBSERVATION,
             clean_consts.DESTINATION_DATASET:
@@ -87,14 +87,15 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         self.assertEqual(self.query_class.get_affected_datasets(),
                          [clean_consts.RDR])
 
-        store_drops = DROP_SELECTION_QUERY.format(project=self.project_id,
-                                                  dataset=self.dataset_id,
-                                                  sandbox=self.sandbox_id,
-                                                  drop_table=SAVE_TABLE_NAME,
-                                                  obs_concepts=OBS_SRC_CONCEPTS)
-        select_saves = DROP_QUERY.format(project=self.project_id,
-                                         dataset=self.dataset_id,
-                                         obs_concepts=OBS_SRC_CONCEPTS)
+        store_drops = DROP_SELECTION_QUERY_TMPL.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            sandbox=self.sandbox_id,
+            drop_table=SAVE_TABLE_NAME,
+            obs_concepts=OBS_SRC_CONCEPTS)
+        select_saves = DROP_QUERY_TMPL.render(project=self.project_id,
+                                              dataset=self.dataset_id,
+                                              obs_concepts=OBS_SRC_CONCEPTS)
         # test
         with self.assertLogs(level='INFO') as cm:
             self.query_class.log_queries()

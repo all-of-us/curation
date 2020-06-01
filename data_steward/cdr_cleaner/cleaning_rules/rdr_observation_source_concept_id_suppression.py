@@ -16,6 +16,7 @@ Include the observation_source_concept_id 903079 to the list
 import logging
 
 # Third party imports
+from jinja2 import Template
 
 # Project imports
 from common import OBSERVATION
@@ -33,22 +34,26 @@ ISSUE_NUMBERS = ['DC-529', 'DC-702']
 
 # Save rows that will be dropped to a sandboxed dataset.
 DROP_SELECTION_QUERY = """
-CREATE OR REPLACE TABLE `{project}.{sandbox}.{drop_table}` AS
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{drop_table}}` AS
 SELECT *
-FROM `{project}.{dataset}.observation`
-WHERE observation_source_concept_id IN ({obs_concepts})
+FROM `{{project}}.{{dataset}}.observation`
+WHERE observation_source_concept_id IN ({{obs_concepts}})
 """
+
+DROP_SELECTION_QUERY_TMPL = Template(DROP_SELECTION_QUERY)
 
 # Query uses 'NOT EXISTS' because the observation_source_concept_id field
 # is nullable.
 DROP_QUERY = """
-SELECT * FROM `{project}.{dataset}.observation` AS o
+SELECT * FROM `{{project}}.{{dataset}}.observation` AS o
 WHERE NOT EXISTS (
     SELECT 1
-    FROM `{project}.{dataset}.observation` AS n
+    FROM `{{project}}.{{dataset}}.observation` AS n
     WHERE o.observation_id = n.observation_id AND
-    n.observation_source_concept_id IN ({obs_concepts})
+    n.observation_source_concept_id IN ({{obs_concepts}})
 )"""
+
+DROP_QUERY_TMPL = Template(DROP_QUERY)
 
 
 class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
@@ -84,7 +89,7 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         """
         save_dropped_rows = {
             cdr_consts.QUERY:
-                DROP_SELECTION_QUERY.format(
+                DROP_SELECTION_QUERY_TMPL.render(
                     project=self.get_project_id(),
                     dataset=self.get_dataset_id(),
                     sandbox=self.get_sandbox_dataset_id(),
@@ -94,9 +99,9 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
 
         drop_rows_query = {
             cdr_consts.QUERY:
-                DROP_QUERY.format(project=self.get_project_id(),
-                                  dataset=self.get_dataset_id(),
-                                  obs_concepts=OBS_SRC_CONCEPTS),
+                DROP_QUERY_TMPL.render(project=self.get_project_id(),
+                                       dataset=self.get_dataset_id(),
+                                       obs_concepts=OBS_SRC_CONCEPTS),
             cdr_consts.DESTINATION_TABLE:
                 OBSERVATION,
             cdr_consts.DESTINATION_DATASET:
