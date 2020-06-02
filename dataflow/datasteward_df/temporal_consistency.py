@@ -39,37 +39,40 @@ class CleanTemporalConsistency(beam.PTransform):
     def _parse_date(self, date):
         return datetime.strptime(date, "%Y-%m-%d")
 
+    def _fmt_date(self, date):
+        return datetime.strftime(date, "%Y-%m-%d")
+
     def replace_invalid_ends(self, by_visit):
         (vo_id, info) = by_visit
 
+        vo = info[common.VISIT_OCCURRENCE]
+        visit_concept_id = None
+        if len(vo) > 1:
+            raise ValueError(
+                f"wanted 1 visit occurence, got {len(vo)} for {vo_id}")
+        elif len(vo) == 1:
+            visit_concept_id = vo[0]['visit_concept_id']
+
         max_end = None
-        for (tbl, (_, end)) in TABLE_DATES:
+        for (tbl, (_, end)) in TABLE_DATES.items():
             for row in info[tbl]:
                 if not row[end]:
                     continue
-                end_date = _parse_date(row[end])
+                end_date = self._parse_date(row[end])
                 if not max_end or end_date > max_end:
                     max_end = end_date
-
-        vo = info[common.VISIT_OCCURRENCE]
-        if len(vo) != 1:
-            raise ValueError(
-                f"wanted 1 visit occurence, got {len(vo)} for {vo_id}")
-        visit_concept_id = vo[0]['visit_concept_id']
 
         (start, end) = TABLE_DATES[self.tbl]
         for row in info[self.tbl]:
             if (not row[start] or not row[end] or
-                    _parse_date(row[start]) <= _parse_date(row[end])):
+                    self._parse_date(row[start]) <= self._parse_date(row[end])):
                 # Valid date range, leave unomdified
                 pass
-            elif visit_concept_id in [OUTPATIENT_VISIT, ER_VISIT]:
+            elif (visit_concept_id in [INPATIENT_VISIT] and max_end and
+                  self._parse_date(row[start]) <= max_end):
+                row[end] = self._fmt_date(max_end)
+            else:
                 row[end] = row[start]
-            elif visit_concept_id in [INPATIENT_VISIT]:
-                if max_end and _parse_date(row[start]) <= max_end:
-                    row[end] = max_end
-                else:
-                    row[end] = row[start]
 
             yield row
 
@@ -88,4 +91,4 @@ class CleanTemporalConsistency(beam.PTransform):
         Outputs a pcollection containing all updated/filtered rows of the target table.
         """
         return (cogrouped_by_visit | f"replace null end dates on {self.tbl}" >>
-                beam.Map(self.replace_invalid_ends))
+                beam.ParDo(self.replace_invalid_ends))

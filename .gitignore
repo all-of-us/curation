@@ -172,3 +172,4 @@ data_steward/analytics/cdr_ops/ad_hoc_analyses/*.png
 data_steward/analytics/cdr_ops/systematic_scripts/*.png
 
 dataflow/fields/*.json
+dataflow/out/*

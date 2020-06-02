@@ -85,7 +85,6 @@ def run(argv=None, save_main_session=True):
                         f"SELECT * FROM `aou-res-curation-test.synthea_ehr_ops_20200513.{table_prefix}_{tbl}` {conditional}",
                         use_standard_sql=True)))
             else:
-                # TODO: FIX!
                 combined_by_domain[tbl] = (
                     p | f"read {tbl}" >> ReadFromText(f"test_data/{tbl}.json") |
                     f"{tbl} from JSON" >> beam.Map(json.loads))
@@ -109,6 +108,14 @@ def run(argv=None, save_main_session=True):
             } | f"{tbl} cogrouped" >> beam.CoGroupByKey() | beam.ParDo(
                 negative_ages.DropNegativeAges(tbl)))
 
+        # Aggregate all necessary tables for temporal_consistency.
+        # An alternate pattern here could be to move this into a helper within the
+        # rule module, e.g.:
+        #   temporal_inconsistency_pcol = temporal_consistency.prepare_inputs(combined_by_domain)
+        #
+        # This hides business logic in the rule module, but also hides heavy processing
+        # side-effects. It's likely such a pattern will be needed if we want to move to a
+        # more generalized cleaning rule model within Beam.
         by_visit = {}
         for tbl in list(
                 temporal_consistency.TABLES) + [common.VISIT_OCCURRENCE]:
@@ -135,8 +142,9 @@ def run(argv=None, save_main_session=True):
                     create_disposition=beam.io.BigQueryDisposition.
                     CREATE_IF_NEEDED)
             else:
-                data | f"output for {domain}" >> beam.io.WriteToText(
-                    f"out/{domain}.txt")
+                (data | f"JSON write for {domain}" >> beam.Map(json.dumps) |
+                 f"output for {domain}" >>
+                 beam.io.WriteToText(f"out/{domain}.txt"))
 
 
 if __name__ == '__main__':
