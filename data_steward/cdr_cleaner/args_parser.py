@@ -1,8 +1,9 @@
 import argparse
 
 import constants.cdr_cleaner.clean_cdr as consts
-from cdr_cleaner.reporter import (CLASS_ATTRIBUTES_MAP, FIELDS_METHODS_MAP,
-                                  FIELDS_PROPERTIES_MAP)
+from constants.cdr_cleaner.reporter import (CLASS_ATTRIBUTES_MAP,
+                                            FIELDS_METHODS_MAP,
+                                            FIELDS_PROPERTIES_MAP)
 
 SHORT_ARGUMENT = 'argument'
 LONG_ARGUMENT = 'long_argument'
@@ -91,9 +92,9 @@ def get_report_parser():
         'Reporting parameters from the clean rule package.  This utility '
         'will provide a csv style report for project management.'))
 
-    methods = [k for k, _ in FIELDS_METHODS_MAP.items()]
-    props = [k for k, _ in FIELDS_PROPERTIES_MAP.items()]
-    class_attrs = [k for k, _ in CLASS_ATTRIBUTES_MAP.items()]
+    methods = [k for k in FIELDS_METHODS_MAP.keys()]
+    props = [k for k in FIELDS_PROPERTIES_MAP.keys()]
+    class_attrs = [k for k in CLASS_ATTRIBUTES_MAP.keys()]
     fields = methods + props + class_attrs
 
     parser.add_argument('-d',

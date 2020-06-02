@@ -15,27 +15,9 @@ import cdr_cleaner.args_parser as cleaning_parser
 import cdr_cleaner.clean_cdr as control
 import cdr_cleaner.clean_cdr_engine as engine
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+import constants.cdr_cleaner.reporter as report
 
 LOGGER = logging.getLogger(__name__)
-
-FIELDS_PROPERTIES_MAP = {
-    'jira-issues': 'issue_numbers',
-    'description': 'description',
-    'affected-datasets': 'affected_datasets',
-    'affected-tables': 'affected_tables',
-    'issue-urls': 'issue_urls',
-    'dependencies': 'depends_on_classes',
-}
-
-FIELDS_METHODS_MAP = {
-    'sql': 'get_query_specs',
-    'sandbox-tables': 'get_sandbox_tablenames',
-}
-
-CLASS_ATTRIBUTES_MAP = {
-    'name': '__class__.__name__',
-    'module': '__class__.__module__',
-}
 
 
 def parse_args(raw_args=None):
@@ -90,14 +72,14 @@ def get_stage_elements(data_stage, fields_list):
                 for field in fields_list:
                     try:
                         value = 'NO DATA'
-                        if field in FIELDS_PROPERTIES_MAP:
-                            func = FIELDS_PROPERTIES_MAP[field]
+                        if field in report.FIELDS_PROPERTIES_MAP:
+                            func = report.FIELDS_PROPERTIES_MAP[field]
                             value = getattr(instance, func, 'no data')
-                        elif field in FIELDS_METHODS_MAP:
-                            func = FIELDS_METHODS_MAP[field]
+                        elif field in report.FIELDS_METHODS_MAP:
+                            func = report.FIELDS_METHODS_MAP[field]
                             value = getattr(instance, func, 'no data')()
-                        elif field in CLASS_ATTRIBUTES_MAP:
-                            func = CLASS_ATTRIBUTES_MAP[field]
+                        elif field in report.CLASS_ATTRIBUTES_MAP:
+                            func = report.CLASS_ATTRIBUTES_MAP[field]
 
                             value = None
                             for item in func.split('.'):
@@ -191,16 +173,27 @@ def format_values(rules_values):
 
 
 def check_field_list_validity(fields_list, required_fields_dict):
+    """
+    Helper function to create a valid fields list for writing the CSV file.
+
+    :param fields_list: list of fields provided via the parse arguments
+        command
+    :param required_fields_dict: The list of dictionaries that are actually
+        generated.
+    :returns: a list of fields that should be written to the csv file
+    """
     known_fields = set()
     for value_dict in required_fields_dict:
         keys = value_dict.keys()
         known_fields.update(keys)
 
+    final_fields = [field for field in fields_list]
+
     for field in known_fields:
         if field not in fields_list:
-            fields_list.append(field)
+            final_fields.append(field)
 
-    return fields_list
+    return final_fields
 
 
 def write_csv_report(output_filepath, stages_list, fields_list):
