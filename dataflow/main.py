@@ -117,11 +117,18 @@ def run(argv=None, save_main_session=True):
         # side-effects. It's likely such a pattern will be needed if we want to move to a
         # more generalized cleaning rule model within Beam.
         by_visit = {}
+
+        def key_by_visit(tbl):
+            # Fallback to the primary ID, otherwise we'll cogroup all rows with
+            # null visits.
+            return lambda row: (row['visit_occurrence_id'] or
+                                f"{tbl}/{row[tbl + '_id']}", row)
+
         for tbl in list(
                 temporal_consistency.TABLES) + [common.VISIT_OCCURRENCE]:
             by_visit[tbl] = (
-                combined_by_domain[tbl] | f"{tbl} by visit occurence" >>
-                beam.Map(lambda row: (row['visit_occurrence_id'], row)))
+                combined_by_domain[tbl] |
+                f"{tbl} by visit occurence" >> beam.Map(key_by_visit(tbl)))
 
         cogrouped_by_visit = (by_visit |
                               "cogrouped by visit for temporal consistency" >>
