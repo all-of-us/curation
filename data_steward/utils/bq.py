@@ -117,7 +117,8 @@ def create_tables(client,
     successes = []
     failures = []
     for index, table_name in enumerate(fq_table_names):
-        schema = get_table_schema(table_name.split('.')[2], fields[index] if fields else None)
+        schema = get_table_schema(
+            table_name.split('.')[2], fields[index] if fields else None)
 
         try:
             table = bigquery.Table(table_name, schema=schema)

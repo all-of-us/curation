@@ -388,20 +388,34 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                         deactivated_pids_table=pids_table,
                         date_column=date_row.date_column)
                 queries_list.append({
-                    clean_consts.QUERY: sandbox_query,
-                    clean_consts.DESTINATION: date_row.project_id + '.' + date_row.dataset_id + '.' + date_row.table,
-                    clean_consts.DESTINATION_DATASET: date_row.dataset_id,
-                    clean_consts.DESTINATION_TABLE: date_row.table,
-                    clean_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-                    'type': 'sandbox'
+                    clean_consts.QUERY:
+                        sandbox_query,
+                    clean_consts.DESTINATION:
+                        date_row.project_id + '.' + date_row.dataset_id + '.' +
+                        date_row.table,
+                    clean_consts.DESTINATION_DATASET:
+                        date_row.dataset_id,
+                    clean_consts.DESTINATION_TABLE:
+                        date_row.table,
+                    clean_consts.DISPOSITION:
+                        bq_consts.WRITE_APPEND,
+                    'type':
+                        'sandbox'
                 })
                 queries_list.append({
-                    clean_consts.QUERY: clean_query,
-                    clean_consts.DESTINATION: date_row.project_id + '.' + date_row.dataset_id + '.' + date_row.table,
-                    clean_consts.DESTINATION_DATASET: date_row.dataset_id,
-                    clean_consts.DESTINATION_TABLE: date_row.table,
-                    clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-                    'type': 'retraction'
+                    clean_consts.QUERY:
+                        clean_query,
+                    clean_consts.DESTINATION:
+                        date_row.project_id + '.' + date_row.dataset_id + '.' +
+                        date_row.table,
+                    clean_consts.DESTINATION_DATASET:
+                        date_row.dataset_id,
+                    clean_consts.DESTINATION_TABLE:
+                        date_row.table,
+                    clean_consts.DISPOSITION:
+                        bq_consts.WRITE_TRUNCATE,
+                    'type':
+                        'retraction'
                 })
             else:
                 # break out of loop to create query, if pid does not exist in table
@@ -422,10 +436,11 @@ def run_queries(queries, client):
     incomplete_jobs = []
     for query_dict in queries:
         # Set configuration.query
-        job_config = bigquery.QueryJobConfig(use_query_cache=False,
-                                             destination=query_dict['destination'],
-                                             write_disposition=query_dict['write_disposition'],
-                                             create_disposition='CREATE_IF_NEEDED')
+        job_config = bigquery.QueryJobConfig(
+            use_query_cache=False,
+            destination=query_dict['destination'],
+            write_disposition=query_dict['write_disposition'],
+            create_disposition='CREATE_IF_NEEDED')
 
         if query_dict['type'] == 'sandbox':
             LOGGER.info(
