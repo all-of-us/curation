@@ -9,6 +9,7 @@ USAGE="tools/import_rdr_omop.sh
     --rdr_project <PROJECT where rdr files are dropped>
     --rdr_directory <DIRECTORY, not including the gs:// bucket name>
     --key_file <path to key file>
+    --rdr_upload_date <Date that the RDR ETL has run - format yyyymmdd>
     --vocab_dataset <vocabulary dataset>"
 
 while true; do
@@ -29,6 +30,10 @@ while true; do
     KEY_FILE=$2
     shift 2
     ;;
+  --rdr_upload_date)
+    RDR_UPLOAD_DATE=$2
+    shift 2
+    ;;
   --vocab_dataset)
     VOCAB_DATASET=$2
     shift 2
@@ -41,7 +46,7 @@ while true; do
   esac
 done
 
-if [[ -z "${RDR_PROJECT}" ]] || [[ -z "${RDR_DIRECTORY}" ]] || [[ -z "${KEY_FILE}" ]] || [[ -z "${VOCAB_DATASET}" ]]; then
+if [[ -z "${RDR_PROJECT}" ]] || [[ -z "${RDR_DIRECTORY}" ]] || [[ -z "${KEY_FILE}" ]] || [[ -z "${VOCAB_DATASET}" ]] || [[ -z "${RDR_UPLOAD_DATE}" ]]; then
   echo "Usage: $USAGE"
   exit 1
 fi
@@ -57,12 +62,12 @@ export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
 export BIGQUERY_DATASET_ID="${OUTPUT_DATASET}"
 
-today=$(date '+%Y%m%d')
-RDR_DATASET="${today}_rdr"
+
+RDR_DATASET="rdr${RDR_UPLOAD_DATE}"
 
 source "${TOOLS_DIR}/set_path.sh"
 
-bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} on ${today}" "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}"
+bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} dated ${RDR_UPLOAD_DATE}" "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}"
 
 python "${DATA_STEWARD_DIR}/cdm.py" "${RDR_DATASET}"
 
