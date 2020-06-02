@@ -31,6 +31,7 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
+        self.client = None
 
         self.query_class = CleanPPINumericFieldsUsingParameters(
             self.project_id, self.dataset_id, self.sandbox_id)
@@ -42,7 +43,7 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
 
     def test_setup_rule(self):
         # Test
-        self.query_class.setup_rule()
+        self.query_class.setup_rule(self.client)
 
         # No errors are raised, nothing will happen
 
