@@ -62,6 +62,13 @@ def generate_paths(log_filepath_list):
 
 
 def create_logger(filename, console_logging=False):
+    """
+    Sets up python logging to file
+
+    :param filename:  name of the log file
+    :param console_logging: if False will only create FileHandler, if True
+                            will create both FileHandler and StreamHandler
+    """
     # gets new logger, will be created if doesn't exist
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -93,12 +100,11 @@ def setup_logger(log_filepath_list, console_logging=True):
 
     :param log_filepath_list:  desired string path and or name of the log file
                                example: ['path/', 'faked.log', 'path/fake.log']
-    :param console_logging:  determines if log is output to desire and/or default file
+    :param console_logging:  determines if log is output to desired and/or default file
                              and console, or just the desired and/or default file
     """
 
     log_path = generate_paths(log_filepath_list)
-    print(f'log_path: {log_path}')
 
     log_list = []
 
