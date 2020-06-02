@@ -23,6 +23,7 @@ QUALIFIER_SOURCE_VALUE = 'qualifier_source_value'
 MODULE_NAME = 'module_name'
 FUNCTION_NAME = 'function_name'
 LINE_NO = 'line_no'
+DESTINATION = 'destination'
 
 # Query dictionary default_values
 MODULE_NAME_DEFAULT_VALUE = 'Unknown module'

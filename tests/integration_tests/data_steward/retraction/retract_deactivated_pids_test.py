@@ -19,13 +19,44 @@ from constants.cdr_cleaner import clean_cdr as clean_consts
 
 TABLE_ROWS_QUERY = 'SELECT * FROM {dataset_id}.__TABLES__ '
 
-EXPECTED_ROWS_QUERY = ('SELECT * '
-                       'FROM {dataset_id}.{table_id} '
-                       'WHERE person_id = {pid} '
-                       'AND {date_column} >= (SELECT deactivated_date '
-                       'FROM {dataset_id}.{pid_table_id} '
-                       'WHERE person_id = {pid})')
-
+EXPECTED_DROPPED_ROWS_QUERY = ('SELECT * '
+                               'FROM {dataset_id}.{table_id} '
+                               'WHERE person_id = {pid} '
+                               'AND {date_column} >= (SELECT deactivated_date '
+                               'FROM {dataset_id}.{pid_table_id} '
+                               'WHERE person_id = {pid})')
+EXPECTED_KEPT_ROWS_QUERY = ('SELECT * '
+                            'FROM {dataset_id}.{table_id} '
+                            'WHERE person_id != {pid} '
+                            'OR(  person_id = {pid} '
+                            'AND {date_column} < (SELECT deactivated_date '
+                            'FROM {dataset_id}.{pid_table_id} '
+                            'WHERE person_id = {pid}))')
+EXPECTED_DROPPED_ROWS_QUERY_END_DATE = (
+    'SELECT * '
+    'FROM {dataset_id}.{table_id} '
+    'WHERE person_id = {pid} '
+    'AND (CASE WHEN {end_date_column} IS NOT NULL THEN {end_date_column} >= '
+    '(SELECT deactivated_date '
+    'FROM `{dataset_id}.{pid_table_id}` '
+    'WHERE person_id = {pid} ) ELSE CASE WHEN {end_date_column} IS NULL THEN '
+    '{start_date_column} >= ( '
+    'SELECT deactivated_date '
+    'FROM `{dataset_id}.{pid_table_id}` '
+    'WHERE person_id = {pid}) END END)')
+EXPECTED_KEPT_ROWS_QUERY_END_DATE = (
+    'SELECT * '
+    'FROM {dataset_id}.{table_id} '
+    'WHERE person_id != {pid} '
+    'OR (person_id = {pid} '
+    'AND (CASE WHEN {end_date_column} IS NOT NULL THEN {end_date_column} < '
+    '(SELECT deactivated_date '
+    'FROM `{dataset_id}.{pid_table_id}` '
+    'WHERE person_id = {pid} ) ELSE CASE WHEN {end_date_column} IS NULL THEN '
+    '{start_date_column} < ( '
+    'SELECT deactivated_date '
+    'FROM `{dataset_id}.{pid_table_id}` '
+    'WHERE person_id = {pid}) END END))')
 INSERT_PID_TABLE = ('INSERT INTO {dataset_id}.{pid_table_id} '
                     '(person_id, deactivated_date) '
                     'VALUES{person_research_ids}')
@@ -49,9 +80,9 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         self.pid_table_id_list = [
             self.project_id + '.' + self.bq_dataset_id + '.' + 'pid_table'
         ]
-        self.deactivated_ehr_participants = [(1, '2007-01-01'),
-                                             (2, '2008-02-01'),
-                                             (1234567, '2019-01-01')]
+        self.deactivated_ehr_participants = [(1, '2010-01-01'),
+                                             (2, '2010-01-01'),
+                                             (5, '2010-01-01')]
 
     @mock.patch(
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
@@ -74,9 +105,16 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
                 'fake_procedure_occurrence', 'fake_visit_occurrence'
             ],
             'date_column': [
-                'condition_end_date', 'drug_exposure_end_date',
-                'measurement_date', 'observation_date', 'procedure_date',
-                'visit_end_date'
+                None, None, 'measurement_date', 'observation_date',
+                'procedure_date', None
+            ],
+            'start_date_column': [
+                'condition_start_date', 'drug_exposure_start_date', None, None,
+                None, 'visit_start_date'
+            ],
+            'end_date_column': [
+                'condition_end_date', 'drug_exposure_end_date', None, None,
+                None, 'visit_end_date'
             ]
         }
         retraction_info = pd.DataFrame(data=d)
@@ -101,7 +139,8 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         client.query(q)
 
         job_ids = []
-        row_count_queries = []
+        dropped_row_count_queries = []
+        kept_row_count_queries = []
         hpo_table_list = []
 
         # Load the cdm files into dataset
@@ -134,29 +173,57 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         # Store query for checking number of rows to delete
         for ehr in self.deactivated_ehr_participants:
             pid = ehr[0]
-            for hpo in hpo_table_list:
-                date_column = retraction_info.loc[
-                    retraction_info['table'].str.contains(hpo),
-                    'date_column'].item()
-                query = EXPECTED_ROWS_QUERY.format(
-                    dataset_id=self.bq_dataset_id,
-                    table_id=hpo,
-                    pid_table_id=self.pid_table_id,
-                    pid=pid,
-                    date_column=date_column)
-                row_count_queries.append({
-                    clean_consts.QUERY: query,
+            for row in retraction_info.itertuples(index=False):
+                if row.date_column is None:
+                    dropped_query = EXPECTED_DROPPED_ROWS_QUERY_END_DATE.format(
+                        dataset_id=self.bq_dataset_id,
+                        table_id=row.table,
+                        pid_table_id=self.pid_table_id,
+                        pid=pid,
+                        start_date_column=row.start_date_column,
+                        end_date_column=row.end_date_column)
+                    kept_query = EXPECTED_KEPT_ROWS_QUERY_END_DATE.format(
+                        dataset_id=self.bq_dataset_id,
+                        table_id=row.table,
+                        pid_table_id=self.pid_table_id,
+                        pid=pid,
+                        start_date_column=row.start_date_column,
+                        end_date_column=row.end_date_column)
+                else:
+                    dropped_query = EXPECTED_DROPPED_ROWS_QUERY.format(
+                        dataset_id=self.bq_dataset_id,
+                        table_id=row.table,
+                        pid_table_id=self.pid_table_id,
+                        pid=pid,
+                        date_column=row.date_column)
+                    kept_query = EXPECTED_KEPT_ROWS_QUERY.format(
+                        dataset_id=self.bq_dataset_id,
+                        table_id=row.table,
+                        pid_table_id=self.pid_table_id,
+                        pid=pid,
+                        date_column=row.date_column)
+                dropped_row_count_queries.append({
+                    clean_consts.QUERY: dropped_query,
                     clean_consts.DESTINATION_DATASET: self.bq_dataset_id,
-                    clean_consts.DESTINATION_TABLE: hpo
+                    clean_consts.DESTINATION_TABLE: row.table
+                })
+                kept_row_count_queries.append({
+                    clean_consts.QUERY: kept_query,
+                    clean_consts.DESTINATION_DATASET: self.bq_dataset_id,
+                    clean_consts.DESTINATION_TABLE: row.table
                 })
 
-        # Use query results to count number of expected row deletions
-        expected_row_count = {}
-        for query_dict in row_count_queries:
+        # Use query results to count number of expected dropped row deletions
+        expected_dropped_row_count = {}
+        for query_dict in dropped_row_count_queries:
             response = client.query(query_dict['query'])
             result = response.result()
-            expected_row_count[
-                query_dict['destination_table_id']] = result.total_rows
+            if query_dict['destination_table_id'] in expected_dropped_row_count:
+                expected_dropped_row_count[
+                    query_dict['destination_table_id']] += result.total_rows
+            else:
+                expected_dropped_row_count[
+                    query_dict['destination_table_id']] = result.total_rows
 
         # Separate check to find number of actual deleted rows
         q = TABLE_ROWS_QUERY.format(dataset_id=self.bq_dataset_id)
@@ -164,6 +231,24 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         row_count_before_retraction = {}
         for row in q_result:
             row_count_before_retraction[row['table_id']] = row['row_count']
+
+        # Use query results to count number of expected dropped row deletions
+        expected_kept_row_count = {}
+        for query_dict in kept_row_count_queries:
+            response = client.query(query_dict['query'])
+            result = response.result()
+            if query_dict['destination_table_id'] in expected_kept_row_count:
+                expected_kept_row_count[query_dict['destination_table_id']] -= (
+                    (row_count_before_retraction[
+                        query_dict['destination_table_id']] -
+                     result.total_rows))
+            else:
+                expected_kept_row_count[query_dict['destination_table_id']] = (
+                    row_count_before_retraction[
+                        query_dict['destination_table_id']] -
+                    (row_count_before_retraction[
+                        query_dict['destination_table_id']] -
+                     result.total_rows))
 
         # Perform retraction
         query_list = retract_deactivated_pids.create_queries(
@@ -177,10 +262,16 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         row_count_after_retraction = {}
         for row in results:
             row_count_after_retraction[row['table_id']] = row['row_count']
-        for table in expected_row_count:
+
+        for table in expected_dropped_row_count:
             self.assertEqual(
-                expected_row_count[table], row_count_before_retraction[table] -
+                expected_dropped_row_count[table],
+                row_count_before_retraction[table] -
                 row_count_after_retraction[table])
+
+        for table in expected_kept_row_count:
+            self.assertEqual(expected_kept_row_count[table],
+                             row_count_after_retraction[table])
 
     def tearDown(self):
         test_util.delete_all_tables(self.bq_dataset_id)

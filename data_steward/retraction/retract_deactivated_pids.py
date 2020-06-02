@@ -74,17 +74,15 @@ WHERE person_id = {{pid}}
 # Queries to create tables in associated sandbox with rows that will be removed per cleaning rule.
 # Two different queries 1. tables containing standard entry dates 2. tables with start and end dates
 SANDBOX_QUERY_DATE = jinja_env.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id = {{pid}}
 AND {{date_column}} >= (SELECT deactivated_date
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
-WHERE person_id = {{pid}}))
+WHERE person_id = {{pid}})
 """)
 
 SANDBOX_QUERY_END_DATE = jinja_env.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id = {{pid}}
@@ -93,7 +91,7 @@ FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pi
 WHERE person_id = {{pid}} ) ELSE CASE WHEN {{end_date_column}} IS NULL THEN {{start_date_column}} >= (
 SELECT deactivated_date
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
-WHERE person_id = {{pid}}) END END))
+WHERE person_id = {{pid}}) END END)
 """)
 
 # Queries to truncate existing tables to remove deactivated EHR PIDS, two different queries for
@@ -391,12 +389,15 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                         date_column=date_row.date_column)
                 queries_list.append({
                     clean_consts.QUERY: sandbox_query,
-                    clean_consts.DESTINATION_DATASET: sandbox_dataset,
+                    clean_consts.DESTINATION: date_row.project_id + '.' + date_row.dataset_id + '.' + date_row.table,
+                    clean_consts.DESTINATION_DATASET: date_row.dataset_id,
                     clean_consts.DESTINATION_TABLE: date_row.table,
+                    clean_consts.DISPOSITION: bq_consts.WRITE_APPEND,
                     'type': 'sandbox'
                 })
                 queries_list.append({
                     clean_consts.QUERY: clean_query,
+                    clean_consts.DESTINATION: date_row.project_id + '.' + date_row.dataset_id + '.' + date_row.table,
                     clean_consts.DESTINATION_DATASET: date_row.dataset_id,
                     clean_consts.DESTINATION_TABLE: date_row.table,
                     clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
@@ -421,12 +422,16 @@ def run_queries(queries, client):
     incomplete_jobs = []
     for query_dict in queries:
         # Set configuration.query
-        job_config = bigquery.QueryJobConfig(use_query_cache=False)
+        job_config = bigquery.QueryJobConfig(use_query_cache=False,
+                                             destination=query_dict['destination'],
+                                             write_disposition=query_dict['write_disposition'],
+                                             create_disposition='CREATE_IF_NEEDED')
+
         if query_dict['type'] == 'sandbox':
             LOGGER.info(
                 f"Writing rows to be retracted, using query {query_dict['query']}"
             )
-            job = client.query(query_dict['query'], job_config=job_config)
+            job = client.query(query=query_dict['query'], job_config=job_config)
             job.result()
             if job.exception():
                 incomplete_jobs.append(job)
@@ -438,7 +443,6 @@ def run_queries(queries, client):
             LOGGER.info(
                 f"Truncating table with clean data, using query {query_dict['query']}"
             )
-            job_config.write_disposition = query_dict['write_disposition']
             job = client.query(query_dict['query'], job_config=job_config)
             job.result()
             if job.exception():
