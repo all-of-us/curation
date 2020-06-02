@@ -347,7 +347,6 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                     sandbox_query = SANDBOX_QUERY_END_DATE.render(
                         project=date_row.project_id,
                         sandbox_dataset=sandbox_dataset,
-                        intermediary_table=ticket_number + '_' + date_row.table,
                         dataset=date_row.dataset_id,
                         table=date_row.table,
                         pid=pid,
@@ -370,7 +369,6 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                     sandbox_query = SANDBOX_QUERY_DATE.render(
                         project=date_row.project_id,
                         sandbox_dataset=sandbox_dataset,
-                        intermediary_table=ticket_number + '_' + date_row.table,
                         dataset=date_row.dataset_id,
                         table=date_row.table,
                         pid=pid,
@@ -391,8 +389,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                     clean_consts.QUERY:
                         sandbox_query,
                     clean_consts.DESTINATION:
-                        date_row.project_id + '.' + date_row.dataset_id + '.' +
-                        date_row.table,
+                        date_row.project_id + '.' + sandbox_dataset + '.' +
+                        (ticket_number + '_' + date_row.table),
                     clean_consts.DESTINATION_DATASET:
                         date_row.dataset_id,
                     clean_consts.DESTINATION_TABLE:

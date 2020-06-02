@@ -86,10 +86,8 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
 
     @mock.patch(
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
-    @mock.patch('utils.bq.list_datasets')
     def test_integration_queries_to_retract_from_fake_dataset(
-        self, mock_list_datasets, mock_retraction_info):
-        mock_list_datasets.return_value = [self.bq_dataset_id]
+        self, mock_retraction_info):
         d = {
             'project_id': [
                 self.project_id, self.project_id, self.project_id,
