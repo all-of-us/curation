@@ -9,16 +9,16 @@ Ensures logging handlers are set up correctly by making sure:
 Original Issue = DC-637
 """
 
-import logging
 # Python imports
 import shutil
 import unittest
+import logging
+import mock
+import os
 from datetime import datetime
 
-import mock
-
 # Project imports
-from utils.pipeline_logging import generate_paths, create_logger
+from utils.pipeline_logging import generate_paths, create_logger, setup_logger
 
 
 class PipelineLoggingTest(unittest.TestCase):
@@ -42,6 +42,7 @@ class PipelineLoggingTest(unittest.TestCase):
         # checks that log_path is generated properly
         results = generate_paths(self.log_file_list)
         self.assertEquals(results, self.log_path)
+        self.assertListEqual(results, self.log_path)
 
     @mock.patch('utils.pipeline_logging.logging.StreamHandler')
     @mock.patch('utils.pipeline_logging.logging.FileHandler')
@@ -67,6 +68,21 @@ class PipelineLoggingTest(unittest.TestCase):
         mock_get_logger.return_value.addHandler.assert_called_with(
             mock_stream_handler.return_value)
         mock_get_logger.assert_called_with(self.log_file_list[1])
+
+    def test_setup_logger(self):
+        expected_list_true = []
+        expected_list_false = []
+
+        # Pre conditions
+        for item in self.log_path:
+            expected_list_true.append(create_logger(item, True))
+
+        for item in self.log_path:
+            expected_list_false.append(create_logger(item, False))
+
+        # Post conditions
+        self.assertEquals(setup_logger(self.log_file_list, True), expected_list_true)
+        self.assertEquals(setup_logger(self.log_file_list, False), expected_list_false)
 
     def tearDown(self):
         shutil.rmtree('path/')
