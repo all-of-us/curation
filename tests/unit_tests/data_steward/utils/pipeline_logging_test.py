@@ -81,8 +81,10 @@ class PipelineLoggingTest(unittest.TestCase):
             expected_list_false.append(create_logger(item, False))
 
         # Post conditions
-        self.assertEquals(setup_logger(self.log_file_list, True), expected_list_true)
-        self.assertEquals(setup_logger(self.log_file_list, False), expected_list_false)
+        self.assertEquals(setup_logger(self.log_file_list, True),
+                          expected_list_true)
+        self.assertEquals(setup_logger(self.log_file_list, False),
+                          expected_list_false)
 
     def tearDown(self):
         shutil.rmtree('path/')
