@@ -27,10 +27,17 @@ pip install apache-beam apache-beam[gcp]
 cp -r data_steward/resource_files/fields dataflow/fields
 ```
 
-- Run the pipeline, from the dataflow dir locally:
+- Run the pipeline, from the dataflow dir locally, from local JSON files:
 
 ```
-python main.py --setup_file $PWD/setup.py --from-bigquery
+python main.py --setup_file $PWD/setup.py
+```
+
+- Run the pipeline, from the dataflow dir locally, against BigQuery. The downsample
+  parameter will approximately downsample the number of participants selected from BQ:
+
+```
+python main.py --setup_file $PWD/setup.py --from-bigquery --downsample-inverse-prob 2500
 ```
 
 - Run the pipeline on Dataflow, from the dataflow dir:
@@ -41,4 +48,14 @@ python main.py \
   --from-bigquery \
   --to-bigquery aou-res-curation-test:calbach_dataflow_testing \
   --runner DataflowRunner
+```
+
+## Generating test inputs
+
+The easiest way is to run the pipeline, then copy the outputs into the test_data directory.
+
+```
+python main.py --setup_file $PWD/setup.py
+
+for f in out/*-of-*; do cp "${f}" "$(echo "${f}" | sed -e "s/txt-00000-of-00001/json/" -e "s,out/,test_data/,")"; done
 ```
