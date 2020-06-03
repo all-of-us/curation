@@ -123,7 +123,7 @@ def separate_sql_statements(rules_values):
 
         # gather the queries as a list
         for query_dict in rule_values.get('sql', []):
-            sql_list.append(query_dict.get('query'))
+            sql_list.append(query_dict.get('query', ''))
 
         if sql_list:
             # generate a dictionary for each query
@@ -162,7 +162,8 @@ def format_values(rules_values):
                 try:
                     value = ', '.join(value)
                 except TypeError:
-                    LOGGER.exception(f"erroneous value is {value}")
+                    LOGGER.exception(f"erroneous field is {field}\n"
+                                     f"erroneous value is {value}")
                     raise
 
             field_values[field] = value
