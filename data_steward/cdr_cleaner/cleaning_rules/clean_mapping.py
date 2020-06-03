@@ -74,10 +74,9 @@ class CleanMappingExtTables(BaseCleaningRule):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = (
-            'Sandboxes the mapping table records and rows dropped '
-            'when the record of the row reference has been dropped '
-            'by a cleaning rule')
+        desc = ('Sandboxes the mapping table records and rows dropped '
+                'when the record of the row reference has been dropped '
+                'by a cleaning rule')
         super().__init__(issue_numbers=[ISSUE_NUMBER],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
