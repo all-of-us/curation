@@ -2,6 +2,7 @@ import logging
 import mock
 import unittest
 from cdr_cleaner import reporter
+import cdr_cleaner.clean_cdr as control
 import constants.cdr_cleaner.reporter as consts
 
 
@@ -155,11 +156,21 @@ class CleanRulesReporterTest(unittest.TestCase):
 
         self.assertEqual(actual, expected)
 
+    def test_get_stage_elements(self):
+        # preconditions
+        fields_list = ['name', 'module', 'sql', 'jira-issues', 'description']
+
+        # test
+        for data_stage in control.DATA_STAGE_RULES_MAPPING.keys():
+            actual = reporter.get_stage_elements(data_stage, fields_list)
+
+            # post conditions
+            for class_info in actual:
+                keys = list(class_info.keys())
+                self.assertEqual(keys, fields_list)
+
     def test_main(self):
         pass
 
     def test_write_csv_report(self):
-        pass
-
-    def test_get_stage_elements(self):
         pass
