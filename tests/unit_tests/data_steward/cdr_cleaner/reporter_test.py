@@ -5,6 +5,13 @@ from cdr_cleaner import reporter
 import constants.cdr_cleaner.reporter as consts
 
 
+def mock_function_obj(self):
+    """
+    A mock description.
+    """
+    pass
+
+
 class CleanRulesReporterTest(unittest.TestCase):
 
     @classmethod
@@ -70,14 +77,15 @@ class CleanRulesReporterTest(unittest.TestCase):
     def test_format_values_with_sql_field(self):
         # preconditions
         report_dicts = [{'sql': [{'query': 'query one'}]}]
+        fields_list = ['sql']
 
         # test
-        with self.assertLogs('', level='INFO') as cm:
-            actual = reporter.format_values(report_dicts)
+        with self.assertLogs('cdr_cleaner.reporter', level='DEBUG') as cm:
+            actual = reporter.format_values(report_dicts, fields_list)
 
         expected_logs = []
         log_record = cm.records[0]
-        self.assertEqual(log_record.levelno, logging.INFO)
+        self.assertEqual(log_record.levelno, logging.DEBUG)
         self.assertEqual(log_record.msg, 'SQL field exists')
 
         expected = [{'sql': 'query one'}]
@@ -85,12 +93,13 @@ class CleanRulesReporterTest(unittest.TestCase):
 
     def test_format_values_raises_errors(self):
         # preconditions
-        statement_dicts = [{'name': 'foo', 'jira-issues': [0, 1]}]
+        report_dicts = [{'name': 'foo', 'jira-issues': [0, 1]}]
+        fields_list = ['name', 'jira-issues']
 
         # test
         with self.assertLogs('', level='INFO') as cm:
-            self.assertRaises(TypeError, reporter.format_values,
-                              statement_dicts)
+            self.assertRaises(TypeError, reporter.format_values, report_dicts,
+                              fields_list)
 
         expected_logs = []
         log_record = cm.records[0]
@@ -101,10 +110,11 @@ class CleanRulesReporterTest(unittest.TestCase):
 
     def test_format_values(self):
         # preconditions
-        statement_dicts = [{'name': 'foo', 'jira-issues': ['DC-000', 'DC-0']}]
+        report_dicts = [{'name': 'foo', 'jira-issues': ['DC-000', 'DC-0']}]
+        fields_list = ['name', 'jira-issues']
 
         # test
-        actual = reporter.format_values(statement_dicts)
+        actual = reporter.format_values(report_dicts, fields_list)
 
         # post conditions
         expected = [{'name': 'foo', 'jira-issues': 'DC-000, DC-0'}]
@@ -126,6 +136,24 @@ class CleanRulesReporterTest(unittest.TestCase):
                          ['name', 'sandbox-tables', 'description'])
         self.assertEqual(elements.output_filepath, 'temp.csv')
         self.assertFalse(elements.console_log)
+
+    def test_get_function_info(self):
+        # preconditions
+        fields_list = ['name', 'module', 'description', 'sql', 'depends-on']
+
+        # test
+        actual = reporter.get_function_info(mock_function_obj, fields_list)
+
+        # post condition
+        expected = {
+            'name': mock_function_obj.__name__,
+            'module': mock_function_obj.__module__,
+            'description': mock_function_obj.__doc__,
+            'sql': 'unknown',
+            'depends-on': 'unknown',
+        }
+
+        self.assertEqual(actual, expected)
 
     def test_main(self):
         pass
