@@ -163,7 +163,7 @@ sns.heatmap(new_hpo_sheets[idx_of_interest], annot=True, annot_kws={"size": 14},
             fmt='g', linewidths=.5, ax=ax, yticklabels=table_id_cols,
             xticklabels=date_cols, cmap="YlGnBu", vmin=0, vmax=100)
 
-ax.set_title("End Dates Preceding Start Dates for {name_of_interest}", size=14)
+ax.set_title(f"End Dates Preceding Start Dates for {name_of_interest}", size=14)
 
 plt.tight_layout()
 img_name = name_of_interest + "_end_before_begin.png"
@@ -266,7 +266,7 @@ for table, values_over_time in success_rates.items():
         plt.plot(date_idxs[non_nan_idx], new_lst, 'o', label=table)
 
 plt.legend(loc="upper left", bbox_to_anchor=(1,1))
-plt.title("{name_of_interest} End Dates Preceding Start Dates")
+plt.title(f"{name_of_interest} End Dates Preceding Start Dates")
 plt.ylabel("End Dates Preceding Start Dates (%)")
 plt.xlabel("")
 plt.xticks(date_idxs, times, rotation = 'vertical')

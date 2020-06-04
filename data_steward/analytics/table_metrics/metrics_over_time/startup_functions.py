@@ -21,7 +21,7 @@ import constants
 
 from dictionaries_and_lists import \
     choice_dict, percentage_dict, \
-    target_low_dict, metric_type_to_english_dict
+    metric_type_to_english_dict
 
 
 from messages import \
@@ -41,9 +41,6 @@ def get_user_analysis_choice():
     percent_bool (bool): determines whether the data will be seen
         as 'percentage complete' or individual instances of a
         particular error
-
-    target_low (bool): determines whether the number displayed should
-        be considered a desirable or undesirable characteristic
     """
 
     user_command = input(analysis_type_prompt).lower()
@@ -55,9 +52,8 @@ def get_user_analysis_choice():
 
     analytics_type = choice_dict[user_command]
     percent_bool = percentage_dict[analytics_type]
-    target_low = target_low_dict[analytics_type]
 
-    return analytics_type, percent_bool, target_low
+    return analytics_type, percent_bool
 
 
 def load_files(user_choice, file_names):
@@ -269,9 +265,6 @@ def startup(file_names):
         as 'percentage complete' or individual instances of a
         particular error
 
-    ideal_low (bool): determines whether the number displayed should
-        be considered a desirable or undesirable characteristic
-
     file_names (list): list of the user-specified Excel files that are
         in the current directory. Files are analytics reports to be
         scanned.
@@ -284,11 +277,11 @@ def startup(file_names):
         into an HPO ID column. for use in generating subsequent
         dataframes.
     """
-    metric_choice, metric_is_percent, ideal_low = get_user_analysis_choice()
+    metric_choice, metric_is_percent = get_user_analysis_choice()
     sheets = load_files(metric_choice, file_names)
     hpo_name_col = generate_hpo_id_col(file_names)
 
-    return metric_choice, metric_is_percent, ideal_low, \
+    return metric_choice, metric_is_percent, \
         sheets, hpo_name_col
 
 

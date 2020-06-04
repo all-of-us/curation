@@ -165,16 +165,12 @@ def get_err_rate(sheet, row_num, metric, hpo_name, column):
     if row_num is not None:
         data_info = sheet.iloc[row_num, :]  # series, column labels and values
     else:
-        print("{hpo_name} is now in the following sheet: {sheet}".format(
+        print("{hpo_name} is not in the following sheet: {sheet}".format(
             hpo_name=hpo_name, sheet=metric
         ))
         sys.exit(0)
 
-    # tend to reverse the reported metric for ACHILLES errors
-    if metric in ['end_before_begin', 'data_after_death']:
-        val = round(100 - data_info[column], 2)
-    else:
-        val = data_info[column]
+    val = data_info[column]
 
     # to ensure that comparisons can be drawn across
     # the threshold

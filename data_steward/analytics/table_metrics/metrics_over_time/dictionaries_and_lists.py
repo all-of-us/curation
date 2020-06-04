@@ -13,9 +13,6 @@ percentage_dict: correlated a particular analysis choice with whether or
     not it is intended to report out a fixed number (as in the case of
     duplicate records) or a  'percentage' (namely success or failure
     rates)
-target_low_dict: indicates whether the metric is intended to be
-    minimized (in the case of an 'error') or maximized (in the
-    case of a 'success rate')
 columns_to_document_for_sheet: indicates which columns contain
     information that should be stored for the particular data
     quality metric that is being analyzed
@@ -99,30 +96,6 @@ percentage_dict = {
     constants.erroneous_dates: constants.true,
     constants.person_id_failure_rate: constants.true,
     constants.achilles_errors: constants.false
-}
-
-
-# FIXME: for errors, we want target_low value to be true
-
-target_low_dict = {
-    # non-percentage values
-    constants.duplicates: constants.true,
-    constants.achilles_errors: constants.true,
-
-    # success rates
-    constants.concept: constants.false,
-    constants.unit_success_rate: constants.false,
-    constants.drug_routes: constants.false,
-    constants.drug_success: constants.false,
-    constants.sites_measurement: constants.false,
-
-    constants.data_after_death: constants.true,
-    constants.end_before_begin: constants.true,
-    constants.visit_date_disparity: constants.false,
-
-    constants.date_datetime_disparity: constants.true,
-    constants.erroneous_dates: constants.true,
-    constants.person_id_failure_rate: constants.true,
 }
 
 columns_to_document_for_sheet = {

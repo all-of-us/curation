@@ -40,14 +40,14 @@ from dictionaries_and_lists import full_names
 
 from contact_list import recipient_dict
 
-report1 = 'april_17_2020.xlsx'
+report1 = 'june_03_2020.xlsx'
 
 report_names = [report1]
 
 sheet_names = [
     'concept', 'data_after_death', 'date_datetime_disparity',
     'drug_routes', 'drug_success', 'duplicates',
-    'end_before_begin', 'measurement_units', 'erroneous_dates',
+    'end_before_begin', 'unit_success_rate', 'erroneous_dates',
     'sites_measurement', 'person_id_failure_rate']
 
 
@@ -116,7 +116,7 @@ def assemble_final_messages(unique_metrics, hpo_id):
     ehr_site = full_names[hpo_id]
     name = "Noah Engel"
     num_metrics = len(sheet_names)
-    date = "April 17th, 2020"
+    date = "June 3rd, 2020"
 
     message = introduction.format(
         ehr_site=ehr_site, name=name,
@@ -132,7 +132,7 @@ def assemble_final_messages(unique_metrics, hpo_id):
     message += """\n
     Email Title:
     ------------
-    Data Check Feedback (April 2020) - {site}""".format(
+    Data Check Feedback (June 2020) - {site}""".format(
         site=ehr_site)
 
     message += """\n
@@ -151,7 +151,7 @@ def main():
     all_objects = []
 
     for metric_choice in sheet_names:
-        dfs, hpo_names, target_low, percent_bool = \
+        dfs, hpo_names, percent_bool = \
             startup(file_names=report_names,
                     metric_choice=metric_choice)
 
@@ -161,7 +161,7 @@ def main():
         dqm_list = create_dqm_list(
             dfs=dfs, file_names=file_names, datetimes=datetimes,
             user_choice=metric_choice, percent_bool=percent_bool,
-            target_low=target_low, hpo_names=hpo_names)
+            hpo_names=hpo_names)
 
         hpo_objects = create_hpo_objects(
             dqm_objects=dqm_list, file_names=file_names,

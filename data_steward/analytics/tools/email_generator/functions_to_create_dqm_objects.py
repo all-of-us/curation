@@ -42,7 +42,7 @@ def find_hpo_row(sheet, hpo):
 
 def get_info(
         sheet, row_num, percentage,
-        sheet_name, columns_to_collect, target_low):
+        sheet_name, columns_to_collect):
     """
     Function is used to create a dictionary that contains
     the number of flawed records for a particular site.
@@ -65,9 +65,6 @@ def get_info(
 
     columns_to_collect (lst): contains the tables that should be
         documented for every table and at every date.
-
-    target_low (bool): determines whether the number displayed
-        should be considered a positive or negative metric
 
     Returns
     -------
@@ -108,10 +105,7 @@ def get_info(
                             "Negative number detected in sheet {} for column "
                             "{}".format(sheet_name, col_label))
 
-                    # actual info to be logged if sensible data
-                    elif percentage and target_low:  # proportion w/ errors
-                        data_dictionary[col_label] = round(100 - number, 2)
-                    elif percentage and not target_low:  # effective
+                    elif percentage:  # effective
                         data_dictionary[col_label] = round(number, 2)
                     elif not percentage and number > -1:
                         data_dictionary[col_label] = int(number)

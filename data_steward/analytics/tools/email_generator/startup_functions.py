@@ -7,7 +7,7 @@ import os
 import sys
 from messages import fnf_error
 from dictionaries_and_lists import \
-    target_low_dict, percentage_dict
+    percentage_dict
 import datetime
 
 
@@ -36,9 +36,6 @@ def startup(file_names, metric_choice):
         into an HPO ID column. for use in generating subsequent
         dataframes.
 
-    target_low (bool): determines whether the number displayed should
-        be considered a desirable or undesirable characteristic
-
     percent_bool (bool): determines whether the data will be seen
         as 'percentage complete' or individual instances of a
         particular error
@@ -47,9 +44,8 @@ def startup(file_names, metric_choice):
     hpo_name_col = generate_hpo_id_col(file_names)
 
     percent_bool = percentage_dict[metric_choice]
-    target_low = target_low_dict[metric_choice]
 
-    return sheets, hpo_name_col, target_low, percent_bool
+    return sheets, hpo_name_col, percent_bool
 
 
 def load_files(user_choice, file_names):

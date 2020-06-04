@@ -23,7 +23,7 @@ great_job = """
     """
 
 sign_off = """
-If have questions about our metrics, please consult the AoU EHR website at this link: {link} under the 'Data Quality Metrics' tab at the top of the page. This site contains descriptions, videos, and SQL queries that can help you troubleshoot your data quality.
+If you have questions about our metrics, please consult the AoU EHR website at this link: {link} under the 'Data Quality Metrics' tab at the top of the page. This site contains descriptions, videos, and SQL queries that can help you troubleshoot your data quality.
 
 Please also be sure to visit the 'results.html' file populated in your Google bucket to find other potential errors related to your EHR submissions.
 

@@ -52,7 +52,7 @@ Please specify your choice by typing the corresponding letter.
 output_prompt = \
     """
 Would you prefer to generate:
-A. {} sheets detailing the data quality for each table.
+A. {} sheets detailing the data quality for each table/class.
 The HPO IDs would be displayed as rows.
 
 or
@@ -60,7 +60,7 @@ or
 B. {} sheets detailing the data quality for each HPO site.
 The table type would be displayed as rows. This will
 also include 1-3 table(s) with statistics on the
-aggregate data for each table type on each date.
+aggregate data for each table/class type on each date.
 """
 
 err_message_agg_for_table = """

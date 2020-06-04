@@ -85,6 +85,8 @@ cols_to_join = ['src_hpo_id']
 site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
 # -
 
+site_df
+
 # # Improve the Definitions of Drug Ingredient
 
 diuretics = (974166, 956874, 970250, 1395058, 904542, 942350, 932745,

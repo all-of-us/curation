@@ -63,7 +63,7 @@ relevant_links = {
     "https://sites.google.com/view/ehrupload/"
     "data-quality-metrics/data-after-death?authuser=0",
 
-    "measurement_units":
+    "unit_success_rate":
     "https://sites.google.com/view/ehrupload/"
     "data-quality-metrics/unit-concept-success-rate?authuser=0",
 
@@ -158,7 +158,7 @@ full_names = {
 
 metric_names = {
     # field population metrics
-    'measurement_units': 'unit_success',
+    'unit_success_rate': 'unit_success',
     'drug_routes': 'route_success',
 
     # integration metrics
@@ -180,7 +180,7 @@ metric_names = {
 
 desired_columns_dict = {
     # field population metrics
-    'measurement_units': ['total_unit_success_rate'],
+    'unit_success_rate': ['total_unit_success_rate'],
 
     'drug_routes': ['total_route_success_rate'],
 
@@ -282,7 +282,7 @@ data_quality_dimension_dict = {
     'sites_measurement': 'Completeness',
     'drug_success': 'Completeness',
     'drug_routes': 'Completeness',
-    'measurement_units': 'Completeness',
+    'unit_success_rate': 'Completeness',
     'date_datetime_disparity': 'Conformance',
     'erroneous_dates': 'Plausibility',
     'person_id_failure_rate': 'Conformance'
@@ -291,7 +291,7 @@ data_quality_dimension_dict = {
 
 metric_type_to_english_dict = {
     # field population metrics
-    'measurement_units': 'Unit Concept ID Success Rate',
+    'unit_success_rate': 'Unit Concept ID Success Rate',
     'drug_routes': 'Route Concept ID Success Rate',
 
     # integration metrics
@@ -314,7 +314,7 @@ metric_type_to_english_dict = {
 
 english_to_metric_type_dict = {
     # field population metrics
-    'Unit Concept ID Success Rate': 'measurement_units',
+    'Unit Concept ID Success Rate': 'unit_success_rate',
     'Route Concept ID Success Rate': 'drug_routes',
 
     # integration metrics

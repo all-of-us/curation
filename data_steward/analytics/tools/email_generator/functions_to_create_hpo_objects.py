@@ -168,8 +168,7 @@ def add_number_total_rows_for_hpo_and_date(
             num_rows_dictionary = get_info(
                 sheet=df_for_date, row_num=hpo_row,
                 percentage=False, sheet_name=sheet_name,
-                columns_to_collect=row_count_col_names,
-                target_low=False)
+                columns_to_collect=row_count_col_names)
 
             for table_name, value in num_rows_dictionary.items():
                 hpo.add_row_count_with_string(
