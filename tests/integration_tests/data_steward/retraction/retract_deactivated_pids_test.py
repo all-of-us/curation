@@ -2,6 +2,7 @@
 import os
 import unittest
 import logging
+from io import open
 
 # Third party imports
 import app_identity
@@ -14,8 +15,8 @@ from utils import bq
 import gcs_utils
 from tests import test_util
 from retraction import retract_deactivated_pids
-from io import open
 from constants.cdr_cleaner import clean_cdr as clean_consts
+from sandbox import get_sandbox_dataset_id
 
 TABLE_ROWS_QUERY = 'SELECT * FROM {dataset_id}.__TABLES__ '
 
@@ -73,8 +74,10 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
     def setUp(self):
         self.hpo_id = 'fake'
         self.project_id = app_identity.get_application_id()
-        self.fake_project_id = 'fake-project-id'
+        if 'test' not in self.project_id:
+            raise RuntimeError(f"Make sure the project_id is set to test.  project_id is {self.project_id}")
         self.bq_dataset_id = bq_utils.get_dataset_id()
+        self.bq_sandbox_dataset_id = get_sandbox_dataset_id(self.bq_dataset_id)
         self.ticket_number = 'DCXXX'
         self.pid_table_id = 'pid_table'
         self.pid_table_id_list = [
@@ -83,6 +86,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         self.deactivated_ehr_participants = [(1, '2010-01-01'),
                                              (2, '2010-01-01'),
                                              (5, '2010-01-01')]
+        self.client = bq.get_client(self.project_id)
 
     @mock.patch(
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
@@ -117,10 +121,9 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         }
         retraction_info = pd.DataFrame(data=d)
         mock_retraction_info.return_value = retraction_info
-        client = bq.get_client(self.project_id)
 
         # Create and load person_ids and deactivated_date to pid table
-        bq.create_tables(client,
+        bq.create_tables(self.client,
                          self.project_id,
                          self.pid_table_id_list,
                          exists_ok=False,
@@ -134,7 +137,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
             dataset_id=self.bq_dataset_id,
             pid_table_id=self.pid_table_id,
             person_research_ids=bq_formatted_insert_values)
-        client.query(q)
+        self.client.query(q)
 
         job_ids = []
         dropped_row_count_queries = []
@@ -150,16 +153,14 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
             if hpo_table == 'fake_person':
                 continue
             hpo_table_list.append(hpo_table)
-            logging.info('Preparing to load table %s.%s' %
-                         (self.bq_dataset_id, hpo_table))
+            logging.info(f'Preparing to load table {self.bq_dataset_id}.{hpo_table}')
             with open(cdm_file, 'rb') as f:
                 gcs_utils.upload_object(gcs_utils.get_hpo_bucket(self.hpo_id),
                                         cdm_file_name, f)
             result = bq_utils.load_cdm_csv(self.hpo_id,
                                            cdm_table,
                                            dataset_id=self.bq_dataset_id)
-            logging.info('Loading table %s.%s' %
-                         (self.bq_dataset_id, hpo_table))
+            logging.info(f'Loading table {self.bq_dataset_id}.{hpo_table}')
             job_id = result['jobReference']['jobId']
             job_ids.append(job_id)
 
@@ -214,7 +215,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         # Use query results to count number of expected dropped row deletions
         expected_dropped_row_count = {}
         for query_dict in dropped_row_count_queries:
-            response = client.query(query_dict['query'])
+            response = self.client.query(query_dict['query'])
             result = response.result()
             if query_dict['destination_table_id'] in expected_dropped_row_count:
                 expected_dropped_row_count[
@@ -225,7 +226,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
 
         # Separate check to find number of actual deleted rows
         q = TABLE_ROWS_QUERY.format(dataset_id=self.bq_dataset_id)
-        q_result = client.query(q)
+        q_result = self.client.query(q)
         row_count_before_retraction = {}
         for row in q_result:
             row_count_before_retraction[row['table_id']] = row['row_count']
@@ -233,7 +234,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         # Use query results to count number of expected dropped row deletions
         expected_kept_row_count = {}
         for query_dict in kept_row_count_queries:
-            response = client.query(query_dict['query'])
+            response = self.client.query(query_dict['query'])
             result = response.result()
             if query_dict['destination_table_id'] in expected_kept_row_count:
                 expected_kept_row_count[query_dict['destination_table_id']] -= (
@@ -252,10 +253,10 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         query_list = retract_deactivated_pids.create_queries(
             self.project_id, self.ticket_number, self.project_id,
             self.bq_dataset_id, self.pid_table_id)
-        retract_deactivated_pids.run_queries(query_list, client)
+        retract_deactivated_pids.run_queries(query_list, self.client)
 
         # Find actual deleted rows
-        q_result = client.query(q)
+        q_result = self.client.query(q)
         results = q_result.result()
         row_count_after_retraction = {}
         for row in results:
@@ -273,3 +274,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
 
     def tearDown(self):
         test_util.delete_all_tables(self.bq_dataset_id)
+        test_util.delete_all_tables(self.bq_sandbox_dataset_id)
+        tables = list(self.client.list_tables(self.bq_sandbox_dataset_id))
+        if not tables:
+            self.client.delete_dataset(self.bq_sandbox_dataset_id)

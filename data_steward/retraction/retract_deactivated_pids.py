@@ -174,7 +174,7 @@ def get_pids_table_info(project_id, dataset_id, client):
     result_df = client.query(all_table_info_query).to_dataframe()
     # Get list of tables that contain person_id
     pids_tables = []
-    for i, row in result_df.iterrows():
+    for row in result_df.iterrows():
         column = getattr(row, 'column_name')
         table = getattr(row, 'table_name')
         if 'person_id' in column:
@@ -235,7 +235,7 @@ def get_date_info_for_pids_tables(project_id, client):
                                                                        )]
 
         # Filter through date columns and append to the appropriate column
-        for i, row in df_to_iterate.iterrows():
+        for row in df_to_iterate.iterrows():
             column = getattr(row, 'column')
             table = getattr(row, 'table')
             if 'start_date' in column:

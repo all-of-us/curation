@@ -10,11 +10,11 @@ from pandas.util.testing import assert_frame_equal
 
 # Project imports
 from retraction import retract_deactivated_pids
+from retraction.retract_utils import DEID_REGEX
 from utils import bq
+from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from sandbox import get_sandbox_dataset_id
-from constants import bq_utils as bq_consts
-from retraction.retract_utils import DEID_REGEX
 
 
 class RetractDataBqTest(unittest.TestCase):
@@ -47,7 +47,7 @@ class RetractDataBqTest(unittest.TestCase):
                 retract_deactivated_pids.TABLE_INFORMATION_SCHEMA.render(
                     project=self.project_id, dataset=dataset)).to_dataframe()
             expected_pids_tables = []
-            for i, row in result_df.iterrows():
+            for row in result_df.iterrows():
                 column = getattr(row, 'column_name')
                 table = getattr(row, 'table_name')
                 if 'person_id' in column:
@@ -57,7 +57,7 @@ class RetractDataBqTest(unittest.TestCase):
 
             returned_result_df = retract_deactivated_pids.get_pids_table_info(
                 self.project_id, dataset, self.mock_bq_client)
-            self.assertEquals(expected_pids_tables_info_df, returned_result_df)
+            self.assertEqual(expected_pids_tables_info_df, returned_result_df)
 
     def test_get_date_info_for_pids_tables(self):
 
@@ -98,7 +98,7 @@ class RetractDataBqTest(unittest.TestCase):
                                           contains('person')]
 
             # Filter through date columns and append to the appropriate column
-            for i, row in df_to_iterate.iterrows():
+            for row in df_to_iterate.iterrows():
                 column = getattr(row, 'column')
                 table = getattr(row, 'table')
                 if 'start_date' in column:
@@ -223,4 +223,4 @@ class RetractDataBqTest(unittest.TestCase):
                     'type': 'retraction'
                 })
 
-        self.assertEquals(returned, expected_queries_list)
+        self.assertEqual(returned, expected_queries_list)
