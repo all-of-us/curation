@@ -156,8 +156,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
                 continue
             hpo_table_list.append(hpo_table)
             logging.info(
-                f'Preparing to load table {self.bq_dataset_id}.{hpo_table}'
-            )
+                f'Preparing to load table {self.bq_dataset_id}.{hpo_table}')
             with open(cdm_file, 'rb') as f:
                 gcs_utils.upload_object(gcs_utils.get_hpo_bucket(self.hpo_id),
                                         cdm_file_name, f)
