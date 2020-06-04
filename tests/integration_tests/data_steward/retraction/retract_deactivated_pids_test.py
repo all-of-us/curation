@@ -75,7 +75,9 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         self.hpo_id = 'fake'
         self.project_id = app_identity.get_application_id()
         if 'test' not in self.project_id:
-            raise RuntimeError(f"Make sure the project_id is set to test.  project_id is {self.project_id}")
+            raise RuntimeError(
+                f"Make sure the project_id is set to test.  project_id is {self.project_id}"
+            )
         self.bq_dataset_id = bq_utils.get_dataset_id()
         self.bq_sandbox_dataset_id = get_sandbox_dataset_id(self.bq_dataset_id)
         self.ticket_number = 'DCXXX'
@@ -153,7 +155,9 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
             if hpo_table == 'fake_person':
                 continue
             hpo_table_list.append(hpo_table)
-            logging.info(f'Preparing to load table {self.bq_dataset_id}.{hpo_table}')
+            logging.info(
+                f'Preparing to load table {self.bq_dataset_id}.{hpo_table}'
+            )
             with open(cdm_file, 'rb') as f:
                 gcs_utils.upload_object(gcs_utils.get_hpo_bucket(self.hpo_id),
                                         cdm_file_name, f)
