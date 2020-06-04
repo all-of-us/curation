@@ -36,7 +36,6 @@ from validation.app_errors import (errors_blueprint, InternalValidationError,
 from validation.metrics import completeness, required_labs
 from validation.participants import identity_match as matching
 
-PREFIX = '/data_steward/v1/'
 app = Flask(__name__)
 
 # register application error handlers
@@ -68,7 +67,6 @@ def save_datasources_json(datasource_id=None,
             raise RuntimeError(
                 f"Cannot save datasources.json if neither hpo_id "
                 f"nor target_bucket are specified.")
-        hpo_id = 'default'
     else:
         if target_bucket is None:
             target_bucket = gcs_utils.get_hpo_bucket(datasource_id)
@@ -201,7 +199,9 @@ def list_bucket(bucket):
             raise BucketDoesNotExistError(
                 f"Failed to list objects in bucket {bucket}", bucket)
         raise
-    except Exception:
+    except Exception as e:
+        msg = getattr(e, 'message', repr(e))
+        logging.exception(f"Unknown error {msg}")
         raise
 
 
@@ -241,8 +241,11 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
     logging.info(
         f"Validating {hpo_id} submission in gs://{bucket}/{folder_prefix}")
     # separate cdm from the unknown (unexpected) files
-    folder_items = [item['name'][len(folder_prefix):] \
-                    for item in bucket_items if item['name'].startswith(folder_prefix)]
+    folder_items = [
+        item['name'][len(folder_prefix):]
+        for item in bucket_items
+        if item['name'].startswith(folder_prefix)
+    ]
     found_cdm_files, found_pii_files, unknown_files = categorize_folder_items(
         folder_items)
 
@@ -294,7 +297,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
     error_occurred = False
 
     # TODO separate query generation, query execution, writing to GCS
-    gcs_path = 'gs://%s/%s' % (bucket, folder_prefix)
+    gcs_path = f"gs://{bucket}/{folder_prefix}"
     report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
     report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
     report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_datetime_str
@@ -557,8 +560,7 @@ def extract_date_from_rdr_dataset_id(rdr_dataset_id):
         # TODO remove dependence on date string in RDR dataset id
         rdr_date = rdr_date[:4] + '-' + rdr_date[4:6] + '-' + rdr_date[6:]
         return rdr_date
-    else:
-        raise ValueError(f"{rdr_dataset_id} is not a valid rdr_dataset_id")
+    raise ValueError(f"{rdr_dataset_id} is not a valid rdr_dataset_id")
 
 
 def get_hpo_missing_pii_query(hpo_id):
@@ -773,10 +775,9 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
         to_process_folder = folders_with_submitted_files[latest_datetime_index]
         if force_process:
             return to_process_folder
-        else:
-            processed = _validation_done(bucket, to_process_folder)
-            if not processed:
-                return to_process_folder
+        processed = _validation_done(bucket, to_process_folder)
+        if not processed:
+            return to_process_folder
     return None
 
 
