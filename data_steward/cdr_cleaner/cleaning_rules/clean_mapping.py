@@ -74,9 +74,9 @@ class CleanMappingExtTables(BaseCleaningRule):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = (
-            'Remove records from the rdr dataset where '
-            'observation_source_concept_id in (43530490, 43528818, 43530333)')
+        desc = ('Sandboxes the mapping table records and rows dropped '
+                'when the record of the row reference has been dropped '
+                'by a cleaning rule')
         super().__init__(issue_numbers=[ISSUE_NUMBER],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
