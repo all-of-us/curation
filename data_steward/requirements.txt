@@ -45,7 +45,7 @@ jupyter-console==5.2.0
 jupyter-core==4.6.1
 jupytext==1.3.0
 Markdown==2.6.9
-MarkupSafe==1.0
+MarkupSafe==1.1.1
 mistune==0.8.4
 mock==2.0.0
 mo_future<2.50.19316
