@@ -25,7 +25,6 @@ DEFAULT_VIEW_MESSAGE = {
 }
 
 DEFAULT_ERROR_STATUS = 500
-DEFAULT_ALERT_MESSAGE = '{} raised.  Message is:\t{}'
 
 
 class InternalValidationError(RuntimeError):
@@ -48,7 +47,7 @@ def _handle_error(alert_message, view_message=None, response_code=None):
     Helper function to send slack alerts and return generic error views.
 
     The alert message may contain sensitive information and should NEVER be used
-    as part of the view message or view return value.  
+    as part of the view message or view return value.
 
     :param alert_message:  the message intended to be sent to the alerting
         mechanism
@@ -77,6 +76,17 @@ def _handle_error(alert_message, view_message=None, response_code=None):
     return view_message, status_code
 
 
+def format_alert_message(raised_error, message):
+    """
+    Formats error in the desired format
+
+    :param raised_error: Error that was raised
+    :param message: Message accompanying the error
+    :return: Formatted f-string
+    """
+    return f"Error raised: {raised_error}\nMessage: {message}"
+
+
 @errors_blueprint.app_errorhandler(BucketDoesNotExistError)
 def handle_bad_bucket_request(error):
     """
@@ -88,8 +98,7 @@ def handle_bad_bucket_request(error):
 
     :return:  an error view
     """
-    alert_message = DEFAULT_ALERT_MESSAGE.format(error.__class__.__name__,
-                                                 str(error))
+    alert_message = format_alert_message(error.__class__.__name__, str(error))
     return _handle_error(alert_message)
 
 
@@ -104,8 +113,7 @@ def handle_internal_validation_error(error):
 
     :return:  an error view
     """
-    alert_message = DEFAULT_ALERT_MESSAGE.format(error.__class__.__name__,
-                                                 str(error))
+    alert_message = format_alert_message(error.__class__.__name__, str(error))
     return _handle_error(alert_message)
 
 
@@ -120,8 +128,7 @@ def handle_api_client_errors(error):
 
     :return:  an error view
     """
-    alert_message = DEFAULT_ALERT_MESSAGE.format(error.__class__.__name__,
-                                                 str(error))
+    alert_message = format_alert_message(error.__class__.__name__, str(error))
     return _handle_error(alert_message)
 
 
@@ -136,8 +143,7 @@ def handle_attribute_errors(error):
 
     :return:  an error view
     """
-    alert_message = DEFAULT_ALERT_MESSAGE.format(error.__class__.__name__,
-                                                 str(error))
+    alert_message = format_alert_message(error.__class__.__name__, str(error))
     return _handle_error(alert_message)
 
 
@@ -152,6 +158,5 @@ def handle_os_errors(error):
 
     :return:  an error view
     """
-    alert_message = DEFAULT_ALERT_MESSAGE.format(error.__class__.__name__,
-                                                 str(error))
+    alert_message = format_alert_message(error.__class__.__name__, str(error))
     return _handle_error(alert_message)

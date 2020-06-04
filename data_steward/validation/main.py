@@ -65,8 +65,9 @@ def save_datasources_json(datasource_id=None,
     """
     if datasource_id is None:
         if target_bucket is None:
-            raise RuntimeError('Cannot save datasources.json if neither hpo_id '
-                               'or target_bucket are specified.')
+            raise RuntimeError(
+                f"Cannot save datasources.json if neither hpo_id "
+                f"nor target_bucket are specified.")
         hpo_id = 'default'
     else:
         if target_bucket is None:
@@ -94,7 +95,7 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
     # Using separate var rather than hpo_id here because hpo_id None needed in calls below
     if datasource_id is None and target_bucket is None:
         raise RuntimeError(
-            'Cannot export if neither hpo_id or target_bucket is specified.')
+            f"Cannot export if neither hpo_id nor target_bucket is specified.")
     else:
         datasource_name = datasource_id
         if target_bucket is None:
@@ -128,12 +129,12 @@ def run_achilles(hpo_id=None):
     :returns:
     """
     if hpo_id is not None:
-        logging.info('running achilles for hpo_id %s' % hpo_id)
+        logging.info(f"Running achilles for hpo_id '{hpo_id}'")
     achilles.create_tables(hpo_id, True)
     achilles.load_analyses(hpo_id)
     achilles.run_analyses(hpo_id=hpo_id)
     if hpo_id is not None:
-        logging.info('running achilles_heel for hpo_id %s' % hpo_id)
+        logging.info(f"Running achilles_heel for hpo_id '{hpo_id}'")
     achilles_heel.create_tables(hpo_id, True)
     achilles_heel.run_heel(hpo_id=hpo_id)
 
@@ -157,13 +158,12 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     else:
         if hpo_id is None:
             raise RuntimeError(
-                'either hpo_id or target_bucket must be specified')
+                f"Either hpo_id or target_bucket must be specified")
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
     logging.info(
-        f"Uploading achilles index files to `gs://{bucket}/{folder_prefix}`...")
+        f"Uploading achilles index files to 'gs://{bucket}/{folder_prefix}'")
     for filename in resources.ACHILLES_INDEX_FILES:
-        logging.info('Uploading achilles file `%s` to bucket `%s`' %
-                     (filename, bucket))
+        logging.info(f"Uploading achilles file '{filename}' to bucket {bucket}")
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
@@ -198,8 +198,8 @@ def list_bucket(bucket):
         return gcs_utils.list_bucket(bucket)
     except HttpError as err:
         if err.resp.status == 404:
-            raise BucketDoesNotExistError('Failed to list objects in bucket ',
-                                          bucket)
+            raise BucketDoesNotExistError(
+                f"Failed to list objects in bucket {bucket}", bucket)
         raise
     except Exception:
         raise
@@ -306,7 +306,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             logging.info(f"Running achilles on {folder_prefix}.")
             run_achilles(hpo_id)
             run_export(datasource_id=hpo_id, folder_prefix=folder_prefix)
-            logging.info(f"Uploading achilles index files to `{gcs_path}`.")
+            logging.info(f"Uploading achilles index files to '{gcs_path}'.")
             _upload_achilles_files(hpo_id, folder_prefix)
             heel_error_query = get_heel_error_query(hpo_id)
             report_data[report_consts.HEEL_ERRORS_REPORT_KEY] = query_rows(
@@ -314,37 +314,37 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         else:
             report_data[
                 report_consts.
-                SUBMISSION_ERROR_REPORT_KEY] = 'Required files are missing'
+                SUBMISSION_ERROR_REPORT_KEY] = "Required files are missing"
             logging.info(
                 f"Required files are missing in {gcs_path}. Skipping achilles.")
 
         # non-unique key metrics
-        logging.info('Getting non-unique key stats for %s...' % hpo_id)
+        logging.info(f"Getting non-unique key stats for {hpo_id}")
         nonunique_metrics_query = get_duplicate_counts_query(hpo_id)
         report_data[
             report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY] = query_rows(
                 nonunique_metrics_query)
 
         # drug class metrics
-        logging.info('Getting drug class for %s...' % hpo_id)
+        logging.info(f"Getting drug class for {hpo_id}")
         drug_class_metrics_query = get_drug_class_counts_query(hpo_id)
         report_data[report_consts.DRUG_CLASS_METRICS_REPORT_KEY] = query_rows(
             drug_class_metrics_query)
 
         # missing PII
-        logging.info('Getting missing record stats for %s...' % hpo_id)
+        logging.info(f"Getting missing record stats for {hpo_id}")
         missing_pii_query = get_hpo_missing_pii_query(hpo_id)
         missing_pii_results = query_rows(missing_pii_query)
         report_data[report_consts.MISSING_PII_KEY] = missing_pii_results
 
         # completeness
-        logging.info('Getting completeness stats for %s...' % hpo_id)
+        logging.info(f"Getting completeness stats for {hpo_id}")
         completeness_query = completeness.get_hpo_completeness_query(hpo_id)
         report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(
             completeness_query)
 
         # lab concept metrics
-        logging.info('Getting lab concepts for %s...' % hpo_id)
+        logging.info(f"Getting lab concepts for {hpo_id}")
         lab_concept_metrics_query = required_labs.get_lab_concept_summary_query(
             hpo_id)
         report_data[report_consts.LAB_CONCEPT_METRICS_REPORT_KEY] = query_rows(
@@ -352,15 +352,15 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
 
         logging.info(
             f"Processing complete. Saving timestamp {processed_datetime_str} to "
-            f"`gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`.")
+            f"'gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}'.")
         _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
                               processed_datetime_str)
 
     except HttpError as err:
         # cloud error occurred- log details for troubleshooting
         logging.exception(
-            'Failed to generate full report due to the following cloud error:\n\n%s'
-            % err.content)
+            f"Failed to generate full report due to the following cloud error:\n\n{err.content}"
+        )
         error_occurred = True
 
         # re-raise error
@@ -399,7 +399,7 @@ def generate_empty_report(hpo_id, bucket, folder_prefix):
     logging.info(
         f"Processing skipped. Reason: Folder {folder_prefix} does not follow naming convention "
         f"{consts.FOLDER_NAMING_CONVENTION}. Saving timestamp {processed_datetime_str} to "
-        f"`gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`.")
+        f"'gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}'.")
     _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
                           processed_datetime_str)
     results_html = hpo_report.render(report_data)
@@ -459,11 +459,11 @@ def process_hpo(hpo_id, force_run=False):
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         logging.warning(
-            f"Bucket `{bucket}` configured for hpo_id `{hpo_id}` does not exist"
+            f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
         )
     except HttpError as http_error:
-        message = 'Failed to process hpo_id `%s` due to the following HTTP error: %s' % (
-            hpo_id, http_error.content.decode())
+        message = (f"Failed to process hpo_id '{hpo_id}' due to the following "
+                   f"HTTP error: {http_error.content.decode()}")
         logging.exception(message)
 
 
@@ -472,7 +472,7 @@ def get_hpo_name(hpo_id):
     for hpo_dict in hpo_list_of_dicts:
         if hpo_dict['hpo_id'].lower() == hpo_id.lower():
             return hpo_dict['name']
-    raise ValueError('%s is not a valid hpo_id' % hpo_id)
+    raise ValueError(f"{hpo_id} is not a valid hpo_id")
 
 
 def render_query(query_str, **kwargs):
@@ -558,7 +558,7 @@ def extract_date_from_rdr_dataset_id(rdr_dataset_id):
         rdr_date = rdr_date[:4] + '-' + rdr_date[4:6] + '-' + rdr_date[6:]
         return rdr_date
     else:
-        raise ValueError('%s is not a valid rdr_dataset_id' % rdr_dataset_id)
+        raise ValueError(f"{rdr_dataset_id} is not a valid rdr_dataset_id")
 
 
 def get_hpo_missing_pii_query(hpo_id):
@@ -607,7 +607,7 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
     """
     errors = []
     results = []
-    logging.info(f"Validating file `{file_name}`")
+    logging.info(f"Validating file '{file_name}'")
     found = parsed = loaded = 0
     table_name = file_name.split('.')[0]
 
@@ -635,10 +635,10 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
         else:
             # Incomplete jobs are internal unrecoverable errors.
             # Aborting the process allows for this submission to be validated when system recovers.
-            message_fmt = 'Loading hpo_id `%s` table `%s` failed because job id `%s` did not complete.'
-            message = message_fmt % (hpo_id, table_name, load_job_id)
-            message += ' Aborting processing `gs://%s/%s`.' % (bucket,
-                                                               folder_prefix)
+            message = (
+                f"Loading hpo_id '{hpo_id}' table '{table_name}' failed because "
+                f"job id '{load_job_id}' did not complete.\n")
+            message += f"Aborting processing 'gs://{bucket}/{folder_prefix}'."
             logging.error(message)
             raise InternalValidationError(message)
 
@@ -861,7 +861,7 @@ def union_ehr():
     now_date_string = datetime.datetime.now().strftime('%Y_%m_%d')
     folder_prefix = 'unioned_ehr_' + now_date_string + '/'
     run_export(datasource_id=hpo_id, folder_prefix=folder_prefix)
-    logging.info('uploading achilles index files')
+    logging.info(f"Uploading achilles index files")
     _upload_achilles_files(hpo_id, folder_prefix)
 
     return 'merge-and-achilles-done'
@@ -878,8 +878,8 @@ def run_retraction_cron():
 
     # retract from bq
     dataset_ids = bq_utils.get_retraction_dataset_ids()
-    logging.info('Dataset id/s to target from env variable: %s' % dataset_ids)
-    logging.info('Running retraction on BQ datasets')
+    logging.info(f"Dataset id/s to target from env variable: {dataset_ids}")
+    logging.info(f"Running retraction on BQ datasets")
     if output_project_id:
         # retract from output dataset
         retract_data_bq.run_bq_retraction(output_project_id, sandbox_dataset_id,
@@ -889,19 +889,19 @@ def run_retraction_cron():
     retract_data_bq.run_bq_retraction(project_id, sandbox_dataset_id,
                                       project_id, pid_table_id, hpo_id,
                                       dataset_ids, retraction_type)
-    logging.info('Completed retraction on BQ datasets')
+    logging.info(f"Completed retraction on BQ datasets")
 
     # retract from gcs
     folder = bq_utils.get_retraction_submission_folder()
-    logging.info('Submission folder/s to target from env variable: %s' % folder)
-    logging.info('Running retraction from internal bucket folders')
+    logging.info(f"Submission folder/s to target from env variable: {folder}")
+    logging.info(f"Running retraction from internal bucket folders")
     retract_data_gcs.run_gcs_retraction(project_id,
                                         sandbox_dataset_id,
                                         pid_table_id,
                                         hpo_id,
                                         folder,
                                         force_flag=True)
-    logging.info('Completed retraction from internal bucket folders')
+    logging.info(f"Completed retraction from internal bucket folders")
     return 'retraction-complete'
 
 
@@ -911,12 +911,12 @@ def validate_pii():
     combined_dataset = bq_utils.get_combined_dataset_id()
     ehr_dataset = bq_utils.get_dataset_id()
     dest_dataset = bq_utils.get_validation_results_dataset_id()
-    logging.info('Calling match_participants')
+    logging.info(f"Calling match_participants")
     _, errors = matching.match_participants(project, combined_dataset,
                                             ehr_dataset, dest_dataset)
 
     if errors > 0:
-        logging.error("Errors encountered in validation process")
+        logging.error(f"Errors encountered in validation process")
 
     return consts.VALIDATION_SUCCESS
 
@@ -925,7 +925,7 @@ def validate_pii():
 def write_drc_pii_validation_file():
     project = bq_utils.app_identity.get_application_id()
     validation_dataset = bq_utils.get_validation_results_dataset_id()
-    logging.info('Calling write_results_to_drc_bucket')
+    logging.info(f"Calling write_results_to_drc_bucket")
     matching.write_results_to_drc_bucket(project, validation_dataset)
 
     return consts.DRC_VALIDATION_REPORT_SUCCESS
@@ -935,7 +935,7 @@ def write_drc_pii_validation_file():
 def write_sites_pii_validation_files():
     project = bq_utils.app_identity.get_application_id()
     validation_dataset = bq_utils.get_validation_results_dataset_id()
-    logging.info('Calling write_results_to_site_buckets')
+    logging.info(f"Calling write_results_to_site_buckets")
     matching.write_results_to_site_buckets(project, validation_dataset)
 
     return consts.SITES_VALIDATION_REPORT_SUCCESS
