@@ -4,7 +4,7 @@ import bq_utils
 import resources
 from utils import bq
 
-METADATA_TABLE = 'cdr_metadata'
+METADATA_TABLE = '_cdr_metadata'
 ETL_VERSION = 'etl_version'
 COPY = 'copy'
 CREATE = 'create'
@@ -96,7 +96,7 @@ def get_etl_version(dataset_id, project_id):
 
 def add_metadata(dataset_id, project_id, table_fields, field_values=None):
     """
-    Adds the metadata value passed in as parameters to the medatadata table
+    Adds the metadata value passed in as parameters to the metadata table
 
     :param dataset_id: Name of the dataset
     :param project_id: Name of the project
