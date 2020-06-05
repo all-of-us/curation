@@ -283,9 +283,8 @@ def main(raw_args=None):
     :param raw_args: The list of arguments to parse.  Defaults to parsing the
         command line.
     """
-    args = parse_args()
+    args = parse_args(raw_args)
     engine.add_console_logging(args.console_log)
-    LOGGER.info(f"{args}")
 
     if cdr_consts.DataStage.UNSPECIFIED.value in args.data_stage:
         args.data_stage = [

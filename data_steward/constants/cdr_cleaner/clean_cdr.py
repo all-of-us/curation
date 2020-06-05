@@ -6,7 +6,6 @@ RDR = 'rdr'
 COMBINED = 'combined'
 DEID_BASE = 'deid_base'
 DEID_CLEAN = 'deid_clean'
-DATASET_CHOICES = [EHR, UNIONED, RDR, COMBINED, DEID_BASE, DEID_CLEAN]
 
 PERSON_TABLE_NAME = 'person'
 
@@ -34,12 +33,12 @@ LINE_NO_DEFAULT_VALUE = 'Unknown line number'
 @unique
 class DataStage(Enum):
     UNSPECIFIED = 'unspecified'
-    EHR = 'ehr'
-    RDR = 'rdr'
-    UNIONED = 'unioned'
-    COMBINED = 'combined'
-    DEID_BASE = 'deid_base'
-    DEID_CLEAN = 'deid_clean'
+    EHR = EHR
+    RDR = RDR
+    UNIONED = UNIONED
+    COMBINED = COMBINED
+    DEID_BASE = DEID_BASE
+    DEID_CLEAN = DEID_CLEAN
 
     def __str__(self):
         return self.value
