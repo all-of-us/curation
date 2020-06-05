@@ -12,10 +12,13 @@ The records for removal should be archived in the dataset sandbox.
 # Python imports
 import unittest
 
+# Third party imports
+
 # Project imports
+from common import OBSERVATION
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
-    ObservationSourceConceptIDRowSuppression, SAVE_TABLE_NAME,
-    DROP_SELECTION_QUERY, DROP_QUERY)
+    ObservationSourceConceptIDRowSuppression, DROP_SELECTION_QUERY_TMPL,
+    DROP_QUERY_TMPL, OBS_SRC_CONCEPTS)
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
@@ -59,16 +62,19 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         # post conditions
         expected_list = [{
             clean_consts.QUERY:
-                DROP_SELECTION_QUERY.format(project=self.project_id,
-                                            dataset=self.dataset_id,
-                                            sandbox=self.sandbox_id,
-                                            drop_table=SAVE_TABLE_NAME)
+                DROP_SELECTION_QUERY_TMPL.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox=self.sandbox_id,
+                    drop_table=self.query_class.get_sandbox_tablenames()[0],
+                    obs_concepts=OBS_SRC_CONCEPTS)
         }, {
             clean_consts.QUERY:
-                DROP_QUERY.format(project=self.project_id,
-                                  dataset=self.dataset_id),
+                DROP_QUERY_TMPL.render(project=self.project_id,
+                                       dataset=self.dataset_id,
+                                       obs_concepts=OBS_SRC_CONCEPTS),
             clean_consts.DESTINATION_TABLE:
-                'observation',
+                OBSERVATION,
             clean_consts.DESTINATION_DATASET:
                 self.dataset_id,
             clean_consts.DISPOSITION:
@@ -82,12 +88,15 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         self.assertEqual(self.query_class.get_affected_datasets(),
                          [clean_consts.RDR])
 
-        store_drops = DROP_SELECTION_QUERY.format(project=self.project_id,
-                                                  dataset=self.dataset_id,
-                                                  sandbox=self.sandbox_id,
-                                                  drop_table=SAVE_TABLE_NAME)
-        select_saves = DROP_QUERY.format(project=self.project_id,
-                                         dataset=self.dataset_id)
+        store_drops = DROP_SELECTION_QUERY_TMPL.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            sandbox=self.sandbox_id,
+            drop_table=self.query_class.get_sandbox_tablenames()[0],
+            obs_concepts=OBS_SRC_CONCEPTS)
+        select_saves = DROP_QUERY_TMPL.render(project=self.project_id,
+                                              dataset=self.dataset_id,
+                                              obs_concepts=OBS_SRC_CONCEPTS)
         # test
         with self.assertLogs(level='INFO') as cm:
             self.query_class.log_queries()

@@ -15,11 +15,11 @@ ids are not removed.
 import os
 
 # Third party imports
-from jinja2 import Template
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import ObservationSourceConceptIDRowSuppression
+from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
+    ObservationSourceConceptIDRowSuppression)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -44,7 +44,8 @@ class ObservationSourceConceptIDRowSuppressionTest(
           (802, 129884, 1585899, date('2016-05-01'), 45905771, {{meds_prediabetes}}),
           (803, 337361, 1585899, date('2016-05-01'), 45905771, {{now_prediabetes}}),
           (804, 129884, 1585899, date('2016-05-01'), 45905771, null),
-          (805, 337361, 1585899, date('2016-05-01'), 45905771, 45)
+          (805, 337361, 1585899, date('2016-05-01'), 45905771, 45),
+          (806, 129884, 1585899, date('2016-05-01'), 45905771, {{prefer_not_to_ans}})
         """)
         ]
         # set the test project identifier
@@ -76,6 +77,7 @@ class ObservationSourceConceptIDRowSuppressionTest(
         age_prediabetes = 43530490
         meds_prediabetes = 43528818
         now_prediabetes = 43530333
+        prefer_not_to_ans = 903079
 
         load_statements = []
         # create the string(s) to load the data
@@ -83,7 +85,8 @@ class ObservationSourceConceptIDRowSuppressionTest(
             query = tmpl.render(fq_table_name=self.fq_table_names[0],
                                 age_prediabetes=age_prediabetes,
                                 meds_prediabetes=meds_prediabetes,
-                                now_prediabetes=now_prediabetes)
+                                now_prediabetes=now_prediabetes,
+                                prefer_not_to_ans=prefer_not_to_ans)
             load_statements.append(query)
 
         self.load_test_data(load_statements)
@@ -102,8 +105,8 @@ class ObservationSourceConceptIDRowSuppressionTest(
             'fq_table_name': self.fq_table_names[0],
             'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
             'fields': ['observation_id'],
-            'loaded_ids': [801, 802, 803, 804, 805],
-            'sandboxed_ids': [801, 802, 803],
+            'loaded_ids': [801, 802, 803, 804, 805, 806],
+            'sandboxed_ids': [801, 802, 803, 806],
             'cleaned_values': [(804,), (805,)]
         }]
 
