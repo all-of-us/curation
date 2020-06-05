@@ -56,7 +56,7 @@ def cross_reference_old_metrics(failing_metrics, old_failing_metrics,
                         new_metric.link == old_metric.link)
 
                     if metrics_the_same:
-                            found_in_old = True
+                        found_in_old = True
 
                 if found_in_old:
                     # found the metric in previous sheet - need to find the
@@ -122,7 +122,7 @@ def find_report_date(prev_dashboards, new_metric):
 
     # check that it is reassigned - just in case
     assert isinstance(report_date, pd.Timestamp), \
-        "Date not found in the old dashboard. This applies to" \
+        "Date not found in the old dashboard. This applies to " \
         "the following DataQualityMetric object: {dq}".format(
             dq=new_metric.print_dqd_attributes()
         )

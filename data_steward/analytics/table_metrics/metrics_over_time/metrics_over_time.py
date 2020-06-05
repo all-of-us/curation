@@ -66,7 +66,7 @@ import pandas as pd
 
 def create_dqm_objects_for_sheet(
         dataframe, hpo_names, user_choice, metric_is_percent,
-        target_low, date):
+        date):
     """
     Function is used to create DataQualityMetric objects for all of
     the pertinent values on the various sheets being loaded.
@@ -85,9 +85,6 @@ def create_dqm_objects_for_sheet(
     metric_is_percent (bool): determines whether the data will be seen
         as 'percentage complete' or individual instances of a
         particular error
-
-    target_low (bool): determines whether the number displayed should
-        be considered a desirable or undesirable characteristic
 
     date (datetime): datetime object that represents the time that the
         data quality metric was documented (corresponding to the
@@ -118,8 +115,7 @@ def create_dqm_objects_for_sheet(
         data_dict = get_info(
             sheet=dataframe, row_num=row_number,
             percentage=metric_is_percent, sheet_name=user_choice,
-            columns_to_collect=columns,
-            target_low=target_low)
+            columns_to_collect=columns)
 
         # for each table / class (column) in the dataframe
         for table, data in data_dict.items():
@@ -137,7 +133,7 @@ def create_dqm_objects_for_sheet(
 
 
 def create_dqm_list(dfs, file_names, datetimes, user_choice,
-                    percent_bool, target_low, hpo_names):
+                    percent_bool, hpo_names):
     """
     Function is used to create all of the possible 'DataQualityMetric'
     objects that are needed given all of the inputted data.
@@ -163,9 +159,6 @@ def create_dqm_list(dfs, file_names, datetimes, user_choice,
         as 'percentage complete' or individual instances of a
         particular error
 
-    target_low (bool): determines whether the number displayed should
-        be considered a desirable or undesirable characteristic
-
     hpo_names (list): list of the strings that should go
         into an HPO ID column. for use in generating subsequent
         dataframes.
@@ -181,7 +174,7 @@ def create_dqm_list(dfs, file_names, datetimes, user_choice,
         dqm_objects, col_names = create_dqm_objects_for_sheet(
             dataframe=dataframe, hpo_names=hpo_names,
             user_choice=user_choice, metric_is_percent=percent_bool,
-            target_low=target_low, date=date)
+            date=date)
 
         dqm_list.extend(dqm_objects)
 
@@ -275,10 +268,10 @@ def create_excel_files(
 
 
 # EHR Ops Dataset Comparisons
-report1 = 'july_15_2019.xlsx'
-report2 = 'october_04_2019.xlsx'
-report3 = 'april_17_2020.xlsx'
-report4 = 'may_14_2020.xlsx'
+report1 = 'october_04_2019.xlsx'
+report2 = 'april_17_2020.xlsx'
+report3 = 'may_18_2020.xlsx'
+report4 = 'june_03_2020.xlsx'
 
 report_names = [report1, report2, report3, report4]
 
@@ -287,7 +280,7 @@ def main():
     """
     Function that executes the entirety of the program.
     """
-    user_choice, percent_bool, target_low, dfs, hpo_names = \
+    user_choice, percent_bool, dfs, hpo_names = \
         startup(file_names=report_names)
 
     file_names, datetimes = convert_file_names_to_datetimes(
@@ -296,7 +289,7 @@ def main():
     dqm_list = create_dqm_list(
         dfs=dfs, file_names=file_names, datetimes=datetimes,
         user_choice=user_choice, percent_bool=percent_bool,
-        target_low=target_low, hpo_names=hpo_names)
+        hpo_names=hpo_names)
 
     hpo_objects = create_hpo_objects(
         dqm_objects=dqm_list, file_names=file_names,

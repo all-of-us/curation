@@ -733,6 +733,7 @@ m.person_id NOT IN ({persons_to_exclude_as_str})
 
 AND
 
+(
 -- between pounds and ounces
 (m.value_as_number > 325 AND
 m.value_as_number < 1600) 
@@ -747,6 +748,7 @@ OR
 
 -- beyond grams
 (m.value_as_number > 147418)
+)
 
 GROUP BY 1
 ORDER BY cnt DESC

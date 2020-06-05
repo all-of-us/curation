@@ -18,10 +18,6 @@ percentage_dict: correlated a particular analysis choice with whether or
     duplicate records) or a  'percentage' (namely success or failure
     rates)
 
-target_low_dict: indicates whether the metric is intended to be
-    minimized (in the case of an 'error') or maximized (in the
-    case of a 'success rate')
-
 columns_to_document_for_sheet: indicates which columns contain
     information that should be stored for the particular data
     quality metric that is being analyzed
@@ -112,7 +108,7 @@ percentage_dict = {
     'data_after_death': True,
     'end_before_begin': True,
     'concept': True,
-    'measurement_units': True,
+    'unit_success_rate': True,
     'drug_routes': True,
     'drug_success': True,
     'sites_measurement': True,
@@ -121,34 +117,13 @@ percentage_dict = {
     'erroneous_dates': True,
     'person_id_failure_rate': True}
 
-target_low_dict = {
-    'duplicates': True,
-    'data_after_death': True,
-    'end_before_begin': True,
-    'concept': False,
-    'measurement_units': False,
-    'drug_routes': False,
-    'drug_success': False,
-    'sites_measurement': False,
-    'visit_date_disparity': False,
-
-    # FIXME: the three below - by logic - should
-    # be 'True' but were calculated as showing
-    # the % of errors rather than (100 - % of errors)
-    # in the DQM scripts. This means they should be
-    # logged as 'False' here to make it an effective
-    # double negative.
-    'date_datetime_disparity': False,
-    'erroneous_dates': False,
-    'person_id_failure_rate': False}
-
 
 # NOTE: This is actually different than what one would
 # find in the metrics_over_time generator. This is because
 # we want less granularity for the 'integration metrics'.
 
 columns_to_document_for_sheet_email = {
-    'measurement_units': ['total_unit_success_rate'],
+    'unit_success_rate': ['total_unit_success_rate'],
 
     'sites_measurement': [
         'Physical_Measurement',	'CMP', 'CBCwDiff',
@@ -251,14 +226,14 @@ data_quality_dimension_dict = {
     'sites_measurement': 'Completeness',
     'drug_success': 'Completeness',
     'drug_routes': 'Completeness',
-    'measurement_units': 'Completeness',
+    'unit_success_rate': 'Completeness',
     'date_datetime_disparity': 'Conformance',
     'erroneous_dates': 'Plausibility',
     'person_id_failure_rate': 'Conformance'}
 
 metric_type_to_english_dict = {
     # field population metrics
-    'measurement_units': 'Unit Concept ID Success Rate',
+    'unit_success_rate': 'Unit Concept ID Success Rate',
     'drug_routes': 'Route Concept ID Success Rate',
 
     # integration metrics

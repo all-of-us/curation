@@ -250,11 +250,7 @@ final_all_units_df = pd.merge(final_all_units_df, potential_floats, on = 'src_hp
 
 final_all_units_df = pd.merge(final_all_units_df, successful_unit_concept_ids_by_site, on = 'src_hpo_id', how = 'left')
 
-# +
 final_all_units_df['percentage_float_rows'] = round(final_all_units_df['number_of_float_source_values'] / final_all_units_df['number_total_rows'] * 100, 2)
-
-
-# -
 
 final_all_units_df['total_unit_success_rate'] = round(final_all_units_df['number_successful_units']/ final_all_units_df['number_of_float_source_values'] * 100, 2)
 
@@ -425,10 +421,12 @@ final_all_units_df['proportion_sel_meas'] = round(final_all_units_df['number_tot
 
 
 
+
 final_all_units_df['percentage_float_rows_selected_measurements'] = round(final_all_units_df['number_of_float_source_values_selected_measures'] / final_all_units_df['number_total_selected_measurements'] * 100, 2)
 
 
 final_all_units_df['selected_measurements_unit_success_rate'] = round(final_all_units_df['number_successful_units_selected_measures']/ final_all_units_df['number_of_float_source_values_selected_measures'] * 100, 2)
+
 
 
 

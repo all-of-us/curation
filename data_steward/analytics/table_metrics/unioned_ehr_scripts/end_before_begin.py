@@ -28,7 +28,7 @@ client = bigquery.Client()
 
 # +
 from notebooks import parameters
-DATASET = parameters.EHR_OPS_Q1_2019
+DATASET = parameters.LATEST_DATASET
 LOOKUP_TABLES = parameters.LOOKUP_TABLES
 
 print(f"Dataset to use: {DATASET}")
@@ -94,6 +94,8 @@ cols_to_join = ['src_hpo_id']
 
 site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
 # -
+
+site_df
 
 # # All temporal data points should be consistent such that end dates should NOT be before a start date.
 
