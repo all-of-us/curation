@@ -28,9 +28,7 @@ LOGGER = logging.getLogger(__name__)
 
 OBS_SRC_CONCEPTS = '43530490,43528818,43530333,903079'
 
-SAVE_TABLE_NAME = 'dc_529_obs_rows_dropped'
-
-ISSUE_NUMBERS = ['DC-529', 'DC-702']
+ISSUE_NUMBERS = ['DC-529', 'DC-520', 'DC-702']
 
 # Save rows that will be dropped to a sandboxed dataset.
 DROP_SELECTION_QUERY = """
@@ -93,7 +91,7 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
                     project=self.get_project_id(),
                     dataset=self.get_dataset_id(),
                     sandbox=self.get_sandbox_dataset_id(),
-                    drop_table=SAVE_TABLE_NAME,
+                    drop_table=self.get_sandbox_tablenames()[0],
                     obs_concepts=OBS_SRC_CONCEPTS),
         }
 
@@ -141,7 +139,12 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        return [SAVE_TABLE_NAME]
+        issue_numbers = self.get_issue_numbers()
+        primary_issue = issue_numbers[0].replace(
+            '-', '_').lower() if issue_numbers else 'UNKNOWN_ISSUE'
+
+        sandbox_table_name = f"{primary_issue}_{OBSERVATION}"
+        return [sandbox_table_name]
 
 
 if __name__ == '__main__':

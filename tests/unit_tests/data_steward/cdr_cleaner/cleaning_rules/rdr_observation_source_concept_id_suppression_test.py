@@ -17,8 +17,8 @@ import unittest
 # Project imports
 from common import OBSERVATION
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
-    ObservationSourceConceptIDRowSuppression, SAVE_TABLE_NAME,
-    DROP_SELECTION_QUERY_TMPL, DROP_QUERY_TMPL, OBS_SRC_CONCEPTS)
+    ObservationSourceConceptIDRowSuppression, DROP_SELECTION_QUERY_TMPL,
+    DROP_QUERY_TMPL, OBS_SRC_CONCEPTS)
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
@@ -62,11 +62,12 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         # post conditions
         expected_list = [{
             clean_consts.QUERY:
-                DROP_SELECTION_QUERY_TMPL.render(project=self.project_id,
-                                                 dataset=self.dataset_id,
-                                                 sandbox=self.sandbox_id,
-                                                 drop_table=SAVE_TABLE_NAME,
-                                                 obs_concepts=OBS_SRC_CONCEPTS)
+                DROP_SELECTION_QUERY_TMPL.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox=self.sandbox_id,
+                    drop_table=self.query_class.get_sandbox_tablenames()[0],
+                    obs_concepts=OBS_SRC_CONCEPTS)
         }, {
             clean_consts.QUERY:
                 DROP_QUERY_TMPL.render(project=self.project_id,
@@ -91,7 +92,7 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
             project=self.project_id,
             dataset=self.dataset_id,
             sandbox=self.sandbox_id,
-            drop_table=SAVE_TABLE_NAME,
+            drop_table=self.query_class.get_sandbox_tablenames()[0],
             obs_concepts=OBS_SRC_CONCEPTS)
         select_saves = DROP_QUERY_TMPL.render(project=self.project_id,
                                               dataset=self.dataset_id,
