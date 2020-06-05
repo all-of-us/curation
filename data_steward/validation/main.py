@@ -15,7 +15,6 @@ from io import StringIO, open
 
 # Third party imports
 from flask import Flask
-import mandrill
 from googleapiclient.errors import HttpError
 
 # Project imports
