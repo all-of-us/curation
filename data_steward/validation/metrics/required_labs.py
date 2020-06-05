@@ -12,8 +12,8 @@ from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
 
 LOGGER = logging.getLogger(__name__)
 
-MEASUREMENT_CONCEPT_SETS_TABLE = 'measurement_concept_sets'
-MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = 'measurement_concept_sets_descendants'
+MEASUREMENT_CONCEPT_SETS_TABLE = '_measurement_concept_sets'
+MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = '_measurement_concept_sets_descendants'
 
 
 def load_measurement_concept_sets_table(project_id, dataset_id):
