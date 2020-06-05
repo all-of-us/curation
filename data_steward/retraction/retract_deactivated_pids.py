@@ -12,9 +12,9 @@ from google.cloud import bigquery
 
 # Project imports
 from retraction.retract_utils import DEID_REGEX
+from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from sandbox import check_and_create_sandbox_dataset
-from constants import bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
 LOGS_PATH = '../logs'
@@ -174,7 +174,7 @@ def get_pids_table_info(project_id, dataset_id, client):
     result_df = client.query(all_table_info_query).to_dataframe()
     # Get list of tables that contain person_id
     pids_tables = []
-    for row in result_df.iterrows():
+    for _, row in result_df.iterrows():
         column = getattr(row, 'column_name')
         table = getattr(row, 'table_name')
         if 'person_id' in column:
@@ -235,7 +235,7 @@ def get_date_info_for_pids_tables(project_id, client):
                                                                        )]
 
         # Filter through date columns and append to the appropriate column
-        for row in df_to_iterate.iterrows():
+        for _, row in df_to_iterate.iterrows():
             column = getattr(row, 'column')
             table = getattr(row, 'table')
             if 'start_date' in column:

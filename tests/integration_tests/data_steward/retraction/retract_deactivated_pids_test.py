@@ -5,11 +5,11 @@ import logging
 from io import open
 
 # Third party imports
-import app_identity
 import pandas as pd
 import mock
 
 # Project Imports
+import app_identity
 import bq_utils
 from utils import bq
 import gcs_utils
@@ -175,7 +175,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         # Store query for checking number of rows to delete
         for ehr in self.deactivated_ehr_participants:
             pid = ehr[0]
-            for row in retraction_info.itertuples(index=False):
+            for _, row in retraction_info.itertuples(index=False):
                 if row.date_column is None:
                     dropped_query = EXPECTED_DROPPED_ROWS_QUERY_END_DATE.format(
                         dataset_id=self.bq_dataset_id,

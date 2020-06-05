@@ -17,7 +17,7 @@ from constants.cdr_cleaner import clean_cdr as clean_consts
 from sandbox import get_sandbox_dataset_id
 
 
-class RetractDataBqTest(unittest.TestCase):
+class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
