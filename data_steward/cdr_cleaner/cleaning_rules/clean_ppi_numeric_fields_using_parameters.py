@@ -33,8 +33,6 @@ jinja_env = Environment(
     comment_start_string='--',
     comment_end_string=' --')
 
-SAVE_TABLE_NAME = 'dc_827_obs_changed_rows_saved'
-
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
 SANDBOX_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE
@@ -176,6 +174,7 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
         super().__init__(issue_numbers=['DC-827', 'DC-502', 'DC-487'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
+                         affected_tables=['observation'],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
@@ -194,7 +193,7 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
                     project=self.get_project_id(),
                     dataset=self.get_dataset_id(),
                     sandbox_dataset=self.get_sandbox_dataset_id(),
-                    intermediary_table=SAVE_TABLE_NAME),
+                    intermediary_table=self.get_sandbox_tablenames()),
         }
 
         clean_ppi_numeric_fields_query = {
@@ -219,7 +218,10 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        return [SAVE_TABLE_NAME]
+        sandbox_table_names = list()
+        sandbox_table_names.append(self._issue_numbers[0] +
+                                   self._affected_tables[0])
+        return sandbox_table_names
 
 
 if __name__ == '__main__':
