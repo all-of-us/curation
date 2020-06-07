@@ -16,7 +16,8 @@ import unittest
 # Project imports
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
-from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters, SAVE_TABLE_NAME, SANDBOX_QUERY, CLEAN_PPI_NUMERIC_FIELDS_QUERY
+from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters, \
+    SANDBOX_QUERY, CLEAN_PPI_NUMERIC_FIELDS_QUERY
 
 
 class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
@@ -61,7 +62,8 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
                 SANDBOX_QUERY.render(project=self.project_id,
                                      dataset=self.dataset_id,
                                      sandbox_dataset=self.sandbox_id,
-                                     intermediary_table=SAVE_TABLE_NAME)
+                                     intermediary_table=self.query_class.
+                                     get_sandbox_tablenames()[0])
         }, {
             clean_consts.QUERY:
                 CLEAN_PPI_NUMERIC_FIELDS_QUERY.render(project=self.project_id,
@@ -85,7 +87,7 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
             project=self.project_id,
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_id,
-            intermediary_table=SAVE_TABLE_NAME)
+            intermediary_table=self.query_class.get_sandbox_tablenames()[0])
 
         select_rows_to_be_changed = CLEAN_PPI_NUMERIC_FIELDS_QUERY.render(
             project=self.project_id, dataset=self.dataset_id)
