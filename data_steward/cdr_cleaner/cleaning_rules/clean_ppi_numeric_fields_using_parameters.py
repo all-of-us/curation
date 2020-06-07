@@ -139,7 +139,7 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
                     project=self.get_project_id(),
                     dataset=self.get_dataset_id(),
                     sandbox_dataset=self.get_sandbox_dataset_id(),
-                    intermediary_table=self.get_sandbox_tablenames()),
+                    intermediary_table=self.get_sandbox_tablenames()[0]),
         }
 
         clean_ppi_numeric_fields_query = {
