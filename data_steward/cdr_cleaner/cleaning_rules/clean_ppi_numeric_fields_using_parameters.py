@@ -117,7 +117,7 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
         desc = (
             'Sets value_as_number to NULL and value_as_concept_id and observation_type_concept_id '
             'to new AOU custom concept 2000000010')
-        super().__init__(issue_numbers=['DC-827', 'DC-502', 'DC-487'],
+        super().__init__(issue_numbers=['DC827', 'DC502', 'DC487'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          affected_tables=['observation'],
