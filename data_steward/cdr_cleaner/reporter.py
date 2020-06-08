@@ -97,7 +97,7 @@ def get_stage_elements(data_stage, fields_list):
             instance = clazz('foo', 'bar', 'baz')
             LOGGER.info(f"{clazz} ducktyped to a class")
 
-        except (TypeError, HttpError, BadRequest):
+        except (RuntimeError, TypeError, HttpError, BadRequest):
             LOGGER.info(f"{rule} did NOT ducktype to a class")
             rule_info = get_function_info(clazz, fields_list)
             report_rows.append(rule_info)
