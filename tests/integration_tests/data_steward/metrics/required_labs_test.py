@@ -46,6 +46,12 @@ class RequiredLabsTest(unittest.TestCase):
         test_util.empty_bucket(self.hpo_bucket)
 
     def _load_data(self):
+        # Create concept and concept_ancestor empty tables if not exist
+        if not bq_utils.table_exists(common.CONCEPT, self.dataset_id):
+            bq_utils.create_standard_table(common.CONCEPT, common.CONCEPT)
+        if not bq_utils.table_exists(common.CONCEPT, self.dataset_id):
+            bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
+                                           common.CONCEPT_ANCESTOR)
 
         # Load measurement_concept_sets
         required_labs.load_measurement_concept_sets_table(
@@ -53,13 +59,6 @@ class RequiredLabsTest(unittest.TestCase):
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
             project_id=self.project_id, dataset_id=self.dataset_id)
-
-        # Create concept and concept_ancestor empty tables if not exist
-        if not bq_utils.table_exists(common.CONCEPT, self.dataset_id):
-            bq_utils.create_standard_table(common.CONCEPT, common.CONCEPT)
-        if not bq_utils.table_exists(common.CONCEPT, self.dataset_id):
-            bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
-                                           common.CONCEPT_ANCESTOR)
 
         # we need to load measurement.csv into bigquery_dataset_id in advance for the other integration tests
         ehr_measurement_result = bq_utils.load_table_from_csv(
