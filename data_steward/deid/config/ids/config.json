@@ -73,7 +73,7 @@
                     "AND obs.value_source_concept_id IN (903096, 903079, 1585901, 1585902, 1585903, 1585904) ",
                     "GROUP BY obs.person_id ) "
                 ],
-                "qualifier": " > 1 AND value_source_concept_id != 1585900 ",
+                "qualifier": " > 1 ",
                 "into": 2000000003,
                 "drop_duplicates": "True"
             },
@@ -81,7 +81,8 @@
                 "comment": "generalize single response that is not straight",
                 "qualifier": "IN",
                 "values": [903096, 903079, 1585901, 1585902, 1585903, 1585904],
-                "into": 2000000003
+                "into": 2000000003,
+                "drop_duplicates": "True"
             }
         ],
         "SEX-AT-BIRTH":[
