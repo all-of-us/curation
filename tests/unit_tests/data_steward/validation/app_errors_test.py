@@ -1,18 +1,16 @@
 """
 A unit test class for the curation/data_steward/validation/app_errors module.
 """
-import json
-import mock
-import unittest
-from mock import patch
+from unittest import TestCase, mock
 
 from googleapiclient.errors import HttpError
 import httplib2
 
 from validation import app_errors, main
+from constants.validation import main as main_consts
 
 
-class AppErrorHandlersTest(unittest.TestCase):
+class AppErrorHandlersTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -59,7 +57,7 @@ class AppErrorHandlersTest(unittest.TestCase):
             else:
                 message = self.message
 
-            expected_alert = app_errors.DEFAULT_ALERT_MESSAGE.format(
+            expected_alert = app_errors.format_alert_message(
                 error.__class__.__name__, message)
 
             expected_alerts.append(mock.call(expected_alert))
@@ -76,7 +74,7 @@ class AppErrorHandlersTest(unittest.TestCase):
         Test the os handler method fires as expected when an OSError is raised.
         """
         with main.app.test_client() as tc:
-            copy_files_url = main.PREFIX + 'CopyFiles/no_bucket_exists'
+            copy_files_url = main_consts.PREFIX + 'CopyFiles/no_bucket_exists'
             response = tc.get(copy_files_url)
 
             mock_check_cron.assert_called_once()

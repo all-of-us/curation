@@ -21,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 
 DEFAULT_VIEW_MESSAGE = {
     "status": "error",
-    "message": "view the logs and / or alert channel for more information"
+    "message": "view the logs or alert channel for more information"
 }
 
 DEFAULT_ERROR_STATUS = 500
