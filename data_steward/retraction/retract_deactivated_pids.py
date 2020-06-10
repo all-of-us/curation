@@ -179,8 +179,13 @@ def get_pids_table_info(project_id, dataset_id, client):
         table = getattr(row, 'table_name')
         if 'person_id' in column:
             pids_tables.append(table)
-    pids_tables_info_df = result_df[result_df['table_name'].isin(pids_tables)]
-    return pids_tables_info_df
+
+    pids_table_info_df = pd.DataFrame()
+
+    if pids_tables and len(result_df) != 0:
+        pids_table_info_df = result_df[result_df['table_name'].isin(pids_tables)]
+
+    return pids_table_info_df
 
 
 def get_date_info_for_pids_tables(project_id, client):
@@ -207,15 +212,14 @@ def get_date_info_for_pids_tables(project_id, client):
     for dataset in datasets:
         LOGGER.info(f'Starting to iterate through dataset: {dataset}')
 
+        # Get table info for tables with pids
+        pids_tables_df = get_pids_table_info(project_id, dataset, client)
+
         # Check to see if dataset is empty, if empty break out of loop
-        tables = list(client.list_tables(dataset))  # Make an API request(s).
-        if not tables:
+        if pids_tables_df.empty:
             LOGGER.info(
                 f'No tables in dataset:{dataset}, skipping over dataset')
             continue
-
-        # Get table info for tables with pids
-        pids_tables_df = get_pids_table_info(project_id, dataset, client)
 
         # Keep only records with datatype of 'DATE'
         date_fields_df = pids_tables_df[pids_tables_df['data_type'] == 'DATE']
