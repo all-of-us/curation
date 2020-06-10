@@ -278,6 +278,4 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
     def tearDown(self):
         test_util.delete_all_tables(self.bq_dataset_id)
         test_util.delete_all_tables(self.bq_sandbox_dataset_id)
-        tables = list(self.client.list_tables(self.bq_sandbox_dataset_id))
-        if not tables:
-            self.client.delete_dataset(self.bq_sandbox_dataset_id)
+        self.client.delete_dataset(self.bq_sandbox_dataset_id)
