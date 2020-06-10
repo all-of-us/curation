@@ -183,7 +183,8 @@ def get_pids_table_info(project_id, dataset_id, client):
     pids_table_info_df = pd.DataFrame()
 
     if pids_tables and len(result_df) != 0:
-        pids_table_info_df = result_df[result_df['table_name'].isin(pids_tables)]
+        pids_table_info_df = result_df[result_df['table_name'].isin(
+            pids_tables)]
 
     return pids_table_info_df
 
