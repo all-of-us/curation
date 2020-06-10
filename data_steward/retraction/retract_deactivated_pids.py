@@ -205,6 +205,14 @@ def get_date_info_for_pids_tables(project_id, client):
     datasets = [d.dataset_id for d in dataset_obj]
 
     for dataset in datasets:
+        LOGGER.info(f'Starting to iterate through dataset: {dataset}')
+
+        # Check to see if dataset is empty, if empty break out of loop
+        tables = list(client.list_tables(dataset))  # Make an API request(s).
+        if not tables:
+            LOGGER.info(f'No tables in dataset:{dataset}, skipping over dataset')
+            continue
+
         # Get table info for tables with pids
         pids_tables_df = get_pids_table_info(project_id, dataset, client)
 
@@ -249,6 +257,7 @@ def get_date_info_for_pids_tables(project_id, client):
                                  'date_column'] = column
 
         date_fields_info_df = date_fields_info_df.append(df_to_append)
+        LOGGER.info(f'Iteration complete through dataset: {dataset}')
 
     return date_fields_info_df
 
@@ -343,6 +352,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                     date_row.project_id, date_row.dataset_id)
 
                 # Create queries based on type of date field
+                LOGGER.info(f'Creating Query to retract {pid} from {date_row.dataset_id}.{date_row.table}')
                 if pd.isnull(date_row.date_column):
                     sandbox_query = SANDBOX_QUERY_END_DATE.render(
                         project=date_row.project_id,
