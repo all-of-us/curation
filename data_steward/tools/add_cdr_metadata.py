@@ -22,7 +22,7 @@ ETL_VERSION_CHECK = """
 select {etl} from `{dataset}.{table}`
 """
 ADD_ETL_METADATA_QUERY = """
-insert into `{project}.{dataset}.cdr_metadata` ({etl_version}) values(\'{field_value}\')
+insert into `{project}.{dataset}._cdr_metadata` ({etl_version}) values(\'{field_value}\')
 """
 
 UPDATE_QUERY = """
@@ -30,7 +30,7 @@ update `{project}.{dataset}.{table}` set {statement} where {etl_version} = \'{et
 """
 
 COPY_QUERY = """
-select * from `{project}.{dataset}.cdr_metadata`
+select * from `{project}.{dataset}._cdr_metadata`
 """
 
 
@@ -58,7 +58,7 @@ def copy_metadata_table(project_id, source_dataset_id, target_dataset_id,
     :return:
     """
     create_metadata_table(target_dataset_id, table_fields)
-    query = COPY_QUERY.format(project=project_id, datset=source_dataset_id)
+    query = COPY_QUERY.format(project=project_id, dataset=source_dataset_id)
     bq_utils.query(query,
                    destination_dataset_id=target_dataset_id,
                    destination_table_id=METADATA_TABLE)
