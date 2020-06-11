@@ -3,10 +3,9 @@ Unit test components of data_steward.validation.main
 """
 import datetime
 import re
-import unittest
+from unittest import TestCase, mock
 
 import googleapiclient.errors
-import mock
 
 import common
 import resources
@@ -16,7 +15,7 @@ from constants.validation.participants import identity_match as id_match_consts
 from validation import main
 
 
-class ValidationMainTest(unittest.TestCase):
+class ValidationMainTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -218,14 +217,15 @@ class ValidationMainTest(unittest.TestCase):
     def test_validate_all_hpos_exception(self, check_cron, mock_logging_error,
                                          mock_list_bucket, mock_hpo_csv,
                                          mock_hpo_bucket):
+        http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
         mock_list_bucket.side_effect = googleapiclient.errors.HttpError(
-            'fake http error', b'fake http error')
+            http_error_string, http_error_string.encode())
         with main.app.test_client() as c:
             c.get(main_consts.PREFIX + 'ValidateAllHpoFiles')
             expected_call = mock.call(
-                'Failed to process hpo_id `{}` due to the following '
-                'HTTP error: fake http error'.format(self.hpo_id))
+                f"Failed to process hpo_id '{self.hpo_id}' due to the following "
+                f"HTTP error: {http_error_string}")
             self.assertIn(expected_call, mock_logging_error.mock_calls)
 
     def test_extract_date_from_rdr(self):
