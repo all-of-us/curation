@@ -79,17 +79,19 @@ class AddCdrMetadataTest(unittest.TestCase):
         expected_query = ADD_ETL_METADATA_QUERY.format(
             project=self.project_id,
             dataset=self.dataset_id,
+            metadata_table=METADATA_TABLE,
             etl_version=ETL_VERSION,
             field_value=self.field_values[ETL_VERSION])
 
-        actual_query = f'\ninsert into `{self.project_id}.{self.dataset_id}._cdr_metadata` ({ETL_VERSION}) values(\'{self.field_values[ETL_VERSION]}\')\n'
+        actual_query = f'\ninsert into `{self.project_id}.{self.dataset_id}.{METADATA_TABLE}` ({ETL_VERSION}) values(\'{self.field_values[ETL_VERSION]}\')\n'
 
         self.assertEquals(expected_query, actual_query)
 
     def test_copy_query(self):
         expected_query = COPY_QUERY.format(project=self.project_id,
-                                           dataset=self.dataset_id)
+                                           dataset=self.dataset_id,
+                                           metadata_table=METADATA_TABLE)
 
-        actual_query = f'\nselect * from `{self.project_id}.{self.dataset_id}._cdr_metadata`\n'
+        actual_query = f'\nselect * from `{self.project_id}.{self.dataset_id}.{METADATA_TABLE}`\n'
 
         self.assertEqual(expected_query, actual_query)
