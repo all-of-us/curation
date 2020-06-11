@@ -58,7 +58,9 @@ def copy_metadata_table(project_id, source_dataset_id, target_dataset_id,
     :return:
     """
     create_metadata_table(target_dataset_id, table_fields)
-    query = COPY_QUERY.format(project=project_id, dataset=source_dataset_id, metadata_table=METADATA_TABLE)
+    query = COPY_QUERY.format(project=project_id,
+                              dataset=source_dataset_id,
+                              metadata_table=METADATA_TABLE)
     bq_utils.query(query,
                    destination_dataset_id=target_dataset_id,
                    destination_table_id=METADATA_TABLE)
