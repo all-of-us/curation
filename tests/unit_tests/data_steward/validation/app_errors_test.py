@@ -80,7 +80,5 @@ class AppErrorHandlersTest(TestCase):
             mock_check_cron.assert_called_once()
             # asserts the handler was called, based on it's contents
             mock_alert_message.assert_called_once()
-            #            self.assertEqual(json.loads(response.data),
-            #                             app_errors.DEFAULT_VIEW_MESSAGE)
             self.assertEqual(response.status_code,
                              app_errors.DEFAULT_ERROR_STATUS)
