@@ -246,7 +246,7 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.all_required_files_loaded')
     @mock.patch('validation.main.query_rows')
     @mock.patch('validation.main.get_duplicate_counts_query')
-    @mock.patch('validation.main._write_string_to_file')
+    @mock.patch('validation.main.upload_string_to_gcs')
     @mock.patch('validation.main.get_hpo_name')
     @mock.patch('validation.main.validate_submission')
     @mock.patch('validation.main.is_valid_rdr')
@@ -254,7 +254,7 @@ class ValidationMainTest(TestCase):
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_process_hpo_ignore_dirs(
         self, mock_hpo_bucket, mock_bucket_list, mock_valid_rdr,
-        mock_validation, mock_get_hpo_name, mock_write_string_to_file,
+        mock_validation, mock_get_hpo_name, mock_upload_string_to_gcs,
         mock_get_duplicate_counts_query, mock_query_rows,
         mock_all_required_files_loaded, mock_upload, mock_run_achilles,
         mock_export, mock_valid_folder_name, mock_query):
@@ -285,7 +285,7 @@ class ValidationMainTest(TestCase):
         mock_query_rows.return_value = []
         mock_get_duplicate_counts_query.return_value = ''
         mock_get_hpo_name.return_value = 'noob'
-        mock_write_string_to_file.return_value = ''
+        mock_upload_string_to_gcs.return_value = ''
         mock_valid_rdr.return_value = True
         yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
         yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
@@ -465,7 +465,7 @@ class ValidationMainTest(TestCase):
         def query_rows_error(q):
             raise googleapiclient.errors.HttpError(500, b'bar', 'baz')
 
-        def _write_string_to_file(bucket, filename, content):
+        def upload_string_to_gcs(bucket, filename, content):
             return True
 
         def get_duplicate_counts_query(hpo_id):
@@ -479,7 +479,7 @@ class ValidationMainTest(TestCase):
                 all_required_files_loaded=all_required_files_loaded,
                 query_rows=query_rows,
                 get_duplicate_counts_query=get_duplicate_counts_query,
-                _write_string_to_file=_write_string_to_file,
+                upload_string_to_gcs=upload_string_to_gcs,
                 is_valid_rdr=is_valid_rdr):
             result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
                                            self.folder_prefix, summary)
@@ -498,7 +498,7 @@ class ValidationMainTest(TestCase):
                 all_required_files_loaded=all_required_files_loaded,
                 query_rows=query_rows_error,
                 get_duplicate_counts_query=get_duplicate_counts_query,
-                _write_string_to_file=_write_string_to_file,
+                upload_string_to_gcs=upload_string_to_gcs,
                 is_valid_rdr=is_valid_rdr):
             with self.assertRaises(googleapiclient.errors.HttpError):
                 result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
@@ -508,7 +508,7 @@ class ValidationMainTest(TestCase):
                 self.assertEqual(error_occurred, True)
 
     @mock.patch('bq_utils.get_hpo_info')
-    @mock.patch('validation.main._write_string_to_file')
+    @mock.patch('validation.main.upload_string_to_gcs')
     def test_html_incorrect_folder_name(self, mock_string_to_file,
                                         mock_hpo_csv):
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]

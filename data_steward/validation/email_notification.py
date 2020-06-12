@@ -42,3 +42,11 @@ def get_hpo_contact_info(project_id):
     contact_df = contact_df.set_index('hpo_id')
     contact_dict = contact_df.to_dict('index')
     return contact_dict
+
+
+def generate_email(content, attachment):
+    pass
+
+
+def send_email(mail_to, mail_from, mail_cc, email_body):
+    pass
