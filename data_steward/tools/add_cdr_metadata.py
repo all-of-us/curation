@@ -4,7 +4,7 @@ import bq_utils
 import resources
 from utils import bq
 
-METADATA_TABLE = 'cdr_metadata'
+METADATA_TABLE = '_cdr_metadata'
 ETL_VERSION = 'etl_version'
 COPY = 'copy'
 CREATE = 'create'
@@ -22,7 +22,7 @@ ETL_VERSION_CHECK = """
 select {etl} from `{dataset}.{table}`
 """
 ADD_ETL_METADATA_QUERY = """
-insert into `{project}.{dataset}.cdr_metadata` ({etl_version}) values(\'{field_value}\')
+insert into `{project}.{dataset}.{metadata_table}` ({etl_version}) values(\'{field_value}\')
 """
 
 UPDATE_QUERY = """
@@ -30,7 +30,7 @@ update `{project}.{dataset}.{table}` set {statement} where {etl_version} = \'{et
 """
 
 COPY_QUERY = """
-select * from `{project}.{dataset}.cdr_metadata`
+select * from `{project}.{dataset}.{metadata_table}`
 """
 
 
@@ -58,7 +58,9 @@ def copy_metadata_table(project_id, source_dataset_id, target_dataset_id,
     :return:
     """
     create_metadata_table(target_dataset_id, table_fields)
-    query = COPY_QUERY.format(project=project_id, datset=source_dataset_id)
+    query = COPY_QUERY.format(project=project_id,
+                              dataset=source_dataset_id,
+                              metadata_table=METADATA_TABLE)
     bq_utils.query(query,
                    destination_dataset_id=target_dataset_id,
                    destination_table_id=METADATA_TABLE)
@@ -96,7 +98,7 @@ def get_etl_version(dataset_id, project_id):
 
 def add_metadata(dataset_id, project_id, table_fields, field_values=None):
     """
-    Adds the metadata value passed in as parameters to the medatadata table
+    Adds the metadata value passed in as parameters to the metadata table
 
     :param dataset_id: Name of the dataset
     :param project_id: Name of the project
@@ -109,6 +111,7 @@ def add_metadata(dataset_id, project_id, table_fields, field_values=None):
         add_etl_query = ADD_ETL_METADATA_QUERY.format(
             project=project_id,
             dataset=dataset_id,
+            metadata_table=METADATA_TABLE,
             etl_version=ETL_VERSION,
             field_value=field_values[ETL_VERSION])
         bq.query(add_etl_query, project_id=project_id)

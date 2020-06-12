@@ -15,7 +15,7 @@ import sandbox
 
 LOGGER = logging.getLogger(__name__)
 
-OPERATIONAL_PII_FIELDS_TABLE = 'operational_pii_fields'
+OPERATIONAL_PII_FIELDS_TABLE = '_operational_pii_fields'
 INTERMEDIARY_TABLE = 'remove_operational_pii_fields_observation'
 
 OPERATION_PII_FIELDS_INTERMEDIARY_QUERY = """
