@@ -409,6 +409,21 @@ def is_valid_folder_prefix_name(folder_prefix):
     return True
 
 
+def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
+    processed_time_str = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+    report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_time_str
+    results_html = hpo_report.render(report_data)
+    upload_string_to_gcs(bucket, folder_prefix + common.RESULTS_HTML,
+                         results_html)
+    logging.info(f"Saving timestamp {processed_time_str} to "
+                 f"gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}.")
+    upload_string_to_gcs(bucket, folder_prefix + common.PROCESSED_TXT,
+                         processed_time_str)
+    if folder_items and is_first_validation_run(folder_items):
+        en.generate_email()
+        en.send_email()
+
+
 def process_hpo(hpo_id, force_run=False):
     """
     runs validation for a single hpo_id
@@ -446,20 +461,8 @@ def process_hpo(hpo_id, force_run=False):
             else:
                 # do not perform validation
                 report_data = generate_empty_report(hpo_id, folder_prefix)
-            processed_time_str = datetime.datetime.now().strftime(
-                '%Y-%m-%dT%H:%M:%S')
-            report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_time_str
-            results_html = hpo_report.render(report_data)
-            upload_string_to_gcs(bucket, folder_prefix + common.RESULTS_HTML,
-                                 results_html)
-            logging.info(
-                f"Saving timestamp {processed_time_str} to "
-                f"`gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}`.")
-            upload_string_to_gcs(bucket, folder_prefix + common.PROCESSED_TXT,
-                                 processed_time_str)
-            if folder_items and is_first_validation_run(folder_items):
-                en.generate_email()
-                en.send_email()
+            perform_reporting(hpo_id, report_data, folder_items, bucket,
+                              folder_prefix)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         logging.warning(
