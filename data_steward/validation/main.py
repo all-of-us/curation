@@ -413,12 +413,12 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
     processed_time_str = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
     report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_time_str
     results_html = hpo_report.render(report_data)
-    upload_string_to_gcs(bucket, folder_prefix + common.RESULTS_HTML,
-                         results_html)
+    results_html_path = folder_prefix + common.RESULTS_HTML
+    processed_txt_path = folder_prefix + common.PROCESSED_TXT
+    upload_string_to_gcs(bucket, results_html_path, results_html)
     logging.info(f"Saving timestamp {processed_time_str} to "
-                 f"gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}.")
-    upload_string_to_gcs(bucket, folder_prefix + common.PROCESSED_TXT,
-                         processed_time_str)
+                 f"gs://{bucket}/{processed_txt_path}.")
+    upload_string_to_gcs(bucket, processed_txt_path, processed_time_str)
     if folder_items and is_first_validation_run(folder_items):
         en.generate_email()
         en.send_email()

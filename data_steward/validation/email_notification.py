@@ -3,6 +3,7 @@
 # Third party imports
 import os
 import logging
+import base64
 
 from google.cloud import bigquery
 import google.auth
@@ -10,24 +11,18 @@ import mandrill
 from jinja2 import Template
 
 # Project imports
+import app_identity
 from constants.utils import bq as bq_consts
+from constants.validation import email_notification as consts
 
 LOGGER = logging.getLogger(__name__)
 
-MANDRILL_API_KEY = 'MANDRILL_API_KEY'
-UNSET_MANDRILL_API_KEY_MSG = f"Mandrill API key not set in environment variable {MANDRILL_API_KEY}"
-
-CONTACT_LIST_QUERY = """
-SELECT *
-FROM `{{project}}.{{dataset}}.{{contact_table}}`
-"""
-
-CONTACT_QUERY_TMPL = Template(CONTACT_LIST_QUERY)
+CONTACT_QUERY_TMPL = Template(consts.CONTACT_LIST_QUERY)
 
 
 class MandrillConfigurationError(RuntimeError):
     """
-    Raised when the required mandrill api key is not properly configured
+    Raised when the required Mandrill API key is not properly configured
     """
 
     def __init__(self, msg):
@@ -40,12 +35,12 @@ def _get_mandrill_api_key():
     Get the token used to interact with the Mandrill API
 
     :raises:
-      SlackConfigurationError: token is not configured
-    :return: configured Slack API token as str
+      MandrillConfigurationError: API key is not configured
+    :return: configured Mandrill API key as str
     """
-    if MANDRILL_API_KEY not in os.environ.keys():
-        raise MandrillConfigurationError(UNSET_MANDRILL_API_KEY_MSG)
-    return os.environ[MANDRILL_API_KEY]
+    if consts.MANDRILL_API_KEY not in os.environ.keys():
+        raise MandrillConfigurationError(consts.UNSET_MANDRILL_API_KEY_MSG)
+    return os.environ[consts.MANDRILL_API_KEY]
 
 
 def get_hpo_contact_info(project_id):
@@ -60,6 +55,10 @@ def get_hpo_contact_info(project_id):
         "https://www.googleapis.com/auth/cloud-platform",
         "https://www.googleapis.com/auth/bigquery",
     ])
+    if project != project_id:
+        raise ValueError(
+            f"{project} does not match {project_id}. "
+            f"Please verify that the project_id is set correctly in env vars")
     client = bigquery.Client(credentials=credentials, project=project)
 
     contact_list_query = CONTACT_QUERY_TMPL.render(
@@ -75,89 +74,102 @@ def get_hpo_contact_info(project_id):
     return contact_dict
 
 
-def generate_email_message(content, attachment):
+def create_recipients_list(hpo_id):
+    """
+    Generates list of recipients for a hpo site
+
+    :param hpo_id: identifies the hpo site
+    :return: list of dicts with keys hpo_id, site_name and dict mail_to, with keys email and type
+    """
+    hpo_recipients = {'hpo_id': hpo_id}
+    mail_to = []
+    project_id = app_identity.get_application_id()
+    hpo_contact_dict = get_hpo_contact_info(project_id).loc[[hpo_id]].to_dict()
+    hpo_recipients[consts.SITE_NAME] = hpo_contact_dict.get(consts.SITE_NAME)
+    hpo_emails_str = hpo_contact_dict.get(consts.SITE_POINT_OF_CONTACT)
+    hpo_emails = [
+        hpo_email.strip().lower() for hpo_email in hpo_emails_str.split(';')
+    ]
+    for hpo_email_address in hpo_emails:
+        if hpo_email_address != consts.NO_DATA_STEWARD:
+            recipient_email_dict = {'email': hpo_email_address, 'type': 'to'}
+            mail_to.append(recipient_email_dict)
+    hpo_recipients[consts.MAIL_TO] = mail_to
+    return hpo_recipients
+
+
+def generate_html_body(site_name, results_html_path, report_data):
+    """
+    Generates html body of the email content
+
+    :param site_name: name of the hpo_site
+    :param results_html_path: path to results.html in bucket
+    :param report_data: dict containing report info for submission
+    :return: html formatted string
+    """
+    html_email_body = Template.render(site_name=site_name,
+                                      ehr_ops_site_url=consts.EHR_OPS_SITE_URL,
+                                      results_html_path=results_html_path,
+                                      **report_data)
+    return html_email_body
+
+
+def generate_email_message(hpo_id, results_html, results_html_path,
+                           report_data):
+    """
+    Generates Mandrill API message dict
+
+    :param hpo_id: identifies the hpo site
+    :param results_html: hpo report html file in string format
+    :param results_html_path: path to results.html in bucket
+    :param report_data: dict containing report info for submission
+    :return: Message dict formatted for Mandrill API
+    """
+    hpo_recipients = create_recipients_list(hpo_id)
+    site_name = hpo_recipients.get(consts.SITE_NAME)
+    mail_to = hpo_recipients.get(consts.MAIL_TO)
+    results_html_b64 = base64.b64encode(results_html.encode())
+    html_body = generate_html_body(site_name, results_html_path, report_data)
+    email_subject = f"EHR Data Submission Report for {site_name}"
     email_message = {
         'attachments': [{
-            'content': 'ZXhhbXBsZSBmaWxl',
-            'name': 'myfile.txt',
-            'type': 'text/plain'
+            'content': results_html_b64,
+            'name': 'results.html',
+            'type': 'text/html'
         }],
-        'auto_html': None,
-        'auto_text': None,
-        'bcc_address': 'message.bcc_address@example.com',
-        'from_email': 'message.from_email@example.com',
-        'from_name': 'Example Name',
-        'global_merge_vars': [{
-            'content': 'merge1 content',
-            'name': 'merge1'
-        }],
-        'google_analytics_campaign': 'message.from_email@example.com',
-        'google_analytics_domains': ['example.com'],
+        'auto_html': True,
+        'from_email': consts.NO_REPLY_ADDRESS,
+        'from_name': 'Data Curation',
         'headers': {
-            'Reply-To': 'message.reply@example.com'
+            'Reply-To': consts.DATA_CURATION_LISTSERV
         },
-        'html': '<p>Example HTML content</p>',
+        'html': html_body,
         'images': [{
-            'content': 'ZXhhbXBsZSBmaWxl',
-            'name': 'IMAGECID',
+            'content': consts.AOU_LOGO_SRC,
+            'name': consts.AOU_LOGO,
             'type': 'image/png'
         }],
         'important': False,
-        'inline_css': None,
-        'merge': True,
-        'merge_language': 'mailchimp',
-        'merge_vars': [{
-            'rcpt': 'recipient.email@example.com',
-            'vars': [{
-                'content': 'merge2 content',
-                'name': 'merge2'
-            }]
-        }],
-        'metadata': {
-            'website': 'www.example.com'
-        },
-        'preserve_recipients': None,
-        'recipient_metadata': [{
-            'rcpt': 'recipient.email@example.com',
-            'values': {
-                'user_id': 123456
-            }
-        }],
-        'return_path_domain': None,
-        'signing_domain': None,
-        'subaccount': 'customer-123',
-        'subject': 'example subject',
-        'tags': ['password-resets'],
-        'text': 'Example text content',
-        'to': [{
-            'email': 'recipient.email@example.com',
-            'name': 'Recipient Name',
-            'type': 'to'
-        }],
-        'track_clicks': None,
-        'track_opens': None,
-        'tracking_domain': None,
-        'url_strip_qs': None,
-        'view_content_link': None
+        'preserve_recipients': False,
+        'subject': email_subject,
+        'tags': [hpo_id],
+        'to': mail_to
     }
     return email_message
 
 
-def send_email(mail_to, mail_from, mail_cc, email_message):
+def send_email(email_message):
+    """
+    Send email using Mandrill API
+
+    :param email_message: Mandrill API message dict to send
+    :return: result from Mandrill API
+    """
     try:
         mandrill_client = mandrill.Mandrill('YOUR_API_KEY')
-        result = mandrill_client.messages.send(message=email_message,
-                                               send_async=False,
-                                               ip_pool='Main Pool',
-                                               send_at='example send_at')
-        '''
-        [{'_id': 'abc123abc123abc123abc123abc123',
-          'email': 'recipient.email@example.com',
-          'reject_reason': 'hard-bounce',
-          'status': 'sent'}]
-        '''
+        result = mandrill_client.messages.send(message=email_message)
     except mandrill.Error as e:
         # Mandrill errors are thrown as exceptions
         LOGGER.exception(f"A mandrill error occurred: {e.__class__} - {e}")
-        # A mandrill error occurred: <class 'mandrill.UnknownSubaccountError'> - No subaccount exists with the id 'customer-123'
         raise
+    return result
