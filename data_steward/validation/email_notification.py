@@ -4,16 +4,19 @@
 import os
 import logging
 import base64
+from io import BytesIO
 
 from google.cloud import bigquery
 import google.auth
 import mandrill
 from jinja2 import Template
+from matplotlib import image as mpimg
 
 # Project imports
 import app_identity
 from constants.utils import bq as bq_consts
 from constants.validation import email_notification as consts
+from resources import achilles_images_path
 
 LOGGER = logging.getLogger(__name__)
 
@@ -84,7 +87,7 @@ def create_recipients_list(hpo_id):
     hpo_recipients = {'hpo_id': hpo_id}
     mail_to = []
     project_id = app_identity.get_application_id()
-    hpo_contact_dict = get_hpo_contact_info(project_id).loc[[hpo_id]].to_dict()
+    hpo_contact_dict = get_hpo_contact_info(project_id).get(hpo_id)
     hpo_recipients[consts.SITE_NAME] = hpo_contact_dict.get(consts.SITE_NAME)
     hpo_emails_str = hpo_contact_dict.get(consts.SITE_POINT_OF_CONTACT)
     hpo_emails = [
@@ -107,11 +110,22 @@ def generate_html_body(site_name, results_html_path, report_data):
     :param report_data: dict containing report info for submission
     :return: html formatted string
     """
-    html_email_body = Template.render(site_name=site_name,
-                                      ehr_ops_site_url=consts.EHR_OPS_SITE_URL,
-                                      results_html_path=results_html_path,
-                                      **report_data)
+    html_email_body = Template(consts.EMAIL_BODY).render(
+        site_name=site_name,
+        ehr_ops_site_url=consts.EHR_OPS_SITE_URL,
+        results_html_path=results_html_path,
+        dc_listserv=consts.DATA_CURATION_LISTSERV,
+        aou_logo=consts.AOU_LOGO,
+        **report_data)
     return html_email_body
+
+
+def get_aou_logo_b64():
+    logo_path = os.path.join(achilles_images_path, consts.AOU_LOGO_PNG)
+    thumbnail_obj = BytesIO()
+    logo = mpimg.thumbnail(logo_path, thumbnail_obj, scale=0.3)
+    logo_b64 = base64.b64encode(thumbnail_obj).decode()
+    return logo_b64
 
 
 def generate_email_message(hpo_id, results_html, results_html_path,
@@ -130,6 +144,7 @@ def generate_email_message(hpo_id, results_html, results_html_path,
     mail_to = hpo_recipients.get(consts.MAIL_TO)
     results_html_b64 = base64.b64encode(results_html.encode())
     html_body = generate_html_body(site_name, results_html_path, report_data)
+    aou_logo_b64 = get_aou_logo_b64()
     email_subject = f"EHR Data Submission Report for {site_name}"
     email_message = {
         'attachments': [{
@@ -145,7 +160,7 @@ def generate_email_message(hpo_id, results_html, results_html_path,
         },
         'html': html_body,
         'images': [{
-            'content': consts.AOU_LOGO_SRC,
+            'content': aou_logo_b64,
             'name': consts.AOU_LOGO,
             'type': 'image/png'
         }],
@@ -166,7 +181,8 @@ def send_email(email_message):
     :return: result from Mandrill API
     """
     try:
-        mandrill_client = mandrill.Mandrill('YOUR_API_KEY')
+        api_key = _get_mandrill_api_key()
+        mandrill_client = mandrill.Mandrill(api_key)
         result = mandrill_client.messages.send(message=email_message)
     except mandrill.Error as e:
         # Mandrill errors are thrown as exceptions
