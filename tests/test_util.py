@@ -114,8 +114,6 @@ PII_MRN_BAD_PERSON_ID_FILE = os.path.join(TEST_DATA_PATH, 'pii_mrn.csv')
 PII_FILE_LOAD_RESULT_CSV = os.path.join(TEST_DATA_PATH,
                                         'pii_file_load_result.csv')
 
-PERSON_ONLY_RESULTS_FILE = os.path.join(TEST_DATA_PATH,
-                                        'person_only_results.html')
 FIVE_PERSON_RESULTS_FILE = os.path.join(TEST_DATA_PATH,
                                         'five_person_results.html')
 FIVE_PERSON_RESULTS_ACHILLES_ERROR_FILE = os.path.join(

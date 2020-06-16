@@ -123,8 +123,8 @@ def generate_html_body(site_name, results_html_path, report_data):
 def get_aou_logo_b64():
     logo_path = os.path.join(achilles_images_path, consts.AOU_LOGO_PNG)
     thumbnail_obj = BytesIO()
-    logo = mpimg.thumbnail(logo_path, thumbnail_obj, scale=0.3)
-    logo_b64 = base64.b64encode(thumbnail_obj).decode()
+    mpimg.thumbnail(logo_path, thumbnail_obj, scale=0.15)
+    logo_b64 = base64.b64encode(thumbnail_obj.getvalue()).decode()
     return logo_b64
 
 
@@ -165,7 +165,7 @@ def generate_email_message(hpo_id, results_html, results_html_path,
             'type': 'image/png'
         }],
         'important': False,
-        'preserve_recipients': False,
+        'preserve_recipients': True,
         'subject': email_subject,
         'tags': [hpo_id],
         'to': mail_to

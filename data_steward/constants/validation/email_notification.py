@@ -38,6 +38,7 @@ please send an email to <a href="mailto:{{ dc_listserv }}">{{ dc_listserv }}</a>
 Curation team, DRC
 <em>All of Us</em> Research Program
 <img src="cid:{{ aou_logo }}"/>
+
 """
 
 AOU_LOGO = 'aou_logo'
