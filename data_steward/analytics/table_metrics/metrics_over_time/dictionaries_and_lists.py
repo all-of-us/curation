@@ -275,7 +275,8 @@ full_names = {
     "cpmc_ucd": "UC Davis",
     "ipmc_rush": "Rush University",
     "va": "United States Department of Veterans Affairs - Boston",
-    "saou_umc": "University Medical Center (UA Tuscaloosa)"
+    "saou_umc": "University Medical Center (UA Tuscaloosa)",
+    "saou_usahs": "University of South Alabama"
 }
 
 row_count_col_names = [

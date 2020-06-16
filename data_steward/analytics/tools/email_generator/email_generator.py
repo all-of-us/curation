@@ -40,7 +40,7 @@ from dictionaries_and_lists import full_names
 
 from contact_list import recipient_dict
 
-report1 = 'june_03_2020.xlsx'
+report1 = 'june_15_2020.xlsx'
 
 report_names = [report1]
 
@@ -116,7 +116,7 @@ def assemble_final_messages(unique_metrics, hpo_id):
     ehr_site = full_names[hpo_id]
     name = "Noah Engel"
     num_metrics = len(sheet_names)
-    date = "June 3rd, 2020"
+    date = "June 14th, 2020"
 
     message = introduction.format(
         ehr_site=ehr_site, name=name,

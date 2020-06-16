@@ -3,11 +3,14 @@ File is intended to create dataframes for each of the sites to better catalog
 their respective data quality issues. The output of this file should
 be useful for uploading to a project management tool that could then be
 provisioned to the different sites.
+
 This project management tool could then, in turn, enable sites to more easily
 identify their data quality issues and allow the DRC to more easily track
 HPO engagement.
+
 For a full description of this issue, please see EDQ-427.
 Start Date: 03/24/2020 (v1)
+
 NOTE: For 'seed' data_quality_issues/analytics report files,
 please see the 'baseline summary reports' folder in the
 internal DRC drive. This will allow someone to run this script.
@@ -21,16 +24,17 @@ from dictionaries_and_lists import relevant_links, full_names, \
 from class_definitions import HPO, DataQualityMetric
 
 from general_functions import load_files, \
-    generate_hpo_id_col, find_hpo_row, get_err_rate, sort_and_convert_dates
+    generate_hpo_id_col, find_hpo_row, get_err_rate, \
+    sort_and_convert_dates, standardize_old_hpo_objects
 
 from cross_reference_functions import cross_reference_old_metrics
 
 import pandas as pd
 
-old_dashboards = 'may_11_2020_data_quality_issues.xlsx'
+old_dashboards = 'june_03_2020_data_quality_issues.xlsx'
 
-old_excel_file_name = 'may_11_2020.xlsx'
-excel_file_name = 'june_03_2020.xlsx'
+old_excel_file_name = 'june_03_2020.xlsx'
+excel_file_name = 'june_15_2020.xlsx'
 
 metric_names = list(metric_names.keys())  # sheets to be investigated
 
@@ -43,16 +47,16 @@ def create_hpo_objects(file_name):
     Parameters
     ----------
     file_name (str): the date of the file that is being used to generate
-        the data quality issue frames
+        the data quality issue frames.
 
     Returns
     -------
     hpo_objects (lst): list of HPO objects (see class_definitions.py)
         that will be used and ultimately populated with the
-        data quality metrics
+        data quality metrics.
 
     hpo_id_column (lst): list of the hpo_ids that will eventually
-        each be associated with its own dataframe
+        each be associated with its own dataframe.
     """
     # creating the various HPO objects
     hpo_id_column = generate_hpo_id_col(file_name)
@@ -90,22 +94,22 @@ def populate_hpo_objects_with_dq_metrics(
     ----------
     hpo_objects (lst): list of HPO objects (see class_definitions.py)
         that will be used and ultimately populated with the
-        data quality metrics
+        data quality metrics.
 
     metric_names (lst): list of the sheets that will be used to
         identify the data quality metrics for each of the HPO
-        and DataQualityMetric objects
+        and DataQualityMetric objects.
 
     file_name (str): the date of the file that is being used to generate
-        the data quality issue frames
+        the data quality issue frames.
 
     date (datetime): datetime object that corresponds to the date that
-        the file is named after
+        the file is named after.
 
     Returns
     -------
     hpo_objects (lst): list of HPO objects (see class_definitions.py)
-        that now have the appropriate DataQualityMetric objects
+        that now have the appropriate DataQualityMetric objects.
     """
 
     # start with analyzing each metric first - minimizes 'loads'
@@ -163,14 +167,14 @@ def create_hpo_problem_dfs(hpo_objects, old_hpo_objects, hpo_id_column,
     ----------
     hpo_objects (lst): list of HPO objects (see class_definitions.py)
         that will be used and ultimately populated with the
-        data quality metrics
+        data quality metrics.
 
     old_hpo_objects (lst): list of HPO objects
         (see class_defintions.py) that will be used to determine
-        if a particular data quality issue is 'old' or 'new'
+        if a particular data quality issue is 'old' or 'new'.
 
     hpo_id_column (lst): list of the hpo_ids that will eventually
-        each be associated with its own dataframe
+        each be associated with its own dataframe.
 
     prev_dashboards (string): name of the 'old' dashboards that
         should reside in an Excel file in the current directory.
@@ -196,11 +200,10 @@ def create_hpo_problem_dfs(hpo_objects, old_hpo_objects, hpo_id_column,
         new_df = pd.DataFrame(columns=attribute_names)
         total_dfs.append(new_df)
 
+    hpo_objects, old_hpo_objects, new_hpo_ids = \
+        standardize_old_hpo_objects(hpo_objects, old_hpo_objects)
+
     for hpo, old_hpo, df in zip(hpo_objects, old_hpo_objects, total_dfs):
-        assert hpo.name == old_hpo.name, \
-            "New HPO added: {hpo_name}. Please re-run the " \
-            "'old' Excel file in order to ensure consistency in" \
-            "HPO names".format(hpo_name=hpo.name)
 
         # now have list of DataQualityMetric objects
         failing_metrics = hpo.find_failing_metrics()
@@ -209,7 +212,7 @@ def create_hpo_problem_dfs(hpo_objects, old_hpo_objects, hpo_id_column,
         # assign failing metrics the correct 'first_reported' date
         failing_metrics = cross_reference_old_metrics(
             failing_metrics, old_failing_metrics,
-            prev_dashboards)
+            prev_dashboards, new_hpo_ids, excel_file_name)
 
         # can only iterate if problem exists
         if failing_metrics:
@@ -234,14 +237,11 @@ def main():
 
     # getting the 'old' objects from previous file
     old_hpo_objects, old_hpo_id_column = create_hpo_objects(
-        file_name=old_excel_file_name
-    )
+        file_name=old_excel_file_name)
 
     old_hpo_objects = populate_hpo_objects_with_dq_metrics(
-        # dfk
         hpo_objects=old_hpo_objects, metrics=metric_names,
-        file_name=old_excel_file_name, date=date_objects[0]
-    )
+        file_name=old_excel_file_name, date=date_objects[0])
 
     # getting the 'new' objects from the current file
     hpo_objects, hpo_id_column = create_hpo_objects(

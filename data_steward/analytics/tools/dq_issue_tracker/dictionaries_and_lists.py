@@ -78,7 +78,7 @@ relevant_links = {
     "drug_success":
     "https://sites.google.com/view/ehrupload/"
     "data-quality-metrics/drug-ingredient-integration-rate?authuser=0",
-    
+
     "erroneous_dates":
     "https://sites.google.com/view/ehrupload/"
     "data-quality-metrics/erroneous-dates?authuser=0",
@@ -152,7 +152,8 @@ full_names = {
     "cpmc_ucd": "UC Davis",
     "ipmc_rush": "Rush University",
     "va": "United States Department of Veterans Affairs - Boston",
-    "saou_umc": "University Medical Center (UA Tuscaloosa)"
+    "saou_umc": "University Medical Center (UA Tuscaloosa)",
+    "saou_usahs": "University of South Alabama"
 }
 
 
