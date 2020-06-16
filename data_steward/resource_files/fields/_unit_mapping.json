@@ -1,0 +1,22 @@
+[
+  {
+    "type": "integer",
+    "name": "measurement_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "unit_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "set_unit_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "transform_value_as_number",
+    "mode": "nullable"
+  }
+]
