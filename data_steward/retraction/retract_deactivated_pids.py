@@ -64,11 +64,27 @@ FROM `{{project}}.{{prefix_regex}}_combined._deid_map`
 WHERE person_id = {{pid}}
 """)
 
-CHECK_PID_EXIST_QUERY = jinja_env.from_string("""
+CHECK_PID_EXIST_DATE_QUERY = jinja_env.from_string("""
 SELECT
 COALESCE(COUNT(*), 0) AS count
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id = {{pid}}
+AND {{date_column}} >= (SELECT deactivated_date
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
+WHERE person_id = {{pid}})
+""")
+
+CHECK_PID_EXIST_END_DATE_QUERY = jinja_env.from_string("""
+SELECT
+COALESCE(COUNT(*), 0) AS count
+FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE person_id = {{pid}}
+AND (CASE WHEN {{end_date_column}} IS NOT NULL THEN {{end_date_column}} >= (SELECT deactivated_date
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
+WHERE person_id = {{pid}} ) ELSE CASE WHEN {{end_date_column}} IS NULL THEN {{start_date_column}} >= (
+SELECT deactivated_date
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
+WHERE person_id = {{pid}}) END END)
 """)
 
 # Queries to create tables in associated sandbox with rows that will be removed per cleaning rule.
@@ -297,21 +313,39 @@ def get_research_id(project, dataset, pid, client):
     return research_id_df['research_id'].iloc[0]
 
 
-def check_pid_exist(pid, date_row, client):
+def check_pid_exist(pid, date_row, client, pids_project_id, pids_dataset_id, pids_table):
     """
-    Queries the table that retraction will take place, to see if the PID exists before creating query
+    Queries the table that retraction will take place, to see if the PID exists after the deactivation date,
+    before creating query
     :param pid: person_id
     :param date_row: row that is being iterated through to create query
-    :param project_id: bq name of project_id
     :param client: bq client object
-    :return: Boolean if pid exists in table
+    :param pids_project_id: bq name of project_id for deactivated pids table
+    :param pids_dataset_id: bq name of dataset_id for deactivated pids table
+    :param pids_table: bq name of table for deactivated pids table
+    :return: count of records in query
     """
-
-    check_pid_df = client.query(
-        CHECK_PID_EXIST_QUERY.render(project=date_row.project_id,
-                                     dataset=date_row.dataset_id,
-                                     table=date_row.table,
-                                     pid=pid)).to_dataframe()
+    if pd.isnull(date_row.date_column):
+        check_pid_df = client.query(
+            CHECK_PID_EXIST_END_DATE_QUERY.render(project=date_row.project_id,
+                                                  dataset=date_row.dataset_id,
+                                                  table=date_row.table,
+                                                  pid=pid,
+                                                  deactivated_pids_project=pids_project_id,
+                                                  deactivated_pids_dataset=pids_dataset_id,
+                                                  deactivated_pids_table=pids_table,
+                                                  end_date_column=date_row.end_date_column,
+                                                  start_date_column=date_row.start_date_column)).to_dataframe()
+    else:
+        check_pid_df = client.query(
+            CHECK_PID_EXIST_DATE_QUERY.render(project=date_row.project_id,
+                                              dataset=date_row.dataset_id,
+                                              table=date_row.table,
+                                              pid=pid,
+                                              date_column=date_row.date_column,
+                                              deactivated_pids_project=pids_project_id,
+                                              deactivated_pids_dataset=pids_dataset_id,
+                                              deactivated_pids_table=pids_table)).to_dataframe()
     return check_pid_df.loc[0, 'count']
 
 
@@ -356,7 +390,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 pid = ehr_row.person_id
 
             # Check if PID is in table
-            if pid and check_pid_exist(pid, date_row, client):
+            if pid and check_pid_exist(pid, date_row, client, pids_project_id, pids_dataset_id, pids_table):
                 dataset_list.add(date_row.dataset_id)
                 # Get or create sandbox dataset
                 sandbox_dataset = check_and_create_sandbox_dataset(
