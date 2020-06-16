@@ -327,25 +327,27 @@ def check_pid_exist(pid, date_row, client, pids_project_id, pids_dataset_id, pid
     """
     if pd.isnull(date_row.date_column):
         check_pid_df = client.query(
-            CHECK_PID_EXIST_END_DATE_QUERY.render(project=date_row.project_id,
-                                                  dataset=date_row.dataset_id,
-                                                  table=date_row.table,
-                                                  pid=pid,
-                                                  deactivated_pids_project=pids_project_id,
-                                                  deactivated_pids_dataset=pids_dataset_id,
-                                                  deactivated_pids_table=pids_table,
-                                                  end_date_column=date_row.end_date_column,
-                                                  start_date_column=date_row.start_date_column)).to_dataframe()
+            CHECK_PID_EXIST_END_DATE_QUERY.render(
+                project=date_row.project_id,
+                dataset=date_row.dataset_id,
+                table=date_row.table,
+                pid=pid,
+                deactivated_pids_project=pids_project_id,
+                deactivated_pids_dataset=pids_dataset_id,
+                deactivated_pids_table=pids_table,
+                end_date_column=date_row.end_date_column,
+                start_date_column=date_row.start_date_column)).to_dataframe()
     else:
         check_pid_df = client.query(
-            CHECK_PID_EXIST_DATE_QUERY.render(project=date_row.project_id,
-                                              dataset=date_row.dataset_id,
-                                              table=date_row.table,
-                                              pid=pid,
-                                              date_column=date_row.date_column,
-                                              deactivated_pids_project=pids_project_id,
-                                              deactivated_pids_dataset=pids_dataset_id,
-                                              deactivated_pids_table=pids_table)).to_dataframe()
+            CHECK_PID_EXIST_DATE_QUERY.render(
+                project=date_row.project_id,
+                dataset=date_row.dataset_id,
+                table=date_row.table,
+                pid=pid,
+                date_column=date_row.date_column,
+                deactivated_pids_project=pids_project_id,
+                deactivated_pids_dataset=pids_dataset_id,
+                deactivated_pids_table=pids_table)).to_dataframe()
     return check_pid_df.loc[0, 'count']
 
 
@@ -390,7 +392,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 pid = ehr_row.person_id
 
             # Check if PID is in table
-            if pid and check_pid_exist(pid, date_row, client, pids_project_id, pids_dataset_id, pids_table):
+            if pid and check_pid_exist(pid, date_row, client, pids_project_id,
+                                       pids_dataset_id, pids_table):
                 dataset_list.add(date_row.dataset_id)
                 # Get or create sandbox dataset
                 sandbox_dataset = check_and_create_sandbox_dataset(
