@@ -426,9 +426,16 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
     logging.info(f"Saving timestamp {processed_time_str} to "
                  f"gs://{bucket}/{processed_txt_path}.")
     upload_string_to_gcs(bucket, processed_txt_path, processed_time_str)
-    # if folder_items and is_first_validation_run(folder_items):
-    #     en.generate_email()
-    #     en.send_email()
+    if folder_items and is_first_validation_run(folder_items):
+        email_msg = en.generate_email_message(hpo_id, results_html,
+                                              results_html_path, report_data)
+        if email_msg is not None:
+            result = en.send_email(email_msg)
+            logging.info(f"Sending emails for hpo_id {hpo_id}")
+        else:
+            logging.info(
+                f"Not enough info in contact list to send emails for hpo_id {hpo_id}"
+            )
 
 
 def process_hpo(hpo_id, force_run=False):

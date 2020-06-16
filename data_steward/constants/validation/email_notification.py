@@ -6,6 +6,7 @@ SELECT *
 FROM `{{project}}.{{dataset}}.{{contact_table}}`
 """
 
+DATA_CURATION = 'Data Curation'
 DATA_CURATION_LISTSERV = 'datacuration@researchallofus.org'
 NO_REPLY_ADDRESS = 'noreply@researchallofus.org'
 NO_DATA_STEWARD = 'no data steward'
@@ -22,23 +23,23 @@ EHR_OPS_SITE_URL = 'https://sites.google.com/view/ehrupload'
 
 # Email content
 EMAIL_BODY = """
-Hi {{ site_name }},
+<p style="font-size:115%;">Hi {{ site_name }},</p>
 
-Your submission <b>{{ folder }}</b> was{% if submission_error %} not successfully loaded.
-{% else %} successfully loaded on {{ timestamp }}.{% endif %}
-Please review the <em>results.html</em> submission report attached to this email{% if submission_error %} 
-and resolve the errors before making a new submission{% endif %}.
-The report is also placed in the submission folder in your GCS bucket <a href="{{ results_html_path }}">here</a>.
-For more information on the report, please refer to our <a href="{{ ehr_ops_site_url }}">EHR Ops website</a>.
+<p style="font-size:115%;">Your submission <b>{{ folder }}</b> was{% if submission_error %} not successfully loaded.<br>
+{% else %} successfully loaded on {{ timestamp }}.<br>{% endif %}
+Please review the <code>results.html</code> submission report attached to this email{% if submission_error %}<br>
+and resolve the errors before making a new submission{% endif %}.<br>
+The report is also placed in the submission folder in your GCS bucket <a href="{{ results_html_url }}">here</a>.<br>
+For more information on the report, please refer to our <a href="{{ ehr_ops_site_url }}">EHR Ops website</a>.</p>
 
-You are receiving this email because you are listed as a point of contact for HPO Site <em>{{ site_name }}</em>.
-If you have additional questions or wish to no longer receive these emails, 
-please send an email to <a href="mailto:{{ dc_listserv }}">{{ dc_listserv }}</a>.
+<p style="font-size:115%;">You are receiving this email because you are listed as a point of contact<br>
+for HPO Site <em>{{ site_name }}</em>.<br>
+If you have additional questions or wish to no longer receive these emails,<br>
+please reply/send an email to <a href="mailto:{{ dc_listserv }}">{{ dc_listserv }}</a>.</p>
 
-Curation team, DRC
-<em>All of Us</em> Research Program
-<img src="cid:{{ aou_logo }}"/>
-
+<p style="font-size:115%;">Curation team, DRC<br>
+<em>All of Us</em> Research Program<br>
+<img src="cid:{{ aou_logo }}"/></p>
 """
 
 AOU_LOGO = 'aou_logo'

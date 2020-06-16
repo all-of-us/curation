@@ -84,12 +84,28 @@ def create_recipients_list(hpo_id):
     :param hpo_id: identifies the hpo site
     :return: list of dicts with keys hpo_id, site_name and dict mail_to, with keys email and type
     """
-    hpo_recipients = {'hpo_id': hpo_id}
+    hpo_recipients = {
+        'hpo_id': hpo_id,
+        consts.SITE_NAME: '',
+        consts.MAIL_TO: []
+    }
     mail_to = []
     project_id = app_identity.get_application_id()
-    hpo_contact_dict = get_hpo_contact_info(project_id).get(hpo_id)
-    hpo_recipients[consts.SITE_NAME] = hpo_contact_dict.get(consts.SITE_NAME)
-    hpo_emails_str = hpo_contact_dict.get(consts.SITE_POINT_OF_CONTACT)
+    hpo_contact_dict = get_hpo_contact_info(project_id).get(hpo_id, None)
+    if hpo_contact_dict is None:
+        LOGGER.info(f"No entry for {hpo_id} in contact list")
+        return hpo_recipients
+    site_name = hpo_contact_dict.get(consts.SITE_NAME, '')
+    if site_name.strip() == '':
+        LOGGER.info(f"No {consts.SITE_NAME} field for {hpo_id} in contact list")
+        return hpo_recipients
+    hpo_recipients[consts.SITE_NAME] = site_name
+    hpo_emails_str = hpo_contact_dict.get(consts.SITE_POINT_OF_CONTACT, '')
+    if hpo_emails_str.strip() == '':
+        LOGGER.info(
+            f"No {consts.SITE_POINT_OF_CONTACT} field for {hpo_id} in contact list"
+        )
+        return hpo_recipients
     hpo_emails = [
         hpo_email.strip().lower() for hpo_email in hpo_emails_str.split(';')
     ]
@@ -97,6 +113,10 @@ def create_recipients_list(hpo_id):
         if hpo_email_address != consts.NO_DATA_STEWARD:
             recipient_email_dict = {'email': hpo_email_address, 'type': 'to'}
             mail_to.append(recipient_email_dict)
+    if len(mail_to) == 0:
+        LOGGER.info(f"No valid email addresses for {hpo_id} in contact list")
+        return hpo_recipients
+    mail_to.append({'email': consts.DATA_CURATION_LISTSERV, 'type': 'cc'})
     hpo_recipients[consts.MAIL_TO] = mail_to
     return hpo_recipients
 
@@ -110,10 +130,12 @@ def generate_html_body(site_name, results_html_path, report_data):
     :param report_data: dict containing report info for submission
     :return: html formatted string
     """
+    results_html_url = results_html_path.replace(
+        'gs://', 'https://storage.cloud.google.com/')
     html_email_body = Template(consts.EMAIL_BODY).render(
         site_name=site_name,
         ehr_ops_site_url=consts.EHR_OPS_SITE_URL,
-        results_html_path=results_html_path,
+        results_html_url=results_html_url,
         dc_listserv=consts.DATA_CURATION_LISTSERV,
         aou_logo=consts.AOU_LOGO,
         **report_data)
@@ -140,8 +162,10 @@ def generate_email_message(hpo_id, results_html, results_html_path,
     :return: Message dict formatted for Mandrill API
     """
     hpo_recipients = create_recipients_list(hpo_id)
-    site_name = hpo_recipients.get(consts.SITE_NAME)
-    mail_to = hpo_recipients.get(consts.MAIL_TO)
+    site_name = hpo_recipients.get(consts.SITE_NAME, '')
+    mail_to = hpo_recipients.get(consts.MAIL_TO, [])
+    if len(site_name) == 0 or len(mail_to) == 0:
+        return None
     results_html_b64 = base64.b64encode(results_html.encode())
     html_body = generate_html_body(site_name, results_html_path, report_data)
     aou_logo_b64 = get_aou_logo_b64()
@@ -154,7 +178,7 @@ def generate_email_message(hpo_id, results_html, results_html_path,
         }],
         'auto_html': True,
         'from_email': consts.NO_REPLY_ADDRESS,
-        'from_name': 'Data Curation',
+        'from_name': consts.DATA_CURATION,
         'headers': {
             'Reply-To': consts.DATA_CURATION_LISTSERV
         },

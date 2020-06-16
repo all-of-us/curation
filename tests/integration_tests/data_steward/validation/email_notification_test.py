@@ -1,12 +1,11 @@
 # Python imports
-from unittest import mock, TestCase
+from unittest import TestCase
 
 # Third party imports
 
 # Project imports
 import app_identity
 from validation import email_notification as en
-from constants.validation import email_notification as consts
 
 
 class EmailNotificationTest(TestCase):
