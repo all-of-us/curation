@@ -210,6 +210,10 @@ def get_date_info_for_pids_tables(project_id, client):
     dataset_obj = client.list_datasets(project_id)
     datasets = [d.dataset_id for d in dataset_obj]
 
+    # Remove synthetic data, vocabulary and curation sandbox datasets
+    prefixes = ('SR', 'vocabulary', 'curation')
+    datasets = [x for x in datasets if not x.startswith(prefixes)]
+
     for dataset in datasets:
         LOGGER.info(f'Starting to iterate through dataset: {dataset}')
 
@@ -341,6 +345,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
         "Looping through the deactivated PIDS df to create queries based on the retractions needed per PID table"
     )
     for ehr_row in deactivated_ehr_pids_df.itertuples(index=False):
+        LOGGER.info(f'Creating retraction queries for PID: {ehr_row.person_id}')
         for date_row in date_columns_df.itertuples(index=False):
             # Determine if dataset is deid to correctly pull pid or research_id and check if ID exists in dataset or if
             # already retracted
