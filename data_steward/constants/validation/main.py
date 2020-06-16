@@ -15,6 +15,9 @@ RESULT_PASS_CODE = '&#x2714'
 RESULT_FAIL_COLOR = 'red'
 RESULT_PASS_COLOR = 'green'
 
+# datetime format
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S %Z'
+
 # Table Headers
 RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
 ERROR_FILE_HEADERS = ["File Name", "Message"]

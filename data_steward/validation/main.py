@@ -373,7 +373,6 @@ def generate_empty_report(hpo_id, folder_prefix):
     Also write processed.txt to folder to prevent processing in the future
 
     :param hpo_id: identifies the HPO site
-    :param bucket: name of the bucket with the submission
     :param folder_prefix: folder containing the submission
     :return: report_data: dict whose keys are params in resource_files/templates/hpo_report.html
     """
@@ -411,12 +410,27 @@ def is_valid_folder_prefix_name(folder_prefix):
 
 
 def get_eastern_time():
+    """
+    Return current Eastern Time
+
+    :return: formatted current eastern time as string
+    """
     eastern_timezone = dateutil.tz.gettz('America/New_York')
-    datetime_str_format = '%Y-%m-%d %H:%M:%S %Z'
-    return datetime.datetime.now(eastern_timezone).strftime(datetime_str_format)
+    return datetime.datetime.now(eastern_timezone).strftime(
+        consts.DATETIME_FORMAT)
 
 
 def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
+    """
+    Generate html report, upload to GCS and send email if possible
+
+    :param hpo_id: identifies the hpo site
+    :param report_data: dictionary containing items for populating hpo_report.html
+    :param folder_items: items in the folder without folder prefix
+    :param bucket: bucket containing the folder
+    :param folder_prefix: submission folder
+    :return:
+    """
     processed_time_str = get_eastern_time()
     report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_time_str
     results_html = hpo_report.render(report_data)
@@ -436,6 +450,21 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
             logging.info(
                 f"Not enough info in contact list to send emails for hpo_id {hpo_id}"
             )
+
+
+def get_folder_items(bucket_items, folder_prefix):
+    """
+    Returns items in bucket which belong to a folder
+
+    :param bucket_items: items in the bucket
+    :param folder_prefix: prefix containing the folder name
+    :return: list of items in the folder without the folder prefix
+    """
+    return [
+        item['name'][len(folder_prefix):]
+        for item in bucket_items
+        if item['name'].startswith(folder_prefix)
+    ]
 
 
 def process_hpo(hpo_id, force_run=False):
@@ -463,11 +492,7 @@ def process_hpo(hpo_id, force_run=False):
             folder_items = []
             if is_valid_folder_prefix_name(folder_prefix):
                 # perform validation
-                folder_items = [
-                    item['name'][len(folder_prefix):]
-                    for item in bucket_items
-                    if item['name'].startswith(folder_prefix)
-                ]
+                folder_items = get_folder_items(bucket_items, folder_prefix)
                 summary = validate_submission(hpo_id, bucket, folder_items,
                                               folder_prefix)
                 report_data = generate_metrics(hpo_id, bucket, folder_prefix,

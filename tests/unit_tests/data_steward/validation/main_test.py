@@ -168,11 +168,7 @@ class ValidationMainTest(TestCase):
         :return:
         """
         folder_prefix = '2019-01-01/'
-        bucket_items = [{
-            'name': folder_prefix + 'person.csv'
-        }, {
-            'name': folder_prefix + 'invalid_file.csv'
-        }]
+        folder_items = ['person.csv', 'invalid_file.csv']
 
         perform_validation_on_file_returns = dict()
         expected_results = []
@@ -204,7 +200,7 @@ class ValidationMainTest(TestCase):
         mock_perform_validation_on_file.side_effect = perform_validation_on_file
 
         actual_result = main.validate_submission(self.hpo_id, self.hpo_bucket,
-                                                 bucket_items, folder_prefix)
+                                                 folder_items, folder_prefix)
         self.assertCountEqual(expected_results, actual_result.get('results'))
         self.assertCountEqual(expected_errors, actual_result.get('errors'))
         self.assertCountEqual(expected_warnings, actual_result.get('warnings'))
@@ -249,15 +245,16 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.upload_string_to_gcs')
     @mock.patch('validation.main.get_hpo_name')
     @mock.patch('validation.main.validate_submission')
+    @mock.patch('validation.main.get_folder_items')
     @mock.patch('validation.main.is_valid_rdr')
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_process_hpo_ignore_dirs(
         self, mock_hpo_bucket, mock_bucket_list, mock_valid_rdr,
-        mock_validation, mock_get_hpo_name, mock_upload_string_to_gcs,
-        mock_get_duplicate_counts_query, mock_query_rows,
-        mock_all_required_files_loaded, mock_upload, mock_run_achilles,
-        mock_export, mock_valid_folder_name, mock_query):
+        mock_folder_items, mock_validation, mock_get_hpo_name,
+        mock_upload_string_to_gcs, mock_get_duplicate_counts_query,
+        mock_query_rows, mock_all_required_files_loaded, mock_upload,
+        mock_run_achilles, mock_export, mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -271,7 +268,7 @@ class ValidationMainTest(TestCase):
         :param mock_hpo_bucket: mock the hpo bucket name.
         :param mock_bucket_list: mocks the list of items in the hpo bucket.
         :param mock_validation: mock performing validation
-        :param mock_validation: mock generate metrics
+        :param mock_folder_items: mock get_folder_items
         :param mock_valid_rdr: mock valid rdr dataset
         :param mock_upload: mock uploading to a bucket
         :param mock_run_achilles: mock running the achilles reports
@@ -323,14 +320,20 @@ class ValidationMainTest(TestCase):
             'warnings': []
         }
 
+        mock_folder_items.return_value = ['measurement.csv']
+
         # test
         main.process_hpo('noob', force_run=True)
 
         # post conditions
+        self.assertTrue(mock_folder_items.called)
+        self.assertEqual(
+            mock_folder_items.assert_called_once_with(
+                mock_bucket_list.return_value, 'SUBMISSION/'), None)
         self.assertTrue(mock_validation.called)
         self.assertEqual(
             mock_validation.assert_called_once_with(
-                'noob', 'noob', mock_bucket_list.return_value, 'SUBMISSION/'),
+                'noob', 'noob', mock_folder_items.return_value, 'SUBMISSION/'),
             None)
         self.assertTrue(mock_run_achilles.called)
         self.assertTrue(mock_export.called)
@@ -522,7 +525,7 @@ class ValidationMainTest(TestCase):
             False)
 
         # validate report data
-        report_data = main.generate_empty_report(self.hpo_id, self.hpo_bucket,
+        report_data = main.generate_empty_report(self.hpo_id,
                                                  incorrect_folder_prefix)
         self.assertIn(report_consts.SUBMISSION_ERROR_REPORT_KEY, report_data)
         self.assertIn(incorrect_folder_prefix,
