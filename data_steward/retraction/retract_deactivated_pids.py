@@ -393,6 +393,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                 pid = ehr_row.person_id
 
             # Check if PID is in table
+            LOGGER.info(f'Checking if records with {pid} after deactivated date, exist in '
+                        f'{pids_project_id}.{pids_dataset_id}.{pids_table}')
             if pid and check_pid_exist(pid, date_row, client, pids_project_id,
                                        pids_dataset_id, pids_table):
                 dataset_list.add(date_row.dataset_id)
