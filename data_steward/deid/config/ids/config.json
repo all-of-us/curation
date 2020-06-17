@@ -61,10 +61,23 @@
         ],
         "SEXUAL-ORIENTATION":[
             {
-                "comment": "generalize any response that is not straight",
+                "comment": [
+                    "multi sexual orientation generalization rule, the values the count is ",
+                    "limited to is provided by the 'on' key.  it is best to ",
+                    "perform aggregate functions before other generalizations"
+                ],
+                "apply": "COUNT",
+                "into": 2000000003,
+                "qualifier": "> 1",
+                "values": [903096, 903079, 1585901, 1585902, 1585903, 1585904, 1585900],
+                "drop_duplicates": "True"
+            },
+            {
+                "comment": "generalize single response that is not straight",
                 "qualifier": "IN",
                 "values": [903096, 903079, 1585901, 1585902, 1585903, 1585904],
-                "into": 2000000003
+                "into": 2000000003,
+                "drop_duplicates": "True"
             }
         ],
         "SEX-AT-BIRTH":[

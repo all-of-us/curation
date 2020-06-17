@@ -35,6 +35,12 @@
         {
             "rules": "@generalize.SEXUAL-ORIENTATION",
             "fields": ["value_source_concept_id"],
+            "dataset": ":idataset",
+            "table": "observation",
+            "alias": "sexual_orientation",
+            "key_field": "sexual_orientation.person_id",
+            "key_row": "sexual_orientation.value_source_concept_id",
+            "value_field": "observation.person_id",
             "on": {
                 "field": "observation_source_concept_id",
                 "qualifier": "in",
