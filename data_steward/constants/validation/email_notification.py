@@ -26,7 +26,7 @@ EMAIL_BODY = """
 <p style="font-size:115%;">Hi {{ site_name }},</p>
 
 <p style="font-size:115%;">Your submission <b>{{ folder }}</b> 
-{% if submission_error %}was not successfully loaded on {{ timestamp }}.<br>
+{% if submission_error %}was NOT successfully loaded on {{ timestamp }}.<br>
 {% else %}was successfully loaded on {{ timestamp }}.<br>
 {% endif %}
 Please review the <code>results.html</code> submission report attached to this email{% if submission_error %}<br>
