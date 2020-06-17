@@ -385,12 +385,12 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                            pids_table):
             dataset_list.add(date_row.dataset_id)
             row = {
-                'project_id':date_row.project_id,
-                'dataset_id':date_row.dataset_id,
-                'table':date_row.table,
-                'date_column':date_row.date_column,
-                'start_date_column':date_row.start_date_column,
-                'end_date_column':date_row.end_date_column
+                'project_id': date_row.project_id,
+                'dataset_id': date_row.dataset_id,
+                'table': date_row.table,
+                'date_column': date_row.date_column,
+                'start_date_column': date_row.start_date_column,
+                'end_date_column': date_row.end_date_column
             }
             final_date_column_df = final_date_column_df.append(
                 row, ignore_index=True)
