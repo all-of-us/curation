@@ -313,7 +313,8 @@ def get_research_id(project, dataset, pid, client):
     return research_id_df['research_id'].iloc[0]
 
 
-def check_pid_exist(date_row, client, pids_project_id, pids_dataset_id, pids_table):
+def check_pid_exist(date_row, client, pids_project_id, pids_dataset_id,
+                    pids_table):
     """
     Queries the table that retraction will take place, to see if the PID exists after the deactivation date,
     before creating query
