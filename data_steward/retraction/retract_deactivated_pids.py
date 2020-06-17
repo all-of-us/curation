@@ -394,7 +394,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
 
             # Check if PID is in table
             LOGGER.info(
-                f'Checking if records with {pid} after deactivated date, exist in '
+                f'Checking if records with pid: {pid} after deactivated date, exist in '
                 f'{date_row.project_id}.{date_row.dataset_id}.{date_row.table}')
             if pid and check_pid_exist(pid, date_row, client, pids_project_id,
                                        pids_dataset_id, pids_table):
