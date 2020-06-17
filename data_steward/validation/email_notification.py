@@ -116,7 +116,7 @@ def create_recipients_list(hpo_id):
     if len(mail_to) == 0:
         LOGGER.info(f"No valid email addresses for {hpo_id} in contact list")
         return hpo_recipients
-    # mail_to.append({'email': consts.DATA_CURATION_LISTSERV, 'type': 'cc'})
+    mail_to.append({'email': consts.DATA_CURATION_LISTSERV, 'type': 'cc'})
     hpo_recipients[consts.MAIL_TO] = mail_to
     return hpo_recipients
 
