@@ -68,23 +68,23 @@ CHECK_PID_EXIST_DATE_QUERY = jinja_env.from_string("""
 SELECT
 COALESCE(COUNT(*), 0) AS count
 FROM `{{project}}.{{dataset}}.{{table}}`
-WHERE person_id = {{pid}}
-AND {{date_column}} >= (SELECT deactivated_date
-FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
-WHERE person_id = {{pid}})
+WHERE person_id IN (SELECT person_id
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`)
+AND {{date_column}} > (SELECT MIN(deactivated_date)
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`)
 """)
 
 CHECK_PID_EXIST_END_DATE_QUERY = jinja_env.from_string("""
 SELECT
 COALESCE(COUNT(*), 0) AS count
 FROM `{{project}}.{{dataset}}.{{table}}`
-WHERE person_id = {{pid}}
-AND (CASE WHEN {{end_date_column}} IS NOT NULL THEN {{end_date_column}} >= (SELECT deactivated_date
-FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
-WHERE person_id = {{pid}} ) ELSE CASE WHEN {{end_date_column}} IS NULL THEN {{start_date_column}} >= (
-SELECT deactivated_date
-FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`
-WHERE person_id = {{pid}}) END END)
+WHERE person_id IN (SELECT person_id
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`)
+AND (CASE WHEN {{end_date_column}} IS NOT NULL THEN {{end_date_column}} > (SELECT MIN(deactivated_date)
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`) 
+ELSE CASE WHEN {{end_date_column}} IS NULL THEN {{start_date_column}} > (
+SELECT MIN(deactivated_date)
+FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`) END END)
 """)
 
 # Queries to create tables in associated sandbox with rows that will be removed per cleaning rule.
@@ -226,8 +226,8 @@ def get_date_info_for_pids_tables(project_id, client):
     dataset_obj = client.list_datasets(project_id)
     datasets = [d.dataset_id for d in dataset_obj]
 
-    # Remove synthetic data, vocabulary and curation sandbox datasets
-    prefixes = ('SR', 'vocabulary', 'curation')
+    # Remove synthetic data, vocabulary, curation sandbox and previous naming convention datasets
+    prefixes = ('SR', 'vocabulary', 'curation', 'combined', '2018', 'R2018')
     datasets = [x for x in datasets if not x.startswith(prefixes)]
 
     for dataset in datasets:
@@ -313,12 +313,10 @@ def get_research_id(project, dataset, pid, client):
     return research_id_df['research_id'].iloc[0]
 
 
-def check_pid_exist(pid, date_row, client, pids_project_id, pids_dataset_id,
-                    pids_table):
+def check_pid_exist(date_row, client, pids_project_id, pids_dataset_id, pids_table):
     """
     Queries the table that retraction will take place, to see if the PID exists after the deactivation date,
     before creating query
-    :param pid: person_id
     :param date_row: row that is being iterated through to create query
     :param client: bq client object
     :param pids_project_id: bq name of project_id for deactivated pids table
@@ -332,7 +330,6 @@ def check_pid_exist(pid, date_row, client, pids_project_id, pids_dataset_id,
                 project=date_row.project_id,
                 dataset=date_row.dataset_id,
                 table=date_row.table,
-                pid=pid,
                 deactivated_pids_project=pids_project_id,
                 deactivated_pids_dataset=pids_dataset_id,
                 deactivated_pids_table=pids_table,
@@ -344,7 +341,6 @@ def check_pid_exist(pid, date_row, client, pids_project_id, pids_dataset_id,
                 project=date_row.project_id,
                 dataset=date_row.dataset_id,
                 table=date_row.table,
-                pid=pid,
                 date_column=date_row.date_column,
                 deactivated_pids_project=pids_project_id,
                 deactivated_pids_dataset=pids_dataset_id,
@@ -384,21 +380,20 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
     for ehr_row in deactivated_ehr_pids_df.itertuples(index=False):
         LOGGER.info(f'Creating retraction queries for PID: {ehr_row.person_id}')
         for date_row in date_columns_df.itertuples(index=False):
-            # Determine if dataset is deid to correctly pull pid or research_id and check if ID exists in dataset or if
-            # already retracted
-            if re.match(DEID_REGEX, date_row.dataset_id):
-                pid = get_research_id(date_row.project_id, date_row.dataset_id,
-                                      ehr_row.person_id, client)
-            else:
-                pid = ehr_row.person_id
-
-            # Check if PID is in table
+            # Filter to only include tables containing deactivated pids with the earliest deactivated date
             LOGGER.info(
-                f'Checking if records with pid: {pid} after deactivated date, exist in '
-                f'{date_row.project_id}.{date_row.dataset_id}.{date_row.table}')
-            if pid and check_pid_exist(pid, date_row, client, pids_project_id,
-                                       pids_dataset_id, pids_table):
+                f'Checking table: {date_row.project_id}.{date_row.dataset_id}.{date_row.table}')
+            if check_pid_exist(date_row, client, pids_project_id, pids_dataset_id, pids_table):
                 dataset_list.add(date_row.dataset_id)
+
+                # Determine if dataset is deid to correctly pull pid or research_id and check if ID exists in dataset or if
+                # already retracted
+                if re.match(DEID_REGEX, date_row.dataset_id):
+                    pid = get_research_id(date_row.project_id, date_row.dataset_id,
+                                          ehr_row.person_id, client)
+                else:
+                    pid = ehr_row.person_id
+
                 # Get or create sandbox dataset
                 sandbox_dataset = check_and_create_sandbox_dataset(
                     date_row.project_id, date_row.dataset_id)
