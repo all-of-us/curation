@@ -288,6 +288,11 @@ class ValidationMainTest(unittest.TestCase):
             actual_result = test_util.read_cloud_file(
                 self.hpo_bucket, self.folder_prefix + common.RESULTS_HTML)
 
+        # ensure emails are not sent
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        self.assertFalse(main.is_first_validation_run(folder_items))
+
         # parse html
         soup = bs(actual_result, parser="lxml", features="lxml")
         missing_pii_html_table = soup.find('table', id='missing_pii')
