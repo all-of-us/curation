@@ -382,14 +382,17 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
         for date_row in date_columns_df.itertuples(index=False):
             # Filter to only include tables containing deactivated pids with the earliest deactivated date
             LOGGER.info(
-                f'Checking table: {date_row.project_id}.{date_row.dataset_id}.{date_row.table}')
-            if check_pid_exist(date_row, client, pids_project_id, pids_dataset_id, pids_table):
+                f'Checking table: {date_row.project_id}.{date_row.dataset_id}.{date_row.table}'
+            )
+            if check_pid_exist(date_row, client, pids_project_id,
+                               pids_dataset_id, pids_table):
                 dataset_list.add(date_row.dataset_id)
 
                 # Determine if dataset is deid to correctly pull pid or research_id and check if ID exists in dataset or if
                 # already retracted
                 if re.match(DEID_REGEX, date_row.dataset_id):
-                    pid = get_research_id(date_row.project_id, date_row.dataset_id,
+                    pid = get_research_id(date_row.project_id,
+                                          date_row.dataset_id,
                                           ehr_row.person_id, client)
                 else:
                     pid = ehr_row.person_id
