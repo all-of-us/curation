@@ -246,15 +246,17 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.get_hpo_name')
     @mock.patch('validation.main.validate_submission')
     @mock.patch('validation.main.get_folder_items')
+    @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.is_valid_rdr')
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_process_hpo_ignore_dirs(
         self, mock_hpo_bucket, mock_bucket_list, mock_valid_rdr,
-        mock_folder_items, mock_validation, mock_get_hpo_name,
-        mock_upload_string_to_gcs, mock_get_duplicate_counts_query,
-        mock_query_rows, mock_all_required_files_loaded, mock_upload,
-        mock_run_achilles, mock_export, mock_valid_folder_name, mock_query):
+        mock_first_validation, mock_folder_items, mock_validation,
+        mock_get_hpo_name, mock_upload_string_to_gcs,
+        mock_get_duplicate_counts_query, mock_query_rows,
+        mock_all_required_files_loaded, mock_upload, mock_run_achilles,
+        mock_export, mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -269,6 +271,7 @@ class ValidationMainTest(TestCase):
         :param mock_bucket_list: mocks the list of items in the hpo bucket.
         :param mock_validation: mock performing validation
         :param mock_folder_items: mock get_folder_items
+        :param mock_first_validation: mock first validation run
         :param mock_valid_rdr: mock valid rdr dataset
         :param mock_upload: mock uploading to a bucket
         :param mock_run_achilles: mock running the achilles reports
@@ -284,6 +287,7 @@ class ValidationMainTest(TestCase):
         mock_get_hpo_name.return_value = 'noob'
         mock_upload_string_to_gcs.return_value = ''
         mock_valid_rdr.return_value = True
+        mock_first_validation.return_value = False
         yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
         yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         moment = datetime.datetime.now()

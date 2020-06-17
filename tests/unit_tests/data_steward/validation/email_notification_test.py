@@ -98,7 +98,7 @@ class EmailNotificationUnitTest(TestCase):
             self.assertTrue(email_dict['email'].islower())
 
         hpo_dict = en.create_recipients_list(self.hpo_id_4)
-        self.assertIsNone(hpo_dict[consts.SITE_NAME])
+        self.assertEqual(len(hpo_dict[consts.SITE_NAME]), 0)
 
     def test_generate_html_body(self):
         html_body = en.generate_html_body(self.site_name_1, self.fake_html_path,

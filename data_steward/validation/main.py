@@ -434,12 +434,17 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
     processed_time_str = get_eastern_time()
     report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_time_str
     results_html = hpo_report.render(report_data)
+
     results_html_path = folder_prefix + common.RESULTS_HTML
-    processed_txt_path = folder_prefix + common.PROCESSED_TXT
+    logging.info(f"Saving timestamp {common.RESULTS_HTML} to "
+                 f"gs://{bucket}/{results_html_path}.")
     upload_string_to_gcs(bucket, results_html_path, results_html)
+
+    processed_txt_path = folder_prefix + common.PROCESSED_TXT
     logging.info(f"Saving timestamp {processed_time_str} to "
                  f"gs://{bucket}/{processed_txt_path}.")
     upload_string_to_gcs(bucket, processed_txt_path, processed_time_str)
+
     if folder_items and is_first_validation_run(folder_items):
         email_msg = en.generate_email_message(hpo_id, results_html,
                                               results_html_path, report_data)
@@ -450,6 +455,8 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
             logging.info(
                 f"Not enough info in contact list to send emails for hpo_id {hpo_id}"
             )
+    logging.info(f"Reporting complete")
+    return
 
 
 def get_folder_items(bucket_items, folder_prefix):
