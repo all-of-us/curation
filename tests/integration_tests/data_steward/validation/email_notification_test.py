@@ -1,11 +1,13 @@
 # Python imports
-from unittest import TestCase
+from unittest import mock, TestCase
 
 # Third party imports
 
 # Project imports
 import app_identity
 from validation import email_notification as en
+from validation.main import get_eastern_time
+from tests.test_util import FIVE_PERSON_RESULTS_FILE
 
 
 class EmailNotificationTest(TestCase):
@@ -19,6 +21,16 @@ class EmailNotificationTest(TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.assertIn('test', self.project_id)
+        self.hpo_id = 'fake'
+        self.site_name = 'Fake Site Name'
+        self.bucket = 'fake'
+        self.folder = 'fake_folder'
+        self.fake_uri_path = f"https://console.cloud.google.com/storage/{self.bucket}/{self.folder}"
+        self.report_data = {
+            'folder': self.folder,
+            'timestamp': get_eastern_time(),
+            'submission_error': False
+        }
 
     def test_hpo_contact_list(self):
         fake_dict = {
@@ -48,3 +60,20 @@ class EmailNotificationTest(TestCase):
         contact_dict = en.get_hpo_contact_info(self.project_id)
         self.assertEqual(len(contact_dict), 4)
         self.assertDictEqual(contact_dict, fake_dict)
+
+    @mock.patch('validation.email_notification.get_hpo_contact_info')
+    def _test_send_email(self, mock_fake_info):
+        mock_fake_info.return_value = {
+            'fake': {
+                'site_name': self.site_name,
+                'site_point_of_contact': '; '
+            }
+        }
+        with open(FIVE_PERSON_RESULTS_FILE, 'r') as f:
+            results_html_str = f.read()
+        email_msg = en.generate_email_message(self.hpo_id, results_html_str,
+                                              self.fake_uri_path,
+                                              self.report_data)
+        self.assertIsNotNone(email_msg)
+        send_result = en.send_email(email_msg)
+        self.assertTrue(send_result)

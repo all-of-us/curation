@@ -104,7 +104,7 @@ class EmailNotificationUnitTest(TestCase):
         html_body = en.generate_html_body(self.site_name_1, self.fake_html_path,
                                           self.report_data)
         self.assertIn(
-            f"https://storage.cloud.google.com/{self.bucket}/{self.folder}/results.html",
+            f"https://console.cloud.google.com/storage/browser/{self.bucket}/{self.folder}",
             html_body)
         self.assertIn('was successfully loaded on', html_body)
 

@@ -110,32 +110,32 @@ def create_recipients_list(hpo_id):
         hpo_email.strip().lower() for hpo_email in hpo_emails_str.split(';')
     ]
     for hpo_email_address in hpo_emails:
-        if hpo_email_address != consts.NO_DATA_STEWARD:
+        if '@' in hpo_email_address:
             recipient_email_dict = {'email': hpo_email_address, 'type': 'to'}
             mail_to.append(recipient_email_dict)
     if len(mail_to) == 0:
         LOGGER.info(f"No valid email addresses for {hpo_id} in contact list")
         return hpo_recipients
-    mail_to.append({'email': consts.DATA_CURATION_LISTSERV, 'type': 'cc'})
+    # mail_to.append({'email': consts.DATA_CURATION_LISTSERV, 'type': 'cc'})
     hpo_recipients[consts.MAIL_TO] = mail_to
     return hpo_recipients
 
 
-def generate_html_body(site_name, results_html_path, report_data):
+def generate_html_body(site_name, folder_uri, report_data):
     """
     Generates html body of the email content
 
     :param site_name: name of the hpo_site
-    :param results_html_path: path to results.html in bucket
+    :param folder_uri: gcs path to submission folder in bucket
     :param report_data: dict containing report info for submission
     :return: html formatted string
     """
-    results_html_url = results_html_path.replace(
-        'gs://', 'https://storage.cloud.google.com/')
+    submission_folder_url = folder_uri.replace(
+        'gs://', 'https://console.cloud.google.com/storage/browser/')
     html_email_body = Template(consts.EMAIL_BODY).render(
         site_name=site_name,
         ehr_ops_site_url=consts.EHR_OPS_SITE_URL,
-        results_html_url=results_html_url,
+        submission_folder_url=submission_folder_url,
         dc_listserv=consts.DATA_CURATION_LISTSERV,
         aou_logo=consts.AOU_LOGO,
         **report_data)
@@ -150,14 +150,13 @@ def get_aou_logo_b64():
     return logo_b64
 
 
-def generate_email_message(hpo_id, results_html, results_html_path,
-                           report_data):
+def generate_email_message(hpo_id, results_html, folder_uri, report_data):
     """
     Generates Mandrill API message dict
 
     :param hpo_id: identifies the hpo site
     :param results_html: hpo report html file in string format
-    :param results_html_path: path to results.html in bucket
+    :param folder_uri: gcs path to submission folder in bucket
     :param report_data: dict containing report info for submission
     :return: Message dict formatted for Mandrill API
     """
@@ -167,7 +166,7 @@ def generate_email_message(hpo_id, results_html, results_html_path,
     if len(site_name) == 0 or len(mail_to) == 0:
         return None
     results_html_b64 = base64.b64encode(results_html.encode())
-    html_body = generate_html_body(site_name, results_html_path, report_data)
+    html_body = generate_html_body(site_name, folder_uri, report_data)
     aou_logo_b64 = get_aou_logo_b64()
     email_subject = f"EHR Data Submission Report for {site_name}"
     email_message = {

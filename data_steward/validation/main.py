@@ -436,7 +436,7 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
     results_html = hpo_report.render(report_data)
 
     results_html_path = folder_prefix + common.RESULTS_HTML
-    logging.info(f"Saving timestamp {common.RESULTS_HTML} to "
+    logging.info(f"Saving file {common.RESULTS_HTML} to "
                  f"gs://{bucket}/{results_html_path}.")
     upload_string_to_gcs(bucket, results_html_path, results_html)
 
@@ -445,12 +445,17 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
                  f"gs://{bucket}/{processed_txt_path}.")
     upload_string_to_gcs(bucket, processed_txt_path, processed_time_str)
 
+    folder_uri = f"gs://{bucket}/{folder_prefix}"
     if folder_items and is_first_validation_run(folder_items):
-        email_msg = en.generate_email_message(hpo_id, results_html,
-                                              results_html_path, report_data)
+        email_msg = en.generate_email_message(hpo_id, results_html, folder_uri,
+                                              report_data)
         if email_msg is not None:
             result = en.send_email(email_msg)
-            logging.info(f"Sending emails for hpo_id {hpo_id}")
+            result_ids = ', '.join(
+                [result_item['_id'] for result_item in result])
+            logging.info(
+                f"Sending emails for hpo_id {hpo_id} with Mandrill tracking ids: {result_ids}"
+            )
         else:
             logging.info(
                 f"Not enough info in contact list to send emails for hpo_id {hpo_id}"
