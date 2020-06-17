@@ -30,29 +30,29 @@ class DataQualityMetric:
         Parameters
         ----------
         hpo (string): name of the HPO being associated with the
-            data quality metric in question (e.g. nyc_cu)
+            data quality metric in question (e.g. nyc_cu).
 
         table_or_class (string): name of the table or class whose
             data quality metric is being determined
-            (e.g. Measurement, ACE Inhibitor)
+            (e.g. Measurement, ACE Inhibitor).
 
         metric_type (string): name of the metric that is being
-            determined (e.g. duplicates)
+            determined (e.g. duplicates).
 
         value (float): value that represents the quantitative value
-            of the data quality metric being investigated
+            of the data quality metric being investigated.
 
         data_quality_dimension (string): represents whether the
             metric_type being investigated is related to the
             conformance, completeness, or plausibility of data
-            quality with respect to the Kahn framework
+            quality with respect to the Kahn framework.
 
         first_reported (datetime.date): represents the time
             at which this metric (with all of the other parameters
-            being exactly the same) was first reported
+            being exactly the same) was first reported.
 
         link (string): link to the AoU EHR Operations page that
-            can help the site troubleshoot its data quality
+            can help the site troubleshoot its data quality.
         """
 
         self.hpo = hpo
@@ -94,7 +94,7 @@ class DataQualityMetric:
         Return
         ------
         attribute_names (list): list of the attribute names
-            for a DataQualityMetric object
+            for a DataQualityMetric object.
         """
 
         attribute_names = [
@@ -115,7 +115,7 @@ class DataQualityMetric:
         Return
         ------
         attributes (list): list of the attributes (values, strings)
-            for the object
+            for the object.
         """
 
         attributes = [
@@ -140,13 +140,14 @@ class HPO:
 
         """
         Used to establish the attributes of the HPO object being instantiated.
+
         Parameters
         ----------
-        self (HPO object): the object to be created
+        self (HPO object): the object to be created.
 
-        name (str): name of the HPO ID to create (e.g. nyc_cu)
+        name (str): name of the HPO ID to create (e.g. nyc_cu).
 
-        full_name (str): full name of the HPO
+        full_name (str): full name of the HPO.
 
         all other optional parameters are intended to be lists. These
         lists should contain DataQualityMetric objects that have all
@@ -181,17 +182,17 @@ class HPO:
         a DataQualityMetric object to the attributes that
         define an HPO object. This will allow us to easily
         associate an HPO object with its constituent data
-        quality metrics
+        quality metrics.
 
         Parameters
         ----------
         metric (string): the name of the sheet that contains the
-            dimension of data quality to be investigated
+            dimension of data quality to be investigated.
 
         dq_object (DataQualityMetric): object that contains
             the information for a particular aspect of the
             site's data quality (NOTE: dq_object.hpo should
-            equal self.name whenever this is used)
+            equal self.name whenever this is used).
         """
 
         if metric == 'Concept ID Success Rate':
@@ -241,16 +242,16 @@ class HPO:
         Parameters
         ----------
         self (HPO object): the object whose 'failing metrics' are to
-            be determined
+            be determined.
 
         Returns
         -------
         failing_metrics (list): has a list of the data quality metrics
             for the HPO that have 'failed' based on the thresholds
-            provided
+            provided.
 
         NOTE: if no data quality problems are found, however, the function
-        will return 'None' to signify that no issues arose
+        will return 'None' to signify that no issues arose.
         """
 
         failing_metrics = []

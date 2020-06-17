@@ -268,10 +268,10 @@ def create_excel_files(
 
 
 # EHR Ops Dataset Comparisons
-report1 = 'october_04_2019.xlsx'
-report2 = 'april_17_2020.xlsx'
-report3 = 'may_18_2020.xlsx'
-report4 = 'june_03_2020.xlsx'
+report1 = 'april_17_2020.xlsx'
+report2 = 'may_18_2020.xlsx'
+report3 = 'june_03_2020.xlsx'
+report4 = 'june_15_2020.xlsx'
 
 report_names = [report1, report2, report3, report4]
 

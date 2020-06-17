@@ -1,6 +1,7 @@
 """
 Python library is intended to house the functions for use in the
 general 'main' file in the library.
+
 These functions are comparatively straighforward
 and are better sequestered in a separate script rather than bogging down
 the 'heavy lifting' of the code in create_dq_issue_site_dfs.py.
@@ -10,6 +11,7 @@ import os
 import pandas as pd
 import sys
 import datetime
+from class_definitions import HPO
 
 
 def load_files(sheet_name, file_name):
@@ -25,17 +27,17 @@ def load_files(sheet_name, file_name):
     Parameters
     ----------
     sheet (str): represents the sheet from the analysis reports
-        whose metrics will be compared over time
+        whose metrics will be compared over time.
 
     file_name (str): name of the user-specified Excel files in the
         in the current directory. this should be an analytics report
-        to be scanned
+        to be scanned.
 
     Returns
     -------
     sheet (df): dataframe contains info about data quality
         for all of the sites on a particular dimension of data
-        quality for a particular date
+        quality for a particular date.
     """
     cwd = os.getcwd()
 
@@ -108,13 +110,13 @@ def find_hpo_row(sheet, hpo):
         metrics for the sites.
 
     hpo (string): represents the HPO site whose row in
-        the particular sheet needs to be determined
+        the particular sheet needs to be determined.
 
     Returns
     -------
     row_num (int): row number where the HPO site of question
         lies within the sheet. returns none if the row is not
-        in the sheet in question but exists in other sheets
+        in the sheet in question but exists in other sheets.
     """
     hpo_column_name = 'src_hpo_id'
     sheet_hpo_col = sheet[hpo_column_name]
@@ -142,25 +144,25 @@ def get_err_rate(sheet, row_num, metric, hpo_name, column):
     ----------
     sheet (df): dataframe contains info about data quality
         for all of the sites on a particular dimension of data
-        quality for a particular date
+        quality for a particular date.
 
     row_num (int): row number where the HPO site of question
-        lies within the sheet
+        lies within the sheet.
 
     metric (string): the name of the sheet that contains the
-        dimension of data quality to be investigated
+        dimension of data quality to be investigated.
 
-    hpo_name (string): ID for the HPO to be investigated
+    hpo_name (string): ID for the HPO to be investigated.
 
     column (string): column to be used to find the relevant
         quantitative metric that captures the data quality
         issue (often includes the metric name and relevant
-        table)
+        table).
 
     Returns
     -------
     val (float): value that represents the quantitative value
-        of the data quality metric being investigated
+        of the data quality metric being investigated.
     """
     if row_num is not None:
         data_info = sheet.iloc[row_num, :]  # series, column labels and values
@@ -191,13 +193,13 @@ def sort_and_convert_dates(file_names):
     Parameters
     ----------
     file_names (list): list of the files for the main
-        script
+        script.
 
     Returns
     -------
     ordered_dates_dt (list) list of ordered dates
         that could be assigned to a DataQualityMetric
-        object
+        object.
     """
     ordered_dates_dt = []
 
@@ -210,3 +212,66 @@ def sort_and_convert_dates(file_names):
     ordered_dates_dt = sorted(ordered_dates_dt)
 
     return ordered_dates_dt
+
+
+def standardize_old_hpo_objects(hpo_objects, old_hpo_objects):
+    """
+    In the case where an HPO exists in a 'newer' iteration of
+    an analytics report but not in the 'older' analytics
+    report, this function places a copy of the 'new' HPO
+    object into the old HPO objects list.
+
+    This placement is to ensure that both lists can be used
+    to evaluate 'new' and 'old' data quality issues in a parallel
+    fashion.
+
+    Both of the HPO objects will have the same associated
+    DataQualityMetric objects. The fact that the 'first_reported'
+    attributes of said DQM objects will be identical is handled
+    later on in the cross_reference_old_metrics function.
+
+    Parameters
+    ----------
+    hpo_objects (lst): list of HPO objects from the
+        current/updated analytics report.
+
+    old_hpo_objects (lst): list of HPO objects from the
+        previous/reference analytics report.
+
+    Returns
+    -------
+    hpo_objects (lst): list of HPO objects and their associated
+        data quality metrics from the 'new' analytics report.
+
+    old_hpo_objects (lst): list of the HPO objects that were
+        in the previous analytics report. now also contains any
+        HPOs that were introduced in the latest data quality
+        metrics report.
+
+    new_hpo_ids (lst): list of the 'new' HPO IDs that were
+        added in the most recent iteration of the script.
+        eventually used to ensure that we do not 'look' for
+        the added HPO in the old panels.
+    """
+    number_new_hpos = len(hpo_objects)
+    new_hpo_ids = []
+
+    idx = 0
+
+    while idx < number_new_hpos - 1:
+
+        for hpo, old_hpo, idx in \
+                zip(hpo_objects, old_hpo_objects, range(number_new_hpos)):
+
+            # discrepancy found - need to create an 'old' HPO
+            # this will just be a 'copy' of the 'new' HPO
+            if hpo.name != old_hpo.name:
+                copy_of_hpo_object = hpo
+                old_hpo_objects.insert(idx, copy_of_hpo_object)
+                new_hpo_ids.append(hpo.name)
+
+                idx = 0  # restart the loop
+
+    # now we have two parallel lists. any 'novel' HPOs
+    # have a counterpart in the 'old HPO list' with identical DQMs.
+    return hpo_objects, old_hpo_objects, new_hpo_ids
