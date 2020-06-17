@@ -227,7 +227,8 @@ def get_date_info_for_pids_tables(project_id, client):
     datasets = [d.dataset_id for d in dataset_obj]
 
     # Remove synthetic data, vocabulary, curation sandbox and previous naming convention datasets
-    prefixes = ('SR', 'vocabulary', 'curation', 'combined', '2018', 'R2018', 'rdr')
+    prefixes = ('SR', 'vocabulary', 'curation', 'combined', '2018', 'R2018',
+                'rdr')
     datasets = [x for x in datasets if not x.startswith(prefixes)]
 
     for dataset in datasets:
@@ -380,13 +381,19 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
         LOGGER.info(
             f'Checking table: {date_row.project_id}.{date_row.dataset_id}.{date_row.table}'
         )
-        if check_pid_exist(date_row, client, pids_project_id,
-                           pids_dataset_id, pids_table):
+        if check_pid_exist(date_row, client, pids_project_id, pids_dataset_id,
+                           pids_table):
             dataset_list.add(date_row.dataset_id)
-            row = {'project_id':date_row.project_id, 'dataset_id':date_row.dataset_id, 'table':date_row.table,
-                   'date_column':date_row.date_column, 'start_date_column':date_row.start_date_column,
-                   'end_date_column':date_row.end_date_column }
-            final_date_column_df = final_date_column_df.append(row, ignore_index=True)
+            row = {
+                'project_id':date_row.project_id,
+                'dataset_id':date_row.dataset_id,
+                'table':date_row.table,
+                'date_column':date_row.date_column,
+                'start_date_column':date_row.start_date_column,
+                'end_date_column':date_row.end_date_column
+            }
+            final_date_column_df = final_date_column_df.append(
+                row, ignore_index=True)
 
     LOGGER.info(
         "Looping through the deactivated PIDS df to create queries based on the retractions needed per PID table"
@@ -397,8 +404,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
             # Determine if dataset is deid to correctly pull pid or research_id and check if ID exists in dataset or if
             # already retracted
             if re.match(DEID_REGEX, date_row.dataset_id):
-                pid = get_research_id(date_row.project_id,
-                                      date_row.dataset_id,
+                pid = get_research_id(date_row.project_id, date_row.dataset_id,
                                       ehr_row.person_id, client)
             else:
                 pid = ehr_row.person_id
@@ -482,7 +488,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                     bq_consts.WRITE_TRUNCATE,
                 'type':
                     'retraction'
-                })
+            })
     LOGGER.info(
         f"Query list complete, retracting ehr deactivated PIDS from the following datasets: "
         f"{dataset_list}")
