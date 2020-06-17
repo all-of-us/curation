@@ -227,7 +227,7 @@ def get_date_info_for_pids_tables(project_id, client):
     datasets = [d.dataset_id for d in dataset_obj]
 
     # Remove synthetic data, vocabulary, curation sandbox and previous naming convention datasets
-    prefixes = ('SR', 'vocabulary', 'curation', 'combined', '2018', 'R2018')
+    prefixes = ('SR', 'vocabulary', 'curation', 'combined', '2018', 'R2018', 'rdr')
     datasets = [x for x in datasets if not x.startswith(prefixes)]
 
     for dataset in datasets:
@@ -363,6 +363,7 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
     """
     queries_list = []
     dataset_list = set()
+    final_date_column_df = pd.DataFrame()
     # Hit bq and receive df of deactivated ehr pids and deactivated date
     client = get_client(project_id)
     deactivated_ehr_pids_df = client.query(
@@ -374,113 +375,114 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
     LOGGER.info(
         "Dataframe creation complete. DF to be used for creation of retraction queries."
     )
+    for date_row in date_columns_df.itertuples(index=False):
+        # Filter to only include tables containing deactivated pids with the earliest deactivated date
+        LOGGER.info(
+            f'Checking table: {date_row.project_id}.{date_row.dataset_id}.{date_row.table}'
+        )
+        if check_pid_exist(date_row, client, pids_project_id,
+                           pids_dataset_id, pids_table):
+            dataset_list.add(date_row.dataset_id)
+            row = {'project_id':date_row.project_id, 'dataset_id':date_row.dataset_id, 'table':date_row.table,
+                   'date_column':date_row.date_column, 'start_date_column':date_row.start_date_column,
+                   'end_date_column':date_row.end_date_column }
+            final_date_column_df = final_date_column_df.append(row, ignore_index=True)
 
     LOGGER.info(
         "Looping through the deactivated PIDS df to create queries based on the retractions needed per PID table"
     )
     for ehr_row in deactivated_ehr_pids_df.itertuples(index=False):
         LOGGER.info(f'Creating retraction queries for PID: {ehr_row.person_id}')
-        for date_row in date_columns_df.itertuples(index=False):
-            # Filter to only include tables containing deactivated pids with the earliest deactivated date
-            LOGGER.info(
-                f'Checking table: {date_row.project_id}.{date_row.dataset_id}.{date_row.table}'
-            )
-            if check_pid_exist(date_row, client, pids_project_id,
-                               pids_dataset_id, pids_table):
-                dataset_list.add(date_row.dataset_id)
-
-                # Determine if dataset is deid to correctly pull pid or research_id and check if ID exists in dataset or if
-                # already retracted
-                if re.match(DEID_REGEX, date_row.dataset_id):
-                    pid = get_research_id(date_row.project_id,
-                                          date_row.dataset_id,
-                                          ehr_row.person_id, client)
-                else:
-                    pid = ehr_row.person_id
-
-                # Get or create sandbox dataset
-                sandbox_dataset = check_and_create_sandbox_dataset(
-                    date_row.project_id, date_row.dataset_id)
-
-                # Create queries based on type of date field
-                LOGGER.info(
-                    f'Creating Query to retract {pid} from {date_row.dataset_id}.{date_row.table}'
-                )
-                if pd.isnull(date_row.date_column):
-                    sandbox_query = SANDBOX_QUERY_END_DATE.render(
-                        project=date_row.project_id,
-                        sandbox_dataset=sandbox_dataset,
-                        dataset=date_row.dataset_id,
-                        table=date_row.table,
-                        pid=pid,
-                        deactivated_pids_project=pids_project_id,
-                        deactivated_pids_dataset=pids_dataset_id,
-                        deactivated_pids_table=pids_table,
-                        end_date_column=date_row.end_date_column,
-                        start_date_column=date_row.start_date_column)
-                    clean_query = CLEAN_QUERY_END_DATE.render(
-                        project=date_row.project_id,
-                        dataset=date_row.dataset_id,
-                        table=date_row.table,
-                        pid=pid,
-                        deactivated_pids_project=pids_project_id,
-                        deactivated_pids_dataset=pids_dataset_id,
-                        deactivated_pids_table=pids_table,
-                        end_date_column=date_row.end_date_column,
-                        start_date_column=date_row.start_date_column)
-                else:
-                    sandbox_query = SANDBOX_QUERY_DATE.render(
-                        project=date_row.project_id,
-                        sandbox_dataset=sandbox_dataset,
-                        dataset=date_row.dataset_id,
-                        table=date_row.table,
-                        pid=pid,
-                        deactivated_pids_project=pids_project_id,
-                        deactivated_pids_dataset=pids_dataset_id,
-                        deactivated_pids_table=pids_table,
-                        date_column=date_row.date_column)
-                    clean_query = CLEAN_QUERY_DATE.render(
-                        project=date_row.project_id,
-                        dataset=date_row.dataset_id,
-                        table=date_row.table,
-                        pid=pid,
-                        deactivated_pids_project=pids_project_id,
-                        deactivated_pids_dataset=pids_dataset_id,
-                        deactivated_pids_table=pids_table,
-                        date_column=date_row.date_column)
-                queries_list.append({
-                    clean_consts.QUERY:
-                        sandbox_query,
-                    clean_consts.DESTINATION:
-                        date_row.project_id + '.' + sandbox_dataset + '.' +
-                        (ticket_number + '_' + date_row.table),
-                    clean_consts.DESTINATION_DATASET:
-                        date_row.dataset_id,
-                    clean_consts.DESTINATION_TABLE:
-                        date_row.table,
-                    clean_consts.DISPOSITION:
-                        bq_consts.WRITE_APPEND,
-                    'type':
-                        'sandbox'
-                })
-                queries_list.append({
-                    clean_consts.QUERY:
-                        clean_query,
-                    clean_consts.DESTINATION:
-                        date_row.project_id + '.' + date_row.dataset_id + '.' +
-                        date_row.table,
-                    clean_consts.DESTINATION_DATASET:
-                        date_row.dataset_id,
-                    clean_consts.DESTINATION_TABLE:
-                        date_row.table,
-                    clean_consts.DISPOSITION:
-                        bq_consts.WRITE_TRUNCATE,
-                    'type':
-                        'retraction'
-                })
+        for date_row in final_date_column_df.itertuples(index=False):
+            # Determine if dataset is deid to correctly pull pid or research_id and check if ID exists in dataset or if
+            # already retracted
+            if re.match(DEID_REGEX, date_row.dataset_id):
+                pid = get_research_id(date_row.project_id,
+                                      date_row.dataset_id,
+                                      ehr_row.person_id, client)
             else:
-                # break out of loop to create query, if pid does not exist in table
-                continue
+                pid = ehr_row.person_id
+
+            # Get or create sandbox dataset
+            sandbox_dataset = check_and_create_sandbox_dataset(
+                date_row.project_id, date_row.dataset_id)
+
+            # Create queries based on type of date field
+            LOGGER.info(
+                f'Creating Query to retract {pid} from {date_row.dataset_id}.{date_row.table}'
+            )
+            if pd.isnull(date_row.date_column):
+                sandbox_query = SANDBOX_QUERY_END_DATE.render(
+                    project=date_row.project_id,
+                    sandbox_dataset=sandbox_dataset,
+                    dataset=date_row.dataset_id,
+                    table=date_row.table,
+                    pid=pid,
+                    deactivated_pids_project=pids_project_id,
+                    deactivated_pids_dataset=pids_dataset_id,
+                    deactivated_pids_table=pids_table,
+                    end_date_column=date_row.end_date_column,
+                    start_date_column=date_row.start_date_column)
+                clean_query = CLEAN_QUERY_END_DATE.render(
+                    project=date_row.project_id,
+                    dataset=date_row.dataset_id,
+                    table=date_row.table,
+                    pid=pid,
+                    deactivated_pids_project=pids_project_id,
+                    deactivated_pids_dataset=pids_dataset_id,
+                    deactivated_pids_table=pids_table,
+                    end_date_column=date_row.end_date_column,
+                    start_date_column=date_row.start_date_column)
+            else:
+                sandbox_query = SANDBOX_QUERY_DATE.render(
+                    project=date_row.project_id,
+                    sandbox_dataset=sandbox_dataset,
+                    dataset=date_row.dataset_id,
+                    table=date_row.table,
+                    pid=pid,
+                    deactivated_pids_project=pids_project_id,
+                    deactivated_pids_dataset=pids_dataset_id,
+                    deactivated_pids_table=pids_table,
+                    date_column=date_row.date_column)
+                clean_query = CLEAN_QUERY_DATE.render(
+                    project=date_row.project_id,
+                    dataset=date_row.dataset_id,
+                    table=date_row.table,
+                    pid=pid,
+                    deactivated_pids_project=pids_project_id,
+                    deactivated_pids_dataset=pids_dataset_id,
+                    deactivated_pids_table=pids_table,
+                    date_column=date_row.date_column)
+            queries_list.append({
+                clean_consts.QUERY:
+                    sandbox_query,
+                clean_consts.DESTINATION:
+                    date_row.project_id + '.' + sandbox_dataset + '.' +
+                    (ticket_number + '_' + date_row.table),
+                clean_consts.DESTINATION_DATASET:
+                    date_row.dataset_id,
+                clean_consts.DESTINATION_TABLE:
+                    date_row.table,
+                clean_consts.DISPOSITION:
+                    bq_consts.WRITE_APPEND,
+                'type':
+                    'sandbox'
+            })
+            queries_list.append({
+                clean_consts.QUERY:
+                    clean_query,
+                clean_consts.DESTINATION:
+                    date_row.project_id + '.' + date_row.dataset_id + '.' +
+                    date_row.table,
+                clean_consts.DESTINATION_DATASET:
+                    date_row.dataset_id,
+                clean_consts.DESTINATION_TABLE:
+                    date_row.table,
+                clean_consts.DISPOSITION:
+                    bq_consts.WRITE_TRUNCATE,
+                'type':
+                    'retraction'
+                })
     LOGGER.info(
         f"Query list complete, retracting ehr deactivated PIDS from the following datasets: "
         f"{dataset_list}")
