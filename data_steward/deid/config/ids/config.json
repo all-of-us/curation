@@ -62,19 +62,14 @@
         "SEXUAL-ORIENTATION":[
             {
                 "comment": [
-                    "aggregate multi-sexual orientation answers before generalizing ",
-                    "single sexual orientation answers."
+                    "multi sexual orientation generalization rule, the values the count is ",
+                    "limited to is provided by the 'on' key.  it is best to ",
+                    "perform aggregate functions before other generalizations"
                 ],
-                "apply": "SQL",
-                "statement": [
-                    "(SELECT COUNT(obs.person_id) ",
-                    "FROM :idataset.:table AS obs ",
-                    "WHERE obs.person_id = :table.person_id ",
-                    "AND obs.value_source_concept_id IN (903096, 903079, 1585901, 1585902, 1585903, 1585904) ",
-                    "GROUP BY obs.person_id ) "
-                ],
-                "qualifier": " > 1 ",
+                "apply": "COUNT",
                 "into": 2000000003,
+                "qualifier": "> 1",
+                "values": [903096, 903079, 1585901, 1585902, 1585903, 1585904, 1585900],
                 "drop_duplicates": "True"
             },
             {
