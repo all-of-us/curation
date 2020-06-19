@@ -172,7 +172,7 @@ jobs:
           command: ./init_env.sh
       - run:
           name: Create buckets and datasets
-          command: ./ci/setup.sh
+          command: PYTHONPATH=./:$PYTHONPATH python ./ci/setup.py
       - run:
           name: Run integration tests
           working_directory: ~/curation
