@@ -94,7 +94,6 @@ def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
     return result
 
 
-def create_tables(client, project_id, fq_table_names, exists_ok=False):
 def create_tables(client,
                   project_id,
                   fq_table_names,

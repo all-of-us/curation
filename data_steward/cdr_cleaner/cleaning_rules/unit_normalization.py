@@ -40,14 +40,6 @@ UNIT_MAPPING_FILE = '_unit_mapping.csv'
 MEASUREMENT = 'measurement'
 UNIT_MAPPING_TABLE_DISPOSITION = 'write_empty'
 
-INSERT_UNITS_QUERY = jinja_env.from_string("""INSERT INTO
-  `{{project_id}}.{{dataset_id}}.{{units_table_id}}` (measurement_concept_id,
-    unit_concept_id,
-    set_unit_concept_id,
-    transform_value_as_number)
-VALUES
-  {{mapping_list}}""")
-
 SANDBOX_UNITS_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE
     `{{project_id}}.{{sandbox_dataset}}.{{intermediary_table}}` AS(
@@ -195,22 +187,6 @@ class UnitNormalization(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
 
-    def get_mapping_list(self, unit_mappings_list):
-        """
-        Filters out name columns from unit_mappings.csv file and returns list of mappings suitable for BQ
-
-        :param unit_mappings_list:
-        :return: formatted list suitable for insert in BQ:
-            (measurement_concept_id, unit_concept_id, set_unit_concept_id, transform_value_as_number)
-        """
-        pair_exprs = []
-        for route_mapping_dict in unit_mappings_list:
-            pair_expr = '({measurement_concept_id}, {unit_concept_id}, {set_unit_concept_id}, ' \
-                        '\"{transform_value_as_number}\")'.format(**route_mapping_dict)
-            pair_exprs.append(pair_expr)
-        formatted_mapping_list = ', '.join(pair_exprs)
-        return formatted_mapping_list
-
     def setup_rule(self, client):
         """
         Load required resources prior to executing cleaning rule queries.
@@ -294,8 +270,8 @@ if __name__ == '__main__':
     unit_normalization = UnitNormalization(ARGS.project_id, ARGS.dataset_id,
                                            ARGS.sandbox_dataset_id)
     client = bq.get_client(ARGS.project_id)
-    UnitNormalization.setup_rule(unit_normalization, client=client)
-    query_list = UnitNormalization.get_query_specs(unit_normalization)
+    unit_normalization.setup_rule(client=client)
+    query_list = unit_normalization.get_query_specs()
     if ARGS.list_queries:
         unit_normalization.log_queries()
     else:
