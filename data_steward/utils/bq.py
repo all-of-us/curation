@@ -34,7 +34,7 @@ def get_client(project_id=None):
     return bigquery.Client(project=project_id)
 
 
-def get_table_schema(table_name):
+def get_table_schema(table_name, fields=None):
     """
     A helper function to create big query SchemaFields for dictionary definitions.
 
@@ -44,9 +44,13 @@ def get_table_schema(table_name):
 
     :param table_name:  the table name to get BigQuery SchemaField information
         for.
+    :param fields: An optional argument to provide fields/schema as a list of JSON objects
     :returns:  a list of SchemaField objects representing the table's schema.
     """
-    fields = fields_for(table_name)
+    if fields:
+        fields = fields
+    else:
+        fields = fields_for(table_name)
 
     schema = []
     for column in fields:
@@ -61,7 +65,11 @@ def get_table_schema(table_name):
     return schema
 
 
-def create_tables(client, project_id, fq_table_names, exists_ok=False):
+def create_tables(client,
+                  project_id,
+                  fq_table_names,
+                  exists_ok=False,
+                  fields=None):
     """
     Create an empty table(s) in a project.
 
@@ -75,6 +83,22 @@ def create_tables(client, project_id, fq_table_names, exists_ok=False):
     :param fq_table_names: A list of fully qualified table names.
     :param exists_ok: A flag to throw an error if the table already exists.
         Defaults to raising an error if the table already exists.
+    :param fields: An optional argument to provide a list of a list of JSON objects for the fields/schema
+            ex:[
+                   [{
+                        "type": "integer",
+                        "name": "condition_occurrence_id",
+                        "mode": "nullable",
+                        "description": ""
+                    },
+                    {
+                        "type": "string",
+                        "name": "src_dataset_id",
+                        "mode": "nullable",
+                        "description": ""
+                    }]
+                ]
+            if not provided resources.get_table_schema will be called to get schema.
 
     :raises RuntimeError: a runtime error if table creation fails for any
         table in the list.
@@ -92,8 +116,9 @@ def create_tables(client, project_id, fq_table_names, exists_ok=False):
 
     successes = []
     failures = []
-    for table_name in fq_table_names:
-        schema = get_table_schema(table_name.split('.')[2])
+    for index, table_name in enumerate(fq_table_names):
+        schema = get_table_schema(
+            table_name.split('.')[2], fields[index] if fields else None)
 
         try:
             table = bigquery.Table(table_name, schema=schema)
