@@ -63,12 +63,18 @@ class EmailNotificationTest(TestCase):
 
     @mock.patch('validation.email_notification.get_hpo_contact_info')
     def _test_send_email(self, mock_fake_info):
+        # This test is disabled since it sends an email.
+        # Add email in 'site_point_of_contact' separated by ';' to send test emails to
+        # Remove the line cc'ing Data Curation in validation.email_notification.create_recipients_list
         mock_fake_info.return_value = {
             'fake': {
                 'site_name': self.site_name,
                 'site_point_of_contact': '; '
             }
         }
+        # The five_person_results.html file referenced below is removed. To generate it, please run
+        # integration_tests.data_steward.validation.main_test.test_html_report_five_person
+        # TODO update html file with results.html generated from synthetic data if needed
         with open(FIVE_PERSON_RESULTS_FILE, 'r') as f:
             results_html_str = f.read()
         email_msg = en.generate_email_message(self.hpo_id, results_html_str,
