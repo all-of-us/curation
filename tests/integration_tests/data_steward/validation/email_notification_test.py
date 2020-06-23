@@ -74,9 +74,9 @@ class EmailNotificationTest(TestCase):
         }
         # The five_person_results.html file referenced below is removed. To generate it, please run
         # integration_tests.data_steward.validation.main_test.test_html_report_five_person
-        # TODO update html file with results.html generated from synthetic data if needed
-        with open(FIVE_PERSON_RESULTS_FILE, 'r') as f:
-            results_html_str = f.read()
+        results_html_str = ''
+        # with open(FIVE_PERSON_RESULTS_FILE, 'r') as f:
+        #     results_html_str = f.read()
         email_msg = en.generate_email_message(self.hpo_id, results_html_str,
                                               self.fake_uri_path,
                                               self.report_data)

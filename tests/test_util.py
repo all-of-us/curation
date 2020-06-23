@@ -116,6 +116,7 @@ PII_FILE_LOAD_RESULT_CSV = os.path.join(TEST_DATA_PATH,
 
 # Removed from repo, generate if required by running the test:
 # integration_tests.data_steward.validation.main_test.test_html_report_five_person and place it in the path below
+# TODO update html file with results.html generated from synthetic data if needed
 FIVE_PERSON_RESULTS_FILE = os.path.join(TEST_DATA_PATH,
                                         'five_person_results.html')
 FIVE_PERSON_RESULTS_ACHILLES_ERROR_FILE = os.path.join(
