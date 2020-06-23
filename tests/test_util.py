@@ -6,7 +6,7 @@ import requests
 
 import bq_utils
 import common
-from constants.validation import main as main
+from constants.validation import main
 import gcs_utils
 import resources
 
@@ -114,8 +114,9 @@ PII_MRN_BAD_PERSON_ID_FILE = os.path.join(TEST_DATA_PATH, 'pii_mrn.csv')
 PII_FILE_LOAD_RESULT_CSV = os.path.join(TEST_DATA_PATH,
                                         'pii_file_load_result.csv')
 
-PERSON_ONLY_RESULTS_FILE = os.path.join(TEST_DATA_PATH,
-                                        'person_only_results.html')
+# Removed from repo, generate if required by running the test:
+# integration_tests.data_steward.validation.main_test.test_html_report_five_person and place it in the path below
+# TODO update html file with results.html generated from synthetic data if needed
 FIVE_PERSON_RESULTS_FILE = os.path.join(TEST_DATA_PATH,
                                         'five_person_results.html')
 FIVE_PERSON_RESULTS_ACHILLES_ERROR_FILE = os.path.join(

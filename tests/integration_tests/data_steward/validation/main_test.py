@@ -17,9 +17,9 @@ from constants import bq_utils as bq_consts
 from constants.validation import main as main_consts
 import gcs_utils
 import resources
-from tests import test_util as test_util
+from tests import test_util
 from validation import main
-from validation.metrics import required_labs as required_labs
+from validation.metrics import required_labs
 
 
 class ValidationMainTest(unittest.TestCase):
@@ -107,8 +107,9 @@ class ValidationMainTest(unittest.TestCase):
             test_util.write_cloud_str(self.hpo_bucket,
                                       self.folder_prefix + cdm_table, ".\n .")
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
         expected_results = [(f, 1, 0, 0) for f in common.SUBMISSION_FILES]
-        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items,
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
                                      self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
@@ -126,7 +127,8 @@ class ValidationMainTest(unittest.TestCase):
             expected_item = (file_name, common.UNKNOWN_FILE)
             expected_warnings.append(expected_item)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items,
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
                                      self.folder_prefix)
         self.assertCountEqual(expected_warnings, r['warnings'])
 
@@ -148,7 +150,8 @@ class ValidationMainTest(unittest.TestCase):
                 expected_result = (cdm_file, 0, 0, 0)
             expected_results.append(expected_result)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items,
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
                                      self.folder_prefix)
         self.assertSetEqual(set(r['results']), set(expected_results))
 
@@ -250,7 +253,8 @@ class ValidationMainTest(unittest.TestCase):
                 expected_results.append(expected_result)
 
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items,
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
                                      self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
@@ -283,6 +287,11 @@ class ValidationMainTest(unittest.TestCase):
             c.get(test_util.VALIDATE_HPO_FILES_URL)
             actual_result = test_util.read_cloud_file(
                 self.hpo_bucket, self.folder_prefix + common.RESULTS_HTML)
+
+        # ensure emails are not sent
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        self.assertFalse(main.is_first_validation_run(folder_items))
 
         # parse html
         soup = bs(actual_result, parser="lxml", features="lxml")

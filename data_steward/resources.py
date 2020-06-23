@@ -30,7 +30,9 @@ HPO_REPORT_HTML = 'hpo_report.html'
 html_boilerplate_path = os.path.join(TEMPLATES_PATH, HPO_REPORT_HTML)
 CRON_TPL_YAML = 'cron.tpl.yaml'
 
-DATASOURCES_JSON = os.path.join(achilles_index_path, 'data/datasources.json')
+achilles_images_path = os.path.join(achilles_index_path, 'images')
+achilles_data_path = os.path.join(achilles_index_path, 'data')
+DATASOURCES_JSON = os.path.join(achilles_data_path, 'datasources.json')
 
 domain_mappings_path = os.path.join(resource_files_path, 'domain_mappings')
 field_mappings_replaced_path = os.path.join(domain_mappings_path,

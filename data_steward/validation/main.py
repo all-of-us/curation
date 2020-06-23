@@ -14,6 +14,7 @@ import re
 from io import StringIO, open
 
 # Third party imports
+import dateutil
 from flask import Flask
 from googleapiclient.errors import HttpError
 
@@ -34,6 +35,7 @@ from validation import achilles, achilles_heel, ehr_union, export, hpo_report
 from validation.app_errors import (errors_blueprint, InternalValidationError,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
+from validation import email_notification as en
 from validation.participants import identity_match as matching
 
 app = Flask(__name__)
@@ -226,13 +228,13 @@ def categorize_folder_items(folder_items):
     return found_cdm_files, found_pii_files, unknown_files
 
 
-def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
+def validate_submission(hpo_id, bucket, folder_items, folder_prefix):
     """
     Load submission in BigQuery and summarize outcome
 
     :param hpo_id:
     :param bucket:
-    :param bucket_items:
+    :param folder_items:
     :param folder_prefix:
     :return: a dict with keys results, errors, warnings
       results is list of tuples (file_name, found, parsed, loaded)
@@ -241,11 +243,6 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
     logging.info(
         f"Validating {hpo_id} submission in gs://{bucket}/{folder_prefix}")
     # separate cdm from the unknown (unexpected) files
-    folder_items = [
-        item['name'][len(folder_prefix):]
-        for item in bucket_items
-        if item['name'].startswith(folder_prefix)
-    ]
     found_cdm_files, found_pii_files, unknown_files = categorize_folder_items(
         folder_items)
 
@@ -278,6 +275,10 @@ def validate_submission(hpo_id, bucket, bucket_items, folder_prefix):
     return dict(results=results, errors=errors, warnings=warnings)
 
 
+def is_first_validation_run(folder_items):
+    return common.RESULTS_HTML not in folder_items and common.PROCESSED_TXT not in folder_items
+
+
 def generate_metrics(hpo_id, bucket, folder_prefix, summary):
     """
     Generate metrics regarding a submission
@@ -292,15 +293,12 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
     :return:
     """
     report_data = summary.copy()
-    processed_datetime_str = datetime.datetime.now().strftime(
-        '%Y-%m-%dT%H:%M:%S')
     error_occurred = False
 
     # TODO separate query generation, query execution, writing to GCS
     gcs_path = f"gs://{bucket}/{folder_prefix}"
     report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
     report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
-    report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_datetime_str
     results = report_data['results']
     try:
         # TODO modify achilles to run successfully when tables are empty
@@ -353,12 +351,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         report_data[report_consts.LAB_CONCEPT_METRICS_REPORT_KEY] = query_rows(
             lab_concept_metrics_query)
 
-        logging.info(
-            f"Processing complete. Saving timestamp {processed_datetime_str} to "
-            f"'gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}'.")
-        _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
-                              processed_datetime_str)
-
+        logging.info(f"Processing complete.")
     except HttpError as err:
         # cloud error occurred- log details for troubleshooting
         logging.exception(
@@ -371,28 +364,21 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
     finally:
         # report all results collected (attempt even if cloud error occurred)
         report_data[report_consts.ERROR_OCCURRED_REPORT_KEY] = error_occurred
-        results_html = hpo_report.render(report_data)
-        _write_string_to_file(bucket, folder_prefix + common.RESULTS_HTML,
-                              results_html)
     return report_data
 
 
-def generate_empty_report(hpo_id, bucket, folder_prefix):
+def generate_empty_report(hpo_id, folder_prefix):
     """
     Generate an empty report with a "validation failed" error
     Also write processed.txt to folder to prevent processing in the future
 
     :param hpo_id: identifies the HPO site
-    :param bucket: name of the bucket with the submission
     :param folder_prefix: folder containing the submission
     :return: report_data: dict whose keys are params in resource_files/templates/hpo_report.html
     """
     report_data = dict()
-    processed_datetime_str = datetime.datetime.now().strftime(
-        '%Y-%m-%dT%H:%M:%S')
     report_data[report_consts.HPO_NAME_REPORT_KEY] = get_hpo_name(hpo_id)
     report_data[report_consts.FOLDER_REPORT_KEY] = folder_prefix
-    report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_datetime_str
     report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY] = (
         f"Submission folder name {folder_prefix} does not follow the "
         f"naming convention {consts.FOLDER_NAMING_CONVENTION}, where vN represents "
@@ -400,14 +386,8 @@ def generate_empty_report(hpo_id, bucket, folder_prefix):
         f"Please resubmit the files in a new folder with the correct naming convention"
     )
     logging.info(
-        f"Processing skipped. Reason: Folder {folder_prefix} does not follow naming convention "
-        f"{consts.FOLDER_NAMING_CONVENTION}. Saving timestamp {processed_datetime_str} to "
-        f"'gs://{bucket}/{folder_prefix + common.PROCESSED_TXT}'.")
-    _write_string_to_file(bucket, folder_prefix + common.PROCESSED_TXT,
-                          processed_datetime_str)
-    results_html = hpo_report.render(report_data)
-    _write_string_to_file(bucket, folder_prefix + common.RESULTS_HTML,
-                          results_html)
+        f"Processing skipped. Reason: Folder {folder_prefix} does not follow "
+        f"naming convention {consts.FOLDER_NAMING_CONVENTION}.")
     return report_data
 
 
@@ -427,6 +407,76 @@ def is_valid_folder_prefix_name(folder_prefix):
     except ValueError:
         return False
     return True
+
+
+def get_eastern_time():
+    """
+    Return current Eastern Time
+
+    :return: formatted current eastern time as string
+    """
+    eastern_timezone = dateutil.tz.gettz('America/New_York')
+    return datetime.datetime.now(eastern_timezone).strftime(
+        consts.DATETIME_FORMAT)
+
+
+def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
+    """
+    Generate html report, upload to GCS and send email if possible
+
+    :param hpo_id: identifies the hpo site
+    :param report_data: dictionary containing items for populating hpo_report.html
+    :param folder_items: items in the folder without folder prefix
+    :param bucket: bucket containing the folder
+    :param folder_prefix: submission folder
+    :return:
+    """
+    processed_time_str = get_eastern_time()
+    report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_time_str
+    results_html = hpo_report.render(report_data)
+
+    results_html_path = folder_prefix + common.RESULTS_HTML
+    logging.info(f"Saving file {common.RESULTS_HTML} to "
+                 f"gs://{bucket}/{results_html_path}.")
+    upload_string_to_gcs(bucket, results_html_path, results_html)
+
+    processed_txt_path = folder_prefix + common.PROCESSED_TXT
+    logging.info(f"Saving timestamp {processed_time_str} to "
+                 f"gs://{bucket}/{processed_txt_path}.")
+    upload_string_to_gcs(bucket, processed_txt_path, processed_time_str)
+
+    folder_uri = f"gs://{bucket}/{folder_prefix}"
+    if folder_items and is_first_validation_run(folder_items):
+        email_msg = en.generate_email_message(hpo_id, results_html, folder_uri,
+                                              report_data)
+        if email_msg is not None:
+            result = en.send_email(email_msg)
+            result_ids = ', '.join(
+                [result_item['_id'] for result_item in result])
+            logging.info(
+                f"Sending emails for hpo_id {hpo_id} with Mandrill tracking ids: {result_ids}"
+            )
+        else:
+            logging.info(
+                f"Not enough info in contact list to send emails for hpo_id {hpo_id}"
+            )
+    logging.info(f"Reporting complete")
+    return
+
+
+def get_folder_items(bucket_items, folder_prefix):
+    """
+    Returns items in bucket which belong to a folder
+
+    :param bucket_items: items in the bucket
+    :param folder_prefix: prefix containing the folder name
+    :return: list of items in the folder without the folder prefix
+    """
+    return [
+        item['name'][len(folder_prefix):]
+        for item in bucket_items
+        if item['name'].startswith(folder_prefix)
+    ]
 
 
 def process_hpo(hpo_id, force_run=False):
@@ -451,14 +501,19 @@ def process_hpo(hpo_id, force_run=False):
             logging.info(
                 f"No submissions to process in {hpo_id} bucket {bucket}")
         else:
+            folder_items = []
             if is_valid_folder_prefix_name(folder_prefix):
                 # perform validation
-                summary = validate_submission(hpo_id, bucket, bucket_items,
+                folder_items = get_folder_items(bucket_items, folder_prefix)
+                summary = validate_submission(hpo_id, bucket, folder_items,
                                               folder_prefix)
-                generate_metrics(hpo_id, bucket, folder_prefix, summary)
+                report_data = generate_metrics(hpo_id, bucket, folder_prefix,
+                                               summary)
             else:
-                # do not perform validation. Generate empty report and processed.txt
-                generate_empty_report(hpo_id, bucket, folder_prefix)
+                # do not perform validation
+                report_data = generate_empty_report(hpo_id, folder_prefix)
+            perform_reporting(hpo_id, report_data, folder_items, bucket,
+                              folder_prefix)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         logging.warning(
@@ -834,7 +889,7 @@ def copy_files(hpo_id):
     return '{"copy-status": "done"}'
 
 
-def _write_string_to_file(bucket, name, string):
+def upload_string_to_gcs(bucket, name, string):
     """
     Save the validation results in GCS
     :param bucket: bucket to save to
