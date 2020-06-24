@@ -1,8 +1,39 @@
 """
-Normalize all height and weight data into cm and kg, remove invalid/implausible data points (rows)
+Normalizes all height and weight data into cm and kg and removes invalid/implausible data points (rows)
+
+Original Issues: DC-416, DC-701
+
+The intent of this cleaning rule is to deleting zero/null/implausible height/weight rows
+and inserting normalized rows (cm and kg)
 """
 
+# Python imports
+import logging
+
+# Third party imports
+from jinja2 import Environment
+
+# Project imports
+from common import MEASUREMENT
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from constants.bq_utils import WRITE_TRUNCATE
+
+LOGGER = logging.getLogger(__name__)
+
+jinja_env = Environment(
+    # help protect against cross-site scripting vulnerabilities
+    autoescape=True,
+    # block tags on their own lines
+    # will not cause extra white space
+    trim_blocks=True,
+    lstrip_blocks=True,
+    # syntax highlighting should be better
+    # with these comment delimiters
+    comment_start_string='--',
+    comment_end_string=' --')
+
+ISSUE_NUMBERS = ['DC-416', 'DC-701']
 
 HEIGHT_TABLE = 'height_table'
 WEIGHT_TABLE = 'weight_table'
@@ -10,7 +41,7 @@ NEW_HEIGHT_ROWS = 'new_height_rows'
 NEW_WEIGHT_ROWS = 'new_weight_rows'
 
 # height queries
-CREATE_HEIGHT_SANDBOX_QUERY = """
+CREATE_HEIGHT_SANDBOX_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{project_id}.{sandbox_dataset_id}.{height_table}` AS
 WITH
   concepts AS (
@@ -189,9 +220,9 @@ FROM (
 ) a
 LEFT JOIN
   height_disagreement_pts USING (person_id)
-"""
+""")
 
-NEW_HEIGHT_ROWS_QUERY = """
+NEW_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{project_id}.{sandbox_dataset_id}.{new_height_rows}` AS
 SELECT
   measurement_id,
@@ -225,22 +256,22 @@ FROM (
 )
 JOIN `{project_id}.{dataset_id}.measurement` m USING (measurement_id)
 LEFT JOIN `{project_id}.{dataset_id}.concept` u_c ON (adj_unit=concept_id)
-"""
+""")
 
-DELETE_HEIGHT_ROWS_QUERY = """
-DELETE
-FROM `{project_id}.{dataset_id}.measurement` m
-WHERE measurement_id IN
-(SELECT measurement_id
-FROM `{project_id}.{dataset_id}.measurement` m
-LEFT JOIN `{project_id}.{dataset_id}.measurement_ext` me
-USING (measurement_id)
-WHERE (m.measurement_concept_id IN (3036277, 3023540, 3019171))
-AND me.src_id != 'PPI/PM')
-"""
+DELETE_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
+    SELECT * 
+    FROM `{project_id}.{dataset_id}.measurement` AS m
+    WHERE measurement_id IN 
+    (SELECT measurement_id 
+    FROM `{project_id}.{dataset_id}.measurement` AS m
+    LEFT JOIN `{project_id}.{dataset_id}.measurement_ext` AS me
+    USING (measurement_id)
+    WHERE (m.measurement_concept_id IN (3036277, 3023540, 3019171))
+    AND me.src_id != 'PPI/PM')    
+""")
 
 # weight queries
-CREATE_WEIGHT_SANDBOX_QUERY = """
+CREATE_WEIGHT_SANDBOX_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{project_id}.{sandbox_dataset_id}.{weight_table}` AS
 WITH
   concepts AS (
@@ -500,9 +531,9 @@ FROM phys_df_wt_adj ht
 LEFT JOIN wt_variance_windows USING (measurement_id)
 LEFT JOIN gt250kg_pts USING (person_id)
 LEFT JOIN weight_disagreement_pts USING (person_id)
-"""
+""")
 
-NEW_WEIGHT_ROWS_QUERY = """
+NEW_WEIGHT_ROWS_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{project_id}.{sandbox_dataset_id}.{new_weight_rows}` AS
 SELECT
   measurement_id,
@@ -537,21 +568,20 @@ FROM (
 )
 JOIN `{project_id}.{dataset_id}.measurement` m USING (measurement_id)
 LEFT JOIN `{project_id}.{dataset_id}.concept` u_c ON (adj_unit=concept_id)
-"""
+""")
 
-DELETE_WEIGHT_ROWS_QUERY = """
-DELETE
-FROM `{project_id}.{dataset_id}.measurement`
-WHERE measurement_id IN
-(SELECT measurement_id
-FROM `{project_id}.{dataset_id}.measurement` m
-LEFT JOIN `{project_id}.{dataset_id}.measurement_ext` me
-USING (measurement_id)
-WHERE (m.measurement_concept_id IN (3025315, 3013762, 3023166))
-AND me.src_id != 'PPI/PM')
-"""
+DELETE_WEIGHT_ROWS_QUERY = jinja_env.from_string("""
+    SELECT * FROM `{project_id}.{dataset_id}.measurement`
+    WHERE measurement_id IN
+    (SELECT measurement_id IN
+    FROM `{project_id}.{dataset_id}.measurement` AS m
+    LEFT JOIN `{project_id}.{dataset_id}.measurement_ext` AS me
+    USING (measurement_id)
+    WHERE (m.measurement_concept_id IN (3025315, 3013762, 3023166))
+    AND me.src_id != 'PPI/PM')
+""")
 
-INSERT_NEW_ROWS_QUERY = """
+INSERT_NEW_ROWS_QUERY = jinja_env.from_string("""
 INSERT INTO `{project_id}.{dataset_id}.measurement`
   (measurement_id,
   person_id,
@@ -591,112 +621,179 @@ SELECT
   unit_source_value,
   value_source_value
 FROM `{project_id}.{sandbox_dataset_id}.{new_rows}`
-"""
+""")
 
 
-def get_queries_clean_height_weight(project_id, dataset_id, sandbox_dataset_id):
+class CleanHeightAndWeight(BaseCleaningRule):
     """
-    Queries to run for deleting zero/null/implausible height/weight rows and inserting normalized rows (cm and kg)
-
-    :param project_id: project id associated with the dataset to run the queries on
-    :param dataset_id: dataset id to run the queries on
-    :param sandbox_dataset_id: dataset id of the sandbox
-    :return: list of query dicts
+    Normalizes all height and weight data into cm and kg
+    and removes invalid/implausible data points (rows)
     """
-    queries = []
 
-    # height
-    height_table_query = dict()
-    height_table_query[cdr_consts.QUERY] = CREATE_HEIGHT_SANDBOX_QUERY.format(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        sandbox_dataset_id=sandbox_dataset_id,
-        height_table=HEIGHT_TABLE)
-    queries.append(height_table_query)
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+        """
+        Initializes the class with the proper information.
 
-    height_rows_query = dict()
-    height_rows_query[cdr_consts.QUERY] = NEW_HEIGHT_ROWS_QUERY.format(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        sandbox_dataset_id=sandbox_dataset_id,
-        height_table=HEIGHT_TABLE,
-        new_height_rows=NEW_HEIGHT_ROWS)
-    queries.append(height_rows_query)
+        Set the issue numbers, description and affected datasets. As other tickets
+        may affect this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
+        desc = (f'Normalizes all height and weight data into cm and kg '
+                f'and removes invalid/implausible data points')
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[cdr_consts.DEID_BASE],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=[MEASUREMENT])
 
-    delete_heights_query = dict()
-    delete_heights_query[cdr_consts.QUERY] = DELETE_HEIGHT_ROWS_QUERY.format(
-        project_id=project_id, dataset_id=dataset_id)
-    queries.append(delete_heights_query)
+    def get_query_specs(self):
+        """
+        Returns a list of dictionary query specifications.
 
-    insert_heights_query = dict()
-    insert_heights_query[cdr_consts.QUERY] = INSERT_NEW_ROWS_QUERY.format(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        sandbox_dataset_id=sandbox_dataset_id,
-        new_rows=NEW_HEIGHT_ROWS)
-    queries.append(insert_heights_query)
+        :return: A list of dictionaries. Each dictionary contains a single query
+            and a specification for how to execute that query. The specifications
+            are optional but the query is required.
+        """
+        queries = []
 
-    # weight
-    weight_table_query = dict()
-    weight_table_query[cdr_consts.QUERY] = CREATE_WEIGHT_SANDBOX_QUERY.format(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        sandbox_dataset_id=sandbox_dataset_id,
-        weight_table=WEIGHT_TABLE)
-    queries.append(weight_table_query)
+        # height
+        save_height_table_query = {
+            cdr_consts.QUERY:
+                CREATE_HEIGHT_SANDBOX_QUERY.render(
+                    project_id=self.get_project_id(),
+                    dataset_id=self.get_dataset_id(),
+                    sandbox_dataset_id=self.get_sandbox_dataset_id(),
+                    height_table=HEIGHT_TABLE),
+        }
 
-    weight_rows_query = dict()
-    weight_rows_query[cdr_consts.QUERY] = NEW_WEIGHT_ROWS_QUERY.format(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        sandbox_dataset_id=sandbox_dataset_id,
-        weight_table=WEIGHT_TABLE,
-        new_weight_rows=NEW_WEIGHT_ROWS)
-    queries.append(weight_rows_query)
+        save_new_height_rows_query = {
+            cdr_consts.QUERY:
+                NEW_HEIGHT_ROWS_QUERY.render(
+                    project_id=self.get_project_id(),
+                    dataset_id=self.get_dataset_id(),
+                    sandbox_dataset_id=self.get_sandbox_dataset_id,
+                    new_height_rows=NEW_HEIGHT_ROWS,
+                    height_table=HEIGHT_TABLE),
+        }
 
-    delete_weights_query = dict()
-    delete_weights_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.format(
-        project_id=project_id, dataset_id=dataset_id)
-    queries.append(delete_weights_query)
+        delete_height_rows_query = {
+            cdr_consts.QUERY:
+                DELETE_HEIGHT_ROWS_QUERY.render(
+                    project_id=self.get_project_id(),
+                    dataset_id=self.get_dataset_id()),
+            cdr_consts.DESTINATION_TABLE:
+                MEASUREMENT,
+            cdr_consts.DESTINATION_DATASET:
+                self.get_dataset_id(),
+            cdr_consts.DISPOSITION:
+                WRITE_TRUNCATE
+        }
 
-    insert_weights_query = dict()
-    insert_weights_query[cdr_consts.QUERY] = INSERT_NEW_ROWS_QUERY.format(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        sandbox_dataset_id=sandbox_dataset_id,
-        new_rows=NEW_WEIGHT_ROWS)
-    queries.append(insert_weights_query)
+        insert_new_height_rows_query = {
+            cdr_consts.QUERY:
+                INSERT_NEW_ROWS_QUERY.render(
+                    project_id=self.get_project_id(),
+                    dataset_id=self.get_dataset_id(),
+                    new_rows=NEW_HEIGHT_ROWS),
+            cdr_consts.DESTINATION_TABLE:
+                MEASUREMENT,
+            cdr_consts.DESTINATION_DATASET:
+                self.get_dataset_id(),
+            cdr_consts.DISPOSITION:
+                WRITE_TRUNCATE
+        }
 
-    return queries
+        # weight
+        save_weight_table_query = {
+            cdr_consts.QUERY:
+                CREATE_WEIGHT_SANDBOX_QUERY.render(
+                    project_id=self.get_project_id(),
+                    sandbox_dataset_id=self.get_sandbox_dataset_id(),
+                    weight_table=WEIGHT_TABLE,
+                    dataset_id=self.get_dataset_id()),
+        }
 
+        save_new_weight_rows_query = {
+            cdr_consts.QUERY:
+                NEW_WEIGHT_ROWS_QUERY.render(
+                    project_id=self.get_project_id(),
+                    sandbox_dataset_id=self.get_sandbox_dataset_id(),
+                    new_weight_rows=NEW_WEIGHT_ROWS,
+                    weight_table=WEIGHT_TABLE,
+                    dataset_id=self.get_dataset_id()),
+        }
 
-def parse_args():
-    """
-    Add sandbox_dataset_id to the default cdr_cleaner.args_parser argument list
+        delete_weight_rows_query = {
+            cdr_consts.QUERY:
+                DELETE_HEIGHT_ROWS_QUERY.render(
+                    project_id=self.get_project_id(),
+                    dataset_id=self.get_dataset_id()),
+            cdr_consts.DESTINATION_TABLE:
+                MEASUREMENT,
+            cdr_consts.DESTINATION_DATASET:
+                self.get_dataset_id(),
+            cdr_consts.DISPOSITION:
+                WRITE_TRUNCATE
+        }
 
-    :return: an expanded argument list object
-    """
-    import cdr_cleaner.args_parser as parser
+        insert_new_weight_rows_query = {
+            cdr_consts.QUERY:
+                INSERT_NEW_ROWS_QUERY.render(
+                    project_id=self.get_project_id(),
+                    dataset_id=self.get_dataset_id(),
+                    sandbox_dataset_id=self.get_sandbox_dataset_id(),
+                    new_rows=NEW_WEIGHT_ROWS),
+            cdr_consts.DESTINATION_TABLE:
+                MEASUREMENT,
+            cdr_consts.DESTINATION_DATASET:
+                self.get_dataset_id(),
+            cdr_consts.DISPOSITION:
+                WRITE_TRUNCATE
 
-    additional_argument = {
-        parser.SHORT_ARGUMENT: '-n',
-        parser.LONG_ARGUMENT: '--sandbox_dataset_id',
-        parser.ACTION: 'store',
-        parser.DEST: 'sandbox_dataset_id',
-        parser.HELP: 'Please specify the sandbox_dataset_id',
-        parser.REQUIRED: True
-    }
-    args = parser.default_parse_args([additional_argument])
-    return args
+        }
+
+        return [save_height_table_query,
+                save_new_height_rows_query,
+                delete_height_rows_query,
+                insert_new_height_rows_query,
+                save_weight_table_query,
+                save_new_weight_rows_query,
+                delete_weight_rows_query,
+                insert_new_weight_rows_query]
+
+    def setup_rule(self, client):
+        """
+        Function to run any data upload options before executing a query.
+        """
+        pass
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup.
+        """
+
+    def validate_rule(self, client):
+        """
+        Validate the cleaning rule which deletes or upates the data from the tables
+        """
 
 
 if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
+    import cdr_cleaner.args_parser as parser
 
-    ARGS = parse_args()
+    ARGS = parser.parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_queries_clean_height_weight(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    deid_base_cleaner = CleanHeightAndWeight(ARGS.project_id,
+                                             ARGS.dataset_id,
+                                             ARGS.sandbox_dataset_id)
+    query_list = deid_base_cleaner.get_query_specs()
+
+    if ARGS.list_queries:
+        deid_base_cleaner.log_queries()
+    else:
+        clean_engine.clean_dataset(ARGS.project_id, query_list)
