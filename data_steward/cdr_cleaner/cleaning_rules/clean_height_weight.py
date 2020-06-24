@@ -3,7 +3,7 @@ Normalizes all height and weight data into cm and kg and removes invalid/implaus
 
 Original Issues: DC-416, DC-701
 
-The intent of this cleaning rule is to deleting zero/null/implausible height/weight rows
+The intent of this cleaning rule is to delete zero/null/implausible height/weight rows
 and inserting normalized rows (cm and kg)
 """
 
@@ -693,10 +693,9 @@ class CleanHeightAndWeight(BaseCleaningRule):
 
         insert_new_height_rows_query = {
             cdr_consts.QUERY:
-                INSERT_NEW_ROWS_QUERY.render(
-                    project_id=self.get_project_id(),
-                    dataset_id=self.get_dataset_id(),
-                    new_rows=NEW_HEIGHT_ROWS),
+                INSERT_NEW_ROWS_QUERY.render(project_id=self.get_project_id(),
+                                             dataset_id=self.get_dataset_id(),
+                                             new_rows=NEW_HEIGHT_ROWS),
             cdr_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             cdr_consts.DESTINATION_DATASET:
@@ -751,17 +750,14 @@ class CleanHeightAndWeight(BaseCleaningRule):
                 self.get_dataset_id(),
             cdr_consts.DISPOSITION:
                 WRITE_TRUNCATE
-
         }
 
-        return [save_height_table_query,
-                save_new_height_rows_query,
-                delete_height_rows_query,
-                insert_new_height_rows_query,
-                save_weight_table_query,
-                save_new_weight_rows_query,
-                delete_weight_rows_query,
-                insert_new_weight_rows_query]
+        return [
+            save_height_table_query, save_new_height_rows_query,
+            delete_height_rows_query, insert_new_height_rows_query,
+            save_weight_table_query, save_new_weight_rows_query,
+            delete_weight_rows_query, insert_new_weight_rows_query
+        ]
 
     def setup_rule(self, client):
         """
@@ -788,8 +784,7 @@ if __name__ == '__main__':
 
     clean_engine.add_console_logging(ARGS.console_log)
 
-    deid_base_cleaner = CleanHeightAndWeight(ARGS.project_id,
-                                             ARGS.dataset_id,
+    deid_base_cleaner = CleanHeightAndWeight(ARGS.project_id, ARGS.dataset_id,
                                              ARGS.sandbox_dataset_id)
     query_list = deid_base_cleaner.get_query_specs()
 
