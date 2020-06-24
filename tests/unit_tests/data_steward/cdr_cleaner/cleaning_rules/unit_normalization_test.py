@@ -34,7 +34,13 @@ class UnitNormalizationTest(unittest.TestCase):
 
     def test_setup_rule(self):
         # Test
-        self.query_class.setup_rule(self.client)
+        def run_setup(client):
+            try:
+                self.query_class.setup_rule(client)
+            except RuntimeError:
+                return
+
+        self.assertRaises(RuntimeError, run_setup(self.client))
 
         # No errors are raised, nothing will happen
 

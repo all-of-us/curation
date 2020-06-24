@@ -202,7 +202,11 @@ class UnitNormalization(BaseCleaningRule):
 
         # creating _unit_mapping table
         unit_mapping_table = f'{self.get_project_id()}.{self.get_dataset_id()}.{UNIT_MAPPING_TABLE}'
-        bq.create_tables(client, self.get_project_id(), [unit_mapping_table])
+        bq.create_tables(
+            client,
+            self.get_project_id(),
+            [unit_mapping_table],
+        )
         # Uploading data to _unit_mapping table
         unit_mappings_csv_path = os.path.join(resources.resource_files_path,
                                               UNIT_MAPPING_FILE)

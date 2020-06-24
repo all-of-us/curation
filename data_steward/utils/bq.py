@@ -5,9 +5,9 @@ A utility to standardize use of the BigQuery python client library.
 import logging
 import os
 
+from google.api_core.exceptions import GoogleAPIError, BadRequest
 # Third-party imports
 from google.cloud import bigquery
-from google.api_core.exceptions import GoogleAPIError
 
 # Project Imports
 from app_identity import PROJECT_ID
