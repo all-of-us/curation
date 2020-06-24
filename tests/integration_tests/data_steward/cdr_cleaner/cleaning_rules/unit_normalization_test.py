@@ -1,13 +1,28 @@
 import os
 import unittest
 
-from google.cloud.exceptions import NotFound
+from google.api_core.exceptions import NotFound
+from jinja2 import Environment
 
 import tests.test_util as test_util
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization, UNIT_MAPPING_TABLE
 # Project Imports
 from utils import bq
+
+jinja_env = Environment(
+    # help protect against cross-site scripting vulnerabilities
+    autoescape=True,
+    # block tags on their own lines
+    # will not cause extra white space
+    trim_blocks=True,
+    lstrip_blocks=True,
+    # syntax highlighting should be better
+    # with these comment delimiters
+    comment_start_string='--',
+    comment_end_string=' --')
+
+test_query = jinja_env.from_string("""select * from `{{intermediary_table}}`""")
 
 
 class UnitNormalizationTest(unittest.TestCase):
@@ -41,21 +56,29 @@ class UnitNormalizationTest(unittest.TestCase):
         intermediary_table = f'{self.project_id}.{self.dataset_id}.{UNIT_MAPPING_TABLE}'
 
         client = bq.get_client(self.project_id)
-        try:
-            client.get_table(intermediary_table)
-            result = True
-        except NotFound:
-            result = False
-        self.assertEquals(result, False)
+
+        def table_exists(bq_client, table):
+            try:
+                bq_client.get_table(table)
+            except NotFound:
+                return
+
+        self.assertRaises(NotFound, table_exists(client, intermediary_table))
 
         # run setup_rule and see if the table is created
         self.query_class.setup_rule(client)
+
         try:
             client.get_table(intermediary_table)
             result = True
         except NotFound:
             result = False
+
         self.assertEquals(result, True)
+
+        query = test_query.render(intermediary_table=intermediary_table)
+        result = bq.query(query, self.project_id)
+        self.assertEqual(result.empty, False)
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)

@@ -12,6 +12,7 @@ Original Issue: DC-414
 import logging
 import os
 
+from google.cloud.exceptions import BadRequest
 # Third party imports
 from jinja2 import Environment
 
@@ -178,7 +179,7 @@ class UnitNormalization(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'Units for labs/measurements will be normalized using unit_mapping.csv.'
+        desc = 'Units for labs/measurements will be normalized using unit_mapping lookup table.'
         super().__init__(issue_numbers=['DC414', 'DC700'],
                          description=desc,
                          affected_datasets=[cdr_consts.DEID_CLEAN],
@@ -201,22 +202,22 @@ class UnitNormalization(BaseCleaningRule):
 
         # creating _unit_mapping table
         unit_mapping_table = f'{self.get_project_id()}.{self.get_dataset_id()}.{UNIT_MAPPING_TABLE}'
+        bq.create_tables(client, self.get_project_id(), [unit_mapping_table])
+        # Uploading data to _unit_mapping table
+        unit_mappings_csv_path = os.path.join(resources.resource_files_path,
+                                              UNIT_MAPPING_FILE)
+        job = bq.upload_csv_data_to_bq_table(client, self.get_dataset_id(),
+                                             UNIT_MAPPING_TABLE,
+                                             unit_mappings_csv_path,
+                                             UNIT_MAPPING_TABLE_DISPOSITION)
+        LOGGER.info(
+            f"Created {self.get_dataset_id()}.{UNIT_MAPPING_TABLE} and loaded data from {unit_mappings_csv_path}"
+        )
         try:
-            bq.create_tables(client, self.get_project_id(),
-                             [unit_mapping_table])
-            # Uploading data to _unit_mapping table
-            unit_mappings_csv_path = os.path.join(resources.resource_files_path,
-                                                  UNIT_MAPPING_FILE)
-            result = bq.upload_csv_data_to_bq_table(
-                client, self.get_dataset_id(), UNIT_MAPPING_TABLE,
-                unit_mappings_csv_path, UNIT_MAPPING_TABLE_DISPOSITION)
-            LOGGER.info(
-                f"Created {self.get_dataset_id()}.{UNIT_MAPPING_TABLE} and loaded data from {unit_mappings_csv_path}"
-            )
-        except RuntimeError as err:
-            LOGGER.info(f"{unit_mapping_table} already exists.")
-            result = err
-        return result
+            job.result()
+        except BadRequest as e:
+            for e in job.errors:
+                print(f'ERROR: {e["message"]}')
 
     def get_query_specs(self):
         """
