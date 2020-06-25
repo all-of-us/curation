@@ -1,7 +1,6 @@
 import os
 import unittest
 
-from google.api_core.exceptions import NotFound
 from jinja2 import Environment
 
 import tests.test_util as test_util
@@ -56,25 +55,11 @@ class UnitNormalizationTest(unittest.TestCase):
         intermediary_table = f'{self.project_id}.{self.dataset_id}.{UNIT_MAPPING_TABLE}'
 
         client = bq.get_client(self.project_id)
-
-        def table_exists(bq_client, table):
-            try:
-                bq_client.get_table(table)
-            except NotFound:
-                return
-
-        self.assertRaises(NotFound, table_exists(client, intermediary_table))
-
         # run setup_rule and see if the table is created
         self.query_class.setup_rule(client)
 
-        try:
-            client.get_table(intermediary_table)
-            result = True
-        except NotFound:
-            result = False
-
-        self.assertEquals(result, True)
+        actual_table = client.get_table(intermediary_table)
+        self.assertIsNotNone(actual_table.created)
 
         query = test_query.render(intermediary_table=intermediary_table)
         result = bq.query(query, self.project_id)

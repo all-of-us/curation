@@ -181,6 +181,7 @@ DEID_CLEAN_CLEANING_CLASSES = [
     # trying to query a table while creating query strings,
     # can't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
+    # TODO: Add Setup rule for unit normalization
     (
         UnitNormalization,),
     (CleanMappingExtTables,)

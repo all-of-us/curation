@@ -34,13 +34,13 @@ class UnitNormalizationTest(unittest.TestCase):
 
     def test_setup_rule(self):
         # Test
-        def run_setup(client):
-            try:
-                self.query_class.setup_rule(client)
-            except RuntimeError:
-                return
+        with self.assertRaises(RuntimeError) as c:
+            self.query_class.setup_rule(None)
 
-        self.assertRaises(RuntimeError, run_setup(self.client))
+        self.assertEqual(
+            str(c.exception),
+            "Unable to create tables: ['foo_project.foo_dataset._unit_mapping']"
+        )
 
         # No errors are raised, nothing will happen
 

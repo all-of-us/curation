@@ -39,7 +39,7 @@ jinja_env = Environment(
 UNIT_MAPPING_TABLE = '_unit_mapping'
 UNIT_MAPPING_FILE = '_unit_mapping.csv'
 MEASUREMENT = 'measurement'
-UNIT_MAPPING_TABLE_DISPOSITION = 'write_empty'
+UNIT_MAPPING_TABLE_DISPOSITION = bq.bigquery.job.WriteDisposition.WRITE_EMPTY
 
 SANDBOX_UNITS_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE
@@ -47,12 +47,10 @@ CREATE OR REPLACE TABLE
 WITH
   joined_query AS (
   SELECT
-    m.*,
-    um.set_unit_concept_id,
-    um.transform_value_as_number
+    m.*
   FROM
   `{{project_id}}.{{dataset_id}}.{{measurement_table}}` as m
-LEFT JOIN
+INNER JOIN
   `{{project_id}}.{{dataset_id}}.{{unit_table_name}}` as um
 USING
   (measurement_concept_id,
@@ -78,9 +76,6 @@ SELECT
   value_source_value
 FROM
   joined_query
-WHERE
-  transform_value_as_number IN ( "(1/x)", "(x-32)*(5/9)", "*0.02835", "*0.394", "*0.4536",
-    "*1", "*10", "*10^(-1)", "*10^(-2)", "*10^(3)", "*10^(-3)", "*10^(6)", "*10^(-6)"))
     """)
 
 UNIT_NORMALIZATION_QUERY = jinja_env.from_string("""SELECT
@@ -188,7 +183,7 @@ class UnitNormalization(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
 
-    def setup_rule(self, client):
+    def setup_rule(self, client=None):
         """
         Load required resources prior to executing cleaning rule queries.
 
@@ -201,27 +196,28 @@ class UnitNormalization(BaseCleaningRule):
         """
 
         # creating _unit_mapping table
+        bq_client = bq.get_client(self.get_project_id())
         unit_mapping_table = f'{self.get_project_id()}.{self.get_dataset_id()}.{UNIT_MAPPING_TABLE}'
         bq.create_tables(
-            client,
+            bq_client,
             self.get_project_id(),
             [unit_mapping_table],
         )
         # Uploading data to _unit_mapping table
         unit_mappings_csv_path = os.path.join(resources.resource_files_path,
                                               UNIT_MAPPING_FILE)
-        job = bq.upload_csv_data_to_bq_table(client, self.get_dataset_id(),
+        job = bq.upload_csv_data_to_bq_table(bq_client, self.get_dataset_id(),
                                              UNIT_MAPPING_TABLE,
                                              unit_mappings_csv_path,
                                              UNIT_MAPPING_TABLE_DISPOSITION)
-        LOGGER.info(
-            f"Created {self.get_dataset_id()}.{UNIT_MAPPING_TABLE} and loaded data from {unit_mappings_csv_path}"
-        )
         try:
             job.result()
-        except BadRequest as e:
-            for e in job.errors:
-                print(f'ERROR: {e["message"]}')
+            LOGGER.info(
+                f"Created {self.get_dataset_id()}.{UNIT_MAPPING_TABLE} and loaded data from {unit_mappings_csv_path}"
+            )
+        except (BadRequest, OSError, AttributeError, TypeError, ValueError):
+            LOGGER.exception(
+                f"Unable to load data to {unit_mapping_table} table")
 
     def get_query_specs(self):
         """
@@ -274,8 +270,7 @@ if __name__ == '__main__':
     clean_engine.add_console_logging(ARGS.console_log)
     unit_normalization = UnitNormalization(ARGS.project_id, ARGS.dataset_id,
                                            ARGS.sandbox_dataset_id)
-    client = bq.get_client(ARGS.project_id)
-    unit_normalization.setup_rule(client=client)
+    unit_normalization.setup_rule(client=None)
     query_list = unit_normalization.get_query_specs()
     if ARGS.list_queries:
         unit_normalization.log_queries()
