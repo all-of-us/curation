@@ -232,13 +232,13 @@ final_procedure_df = final_procedure_df.fillna(0)
 
 # ### Now we can actually calculate the 'tangible success rate'
 
-final_procedure_df['procedure_failure_rate'] = \
+final_procedure_df['procedure_occurrence'] = \
 round((final_procedure_df['num_bad_records']) / final_procedure_df['num_total_records'] * 100, 2)
 
 # +
 final_procedure_df = final_procedure_df.fillna(0)
 
-final_procedure_df = final_procedure_df.sort_values(by=['procedure_failure_rate'], ascending = False)
+final_procedure_df = final_procedure_df.sort_values(by=['procedure_occurrence'], ascending = False)
 # -
 
 final_procedure_df
@@ -388,13 +388,13 @@ final_observation_df = final_observation_df.fillna(0)
 
 # ### Now we can actually calculate the 'tangible success rate'
 
-final_observation_df['observation_date_failure'] = \
+final_observation_df['observation'] = \
 round((final_observation_df['num_bad_records']) / final_observation_df['num_total_records'] * 100, 2)
 
 # +
 final_observation_df = final_observation_df.fillna(0)
 
-final_observation_df = final_observation_df.sort_values(by=['observation_date_failure'], ascending = False)
+final_observation_df = final_observation_df.sort_values(by=['observation'], ascending = False)
 # -
 
 # ### Creating a shorter df
@@ -544,13 +544,13 @@ final_measurment_df = final_measurment_df.fillna(0)
 
 # ### Now we can actually calculate the 'tangible success rate'
 
-final_measurment_df['measurement_date_failure'] = \
+final_measurment_df['measurement'] = \
 round((final_measurment_df['num_bad_records']) / final_measurment_df['num_total_records'] * 100, 2)
 
 # +
 final_measurment_df = final_measurment_df.fillna(0)
 
-final_measurment_df = final_measurment_df.sort_values(by=['measurement_date_failure'], ascending = False)
+final_measurment_df = final_measurment_df.sort_values(by=['measurement'], ascending = False)
 
 # +
 ### Creating a shorter df
@@ -675,13 +675,13 @@ final_condition_df = final_condition_df.fillna(0)
 
 # ### Now we can actually calculate the 'tangible success rate'
 
-final_condition_df['condition_date_failure'] = \
+final_condition_df['condition_occurrence'] = \
 round((final_condition_df['num_bad_records']) / final_condition_df['num_total_records'] * 100, 2)
 
 # +
 final_condition_df = final_condition_df.fillna(0)
 
-final_condition_df = final_condition_df.sort_values(by=['condition_date_failure'], ascending = False)
+final_condition_df = final_condition_df.sort_values(by=['condition_occurrence'], ascending = False)
 # -
 
 # ### Creating a shorter df
@@ -806,13 +806,13 @@ final_drug_df = final_drug_df.fillna(0)
 
 # ### Now we can actually calculate the 'tangible success rate'
 
-final_drug_df['drug_date_failure'] = \
+final_drug_df['drug_exposure'] = \
 round((final_drug_df['num_bad_records']) / final_drug_df['num_total_records'] * 100, 2)
 
 # +
 final_drug_df = final_drug_df.fillna(0)
 
-final_drug_df = final_drug_df.sort_values(by=['drug_date_failure'], ascending = False)
+final_drug_df = final_drug_df.sort_values(by=['drug_exposure'], ascending = False)
 # -
 
 # ### Creating a shorter dataframe
@@ -826,7 +826,7 @@ short_drug_df
 final_success_df = 0
 
 final_success_df = pd.merge(short_drug_df, site_df, how='outer', on='src_hpo_id') 
-final_success_df = final_success_df[['src_hpo_id', 'drug_date_failure']]  #rearrang columnds
+final_success_df = final_success_df[['src_hpo_id', 'drug_exposure']]  #rearrang columnds
 
 # +
 final_success_df = pd.merge(final_success_df, short_observation_df, how='outer', on='src_hpo_id') 

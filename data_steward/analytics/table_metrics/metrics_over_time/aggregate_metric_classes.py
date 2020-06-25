@@ -84,23 +84,15 @@ class AggregateMetricForTableOrClass:
         """
         time = self.date.strftime(constants.date_format)
 
-        attributes_str = """
-        Table/Class Name: {table_or_class_name}
-        Date: {date}
-        Metric Type: {metric_type}
-        Number of Total Rows: {total_rows}
-        Number of Pertinent Rows: {pert_rows}
-        Overall Rate: {rate}
-        Unweighted Metric?: {uw_metric}
-        """.format(
-            table_or_class_name=self.table_or_class_name,
-            date=time,
-            metric_type=self.metric_type,
-            total_rows=self.num_total_rows,
-            pert_rows=self.num_pertinent_rows,
-            rate=self.overall_rate,
-            uw_metric=self.unweighted_metric
-        )
+        attributes_str = f"""
+        Table/Class Name: {self.table_or_class_name}
+        Date: {time}
+        Metric Type: {self.metric_type}
+        Number of Total Rows: {self.num_total_rows}
+        Number of Pertinent Rows: {self.num_pertinent_rows}
+        Overall Rate: {self.overall_rate}
+        Unweighted Metric?: {self.unweighted_metric}
+        """
 
         print(attributes_str)
 
@@ -197,22 +189,15 @@ class AggregateMetricForHPO:
         """
         time = self.date.strftime(constants.date_format)
 
-        attributes_str = """
-        Date: {date}
-        HPO Name: {hpo_name}
-        Metric Type: {metric_type}
-        Number of Total Rows: {total_rows}
-        Number of Pertinent Rows: {pert_rows}
-        Overall Rate: {rate}
-        Unweighted Metric?: {uw_metric}
-        """.format(
-            hpo_name=self.hpo_name,
-            date=time,
-            metric_type=self.metric_type,
-            total_rows=self.num_total_rows,
-            pert_rows=self.num_pertinent_rows,
-            rate=self.overall_rate,
-            uw_metric=self.unweighted_metric)
+        attributes_str = f"""
+        Date: {time}
+        HPO Name: {self.hpo_name}
+        Metric Type: {self.metric_type}
+        Number of Total Rows: {self.num_total_rows}
+        Number of Pertinent Rows: {self.num_pertinent_rows}
+        Overall Rate: {self.overall_rate}
+        Unweighted Metric?: {self.unweighted_metric}
+        """
 
         print(attributes_str)
 
@@ -316,20 +301,14 @@ class AggregateMetricForDate:
         """
         time = self.date.strftime(constants.date_format)
 
-        attributes_str = """
-        Date: {date}
-        Metric Type: {metric_type}
-        Number of Total Rows: {total_rows}
-        Number of Pertinent Rows: {pert_rows}
-        Overall Rate: {rate}
-        Unweighted Metric?: {uw_metric}
-        """.format(
-            date=time,
-            metric_type=self.metric_type,
-            total_rows=self.num_total_rows,
-            pert_rows=self.num_pertinent_rows,
-            rate=self.overall_rate,
-            uw_metric=self.unweighted_metric)
+        attributes_str = f"""
+        Date: {time}
+        Metric Type: {self.metric_type}
+        Number of Total Rows: {self.num_total_rows}
+        Number of Pertinent Rows: {self.num_pertinent_rows}
+        Overall Rate: {self.overall_rate}
+        Unweighted Metric?: {self.unweighted_metric}
+        """
 
         print(attributes_str)
 

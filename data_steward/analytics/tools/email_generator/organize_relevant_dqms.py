@@ -18,9 +18,9 @@ def get_hpo_site():
     hpo_id (str): string that represents the HPO ID whose email
         is to be generated
     """
-    prompt = "Please input the site ID of the HPO site that " \
-             "you would like to use for an auto-generated e-mail. " \
-             "(e.g. nyc_hh)\n"
+    prompt = """
+    Please input the site ID of the HPO site that you would 
+    like to use for an auto-generated e-mail (e.g. nyc_hh)."""
 
     hpo_id = input(prompt)
     hpo_id = hpo_id.lower()  # case sensitivity
@@ -96,7 +96,7 @@ def create_string_for_failing_metrics(hpo_objects):
 
     issue_num = 1
 
-    issue_report = ""
+    issue_report = ""  #empty string
 
     for metric_type, tables_or_classes in unique_metrics.items():
 

@@ -96,10 +96,8 @@ def load_files(user_choice, file_names):
 
             if sheet.empty:
 
-                print("WARNING: No data found in the {user_choice} sheet "
-                      "in dataframe {file_name}".format(
-                       user_choice=user_choice,
-                       file_name=file_name))
+                print(f"""WARNING: No data found in the {user_choice} sheet
+                      in dataframe {file_name}""")
 
                 del file_names[num_files_indexed]
                 num_files_indexed -= 1  # skip over the date
@@ -115,9 +113,10 @@ def load_files(user_choice, file_names):
                 sys.exit(0)
 
             else:
-                print("WARNING: No {} sheet found in dataframe {}. "
-                      "This is a(n) {}.".format(
-                        user_choice, file_name, type(ex).__name__))
+                print(f"""
+                WARNING: No {user_choice} sheet
+                found in dataframe {file_name}. "
+                This is a(n) {type(ex).__name__}.""")
 
                 print(ex)
 
@@ -230,14 +229,14 @@ def convert_file_names_to_datetimes(file_names):
     # NOTE: requires files to have full month name and 4-digit year
     for date_str in file_names:
         date_str = date_str[:-5]  # get rid of extension
-        date = datetime.datetime.strptime(date_str, '%B_%d_%Y')
+        date = datetime.datetime.strptime(date_str, constants.date_format)
         ordered_dates_dt.append(date)
 
     ordered_dates_dt = sorted(ordered_dates_dt)
 
     # converting back to standard form to index into file
     ordered_dates_str = [
-        x.strftime('%B_%d_%Y').lower() + '.xlsx'
+        x.strftime(constants.date_format).lower() + '.xlsx'
         for x in ordered_dates_dt]
 
     return ordered_dates_str, ordered_dates_dt

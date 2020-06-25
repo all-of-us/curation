@@ -7,23 +7,6 @@ to a cleaner-looking code (as strings tend to 'bog down' the script
 in general. Beyond legibility, this allows us to "mass change" certain
 attributes that appear many times in the file.
 """
-# Booleans
-# --------
-true = True
-false = False
-
-
-# Formatting
-# ----------
-date_format = '%B_%d_%Y'
-rounding_val = 2
-
-
-# misc_strings
-# ------------
-hpo_sheets = 'hpo_sheets'
-table_sheets = 'table_sheets'
-aggregate_info = 'aggregate_info'
 
 
 # Table Names
@@ -48,13 +31,6 @@ all_canonical_tables = [
 
 tables_with_one_date = [
     visit_occurrence, condition_occurrence, drug_exposure]
-
-observation_total_row = 'observation_total_row'
-drug_total_row = 'drug_total_row'
-procedure_total_row = 'procedure_total_row'
-condition_total_row = 'condition_total_row'
-measurement_total_row = 'measurement_total_row'
-visit_total_row = 'visit_total_row'
 
 
 # Measurement Class Names
@@ -185,19 +161,22 @@ measurement_success = 'measurement_success_rate'
 visit_success = 'visit_success_rate'
 
 concept_success_rate_columns = [
-    observation_success, condition_success, drug_success_col,
-    visit_success, measurement_success, procedure_success]
+    condition_success, drug_success_col,
+    condition_success, measurement_success, procedure_success]
 
 total_unit_success_rate = 'total_unit_success_rate'
 total_route_success_rate = 'total_route_success_rate'
 
+hpo_col_name = 'HPO'
+table_class_col_name = 'Table/Class'
+metric_type_col_name = 'Metric Type'
+data_quality_dimension_col_name = 'Data Quality Dimension'
+link_col_name = 'Link'
+first_reported_col_name = 'First Reported'
 
-# Values
-# ------
-nan_string = "NaN"
-no_data = 'No Data'
 
 # Other Strings
 # -------------
-analytics_report_file_ending = "_analytics_report.xlsx"
+date_format = '%B_%d_%Y'
+output_file_ending = "_data_quality_issues.xlsx"
 xl_writer = 'xlsxwriter'

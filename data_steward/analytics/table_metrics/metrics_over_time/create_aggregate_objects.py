@@ -139,9 +139,10 @@ def create_weighted_aggregate_metrics(
 
     elif sheet_output != constants.table_sheets:
         raise Exception(
-            """Bad parameter input for function
-             create_aggregate_master_function. Parameter provided
-            was: {param}""".format(param=sheet_output))
+            f"""
+            Bad parameter input for
+            create_aggregate_master_function. Parameter provided
+            was: {sheet_output}""")
 
     return aggregate_metrics
 
@@ -203,9 +204,9 @@ def create_unweighted_aggregate_metrics(
 
     elif sheet_output != constants.table_sheets:
         raise Exception(
-            """Bad parameter input for function
+            f"""Bad parameter input for function
              create_aggregate_master_function. Parameter provided
-            was: {param}""".format(param=sheet_output))
+            was: {sheet_output}""")
 
     return aggregate_metrics
 

@@ -11,7 +11,7 @@ import os
 import pandas as pd
 import sys
 import datetime
-from class_definitions import HPO
+import constants
 
 
 def load_files(sheet_name, file_name):
@@ -45,24 +45,24 @@ def load_files(sheet_name, file_name):
         sheet = pd.read_excel(file_name, sheet_name=sheet_name)
 
         if sheet.empty:
-            print("WARNING: No data found in the {} sheet "
-                  "in dataframe {}".format(
-                   sheet_name, file_name))
+            print(f"""WARNING: No data found in the {sheet_name} sheet
+                  in dataframe {file_name}""")
 
     except Exception as ex:  # sheet not in specified excel file
         if type(ex).__name__ == "FileNotFoundError":
-            print("{} not found in the current directory: {}. Please "
-                  "ensure that the file names are consistent between "
-                  "the Python script and the file name in your current "
-                  "directory. ".format(file_name, cwd))
+            print(f"""{file_name} not found in the current directory: {cwd}.
+                  Please ensure that the file names are consistent
+                  between the Python script and the file name in
+                  your current directory. """)
             sys.exit(0)
 
         else:
-            print("WARNING: No {} sheet found in dataframe {}. "
-                  "This is a(n) {}.".format(
-                    sheet_name, file_name, type(ex).__name__))
+            err_type = type(ex).__name__
 
-            print("The error message is as follows: {err}".format(err=ex))
+            print(f"""WARNING: No {sheet_name} sheet found in
+                  dataframe {file_name}. This is a(n) {err_type}.""")
+
+            print(f"The error message is as follows: {ex}")
             print(ex)
             sys.exit(0)
 
@@ -167,9 +167,7 @@ def get_err_rate(sheet, row_num, metric, hpo_name, column):
     if row_num is not None:
         data_info = sheet.iloc[row_num, :]  # series, column labels and values
     else:
-        print("{hpo_name} is not in the following sheet: {sheet}".format(
-            hpo_name=hpo_name, sheet=metric
-        ))
+        print(f"{hpo_name} is not in the following sheet: {metric}")
         sys.exit(0)
 
     val = data_info[column]
@@ -206,7 +204,7 @@ def sort_and_convert_dates(file_names):
     # NOTE: requires files to have full month name and 4-digit year
     for date_str in file_names:
         date_str = date_str[:-5]  # take off the .xlsx
-        date = datetime.datetime.strptime(date_str, '%B_%d_%Y')
+        date = datetime.datetime.strptime(date_str, constants.date_format)
         ordered_dates_dt.append(date)
 
     ordered_dates_dt = sorted(ordered_dates_dt)

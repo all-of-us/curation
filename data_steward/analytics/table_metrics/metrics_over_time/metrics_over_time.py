@@ -63,6 +63,8 @@ from organize_dataframes import \
 
 import pandas as pd
 
+import constants
+
 
 def create_dqm_objects_for_sheet(
         dataframe, hpo_names, user_choice, metric_is_percent,
@@ -256,10 +258,10 @@ def create_excel_files(
     """
 
     output_file_name = metric_choice + "_" + sheet_output + \
-        "_analytics_report.xlsx"
+        constants.analytics_report_file_ending
 
     writer = pd.ExcelWriter(
-        output_file_name, engine='xlsxwriter')
+        output_file_name, engine=constants.xl_writer)
 
     for df_name, dataframe in df_dict.items():
         dataframe.to_excel(writer, sheet_name=df_name)

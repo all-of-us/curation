@@ -36,6 +36,7 @@ class HPO:
             route_success, unit_success, measurement_integration,
             ingredient_integration, date_datetime_disp,
             erroneous_dates, person_id_failure, achilles_errors,
+            visit_date_disparity,
 
             # number of rows for the 6 canonical tables
             num_measurement_rows=0,
@@ -123,6 +124,10 @@ class HPO:
             objects that show the number of ACHILLES errors
             for the particular date
 
+        visit_date_disparity (list): list of DataQualityMetric
+            objects that show the percentage of rows that have
+            inconsistencies with respect to the visit date
+
         num_measurement_rows (float): number of rows in the
             measurement table
 
@@ -154,6 +159,7 @@ class HPO:
         self.date_datetime_disp = date_datetime_disp
         self.erroneous_dates = erroneous_dates
         self.person_id_failure = person_id_failure
+        self.visit_date_disparity = visit_date_disparity
 
         # only relates to one table / entity
         self.route_success = route_success
@@ -178,53 +184,34 @@ class HPO:
         This string is then printed to display on the
         program.
         """
-        attributes_str = """
-        HPO ID: {hpo_id}
-        Full Name: {full_name}
-        Date: {date}
+        attributes_str = f"""
+        HPO ID: {self.name}
+        Full Name: {self.full_name}
+        Date: {self.date}
         
         Number of Metrics:
-            Concept Success Rate: {num_concepts}
-            Duplicates: {duplicates}
-            End Dates Preceding Start Dates: {end_before_start}
-            Data After Death: {d_a_d}
-            Route Success: {route_success}
-            Unit Success: {unit_success}
-            Measurement Integration: {measurement_integration}
-            Ingredient Integration: {ingredient_integration}
-            Date/Datetime Disagreement: {date_datetime}
-            Erroneous Dates: {erroneous_dates}
-            Person ID Failure: {person_id_failure}
-            Number of ACHILLES Errors: {achilles_errors}
+            Concept Success Rate: {len(self.concept_success)}
+            Duplicates: {len(self.duplicates)}
+            End Dates Preceding Start Dates: {len(self.end_before_begin)}
+            Data After Death: {len(self.data_after_death)}
+            Route Success: {len(self.route_success)}
+            Unit Success: {len(self.unit_success)}
+            Measurement Integration: {len(self.measurement_integration)}
+            Ingredient Integration: {len(self.ingredient_integration)}
+            Date/Datetime Disagreement: {len(self.date_datetime_disp)}
+            Erroneous Dates: {len(self.erroneous_dates)}
+            Person ID Failure: {len(self.person_id_failure)}
+            Number of ACHILLES Errors: {len(self.achilles_errors)}
+            Visit Date Disparity: {len(self.visit_date_disparity)}
         
         Number of Rows:
-            Measurement: {measurement}
-            Visit Occurrence: {visit}
-            Procedure Occurrence: {procedure}
-            Condition Occurrence: {condition}
-            Drug Exposure: {drug}
-            Observation: {observation}
-        """.format(
-            hpo_id=self.name, full_name=self.full_name,
-            date=self.date, num_concepts=len(self.concept_success),
-            duplicates=len(self.duplicates),
-            end_before_start=len(self.end_before_begin),
-            d_a_d=len(self.data_after_death),
-            route_success=len(self.route_success),
-            unit_success=len(self.unit_success),
-            measurement_integration=len(self.measurement_integration),
-            ingredient_integration=len(self.ingredient_integration),
-            date_datetime=len(self.date_datetime_disp),
-            erroneous_dates=len(self.erroneous_dates),
-            person_id_failure=len(self.person_id_failure),
-            achilles_errors=len(self.achilles_errors),
-            measurement=self.num_measurement_rows,
-            visit=self.num_visit_rows,
-            procedure=self.num_procedure_rows,
-            condition=self.num_condition_rows,
-            drug=self.num_drug_rows,
-            observation=self.num_observation_rows
-        )
+            Measurement: {self.num_measurement_rows}
+            Visit Occurrence: {self.num_visit_rows}
+            Procedure Occurrence: {self.num_procedure_rows}
+            Condition Occurrence: {self.num_condition_rows}
+            Drug Exposure: {self.num_drug_rows}
+            Observation: {self.num_observation_rows}
+        """
 
         print(attributes_str)
 
@@ -283,9 +270,12 @@ class HPO:
         elif metric == constants.achilles_errors_full:
             self.achilles_errors.append(dq_object)
 
+        elif metric == constants.visit_date_disparity_full:
+            self.visit_date_disparity.append(dq_object)
+
         else:
-            print("Unrecognized metric input: {metric} for {hpo}".format(
-                metric=metric, hpo=self.name))
+            hpo_name = self.name
+            print(f"Unrecognized metric input: {metric} for {hpo_name}")
             sys.exit(0)
 
     def add_row_count_with_string(self, table, value):
@@ -319,8 +309,8 @@ class HPO:
         elif table == constants.visit_total_row:
             self.num_visit_rows = value
         else:
-            print("Unrecognized table input: {table} for {hpo}".format(
-                table=table, hpo=self.name))
+            hpo_name = self.name
+            print(f"Unrecognized table input: {table} for {hpo_name}")
             sys.exit(0)
 
     def use_table_or_class_name_to_find_rows(
@@ -409,12 +399,16 @@ class HPO:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
+        elif metric == constants.visit_date_disparity_full:
+            for obj in self.visit_date_disparity:
+                if obj.table_or_class == table_or_class:
+                    succ_rate = obj.value
+
         else:
-            raise Exception("""
+            raise Exception(f"""
                 Unexpected metric type:
                 {metric} found for table or class
-                {table_or_class}""".format(
-                    metric=metric, table_or_class=table_or_class))
+                {table_or_class}""")
 
         if table_or_class == constants.measurement_full:
             total_rows = self.num_measurement_rows
@@ -432,9 +426,8 @@ class HPO:
             total_rows = 0
         else:
             raise Exception(
-                "Unexpected table type:"
-                "{table_or_class} found for metric {metric}".format(
-                    table_or_class=table_or_class, metric=metric))
+                f"""Unexpected table type:
+                {table_or_class} found for metric {metric}""")
 
         if metric == constants.duplicates_full:
             rel_rows = succ_rate  # want to report out the total #
@@ -484,10 +477,9 @@ class HPO:
                         metric=metric)
 
         # making sure we could calculate the row_count
-        assert row_count is not None, "The row count for the following " \
-            "data quality metric could not be found for the " \
-            "table {table_or_class} and the metric {metric}".format(
-                table_or_class=table_or_class, metric=metric)
+        assert row_count is not None, f"""The row count for the following
+            data quality metric could not be found for the
+            table {table_or_class} and the metric {metric}"""
 
         return row_count
 
@@ -544,10 +536,13 @@ class HPO:
         elif metric == constants.achilles_errors_full:
             relevant_objects = self.achilles_errors
 
+        elif metric == constants.visit_date_disparity_full:
+            relevant_objects = self.visit_date_disparity
+
         else:
             raise Exception(
-                "The following was identified as a metric: "
-                "{metric}".format(metric=metric))
+                f"""The following was identified as a metric:
+                {metric}""")
 
         return relevant_objects
 
@@ -670,6 +665,11 @@ class HPO:
             if achilles_error_obj.value > \
                     thresholds[constants.achilles_errors_max]:
                 failing_metrics.append(achilles_error_obj)
+
+        for visit_date_disparity_obj in self.visit_date_disparity:
+            if visit_date_disparity_obj.value > \
+                    thresholds[constants.visit_date_disparity_max]:
+                failing_metrics.append(visit_date_disparity_obj)
 
         if not failing_metrics:  # no errors logged
             return None

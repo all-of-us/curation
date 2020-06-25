@@ -63,7 +63,8 @@ def establish_hpo_objects(dqm_objects):
               route_success=[], unit_success=[],
               measurement_integration=[], ingredient_integration=[],
               date_datetime_disp=[], erroneous_dates=[],
-              person_id_failure=[], achilles_errors=[])
+              person_id_failure=[], achilles_errors=[],
+              visit_date_disparity=[])
 
             blank_hpo_objects.append(hpo)
 
@@ -144,7 +145,8 @@ def add_number_total_rows_for_hpo_and_date(
 
     for date_str in date_names:
         date_str = date_str[:-5]  # get rid of extension
-        date_obj = datetime.datetime.strptime(date_str, '%B_%d_%Y')
+        date_obj = datetime.datetime.strptime(
+            date_str, constants.date_format)
         dates_objs.append(date_obj)
 
     chosen_idx = -1
@@ -153,9 +155,7 @@ def add_number_total_rows_for_hpo_and_date(
         if date_object == date:
             chosen_idx = idx
 
-    assert chosen_idx > -1, "Invalid Date: {date}".format(
-        date=date
-    )
+    assert chosen_idx > -1, f"Invalid Date: {date}"
 
     df_for_date = dfs[chosen_idx]
 

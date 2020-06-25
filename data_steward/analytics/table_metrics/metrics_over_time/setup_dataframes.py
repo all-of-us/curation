@@ -89,9 +89,9 @@ def create_dataframe_skeletons(
 
     else:
         raise Exception(
-            """Bad parameter input for function
+            f"""Bad parameter input for function
              organize_dataframes_master_function. Parameter provided
-            was: {param}""".format(param=sheet_output))
+            was: {sheet_output}""")
 
     return dataframes_dict, tables_or_classes_for_metric
 

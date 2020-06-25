@@ -17,7 +17,7 @@ internal DRC drive. This will allow someone to run this script.
 """
 
 from dictionaries_and_lists import relevant_links, full_names, \
-    desired_columns_dict, data_quality_dimension_dict, \
+    columns_to_document_for_sheet, data_quality_dimension_dict, \
     table_or_class_based_on_column_provided, metric_names, \
     metric_type_to_english_dict
 
@@ -30,13 +30,12 @@ from general_functions import load_files, \
 from cross_reference_functions import cross_reference_old_metrics
 
 import pandas as pd
+import constants
 
 old_dashboards = 'june_03_2020_data_quality_issues.xlsx'
 
 old_excel_file_name = 'june_03_2020.xlsx'
 excel_file_name = 'june_15_2020.xlsx'
-
-metric_names = list(metric_names.keys())  # sheets to be investigated
 
 
 def create_hpo_objects(file_name):
@@ -75,7 +74,8 @@ def create_hpo_objects(file_name):
             end_before_begin=[], data_after_death=[],
             route_success=[], unit_success=[], measurement_integration=[],
             ingredient_integration=[], date_datetime_disparity=[],
-            erroneous_dates=[], person_id_failure_rate=[])
+            erroneous_dates=[], person_id_failure_rate=[],
+            visit_date_disparity=[])
 
         hpo_objects.append(hpo)
 
@@ -121,7 +121,7 @@ def populate_hpo_objects_with_dq_metrics(
             row_num = find_hpo_row(sheet, hpo_name)
 
             # what we are looking for within each analytics sheet
-            desired_columns = desired_columns_dict[metric]
+            desired_columns = columns_to_document_for_sheet[metric]
 
             all_dqds_for_hpo_for_metric = []  # list of objects - to be filled
 
@@ -259,9 +259,9 @@ def main():
 
     # cut off previous extension
     output_file_name = excel_file_name[:-5] + \
-        "_data_quality_issues.xlsx"
+        constants.output_file_ending
 
-    writer = pd.ExcelWriter(output_file_name, engine='xlsxwriter')
+    writer = pd.ExcelWriter(output_file_name, engine=constants.xl_writer)
 
     for df_name, dataframe in df_dict.items():
         dataframe.to_excel(writer, sheet_name=df_name)

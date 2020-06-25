@@ -67,16 +67,12 @@ class DataQualityMetric:
         human-readable format.
         """
         print(
-            "HPO: {hpo}\n"
-            "Table/Class: {table_or_class}\n"
-            "Metric Type: {metric_type}\n"
-            "Value: {value}\n"
-            "Data Quality Dimension: {dqd}\n"
-            "Date: {date}\n\n".format(
-                hpo=self.hpo, table_or_class=self.table_or_class,
-                metric_type=self.metric_type,
-                value=self.value, dqd=self.data_quality_dimension,
-                date=self.date))
+            f"""HPO: {self.hpo}
+            Table Or Class: {self.table_or_class}
+            Metric Type: {self.metric_type}
+            Value: {self.value}
+            Data Quality Dimension: {self.data_quality_dimension}
+            Date: {self.date}""")
 
     def get_list_of_attribute_names(self):
         """

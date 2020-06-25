@@ -120,6 +120,7 @@ def create_dqm_list(dfs, file_names, datetimes, user_choice,
 
     # creating the DQM objects and assigning to HPOs
     for dataframe, file_name, date in zip(dfs, file_names, datetimes):
+
         dqm_objects, col_names = create_dqm_objects_for_sheet(
             dataframe=dataframe, hpo_names=hpo_names,
             user_choice=user_choice, metric_is_percent=percent_bool,
