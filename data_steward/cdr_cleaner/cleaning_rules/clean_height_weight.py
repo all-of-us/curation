@@ -79,7 +79,7 @@ WITH
     WHERE (m.measurement_concept_id IN (3036277, 3023540, 3019171))
       AND m.value_as_number IS NOT NULL
       AND m.value_as_number != 0
-      AND s.src_id != 'PPI/PM' -- site could use measurement_source_concept_id 903133 but we still need to include them
+      AND s.src_id != 'PPI/PM' -- site could use measurement_source_concept_id 903133 but we still need to include them --
   ),
   condition_occ AS (
     SELECT
@@ -97,7 +97,7 @@ WITH
       *
     FROM `{project_id}.{dataset_id}.concept_ancestor`
   ),
-  /* Outlier patients if they have certain diagnosis codes */
+  -- Outlier patients if they have certain diagnosis codes --
   outlierHt_pts AS (
     SELECT DISTINCT
       person_id,
@@ -163,7 +163,7 @@ WITH
       2847077, 2806601, 2819463, 2819475, 2767192, 2767146, 2767172, 2766941, 2767408, 2767411,
       2767170, 2767404, 2767198, 2767151, 2767137, 2767180, 2767203, 2767187)
   ),
-  /* Easier to reference this table for later */
+  -- Easier to reference this table for later --
   phys_df_ht AS (
     SELECT
       *,
@@ -187,7 +187,7 @@ WITH
     LEFT JOIN outlierHt_pts USING (person_id)
     WHERE DATE_DIFF(measurement_date, EXTRACT(DATE from birth_datetime), YEAR) >= 18
   ),
-  /* Height disagreement: count == 2, sd > 10 */
+  -- Height disagreement: count == 2, sd > 10 --
   height_disagreement_pts AS (
     SELECT DISTINCT
       person_id,
@@ -203,24 +203,24 @@ WITH
     WHERE (n = 2 AND sd_height > 10)
   )
 
-/* All height stuff in a table */
-SELECT DISTINCT
-  a.*,
-  CASE
-    WHEN ((f_outlierDx_Ht IS NULL)
-      AND (adj_Ht > median_Ht + 0.03 * median_Ht OR adj_Ht < median_Ht - 0.03 * median_Ht)) THEN (1)
-    ELSE (0)
-  END AS f_outlier_Ht,
-  COALESCE(f_disagree2_Ht,0) AS f_disagree2_Ht
-FROM (
-  SELECT
-    *,
-    PERCENTILE_CONT(ABS(adj_Ht),.5) OVER (PARTITION BY person_id) AS median_Ht
-  FROM phys_df_ht
-) a
-LEFT JOIN
-  height_disagreement_pts USING (person_id)
-""")
+    -- All height stuff in a table --
+    SELECT DISTINCT
+      a.*,
+      CASE
+        WHEN ((f_outlierDx_Ht IS NULL)
+          AND (adj_Ht > median_Ht + 0.03 * median_Ht OR adj_Ht < median_Ht - 0.03 * median_Ht)) THEN (1)
+        ELSE (0)
+      END AS f_outlier_Ht,
+      COALESCE(f_disagree2_Ht,0) AS f_disagree2_Ht
+    FROM (
+      SELECT
+        *,
+        PERCENTILE_CONT(ABS(adj_Ht),.5) OVER (PARTITION BY person_id) AS median_Ht
+      FROM phys_df_ht
+    ) a
+    LEFT JOIN
+      height_disagreement_pts USING (person_id)
+    """)
 
 NEW_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{project_id}.{sandbox_dataset_id}.{new_height_rows}` AS
@@ -309,7 +309,7 @@ WITH
     WHERE (m.measurement_concept_id IN (3025315, 3013762, 3023166))
       AND m.value_as_number IS NOT NULL
       AND m.value_as_number != 0
-      AND s.src_id != 'PPI/PM' -- site could use measurement_source_concept_id 903121 but we still need to include them
+      AND s.src_id != 'PPI/PM' -- site could use measurement_source_concept_id 903121 but we still need to include them --
   ),
   condition_occ AS (
     SELECT
@@ -356,16 +356,16 @@ WITH
     FROM condition_occ
     WHERE condition_concept_id IN (434005, 37018860, 439141, 4074313, 45771307, 4100857, 42539192)
   ),
-  -- Easier to reference this table for later
-  -- add some basic cleaning in here
-  -- Drop anything over 16000
-  -- calculate min, mean and max value_as_number for measurement_concept_id = 3025315 over each unit_concept_id,
-  -- including NULL. If there are discrepancies, plot the distribution of value_as_number
-  -- if multiple peaks exist, it is presumably due to multiple units being used with the same unit_concept_id/NULL
-  -- In such cases,
-  --  1. convert values that do not appear to use kg into kg using the conversion used below in phys_df_wt_adj_site
-  --     and add it as a step in the CASE statement to null out values above 16000
-  --  2. ensure that only one peak exists in the distribution for each unit for the measurement_concept_id 3025315
+  -- Easier to reference this table for later --
+  -- add some basic cleaning in here --
+  -- Drop anything over 16000 --
+  -- calculate min, mean and max value_as_number for measurement_concept_id = 3025315 over each unit_concept_id, --
+  -- including NULL. If there are discrepancies, plot the distribution of value_as_number --
+  -- if multiple peaks exist, it is presumably due to multiple units being used with the same unit_concept_id/NULL --
+  -- In such cases, --
+  --  1. convert values that do not appear to use kg into kg using the conversion used below in phys_df_wt_adj_site --
+  --     and add it as a step in the CASE statement to null out values above 16000 --
+  --  2. ensure that only one peak exists in the distribution for each unit for the measurement_concept_id 3025315 --
   phys_df_wt AS (
     SELECT
       person_id,
@@ -394,8 +394,8 @@ WITH
     LEFT JOIN outlierWt_pts_low USING (person_id)
     WHERE DATE_DIFF(measurement_date, EXTRACT(DATE from birth_datetime), YEAR) >= 18
   ),
-  --3) Check medians by site, concept_id, unit_concept_id
-  --Note that there are 'grams' recorded, but essentially nothing that can feasibly be grams.
+  --3) Check medians by site, concept_id, unit_concept_id --
+  --Note that there are 'grams' recorded, but essentially nothing that can feasibly be grams. --
   median_Wt_by_site AS (
     SELECT DISTINCT
       src_id,
@@ -404,7 +404,7 @@ WITH
       PERCENTILE_CONT(ABS(value_as_number_adj),.5) OVER (PARTITION BY src_id, unit_concept_id) AS median_Wt_site
     FROM phys_df_wt
   ),
-  --4) Tweak again based on 3, ie site medians
+  -- 4) Tweak again based on 3, ie site medians --
   phys_df_wt_adj_site AS (
     SELECT
       *,
@@ -423,7 +423,7 @@ WITH
     FROM phys_df_wt
     LEFT JOIN median_Wt_by_site USING (measurement_concept_id, unit_concept_id, src_id)
   ),
-  /* List of potential pregnant times. 1 month before and after preg-related conditions. */
+  -- List of potential pregnant times. 1 month before and after preg-related conditions. --
   preg_pts AS (
     SELECT DISTINCT
       person_id,
@@ -433,11 +433,11 @@ WITH
     JOIN concept_ancestor ON (condition_concept_id=descendant_concept_id)
     WHERE ancestor_concept_id = 4299535
   ),
-  --5) Check individual medians and add possible pregnancy flag
-  --Go ahead and adjust again based on the algorithm
-  -- Any weight greater than 1.5x and less than 3x the median weight is assumed to be in lbs and not kgs - do conversion.
-  -- Any weight greater than 24x and less than 50x the median for that individual is assumed to be in oz and not kg, convert.
-  -- This window leaves out the "x10" that results from an extra digit/misplaced decimal point.
+  --5) Check individual medians and add possible pregnancy flag --
+  --Go ahead and adjust again based on the algorithm --
+  -- Any weight greater than 1.5x and less than 3x the median weight is assumed to be in lbs and not kgs - do conversion. --
+  -- Any weight greater than 24x and less than 50x the median for that individual is assumed to be in oz and not kg, convert. --
+  -- This window leaves out the "x10" that results from an extra digit/misplaced decimal point. --
   phys_df_wt_adj AS (
     SELECT
       *,
@@ -465,8 +465,8 @@ WITH
       FROM phys_df_wt_adj_site
     )
   ),
-  -- flag any remaining differences >33% of median over 2 years (where >=3 values occur in that window)
-  -- Ignoring pregnancy weights
+  -- flag any remaining differences >33% of median over 2 years (where >=3 values occur in that window) --
+  -- Ignoring pregnancy weights --
   wt_variance_windows as (
     SELECT
       measurement_id,
@@ -491,7 +491,7 @@ WITH
     GROUP BY measurement_id
     HAVING COUNT(DISTINCT child_id) >= 3
   ),
-  /* Patients with 3+ weights > 250 kg */
+  -- Patients with 3+ weights > 250 kg --
   gt250kg_pts AS (
     SELECT DISTINCT
       person_id,
@@ -517,20 +517,20 @@ WITH
     WHERE (n = 2 AND sd_weight > 10)
   )
 
-/* All the weight stuff in a table */
-SELECT
-  ht.*,
-  CASE
-    WHEN adj_Wt>IF(f_outlierDx_Wt_high = 1 OR f_gt250kg=1,450,250) THEN 1
-    WHEN adj_Wt<IF(f_outlierDx_Wt_low = 1, 20, 30) THEN 1
-    ELSE 0
-  END AS f_outlier_Wt,
-  COALESCE(f_disagree2_Wt,0) AS f_disagree2_Wt,
-  COALESCE(window_flag,0) AS window_flag
-FROM phys_df_wt_adj ht
-LEFT JOIN wt_variance_windows USING (measurement_id)
-LEFT JOIN gt250kg_pts USING (person_id)
-LEFT JOIN weight_disagreement_pts USING (person_id)
+    -- All the weight stuff in a table --
+    SELECT
+      ht.*,
+      CASE
+        WHEN adj_Wt>IF(f_outlierDx_Wt_high = 1 OR f_gt250kg=1,450,250) THEN 1
+        WHEN adj_Wt<IF(f_outlierDx_Wt_low = 1, 20, 30) THEN 1
+        ELSE 0
+      END AS f_outlier_Wt,
+      COALESCE(f_disagree2_Wt,0) AS f_disagree2_Wt,
+      COALESCE(window_flag,0) AS window_flag
+    FROM phys_df_wt_adj ht
+    LEFT JOIN wt_variance_windows USING (measurement_id)
+    LEFT JOIN gt250kg_pts USING (person_id)
+    LEFT JOIN weight_disagreement_pts USING (person_id)
 """)
 
 NEW_WEIGHT_ROWS_QUERY = jinja_env.from_string("""
@@ -656,7 +656,6 @@ class CleanHeightAndWeight(BaseCleaningRule):
             and a specification for how to execute that query. The specifications
             are optional but the query is required.
         """
-        queries = []
 
         # height
         save_height_table_query = {
@@ -770,10 +769,15 @@ class CleanHeightAndWeight(BaseCleaningRule):
         Run required steps for validation setup.
         """
 
-    def validate_rule(self, client):
+    def validate_rule(self):
         """
         Validate the cleaning rule which deletes or upates the data from the tables
         """
+
+        raise NotImplementedError("Please fix me.")
+
+    def get_sandbox_tablenames(self):
+        pass
 
 
 if __name__ == '__main__':
