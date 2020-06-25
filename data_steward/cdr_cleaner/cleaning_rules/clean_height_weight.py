@@ -725,7 +725,7 @@ class CleanHeightAndWeight(BaseCleaningRule):
 
         delete_weight_rows_query = {
             cdr_consts.QUERY:
-                DELETE_HEIGHT_ROWS_QUERY.render(
+                DELETE_WEIGHT_ROWS_QUERY.render(
                     project_id=self.get_project_id(),
                     dataset_id=self.get_dataset_id()),
             cdr_consts.DESTINATION_TABLE:
