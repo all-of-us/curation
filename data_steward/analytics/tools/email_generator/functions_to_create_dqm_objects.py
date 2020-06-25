@@ -102,8 +102,8 @@ def get_info(
                     # to detect potential problems in excel file generator
                     if number < 0:
                         raise ValueError(
-                            "Negative number detected in sheet {} for column "
-                            "{}".format(sheet_name, col_label))
+                            f"""Negative number detected in sheet
+                            {sheet_name} for column {col_label}""")
 
                     elif percentage:  # effective
                         data_dictionary[col_label] = round(number, 2)

@@ -9,6 +9,7 @@ from messages import fnf_error
 from dictionaries_and_lists import \
     percentage_dict
 import datetime
+import constants
 
 
 def startup(file_names, metric_choice):
@@ -86,10 +87,8 @@ def load_files(user_choice, file_names):
 
             if sheet.empty:
 
-                print("WARNING: No data found in the {user_choice} sheet "
-                      "in dataframe {file_name}".format(
-                       user_choice=user_choice,
-                       file_name=file_name))
+                print(f"WARNING: No data found in the {user_choice} sheet "
+                      "in dataframe {file_name}")
 
                 del file_names[num_files_indexed]
                 num_files_indexed -= 1  # skip over the date
@@ -105,9 +104,9 @@ def load_files(user_choice, file_names):
                 sys.exit(0)
 
             else:
-                print("WARNING: No {} sheet found in dataframe {}. "
-                      "This is a(n) {}.".format(
-                        user_choice, file_name, type(ex).__name__))
+                print(f"WARNING: No {user_choice} sheet found "
+                      f"in dataframe {file_name}. This is a(n) "
+                      f"{type(ex).__name__}.")
 
                 print(ex)
 
@@ -154,7 +153,7 @@ def generate_hpo_id_col(file_names):
 
     # use concept sheet; always has all of the HPO IDs
     dataframes = load_files(
-        user_choice='concept', file_names=file_names)
+        user_choice=constants.concept, file_names=file_names)
     hpo_col_name = 'src_hpo_id'
     selective_rows, total_hpo_id_columns = [], []
 
@@ -217,14 +216,14 @@ def convert_file_names_to_datetimes(file_names):
     # NOTE: requires files to have full month name and 4-digit year
     for date_str in file_names:
         date_str = date_str[:-5]  # get rid of extension
-        date = datetime.datetime.strptime(date_str, '%B_%d_%Y')
+        date = datetime.datetime.strptime(date_str, constants.date_format)
         ordered_dates_dt.append(date)
 
     ordered_dates_dt = sorted(ordered_dates_dt)
 
     # converting back to standard form to index into file
     ordered_dates_str = [
-        x.strftime('%B_%d_%Y').lower() + '.xlsx'
+        x.strftime(constants.date_format).lower() + '.xlsx'
         for x in ordered_dates_dt]
 
     return ordered_dates_str, ordered_dates_dt

@@ -12,14 +12,16 @@ def find_hpo_row(sheet, hpo):
     Finds the row index of a particular HPO site within
     a larger sheet.
 
-    :param
+    Parameters
+    ----------
     sheet (dataframe): dataframe with all of the data quality
         metrics for the sites.
 
     hpo (string): represents the HPO site whose row in
         the particular sheet needs to be determined
 
-    :return:
+    Returns
+    -------
     row_num (int): row number where the HPO site of question
         lies within the sheet. returns none if the row is not
         in the sheet in question but exists in other sheets
@@ -100,8 +102,8 @@ def get_info(
                     # to detect potential problems in excel file generator
                     if number < 0:
                         raise ValueError(
-                            "Negative number detected in sheet {} for column "
-                            "{}".format(sheet_name, col_label))
+                            f"""Negative number detected in sheet 
+                            {sheet_name} for column {col_label}""")
 
                     # actual info to be logged if sensible data
                     elif percentage:

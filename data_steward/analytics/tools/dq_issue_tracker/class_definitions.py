@@ -11,6 +11,7 @@ script.
 from dictionaries_and_lists import thresholds
 from datetime import date
 import sys
+import constants
 
 
 class DataQualityMetric:
@@ -71,18 +72,13 @@ class DataQualityMetric:
         human-readable format.
         """
         print(
-            "HPO: {hpo}\n"
-            "Table Or Class: {table_or_class}\n"
-            "Metric Type: {metric_type}\n"
-            "Value: {value}\n"
-            "Data Quality Dimension: {dqd}\n"
-            "First Reported: {date}\n"
-            "Link: {link}".format(
-                hpo=self.hpo, table_or_class=self.table_or_class,
-                metric_type=self.metric_type,
-                value=self.value, dqd=self.data_quality_dimension,
-                date=self.first_reported,
-                link=self.link))
+            f"""HPO: {self.hpo}
+            Table Or Class: {self.table_or_class}
+            Metric Type: {self.metric_type}
+            Value: {self.value}
+            Data Quality Dimension: {self.data_quality_dimension}
+            First Reported: {self.first_reported}
+            Link: {self.link}""")
 
     def get_list_of_attribute_names(self):
         """
@@ -136,7 +132,8 @@ class HPO:
             end_before_begin, data_after_death,
             route_success, unit_success, measurement_integration,
             ingredient_integration, date_datetime_disparity,
-            erroneous_dates, person_id_failure_rate):
+            erroneous_dates, person_id_failure_rate,
+            visit_date_disparity):
 
         """
         Used to establish the attributes of the HPO object being instantiated.
@@ -165,16 +162,16 @@ class HPO:
         self.duplicates = duplicates
         self.end_before_begin = end_before_begin
         self.data_after_death = data_after_death
+        self.date_datetime_disparity = date_datetime_disparity
+        self.erroneous_dates = erroneous_dates
+        self.person_id_failure_rate = person_id_failure_rate
+        self.visit_date_disparity = visit_date_disparity
 
         # only relates to one table - therefore single float expected
         self.route_success = route_success
         self.unit_success = unit_success
         self.measurement_integration = measurement_integration
         self.ingredient_integration = ingredient_integration
-
-        self.date_datetime_disparity = date_datetime_disparity
-        self.erroneous_dates = erroneous_dates
-        self.person_id_failure_rate = person_id_failure_rate
 
     def add_attribute_with_string(self, metric, dq_object):
         """
@@ -195,42 +192,46 @@ class HPO:
             equal self.name whenever this is used).
         """
 
-        if metric == 'Concept ID Success Rate':
+        if metric == constants.concept_full:
             self.concept_success.append(dq_object)
 
-        elif metric == 'Duplicate Records':
+        elif metric == constants.duplicates_full:
             self.duplicates.append(dq_object)
 
-        elif metric == 'End Dates Preceding Start Dates':
+        elif metric == constants.end_before_begin_full:
             self.end_before_begin.append(dq_object)
 
-        elif metric == 'Data After Death':
+        elif metric == constants.data_after_death_full:
             self.data_after_death.append(dq_object)
 
-        elif metric == 'Measurement Integration':
+        elif metric == constants.sites_measurement_full:
             self.measurement_integration.append(dq_object)
 
-        elif metric == 'Drug Ingredient Integration':
+        elif metric == constants.drug_success_full:
             self.ingredient_integration.append(dq_object)
 
-        elif metric == 'Route Concept ID Success Rate':
+        elif metric == constants.drug_routes_full:
             self.route_success.append(dq_object)
 
-        elif metric == 'Unit Concept ID Success Rate':
+        elif metric == constants.unit_success_full:
             self.unit_success.append(dq_object)
 
-        elif metric == 'Date/Datetime Disparity':
+        elif metric == constants.date_datetime_disparity_full:
             self.date_datetime_disparity.append(dq_object)
 
-        elif metric == 'Erroneous Dates':
+        elif metric == constants.erroneous_dates_full:
             self.erroneous_dates.append(dq_object)
 
-        elif metric == 'Person ID Failure Rate':
+        elif metric == constants.person_id_failure_rate_full:
             self.erroneous_dates.append(dq_object)
+
+        elif metric == constants.visit_date_disparity_full:
+            self.visit_date_disparity.append(dq_object)
 
         else:
-            print("Unrecognized metric input: {metric} for {hpo}".format(
-                metric=metric, hpo=self.name))
+            hpo_name = self.name
+
+            print(f"Unrecognized metric input: {metric} for {hpo_name}")
             sys.exit(0)
 
     def find_failing_metrics(self):
@@ -242,16 +243,22 @@ class HPO:
         Parameters
         ----------
         self (HPO object): the object whose 'failing metrics' are to
-            be determined.
+            be determined
 
         Returns
         -------
         failing_metrics (list): has a list of the data quality metrics
             for the HPO that have 'failed' based on the thresholds
-            provided.
+            provided
 
-        NOTE: if no data quality problems are found, however, the function
-        will return 'None' to signify that no issues arose.
+        NOTES
+        -----
+        1. if no data quality problems are found, however, the
+        function will return 'None' to signify that no issues arose
+
+        2. this funciton is not currently implemented in our current
+        iteration of metrics_over_time. this function, however, holds
+        potential to be useful in future iterations.
         """
 
         failing_metrics = []
@@ -259,53 +266,64 @@ class HPO:
         # below we can find the data quality metrics for several tables -
         # need to iterate through a list to get the objects for each table
         for concept_success_obj in self.concept_success:
-            if concept_success_obj.value < thresholds['concept_success_min']:
+            if concept_success_obj.value < thresholds[constants.concept_success_min]:
                 failing_metrics.append(concept_success_obj)
 
         for duplicates_obj in self.duplicates:
-            if duplicates_obj.value > thresholds['duplicates_max']:
+            if duplicates_obj.value > thresholds[constants.duplicates_max]:
                 failing_metrics.append(duplicates_obj)
 
         for end_before_begin_obj in self.end_before_begin:
-            if end_before_begin_obj.value > thresholds['end_before_begin_max']:
+            if end_before_begin_obj.value > thresholds[constants.end_before_begin_max]:
                 failing_metrics.append(end_before_begin_obj)
 
         for data_after_death_obj in self.data_after_death:
-            if data_after_death_obj.value > thresholds['data_after_death_max']:
+            if data_after_death_obj.value > thresholds[constants.data_after_death_max]:
                 failing_metrics.append(data_after_death_obj)
 
         for route_obj in self.route_success:
-            if route_obj.value < thresholds['route_success_min']:
+            if route_obj.value < thresholds[constants.route_success_min]:
                 failing_metrics.append(route_obj)
 
         for unit_obj in self.unit_success:
-            if unit_obj.value < thresholds['unit_success_min']:
+            if unit_obj.value < thresholds[constants.unit_success_min]:
                 failing_metrics.append(unit_obj)
 
         for measurement_integration_obj in self.measurement_integration:
             if measurement_integration_obj.value < \
-                    thresholds['measurement_integration_min']:
+                    thresholds[constants.measurement_integration_min]:
                 failing_metrics.append(measurement_integration_obj)
 
         for ingredient_integration_obj in self.ingredient_integration:
             if ingredient_integration_obj.value < \
-                    thresholds['route_success_min']:
+                    thresholds[constants.route_success_min]:
                 failing_metrics.append(ingredient_integration_obj)
 
-        for date_disparity_obj in self.date_datetime_disparity:
-            if date_disparity_obj.value > \
-                    thresholds['date_datetime_disparity_max']:
-                failing_metrics.append(date_disparity_obj)
+        for date_datetime_disp_obj in self.date_datetime_disparity:
+            if date_datetime_disp_obj.value > \
+                    thresholds[constants.date_datetime_disparity_max]:
+                failing_metrics.append(date_datetime_disp_obj)
 
         for erroneous_date_obj in self.erroneous_dates:
             if erroneous_date_obj.value > \
-                    thresholds['erroneous_dates_max']:
+                    thresholds[constants.erroneous_dates_max]:
                 failing_metrics.append(erroneous_date_obj)
 
         for person_id_failure_obj in self.person_id_failure_rate:
             if person_id_failure_obj.value > \
-                    thresholds['person_failure_rate_max']:
+                    thresholds[constants.person_failure_rate_max]:
                 failing_metrics.append(person_id_failure_obj)
+
+        # NOTE: we are NOT reporting ACHILLES errors at the moment.
+        # for achilles_error_obj in self.achilles_errors:
+        #     if achilles_error_obj.value > \
+        #             thresholds[constants.achilles_errors_max]:
+        #         failing_metrics.append(achilles_error_obj)
+
+        for visit_date_disparity_obj in self.visit_date_disparity:
+            if visit_date_disparity_obj.value > \
+                    thresholds[constants.visit_date_disparity_max]:
+                failing_metrics.append(visit_date_disparity_obj)
 
         if not failing_metrics:  # no errors logged
             return None

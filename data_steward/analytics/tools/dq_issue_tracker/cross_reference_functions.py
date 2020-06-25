@@ -8,6 +8,8 @@ readability.
 from general_functions import load_files
 import pandas as pd
 import datetime
+from dictionaries_and_lists import new_metric_types
+import constants
 
 
 def cross_reference_old_metrics(
@@ -58,13 +60,20 @@ def cross_reference_old_metrics(
 
                     # all attributes except value or first reported
                     metrics_the_same = (
-                        new_metric.hpo == old_metric.hpo and
-                        new_metric.table_or_class ==
-                        old_metric.table_or_class and
-                        new_metric.metric_type == old_metric.metric_type and
-                        new_metric.data_quality_dimension ==
-                        old_metric.data_quality_dimension and
-                        new_metric.link == old_metric.link)
+                        new_metric.hpo.lower() ==
+                        old_metric.hpo.lower() and
+
+                        new_metric.table_or_class.lower() ==
+                        old_metric.table_or_class.lower() and
+
+                        new_metric.metric_type.lower() ==
+                        old_metric.metric_type.lower() and
+
+                        new_metric.data_quality_dimension.lower() ==
+                        old_metric.data_quality_dimension.lower() and
+
+                        new_metric.link.lower() ==
+                        old_metric.link.lower())
 
                     if metrics_the_same:
                         found_in_old = True
@@ -125,7 +134,7 @@ def find_report_date(
         # did not exist in the previous sheet
 
         date_str = excel_file_name[:-5]  # take off the .xlsx
-        date = datetime.datetime.strptime(date_str, '%B_%d_%Y')
+        date = datetime.datetime.strptime(date_str, constants.date_format)
         date = pd.Timestamp(date)
         report_date = date
 
@@ -139,15 +148,21 @@ def find_report_date(
         for index, row in sheet.iterrows():
 
             # same standards as employed by cross_reference_old_metrics
-            same_hpo = (row['HPO'] == new_metric.hpo)
-            same_table = (row['Table/Class'] ==
-                          new_metric.table_or_class)
-            same_mt = (row['Metric Type'] ==
-                       new_metric.metric_type)
-            same_dqd = (row['Data Quality Dimension'] ==
-                        new_metric.data_quality_dimension)
-            same_link = (row['Link'] ==
-                         new_metric.link)
+            same_hpo = (
+                row[constants.hpo_col_name].lower() ==
+                new_metric.hpo.lower())
+            same_table = (
+                row[constants.table_class_col_name].lower() ==
+                new_metric.table_or_class.lower())
+            same_mt = (
+                row[constants.metric_type_col_name].lower() ==
+                new_metric.metric_type.lower())
+            same_dqd = (
+                row[constants.data_quality_dimension_col_name].lower() ==
+                new_metric.data_quality_dimension.lower())
+            same_link = (
+                row[constants.link_col_name].lower() ==
+                new_metric.link.lower())
 
             correct_row = (
                  same_hpo and same_table and same_mt and
@@ -155,13 +170,20 @@ def find_report_date(
 
             # get the date
             if correct_row:
-                report_date = row['First Reported']
+                report_date = row[constants.first_reported_col_name]
 
-    # check that it is reassigned - just in case
-    assert isinstance(report_date, pd.Timestamp), \
-        "Date not found in the old dashboard. This applies to " \
-        "the following DataQualityMetric object: {dq}".format(
-            dq=new_metric.print_dqd_attributes()
-        )
+    if new_metric.metric_type not in new_metric_types:
+        # ensure reassignment
+        assert isinstance(report_date, pd.Timestamp), \
+            f"""
+            Date not found in the old dashboard. This applies to
+            the following DataQualityMetric object:
+            {new_metric.print_dqd_attributes()}"""
+    else:
+        # NOTE: the metric being investigated is new and therefore
+        # should not be expected to appear on an old 'data_quality
+        # _issues' panel. please be sure to delete a 'new metric'
+        # in the corresponding list once it appears in old panels
+        report_date = new_metric.first_reported
 
     return report_date

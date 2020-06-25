@@ -2,43 +2,55 @@
 This file is intended to serve as a 'storing place' for pieces of information
 that may change in the future. This also is a great means to sequester pieces
 of information that may otherwise 'bog down' the regular code.
+
 Dictionaries
 ------------
 thresholds: thresholds: the point at which a data quality metric (whether too
     high or too low) would be flagged as 'erroneous'. not used in the
     metrics_over_time script yet but has potential future implementations.
+
 choice_dict: correlates the user-specified choice to the corresponding
     page on the analytics report
+
 percentage_dict: correlated a particular analysis choice with whether or
     not it is intended to report out a fixed number (as in the case of
     duplicate records) or a  'percentage' (namely success or failure
     rates)
+
 columns_to_document_for_sheet: indicates which columns contain
     information that should be stored for the particular data
     quality metric that is being analyzed
+
 table_based_on_column_provided: allows us to determine the table that
     should be associated with a particular Data Quality Dimension object
     based upon the column that was used to get the associated 'value'
     float
+
 data_quality_dimension_dict: shows which attribute of Kahn's Data Quality
     framework the particular 'data quality metric' at hand relates to
+
 metric_type_to_english_dict: allows one to translate the 'metric type'
     that is normally associated with a 'DataQualityMetric' object to
     'English'. this is useful for printing the columns on a new
     dashboard
+
 full_names: allows one to use the hpo_id (shorter) name to find
     the longer (more human-readable) name
+
 Lists
 -----
 row_count_col_names: shows the column names where one can find the
     total row count for a particular date for each table
+
 unweighted_metric_already_integrated_for_hpo: shows which
     'unweighted metrics' do not need to be calculated for
     each HPO. these metrics do NOT need to be calculated because
     there already is an appropriate 'aggregate metric'
     established in the sheet.
+
 aggregate_metric_class_names: contains the 'names' of the aggregate
     metric objects that one can use
+
 no_aggregate_metric_needed_for_table_sheets: indicates instances where
     no 'aggregate' row needs to be calculated for the 'table' sheets
 """
@@ -63,7 +75,8 @@ thresholds = {
     constants.erroneous_dates_max: constants.achilles_max_value,
     constants.person_failure_rate_max: constants.achilles_max_value,
 
-    constants.achilles_errors_max: 15
+    constants.achilles_errors_max: 15,
+    constants.visit_date_disparity_max: constants.achilles_max_value
 }
 
 
@@ -91,11 +104,11 @@ percentage_dict = {
     constants.drug_routes: constants.true,
     constants.drug_success: constants.true,
     constants.sites_measurement: constants.true,
-    constants.visit_date_disparity: constants.true,
     constants.date_datetime_disparity: constants.true,
     constants.erroneous_dates: constants.true,
     constants.person_id_failure_rate: constants.true,
-    constants.achilles_errors: constants.false
+    constants.achilles_errors: constants.false,
+    constants.visit_date_disparity: constants.true,
 }
 
 columns_to_document_for_sheet = {
@@ -122,10 +135,7 @@ columns_to_document_for_sheet = {
         'diabetics_w_drugs', 'diabetics_w_glucose',
         'diabetics_w_a1c', 'diabetics_w_insulin'],
 
-    constants.concept: [
-        constants.observation_success, constants.drug_success_col,
-        constants.procedure_success, constants.condition_success,
-        constants.measurement_success, constants.visit_success],
+    constants.concept: constants.concept_success_rate_columns,
 
     constants.date_datetime_disparity:
         constants.all_canonical_tables,
@@ -137,7 +147,13 @@ columns_to_document_for_sheet = {
         constants.all_canonical_tables,
 
     constants.achilles_errors:
-        ['num_distinct_ids']
+        ['num_distinct_ids'],
+
+    constants.visit_date_disparity:
+        [
+        constants.condition_occurrence, constants.drug_exposure,
+        constants.observation, constants.measurement,
+        constants.procedure_occurrence]
 }
 
 
@@ -163,25 +179,25 @@ table_based_on_column_provided = {
     constants.total_route_success_rate: constants.drug_exposure_full,
 
     # drug integration columns
-    constants.all_drugs: 'All Drugs',
-    constants.ace_inhibs: 'ACE Inhibitors',
-    constants.pain_nsaids: 'Pain NSAIDS',
-    constants.msk_nsaids: 'MSK NSAIDS',
-    constants.statins: 'Statins',
-    constants.antibiotics: 'Antibiotics',
-    constants.opioids: 'Opioids',
-    constants.oral_hypo: 'Oral Hypoglycemics',
-    constants.vaccine: 'Vaccine',
-    constants.ccb: 'Calcium Channel Blockers',
-    constants.diuretics: 'Diuretics',
+    constants.all_drugs: constants.all_drugs_full,
+    constants.ace_inhibs: constants.ace_inhibs_full,
+    constants.pain_nsaids: constants.pain_nsaids_full,
+    constants.msk_nsaids: constants.msk_nsaids_full,
+    constants.statins: constants.statins_full,
+    constants.antibiotics: constants.antibiotics_full,
+    constants.opioids: constants.opioids_full,
+    constants.oral_hypo: constants.oral_hypo_full,
+    constants.vaccine: constants.vaccine_full,
+    constants.ccb: constants.ccb_full,
+    constants.diuretics: constants.diuretics_full,
 
     # measurement integration columns
-    constants.all_measurements: 'All Measurements',
-    constants.physical_measurement: 'Physical Measurements',
-    constants.cmp: 'Comprehensive Metabolic Panel',
-    constants.cbc_w_diff: 'CBC with Differential',
-    constants.cbc: 'Complete Blood Count (CBC)',
-    constants.lipid: 'Lipid',
+    constants.all_measurements: constants.all_measurements_full,
+    constants.physical_measurement: constants.physical_measurements_full,
+    constants.cmp: constants.cmp_full,
+    constants.cbc_w_diff: constants.cbc_w_diff_full,
+    constants.cbc: constants.cbc_full,
+    constants.lipid: constants.lipid_full,
 
     'num_distinct_ids': 'All Tables'
 }
@@ -198,7 +214,8 @@ data_quality_dimension_dict = {
     constants.date_datetime_disparity: constants.conformance,
     constants.erroneous_dates: constants.plausibility,
     constants.person_id_failure_rate: constants.conformance,
-    constants.achilles_errors: constants.conformance
+    constants.achilles_errors: constants.conformance,
+    constants.visit_date_disparity: constants.conformance
 }
 
 metric_type_to_english_dict = {
@@ -220,7 +237,8 @@ metric_type_to_english_dict = {
     constants.duplicates: constants.duplicates_full,
     constants.erroneous_dates: constants.erroneous_dates_full,
     constants.person_id_failure_rate: constants.person_id_failure_rate_full,
-    constants.achilles_errors: constants.achilles_errors_full
+    constants.achilles_errors: constants.achilles_errors_full,
+    constants.visit_date_disparity: constants.visit_date_disparity_full
 }
 
 metrics_to_weight = [
@@ -228,7 +246,8 @@ metrics_to_weight = [
     constants.end_before_begin, constants.data_after_death,
     constants.concept, constants.duplicates,
     constants.date_datetime_disparity,
-    constants.erroneous_dates, constants.person_id_failure_rate]
+    constants.erroneous_dates, constants.person_id_failure_rate,
+    constants.visit_date_disparity]
 
 full_names = {
     "saou_uab_selma": "UAB Selma",
@@ -295,4 +314,5 @@ unweighted_metric_already_integrated_for_hpo = [
 no_aggregate_metric_needed_for_table_sheets = [
     constants.drug_success, constants.sites_measurement]
 
-aggregate_metric_class_names = ['All Measurements', 'All Drugs']
+aggregate_metric_class_names = [
+    constants.all_measurements_full, constants.all_drugs_full]
