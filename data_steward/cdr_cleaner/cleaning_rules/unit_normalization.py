@@ -196,17 +196,16 @@ class UnitNormalization(BaseCleaningRule):
         """
 
         # creating _unit_mapping table
-        bq_client = bq.get_client(self.get_project_id())
         unit_mapping_table = f'{self.get_project_id()}.{self.get_dataset_id()}.{UNIT_MAPPING_TABLE}'
         bq.create_tables(
-            bq_client,
+            client,
             self.get_project_id(),
             [unit_mapping_table],
         )
         # Uploading data to _unit_mapping table
         unit_mappings_csv_path = os.path.join(resources.resource_files_path,
                                               UNIT_MAPPING_FILE)
-        job = bq.upload_csv_data_to_bq_table(bq_client, self.get_dataset_id(),
+        job = bq.upload_csv_data_to_bq_table(client, self.get_dataset_id(),
                                              UNIT_MAPPING_TABLE,
                                              unit_mappings_csv_path,
                                              UNIT_MAPPING_TABLE_DISPOSITION)
@@ -270,7 +269,8 @@ if __name__ == '__main__':
     clean_engine.add_console_logging(ARGS.console_log)
     unit_normalization = UnitNormalization(ARGS.project_id, ARGS.dataset_id,
                                            ARGS.sandbox_dataset_id)
-    unit_normalization.setup_rule(client=None)
+    client = bq.get_client(ARGS.project_id)
+    unit_normalization.setup_rule(client=client)
     query_list = unit_normalization.get_query_specs()
     if ARGS.list_queries:
         unit_normalization.log_queries()

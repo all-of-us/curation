@@ -37,10 +37,7 @@ class UnitNormalizationTest(unittest.TestCase):
         with self.assertRaises(RuntimeError) as c:
             self.query_class.setup_rule(None)
 
-        self.assertEqual(
-            str(c.exception),
-            "Unable to create tables: ['foo_project.foo_dataset._unit_mapping']"
-        )
+        self.assertEqual(str(c.exception), 'Specify BigQuery client object')
 
         # No errors are raised, nothing will happen
 
