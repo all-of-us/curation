@@ -44,11 +44,6 @@ class UnitNormalizationTest(unittest.TestCase):
         self.query_class = UnitNormalization(self.project_id, self.dataset_id,
                                              self.sandbox_id)
 
-        self.assertEqual(self.query_class.get_project_id(), self.project_id)
-        self.assertEqual(self.query_class.get_dataset_id(), self.dataset_id)
-        self.assertEqual(self.query_class.get_sandbox_dataset_id(),
-                         self.sandbox_id)
-
     def test_setup_rule(self):
 
         # test if intermediary table exists before running the cleaning rule
@@ -60,6 +55,15 @@ class UnitNormalizationTest(unittest.TestCase):
 
         actual_table = client.get_table(intermediary_table)
         self.assertIsNotNone(actual_table.created)
+
+        # test if exception is raised if table already exists
+        with self.assertRaises(RuntimeError) as c:
+            self.query_class.setup_rule(client)
+
+        self.assertEqual(
+            str(c.exception),
+            "Unable to create tables: ['aou-res-curation-test.krishna_combined._unit_mapping']"
+        )
 
         query = test_query.render(intermediary_table=intermediary_table)
         result = bq.query(query, self.project_id)

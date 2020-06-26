@@ -12,7 +12,6 @@ Original Issue: DC-414
 import logging
 import os
 
-from google.cloud.exceptions import BadRequest
 # Third party imports
 from jinja2 import Environment
 
@@ -44,9 +43,7 @@ UNIT_MAPPING_TABLE_DISPOSITION = bq.bigquery.job.WriteDisposition.WRITE_EMPTY
 SANDBOX_UNITS_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE
     `{{project_id}}.{{sandbox_dataset}}.{{intermediary_table}}` AS(
-WITH
-  joined_query AS (
-  SELECT
+SELECT
     m.*
   FROM
   `{{project_id}}.{{dataset_id}}.{{measurement_table}}` as m
@@ -55,27 +52,6 @@ INNER JOIN
 USING
   (measurement_concept_id,
     unit_concept_id))
-SELECT
-  measurement_id,
-  person_id,
-  measurement_concept_id,
-  measurement_date,
-  measurement_datetime,
-  measurement_type_concept_id,
-  operator_concept_id,
-  value_as_number,
-  value_as_concept_id,
-  unit_concept_id,
-  range_low,
-  range_high,
-  provider_id,
-  visit_occurrence_id,
-  measurement_source_value,
-  measurement_source_concept_id,
-  unit_source_value,
-  value_source_value
-FROM
-  joined_query
     """)
 
 UNIT_NORMALIZATION_QUERY = jinja_env.from_string("""SELECT
@@ -209,14 +185,10 @@ class UnitNormalization(BaseCleaningRule):
                                              UNIT_MAPPING_TABLE,
                                              unit_mappings_csv_path,
                                              UNIT_MAPPING_TABLE_DISPOSITION)
-        try:
-            job.result()
-            LOGGER.info(
-                f"Created {self.get_dataset_id()}.{UNIT_MAPPING_TABLE} and loaded data from {unit_mappings_csv_path}"
-            )
-        except (BadRequest, OSError, AttributeError, TypeError, ValueError):
-            LOGGER.exception(
-                f"Unable to load data to {unit_mapping_table} table")
+        job.result()
+        LOGGER.info(
+            f"Created {self.get_dataset_id()}.{UNIT_MAPPING_TABLE} and loaded data from {unit_mappings_csv_path}"
+        )
 
     def get_query_specs(self):
         """
@@ -254,11 +226,11 @@ class UnitNormalization(BaseCleaningRule):
         """
         pass
 
+    def get_sandbox_table_name(self):
+        return f'{self._issue_numbers[0].lower()}_measurement'
+
     def get_sandbox_tablenames(self):
-        sandbox_table_names = list()
-        sandbox_table_names.append(self._issue_numbers[0].lower() + '_' +
-                                   self._affected_tables[0])
-        return sandbox_table_names
+        return [self.get_sandbox_table_name()]
 
 
 if __name__ == '__main__':

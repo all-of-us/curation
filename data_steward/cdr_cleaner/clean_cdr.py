@@ -10,7 +10,6 @@ import logging
 
 # Third party imports
 import app_identity
-# Project imports
 import bq_utils
 import cdr_cleaner.clean_cdr_engine as clean_engine
 import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
@@ -55,6 +54,8 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
+# Project imports
+from utils import bq
 
 LOGGER = logging.getLogger(__name__)
 
@@ -181,7 +182,6 @@ DEID_CLEAN_CLEANING_CLASSES = [
     # trying to query a table while creating query strings,
     # can't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
-    # TODO: Add Setup rule for unit normalization
     (
         UnitNormalization,),
     (CleanMappingExtTables,)
@@ -498,6 +498,12 @@ def clean_combined_de_identified_clean_dataset(project_id=None,
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
                                                         dataset_id=dataset_id)
+
+    # TODO: Add Logic to run setup_rule for the cleaning rule with query_spec
+    unit_normalization = UnitNormalization(project_id, dataset_id,
+                                           sandbox_dataset_id)
+    bq_client = bq.get_client(project_id)
+    unit_normalization.setup_rule(client=bq_client)
 
     query_list = _gather_deid_clean_cleaning_queries(project_id, dataset_id,
                                                      sandbox_dataset_id)

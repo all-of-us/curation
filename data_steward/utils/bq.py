@@ -92,9 +92,9 @@ def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
                                           job_config=job_config)
     try:
         result = job.result()  # Waits for table load to complete.
-    except BadRequest as e:
-        for e in job.errors:
-            print(f"ERROR: {e['message']}")
+    except (BadRequest, OSError, AttributeError, TypeError, ValueError):
+        raise RuntimeError(f"Unable to load data to table {table_name}")
+
     return result
 
 
