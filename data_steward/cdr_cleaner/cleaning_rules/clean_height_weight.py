@@ -14,7 +14,7 @@ import logging
 from jinja2 import Environment
 
 # Project imports
-from common import MEASUREMENT
+from common import MEASUREMENT, CONCEPT, PERSON, CONDITION_OCCURRENCE, CONCEPT_ANCESTOR
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
@@ -646,7 +646,9 @@ class CleanHeightAndWeight(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=[MEASUREMENT])
+                         affected_tables=[MEASUREMENT, CONCEPT,
+                                          PERSON, CONDITION_OCCURRENCE,
+                                          CONCEPT_ANCESTOR, 'measurement_ext'])
 
     def get_query_specs(self):
         """
