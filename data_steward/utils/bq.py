@@ -4,11 +4,13 @@ A utility to standardize use of the BigQuery python client library.
 # Python Imports
 import logging
 import os
+import typing
 
 # Third-party imports
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
 from google.auth import default
+import jinja2
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -17,6 +19,46 @@ from constants.utils import bq as consts
 from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
+JINJA_ENV = jinja2.Environment(
+    # block tags on their own lines
+    # will not cause extra white space
+    trim_blocks=True,
+    lstrip_blocks=True,
+    # syntax highlighting should be better
+    # with these comment delimiters
+    comment_start_string='--',
+    comment_end_string=' --',
+    # in jinja2 autoescape is for html; jinjasql supports autoescape for sql
+    # TODO Look into jinjasql for sql templating
+    autoescape=False)
+
+CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE {{dataset_id}}.{{table_id}} (
+{% for field in schema -%}
+  {{ field.name }} {{ field.field_type }} {% if field.mode == 'required' -%} NOT NULL {%- endif %}
+  {% if field.description %} OPTIONS (description="{{ field.description }}") {%- endif %} 
+  {% if loop.nextitem %},{% endif -%}
+{%- endfor %} )
+{% if opts -%} 
+OPTIONS (
+    {% for opt_name, opt_val in opts.items() -%}
+    {{opt_name}}=
+        {% if opt_val is string %}
+        "{{opt_val}}"
+        {% elif opt_val is mapping %}
+        [
+            {% for opt_val_key, opt_val_val in opt_val.items() %}
+                ("{{opt_val_key}}", "{{opt_val_val}}"){% if loop.nextitem is defined %},{% endif %}       
+            {% endfor %}
+        ]
+        {% endif %}
+        {% if loop.nextitem is defined %},{% endif %} 
+    {%- endfor %} )
+{%- endif %}
+-- Note clustering/partitioning in conjunction with AS query_expression is -- 
+-- currently unsupported (see https://bit.ly/2VeMs7e) --
+{% if query -%} AS {{ query }} {%- endif %}
+""")
 
 
 def get_client(project_id=None, scopes=None):
@@ -105,6 +147,58 @@ def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
         raise RuntimeError(message)
 
     return result
+
+
+def _to_standard_sql_type(field_type: str) -> str:
+    """
+    Get standard SQL type corresponding to a SchemaField type
+
+    :param field_type: type in SchemaField object (can be legacy or standard SQL type)
+    :return: standard SQL type name
+    """
+    upper_field_type = field_type.upper()
+    standard_sql_type_code = bigquery.schema.LEGACY_TO_STANDARD_TYPES.get(
+        upper_field_type)
+    if not standard_sql_type_code:
+        raise ValueError(f'{field_type} is not a valid field type')
+    standard_sql_type = bigquery.StandardSqlDataTypes(standard_sql_type_code)
+    return standard_sql_type.name
+
+
+def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
+    """
+    Convert all types in a schema field object to standard SQL types (not legacy)
+
+    :param field: the schema field object
+    :return: a converted schema field object
+    """
+    return bigquery.SchemaField(field.name,
+                                _to_standard_sql_type(field.field_type),
+                                field.mode, field.description, field.fields)
+
+
+def get_table_ddl(dataset_id: str,
+                  table_id: str,
+                  schema: typing.List[bigquery.SchemaField] = None,
+                  as_query: str = None,
+                  **table_options):
+    """
+    Generate CREATE TABLE DDL statement
+
+    :param dataset_id:
+    :param table_id:
+    :param schema:
+    :param as_query: query used to populate the table
+    :param table_options: options e.g. description and labels
+    :return:
+    """
+    _schema = get_table_schema(table_id) if schema is None else schema
+    _schema = [_to_sql_field(field) for field in _schema]
+    return CREATE_OR_REPLACE_TABLE_TPL.render(dataset_id=dataset_id,
+                                              table_id=table_id,
+                                              schema=_schema,
+                                              query=as_query,
+                                              opts=table_options)
 
 
 def create_tables(client,
