@@ -98,109 +98,159 @@
 
 # +
 import argparse
-from enum import Enum
+from pathlib import Path
+from typing import Iterable
 
-import jinja2
 import pandas
 from google.cloud import bigquery
 
-
-class RuleType(Enum):
-    """
-    Represents whether rule is to keep or remove child question
-
-    Note: Member names are the same as column name in associated CSV file
-    """
-    remove_if_parent_value_equals = 1
-    keep_if_parent_value_equals = 2
-
+import sandbox
+from common import OBSERVATION
+from resources import PPI_BRANCHING_RULE_PATHS
+from utils import bq
 
 ISSUE_KEY = 'dc-545'
-JINJA_ENV = jinja2.Environment(
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --',
-    autoescape=True)
-RULE_TYPE_COL_SUFFIX = '_if_parent_value_equals'
-QUERY_TEMPLATE = JINJA_ENV.from_string("""
-{% for (child_question, parent_question), parent_answers in grouped_rules %}
-SELECT oc.person_id,
-       oc.observation_id           child_observation_id,
-       oc.observation_source_value child_observation_source_value,
-       oc.value_source_value       child_value_source_value,
-       op.observation_id           parent_observation_id,
-       op.observation_source_value parent_observation_source_value,
-       op.value_source_value       parent_value_source_value
-FROM `{{dataset_id}}.observation` oc
-  LEFT JOIN `{{dataset_id}}.observation` op
-   ON op.person_id = oc.person_id
-   AND op.observation_source_value = '{{parent_question}}'
-   AND op.value_source_value IN (
-     {% for parent_answer in parent_answers %}
-     '{{ parent_answer }}'{{ ',' if loop.nextitem is defined }}
-     {% endfor %}
-   )
+PPI_BRANCHING_TABLE_PREFIX = '_ppi_branching'
+RULES_LOOKUP_TABLE_ID = f'{PPI_BRANCHING_TABLE_PREFIX}_rules_lookup'
+OBSERVATION_BACKUP_TABLE_ID = f'{PPI_BRANCHING_TABLE_PREFIX}_observation'
+BACKUP_ROWS_QUERY = bq.JINJA_ENV.from_string("""
+WITH rule AS
+(SELECT
+  rule_type,
+  child_question,
+  parent_question,
+  -- array of parent answer codes --
+  ARRAY_AGG(parent_value) AS parent_values
+FROM
+  {{lookup_table.project}}.{{lookup_table.dataset_id}}.{{lookup_table.table_id}}
+WHERE parent_value IS NOT NULL
+GROUP BY rule_type, child_question, parent_question)
+
+SELECT 
+  -- SELECT * permissible here because it makes this MORE resilient to schema changes --
+  oc.*
+FROM rule r
+  JOIN {{src_table.project}}.{{src_table.dataset_id}}.{{src_table.table_id}} oc
+    ON r.child_question = oc.observation_source_value
+  JOIN {{src_table.project}}.{{src_table.dataset_id}}.{{src_table.table_id}} op
+    ON op.person_id = oc.person_id
+    AND op.observation_source_value = r.parent_question
 WHERE
- oc.observation_source_value = '{{child_question}}'
-  -- does not have suitable parent answer --
- AND op.observation_id IS {{ 'NOT' if rule_type == RuleType.remove_if_parent_value_equals }} NULL
-
-{{ 'UNION ALL' if loop.nextitem is defined }}
-
-{% endfor %}
-""", globals={'RuleType': RuleType})
-# +
-# TODO Store CSVs in BQ and generate table with schema below so we can
-#  1. avoid having large queries (and have to solve query length limits) and
-#  2. perform sandboxing and removal using atomic operations
-#  (rule_type: STRING,
-#   rule_source: STRING,
-#   child_code: STRING,
-#   parent_code: STRING,
-#   parent_answers: ARRAY[STRING])
-
-# from google.oauth2 import service_account
-# credentials = service_account.Credentials.from_service_account_file('/path/to/json')
-# lifestyle_df['rule_type'] = 'remove'
-# lifestyle_df['source'] = 'lifestyle.csv'
-# to_gbq_result = lifestyle_df.to_gbq(destination_table='{SANDBOX_DATASET}.branching_rules',
-#                                     credentials=credentials,
-#                                     if_exists='replace')
-# -
+(r.rule_type = 'drop' AND op.value_source_value IN UNNEST(r.parent_values)) OR
+(r.rule_type = 'keep' AND op.value_source_value NOT IN UNNEST(r.parent_values))
+""")
 
 
-def get_rule_type(df) -> RuleType:
-    rule_type_lookup = df.columns[2]
-    return RuleType[rule_type_lookup]
+def _load_dataframe(rule_paths: Iterable[str]) -> pandas.DataFrame:
+    """
+    Create dataframe which contains all the rules in the provided file paths
 
-
-def get_sandbox_queries(project_id, dataset_id, rule_paths):
+    :param rule_paths: paths to rule csv files
+    :return: dataframe with all the rules
+    """
+    all_rules_df = pandas.DataFrame()
     for rule_path in rule_paths:
-        rule_df = pandas.read_csv(rule_path, header=0)
-        rule_type = get_rule_type(rule_df)
-
-        rule_gb = rule_df.groupby(['child_question', 'parent_question'])
-        rm_by_child_parent_series = rule_gb[rule_type.name].apply(set)
-        grouped_rules = list(rm_by_child_parent_series.items())
-        query = QUERY_TEMPLATE.render(dataset_id=dataset_id,
-                                      grouped_rules=grouped_rules,
-                                      rule_type=rule_type)
-        yield query
+        rules_df = pandas.read_csv(rule_path, header=0)
+        rules_df['rule_source'] = Path(rule_path).name
+        all_rules_df = all_rules_df.append(rules_df)
+    return all_rules_df
 
 
-def get_sandbox_records(project_id, dataset_id, query):
+def load_rules_lookup(client: bigquery.client.Client,
+                      destination_table: bigquery.TableReference,
+                      rule_paths: Iterable[str]) -> bigquery.job.LoadJob:
+    """
+    Load rule csv files to a BigQuery table
+
+    :param client: active BigQuery Client object
+    :param destination_table: Identifies the table to use for loading the data
+    :param rule_paths: Paths to CSV rule files
+
+    :return: the completed LoadJob object
+    """
+    rules_df = _load_dataframe(rule_paths)
+    job_config = bigquery.LoadJobConfig()
+    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+    job = client.load_table_from_dataframe(rules_df,
+                                           destination=destination_table,
+                                           job_config=job_config)
+    return job.result()
+
+
+def get_backup_rows_query(src_table: bigquery.TableReference,
+                          dst_table: bigquery.TableReference,
+                          lookup_table: bigquery.TableReference) -> str:
+    observation_schema = bq.get_table_schema(OBSERVATION)
+    query = BACKUP_ROWS_QUERY.render(lookup_table=lookup_table, src_table=src_table)
+    return bq.get_table_ddl(dataset_id=dst_table.dataset_id,
+                            table_id=dst_table.table_id,
+                            schema=observation_schema,
+                            as_query=query)
+
+
+def backup_rows(src_table: bigquery.TableReference,
+                dst_table: bigquery.TableReference,
+                lookup_table: bigquery.TableReference,
+                client: bigquery.Client) -> bigquery.QueryJob:
+    job_config = bigquery.QueryJobConfig()
+    job_config.destination = dst_table
+    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+    query = get_backup_rows_query(src_table=src_table,
+                                  dst_table=dst_table,
+                                  lookup_table=lookup_table)
+    query_job = client.query(query=query, job_config=job_config)
+    return query_job.result()
+
+
+def get_observation_replace_query(src_table: bigquery.TableReference,
+                                  backup_table: bigquery.TableReference) -> str:
+    observation_schema = bq.get_table_schema(OBSERVATION)
+    query = f"""
+    SELECT o.* 
+    FROM {src_table.project}.{src_table.dataset_id}.{src_table.table_id} src
+    WHERE NOT EXISTS
+     (SELECT 1 
+      FROM {backup_table.project}.{backup_table.dataset_id}.{backup_table.table_id} bak
+      WHERE bak.observation_id = src.observation_id)
+    """
+    return bq.get_table_ddl(src_table.dataset_id,
+                            schema=observation_schema,
+                            table_id=src_table.table_id,
+                            as_query=query)
+
+
+def drop_rows(client: bigquery.Client,
+              src_table: bigquery.TableReference,
+              backup_table: bigquery.TableReference) -> bigquery.QueryJob:
+    query = get_observation_replace_query(src_table, backup_table)
+    job_config = bigquery.QueryJobConfig()
+    job_config.labels['issue_key'] = ISSUE_KEY
+    job_config.destination = src_table
+    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+    query_job = client.query(query, job_config)
+    return query_job.result()
+
+
+def run(project_id: str, dataset_id: str, sandbox_dataset_id: str,
+        rule_paths: Iterable[str] = None):
+    if not rule_paths:
+        rule_paths = PPI_BRANCHING_RULE_PATHS
     client = bigquery.client.Client(project=project_id)
-    query_job_config = bigquery.QueryJobConfig()
-    query_job_config.labels['issue_key'] = ISSUE_KEY
-    query_job = client.query(query=query, job_config=query_job_config)
-    query_results = query_job.result()
-    results_df = query_results.to_dataframe()
-    return results_df
+
+    # target dataset refs
+    dataset = bigquery.DatasetReference(project_id, dataset_id)
+    src_table = bigquery.TableReference(dataset, OBSERVATION)
+
+    # sandbox dataset refs
+    sandbox_dataset = bigquery.DatasetReference(project_id, sandbox_dataset_id)
+    rules_lookup_table = bigquery.TableReference(sandbox_dataset, RULES_LOOKUP_TABLE_ID)
+    backup_table = bigquery.TableReference(sandbox_dataset, OBSERVATION_BACKUP_TABLE_ID)
+
+    load_rules_job = load_rules_lookup(client,
+                                       destination_table=rules_lookup_table,
+                                       rule_paths=rule_paths)
+    backup_job = backup_rows(src_table, backup_table, rules_lookup_table, client)
+    drop_rows_job = drop_rows(client, src_table, backup_table)
 
 
 def get_arg_parser():
@@ -229,7 +279,7 @@ def get_arg_parser():
                         nargs='+',
                         dest='files',
                         help='Rule files',
-                        required=True)
+                        required=False)
     return parser
 
 
@@ -246,6 +296,5 @@ def parse_args(args=None):
 
 if __name__ == '__main__':
     ARGS = parse_args()
-    QUERIES = get_sandbox_queries(ARGS.project_id, ARGS.dataset_id, ARGS.files)
-    for QUERY in QUERIES:
-        print(QUERY)
+    SANDBOX_DATASET_ID = sandbox.get_sandbox_dataset_id(ARGS.dataset_id)
+    run(ARGS.project_id, ARGS.dataset_id, SANDBOX_DATASET_ID, ARGS.files)
