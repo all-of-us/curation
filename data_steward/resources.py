@@ -43,6 +43,19 @@ value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
 CDR_CLEANER_PATH = os.path.join(resource_files_path, 'cdr_cleaner')
 DC732_CONCEPT_LOOKUP_CSV_PATH = os.path.join(CDR_CLEANER_PATH,
                                              'dc732_concept_lookup.csv')
+PPI_BRANCHING_PATH = os.path.join(CDR_CLEANER_PATH, 'ppi_branching')
+BASICS_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'basics.csv')
+FAMILY_HISTORY_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'family_history.csv')
+HEALTHCARE_ACCESS_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'healthcare_access.csv')
+LIFESTYLE_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'lifestyle.csv')
+OVERALL_HEALTH_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'overall_health.csv')
+PERSONAL_MEDICAL_HISTORY_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'personal_medical_history.csv')
+PPI_BRANCHING_RULE_PATHS = [BASICS_CSV_PATH,
+                            FAMILY_HISTORY_CSV_PATH,
+                            HEALTHCARE_ACCESS_CSV_PATH,
+                            LIFESTYLE_CSV_PATH,
+                            OVERALL_HEALTH_CSV_PATH,
+                            PERSONAL_MEDICAL_HISTORY_CSV_PATH]
 
 
 @cachetools.cached(cache={})
