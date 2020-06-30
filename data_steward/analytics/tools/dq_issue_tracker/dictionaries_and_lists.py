@@ -94,7 +94,12 @@ relevant_links = {
     "data-quality-metrics/person-id-failure-rate?authuser=0",
 
     constants.visit_date_disparity:
-    "placeholder"
+    "https://sites.google.com/view/ehrupload/"
+    "data-quality-metrics/visit-date-disparity?authuser=0",
+
+    constants.visit_id_failure_rate:
+    "https://sites.google.com/view/ehrupload/"
+    "data-quality-metrics/visit-id-failure-rate?authuser=0"
 }
 
 
@@ -113,12 +118,13 @@ thresholds = {
 
     constants.date_datetime_disparity_max: constants.achilles_max_value,
     constants.erroneous_dates_max: constants.achilles_max_value,
-    constants.person_failure_rate_max: constants.achilles_max_value,
+
+    constants.visit_id_failure_rate_max: constants.foreign_key_max_value,
+    constants.person_failure_rate_max: constants.foreign_key_max_value,
 
     constants.achilles_errors_max: 15,
     constants.visit_date_disparity_max: constants.achilles_max_value
 }
-
 
 full_names = {
     "saou_uab_selma": "UAB Selma",
@@ -189,7 +195,8 @@ metric_names = [
     constants.erroneous_dates,
     constants.person_id_failure_rate,
     constants.date_datetime_disparity,
-    constants.visit_date_disparity]
+    constants.visit_date_disparity,
+    constants.visit_id_failure_rate]
 
 
 columns_to_document_for_sheet = {
@@ -231,10 +238,10 @@ columns_to_document_for_sheet = {
         ['num_distinct_ids'],
 
     constants.visit_date_disparity:
-        [
-        constants.condition_occurrence, constants.drug_exposure,
-        constants.observation, constants.measurement,
-        constants.procedure_occurrence]
+        constants.tables_except_visit,
+
+    constants.visit_id_failure_rate:
+        constants.tables_except_visit
 }
 
 table_or_class_based_on_column_provided = {
@@ -295,7 +302,8 @@ data_quality_dimension_dict = {
     constants.erroneous_dates: constants.plausibility,
     constants.person_id_failure_rate: constants.conformance,
     constants.achilles_errors: constants.conformance,
-    constants.visit_date_disparity: constants.conformance
+    constants.visit_date_disparity: constants.conformance,
+    constants.visit_id_failure_rate: constants.conformance
 }
 
 metric_type_to_english_dict = {
@@ -318,8 +326,11 @@ metric_type_to_english_dict = {
     constants.erroneous_dates: constants.erroneous_dates_full,
     constants.person_id_failure_rate: constants.person_id_failure_rate_full,
     constants.achilles_errors: constants.achilles_errors_full,
-    constants.visit_date_disparity: constants.visit_date_disparity_full
+    constants.visit_date_disparity: constants.visit_date_disparity_full,
+    constants.visit_id_failure_rate: constants.visit_id_failure_rate_full
 }
 
 # currently blank - no new metrics expected
-new_metric_types = [constants.visit_date_disparity_full]
+new_metric_types = [
+    constants.visit_date_disparity_full,
+    constants.visit_id_failure_rate_full]

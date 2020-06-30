@@ -75,7 +75,7 @@ def create_hpo_objects(file_name):
             route_success=[], unit_success=[], measurement_integration=[],
             ingredient_integration=[], date_datetime_disparity=[],
             erroneous_dates=[], person_id_failure_rate=[],
-            visit_date_disparity=[])
+            visit_date_disparity=[], visit_id_failure=[])
 
         hpo_objects.append(hpo)
 

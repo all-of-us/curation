@@ -133,7 +133,7 @@ class HPO:
             route_success, unit_success, measurement_integration,
             ingredient_integration, date_datetime_disparity,
             erroneous_dates, person_id_failure_rate,
-            visit_date_disparity):
+            visit_date_disparity, visit_id_failure):
 
         """
         Used to establish the attributes of the HPO object being instantiated.
@@ -166,6 +166,7 @@ class HPO:
         self.erroneous_dates = erroneous_dates
         self.person_id_failure_rate = person_id_failure_rate
         self.visit_date_disparity = visit_date_disparity
+        self.visit_id_failure = visit_id_failure
 
         # only relates to one table - therefore single float expected
         self.route_success = route_success
@@ -227,6 +228,9 @@ class HPO:
 
         elif metric == constants.visit_date_disparity_full:
             self.visit_date_disparity.append(dq_object)
+
+        elif metric == constants.visit_id_failure_rate_full:
+            self.visit_id_failure.append(dq_object)
 
         else:
             hpo_name = self.name
@@ -324,6 +328,11 @@ class HPO:
             if visit_date_disparity_obj.value > \
                     thresholds[constants.visit_date_disparity_max]:
                 failing_metrics.append(visit_date_disparity_obj)
+
+        for visit_id_failure_obj in self.visit_id_failure:
+            if visit_id_failure_obj.value > \
+                    thresholds[constants.visit_id_failure_rate_max]:
+                failing_metrics.append(visit_id_failure_obj)
 
         if not failing_metrics:  # no errors logged
             return None

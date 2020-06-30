@@ -46,6 +46,10 @@ all_canonical_tables = [
     visit_occurrence, condition_occurrence, drug_exposure,
     observation, measurement, procedure_occurrence]
 
+tables_except_visit = [
+    condition_occurrence, drug_exposure,
+    observation, measurement, procedure_occurrence]
+
 tables_with_one_date = [
     visit_occurrence, condition_occurrence, drug_exposure]
 
@@ -116,6 +120,7 @@ all_drugs_full = 'All Drugs'
 achilles_max_value = 0.01
 integration_minimum = 90
 field_population_minimum = 85
+foreign_key_max_value = 0.01
 
 
 # Metric Names
@@ -134,6 +139,7 @@ erroneous_dates = 'erroneous_dates'
 person_id_failure_rate = 'person_id_failure_rate'
 achilles_errors = 'achilles_errors'
 diabetes = 'diabetes'
+visit_id_failure_rate = 'visit_occ_id_failure_rate'
 
 duplicates_full = 'Duplicate Records'
 data_after_death_full = 'Data After Death'
@@ -149,6 +155,7 @@ erroneous_dates_full = 'Erroneous Dates'
 person_id_failure_rate_full = 'Person ID Failure Rate'
 achilles_errors_full = 'Number of ACHILLES Errors'
 diabetes_full = 'Diabetes Completeness'
+visit_id_failure_rate_full = 'Visit ID Failure Rate'
 
 
 # Dimensions of Data Quality
@@ -173,6 +180,7 @@ erroneous_dates_max = 'erroneous_dates_max'
 person_failure_rate_max = 'person_failure_rate_max'
 achilles_errors_max = 'achilles_errors_max'
 visit_date_disparity_max = 'visit_date_disparity_max'
+visit_id_failure_rate_max = 'visit_occ_id_failure_rate_max'
 
 
 # Other Column Names

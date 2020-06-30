@@ -37,7 +37,7 @@ client = bigquery.Client()
 
 # +
 from notebooks import parameters
-DATASET = parameters.LATEST_DATASET
+DATASET = parameters.UNIONED_Q4_2018
 LOOKUP_TABLES = parameters.LOOKUP_TABLES
 
 print(f"Dataset to use: {DATASET}")
@@ -120,7 +120,7 @@ FROM
   DISTINCT
   mco.src_hpo_id, COUNT(mco.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_condition_occurrence` co
+  `{DATASET}.condition_occurrence` co
   LEFT JOIN
   `{DATASET}._mapping_condition_occurrence` mco
   ON
@@ -136,7 +136,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_condition_occurrence` co
+  `{DATASET}.condition_occurrence` co
   LEFT JOIN
   `{DATASET}._mapping_condition_occurrence` mco
   ON
@@ -144,7 +144,7 @@ LEFT JOIN
 
   -- to enable visit/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  `{DATASET}.visit_occurrence` vo
   ON
   co.visit_occurrence_id = vo.visit_occurrence_id
   LEFT JOIN
@@ -160,7 +160,7 @@ LEFT JOIN
     SELECT
     DISTINCT vo.visit_occurrence_id
     FROM
-    `{DATASET}.unioned_ehr_visit_occurrence` vo
+    `{DATASET}.visit_occurrence` vo
     )
 
   -- same visit_occurrence_id but traced to different sites
@@ -200,7 +200,7 @@ FROM
   DISTINCT
   mo.src_hpo_id, COUNT(mo.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_observation` o
+  `{DATASET}.observation` o
   LEFT JOIN
   `{DATASET}._mapping_observation` mo
   ON
@@ -216,7 +216,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_observation` o
+  `{DATASET}.observation` o
   LEFT JOIN
   `{DATASET}._mapping_observation` mo
   ON
@@ -224,7 +224,7 @@ LEFT JOIN
 
   -- to enable visit/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  `{DATASET}.visit_occurrence` vo
   ON
   o.visit_occurrence_id = vo.visit_occurrence_id
   LEFT JOIN
@@ -240,7 +240,7 @@ LEFT JOIN
     SELECT
     DISTINCT vo.visit_occurrence_id
     FROM
-    `{DATASET}.unioned_ehr_visit_occurrence` vo
+    `{DATASET}.visit_occurrence` vo
     )
 
   -- same visit_occurrence_id but traced to different sites
@@ -279,7 +279,7 @@ FROM
   DISTINCT
   mm.src_hpo_id, COUNT(mm.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_measurement` m
+  `{DATASET}.measurement` m
   LEFT JOIN
   `{DATASET}._mapping_measurement` mm
   ON
@@ -295,7 +295,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_measurement` m
+  `{DATASET}.measurement` m
   LEFT JOIN
   `{DATASET}._mapping_measurement` mm
   ON
@@ -303,7 +303,7 @@ LEFT JOIN
 
   -- to enable visit/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  `{DATASET}.visit_occurrence` vo
   ON
   m.visit_occurrence_id = vo.visit_occurrence_id
   LEFT JOIN
@@ -319,7 +319,7 @@ LEFT JOIN
     SELECT
     DISTINCT vo.visit_occurrence_id
     FROM
-    `{DATASET}.unioned_ehr_visit_occurrence` vo
+    `{DATASET}.visit_occurrence` vo
     )
 
   -- same visit_occurrence_id but traced to different sites
@@ -358,7 +358,7 @@ FROM
   DISTINCT
   mde.src_hpo_id, COUNT(mde.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_drug_exposure` de
+  `{DATASET}.drug_exposure` de
   LEFT JOIN
   `{DATASET}._mapping_drug_exposure` mde
   ON
@@ -374,7 +374,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_drug_exposure` de
+  `{DATASET}.drug_exposure` de
   LEFT JOIN
   `{DATASET}._mapping_drug_exposure` mde
   ON
@@ -382,7 +382,7 @@ LEFT JOIN
 
   -- to enable visit/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  `{DATASET}.visit_occurrence` vo
   ON
   de.visit_occurrence_id = vo.visit_occurrence_id
   LEFT JOIN
@@ -398,7 +398,7 @@ LEFT JOIN
     SELECT
     DISTINCT vo.visit_occurrence_id
     FROM
-    `{DATASET}.unioned_ehr_visit_occurrence` vo
+    `{DATASET}.visit_occurrence` vo
     )
 
   -- same visit_occurrence_id but traced to different sites
@@ -437,7 +437,7 @@ FROM
   DISTINCT
   mpo.src_hpo_id, COUNT(mpo.src_hpo_id) as total_rows
   FROM
-  `{DATASET}.unioned_ehr_procedure_occurrence` po
+  `{DATASET}.procedure_occurrence` po
   LEFT JOIN
   `{DATASET}._mapping_procedure_occurrence` mpo
   ON
@@ -453,7 +453,7 @@ LEFT JOIN
 
   -- to enable site tracing
   FROM
-  `{DATASET}.unioned_ehr_procedure_occurrence` po
+  `{DATASET}.procedure_occurrence` po
   LEFT JOIN
   `{DATASET}._mapping_procedure_occurrence` mpo
   ON
@@ -461,7 +461,7 @@ LEFT JOIN
 
   -- to enable visit/src_hpo_id cross-checking
   LEFT JOIN
-  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  `{DATASET}.visit_occurrence` vo
   ON
   po.visit_occurrence_id = vo.visit_occurrence_id
   LEFT JOIN
@@ -477,7 +477,7 @@ LEFT JOIN
     SELECT
     DISTINCT vo.visit_occurrence_id
     FROM
-    `{DATASET}.unioned_ehr_visit_occurrence` vo
+    `{DATASET}.visit_occurrence` vo
     )
 
   -- same visit_occurrence_id but traced to different sites
