@@ -67,7 +67,7 @@ AND table_id NOT LIKE '\\\_%'
 site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
 
 get_full_names = f"""
-select * from {LOOKUP_TABLES}
+select * from {LOOKUP_TABLES}.hpo_site_id_mappings
 """
 
 full_names_df = pd.io.gbq.read_gbq(get_full_names, dialect='standard')
