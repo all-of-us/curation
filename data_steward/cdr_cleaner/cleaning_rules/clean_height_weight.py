@@ -42,24 +42,24 @@ NEW_WEIGHT_ROWS = 'new_weight_rows'
 
 # height queries
 CREATE_HEIGHT_SANDBOX_QUERY = jinja_env.from_string("""
-CREATE OR REPLACE TABLE `{project_id}.{sandbox_dataset_id}.{height_table}` AS
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{height_table}}` AS
 WITH
   concepts AS (
     SELECT
       *
-    FROM `{project_id}.{dataset_id}.concept`
+    FROM `{{project_id}}.{{dataset_id}}.concept`
   ),
   persons AS (
     SELECT
       person_id,
       birth_datetime
-    FROM `{project_id}.{dataset_id}.person`
+    FROM `{{project_id}}.{{dataset_id}}.person`
   ),
   sites AS (
     SELECT
       measurement_id,
       src_id
-    FROM `{project_id}.{dataset_id}.measurement_ext`
+    FROM `{{project_id}}.{{dataset_id}}.measurement_ext`
   ),
   height_measurements AS (
     SELECT
@@ -73,7 +73,7 @@ WITH
       m.value_as_number,
       m.value_as_concept_id,
       m.unit_concept_id
-    FROM `{project_id}.{dataset_id}.measurement` m
+    FROM `{{project_id}}.{{dataset_id}}.measurement` m
     LEFT JOIN sites s
     USING (measurement_id)
     WHERE (m.measurement_concept_id IN (3036277, 3023540, 3019171))
@@ -90,12 +90,12 @@ WITH
       condition_end_date,
       condition_end_datetime,
       condition_type_concept_id
-    FROM `{project_id}.{dataset_id}.condition_occurrence`
+    FROM `{{project_id}}.{{dataset_id}}.condition_occurrence`
   ),
   concept_ancestor AS (
     SELECT
       *
-    FROM `{project_id}.{dataset_id}.concept_ancestor`
+    FROM `{{project_id}}.{{dataset_id}}.concept_ancestor`
   ),
   -- Outlier patients if they have certain diagnosis codes --
   outlierHt_pts AS (
@@ -223,7 +223,7 @@ WITH
     """)
 
 NEW_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
-CREATE OR REPLACE TABLE `{project_id}.{sandbox_dataset_id}.{new_height_rows}` AS
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{new_height_rows}}` AS
 SELECT
   measurement_id,
   person_id,
@@ -248,23 +248,23 @@ FROM (
     measurement_id,
     adj_Ht,
     adj_unit
-  FROM `{project_id}.{sandbox_dataset_id}.{height_table}`
+  FROM `{{project_id}}.{{sandbox_dataset_id}}.{{height_table}}`
   WHERE f_outlier_Ht=0
     AND f_disagree2_Ht=0
     AND adj_Ht IS NOT NULL
     AND adj_unit=8582
 )
-JOIN `{project_id}.{dataset_id}.measurement` m USING (measurement_id)
-LEFT JOIN `{project_id}.{dataset_id}.concept` u_c ON (adj_unit=concept_id)
+JOIN `{{project_id}}.{{dataset_id}}.measurement` m USING (measurement_id)
+LEFT JOIN `{{project_id}}.{{dataset_id}}.concept` u_c ON (adj_unit=concept_id)
 """)
 
 DELETE_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
     SELECT * 
-    FROM `{project_id}.{dataset_id}.measurement` AS m
+    FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
     WHERE measurement_id IN 
     (SELECT measurement_id 
-    FROM `{project_id}.{dataset_id}.measurement` AS m
-    LEFT JOIN `{project_id}.{dataset_id}.measurement_ext` AS me
+    FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
+    LEFT JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS me
     USING (measurement_id)
     WHERE (m.measurement_concept_id IN (3036277, 3023540, 3019171))
     AND me.src_id != 'PPI/PM')    
@@ -272,24 +272,24 @@ DELETE_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
 
 # weight queries
 CREATE_WEIGHT_SANDBOX_QUERY = jinja_env.from_string("""
-CREATE OR REPLACE TABLE `{project_id}.{sandbox_dataset_id}.{weight_table}` AS
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{weight_table}}` AS
 WITH
   concepts AS (
     SELECT
       *
-    FROM `{project_id}.{dataset_id}.concept`
+    FROM `{{project_id}}.{{dataset_id}}.concept`
   ),
   persons AS (
     SELECT
       person_id,
       birth_datetime
-    FROM `{project_id}.{dataset_id}.person`
+    FROM `{{project_id}}.{{dataset_id}}.person`
   ),
   sites AS (
     SELECT
       measurement_id,
       src_id
-    FROM `{project_id}.{dataset_id}.measurement_ext`
+    FROM `{{project_id}}.{{dataset_id}}.measurement_ext`
   ),
   weight_measurements AS (
     SELECT
@@ -303,7 +303,7 @@ WITH
       m.value_as_number,
       m.value_as_concept_id,
       m.unit_concept_id
-    FROM `{project_id}.{dataset_id}.measurement` m
+    FROM `{{project_id}}.{{dataset_id}}.measurement` m
     LEFT JOIN sites s
     USING (measurement_id)
     WHERE (m.measurement_concept_id IN (3025315, 3013762, 3023166))
@@ -320,12 +320,12 @@ WITH
       condition_end_date,
       condition_end_datetime,
       condition_type_concept_id
-    FROM `{project_id}.{dataset_id}.condition_occurrence`
+    FROM `{{project_id}}.{{dataset_id}}.condition_occurrence`
   ),
   concept_ancestor AS (
     SELECT
       *
-    FROM `{project_id}.{dataset_id}.concept_ancestor`
+    FROM `{{project_id}}.{{dataset_id}}.concept_ancestor`
   ),
   /* Outlier patients if they have certain diagnosis codes */
   outlierWt_pts_low AS (
@@ -534,7 +534,7 @@ WITH
 """)
 
 NEW_WEIGHT_ROWS_QUERY = jinja_env.from_string("""
-CREATE OR REPLACE TABLE `{project_id}.{sandbox_dataset_id}.{new_weight_rows}` AS
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{new_weight_rows}}` AS
 SELECT
   measurement_id,
   person_id,
@@ -559,30 +559,30 @@ FROM (
     measurement_id,
     adj_Wt,
     adj_unit
-  FROM `{project_id}.{sandbox_dataset_id}.{weight_table}`
+  FROM `{{project_id}}.{{sandbox_dataset_id}}.{{weight_table}}`
   WHERE f_outlier_Wt=0
     AND f_disagree2_Wt=0
     AND window_flag=0
     AND adj_Wt IS NOT NULL
     AND adj_unit=9529
 )
-JOIN `{project_id}.{dataset_id}.measurement` m USING (measurement_id)
-LEFT JOIN `{project_id}.{dataset_id}.concept` u_c ON (adj_unit=concept_id)
+JOIN `{{project_id}}.{{dataset_id}}.measurement` m USING (measurement_id)
+LEFT JOIN `{{project_id}}.{{dataset_id}}.concept` u_c ON (adj_unit=concept_id)
 """)
 
 DELETE_WEIGHT_ROWS_QUERY = jinja_env.from_string("""
-    SELECT * FROM `{project_id}.{dataset_id}.measurement`
+    SELECT * FROM `{{project_id}}.{{dataset_id}}.measurement`
     WHERE measurement_id IN
     (SELECT measurement_id IN
-    FROM `{project_id}.{dataset_id}.measurement` AS m
-    LEFT JOIN `{project_id}.{dataset_id}.measurement_ext` AS me
+    FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
+    LEFT JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS me
     USING (measurement_id)
     WHERE (m.measurement_concept_id IN (3025315, 3013762, 3023166))
     AND me.src_id != 'PPI/PM')
 """)
 
 INSERT_NEW_ROWS_QUERY = jinja_env.from_string("""
-INSERT INTO `{project_id}.{dataset_id}.measurement`
+INSERT INTO `{{project_id}}.{{dataset_id}}.measurement`
   (measurement_id,
   person_id,
   measurement_concept_id,
@@ -620,7 +620,7 @@ SELECT
   measurement_source_concept_id,
   unit_source_value,
   value_source_value
-FROM `{project_id}.{sandbox_dataset_id}.{new_rows}`
+FROM `{{project_id}}.{{sandbox_dataset_id}}.{{new_rows}}`
 """)
 
 
@@ -646,9 +646,7 @@ class CleanHeightAndWeight(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=[MEASUREMENT, CONCEPT,
-                                          PERSON, CONDITION_OCCURRENCE,
-                                          CONCEPT_ANCESTOR, 'measurement_ext'])
+                         affected_tables=[MEASUREMENT])
 
     def get_query_specs(self):
         """
