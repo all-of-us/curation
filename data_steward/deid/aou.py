@@ -257,6 +257,24 @@ def create_questionnaire_mapping_table(table,
     LOGGER.info('created new questionnaire response mapping table')
 
 
+def create_concept_id_lookup_table(input_dataset, credentials):
+    """
+    Create a lookup table of concept_id's to suppress
+
+    :param input_dataset: input dataset to save lookup table to
+    :param credentials: bigquery credentials
+    """
+
+    lookup_tablename = input_dataset + "._concept_ids_suppression"
+    data = pd.read_csv(
+        os.path.join(DEID_PATH, 'config', 'internal_tables',
+                     'src_concept_ids_suppression.csv'))
+
+    # write this to bigquery.
+    data.to_gbq(lookup_tablename, credentials=credentials, if_exists='replace')
+
+
+
 class AOU(Press):
 
     def __init__(self, **args):
@@ -296,6 +314,9 @@ class AOU(Press):
         person_table = self.get_dataframe(sql=sql, query_config=job_config)
         LOGGER.info(f"patient count is:\t{person_table.shape[0]}")
         map_table = pd.DataFrame()
+
+        # Create concept_id lookup table for suppressions
+        create_concept_id_lookup_table(self.idataset, self.credentials)
 
         # only need to create these tables deidentifying the observation table
         if 'observation' in self.get_tablename().lower().split('.'):
