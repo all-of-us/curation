@@ -274,7 +274,6 @@ def create_concept_id_lookup_table(input_dataset, credentials):
     data.to_gbq(lookup_tablename, credentials=credentials, if_exists='replace')
 
 
-
 class AOU(Press):
 
     def __init__(self, **args):
