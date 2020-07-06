@@ -64,7 +64,7 @@ def establish_hpo_objects(dqm_objects):
               measurement_integration=[], ingredient_integration=[],
               date_datetime_disp=[], erroneous_dates=[],
               person_id_failure=[], achilles_errors=[],
-              visit_date_disparity=[])
+              visit_date_disparity=[], visit_id_failure=[])
 
             blank_hpo_objects.append(hpo)
 

@@ -36,7 +36,7 @@ class HPO:
             route_success, unit_success, measurement_integration,
             ingredient_integration, date_datetime_disp,
             erroneous_dates, person_id_failure, achilles_errors,
-            visit_date_disparity,
+            visit_date_disparity, visit_id_failure,
 
             # number of rows for the 6 canonical tables
             num_measurement_rows=0,
@@ -128,6 +128,10 @@ class HPO:
             objects that show the percentage of rows that have
             inconsistencies with respect to the visit date
 
+        visit_id_failure (list): list of DataQualityMetric
+            objects that show the percentage of rows with an
+            invalid visit_occurrence_id
+
         num_measurement_rows (float): number of rows in the
             measurement table
 
@@ -160,6 +164,7 @@ class HPO:
         self.erroneous_dates = erroneous_dates
         self.person_id_failure = person_id_failure
         self.visit_date_disparity = visit_date_disparity
+        self.visit_id_failure = visit_id_failure
 
         # only relates to one table / entity
         self.route_success = route_success
@@ -188,7 +193,7 @@ class HPO:
         HPO ID: {self.name}
         Full Name: {self.full_name}
         Date: {self.date}
-        
+
         Number of Metrics:
             Concept Success Rate: {len(self.concept_success)}
             Duplicates: {len(self.duplicates)}
@@ -203,7 +208,9 @@ class HPO:
             Person ID Failure: {len(self.person_id_failure)}
             Number of ACHILLES Errors: {len(self.achilles_errors)}
             Visit Date Disparity: {len(self.visit_date_disparity)}
-        
+            Visit ID Failure: {len(self.visit_id_failure)}
+
+
         Number of Rows:
             Measurement: {self.num_measurement_rows}
             Visit Occurrence: {self.num_visit_rows}
@@ -272,6 +279,9 @@ class HPO:
 
         elif metric == constants.visit_date_disparity_full:
             self.visit_date_disparity.append(dq_object)
+
+        elif metric == constants.visit_id_failure_rate_full:
+            self.visit_id_failure.append(dq_object)
 
         else:
             hpo_name = self.name
@@ -401,6 +411,13 @@ class HPO:
 
         elif metric == constants.visit_date_disparity_full:
             for obj in self.visit_date_disparity:
+                if obj.table_or_class == table_or_class:
+                    succ_rate = obj.value
+
+        # NOTE: perhaps we should have a different variable
+        # for 'failure rates' to avoid confusion
+        elif metric == constants.visit_id_failure_rate_full:
+            for obj in self.visit_id_failure:
                 if obj.table_or_class == table_or_class:
                     succ_rate = obj.value
 
@@ -539,6 +556,9 @@ class HPO:
         elif metric == constants.visit_date_disparity_full:
             relevant_objects = self.visit_date_disparity
 
+        elif metric == constants.visit_id_failure_rate_full:
+            relevant_objects = self.visit_id_failure
+
         else:
             raise Exception(
                 f"""The following was identified as a metric:
@@ -613,27 +633,33 @@ class HPO:
         # below we can find the data quality metrics for several tables -
         # need to iterate through a list to get the objects for each table
         for concept_success_obj in self.concept_success:
-            if concept_success_obj.value < thresholds[constants.concept_success_min]:
+            if concept_success_obj.value < \
+                    thresholds[constants.concept_success_min]:
                 failing_metrics.append(concept_success_obj)
 
         for duplicates_obj in self.duplicates:
-            if duplicates_obj.value > thresholds[constants.duplicates_max]:
+            if duplicates_obj.value > \
+                    thresholds[constants.duplicates_max]:
                 failing_metrics.append(duplicates_obj)
 
         for end_before_begin_obj in self.end_before_begin:
-            if end_before_begin_obj.value > thresholds[constants.end_before_begin_max]:
+            if end_before_begin_obj.value > \
+                    thresholds[constants.end_before_begin_max]:
                 failing_metrics.append(end_before_begin_obj)
 
         for data_after_death_obj in self.data_after_death:
-            if data_after_death_obj.value > thresholds[constants.data_after_death_max]:
+            if data_after_death_obj.value > \
+                    thresholds[constants.data_after_death_max]:
                 failing_metrics.append(data_after_death_obj)
 
         for route_obj in self.route_success:
-            if route_obj.value < thresholds[constants.route_success_min]:
+            if route_obj.value < \
+                    thresholds[constants.route_success_min]:
                 failing_metrics.append(route_obj)
 
         for unit_obj in self.unit_success:
-            if unit_obj.value < thresholds[constants.unit_success_min]:
+            if unit_obj.value < \
+                    thresholds[constants.unit_success_min]:
                 failing_metrics.append(unit_obj)
 
         for measurement_integration_obj in self.measurement_integration:
@@ -670,6 +696,11 @@ class HPO:
             if visit_date_disparity_obj.value > \
                     thresholds[constants.visit_date_disparity_max]:
                 failing_metrics.append(visit_date_disparity_obj)
+
+        for visit_id_failure_obj in self.visit_id_failure:
+            if visit_id_failure_obj.value > \
+                    thresholds[constants.visit_id_failure_rate_max]:
+                failing_metrics.append(visit_id_failure_obj)
 
         if not failing_metrics:  # no errors logged
             return None
