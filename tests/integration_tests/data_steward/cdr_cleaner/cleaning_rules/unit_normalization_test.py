@@ -60,13 +60,12 @@ class UnitNormalizationTest(unittest.TestCase):
         with self.assertRaises(RuntimeError) as c:
             self.query_class.setup_rule(client)
 
-        self.assertEqual(
-            str(c.exception),
-            "Unable to create tables: ['aou-res-curation-test.krishna_combined._unit_mapping']"
-        )
+        self.assertEqual(str(c.exception),
+                         f"Unable to create tables: ['{intermediary_table}']")
 
         query = test_query.render(intermediary_table=intermediary_table)
-        result = bq.query(query, self.project_id)
+        query_job_config = bq.bigquery.job.QueryJobConfig(use_query_cache=False)
+        result = client.query(query, job_config=query_job_config).to_dataframe()
         self.assertEqual(result.empty, False)
 
     def tearDown(self):
