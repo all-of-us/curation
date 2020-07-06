@@ -5,9 +5,9 @@ A utility to standardize use of the BigQuery python client library.
 import logging
 import os
 
+from google.api_core.exceptions import GoogleAPIError, BadRequest
 # Third-party imports
 from google.cloud import bigquery
-from google.api_core.exceptions import GoogleAPIError
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -63,6 +63,41 @@ def get_table_schema(table_name, fields=None):
         schema.append(column_def)
 
     return schema
+
+
+def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
+                                write_disposition):
+    """
+    Uploads data from local csv file to bigquery table
+
+    :param client: an instantiated bigquery client object
+    :param dataset_id: identifies the dataset
+    :param table_name: identifies the table name where data needs to be uploaded
+    :param fq_file_path: Fully qualified path to the csv file which needs to be uploaded
+    :param write_disposition: Write disposition for job choose b/w write_empty, write_append, write_truncate
+    :return: job result
+    """
+    dataset_ref = client.dataset(dataset_id)
+    table_ref = dataset_ref.table(table_name)
+    job_config = bigquery.LoadJobConfig()
+    job_config.source_format = bigquery.SourceFormat.CSV
+    job_config.skip_leading_rows = 1
+    job_config.autodetect = True
+    job_config.write_disposition = write_disposition
+
+    LOGGER.info(f"Uploading {fq_file_path} data to {dataset_id}.{table_name}")
+    with open(fq_file_path, "rb") as source_file:
+        job = client.load_table_from_file(source_file,
+                                          table_ref,
+                                          job_config=job_config)
+    try:
+        result = job.result()  # Waits for table load to complete.
+    except (BadRequest, OSError, AttributeError, TypeError, ValueError):
+        message = f"Unable to load data to table {table_name}"
+        LOGGER.exception(message)
+        raise RuntimeError(message)
+
+    return result
 
 
 def create_tables(client,
