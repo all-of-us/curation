@@ -32,18 +32,24 @@ class CleanHeightAndWeightTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = project_id
 
         # Set the expected test datasets
-        dataset_id = os.environ.get('UNIONED_DATASET_ID')
+        dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
 
         cls.query_class = CleanHeightAndWeight(project_id, dataset_id,
                                                sandbox_id)
 
+        sb_table_names = cls.query_class.get_sandbox_tablenames()
+        for table_name in sb_table_names:
+            cls.fq_sandbox_table_names.append(
+                f'{project_id}.{sandbox_id}.{table_name}')
+
         cls.fq_table_names = [
-            f'{project_id}.{dataset_id}.measurement'
-            # f'{project_id}.{dataset_id}.concept',
-            # f'{project_id}.{dataset_id}.person',
-            # f'{project_id}.{dataset_id}.condition_occurrence',
-            # f'{project_id}.{dataset_id}.concept_ancestor'
+            f'{project_id}.{dataset_id}.measurement',
+            f'{project_id}.{dataset_id}.concept',
+            f'{project_id}.{dataset_id}.person',
+            f'{project_id}.{dataset_id}.measurement_ext',
+            f'{project_id}.{dataset_id}.condition_occurrence',
+            f'{project_id}.{dataset_id}.concept_ancestor'
         ]
 
         # call super to set up the client, create datasets, and create
@@ -82,69 +88,81 @@ class CleanHeightAndWeightTest(BaseTest.CleaningRulesTestBase):
                 (678, 666666, 3013762, date('2020-07-01'), 876),
                 (789, 777777, 3023166, date('2020-07-01'), 987)""")
 
-        # concept_tmpl = self.jinja_env.from_string("""
-        #     INSERT INTO `{{fq_dataset_name}}.concept`
-        #     (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, concept_code
-        #         valid_start_date, valid_end_date)
-        #     VALUES
-        #         (123, 'foo', 'foo', 'foo', 'foo', 0, date('2020-06-30'), date('2020-07-01'),
-        #         (234, 'bar', 'bar', 'bar', 'bar', 0, date('2020-06-30'), date('2020-07-01'),
-        #         (345, 'baz', 'baz', 'baz', 'baz', 0, date('2020-06-30'), date('2020-07-01'),
-        #         (456, 'fizz', 'fizz', 'fizz', 'fizz', 0, date('2020-06-30'), date('2020-07-01')"""
-        #                                          )
-        #
-        # person_tmpl = self.jinja_env.from_string("""
-        #     INSERT INTO `{{fq_dataset_name}}.person`
-        #     (person_id, gender_concept_id, year_of_birth, birth_datetime, race_concept_id, ethnicity_concept_id)
-        #     VALUES
-        #         (123, 1111, 1986, timestamp('1986-08-15 11:00:00'), 0, 0),
-        #         (234, 2222, 1979, timestamp('1979-04-15 11:00:00'), 0, 0),
-        #         (345, 3333, 1951, timestamp('1951-09-07 11:00:00'), 0, 0),
-        #         (456, 4444, 1950, timestamp('1952-03-28 11:00:00'), 0, 0)""")
-        #
-        # condition_occurrence_tmpl = self.jinja_env.from_string("""
-        #     INSERT INTO `{{fq_dataset_name}}.condition_occurrence`
-        #     (condition_occurrence_id, person_id, condition_concept_id, condition_start_date, condition_start_datetime,
-        #         condition_type_concept_id)
-        #     VALUES
-        #         (1111, 123, 434005, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
-        #         (2222, 234, 37018860, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
-        #         (3333, 345, 439141, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
-        #         (4444, 456, 4074213, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
-        #         (5555, 567, 45771307, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
-        #         (6666, 678, 4100857, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
-        #         (7777, 789, 42539192, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
-        #         (8888, 890, 1234567, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0)"""
-        #                                                       )
-        #
-        # concept_ancestor_tmpl = self.jinja_env.from_string("""
-        # INSERT INTO `{{fq_dataset_name}}.concept_ancestor`
-        # (ancestor_concept_id, descendant_concept_id, min_levels_of_separation, max_levels_of_separation)
-        # VALUES
-        #     (1234, 4321, 10, 20),
-        #     (2345, 5432, 10, 20),
-        #     (3456, 6543, 10, 20),
-        #     (4567, 7654, 10, 20)""")
+        concept_tmpl = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.concept`
+            (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, concept_code,
+                valid_start_date, valid_end_date)
+            VALUES
+                (123, 'foo', 'foo', 'foo', 'foo', '0', date('2020-06-30'), date('2020-07-01')),
+                (234, 'bar', 'bar', 'bar', 'bar', '0', date('2020-06-30'), date('2020-07-01')),
+                (345, 'baz', 'baz', 'baz', 'baz', '0', date('2020-06-30'), date('2020-07-01')),
+                (456, 'fizz', 'fizz', 'fizz', 'fizz', '0', date('2020-06-30'), date('2020-07-01'))"""
+                                                 )
+
+        person_tmpl = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.person`
+            (person_id, gender_concept_id, year_of_birth, birth_datetime, race_concept_id, ethnicity_concept_id)
+            VALUES
+                (123, 1111, 1986, timestamp('1986-08-15 11:00:00'), 0, 0),
+                (234, 2222, 1979, timestamp('1979-04-15 11:00:00'), 0, 0),
+                (345, 3333, 1951, timestamp('1951-09-07 11:00:00'), 0, 0),
+                (456, 4444, 1950, timestamp('1952-03-28 11:00:00'), 0, 0)""")
+
+        measurement_ext_tmpl = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.measurement_ext`
+            (measurement_id, src_id)
+            VALUES
+                (111111, 'foo'),
+                (222222, 'bar'),
+                (333333, 'baz')""")
+
+        condition_occurrence_tmpl = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.condition_occurrence`
+            (condition_occurrence_id, person_id, condition_concept_id, condition_start_date, condition_start_datetime,
+                condition_type_concept_id)
+            VALUES
+                (1111, 123, 434005, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
+                (2222, 234, 37018860, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
+                (3333, 345, 439141, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
+                (4444, 456, 4074213, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
+                (5555, 567, 45771307, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
+                (6666, 678, 4100857, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
+                (7777, 789, 42539192, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0),
+                (8888, 890, 1234567, date('2015-01-01'), timestamp('2015-01-01 11:00:00'), 0)"""
+                                                              )
+
+        concept_ancestor_tmpl = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.concept_ancestor`
+        (ancestor_concept_id, descendant_concept_id, min_levels_of_separation, max_levels_of_separation)
+        VALUES
+            (1234, 4321, 10, 20),
+            (2345, 5432, 10, 20),
+            (3456, 6543, 10, 20),
+            (4567, 7654, 10, 20)""")
 
         measurement_query = measurement_tmpl.render(
             fq_dataset_name=self.fq_dataset_name)
-        # concept_query = concept_tmpl.render(
-        #     fq_dataset_name=self.fq_dataset_name)
-        # person_query = person_tmpl.render(fq_dataset_name=self.fq_dataset_name)
-        # condition_occurrence_query = condition_occurrence_tmpl.render(
-        #     fq_dataset_name=self.fq_dataset_name)
-        # concept_ancestor_query = concept_ancestor_tmpl.render(
-        #     fq_dataset_name=self.fq_dataset_name)
+        concept_query = concept_tmpl.render(
+            fq_dataset_name=self.fq_dataset_name)
+        person_query = person_tmpl.render(fq_dataset_name=self.fq_dataset_name)
+        measurement_ext_query = measurement_ext_tmpl.render(fq_dataset_name=self.fq_dataset_name)
+        condition_occurrence_query = condition_occurrence_tmpl.render(
+            fq_dataset_name=self.fq_dataset_name)
+        concept_ancestor_query = concept_ancestor_tmpl.render(
+            fq_dataset_name=self.fq_dataset_name)
 
         self.load_test_data([
-            measurement_query
-            # concept_query, person_query,
-            # condition_occurrence_query, concept_ancestor_query
+            measurement_query, concept_query, person_query, measurement_ext_query,
+            condition_occurrence_query, concept_ancestor_query
         ])
 
         # Expected results list
         tables_and_counts = [{
-            'fq_table_name': '.'.join([self.fq_dataset_name, 'measurement']),
+            'fq_table_name': self.fq_table_names[0],
+            'fq_sandbox_table_name': [
+                self.fq_sandbox_table_names[0], self.fq_sandbox_table_names[1],
+                self.fq_sandbox_table_names[2], self.fq_sandbox_table_names[3]
+            ],
             'loaded_ids': [123, 234, 345, 456, 567, 678, 789],
             'sandboxed_ids': [123, 234, 345, 567, 678, 789],
             'fields': [
