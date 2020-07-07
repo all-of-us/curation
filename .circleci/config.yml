@@ -1,6 +1,8 @@
 version: 2.1
 
 orbs:
+  # Send notifications for failed builds on master, develop branches using Slack orb (https://circleci.com/orbs/registry/orb/circleci/slack). Refer to the
+  # For channels to notify and webhook URL refer to the CircleCI Slack App page (https://slack.com/apps/A0F7VRE7N-circleci).
   slack: circleci/slack@3.4.2
 
 job_defaults: &job_defaults
