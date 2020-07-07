@@ -74,6 +74,9 @@ def get_hpo_contact_info(project_id):
     contact_df = contact_df[contact_df.hpo_id.notnull()]
     contact_df = contact_df.set_index('hpo_id')
     contact_dict = contact_df.to_dict('index')
+    LOGGER.info(f"Retrieved contact list from "
+                f"{project_id}.{bq_consts.LOOKUP_TABLES_DATASET_ID}."
+                f"{bq_consts.HPO_ID_CONTACT_LIST_TABLE_ID}")
     return contact_dict
 
 
@@ -116,8 +119,9 @@ def create_recipients_list(hpo_id):
     if len(mail_to) == 0:
         LOGGER.info(f"No valid email addresses for {hpo_id} in contact list")
         return hpo_recipients
-    mail_to.append({'email': consts.DATA_CURATION_LISTSERV, 'type': 'cc'})
+    # mail_to.append({'email': consts.DATA_CURATION_LISTSERV, 'type': 'cc'})
     hpo_recipients[consts.MAIL_TO] = mail_to
+    LOGGER.info(f"Fetched emails {mail_to}")
     return hpo_recipients
 
 
@@ -139,6 +143,7 @@ def generate_html_body(site_name, folder_uri, report_data):
         dc_listserv=consts.DATA_CURATION_LISTSERV,
         aou_logo=consts.AOU_LOGO,
         **report_data)
+    LOGGER.info(f"Generated html email body")
     return html_email_body
 
 
@@ -160,10 +165,13 @@ def generate_email_message(hpo_id, results_html, folder_uri, report_data):
     :param report_data: dict containing report info for submission
     :return: Message dict formatted for Mandrill API
     """
+    LOGGER.info(f"Retrieving email ids for {hpo_id}")
     hpo_recipients = create_recipients_list(hpo_id)
     site_name = hpo_recipients.get(consts.SITE_NAME, '')
     mail_to = hpo_recipients.get(consts.MAIL_TO, [])
     if len(site_name) == 0 or len(mail_to) == 0:
+        LOGGER.info(
+            f"No email ids found for {hpo_id}. Please update contact list.")
         return None
     results_html_b64 = base64.b64encode(results_html.encode())
     html_body = generate_html_body(site_name, folder_uri, report_data)
@@ -209,6 +217,7 @@ def send_email(email_message):
         result = mandrill_client.messages.send(message=email_message)
     except mandrill.Error as e:
         # Mandrill errors are thrown as exceptions
-        LOGGER.exception(f"A mandrill error occurred: {e.__class__} - {e}")
-        raise
+        msg = f"A mandrill error occurred: {e.__class__} - {e}"
+        LOGGER.exception(msg)
+        result = [{'_id': msg}]
     return result

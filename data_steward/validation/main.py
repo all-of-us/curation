@@ -11,6 +11,8 @@ import json
 import logging
 import os
 import re
+import sys
+import traceback
 from io import StringIO, open
 
 # Third party imports
@@ -44,12 +46,27 @@ app = Flask(__name__)
 app.register_blueprint(errors_blueprint)
 
 
+def print_traceback(func):
+    """Wrapper that prints exception tracebacks to stdout"""
+
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logging.exception(f"Exception {e.__class__}: {str(e)}",
+                              exc_info=True)
+            traceback.print_exc(file=sys.stdout)
+            raise e
+
+    return wrapper
+
+
 def all_required_files_loaded(result_items):
     for (file_name, _, _, loaded) in result_items:
         if file_name in common.REQUIRED_FILES:
             if loaded != 1:
                 return False
-    return True
+    return False
 
 
 def save_datasources_json(datasource_id=None,
@@ -174,6 +191,7 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
 
 
 @api_util.auth_required_cron
+@print_traceback
 def validate_hpo_files(hpo_id):
     """
     validation end point for individual hpo_ids
@@ -183,6 +201,7 @@ def validate_hpo_files(hpo_id):
 
 
 @api_util.auth_required_cron
+@print_traceback
 def validate_all_hpos():
     """
     validation end point for all hpo_ids
@@ -447,6 +466,7 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
 
     folder_uri = f"gs://{bucket}/{folder_prefix}"
     if folder_items and is_first_validation_run(folder_items):
+        logging.info(f"Attempting to email report for {hpo_id}")
         email_msg = en.generate_email_message(hpo_id, results_html, folder_uri,
                                               report_data)
         if email_msg is not None:
@@ -615,7 +635,9 @@ def extract_date_from_rdr_dataset_id(rdr_dataset_id):
         # TODO remove dependence on date string in RDR dataset id
         rdr_date = rdr_date[:4] + '-' + rdr_date[4:6] + '-' + rdr_date[6:]
         return rdr_date
-    raise ValueError(f"{rdr_dataset_id} is not a valid rdr_dataset_id")
+    else:
+        logging.info(f"{rdr_dataset_id} is not a valid rdr_dataset_id")
+        return '2020-01-01'
 
 
 def get_hpo_missing_pii_query(hpo_id):
