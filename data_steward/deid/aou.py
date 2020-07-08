@@ -277,7 +277,9 @@ def create_concept_id_lookup_table(input_dataset, credentials):
                          'src_concept_ids_suppression.csv'))
 
         # write this to bigquery.
-        data.to_gbq(lookup_tablename, credentials=credentials, if_exists='replace')
+        data.to_gbq(lookup_tablename, 
+                    credentials=credentials, 
+                    if_exists='replace')
 
 
 class AOU(Press):
