@@ -266,12 +266,18 @@ def create_concept_id_lookup_table(input_dataset, credentials):
     """
 
     lookup_tablename = input_dataset + "._concept_ids_suppression"
-    data = pd.read_csv(
-        os.path.join(DEID_PATH, 'config', 'internal_tables',
-                     'src_concept_ids_suppression.csv'))
+    # check for existence
+    try:
+        client = bq.Client(credentials=credentials)
+        client.get_table(lookup_tablename)
+    except NotFound:
+        LOGGER.info(f"Creating table {lookup_tablename}.")
+        data = pd.read_csv(
+            os.path.join(DEID_PATH, 'config', 'internal_tables',
+                         'src_concept_ids_suppression.csv'))
 
-    # write this to bigquery.
-    data.to_gbq(lookup_tablename, credentials=credentials, if_exists='replace')
+        # write this to bigquery.
+        data.to_gbq(lookup_tablename, credentials=credentials, if_exists='replace')
 
 
 class AOU(Press):
