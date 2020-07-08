@@ -172,22 +172,22 @@ class UnitNormalization(BaseCleaningRule):
         """
 
         # creating _unit_mapping table
-        unit_mapping_table = f'{self.get_project_id()}.{self.get_dataset_id()}.{UNIT_MAPPING_TABLE}'
+        unit_mapping_table = f'{self.project_id}.{self.dataset_id}.{UNIT_MAPPING_TABLE}'
         bq.create_tables(
             client,
-            self.get_project_id(),
+            self.project_id,
             [unit_mapping_table],
         )
         # Uploading data to _unit_mapping table
         unit_mappings_csv_path = os.path.join(resources.resource_files_path,
                                               UNIT_MAPPING_FILE)
-        job = bq.upload_csv_data_to_bq_table(client, self.get_dataset_id(),
+        job = bq.upload_csv_data_to_bq_table(client, self.dataset_id,
                                              UNIT_MAPPING_TABLE,
                                              unit_mappings_csv_path,
                                              UNIT_MAPPING_TABLE_DISPOSITION)
         job.result()
         LOGGER.info(
-            f"Created {self.get_dataset_id()}.{UNIT_MAPPING_TABLE} and loaded data from {unit_mappings_csv_path}"
+            f"Created {self.dataset_id}.{UNIT_MAPPING_TABLE} and loaded data from {unit_mappings_csv_path}"
         )
 
     def get_query_specs(self):
@@ -196,22 +196,22 @@ class UnitNormalization(BaseCleaningRule):
         """
         sandbox_query = dict()
         sandbox_query[cdr_consts.QUERY] = SANDBOX_UNITS_QUERY.render(
-            project_id=self.get_project_id(),
-            sandbox_dataset=self.get_sandbox_dataset_id(),
+            project_id=self.project_id,
+            sandbox_dataset=self.sandbox_dataset_id,
             intermediary_table=self.get_sandbox_tablenames()[0],
-            dataset_id=self.get_dataset_id(),
+            dataset_id=self.dataset_id,
             unit_table_name=UNIT_MAPPING_TABLE,
             measurement_table=MEASUREMENT)
 
         update_query = dict()
         update_query[cdr_consts.QUERY] = UNIT_NORMALIZATION_QUERY.render(
-            project_id=self.get_project_id(),
-            dataset_id=self.get_dataset_id(),
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
             unit_table_name=UNIT_MAPPING_TABLE,
             measurement_table=MEASUREMENT)
         update_query[cdr_consts.DESTINATION_TABLE] = MEASUREMENT
         update_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        update_query[cdr_consts.DESTINATION_DATASET] = self.get_dataset_id()
+        update_query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         return [sandbox_query, update_query]
 
     def setup_validation(self, client):
