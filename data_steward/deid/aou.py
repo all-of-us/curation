@@ -84,6 +84,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from google.cloud import bigquery as bq
+from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
 
 # Project imports
@@ -277,8 +278,8 @@ def create_concept_id_lookup_table(input_dataset, credentials):
                          'src_concept_ids_suppression.csv'))
 
         # write this to bigquery.
-        data.to_gbq(lookup_tablename, 
-                    credentials=credentials, 
+        data.to_gbq(lookup_tablename,
+                    credentials=credentials,
                     if_exists='replace')
 
 
