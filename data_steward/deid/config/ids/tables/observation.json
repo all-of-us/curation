@@ -114,31 +114,31 @@
     "suppress": [
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for the value_source_concept_id field",
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and value_source_concept_id in (select concept_id from `:idataset.concept_ids_suppression`))"
+            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and value_source_concept_id in (select concept_id from `:idataset._concept_ids_suppression`))"
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for the observation_source_concept_id field",
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (select concept_id from `:idataset.concept_ids_suppression`))"
+            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_source_concept_id in (select concept_id from `:idataset._concept_ids_suppression`))"
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for the observation_concept_id field",
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_concept_id in (select concept_id from `:idataset.concept_ids_suppression`))"
+            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_concept_id in (select concept_id from `:idataset._concept_ids_suppression`))"
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for the observation_type_concept_id field",
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_type_concept_id in (select concept_id from `:idataset.concept_ids_suppression`))"
+            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and observation_type_concept_id in (select concept_id from `:idataset._concept_ids_suppression`))"
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for the value_as_concept_id field",
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and value_as_concept_id in (select concept_id from `:idataset.concept_ids_suppression`))"
+            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and value_as_concept_id in (select concept_id from `:idataset._concept_ids_suppression`))"
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for the qualifier_concept_id field",
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and qualifier_concept_id in (select concept_id from `:idataset.concept_ids_suppression`))"
+            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and qualifier_concept_id in (select concept_id from `:idataset._concept_ids_suppression`))"
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for the unit_concept_id field",
-            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and unit_concept_id in (select concept_id from `:idataset.concept_ids_suppression`))"
+            "on": " exists (select * from `:idataset.observation` as record2 where :join_tablename.observation_id = record2.observation_id and unit_concept_id in (select concept_id from `:idataset._concept_ids_suppression`))"
         },
         {   "comment": "removing ethnic groups, alternative race and fields (data has redundancies) and ehr DOB",
              "on": "observation_concept_id in (4013886, 4271761, 4135376, 4083587)"

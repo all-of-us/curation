@@ -2,27 +2,27 @@
     "suppress":[
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for measurement_source_concept_id",
-            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and measurement_source_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and measurement_source_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for measurement_concept_id",
-            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and measurement_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and measurement_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for measurement_type_concept_id",
-            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and measurement_type_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and measurement_type_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for operator_concept_id",
-            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and operator_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and operator_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for value_as_concept_id",
-            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and value_as_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and value_as_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for unit_concept_id",
-            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and unit_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.measurement` as record2 where measurement.measurement_id = record2.measurement_id and unit_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         }
     ]
 }

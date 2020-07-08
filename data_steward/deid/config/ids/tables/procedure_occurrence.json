@@ -2,19 +2,19 @@
     "suppress":[
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for procedure_source_concept_id",
-            "on": " exists (select * from `:idataset.procedure_occurrence` as record2 where procedure_occurrence.procedure_occurrence_id = record2.procedure_occurrence_id and procedure_source_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.procedure_occurrence` as record2 where procedure_occurrence.procedure_occurrence_id = record2.procedure_occurrence_id and procedure_source_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for procedure_concept_id",
-            "on": " exists (select * from `:idataset.procedure_occurrence` as record2 where procedure_occurrence.procedure_occurrence_id = record2.procedure_occurrence_id and procedure_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.procedure_occurrence` as record2 where procedure_occurrence.procedure_occurrence_id = record2.procedure_occurrence_id and procedure_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for procedure_type_concept_id",
-            "on": " exists (select * from `:idataset.procedure_occurrence` as record2 where procedure_occurrence.procedure_occurrence_id = record2.procedure_occurrence_id and procedure_type_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.procedure_occurrence` as record2 where procedure_occurrence.procedure_occurrence_id = record2.procedure_occurrence_id and procedure_type_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for modifier_concept_id",
-            "on": " exists (select * from `:idataset.procedure_occurrence` as record2 where procedure_occurrence.procedure_occurrence_id = record2.procedure_occurrence_id and modifier_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.procedure_occurrence` as record2 where procedure_occurrence.procedure_occurrence_id = record2.procedure_occurrence_id and modifier_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         }
     ]
 }

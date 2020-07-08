@@ -2,19 +2,19 @@
     "suppress":[
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for gender_source_concept_id.  nothing should be removed",
-            "on": " exists (select * from `:idataset.provider` as record2 where provider.provider_id = record2.provider_id and gender_source_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.provider` as record2 where provider.provider_id = record2.provider_id and gender_source_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for gender_concept_id.  nothing should be removed",
-            "on": " exists (select * from `:idataset.provider` as record2 where provider.provider_id = record2.provider_id and gender_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.provider` as record2 where provider.provider_id = record2.provider_id and gender_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for specialty_source_concept_id.  nothing should be removed",
-            "on": " exists (select * from `:idataset.provider` as record2 where provider.provider_id = record2.provider_id and specialty_source_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.provider` as record2 where provider.provider_id = record2.provider_id and specialty_source_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         },
         {
             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for specialty_concept_id.  nothing should be removed",
-            "on": " exists (select * from `:idataset.provider` as record2 where provider.provider_id = record2.provider_id and specialty_concept_id in (select concept_id from `:idataset.concept_ids_suppression`)) "
+            "on": " exists (select * from `:idataset.provider` as record2 where provider.provider_id = record2.provider_id and specialty_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
         }
     ]
 }
