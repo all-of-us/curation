@@ -47,6 +47,7 @@ import sandbox
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
+from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import DropDuplicatePpiQuestionsAndAnswers
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import \
@@ -157,6 +158,7 @@ COMBINED_CLEANING_CLASSES = [
     (remove_aian_participants.get_queries,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
+    (DropDuplicatePpiQuestionsAndAnswers,),
     # trying to query a table while creating query strings,
     # can't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
