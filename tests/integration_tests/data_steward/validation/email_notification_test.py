@@ -7,7 +7,6 @@ from unittest import mock, TestCase
 import app_identity
 from validation import email_notification as en
 from validation.main import get_eastern_time
-from tests.test_util import FIVE_PERSON_RESULTS_FILE
 
 
 class EmailNotificationTest(TestCase):
@@ -32,7 +31,11 @@ class EmailNotificationTest(TestCase):
             'submission_error': False
         }
 
-    def test_hpo_contact_list(self):
+    @mock.patch(
+        'validation.email_notification.query_sheet_linked_bq_table_app_engine')
+    def test_hpo_contact_list(self, query_rest_api):
+        query_rest_api.return_value = en.query_sheet_linked_bq_table_compute_engine(
+            self.project_id)
         fake_dict = {
             'fake_1': {
                 'site_name':

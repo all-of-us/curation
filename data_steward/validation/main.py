@@ -66,7 +66,7 @@ def all_required_files_loaded(result_items):
         if file_name in common.REQUIRED_FILES:
             if loaded != 1:
                 return False
-    return False
+    return True
 
 
 def save_datasources_json(datasource_id=None,
@@ -466,16 +466,21 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
 
     folder_uri = f"gs://{bucket}/{folder_prefix}"
     if folder_items and is_first_validation_run(folder_items):
-        logging.info(f"Attempting to email report for {hpo_id}")
+        logging.info(f"Attempting to send report via email for {hpo_id}")
         email_msg = en.generate_email_message(hpo_id, results_html, folder_uri,
                                               report_data)
         if email_msg is not None:
             result = en.send_email(email_msg)
-            result_ids = ', '.join(
-                [result_item['_id'] for result_item in result])
-            logging.info(
-                f"Sending emails for hpo_id {hpo_id} with Mandrill tracking ids: {result_ids}"
-            )
+            if result is not None:
+                result_ids = ', '.join(
+                    [result_item['_id'] for result_item in result])
+                logging.info(
+                    f"Sending emails for hpo_id {hpo_id} with Mandrill tracking ids: {result_ids}"
+                )
+            else:
+                logging.info(
+                    'Mandrill error occurred. Please check logs for more details'
+                )
         else:
             logging.info(
                 f"Not enough info in contact list to send emails for hpo_id {hpo_id}"
@@ -637,7 +642,7 @@ def extract_date_from_rdr_dataset_id(rdr_dataset_id):
         return rdr_date
     else:
         logging.info(f"{rdr_dataset_id} is not a valid rdr_dataset_id")
-        return '2020-01-01'
+        return '2020-01-01 (outdated)'
 
 
 def get_hpo_missing_pii_query(hpo_id):
