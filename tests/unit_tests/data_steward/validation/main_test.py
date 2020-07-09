@@ -230,8 +230,10 @@ class ValidationMainTest(TestCase):
         expected_date = '2020-02-01'
         rdr_date = main.extract_date_from_rdr_dataset_id(rdr_dataset_id)
         self.assertEqual(rdr_date, expected_date)
-        self.assertRaises(ValueError, main.extract_date_from_rdr_dataset_id,
-                          bad_rdr_dataset_id)
+        expected_placeholder_date = '2020-01-01 (outdated)'
+        placeholder_rdr_date = main.extract_date_from_rdr_dataset_id(
+            bad_rdr_dataset_id)
+        self.assertEqual(placeholder_rdr_date, expected_placeholder_date)
 
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
     @mock.patch('bq_utils.query')
