@@ -81,7 +81,7 @@ and relationship_id = 'Maps to')
 DELETE_DUPLICATE_ANSWERS = jinja_env.from_string("""
 select * 
 from `{{project}}.{{dataset}}.{{clinical_table_name}}` o
-where value_source_concept_id in (select value_source_concept_id 
+where value_source_concept_id not in (select value_source_concept_id 
 from `{{project}}.{{sandbox_dataset}}.{{ans_table}}`)
 """)
 
@@ -112,7 +112,7 @@ class DropDuplicatePpiQuestionsAndAnswers(BaseCleaningRule):
         )
         super().__init__(issue_numbers=['DC539', 'DC704'],
                          description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_datasets=[cdr_consts.RDR],
                          affected_tables=['observation'],
                          project_id=project_id,
                          dataset_id=dataset_id,
@@ -217,11 +217,12 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    combined_cleaner = DropDuplicatePpiQuestionsAndAnswers(
-        ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
-    query_list = combined_cleaner.get_query_specs()
+    rdr_cleaner = DropDuplicatePpiQuestionsAndAnswers(ARGS.project_id,
+                                                      ARGS.dataset_id,
+                                                      ARGS.sandbox_dataset_id)
+    query_list = rdr_cleaner.get_query_specs()
 
     if ARGS.list_queries:
-        combined_cleaner.log_queries()
+        rdr_cleaner.log_queries()
     else:
         clean_engine.clean_dataset(ARGS.project_id, query_list)

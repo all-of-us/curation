@@ -120,6 +120,7 @@ RDR_CLEANING_CLASSES = [
         get_update_questions_answers_not_mapped_to_omop,),
     (round_ppi_values.get_round_ppi_values_queries,),
     (update_family_history.get_update_family_history_qa_queries,),
+    (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
     (drop_mult_meas.get_drop_multiple_measurement_queries,),
 ]
@@ -158,7 +159,6 @@ COMBINED_CLEANING_CLASSES = [
     (remove_aian_participants.get_queries,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
-    (DropDuplicatePpiQuestionsAndAnswers,),
     # trying to query a table while creating query strings,
     # can't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution

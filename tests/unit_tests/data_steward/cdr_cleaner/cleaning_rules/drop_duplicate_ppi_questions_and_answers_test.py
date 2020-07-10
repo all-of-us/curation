@@ -59,7 +59,7 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
     def test_get_query_specs(self):
         # Pre conditions
         self.assertEqual(self.query_class.get_affected_datasets(),
-                         [clean_consts.COMBINED])
+                         [clean_consts.RDR])
 
         # Test
         results_list = self.query_class.get_query_specs()
@@ -116,7 +116,7 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
     def test_log_queries(self):
         # Pre conditions
         self.assertEqual(self.query_class.get_affected_datasets(),
-                         [clean_consts.COMBINED])
+                         [clean_consts.RDR])
 
         sandbox_answers = SANDBOX_PPI_ANSWERS.render(
             project=self.project_id,
