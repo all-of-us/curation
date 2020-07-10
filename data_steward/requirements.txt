@@ -16,13 +16,13 @@ entrypoints==0.3
 enum34==1.1.6
 flask==0.10
 funcsigs==1.0.2
-google-api-core==1.14.3
+google-api-core==1.15.0
 google-api-python-client==1.6.4
-google-auth==1.9.0
+google-auth==1.11.0
 google-auth-httplib2==0.0.3
 google-auth-oauthlib==0.4.1
 google-cloud-bigquery==1.24.0
-google-cloud-core==1.1.0
+google-cloud-core==1.2.0
 google-cloud-logging==1.14.0
 google-resumable-media==0.5.0
 googleapis-common-protos==1.6.0
