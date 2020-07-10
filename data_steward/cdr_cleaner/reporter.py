@@ -160,7 +160,7 @@ def separate_sql_statements(rules_values):
     separated_rules_values = []
     for rule_values in rules_values:
         sql_list = []
-        separated = dict()
+        separated = dict(rule_values)
 
         # gather the queries as a list
         sql_value = rule_values.get(report_consts.SQL, [])
@@ -177,12 +177,10 @@ def separate_sql_statements(rules_values):
         if sql_list:
             # generate a dictionary for each query
             for query in sql_list:
-                separated = dict(rule_values)
                 separated[report_consts.SQL] = query.strip()
                 separated_rules_values.append(separated)
         else:
             # was unable to read any sql, so just add to the list
-            separated = dict(rule_values)
             separated_rules_values.append(separated)
 
     return separated_rules_values
