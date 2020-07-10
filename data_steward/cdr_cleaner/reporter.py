@@ -9,13 +9,14 @@ import os
 # Third party imports
 from googleapiclient.errors import HttpError
 from google.api_core.exceptions import BadRequest
+from google.auth.exceptions import DefaultCredentialsError
 
 # Project imports
 import cdr_cleaner.args_parser as cleaning_parser
 import cdr_cleaner.clean_cdr as control
 import cdr_cleaner.clean_cdr_engine as engine
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import constants.cdr_cleaner.reporter as report
+import constants.cdr_cleaner.reporter as report_consts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -51,24 +52,26 @@ def get_function_info(func, fields_list):
     func_info = dict()
 
     for field in fields_list:
-        func_info[field] = 'unknown'
+        func_info[field] = report_consts.UNKNOWN
 
-    if 'name' not in fields_list:
-        LOGGER.info(f"Adding 'name' field to notify report reader this "
-                    f"function ({func.__qualname__}), "
-                    "needs to be implemented as a class.")
+    if report_consts.NAME not in fields_list:
+        LOGGER.info(
+            f"Adding '{report_consts.NAME}' field to notify report reader this "
+            f"function ({func.__qualname__}), "
+            "needs to be implemented as a class.")
 
-    func_info['name'] = func.__name__
+    func_info[report_consts.NAME] = func.__name__
 
-    if 'module' not in fields_list:
-        LOGGER.info(f"Adding 'module' field to notify report reader this "
-                    f"function ({func.__qualname__}) "
-                    "needs to be implemented as a class.")
+    if report_consts.MODULE not in fields_list:
+        LOGGER.info(
+            f"Adding '{report_consts.MODULE}' field to notify report reader this "
+            f"function ({func.__qualname__}) "
+            "needs to be implemented as a class.")
 
-    func_info['module'] = func.__module__
+    func_info[report_consts.MODULE] = func.__module__
 
-    if 'description' in fields_list:
-        func_info['description'] = func.__doc__
+    if report_consts.DESCRIPTION in fields_list:
+        func_info[report_consts.DESCRIPTION] = func.__doc__
 
     return func_info
 
@@ -97,7 +100,8 @@ def get_stage_elements(data_stage, fields_list):
             instance = clazz('foo', 'bar', 'baz')
             LOGGER.info(f"{clazz} ducktyped to a class")
 
-        except (RuntimeError, TypeError, HttpError, BadRequest):
+        except (RuntimeError, TypeError, HttpError, BadRequest,
+                DefaultCredentialsError):
             LOGGER.info(f"{rule} did NOT ducktype to a class")
             rule_info = get_function_info(clazz, fields_list)
             report_rows.append(rule_info)
@@ -110,14 +114,14 @@ def get_stage_elements(data_stage, fields_list):
                 for field in fields_list:
                     try:
                         value = 'NO DATA'
-                        if field in report.FIELDS_PROPERTIES_MAP:
-                            func = report.FIELDS_PROPERTIES_MAP[field]
+                        if field in report_consts.FIELDS_PROPERTIES_MAP:
+                            func = report_consts.FIELDS_PROPERTIES_MAP[field]
                             value = getattr(instance, func, 'no data')
-                        elif field in report.FIELDS_METHODS_MAP:
-                            func = report.FIELDS_METHODS_MAP[field]
+                        elif field in report_consts.FIELDS_METHODS_MAP:
+                            func = report_consts.FIELDS_METHODS_MAP[field]
                             value = getattr(instance, func, 'no data')()
-                        elif field in report.CLASS_ATTRIBUTES_MAP:
-                            func = report.CLASS_ATTRIBUTES_MAP[field]
+                        elif field in report_consts.CLASS_ATTRIBUTES_MAP:
+                            func = report_consts.CLASS_ATTRIBUTES_MAP[field]
 
                             value = None
                             for item in func.split('.'):
@@ -134,7 +138,7 @@ def get_stage_elements(data_stage, fields_list):
                         LOGGER.exception(
                             f'An error occurred trying to get the value for {field}'
                         )
-                        rule_info[field] = 'unknown'
+                        rule_info[field] = report_consts.UNKNOWN
             except (TypeError, AttributeError):
                 # an error occurred indicating this is not a rule extending the
                 # base cleaning rule.  provide the info we can and move on.
@@ -159,14 +163,22 @@ def separate_sql_statements(rules_values):
         separated = dict()
 
         # gather the queries as a list
-        for query_dict in rule_values.get('sql', []):
-            sql_list.append(query_dict.get('query', ''))
+        sql_value = rule_values.get(report_consts.SQL, [])
+        for query_dict in sql_value:
+            try:
+                sql_list.append(query_dict.get(report_consts.QUERY, ''))
+            except AttributeError:
+                if sql_value == report_consts.UNKNOWN:
+                    sql_list.append(report_consts.UNKNOWN)
+                    break
+                else:
+                    raise
 
         if sql_list:
             # generate a dictionary for each query
             for query in sql_list:
                 separated = dict(rule_values)
-                separated['sql'] = query.strip()
+                separated[report_consts.SQL] = query.strip()
                 separated_rules_values.append(separated)
         else:
             # was unable to read any sql, so just add to the list
@@ -188,7 +200,7 @@ def format_values(rules_values, fields_list):
     """
     formatted_values = []
 
-    if 'sql' in fields_list:
+    if report_consts.SQL in fields_list:
         LOGGER.debug("SQL field exists")
         rules_values = separate_sql_statements(rules_values)
 
@@ -252,13 +264,15 @@ def write_csv_report(output_filepath, stages_list, fields_list):
         raise RuntimeError(f"This file is not a csv file: {output_filepath}.")
 
     required_fields_dict = [{}]
+    output_list = [{}]
     for stage in stages_list:
         # get the fields and values
         required_fields_dict = get_stage_elements(stage, fields_list)
         # format dictionaries for writing
         required_fields_dict = format_values(required_fields_dict, fields_list)
+        output_list.extend(required_fields_dict)
 
-    fields_list = check_field_list_validity(fields_list, required_fields_dict)
+    fields_list = check_field_list_validity(fields_list, output_list)
 
     # write the contents to a csv file
     with open(output_filepath, 'w', newline='') as csvfile:
@@ -268,7 +282,7 @@ def write_csv_report(output_filepath, stages_list, fields_list):
                                 lineterminator=os.linesep,
                                 quoting=csv.QUOTE_ALL)
         writer.writeheader()
-        for info in required_fields_dict:
+        for info in output_list:
             writer.writerow(info)
 
 

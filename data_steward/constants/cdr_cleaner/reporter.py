@@ -1,9 +1,16 @@
 """
 A package to generate a csv file type report for cleaning rules.
 """
+NAME = 'name'
+MODULE = 'module'
+UNKNOWN = 'unknown'
+DESCRIPTION = 'description'
+SQL = 'sql'
+QUERY = 'query'
+
 FIELDS_PROPERTIES_MAP = {
     'jira-issues': 'issue_numbers',
-    'description': 'description',
+    DESCRIPTION: 'description',
     'affected-datasets': 'affected_datasets',
     'affected-tables': 'affected_tables',
     'issue-urls': 'issue_urls',
@@ -11,11 +18,11 @@ FIELDS_PROPERTIES_MAP = {
 }
 
 FIELDS_METHODS_MAP = {
-    'sql': 'get_query_specs',
+    SQL: 'get_query_specs',
     'sandbox-tables': 'get_sandbox_tablenames',
 }
 
 CLASS_ATTRIBUTES_MAP = {
-    'name': '__class__.__name__',
-    'module': '__class__.__module__',
+    NAME: '__class__.__name__',
+    MODULE: '__class__.__module__',
 }
