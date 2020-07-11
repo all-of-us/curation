@@ -23,14 +23,14 @@ class PpiBranchingTest(unittest.TestCase):
         self.observation_schema = get_table_schema('observation')
 
     def test_get_backup_rows_query(self):
-        result = ppi_branching.get_backup_rows_query(self.src_table,
-                                                     self.backup_table,
-                                                     self.lookup_table).strip()
+        result = ppi_branching.get_backup_rows_ddl(self.src_table,
+                                                   self.backup_table,
+                                                   self.lookup_table).strip()
         self.assertTrue(result.startswith('CREATE OR REPLACE TABLE fake_sandbox.backup_table'))
         self.assertTrue(all(field.description in result for field in self.observation_schema))
 
     def test_get_observation_replace_query(self):
-        result = ppi_branching.get_observation_replace_query(self.src_table,
-                                                             self.backup_table).strip()
+        result = ppi_branching.get_observation_replace_ddl(self.src_table,
+                                                           self.backup_table).strip()
         self.assertTrue(result.startswith('CREATE OR REPLACE TABLE fake_dataset.src_table'))
         self.assertTrue(all(field.description in result for field in self.observation_schema))
