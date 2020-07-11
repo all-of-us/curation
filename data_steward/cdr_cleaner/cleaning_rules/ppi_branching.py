@@ -177,9 +177,9 @@ def load_rules_lookup(client: bigquery.client.Client,
     return job.result()
 
 
-def get_backup_rows_query(src_table: bigquery.TableReference,
-                          dst_table: bigquery.TableReference,
-                          lookup_table: bigquery.TableReference) -> str:
+def get_backup_rows_ddl(src_table: bigquery.TableReference,
+                        dst_table: bigquery.TableReference,
+                        lookup_table: bigquery.TableReference) -> str:
     observation_schema = bq.get_table_schema(OBSERVATION)
     query = BACKUP_ROWS_QUERY.render(lookup_table=lookup_table, src_table=src_table)
     return bq.get_table_ddl(dataset_id=dst_table.dataset_id,
@@ -192,18 +192,27 @@ def backup_rows(src_table: bigquery.TableReference,
                 dst_table: bigquery.TableReference,
                 lookup_table: bigquery.TableReference,
                 client: bigquery.Client) -> bigquery.QueryJob:
-    job_config = bigquery.QueryJobConfig()
-    job_config.destination = dst_table
-    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
-    query = get_backup_rows_query(src_table=src_table,
-                                  dst_table=dst_table,
-                                  lookup_table=lookup_table)
-    query_job = client.query(query=query, job_config=job_config)
-    return query_job.result()
+    """
+    Store observation rows this rule would delete
+
+    :param src_table: observation table being cleaned
+    :param dst_table: table to save rows to be deleted from src_table
+    :param lookup_table: table where the branching rules are loaded
+    :param client: active client object
+    :return: the completed job
+    :raises: google.cloud.exceptions.GoogleCloudError if the job failed
+    :raises: concurrent.futures.TimeoutError if the job did not complete in the given timeout
+    """
+    query = get_backup_rows_ddl(src_table=src_table,
+                                dst_table=dst_table,
+                                lookup_table=lookup_table)
+    query_job = client.query(query=query)
+    query_job.result()
+    return query_job
 
 
-def get_observation_replace_query(src_table: bigquery.TableReference,
-                                  backup_table: bigquery.TableReference) -> str:
+def get_observation_replace_ddl(src_table: bigquery.TableReference,
+                                backup_table: bigquery.TableReference) -> str:
     observation_schema = bq.get_table_schema(OBSERVATION)
     query = f"""
     SELECT o.* 
@@ -222,11 +231,18 @@ def get_observation_replace_query(src_table: bigquery.TableReference,
 def drop_rows(client: bigquery.Client,
               src_table: bigquery.TableReference,
               backup_table: bigquery.TableReference) -> bigquery.QueryJob:
-    query = get_observation_replace_query(src_table, backup_table)
+    """
+    Drop rows that are loaded in a backup table from an observation table
+
+    :param client: the active client object
+    :param src_table: observation table from which to delete rows
+    :param backup_table: table where rows to delete are backed up
+    :return: the completed query job
+    """
+    query = get_observation_replace_ddl(src_table, backup_table)
     job_config = bigquery.QueryJobConfig()
     job_config.labels['issue_key'] = ISSUE_KEY
     job_config.destination = src_table
-    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
     query_job = client.query(query, job_config)
     return query_job.result()
 
@@ -240,7 +256,6 @@ def run(project_id: str, dataset_id: str, sandbox_dataset_id: str,
     # target dataset refs
     dataset = bigquery.DatasetReference(project_id, dataset_id)
     src_table = bigquery.TableReference(dataset, OBSERVATION)
-
     # sandbox dataset refs
     sandbox_dataset = bigquery.DatasetReference(project_id, sandbox_dataset_id)
     rules_lookup_table = bigquery.TableReference(sandbox_dataset, RULES_LOOKUP_TABLE_ID)
