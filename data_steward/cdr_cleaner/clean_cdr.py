@@ -47,6 +47,7 @@ import sandbox
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
+from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import DropDuplicatePpiQuestionsAndAnswers
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import \
@@ -119,6 +120,7 @@ RDR_CLEANING_CLASSES = [
         get_update_questions_answers_not_mapped_to_omop,),
     (round_ppi_values.get_round_ppi_values_queries,),
     (update_family_history.get_update_family_history_qa_queries,),
+    (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
     (drop_mult_meas.get_drop_multiple_measurement_queries,),
 ]
