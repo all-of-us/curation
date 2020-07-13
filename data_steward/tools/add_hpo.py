@@ -123,7 +123,7 @@ def shift_display_orders(at_display_order):
     """
     q = SHIFT_HPO_SITE_DISPLAY_ORDER.format(
         display_order=at_display_order,
-        hpo_site_id_mappings_table_id=bq_consts.HPO_ID_BUCKET_NAME_TABLE_ID)
+        hpo_site_id_mappings_table_id=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
     LOGGER.info(f'Shifting lookup with the following query:\n {q}\n')
     query_response = bq_utils.query(q)
     return query_response
