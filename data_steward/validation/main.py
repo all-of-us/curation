@@ -621,9 +621,7 @@ def extract_date_from_rdr_dataset_id(rdr_dataset_id):
         # TODO remove dependence on date string in RDR dataset id
         rdr_date = rdr_date[:4] + '-' + rdr_date[4:6] + '-' + rdr_date[6:]
         return rdr_date
-    else:
-        logging.info(f"{rdr_dataset_id} is not a valid rdr_dataset_id")
-        return '2020-01-01 (outdated)'
+    raise ValueError(f"{rdr_dataset_id} is not a valid rdr_dataset_id")
 
 
 def get_hpo_missing_pii_query(hpo_id):
