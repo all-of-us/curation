@@ -11,8 +11,6 @@ import json
 import logging
 import os
 import re
-import sys
-import traceback
 from io import StringIO, open
 
 # Third party imports
@@ -44,21 +42,6 @@ app = Flask(__name__)
 
 # register application error handlers
 app.register_blueprint(errors_blueprint)
-
-
-def print_traceback(func):
-    """Wrapper that prints exception tracebacks to stdout"""
-
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            logging.exception(f"Exception {e.__class__}: {str(e)}",
-                              exc_info=True)
-            traceback.print_exc(file=sys.stdout)
-            raise e
-
-    return wrapper
 
 
 def all_required_files_loaded(result_items):
@@ -191,7 +174,6 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
 
 
 @api_util.auth_required_cron
-@print_traceback
 def validate_hpo_files(hpo_id):
     """
     validation end point for individual hpo_ids
@@ -201,7 +183,6 @@ def validate_hpo_files(hpo_id):
 
 
 @api_util.auth_required_cron
-@print_traceback
 def validate_all_hpos():
     """
     validation end point for all hpo_ids
