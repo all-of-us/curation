@@ -14,35 +14,29 @@ import os
 
 # Third party imports
 from google.oauth2 import service_account
-from google.cloud import storage
+import google.auth
+import google.auth.transport.requests
 
 
-def get_access_token(project_id):
+def get_access_token():
     """
-    Obtains GCR access token
+    Obtains GCP Bearer token
 
-    :param project_id: The project that will be used to
     :return: returns the access_token
     """
+
     scopes = ['https://www.googleapis.com/auth/sqlservice.admin']
     service_account_file = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
     credentials = service_account.Credentials.from_service_account_file(
         service_account_file, scopes=scopes)
-    try:
-        list(storage.Client(project=project_id, credentials=credentials).bucket('random_bucket').list_blobs())
-    except:
-        """This will fail because no bucket exists with the name 'random buck' in this project.
-           This is fine because the library attempted to use the credentials and in doing so
-           generated the access token which is needed."""
-        pass
+
+    auth_req = google.auth.transport.requests.Request()
+    credentials.refresh(auth_req)
 
     access_token = credentials.token
 
-    if access_token.startswith('ya'):
-        return access_token
-    else:
-        raise RuntimeError('Authentication Token Error')
+    return access_token
 
 
 def get_deactivated_participants(project_id):
@@ -53,7 +47,7 @@ def get_deactivated_participants(project_id):
 
     :return: returns list of deactivated_participants
     """
-    token = get_access_token(project_id)
+    token = get_access_token()
     print(token)
 
     headers = {
@@ -71,11 +65,15 @@ def get_deactivated_participants(project_id):
     not_done = True
     data = []
 
+    resp = requests.get(url, headers=headers)
+    print(resp)
+
     while not_done:
         resp = requests.get(url, headers=headers)
         if not resp or resp.status_code != 200:
-            print('Error: api request failed.\n\n{0}.'.format(
-                resp.text if resp else 'Unknown error.'))
+            print(f'Error: API request failed because {resp}')
+            # print('Error: api request failed.\n\n{0}.'.format(
+            #     resp.text if resp else 'Unknown error.'))
         else:
             r_json = resp.json()
             data += r_json['entry']
@@ -98,3 +96,8 @@ def get_deactivated_participants(project_id):
 
     df = pandas.DataFrame(deactivated_participants, columns=deactivated_participants_cols)
     print(df)
+
+if __name__ == '__main__':
+    project_id = os.environ.get('PROJECT_ID')
+    print(project_id)
+    get_deactivated_participants(project_id)
