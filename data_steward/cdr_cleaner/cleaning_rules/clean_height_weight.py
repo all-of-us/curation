@@ -258,10 +258,10 @@ JOIN `{{project_id}}.{{dataset_id}}.measurement` m USING (measurement_id)
 LEFT JOIN `{{project_id}}.{{dataset_id}}.concept` u_c ON (adj_unit=concept_id)
 """)
 
-DELETE_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
+DROP_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
     SELECT * 
     FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
-    WHERE measurement_id IN
+    WHERE measurement_id NOT IN
     (SELECT measurement_id 
     FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
     LEFT JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS me
@@ -570,9 +570,9 @@ JOIN `{{project_id}}.{{dataset_id}}.measurement` m USING (measurement_id)
 LEFT JOIN `{{project_id}}.{{dataset_id}}.concept` u_c ON (adj_unit=concept_id)
 """)
 
-DELETE_WEIGHT_ROWS_QUERY = jinja_env.from_string("""
+DROP_WEIGHT_ROWS_QUERY = jinja_env.from_string("""
     SELECT * FROM `{{project_id}}.{{dataset_id}}.measurement`
-    WHERE measurement_id IN
+    WHERE measurement_id NOT IN
     (SELECT measurement_id
     FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
     LEFT JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS me
@@ -647,12 +647,6 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     dataset_id=self.get_dataset_id(),
                     sandbox_dataset_id=self.get_sandbox_dataset_id(),
                     height_table=HEIGHT_TABLE),
-            cdr_consts.DESTINATION_TABLE:
-                HEIGHT_TABLE,
-            cdr_consts.DESTINATION_DATASET:
-                self.get_sandbox_dataset_id(),
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
         }
 
         save_new_height_rows_query = {
@@ -663,17 +657,11 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     sandbox_dataset_id=self.get_sandbox_dataset_id(),
                     new_height_rows=NEW_HEIGHT_ROWS,
                     height_table=HEIGHT_TABLE),
-            cdr_consts.DESTINATION_TABLE:
-                NEW_HEIGHT_ROWS,
-            cdr_consts.DESTINATION_DATASET:
-                self.get_sandbox_dataset_id(),
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
         }
 
-        delete_height_rows_query = {
+        drop_height_rows_query = {
             cdr_consts.QUERY:
-                DELETE_HEIGHT_ROWS_QUERY.render(
+                DROP_HEIGHT_ROWS_QUERY.render(
                     project_id=self.get_project_id(),
                     dataset_id=self.get_dataset_id()),
             cdr_consts.DESTINATION_TABLE:
@@ -690,9 +678,9 @@ class CleanHeightAndWeight(BaseCleaningRule):
                                              dataset_id=self.get_dataset_id(),
                                              new_rows=NEW_HEIGHT_ROWS),
             cdr_consts.DESTINATION_TABLE:
-                HEIGHT_TABLE,
+                MEASUREMENT,
             cdr_consts.DESTINATION_DATASET:
-                self.get_sandbox_dataset_id(),
+                self.get_dataset_id(),
             cdr_consts.DISPOSITION:
                 WRITE_APPEND
         }
@@ -705,12 +693,6 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     sandbox_dataset_id=self.get_sandbox_dataset_id(),
                     weight_table=WEIGHT_TABLE,
                     dataset_id=self.get_dataset_id()),
-            cdr_consts.DESTINATION_TABLE:
-                WEIGHT_TABLE,
-            cdr_consts.DESTINATION_DATASET:
-                self.get_sandbox_dataset_id(),
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
         }
 
         save_new_weight_rows_query = {
@@ -721,17 +703,11 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     new_weight_rows=NEW_WEIGHT_ROWS,
                     weight_table=WEIGHT_TABLE,
                     dataset_id=self.get_dataset_id()),
-            cdr_consts.DESTINATION_TABLE:
-                NEW_WEIGHT_ROWS,
-            cdr_consts.DESTINATION_DATASET:
-                self.get_sandbox_dataset_id(),
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
         }
 
-        delete_weight_rows_query = {
+        drop_weight_rows_query = {
             cdr_consts.QUERY:
-                DELETE_WEIGHT_ROWS_QUERY.render(
+                DROP_WEIGHT_ROWS_QUERY.render(
                     project_id=self.get_project_id(),
                     dataset_id=self.get_dataset_id()),
             cdr_consts.DESTINATION_TABLE:
@@ -750,18 +726,18 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     sandbox_dataset_id=self.get_sandbox_dataset_id(),
                     new_rows=NEW_WEIGHT_ROWS),
             cdr_consts.DESTINATION_TABLE:
-                WEIGHT_TABLE,
+                MEASUREMENT,
             cdr_consts.DESTINATION_DATASET:
-                self.get_sandbox_dataset_id(),
+                self.get_dataset_id(),
             cdr_consts.DISPOSITION:
                 WRITE_APPEND
         }
 
         return [
             save_height_table_query, save_new_height_rows_query,
-            delete_height_rows_query, insert_new_height_rows_query,
+            drop_height_rows_query, insert_new_height_rows_query,
             save_weight_table_query, save_new_weight_rows_query,
-            delete_weight_rows_query, insert_new_weight_rows_query
+            drop_weight_rows_query, insert_new_weight_rows_query
         ]
 
     def setup_rule(self, client):
