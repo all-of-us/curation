@@ -180,6 +180,14 @@ def load_rules_lookup(client: bigquery.client.Client,
 def get_backup_rows_ddl(src_table: bigquery.TableReference,
                         dst_table: bigquery.TableReference,
                         lookup_table: bigquery.TableReference) -> str:
+    """
+    Get a DDL statement which loads a backup table with rows to be dropped
+
+    :param src_table: table being cleaned
+    :param dst_table: table containing backed up rows
+    :param lookup_table: table where the branching rules are loaded
+    :return: the DDL statement
+    """
     observation_schema = bq.get_table_schema(OBSERVATION)
     query = BACKUP_ROWS_QUERY.render(lookup_table=lookup_table, src_table=src_table)
     return bq.get_table_ddl(dataset_id=dst_table.dataset_id,
