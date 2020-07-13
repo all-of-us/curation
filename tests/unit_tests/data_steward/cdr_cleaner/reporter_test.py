@@ -39,19 +39,34 @@ class CleanRulesReporterTest(unittest.TestCase):
 
     def test_separate_sql_statements(self):
         # preconditions
-        statement_dicts = [{
-            'name':
-                'foo',
-            'sql': [{
-                'query': 'query one'
-            }, {
-                'query': 'query two  '
-            }, {
-                'query': '  query three'
-            }]
-        }, {
-            'name': 'bar'
-        }]
+        statement_dicts = [
+            {
+                'name':
+                    'foo',
+                # proves list is separated
+                'sql': [
+                    {
+                        'query': 'query one'
+                    },
+                    {
+                        # proves queries are stripped of whitespace
+                        'query': 'query two  '
+                    },
+                    {
+                        'query': '  query three'
+                    }
+                ]
+            },
+            {
+                # proves it can handle the absence of an sql key
+                'name': 'bar'
+            },
+            {
+                # proves it can handle an unset sql key
+                'name': 'baz',
+                'sql': 'unknown'
+            }
+        ]
 
         # test
         actual = reporter.separate_sql_statements(statement_dicts)
@@ -68,6 +83,10 @@ class CleanRulesReporterTest(unittest.TestCase):
             'sql': 'query three'
         }, {
             'name': 'bar',
+            'sql': 'unknown'
+        }, {
+            'name': 'baz',
+            'sql': 'unknown'
         }]
         self.assertEqual(actual, expected)
 

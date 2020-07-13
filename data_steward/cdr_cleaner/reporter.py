@@ -5,6 +5,7 @@ A package to generate a csv file type report for cleaning rules.
 import csv
 import logging
 import os
+from copy import copy
 
 # Third party imports
 from googleapiclient.errors import HttpError
@@ -151,22 +152,35 @@ def get_stage_elements(data_stage, fields_list):
     return report_rows
 
 
-def separate_sql_statements(rules_values):
+def separate_sql_statements(unformatted_values):
     """
     Separate SQL statements into items with other identical fields.
 
-    This must maintain the SQL statement order.
+    This must maintain the SQL statement order.  For example, if the user
+    requests the fields 'name module sql', the input for this function will be
+    a list of dictionaries of the where each dictionary will have the keys,
+    '{name: <value>, module: <value>,  sql: "unknown" or [{dictionary attributes}]}'.
+    The purpose of this function is to break into the 'sql' values (because a
+    cleaning rule may contain more than one sql statement) and copy the other
+    field values.
+
+    For example, the following input:
+    [{'name': 'foo', 'sql':[{'query': 'q1',...},{'query': 'q2'...}]}]
+
+    Should be formatted as:
+    [{'name': 'foo', 'sql': 'q1'}
+     {'name': 'foo', 'sql': 'q2'}]
     """
-    separated_rules_values = []
-    for rule_values in rules_values:
+    formatted_values = []
+    for rule_values in unformatted_values:
         sql_list = []
-        separated = dict(rule_values)
 
         # gather the queries as a list
         sql_value = rule_values.get(report_consts.SQL, [])
         for query_dict in sql_value:
             try:
-                sql_list.append(query_dict.get(report_consts.QUERY, ''))
+                sql_list.append(
+                    query_dict.get(report_consts.QUERY, report_consts.UNKNOWN))
             except AttributeError:
                 if sql_value == report_consts.UNKNOWN:
                     sql_list.append(report_consts.UNKNOWN)
@@ -177,13 +191,16 @@ def separate_sql_statements(rules_values):
         if sql_list:
             # generate a dictionary for each query
             for query in sql_list:
+                # get a fresh copy for each rule.
+                separated = copy(rule_values)
                 separated[report_consts.SQL] = query.strip()
-                separated_rules_values.append(separated)
+                formatted_values.append(separated)
         else:
-            # was unable to read any sql, so just add to the list
-            separated_rules_values.append(separated)
+            separated = copy(rule_values)
+            separated[report_consts.SQL] = report_consts.UNKNOWN
+            formatted_values.append(separated)
 
-    return separated_rules_values
+    return formatted_values
 
 
 def format_values(rules_values, fields_list):
