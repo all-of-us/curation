@@ -30,7 +30,7 @@ class PpiBranchingTest(unittest.TestCase):
         self.assertTrue(all(field.description in result for field in self.observation_schema))
 
     def test_get_observation_replace_query(self):
-        result = ppi_branching.get_observation_replace_ddl(self.src_table,
-                                                           self.backup_table).strip()
+        result = ppi_branching.get_drop_rows_ddl(self.src_table,
+                                                 self.backup_table).strip()
         self.assertTrue(result.startswith('CREATE OR REPLACE TABLE fake_dataset.src_table'))
         self.assertTrue(all(field.description in result for field in self.observation_schema))

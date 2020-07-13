@@ -211,11 +211,18 @@ def backup_rows(src_table: bigquery.TableReference,
     return query_job
 
 
-def get_observation_replace_ddl(src_table: bigquery.TableReference,
-                                backup_table: bigquery.TableReference) -> str:
+def get_drop_rows_ddl(src_table: bigquery.TableReference,
+                      backup_table: bigquery.TableReference) -> str:
+    """
+    Get a DDL statement which drops rows from a table that are backed up in another
+
+    :param src_table: table being cleaned
+    :param backup_table: table containing backed up rows
+    :return: the DDL statement
+    """
     observation_schema = bq.get_table_schema(OBSERVATION)
     query = f"""
-    SELECT o.* 
+    SELECT src.* 
     FROM {src_table.project}.{src_table.dataset_id}.{src_table.table_id} src
     WHERE NOT EXISTS
      (SELECT 1 
@@ -239,12 +246,12 @@ def drop_rows(client: bigquery.Client,
     :param backup_table: table where rows to delete are backed up
     :return: the completed query job
     """
-    query = get_observation_replace_ddl(src_table, backup_table)
+    query = get_drop_rows_ddl(src_table, backup_table)
     job_config = bigquery.QueryJobConfig()
     job_config.labels['issue_key'] = ISSUE_KEY
-    job_config.destination = src_table
     query_job = client.query(query, job_config)
-    return query_job.result()
+    query_job.result()
+    return query_job
 
 
 def run(project_id: str, dataset_id: str, sandbox_dataset_id: str,
