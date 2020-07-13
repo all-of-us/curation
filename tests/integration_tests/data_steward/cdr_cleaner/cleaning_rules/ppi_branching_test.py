@@ -18,29 +18,22 @@ TEST_DATA_FIELDS = (
 )
 """The columns associated with `TEST_DATA_ROWS`"""
 
-TEST_DATA_ROWS = [
-    # No appropriate race option, should KEEP free-text sub-question
+TEST_DATA_ROWS = {
     (2000, 2000, 'Race_WhatRaceEthnicity', 'WhatRaceEthnicity_RaceEthnicityNoneOfThese', None),
     (2001, 2000, 'RaceEthnicityNoneOfThese_RaceEthnicityFreeTextBox', None, 'Mexican and Filipino'),
-
-    # White option selected, should DROP sub-question
     (3000, 3000, 'Race_WhatRaceEthnicity', 'WhatRaceEthnicity_White', None),
-    (3001, 3000, 'RaceEthnicityNoneOfThese_RaceEthnicityFreeTextBox', 'PMI_Skip'),
+    (3001, 3000, 'RaceEthnicityNoneOfThese_RaceEthnicityFreeTextBox', 'PMI_Skip', None),
+    (4000, 4000, 'OverallHealth_OrganTransplant', 'OrganTransplant_Yes', None),
+    (4001, 4000, 'OrganTransplant_OrganTransplantDescription', None, 'Cornea'),
+    (5000, 5000, 'OverallHealth_OrganTransplant', 'OrganTransplant_No', None),
+    (5001, 5000, 'OrganTransplant_OrganTransplantDescription', 'PMI_Skip', None)}
+"""Set of tuples used to create rows in the observation table"""
 
-    # Yes to transplant, should KEEP free-text sub-question
-    (4000, 400, 'OverallHealth_OrganTransplant', 'OrganTransplant_Yes', None),
-    (4001, 400, 'OrganTransplant_OrganTransplantDescription', None, 'Cornea'),
+TEST_DATA_DROP = {r for r in TEST_DATA_ROWS if r[0] in (3001, 5001)}
+"""Set of tuples in TEST_DATA_ROWS that should be removed after rule is run"""
 
-    # No to transplant, should DROP sub-question
-    (5000, 500, 'OverallHealth_OrganTransplant', 'OrganTransplant_No', None),
-    (5001, 500, 'OrganTransplant_OrganTransplantDescription', 'PMI_Skip', None)
-]
-"""Tuples used to create rows in the observation table"""
-
-TEST_DATA_DROP = [r for r in TEST_DATA_ROWS if r[0] in (3001, 5001)]
-"""Tuples in TEST_DATA_ROWS that should be removed by rule"""
-
-TEST_DATA_KEEP = list(set(TEST_DATA_ROWS) - set(TEST_DATA_DROP))
+TEST_DATA_KEEP = set(TEST_DATA_ROWS) - set(TEST_DATA_DROP)
+"""Set of tuples in TEST_DATA_ROWS that should remain after rule is run"""
 
 
 def _default_value_for(field: bigquery.SchemaField) -> Optional[Any]:
@@ -113,7 +106,11 @@ class PPiBranchingTest(unittest.TestCase):
         self.backup_table = TableReference(self.sandbox_dataset,
                                            ppi_branching.OBSERVATION_BACKUP_TABLE_ID)
 
-    def load_test_data(self):
+    def load_observation_table(self):
+        """
+        Drop existing and create observation table loaded with test data
+        :return:
+        """
         self.client.delete_table(self.observation_table, not_found_ok=True)
         self.observation_table = self.client.create_table(self.observation_table)
         job_config = bigquery.LoadJobConfig()
@@ -123,44 +120,86 @@ class PPiBranchingTest(unittest.TestCase):
                                          destination=self.observation_table,
                                          job_config=job_config).result()
 
-    def query(self, q):
-        return list(self.client.query(q).result())
+    def _query(self, q: str) -> bigquery.table.RowIterator:
+        """
+        Execute query and return results
+
+        :param q: the query
+        :return: results as an iterable collection of Row objects
+        """
+        query_job = self.client.query(q)
+        return query_job.result()
+
+    def assertJobSuccess(self, job):
+        self.assertEqual(job.state, 'DONE')
+        self.assertIsNone(job.error_result)
+        self.assertIsNone(job.errors)
 
     def test_rule(self):
         rules_df = ppi_branching._load_dataframe(resources.PPI_BRANCHING_RULE_PATHS)
-        # can successfully create lookup table
+
+        # create lookup table
         lookup_job = ppi_branching.load_rules_lookup(client=self.client,
                                                      destination_table=self.lookup_table,
                                                      rule_paths=resources.PPI_BRANCHING_RULE_PATHS)
-        self.assertEqual(lookup_job.state, 'DONE')
-        self.assertIsNone(lookup_job.error_result)
-        self.assertIsNone(lookup_job.errors)
-        rows = self.query(f'SELECT * FROM {self.lookup_table.dataset_id}.{self.lookup_table.table_id}')
-        self.assertEqual(len(rows), len(rules_df.index))
+        self.assertIsInstance(lookup_job, bigquery.LoadJob)
+        self.assertJobSuccess(lookup_job)
+        q = f'SELECT * FROM {self.lookup_table.dataset_id}.{self.lookup_table.table_id}'
+        row_iter = self._query(q)
+        self.assertEqual(row_iter.total_rows, len(rules_df.index))
+        # existing lookup gets overwritten
+        lookup_job = ppi_branching.load_rules_lookup(client=self.client,
+                                                     destination_table=self.lookup_table,
+                                                     rule_paths=resources.PPI_BRANCHING_RULE_PATHS)
+        self.assertJobSuccess(lookup_job)
+        row_iter = self._query(q)
+        self.assertEqual(row_iter.total_rows, len(rules_df.index))
 
-        self.load_test_data()
+        # subsequent tests rely on observation test data
+        self.load_observation_table()
 
-        # can backup rows
+        # backup rows
         backup_job = ppi_branching.backup_rows(src_table=self.observation_table,
                                                dst_table=self.backup_table,
                                                lookup_table=self.lookup_table,
                                                client=self.client)
-        self.assertEqual(backup_job.state, 'DONE')
-        self.assertIsNone(backup_job.error_result)
-        self.assertIsNone(backup_job.errors)
-        rows = self.query(f'SELECT * FROM {self.backup_table.dataset_id}.{self.backup_table.table_id}')
+        self.assertIsInstance(backup_job, bigquery.QueryJob)
+        self.assertJobSuccess(backup_job)
+        q = f'''SELECT * FROM {self.backup_table.dataset_id}.{self.backup_table.table_id} 
+                ORDER BY observation_id'''
+        actual_result = {tuple(row[f] for f in TEST_DATA_FIELDS) for row in self._query(q)}
+        self.assertSetEqual(TEST_DATA_DROP, actual_result)
+        # existing backup gets overwritten
+        backup_job = ppi_branching.backup_rows(src_table=self.observation_table,
+                                               dst_table=self.backup_table,
+                                               lookup_table=self.lookup_table,
+                                               client=self.client)
+        self.assertJobSuccess(backup_job)
+        actual_result = {tuple(row[f] for f in TEST_DATA_FIELDS) for row in self._query(q)}
+        self.assertSetEqual(TEST_DATA_DROP, actual_result)
 
-        self.assertEqual(len(rows), 2)
-
-        # TODO compare rows to test data
-
-        ppi_branching.drop_rows(self.client,
-                                src_table=self.observation_table,
-                                backup_table=self.backup_table)
-        # TODO check observation schema
-        q = f'SELECT * FROM {self.observation_table.dataset_id}.{self.observation_table.table_id}'
-        self.client.query(q).result()
+        # drop rows
+        drop_job = ppi_branching.drop_rows(self.client,
+                                           src_table=self.observation_table,
+                                           backup_table=self.backup_table)
+        self.assertIsInstance(drop_job, bigquery.QueryJob)
+        self.assertJobSuccess(drop_job)
+        q = f'''SELECT * FROM {self.observation_table.dataset_id}.{self.observation_table.table_id} 
+                ORDER BY observation_id'''
+        actual_result = {tuple(row[f] for f in TEST_DATA_FIELDS) for row in self._query(q)}
+        self.assertSetEqual(actual_result, TEST_DATA_KEEP)
+        # repeated drop job has no effect
+        drop_job = ppi_branching.drop_rows(self.client,
+                                           src_table=self.observation_table,
+                                           backup_table=self.backup_table)
+        self.assertJobSuccess(drop_job)
+        actual_result = {tuple(row[f] for f in TEST_DATA_FIELDS) for row in self._query(q)}
+        self.assertSetEqual(actual_result, TEST_DATA_KEEP)
 
     def tearDown(self) -> None:
+        """
+        Delete any existing observation, backup and lookup tables
+        """
         self.client.delete_table(self.observation_table, not_found_ok=True)
+        self.client.delete_table(self.backup_table, not_found_ok=True)
         self.client.delete_table(self.lookup_table, not_found_ok=True)
