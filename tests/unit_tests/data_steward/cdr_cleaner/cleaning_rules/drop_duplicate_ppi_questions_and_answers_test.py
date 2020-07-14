@@ -45,10 +45,9 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
         self.query_class = DropDuplicatePpiQuestionsAndAnswers(
             self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEquals(self.query_class.get_project_id(), self.project_id)
-        self.assertEquals(self.query_class.get_dataset_id(), self.dataset_id)
-        self.assertEquals(self.query_class.get_sandbox_dataset_id(),
-                          self.sandbox_id)
+        self.assertEquals(self.query_class.project_id, self.project_id)
+        self.assertEquals(self.query_class.dataset_id, self.dataset_id)
+        self.assertEquals(self.query_class.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # Test
@@ -58,8 +57,7 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [clean_consts.RDR])
+        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
 
         # Test
         results_list = self.query_class.get_query_specs()
@@ -115,8 +113,7 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [clean_consts.RDR])
+        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
 
         sandbox_answers = SANDBOX_PPI_ANSWERS.render(
             project=self.project_id,

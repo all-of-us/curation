@@ -129,9 +129,9 @@ class DropDuplicatePpiQuestionsAndAnswers(BaseCleaningRule):
         sandbox_answers = {
             cdr_consts.QUERY:
                 SANDBOX_PPI_ANSWERS.render(
-                    project=self.get_project_id(),
-                    sandbox_dataset=self.get_sandbox_dataset_id(),
-                    dataset=self.get_dataset_id(),
+                    project=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    dataset=self.dataset_id,
                     ans_table=self.get_sandbox_tablenames()[0],
                     clinical_table_name=OBSERVATION),
         }
@@ -139,9 +139,9 @@ class DropDuplicatePpiQuestionsAndAnswers(BaseCleaningRule):
         sandbox_questions = {
             cdr_consts.QUERY:
                 SANDBOX_PPI_QUESTIONS.render(
-                    project=self.get_project_id(),
-                    sandbox_dataset=self.get_sandbox_dataset_id(),
-                    dataset=self.get_dataset_id(),
+                    project=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    dataset=self.dataset_id,
                     ques_table=self.get_sandbox_tablenames()[1],
                     clinical_table_name=OBSERVATION),
         }
@@ -149,15 +149,15 @@ class DropDuplicatePpiQuestionsAndAnswers(BaseCleaningRule):
         delete_ppi_duplicate_answers = {
             cdr_consts.QUERY:
                 DELETE_DUPLICATE_ANSWERS.render(
-                    project=self.get_project_id(),
-                    dataset=self.get_dataset_id(),
+                    project=self.project_id,
+                    dataset=self.dataset_id,
                     clinical_table_name=OBSERVATION,
-                    sandbox_dataset=self.get_sandbox_dataset_id(),
+                    sandbox_dataset=self.sandbox_dataset_id,
                     ans_table=self.get_sandbox_tablenames()[0]),
             cdr_consts.DESTINATION_TABLE:
                 'observation',
             cdr_consts.DESTINATION_DATASET:
-                self.get_dataset_id(),
+                self.dataset_id,
             cdr_consts.DISPOSITION:
                 WRITE_TRUNCATE
         }
@@ -165,15 +165,15 @@ class DropDuplicatePpiQuestionsAndAnswers(BaseCleaningRule):
         delete_ppi_duplicate_questions = {
             cdr_consts.QUERY:
                 DELETE_DUPLICATE_QUESTIONS.render(
-                    project=self.get_project_id(),
-                    dataset=self.get_dataset_id(),
+                    project=self.project_id,
+                    dataset=self.dataset_id,
                     clinical_table_name=OBSERVATION,
-                    sandbox_dataset=self.get_sandbox_dataset_id(),
+                    sandbox_dataset=self.sandbox_dataset_id,
                     ques_table=self.get_sandbox_tablenames()[1]),
             cdr_consts.DESTINATION_TABLE:
                 'observation',
             cdr_consts.DESTINATION_DATASET:
-                self.get_dataset_id(),
+                self.dataset_id,
             cdr_consts.DISPOSITION:
                 WRITE_TRUNCATE
         }
