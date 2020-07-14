@@ -16,8 +16,8 @@ from common import MEASUREMENT
 from cdr_cleaner.cleaning_rules.clean_height_weight import (
     CleanHeightAndWeight, HEIGHT_TABLE, WEIGHT_TABLE, NEW_HEIGHT_ROWS,
     NEW_WEIGHT_ROWS, CREATE_HEIGHT_SANDBOX_QUERY, NEW_HEIGHT_ROWS_QUERY,
-    DELETE_HEIGHT_ROWS_QUERY, CREATE_WEIGHT_SANDBOX_QUERY,
-    NEW_WEIGHT_ROWS_QUERY, DELETE_WEIGHT_ROWS_QUERY, INSERT_NEW_ROWS_QUERY)
+    DROP_HEIGHT_ROWS_QUERY, CREATE_WEIGHT_SANDBOX_QUERY, NEW_WEIGHT_ROWS_QUERY,
+    DROP_WEIGHT_ROWS_QUERY, INSERT_NEW_ROWS_QUERY)
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
@@ -76,8 +76,8 @@ class CleanHeightAndWeightTest(unittest.TestCase):
                                              height_table=HEIGHT_TABLE)
         }, {
             clean_consts.QUERY:
-                DELETE_HEIGHT_ROWS_QUERY.render(project_id=self.project_id,
-                                                dataset_id=self.dataset_id),
+                DROP_HEIGHT_ROWS_QUERY.render(project_id=self.project_id,
+                                              dataset_id=self.dataset_id),
             clean_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             clean_consts.DESTINATION_DATASET:
@@ -111,8 +111,8 @@ class CleanHeightAndWeightTest(unittest.TestCase):
                                              dataset_id=self.dataset_id)
         }, {
             clean_consts.QUERY:
-                DELETE_WEIGHT_ROWS_QUERY.render(project_id=self.project_id,
-                                                dataset_id=self.dataset_id),
+                DROP_WEIGHT_ROWS_QUERY.render(project_id=self.project_id,
+                                              dataset_id=self.dataset_id),
             clean_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             clean_consts.DESTINATION_DATASET:
@@ -154,7 +154,7 @@ class CleanHeightAndWeightTest(unittest.TestCase):
             new_height_rows=NEW_HEIGHT_ROWS,
             height_table=HEIGHT_TABLE)
 
-        delete_height_rows = DELETE_HEIGHT_ROWS_QUERY.render(
+        delete_height_rows = DROP_HEIGHT_ROWS_QUERY.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
         insert_new_height_rows = INSERT_NEW_ROWS_QUERY.render(
@@ -175,7 +175,7 @@ class CleanHeightAndWeightTest(unittest.TestCase):
             weight_table=WEIGHT_TABLE,
             dataset_id=self.dataset_id)
 
-        delete_weight_rows = DELETE_WEIGHT_ROWS_QUERY.render(
+        delete_weight_rows = DROP_WEIGHT_ROWS_QUERY.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
         insert_new_weight_rows = INSERT_NEW_ROWS_QUERY.render(
