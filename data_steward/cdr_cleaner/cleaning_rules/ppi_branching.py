@@ -170,7 +170,7 @@ class PpiBranching(BaseCleaningRule):
         self.backup_table = bigquery.TableReference(sandbox_dataset_ref,
                                                     OBSERVATION_BACKUP_TABLE_ID)
 
-    def _load_dataframe(self) -> pandas.DataFrame:
+    def create_rules_dataframe(self) -> pandas.DataFrame:
         """
         Create dataframe which contains all the rules in the provided file paths
 
@@ -193,7 +193,7 @@ class PpiBranching(BaseCleaningRule):
         :return: the completed LoadJob object
         """
         job_config = bigquery.LoadJobConfig()
-        rules_dataframe = self._load_dataframe()
+        rules_dataframe = self.create_rules_dataframe()
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
         job = client.load_table_from_dataframe(rules_dataframe,
                                                destination=self.lookup_table,
