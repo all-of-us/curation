@@ -97,19 +97,18 @@
 #    **TODO** Standardize branching logic CSV files
 
 # +
-import argparse
 from pathlib import Path
-from typing import Iterable
 
 import pandas
 from google.cloud import bigquery
 
-import sandbox
+import constants.cdr_cleaner.clean_cdr as cdr_consts
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from common import OBSERVATION
 from resources import PPI_BRANCHING_RULE_PATHS
 from utils import bq
 
-ISSUE_KEY = 'dc-545'
+ISSUE_NUMBER = 'dc-545'
 PPI_BRANCHING_TABLE_PREFIX = '_ppi_branching'
 RULES_LOOKUP_TABLE_ID = f'{PPI_BRANCHING_TABLE_PREFIX}_rules_lookup'
 OBSERVATION_BACKUP_TABLE_ID = f'{PPI_BRANCHING_TABLE_PREFIX}_observation'
@@ -139,192 +138,134 @@ WHERE
 (r.rule_type = 'drop' AND op.value_source_value IN UNNEST(r.parent_values)) OR
 (r.rule_type = 'keep' AND op.value_source_value NOT IN UNNEST(r.parent_values))
 """)
+CLEANED_ROWS_QUERY = bq.JINJA_ENV.from_string("""
+SELECT {{ scope or 'src.*' }} 
+FROM {{src.project}}.{{src.dataset_id}}.{{src.table_id}} src
+WHERE NOT EXISTS
+ (SELECT 1 
+  FROM {{backup.project}}.{{backup.dataset_id}}.{{backup.table_id}} bak
+  WHERE bak.observation_id = src.observation_id)
+""")
 
 
-def _load_dataframe(rule_paths: Iterable[str]) -> pandas.DataFrame:
-    """
-    Create dataframe which contains all the rules in the provided file paths
+class PpiBranching(BaseCleaningRule):
 
-    :param rule_paths: paths to rule csv files
-    :return: dataframe with all the rules
-    """
-    all_rules_df = pandas.DataFrame()
-    for rule_path in rule_paths:
-        rules_df = pandas.read_csv(rule_path, header=0)
-        rules_df['rule_source'] = Path(rule_path).name
-        all_rules_df = all_rules_df.append(rules_df)
-    return all_rules_df
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+        desc = ('Load a lookup of PPI branching rules represented in CSV files. '
+                'Store rows in the observation table that violate the rules '
+                'in a sandbox table and then drop the rows.')
+        super().__init__(issue_numbers=[ISSUE_NUMBER],
+                         description=desc,
+                         affected_datasets=[cdr_consts.RDR],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=[OBSERVATION])
+        dataset_ref = bigquery.DatasetReference(project_id, dataset_id)
+        sandbox_dataset_ref = bigquery.DatasetReference(project_id, sandbox_dataset_id)
 
+        self.rule_paths = PPI_BRANCHING_RULE_PATHS
+        self.observation_table = bigquery.TableReference(dataset_ref, OBSERVATION)
+        self.lookup_table = bigquery.TableReference(sandbox_dataset_ref, RULES_LOOKUP_TABLE_ID)
+        self.backup_table = bigquery.TableReference(sandbox_dataset_ref,
+                                                    OBSERVATION_BACKUP_TABLE_ID)
 
-def load_rules_lookup(client: bigquery.client.Client,
-                      destination_table: bigquery.TableReference,
-                      rule_paths: Iterable[str]) -> bigquery.job.LoadJob:
-    """
-    Load rule csv files to a BigQuery table
+    def _load_dataframe(self) -> pandas.DataFrame:
+        """
+        Create dataframe which contains all the rules in the provided file paths
 
-    :param client: active BigQuery Client object
-    :param destination_table: Identifies the table to use for loading the data
-    :param rule_paths: Paths to CSV rule files
+        :return: dataframe with all the rules
+        """
+        all_rules_df = pandas.DataFrame()
+        for rule_path in self.rule_paths:
+            rules_df = pandas.read_csv(rule_path, header=0)
+            rules_df['rule_source'] = Path(rule_path).name
+            all_rules_df = all_rules_df.append(rules_df)
+        return all_rules_df
 
-    :return: the completed LoadJob object
-    """
-    rules_df = _load_dataframe(rule_paths)
-    job_config = bigquery.LoadJobConfig()
-    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
-    job = client.load_table_from_dataframe(rules_df,
-                                           destination=destination_table,
-                                           job_config=job_config)
-    return job.result()
+    def load_rules_lookup(self,
+                          client: bigquery.Client) -> bigquery.job.LoadJob:
+        """
+        Load rule csv files to a BigQuery table
 
+        :param client: active BigQuery Client object
 
-def get_backup_rows_ddl(src_table: bigquery.TableReference,
-                        dst_table: bigquery.TableReference,
-                        lookup_table: bigquery.TableReference) -> str:
-    """
-    Get a DDL statement which loads a backup table with rows to be dropped
+        :return: the completed LoadJob object
+        """
+        job_config = bigquery.LoadJobConfig()
+        rules_dataframe = self._load_dataframe()
+        job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+        job = client.load_table_from_dataframe(rules_dataframe,
+                                               destination=self.lookup_table,
+                                               job_config=job_config)
+        return job.result()
 
-    :param src_table: table being cleaned
-    :param dst_table: table containing backed up rows
-    :param lookup_table: table where the branching rules are loaded
-    :return: the DDL statement
-    """
-    observation_schema = bq.get_table_schema(OBSERVATION)
-    query = BACKUP_ROWS_QUERY.render(lookup_table=lookup_table, src_table=src_table)
-    return bq.get_table_ddl(dataset_id=dst_table.dataset_id,
-                            table_id=dst_table.table_id,
-                            schema=observation_schema,
-                            as_query=query)
+    def get_backup_rows_ddl(self) -> str:
+        """
+        Get a DDL statement which loads a backup table with rows to be dropped
 
+        :return: the DDL statement
+        """
+        observation_schema = bq.get_table_schema(OBSERVATION)
+        query = BACKUP_ROWS_QUERY.render(lookup_table=self.lookup_table,
+                                         src_table=self.observation_table)
+        return bq.get_table_ddl(dataset_id=self.backup_table.dataset_id,
+                                table_id=self.backup_table.table_id,
+                                schema=observation_schema,
+                                as_query=query)
 
-def backup_rows(src_table: bigquery.TableReference,
-                dst_table: bigquery.TableReference,
-                lookup_table: bigquery.TableReference,
-                client: bigquery.Client) -> bigquery.QueryJob:
-    """
-    Store observation rows this rule would delete
+    def get_drop_rows_ddl(self) -> str:
+        """
+        Get a DDL statement which drops rows from a table that are backed up in another
 
-    :param src_table: observation table being cleaned
-    :param dst_table: table to save rows to be deleted from src_table
-    :param lookup_table: table where the branching rules are loaded
-    :param client: active client object
-    :return: the completed job
-    :raises: google.cloud.exceptions.GoogleCloudError if the job failed
-    :raises: concurrent.futures.TimeoutError if the job did not complete in the given timeout
-    """
-    query = get_backup_rows_ddl(src_table=src_table,
-                                dst_table=dst_table,
-                                lookup_table=lookup_table)
-    query_job = client.query(query=query)
-    query_job.result()
-    return query_job
+        :return: the DDL statement
+        """
+        observation_schema = bq.get_table_schema(OBSERVATION)
+        src = self.observation_table
+        backup = self.backup_table
+        query = CLEANED_ROWS_QUERY.render(src=src, backup=backup)
+        return bq.get_table_ddl(src.dataset_id,
+                                schema=observation_schema,
+                                table_id=src.table_id,
+                                as_query=query)
 
+    def get_sandbox_tablenames(self):
+        return [RULES_LOOKUP_TABLE_ID, OBSERVATION_BACKUP_TABLE_ID]
 
-def get_drop_rows_ddl(src_table: bigquery.TableReference,
-                      backup_table: bigquery.TableReference) -> str:
-    """
-    Get a DDL statement which drops rows from a table that are backed up in another
+    def setup_rule(self, client, *args, **keyword_args):
+        self.load_rules_lookup(client)
 
-    :param src_table: table being cleaned
-    :param backup_table: table containing backed up rows
-    :return: the DDL statement
-    """
-    observation_schema = bq.get_table_schema(OBSERVATION)
-    query = f"""
-    SELECT src.* 
-    FROM {src_table.project}.{src_table.dataset_id}.{src_table.table_id} src
-    WHERE NOT EXISTS
-     (SELECT 1 
-      FROM {backup_table.project}.{backup_table.dataset_id}.{backup_table.table_id} bak
-      WHERE bak.observation_id = src.observation_id)
-    """
-    return bq.get_table_ddl(src_table.dataset_id,
-                            schema=observation_schema,
-                            table_id=src_table.table_id,
-                            as_query=query)
+    def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
+        return [{cdr_consts.QUERY: self.get_backup_rows_ddl()},
+                {cdr_consts.QUERY: self.get_drop_rows_ddl()}]
 
+    def setup_validation(self, client, *args, **keyword_args):
+        pass
 
-def drop_rows(client: bigquery.Client,
-              src_table: bigquery.TableReference,
-              backup_table: bigquery.TableReference) -> bigquery.QueryJob:
-    """
-    Drop rows that are loaded in a backup table from an observation table
-
-    :param client: the active client object
-    :param src_table: observation table from which to delete rows
-    :param backup_table: table where rows to delete are backed up
-    :return: the completed query job
-    """
-    query = get_drop_rows_ddl(src_table, backup_table)
-    job_config = bigquery.QueryJobConfig()
-    job_config.labels['issue_key'] = ISSUE_KEY
-    query_job = client.query(query, job_config)
-    query_job.result()
-    return query_job
-
-
-def run(project_id: str, dataset_id: str, sandbox_dataset_id: str,
-        rule_paths: Iterable[str] = None):
-    if not rule_paths:
-        rule_paths = PPI_BRANCHING_RULE_PATHS
-    client = bigquery.client.Client(project=project_id)
-
-    # target dataset refs
-    dataset = bigquery.DatasetReference(project_id, dataset_id)
-    src_table = bigquery.TableReference(dataset, OBSERVATION)
-    # sandbox dataset refs
-    sandbox_dataset = bigquery.DatasetReference(project_id, sandbox_dataset_id)
-    rules_lookup_table = bigquery.TableReference(sandbox_dataset, RULES_LOOKUP_TABLE_ID)
-    backup_table = bigquery.TableReference(sandbox_dataset, OBSERVATION_BACKUP_TABLE_ID)
-
-    load_rules_job = load_rules_lookup(client,
-                                       destination_table=rules_lookup_table,
-                                       rule_paths=rule_paths)
-    backup_job = backup_rows(src_table, backup_table, rules_lookup_table, client)
-    drop_rows_job = drop_rows(client, src_table, backup_table)
-
-
-def get_arg_parser():
-    """
-    Get an argument parser
-
-    :return: the parser
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-p',
-        '--project_id',
-        action='store',
-        dest='project_id',
-        help='Identifies the project containing the dataset',
-        required=True)
-    parser.add_argument('-d',
-                        '--dataset_id',
-                        action='store',
-                        dest='dataset_id',
-                        help='Identifies dataset to clean',
-                        required=True)
-    parser.add_argument('-f',
-                        '--files',
-                        action='store',
-                        nargs='+',
-                        dest='files',
-                        help='Rule files',
-                        required=False)
-    return parser
-
-
-def parse_args(args=None):
-    """
-    Parse command line arguments
-
-    :return: namespace with parsed arguments
-    """
-    parser = get_arg_parser()
-    args = parser.parse_args(args)
-    return args
+    def validate_rule(self, client: bigquery.Client, *args, **keyword_args):
+        backup_table_obj = client.get_table(self.backup_table)
+        if not backup_table_obj.created:
+            raise RuntimeError(
+                f'Backup table {backup_table_obj.table_id} for branching cleaning rule was not '
+                f'found on the server')
+        query = BACKUP_ROWS_QUERY.render(lookup_table=self.lookup_table,
+                                         src_table=self.observation_table)
+        result = client.query(query).result()
+        if result.total_rows > 0:
+            raise RuntimeError(
+                f'Branching cleaning rule was run but still identifies {result.total_rows} '
+                f'rows from the observation table to drop')
 
 
 if __name__ == '__main__':
-    ARGS = parse_args()
-    SANDBOX_DATASET_ID = sandbox.get_sandbox_dataset_id(ARGS.dataset_id)
-    run(ARGS.project_id, ARGS.dataset_id, SANDBOX_DATASET_ID, ARGS.files)
+    import cdr_cleaner.args_parser as parser
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    ARGS = parser.parse_args()
+    clean_engine.add_console_logging(ARGS.console_log)
+    cleaner = PpiBranching(ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
+    query_list = cleaner.get_query_specs()
+    if ARGS.list_queries:
+        cleaner.log_queries()
+    else:
+        clean_engine.clean_dataset(ARGS.project_id, query_list, data_stage=cdr_consts.RDR)
