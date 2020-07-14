@@ -70,6 +70,7 @@ def get_hpo_contact_info(project_id):
     contact_df = contact_df[contact_df.hpo_id.notnull()]
     contact_df = contact_df.set_index('hpo_id')
     contact_dict = contact_df.to_dict('index')
+    LOGGER.info(f"Retrieved contact list using {contact_list_query}")
     return contact_dict
 
 

@@ -405,7 +405,7 @@ def create_dataset(project_id,
 
 def post_query(project_id, dataset_id, table_content_query, scopes):
     """
-    Queries contact table using a Post request to the BQ rest API and returns the response
+    Queries table using a Post request to the BQ rest API and returns the response
 
     :param project_id: identifies the project the table resides in
     :param dataset_id: identifies the default dataset
@@ -439,13 +439,12 @@ def post_query(project_id, dataset_id, table_content_query, scopes):
 def query_sheet_linked_bq_table_compute_engine(project_id, table_content_query,
                                                external_data_scopes):
     """
-    Queries Google Sheet sourced BigQuery Table for hpo contact info from within compute engine or locally
+    Queries Google Sheet sourced BigQuery Table from within compute engine or locally
 
     :param project_id: identifies the project
     :param table_content_query: query to retrieve table contents
     :param external_data_scopes: scopes needed to query the external data sourced table
-    :return: dictionary with key hpo_id and value as
-             dictionary with keys site_name, hpo_id and site_point_of_contact
+    :return: result dataframe
     """
     # add Google Drive scope
     credentials, _ = google.auth.default(scopes=external_data_scopes)
@@ -455,28 +454,21 @@ def query_sheet_linked_bq_table_compute_engine(project_id, table_content_query,
     result_df = client.query(table_content_query,
                              job_config=query_job_config).to_dataframe()
 
-    LOGGER.info(f"Retrieved contact list from "
-                f"{project_id}.{consts.LOOKUP_TABLES_DATASET_ID}."
-                f"{consts.HPO_ID_CONTACT_LIST_TABLE_ID}")
     return result_df
 
 
 def query_sheet_linked_bq_table_app_engine(project_id, table_content_query,
                                            external_data_scopes):
     """
-    Queries Google Sheet sourced BigQuery Table for hpo contact info from within App Engine using rest API
+    Queries Google Sheet sourced BigQuery Table from within App Engine using rest API
 
     :param project_id: identifies the project
     :param table_content_query: query to retrieve table contents
     :param external_data_scopes: scopes needed to query the external data sourced table
-    :return: dictionary with key hpo_id and value as
-             dictionary with keys site_name, hpo_id and site_point_of_contact
+    :return: result dataframe
     """
     response = post_query(project_id, consts.LOOKUP_TABLES_DATASET_ID,
                           table_content_query, external_data_scopes)
     result_df = response.to_dataframe()
 
-    LOGGER.info(f"Retrieved contact list from "
-                f"{project_id}.{consts.LOOKUP_TABLES_DATASET_ID}."
-                f"{consts.HPO_ID_CONTACT_LIST_TABLE_ID}")
     return result_df
