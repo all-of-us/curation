@@ -5,6 +5,8 @@ from unittest import mock, TestCase
 
 # Project imports
 import app_identity
+from utils import bq
+from constants.utils import bq as bq_consts
 from validation import email_notification as en
 from validation.main import get_eastern_time
 
@@ -31,11 +33,22 @@ class EmailNotificationTest(TestCase):
             'submission_error': False
         }
 
-    @mock.patch(
-        'validation.email_notification.query_sheet_linked_bq_table_app_engine')
+    @mock.patch('utils.bq.query_sheet_linked_bq_table_app_engine')
     def test_hpo_contact_list(self, query_rest_api):
-        query_rest_api.return_value = en.query_sheet_linked_bq_table_compute_engine(
-            self.project_id)
+        scopes = [
+            "https://www.googleapis.com/auth/drive",
+            "https://www.googleapis.com/auth/cloud-platform"
+        ]
+
+        # Grant viewing access to the test sheet to BigQuery test accounts
+        sheet_url = (
+            "https://docs.google.com/spreadsheets"
+            "/d/1JI-KyigmwZU9I2J6TZqVTPNoEAWVqiFeF8Y549-dvzM/edit#gid=0")
+
+        query = (f"SELECT * FROM {bq_consts.LOOKUP_TABLES_DATASET_ID}."
+                 f"{bq_consts.HPO_ID_CONTACT_LIST_TABLE_ID}")
+        query_rest_api.return_value = bq.query_sheet_linked_bq_table_compute_engine(
+            self.project_id, query, scopes)
         fake_dict = {
             'fake_1': {
                 'site_name':

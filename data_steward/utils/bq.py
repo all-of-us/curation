@@ -4,13 +4,16 @@ A utility to standardize use of the BigQuery python client library.
 # Python Imports
 import logging
 import os
+import requests
 
-from google.api_core.exceptions import GoogleAPIError, BadRequest
 # Third-party imports
+from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
+import google.auth
 
 # Project Imports
 from app_identity import PROJECT_ID
+from utils import auth
 from constants.utils import bq as consts
 from resources import fields_for
 
@@ -398,3 +401,82 @@ def create_dataset(project_id,
         raise RuntimeError(f"Unable to create dataset: {failures}")
 
     return dataset
+
+
+def post_query(project_id, dataset_id, table_content_query, scopes):
+    """
+    Queries contact table using a Post request to the BQ rest API and returns the response
+
+    :param project_id: identifies the project the table resides in
+    :param dataset_id: identifies the default dataset
+    :param table_content_query: query to retrieve table contents
+    :param scopes: scopes needed to query the external data sourced table
+    :return: response as json
+    """
+    url = f'https://www.googleapis.com/bigquery/v2/projects/{project_id}/queries'
+
+    job_body = {
+        'defaultDataset': {
+            'projectId': project_id,
+            'datasetId': dataset_id
+        },
+        'query': table_content_query,
+        'timeoutMs': 600000,
+        'useLegacySql': False,
+        'dryRun': False,
+        'priority': 'INTERACTIVE',
+    }
+
+    access_token = auth.get_access_token(scopes)
+    headers = {'Authorization': 'Bearer {}'.format(access_token)}
+
+    r = requests.post(url, json=job_body, headers=headers)
+    r.raise_for_status()
+
+    return r.json()
+
+
+def query_sheet_linked_bq_table_compute_engine(project_id, table_content_query,
+                                               external_data_scopes):
+    """
+    Queries Google Sheet sourced BigQuery Table for hpo contact info from within compute engine or locally
+
+    :param project_id: identifies the project
+    :param table_content_query: query to retrieve table contents
+    :param external_data_scopes: scopes needed to query the external data sourced table
+    :return: dictionary with key hpo_id and value as
+             dictionary with keys site_name, hpo_id and site_point_of_contact
+    """
+    # add Google Drive scope
+    credentials, _ = google.auth.default(scopes=external_data_scopes)
+    client = bigquery.Client(credentials=credentials, project=project_id)
+
+    query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
+    result_df = client.query(table_content_query,
+                             job_config=query_job_config).to_dataframe()
+
+    LOGGER.info(f"Retrieved contact list from "
+                f"{project_id}.{consts.LOOKUP_TABLES_DATASET_ID}."
+                f"{consts.HPO_ID_CONTACT_LIST_TABLE_ID}")
+    return result_df
+
+
+def query_sheet_linked_bq_table_app_engine(project_id, table_content_query,
+                                           external_data_scopes):
+    """
+    Queries Google Sheet sourced BigQuery Table for hpo contact info from within App Engine using rest API
+
+    :param project_id: identifies the project
+    :param table_content_query: query to retrieve table contents
+    :param external_data_scopes: scopes needed to query the external data sourced table
+    :return: dictionary with key hpo_id and value as
+             dictionary with keys site_name, hpo_id and site_point_of_contact
+    """
+    response = post_query(project_id, consts.LOOKUP_TABLES_DATASET_ID,
+                          table_content_query, external_data_scopes)
+    result_df = response.to_dataframe()
+
+    LOGGER.info(f"Retrieved contact list from "
+                f"{project_id}.{consts.LOOKUP_TABLES_DATASET_ID}."
+                f"{consts.HPO_ID_CONTACT_LIST_TABLE_ID}")
+    return result_df
