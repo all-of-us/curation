@@ -25,11 +25,15 @@ def get_access_token():
     :return: returns the access_token
     """
 
-    scopes = ['https://www.googleapis.com/auth/sqlservice.admin']
+    scopes = [
+        'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
+    ]
+
+    # GOOGLE_APPLICATION_CREDENTIALS needs to point to cdr-ops SA key
     service_account_file = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
     credentials = service_account.Credentials.from_service_account_file(
-        service_account_file, scopes=scopes)
+        filename=service_account_file, scopes=scopes)
 
     auth_req = google.auth.transport.requests.Request()
     credentials.refresh(auth_req)
@@ -43,19 +47,16 @@ def get_deactivated_participants(project_id):
     """
     Gets all deactivated participants via API if suspensionStatus = 'NO_CONTACT'
 
-    :param project_id: The project that will contain the created table.
+    :param project_id: The RDR project that contains the deactivated participants.
 
-    :return: returns list of deactivated_participants
+    :return: returns dataframe of deactivated participants
     """
     token = get_access_token()
-    print(token)
 
     headers = {
         'content-type': 'application/json',
         'Authorization': 'Bearer {0}'.format(token)
     }
-
-    print(headers)
 
     # Make request to get API version. This is the current RDR version for reference
     # See https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this api.
@@ -82,7 +83,9 @@ def get_deactivated_participants(project_id):
             else:
                 not_done = False
 
-    deactivated_participants_cols = ['participantId', 'suspensionStatus', 'suspensionTime']  # any other relevant columns we want to push to a table in BQ
+    deactivated_participants_cols = [
+        'participantId', 'suspensionStatus', 'suspensionTime'
+    ]  # any other relevant columns we want to push to a table in BQ
 
     deactivated_participants = []
     # loop over participant summary records, insert participant data in same order as good_cols.
@@ -94,10 +97,13 @@ def get_deactivated_participants(project_id):
                     item.append(val)
         deactivated_participants.append(item)
 
-    df = pandas.DataFrame(deactivated_participants, columns=deactivated_participants_cols)
+    df = pandas.DataFrame(deactivated_participants,
+                          columns=deactivated_participants_cols)
     print(df)
 
-if __name__ == '__main__':
-    project_id = os.environ.get('PROJECT_ID')
-    print(project_id)
-    get_deactivated_participants(project_id)
+    return df
+
+
+# if __name__ == '__main__':
+#     project_id = os.environ.get('PROJECT_ID')
+#     get_deactivated_participants(project_id)
