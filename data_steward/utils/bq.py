@@ -10,6 +10,7 @@ import requests
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
 import google.auth
+from pandas import DataFrame
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -469,6 +470,8 @@ def query_sheet_linked_bq_table_app_engine(project_id, table_content_query,
     """
     response = post_query(project_id, consts.LOOKUP_TABLES_DATASET_ID,
                           table_content_query, external_data_scopes)
-    result_df = response.to_dataframe()
+    columns = [field['name'] for field in response['schema']['fields']]
+    rows = [[item['v'] for item in row['f']] for row in response['rows']]
+    result_df = DataFrame(rows, columns=columns)
 
     return result_df
