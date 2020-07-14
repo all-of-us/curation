@@ -32,10 +32,9 @@ class EnsureDateDatetime(unittest.TestCase):
         self.query_class = EnsureDateDatetimeConsistency(
             self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEqual(self.query_class.get_project_id(), self.project_id)
-        self.assertEqual(self.query_class.get_dataset_id(), self.dataset_id)
-        self.assertEqual(self.query_class.get_sandbox_dataset_id(),
-                         self.sandbox_id)
+        self.assertEqual(self.query_class.project_id, self.project_id)
+        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
+        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # test
@@ -46,7 +45,7 @@ class EnsureDateDatetime(unittest.TestCase):
     def test_get_cols(self):
         # pre conditions
         self.assertEqual(
-            self.query_class.get_affected_datasets(),
+            self.query_class.affected_datasets,
             [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
 
         for table in TABLE_DATES:
@@ -72,7 +71,7 @@ class EnsureDateDatetime(unittest.TestCase):
     def test_get_query_specs(self):
         # pre conditions
         self.assertEqual(
-            self.query_class.get_affected_datasets(),
+            self.query_class.affected_datasets,
             [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
 
         # test

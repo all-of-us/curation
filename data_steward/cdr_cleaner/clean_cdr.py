@@ -50,8 +50,8 @@ from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import DropDuplicatePpiQuestionsAndAnswers
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
-from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import \
-    ObservationSourceConceptIDRowSuppression
+from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
+    ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
@@ -60,14 +60,8 @@ from utils import bq
 
 LOGGER = logging.getLogger(__name__)
 
-EHR_CLEANING_CLASSES = [
-    (id_dedup.get_id_deduplicate_queries,),
-    # trying to query a table while creating query strings,
-    # can't work with mocked strings.  should use base class
-    # setup_query_execution function to load dependencies before query execution
-    (
-        CleanMappingExtTables,)
-]
+EHR_CLEANING_CLASSES = [(id_dedup.get_id_deduplicate_queries,),
+                        (CleanMappingExtTables,)]
 
 UNIONED_EHR_CLEANING_CLASSES = [
     (id_dedup.get_id_deduplicate_queries,),
@@ -84,11 +78,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
-    # trying to query a table while creating query strings,
-    # can't work with mocked strings.  should use base class
-    # setup_query_execution function to load dependencies before query execution
-    (
-        CleanMappingExtTables,)
+    (CleanMappingExtTables,)
 ]
 
 RDR_CLEANING_CLASSES = [
@@ -149,7 +139,7 @@ COMBINED_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         populate_routes.get_route_mapping_queries,),
-    (EnsureDateDatetimeConsistency),
+    (EnsureDateDatetimeConsistency,),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),
@@ -159,11 +149,7 @@ COMBINED_CLEANING_CLASSES = [
     (remove_aian_participants.get_queries,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
-    # trying to query a table while creating query strings,
-    # can't work with mocked strings.  should use base class
-    # setup_query_execution function to load dependencies before query execution
-    (
-        CleanMappingExtTables,)
+    (CleanMappingExtTables,)
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
@@ -173,21 +159,19 @@ DEID_BASE_CLEANING_CLASSES = [
     (valid_death_dates.get_valid_death_date_queries,),
     (fill_source_value.get_fill_freetext_source_value_fields_queries,),
     (repopulate_person.get_repopulate_person_post_deid_queries,),
-    # trying to query a table while creating query strings,
-    # can't work with mocked strings.  should use base class
-    # setup_query_execution function to load dependencies before query execution
-    (
-        CleanMappingExtTables,)
-]
-
-DEID_CLEAN_CLEANING_CLASSES = [
-    # trying to query a table while creating query strings,
-    # can't work with mocked strings.  should use base class
-    # setup_query_execution function to load dependencies before query execution
-    (
-        UnitNormalization,),
     (CleanMappingExtTables,)
 ]
+
+DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanMappingExtTables,)]
+
+DATA_STAGE_RULES_MAPPING = {
+    stage.EHR.value: EHR_CLEANING_CLASSES,
+    stage.UNIONED.value: UNIONED_EHR_CLEANING_CLASSES,
+    stage.RDR.value: RDR_CLEANING_CLASSES,
+    stage.COMBINED.value: COMBINED_CLEANING_CLASSES,
+    stage.DEID_BASE.value: DEID_BASE_CLEANING_CLASSES,
+    stage.DEID_CLEAN.value: DEID_CLEAN_CLEANING_CLASSES,
+}
 
 
 def add_module_info_decorator(query_function, *positional_args, **keyword_args):

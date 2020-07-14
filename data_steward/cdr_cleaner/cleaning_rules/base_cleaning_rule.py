@@ -158,7 +158,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         :param depends_on:  a list of rules a cleaning rule depends on when
             running.  Right now, it is used for reporting purposes, but the
             scope may expand in the future.  Default is an empty list.
-        :param affected_tables: a list of tables that are affected by 
+        :param affected_tables: a list of tables that are affected by
             running this cleaning rule.
         """
         self._issue_numbers = issue_numbers
@@ -269,49 +269,57 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                                format(clazz))
                     raise TypeError(message)
 
-    def get_depends_on_classes(self):
+    @property
+    def depends_on_classes(self):
         """
         Return the names of classes the rule depends on.
         """
         return self._depends_on_classes
 
-    def get_issue_urls(self):
+    @property
+    def issue_urls(self):
         """
         Return the issue_urls instance variable.
         """
         return self._issue_urls
 
-    def get_issue_numbers(self):
+    @property
+    def issue_numbers(self):
         """
         Return the issue_numbers instance variable.
         """
         return self._issue_numbers
 
-    def get_description(self):
+    @property
+    def description(self):
         """
         Get the common language explanation of the intent of a cleaning rule.
         """
         return self._description
 
-    def get_affected_datasets(self):
+    @property
+    def affected_datasets(self):
         """
         Get the list of datasets a rule affects.
         """
         return self._affected_datasets
 
-    def get_project_id(self):
+    @property
+    def project_id(self):
         """
         Get the project id for this class instance.
         """
         return self._project_id
 
-    def get_dataset_id(self):
+    @property
+    def dataset_id(self):
         """
         Get the dataset id for this class instance.
         """
         return self._dataset_id
 
-    def get_sandbox_dataset_id(self):
+    @property
+    def sandbox_dataset_id(self):
         """
         Get the sandbox dataset id for this class instance.
         """
