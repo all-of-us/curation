@@ -7,3 +7,4 @@ lxml==4.5.0
 beautifulsoup4==4.8.2
 soupsieve==1.9.5
 bs4==0.0.1
+pipdeptree==1.0.0
