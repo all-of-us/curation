@@ -388,59 +388,6 @@ def get_job_details(job_id):
         jobId=job_id).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
-def merge_tables(source_dataset_id, source_table_id_list,
-                 destination_dataset_id, destination_table_id):
-    """Takes a list of table names and runs a copy job
-
-    :source_table_name_list: list of tables to merge
-    :source_dataset_name: dataset where all the source tables reside
-    :destination_table_name: data goes into this table
-    :destination_dataset_name: dataset where the destination table resides
-    :returns: True if successfull. Or False if error or taking too long.
-
-    """
-    app_id = app_identity.get_application_id()
-    source_tables = [{
-        "projectId": app_id,
-        "datasetId": source_dataset_id,
-        "tableId": table_name
-    } for table_name in source_table_id_list]
-    job_body = {
-        'configuration': {
-            "copy": {
-                "sourceTables": source_tables,
-                "destinationTable": {
-                    "projectId": app_id,
-                    "datasetId": destination_dataset_id,
-                    "tableId": destination_table_id
-                },
-                "writeDisposition": "WRITE_TRUNCATE",
-            }
-        }
-    }
-
-    bq_service = create_service()
-    insert_result = bq_service.jobs().insert(
-        projectId=app_id,
-        body=job_body).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-    job_id = insert_result[bq_consts.JOB_REFERENCE][bq_consts.JOB_ID]
-    incomplete_jobs = wait_on_jobs([job_id])
-
-    if len(incomplete_jobs) == 0:
-        job_status = get_job_details(job_id)['status']
-        if 'errorResult' in job_status:
-            error_messages = [
-                '{}'.format(item['message']) for item in job_status['errors']
-            ]
-            logging.info(' || '.join(error_messages))
-            return False, ' || '.join(error_messages)
-    else:
-        logging.info("Wait timeout exceeded before load job with id '%s' was \
-                     done" % job_id)
-        return False, "Job timeout"
-    return True, ""
-
-
 def query(q,
           use_legacy_sql=False,
           destination_table_id=None,
