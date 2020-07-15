@@ -1,13 +1,13 @@
 import unittest
 
-from data_steward.cdr_cleaner.cleaning_rules.ppi_branching import OBSERVATION_BACKUP_TABLE_ID
-from data_steward.cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching, OBSERVATION
-from data_steward.cdr_cleaner.cleaning_rules.ppi_branching import PPI_BRANCHING_RULE_PATHS
-from utils.bq import get_table_schema
-
+import mock
 from google.cloud import bigquery
 from pandas import DataFrame
-import mock
+
+from cdr_cleaner.cleaning_rules.ppi_branching import OBSERVATION_BACKUP_TABLE_ID
+from cdr_cleaner.cleaning_rules.ppi_branching import PPI_BRANCHING_RULE_PATHS
+from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching, OBSERVATION
+from utils.bq import get_table_schema
 
 
 def _get_csv_row_count() -> int:
@@ -18,7 +18,7 @@ def _get_csv_row_count() -> int:
     """
     csv_row_count = 0
     for rule_path in PPI_BRANCHING_RULE_PATHS:
-        with open(rule_path, ) as rule_fp:
+        with open(rule_path) as rule_fp:
             header, *lines = rule_fp.readlines()
             csv_row_count += len(lines)
     return csv_row_count
@@ -37,7 +37,8 @@ class PpiBranchingTest(unittest.TestCase):
         self.dataset_id = 'fake_dataset'
         self.sandbox_dataset_id = 'fake_sandbox'
         self.observation_schema = get_table_schema('observation')
-        self.cleaning_rule = PpiBranching(self.project_id, self.dataset_id, self.sandbox_dataset_id)
+        self.cleaning_rule = PpiBranching(self.project_id, self.dataset_id,
+                                          self.sandbox_dataset_id)
 
     def test_load_rules_lookup(self):
         # dataframe has same number of rows as all input csv files (minus headers)
@@ -57,11 +58,15 @@ class PpiBranchingTest(unittest.TestCase):
         expected_sql = (f'CREATE OR REPLACE TABLE {self.sandbox_dataset_id}.'
                         f'{OBSERVATION_BACKUP_TABLE_ID}')
         self.assertTrue(result.startswith(expected_sql))
-        self.assertTrue(all(field.description in result for field in self.observation_schema))
+        self.assertTrue(
+            all(field.description in result
+                for field in self.observation_schema))
 
     def test_get_observation_replace_query(self):
         # check that DDL table location is correct and contains all field descriptions
         result = self.cleaning_rule.get_drop_rows_ddl().strip()
         expected_sql = f'CREATE OR REPLACE TABLE {self.dataset_id}.{OBSERVATION}'
         self.assertTrue(result.startswith(expected_sql))
-        self.assertTrue(all(field.description in result for field in self.observation_schema))
+        self.assertTrue(
+            all(field.description in result
+                for field in self.observation_schema))

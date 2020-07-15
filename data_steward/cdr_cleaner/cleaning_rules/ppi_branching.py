@@ -6,18 +6,18 @@
 # -
 
 # ## Problem
-# Some survey questions follow branching logic, that is, they may follow naturally 
-# from responses given to previous (parent) questions. For example, consider the 
+# Some survey questions follow branching logic, that is, they may follow naturally
+# from responses given to previous (parent) questions. For example, consider the
 # questions below taken from the lifestyle survey module.
 #
 #   Smoking_100CigsLifetime Have you smoked at least 100 cigarettes in your entire life?
 #   Smoking_SmokeFrequency Do you now smoke cigarettes [...]?
 #
-# The child question `Smoking_SmokeFrequency` should pertain only to participants who 
+# The child question `Smoking_SmokeFrequency` should pertain only to participants who
 # answer the parent question `Smoking_100CigsLifetime` affirmatively.
 #
-# A bug has been identified which may cause child questions to appear even when a  
-# requisite parent response has not been provided. In this case, `Smoking_SmokeFrequency` 
+# A bug has been identified which may cause child questions to appear even when a
+# requisite parent response has not been provided. In this case, `Smoking_SmokeFrequency`
 # might appear for participants who do **not** respond affirmatively to `Smoking_100CigsLifetime`.
 #
 # ## Solution
@@ -51,8 +51,8 @@
 # 1. Identify rows of the observation table that are child questions missing requisite
 #    parent responses and which must be removed. Backup the rows in a sandboxed table.
 #
-#   For each CSV file, we group columns to yield 
-#  
+#   For each CSV file, we group columns to yield
+#
 #   `(child_question, parent_question) => {parent_answer1, parent_answer2, ..}`
 #
 # ```sql
@@ -69,31 +69,31 @@
 #        )
 #     WHERE
 #      oc.observation_source_value = '{{child_question}}'
-#      AND op.observation_id IS NOT NULL -- the parent 
+#      AND op.observation_id IS NOT NULL -- the parent
 #     UNION ALL
 # ```
 #
 # 2. Reload all rows in the observation table, excluding the sandboxed rows.
 #
 # ```sql
-#     SELECT * FROM `{{dataset_id}}.observation` o 
+#     SELECT * FROM `{{dataset_id}}.observation` o
 #     WHERE NOT EXISTS (
-#       SELECT 1 FROM `{{dataset_id}}.observation` oc 
+#       SELECT 1 FROM `{{dataset_id}}.observation` oc
 #       WHERE oc.observation_id = o.observation_id
 #     )
 # ```
 #
 # # Limitations
 #  * Some concept codes are truncated in the RDR export
-#  
+#
 #    **TODO** Reference parent/child questions by concept_id rather than concept_code
 #
 #  * CSV rules which note any additional logic are currently skipped (as they are incompatible with approach)
-#  
+#
 #    **TODO** Complete the Basics and Overall Health branching logic CSV files
 #
 #  * Some CSV files indicate child questions to keep and others indicate child questions to remove
-#  
+#
 #    **TODO** Standardize branching logic CSV files
 
 # +
@@ -151,9 +151,10 @@ WHERE NOT EXISTS
 class PpiBranching(BaseCleaningRule):
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
-        desc = ('Load a lookup of PPI branching rules represented in CSV files. '
-                'Store rows in the observation table that violate the rules '
-                'in a sandbox table and then drop the rows.')
+        desc = (
+            'Load a lookup of PPI branching rules represented in CSV files. '
+            'Store rows in the observation table that violate the rules '
+            'in a sandbox table and then drop the rows.')
         super().__init__(issue_numbers=[ISSUE_NUMBER],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
@@ -162,13 +163,16 @@ class PpiBranching(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[OBSERVATION])
         dataset_ref = bigquery.DatasetReference(project_id, dataset_id)
-        sandbox_dataset_ref = bigquery.DatasetReference(project_id, sandbox_dataset_id)
+        sandbox_dataset_ref = bigquery.DatasetReference(project_id,
+                                                        sandbox_dataset_id)
 
         self.rule_paths = PPI_BRANCHING_RULE_PATHS
-        self.observation_table = bigquery.TableReference(dataset_ref, OBSERVATION)
-        self.lookup_table = bigquery.TableReference(sandbox_dataset_ref, RULES_LOOKUP_TABLE_ID)
-        self.backup_table = bigquery.TableReference(sandbox_dataset_ref,
-                                                    OBSERVATION_BACKUP_TABLE_ID)
+        self.observation_table = bigquery.TableReference(
+            dataset_ref, OBSERVATION)
+        self.lookup_table = bigquery.TableReference(sandbox_dataset_ref,
+                                                    RULES_LOOKUP_TABLE_ID)
+        self.backup_table = bigquery.TableReference(
+            sandbox_dataset_ref, OBSERVATION_BACKUP_TABLE_ID)
 
     def create_rules_dataframe(self) -> pandas.DataFrame:
         """
@@ -236,8 +240,11 @@ class PpiBranching(BaseCleaningRule):
         self.load_rules_lookup(client)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
-        return [{cdr_consts.QUERY: self.get_backup_rows_ddl()},
-                {cdr_consts.QUERY: self.get_drop_rows_ddl()}]
+        return [{
+            cdr_consts.QUERY: self.get_backup_rows_ddl()
+        }, {
+            cdr_consts.QUERY: self.get_drop_rows_ddl()
+        }]
 
     def setup_validation(self, client, *args, **keyword_args):
         pass
@@ -263,9 +270,12 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
-    cleaner = PpiBranching(ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id)
+    cleaner = PpiBranching(ARGS.project_id, ARGS.dataset_id,
+                           ARGS.sandbox_dataset_id)
     query_list = cleaner.get_query_specs()
     if ARGS.list_queries:
         cleaner.log_queries()
     else:
-        clean_engine.clean_dataset(ARGS.project_id, query_list, data_stage=cdr_consts.RDR)
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   query_list,
+                                   data_stage=cdr_consts.RDR)

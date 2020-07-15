@@ -116,12 +116,15 @@ class BqTest(unittest.TestCase):
         # Unknown types should raise ValueError
         with self.assertRaises(ValueError) as c:
             _to_standard_sql_type('unknown_type')
-            self.assertEqual(str(c.exception), f'unknown_type is not a valid field type')
+            self.assertEqual(str(c.exception),
+                             f'unknown_type is not a valid field type')
 
     def test_get_table_ddl(self):
         # Schema is determined by table name
         ddl = get_table_ddl(self.dataset_id, 'observation').strip()
-        self.assertTrue(ddl.startswith(f'CREATE OR REPLACE TABLE {self.dataset_id}.observation'))
+        self.assertTrue(
+            ddl.startswith(
+                f'CREATE OR REPLACE TABLE {self.dataset_id}.observation'))
         self.assertTrue(ddl.endswith(')'))
 
         # Explicitly provided table name and schema are rendered
@@ -130,14 +133,20 @@ class BqTest(unittest.TestCase):
                             table_id='custom_observation',
                             schema=observation_schema).strip()
         self.assertTrue(
-            ddl.startswith(f'CREATE OR REPLACE TABLE {self.dataset_id}.custom_observation')
+            ddl.startswith(
+                f'CREATE OR REPLACE TABLE {self.dataset_id}.custom_observation')
         )
         # Sanity check that observation schema is rendered
-        self.assertTrue(all(field.description in ddl for field in observation_schema))
+        self.assertTrue(
+            all(field.description in ddl for field in observation_schema))
         self.assertTrue(ddl.endswith(')'))
 
         # Parameter as_query is rendered
         fake_as_query = "SELECT 1 FROM fake"
-        ddl = get_table_ddl(self.dataset_id, 'observation', as_query=fake_as_query).strip()
-        self.assertTrue(ddl.startswith(f'CREATE OR REPLACE TABLE {self.dataset_id}.observation'))
+        ddl = get_table_ddl(self.dataset_id,
+                            'observation',
+                            as_query=fake_as_query).strip()
+        self.assertTrue(
+            ddl.startswith(
+                f'CREATE OR REPLACE TABLE {self.dataset_id}.observation'))
         self.assertTrue(ddl.endswith(fake_as_query))
