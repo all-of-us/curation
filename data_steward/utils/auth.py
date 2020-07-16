@@ -32,8 +32,9 @@ def get_access_token(scopes):
 
 def delegated_credentials(credentials, subject, scopes):
     """
-    Generate credentials with scopes. This needs the 'SA token creator' role for the SA
+    Generate credentials with scopes. This needs the 'SA Token Creator' role for the SA
 
+    Source: https://stackoverflow.com/a/57092533
     :param credentials: Credentials object to add scopes/subject to
     :param subject: Subject to add to credentials
     :param scopes: Scopes to add to credentials
