@@ -59,35 +59,36 @@ from `{{project}}.{{dataset}}.measurement`
 
 # Identify sites who submitted "junk" data.  Only one value.  Likely 0.
 SITES_TO_REMOVE_DATA_FOR = jinja_env.from_string("""
--- group site input by the site src_id and the value_as_number --
--- only do this for sites, not PPI or PM --
-WITH site_aggregates AS (
-    SELECT 
-    me.src_id,
-    m.value_as_number
-    FROM `{{project}}.{{dataset}}.measurement_ext` as me
-    JOIN `{{project}}.{{dataset}}.measurement` as m
-    USING (measurement_id)
-    WHERE m.value_as_number IS NOT NULL
-    AND me.src_id LIKE 'EHR site%'
-    GROUP BY me.src_id, m.value_as_number
+-- join the measurment and mapping table and only store EHR site records --
+WITH joined_table AS (
+SELECT *
+FROM `{{project}}.{{dataset}}.measurement` AS m
+JOIN `{{project}}.{{dataset}}..measurement_ext` AS me
+USING (measurement_id)
+WHERE src_id LIKE 'EHR site%'
 ),
 
--- count the rows for each site src_id in site_aggregates --
--- more than one row in the aggregate indicates the site submitted more than --
--- one value type in value_as_number --
-site_count_measurements AS (
-    SELECT ms.src_id,
-    COUNT(src_id) AS site_count
-    FROM site_aggregates AS ms
-    GROUP BY ms.src_id
-)
+-- get the src_id of sites having something greater than 0 in the value_as_number field --
+values_containing_srcs AS(
+SELECT DISTINCT(src_id)
+FROM joined_table AS jt
+GROUP BY src_id, value_as_number
+HAVING value_as_number > 0
+),
 
--- select src_id from sites that have only one row in site_count_measurements --
--- this means the site only listed one type of value for value_as_number --
-SELECT scm.src_id
-FROM site_count_measurements AS scm
-WHERE scm.site_count < 2""")
+-- get the src_id of sites having either 0 or null in the value_as_number field --
+junk_srcs AS (
+SELECT DISTINCT(src_id)
+FROM joined_table AS jt
+GROUP BY src_id, value_as_number
+HAVING value_as_number = 0 OR value_as_number IS NULL)
+
+-- select those src_ids from junk_srcs that do not exist in value containing sources --
+-- this means the site never submitted anything other than 0 or null in the --
+-- value_as_number field --
+SELECT js.src_id
+FROM junk_srcs AS js
+WHERE js.src_id NOT IN (SELECT src_id FROM values_containing_srcs)""")
 
 # store data from sites that will be dropped.
 ZERO_VALUES_SAVE_QUERY = jinja_env.from_string("""
@@ -150,27 +151,13 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
             single query and a specification for how to execute that query.
             The specifications are optional but the query is required.
         """
-        save_dropped_rows = {
-            cdr_consts.QUERY:
-                DROP_SELECTION_QUERY_TMPL.render(
-                    project=self.project_id,
-                    dataset=self.dataset_id,
-                    sandbox=self.sandbox_dataset_id,
-                    drop_table=self.get_sandbox_tablenames()[0],
-                    obs_concepts=OBS_SRC_CONCEPTS),
-        }
+        save_dropped_rows = {cdr_consts.QUERY: ''}
 
         drop_rows_query = {
-            cdr_consts.QUERY:
-                DROP_QUERY_TMPL.render(project=self.project_id,
-                                       dataset=self.dataset_id,
-                                       obs_concepts=OBS_SRC_CONCEPTS),
-            cdr_consts.DESTINATION_TABLE:
-                OBSERVATION,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
+            cdr_consts.QUERY: '',
+            cdr_consts.DESTINATION_TABLE: MEASUREMENT,
+            cdr_consts.DESTINATION_DATASET: self.dataset_id,
+            cdr_consts.DISPOSITION: WRITE_TRUNCATE
         }
 
         return [save_dropped_rows, drop_rows_query]
