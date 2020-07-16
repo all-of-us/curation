@@ -12,10 +12,11 @@ import pandas
 import os
 
 # Third party imports
-from google.oauth2 import service_account
 import google.auth
 import google.auth.transport.requests
 import requests
+from google.oauth2 import service_account
+
 
 def get_access_token():
     """
@@ -95,8 +96,3 @@ def get_deactivated_participants(project_id):
                           columns=deactivated_participants_cols)
 
     return df
-
-
-if __name__ == '__main__':
-    project_id = os.environ.get('PROJECT_ID')
-    get_deactivated_participants(project_id)
