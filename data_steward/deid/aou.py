@@ -93,6 +93,7 @@ import constants.bq_utils as bq_consts
 from deid.parser import parse_args
 from deid.press import Press
 from resources import DEID_PATH
+from utils.concept_ids_suppression import get_additional_concepts_query
 
 LOGGER = logging.getLogger(__name__)
 
@@ -276,6 +277,10 @@ def create_concept_id_lookup_table(input_dataset, credentials):
         data = pd.read_csv(
             os.path.join(DEID_PATH, 'config', 'internal_tables',
                          'src_concept_ids_suppression.csv'))
+
+        # check utility to append additional concept_ids
+        additional_concept_ids = get_additional_concepts_query(input_dataset, client)
+        data = data.append(additional_concept_ids)
 
         # write this to bigquery.
         data.to_gbq(lookup_tablename,
