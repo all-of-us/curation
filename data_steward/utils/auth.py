@@ -16,6 +16,8 @@ def get_access_token(scopes):
     """
     Retrieves an access_token in App Engine for the default service account
 
+    Source: https://cloud.google.com/functions/docs/securing/function-identity#gcloud
+    and https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances#applications
     :param scopes: List of Google scopes as strings
     :return: access token as string to be used in a request header as
         headers = {'Authorization': f'Bearer {access_token}'}
