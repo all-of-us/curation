@@ -67,9 +67,7 @@ class BQTest(unittest.TestCase):
             "https://www.googleapis.com/auth/drive",
             "https://www.googleapis.com/auth/cloud-platform"
         ]
-        credentials, _ = google.auth.default(scopes=external_data_scopes)
-        client = bigquery.Client(credentials=credentials,
-                                 project=self.project_id)
+        client = bq.get_client(self.project_id, external_data_scopes)
 
         # Configure the external data source and query job.
         external_config = bigquery.ExternalConfig("GOOGLE_SHEETS")
