@@ -279,7 +279,8 @@ def create_concept_id_lookup_table(input_dataset, credentials):
                          'src_concept_ids_suppression.csv'))
 
         # check utility to append additional concept_ids
-        additional_concept_ids = get_additional_concepts_query(input_dataset, client)
+        additional_concept_ids = get_additional_concepts_query(
+            input_dataset, client)
         data = data.append(additional_concept_ids)
 
         # write this to bigquery.

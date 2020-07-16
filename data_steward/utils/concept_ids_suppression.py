@@ -61,7 +61,7 @@ def get_additional_concepts_query(input_dataset, client):
                 jinja_env.from_string(q).render(
                     input_dataset=input_dataset)).to_dataframe())
 
-    LOGGER.info(f"Adding {len(concept_id_df.index)} rows to dataframe to create _concept_ids_suppression lookup table")
+    LOGGER.info(
+        f"Adding {len(concept_id_df.index)} rows to dataframe to create _concept_ids_suppression lookup table"
+    )
     return concept_id_df
-
-
