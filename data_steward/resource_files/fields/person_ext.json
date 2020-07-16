@@ -6,6 +6,12 @@
         "description": "A unique identifier for each person."
     },
     {
+        "type": "integer",
+        "name": "src_id",
+        "mode": "nullable",
+        "description": "A foreign key to the participant's source EHR site."
+    },
+    {
         "type": "integer", 
         "name": "state_of_residence_concept_id", 
         "mode": "nullable", 
