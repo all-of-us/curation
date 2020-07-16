@@ -59,7 +59,7 @@ class BQTest(unittest.TestCase):
                                     self.description, self.label_or_tag)
         self.assertEqual(dataset.dataset_id, self.dataset_id)
 
-    def test_query_sheet_linked_bq_table_compute_engine(self):
+    def test_query_sheet_linked_bq_table(self):
         dataset = bq.create_dataset(self.project_id, self.dataset_id,
                                     self.description, self.label_or_tag)
         # add Google Drive scope
@@ -96,8 +96,9 @@ class BQTest(unittest.TestCase):
 
         table = client.create_table(table)
         table_content_query = f'SELECT * FROM `{dataset.dataset_id}.{table.table_id}`'
-        actual_df = bq.query_sheet_linked_bq_table_compute_engine(
-            self.project_id, table_content_query, external_data_scopes)
+        actual_df = bq.query_sheet_linked_bq_table(self.project_id,
+                                                   table_content_query,
+                                                   external_data_scopes)
         expected_dict = [{
             'site_name':
                 'Fake Site Name 1',

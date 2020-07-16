@@ -4,7 +4,6 @@ A utility to standardize use of the BigQuery python client library.
 # Python Imports
 import logging
 import os
-import requests
 
 # Third-party imports
 from google.api_core.exceptions import GoogleAPIError, BadRequest
@@ -21,16 +20,23 @@ from resources import fields_for
 LOGGER = logging.getLogger(__name__)
 
 
-def get_client(project_id=None):
+def get_client(project_id=None, scopes=None):
     """
     Get a client for a specified project.
 
     :param project_id:  Name of the project to create a bigquery library client for
         It is being nice for now, but will begin to require users to provide
         the project_id.
+    :param scopes: List of Google scopes as strings
 
     :return:  A bigquery Client object.
     """
+    if scopes:
+        credentials, project_id = google.auth.default()
+        credentials = auth.delegated_credentials(credentials,
+                                                 subject=None,
+                                                 scopes=scopes)
+        return bigquery.Client(project=project_id, credentials=credentials)
     if project_id is None:
         LOGGER.info(f"You should specify project_id for a reliable experience."
                     f"Defaulting to {os.environ.get(PROJECT_ID)}.")
@@ -404,74 +410,20 @@ def create_dataset(project_id,
     return dataset
 
 
-def post_query(project_id, dataset_id, table_content_query, scopes):
+def query_sheet_linked_bq_table(project_id, table_content_query,
+                                external_data_scopes):
     """
-    Queries table using a Post request to the BQ rest API and returns the response
-
-    :param project_id: identifies the project the table resides in
-    :param dataset_id: identifies the default dataset
-    :param table_content_query: query to retrieve table contents
-    :param scopes: scopes needed to query the external data sourced table
-    :return: response as json
-    """
-    url = f'https://www.googleapis.com/bigquery/v2/projects/{project_id}/queries'
-
-    job_body = {
-        'defaultDataset': {
-            'projectId': project_id,
-            'datasetId': dataset_id
-        },
-        'query': table_content_query,
-        'timeoutMs': 600000,
-        'useLegacySql': False,
-        'dryRun': False,
-        'priority': 'INTERACTIVE',
-    }
-
-    access_token = auth.get_access_token(scopes)
-    headers = {'Authorization': 'Bearer {}'.format(access_token)}
-
-    r = requests.post(url, json=job_body, headers=headers)
-    r.raise_for_status()
-
-    return r.json()
-
-
-def query_sheet_linked_bq_table_compute_engine(project_id, table_content_query,
-                                               external_data_scopes):
-    """
-    Queries Google Sheet sourced BigQuery Table from within compute engine or locally
+    Queries Google Sheet sourced BigQuery Table and returns results dataframe
 
     :param project_id: identifies the project
     :param table_content_query: query to retrieve table contents
     :param external_data_scopes: scopes needed to query the external data sourced table
     :return: result dataframe
     """
-    # add Google Drive scope
-    credentials, _ = google.auth.default(scopes=external_data_scopes)
-    client = bigquery.Client(credentials=credentials, project=project_id)
-
+    # add Google OAuth2.0 scopes
+    client = get_client(project_id, external_data_scopes)
     query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
     result_df = client.query(table_content_query,
                              job_config=query_job_config).to_dataframe()
-
-    return result_df
-
-
-def query_sheet_linked_bq_table_app_engine(project_id, table_content_query,
-                                           external_data_scopes):
-    """
-    Queries Google Sheet sourced BigQuery Table from within App Engine using rest API
-
-    :param project_id: identifies the project
-    :param table_content_query: query to retrieve table contents
-    :param external_data_scopes: scopes needed to query the external data sourced table
-    :return: result dataframe
-    """
-    response = post_query(project_id, consts.LOOKUP_TABLES_DATASET_ID,
-                          table_content_query, external_data_scopes)
-    columns = [field['name'] for field in response['schema']['fields']]
-    rows = [[item['v'] for item in row['f']] for row in response['rows']]
-    result_df = DataFrame(rows, columns=columns)
 
     return result_df

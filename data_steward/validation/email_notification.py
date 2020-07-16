@@ -62,10 +62,9 @@ def get_hpo_contact_info(project_id):
         dataset=bq_client_consts.LOOKUP_TABLES_DATASET_ID,
         contact_table=bq_client_consts.HPO_ID_CONTACT_LIST_TABLE_ID)
 
-    # TODO change to query_sheet_linked_bq_table_compute_engine after migrating to compute engine
-    # The below function only works in app_engine
-    contact_df = bq.query_sheet_linked_bq_table_app_engine(
-        project_id, contact_list_query, external_data_scopes=scopes)
+    contact_df = bq.query_sheet_linked_bq_table(project_id,
+                                                contact_list_query,
+                                                external_data_scopes=scopes)
 
     contact_df = contact_df[contact_df.hpo_id.notnull()]
     contact_df = contact_df.set_index('hpo_id')
