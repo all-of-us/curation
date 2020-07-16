@@ -1,5 +1,5 @@
 # Python imports
-import requests
+import requests as req
 
 # Third party imports
 from google.auth import iam
@@ -23,7 +23,7 @@ def get_access_token(scopes):
     scopes_str = ','.join(scopes)
     url = f'{METADATA_URL}instance/service-accounts/{SERVICE_ACCOUNT}/token?scopes={scopes_str}'
     # Request an access token from the metadata server.
-    r = requests.get(url, headers=METADATA_HEADERS)
+    r = req.get(url, headers=METADATA_HEADERS)
     r.raise_for_status()
     # Extract the access token from the response.
     access_token = r.json()['access_token']
