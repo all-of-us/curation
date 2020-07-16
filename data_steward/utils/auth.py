@@ -31,6 +31,14 @@ def get_access_token(scopes):
 
 
 def delegated_credentials(credentials, subject, scopes):
+    """
+    Generate credentials with scopes. This needs the 'SA token creator' role for the SA
+
+    :param credentials: Credentials object to add scopes/subject to
+    :param subject: Subject to add to credentials
+    :param scopes: Scopes to add to credentials
+    :return: Updated credentials object with access token for scopes
+    """
     try:
         # If using service account credentials from json file
         updated_credentials = credentials.with_subject(subject).with_scopes(
