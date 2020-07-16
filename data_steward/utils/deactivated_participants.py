@@ -8,7 +8,6 @@ The intent of this module is to call and store deactivated participants informat
 """
 
 # Python imports
-import requests
 import pandas
 import os
 
@@ -16,7 +15,7 @@ import os
 from google.oauth2 import service_account
 import google.auth
 import google.auth.transport.requests
-
+import requests
 
 def get_access_token():
     """
@@ -62,19 +61,14 @@ def get_deactivated_participants(project_id):
     # See https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this api.
     url = 'https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified&suspensionStatus={1}'.format(
         project_id, 'NO_CONTACT')
-    print(url)
+
     not_done = True
     data = []
-
-    resp = requests.get(url, headers=headers)
-    print(resp)
 
     while not_done:
         resp = requests.get(url, headers=headers)
         if not resp or resp.status_code != 200:
             print(f'Error: API request failed because {resp}')
-            # print('Error: api request failed.\n\n{0}.'.format(
-            #     resp.text if resp else 'Unknown error.'))
         else:
             r_json = resp.json()
             data += r_json['entry']
@@ -99,11 +93,10 @@ def get_deactivated_participants(project_id):
 
     df = pandas.DataFrame(deactivated_participants,
                           columns=deactivated_participants_cols)
-    print(df)
 
     return df
 
 
-# if __name__ == '__main__':
-#     project_id = os.environ.get('PROJECT_ID')
-#     get_deactivated_participants(project_id)
+if __name__ == '__main__':
+    project_id = os.environ.get('PROJECT_ID')
+    get_deactivated_participants(project_id)
