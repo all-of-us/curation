@@ -114,7 +114,7 @@ def create_recipients_list(hpo_id):
         return hpo_recipients
     mail_to.append({'email': consts.DATA_CURATION_LISTSERV, 'type': 'cc'})
     hpo_recipients[consts.MAIL_TO] = mail_to
-    LOGGER.info(f"Fetched emails {mail_to}")
+    LOGGER.info(f"Successfully fetched emails for {hpo_id}")
     return hpo_recipients
 
 

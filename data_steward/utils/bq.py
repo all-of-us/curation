@@ -9,7 +9,6 @@ import os
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
 import google.auth
-from pandas import DataFrame
 
 # Project Imports
 from app_identity import PROJECT_ID
