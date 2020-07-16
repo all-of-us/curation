@@ -12,7 +12,7 @@ from matplotlib import image as mpimg
 # Project imports
 import app_identity
 from utils import bq
-from constants.utils import bq as bq_client_consts
+from constants.utils import bq as bq_consts
 from constants.validation import email_notification as consts
 from resources import achilles_images_path
 
@@ -59,8 +59,8 @@ def get_hpo_contact_info(project_id):
 
     contact_list_query = CONTACT_QUERY_TMPL.render(
         project=project_id,
-        dataset=bq_client_consts.LOOKUP_TABLES_DATASET_ID,
-        contact_table=bq_client_consts.HPO_ID_CONTACT_LIST_TABLE_ID)
+        dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
+        contact_table=bq_consts.HPO_ID_CONTACT_LIST_TABLE_ID)
 
     contact_df = bq.query_sheet_linked_bq_table(project_id,
                                                 contact_list_query,
