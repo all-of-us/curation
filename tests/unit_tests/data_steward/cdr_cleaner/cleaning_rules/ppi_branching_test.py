@@ -41,16 +41,26 @@ class PpiBranchingTest(unittest.TestCase):
                                           self.sandbox_dataset_id)
 
     def test_load_rules_lookup(self):
-        # dataframe has same number of rows as all input csv files (minus headers)
-        expected_row_count = _get_csv_row_count()
 
-        client = bigquery.Client(self.project_id)
-        client.load_table_from_dataframe = mock.MagicMock()
-        self.cleaning_rule.load_rules_lookup(client)
-        # unpacking first arg; call_args is collection of (args: Tuple, kwargs: dict)
-        dataframe_arg, *_ = client.load_table_from_dataframe.call_args[0]
-        self.assertIsInstance(dataframe_arg, DataFrame)
-        self.assertEqual(expected_row_count, len(dataframe_arg.index))
+        def check_load_table_from_dataframe(dataframe, destination, job_config):
+            """
+            Mocks bigquery.Client.load_table_from_dataframe to
+            ensure that it is called by the rule as expected
+            """
+            expected_row_count = _get_csv_row_count()
+            self.assertIsInstance(dataframe, DataFrame)
+            self.assertEqual(expected_row_count, len(dataframe))
+            self.assertEqual(destination, self.cleaning_rule.lookup_table)
+            self.assertEqual(job_config.write_disposition,
+                             bigquery.WriteDisposition.WRITE_TRUNCATE)
+            # return a mock for the job result
+            return mock.MagicMock()
+
+        # dataframe has same number of rows as all input csv files (minus headers)
+        with mock.patch('google.cloud.bigquery.Client') as m:
+            instance = m.return_value
+            instance.load_table_from_dataframe = check_load_table_from_dataframe
+            self.cleaning_rule.load_rules_lookup(instance)
 
     def test_get_backup_rows_query(self):
         # check that DDL table location is correct and contains all field descriptions
