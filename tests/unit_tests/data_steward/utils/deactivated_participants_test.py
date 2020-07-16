@@ -12,17 +12,12 @@ The intent of this module is to check that GCR access token is generated properl
 
 # Python imports
 import unittest
-from unittest.mock import Mock
-import requests
 import pandas
 import mock
+import pandas.testing
 
 # Project imports
-from utils.deactivated_participants import get_access_token, get_deactivated_participants
-
-# Third-party imports
-from google.oauth2 import service_account
-from google.cloud import storage
+from utils.deactivated_participants import get_deactivated_participants
 
 
 class DeactivatedParticipantsTest(unittest.TestCase):
@@ -36,17 +31,50 @@ class DeactivatedParticipantsTest(unittest.TestCase):
     def setUp(self):
         # Input parameters expected by the class
         self.project_id = 'foo_project'
-        self.service_account_file = '/path/to/SA/key.json'
-        self.scopes = [
-            'https://www.fakewebsite.com', 'fake_email', 'fake_profile'
-        ]
         self.access_token = 'ya29.12345'
+        self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
+        self.deactivated_participants = [[
+            'P111', 'NO_CONTACT', '2018-12-07T08:21:14'
+        ], ['P222', 'NO_CONTACT', '2018-12-07T08:21:14']]
+        self.fake_dataframe = pandas.DataFrame(self.deactivated_participants,
+                                               columns=self.columns)
 
-    @mock.patch('utils.deactivated_participants.get_access_token', return_value='ya29.12345')
-    def test_get_access_token(self, mocked_access_token):
-        self.assertEqual(mocked_access_token(), self.access_token)
+        self.json_response_entry = {
+            'entry': [{
+                'fullUrl':
+                    'https//foo_project.appspot.com/rdr/v1/Participant/P111/Summary',
+                'resource': {
+                    'participantId': 'P111',
+                    'suspensionStatus': 'NO_CONTACT',
+                    'suspensionTime': '2018-12-07T08:21:14'
+                }
+            }, {
+                'fullUrl':
+                    'https//foo_project.appspot.com/rdr/v1/Participant/P222/Summary',
+                'resource': {
+                    'participantId': 'P222',
+                    'suspensionStatus': 'NO_CONTACT',
+                    'suspensionTime': '2018-12-07T08:21:14'
+                }
+            }]
+        }
 
-    @mock.patch('utils.deactivated_participants.get_access_token', return_value='ya29.12345')
-    def test_get_deactivated_participants(self):
-        results = get_deactivated_participants(self.project_id)
-        print(results)
+    @mock.patch('utils.deactivated_participants.get_access_token',
+                return_value='ya29.12345')
+    def test_get_access_token(self, mock_access_token):
+        self.assertEqual(mock_access_token(), self.access_token)
+
+    @mock.patch('utils.deactivated_participants.get_deactivated_participants')
+    @mock.patch('utils.deactivated_participants.requests.get')
+    def test_get_deactivated_participants(self, mock_get,
+                                          mock_get_deactivated_participants):
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = self.json_response_entry
+
+        mock_get_deactivated_participants.return_value = self.fake_dataframe
+        response = get_deactivated_participants(self.project_id)
+
+        pandas.testing.assert_frame_equal(
+            response,
+            pandas.DataFrame(self.deactivated_participants,
+                             columns=self.columns))
