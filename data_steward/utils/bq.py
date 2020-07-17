@@ -8,7 +8,7 @@ import os
 # Third-party imports
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
-import google.auth
+from google.auth import default
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -31,10 +31,8 @@ def get_client(project_id=None, scopes=None):
     :return:  A bigquery Client object.
     """
     if scopes:
-        credentials, project_id = google.auth.default()
-        credentials = auth.delegated_credentials(credentials,
-                                                 subject=None,
-                                                 scopes=scopes)
+        credentials, project_id = default()
+        credentials = auth.delegated_credentials(credentials, scopes=scopes)
         return bigquery.Client(project=project_id, credentials=credentials)
     if project_id is None:
         LOGGER.info(f"You should specify project_id for a reliable experience."
