@@ -55,6 +55,12 @@ OPTIONS (
         {% if loop.nextitem is defined %},{% endif %} 
     {%- endfor %} )
 {%- endif %}
+{% if cluster_by_cols -%}
+CLUSTER BY 
+{% for col in cluster_by_cols -%}
+    {{col}}{% if loop.nextitem is defined %},{% endif %}
+{%- endfor %}  
+{%- endif -%}
 -- Note clustering/partitioning in conjunction with AS query_expression is -- 
 -- currently unsupported (see https://bit.ly/2VeMs7e) --
 {% if query -%} AS {{ query }} {%- endif %}
@@ -180,6 +186,7 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
 def get_table_ddl(dataset_id: str,
                   table_id: str,
                   schema: typing.List[bigquery.SchemaField] = None,
+                  cluster_by_cols: typing.List[str] = None,
                   as_query: str = None,
                   **table_options):
     """
@@ -197,6 +204,7 @@ def get_table_ddl(dataset_id: str,
     return CREATE_OR_REPLACE_TABLE_TPL.render(dataset_id=dataset_id,
                                               table_id=table_id,
                                               schema=_schema,
+                                              cluster_by_cols=cluster_by_cols,
                                               query=as_query,
                                               opts=table_options)
 

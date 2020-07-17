@@ -1,9 +1,9 @@
 import datetime
 import time
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Tuple, Set
 
 from google.cloud import bigquery
-from google.cloud.bigquery import Table
+from google.cloud.bigquery import Table, TimePartitioning
 
 import app_identity
 import bq_utils
@@ -95,6 +95,16 @@ def _fq_table_name(table: Table) -> str:
     return f'{table.project}.{table.dataset_id}.{table.table_id}'
 
 
+def row_iter_to_set(row_iter: bigquery.table.RowIterator) -> Set[Tuple]:
+    """
+    Convert a row iterator to a set of tuples
+
+    :param row_iter: open, unread results from a query
+    :return: the results as a set of tuples
+    """
+    return {tuple(row[f] for f in TEST_DATA_FIELDS) for row in row_iter}
+
+
 class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
@@ -123,9 +133,15 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
             Observation(**dict(zip(TEST_DATA_FIELDS, row))).__dict__
             for row in TEST_DATA_ROWS
         ]
+        self.client.delete_table(f'{self.dataset_id}.observation', not_found_ok=True)
         job_config = bigquery.LoadJobConfig()
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
+        # TODO figure out how to handle if clustering does NOT exist
+        #      CREATE OR REPLACE fails if partitioning specs differ
+        job_config.clustering_fields = ['person_id']
+        job_config.time_partitioning = TimePartitioning(type_=bigquery.TimePartitioningType.DAY)
         job_config.schema = Observation.SCHEMA
+        job_config.create_disposition = bigquery.CreateDisposition.CREATE_IF_NEEDED
         self.client.load_table_from_json(
             self.data,
             destination=f'{self.dataset_id}.{ppi_branching.OBSERVATION}',
@@ -144,17 +160,17 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
             destination=f'{self.dataset_id}.{ppi_branching.OBSERVATION}',
             job_config=job_config).result()
 
-    def _query(self, q: str) -> (bigquery.table.RowIterator, bigquery.QueryJob):
+    def _query(self, q: str) -> Tuple[Set[Tuple], bigquery.QueryJob]:
         """
         Execute query and return results
 
         :param q: the query
-        :return: (rows, job) where results is an iterable of row objects
+        :return: (rows, job) where results is a set of tuples
                  and job is the completed job
         """
         query_job = self.client.query(q)
         row_iter = query_job.result()
-        return row_iter, query_job
+        return row_iter_to_set(row_iter), query_job
 
     def assert_job_success(self, job: Union[bigquery.QueryJob,
                                             bigquery.LoadJob]):
@@ -171,61 +187,63 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
     def test(self):
         rule = self.query_class  # var just to reduce line lengths
 
-        # create lookup table
+        # setup_rule creates lookup
         rules_df = rule.create_rules_dataframe()
-        lookup_job = rule.load_rules_lookup(client=self.client)
-        self.assertIsInstance(lookup_job, bigquery.LoadJob)
-        self.assert_job_success(lookup_job)
+        rule.setup_rule(client=self.client)
         q = f'SELECT * FROM {rule.lookup_table.dataset_id}.{rule.lookup_table.table_id}'
-        row_iter, _ = self._query(q)
-        self.assertEqual(row_iter.total_rows, len(rules_df.index))
+        row_iter = self.client.query(q).result()
+        self.assertEqual(len(rules_df.index), row_iter.total_rows)
         # if lookup exists it gets overwritten successfully
         lookup_job = rule.load_rules_lookup(client=self.client)
         self.assert_job_success(lookup_job)
-        row_iter, _ = self._query(q)
-        self.assertEqual(row_iter.total_rows, len(rules_df.index))
+        row_iter = self.client.query(q).result()
+        self.assertEqual(len(rules_df.index), row_iter.total_rows)
 
         # subsequent tests rely on observation test data
         self.load_observation_table()
 
-        # backup rows
-        backup_rows_ddl = rule.get_backup_rows_ddl()
-        _, backup_job = self._query(backup_rows_ddl)
-        self.assertIsInstance(backup_job, bigquery.QueryJob)
-        self.assert_job_success(backup_job)
-        q = f'''SELECT * FROM {_fq_table_name(rule.backup_table)} 
-                ORDER BY observation_id'''
-        row_iter, _ = self._query(q)
-        actual_result = {
-            tuple(row[f] for f in TEST_DATA_FIELDS) for row in row_iter
-        }
-        self.assertSetEqual(TEST_DATA_DROP, actual_result)
-        # existing backup gets overwritten
-        _, backup_job = self._query(backup_rows_ddl)
-        self.assert_job_success(backup_job)
-        row_iter, _ = self._query(q)
-        actual_result = {
-            tuple(row[f] for f in TEST_DATA_FIELDS) for row in row_iter
-        }
-        self.assertSetEqual(TEST_DATA_DROP, actual_result)
-
-        # drop rows
-        drop_rows_ddl = rule.get_drop_rows_ddl()
-        _, drop_job = self._query(drop_rows_ddl)
+        # clean rows
+        clean_table_script = rule.cleaning_script()
+        _, drop_job = self._query(clean_table_script)
         self.assertIsInstance(drop_job, bigquery.QueryJob)
         self.assert_job_success(drop_job)
+
+        # stage created
+        q = f'''SELECT * FROM {_fq_table_name(rule.stage_table)}
+                                ORDER BY observation_id'''
+        rows, _ = self._query(q)
+        self.assertSetEqual(TEST_DATA_KEEP, rows)
+
+        # deleted rows are backed up
+        q = f'''SELECT * FROM {_fq_table_name(rule.backup_table)}
+                        ORDER BY observation_id'''
+        rows, _ = self._query(q)
+        self.assertSetEqual(TEST_DATA_DROP, rows)
+
+        # source table is cleaned
         q = f'''SELECT * FROM {_fq_table_name(rule.observation_table)} 
                 ORDER BY observation_id'''
-        row_iter, _ = self._query(q)
-        actual_result = {
-            tuple(row[f] for f in TEST_DATA_FIELDS) for row in row_iter
-        }
-        self.assertSetEqual(actual_result, TEST_DATA_KEEP)
-        # repeated drop job has no effect
-        _, drop_job = self._query(drop_rows_ddl)
+        rows, _ = self._query(q)
+        self.assertSetEqual(TEST_DATA_KEEP, rows)
+
+        # repeated cleaning yields same output (no rows are backed up)
+        _, drop_job = self._query(clean_table_script)
         self.assert_job_success(drop_job)
-        row_iter, _ = self._query(q)
-        actual_result = {
-            tuple(row[f] for f in TEST_DATA_FIELDS) for row in row_iter
-        }
-        self.assertSetEqual(actual_result, TEST_DATA_KEEP)
+
+        # stage created
+        q = f'''SELECT * FROM {_fq_table_name(rule.stage_table)}
+                                        ORDER BY observation_id'''
+        rows, _ = self._query(q)
+        self.assertSetEqual(TEST_DATA_KEEP, rows)
+
+        # no rows are backed up this time
+        q = f'''SELECT * FROM {_fq_table_name(rule.backup_table)}
+                                ORDER BY observation_id'''
+        rows, _ = self._query(q)
+        self.assertEqual(0, len(rows))
+
+        # source table is cleaned
+        q = f'''SELECT * FROM {_fq_table_name(rule.observation_table)} 
+                        ORDER BY observation_id'''
+        rows, _ = self._query(q)
+        self.assertSetEqual(TEST_DATA_KEEP, rows)

@@ -64,7 +64,7 @@ class PpiBranchingTest(unittest.TestCase):
 
     def test_get_backup_rows_query(self):
         # check that DDL table location is correct and contains all field descriptions
-        result = self.cleaning_rule.get_backup_rows_ddl().strip()
+        result = self.cleaning_rule.backup_rows_to_drop_ddl().strip()
         expected_sql = (f'CREATE OR REPLACE TABLE {self.sandbox_dataset_id}.'
                         f'{OBSERVATION_BACKUP_TABLE_ID}')
         self.assertTrue(result.startswith(expected_sql))
@@ -74,7 +74,7 @@ class PpiBranchingTest(unittest.TestCase):
 
     def test_get_observation_replace_query(self):
         # check that DDL table location is correct and contains all field descriptions
-        result = self.cleaning_rule.get_drop_rows_ddl().strip()
+        result = self.cleaning_rule.stage_to_target_ddl().strip()
         expected_sql = f'CREATE OR REPLACE TABLE {self.dataset_id}.{OBSERVATION}'
         self.assertTrue(result.startswith(expected_sql))
         self.assertTrue(
