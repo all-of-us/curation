@@ -6,7 +6,7 @@
         "description": "A unique identifier for each person."
     },
     {
-        "type": "integer",
+        "type": "string",
         "name": "src_id",
         "mode": "nullable",
         "description": "A foreign key to the participant's source EHR site."
@@ -21,7 +21,7 @@
         "type": "string", 
         "name": "state_of_residence_source_value", 
         "mode": "nullable", 
-        "description": "[All of Us OMOP extension] The source code for the participant's state of the residence."
+        "description": "[All of Us OMOP extension] The source code for the participant's state of residence."
     },
     {
         "type": "integer", 
