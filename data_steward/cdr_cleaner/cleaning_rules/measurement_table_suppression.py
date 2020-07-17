@@ -57,7 +57,9 @@ unit_source_value, value_source_value
 from `{{project}}.{{dataset}}.measurement`
 """)
 
-# Identify sites who submitted "junk" data.  Only one value.  Likely 0.
+# Identify sites who submitted "junk" data.  Either all nulls or zero values in
+# the value_as_number field.  These sites should be saved to a table to make
+# programmatic access easier
 SITES_TO_REMOVE_DATA_FOR = jinja_env.from_string("""
 -- join the measurment and mapping table and only store EHR site records --
 WITH joined_table AS (
@@ -91,23 +93,64 @@ FROM junk_srcs AS js
 WHERE js.src_id NOT IN (SELECT src_id FROM values_containing_srcs)""")
 
 # store data from sites that will be dropped.
-ZERO_VALUES_SAVE_QUERY = jinja_env.from_string("""
+NULL_AND_ZERO_VALUES_SAVE_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS
 SELECT *
-FROM `{{project}}.{{dataset}}.measurement`
-WHERE value_as_number = 9999999
+FROM `{{project}}.{{dataset}}.measurement` AS m
+JOIN `{{project}}.{{dataset}}.measurement_ext` AS me
+USING (measurement_id)
+WHERE me.src_id IN (SELECT src_id FROM `{{project}}.{{sandbox}}.{{id_table}}`)
+AND m.value_as_number = 0
 """)
 
-# Query uses 'NOT EXISTS' because the observation_source_concept_id field
-# is nullable.
-DROP_QUERY = """
-SELECT * FROM `{{project}}.{{dataset}}.observation` AS o
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM `{{project}}.{{dataset}}.observation` AS n
-    WHERE o.observation_id = n.observation_id AND
-    n.observation_source_concept_id IN ({{obs_concepts}})
-)"""
+# Update value_as_number for any site that has only submitted junk, i.e. 0 or null
+# for value_as_number
+SET_NULL_WHEN_ONLY_ZEROS_SUBMITTED = jinja_env.from_string("""
+SELECT
+  measurement_id,
+  person_id,
+  measurement_concept_id,
+  measurement_date,
+  measurement_datetime,
+  measurement_type_concept_id,
+  operator_concept_id,
+  value_as_concept_id,
+  unit_concept_id,
+  range_low,
+  range_high,
+  provider_id,
+  visit_occurrence_id,
+  measurement_source_value,
+  measurement_source_concept_id,
+  unit_source_value,
+  value_source_value,
+  CASE
+    WHEN value_as_number = 0 THEN NULL
+  ELSE
+  value_as_number
+END
+  AS value_as_number
+FROM `{{project}}.{{dataset}}.measurement` AS m
+JOIN `{{project}}.{{dataset}}.measurement_ext` AS me
+USING (measurement_id)
+WHERE me.src_id IN (SELECT src_id FROM `{{project}}.{{sandbox}}.{{id_table}}`)
+AND m.value_as_number = 0
+""")
+
+# Save records that will be dropped when
+# value_as_number IS NULL AND value_as_concept_id IS NULL
+SAVE_NULL_DROP_RECORDS = jinja_env.from_string("""
+SELECT *
+FROM `{{project}}.{{dataset}}.measurement` AS m
+WHERE m.value_as_number IS NULL AND m.value_as_concept_id IS NULL
+""")
+
+# Only select records that we want to keep
+SELECT_RECORDS_WITH_VALID_DATA = jinja_env.from_string("""
+SELECT *
+FROM `{{project}}.{{dataset}}.measurement` AS m
+WHERE m.value_as_number IS NOT NULL OR m.value_as_concept_id IS NOT NULL
+""")
 
 
 class MeasurementRecordsSuppression(BaseCleaningRule):
