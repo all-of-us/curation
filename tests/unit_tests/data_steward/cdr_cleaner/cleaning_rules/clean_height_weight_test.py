@@ -18,7 +18,7 @@ from cdr_cleaner.cleaning_rules.clean_height_weight import (
     NEW_WEIGHT_ROWS, CREATE_HEIGHT_SANDBOX_QUERY, NEW_HEIGHT_ROWS_QUERY,
     DROP_HEIGHT_ROWS_QUERY, CREATE_WEIGHT_SANDBOX_QUERY, NEW_WEIGHT_ROWS_QUERY,
     DROP_WEIGHT_ROWS_QUERY, INSERT_NEW_ROWS_QUERY)
-from constants.bq_utils import WRITE_TRUNCATE
+from constants.bq_utils import WRITE_TRUNCATE, WRITE_APPEND
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
 
@@ -35,14 +35,15 @@ class CleanHeightAndWeightTest(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
         self.client = None
+        self.maxDiff = None
 
         self.query_class = CleanHeightAndWeight(self.project_id,
                                                 self.dataset_id,
                                                 self.sandbox_id)
 
-        self.assertEqual(self.query_class.get_project_id(), self.project_id)
-        self.assertEqual(self.query_class.get_dataset_id(), self.dataset_id)
-        self.assertEqual(self.query_class.get_sandbox_dataset_id(),
+        self.assertEqual(self.query_class.project_id, self.project_id)
+        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
+        self.assertEqual(self.query_class.sandbox_dataset_id,
                          self.sandbox_id)
 
     def test_setup_rule(self):
@@ -53,7 +54,7 @@ class CleanHeightAndWeightTest(unittest.TestCase):
 
     def test_get_query_specs(self):
         # Pre-conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
+        self.assertEqual(self.query_class.affected_datasets,
                          [clean_consts.DEID_BASE])
 
         # Test
@@ -94,7 +95,7 @@ class CleanHeightAndWeightTest(unittest.TestCase):
             clean_consts.DESTINATION_DATASET:
                 self.dataset_id,
             clean_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                WRITE_APPEND
         }, {
             clean_consts.QUERY:
                 CREATE_WEIGHT_SANDBOX_QUERY.render(
@@ -130,7 +131,7 @@ class CleanHeightAndWeightTest(unittest.TestCase):
             clean_consts.DESTINATION_DATASET:
                 self.dataset_id,
             clean_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                WRITE_APPEND
         }]
 
         # Test
@@ -138,7 +139,7 @@ class CleanHeightAndWeightTest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre-conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
+        self.assertEqual(self.query_class.affected_datasets,
                          [clean_consts.DEID_BASE])
 
         store_height_table = CREATE_HEIGHT_SANDBOX_QUERY.render(
