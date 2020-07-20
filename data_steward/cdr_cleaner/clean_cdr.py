@@ -52,6 +52,7 @@ from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDa
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
+from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
@@ -159,7 +160,8 @@ DEID_BASE_CLEANING_CLASSES = [
     (valid_death_dates.get_valid_death_date_queries,),
     (fill_source_value.get_fill_freetext_source_value_fields_queries,),
     (repopulate_person.get_repopulate_person_post_deid_queries,),
-    (CleanMappingExtTables,)
+    (CleanMappingExtTables,),
+    (CleanHeightAndWeight,),
 ]
 
 DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanMappingExtTables,)]
