@@ -42,8 +42,7 @@ class CleanHeightAndWeightTest(unittest.TestCase):
 
         self.assertEqual(self.query_class.project_id, self.project_id)
         self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id,
-                         self.sandbox_id)
+        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # Test

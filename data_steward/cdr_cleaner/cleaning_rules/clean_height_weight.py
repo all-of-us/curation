@@ -627,8 +627,10 @@ class CleanHeightAndWeight(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=[CONCEPT, PERSON, 'measurement_ext', MEASUREMENT,
-                                          CONDITION_OCCURRENCE, CONCEPT_ANCESTOR])
+                         affected_tables=[
+                             CONCEPT, PERSON, 'measurement_ext', MEASUREMENT,
+                             CONDITION_OCCURRENCE, CONCEPT_ANCESTOR
+                         ])
 
     def get_query_specs(self):
         """
@@ -661,9 +663,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
 
         drop_height_rows_query = {
             cdr_consts.QUERY:
-                DROP_HEIGHT_ROWS_QUERY.render(
-                    project_id=self.project_id,
-                    dataset_id=self.dataset_id),
+                DROP_HEIGHT_ROWS_QUERY.render(project_id=self.project_id,
+                                              dataset_id=self.dataset_id),
             cdr_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             cdr_consts.DESTINATION_DATASET:
@@ -707,9 +708,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
 
         drop_weight_rows_query = {
             cdr_consts.QUERY:
-                DROP_WEIGHT_ROWS_QUERY.render(
-                    project_id=self.project_id,
-                    dataset_id=self.dataset_id),
+                DROP_WEIGHT_ROWS_QUERY.render(project_id=self.project_id,
+                                              dataset_id=self.dataset_id),
             cdr_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             cdr_consts.DESTINATION_DATASET:
