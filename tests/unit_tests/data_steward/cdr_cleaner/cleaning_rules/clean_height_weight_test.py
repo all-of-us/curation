@@ -35,7 +35,6 @@ class CleanHeightAndWeightTest(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
         self.client = None
-        self.maxDiff = None
 
         self.query_class = CleanHeightAndWeight(self.project_id,
                                                 self.dataset_id,
