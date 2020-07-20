@@ -64,10 +64,13 @@ class DeactivatedParticipantsTest(unittest.TestCase):
     def test_get_access_token(self, mock_access_token):
         self.assertEqual(mock_access_token(), self.access_token)
 
+    @mock.patch('utils.deactivated_participants.get_access_token',
+                return_value='ya29.12345')
     @mock.patch('utils.deactivated_participants.get_deactivated_participants')
     @mock.patch('utils.deactivated_participants.requests.get')
     def test_get_deactivated_participants(self, mock_get,
-                                          mock_get_deactivated_participants):
+                                          mock_get_deactivated_participants,
+                                          mock_access_token):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = self.json_response_entry
 
