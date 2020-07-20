@@ -34,26 +34,33 @@ jinja_env = Environment(
     comment_start_string='--',
     comment_end_string=' --')
 
+INVALID_VALUES_RECORDS = 'dc699_save_9999999_as_null'
+SITES_WITH_ONLY_BAD_DATA = 'dc699_sites_with_only_null_or_zero_meas_data'
+SAVE_BAD_SITE_DATA = 'dc699_save_bad_site_data'
+SAVE_ZERO_VALUE_RECORDS = 'dc699_zero_value_measurement_data'
+SAVE_NULL_VALUE_RECORDS = 'dc699_save_null_records_from_measurement'
+SAVE_DUPLICATE_RECORDS = 'dc699_save_measurement_duplicates'
+
 # Save rows that will be altered to a sandbox dataset.
 NULL_VALUES_SAVE_QUERY = jinja_env.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
 SELECT *
 FROM `{{project}}.{{dataset}}.measurement`
 WHERE value_as_number = 9999999
-""")
+)""")
 
 # Alter rows by changing 9999999 to NULL
 NULL_VALUES_UPDATE_QUERY = jinja_env.from_string("""
-SELECT 
+SELECT
 measurement_id, person_id, measurement_concept_id, measurement_date,
-measurement_datetime, measurement_type_concept_id, operator_concept_id, 
+measurement_datetime, measurement_type_concept_id, operator_concept_id,
 CASE
 WHEN value_as_number = 9999999 THEN NULL
 ELSE value_as_number
-END AS value_as_number, 
-value_as_concept_id, unit_concept_id, range_low, range_high, provider_id, 
-visit_occurrence_id, measurement_source_value, measurement_source_concept_id, 
-unit_source_value, value_source_value 
+END AS value_as_number,
+value_as_concept_id, unit_concept_id, range_low, range_high, provider_id,
+visit_occurrence_id, measurement_source_value, measurement_source_concept_id,
+unit_source_value, value_source_value
 from `{{project}}.{{dataset}}.measurement`
 """)
 
@@ -61,11 +68,12 @@ from `{{project}}.{{dataset}}.measurement`
 # the value_as_number field.  These sites should be saved to a table to make
 # programmatic access easier
 SITES_TO_REMOVE_DATA_FOR = jinja_env.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
 -- join the measurment and mapping table and only store EHR site records --
 WITH joined_table AS (
 SELECT *
 FROM `{{project}}.{{dataset}}.measurement` AS m
-JOIN `{{project}}.{{dataset}}..measurement_ext` AS me
+JOIN `{{project}}.{{dataset}}.measurement_ext` AS me
 USING (measurement_id)
 WHERE src_id LIKE 'EHR site%'
 ),
@@ -90,18 +98,19 @@ HAVING value_as_number = 0 OR value_as_number IS NULL)
 -- value_as_number field --
 SELECT js.src_id
 FROM junk_srcs AS js
-WHERE js.src_id NOT IN (SELECT src_id FROM values_containing_srcs)""")
+WHERE js.src_id NOT IN (SELECT src_id FROM values_containing_srcs)
+)""")
 
 # store data from sites that will be dropped.
 NULL_AND_ZERO_VALUES_SAVE_QUERY = jinja_env.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
 SELECT *
 FROM `{{project}}.{{dataset}}.measurement` AS m
 JOIN `{{project}}.{{dataset}}.measurement_ext` AS me
 USING (measurement_id)
 WHERE me.src_id IN (SELECT src_id FROM `{{project}}.{{sandbox}}.{{id_table}}`)
 AND m.value_as_number = 0
-""")
+)""")
 
 # Update value_as_number for any site that has only submitted junk, i.e. 0 or null
 # for value_as_number
@@ -125,7 +134,7 @@ SELECT
   unit_source_value,
   value_source_value,
   CASE
-    WHEN value_as_number = 0 THEN NULL
+    WHEN value_as_number = 0 AND me.src_id IN (SELECT src_id FROM `{{project}}.{{sandbox}}.{{id_table}}`) THEN NULL
   ELSE
   value_as_number
 END
@@ -133,23 +142,104 @@ END
 FROM `{{project}}.{{dataset}}.measurement` AS m
 JOIN `{{project}}.{{dataset}}.measurement_ext` AS me
 USING (measurement_id)
-WHERE me.src_id IN (SELECT src_id FROM `{{project}}.{{sandbox}}.{{id_table}}`)
-AND m.value_as_number = 0
 """)
 
 # Save records that will be dropped when
 # value_as_number IS NULL AND value_as_concept_id IS NULL
 SAVE_NULL_DROP_RECORDS = jinja_env.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
 SELECT *
 FROM `{{project}}.{{dataset}}.measurement` AS m
 WHERE m.value_as_number IS NULL AND m.value_as_concept_id IS NULL
-""")
+)""")
 
 # Only select records that we want to keep
 SELECT_RECORDS_WITH_VALID_DATA = jinja_env.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.measurement` AS m
 WHERE m.value_as_number IS NOT NULL OR m.value_as_concept_id IS NOT NULL
+""")
+
+# Sandbox duplicate records based on the fields:  person_id,
+# measurement_source_concept_id, unit_concept_id, measurement_concept_id,
+# meeasurement_datetime, value_as_number, value_as_concept_id
+# Had to use grouping because ROW_NUMBER OVER cannot partition by value_as_number
+SANDBOX_DUPLICATES = jinja_env.from_string("""
+-- identify duplicates with this context table statement --
+-- only add duplicate field identifiers to this statement --
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
+WITH
+  cte AS (
+  SELECT
+    person_id,
+    measurement_source_concept_id,
+    unit_concept_id,
+    measurement_concept_id,
+    measurement_datetime,
+    value_as_number,
+    value_as_concept_id,
+    COUNT(*) occurrences
+  FROM
+    `{{project}}.{{dataset}}.measurement`
+  GROUP BY
+    person_id,
+    measurement_source_concept_id,
+    unit_concept_id,
+    measurement_concept_id,
+    measurement_datetime,
+    value_as_number,
+    value_as_concept_id
+  HAVING
+    COUNT(*) > 1 )
+
+-- select all fields from the table for sandboxing --
+SELECT
+  t1.measurement_id,
+  t1.person_id,
+  t1.measurement_concept_id,
+  t1.measurement_date,
+  t1.measurement_datetime,
+  t1.measurement_type_concept_id,
+  t1.operator_concept_id,
+  t1.value_as_number,
+  t1.value_as_concept_id,
+  t1.unit_concept_id,
+  t1.range_low,
+  t1.range_high,
+  t1.provider_id,
+  t1.visit_occurrence_id,
+  t1.measurement_source_value,
+  t1.measurement_source_concept_id,
+  t1.unit_source_value,
+  t1.value_source_value
+FROM
+  `{{project}}.{{dataset}}.measurement` AS t1
+INNER JOIN
+  cte
+ON
+  cte.person_id = t1.person_id
+  AND cte.measurement_source_concept_id = t1.measurement_source_concept_id
+  AND cte.unit_concept_id = t1.unit_concept_id
+  AND cte.measurement_concept_id = t1.measurement_concept_id
+  AND cte.measurement_datetime = t1.measurement_datetime
+  AND cte.value_as_number = t1.value_as_number
+  AND cte.value_as_concept_id = t1.value_as_concept_id
+ORDER BY
+  t1.person_id,
+  t1.measurement_source_concept_id,
+  t1.unit_concept_id,
+  t1.measurement_concept_id,
+  t1.measurement_datetime,
+  t1.value_as_number,
+  t1.value_as_concept_id
+)""")
+
+REMOVE_DUPLICATES = jinja_env.from_string("""
+-- Select only the records that have not been sandboxed --
+SELECT *
+FROM `{{project}}.{{dataset}}.measurement`
+WHERE measurement_id NOT IN
+  (SELECT measurement_id FROM `{{project}}.{{sandbox}}.{{id_table}}`)
 """)
 
 
@@ -176,7 +266,7 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = (f'Clean the measurement table after de-identifying it.  '
+        desc = (f'Clean the measurement table after it was de-identified.  '
                 f'Remove rows that do not contribute high quality data.')
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
@@ -194,16 +284,104 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
             single query and a specification for how to execute that query.
             The specifications are optional but the query is required.
         """
-        save_dropped_rows = {cdr_consts.QUERY: ''}
-
-        drop_rows_query = {
-            cdr_consts.QUERY: '',
-            cdr_consts.DESTINATION_TABLE: MEASUREMENT,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id,
-            cdr_consts.DISPOSITION: WRITE_TRUNCATE
+        save_null_values = {
+            cdr_consts.QUERY:
+                NULL_VALUES_SAVE_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox=self.sandbox_dataset_id,
+                    save_table=INVALID_VALUES_RECORDS),
         }
 
-        return [save_dropped_rows, drop_rows_query]
+        update_to_null_values = {
+            cdr_consts.QUERY:
+                NULL_VALUES_UPDATE_QUERY.render(project=self.project_id,
+                                                dataset=self.dataset_id),
+            cdr_consts.DESTINATION_TABLE:
+                MEASUREMENT,
+            cdr_consts.DESTINATION_DATASET:
+                self.dataset_id,
+            cdr_consts.DISPOSITION:
+                WRITE_TRUNCATE
+        }
+
+        identify_bad_sites = {
+            cdr_consts.QUERY:
+                SITES_TO_REMOVE_DATA_FOR.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox=self.sandbox_dataset_id,
+                    save_table=SITES_WITH_ONLY_BAD_DATA)
+        }
+
+        save_data_from_bad_sites = {
+            cdr_consts.QUERY:
+                NULL_AND_ZERO_VALUES_SAVE_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox=self.sandbox_dataset_id,
+                    save_table=SAVE_BAD_SITE_DATA,
+                    id_table=SITES_WITH_ONLY_BAD_DATA)
+        }
+
+        set_null_for_zero_from_bad_sites = {
+            cdr_consts.QUERY:
+                SET_NULL_WHEN_ONLY_ZEROS_SUBMITTED.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox=self.sandbox_dataset_id,
+                    save_table=SAVE_ZERO_VALUE_RECORDS,
+                    id_table=SITES_WITH_ONLY_BAD_DATA)
+        }
+
+        save_null_records_before_dropping = {
+            cdr_consts.QUERY:
+                SAVE_NULL_DROP_RECORDS.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox=self.sandbox_dataset_id,
+                    save_table=SAVE_NULL_VALUE_RECORDS)
+        }
+
+        keep_records_with_good_data = {
+            cdr_consts.QUERY:
+                SELECT_RECORDS_WITH_VALID_DATA.render(project=self.project_id,
+                                                      dataset=self.dataset_id),
+            cdr_consts.DESTINATION_TABLE:
+                MEASUREMENT,
+            cdr_consts.DESTINATION_DATASET:
+                self.dataset_id,
+            cdr_consts.DISPOSITION:
+                WRITE_TRUNCATE
+        }
+
+        sandbox_duplicates = {
+            cdr_consts.QUERY:
+                SANDBOX_DUPLICATES.render(project=self.project_id,
+                                          dataset=self.dataset_id,
+                                          sandbox=self.sandbox_dataset_id,
+                                          save_table=SAVE_DUPLICATE_RECORDS)
+        }
+        remove_duplicates = {
+            cdr_consts.QUERY:
+                REMOVE_DUPLICATES.render(project=self.project_id,
+                                         dataset=self.dataset_id,
+                                         sandbox=self.sandbox_dataset_id,
+                                         id_table=SAVE_DUPLICATE_RECORDS),
+            cdr_consts.DESTINATION_TABLE:
+                MEASUREMENT,
+            cdr_consts.DESTINATION_DATASET:
+                self.dataset_id,
+            cdr_consts.DISPOSITION:
+                WRITE_TRUNCATE
+        }
+
+        return [
+            save_null_values, update_to_null_values, identify_bad_sites,
+            save_data_from_bad_sites, set_null_for_zero_from_bad_sites,
+            save_null_records_before_dropping, keep_records_with_good_data,
+            sandbox_duplicates, remove_duplicates
+        ]
 
     def setup_rule(self, client):
         """
@@ -234,12 +412,11 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        issue_numbers = self.issue_numbers
-        primary_issue = issue_numbers[0].replace(
-            '-', '_').lower() if issue_numbers else self.__class__.__name__
-
-        sandbox_table_name = f"{primary_issue}_{MEASUREMENT}"
-        return [sandbox_table_name]
+        return [
+            INVALID_VALUES_RECORDS, SITES_WITH_ONLY_BAD_DATA,
+            SAVE_BAD_SITE_DATA, SAVE_ZERO_VALUE_RECORDS,
+            SAVE_NULL_VALUE_RECORDS, SAVE_DUPLICATE_RECORDS
+        ]
 
 
 if __name__ == '__main__':
@@ -251,10 +428,9 @@ if __name__ == '__main__':
     meas_cleaner = MeasurementRecordsSuppression(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id)
-    #    query_list = meas_cleaner.get_query_specs()
-    #
-    #    if ARGS.list_queries:
-    #        meas_cleaner.log_queries()
-    #    else:
-    #        clean_engine.clean_dataset(ARGS.project_id, query_list)
-    meas_cleaner.get_sandbox_tablenames()
+    query_list = meas_cleaner.get_query_specs()
+
+    if ARGS.list_queries:
+        meas_cleaner.log_queries()
+#    else:
+#        clean_engine.clean_dataset(ARGS.project_id, query_list)
