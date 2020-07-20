@@ -93,7 +93,7 @@ import constants.bq_utils as bq_consts
 from deid.parser import parse_args
 from deid.press import Press
 from resources import DEID_PATH
-from utils.concept_ids_suppression import get_additional_concepts_query
+from tools.concept_ids_suppression import get_additional_concepts_query
 
 LOGGER = logging.getLogger(__name__)
 
