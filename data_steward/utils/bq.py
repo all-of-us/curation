@@ -5,28 +5,35 @@ A utility to standardize use of the BigQuery python client library.
 import logging
 import os
 
-from google.api_core.exceptions import GoogleAPIError, BadRequest
 # Third-party imports
+from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
+from google.auth import default
 
 # Project Imports
 from app_identity import PROJECT_ID
+from utils import auth
 from constants.utils import bq as consts
 from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
 
-def get_client(project_id=None):
+def get_client(project_id=None, scopes=None):
     """
     Get a client for a specified project.
 
     :param project_id:  Name of the project to create a bigquery library client for
         It is being nice for now, but will begin to require users to provide
         the project_id.
+    :param scopes: List of Google scopes as strings
 
     :return:  A bigquery Client object.
     """
+    if scopes:
+        credentials, project_id = default()
+        credentials = auth.delegated_credentials(credentials, scopes=scopes)
+        return bigquery.Client(project=project_id, credentials=credentials)
     if project_id is None:
         LOGGER.info(f"You should specify project_id for a reliable experience."
                     f"Defaulting to {os.environ.get(PROJECT_ID)}.")
@@ -398,3 +405,22 @@ def create_dataset(project_id,
         raise RuntimeError(f"Unable to create dataset: {failures}")
 
     return dataset
+
+
+def query_sheet_linked_bq_table(project_id, table_content_query,
+                                external_data_scopes):
+    """
+    Queries Google Sheet sourced BigQuery Table and returns results dataframe
+
+    :param project_id: identifies the project
+    :param table_content_query: query to retrieve table contents
+    :param external_data_scopes: scopes needed to query the external data sourced table
+    :return: result dataframe
+    """
+    # add Google OAuth2.0 scopes
+    client = get_client(project_id, external_data_scopes)
+    query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
+    result_df = client.query(table_content_query,
+                             job_config=query_job_config).to_dataframe()
+
+    return result_df

@@ -447,19 +447,25 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
 
     folder_uri = f"gs://{bucket}/{folder_prefix}"
     if folder_items and is_first_validation_run(folder_items):
+        logging.info(f"Attempting to send report via email for {hpo_id}")
         email_msg = en.generate_email_message(hpo_id, results_html, folder_uri,
                                               report_data)
-        if email_msg is not None:
-            result = en.send_email(email_msg)
-            result_ids = ', '.join(
-                [result_item['_id'] for result_item in result])
-            logging.info(
-                f"Sending emails for hpo_id {hpo_id} with Mandrill tracking ids: {result_ids}"
-            )
-        else:
+        if email_msg is None:
             logging.info(
                 f"Not enough info in contact list to send emails for hpo_id {hpo_id}"
             )
+        else:
+            result = en.send_email(email_msg)
+            if result is None:
+                logging.info(
+                    'Mandrill error occurred. Please check logs for more details'
+                )
+            else:
+                result_ids = ', '.join(
+                    [result_item['_id'] for result_item in result])
+                logging.info(
+                    f"Sending emails for hpo_id {hpo_id} with Mandrill tracking ids: {result_ids}"
+                )
     logging.info(f"Reporting complete")
     return
 

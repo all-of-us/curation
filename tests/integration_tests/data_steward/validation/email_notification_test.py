@@ -7,7 +7,6 @@ from unittest import mock, TestCase
 import app_identity
 from validation import email_notification as en
 from validation.main import get_eastern_time
-from tests.test_util import FIVE_PERSON_RESULTS_FILE
 
 
 class EmailNotificationTest(TestCase):
@@ -33,6 +32,11 @@ class EmailNotificationTest(TestCase):
         }
 
     def test_hpo_contact_list(self):
+        # Grant viewing access to the test sheet to BigQuery test accounts
+        sheet_url = (
+            "https://docs.google.com/spreadsheets"
+            "/d/1JI-KyigmwZU9I2J6TZqVTPNoEAWVqiFeF8Y549-dvzM/edit#gid=0")
+
         fake_dict = {
             'fake_1': {
                 'site_name':
