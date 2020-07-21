@@ -268,7 +268,10 @@ def create_concept_id_lookup_table(input_dataset, credentials):
     """
 
     lookup_tablename = input_dataset + "._concept_ids_suppression"
-    columns = ['vocabulary_id', 'concept_code', 'concept_name', 'concept_id', 'domain_id', 'rule', 'question']
+    columns = [
+        'vocabulary_id', 'concept_code', 'concept_name', 'concept_id',
+        'domain_id', 'rule', 'question'
+    ]
     client = bq.Client(credentials=credentials)
 
     # use utility to get and append concept_ids from csv files and queries

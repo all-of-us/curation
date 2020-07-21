@@ -76,6 +76,7 @@ def get_all_concept_ids(columns, input_dataset, client):
 
     return all_concept_ids
 
+
 def check_concept_id_field(df):
     """
     helper function to check that 'concept_id' is included in the dataframe schema
@@ -90,6 +91,7 @@ def check_concept_id_field(df):
     else:
         return False
 
+
 def get_concepts_via_csv():
     """
     function to collect and process files in `data_steward/deid/config/internal_tables/concept_ids_suppression_files`
@@ -98,14 +100,16 @@ def get_concepts_via_csv():
     :return: dataframe of concept_ids and information from all csv files located in specified folder
     """
 
-    folder_path = os.path.join(DEID_PATH, 'config', 'internal_tables', 'concept_ids_suppression_files')
+    folder_path = os.path.join(DEID_PATH, 'config', 'internal_tables',
+                               'concept_ids_suppression_files')
     final_csv_data_df = pd.DataFrame()
 
-    LOGGER.info("Processing files in folder to append data to _concept_ids_suppression table")
+    LOGGER.info(
+        "Processing files in folder to append data to _concept_ids_suppression table"
+    )
     # Loop through all file in directory
     for file in os.listdir(folder_path):
-        file_data_df = pd.read_csv(
-            os.path.join(folder_path, file))
+        file_data_df = pd.read_csv(os.path.join(folder_path, file))
         # Clean up column headers
         file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
             .str.replace(')', '')
@@ -113,7 +117,9 @@ def get_concepts_via_csv():
         if check_concept_id_field(file_data_df):
             final_csv_data_df = final_csv_data_df.append(file_data_df)
         else:
-            LOGGER.info(f"ERROR: file: {file} does not contain concept_id in schema, will not process.")
+            LOGGER.info(
+                f"ERROR: file: {file} does not contain concept_id in schema, will not process."
+            )
             continue
 
     LOGGER.info(
@@ -135,19 +141,22 @@ def get_concepts_via_query(input_dataset, client):
     queries = [COVID_CONCEPT_IDS_QUERY]
     final_query_data_df = pd.DataFrame()
 
-    LOGGER.info("Running queries to append data to _concept_ids_suppression table")
+    LOGGER.info(
+        "Running queries to append data to _concept_ids_suppression table")
     for q in queries:
-        query_data_df = client.query(jinja_env.from_string(q).render(input_dataset=input_dataset)).to_dataframe()
+        query_data_df = client.query(
+            jinja_env.from_string(q).render(
+                input_dataset=input_dataset)).to_dataframe()
         # verify csv file contains 'concept_id' column
         if check_concept_id_field(query_data_df):
             final_query_data_df = final_query_data_df.append(query_data_df)
         else:
-           LOGGER.info(f"Query: {q} does not contain concept_id in schema, will not process.")
+           LOGGER.info(
+               f"Query: {q} does not contain concept_id in schema, will not process."
+           )
            continue
 
     LOGGER.info(
         f"Adding {len(final_query_data_df.index)} rows from queries, to dataframe to create _concept_ids_suppression "
-        f"lookup table"
-    )
+        f"lookup table")
     return final_query_data_df
-
