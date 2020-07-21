@@ -37,7 +37,6 @@ jinja_env = Environment(
 INVALID_VALUES_RECORDS = 'dc699_save_9999999_as_null'
 SITES_WITH_ONLY_BAD_DATA = 'dc699_sites_with_only_null_or_zero_meas_data'
 SAVE_BAD_SITE_DATA = 'dc699_save_bad_site_data'
-SAVE_ZERO_VALUE_RECORDS = 'dc699_zero_value_measurement_data'
 SAVE_NULL_VALUE_RECORDS = 'dc699_save_null_records_from_measurement'
 SAVE_DUPLICATE_RECORDS = 'dc699_save_measurement_duplicates'
 
@@ -171,67 +170,27 @@ CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
 WITH
   cte AS (
   SELECT
-    person_id,
-    measurement_source_concept_id,
-    unit_concept_id,
-    measurement_concept_id,
-    measurement_datetime,
-    value_as_number,
-    value_as_concept_id,
-    COUNT(*) occurrences
+    *,
+    ROW_NUMBER() OVER (PARTITION BY person_id, measurement_source_concept_id, unit_concept_id, measurement_concept_id, measurement_datetime, CAST(value_as_number AS string),
+      value_as_concept_id
+    ORDER BY
+      person_id,
+      measurement_source_concept_id,
+      unit_concept_id,
+      measurement_concept_id,
+      measurement_datetime,
+      value_as_number,
+      value_as_concept_id,
+      measurement_id) AS row_num
   FROM
     `{{project}}.{{dataset}}.measurement`
-  GROUP BY
-    person_id,
-    measurement_source_concept_id,
-    unit_concept_id,
-    measurement_concept_id,
-    measurement_datetime,
-    value_as_number,
-    value_as_concept_id
-  HAVING
-    COUNT(*) > 1 )
+)
 
 -- select all fields from the table for sandboxing --
-SELECT
-  t1.measurement_id,
-  t1.person_id,
-  t1.measurement_concept_id,
-  t1.measurement_date,
-  t1.measurement_datetime,
-  t1.measurement_type_concept_id,
-  t1.operator_concept_id,
-  t1.value_as_number,
-  t1.value_as_concept_id,
-  t1.unit_concept_id,
-  t1.range_low,
-  t1.range_high,
-  t1.provider_id,
-  t1.visit_occurrence_id,
-  t1.measurement_source_value,
-  t1.measurement_source_concept_id,
-  t1.unit_source_value,
-  t1.value_source_value
+SELECT *
 FROM
-  `{{project}}.{{dataset}}.measurement` AS t1
-INNER JOIN
   cte
-ON
-  cte.person_id = t1.person_id
-  AND cte.measurement_source_concept_id = t1.measurement_source_concept_id
-  AND cte.unit_concept_id = t1.unit_concept_id
-  AND cte.measurement_concept_id = t1.measurement_concept_id
-  AND cte.measurement_datetime = t1.measurement_datetime
-  AND cte.value_as_number = t1.value_as_number
-  AND cte.value_as_concept_id = t1.value_as_concept_id
-ORDER BY
-  t1.person_id,
-  t1.measurement_source_concept_id,
-  t1.unit_concept_id,
-  t1.measurement_concept_id,
-  t1.measurement_datetime,
-  t1.value_as_number,
-  t1.value_as_concept_id
+WHERE row_num > 1
 )""")
 
 REMOVE_DUPLICATES = jinja_env.from_string("""
@@ -330,7 +289,6 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_dataset_id,
-                    save_table=SAVE_ZERO_VALUE_RECORDS,
                     id_table=SITES_WITH_ONLY_BAD_DATA)
         }
 
@@ -414,8 +372,7 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         return [
             INVALID_VALUES_RECORDS, SITES_WITH_ONLY_BAD_DATA,
-            SAVE_BAD_SITE_DATA, SAVE_ZERO_VALUE_RECORDS,
-            SAVE_NULL_VALUE_RECORDS, SAVE_DUPLICATE_RECORDS
+            SAVE_BAD_SITE_DATA, SAVE_NULL_VALUE_RECORDS, SAVE_DUPLICATE_RECORDS
         ]
 
 
