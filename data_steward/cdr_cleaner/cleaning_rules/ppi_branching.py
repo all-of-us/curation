@@ -169,15 +169,14 @@ class PpiBranching(BaseCleaningRule):
                                                         sandbox_dataset_id)
 
         self.rule_paths = PPI_BRANCHING_RULE_PATHS
-        self.observation_table = bigquery.Table(bigquery.TableReference(
-            dataset_ref, OBSERVATION))
+        self.observation_table = bigquery.Table(
+            bigquery.TableReference(dataset_ref, OBSERVATION))
         self.lookup_table = bigquery.TableReference(sandbox_dataset_ref,
                                                     RULES_LOOKUP_TABLE_ID)
         self.backup_table = bigquery.TableReference(
             sandbox_dataset_ref, OBSERVATION_BACKUP_TABLE_ID)
-        self.stage_table = bigquery.TableReference(
-            sandbox_dataset_ref, OBSERVATION_STAGE_TABLE_ID
-        )
+        self.stage_table = bigquery.TableReference(sandbox_dataset_ref,
+                                                   OBSERVATION_STAGE_TABLE_ID)
 
     def create_rules_dataframe(self) -> pandas.DataFrame:
         """
@@ -232,7 +231,8 @@ class PpiBranching(BaseCleaningRule):
         :return: the DDL statement
         """
         observation_schema = bq.get_table_schema(OBSERVATION)
-        query = CLEANED_ROWS_QUERY.render(src=self.observation_table, backup=self.backup_table)
+        query = CLEANED_ROWS_QUERY.render(src=self.observation_table,
+                                          backup=self.backup_table)
         return bq.get_table_ddl(dataset_id=self.stage_table.dataset_id,
                                 table_id=self.stage_table.table_id,
                                 schema=observation_schema,
@@ -277,7 +277,10 @@ class PpiBranching(BaseCleaningRule):
         return script
 
     def get_sandbox_tablenames(self):
-        return [RULES_LOOKUP_TABLE_ID, OBSERVATION_STAGE_TABLE_ID, OBSERVATION_BACKUP_TABLE_ID]
+        return [
+            RULES_LOOKUP_TABLE_ID, OBSERVATION_STAGE_TABLE_ID,
+            OBSERVATION_BACKUP_TABLE_ID
+        ]
 
     def setup_rule(self, client: bigquery.Client, *args, **keyword_args):
         self.load_rules_lookup(client)

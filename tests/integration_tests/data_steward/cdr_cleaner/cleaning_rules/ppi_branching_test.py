@@ -133,13 +133,15 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
             Observation(**dict(zip(TEST_DATA_FIELDS, row))).__dict__
             for row in TEST_DATA_ROWS
         ]
-        self.client.delete_table(f'{self.dataset_id}.observation', not_found_ok=True)
+        self.client.delete_table(f'{self.dataset_id}.observation',
+                                 not_found_ok=True)
         job_config = bigquery.LoadJobConfig()
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
         # TODO figure out how to handle if clustering does NOT exist
         #      CREATE OR REPLACE fails if partitioning specs differ
         job_config.clustering_fields = ['person_id']
-        job_config.time_partitioning = TimePartitioning(type_=bigquery.TimePartitioningType.DAY)
+        job_config.time_partitioning = TimePartitioning(
+            type_=bigquery.TimePartitioningType.DAY)
         job_config.schema = Observation.SCHEMA
         job_config.create_disposition = bigquery.CreateDisposition.CREATE_IF_NEEDED
         self.client.load_table_from_json(
