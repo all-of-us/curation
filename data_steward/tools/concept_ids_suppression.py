@@ -52,6 +52,7 @@ WHERE
   ca.ancestor_concept_id IN (756055, 4100065, 37311061, 439676, 37311060, 45763724)
 """
 
+
 def get_all_concept_ids(columns, input_dataset, client):
     """
     function to collect concept_ids from both csv files and queries. combines the data and filters out to match
