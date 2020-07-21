@@ -151,10 +151,10 @@ def get_concepts_via_query(input_dataset, client):
         if check_concept_id_field(query_data_df):
             final_query_data_df = final_query_data_df.append(query_data_df)
         else:
-           LOGGER.info(
-               f"Query: {q} does not contain concept_id in schema, will not process."
-           )
-           continue
+            LOGGER.info(
+                f"Query: {q} does not contain concept_id in schema, will not process."
+            )
+            continue
 
     LOGGER.info(
         f"Adding {len(final_query_data_df.index)} rows from queries, to dataframe to create _concept_ids_suppression "
