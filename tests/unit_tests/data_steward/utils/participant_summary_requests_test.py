@@ -72,7 +72,8 @@ class ParticipantSummaryRequests(unittest.TestCase):
 
     @mock.patch('utils.participant_summary_requests.get_access_token',
                 return_value='ya29.12345')
-    @mock.patch('utils.participant_summary_requests.get_deactivated_participants')
+    @mock.patch(
+        'utils.participant_summary_requests.get_deactivated_participants')
     @mock.patch('utils.participant_summary_requests.requests.get')
     def test_get_deactivated_participants(self, mock_get,
                                           mock_get_deactivated_participants,
@@ -81,7 +82,8 @@ class ParticipantSummaryRequests(unittest.TestCase):
         mock_get.return_value.json.return_value = self.json_response_entry
 
         mock_get_deactivated_participants.return_value = self.fake_dataframe
-        response = get_deactivated_participants(self.project_id, self.fake_sa_key, self.columns)
+        response = get_deactivated_participants(self.project_id,
+                                                self.fake_sa_key, self.columns)
 
         pandas.testing.assert_frame_equal(
             response,
