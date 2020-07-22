@@ -2,12 +2,15 @@ import csv
 import hashlib
 import inspect
 import json
+import logging
 import os
 from io import open
 
 import cachetools
 
 from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML
+
+LOGGER = logging.getLogger(__name__)
 
 base_path = os.path.dirname(
     os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -111,9 +114,22 @@ def achilles_index_files():
 
 
 def fields_for(table):
-    json_path = os.path.join(fields_path, table + '.json')
+    """
+    Return the json schema for any table identified in the fields directory.
+
+    Uses os.walk to traverse subdirectories
+
+    :param table: The table to get a schema for
+    """
+    for dirpath, _, files in os.walk(fields_path):
+        for filename in files:
+            if filename[:-5] == table:
+                json_path = os.path.join(dirpath, filename)
+                break
+
     with open(json_path, 'r') as fp:
         fields = json.load(fp)
+
     return fields
 
 
@@ -126,6 +142,19 @@ def is_internal_table(table_id):
     :return: True if specified table is an internal table, False otherwise
     """
     return table_id.startswith('_')
+
+
+def is_extension_table(table_id):
+    """
+    Return True if specified table is an OMOP extension table.
+
+    Extension tables provide additional detail about an OMOP records taht does
+    not inherently fit in with the OMOP common data model.
+
+    :param table_id: identifies the table
+    :return: True if specified table is an internal table, False otherwise
+    """
+    return table_id.endswith('_ext')
 
 
 def is_mapping_table(table_id):
@@ -167,27 +196,31 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
     :return:
     """
     result = dict()
-    for f in os.listdir(fields_path):
-        file_path = os.path.join(fields_path, f)
-        with open(file_path, 'r') as fp:
-            file_name = os.path.basename(f)
-            table_name = file_name.split('.')[0]
-            schema = json.load(fp)
-            include_table = True
-            if table_name in VOCABULARY_TABLES and not include_vocabulary:
-                include_table = False
-            elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
-                include_table = False
-            elif is_internal_table(table_name):
-                include_table = False
-            elif is_pii_table(table_name):
-                include_table = False
-            elif is_id_match(table_name):
-                include_table = False
-            elif table_name == 'post_deid_person':
-                include_table = False
-            if include_table:
-                result[table_name] = schema
+    for dir_path, _, files in os.walk(fields_path):
+        for f in files:
+            file_path = os.path.join(dir_path, f)
+            with open(file_path, 'r') as fp:
+                file_name = os.path.basename(f)
+                table_name = file_name.split('.')[0]
+                schema = json.load(fp)
+                include_table = True
+                if table_name in VOCABULARY_TABLES and not include_vocabulary:
+                    include_table = False
+                elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
+                    include_table = False
+                elif is_internal_table(table_name):
+                    include_table = False
+                elif is_pii_table(table_name):
+                    include_table = False
+                elif is_id_match(table_name):
+                    include_table = False
+                elif is_extension_table(table_name):
+                    include_table = False
+                elif table_name == 'post_deid_person':
+                    include_table = False
+                if include_table:
+                    result[table_name] = schema
+
     return result
 
 

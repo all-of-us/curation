@@ -49,6 +49,7 @@ from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import DropDuplicatePpiQuestionsAndAnswers
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
+from cdr_cleaner.cleaning_rules.measurement_table_suppression import MeasurementRecordsSuppression
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
@@ -166,8 +167,12 @@ DEID_BASE_CLEANING_CLASSES = [
     (CleanMappingExtTables,),
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanHeightAndWeight,),
-                               (CleanMappingExtTables,), (DropZeroConceptIDs,)]
+DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,),
+    # Original ticket is DC-481, tickets 416 and 414 must be run after this
+    # rule but before cleaning the extension tables
+    (
+        MeasurementRecordsSuppression,), (CleanHeightAndWeight,), (DropZeroConceptIDs,)
+                               (CleanMappingExtTables,)]
 
 DATA_STAGE_RULES_MAPPING = {
     stage.EHR.value: EHR_CLEANING_CLASSES,
