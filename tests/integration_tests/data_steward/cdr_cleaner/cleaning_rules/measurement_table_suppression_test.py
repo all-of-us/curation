@@ -56,12 +56,6 @@ class MeasurementTableSuppressionTest(BaseTest.CleaningRulesTestBase):
         # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
 
-    def setUp(self):
-        """
-        Add data to the tables for the rule to run on.
-        """
-        super().setUp()
-
     def test_duplicates(self):
         """
         Use the default drop rows test function.

@@ -251,6 +251,12 @@ class BaseTest:
             # The query class that is being executed.
             cls.query_class = None
 
+        def setUp(self):
+            """
+            Add data to the tables for the rule to run on.
+            """
+            super().setUp()
+
         def default_test(self, tables_and_test_values):
             """
             Test passing the query specifications to the clean engine module.
