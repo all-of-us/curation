@@ -389,5 +389,5 @@ if __name__ == '__main__':
 
     if ARGS.list_queries:
         meas_cleaner.log_queries()
-#    else:
-#        clean_engine.clean_dataset(ARGS.project_id, query_list)
+    else:
+        clean_engine.clean_dataset(ARGS.project_id, query_list)
