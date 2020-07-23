@@ -6,44 +6,31 @@ The intent of this module is to call and store deactivated participants informat
 """
 
 # Python imports
-import os
+from utils import auth
 
 # Third party imports
-import google.auth
-import google.auth.transport.requests
+from google.auth import default
+import google.auth.transport.requests as req
 import requests
 import pandas
-from google.oauth2 import service_account
 
 
-def get_access_token(sa_key):
+def get_access_token():
     """
     Obtains GCP Bearer token
 
-    :param sa_key: path that points to your cdr-ops SA key
-
     :return: returns the access_token
     """
-
-    if sa_key is None or sa_key == "":
-        TypeError(
-            f'Path to cdr-ops service account key necessary to generate access token'
-        )
-    else:
-        pass
-
-    service_account_file = sa_key
 
     scopes = [
         'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
     ]
 
-    credentials = service_account.Credentials.from_service_account_file(
-        filename=service_account_file, scopes=scopes)
+    credentials, project_id = default()
+    credentials = auth.delegated_credentials(credentials, scopes=scopes)
 
-    auth_req = google.auth.transport.requests.Request()
-    credentials.refresh(auth_req)
-
+    request = req.Request()
+    credentials.refresh(request)
     access_token = credentials.token
 
     return access_token
@@ -78,18 +65,17 @@ def get_participant_data(url, headers):
     return participant_data
 
 
-def get_deactivated_participants(project_id, sa_key, columns):
+def get_deactivated_participants(project_id, columns):
     """
     Fetches all deactivated participants via API if suspensionStatus = 'NO_CONTACT'
 
     :param project_id: THE RDR project that contains participant summary data
-    :param sa_key: path that points to your cdr-ops SA key
     :param columns: columns to be pushed to a table in BigQuery
 
     :return: returns dataframe of deactivated participants
     """
 
-    token = get_access_token(sa_key)
+    token = get_access_token()
 
     headers = {
         'content-type': 'application/json',
