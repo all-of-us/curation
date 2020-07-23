@@ -163,7 +163,8 @@ DEID_BASE_CLEANING_CLASSES = [
     (CleanMappingExtTables,),
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanHeightAndWeight,), (CleanMappingExtTables,)]
+DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanHeightAndWeight,),
+                               (CleanMappingExtTables,)]
 
 DATA_STAGE_RULES_MAPPING = {
     stage.EHR.value: EHR_CLEANING_CLASSES,
