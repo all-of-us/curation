@@ -4,7 +4,8 @@ Normalizes all height and weight data into cm and kg and removes invalid/implaus
 Original Issues: DC-416, DC-701
 
 The intent of this cleaning rule is to delete zero/null/implausible height/weight rows
-and inserting normalized rows (cm and kg)
+and inserting normalized rows (cm and kg). This cleaning rule also expects `measurement_ext` table to be
+present in the dataset
 """
 
 # Python imports
