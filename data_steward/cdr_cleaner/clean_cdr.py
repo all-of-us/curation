@@ -161,10 +161,9 @@ DEID_BASE_CLEANING_CLASSES = [
     (fill_source_value.get_fill_freetext_source_value_fields_queries,),
     (repopulate_person.get_repopulate_person_post_deid_queries,),
     (CleanMappingExtTables,),
-    (CleanHeightAndWeight,),
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanMappingExtTables,)]
+DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanHeightAndWeight,), (CleanMappingExtTables,)]
 
 DATA_STAGE_RULES_MAPPING = {
     stage.EHR.value: EHR_CLEANING_CLASSES,
