@@ -65,7 +65,8 @@ metric_names = [
     constants.erroneous_dates,
     constants.person_id_failure_rate,
     constants.date_datetime_disparity,
-    constants.visit_date_disparity]
+    constants.visit_date_disparity,
+    constants.visit_id_failure_rate]
 
 # ---------- Dictionaries ---------- #
 thresholds = {
@@ -83,10 +84,12 @@ thresholds = {
 
     constants.date_datetime_disparity_max: constants.achilles_max_value,
     constants.erroneous_dates_max: constants.achilles_max_value,
-    constants.person_failure_rate_max: constants.achilles_max_value,
+
+    constants.visit_id_failure_rate_max: constants.foreign_key_max_value,
+    constants.person_failure_rate_max: constants.foreign_key_max_value,
 
     constants.achilles_errors_max: 15,
-    constants.visit_date_disparity_max: constants.achilles_max_value,
+    constants.visit_date_disparity_max: constants.achilles_max_value
 }
 
 
@@ -108,8 +111,9 @@ thresholds_full_name = {
     constants.concept_full: 90,
     constants.duplicates_full: 5,
     constants.erroneous_dates_full: constants.achilles_max_value,
-    constants.person_id_failure_rate_full: constants.achilles_max_value,
-    constants.visit_date_disparity_full: constants.achilles_max_value}
+    constants.person_id_failure_rate_full: constants.foreign_key_max_value,
+    constants.visit_date_disparity_full: constants.achilles_max_value,
+    constants.visit_id_failure_rate_full: constants.foreign_key_max_value}
 
 min_or_max = {
     # field population metrics
@@ -130,7 +134,8 @@ min_or_max = {
     constants.duplicates_full: constants.maximum,
     constants.erroneous_dates_full: constants.maximum,
     constants.person_id_failure_rate_full: constants.maximum,
-    constants.visit_date_disparity_full: constants.maximum}
+    constants.visit_date_disparity_full: constants.maximum,
+    constants.visit_id_failure_rate_full: constants.maximum}
 
 percentage_dict = {
     constants.duplicates: constants.false,
@@ -146,6 +151,7 @@ percentage_dict = {
     constants.person_id_failure_rate: constants.true,
     constants.achilles_errors: constants.false,
     constants.visit_date_disparity: constants.true,
+    constants.visit_id_failure_rate: constants.true
 }
 
 
@@ -185,10 +191,10 @@ columns_to_document_for_sheet_email = {
         constants.all_canonical_tables,
 
     constants.visit_date_disparity:
-        [
-        constants.condition_occurrence, constants.drug_exposure,
-        constants.observation, constants.measurement,
-        constants.procedure_occurrence]}
+        constants.tables_except_visit,
+
+    constants.visit_id_failure_rate:
+        constants.tables_except_visit}
 
 
 table_based_on_column_provided = {
@@ -249,7 +255,8 @@ data_quality_dimension_dict = {
     constants.erroneous_dates: constants.plausibility,
     constants.person_id_failure_rate: constants.conformance,
     constants.achilles_errors: constants.conformance,
-    constants.visit_date_disparity: constants.conformance
+    constants.visit_date_disparity: constants.conformance,
+    constants.visit_id_failure_rate: constants.conformance
 }
 
 metric_type_to_english_dict = {
@@ -272,7 +279,8 @@ metric_type_to_english_dict = {
     constants.erroneous_dates: constants.erroneous_dates_full,
     constants.person_id_failure_rate: constants.person_id_failure_rate_full,
     constants.achilles_errors: constants.achilles_errors_full,
-    constants.visit_date_disparity: constants.visit_date_disparity_full
+    constants.visit_date_disparity: constants.visit_date_disparity_full,
+    constants.visit_id_failure_rate: constants.visit_id_failure_rate_full
 }
 
 full_names = {

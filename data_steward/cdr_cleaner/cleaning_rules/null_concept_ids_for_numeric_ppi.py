@@ -125,21 +125,20 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
         """
         save_changed_rows = {
             cdr_consts.QUERY:
-                SANDBOX_QUERY.render(
-                    project=self.get_project_id(),
-                    dataset=self.get_dataset_id(),
-                    sandbox_dataset=self.get_sandbox_dataset_id(),
-                    intermediary_table=SAVE_TABLE_NAME),
+                SANDBOX_QUERY.render(project=self.project_id,
+                                     dataset=self.dataset_id,
+                                     sandbox_dataset=self.sandbox_dataset_id,
+                                     intermediary_table=SAVE_TABLE_NAME),
         }
 
         clean_numeric_ppi_query = {
             cdr_consts.QUERY:
-                CLEAN_NUMERIC_PPI_QUERY.render(project=self.get_project_id(),
-                                               dataset=self.get_dataset_id()),
+                CLEAN_NUMERIC_PPI_QUERY.render(project=self.project_id,
+                                               dataset=self.dataset_id),
             cdr_consts.DESTINATION_TABLE:
                 'observation',
             cdr_consts.DESTINATION_DATASET:
-                self.get_dataset_id(),
+                self.dataset_id,
             cdr_consts.DISPOSITION:
                 WRITE_TRUNCATE
         }

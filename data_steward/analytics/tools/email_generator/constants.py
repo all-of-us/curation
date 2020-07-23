@@ -7,6 +7,23 @@ to a cleaner-looking code (as strings tend to 'bog down' the script
 in general. Beyond legibility, this allows us to "mass change" certain
 attributes that appear many times in the file.
 """
+# Booleans
+# --------
+true = True
+false = False
+
+
+# Formatting
+# ----------
+date_format = '%B_%d_%Y'
+rounding_val = 2
+
+
+# misc_strings
+# ------------
+hpo_sheets = 'hpo_sheets'
+table_sheets = 'table_sheets'
+aggregate_info = 'aggregate_info'
 
 
 # Table Names
@@ -29,6 +46,10 @@ all_canonical_tables = [
     visit_occurrence, condition_occurrence, drug_exposure,
     observation, measurement, procedure_occurrence]
 
+tables_except_visit = [
+    condition_occurrence, drug_exposure,
+    observation, measurement, procedure_occurrence]
+
 tables_with_one_date = [
     visit_occurrence, condition_occurrence, drug_exposure]
 
@@ -38,6 +59,7 @@ procedure_total_row = 'procedure_total_row'
 condition_total_row = 'condition_total_row'
 measurement_total_row = 'measurement_total_row'
 visit_total_row = 'visit_total_row'
+
 
 # Measurement Class Names
 # -----------------------
@@ -98,6 +120,7 @@ all_drugs_full = 'All Drugs'
 achilles_max_value = 0.01
 integration_minimum = 90
 field_population_minimum = 85
+foreign_key_max_value = 0.01
 
 
 # Metric Names
@@ -116,6 +139,7 @@ erroneous_dates = 'erroneous_dates'
 person_id_failure_rate = 'person_id_failure_rate'
 achilles_errors = 'achilles_errors'
 diabetes = 'diabetes'
+visit_id_failure_rate = 'visit_occ_id_failure_rate'
 
 duplicates_full = 'Duplicate Records'
 data_after_death_full = 'Data After Death'
@@ -131,6 +155,7 @@ erroneous_dates_full = 'Erroneous Dates'
 person_id_failure_rate_full = 'Person ID Failure Rate'
 achilles_errors_full = 'Number of ACHILLES Errors'
 diabetes_full = 'Diabetes Completeness'
+visit_id_failure_rate_full = 'Visit ID Failure Rate'
 
 
 # Dimensions of Data Quality
@@ -155,6 +180,7 @@ erroneous_dates_max = 'erroneous_dates_max'
 person_failure_rate_max = 'person_failure_rate_max'
 achilles_errors_max = 'achilles_errors_max'
 visit_date_disparity_max = 'visit_date_disparity_max'
+visit_id_failure_rate_max = 'visit_occ_id_failure_rate_max'
 
 
 # Other Column Names
@@ -167,11 +193,12 @@ measurement_success = 'measurement_success_rate'
 visit_success = 'visit_success_rate'
 
 concept_success_rate_columns = [
-    condition_success, drug_success_col,
-    condition_success, measurement_success, procedure_success]
+    observation_success, condition_success, drug_success_col,
+    visit_success, measurement_success, procedure_success]
 
 total_unit_success_rate = 'total_unit_success_rate'
 total_route_success_rate = 'total_route_success_rate'
+
 
 hpo_col_name = 'HPO'
 table_class_col_name = 'Table/Class'

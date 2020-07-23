@@ -84,6 +84,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from google.cloud import bigquery as bq
+from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
 
 # Project imports
@@ -92,6 +93,7 @@ import constants.bq_utils as bq_consts
 from deid.parser import parse_args
 from deid.press import Press
 from resources import DEID_PATH
+from tools.concept_ids_suppression import get_additional_concepts_query
 
 LOGGER = logging.getLogger(__name__)
 
@@ -257,6 +259,31 @@ def create_questionnaire_mapping_table(table,
     LOGGER.info('created new questionnaire response mapping table')
 
 
+def create_concept_id_lookup_table(input_dataset, credentials):
+    """
+    Create a lookup table of concept_id's to suppress
+
+    :param input_dataset: input dataset to save lookup table to
+    :param credentials: bigquery credentials
+    """
+
+    lookup_tablename = input_dataset + "._concept_ids_suppression"
+    client = bq.Client(credentials=credentials)
+
+    data = pd.read_csv(
+        os.path.join(DEID_PATH, 'config', 'internal_tables',
+                     'src_concept_ids_suppression.csv'))
+
+    # check utility to append additional concept_ids
+    additional_concept_ids = get_additional_concepts_query(
+        input_dataset, client)
+
+    data = data.append(additional_concept_ids)
+
+    # write this to bigquery.
+    data.to_gbq(lookup_tablename, credentials=credentials, if_exists='replace')
+
+
 class AOU(Press):
 
     def __init__(self, **args):
@@ -296,6 +323,9 @@ class AOU(Press):
         person_table = self.get_dataframe(sql=sql, query_config=job_config)
         LOGGER.info(f"patient count is:\t{person_table.shape[0]}")
         map_table = pd.DataFrame()
+
+        # Create concept_id lookup table for suppressions
+        create_concept_id_lookup_table(self.idataset, self.credentials)
 
         # only need to create these tables deidentifying the observation table
         if 'observation' in self.get_tablename().lower().split('.'):

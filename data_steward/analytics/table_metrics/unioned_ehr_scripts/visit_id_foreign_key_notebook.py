@@ -84,7 +84,7 @@ AND table_id NOT LIKE '\\\_%'
 site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
 
 get_full_names = f"""
-select * from {LOOKUP_TABLES}
+select * from {LOOKUP_TABLES}.hpo_site_id_mappings
 """
 
 full_names_df = pd.io.gbq.read_gbq(get_full_names, dialect='standard')
@@ -103,6 +103,8 @@ site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
 # -
 
 # # visit_occurrence_id evaluations
+
+# ## Condition Occurrence Table
 
 condition_occurrence_query = f"""
 SELECT
@@ -164,6 +166,11 @@ LEFT JOIN
   -- same visit_occurrence_id but traced to different sites
   OR
   mco.src_hpo_id <> mvo.src_hpo_id
+  
+  OR
+  co.visit_occurrence_id = 0
+  OR
+  co.visit_occurrence_id IS NULL
 
   GROUP BY 1
   ORDER BY number_rows_w_no_valid_vo DESC) invalid_row_count
@@ -176,5 +183,336 @@ ORDER BY condition_occurrence DESC
 condition_occurrence_df = pd.io.gbq.read_gbq(condition_occurrence_query, dialect ='standard')
 
 condition_occurrence_df
+
+# ## Observation Table Query
+
+observation_query = f"""
+SELECT
+DISTINCT
+total_rows.src_hpo_id,
+-- IFNULL(invalid_row_count.number_rows_w_no_vo, 0) as rows_w_no_valid_vo,
+-- total_rows.total_rows,
+round(IFNULL(invalid_row_count.number_rows_w_no_valid_vo, 0) / total_rows.total_rows * 100, 2) AS observation
+
+FROM
+
+  (SELECT
+  DISTINCT
+  mo.src_hpo_id, COUNT(mo.src_hpo_id) as total_rows
+  FROM
+  `{DATASET}.unioned_ehr_observation` o
+  LEFT JOIN
+  `{DATASET}._mapping_observation` mo
+  ON
+  o.observation_id = mo.observation_id
+  GROUP BY 1
+  ORDER BY total_rows DESC) total_rows
+
+LEFT JOIN
+
+  (SELECT
+  DISTINCT
+  mo.src_hpo_id, COUNT(mo.src_hpo_id) as number_rows_w_no_valid_vo
+
+  -- to enable site tracing
+  FROM
+  `{DATASET}.unioned_ehr_observation` o
+  LEFT JOIN
+  `{DATASET}._mapping_observation` mo
+  ON
+  o.observation_id = mo.observation_id
+
+  -- to enable visit/src_hpo_id cross-checking
+  LEFT JOIN
+  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  ON
+  o.visit_occurrence_id = vo.visit_occurrence_id
+  LEFT JOIN
+  `{DATASET}._mapping_visit_occurrence` mvo
+  ON
+  o.visit_occurrence_id = mvo.visit_occurrence_id
+
+
+  -- anything dropped by the 'left join'
+  WHERE
+  o.visit_occurrence_id NOT IN
+    (
+    SELECT
+    DISTINCT vo.visit_occurrence_id
+    FROM
+    `{DATASET}.unioned_ehr_visit_occurrence` vo
+    )
+
+  -- same visit_occurrence_id but traced to different sites
+  OR
+  mo.src_hpo_id <> mvo.src_hpo_id
+  
+  OR o.visit_occurrence_id = 0
+  
+  OR o.visit_occurrence_id IS NULL
+
+  GROUP BY 1
+  ORDER BY number_rows_w_no_valid_vo DESC) invalid_row_count
+
+ON
+total_rows.src_hpo_id = invalid_row_count.src_hpo_id
+ORDER BY observation DESC
+"""
+
+observation_df = pd.io.gbq.read_gbq(observation_query, dialect ='standard')
+
+observation_df
+
+# ## Measurement Table Query
+
+measurement_query = f"""
+SELECT
+DISTINCT
+total_rows.src_hpo_id,
+-- IFNULL(invalid_row_count.number_rows_w_no_vo, 0) as rows_w_no_valid_vo,
+-- total_rows.total_rows,
+round(IFNULL(invalid_row_count.number_rows_w_no_valid_vo, 0) / total_rows.total_rows * 100, 2) AS measurement
+
+FROM
+
+  (SELECT
+  DISTINCT
+  mm.src_hpo_id, COUNT(mm.src_hpo_id) as total_rows
+  FROM
+  `{DATASET}.unioned_ehr_measurement` m
+  LEFT JOIN
+  `{DATASET}._mapping_measurement` mm
+  ON
+  m.measurement_id = mm.measurement_id
+  GROUP BY 1
+  ORDER BY total_rows DESC) total_rows
+
+LEFT JOIN
+
+  (SELECT
+  DISTINCT
+  mm.src_hpo_id, COUNT(mm.src_hpo_id) as number_rows_w_no_valid_vo
+
+  -- to enable site tracing
+  FROM
+  `{DATASET}.unioned_ehr_measurement` m
+  LEFT JOIN
+  `{DATASET}._mapping_measurement` mm
+  ON
+  m.measurement_id = mm.measurement_id
+
+  -- to enable visit/src_hpo_id cross-checking
+  LEFT JOIN
+  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  ON
+  m.visit_occurrence_id = vo.visit_occurrence_id
+  LEFT JOIN
+  `{DATASET}._mapping_visit_occurrence` mvo
+  ON
+  m.visit_occurrence_id = mvo.visit_occurrence_id
+
+
+  -- anything dropped by the 'left join'
+  WHERE
+  m.visit_occurrence_id NOT IN
+    (
+    SELECT
+    DISTINCT vo.visit_occurrence_id
+    FROM
+    `{DATASET}.unioned_ehr_visit_occurrence` vo
+    )
+
+  -- same visit_occurrence_id but traced to different sites
+  OR
+  mm.src_hpo_id <> mvo.src_hpo_id
+  
+  OR m.visit_occurrence_id = 0
+  
+  OR m.visit_occurrence_id IS NULL
+
+  GROUP BY 1
+  ORDER BY number_rows_w_no_valid_vo DESC) invalid_row_count
+
+ON
+total_rows.src_hpo_id = invalid_row_count.src_hpo_id
+ORDER BY measurement DESC
+"""
+
+measurement_df = pd.io.gbq.read_gbq(measurement_query, dialect ='standard')
+
+measurement_df
+
+# # Drug Exposure Table
+
+drug_exposure_query = f"""
+SELECT
+DISTINCT
+total_rows.src_hpo_id,
+-- IFNULL(invalid_row_count.number_rows_w_no_vo, 0) as rows_w_no_valid_vo,
+-- total_rows.total_rows,
+round(IFNULL(invalid_row_count.number_rows_w_no_valid_vo, 0) / total_rows.total_rows * 100, 2) AS drug_exposure
+
+FROM
+
+  (SELECT
+  DISTINCT
+  mde.src_hpo_id, COUNT(mde.src_hpo_id) as total_rows
+  FROM
+  `{DATASET}.unioned_ehr_drug_exposure` de
+  LEFT JOIN
+  `{DATASET}._mapping_drug_exposure` mde
+  ON
+  de.drug_exposure_id = mde.drug_exposure_id
+  GROUP BY 1
+  ORDER BY total_rows DESC) total_rows
+
+LEFT JOIN
+
+  (SELECT
+  DISTINCT
+  mde.src_hpo_id, COUNT(mde.src_hpo_id) as number_rows_w_no_valid_vo
+
+  -- to enable site tracing
+  FROM
+  `{DATASET}.unioned_ehr_drug_exposure` de
+  LEFT JOIN
+  `{DATASET}._mapping_drug_exposure` mde
+  ON
+  de.drug_exposure_id = mde.drug_exposure_id
+
+  -- to enable visit/src_hpo_id cross-checking
+  LEFT JOIN
+  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  ON
+  de.visit_occurrence_id = vo.visit_occurrence_id
+  LEFT JOIN
+  `{DATASET}._mapping_visit_occurrence` mvo
+  ON
+  de.visit_occurrence_id = mvo.visit_occurrence_id
+
+
+  -- anything dropped by the 'left join'
+  WHERE
+  de.visit_occurrence_id NOT IN
+    (
+    SELECT
+    DISTINCT vo.visit_occurrence_id
+    FROM
+    `{DATASET}.unioned_ehr_visit_occurrence` vo
+    )
+
+  -- same visit_occurrence_id but traced to different sites
+  OR
+  mde.src_hpo_id <> mvo.src_hpo_id
+  
+  OR de.visit_occurrence_id = 0
+  
+  OR de.visit_occurrence_id IS NULL
+
+  GROUP BY 1
+  ORDER BY number_rows_w_no_valid_vo DESC) invalid_row_count
+
+ON
+total_rows.src_hpo_id = invalid_row_count.src_hpo_id
+ORDER BY drug_exposure DESC
+"""
+
+drug_exposure_df = pd.io.gbq.read_gbq(drug_exposure_query, dialect ='standard')
+
+drug_exposure_df
+
+# # Procedure Occurrence
+
+procedure_occurrence_query = f"""
+SELECT
+DISTINCT
+total_rows.src_hpo_id,
+-- IFNULL(invalid_row_count.number_rows_w_no_vo, 0) as rows_w_no_valid_vo,
+-- total_rows.total_rows,
+round(IFNULL(invalid_row_count.number_rows_w_no_valid_vo, 0) / total_rows.total_rows * 100, 2) AS procedure_occurrence
+
+FROM
+
+  (SELECT
+  DISTINCT
+  mpo.src_hpo_id, COUNT(mpo.src_hpo_id) as total_rows
+  FROM
+  `{DATASET}.unioned_ehr_procedure_occurrence` po
+  LEFT JOIN
+  `{DATASET}._mapping_procedure_occurrence` mpo
+  ON
+  po.procedure_occurrence_id = mpo.procedure_occurrence_id
+  GROUP BY 1
+  ORDER BY total_rows DESC) total_rows
+
+LEFT JOIN
+
+  (SELECT
+  DISTINCT
+  mpo.src_hpo_id, COUNT(mpo.src_hpo_id) as number_rows_w_no_valid_vo
+
+  -- to enable site tracing
+  FROM
+  `{DATASET}.unioned_ehr_procedure_occurrence` po
+  LEFT JOIN
+  `{DATASET}._mapping_procedure_occurrence` mpo
+  ON
+  po.procedure_occurrence_id = mpo.procedure_occurrence_id
+
+  -- to enable visit/src_hpo_id cross-checking
+  LEFT JOIN
+  `{DATASET}.unioned_ehr_visit_occurrence` vo
+  ON
+  po.visit_occurrence_id = vo.visit_occurrence_id
+  LEFT JOIN
+  `{DATASET}._mapping_visit_occurrence` mvo
+  ON
+  po.visit_occurrence_id = mvo.visit_occurrence_id
+
+
+  -- anything dropped by the 'left join'
+  WHERE
+  po.visit_occurrence_id NOT IN
+    (
+    SELECT
+    DISTINCT vo.visit_occurrence_id
+    FROM
+    `{DATASET}.unioned_ehr_visit_occurrence` vo
+    )
+
+  -- same visit_occurrence_id but traced to different sites
+  OR
+  mpo.src_hpo_id <> mvo.src_hpo_id
+  
+  OR po.visit_occurrence_id = 0
+  
+  OR po.visit_occurrence_id IS NULL
+
+  GROUP BY 1
+  ORDER BY number_rows_w_no_valid_vo DESC) invalid_row_count
+
+ON
+total_rows.src_hpo_id = invalid_row_count.src_hpo_id
+ORDER BY procedure_occurrence DESC
+"""
+
+procedure_occurrence_df = pd.io.gbq.read_gbq(procedure_occurrence_query, dialect ='standard')
+
+procedure_occurrence_df
+
+final_success_df = pd.merge(site_df, drug_exposure_df, how='inner', on='src_hpo_id') 
+
+# +
+final_success_df = pd.merge(final_success_df, observation_df, how='outer', on='src_hpo_id') 
+final_success_df = pd.merge(final_success_df, procedure_occurrence_df, how='outer', on='src_hpo_id')
+final_success_df = pd.merge(final_success_df, condition_occurrence_df, how='outer', on='src_hpo_id') 
+final_success_df = pd.merge(final_success_df, measurement_df, how='outer', on='src_hpo_id')
+
+final_success_df = final_success_df.fillna(0)
+
+final_success_df.sort_values(by='drug_exposure', ascending=False)
+# -
+
+final_success_df.to_csv("{cwd}/visit_occ_id_failure_rate.csv".format(cwd = cwd))
 
 

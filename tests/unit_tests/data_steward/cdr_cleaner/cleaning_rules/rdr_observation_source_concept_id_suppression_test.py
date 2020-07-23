@@ -40,10 +40,9 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         self.query_class = ObservationSourceConceptIDRowSuppression(
             self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEqual(self.query_class.get_project_id(), self.project_id)
-        self.assertEqual(self.query_class.get_dataset_id(), self.dataset_id)
-        self.assertEqual(self.query_class.get_sandbox_dataset_id(),
-                         self.sandbox_id)
+        self.assertEqual(self.query_class.project_id, self.project_id)
+        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
+        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # test
@@ -53,8 +52,7 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
 
     def test_get_query_specs(self):
         # pre-conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [clean_consts.RDR])
+        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
 
         # test
         result_list = self.query_class.get_query_specs()
@@ -85,8 +83,7 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
 
     def test_log_queries(self):
         # pre-conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [clean_consts.RDR])
+        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
 
         store_drops = DROP_SELECTION_QUERY_TMPL.render(
             project=self.project_id,

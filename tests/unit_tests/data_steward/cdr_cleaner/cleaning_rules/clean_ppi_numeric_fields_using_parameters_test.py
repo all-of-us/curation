@@ -16,8 +16,9 @@ import unittest
 # Project imports
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
-from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters, \
-    SANDBOX_QUERY, CLEAN_PPI_NUMERIC_FIELDS_QUERY
+from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import (
+    CleanPPINumericFieldsUsingParameters, SANDBOX_QUERY,
+    CLEAN_PPI_NUMERIC_FIELDS_QUERY)
 
 
 class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
@@ -37,10 +38,9 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
         self.query_class = CleanPPINumericFieldsUsingParameters(
             self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEquals(self.query_class.get_project_id(), self.project_id)
-        self.assertEquals(self.query_class.get_dataset_id(), self.dataset_id)
-        self.assertEquals(self.query_class.get_sandbox_dataset_id(),
-                          self.sandbox_id)
+        self.assertEquals(self.query_class.project_id, self.project_id)
+        self.assertEquals(self.query_class.dataset_id, self.dataset_id)
+        self.assertEquals(self.query_class.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # Test
@@ -50,8 +50,7 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [clean_consts.RDR])
+        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
 
         # Test
         results_list = self.query_class.get_query_specs()
@@ -80,8 +79,7 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre conditions
-        self.assertEqual(self.query_class.get_affected_datasets(),
-                         [clean_consts.RDR])
+        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
 
         store_rows_to_be_changed = SANDBOX_QUERY.render(
             project=self.project_id,

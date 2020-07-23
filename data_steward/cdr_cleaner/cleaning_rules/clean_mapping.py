@@ -50,6 +50,12 @@ ISSUE_NUMBER = 'DC-715'
 def get_mapping_tables():
     """
     Returns list of mapping tables in fields path
+
+    Uses json table defintion files to identify mapping tables and create
+    a list of extension tables.
+
+    :returns: a list of mapping and extension tables based on mapping
+        table names
     """
     mapping_tables = resources.MAPPING_TABLES
     ext_tables = []
@@ -84,6 +90,14 @@ class CleanMappingExtTables(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=get_mapping_tables())
+        # setting default values for these variables based on table schema
+        # definition files and table naming conventions.  These values will be
+        # reset when setup_rule is executed.
+        tables = get_mapping_tables()
+        self.mapping_tables = [
+            table for table in tables if table.startswith('_mapping')
+        ]
+        self.ext_tables = [table for table in tables if table.endswith('_ext')]
 
     @staticmethod
     def get_cdm_table(table, table_type):
@@ -96,21 +110,22 @@ class CleanMappingExtTables(BaseCleaningRule):
         """
         if table_type == MAPPING:
             cdm_table = table.replace(MAPPING_PREFIX, '')
-            return cdm_table
-        cdm_table = table.replace(EXT_SUFFIX, '')
+        else:
+            cdm_table = table.replace(EXT_SUFFIX, '')
+
         return cdm_table
 
-    def get_tables(self, project_id, dataset_id, table_type):
+    def get_tables(self, table_type):
         """
         Retrieves mapping/ext tables in dataset
 
-        :param project_id: identifies the project
-        :param dataset_id: identifies the dataset
-        :param table_type: can take values 'mapping' or 'ext', generates queries targeting the respective tables
+        :param table_type: can take values 'mapping' or 'ext', identifies
+            tables in the dataset with the given type
+
         :return: list of tables in the dataset which are mapping or ext tables of cdm_tables
         """
-        tables_query = GET_TABLES_QUERY.format(project=project_id,
-                                               dataset=dataset_id,
+        tables_query = GET_TABLES_QUERY.format(project=self.project_id,
+                                               dataset=self.dataset_id,
                                                table_type=table_type)
         tables = bq.query(tables_query).get(TABLE_NAME).to_list()
         cdm_tables = set(resources.CDM_TABLES)
@@ -130,54 +145,51 @@ class CleanMappingExtTables(BaseCleaningRule):
         """
         return 'ehr' in dataset_id and 'unioned' not in dataset_id
 
-    def get_clean_queries(self, project_id, dataset_id, sandbox_dataset_id,
-                          table_type):
+    def get_clean_queries(self, table_list, table_type):
         """
         Collect queries for sandboxing and cleaning either mapping or ext tables
 
-        :param project_id: identifies the project
-        :param dataset_id: identifies the dataset
-        :param sandbox_dataset_id: identifies the sandbox dataset
-        :param table_type: can take values 'mapping' or 'ext', generates queries targeting the respective tables
+        :param table_list: list of tables to create cleaning queries for
+        :param table_type: can take values 'mapping' or 'ext', generates
+            queries targeting the respective tables
 
         :return: list of query dicts
         """
         queries = []
 
-        tables = self.get_tables(project_id, dataset_id, table_type)
-
         # TODO modify based on new naming convention
-        is_ehr = self.is_ehr_dataset(dataset_id)
+        is_ehr = self.is_ehr_dataset(self.dataset_id)
 
-        for table in tables:
-            cdm_table = self.get_cdm_table(
-                table, table_type
-            ) if not is_ehr else UNIONED_PREFIX + self.get_cdm_table(
-                table, table_type)
+        for table in table_list:
+            cdm_table = self.get_cdm_table(table, table_type)
+            if is_ehr:
+                cdm_table = UNIONED_PREFIX + cdm_table
+
             table_id = cdm_table + '_id'
 
             sandbox_query = dict()
             sandbox_query[cdr_consts.QUERY] = SELECT_RECORDS_QUERY.format(
-                project=project_id,
-                dataset=dataset_id,
+                project=self.project_id,
+                dataset=self.dataset_id,
                 table=table,
                 cdm_table=cdm_table,
                 table_id=table_id,
                 value=NULL)
-            sandbox_query[cdr_consts.DESTINATION_DATASET] = sandbox_dataset_id
+            sandbox_query[
+                cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
             sandbox_query[cdr_consts.DESTINATION_TABLE] = table
             sandbox_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
             queries.append(sandbox_query)
 
             query = dict()
             query[cdr_consts.QUERY] = SELECT_RECORDS_QUERY.format(
-                project=project_id,
-                dataset=dataset_id,
+                project=self.project_id,
+                dataset=self.dataset_id,
                 table=table,
                 cdm_table=cdm_table,
                 table_id=table_id,
                 value=NOT_NULL)
-            query[cdr_consts.DESTINATION_DATASET] = dataset_id
+            query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
             query[cdr_consts.DESTINATION_TABLE] = table
             query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
             queries.append(query)
@@ -189,23 +201,21 @@ class CleanMappingExtTables(BaseCleaningRule):
 
         :return: list of query dicts
         """
-        mapping_clean_queries = self.get_clean_queries(
-            project_id=self.get_project_id(),
-            dataset_id=self.get_dataset_id(),
-            sandbox_dataset_id=self.get_sandbox_dataset_id(),
-            table_type=MAPPING)
-        ext_clean_queries = self.get_clean_queries(
-            project_id=self.get_project_id(),
-            dataset_id=self.get_dataset_id(),
-            sandbox_dataset_id=self.get_sandbox_dataset_id(),
-            table_type=EXT)
+        mapping_clean_queries = self.get_clean_queries(self.mapping_tables,
+                                                       table_type=MAPPING)
+        ext_clean_queries = self.get_clean_queries(self.ext_tables,
+                                                   table_type=EXT)
         return mapping_clean_queries + ext_clean_queries
 
     def setup_rule(self, client):
         """
         Function to run any data upload options before executing a query.
+
+        Should also be used to setup the class with any calls required to
+        instantiate the class properly.
         """
-        pass
+        self.mapping_tables = self.get_tables(MAPPING)
+        self.ext_tables = self.get_tables(EXT)
 
     def get_sandbox_tablenames(self):
         """

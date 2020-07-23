@@ -308,16 +308,16 @@ class NoSuperInitialization(BaseCleaningRule):
         self.sandbox_dataset_id = sandbox_dataset_id
 
     def get_query_specs(self):
-        _ = self.get_project_id()
-        _ = self.get_issue_numbers()
+        _ = self.project_id
+        _ = self.issue_numbers
 
     def setup_rule(self):
-        _ = self.get_project_id()
-        _ = self.get_dataset_id()
-        _ = self.get_sandbox_dataset_id()
-        _ = self.get_issue_numbers()
-        _ = self.get_affected_datasets()
-        _ = self.get_issue_urls()
+        _ = self.project_id
+        _ = self.dataset_id
+        _ = self.sandbox_dataset_id
+        _ = self.issue_numbers
+        _ = self.affected_datasets
+        _ = self.issue_urls
 
     def get_sandbox_tablenames(self):
         pass
@@ -368,16 +368,14 @@ class BaseCleaningRuleTest(unittest.TestCase):
 
         # post conditions
         for clazz in [alpha, beta]:
-            self.assertEqual(self.project_id, clazz.get_project_id())
-            self.assertEqual(self.issue_numbers, clazz.get_issue_numbers())
-            self.assertEqual(self.affected_datasets,
-                             clazz.get_affected_datasets())
-            self.assertEqual(self.dataset_id, clazz.get_dataset_id())
-            self.assertEqual(self.sandbox_dataset_id,
-                             clazz.get_sandbox_dataset_id())
+            self.assertEqual(self.project_id, clazz.project_id)
+            self.assertEqual(self.issue_numbers, clazz.issue_numbers)
+            self.assertEqual(self.affected_datasets, clazz.affected_datasets)
+            self.assertEqual(self.dataset_id, clazz.dataset_id)
+            self.assertEqual(self.sandbox_dataset_id, clazz.sandbox_dataset_id)
 
-        self.assertEqual([], alpha.get_depends_on_classes())
-        self.assertEqual(self.depends_on, beta.get_depends_on_classes())
+        self.assertEqual([], alpha.depends_on_classes)
+        self.assertEqual(self.depends_on, beta.depends_on_classes)
 
     def test_instantiating_inheriting_class_incorrectly(self):
         """
@@ -389,12 +387,9 @@ class BaseCleaningRuleTest(unittest.TestCase):
                           self.sandbox_dataset_id)
 
         # Not using super in initialization
-        bad_init = NoSuperInitialization(self.project_id, self.dataset_id,
-                                         self.sandbox_dataset_id)
-        self.assertRaises(AttributeError, bad_init.get_description)
-        self.assertRaises(AttributeError, bad_init.get_issue_numbers)
-        self.assertRaises(AttributeError, bad_init.get_depends_on_classes)
-        self.assertRaises(AttributeError, bad_init.get_affected_datasets)
+        self.assertRaises(AttributeError, NoSuperInitialization,
+                          self.project_id, self.dataset_id,
+                          self.sandbox_dataset_id)
 
     def test_passing_bad_constructor_arguments(self):
         """

@@ -1,19 +1,17 @@
 # Python imports
-
-# Third party imports
 import os
 import logging
 import base64
 from io import BytesIO
 
-from google.cloud import bigquery
-import google.auth
+# Third party imports
 import mandrill
 from jinja2 import Template
 from matplotlib import image as mpimg
 
 # Project imports
 import app_identity
+from utils import bq
 from constants.utils import bq as bq_consts
 from constants.validation import email_notification as consts
 from resources import achilles_images_path
@@ -50,30 +48,28 @@ def get_hpo_contact_info(project_id):
     """
     Fetch email of points of contact for hpo sites
     :param project_id: identifies the project containing the contact lookup table
-    :return: dataframe containing site_name, hpo_id and site_point_of_contact
+    :return: dictionary with key hpo_id and value as
+             dictionary with keys site_name, hpo_id and site_point_of_contact
     """
-    # add Google Drive scope
-    credentials, project = google.auth.default(scopes=[
-        "https://www.googleapis.com/auth/drive.readonly",
-        "https://www.googleapis.com/auth/cloud-platform",
-        "https://www.googleapis.com/auth/bigquery",
-    ])
-    if project != project_id:
-        raise ValueError(
-            f"{project} does not match {project_id}. "
-            f"Please verify that the project_id is set correctly in env vars")
-    client = bigquery.Client(credentials=credentials, project=project)
+    # Add scopes for Spreadsheet-sourced-BigQuery table
+    scopes = [
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/cloud-platform"
+    ]
 
     contact_list_query = CONTACT_QUERY_TMPL.render(
         project=project_id,
         dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
         contact_table=bq_consts.HPO_ID_CONTACT_LIST_TABLE_ID)
-    query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
-    contact_df = client.query(contact_list_query,
-                              job_config=query_job_config).to_dataframe()
+
+    contact_df = bq.query_sheet_linked_bq_table(project_id,
+                                                contact_list_query,
+                                                external_data_scopes=scopes)
+
     contact_df = contact_df[contact_df.hpo_id.notnull()]
     contact_df = contact_df.set_index('hpo_id')
     contact_dict = contact_df.to_dict('index')
+    LOGGER.info(f"Retrieved contact list using {contact_list_query}")
     return contact_dict
 
 
@@ -118,6 +114,7 @@ def create_recipients_list(hpo_id):
         return hpo_recipients
     mail_to.append({'email': consts.DATA_CURATION_LISTSERV, 'type': 'cc'})
     hpo_recipients[consts.MAIL_TO] = mail_to
+    LOGGER.info(f"Successfully fetched emails for {hpo_id}")
     return hpo_recipients
 
 
@@ -139,6 +136,7 @@ def generate_html_body(site_name, folder_uri, report_data):
         dc_listserv=consts.DATA_CURATION_LISTSERV,
         aou_logo=consts.AOU_LOGO,
         **report_data)
+    LOGGER.info(f"Generated html email body")
     return html_email_body
 
 
@@ -160,10 +158,13 @@ def generate_email_message(hpo_id, results_html, folder_uri, report_data):
     :param report_data: dict containing report info for submission
     :return: Message dict formatted for Mandrill API
     """
+    LOGGER.info(f"Retrieving email ids for {hpo_id}")
     hpo_recipients = create_recipients_list(hpo_id)
     site_name = hpo_recipients.get(consts.SITE_NAME, '')
     mail_to = hpo_recipients.get(consts.MAIL_TO, [])
     if len(site_name) == 0 or len(mail_to) == 0:
+        LOGGER.info(
+            f"No email ids found for {hpo_id}. Please update contact list.")
         return None
     results_html_b64 = base64.b64encode(results_html.encode())
     html_body = generate_html_body(site_name, folder_uri, report_data)
@@ -203,12 +204,13 @@ def send_email(email_message):
     :param email_message: Mandrill API message dict to send
     :return: result from Mandrill API
     """
+    result = None
     try:
         api_key = _get_mandrill_api_key()
         mandrill_client = mandrill.Mandrill(api_key)
         result = mandrill_client.messages.send(message=email_message)
     except mandrill.Error as e:
         # Mandrill errors are thrown as exceptions
-        LOGGER.exception(f"A mandrill error occurred: {e.__class__} - {e}")
-        raise
+        msg = f"A mandrill error occurred: {e.__class__} - {e}"
+        LOGGER.exception(msg, exec_info=True)
     return result

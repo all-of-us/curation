@@ -45,6 +45,7 @@ J. Date/datetime inconsistencies
 K. Erroneous dates
 L. Person ID failure rate
 M. Number of ACHILLES Errors
+N. Visit ID failure rate
 
 Please specify your choice by typing the corresponding letter.
 """

@@ -6,27 +6,34 @@ import logging
 import os
 
 # Third-party imports
+from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
-from google.api_core.exceptions import GoogleAPIError
+from google.auth import default
 
 # Project Imports
 from app_identity import PROJECT_ID
+from utils import auth
 from constants.utils import bq as consts
 from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
 
-def get_client(project_id=None):
+def get_client(project_id=None, scopes=None):
     """
     Get a client for a specified project.
 
     :param project_id:  Name of the project to create a bigquery library client for
         It is being nice for now, but will begin to require users to provide
         the project_id.
+    :param scopes: List of Google scopes as strings
 
     :return:  A bigquery Client object.
     """
+    if scopes:
+        credentials, project_id = default()
+        credentials = auth.delegated_credentials(credentials, scopes=scopes)
+        return bigquery.Client(project=project_id, credentials=credentials)
     if project_id is None:
         LOGGER.info(f"You should specify project_id for a reliable experience."
                     f"Defaulting to {os.environ.get(PROJECT_ID)}.")
@@ -63,6 +70,41 @@ def get_table_schema(table_name, fields=None):
         schema.append(column_def)
 
     return schema
+
+
+def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
+                                write_disposition):
+    """
+    Uploads data from local csv file to bigquery table
+
+    :param client: an instantiated bigquery client object
+    :param dataset_id: identifies the dataset
+    :param table_name: identifies the table name where data needs to be uploaded
+    :param fq_file_path: Fully qualified path to the csv file which needs to be uploaded
+    :param write_disposition: Write disposition for job choose b/w write_empty, write_append, write_truncate
+    :return: job result
+    """
+    dataset_ref = client.dataset(dataset_id)
+    table_ref = dataset_ref.table(table_name)
+    job_config = bigquery.LoadJobConfig()
+    job_config.source_format = bigquery.SourceFormat.CSV
+    job_config.skip_leading_rows = 1
+    job_config.autodetect = True
+    job_config.write_disposition = write_disposition
+
+    LOGGER.info(f"Uploading {fq_file_path} data to {dataset_id}.{table_name}")
+    with open(fq_file_path, "rb") as source_file:
+        job = client.load_table_from_file(source_file,
+                                          table_ref,
+                                          job_config=job_config)
+    try:
+        result = job.result()  # Waits for table load to complete.
+    except (BadRequest, OSError, AttributeError, TypeError, ValueError):
+        message = f"Unable to load data to table {table_name}"
+        LOGGER.exception(message)
+        raise RuntimeError(message)
+
+    return result
 
 
 def create_tables(client,
@@ -363,3 +405,22 @@ def create_dataset(project_id,
         raise RuntimeError(f"Unable to create dataset: {failures}")
 
     return dataset
+
+
+def query_sheet_linked_bq_table(project_id, table_content_query,
+                                external_data_scopes):
+    """
+    Queries Google Sheet sourced BigQuery Table and returns results dataframe
+
+    :param project_id: identifies the project
+    :param table_content_query: query to retrieve table contents
+    :param external_data_scopes: scopes needed to query the external data sourced table
+    :return: result dataframe
+    """
+    # add Google OAuth2.0 scopes
+    client = get_client(project_id, external_data_scopes)
+    query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
+    result_df = client.query(table_content_query,
+                             job_config=query_job_config).to_dataframe()
+
+    return result_df
