@@ -25,11 +25,18 @@ def get_access_token(sa_key):
     :return: returns the access_token
     """
 
+    if sa_key is None or sa_key == "":
+        TypeError(
+            f'Path to cdr-ops service account key necessary to generate access token'
+        )
+    else:
+        pass
+
+    service_account_file = sa_key
+
     scopes = [
         'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
     ]
-
-    service_account_file = sa_key
 
     credentials = service_account.Credentials.from_service_account_file(
         filename=service_account_file, scopes=scopes)
@@ -103,7 +110,7 @@ def get_deactivated_participants(project_id, sa_key, columns):
     for entry in participant_data:
         item = []
         for col in deactivated_participants_cols:
-            for key, val in entry['resource'].items():
+            for key, val in entry.get('resource', {}).items():
                 if col == key:
                     item.append(val)
         deactivated_participants.append(item)
