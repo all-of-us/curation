@@ -34,7 +34,6 @@ class ParticipantSummaryRequests(unittest.TestCase):
     def setUp(self):
         # Input parameters expected by the class
         self.project_id = 'foo_project'
-        self.fake_sa_key = '/path/to/sa/key.json'
         self.fake_scopes = ['www.fake_site.com', 'fake_email', 'fake_profile']
         self.access_token = 'ya29.12345'
 
@@ -89,16 +88,13 @@ class ParticipantSummaryRequests(unittest.TestCase):
             }]
         }
 
-    @mock.patch(
-        'google.oauth2.service_account.Credentials.from_service_account_file')
+    @mock.patch('utils.auth.delegated_credentials')
     def test_get_access_token(self, mock_credentials):
 
         mock_credentials.return_value.token = 'ya29.12345'
 
-        expected_response = get_access_token(self.fake_sa_key)
+        expected_response = get_access_token()
 
-        self.assertRaises(TypeError, get_access_token(None))
-        self.assertRaises(TypeError, get_access_token(""))
         self.assertEqual(expected_response, self.access_token)
 
     @mock.patch('utils.participant_summary_requests.requests.get')
@@ -124,8 +120,7 @@ class ParticipantSummaryRequests(unittest.TestCase):
         mock_get_participant_data.return_value = self.participant_data
         mock_get_deactivated_participants.return_value = self.fake_dataframe
 
-        response = get_deactivated_participants(self.project_id,
-                                                self.fake_sa_key, self.columns)
+        response = get_deactivated_participants(self.project_id, self.columns)
 
         pandas.testing.assert_frame_equal(
             response,
