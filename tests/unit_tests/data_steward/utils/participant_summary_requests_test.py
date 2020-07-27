@@ -88,8 +88,9 @@ class ParticipantSummaryRequests(unittest.TestCase):
             }]
         }
 
+    @mock.patch('google.auth.default')
     @mock.patch('utils.auth.delegated_credentials')
-    def test_get_access_token(self, mock_credentials):
+    def test_get_access_token(self, mock_credentials, mock_defaults):
 
         mock_credentials.return_value.token = 'ya29.12345'
 
