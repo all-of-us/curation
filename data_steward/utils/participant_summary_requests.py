@@ -9,7 +9,7 @@ The intent of this module is to call and store deactivated participants informat
 from utils import auth
 
 # Third party imports
-from google.auth._default import _load_credentials_from_file
+from google.auth import default
 import google.auth.transport.requests as req
 import requests
 import pandas
@@ -27,7 +27,7 @@ def get_access_token():
         'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
     ]
 
-    credentials, project_id = _load_credentials_from_file(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))
+    credentials, project_id = default()
     credentials = auth.delegated_credentials(credentials, scopes=scopes)
 
     request = req.Request()
@@ -106,3 +106,6 @@ def get_deactivated_participants(project_id, columns):
                           columns=deactivated_participants_cols)
 
     return df
+
+if __name__ == '__main__':
+    get_access_token()
