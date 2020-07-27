@@ -5,14 +5,15 @@ The intent of this module is to call and store deactivated participants informat
     Summary API. Deactivated participant information stored is `participantID`, `suspensionStatus`, and `suspensionTime`.
 """
 
-# Python imports
+# Project imports
 from utils import auth
 
 # Third party imports
-from google.auth import default
+from google.auth._default import _load_credentials_from_file
 import google.auth.transport.requests as req
 import requests
 import pandas
+import os
 
 
 def get_access_token():
@@ -26,7 +27,7 @@ def get_access_token():
         'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
     ]
 
-    credentials, project_id = default()
+    credentials, project_id = _load_credentials_from_file(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))
     credentials = auth.delegated_credentials(credentials, scopes=scopes)
 
     request = req.Request()
