@@ -13,7 +13,6 @@ from google.auth import default
 import google.auth.transport.requests as req
 import requests
 import pandas
-import os
 
 
 def get_access_token():
@@ -106,6 +105,3 @@ def get_deactivated_participants(project_id, columns):
                           columns=deactivated_participants_cols)
 
     return df
-
-if __name__ == '__main__':
-    get_access_token()
