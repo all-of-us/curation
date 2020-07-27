@@ -35,7 +35,6 @@ class ParticipantSummaryRequests(unittest.TestCase):
         # Input parameters expected by the class
         self.project_id = 'foo_project'
         self.fake_scopes = ['www.fake_site.com', 'fake_email', 'fake_profile']
-        self.access_token = 'ya29.12345'
 
         self.fake_url = 'www.fake_site.com'
         self.fake_headers = {
@@ -87,15 +86,6 @@ class ParticipantSummaryRequests(unittest.TestCase):
                 }
             }]
         }
-
-    @mock.patch('utils.auth.delegated_credentials')
-    def test_get_access_token(self, mock_credentials):
-
-        mock_credentials.return_value.token = 'ya29.12345'
-
-        expected_response = get_access_token()
-
-        self.assertEqual(expected_response, self.access_token)
 
     @mock.patch('utils.participant_summary_requests.requests.get')
     def test_get_participant_data(self, mock_get):
