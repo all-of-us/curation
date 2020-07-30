@@ -183,20 +183,24 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
                                 field.mode, field.description, field.fields)
 
 
-def get_table_ddl(dataset_id: str,
-                  table_id: str,
-                  schema: typing.List[bigquery.SchemaField] = None,
-                  cluster_by_cols: typing.List[str] = None,
-                  as_query: str = None,
-                  **table_options):
+def get_create_or_replace_table_ddl(dataset_id: str,
+                                    table_id: str,
+                                    schema: typing.List[bigquery.SchemaField] = None,
+                                    cluster_by_cols: typing.List[str] = None,
+                                    as_query: str = None,
+                                    **table_options):
     """
-    Generate CREATE TABLE DDL statement
+    Generate CREATE OR REPLACE TABLE DDL statement
 
-    :param dataset_id:
-    :param table_id:
-    :param schema:
-    :param as_query: query used to populate the table
-    :param table_options: options e.g. description and labels
+    Note: Reference https://bit.ly/3fgkCPg for supported syntax
+
+    :param dataset_id: identifies the dataset containing the table
+    :param table_id: identifies the table to be created or replaced
+    :param schema: list of schema fields (optional). if not provided, attempts to
+                   use a schema associated with the table_id.
+    :param cluster_by_cols: columns defining the table clustering (optional)
+    :param as_query: query used to populate the table (optional)
+    :param table_options: options e.g. description and labels (optional)
     :return:
     """
     _schema = get_table_schema(table_id) if schema is None else schema

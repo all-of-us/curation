@@ -55,7 +55,6 @@ The columns of the lookup table are described below.
  **TODO** Standardize branching logic CSV files
 """
 
-
 from pathlib import Path
 from typing import Union
 
@@ -176,10 +175,10 @@ class PpiBranching(BaseCleaningRule):
         observation_schema = bq.get_table_schema(OBSERVATION)
         query = BACKUP_ROWS_QUERY.render(lookup_table=self.lookup_table,
                                          src_table=self.observation_table)
-        return bq.get_table_ddl(dataset_id=self.backup_table.dataset_id,
-                                table_id=self.backup_table.table_id,
-                                schema=observation_schema,
-                                as_query=query)
+        return bq.get_create_or_replace_table_ddl(dataset_id=self.backup_table.dataset_id,
+                                                  table_id=self.backup_table.table_id,
+                                                  schema=observation_schema,
+                                                  as_query=query)
 
     def stage_cleaned_table_ddl(self) -> str:
         """
@@ -193,10 +192,10 @@ class PpiBranching(BaseCleaningRule):
         observation_schema = bq.get_table_schema(OBSERVATION)
         query = CLEANED_ROWS_QUERY.render(src=self.observation_table,
                                           backup=self.backup_table)
-        return bq.get_table_ddl(dataset_id=self.stage_table.dataset_id,
-                                table_id=self.stage_table.table_id,
-                                schema=observation_schema,
-                                as_query=query)
+        return bq.get_create_or_replace_table_ddl(dataset_id=self.stage_table.dataset_id,
+                                                  table_id=self.stage_table.table_id,
+                                                  schema=observation_schema,
+                                                  as_query=query)
 
     def drop_observation_ddl(self, table: Union[bigquery.TableReference, bigquery.Table]) -> str:
         """
@@ -216,10 +215,10 @@ class PpiBranching(BaseCleaningRule):
         observation_schema = bq.get_table_schema(OBSERVATION)
         stage = self.stage_table
         query = f'''SELECT * FROM `{stage.project}.{stage.dataset_id}.{stage.table_id}`'''
-        return bq.get_table_ddl(self.observation_table.dataset_id,
-                                schema=observation_schema,
-                                table_id=self.observation_table.table_id,
-                                as_query=query)
+        return bq.get_create_or_replace_table_ddl(self.observation_table.dataset_id,
+                                                  schema=observation_schema,
+                                                  table_id=self.observation_table.table_id,
+                                                  as_query=query)
 
     def cleaning_script(self) -> str:
         """
