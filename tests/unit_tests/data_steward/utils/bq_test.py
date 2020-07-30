@@ -22,8 +22,9 @@ from google.cloud import bigquery
 
 # Project imports
 import resources
-from utils.bq import (define_dataset, update_labels_and_tags, get_create_or_replace_table_ddl,
-                      _to_standard_sql_type, get_table_schema)
+from utils.bq import (define_dataset, update_labels_and_tags,
+                      get_create_or_replace_table_ddl, _to_standard_sql_type,
+                      get_table_schema)
 
 
 def _get_all_field_types() -> typing.FrozenSet[str]:
@@ -122,7 +123,8 @@ class BqTest(unittest.TestCase):
 
     def test_get_table_ddl(self):
         # Schema is determined by table name
-        ddl = get_create_or_replace_table_ddl(self.dataset_id, 'observation').strip()
+        ddl = get_create_or_replace_table_ddl(self.dataset_id,
+                                              'observation').strip()
         self.assertTrue(
             ddl.startswith(
                 f'CREATE OR REPLACE TABLE {self.dataset_id}.observation'))
@@ -130,9 +132,10 @@ class BqTest(unittest.TestCase):
 
         # Explicitly provided table name and schema are rendered
         observation_schema = get_table_schema('observation')
-        ddl = get_create_or_replace_table_ddl(self.dataset_id,
-                                              table_id='custom_observation',
-                                              schema=observation_schema).strip()
+        ddl = get_create_or_replace_table_ddl(
+            self.dataset_id,
+            table_id='custom_observation',
+            schema=observation_schema).strip()
         self.assertTrue(
             ddl.startswith(
                 f'CREATE OR REPLACE TABLE {self.dataset_id}.custom_observation')
