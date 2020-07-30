@@ -1,102 +1,95 @@
-# + language="html"
-# <style>
-#   .rendered_html table {margin-left: 0}
-#   .rendered_html td, .rendered_html th {text-align: left}
-# </style>
-# -
+"""
+Some survey questions follow branching logic, that is, they may follow naturally
+from responses given to previous (parent) questions. For example, consider the
+questions below taken from the lifestyle survey module.
 
-# ## Problem
-# Some survey questions follow branching logic, that is, they may follow naturally
-# from responses given to previous (parent) questions. For example, consider the
-# questions below taken from the lifestyle survey module.
-#
-#   Smoking_100CigsLifetime Have you smoked at least 100 cigarettes in your entire life?
-#   Smoking_SmokeFrequency Do you now smoke cigarettes [...]?
-#
-# The child question `Smoking_SmokeFrequency` should pertain only to participants who
-# answer the parent question `Smoking_100CigsLifetime` affirmatively.
-#
-# A bug has been identified which may cause child questions to appear even when a
-# requisite parent response has not been provided. In this case, `Smoking_SmokeFrequency`
-# might appear for participants who do **not** respond affirmatively to `Smoking_100CigsLifetime`.
-#
-# ## Solution
-# Remove from the observation table child questions where requisite parent responses are missing.
-#
-# Branching logic is represented by CSV files whose columns are described below.
-#
-# <table>
-# <tr>
-#   <th>column name</th>
-#   <th>description</th>
-#   <th>field in observation table</th>
-# </tr>
-# <tr>
-#     <td>child_question</td>
-#     <td>concept_code of the child question</td>
-#     <td>observation_source_value</td>
-# </tr>
-# <tr>
-#     <td>parent_question</td>
-#     <td>concept_code of the parent question</td>
-#     <td>observation_source_value</td>
-# </tr>
-# <tr>
-#     <td>keep_if_parent_value_equals</td>
-#     <td>concept_code of answer to parent_question</td>
-#     <td>value_source_value</td>
-# </tr>
-# </table>
-#
-# 1. Identify rows of the observation table that are child questions missing requisite
-#    parent responses and which must be removed. Backup the rows in a sandboxed table.
-#
-#   For each CSV file, we group columns to yield
-#
-#   `(child_question, parent_question) => {parent_answer1, parent_answer2, ..}`
-#
-# ```sql
-# -- these are the child rows to REMOVE and save in sandbox
-# for (child_question, parent_question), parent_answers in grouped_rules:
-#     SELECT oc.*
-#     FROM `{{dataset_id}}.observation` oc
-#       LEFT JOIN `{{dataset_id}}.observation` op
-#        ON op.person_id = oc.person_id
-#        AND op.observation_source_value = '{{parent_question}}'
-#        AND op.value_source_value IN (
-#          for parent_answer in parent_answers:
-#            '{{parent_answer}}'
-#        )
-#     WHERE
-#      oc.observation_source_value = '{{child_question}}'
-#      AND op.observation_id IS NOT NULL -- the parent
-#     UNION ALL
-# ```
-#
-# 2. Reload all rows in the observation table, excluding the sandboxed rows.
-#
-# ```sql
-#     SELECT * FROM `{{dataset_id}}.observation` o
-#     WHERE NOT EXISTS (
-#       SELECT 1 FROM `{{dataset_id}}.observation` oc
-#       WHERE oc.observation_id = o.observation_id
-#     )
-# ```
-#
-# # Limitations
-#  * Some concept codes are truncated in the RDR export
-#
-#    **TODO** Reference parent/child questions by concept_id rather than concept_code
-#
-#  * CSV rules which note any additional logic are currently skipped (as they are incompatible with approach)
-#
-#    **TODO** Complete the Basics and Overall Health branching logic CSV files
-#
-#  * Some CSV files indicate child questions to keep and others indicate child questions to remove
-#
-#    **TODO** Standardize branching logic CSV files
+  Smoking_100CigsLifetime Have you smoked at least 100 cigarettes in your entire life?
+  Smoking_SmokeFrequency Do you now smoke cigarettes [...]?
 
-# +
+The child question `Smoking_SmokeFrequency` should pertain only to participants who
+answer the parent question `Smoking_100CigsLifetime` affirmatively.
+
+A bug has been identified which may cause child questions to appear even when a
+requisite parent response has not been provided. In this case, `Smoking_SmokeFrequency`
+might appear for participants who do **not** respond affirmatively to `Smoking_100CigsLifetime`.
+
+## Solution
+Remove from the observation table child questions where requisite parent responses are missing.
+
+Branching logic is represented by CSV files whose columns are described below.
+
+<table>
+<tr>
+  <th>column name</th>
+  <th>description</th>
+  <th>field in observation table</th>
+</tr>
+<tr>
+    <td>child_question</td>
+    <td>concept_code of the child question</td>
+    <td>observation_source_value</td>
+</tr>
+<tr>
+    <td>parent_question</td>
+    <td>concept_code of the parent question</td>
+    <td>observation_source_value</td>
+</tr>
+<tr>
+    <td>keep_if_parent_value_equals</td>
+    <td>concept_code of answer to parent_question</td>
+    <td>value_source_value</td>
+</tr>
+</table>
+
+1. Identify rows of the observation table that are child questions missing requisite
+   parent responses and which must be removed. Backup the rows in a sandboxed table.
+
+  For each CSV file, we group columns to yield
+
+  `(child_question, parent_question) => {parent_answer1, parent_answer2, ..}`
+
+```sql
+-- these are the child rows to REMOVE and save in sandbox
+for (child_question, parent_question), parent_answers in grouped_rules:
+    SELECT oc.*
+    FROM `{{dataset_id}}.observation` oc
+      LEFT JOIN `{{dataset_id}}.observation` op
+       ON op.person_id = oc.person_id
+       AND op.observation_source_value = '{{parent_question}}'
+       AND op.value_source_value IN (
+         for parent_answer in parent_answers:
+           '{{parent_answer}}'
+       )
+    WHERE
+     oc.observation_source_value = '{{child_question}}'
+     AND op.observation_id IS NOT NULL -- the parent
+    UNION ALL
+```
+
+2. Reload all rows in the observation table, excluding the sandboxed rows.
+
+```sql
+    SELECT * FROM `{{dataset_id}}.observation` o
+    WHERE NOT EXISTS (
+      SELECT 1 FROM `{{dataset_id}}.observation` oc
+      WHERE oc.observation_id = o.observation_id
+    )
+```
+# Limitations
+ * Some concept codes are truncated in the RDR export
+
+   **TODO** Reference parent/child questions by concept_id rather than concept_code
+
+ * CSV rules which note any additional logic are currently skipped (as they are incompatible with approach)
+
+   **TODO** Complete the Basics and Overall Health branching logic CSV files
+
+ * Some CSV files indicate child questions to keep and others indicate child questions to remove
+
+   **TODO** Standardize branching logic CSV files
+"""
+
+
 from pathlib import Path
 
 import pandas
