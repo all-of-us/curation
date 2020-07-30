@@ -57,6 +57,7 @@ The columns of the lookup table are described below.
 
 
 from pathlib import Path
+from typing import Union
 
 import pandas
 from google.cloud import bigquery
@@ -197,13 +198,12 @@ class PpiBranching(BaseCleaningRule):
                                 schema=observation_schema,
                                 as_query=query)
 
-    def drop_observation_ddl(self) -> str:
+    def drop_observation_ddl(self, table: Union[bigquery.TableReference, bigquery.Table]) -> str:
         """
-        Get a DDL statement which drops the observation table
+        Get a DDL statement which drops a specified table
 
         :return: the DDL statement
         """
-        table = self.observation_table
         return f'DROP TABLE `{table.project}.{table.dataset_id}.{table.table_id}`'
 
     def stage_to_target_ddl(self) -> str:
@@ -230,8 +230,9 @@ class PpiBranching(BaseCleaningRule):
         script = f"""
         {self.backup_rows_to_drop_ddl()};
         {self.stage_cleaned_table_ddl()};
-        {self.drop_observation_ddl()};
+        {self.drop_observation_ddl(self.observation_table)};
         {self.stage_to_target_ddl()};
+        {self.drop_observation_ddl(self.stage_table)};
         """
         return script
 
