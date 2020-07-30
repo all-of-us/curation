@@ -1,92 +1,58 @@
 """
-Some survey questions follow branching logic, that is, they may follow naturally
-from responses given to previous (parent) questions. For example, consider the
-questions below taken from the lifestyle survey module.
+Remove from the observation table PPI responses that are inconsistent with branching logic.
+
+The relevance of some survey questions depend on responses given to previous (parent)
+questions. This rule addresses a bug wherein child questions may appear even though a
+requisite response to a parent question was NOT provided.
+
+For example, consider the questions below taken from the lifestyle survey module.
 
   Smoking_100CigsLifetime Have you smoked at least 100 cigarettes in your entire life?
   Smoking_SmokeFrequency Do you now smoke cigarettes [...]?
 
 The child question `Smoking_SmokeFrequency` should pertain only to participants who
-answer the parent question `Smoking_100CigsLifetime` affirmatively.
+answer the parent question `Smoking_100CigsLifetime` affirmatively however due to the bug
+`Smoking_SmokeFrequency` may appear for participants who do not respond
+affirmatively to the parent question. This rule removes these invalid `Smoking_SmokeFrequency`
+questions.
 
-A bug has been identified which may cause child questions to appear even when a
-requisite parent response has not been provided. In this case, `Smoking_SmokeFrequency`
-might appear for participants who do **not** respond affirmatively to `Smoking_100CigsLifetime`.
+# Setup Rule
 
-## Solution
-Remove from the observation table child questions where requisite parent responses are missing.
+Load CSV files into a lookup table which represents PPI branching logic.
 
-Branching logic is represented by CSV files whose columns are described below.
+The columns of the lookup table are described below.
+| column name     | description                            | field in observation table |
+|-----------------|----------------------------------------|----------------------------|
+| child_question  | child question concept_code            | observation_source_value   |
+| parent_question | parent question concept_code           | observation_source_value   |
+| parent_value    | concept_code of parent_question answer | value_source_value         |
 
-<table>
-<tr>
-  <th>column name</th>
-  <th>description</th>
-  <th>field in observation table</th>
-</tr>
-<tr>
-    <td>child_question</td>
-    <td>concept_code of the child question</td>
-    <td>observation_source_value</td>
-</tr>
-<tr>
-    <td>parent_question</td>
-    <td>concept_code of the parent question</td>
-    <td>observation_source_value</td>
-</tr>
-<tr>
-    <td>keep_if_parent_value_equals</td>
-    <td>concept_code of answer to parent_question</td>
-    <td>value_source_value</td>
-</tr>
-</table>
+ * rule_type: the action to perform on child_question if parent_question = parent_value
+ * rule_source: name of the CSV file the rule originated from
+ * notes: comments from the author of the logical rule
 
-1. Identify rows of the observation table that are child questions missing requisite
-   parent responses and which must be removed. Backup the rows in a sandboxed table.
+# Rule execution
 
-  For each CSV file, we group columns to yield
+1. Backup rows of the observation table that are child questions missing requisite
+   parent responses and which must be removed.
 
-  `(child_question, parent_question) => {parent_answer1, parent_answer2, ..}`
+2. Recreate the observation table such that it excludes the backed up rows.
 
-```sql
--- these are the child rows to REMOVE and save in sandbox
-for (child_question, parent_question), parent_answers in grouped_rules:
-    SELECT oc.*
-    FROM `{{dataset_id}}.observation` oc
-      LEFT JOIN `{{dataset_id}}.observation` op
-       ON op.person_id = oc.person_id
-       AND op.observation_source_value = '{{parent_question}}'
-       AND op.value_source_value IN (
-         for parent_answer in parent_answers:
-           '{{parent_answer}}'
-       )
-    WHERE
-     oc.observation_source_value = '{{child_question}}'
-     AND op.observation_id IS NOT NULL -- the parent
-    UNION ALL
-```
+   Note: A current limitation of the CREATE OR REPLACE TABLE DDL statement is it
+   cannot load the table via query when the existent table is ingestion-time
+   partitioned (see https://bit.ly/2VeMs7e). The rule will therefore
+     * stage the cleaned observation table in the sandbox
+     * drop the existent observation table
+     * create the observation table and load via query on the staged table
 
-2. Reload all rows in the observation table, excluding the sandboxed rows.
-
-```sql
-    SELECT * FROM `{{dataset_id}}.observation` o
-    WHERE NOT EXISTS (
-      SELECT 1 FROM `{{dataset_id}}.observation` oc
-      WHERE oc.observation_id = o.observation_id
-    )
-```
 # Limitations
+
  * Some concept codes are truncated in the RDR export
-
-   **TODO** Reference parent/child questions by concept_id rather than concept_code
-
- * CSV rules which note any additional logic are currently skipped (as they are incompatible with approach)
-
-   **TODO** Complete the Basics and Overall Health branching logic CSV files
-
- * Some CSV files indicate child questions to keep and others indicate child questions to remove
-
-   **TODO** Standardize branching logic CSV files
+ **TODO** Reference parent/child questions by concept_id rather than concept_code
+ * Rules indicated by author notes are NOT applied (as they are incompatible with approach)
+ **TODO** Complete the Basics and Overall Health branching logic CSV files
+ * Some rules indicate child questions to keep and others indicate child questions to remove
+ **TODO** Standardize branching logic CSV files
 """
 
 
