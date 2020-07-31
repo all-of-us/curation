@@ -5,6 +5,7 @@ A utility to standardize use of the BigQuery python client library.
 import logging
 import os
 import typing
+import warnings
 
 # Third-party imports
 from google.api_core.exceptions import GoogleAPIError, BadRequest
@@ -65,6 +66,8 @@ CLUSTER BY
 -- currently unsupported (see https://bit.ly/2VeMs7e) --
 {% if query -%} AS {{ query }} {%- endif %}
 """)
+
+DATASET_COLUMNS_TPL = JINJA_ENV.from_string(consts.DATASET_COLUMNS_QUERY)
 
 
 def get_client(project_id=None, scopes=None):
@@ -184,12 +187,12 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
 
 
 def get_create_or_replace_table_ddl(
-    dataset_id: str,
-    table_id: str,
-    schema: typing.List[bigquery.SchemaField] = None,
-    cluster_by_cols: typing.List[str] = None,
-    as_query: str = None,
-    **table_options):
+        dataset_id: str,
+        table_id: str,
+        schema: typing.List[bigquery.SchemaField] = None,
+        cluster_by_cols: typing.List[str] = None,
+        as_query: str = None,
+        **table_options):
     """
     Generate CREATE OR REPLACE TABLE DDL statement
 
@@ -285,6 +288,20 @@ def create_tables(client,
 
 
 def query(q, project_id=None, use_cache=False):
+    """
+    Deprecated: Execute a query and get results as a dataframe 
+     
+    :param q: the query to execute
+    :param project_id: identifies the project associated with the query
+    :param use_cache: if set to True, allow cached results
+    :return: the results as a dataframe
+    """
+    warnings.warn(
+        "Function utils.bq.query is deprecated and will be removed in a future version. "
+        "Use `bigquery.Client` object directly and its `to_dataframe()` method if needed.",
+        PendingDeprecationWarning,
+        stacklevel=2,
+    )
     client = get_client(project_id)
     query_job_config = bigquery.job.QueryJobConfig(use_query_cache=use_cache)
     return client.query(q, job_config=query_job_config).to_dataframe()
@@ -301,19 +318,16 @@ def list_datasets(project_id):
     return datasets
 
 
-def get_table_info_for_dataset(project_id, dataset_id):
+def dataset_columns_query(project_id: str, dataset_id: str) -> str:
     """
-    Get df of INFORMATION_SCHEMA.COLUMNS for a specified dataset
-
-    :param project_id: identifies the project
-    :param dataset_id: identifies the dataset
-    :return df containing table column information
-    :raises BadRequest
+    Get INFORMATION_SCHEMA.COLUMNS query for a specified dataset
+ 
+    :param project_id: identifies the project containing the dataset
+    :param dataset_id: identifies the dataset whose metadata is queried
+    :return the query as a string 
     """
-    table_info_query = consts.TABLE_INFO_QUERY.format(project=project_id,
-                                                      dataset=dataset_id)
-    result_df = query(table_info_query, project_id)
-    return result_df
+    return DATASET_COLUMNS_TPL.render(project_id=project_id,
+                                      dataset_id=dataset_id)
 
 
 def get_dataset(project_id, dataset_id):
