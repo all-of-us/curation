@@ -19,8 +19,7 @@ import pandas
 import pandas.testing
 
 # Project imports
-from utils.participant_summary_requests import get_access_token, get_deactivated_participants, \
-    get_participant_data
+import utils.participant_summary_requests as psr
 
 
 class ParticipantSummaryRequests(unittest.TestCase):
@@ -92,8 +91,8 @@ class ParticipantSummaryRequests(unittest.TestCase):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = self.json_response_entry
 
-        expected_response = get_participant_data(self.fake_url,
-                                                 self.fake_headers)
+        expected_response = psr.get_participant_data(self.fake_url,
+                                                     self.fake_headers)
 
         self.assertEqual(expected_response, self.participant_data)
 
@@ -110,9 +109,36 @@ class ParticipantSummaryRequests(unittest.TestCase):
         mock_get_participant_data.return_value = self.participant_data
         mock_get_deactivated_participants.return_value = self.fake_dataframe
 
-        response = get_deactivated_participants(self.project_id, self.columns)
+        response = psr.get_deactivated_participants(self.project_id,
+                                                    self.columns)
 
         pandas.testing.assert_frame_equal(
             response,
             pandas.DataFrame(self.deactivated_participants,
                              columns=self.columns))
+
+    @mock.patch('utils.participant_summary_requests.default')
+    @mock.patch('utils.participant_summary_requests.auth')
+    @mock.patch('utils.participant_summary_requests.req')
+    def test_get_access_token(self, mock_req, mock_auth, mock_default):
+        # pre conditions
+        scopes = [
+            'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
+        ]
+        creds = mock.MagicMock()
+        mock_default.return_value = (creds, None)
+        req = mock.MagicMock()
+        mock_req.Request.return_value = req
+
+        # test
+        actual_token = psr.get_access_token()
+
+        # post conditions
+        mock_default.assert_called_once_with()
+        mock_auth.delegated_credentials.assert_called_once_with(creds,
+                                                                scopes=scopes)
+        mock_req.Request.assert_called_once_with()
+        # assert the credential refresh still happens
+        mock_auth.delegated_credentials().refresh.assert_called_once_with(req)
+
+        self.assertEqual(mock_auth.delegated_credentials().token, actual_token)
