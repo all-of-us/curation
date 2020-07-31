@@ -167,12 +167,16 @@ DEID_BASE_CLEANING_CLASSES = [
     (CleanMappingExtTables,),
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,),
+DEID_CLEAN_CLEANING_CLASSES = [
+    (UnitNormalization,),
     # Original ticket is DC-481, tickets 416 and 414 must be run after this
     # rule but before cleaning the extension tables
     (
-        MeasurementRecordsSuppression,), (CleanHeightAndWeight,), (DropZeroConceptIDs,)
-                               (CleanMappingExtTables,)]
+        MeasurementRecordsSuppression,),
+    (CleanHeightAndWeight,),
+     (DropZeroConceptIDs,),
+    (CleanMappingExtTables,)
+]
 
 DATA_STAGE_RULES_MAPPING = {
     stage.EHR.value: EHR_CLEANING_CLASSES,
