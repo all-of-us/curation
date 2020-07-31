@@ -187,12 +187,12 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
 
 
 def get_create_or_replace_table_ddl(
-        dataset_id: str,
-        table_id: str,
-        schema: typing.List[bigquery.SchemaField] = None,
-        cluster_by_cols: typing.List[str] = None,
-        as_query: str = None,
-        **table_options):
+    dataset_id: str,
+    table_id: str,
+    schema: typing.List[bigquery.SchemaField] = None,
+    cluster_by_cols: typing.List[str] = None,
+    as_query: str = None,
+    **table_options):
     """
     Generate CREATE OR REPLACE TABLE DDL statement
 

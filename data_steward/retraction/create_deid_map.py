@@ -84,6 +84,13 @@ def get_corresponding_combined_dataset(all_datasets, deid_datasets):
     return deid_and_combined_datasets_df
 
 
+def get_table_info_for_dataset(project_id, dataset):
+    bq_client = utils.bq.get_client(project_id)
+    cols_query = utils.bq.dataset_columns_query(project_id, dataset)
+    table_info_df = bq_client.query(cols_query).to_dataframe()
+    return table_info_df
+
+
 def check_if_deid_map_exists(project_id, dataset):
     """
     Checks if _deid_map table exists in the given dataset.
@@ -91,9 +98,7 @@ def check_if_deid_map_exists(project_id, dataset):
     :param dataset: bq name of dataset
     :return: returns True, False or 'rename required' which had 'deid_map' table instead of '_deid_map'
     """
-    bq_client = utils.bq.get_client(project_id)
-    cols_query = utils.bq.dataset_columns_query(project_id, dataset)
-    table_info_df = bq_client.query(cols_query).to_dataframe()
+    table_info_df = get_table_info_for_dataset(project_id, dataset)
     column_list = table_info_df['table_name'].tolist()
 
     if '_deid_map' in column_list:

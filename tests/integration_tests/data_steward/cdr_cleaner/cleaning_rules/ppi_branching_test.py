@@ -1,6 +1,6 @@
 import datetime
 import time
-from typing import Any, Optional, Union, Tuple, Set
+from typing import Any, Optional, Union, Tuple, Set, Dict
 
 from google.cloud import bigquery
 from google.cloud.bigquery import Table, TimePartitioning
@@ -8,8 +8,8 @@ from google.cloud.bigquery import Table, TimePartitioning
 import app_identity
 import bq_utils
 import sandbox
-from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules import ppi_branching
+from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 from utils import bq
@@ -119,6 +119,7 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
         sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
         rule = PpiBranching(project_id, dataset_id, sandbox_dataset_id)
         cls.dataset_id = dataset_id
+        cls.sandbox_dataset_id = sandbox_dataset_id
         cls.project_id = project_id
         cls.query_class = rule
         cls.fq_sandbox_table_names = [
@@ -186,6 +187,52 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
         self.assertIsNone(job.error_result)
         self.assertIsNone(job.errors)
 
+    def get_dataset_table_map(self) -> Dict[str, Set[str]]:
+        """
+        Get set of tables currently in this test's datasets 
+
+        :return: a mapping from dataset_id -> table_ids
+        """
+        dataset_cols_query = bq.dataset_columns_query(self.project_id,
+                                                      self.dataset_id)
+        sandbox_cols_query = bq.dataset_columns_query(self.project_id,
+                                                      self.sandbox_dataset_id)
+        cols_query = f"""
+                {dataset_cols_query}
+                UNION ALL
+                {sandbox_cols_query}
+                """
+        cols = list(self.client.query(cols_query).result())
+        dataset_tables = {
+            dataset_id: set(col.table_name
+                            for col in cols
+                            if col.table_schema == dataset_id)
+            for dataset_id in (self.dataset_id, self.sandbox_dataset_id)
+        }
+        return dataset_tables
+
+    def post_execution_table_checks(self):
+        """
+        Check that tables were created or dropped from associated their 
+        associated datasets as expected 
+        """
+        rule = self.query_class
+
+        dataset_tables = self.get_dataset_table_map()
+
+        # lookup, observation and backup tables should exist
+        created_tables = [
+            rule.lookup_table, rule.observation_table, rule.backup_table
+        ]
+        # staged table should have been removed
+        dropped_tables = [rule.stage_table]
+
+        for table in created_tables:
+            self.assertIn(table.table_id, dataset_tables[table.dataset_id])
+
+        for table in dropped_tables:
+            self.assertNotIn(table.table_id, dataset_tables[table.dataset_id])
+
     def test(self):
         rule = self.query_class  # var just to reduce line lengths
 
@@ -210,11 +257,7 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
         self.assertIsInstance(drop_job, bigquery.QueryJob)
         self.assert_job_success(drop_job)
 
-        # stage created
-        q = f'''SELECT * FROM {_fq_table_name(rule.stage_table)}
-                                ORDER BY observation_id'''
-        rows, _ = self._query(q)
-        self.assertSetEqual(TEST_DATA_KEEP, rows)
+        self.post_execution_table_checks()
 
         # deleted rows are backed up
         q = f'''SELECT * FROM {_fq_table_name(rule.backup_table)}
@@ -232,11 +275,7 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
         _, drop_job = self._query(clean_table_script)
         self.assert_job_success(drop_job)
 
-        # stage created
-        q = f'''SELECT * FROM {_fq_table_name(rule.stage_table)}
-                                        ORDER BY observation_id'''
-        rows, _ = self._query(q)
-        self.assertSetEqual(TEST_DATA_KEEP, rows)
+        self.post_execution_table_checks()
 
         # no rows are backed up this time
         q = f'''SELECT * FROM {_fq_table_name(rule.backup_table)}
