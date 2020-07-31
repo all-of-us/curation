@@ -113,7 +113,7 @@ def achilles_index_files():
     return achilles_index_files
 
 
-def fields_for(table):
+def fields_for(table, sub_path=None):
     """
     Return the json schema for any table identified in the fields directory.
 
@@ -121,11 +121,25 @@ def fields_for(table):
 
     :param table: The table to get a schema for
     """
-    for dirpath, _, files in os.walk(fields_path):
+    path = os.path.join(fields_path, sub_path if sub_path else '')
+
+    # default setting
+    json_path = os.path.join(path, table + '.json')
+
+    unique_count = 0
+    for dirpath, _, files in os.walk(path):
+        if sub_path and os.path.basename(sub_path) != os.path.basename(dirpath):
+            continue
+
         for filename in files:
             if filename[:-5] == table:
                 json_path = os.path.join(dirpath, filename)
-                break
+                unique_count = unique_count + 1
+
+    if unique_count > 1:
+        raise RuntimeError(
+            f"Unable to read schema file because multiple schemas exist for:\t"
+            f"{table} in path {path}")
 
     with open(json_path, 'r') as fp:
         fields = json.load(fp)

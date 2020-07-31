@@ -1,0 +1,12 @@
+
+[{
+    "type": "integer",
+    "name": "measurement_id",
+    "mode": "nullable",
+    "description": "The measurement_id used in the measurement table."
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The provenance of the data associated with the measurement_id."
+}]
