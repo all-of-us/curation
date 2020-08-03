@@ -123,23 +123,25 @@ class BqTest(unittest.TestCase):
 
     def test_get_table_ddl(self):
         # Schema is determined by table name
-        ddl = get_create_or_replace_table_ddl(self.dataset_id,
+        ddl = get_create_or_replace_table_ddl(self.project_id, self.dataset_id,
                                               'observation').strip()
         self.assertTrue(
             ddl.startswith(
-                f'CREATE OR REPLACE TABLE {self.dataset_id}.observation'))
+                f'CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}.observation`'
+            ))
         self.assertTrue(ddl.endswith(')'))
 
         # Explicitly provided table name and schema are rendered
         observation_schema = get_table_schema('observation')
         ddl = get_create_or_replace_table_ddl(
+            self.project_id,
             self.dataset_id,
             table_id='custom_observation',
             schema=observation_schema).strip()
         self.assertTrue(
             ddl.startswith(
-                f'CREATE OR REPLACE TABLE {self.dataset_id}.custom_observation')
-        )
+                f'CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}.custom_observation`'
+            ))
         # Sanity check that observation schema is rendered
         self.assertTrue(
             all(field.description in ddl for field in observation_schema))
@@ -147,10 +149,12 @@ class BqTest(unittest.TestCase):
 
         # Parameter as_query is rendered
         fake_as_query = "SELECT 1 FROM fake"
-        ddl = get_create_or_replace_table_ddl(self.dataset_id,
+        ddl = get_create_or_replace_table_ddl(self.project_id,
+                                              self.dataset_id,
                                               'observation',
                                               as_query=fake_as_query).strip()
         self.assertTrue(
             ddl.startswith(
-                f'CREATE OR REPLACE TABLE {self.dataset_id}.observation'))
+                f'CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}.observation`'
+            ))
         self.assertTrue(ddl.endswith(fake_as_query))

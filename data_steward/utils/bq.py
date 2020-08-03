@@ -34,7 +34,7 @@ JINJA_ENV = jinja2.Environment(
     autoescape=False)
 
 CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE {{dataset_id}}.{{table_id}} (
+CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}` (
 {% for field in schema -%}
   {{ field.name }} {{ field.field_type }} {% if field.mode == 'required' -%} NOT NULL {%- endif %}
   {% if field.description %} OPTIONS (description="{{ field.description }}") {%- endif %} 
@@ -186,18 +186,20 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
                                 field.mode, field.description, field.fields)
 
 
-def get_create_or_replace_table_ddl(
-    dataset_id: str,
-    table_id: str,
-    schema: typing.List[bigquery.SchemaField] = None,
-    cluster_by_cols: typing.List[str] = None,
-    as_query: str = None,
-    **table_options):
+def get_create_or_replace_table_ddl(project_id: str,
+                                    dataset_id: str,
+                                    table_id: str,
+                                    schema: typing.List[
+                                        bigquery.SchemaField] = None,
+                                    cluster_by_cols: typing.List[str] = None,
+                                    as_query: str = None,
+                                    **table_options) -> str:
     """
     Generate CREATE OR REPLACE TABLE DDL statement
 
     Note: Reference https://bit.ly/3fgkCPg for supported syntax
 
+    :param project_id: identifies the project containing the table
     :param dataset_id: identifies the dataset containing the table
     :param table_id: identifies the table to be created or replaced
     :param schema: list of schema fields (optional). if not provided, attempts to
@@ -205,11 +207,12 @@ def get_create_or_replace_table_ddl(
     :param cluster_by_cols: columns defining the table clustering (optional)
     :param as_query: query used to populate the table (optional)
     :param table_options: options e.g. description and labels (optional)
-    :return:
+    :return: DDL statement as string
     """
     _schema = get_table_schema(table_id) if schema is None else schema
     _schema = [_to_sql_field(field) for field in _schema]
-    return CREATE_OR_REPLACE_TABLE_TPL.render(dataset_id=dataset_id,
+    return CREATE_OR_REPLACE_TABLE_TPL.render(project_id=project_id,
+                                              dataset_id=dataset_id,
                                               table_id=table_id,
                                               schema=_schema,
                                               cluster_by_cols=cluster_by_cols,
