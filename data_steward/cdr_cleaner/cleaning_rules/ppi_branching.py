@@ -289,6 +289,8 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         cleaner.log_queries()
     else:
+        bq_client = bq.get_client(ARGS.project_id)
+        cleaner.setup_rule(bq_client)
         clean_engine.clean_dataset(ARGS.project_id,
                                    query_list,
                                    data_stage=cdr_consts.RDR)
