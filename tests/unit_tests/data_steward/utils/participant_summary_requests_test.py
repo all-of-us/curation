@@ -17,6 +17,9 @@ import mock
 # Third Party imports
 import pandas
 import pandas.testing
+import google.api_core.exceptions
+from google.cloud import bigquery
+from pandas_gbq import gbq
 
 # Project imports
 import utils.participant_summary_requests as psr
@@ -34,6 +37,9 @@ class ParticipantSummaryRequests(unittest.TestCase):
         # Input parameters expected by the class
         self.project_id = 'foo_project'
         self.fake_scopes = ['www.fake_site.com', 'fake_email', 'fake_profile']
+        self.schema = [bigquery.SchemaField("participantId", "STRING", mode="REQUIRED"),
+                       bigquery.SchemaField("suspensionStatus", "STRING", mode="REQUIRED"),
+                       bigquery.SchemaField("suspensionTime", "TIMESTAMP", mode="REQUIRED")]
 
         self.fake_url = 'www.fake_site.com'
         self.fake_headers = {
@@ -96,6 +102,7 @@ class ParticipantSummaryRequests(unittest.TestCase):
 
         self.assertEqual(expected_response, self.participant_data)
 
+    @mock.patch('utils.participant_summary_requests.store_participant_data')
     @mock.patch('utils.participant_summary_requests.get_participant_data')
     @mock.patch('utils.participant_summary_requests.get_access_token',
                 return_value='ya29.12345')
@@ -104,7 +111,8 @@ class ParticipantSummaryRequests(unittest.TestCase):
     def test_get_deactivated_participants(self,
                                           mock_get_deactivated_participants,
                                           mock_access_token,
-                                          mock_get_participant_data):
+                                          mock_get_participant_data,
+                                          mock_store_participant_data):
 
         mock_get_participant_data.return_value = self.participant_data
         mock_get_deactivated_participants.return_value = self.fake_dataframe
@@ -142,3 +150,15 @@ class ParticipantSummaryRequests(unittest.TestCase):
         mock_auth.delegated_credentials().refresh.assert_called_once_with(req)
 
         self.assertEqual(mock_auth.delegated_credentials().token, actual_token)
+
+    @mock.patch('utils.participant_summary_requests.pandas.DataFrame.to_gbq')
+    def test_store_participant_data(self, mock_to_gbq):
+        # pre conditions
+        destination_table = 'fake_dataset.fake_tablename'
+        # test
+        results = psr.store_participant_data(self.fake_dataframe, destination_table, self.project_id)
+
+        # post condition
+        mock_to_gbq.return_value.assert_called_with(self.fake_dataframe, destination_table, self.project_id, if_exists='append')
+
+        self.assertEqual(mock_to_gbq, results)
