@@ -68,6 +68,7 @@ def get_participant_data(url, headers):
 def get_deactivated_participants(project_id, columns):
     """
     Fetches all deactivated participants via API if suspensionStatus = 'NO_CONTACT'
+    and stores all the deactivated participants in a BigQuery dataset table
 
     :param project_id: THE RDR project that contains participant summary data
     :param columns: columns to be pushed to a table in BigQuery
@@ -104,4 +105,26 @@ def get_deactivated_participants(project_id, columns):
     df = pandas.DataFrame(deactivated_participants,
                           columns=deactivated_participants_cols)
 
-    return df
+    # To store dataframe in a BQ dataset table
+    destination_table = 'pipeline_tables._deactivated_participants'
+
+    dataset = store_participant_data(df, destination_table, project_id)
+    print(dataset)
+
+    return dataset
+
+
+def store_participant_data(df, destination_table, project_id):
+    """
+    Stores the fetched participant data in a BigQuery dataset
+
+    :param df: pandas dataframe created to hold participant data fetched from ParticipantSummary API
+    :param project_id: identifies the project
+    :param destination_table: name of the table to be written in the form of dataset.tablename
+    """
+
+    # Stores the dataframe into specified BQ dataset table
+    # if table exists, insert the data, if it doesn't create the tables
+    stored_dataset = pandas.DataFrame.to_gbq(df, destination_table, project_id, if_exists="append")
+
+    return stored_dataset
