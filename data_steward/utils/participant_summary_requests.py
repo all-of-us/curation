@@ -10,6 +10,7 @@ from google.auth import default
 import google.auth.transport.requests as req
 import requests
 import pandas
+import pandas_gbq
 
 # Project imports
 from utils import auth
@@ -65,16 +66,31 @@ def get_participant_data(url, headers):
     return participant_data
 
 
-def get_deactivated_participants(project_id, columns):
+def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     """
     Fetches all deactivated participants via API if suspensionStatus = 'NO_CONTACT'
     and stores all the deactivated participants in a BigQuery dataset table
 
-    :param project_id: THE RDR project that contains participant summary data
-    :param columns: columns to be pushed to a table in BigQuery
+    :param project_id: The RDR project that contains participant summary data
+    :param dataset_id: The dataset name
+    :param tablename: The name of the table to house the deactivated participant data
+    :param columns: columns to be pushed to a table in BigQuery in the form of a list of strings
 
     :return: returns dataframe of deactivated participants
     """
+
+    # Parameter checks
+    if not project_id or not isinstance(project_id, str):
+        raise RuntimeError(f'Please specify the RDR project')
+
+    if not dataset_id or not isinstance(dataset_id, str):
+        raise RuntimeError(f'Please provide a dataset_id')
+
+    if not tablename or not isinstance(tablename, str):
+        raise RuntimeError(f'Please provide a tablename to house deactivated participant data')
+
+    if not columns or not isinstance(columns, list):
+        raise RuntimeError('Please provide a list of columns to be pushed to BigQuery table')
 
     token = get_access_token()
 
@@ -106,14 +122,14 @@ def get_deactivated_participants(project_id, columns):
                           columns=deactivated_participants_cols)
 
     # To store dataframe in a BQ dataset table
-    destination_table = 'pipeline_tables._deactivated_participants'
+    destination_table = dataset_id + '.' + tablename
 
-    dataset = store_participant_data(df, destination_table, project_id)
+    dataset = store_participant_data(df, project_id, destination_table)
 
     return dataset
 
 
-def store_participant_data(df, destination_table, project_id):
+def store_participant_data(df, project_id, destination_table):
     """
     Stores the fetched participant data in a BigQuery dataset. If the
     table doesn't exist, it will create that table. If the table does
@@ -121,21 +137,28 @@ def store_participant_data(df, destination_table, project_id):
 
     :param df: pandas dataframe created to hold participant data fetched from ParticipantSummary API
     :param project_id: identifies the project
+    :param dataset_id: identifies which dataset will house the participant data
     :param destination_table: name of the table to be written in the form of dataset.tablename
-    """
-    # Parameter checks
-    if not destination_table or not isinstance(destination_table, str):
-        raise RuntimeError(
-            "Please specify the name of the table to be written in the form dataset.tablename"
-        )
 
+    :return: returns a dataset with the participant data
+    """
+
+    # Parameter check
     if not project_id or not isinstance(project_id, str):
         raise RuntimeError(
-            "Please specify the project in which to create the tables")
+            f'Please specify the project in which to create the tables')
 
-    stored_dataset = pandas.DataFrame.to_gbq(df,
-                                             destination_table,
-                                             project_id,
-                                             if_exists="append")
+    # # Checks if dataset exists
+    # # Will create dataset if it does not exist
+    # all_datasets = [d.dataset_id for d in bq.list_datasets(project_id)]
+    # if dataset_id not in all_datasets:
+    #     bq.create_dataset(project_id, dataset_id, None, None, None, False)
+    # else:
+    #     print(f'{dataset_id} already exists, continuing.')
+
+    stored_dataset = pandas_gbq.to_gbq(df,
+                                       destination_table,
+                                       project_id,
+                                       if_exists="append")
 
     return stored_dataset
