@@ -109,22 +109,21 @@ def get_deactivated_participants(project_id, columns):
     destination_table = 'pipeline_tables._deactivated_participants'
 
     dataset = store_participant_data(df, destination_table, project_id)
-    print(dataset)
 
     return dataset
 
 
 def store_participant_data(df, destination_table, project_id):
     """
-    Stores the fetched participant data in a BigQuery dataset
+    Stores the fetched participant data in a BigQuery dataset. If the
+    table doesn't exist, it will create that table. If the table does
+    exist, it will append the data onto that designated table.
 
     :param df: pandas dataframe created to hold participant data fetched from ParticipantSummary API
     :param project_id: identifies the project
     :param destination_table: name of the table to be written in the form of dataset.tablename
     """
 
-    # Stores the dataframe into specified BQ dataset table
-    # if table exists, insert the data, if it doesn't create the tables
     stored_dataset = pandas.DataFrame.to_gbq(df, destination_table, project_id, if_exists="append")
 
     return stored_dataset
