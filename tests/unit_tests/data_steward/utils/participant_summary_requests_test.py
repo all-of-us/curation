@@ -1,13 +1,15 @@
 """
 Unit Test for the deactivated_participants module
 
-Ensures that get_token function fetches the access token properly and get_deactivated_participants
-    fetches all deactivated participants information.
+Ensures that get_token function fetches the access token properly, get_deactivated_participants
+    fetches all deactivated participants information, and store_participant_data properly stores all
+    the fetched deactivated participant data
 
 Original Issues: DC-797, DC-971 (sub-task), DC-972 (sub-task)
 
-The intent of this module is to check that GCR access token is generated properly and the list of
-    deactivated participants returned contains `participantID`, `suspensionStatus`, and `suspensionTime`.
+The intent of this module is to check that GCR access token is generated properly, the list of
+    deactivated participants returned contains `participantID`, `suspensionStatus`, and `suspensionTime`,
+    and that the fetched deactivated participants data is stored properly in a BigQuery dataset.
 """
 
 # Python imports
@@ -17,9 +19,6 @@ import mock
 # Third Party imports
 import pandas
 import pandas.testing
-import google.api_core.exceptions
-from google.cloud import bigquery
-from pandas_gbq import gbq
 
 # Project imports
 import utils.participant_summary_requests as psr
@@ -36,13 +35,9 @@ class ParticipantSummaryRequests(unittest.TestCase):
     def setUp(self):
         # Input parameters expected by the class
         self.project_id = 'foo_project'
-        self.fake_scopes = ['www.fake_site.com', 'fake_email', 'fake_profile']
-        self.schema = [
-            bigquery.SchemaField("participantId", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("suspensionStatus", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("suspensionTime", "TIMESTAMP", mode="REQUIRED")
-        ]
-        self.destination_table = 'foo_dataset.foo_table'
+        self.dataset_id = 'bar_dataset'
+        self.tablename = 'baz_table'
+        self.destination_table = 'bar_dataset.foo_table'
 
         self.fake_url = 'www.fake_site.com'
         self.fake_headers = {
@@ -142,17 +137,18 @@ class ParticipantSummaryRequests(unittest.TestCase):
                                           mock_access_token,
                                           mock_get_participant_data,
                                           mock_store_participant_data):
+
         # pre conditions
         mock_get_participant_data.return_value = self.participant_data
         mock_get_deactivated_participants.return_value = self.fake_dataframe
 
         # tests
         dataframe_response = psr.get_deactivated_participants(
-            self.project_id, self.columns)
+            self.project_id, self.dataset_id, self.tablename, self.columns)
 
         dataset_response = psr.store_participant_data(self.fake_dataframe,
-                                                      self.destination_table,
-                                                      self.project_id)
+                                                      self.project_id,
+                                                      self.destination_table)
         # post conditions
         pandas.testing.assert_frame_equal(
             dataframe_response,
@@ -161,21 +157,20 @@ class ParticipantSummaryRequests(unittest.TestCase):
 
         self.assertEqual(
             mock_store_participant_data(self.fake_dataframe,
-                                        self.destination_table,
-                                        self.project_id), dataset_response)
+                                        self.project_id,
+                                        self.destination_table), dataset_response)
 
-    @mock.patch('utils.participant_summary_requests.pandas.DataFrame.to_gbq')
+    @mock.patch('utils.participant_summary_requests.pandas_gbq.to_gbq')
     def test_store_participant_data(self, mock_to_gbq):
         # parameter check test
         self.assertRaises(RuntimeError, psr.store_participant_data,
-                          self.fake_dataframe, None, self.project_id)
-        self.assertRaises(RuntimeError, psr.store_participant_data,
-                          self.fake_dataframe, self.destination_table, None)
+                          self.fake_dataframe, None,
+                          self.destination_table)
 
         # test
         results = psr.store_participant_data(self.fake_dataframe,
-                                             self.destination_table,
-                                             self.project_id)
+                                             self.project_id,
+                                             self.destination_table)
 
         # post condition
         self.assertEqual(
