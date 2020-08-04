@@ -168,13 +168,10 @@ DEID_BASE_CLEANING_CLASSES = [
 ]
 
 DEID_CLEAN_CLEANING_CLASSES = [
-    (UnitNormalization,),
-    # Original ticket is DC-481, tickets 416 and 414 must be run after this
-    # rule but before cleaning the extension tables
-    (
-        MeasurementRecordsSuppression,),
-    (CleanHeightAndWeight,),
-     (DropZeroConceptIDs,),
+    (MeasurementRecordsSuppression,),
+    (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
+    (UnitNormalization,),  # dependent on CleanHeightAndWeight
+    (DropZeroConceptIDs,),
     (CleanMappingExtTables,)
 ]
 
