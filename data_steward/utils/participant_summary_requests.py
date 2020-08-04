@@ -123,7 +123,19 @@ def store_participant_data(df, destination_table, project_id):
     :param project_id: identifies the project
     :param destination_table: name of the table to be written in the form of dataset.tablename
     """
+    # Parameter checks
+    if not destination_table or not isinstance(destination_table, str):
+        raise RuntimeError(
+            "Please specify the name of the table to be written in the form dataset.tablename"
+        )
 
-    stored_dataset = pandas.DataFrame.to_gbq(df, destination_table, project_id, if_exists="append")
+    if not project_id or not isinstance(project_id, str):
+        raise RuntimeError(
+            "Please specify the project in which to create the tables")
+
+    stored_dataset = pandas.DataFrame.to_gbq(df,
+                                             destination_table,
+                                             project_id,
+                                             if_exists="append")
 
     return stored_dataset
