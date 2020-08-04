@@ -305,6 +305,8 @@ def _get_query_list(cleaning_classes, project_id, dataset_id,
     """
     query_list = []
 
+    client = bq.get_client(project_id=project_id)
+
     for class_info in cleaning_classes:
         clazz = class_info[0]
         try:
@@ -324,6 +326,8 @@ def _get_query_list(cleaning_classes, project_id, dataset_id,
                 else:
                     keywords = {}
                     positionals = class_info[1:]
+
+                instance.setup_rule(client)
 
                 query_list.extend(
                     add_module_info_decorator(instance.get_query_specs,
@@ -495,12 +499,6 @@ def clean_combined_de_identified_clean_dataset(project_id=None,
 
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
                                                         dataset_id=dataset_id)
-
-    # TODO: Add Logic to run setup_rule for the cleaning rule with query_spec
-    unit_normalization = UnitNormalization(project_id, dataset_id,
-                                           sandbox_dataset_id)
-    bq_client = bq.get_client(project_id)
-    unit_normalization.setup_rule(client=bq_client)
 
     query_list = _gather_deid_clean_cleaning_queries(project_id, dataset_id,
                                                      sandbox_dataset_id)
