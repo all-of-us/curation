@@ -92,13 +92,12 @@ class ResourcesTest(unittest.TestCase):
         Testing that fields for works as expected with sub-directory structures.
         """
         # preconditions
-        walk_results = [(
-            os.path.join('foo', 'bar'), [], ['duplicate.json', 'unique1.json']
-        ),
-                        (
-                            os.path.join('foo', 'bar', 'baz'), [],
-                            ['duplicate.json', 'unique2.json']
-                        )]
+        walk_results = [
+            (os.path.join('foo', 'bar'), [], ['duplicate.json',
+                                              'unique1.json']),
+            (os.path.join('foo', 'bar',
+                          'baz'), [], ['duplicate.json', 'unique2.json'])
+        ]
 
         mock_walk.return_value = walk_results
 

@@ -120,6 +120,9 @@ def fields_for(table, sub_path=None):
     Uses os.walk to traverse subdirectories
 
     :param table: The table to get a schema for
+    :param sub_path: A string identifying a sub-directory in resource_files/fields.
+        If provided, this directory will be searched.
+    :returns: a json object representing the fields for the named table
     """
     path = os.path.join(fields_path, sub_path if sub_path else '')
 
@@ -140,6 +143,9 @@ def fields_for(table, sub_path=None):
         raise RuntimeError(
             f"Unable to read schema file because multiple schemas exist for:\t"
             f"{table} in path {path}")
+    elif unique_count == 0:
+        raise RuntimeError(
+            f"Unable to find schema file for {table} in path {path}")
 
     with open(json_path, 'r') as fp:
         fields = json.load(fp)
@@ -210,6 +216,7 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
     :return:
     """
     result = dict()
+    # TODO:  update this code as part of DC-1015 and remove this comment
     for dir_path, _, files in os.walk(fields_path):
         for f in files:
             file_path = os.path.join(dir_path, f)
