@@ -53,6 +53,7 @@ from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConc
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
+from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
@@ -162,7 +163,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (CleanMappingExtTables,)
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanMappingExtTables,)]
+DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanMappingExtTables,), (DropZeroConceptIDs,)]
 
 DATA_STAGE_RULES_MAPPING = {
     stage.EHR.value: EHR_CLEANING_CLASSES,
