@@ -166,6 +166,12 @@ class ParticipantSummaryRequests(unittest.TestCase):
 
     @mock.patch('utils.participant_summary_requests.pandas.DataFrame.to_gbq')
     def test_store_participant_data(self, mock_to_gbq):
+        # parameter check test
+        self.assertRaises(RuntimeError, psr.store_participant_data,
+                          self.fake_dataframe, None, self.project_id)
+        self.assertRaises(RuntimeError, psr.store_participant_data,
+                          self.fake_dataframe, self.destination_table, None)
+
         # test
         results = psr.store_participant_data(self.fake_dataframe,
                                              self.destination_table,
