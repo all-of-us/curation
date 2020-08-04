@@ -37,9 +37,12 @@ class ParticipantSummaryRequests(unittest.TestCase):
         # Input parameters expected by the class
         self.project_id = 'foo_project'
         self.fake_scopes = ['www.fake_site.com', 'fake_email', 'fake_profile']
-        self.schema = [bigquery.SchemaField("participantId", "STRING", mode="REQUIRED"),
-                       bigquery.SchemaField("suspensionStatus", "STRING", mode="REQUIRED"),
-                       bigquery.SchemaField("suspensionTime", "TIMESTAMP", mode="REQUIRED")]
+        self.schema = [
+            bigquery.SchemaField("participantId", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("suspensionStatus", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("suspensionTime", "TIMESTAMP", mode="REQUIRED")
+        ]
+        self.destination_table = 'foo_dataset.foo_table'
 
         self.fake_url = 'www.fake_site.com'
         self.fake_headers = {
@@ -92,39 +95,6 @@ class ParticipantSummaryRequests(unittest.TestCase):
             }]
         }
 
-    @mock.patch('utils.participant_summary_requests.requests.get')
-    def test_get_participant_data(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = self.json_response_entry
-
-        expected_response = psr.get_participant_data(self.fake_url,
-                                                     self.fake_headers)
-
-        self.assertEqual(expected_response, self.participant_data)
-
-    @mock.patch('utils.participant_summary_requests.store_participant_data')
-    @mock.patch('utils.participant_summary_requests.get_participant_data')
-    @mock.patch('utils.participant_summary_requests.get_access_token',
-                return_value='ya29.12345')
-    @mock.patch(
-        'utils.participant_summary_requests.get_deactivated_participants')
-    def test_get_deactivated_participants(self,
-                                          mock_get_deactivated_participants,
-                                          mock_access_token,
-                                          mock_get_participant_data,
-                                          mock_store_participant_data):
-
-        mock_get_participant_data.return_value = self.participant_data
-        mock_get_deactivated_participants.return_value = self.fake_dataframe
-
-        response = psr.get_deactivated_participants(self.project_id,
-                                                    self.columns)
-
-        pandas.testing.assert_frame_equal(
-            response,
-            pandas.DataFrame(self.deactivated_participants,
-                             columns=self.columns))
-
     @mock.patch('utils.participant_summary_requests.default')
     @mock.patch('utils.participant_summary_requests.auth')
     @mock.patch('utils.participant_summary_requests.req')
@@ -151,14 +121,59 @@ class ParticipantSummaryRequests(unittest.TestCase):
 
         self.assertEqual(mock_auth.delegated_credentials().token, actual_token)
 
+    @mock.patch('utils.participant_summary_requests.requests.get')
+    def test_get_participant_data(self, mock_get):
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = self.json_response_entry
+
+        expected_response = psr.get_participant_data(self.fake_url,
+                                                     self.fake_headers)
+
+        self.assertEqual(expected_response, self.participant_data)
+
+    @mock.patch('utils.participant_summary_requests.store_participant_data')
+    @mock.patch('utils.participant_summary_requests.get_participant_data')
+    @mock.patch('utils.participant_summary_requests.get_access_token',
+                return_value='ya29.12345')
+    @mock.patch(
+        'utils.participant_summary_requests.get_deactivated_participants')
+    def test_get_deactivated_participants(self,
+                                          mock_get_deactivated_participants,
+                                          mock_access_token,
+                                          mock_get_participant_data,
+                                          mock_store_participant_data):
+        # pre conditions
+        mock_get_participant_data.return_value = self.participant_data
+        mock_get_deactivated_participants.return_value = self.fake_dataframe
+
+        # tests
+        dataframe_response = psr.get_deactivated_participants(
+            self.project_id, self.columns)
+
+        dataset_response = psr.store_participant_data(self.fake_dataframe,
+                                                      self.destination_table,
+                                                      self.project_id)
+        # post conditions
+        pandas.testing.assert_frame_equal(
+            dataframe_response,
+            pandas.DataFrame(self.deactivated_participants,
+                             columns=self.columns))
+
+        self.assertEqual(
+            mock_store_participant_data(self.fake_dataframe,
+                                        self.destination_table,
+                                        self.project_id), dataset_response)
+
     @mock.patch('utils.participant_summary_requests.pandas.DataFrame.to_gbq')
     def test_store_participant_data(self, mock_to_gbq):
-        # pre conditions
-        destination_table = 'fake_dataset.fake_tablename'
         # test
-        results = psr.store_participant_data(self.fake_dataframe, destination_table, self.project_id)
+        results = psr.store_participant_data(self.fake_dataframe,
+                                             self.destination_table,
+                                             self.project_id)
 
         # post condition
-        mock_to_gbq.return_value.assert_called_with(self.fake_dataframe, destination_table, self.project_id, if_exists='append')
-
-        self.assertEqual(mock_to_gbq, results)
+        self.assertEqual(
+            mock_to_gbq(self.fake_dataframe,
+                        self.destination_table,
+                        self.project_id,
+                        if_exists='append'), results)
