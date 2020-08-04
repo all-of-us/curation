@@ -79,8 +79,8 @@ class ResourcesTest(unittest.TestCase):
         actual_fields = resources.fields_for('person')
 
         # post conditions
-        person_path = os.path.join('data_steward', 'resource_files', 'fields',
-                                   'person.json')
+        person_path = os.path.join(resources.base_path, 'resource_files',
+                                   'fields', 'person.json')
         with open(person_path, 'r') as fp:
             expected_fields = json.load(fp)
 
