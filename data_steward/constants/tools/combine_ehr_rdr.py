@@ -11,6 +11,9 @@ FOREIGN_KEYS_FIELDS = [
 ]
 RDR_TABLES_TO_COPY = ['person']
 EHR_TABLES_TO_COPY = ['death']
+PID_RID_MAPPING_TABLE = '_pid_rid_mapping'
+DEID_MAP_TABLE = '_deid_map'
+PIPELINE_TABLES_DATASET = 'pipeline_tables'
 DOMAIN_TABLES = list(
     set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY))
 TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES

@@ -46,10 +46,30 @@ TODO
 """
 import logging
 
+from jinja2 import Environment
+
+import app_identity
 import bq_utils
 import common
-from constants.tools import combine_ehr_rdr as combine_consts
 import resources
+from constants.tools import combine_ehr_rdr as combine_consts
+from utils import bq as bq
+
+jinja_env = Environment(
+    # help protect against cross-site scripting vulnerabilities
+    autoescape=True,
+    # block tags on their own lines
+    # will not cause extra white space
+    trim_blocks=True,
+    lstrip_blocks=True,
+    # syntax highlighting should be better
+    # with these comment delimiters
+    comment_start_string='--',
+    comment_end_string=' --')
+
+COPY_PID_RID_QUERY = jinja_env.from_string("""
+select * from `{{project}}.{{dataset}}.{{pid_rid_table}}`
+""")
 
 
 def query(q, dst_table_id, write_disposition='WRITE_APPEND'):
@@ -361,10 +381,58 @@ def load_mapped_person():
     query(q, 'person', write_disposition='WRITE_TRUNCATE')
 
 
+def copy_deid_map_table(pid_rid_mapping_table, project_id, dataset_id, client):
+    job_config = bq.bigquery.QueryJobConfig(destination=pid_rid_mapping_table)
+    q = COPY_PID_RID_QUERY.render(
+        project=project_id,
+        dataset=dataset_id,
+        pid_rid_table=combine_consts.PID_RID_MAPPING_TABLE)
+
+    query_job = client.query(q, job_config=job_config)
+    query_job.result()
+
+
+def load_deid_map_table():
+
+    # Create _pid_rid_mapping table
+    project_id = app_identity.get_application_id()
+    client = bq.get_client(project_id)
+    deid_map_mapping_table = f'{project_id}.{bq_utils.get_combined_dataset_id()}.{combine_consts.DEID_MAP_TABLE}'
+    bq.create_tables(client,
+                     project_id, [deid_map_mapping_table],
+                     exists_ok=False)
+
+    # copy data to _pid_rid_mapping_table
+    if bq_utils.table_exists(combine_consts.DEID_MAP_TABLE,
+                             dataset_id=bq_utils.get_rdr_dataset_id()):
+        copy_deid_map_table(deid_map_mapping_table, project_id,
+                            bq_utils.get_rdr_dataset_id(), client)
+        logging.info(
+            f"{project_id}.{bq_utils.get_rdr_dataset_id()}.{combine_consts.DEID_MAP_TABLE} \
+            copied to the table {deid_map_mapping_table}")
+
+    # This else condition is a stop gap fix until RDR starts sending the _pid_rid_mapping table
+    elif bq_utils.table_exists(
+            combine_consts.PID_RID_MAPPING_TABLE,
+            dataset_id=combine_consts.PIPELINE_TABLES_DATASET):
+        copy_deid_map_table(deid_map_mapping_table, project_id,
+                            combine_consts.PIPELINE_TABLES_DATASET, client)
+        logging.info(
+            f"{project_id}.{combine_consts.PIPELINE_TABLES_DATASET}.{combine_consts.PID_RID_MAPPING_TABLE} \
+                    copied to the table {deid_map_mapping_table}")
+    else:
+        raise RuntimeError(
+            f'{combine_consts.PID_RID_MAPPING_TABLE} is not available in {bq_utils.get_rdr_dataset_id()}'
+        )
+
+
 def main():
     logging.info('EHR + RDR combine started')
     logging.info('Verifying all CDM tables in EHR and RDR datasets...')
     assert_ehr_and_rdr_tables()
+    logging.info('Copying _deid_map table from rdr_dataset...')
+    load_deid_map_table()
+    logging.info('Loaded _deid_map table from rdr_dataset')
     logging.info('Creating destination CDM tables...')
     create_cdm_tables()
     ehr_consent()

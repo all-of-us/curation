@@ -84,7 +84,6 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from google.cloud import bigquery as bq
-from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
 
 # Project imports
@@ -106,36 +105,6 @@ def milliseconds_since_epoch():
     """
     return int(
         (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
-
-
-def create_participant_mapping_table(table, map_tablename, lower_bound,
-                                     max_day_shift, credentials):
-    # create the deid_map table.  set upper and lower bounds of the research_id array
-    records = table.shape[0]
-    upper_bound = lower_bound + (10 * records)
-    map_table = pd.DataFrame({"person_id": table['person_id'].tolist()})
-
-    # generate random research_ids
-    research_id_array = np.random.choice(np.arange(lower_bound, upper_bound),
-                                         records,
-                                         replace=False)
-
-    # throw in some extra, non-deterministic shuffling
-    for _ in range(milliseconds_since_epoch() % 5):
-        np.random.shuffle(research_id_array)
-    map_table['research_id'] = research_id_array
-
-    # generate date shift values
-    shift_array = np.random.choice(np.arange(1, max_day_shift), records)
-
-    # throw in some extra, non-deterministic shuffling
-    for _ in range(milliseconds_since_epoch() % 5):
-        np.random.shuffle(shift_array)
-    map_table['shift'] = shift_array
-
-    # write this to bigquery.
-    map_table.to_gbq(map_tablename, credentials=credentials, if_exists='fail')
-    LOGGER.info('created new patient mapping table')
 
 
 def create_person_id_src_hpo_map(input_dataset, credentials):
@@ -309,7 +278,6 @@ class AOU(Press):
         LOGGER.info(f"BEGINNING de-identification on table:\t{self.tablename}")
 
         age_limit = args['age_limit']
-        max_day_shift = args['max_day_shift']
         million = 1000000
         map_tablename = self.idataset + "._deid_map"
 
@@ -341,31 +309,10 @@ class AOU(Press):
                 }
             }
             map_table = self.get_dataframe(sql=map_sql, query_config=job_config)
-            if map_table.shape[0] > 0:
-                # Make sure the mapping table is mapping the expected data
-                map_table_set = set(map_table.loc[:, 'person_id'].tolist())
-                person_set = set(person_table.loc[:, 'person_id'].tolist())
-                if map_table_set == person_set:
-                    LOGGER.info('participant mapping table contains '
-                                'all person ids.  continuing...')
-                else:
-                    LOGGER.info(
-                        "creating new participant mapping table because the current mapping table doesn't match"
-                    )
-                    create_participant_mapping_table(person_table,
-                                                     map_tablename, million,
-                                                     max_day_shift,
-                                                     self.credentials)
-            else:
-                LOGGER.info(
-                    "creating new participant mapping table because one doesn't exist"
+            if not map_table.shape[0] > 0:
+                LOGGER.error(
+                    "Unable to initialize Deid. _deid_map has no participants to load."
                 )
-                create_participant_mapping_table(person_table, map_tablename,
-                                                 million, max_day_shift,
-                                                 self.credentials)
-        else:
-            LOGGER.error("Unable to initialize Deid.  Check "
-                         "configuration files, parameters, and credentials.")
 
         LOGGER.info(f"map table contains {map_table.shape[0]} participants.")
         return person_table.shape[0] > 0 or map_table.shape[0] > 0
