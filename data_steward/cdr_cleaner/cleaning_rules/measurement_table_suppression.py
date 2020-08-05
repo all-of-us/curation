@@ -161,7 +161,7 @@ WHERE m.value_as_number IS NOT NULL OR m.value_as_concept_id IS NOT NULL
 
 # Sandbox duplicate records based on the fields:  person_id,
 # measurement_source_concept_id, unit_concept_id, measurement_concept_id,
-# meeasurement_datetime, value_as_number, value_as_concept_id
+# measurement_datetime, value_as_number, value_as_concept_id
 # Had to use grouping because ROW_NUMBER OVER cannot partition by value_as_number
 SANDBOX_DUPLICATES = jinja_env.from_string("""
 -- identify duplicates with this context table statement --

@@ -105,7 +105,6 @@ class BaseTest:
             """
             for table in cls.fq_table_names + cls.fq_sandbox_table_names:
                 cls.client.delete_table(table, not_found_ok=True)
-                pass
 
         def drop_rows(self, fq_table_name):
             """
@@ -132,7 +131,6 @@ class BaseTest:
             for table in self.fq_table_names + self.fq_sandbox_table_names:
                 self.drop_rows(table)
                 self.client.delete_table(table)
-                pass
 
         def load_test_data(self, sql_statements=None):
             """
