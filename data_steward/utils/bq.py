@@ -4,11 +4,14 @@ A utility to standardize use of the BigQuery python client library.
 # Python Imports
 import logging
 import os
+import typing
+import warnings
 
 # Third-party imports
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
 from google.auth import default
+import jinja2
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -17,6 +20,54 @@ from constants.utils import bq as consts
 from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
+JINJA_ENV = jinja2.Environment(
+    # block tags on their own lines
+    # will not cause extra white space
+    trim_blocks=True,
+    lstrip_blocks=True,
+    # syntax highlighting should be better
+    # with these comment delimiters
+    comment_start_string='--',
+    comment_end_string=' --',
+    # in jinja2 autoescape is for html; jinjasql supports autoescape for sql
+    # TODO Look into jinjasql for sql templating
+    autoescape=False)
+
+CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}` (
+{% for field in schema -%}
+  {{ field.name }} {{ field.field_type }} {% if field.mode == 'required' -%} NOT NULL {%- endif %}
+  {% if field.description %} OPTIONS (description="{{ field.description }}") {%- endif %} 
+  {% if loop.nextitem %},{% endif -%}
+{%- endfor %} )
+{% if opts -%} 
+OPTIONS (
+    {% for opt_name, opt_val in opts.items() -%}
+    {{opt_name}}=
+        {% if opt_val is string %}
+        "{{opt_val}}"
+        {% elif opt_val is mapping %}
+        [
+            {% for opt_val_key, opt_val_val in opt_val.items() %}
+                ("{{opt_val_key}}", "{{opt_val_val}}"){% if loop.nextitem is defined %},{% endif %}       
+            {% endfor %}
+        ]
+        {% endif %}
+        {% if loop.nextitem is defined %},{% endif %} 
+    {%- endfor %} )
+{%- endif %}
+{% if cluster_by_cols -%}
+CLUSTER BY 
+{% for col in cluster_by_cols -%}
+    {{col}}{% if loop.nextitem is defined %},{% endif %}
+{%- endfor %}  
+{%- endif -%}
+-- Note clustering/partitioning in conjunction with AS query_expression is -- 
+-- currently unsupported (see https://bit.ly/2VeMs7e) --
+{% if query -%} AS {{ query }} {%- endif %}
+""")
+
+DATASET_COLUMNS_TPL = JINJA_ENV.from_string(consts.DATASET_COLUMNS_QUERY)
 
 
 def get_client(project_id=None, scopes=None):
@@ -107,6 +158,68 @@ def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
     return result
 
 
+def _to_standard_sql_type(field_type: str) -> str:
+    """
+    Get standard SQL type corresponding to a SchemaField type
+
+    :param field_type: type in SchemaField object (can be legacy or standard SQL type)
+    :return: standard SQL type name
+    """
+    upper_field_type = field_type.upper()
+    standard_sql_type_code = bigquery.schema.LEGACY_TO_STANDARD_TYPES.get(
+        upper_field_type)
+    if not standard_sql_type_code:
+        raise ValueError(f'{field_type} is not a valid field type')
+    standard_sql_type = bigquery.StandardSqlDataTypes(standard_sql_type_code)
+    return standard_sql_type.name
+
+
+def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
+    """
+    Convert all types in a schema field object to standard SQL types (not legacy)
+
+    :param field: the schema field object
+    :return: a converted schema field object
+    """
+    return bigquery.SchemaField(field.name,
+                                _to_standard_sql_type(field.field_type),
+                                field.mode, field.description, field.fields)
+
+
+def get_create_or_replace_table_ddl(project_id: str,
+                                    dataset_id: str,
+                                    table_id: str,
+                                    schema: typing.List[
+                                        bigquery.SchemaField] = None,
+                                    cluster_by_cols: typing.List[str] = None,
+                                    as_query: str = None,
+                                    **table_options) -> str:
+    """
+    Generate CREATE OR REPLACE TABLE DDL statement
+
+    Note: Reference https://bit.ly/3fgkCPg for supported syntax
+
+    :param project_id: identifies the project containing the table
+    :param dataset_id: identifies the dataset containing the table
+    :param table_id: identifies the table to be created or replaced
+    :param schema: list of schema fields (optional). if not provided, attempts to
+                   use a schema associated with the table_id.
+    :param cluster_by_cols: columns defining the table clustering (optional)
+    :param as_query: query used to populate the table (optional)
+    :param table_options: options e.g. description and labels (optional)
+    :return: DDL statement as string
+    """
+    _schema = get_table_schema(table_id) if schema is None else schema
+    _schema = [_to_sql_field(field) for field in _schema]
+    return CREATE_OR_REPLACE_TABLE_TPL.render(project_id=project_id,
+                                              dataset_id=dataset_id,
+                                              table_id=table_id,
+                                              schema=_schema,
+                                              cluster_by_cols=cluster_by_cols,
+                                              query=as_query,
+                                              opts=table_options)
+
+
 def create_tables(client,
                   project_id,
                   fq_table_names,
@@ -178,6 +291,20 @@ def create_tables(client,
 
 
 def query(q, project_id=None, use_cache=False):
+    """
+    Deprecated: Execute a query and get results as a dataframe 
+     
+    :param q: the query to execute
+    :param project_id: identifies the project associated with the query
+    :param use_cache: if set to True, allow cached results
+    :return: the results as a dataframe
+    """
+    warnings.warn(
+        "Function utils.bq.query is deprecated and will be removed in a future version. "
+        "Use `bigquery.Client` object directly and its `to_dataframe()` method if needed.",
+        PendingDeprecationWarning,
+        stacklevel=2,
+    )
     client = get_client(project_id)
     query_job_config = bigquery.job.QueryJobConfig(use_query_cache=use_cache)
     return client.query(q, job_config=query_job_config).to_dataframe()
@@ -194,19 +321,16 @@ def list_datasets(project_id):
     return datasets
 
 
-def get_table_info_for_dataset(project_id, dataset_id):
+def dataset_columns_query(project_id: str, dataset_id: str) -> str:
     """
-    Get df of INFORMATION_SCHEMA.COLUMNS for a specified dataset
-
-    :param project_id: identifies the project
-    :param dataset_id: identifies the dataset
-    :return df containing table column information
-    :raises BadRequest
+    Get INFORMATION_SCHEMA.COLUMNS query for a specified dataset
+ 
+    :param project_id: identifies the project containing the dataset
+    :param dataset_id: identifies the dataset whose metadata is queried
+    :return the query as a string 
     """
-    table_info_query = consts.TABLE_INFO_QUERY.format(project=project_id,
-                                                      dataset=dataset_id)
-    result_df = query(table_info_query, project_id)
-    return result_df
+    return DATASET_COLUMNS_TPL.render(project_id=project_id,
+                                      dataset_id=dataset_id)
 
 
 def get_dataset(project_id, dataset_id):

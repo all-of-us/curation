@@ -175,7 +175,9 @@ def count_pid_rows_in_dataset(project_id, dataset_id, hpo_id, pid_source):
         ru_consts.TABLE_ID, consts.ALL_COUNT, consts.ALL_EHR_COUNT,
         consts.MAP_EHR_COUNT
     ])
-    table_df = bq.get_table_info_for_dataset(project_id, dataset_id)
+    bq_client = bq.get_client(project_id)
+    cols_query = bq.dataset_columns_query(project_id, dataset_id)
+    table_df = bq_client.query(cols_query).to_dataframe()
 
     if dataset_type == common.COMBINED:
         query = get_combined_deid_query(project_id, dataset_id, pid_source,

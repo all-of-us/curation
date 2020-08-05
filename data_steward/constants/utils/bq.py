@@ -16,9 +16,9 @@ VALIDATION_DATASET_REGEX = 'validation_\d{8}'
 VALIDATION_DATE_FORMAT = '%Y%m%d'
 
 # Query to list all table information within a dataset
-TABLE_INFO_QUERY = """
+DATASET_COLUMNS_QUERY = """
 SELECT *
-FROM `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
+FROM `{{project_id}}.{{dataset_id}}.INFORMATION_SCHEMA.COLUMNS`
 """
 
 TABLE_NAME = 'table_name'

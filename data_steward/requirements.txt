@@ -71,6 +71,7 @@ pickleshare==0.7.5
 prometheus-client==0.7.1
 prompt-toolkit==1.0.18
 protobuf==3.10.0
+pyarrow==0.17.1
 pyasn1==0.4.7
 pyasn1-modules==0.2.6
 pydata-google-auth==0.1.3
