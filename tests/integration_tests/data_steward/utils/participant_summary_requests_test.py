@@ -19,9 +19,7 @@ import mock
 # Third party imports
 import pandas
 import pandas.testing
-import pandas_gbq
 import google.auth.transport.requests as req
-from google.cloud import bigquery
 from google.auth import default
 
 # Project imports
@@ -125,8 +123,7 @@ class ParticipantSummaryRequests(unittest.TestCase):
         # post conditions
         self.assertEqual(expected_response, self.participant_data)
 
-    @mock.patch('utils.participant_summary_requests.get_participant_data')
-    def test_get_deactivated_participants(self, mock_get_participant_data):
+    def test_get_deactivated_participants_parameters(self):
         # Parameter check tests
         self.assertRaises(RuntimeError, psr.get_deactivated_participants, None,
                           self.dataset_id, self.tablename, self.columns)
@@ -138,27 +135,46 @@ class ParticipantSummaryRequests(unittest.TestCase):
                           self.project_id, self.dataset_id, self.tablename,
                           None)
 
+    @mock.patch('utils.participant_summary_requests.store_participant_data')
+    @mock.patch(
+        'utils.participant_summary_requests.get_deactivated_participants')
+    def test_get_deactivated_participants(self,
+                                          mock_get_deactivated_participants,
+                                          mock_store_participant_data):
         # Pre conditions
-        mock_get_participant_data.return_value = self.participant_data
+        mock_get_deactivated_participants.return_value = self.fake_dataframe
 
         # Tests
         dataframe_response = psr.get_deactivated_participants(
             self.project_id, self.dataset_id, self.tablename, self.columns)
-        dataset_response = psr.store_participant_data(self.fake_dataframe,
+
+        dataset_response = psr.store_participant_data(dataframe_response,
                                                       self.project_id,
                                                       self.destination_table)
+
+        expected_response = mock_store_participant_data(dataframe_response,
+                                                        self.destination_table,
+                                                        self.project_id)
 
         # Post conditions
         pandas.testing.assert_frame_equal(
             dataframe_response,
             pandas.DataFrame(self.deactivated_participants,
                              columns=self.columns))
-        self.assertEqual(dataset_response)
 
-    def test_store_participant_data(self):
+        self.assertEqual(dataset_response, expected_response)
+
+    @mock.patch('utils.participant_summary_requests.pandas_gbq.to_gbq')
+    def test_store_participant_data(self, mock_to_gbq):
         # Parameter check test
         self.assertRaises(RuntimeError, psr.store_participant_data,
                           self.fake_dataframe, None, self.destination_table)
+
+        # Pre conditions
+        expected = mock_to_gbq(self.fake_dataframe,
+                               self.destination_table,
+                               self.project_id,
+                               if_exists="append")
 
         # Test
         results = psr.store_participant_data(self.fake_dataframe,
@@ -166,3 +182,4 @@ class ParticipantSummaryRequests(unittest.TestCase):
                                              self.destination_table)
 
         # Post conditions
+        self.assertEqual(expected, results)
