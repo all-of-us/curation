@@ -118,8 +118,8 @@ FROM {{project}}.{{sandbox_dataset}}.{{sandbox_table}}
 
 class DropZeroConceptIDs(BaseCleaningRule):
     """
-    Apply value ranges to ensure that values are reasonable and to minimize the likelihood
-    of sensitive information (like phone numbers) within the free text fields.
+    Remove rows with a concept_id and source concept_id's containing zero or NULL.
+    Both columns need to be one or the other to drop.
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
@@ -131,7 +131,7 @@ class DropZeroConceptIDs(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = (
-            'Drops the duplicated PPI questions and answers created because of casing in vocabulary'
+            'Drops rows with concept_id and source_concept_ids containing zero or null'
         )
         super().__init__(issue_numbers=['DC975'],
                          description=desc,
@@ -193,13 +193,13 @@ class DropZeroConceptIDs(BaseCleaningRule):
         """
         Run required steps for validation setup
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def validate_rule(self, client):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
         sandbox_table_names = list()
