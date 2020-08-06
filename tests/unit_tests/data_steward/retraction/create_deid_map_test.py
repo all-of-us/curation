@@ -64,7 +64,7 @@ class CreateDeidMapTest(unittest.TestCase):
         expected = pd.DataFrame(data=d)
         pd.testing.assert_frame_equal(expected, result)
 
-    @mock.patch('utils.bq.get_table_info_for_dataset')
+    @mock.patch('retraction.create_deid_map.get_table_info_for_dataset')
     def test_check_if_deid_map_exists(self, mock_get_table_info):
         expected_create_df = mock_get_table_info.return_value = pd.DataFrame(
             data={
@@ -101,8 +101,7 @@ class CreateDeidMapTest(unittest.TestCase):
         self.assertEquals(result, consts.RENAME)
 
     @mock.patch('retraction.create_deid_map.utils.bq.list_datasets')
-    @mock.patch('retraction.create_deid_map.utils.bq.get_table_info_for_dataset'
-               )
+    @mock.patch('retraction.create_deid_map.get_table_info_for_dataset')
     def test_create_deid_map_table_queries(self, mock_table_info,
                                            mock_list_datasets):
 

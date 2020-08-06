@@ -50,8 +50,10 @@ from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import DropDuplicatePpiQuestionsAndAnswers
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
+from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
+from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -83,6 +85,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
 ]
 
 RDR_CLEANING_CLASSES = [
+    (PpiBranching,),
     (ObservationSourceConceptIDRowSuppression,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
@@ -160,7 +163,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (valid_death_dates.get_valid_death_date_queries,),
     (fill_source_value.get_fill_freetext_source_value_fields_queries,),
     (repopulate_person.get_repopulate_person_post_deid_queries,),
-    (CleanMappingExtTables,)
+    (CleanMappingExtTables,),
 ]
 
 DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanMappingExtTables,),
