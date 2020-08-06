@@ -127,45 +127,39 @@ class ParticipantSummaryRequests(unittest.TestCase):
         self.assertEqual(expected_response, self.participant_data)
 
     @mock.patch('utils.participant_summary_requests.store_participant_data')
-    @mock.patch('utils.participant_summary_requests.get_participant_data')
-    @mock.patch('utils.participant_summary_requests.get_access_token',
-                return_value='ya29.12345')
     @mock.patch(
         'utils.participant_summary_requests.get_deactivated_participants')
     def test_get_deactivated_participants(self,
                                           mock_get_deactivated_participants,
-                                          mock_access_token,
-                                          mock_get_participant_data,
                                           mock_store_participant_data):
 
         # pre conditions
-        mock_get_participant_data.return_value = self.participant_data
         mock_get_deactivated_participants.return_value = self.fake_dataframe
 
         # tests
         dataframe_response = psr.get_deactivated_participants(
             self.project_id, self.dataset_id, self.tablename, self.columns)
 
-        dataset_response = psr.store_participant_data(self.fake_dataframe,
+        dataset_response = psr.store_participant_data(dataframe_response,
                                                       self.project_id,
                                                       self.destination_table)
+        expected_response = mock_store_participant_data(dataframe_response,
+                                                        self.project_id,
+                                                        self.destination_table)
+
         # post conditions
         pandas.testing.assert_frame_equal(
             dataframe_response,
             pandas.DataFrame(self.deactivated_participants,
                              columns=self.columns))
 
-        self.assertEqual(
-            mock_store_participant_data(self.fake_dataframe,
-                                        self.project_id,
-                                        self.destination_table), dataset_response)
+        self.assertEqual(expected_response, dataset_response)
 
     @mock.patch('utils.participant_summary_requests.pandas_gbq.to_gbq')
     def test_store_participant_data(self, mock_to_gbq):
         # parameter check test
         self.assertRaises(RuntimeError, psr.store_participant_data,
-                          self.fake_dataframe, None,
-                          self.destination_table)
+                          self.fake_dataframe, None, self.destination_table)
 
         # test
         results = psr.store_participant_data(self.fake_dataframe,
