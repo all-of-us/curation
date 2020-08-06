@@ -87,10 +87,12 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
         raise RuntimeError(f'Please provide a dataset_id')
 
     if not tablename or not isinstance(tablename, str):
-        raise RuntimeError(f'Please provide a tablename to house deactivated participant data')
+        raise RuntimeError(
+            f'Please provide a tablename to house deactivated participant data')
 
     if not columns or not isinstance(columns, list):
-        raise RuntimeError('Please provide a list of columns to be pushed to BigQuery table')
+        raise RuntimeError(
+            'Please provide a list of columns to be pushed to BigQuery table')
 
     token = get_access_token()
 
@@ -137,7 +139,6 @@ def store_participant_data(df, project_id, destination_table):
 
     :param df: pandas dataframe created to hold participant data fetched from ParticipantSummary API
     :param project_id: identifies the project
-    :param dataset_id: identifies which dataset will house the participant data
     :param destination_table: name of the table to be written in the form of dataset.tablename
 
     :return: returns a dataset with the participant data
@@ -147,14 +148,6 @@ def store_participant_data(df, project_id, destination_table):
     if not project_id or not isinstance(project_id, str):
         raise RuntimeError(
             f'Please specify the project in which to create the tables')
-
-    # # Checks if dataset exists
-    # # Will create dataset if it does not exist
-    # all_datasets = [d.dataset_id for d in bq.list_datasets(project_id)]
-    # if dataset_id not in all_datasets:
-    #     bq.create_dataset(project_id, dataset_id, None, None, None, False)
-    # else:
-    #     print(f'{dataset_id} already exists, continuing.')
 
     stored_dataset = pandas_gbq.to_gbq(df,
                                        destination_table,
