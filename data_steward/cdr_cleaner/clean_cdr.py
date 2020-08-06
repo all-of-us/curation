@@ -166,7 +166,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (CleanMappingExtTables,),
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanMappingExtTables,),
+DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanHeightAndWeight,),
                                (CleanMappingExtTables,), (DropZeroConceptIDs,)]
 
 DATA_STAGE_RULES_MAPPING = {
