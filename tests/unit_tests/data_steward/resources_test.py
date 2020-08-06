@@ -90,14 +90,19 @@ class ResourcesTest(unittest.TestCase):
     def test_fields_for_duplicate_files(self, mock_walk):
         """
         Testing that fields for works as expected with sub-directory structures.
+
+        Verifies that if duplicates are detected and no distinction is made as
+        to which one is wanted, an error is raised.  Also shows that if duplicate
+        file names exist in separate directories, if the named sub-directory is
+        searched and the file is found, this file is opened and read.
         """
         # preconditions
-        walk_results = [
-            (os.path.join('foo', 'bar'), [], ['duplicate.json',
-                                              'unique1.json']),
-            (os.path.join('foo', 'bar',
-                          'baz'), [], ['duplicate.json', 'unique2.json'])
-        ]
+        sub_dir = 'baz'
+        # mocks result tuples for os.walk
+        walk_results = [(os.path.join('resource_files', 'fields'), [sub_dir],
+                         ['duplicate.json', 'unique1.json']),
+                        (os.path.join('resource_files', 'fields', sub_dir), [],
+                         ['duplicate.json', 'unique2.json'])]
 
         mock_walk.return_value = walk_results
 
@@ -111,33 +116,5 @@ class ResourcesTest(unittest.TestCase):
                         mock.mock_open(read_data=data)) as mock_file:
             with mock.patch('resources.json.load') as mock_json:
                 mock_json.return_value = json_data
-                fake_path = 'baz'
-                actual_fields = resources.fields_for('duplicate', fake_path)
+                actual_fields = resources.fields_for('duplicate', sub_dir)
                 self.assertEqual(actual_fields, json_data)
-
-    @mock.patch('resources.os.walk')
-    def test_fields_for_duplicate_files_with_defined_path(self, mock_walk):
-        """
-        Testing that fields for works as expected with sub-directory structures.
-        """
-        # preconditions
-        walk_results = [[
-            os.path.join('foo', 'bar', 'baz'), '',
-            ['duplicate.json', 'unique2.json']
-        ]]
-
-        mock_walk.return_value = walk_results
-
-        data = '[{"id": "fake id desc", "type": "fake type"}]'
-        json_data = json.loads(data)
-
-        # test
-        with mock.patch('resources.open',
-                        mock.mock_open(read_data=data)) as mock_file:
-            with mock.patch('resources.json.load') as mock_json:
-                mock_json.return_value = json_data
-                fake_path = os.path.join('foo', 'bar', 'baz')
-                actual_fields = resources.fields_for('duplicate', fake_path)
-
-        # post conditions
-        self.assertEqual(actual_fields, json_data)
