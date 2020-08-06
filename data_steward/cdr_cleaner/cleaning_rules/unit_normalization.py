@@ -20,6 +20,9 @@ import constants.bq_utils as bq_consts
 import resources
 import utils.bq as bq
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
+from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
+    MeasurementRecordsSuppression)
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
@@ -151,13 +154,15 @@ class UnitNormalization(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Units for labs/measurements will be normalized using unit_mapping lookup table.'
-        super().__init__(issue_numbers=['DC414', 'DC700'],
-                         description=desc,
-                         affected_datasets=[cdr_consts.DEID_CLEAN],
-                         affected_tables=['measurement'],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+        super().__init__(
+            issue_numbers=['DC414', 'DC700'],
+            description=desc,
+            affected_datasets=[cdr_consts.DEID_CLEAN],
+            affected_tables=['measurement'],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            depends_on=[MeasurementRecordsSuppression, CleanHeightAndWeight])
 
     def setup_rule(self, client=None):
         """

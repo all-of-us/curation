@@ -1,3 +1,6 @@
+import json
+import mock
+import os
 import unittest
 
 import common
@@ -65,3 +68,53 @@ class ResourcesTest(unittest.TestCase):
             result_vocab_tables,
             msg='Vocabulary tables %s should not be in result of cdm_schemas()'
             % result_vocab_tables)
+
+    def test_fields_for(self):
+        """
+        Testing that fields for works as expected with sub-directory structures.
+        """
+        # preconditions
+
+        # test
+        actual_fields = resources.fields_for('person')
+
+        # post conditions
+        person_path = os.path.join(resources.base_path, 'resource_files',
+                                   'fields', 'person.json')
+        with open(person_path, 'r') as fp:
+            expected_fields = json.load(fp)
+
+        self.assertEqual(actual_fields, expected_fields)
+
+    @mock.patch('resources.os.walk')
+    def test_fields_for_duplicate_files(self, mock_walk):
+        """
+        Testing that fields for works as expected with sub-directory structures.
+
+        Verifies that if duplicates are detected and no distinction is made as
+        to which one is wanted, an error is raised.  Also shows that if duplicate
+        file names exist in separate directories, if the named sub-directory is
+        searched and the file is found, this file is opened and read.
+        """
+        # preconditions
+        sub_dir = 'baz'
+        # mocks result tuples for os.walk
+        walk_results = [(os.path.join('resource_files', 'fields'), [sub_dir],
+                         ['duplicate.json', 'unique1.json']),
+                        (os.path.join('resource_files', 'fields', sub_dir), [],
+                         ['duplicate.json', 'unique2.json'])]
+
+        mock_walk.return_value = walk_results
+
+        # test
+        self.assertRaises(RuntimeError, resources.fields_for, 'duplicate')
+
+        # test
+        data = '[{"id": "fake id desc", "type": "fake type"}]'
+        json_data = json.loads(data)
+        with mock.patch('resources.open',
+                        mock.mock_open(read_data=data)) as mock_file:
+            with mock.patch('resources.json.load') as mock_json:
+                mock_json.return_value = json_data
+                actual_fields = resources.fields_for('duplicate', sub_dir)
+                self.assertEqual(actual_fields, json_data)
