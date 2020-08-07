@@ -15,6 +15,7 @@ The intent of this module is to check that GCR access token is generated properl
 # Python imports
 import unittest
 import mock
+import os
 
 # Third party imports
 import pandas
@@ -24,11 +25,12 @@ from google.auth import default
 
 # Project imports
 import utils.participant_summary_requests as psr
-import app_identity
+from app_identity import PROJECT_ID
 from utils import auth
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
-class ParticipantSummaryRequests(unittest.TestCase):
+class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -36,12 +38,18 @@ class ParticipantSummaryRequests(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    def setUp(self):
-        self.project_id = app_identity.get_application_id()
-        self.dataset_id = 'pipeline_tables'
-        self.tablename = '_deactivated_participants'
-        self.destination_table = self.dataset_id + '.' + self.tablename
+        super().initialize_class_vars()
 
+        cls.project_id = os.environ.get(PROJECT_ID)
+        cls.dataset_id = os.environ.get('COMBINED_DATASET_ID') 
+
+        cls.tablename = '_deactivated_participants'
+        cls.destination_table = cls.dataset_id + '.' + cls.tablename
+
+        cls.fq_table_names = [f"{cls.project_id}.{cls.dataset_id}.{cls.tablename}"]
+        super().setUpClass()
+
+    def setUp(self):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
         self.deactivated_participants = [[
             'P111', 'NO_CONTACT', '2018-12-07T08:21:14'
@@ -93,6 +101,8 @@ class ParticipantSummaryRequests(unittest.TestCase):
                 }
             }]
         }
+
+        super().setUp()
 
     def test_get_access_token(self):
         # pre conditions
