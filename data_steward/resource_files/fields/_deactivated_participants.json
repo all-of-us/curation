@@ -1,0 +1,20 @@
+[
+    {
+        "type": "string",
+        "name": "participantId",
+        "mode": "required",
+        "description": "The RDR internal unique ID of a participant"
+    },
+    {
+        "type": "string",
+        "name": "suspensionStatus",
+        "mode": "required",
+        "description": "The status of suspension for a participant. Enumerated values: NOT_SUSPENDED and NO_CONTACT"
+    },
+    {
+        "type": "datetime",
+        "name": "suspensionTime",
+        "mode": "required",
+        "description": "The date and time a participant's status was set to NO_CONTACT"
+    }
+]
