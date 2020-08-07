@@ -49,8 +49,12 @@ class ParticipantSummaryRequests(unittest.TestCase):
         self.deactivated_participants = [[
             'P111', 'NO_CONTACT', '2018-12-07T08:21:14'
         ], ['P222', 'NO_CONTACT', '2018-12-07T08:21:14']]
-        self.fake_dataframe = pandas.DataFrame(self.deactivated_participants,
-                                               columns=self.columns)
+        self.updated_deactivated_participants = [[
+            111, 'NO_CONTACT', '2018-12-07T08:21:14'
+        ], [222, 'NO_CONTACT', '2018-12-07T08:21:14']]
+
+        self.fake_dataframe = pandas.DataFrame(
+            self.updated_deactivated_participants, columns=self.columns)
 
         self.participant_data = [{
             'fullUrl':
@@ -146,6 +150,7 @@ class ParticipantSummaryRequests(unittest.TestCase):
         expected_response = mock_store_participant_data(dataframe_response,
                                                         self.project_id,
                                                         self.destination_table)
+        psr.participant_id_to_int(self.deactivated_participants, self.columns)
 
         # post conditions
         pandas.testing.assert_frame_equal(
@@ -154,6 +159,26 @@ class ParticipantSummaryRequests(unittest.TestCase):
                              columns=self.columns))
 
         self.assertEqual(expected_response, dataset_response)
+
+    def test_participant_id_to_int(self):
+        # pre conditions
+        columns = ['suspensionStatus', 'participantId', 'suspensionTime']
+        deactivated_participants = [[
+            'NO_CONTACT', 'P111', '2018-12-07T08:21:14'
+        ], ['NO_CONTACT', 'P222', '2018-12-07T08:21:14']]
+        updated_deactivated_participants = [[
+            'NO_CONTACT', 111, '2018-12-07T08:21:14'
+        ], ['NO_CONTACT', 222, '2018-12-07T08:21:14']]
+
+        # tests
+        expected_1 = psr.participant_id_to_int(self.deactivated_participants,
+                                               self.columns)
+        expected_2 = psr.participant_id_to_int(deactivated_participants,
+                                               columns)
+
+        # post conditions
+        self.assertEqual(expected_1, self.updated_deactivated_participants)
+        self.assertEqual(expected_2, updated_deactivated_participants)
 
     @mock.patch('utils.participant_summary_requests.pandas_gbq.to_gbq')
     def test_store_participant_data(self, mock_to_gbq):
