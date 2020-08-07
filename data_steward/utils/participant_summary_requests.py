@@ -2,7 +2,7 @@
 Utility to fetch and store deactivated participants information.
 
 The intent of this module is to call and store deactivated participants information by leveraging the RDR Participant
-    Summary API. Deactivated participant information stored is `participantID`, `suspensionStatus`, and `suspensionTime`.
+    Summary API. Deactivated participant information stored is `participantId`, `suspensionStatus`, and `suspensionTime`.
 """
 
 # Third party imports
@@ -80,17 +80,17 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     """
 
     # Parameter checks
-    if not project_id or not isinstance(project_id, str):
+    if not isinstance(project_id, str):
         raise RuntimeError(f'Please specify the RDR project')
 
-    if not dataset_id or not isinstance(dataset_id, str):
+    if not isinstance(dataset_id, str):
         raise RuntimeError(f'Please provide a dataset_id')
 
-    if not tablename or not isinstance(tablename, str):
+    if not isinstance(tablename, str):
         raise RuntimeError(
             f'Please provide a tablename to house deactivated participant data')
 
-    if not columns or not isinstance(columns, list):
+    if not isinstance(columns, list):
         raise RuntimeError(
             'Please provide a list of columns to be pushed to BigQuery table')
 
@@ -120,7 +120,10 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
                     item.append(val)
         deactivated_participants.append(item)
 
-    df = pandas.DataFrame(deactivated_participants,
+    # Transforms participantId to an integer string
+    updated_deactivated_participants = participant_id_to_int(deactivated_participants, columns)
+
+    df = pandas.DataFrame(updated_deactivated_participants,
                           columns=deactivated_participants_cols)
 
     # To store dataframe in a BQ dataset table
@@ -129,6 +132,29 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     dataset = store_participant_data(df, project_id, destination_table)
 
     return dataset
+
+
+def participant_id_to_int(participant_list, columns):
+    """
+    Transforms the participantId received from RDR ParticipantSummary API from an
+    alphanumeric string to an integer string.
+
+    :param participant_list: list of participants fetched from ParticipantSummary API
+    :param columns: columns to be pushed to a table in BigQuery in the form of a list of strings
+    :return: returns the list of participants with the participantId transformed to
+                an integer string
+    """
+
+    # determines the index of participantId in columns list
+    participant_id = columns.index('participantId')
+
+    updated_participant_list = []
+
+    for participant in participant_list:
+        participant[participant_id] = int(participant[participant_id][1:])
+        updated_participant_list.append(participant)
+
+    return updated_participant_list
 
 
 def store_participant_data(df, project_id, destination_table):
@@ -145,7 +171,7 @@ def store_participant_data(df, project_id, destination_table):
     """
 
     # Parameter check
-    if not project_id or not isinstance(project_id, str):
+    if not isinstance(project_id, str):
         raise RuntimeError(
             f'Please specify the project in which to create the tables')
 
