@@ -41,12 +41,14 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         super().initialize_class_vars()
 
         cls.project_id = os.environ.get(PROJECT_ID)
-        cls.dataset_id = os.environ.get('COMBINED_DATASET_ID') 
+        cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
 
         cls.tablename = '_deactivated_participants'
         cls.destination_table = cls.dataset_id + '.' + cls.tablename
 
-        cls.fq_table_names = [f"{cls.project_id}.{cls.dataset_id}.{cls.tablename}"]
+        cls.fq_table_names = [
+            f"{cls.project_id}.{cls.dataset_id}.{cls.tablename}"
+        ]
         super().setUpClass()
 
     def setUp(self):
