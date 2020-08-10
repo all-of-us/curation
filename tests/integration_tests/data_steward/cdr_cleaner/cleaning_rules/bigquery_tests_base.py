@@ -94,7 +94,8 @@ class BaseTest:
                                             {'test': ''})
                 cls.client.create_dataset(dataset, exists_ok=True)
 
-            bq.create_tables(cls.client, cls.project_id, cls.fq_table_names,
+        def setUp(self):
+            bq.create_tables(self.client, self.project_id, self.fq_table_names,
                              True)
 
         @classmethod
@@ -103,7 +104,7 @@ class BaseTest:
             Remove the test dataset table(s).
             """
             for table in cls.fq_table_names + cls.fq_sandbox_table_names:
-                cls.client.delete_table(table)
+                cls.client.delete_table(table, not_found_ok=True)
 
         def drop_rows(self, fq_table_name):
             """
@@ -129,6 +130,7 @@ class BaseTest:
             """
             for table in self.fq_table_names + self.fq_sandbox_table_names:
                 self.drop_rows(table)
+                self.client.delete_table(table)
 
         def load_test_data(self, sql_statements=None):
             """
@@ -246,6 +248,12 @@ class BaseTest:
             super().initialize_class_vars()
             # The query class that is being executed.
             cls.query_class = None
+
+        def setUp(self):
+            """
+            Add data to the tables for the rule to run on.
+            """
+            super().setUp()
 
         def default_test(self, tables_and_test_values):
             """

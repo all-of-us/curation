@@ -74,6 +74,8 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
+        super().setUp()
+
     def test_nullable_field_datetime_pair(self):
         """
         Tests possible values of a required date and nullable datetime field pair.

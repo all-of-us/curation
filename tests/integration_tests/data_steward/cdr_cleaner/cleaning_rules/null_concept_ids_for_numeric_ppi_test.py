@@ -67,6 +67,8 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
+        super().setUp()
+
     def test_field_cleaning(self):
         """
         Tests that the specifications for the SANDBOX_QUERY and CLEAN_NUMERIC_PPI_QUERY

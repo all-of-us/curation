@@ -34,12 +34,12 @@ def _get_all_field_types() -> typing.FrozenSet[str]:
     :return: names of all types in fields files
     """
     all_field_types = set()
-    fields_files = os.listdir(resources.fields_path)
-    for fields_file in fields_files:
-        table, _ = os.path.splitext(os.path.basename(fields_file))
-        fields = resources.fields_for(table)
-        for field in fields:
-            all_field_types.add(field['type'])
+    for dir_path, _, files in os.walk(resources.fields_path):
+        for fields_file in files:
+            table, _ = os.path.splitext(fields_file)
+            fields = resources.fields_for(table)
+            for field in fields:
+                all_field_types.add(field.get('type'))
     return frozenset(all_field_types)
 
 

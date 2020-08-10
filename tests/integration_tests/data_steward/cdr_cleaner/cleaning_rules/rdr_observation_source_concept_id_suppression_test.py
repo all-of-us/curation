@@ -79,7 +79,7 @@ class ObservationSourceConceptIDRowSuppressionTest(
         now_prediabetes = 43530333
         prefer_not_to_ans = 903079
 
-        load_statements = []
+        self.load_statements = []
         # create the string(s) to load the data
         for tmpl in self.insert_fake_participants_tmpls:
             query = tmpl.render(fq_table_name=self.fq_table_names[0],
@@ -87,9 +87,9 @@ class ObservationSourceConceptIDRowSuppressionTest(
                                 meds_prediabetes=meds_prediabetes,
                                 now_prediabetes=now_prediabetes,
                                 prefer_not_to_ans=prefer_not_to_ans)
-            load_statements.append(query)
+            self.load_statements.append(query)
 
-        self.load_test_data(load_statements)
+        super().setUp()
 
     def test(self):
         """
@@ -98,6 +98,8 @@ class ObservationSourceConceptIDRowSuppressionTest(
         Validates pre-conditions, test execution and post conditions based on
         the load statements and the tables_and_counts variable.
         """
+        self.load_test_data(self.load_statements)
+
         # Using the 0 position because there is only one sandbox table and
         # one affected OMOP table
         tables_and_counts = [{

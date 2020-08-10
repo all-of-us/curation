@@ -49,12 +49,14 @@ from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import DropDuplicatePpiQuestionsAndAnswers
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
+from cdr_cleaner.cleaning_rules.measurement_table_suppression import MeasurementRecordsSuppression
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
+from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
@@ -165,8 +167,13 @@ DEID_BASE_CLEANING_CLASSES = [
     (CleanMappingExtTables,),
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = [(UnitNormalization,), (CleanHeightAndWeight,),
-                               (CleanMappingExtTables,)]
+DEID_CLEAN_CLEANING_CLASSES = [
+    (MeasurementRecordsSuppression,),
+    (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
+    (UnitNormalization,),  # dependent on CleanHeightAndWeight
+    (DropZeroConceptIDs,),
+    (CleanMappingExtTables,)
+]
 
 DATA_STAGE_RULES_MAPPING = {
     stage.EHR.value: EHR_CLEANING_CLASSES,

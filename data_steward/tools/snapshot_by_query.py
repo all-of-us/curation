@@ -86,7 +86,7 @@ def get_copy_table_query(project_id, dataset_id, table_id):
             for field in fields
         ]
         col_expr = ', '.join(fields_with_datatypes)
-    except (OSError, IOError):
+    except (OSError, IOError, RuntimeError):
         # default to select *
         col_expr = '*'
     select_all_query = 'SELECT {col_expr} FROM `{project_id}.{dataset_id}.{table_id}`'
