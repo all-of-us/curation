@@ -121,7 +121,8 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
         deactivated_participants.append(item)
 
     # Transforms participantId to an integer string
-    updated_deactivated_participants = participant_id_to_int(deactivated_participants, columns)
+    updated_deactivated_participants = participant_id_to_int(
+        deactivated_participants, columns)
 
     df = pandas.DataFrame(updated_deactivated_participants,
                           columns=deactivated_participants_cols)
@@ -129,9 +130,9 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     # To store dataframe in a BQ dataset table
     destination_table = dataset_id + '.' + tablename
 
-    dataset = store_participant_data(df, project_id, destination_table)
+    store_participant_data(df, project_id, destination_table)
 
-    return dataset
+    return '.'.join([project_id, destination_table])
 
 
 def participant_id_to_int(participant_list, columns):
@@ -175,9 +176,7 @@ def store_participant_data(df, project_id, destination_table):
         raise RuntimeError(
             f'Please specify the project in which to create the tables')
 
-    stored_dataset = pandas_gbq.to_gbq(df,
-                                       destination_table,
-                                       project_id,
-                                       if_exists="append")
-
-    return stored_dataset
+    return pandas_gbq.to_gbq(df,
+                             destination_table,
+                             project_id,
+                             if_exists="append")
