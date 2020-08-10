@@ -46,30 +46,12 @@ TODO
 """
 import logging
 
-from jinja2 import Environment
-
 import app_identity
 import bq_utils
 import common
 import resources
 from constants.tools import combine_ehr_rdr as combine_consts
 from utils import bq as bq
-
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
-
-COPY_PID_RID_QUERY = jinja_env.from_string("""
-select * from `{{project}}.{{dataset}}.{{pid_rid_table}}`
-""")
 
 
 def query(q, dst_table_id, write_disposition='WRITE_APPEND'):
@@ -430,9 +412,6 @@ def main():
     logging.info('EHR + RDR combine started')
     logging.info('Verifying all CDM tables in EHR and RDR datasets...')
     assert_ehr_and_rdr_tables()
-    logging.info('Copying _deid_map table from rdr_dataset...')
-    load_deid_map_table()
-    logging.info('Loaded _deid_map table from rdr_dataset')
     logging.info('Creating destination CDM tables...')
     create_cdm_tables()
     ehr_consent()
