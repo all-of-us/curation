@@ -4,13 +4,16 @@ A module to serve as the entry point to the cdr_cleaner package.
 It gathers the list of query strings to execute and sends them
 to the query engine.
 """
-import inspect
 # Python imports
+import inspect
 import logging
 
 # Third party imports
+
+# Project imports
 import app_identity
 import bq_utils
+from utils import bq
 import cdr_cleaner.clean_cdr_engine as clean_engine
 import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
@@ -59,8 +62,6 @@ from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
-# Project imports
-from utils import bq
 
 LOGGER = logging.getLogger(__name__)
 
