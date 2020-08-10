@@ -4,14 +4,16 @@ A module to serve as the entry point to the cdr_cleaner package.
 It gathers the list of query strings to execute and sends them
 to the query engine.
 """
+# Python imports
 import inspect
 import logging
-# Python imports
-from collections import namedtuple
 
 # Third party imports
+
+# Project imports
 import app_identity
 import bq_utils
+from utils import bq
 import cdr_cleaner.clean_cdr_engine as clean_engine
 import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
 import cdr_cleaner.cleaning_rules.clean_years as clean_years
@@ -67,14 +69,6 @@ from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
-# Project imports
-from utils import bq
-
-RULE_ARGS = namedtuple('CleanClass', [
-    'clazz', 'clazz_pos', 'clazz_keyword', 'query_specs_pos',
-    'query_specs_keyword'
-],
-                       defaults=([], {}, [], {}))
 
 LOGGER = logging.getLogger(__name__)
 
@@ -173,10 +167,9 @@ COMBINED_CLEANING_CLASSES = [
 ]
 
 FITBIT_CLEANING_CLASSES = [
-    RULE_ARGS(RemoveFitbitDataIfMaxAgeExceeded, ['mapping_dataset_id']),
-    RULE_ARGS(PIDtoRID, ['mapping_dataset_id', 'pid_rid_map_tablename']),
-    RULE_ARGS(FitbitDateShiftRule,
-              ['mapping_dataset_id', 'pid_rid_map_tablename']),
+    (RemoveFitbitDataIfMaxAgeExceeded,),
+    (PIDtoRID,),
+    (FitbitDateShiftRule,),
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
@@ -284,31 +277,6 @@ def _gather_unioned_ehr_queries(project_id, dataset_id, sandbox_dataset_id):
                            sandbox_dataset_id)
 
 
-def _gather_fitbit_cleaning_queries(project_id, dataset_id, sandbox_dataset_id,
-                                    mapping_dataset_id, pid_rid_tablename):
-    """
-    Gathers all the queries required to clean fitbit dataset
-
-    :param project_id: project name
-    :param dataset_id: fitbit dataset name
-    :return: returns list of queries
-    """
-    corrected_classes = []
-    for cl in FITBIT_CLEANING_CLASSES:
-        positionals = [
-            mapping_dataset_id if field == 'mapping_dataset_id' else field
-            for field in cl.clazz_pos
-        ]
-        positionals = [
-            pid_rid_tablename if field == 'pid_rid_map_tablename' else field
-            for field in positionals
-        ]
-        common = [project_id, dataset_id, sandbox_dataset_id]
-        cl = cl._replace(clazz_pos=common + positionals)
-        corrected_classes.append(cl)
-    return _get_named_tuple_query_list(corrected_classes)
-
-
 def _gather_deid_base_cleaning_queries(project_id, dataset_id,
                                        sandbox_dataset_id):
     """
@@ -341,35 +309,6 @@ def _gather_deid_clean_cleaning_queries(project_id, dataset_id,
     """
     return _get_query_list(DEID_CLEAN_CLEANING_CLASSES, project_id, dataset_id,
                            sandbox_dataset_id)
-
-
-def _get_named_tuple_query_list(cleaning_classes):
-    """
-    gathers all the queries required to clean a dataset
-
-    :param cleaning_classes:  the list of classes generating SQL cleaning statements
-    :return: returns list of queries
-    """
-    query_list = []
-
-    for class_info in cleaning_classes:
-        clazz = class_info.clazz
-        try:
-            instance = clazz(*class_info.clazz_pos, **class_info.clazz_keyword)
-        except TypeError:
-            LOGGER.exception("Cannot instantiate class: {clazz}")
-        else:
-            # should eventually be the main component of this function.
-            # Everything should transition to using a common base class.
-            if isinstance(instance, BaseCleaningRule):
-                query_list.extend(
-                    add_module_info_decorator(instance.get_query_specs,
-                                              *class_info.query_specs_pos,
-                                              **class_info.query_specs_keyword))
-            else:
-                LOGGER.error(f"Cannot create SQL for {clazz}")
-
-    return query_list
 
 
 def _get_query_list(cleaning_classes, project_id, dataset_id,
@@ -424,43 +363,6 @@ def _get_query_list(cleaning_classes, project_id, dataset_id,
                                               sandbox_dataset_id))
 
     return query_list
-
-
-def clean_fitbit_dataset(project_id, dataset_id, mapping_dataset_id,
-                         mapping_tablename):
-    """
-    Run all clean rules defined for the Fitbit dataset.
-
-    :param project_id:  Name of the BigQuery project.
-    :param dataset_id:  Name of the dataset to clean.
-    :param mapping_dataset_id: Name of the dataset containing the mapping table.
-    :param mapping_tablename:  Name of the mapping table to use.
-    """
-    if not project_id:
-        raise RuntimeError("Project is unspecified for cleaning fitbit data.")
-
-    if not dataset_id:
-        raise RuntimeError("Dataset is unspecified for cleaning fitbit data.")
-
-    if not mapping_dataset_id:
-        raise RuntimeError(
-            "Mapping dataset id is unspecified for cleaning fitbit data.")
-
-    if not mapping_tablename:
-        raise RuntimeError(
-            "Mapping table name is unspecified for cleaning fitbit data.")
-
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
-                                                        dataset_id=dataset_id)
-
-    query_list = _gather_fitbit_cleaning_queries(project_id, dataset_id,
-                                                 sandbox_dataset_id,
-                                                 mapping_dataset_id,
-                                                 mapping_tablename)
-
-    LOGGER.info("Cleaning FITBIT dataset")
-
-    clean_engine.clean_dataset(project_id, query_list, stage.FITBIT)
 
 
 def clean_rdr_dataset(project_id=None, dataset_id=None):
@@ -638,33 +540,6 @@ if __name__ == '__main__':
                             [s for s in stage if s is not stage.UNSPECIFIED]),
                         help='Specify the dataset')
     parser.add_argument('-s', action='store_true', help='Send logs to console')
-    parser.add_argument('-p',
-                        '--project-id',
-                        dest='project_id',
-                        action='store',
-                        help=('Project identifier for cleaning'))
-    parser.add_argument('-n',
-                        '--dataset-id',
-                        dest='dataset_id',
-                        action='store',
-                        help=('Dataset identifier for cleaning'))
-    deid_group = parser.add_argument_group(
-        'post_deid',
-        'Arguments related to the deid mapping table location that should be used for post-deid cleaning rules.'
-    )
-    deid_group.add_argument(
-        '--mapping-dataset',
-        dest='mapping_dataset',
-        action='store',
-        help=('Supply dataset name for dataset containing the _deid_map table '
-              'to reference.'))
-    deid_group.add_argument(
-        '--mapping-table',
-        dest='mapping_tablename',
-        action='store',
-        help=(
-            'Define the mapping table name.  Default historically is _deid_map.'
-        ))
     args = parser.parse_args()
     clean_engine.add_console_logging(args.s)
     if args.data_stage == stage.EHR:
@@ -679,16 +554,6 @@ if __name__ == '__main__':
         clean_combined_de_identified_dataset()
     elif args.data_stage == stage.DEID_CLEAN:
         clean_combined_de_identified_clean_dataset()
-    elif args.data_stage == stage.FITBIT:
-        if args.project_id and args.dataset_id and args.mapping_dataset and args.mapping_tablename:
-            clean_fitbit_dataset(args.project_id, args.dataset_id,
-                                 args.mapping_dataset, args.mapping_tablename)
-        else:
-            raise RuntimeError(
-                "Please run `python cdr_cleaner/clean_cdr.py -h` to list help "
-                "commands.  One or more of project-id, dataset-id, "
-                "mapping-dataset, or mapping-table are missing.  These are "
-                "required to clean fitbit data.")
     else:
         raise OSError(
             f'Dataset selection should be from [{stage.EHR}, {stage.UNIONED}, {stage.RDR}, {stage.COMBINED},'
