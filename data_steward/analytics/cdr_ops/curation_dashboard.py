@@ -29,7 +29,7 @@ sns.set()
 
 
 def row_counts(dataset_ids):
-    sq = "SELECT '{dataset_id}' dataset_id, table_id, row_count FROM {dataset_id}.__TABLES__"
+    sq = "SELECT '{dataset_id}' dataset_id, table_id, row_count FROM `{dataset_id}.__TABLES__`"
     sqs = [sq.format(dataset_id=d) for d in dataset_ids]
     iq = "\nUNION ALL\n".join(sqs)
     q = """ 
@@ -44,7 +44,7 @@ def row_counts(dataset_ids):
     df['dataset_id'] = df['dataset_id'].astype('category')
     df['table_id'] = df['table_id'].astype('category')
     g = sns.FacetGrid(df, col='table_id', sharey=False, col_wrap=5)
-    g.map(sns.barplot, 'load_date', 'row_count', ci=None)
+    g.map(sns.barplot, 'dataset_id', 'row_count', ci=None)
     g.set_xticklabels(rotation=45, ha='right')
     return df
 
