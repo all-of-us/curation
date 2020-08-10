@@ -1,16 +1,24 @@
-from __future__ import print_function
-
+# Python imports
+import inspect
 import logging
+from concurrent.futures import TimeoutError as TOError
 
+# Third party imports
+import google.cloud.bigquery as gbq
+from google.cloud.exceptions import GoogleCloudError
 import googleapiclient
 import oauth2client
-import app_identity
-from constants.cdr_cleaner.clean_cdr import DataStage as stage
-from constants.cdr_cleaner.clean_cdr_engine import FILENAME, FAILURE_MESSAGE_TEMPLATE
 
+# Project imports
+import app_identity
 import bq_utils
+from utils import bq
+import sandbox
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.clean_cdr import DATA_STAGE_RULES_MAPPING
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +32,7 @@ def add_console_logging(add_handler):
     """
     logging.basicConfig(
         level=logging.INFO,
-        filename=FILENAME,
+        filename=ce_consts.FILENAME,
         filemode='a',
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -37,7 +45,9 @@ def add_console_logging(add_handler):
         logging.getLogger('').addHandler(handler)
 
 
-def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
+def clean_dataset(project=None,
+                  statements=None,
+                  data_stage=cdr_consts.DataStage.UNSPECIFIED):
     """
        Run the assigned cleaning rules.
 
@@ -140,6 +150,152 @@ def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
         )
 
 
+def run_queries(client, dataset_id, query_list, module_info_dict):
+    query_count = len(query_list)
+    successes, failures = 0, 0
+    for index, query_dict in enumerate(query_list):
+        try:
+            LOGGER.info(
+                ce_consts.QUERY_RUN_MESSAGE_TEMPLATE.render(
+                    index, query_count, **module_info_dict, **query_dict))
+            job_config = gbq.job.QueryJobConfig()
+            if query_dict.get(cdr_consts.DESTINATION_TABLE) is not None:
+                destination_dataset_id = query_dict.get(
+                    cdr_consts.DESTINATION_DATASET)
+                destination_dataset_ref = gbq.DatasetReference(
+                    client.project, destination_dataset_id)
+                destination_table_id = query_dict.get(
+                    cdr_consts.DESTINATION_TABLE)
+                destination_table_ref = gbq.table.TableReference(
+                    destination_dataset_ref, destination_table_id)
+
+                job_config.destination = destination_table_ref
+                job_config.use_legacy_sql = query_dict.get(
+                    cdr_consts.LEGACY_SQL, False)
+                # allow_large_results can only be used if use_legacy_sql=True
+                job_config.allow_large_results = job_config.use_legacy_sql
+                job_config.write_disposition = query_dict.get(
+                    cdr_consts.DISPOSITION, bq_consts.WRITE_EMPTY)
+
+            query_job = client.query(query=query_dict.get(cdr_consts.QUERY),
+                                     job_config=job_config,
+                                     job_id_prefix=f'clean_{dataset_id}_')
+
+            # wait for job to complete
+            query_job.result()
+        except (GoogleCloudError, TOError) as exp:
+            LOGGER.exception(
+                ce_consts.FAILURE_MESSAGE_TEMPLATE.render(client.project,
+                                                          **module_info_dict,
+                                                          **query_dict,
+                                                          exception=exp))
+            failures += 1
+            continue
+        else:
+            successes += 1
+    return successes, failures
+
+
+def get_module_info(query_function):
+    function_name = query_function.__name__
+    module_name = inspect.getmodule(query_function).__name__
+    _, line_no = inspect.getsourcelines(query_function)
+    module_info_dict = {
+        cdr_consts.MODULE_NAME: module_name,
+        cdr_consts.FUNCTION_NAME: function_name,
+        cdr_consts.LINE_NO: line_no
+    }
+    return module_info_dict
+
+
+def clean_dataset_v1(project_id=None,
+                     dataset_id=None,
+                     rules=None,
+                     data_stage=cdr_consts.DataStage.UNSPECIFIED):
+    """
+    Run the assigned cleaning rules.
+
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset to clean
+    :param rules: a list of cleaning rule objects/functions as tuples
+    :param data_stage: an enum to indicate what stage of the cleaning this is
+    """
+    if project_id is None or project_id == '' or project_id.isspace():
+        project_id = app_identity.get_application_id()
+        LOGGER.info(f"project_id not provided, using default {project_id}")
+
+    if rules is None:
+        rules = DATA_STAGE_RULES_MAPPING.get(data_stage, [])
+
+    # Set up
+    client = bq.get_client(project_id=project_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+                                                        dataset_id=dataset_id)
+    successful_rules, failed_rules = 0, 0
+    for rule in rules:
+        clazz = rule[0]
+        try:
+            instance = clazz(project_id, dataset_id, sandbox_dataset_id)
+        except TypeError:
+            # raised when called with the 3 parameters and only 2 are needed
+            query_list = clazz(project_id, dataset_id)
+            query_function = clazz
+        else:
+            # should eventually be the main component of this function.
+            # Everything should transition to using a common base class.
+            if isinstance(instance, BaseCleaningRule):
+
+                keywords = rule[-1]
+                if isinstance(keywords, dict):
+                    positionals = rule[1:-1]
+                else:
+                    keywords = {}
+                    positionals = rule[1:]
+
+                query_function = instance.get_query_specs
+
+                # setup
+                try:
+                    instance.setup_rule(client)
+                except NotImplementedError:
+                    logging.warning(
+                        f"setup rule not implemented for {query_function.__name__}"
+                    )
+
+                query_list = instance.get_query_specs()
+            else:
+                query_list = clazz(project_id, dataset_id, sandbox_dataset_id)
+                query_function = clazz
+
+        module_info_dict = get_module_info(query_function)
+        successes, failures = run_queries(client, dataset_id, query_list,
+                                          module_info_dict)
+        LOGGER.info(
+            f"Status: {successes} successes and {failures} failures out of "
+            f"{len(query_list)} queries for clean rule {module_info_dict}")
+        if failures > 0:
+            failed_rules += 1
+        if successes > 0:
+            successful_rules += 1
+
+    if successful_rules > 0:
+        LOGGER.info(
+            f"Successfully applied {successful_rules} clean rules for {project_id}.{data_stage}"
+        )
+    else:
+        LOGGER.warning(
+            f"No clean rules successfully applied to {project_id}.{data_stage}")
+
+    if failed_rules > 0:
+        LOGGER.warning(
+            f"Failed to apply {failed_rules} clean rules for {project_id}.{data_stage}"
+        )
+    else:
+        LOGGER.info(
+            f"There were no failures in applying cleaning rules for {project_id}.{data_stage}"
+        )
+
+
 def format_failure_message(project_id, statement, exception):
 
     query = statement.get(cdr_consts.QUERY, '')
@@ -153,7 +309,7 @@ def format_failure_message(project_id, statement, exception):
     line_no = statement.get(cdr_consts.LINE_NO,
                             cdr_consts.LINE_NO_DEFAULT_VALUE)
 
-    return FAILURE_MESSAGE_TEMPLATE.format(
+    return ce_consts.FAILURE_MESSAGE_TEMPLATE.format(
         module_name=module_name,
         function_name=function_name,
         line_no=line_no,
