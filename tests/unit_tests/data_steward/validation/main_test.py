@@ -507,12 +507,10 @@ class ValidationMainTest(TestCase):
                 get_duplicate_counts_query=get_duplicate_counts_query,
                 upload_string_to_gcs=upload_string_to_gcs,
                 is_valid_rdr=is_valid_rdr):
-            with self.assertRaises(googleapiclient.errors.HttpError):
-                result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
-                                               self.folder_prefix, summary)
-                error_occurred = result.get(
-                    report_consts.ERROR_OCCURRED_REPORT_KEY)
-                self.assertEqual(error_occurred, True)
+            result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
+                                           self.folder_prefix, summary)
+            error_occurred = result.get(report_consts.ERROR_OCCURRED_REPORT_KEY)
+            self.assertEqual(error_occurred, True)
 
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('validation.main.upload_string_to_gcs')

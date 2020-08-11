@@ -79,8 +79,7 @@ def is_hpo_col(hpo_id, col):
     :return: True if col is on specified HPO table, False otherwise
     """
     hpo_tables = [
-        bq_utils.get_table_id(hpo_id, table)
-        for table in CDM_TABLES + PII_TABLES
+        bq_utils.get_table_id(hpo_id, table) for table in resources.CDM_TABLES
     ]
     return col[consts.TABLE_NAME] in hpo_tables
 
