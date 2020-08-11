@@ -55,10 +55,11 @@ jinja_env = Environment(
     comment_end_string=' --')
 
 COPY_PID_RID_QUERY = jinja_env.from_string("""
+CREATE or REPLACE TABLE {{map_table}} as
 SELECT
   *
 FROM
-  `{{project}}.{{dataset}}.{{pid_rid_table}}`
+  `{{project}}.{{lookup_dataset}}.{{pid_rid_table}}`
 WHERE
   person_id IN (
   SELECT
@@ -67,7 +68,7 @@ WHERE
     SELECT
       DISTINCT person_id,
       EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth AS age
-    FROM `{{project}}.{{output_dataset}}.person`
+    FROM `{{project}}.{{input_dataset}}.person`
     ORDER BY 2)
   WHERE
     age < {{max_age}})
@@ -248,40 +249,37 @@ def parse_args(raw_args=None):
                         required=False,
                         help='Log to the console as well as to a file.')
     parser.add_argument('--version', action='version', version='deid-02')
-    parser.add_argument(
-        '-ma',
-        '--age_limit',
-        dest='age_limit',
-        action='store',
-        required=True,
-        help=
-        'Determines the max_age of a participant that is to be allowed in the cdr.'
-    )
+    parser.add_argument('-m',
+                        '--age_limit',
+                        dest='age_limit',
+                        action='store',
+                        required=True,
+                        help='Set the maximum allowable age of participants.')
     return parser.parse_args(raw_args)
 
 
-def copy_deid_map_table(pid_rid_mapping_table, project_id, input_dataset_id,
-                        output_dataset_id, age_limit, client):
+def copy_deid_map_table(deid_map_table, project_id, lookup_dataset_id,
+                        input_dataset_id, age_limit, client):
     """
     Copies research_ids for participants who's age is below max_age limit from pipeline_tables.pid_rid_mapping table
      to _deid_map table.
 
-    :param pid_rid_mapping_table: Fully Qualified(fq) pid_rid_mapping table name
+    :param deid_map_table: Fully Qualified(fq) pid_rid_mapping table name
     :param project_id: Project identifier 
     :param input_dataset_id: Name of the dataset where pid_rid_mapping table is stored
-    :param output_dataset_id: Name of the dataset where _deid_map dataset needs to be created.
+    :param lookup_dataset_id: Name of the dataset where _deid_map dataset needs to be created.
     :param age_limit: Allowed Max_age of a participant
     :param client: Bigquery client
     :return: None
     """
-    job_config = bq.bigquery.QueryJobConfig(destination=pid_rid_mapping_table)
-    q = COPY_PID_RID_QUERY.render(project=project_id,
-                                  dataset=input_dataset_id,
-                                  output_dataset=output_dataset_id,
+    q = COPY_PID_RID_QUERY.render(map_table=deid_map_table,
+                                  project=project_id,
+                                  lookup_dataset=lookup_dataset_id,
+                                  input_dataset=input_dataset_id,
                                   max_age=age_limit,
                                   pid_rid_table=PID_RID_MAPPING_TABLE)
 
-    query_job = client.query(q, job_config=job_config)
+    query_job = client.query(q)
     query_job.result()
     if query_job.exception():
         logging.error(f"The _deid_map table did not generate successfully")
@@ -292,19 +290,15 @@ def load_deid_map_table(deid_map_dataset_name, age_limit):
     # Create _pid_rid_mapping table
     project_id = app_identity.get_application_id()
     client = bq.get_client(project_id)
-    deid_map_mapping_table = f'{project_id}.{deid_map_dataset_name}.{DEID_MAP_TABLE}'
-    bq.create_tables(client,
-                     project_id, [deid_map_mapping_table],
-                     exists_ok=False)
+    deid_map_table = f'{project_id}.{deid_map_dataset_name}.{DEID_MAP_TABLE}'
     # Copy pid_rid_mapping records to _deid_map table
     if bq_utils.table_exists(PID_RID_MAPPING_TABLE,
                              dataset_id=PIPELINE_TABLES_DATASET):
-        copy_deid_map_table(deid_map_mapping_table, project_id,
-                            PIPELINE_TABLES_DATASET, deid_map_dataset_name,
-                            age_limit, client)
+        copy_deid_map_table(deid_map_table, project_id, PIPELINE_TABLES_DATASET,
+                            deid_map_dataset_name, age_limit, client)
         logging.info(
-            f"{project_id}.{PIPELINE_TABLES_DATASET}.{PID_RID_MAPPING_TABLE} "
-            f" copied to the table {deid_map_mapping_table}")
+            f"copied participants younger than {age_limit} to the table {deid_map_table}"
+        )
     else:
         raise RuntimeError(
             f'{PID_RID_MAPPING_TABLE} is not available in {project_id}.{PIPELINE_TABLES_DATASET}'
@@ -324,10 +318,10 @@ def main(raw_args=None):
     configured_tables = get_known_tables(deid_tables_path)
     tables = get_output_tables(args.input_dataset, known_tables,
                                args.skip_tables, args.tables)
-    logging.info('Loading _deid_map table...')
+    logging.info(f"Loading {DEID_MAP_TABLE} table...")
     load_deid_map_table(deid_map_dataset_name=args.input_dataset,
                         age_limit=args.age_limit)
-    logging.info('Loaded _deid_map table.')
+    logging.info(f"Loaded {DEID_MAP_TABLE} table.")
 
     exceptions = []
     successes = []
