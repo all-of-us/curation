@@ -14,6 +14,7 @@ import pandas_gbq
 
 # Project imports
 from utils import auth
+from resources import fields_for
 
 
 def get_access_token():
@@ -120,12 +121,16 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
                     item.append(val)
         deactivated_participants.append(item)
 
-    # Transforms participantId to an integer string
-    updated_deactivated_participants = participant_id_to_int(
-        deactivated_participants, columns)
-
-    df = pandas.DataFrame(updated_deactivated_participants,
+    df = pandas.DataFrame(deactivated_participants,
                           columns=deactivated_participants_cols)
+
+    # Converts column `suspensionTime` from string to timestamp
+    for column in deactivated_participants_cols:
+        if column == 'suspensionTime':
+            df[column] = pandas.to_datetime(df[column])
+
+    # Transforms participantId to an integer string
+    df['participantId'] = df['participantId'].apply(participant_id_to_int)
 
     # To store dataframe in a BQ dataset table
     destination_table = dataset_id + '.' + tablename
@@ -135,27 +140,16 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     return '.'.join([project_id, destination_table])
 
 
-def participant_id_to_int(participant_list, columns):
+def participant_id_to_int(participant_id):
     """
     Transforms the participantId received from RDR ParticipantSummary API from an
     alphanumeric string to an integer string.
 
-    :param participant_list: list of participants fetched from ParticipantSummary API
-    :param columns: columns to be pushed to a table in BigQuery in the form of a list of strings
-    :return: returns the list of participants with the participantId transformed to
-                an integer string
+    :param participant_id: the RDR internal unique ID of a participant
+    :return: returns the participantId as integer data type
     """
 
-    # determines the index of participantId in columns list
-    participant_id = columns.index('participantId')
-
-    updated_participant_list = []
-
-    for participant in participant_list:
-        participant[participant_id] = int(participant[participant_id][1:])
-        updated_participant_list.append(participant)
-
-    return updated_participant_list
+    return int(participant_id[1:])
 
 
 def store_participant_data(df, project_id, destination_table):
@@ -176,7 +170,10 @@ def store_participant_data(df, project_id, destination_table):
         raise RuntimeError(
             f'Please specify the project in which to create the tables')
 
+    table_schema = fields_for(destination_table.split('.')[-1])
+
     return pandas_gbq.to_gbq(df,
                              destination_table,
                              project_id,
-                             if_exists="append")
+                             if_exists="append",
+                             table_schema=table_schema)
