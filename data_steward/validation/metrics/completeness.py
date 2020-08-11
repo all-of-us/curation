@@ -6,7 +6,6 @@ from io import open
 # Project imports
 import bq_utils
 import resources
-from common import CDM_TABLES, PII_TABLES
 from constants.validation.metrics import completeness as consts
 
 
