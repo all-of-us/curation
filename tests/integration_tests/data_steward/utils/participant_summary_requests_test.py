@@ -13,7 +13,6 @@ The intent of this module is to check that GCR access token is generated properl
 """
 
 # Python imports
-import unittest
 import mock
 import os
 
@@ -22,6 +21,7 @@ import pandas
 import pandas.testing
 import google.auth.transport.requests as req
 from google.auth import default
+from dateutil import parser
 
 # Project imports
 import utils.participant_summary_requests as psr
@@ -54,8 +54,10 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
     def setUp(self):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
         self.deactivated_participants = [[
-            'P111', 'NO_CONTACT', '2018-12-07T08:21:14'
-        ], ['P222', 'NO_CONTACT', '2018-12-07T08:21:14']]
+            111, 'NO_CONTACT',
+            pandas.Timestamp('2018-12-07T08:21:14')
+        ], [222, 'NO_CONTACT',
+            pandas.Timestamp('2018-12-07T08:21:14')]]
 
         self.fake_dataframe = pandas.DataFrame(self.deactivated_participants,
                                                columns=self.columns)
@@ -125,6 +127,9 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
 
     @mock.patch('utils.participant_summary_requests.requests.get')
     def test_get_participant_data(self, mock_get):
+        """
+        Mocks calling the participant summary api.
+        """
         # pre conditions
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = self.json_response_entry
@@ -136,6 +141,9 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         self.assertEqual(expected_response, self.participant_data)
 
     def test_get_deactivated_participants_parameters(self):
+        """
+        Ensures error checking is working.
+        """
         # Parameter check tests
         self.assertRaises(RuntimeError, psr.get_deactivated_participants, None,
                           self.dataset_id, self.tablename, self.columns)
@@ -147,51 +155,35 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
                           self.project_id, self.dataset_id, self.tablename,
                           None)
 
-    @mock.patch('utils.participant_summary_requests.store_participant_data')
-    @mock.patch(
-        'utils.participant_summary_requests.get_deactivated_participants')
-    def test_get_deactivated_participants(self,
-                                          mock_get_deactivated_participants,
-                                          mock_store_participant_data):
+    @mock.patch('utils.participant_summary_requests.requests.get')
+    def test_get_deactivated_participants(self, mock_get):
         # Pre conditions
-        mock_get_deactivated_participants.return_value = self.fake_dataframe
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = self.json_response_entry
 
         # Tests
-        dataframe_response = psr.get_deactivated_participants(
-            self.project_id, self.dataset_id, self.tablename, self.columns)
-
-        dataset_response = psr.store_participant_data(dataframe_response,
-                                                      self.project_id,
-                                                      self.destination_table)
-
-        expected_response = mock_store_participant_data(dataframe_response,
-                                                        self.destination_table,
-                                                        self.project_id)
+        psr.get_deactivated_participants(self.project_id, self.dataset_id,
+                                         self.tablename, self.columns)
 
         # Post conditions
-        pandas.testing.assert_frame_equal(
-            dataframe_response,
-            pandas.DataFrame(self.deactivated_participants,
-                             columns=self.columns))
+        values = [(111, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC')),
+                  (222, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC'))]
+        self.assertTableValuesMatch(
+            '.'.join([self.project_id, self.destination_table]), self.columns,
+            values)
 
-        self.assertEqual(dataset_response, expected_response)
-
-    @mock.patch('utils.participant_summary_requests.pandas_gbq.to_gbq')
-    def test_store_participant_data(self, mock_to_gbq):
+    def test_store_participant_data(self):
         # Parameter check test
         self.assertRaises(RuntimeError, psr.store_participant_data,
                           self.fake_dataframe, None, self.destination_table)
 
-        # Pre conditions
-        expected = mock_to_gbq(self.fake_dataframe,
-                               self.destination_table,
-                               self.project_id,
-                               if_exists="append")
-
         # Test
-        results = psr.store_participant_data(self.fake_dataframe,
-                                             self.project_id,
-                                             self.destination_table)
+        psr.store_participant_data(self.fake_dataframe, self.project_id,
+                                   self.destination_table)
 
         # Post conditions
-        self.assertEqual(expected, results)
+        values = [(111, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC')),
+                  (222, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC'))]
+        self.assertTableValuesMatch(
+            '.'.join([self.project_id, self.destination_table]), self.columns,
+            values)
