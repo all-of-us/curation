@@ -1,7 +1,12 @@
+# Python imports
+from io import open
+
+# Third party imports
+
+# Project imports
 import bq_utils
 import resources
 from constants.validation.metrics import completeness as consts
-from io import open
 
 
 def get_hpo_ids():
@@ -72,7 +77,10 @@ def is_hpo_col(hpo_id, col):
     :param col: column summary
     :return: True if col is on specified HPO table, False otherwise
     """
-    return col[consts.TABLE_NAME].startswith(hpo_id)
+    hpo_tables = [
+        bq_utils.get_table_id(hpo_id, table) for table in resources.CDM_TABLES
+    ]
+    return col[consts.TABLE_NAME] in hpo_tables
 
 
 def get_standard_table_name(table_name):

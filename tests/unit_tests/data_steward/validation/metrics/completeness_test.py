@@ -34,10 +34,13 @@ class CompletenessTest(unittest.TestCase):
     def test_is_hpo_col(self):
         col = dict()
         hpo_id = 'bogus_hpo'
+        hpo_id_fake = 'bogus_hpo_fake'
         table_name = 'condition_occurrence'
         col[consts.TABLE_NAME] = bq_utils.get_table_id(hpo_id, table_name)
         self.assertTrue(completeness.is_hpo_col(hpo_id, col))
         col[consts.TABLE_NAME] = table_name
+        self.assertFalse(completeness.is_hpo_col(hpo_id, col))
+        col[consts.TABLE_NAME] = bq_utils.get_table_id(hpo_id_fake, table_name)
         self.assertFalse(completeness.is_hpo_col(hpo_id, col))
 
     @patch('validation.participants.writers.bq_utils.query')
