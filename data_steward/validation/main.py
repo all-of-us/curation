@@ -358,9 +358,6 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             f"Failed to generate full report due to the following cloud error:\n\n{err.content}"
         )
         error_occurred = True
-
-        # re-raise error
-        raise err
     finally:
         # report all results collected (attempt even if cloud error occurred)
         report_data[report_consts.ERROR_OCCURRED_REPORT_KEY] = error_occurred
