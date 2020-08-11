@@ -7,9 +7,9 @@ client = bigquery.Client()
 
 VOCABULARY_DATASET_RE = re.compile(r'^vocabulary\d{8}$')
 RDR_DATASET_RE = re.compile(r'^rdr\d{8}$')
-UNIONED_DATASET_RE = re.compile(r'^unioned_ehr\d{8}$')
-COMBINED_DATASET_RE = re.compile(r'^combined\d{8}(?:v\d+)$')
-DEID_DATASET_RE = re.compile(r'^combined\d{8}.*_deid(?:_clean)$')
+UNIONED_DATASET_RE = re.compile(r'^\d{4}q\dr\d_unioned_ehr$')
+COMBINED_DATASET_RE = re.compile(r'^\d{4}q\dr\d_combined$')
+DEID_DATASET_RE = re.compile(r'^R\d{4}q\dr\d_deid(?:_clean)$')
 TREND_N = 3
 
 
@@ -59,10 +59,10 @@ def _datasets():
     LatestDatasets = collections.namedtuple(
         'LatestDatasets', 'vocabulary rdr unioned combined deid')
     latest = LatestDatasets(vocabulary=vocabulary[0],
-                            rdr=rdr[0],
-                            unioned=unioned[0],
-                            combined=combined[0],
-                            deid=deid[0])
+                            rdr=rdr[0] if rdr else [],
+                            unioned=unioned[0] if unioned else [],
+                            combined=combined[0] if combined else [],
+                            deid=deid[0] if deid else [])
 
     TrendDatasets = collections.namedtuple('TrendDatasets',
                                            'rdr unioned combined deid')
