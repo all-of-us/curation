@@ -9,16 +9,16 @@ test_get_output_table_schemas -- ensures only table schemas for suppressed table
 Original Issue: DC-744
 """
 
+import os
 # Python imports
 import unittest
-import os
 
 # Third party imports
 from mock import patch
 
+from resources import DEID_PATH
 # Project imports
 from tools import run_deid
-from resources import DEID_PATH
 
 
 class RunDeidTest(unittest.TestCase):
@@ -38,11 +38,13 @@ class RunDeidTest(unittest.TestCase):
         self.action = 'debug'
         self.skip_tables = 'foo_table'
         self.tablename = 'bar_table'
+        self.max_age = '89'
 
         self.correct_parameter_list = [
             '--idataset', self.input_dataset, '--private_key', self.private_key,
             '--odataset', self.output_dataset, '--action', self.action,
-            '--skip-tables', self.skip_tables, '--tables', self.tablename
+            '--skip-tables', self.skip_tables, '--tables', self.tablename,
+            '--age_limit', self.max_age
         ]
 
         self.incorrect_parameter_list = [
@@ -94,8 +96,11 @@ class RunDeidTest(unittest.TestCase):
     @patch('tools.run_deid.fields_for')
     @patch('tools.run_deid.copy_suppressed_table_schemas')
     @patch('deid.aou.main')
+    @patch('tools.run_deid.copy_deid_map_table')
+    @patch('tools.run_deid.load_deid_map_table')
     @patch('tools.run_deid.get_output_tables')
-    def test_main(self, mock_tables, mock_main, mock_suppressed, mock_fields):
+    def test_main(self, mock_tables, mock_load, mock_copy, mock_main,
+                  mock_suppressed, mock_fields):
         # Tests if incorrect parameters are given
         self.assertRaises(SystemExit, run_deid.main,
                           self.incorrect_parameter_list)
@@ -113,7 +118,7 @@ class RunDeidTest(unittest.TestCase):
             os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
             '--private_key', self.private_key, '--table', 'fake1', '--action',
             self.action, '--idataset', self.input_dataset, '--log', 'LOGS',
-            '--odataset', self.output_dataset
+            '--odataset', self.output_dataset, '--age_limit', self.max_age
         ])
         self.assertEqual(mock_main.call_count, 1)
 
