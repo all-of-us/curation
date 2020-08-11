@@ -11,8 +11,6 @@ import json
 import logging
 import os
 import re
-import sys
-import traceback
 from io import StringIO, open
 
 # Third party imports
@@ -28,6 +26,7 @@ import cdm
 import common
 import gcs_utils
 import resources
+from utils.slack_alerts import post_message, SlackConfigurationError
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
@@ -53,9 +52,13 @@ def log_traceback(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logging.exception(f"Exception {e.__class__}: {str(e)}",
-                              exc_info=True)
-            traceback.print_exc(file=sys.stdout)
+            alert_message = f"Exception {e.__class__}: {str(e)}"
+            logging.exception(alert_message, exc_info=True, stack_info=True)
+            try:
+                post_message(alert_message)
+            except SlackConfigurationError:
+                logging.exception(
+                    'Slack is not configured for posting messages.')
             raise e
 
     return wrapper
@@ -157,6 +160,7 @@ def run_achilles(hpo_id=None):
 
 
 @api_util.auth_required_cron
+@log_traceback
 def upload_achilles_files(hpo_id):
     result = _upload_achilles_files(hpo_id, "")
     return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
@@ -877,6 +881,7 @@ def _is_string_excluded_file(gcs_file_name):
 
 
 @api_util.auth_required_cron
+@log_traceback
 def copy_files(hpo_id):
     """copies over files from hpo bucket to drc bucket
 
@@ -928,6 +933,7 @@ def upload_string_to_gcs(bucket, name, string):
 
 
 @api_util.auth_required_cron
+@log_traceback
 def union_ehr():
     hpo_id = 'unioned_ehr'
     app_id = bq_utils.app_identity.get_application_id()
@@ -946,6 +952,7 @@ def union_ehr():
 
 
 @api_util.auth_required_cron
+@log_traceback
 def run_retraction_cron():
     project_id = bq_utils.app_identity.get_application_id()
     output_project_id = bq_utils.get_output_project_id()
@@ -984,6 +991,7 @@ def run_retraction_cron():
 
 
 @api_util.auth_required_cron
+@log_traceback
 def validate_pii():
     project = bq_utils.app_identity.get_application_id()
     combined_dataset = bq_utils.get_combined_dataset_id()
@@ -1000,6 +1008,7 @@ def validate_pii():
 
 
 @api_util.auth_required_cron
+@log_traceback
 def write_drc_pii_validation_file():
     project = bq_utils.app_identity.get_application_id()
     validation_dataset = bq_utils.get_validation_results_dataset_id()
@@ -1010,6 +1019,7 @@ def write_drc_pii_validation_file():
 
 
 @api_util.auth_required_cron
+@log_traceback
 def write_sites_pii_validation_files():
     project = bq_utils.app_identity.get_application_id()
     validation_dataset = bq_utils.get_validation_results_dataset_id()
