@@ -48,8 +48,8 @@ import logging
 
 import bq_utils
 import common
-from constants.tools import combine_ehr_rdr as combine_consts
 import resources
+from constants.tools import combine_ehr_rdr as combine_consts
 
 
 def query(q, dst_table_id, write_disposition='WRITE_APPEND'):
