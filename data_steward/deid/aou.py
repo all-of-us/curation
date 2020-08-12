@@ -691,7 +691,7 @@ def main(raw_args=None):
     else:
         LOGGER.error(
             f"Unable to initialize process.  Check _deid_map table "
-            f"contents against {sys_args.get(idataset)}.person contents")
+            f"contents against {sys_args.get('idataset')}.person contents")
 
 
 if __name__ == '__main__':

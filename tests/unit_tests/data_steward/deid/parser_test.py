@@ -63,7 +63,7 @@ class ParserTest(unittest.TestCase):
 
         # setting correct_parameter_dict values not set in setUp function
         correct_parameter_dict['cluster'] = False
-        correct_parameter_dict['age-limit'] = 89
+        correct_parameter_dict['age_limit'] = 89
 
         # Test if correct parameters are given
         results_dict = parse_args(self.correct_parameter_list)
