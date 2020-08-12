@@ -10,6 +10,8 @@ LONG_ARGUMENT = 'long_argument'
 ACTION = 'action'
 DEST = 'dest'
 HELP = 'help'
+TYPE = 'type'
+DEFAULT = 'default'
 REQUIRED = 'required'
 
 
@@ -22,12 +24,9 @@ def default_parse_args(additional_arguments=None):
 
     if additional_arguments is not None:
         for argument in additional_arguments:
-            parser.add_argument(argument[SHORT_ARGUMENT],
-                                argument[LONG_ARGUMENT],
-                                dest=argument[DEST],
-                                action=argument[ACTION],
-                                help=argument[HELP],
-                                required=argument[REQUIRED])
+            short_arg = argument.pop(SHORT_ARGUMENT, None)
+            long_arg = argument.pop(LONG_ARGUMENT, None)
+            parser.add_argument(short_arg, long_arg, **argument)
 
     return parser.parse_args()
 

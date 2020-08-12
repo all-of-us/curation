@@ -19,6 +19,8 @@ ISSUE_NUMBERS = ['DC-1000']
 
 pipeline_tables = 'pipeline_tables'
 
+MAX_AGE = 89
+
 ACTIVITY_SUMMARY = 'activity_summary'
 HEART_RATE_MINUTE_LEVEL = 'heart_rate_minute_level'
 HEART_RATE_SUMMARY = 'heart_rate_summary'
@@ -59,8 +61,12 @@ class PIDtoRID(BaseCleaningRule):
     Use RID instead of PID for specific tables
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 combined_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 combined_dataset_id,
+                 max_age=MAX_AGE):
         """
         Initialize the class with proper info.
 
@@ -80,14 +86,23 @@ class PIDtoRID(BaseCleaningRule):
         self.dataset_ref = gbq.DatasetReference(self.project_id,
                                                 self.dataset_id)
         self.pid_tables = []
-        self.table_refs = []
+        self.table_refs_cols = []
         self.pipeline_tables_ref = gbq.DatasetReference(self.project_id,
                                                         pipeline_tables)
         self.deid_map = gbq.TableReference(self.pipeline_tables_ref,
                                            'deid_mapping')
         self.combined_dataset_ref = gbq.DatasetReference(
             self.project_id, combined_dataset_id)
+        self.max_age = max_age
         self.person = gbq.TableReference(self.combined_dataset_ref, 'person')
+
+    @staticmethod
+    def get_cols_str(cols):
+        cols_list = []
+        for col in cols:
+            join_col = f'd.research_id AS {col}' if col == 'person_id' else f't.{col}'
+            cols_list.append(join_col)
+        return ','.join(cols_list)
 
     def get_query_specs(self):
         """
@@ -99,12 +114,17 @@ class PIDtoRID(BaseCleaningRule):
         """
         queries = []
 
-        for table in self.table_refs:
+        for table_ref_cols in self.table_refs_cols:
+            table = table_ref_cols['ref']
+            cols = table_ref_cols['cols']
+            join_cols = self.get_cols_str(cols)
             table_query = {
                 cdr_consts.QUERY:
-                    PID_RID_QUERY_TMPL.render(fitbit_table=table,
+                    PID_RID_QUERY_TMPL.render(cols=join_cols,
+                                              fitbit_table=table,
                                               deid_map=self.deid_map,
-                                              combined_person=self.person),
+                                              combined_person=self.person,
+                                              max_age=self.max_age),
                 cdr_consts.DESTINATION_TABLE:
                     table.table_id,
                 cdr_consts.DESTINATION_DATASET:
@@ -125,10 +145,13 @@ class PIDtoRID(BaseCleaningRule):
         fitbit_df = table_df.filter(items=FITBIT_TABLES, axis=0)
         pid_tables_df = fitbit_df.loc[fitbit_df['column_name'] == 'person_id']
         self.pid_tables = pid_tables_df['table_name'].to_list()
-        self.table_refs = [
-            gbq.TableReference(self.dataset_ref, table)
-            for table in self.pid_tables
-        ]
+        self.table_refs_cols = [{
+            'ref':
+                gbq.TableReference(self.dataset_ref, table),
+            'cols':
+                fitbit_df.loc[fitbit_df['table_name'] == table]
+                ['column_name'].to_list()
+        } for table in self.pid_tables]
         LOGGER.info(
             f'Identified the following fitbit tables with pids: {self.pid_tables}'
         )
@@ -143,7 +166,8 @@ class PIDtoRID(BaseCleaningRule):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
         """
-        for table in self.table_refs:
+        for table_ref_cols in self.table_refs_cols:
+            table = table_ref_cols['ref']
             query = VALIDATE_QUERY_TMPL.render(
                 fitbit_table=table,
                 deid_map=self.deid_map,
@@ -167,10 +191,22 @@ if __name__ == '__main__':
         parser.REQUIRED: True
     }
 
-    ARGS = parser.default_parse_args(combined_dataset_arg)
+    max_age_arg = {
+        parser.SHORT_ARGUMENT: '-a',
+        parser.LONG_ARGUMENT: '--max_age',
+        parser.ACTION: 'store',
+        parser.DEST: 'max_age',
+        parser.DEFAULT: MAX_AGE,
+        parser.TYPE: int,
+        parser.HELP: f'Set the max age, default={MAX_AGE}',
+        parser.REQUIRED: False
+    }
+
+    ARGS = parser.default_parse_args([combined_dataset_arg, max_age_arg])
     clean_engine.add_console_logging(ARGS.console_log)
     pid_rid_rule = PIDtoRID(ARGS.project_id, ARGS.dataset_id,
-                            ARGS.sandbox_dataset_id, ARGS.combined_dataset_id)
+                            ARGS.sandbox_dataset_id, ARGS.combined_dataset_id,
+                            ARGS.max_age)
     query_list = pid_rid_rule.get_query_specs()
 
     if ARGS.list_queries:
