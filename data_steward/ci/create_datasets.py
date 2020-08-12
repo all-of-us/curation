@@ -68,7 +68,7 @@ def create_test_datasets(config, datasets):
     remove_datasets(project, config.get('GOOGLE_APPLICATION_CREDENTIALS'),
                     config, datasets)
     create_datasets(project, config, datasets)
-    vocab_dataset = f"{project}.vocabulary20200701"
+    vocab_dataset = f"{project}.vocabulary20200723"
     dest_prefix = f"{project}.{config.get('BIGQUERY_DATASET_ID')}"
     copy_vocab_tables(vocab_dataset, dest_prefix)
 
