@@ -6,6 +6,7 @@ The intent of this module is to call and store deactivated participants informat
 """
 
 # Third party imports
+import re
 from google.auth import default
 import google.auth.transport.requests as req
 import requests
@@ -112,7 +113,7 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     deactivated_participants_cols = columns
 
     deactivated_participants = []
-    # loop over participant summary records, insert participant data in same order as good_cols.
+    # loop over participant summary records, insert participant data in same order as deactivated_participant_cols
     for entry in participant_data:
         item = []
         for col in deactivated_participants_cols:
@@ -129,9 +130,21 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
         df['suspensionTime'] = pandas.to_datetime(df['suspensionTime'])
 
     # Transforms participantId to an integer string
-    # Rename participantId column to person_id
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
-    df = df.rename(columns={'participantId': 'person_id'})
+
+    # Rename columns to be consistent with the curation software
+    bq_columns = [
+        '_'.join(re.split('(?=[A-Z])', k)).lower()
+        for k in deactivated_participants_cols
+    ]
+    bq_columns = [
+        'person_id' if k == 'participant_id' else k for k in bq_columns
+    ]
+    column_map = {
+        k: v for k, v in zip(deactivated_participants_cols, bq_columns)
+    }
+
+    df = df.rename(columns=column_map)
 
     # To store dataframe in a BQ dataset table
     destination_table = dataset_id + '.' + tablename

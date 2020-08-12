@@ -7,13 +7,13 @@
     },
     {
         "type": "STRING",
-        "name": "suspensionStatus",
+        "name": "suspension_status",
         "mode": "required",
         "description": "The status of suspension for a participant. Enumerated values: NOT_SUSPENDED and NO_CONTACT"
     },
     {
         "type": "TIMESTAMP",
-        "name": "suspensionTime",
+        "name": "suspension_time",
         "mode": "required",
         "description": "The date and time a participant's status was set to NO_CONTACT"
     }

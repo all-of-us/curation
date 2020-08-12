@@ -53,7 +53,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
 
     def setUp(self):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
-        self.bq_columns = ['person_id'] + self.columns[1:]
+        self.bq_columns = ['person_id', 'suspension_status', 'suspension_time']
         self.deactivated_participants = [[
             111, 'NO_CONTACT',
             pandas.Timestamp('2018-12-07T08:21:14')
@@ -108,23 +108,6 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         }
 
         super().setUp()
-
-    def test_get_access_token(self):
-        # pre conditions
-        scopes = [
-            'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
-        ]
-        credentials, _ = default()
-        credentials = auth.delegated_credentials(credentials, scopes=scopes)
-        request = req.Request()
-        credentials.refresh(request)
-        expected_access_token = credentials.token
-
-        # test
-        actual_access_token = psr.get_access_token()
-
-        # post conditions
-        self.assertEqual(actual_access_token, expected_access_token)
 
     @mock.patch('utils.participant_summary_requests.requests.get')
     def test_get_participant_data(self, mock_get):
