@@ -1,9 +1,9 @@
 [
     {
         "type": "INTEGER",
-        "name": "participantId",
+        "name": "person_id",
         "mode": "required",
-        "description": "The RDR internal unique ID of a participant"
+        "description": "The person_id created by removing the first character form the RDR participantId"
     },
     {
         "type": "STRING",

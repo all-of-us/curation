@@ -2,7 +2,7 @@
 Utility to fetch and store deactivated participants information.
 
 The intent of this module is to call and store deactivated participants information by leveraging the RDR Participant
-    Summary API. Deactivated participant information stored is `participantId`, `suspensionStatus`, and `suspensionTime`.
+    Summary API. Deactivated participant information stored is `participantId`, `suspensionStatus`, and `suspensionTime`
 """
 
 # Third party imports
@@ -125,12 +125,13 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
                           columns=deactivated_participants_cols)
 
     # Converts column `suspensionTime` from string to timestamp
-    for column in deactivated_participants_cols:
-        if column == 'suspensionTime':
-            df[column] = pandas.to_datetime(df[column])
+    if 'suspensionTime' in deactivated_participants_cols:
+        df['suspensionTime'] = pandas.to_datetime(df['suspensionTime'])
 
     # Transforms participantId to an integer string
+    # Rename participantId column to person_id
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
+    df = df.rename(columns={'participantId': 'person_id'})
 
     # To store dataframe in a BQ dataset table
     destination_table = dataset_id + '.' + tablename

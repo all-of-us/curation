@@ -53,6 +53,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
 
     def setUp(self):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
+        self.bq_columns = ['person_id'] + self.columns[1:]
         self.deactivated_participants = [[
             111, 'NO_CONTACT',
             pandas.Timestamp('2018-12-07T08:21:14')
@@ -60,7 +61,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
             pandas.Timestamp('2018-12-07T08:21:14')]]
 
         self.fake_dataframe = pandas.DataFrame(self.deactivated_participants,
-                                               columns=self.columns)
+                                               columns=self.bq_columns)
 
         self.url = 'www.fake_site.com'
         self.headers = {
@@ -169,8 +170,8 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         values = [(111, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC')),
                   (222, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC'))]
         self.assertTableValuesMatch(
-            '.'.join([self.project_id, self.destination_table]), self.columns,
-            values)
+            '.'.join([self.project_id, self.destination_table]),
+            self.bq_columns, values)
 
     def test_store_participant_data(self):
         # Parameter check test
@@ -185,5 +186,5 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         values = [(111, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC')),
                   (222, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC'))]
         self.assertTableValuesMatch(
-            '.'.join([self.project_id, self.destination_table]), self.columns,
-            values)
+            '.'.join([self.project_id, self.destination_table]),
+            self.bq_columns, values)
