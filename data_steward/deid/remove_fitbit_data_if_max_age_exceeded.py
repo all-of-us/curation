@@ -12,7 +12,7 @@ by sandboxing the applicable records and then dropping them.
 import logging
 
 # Third Party Imports
-from jinja2 import Template
+from jinja2 import Environment
 
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -21,15 +21,27 @@ from constants.bq_utils import WRITE_TRUNCATE
 
 LOGGER = logging.getLogger(__name__)
 
+jinja_env = Environment(
+    # help protect against cross-site scripting vulnerabilities
+    autoescape=True,
+    # block tags on their own lines
+    # will not cause extra white space
+    trim_blocks=True,
+    lstrip_blocks=True,
+    # syntax highlighting should be better
+    # with these comment delimiters
+    comment_start_string='--',
+    comment_end_string=' --')
+
 ISSUE_NUMBER = ['DC-1001']
 
-TABLES = ['activity_summary', 'heart_rate_minute_level',
-          'heart_rate_summary', 'steps_intraday']
-
-MAX_AGE = 89
+TABLES = [
+    'activity_summary', 'heart_rate_minute_level', 'heart_rate_summary',
+    'steps_intraday'
+]
 
 # Save rows that will be dropped to a sandboxed dataset
-SAVE_ROWS_TO_BE_DROPPED_QUERY = """
+SAVE_ROWS_TO_BE_DROPPED_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS 
 SELECT * 
 FROM `{{project}}.{{dataset}}.{{table}}`
@@ -38,21 +50,16 @@ WHERE EXISTS(
     EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth as age
     FROM `{{project}}.{{dataset}}.person`
     WHERE age > 89)
-"""
-
-SAVE_ROWS_TO_BE_DROPPED_TMPL = Template(SAVE_ROWS_TO_BE_DROPPED_QUERY)
+""")
 
 # Drop rows where age is greater than 89
-DROP_MAX_AGE_EXCEEDED_ROWS_QUERY = """
-SELECT * FROM `{{project}}.{{dataset}}.{{table}}`
-WHERE EXISTS(
-    SELECT DISTINCT person_id,
-    EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth as age
-    FROM `{{project}}.{{dataset}}.person`
-    WHERE age > 89)
-"""
+DROP_MAX_AGE_EXCEEDED_ROWS_QUERY = jinja_env.from_string("""
+SELECT *
+FROM `{{project}}.{{dataset}}.{{table}}` t
+WHERE person_id IN (
+    SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+""")
 
-DROP_MAX_AGE_EXCEEDED_ROWS_TMPL = Template(DROP_MAX_AGE_EXCEEDED_ROWS_QUERY)
 
 class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
     """
@@ -70,8 +77,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = (
-            'Drops all FitBit data from participants whose max age exceeds 89'
-        )
+            'Drops all FitBit data from participants whose max age exceeds 89')
         super().__init__(issue_numbers=ISSUE_NUMBER,
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
@@ -93,20 +99,23 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
 
         for i, table in enumerate(TABLES):
             sandbox_queries_list.append({
-                SAVE_ROWS_TO_BE_DROPPED_TMPL.render(
-                    project=self.project_id,
-                    sandbox_dataset=self.sandbox_dataset_id,
-                    sandbox_table=self.get_sandbox_tablenames()[i],
-                    dataset=self.dataset_id,
-                    table=table)
+                cdr_consts.QUERY:
+                    SAVE_ROWS_TO_BE_DROPPED_QUERY.render(
+                        project=self.project_id,
+                        sandbox_dataset=self.sandbox_dataset_id,
+                        sandbox_table=self.get_sandbox_tablenames()[i],
+                        dataset=self.dataset_id,
+                        table=table)
             })
 
             drop_queries_list.append({
                 cdr_consts.QUERY:
-                    DROP_MAX_AGE_EXCEEDED_ROWS_TMPL.render(
+                    DROP_MAX_AGE_EXCEEDED_ROWS_QUERY.render(
                         project=self.project_id,
                         dataset=self.dataset_id,
-                        table=table),
+                        table=table,
+                        sandbox_dataset=self.sandbox_dataset_id,
+                        sandbox_table=self.get_sandbox_tablenames()[i]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -115,7 +124,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                     WRITE_TRUNCATE
             })
 
-            return [sandbox_queries_list, drop_queries_list]
+        return [sandbox_queries_list, drop_queries_list]
 
     def setup_rule(self, client):
         """
@@ -151,8 +160,7 @@ if __name__ == '__main__':
 
     clean_engine.add_console_logging(ARGS.console_log)
 
-    cleaner = RemoveFitbitDataIfMaxAgeExceeded(ARGS.project_id,
-                                               ARGS.dataset_id,
+    cleaner = RemoveFitbitDataIfMaxAgeExceeded(ARGS.project_id, ARGS.dataset_id,
                                                ARGS.sandbox_dataset_id)
     query_list = cleaner.get_query_specs()
 
