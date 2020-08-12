@@ -184,7 +184,7 @@ def parse_args(raw_args=None):
               'generalize, suppress, shift, compute'))
     parser.add_argument(
         '--age-limit',
-        dest='age-limit',
+        dest='age_limit',
         action='store',
         default=89,
         type=int,
