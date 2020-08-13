@@ -6,9 +6,8 @@ from utils.bq import JINJA_ENV
 FILENAME = os.path.join(tempfile.gettempdir(), 'cleaner.log')
 
 QUERY_RUN_MESSAGE = '''
-Cleaning rule {{module_name}}.{{function_name}}
-Rule {{rule_no}} out of {{rule_count}} 
-Query {{query_no}} out of {{query_count}}
+Clean rule {{module_name}}.{{function_name}}
+    rule {{rule_no}}/{{rule_count}} query {{query_no}}/{{query_count}}
     query={{query}}"
 '''
 
