@@ -45,7 +45,8 @@ def log_traceback(func):
                 post_message(alert_message)
             except SlackConfigurationError:
                 logging.exception(
-                    'Slack is not configured for posting messages.')
+                    'Slack is not configured for posting messages, refer to playbook.'
+                )
             raise e
 
     return wrapper
@@ -73,6 +74,7 @@ def _handle_error(alert_message, view_message=None, response_code=None):
     The alert message may contain sensitive information and should NEVER be used
     as part of the view message or view return value.
 
+    TODO reuse this handler in the future after deprecating log_traceback
     :param alert_message:  the message intended to be sent to the alerting
         mechanism
     :param view_message:  the message that will be provided to the end user in
