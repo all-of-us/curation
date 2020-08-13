@@ -200,7 +200,7 @@ def run_queries(client, query_list, module_info_dict):
     :return: integers indicating the number of queries that succeeded and failed
     """
     query_count = len(query_list)
-    successes, failures = 0, 0
+    successes, failures = [], []
     for index, query_dict in enumerate(query_list):
         try:
             LOGGER.info(
@@ -221,10 +221,10 @@ def run_queries(client, query_list, module_info_dict):
                                                           **module_info_dict,
                                                           **query_dict,
                                                           exception=exp))
-            failures += 1
+            failures.append(query_dict[cdr_consts.QUERY])
             continue
         else:
-            successes += 1
+            successes.append(query_dict[cdr_consts.QUERY])
     return successes, failures
 
 
@@ -245,6 +245,68 @@ def get_module_info(query_function):
         cdr_consts.LINE_NO: line_no
     }
     return module_info_dict
+
+
+def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id, client=None):
+    """
+    Identify the type of the clean rule set up if client is provided
+
+    :param clazz: Clean rule class or old style clean function
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset to clean
+    :param sandbox_dataset_id: identifies the dataset to store sandbox tables
+    :param client: BQ client
+    :return: query_list: list of query_dicts
+             query_function: function that generated query_list
+    """
+    if issubclass(clazz, BaseCleaningRule):
+        instance = clazz(project_id, dataset_id, sandbox_dataset_id)
+
+        query_function = instance.get_query_specs
+
+        if client is not None:
+            instance.setup_rule(client)
+
+        query_list = instance.get_query_specs()
+    else:
+        query_function = clazz
+        try:
+            query_list = clazz(project_id, dataset_id, sandbox_dataset_id)
+        except TypeError:
+            # raised when called with the 3 parameters and only 2 are needed
+            query_list = clazz(project_id, dataset_id)
+    return query_list, query_function
+
+
+def get_query_list(project_id=None,
+                   dataset_id=None,
+                   rules=None,
+                   data_stage=cdr_consts.DataStage.UNSPECIFIED):
+    """
+    Generates list of all query_dicts that will be run on the dataset
+
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset to clean
+    :param rules: a list of cleaning rule objects/functions as tuples
+    :param data_stage: an enum to indicate what stage of the cleaning this is
+    :return list of all query_dicts that will be run on the dataset
+    """
+    if project_id is None or project_id == '' or project_id.isspace():
+        project_id = app_identity.get_application_id()
+        LOGGER.info(f"project_id not provided, using default {project_id}")
+
+    if rules is None:
+        rules = DATA_STAGE_RULES_MAPPING.get(data_stage, [])
+
+    sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
+
+    all_queries_list = []
+    for rule in rules:
+        clazz = rule[0]
+        query_list, _ = infer_rule(clazz, project_id, dataset_id,
+                                   sandbox_dataset_id)
+        all_queries_list.extend(query_list)
+    return all_queries_list
 
 
 def clean_dataset_v1(project_id=None,
@@ -270,63 +332,33 @@ def clean_dataset_v1(project_id=None,
     client = bq.get_client(project_id=project_id)
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
                                                         dataset_id=dataset_id)
-    successful_rules, failed_rules = 0, 0
+    successful_rules, failed_rules = [], []
     for rule in rules:
         clazz = rule[0]
-        try:
-            instance = clazz(project_id, dataset_id, sandbox_dataset_id)
-        except TypeError:
-            # raised when called with the 3 parameters and only 2 are needed
-            query_list = clazz(project_id, dataset_id)
-            query_function = clazz
-        else:
-            # should eventually be the main component of this function.
-            # Everything should transition to using a common base class.
-            if isinstance(instance, BaseCleaningRule):
-
-                keywords = rule[-1]
-                if isinstance(keywords, dict):
-                    positionals = rule[1:-1]
-                else:
-                    keywords = {}
-                    positionals = rule[1:]
-
-                query_function = instance.get_query_specs
-
-                # setup
-                try:
-                    instance.setup_rule(client)
-                except NotImplementedError:
-                    logging.warning(
-                        f"setup rule not implemented for {query_function.__name__}"
-                    )
-
-                query_list = instance.get_query_specs()
-            else:
-                query_list = clazz(project_id, dataset_id, sandbox_dataset_id)
-                query_function = clazz
-
+        query_list, query_function = infer_rule(client, clazz, project_id,
+                                                dataset_id, sandbox_dataset_id)
         module_info_dict = get_module_info(query_function)
         successes, failures = run_queries(client, query_list, module_info_dict)
         LOGGER.info(
             f"Status: {successes} successes and {failures} failures out of "
             f"{len(query_list)} queries for clean rule {module_info_dict}")
-        if failures > 0:
-            failed_rules += 1
-        if successes > 0:
-            successful_rules += 1
+        if failures:
+            failed_rules[module_info_dict[cdr_consts.MODULE_NAME]] = failures
+        if successes:
+            successful_rules[module_info_dict[
+                cdr_consts.MODULE_NAME]] = successes
 
-    if successful_rules > 0:
+    if len(successful_rules) > 0:
         LOGGER.info(
-            f"Successfully applied {successful_rules} clean rules for {project_id}.{data_stage}"
+            f"Successfully applied {len(successful_rules)} clean rules for {project_id}.{data_stage}"
         )
     else:
         LOGGER.warning(
             f"No clean rules successfully applied to {project_id}.{data_stage}")
 
-    if failed_rules > 0:
+    if len(failed_rules) > 0:
         LOGGER.warning(
-            f"Failed to apply {failed_rules} clean rules for {project_id}.{data_stage}"
+            f"Failed to apply {len(failed_rules)} clean rules for {project_id}.{data_stage}"
         )
     else:
         LOGGER.info(
