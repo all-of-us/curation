@@ -27,6 +27,30 @@ DEFAULT_VIEW_MESSAGE = {
 DEFAULT_ERROR_STATUS = 500
 
 
+def log_traceback(func):
+    """
+    Wrapper that prints exception tracebacks to stdout
+
+    This is only a temporary fix until we add capability to handle
+    all errors encountered by the app within this module/errors_blueprint
+    """
+
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            alert_message = f"Exception {e.__class__}: {str(e)}"
+            logging.exception(alert_message, exc_info=True, stack_info=True)
+            try:
+                post_message(alert_message)
+            except SlackConfigurationError:
+                logging.exception(
+                    'Slack is not configured for posting messages.')
+            raise e
+
+    return wrapper
+
+
 class InternalValidationError(RuntimeError):
     """Raised when an internal error occurs during validation"""
 

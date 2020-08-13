@@ -26,14 +26,14 @@ import cdm
 import common
 import gcs_utils
 import resources
-from utils.slack_alerts import post_message, SlackConfigurationError
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, initialize_logging
 from retraction import retract_data_bq, retract_data_gcs
 from validation import achilles, achilles_heel, ehr_union, export, hpo_report
-from validation.app_errors import (errors_blueprint, InternalValidationError,
+from validation.app_errors import (log_traceback, errors_blueprint,
+                                   InternalValidationError,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
 from validation import email_notification as en
@@ -43,25 +43,6 @@ app = Flask(__name__)
 
 # register application error handlers
 app.register_blueprint(errors_blueprint)
-
-
-def log_traceback(func):
-    """Wrapper that prints exception tracebacks to stdout"""
-
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            alert_message = f"Exception {e.__class__}: {str(e)}"
-            logging.exception(alert_message, exc_info=True, stack_info=True)
-            try:
-                post_message(alert_message)
-            except SlackConfigurationError:
-                logging.exception(
-                    'Slack is not configured for posting messages.')
-            raise e
-
-    return wrapper
 
 
 def all_required_files_loaded(result_items):
