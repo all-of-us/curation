@@ -340,7 +340,7 @@ def clean_dataset_v1(project_id=None,
         module_info_dict = get_module_info(query_function)
         successes, failures = run_queries(client, query_list, module_info_dict)
         LOGGER.info(
-            f"Status: {successes} successes and {failures} failures out of "
+            f"Status: {len(successes)} successes and {len(failures)} failures out of "
             f"{len(query_list)} queries for clean rule {module_info_dict}")
         if failures:
             failed_rules[module_info_dict[cdr_consts.MODULE_NAME]] = failures
