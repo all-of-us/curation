@@ -92,6 +92,6 @@ class AppErrorHandlersTest(TestCase):
 
             mock_check_cron.assert_called_once()
             # asserts the handler was called, based on it's contents
-            mock_alert_message.assert_called_once()
+            mock_alert_message.assert_called()
             self.assertEqual(response.status_code,
                              app_errors.DEFAULT_ERROR_STATUS)
