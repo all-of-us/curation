@@ -39,6 +39,19 @@ class AppErrorHandlersTest(TestCase):
         ]
 
     @mock.patch('validation.app_errors.post_message')
+    def test_log_traceback(self, mock_post):
+        message = f"This is a test Exception"
+        exception = ValueError(message)
+        alert_msg = f"Exception {exception.__class__}: {message}"
+
+        @app_errors.log_traceback
+        def fake_function():
+            raise exception
+
+        self.assertRaises(ValueError, fake_function)
+        mock_post.assert_called_once_with(alert_msg)
+
+    @mock.patch('validation.app_errors.post_message')
     def test_handler_functions(self, mock_alert_message):
         """
         Test that all the handlers behave as expected.

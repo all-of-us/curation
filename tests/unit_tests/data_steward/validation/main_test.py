@@ -34,19 +34,6 @@ class ValidationMainTest(TestCase):
         self.addCleanup(mock_get_hpo_name.stop)
         self.folder_prefix = '2019-01-01-v1/'
 
-    @mock.patch('validation.main.post_message')
-    def test_log_traceback(self, mock_post):
-        message = f"This is a test Exception"
-        exception = ValueError(message)
-        alert_msg = f"Exception {exception.__class__}: {message}"
-
-        @main.log_traceback
-        def fake_function():
-            raise exception
-
-        self.assertRaises(ValueError, fake_function)
-        mock_post.assert_called_once_with(alert_msg)
-
     def test_retention_checks_list_submitted_bucket_items(self):
         outside_retention = datetime.datetime.today() - datetime.timedelta(
             days=29)
