@@ -27,6 +27,31 @@ DEFAULT_VIEW_MESSAGE = {
 DEFAULT_ERROR_STATUS = 500
 
 
+def log_traceback(func):
+    """
+    Wrapper that prints exception tracebacks to stdout
+
+    This is only a temporary fix until we add capability to handle
+    all errors encountered by the app within this module/errors_blueprint
+    """
+
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            alert_message = format_alert_message(e.__class__.__name__, str(e))
+            logging.exception(alert_message, exc_info=True, stack_info=True)
+            try:
+                post_message(alert_message)
+            except SlackConfigurationError:
+                logging.exception(
+                    'Slack is not configured for posting messages, refer to playbook.'
+                )
+            raise e
+
+    return wrapper
+
+
 class InternalValidationError(RuntimeError):
     """Raised when an internal error occurs during validation"""
 
@@ -49,6 +74,7 @@ def _handle_error(alert_message, view_message=None, response_code=None):
     The alert message may contain sensitive information and should NEVER be used
     as part of the view message or view return value.
 
+    TODO reuse this handler in the future after deprecating log_traceback
     :param alert_message:  the message intended to be sent to the alerting
         mechanism
     :param view_message:  the message that will be provided to the end user in
@@ -61,13 +87,6 @@ def _handle_error(alert_message, view_message=None, response_code=None):
     :return: A message string for the view in json format and an error code.
         Any error raised by the application will return a 500 code.
     """
-    try:
-        post_message(alert_message)
-    except SlackConfigurationError:
-        LOGGER.exception('Slack is not configured for posting messages.  '
-                         'Read the playbook for deployment and updated as '
-                         'as needed.')
-
     view_message = view_message if isinstance(view_message,
                                               (dict,
                                                str)) else DEFAULT_VIEW_MESSAGE
@@ -84,7 +103,7 @@ def format_alert_message(raised_error, message):
     :param message: Message accompanying the error
     :return: Formatted f-string
     """
-    return f"Error raised: {raised_error}\nMessage: {message}"
+    return f"{raised_error}: {message}"
 
 
 @errors_blueprint.app_errorhandler(BucketDoesNotExistError)

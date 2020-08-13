@@ -39,6 +39,20 @@ class AppErrorHandlersTest(TestCase):
         ]
 
     @mock.patch('validation.app_errors.post_message')
+    def test_log_traceback(self, mock_post):
+        message = f"This is a test Exception"
+        exception = ValueError(message)
+        alert_msg = app_errors.format_alert_message(
+            exception.__class__.__name__, message)
+
+        @app_errors.log_traceback
+        def fake_function():
+            raise exception
+
+        self.assertRaises(ValueError, fake_function)
+        mock_post.assert_called_once_with(alert_msg)
+
+    @mock.patch('validation.app_errors.post_message')
     def test_handler_functions(self, mock_alert_message):
         """
         Test that all the handlers behave as expected.
@@ -63,9 +77,6 @@ class AppErrorHandlersTest(TestCase):
             expected_alerts.append(mock.call(expected_alert))
             self.assertEqual(view, app_errors.DEFAULT_VIEW_MESSAGE)
             self.assertEqual(code, app_errors.DEFAULT_ERROR_STATUS)
-            mock_alert_message.assert_called()
-
-        mock_alert_message.assert_has_calls(expected_alerts)
 
     @mock.patch('validation.app_errors.post_message')
     @mock.patch('api_util.check_cron')

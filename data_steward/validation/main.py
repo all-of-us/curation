@@ -32,7 +32,8 @@ from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, initialize_logging
 from retraction import retract_data_bq, retract_data_gcs
 from validation import achilles, achilles_heel, ehr_union, export, hpo_report
-from validation.app_errors import (errors_blueprint, InternalValidationError,
+from validation.app_errors import (log_traceback, errors_blueprint,
+                                   InternalValidationError,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
 from validation import email_notification as en
@@ -140,6 +141,7 @@ def run_achilles(hpo_id=None):
 
 
 @api_util.auth_required_cron
+@log_traceback
 def upload_achilles_files(hpo_id):
     result = _upload_achilles_files(hpo_id, "")
     return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
@@ -174,6 +176,7 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
 
 
 @api_util.auth_required_cron
+@log_traceback
 def validate_hpo_files(hpo_id):
     """
     validation end point for individual hpo_ids
@@ -183,6 +186,7 @@ def validate_hpo_files(hpo_id):
 
 
 @api_util.auth_required_cron
+@log_traceback
 def validate_all_hpos():
     """
     validation end point for all hpo_ids
@@ -858,6 +862,7 @@ def _is_string_excluded_file(gcs_file_name):
 
 
 @api_util.auth_required_cron
+@log_traceback
 def copy_files(hpo_id):
     """copies over files from hpo bucket to drc bucket
 
@@ -909,6 +914,7 @@ def upload_string_to_gcs(bucket, name, string):
 
 
 @api_util.auth_required_cron
+@log_traceback
 def union_ehr():
     hpo_id = 'unioned_ehr'
     app_id = bq_utils.app_identity.get_application_id()
@@ -927,6 +933,7 @@ def union_ehr():
 
 
 @api_util.auth_required_cron
+@log_traceback
 def run_retraction_cron():
     project_id = bq_utils.app_identity.get_application_id()
     output_project_id = bq_utils.get_output_project_id()
@@ -965,6 +972,7 @@ def run_retraction_cron():
 
 
 @api_util.auth_required_cron
+@log_traceback
 def validate_pii():
     project = bq_utils.app_identity.get_application_id()
     combined_dataset = bq_utils.get_combined_dataset_id()
@@ -981,6 +989,7 @@ def validate_pii():
 
 
 @api_util.auth_required_cron
+@log_traceback
 def write_drc_pii_validation_file():
     project = bq_utils.app_identity.get_application_id()
     validation_dataset = bq_utils.get_validation_results_dataset_id()
@@ -991,6 +1000,7 @@ def write_drc_pii_validation_file():
 
 
 @api_util.auth_required_cron
+@log_traceback
 def write_sites_pii_validation_files():
     project = bq_utils.app_identity.get_application_id()
     validation_dataset = bq_utils.get_validation_results_dataset_id()
