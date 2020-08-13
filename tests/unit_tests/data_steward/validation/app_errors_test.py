@@ -42,7 +42,8 @@ class AppErrorHandlersTest(TestCase):
     def test_log_traceback(self, mock_post):
         message = f"This is a test Exception"
         exception = ValueError(message)
-        alert_msg = f"Exception {exception.__class__}: {message}"
+        alert_msg = app_errors.format_alert_message(
+            exception.__class__.__name__, message)
 
         @app_errors.log_traceback
         def fake_function():
@@ -76,9 +77,6 @@ class AppErrorHandlersTest(TestCase):
             expected_alerts.append(mock.call(expected_alert))
             self.assertEqual(view, app_errors.DEFAULT_VIEW_MESSAGE)
             self.assertEqual(code, app_errors.DEFAULT_ERROR_STATUS)
-            mock_alert_message.assert_called()
-
-        mock_alert_message.assert_has_calls(expected_alerts)
 
     @mock.patch('validation.app_errors.post_message')
     @mock.patch('api_util.check_cron')
@@ -92,6 +90,6 @@ class AppErrorHandlersTest(TestCase):
 
             mock_check_cron.assert_called_once()
             # asserts the handler was called, based on it's contents
-            mock_alert_message.assert_called()
+            mock_alert_message.assert_called_once()
             self.assertEqual(response.status_code,
                              app_errors.DEFAULT_ERROR_STATUS)
