@@ -1,0 +1,20 @@
+[
+    {
+        "type": "INTEGER",
+        "name": "person_id",
+        "mode": "required",
+        "description": "The person_id created by removing the first character form the RDR participantId"
+    },
+    {
+        "type": "STRING",
+        "name": "suspension_status",
+        "mode": "required",
+        "description": "The status of suspension for a participant. Enumerated values: NOT_SUSPENDED and NO_CONTACT"
+    },
+    {
+        "type": "TIMESTAMP",
+        "name": "suspension_time",
+        "mode": "required",
+        "description": "The date and time a participant's status was set to NO_CONTACT"
+    }
+]
