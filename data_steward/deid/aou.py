@@ -89,6 +89,7 @@ from google.oauth2 import service_account
 # Project imports
 import bq_utils
 import constants.bq_utils as bq_consts
+from constants.deid.deid import MAX_AGE
 from deid.parser import parse_args
 from deid.press import Press
 from resources import DEID_PATH
@@ -276,7 +277,7 @@ class AOU(Press):
         Press.initialize(self, **args)
         LOGGER.info(f"BEGINNING de-identification on table:\t{self.tablename}")
 
-        age_limit = args.get('age_limit', 89)
+        age_limit = args.get('age_limit', MAX_AGE)
         LOGGER.info(f"Using participant age limit of {age_limit}")
 
         million = 1000000
@@ -315,7 +316,8 @@ class AOU(Press):
         # ensure no age ineligible participants are available in the mapping table
         ineligible_person_table = person_table[person_table.age >= age_limit]
         if ineligible_person_table.shape[0] > 0:
-            LOGGER.error(f"Some age ineligible participants are available in "
+            LOGGER.error(f"{ineligible_person_table.shape[0]} age ineligible "
+                         f"participants are available in "
                          f"{map_tablename}.  Deid is bailing out!!")
 
         LOGGER.info(f"map table contains {eligible_person_table.shape[0]} "
