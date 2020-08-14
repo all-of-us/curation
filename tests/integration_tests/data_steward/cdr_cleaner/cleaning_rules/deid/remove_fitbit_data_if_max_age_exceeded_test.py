@@ -1,0 +1,129 @@
+"""
+Integration test for remove_fitbit_data_if_max_age_exceeded module
+
+Original Issues: DC-1001
+
+The intent is to ensure there is no data for participants over the age of 89 in
+Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables
+by sandboxing the applicable records and then dropping them.
+"""
+
+# Python Imports
+import os
+
+# Project Imports
+from app_identity import PROJECT_ID
+from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded, TABLES
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+
+
+class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
+
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
+        super().initialize_class_vars()
+
+        # Set the test project identifier
+        project_id = os.environ.get(PROJECT_ID)
+        cls.project_id = project_id
+
+        # Set the expected test datasets
+        dataset_id = os.environ.get('RDR_DATASET_ID')
+        sandbox_id = dataset_id + '_sandbox'
+
+        cls.query_class = RemoveFitbitDataIfMaxAgeExceeded(
+            project_id, dataset_id, sandbox_id)
+
+        # template for data that will be inserted into the FitBit tables
+        cls.insert_fake_fitbit_data_tmpls = [
+            cls.jinja_env.from_string("""
+            INSERT INTO `{{fq_table_name}}`
+            (person_id)
+            VALUES
+            (111), (222), (333), (444), (555)
+            """)
+        ]
+
+        # Generates list of fully qualified sandbox table names
+        sb_table_names = cls.query_class.get_sandbox_tablenames()
+        for table_name in sb_table_names:
+            cls.fq_sandbox_table_names.append(
+                f'{project_id}.{sandbox_id}.{table_name}')
+
+        # Generates list of fully qualified table names
+        cls.fq_table_names.append(f'{project_id}.{dataset_id}.person')
+        for table in TABLES:
+            cls.fq_table_names.append(f'{project_id}.{dataset_id}.{table}')
+
+        # call super to set up the client, create datasets, and create
+        # empty test tables
+        # NOTE:  does not create empty sandbox tables.
+        super().setUpClass()
+
+    def setUp(self):
+        """
+        Add data to the tables for the rule to run on
+        """
+
+        self.load_statements = []
+
+        # Create the string(s) to load the data
+        for tmpl in self.insert_fake_fitbit_data_tmpls:
+            for i in range(1, 5):
+                query = tmpl.render(fq_table_name=self.fq_table_names[i])
+                self.load_statements.append(query)
+
+        fq_dataset_name = self.fq_table_names[0].split('.')
+        self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
+
+        super().setUp()
+
+    def test_max_age(self):
+        """
+        Tests that the specifications for SAVE_ROWS_TO_BE_DROPPED_QUERY and
+        DROP_MAX_AGE_EXCEEDED_ROWS_QUERY perform as designed.
+
+        Validates pre conditions, tests execution, and post conditions based on the load
+        statements and the tables_and_counts variable.
+        """
+
+        tmpl = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.person`
+        (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
+        VALUES
+        (111, 0, 1900, 0, 0),
+        (222, 0, 1910, 0, 0),
+        (333, 0, 1920, 0, 0),
+        (444, 0, 1951, 0, 0),
+        (555, 0, 1951, 0, 0)
+        """)
+
+        query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
+
+        # Load person table data before the rest of the data is loaded
+        # so all required columns are included
+        self.load_test_data([query])
+
+        # Iterate through and load data for all tables except for the person table
+        for i in range(0, 4):
+            self.load_test_data([self.load_statements[i]])
+
+        tables_and_counts_list = []
+        for i in range(0, 4):
+            tables_and_counts = {
+                'fq_table_name': self.fq_table_names[i+1],
+                'fq_sandbox_table_name': self.fq_sandbox_table_names[i],
+                'fields': [
+                    'person_id'
+                ],
+                'loaded_ids': [111, 222, 333, 444, 555],
+                'sandboxed_ids': [111, 222, 333],
+                'cleaned_values': [(444,), (555,)]
+            }
+            tables_and_counts_list.append(tables_and_counts)
+
+        self.default_test(tables_and_counts_list)
