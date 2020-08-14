@@ -33,8 +33,6 @@ jinja_env = Environment(
     comment_start_string='--',
     comment_end_string=' --')
 
-ISSUE_NUMBER = ['DC-1001']
-
 TABLES = [
     'activity_summary', 'heart_rate_minute_level', 'heart_rate_summary',
     'steps_intraday'
@@ -42,22 +40,23 @@ TABLES = [
 
 # Save rows that will be dropped to a sandboxed dataset
 SAVE_ROWS_TO_BE_DROPPED_QUERY = jinja_env.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS 
-SELECT * 
-FROM `{{project}}.{{dataset}}.{{table}}`
-WHERE EXISTS(
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
+SELECT * FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE person_id IN (
+  SELECT person_id
+    FROM (
     SELECT DISTINCT person_id,
-    EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth as age
-    FROM `{{project}}.{{dataset}}.person`
-    WHERE age > 89)
+        EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth AS age
+            FROM `{{project}}.{{dataset}}.person` ORDER BY 2)
+        WHERE age > 89)
 """)
 
 # Drop rows where age is greater than 89
 DROP_MAX_AGE_EXCEEDED_ROWS_QUERY = jinja_env.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}` t
-WHERE person_id IN (
-    SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+WHERE person_id NOT IN (
+    SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)
 """)
 
 
@@ -78,7 +77,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
         """
         desc = (
             'Drops all FitBit data from participants whose max age exceeds 89')
-        super().__init__(issue_numbers=ISSUE_NUMBER,
+        super().__init__(issue_numbers=['DC1001'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          project_id=project_id,
@@ -94,9 +93,9 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
             and a specification for how to execute that query. The specifications
             are optional but the query is required.
         """
+
         sandbox_queries_list = []
         drop_queries_list = []
-
         for i, table in enumerate(TABLES):
             sandbox_queries_list.append({
                 cdr_consts.QUERY:
@@ -108,6 +107,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                         table=table)
             })
 
+        for i, table in enumerate(TABLES):
             drop_queries_list.append({
                 cdr_consts.QUERY:
                     DROP_MAX_AGE_EXCEEDED_ROWS_QUERY.render(
