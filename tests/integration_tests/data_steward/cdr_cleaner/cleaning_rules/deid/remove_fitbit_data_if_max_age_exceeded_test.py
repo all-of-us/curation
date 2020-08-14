@@ -115,11 +115,9 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts_list = []
         for i in range(0, 4):
             tables_and_counts = {
-                'fq_table_name': self.fq_table_names[i+1],
+                'fq_table_name': self.fq_table_names[i + 1],
                 'fq_sandbox_table_name': self.fq_sandbox_table_names[i],
-                'fields': [
-                    'person_id'
-                ],
+                'fields': ['person_id'],
                 'loaded_ids': [111, 222, 333, 444, 555],
                 'sandboxed_ids': [111, 222, 333],
                 'cleaned_values': [(444,), (555,)]
