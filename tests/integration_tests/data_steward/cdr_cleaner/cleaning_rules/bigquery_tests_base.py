@@ -95,6 +95,7 @@ class BaseTest:
                 cls.client.create_dataset(dataset, exists_ok=True)
 
         def setUp(self):
+            self.tearDownClass()
             bq.create_tables(self.client, self.project_id, self.fq_table_names,
                              True)
 

@@ -1,0 +1,80 @@
+[
+  {
+    "type": "date",
+    "name": "date",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "float", 
+    "name": "activity_calories",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "float",
+    "name": "calories_bmr",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "float",
+    "name": "calories_out",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "float",
+    "name": "elevation",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "float",
+    "name": "fairly_active_minutes",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "integer",
+    "name": "floors",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "float",
+    "name": "lightly_active_minutes",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "float",
+    "name": "marginal_calories",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "float",
+    "name": "sedentary_minutes",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "integer",
+    "name": "steps",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "float",
+    "name": "very_active_minutes",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "nullable",
+    "description": ""
+  }
+]
