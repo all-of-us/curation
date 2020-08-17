@@ -61,6 +61,7 @@ WHERE
     concept_id
   FROM
     `{{project_id}}.{{pipeline_tables_dataset}}.{{cope_concepts_table}}`)
+    `{{project}}.{{pipeline_tables_dataset}}.{{cope_concepts_table}}`)
     """)
 
 DATE_SHIFT_QUERY = jinja_env.from_string("""
