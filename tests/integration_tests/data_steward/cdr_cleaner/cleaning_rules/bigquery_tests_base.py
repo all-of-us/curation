@@ -334,22 +334,16 @@ class BaseTest:
 
     class DeidRulesTestBase(CleaningRulesTestBase):
         """
-        Class that can be extended and used to test cleaning rules.
+        Class that can be extended and used to test deid cleaning rules.
 
-        This class defines basic tests that can be used by extending classes
-        to support integration testing.  The test functions can be overridden
-        by extending classes, if desired.  These tests will minimally ensure
-        that sandbox tables are empty and all data is loaded prior to test
-        execution.  They will then ensure only expected cleaned data exists in
-        the cleaned tables, and defined sandboxed data exists in the sandbox
-        table(s).  This class is optional and is not required.  It is here to
-        support testing efforts.  All assertions are based on {tablename}_id fields.
+        This class adds a helper to create a mapping table and a tearDown
+        to remove the named deid map table.
         """
 
         @classmethod
         def initialize_class_vars(cls):
             super().initialize_class_vars()
-            fq_mapping_tablename = ''
+            cls.fq_mapping_tablename = ''
 
         def create_mapping_table(self):
             """

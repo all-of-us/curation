@@ -2,6 +2,8 @@
 The basic date shifting rule..
 
 Original Issue:  DC-1005
+This is an abstract class and cannot be directly instantiated.  It must be
+extended to be used.
 """
 # Python Imports
 import logging
