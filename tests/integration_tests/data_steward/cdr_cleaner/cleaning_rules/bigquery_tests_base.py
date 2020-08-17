@@ -14,6 +14,7 @@ import unittest
 
 # Third party imports
 import google.cloud.exceptions as gc_exc
+from google.cloud import bigquery
 from jinja2 import Environment
 
 # Project imports
@@ -330,3 +331,47 @@ class BaseTest:
                     # that the table data loaded correctly.
                     fields = [table_info.get('fields', [])[0]]
                     self.assertRowIDsMatch(fq_sandbox_name, fields, values)
+
+    class DeidRulesTestBase(CleaningRulesTestBase):
+        """
+        Class that can be extended and used to test cleaning rules.
+
+        This class defines basic tests that can be used by extending classes
+        to support integration testing.  The test functions can be overridden
+        by extending classes, if desired.  These tests will minimally ensure
+        that sandbox tables are empty and all data is loaded prior to test
+        execution.  They will then ensure only expected cleaned data exists in
+        the cleaned tables, and defined sandboxed data exists in the sandbox
+        table(s).  This class is optional and is not required.  It is here to
+        support testing efforts.  All assertions are based on {tablename}_id fields.
+        """
+
+        @classmethod
+        def initialize_class_vars(cls):
+            super().initialize_class_vars()
+            fq_mapping_tablename = ''
+
+        def create_mapping_table(self):
+            """
+            Create a mapping table with a mapping table schema.
+            """
+
+            # create a false mapping table
+            schema = [
+                bigquery.SchemaField("person_id", "INTEGER", mode="REQUIRED"),
+                bigquery.SchemaField("research_id", "INTEGER", mode="REQUIRED"),
+                bigquery.SchemaField("shift", "INTEGER", mode="REQUIRED"),
+            ]
+
+            table = bigquery.Table(self.fq_mapping_tablename, schema=schema)
+            table = self.client.create_table(table)  # Make an API request.
+
+        def tearDown(self):
+            """
+            Clear and drop the mapping table between each test.
+            """
+            # delete the mapping table
+            self.drop_rows(self.fq_mapping_tablename)
+            self.client.delete_table(self.fq_mapping_tablename)
+
+            super().tearDown()

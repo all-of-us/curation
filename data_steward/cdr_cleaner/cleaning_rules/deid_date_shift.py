@@ -47,9 +47,13 @@ FROM `{{project}}.{{dataset}}.{{table}}` AS remodel)
 """)
 
 
-class DateShiftFieldsRule(BaseCleaningRule):
+class DateShiftRule(BaseCleaningRule):
     """
-    Suppress rows by values in the observation_source_concept_id field.
+    Date shift fields from 1 - 365 days in the past.
+
+    Performs a "day" shift for any field in the provided table names
+    and schemas.  Uses the field type to determine the shift function to
+    use.  Currently works for the DATE, DATETIME, and TIMESTAMP type fields.
     """
 
     def __init__(self,

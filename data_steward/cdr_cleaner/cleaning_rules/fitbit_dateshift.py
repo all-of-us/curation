@@ -10,7 +10,7 @@ Original Issue:  DC-1005
 import logging
 
 # Project imports
-from cdr_cleaner.cleaning_rules.deid_date_shift import DateShiftFieldsRule
+from cdr_cleaner.cleaning_rules.deid_date_shift import DateShiftRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from resources import fields_for
 
@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 ISSUE_NUMBERS = ['DC-1005']
 
 
-class DateShiftFitbitFieldsRule(DateShiftFieldsRule):
+class FitbitDateShiftRule(DateShiftRule):
     """
     Suppress rows by values in the observation_source_concept_id field.
     """
@@ -223,9 +223,9 @@ if __name__ == '__main__':
                         help=('Name of the mapping table to use'))
     ARGS = parser.parse_args()
     clean_engine.add_console_logging(ARGS.console_log)
-    date_shifter = DateShiftFitbitFieldsRule(ARGS.project_id, ARGS.dataset_id,
-                                             ARGS.sandbox_dataset_id,
-                                             ARGS.map_dataset, ARGS.map_table)
+    date_shifter = FitbitDateShiftRule(ARGS.project_id, ARGS.dataset_id,
+                                       ARGS.sandbox_dataset_id,
+                                       ARGS.map_dataset, ARGS.map_table)
     query_list = date_shifter.get_query_specs()
 
     if ARGS.list_queries:
