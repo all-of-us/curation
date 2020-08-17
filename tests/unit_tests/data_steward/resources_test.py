@@ -86,6 +86,16 @@ class ResourcesTest(unittest.TestCase):
 
         self.assertEqual(actual_fields, expected_fields)
 
+        # test
+        actual_fields = resources.fields_for('person_ext')
+        person_ext_path = os.path.join(resources.base_path, 'resource_files',
+                                       'fields', 'extension_tables',
+                                       'person_ext.json')
+        with open(person_ext_path, 'r') as fp:
+            expected_fields = json.load(fp)
+
+        self.assertEqual(actual_fields, expected_fields)
+
     @mock.patch('resources.os.walk')
     def test_fields_for_duplicate_files(self, mock_walk):
         """
