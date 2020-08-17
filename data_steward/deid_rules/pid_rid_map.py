@@ -31,7 +31,8 @@ FITBIT_TABLES = [
 
 PID_RID_QUERY = """
 SELECT
-    {{cols}}
+    t.* EXCEPT (person_id),
+    d.research_id as person_id
 FROM `{{fitbit_table.project}}.{{fitbit_table.dataset_id}}.{{fitbit_table.table_id}}` t
 LEFT JOIN `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
 ON t.person_id = d.person_id
@@ -67,7 +68,7 @@ class PIDtoRID(BaseCleaningRule):
         desc = f'Change PIDs to RIDs in specified tables'
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=['fitbit'],
+                         affected_datasets=[dataset_id],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -75,8 +76,10 @@ class PIDtoRID(BaseCleaningRule):
 
         self.dataset_ref = gbq.DatasetReference(self.project_id,
                                                 self.dataset_id)
-        self.pid_tables = []
-        self.table_refs_cols = []
+        self.pid_tables = [
+            gbq.TableReference(self.dataset_ref, table_id)
+            for table_id in FITBIT_TABLES
+        ]
         self.pipeline_tables_ref = gbq.DatasetReference(self.project_id,
                                                         pipeline_tables)
         self.deid_map = gbq.TableReference(self.pipeline_tables_ref,
@@ -84,14 +87,6 @@ class PIDtoRID(BaseCleaningRule):
         self.combined_dataset_ref = gbq.DatasetReference(
             self.project_id, combined_dataset_id)
         self.person = gbq.TableReference(self.combined_dataset_ref, 'person')
-
-    @staticmethod
-    def get_cols_str(cols):
-        cols_list = []
-        for col in cols:
-            join_col = f'd.research_id AS {col}' if col == 'person_id' else f't.{col}'
-            cols_list.append(join_col)
-        return ','.join(cols_list)
 
     def get_query_specs(self):
         """
@@ -103,14 +98,10 @@ class PIDtoRID(BaseCleaningRule):
         """
         queries = []
 
-        for table_ref_cols in self.table_refs_cols:
-            table = table_ref_cols['ref']
-            cols = table_ref_cols['cols']
-            join_cols = self.get_cols_str(cols)
+        for table in self.pid_tables:
             table_query = {
                 cdr_consts.QUERY:
-                    PID_RID_QUERY_TMPL.render(cols=join_cols,
-                                              fitbit_table=table,
+                    PID_RID_QUERY_TMPL.render(fitbit_table=table,
                                               deid_map=self.deid_map,
                                               combined_person=self.person),
                 cdr_consts.DESTINATION_TABLE:
@@ -128,21 +119,7 @@ class PIDtoRID(BaseCleaningRule):
         """
         Function to run any data upload options before executing a query.
         """
-        cols_query = bq.dataset_columns_query(self.project_id, self.dataset_id)
-        table_df = client.query(cols_query).to_dataframe(index='table_name')
-        fitbit_df = table_df.filter(items=FITBIT_TABLES, axis=0)
-        pid_tables_df = fitbit_df.loc[fitbit_df['column_name'] == 'person_id']
-        self.pid_tables = pid_tables_df['table_name'].to_list()
-        self.table_refs_cols = [{
-            'ref':
-                gbq.TableReference(self.dataset_ref, table),
-            'cols':
-                fitbit_df.loc[fitbit_df['table_name'] == table]
-                ['column_name'].to_list()
-        } for table in self.pid_tables]
-        LOGGER.info(
-            f'Identified the following fitbit tables with pids: {self.pid_tables}'
-        )
+        pass
 
     def setup_validation(self, client):
         """
@@ -154,8 +131,7 @@ class PIDtoRID(BaseCleaningRule):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
         """
-        for table_ref_cols in self.table_refs_cols:
-            table = table_ref_cols['ref']
+        for table in self.pid_tables:
             query = VALIDATE_QUERY_TMPL.render(
                 fitbit_table=table,
                 deid_map=self.deid_map,
