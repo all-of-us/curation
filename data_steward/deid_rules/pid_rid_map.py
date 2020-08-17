@@ -19,8 +19,6 @@ ISSUE_NUMBERS = ['DC-1000']
 
 pipeline_tables = 'pipeline_tables'
 
-MAX_AGE = 89
-
 ACTIVITY_SUMMARY = 'activity_summary'
 HEART_RATE_MINUTE_LEVEL = 'heart_rate_minute_level'
 HEART_RATE_SUMMARY = 'heart_rate_summary'
@@ -37,10 +35,6 @@ SELECT
 FROM `{{fitbit_table.project}}.{{fitbit_table.dataset_id}}.{{fitbit_table.table_id}}` t
 LEFT JOIN `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
 ON t.person_id = d.person_id
-WHERE t.person_id IN 
-(SELECT person_id
-FROM `{{combined_person.project}}.{{combined_person.dataset_id}}.{{combined_person.table_id}}`
-WHERE (EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth) < {{max_age}})
 """
 
 PID_RID_QUERY_TMPL = bq.JINJA_ENV.from_string(PID_RID_QUERY)
@@ -61,12 +55,8 @@ class PIDtoRID(BaseCleaningRule):
     Use RID instead of PID for specific tables
     """
 
-    def __init__(self,
-                 project_id,
-                 dataset_id,
-                 sandbox_dataset_id,
-                 combined_dataset_id,
-                 max_age=MAX_AGE):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
+                 combined_dataset_id):
         """
         Initialize the class with proper info.
 
@@ -93,7 +83,6 @@ class PIDtoRID(BaseCleaningRule):
                                            'deid_mapping')
         self.combined_dataset_ref = gbq.DatasetReference(
             self.project_id, combined_dataset_id)
-        self.max_age = max_age
         self.person = gbq.TableReference(self.combined_dataset_ref, 'person')
 
     @staticmethod
@@ -123,8 +112,7 @@ class PIDtoRID(BaseCleaningRule):
                     PID_RID_QUERY_TMPL.render(cols=join_cols,
                                               fitbit_table=table,
                                               deid_map=self.deid_map,
-                                              combined_person=self.person,
-                                              max_age=self.max_age),
+                                              combined_person=self.person),
                 cdr_consts.DESTINATION_TABLE:
                     table.table_id,
                 cdr_consts.DESTINATION_DATASET:
@@ -191,22 +179,10 @@ if __name__ == '__main__':
         parser.REQUIRED: True
     }
 
-    max_age_arg = {
-        parser.SHORT_ARGUMENT: '-a',
-        parser.LONG_ARGUMENT: '--max_age',
-        parser.ACTION: 'store',
-        parser.DEST: 'max_age',
-        parser.DEFAULT: MAX_AGE,
-        parser.TYPE: int,
-        parser.HELP: f'Set the max age, default={MAX_AGE}',
-        parser.REQUIRED: False
-    }
-
-    ARGS = parser.default_parse_args([combined_dataset_arg, max_age_arg])
+    ARGS = parser.default_parse_args([combined_dataset_arg])
     clean_engine.add_console_logging(ARGS.console_log)
     pid_rid_rule = PIDtoRID(ARGS.project_id, ARGS.dataset_id,
-                            ARGS.sandbox_dataset_id, ARGS.combined_dataset_id,
-                            ARGS.max_age)
+                            ARGS.sandbox_dataset_id, ARGS.combined_dataset_id)
     query_list = pid_rid_rule.get_query_specs()
 
     if ARGS.list_queries:
