@@ -82,6 +82,17 @@ DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
 ALL_REPORT_FILES = [report + '.json' for report in ALL_REPORTS]
 
+# Wearables
+ACTIVITY_SUMMARY = 'activity_summary'
+HEART_RATE_MINUTE_LEVEL = 'heart_rate_minute_level'
+HEART_RATE_SUMMARY = 'heart_rate_summary'
+STEPS_INTRADAY = 'steps_intraday'
+
+FITBIT_TABLES = [
+    ACTIVITY_SUMMARY, HEART_RATE_MINUTE_LEVEL, HEART_RATE_SUMMARY,
+    STEPS_INTRADAY
+]
+
 # Vocabulary
 CONCEPT = 'concept'
 CONCEPT_ANCESTOR = 'concept_ancestor'
