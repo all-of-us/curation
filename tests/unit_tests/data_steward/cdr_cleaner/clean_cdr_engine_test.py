@@ -1,4 +1,5 @@
 # Python imports
+import inspect
 from unittest import TestCase, mock
 
 # Third party imports
@@ -6,7 +7,9 @@ from googleapiclient.errors import HttpError
 
 # Project imports
 import bq_utils
-from cdr_cleaner import clean_cdr_engine
+from cdr_cleaner import clean_cdr_engine as ce
+import cdr_cleaner.cleaning_rules.update_family_history_qa_codes as update_family_history
+from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr_engine import FAILURE_MESSAGE_TEMPLATE
 from constants import bq_utils as bq_consts
@@ -23,6 +26,8 @@ class CleanCDREngineTest(TestCase):
     def setUp(self):
 
         self.project = 'test-project'
+        self.dataset_id = 'test-dataset'
+        self.sandbox_dataset_id = 'test-dataset_sandbox'
         self.dry_run = False
         self.statement_one = {
             cdr_consts.QUERY: 'query one',
@@ -77,7 +82,7 @@ class CleanCDREngineTest(TestCase):
                                                (True,
                                                 self.exception_statement_one)]
 
-        clean_cdr_engine.clean_dataset(self.project, self.statements)
+        ce.clean_dataset(self.project, self.statements)
 
         self.assertEqual(mock_bq_utils.call_count, len(self.statements))
         self.assertEqual(mock_format_failure_message.call_count, 1)
@@ -117,7 +122,7 @@ class CleanCDREngineTest(TestCase):
             mock.Mock(return_value={'status': 404}),
             self.exception_statement_one)
 
-        clean_cdr_engine.clean_dataset(self.project, self.statements)
+        ce.clean_dataset(self.project, self.statements)
 
         self.assertEqual(mock_wait_on_jobs.call_count, 0)
         self.assertEqual(mock_job_status_errored.call_count, 0)
@@ -131,7 +136,46 @@ class CleanCDREngineTest(TestCase):
         mock_wait_on_jobs.return_value = [self.job_id_success]
 
         with self.assertRaises(bq_utils.BigQueryJobWaitError):
-            clean_cdr_engine.clean_dataset(self.project, self.statements)
+            ce.clean_dataset(self.project, self.statements)
+
+    def test_infer_rule(self):
+        clazz = CleanPPINumericFieldsUsingParameters
+        query_fn, setup_fn, rule_info = ce.infer_rule(clazz, self.project,
+                                                      self.dataset_id,
+                                                      self.sandbox_dataset_id)
+        self.assertTrue(
+            inspect.ismethod(rule_info.pop(cdr_consts.QUERY_FUNCTION)))
+        self.assertTrue(
+            inspect.ismethod(rule_info.pop(cdr_consts.SETUP_FUNCTION)))
+        expected_query_fn = CleanPPINumericFieldsUsingParameters.get_query_specs
+        expected_rule_info = {
+            cdr_consts.FUNCTION_NAME:
+                expected_query_fn.__name__,
+            cdr_consts.MODULE_NAME:
+                inspect.getmodule(expected_query_fn).__name__,
+            cdr_consts.LINE_NO:
+                inspect.getsourcelines(expected_query_fn)[1]
+        }
+        self.assertDictEqual(rule_info, expected_rule_info)
+
+        clazz = update_family_history.get_update_family_history_qa_queries
+        query_fn, setup_fn, rule_info = ce.infer_rule(clazz, self.project,
+                                                      self.dataset_id,
+                                                      self.sandbox_dataset_id)
+        self.assertTrue(
+            inspect.isfunction(rule_info.pop(cdr_consts.QUERY_FUNCTION)))
+        self.assertTrue(
+            inspect.isfunction(rule_info.pop(cdr_consts.SETUP_FUNCTION)))
+        expected_query_fn = update_family_history.get_update_family_history_qa_queries
+        expected_rule_info = {
+            cdr_consts.FUNCTION_NAME:
+                expected_query_fn.__name__,
+            cdr_consts.MODULE_NAME:
+                inspect.getmodule(expected_query_fn).__name__,
+            cdr_consts.LINE_NO:
+                inspect.getsourcelines(expected_query_fn)[1]
+        }
+        self.assertCountEqual(rule_info, expected_rule_info)
 
     def test_format_failure_message(self):
 
@@ -148,7 +192,7 @@ class CleanCDREngineTest(TestCase):
             query=self.statement_one.get(cdr_consts.QUERY),
             exception=self.exception_statement_one)
 
-        actual_failure_message = clean_cdr_engine.format_failure_message(
+        actual_failure_message = ce.format_failure_message(
             self.project, self.statement_one, self.exception_statement_one)
 
         self.assertEqual(expected_failure_message, actual_failure_message)
