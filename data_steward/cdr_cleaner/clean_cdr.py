@@ -57,6 +57,7 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
+from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
@@ -155,6 +156,10 @@ COMBINED_CLEANING_CLASSES = [
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
     (CleanMappingExtTables,)
+]
+
+FITBIT_CLEANING_CLASSES = [
+    (RemoveFitbitDataIfMaxAgeExceeded,),
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
@@ -256,6 +261,18 @@ def _gather_unioned_ehr_queries(project_id, dataset_id, sandbox_dataset_id):
     :return: returns list of queries
     """
     return _get_query_list(UNIONED_EHR_CLEANING_CLASSES, project_id, dataset_id,
+                           sandbox_dataset_id)
+
+
+def _gather_fitbit_cleaning_queries(project_id, dataset_id, sandbox_dataset_id):
+    """
+    Gathers all the queries required to clean fitbit dataset
+
+    :param project_id: project name
+    :param dataset_id: fitbit dataset name
+    :return: returns list of queries
+    """
+    return _get_query_list(FITBIT_CLEANING_CLASSES, project_id, dataset_id,
                            sandbox_dataset_id)
 
 

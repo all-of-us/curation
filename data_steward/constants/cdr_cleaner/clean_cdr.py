@@ -6,6 +6,7 @@ RDR = 'rdr'
 COMBINED = 'combined'
 DEID_BASE = 'deid_base'
 DEID_CLEAN = 'deid_clean'
+FITBIT = 'fitbit'
 
 PERSON_TABLE_NAME = 'person'
 
@@ -39,6 +40,7 @@ class DataStage(Enum):
     COMBINED = COMBINED
     DEID_BASE = DEID_BASE
     DEID_CLEAN = DEID_CLEAN
+    FITBIT = FITBIT
 
     def __str__(self):
         return self.value
