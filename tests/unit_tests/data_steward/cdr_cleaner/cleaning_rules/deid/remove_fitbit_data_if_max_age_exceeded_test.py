@@ -46,7 +46,8 @@ class RemoveFitbitDataIfMaxAgeExceededTest(unittest.TestCase):
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.FITBIT])
+        self.assertEqual(self.query_class.affected_datasets,
+                         [clean_consts.FITBIT])
 
         # Test
         results_list = self.query_class.get_query_specs()
