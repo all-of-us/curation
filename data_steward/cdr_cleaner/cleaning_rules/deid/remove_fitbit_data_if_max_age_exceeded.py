@@ -124,7 +124,8 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                     WRITE_TRUNCATE
             })
 
-        return [sandbox_queries_list, drop_queries_list]
+        # returns the unnested list of list of dictionaries
+        return sandbox_queries_list + drop_queries_list
 
     def setup_rule(self, client):
         """
