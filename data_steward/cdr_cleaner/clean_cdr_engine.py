@@ -15,7 +15,6 @@ import bq_utils
 from utils import bq
 import sandbox
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from cdr_cleaner.clean_cdr import DATA_STAGE_RULES_MAPPING
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
@@ -302,9 +301,6 @@ def get_query_list(project_id=None,
         project_id = app_identity.get_application_id()
         LOGGER.info(f"project_id not provided, using default {project_id}")
 
-    if rules is None:
-        rules = DATA_STAGE_RULES_MAPPING.get(data_stage, [])
-
     sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
 
     all_queries_list = []
@@ -332,9 +328,6 @@ def clean_dataset_v1(project_id=None,
     if project_id is None or project_id == '' or project_id.isspace():
         project_id = app_identity.get_application_id()
         LOGGER.info(f"project_id not provided, using default {project_id}")
-
-    if rules is None:
-        rules = DATA_STAGE_RULES_MAPPING.get(data_stage, [])
 
     # Set up
     client = bq.get_client(project_id=project_id)
@@ -388,7 +381,7 @@ def format_failure_message(project_id, statement, exception):
     line_no = statement.get(cdr_consts.LINE_NO,
                             cdr_consts.LINE_NO_DEFAULT_VALUE)
 
-    return ce_consts.FAILURE_MESSAGE_TEMPLATE.format(
+    return ce_consts.FAILURE_MESSAGE_TEMPLATE.render(
         module_name=module_name,
         function_name=function_name,
         line_no=line_no,
