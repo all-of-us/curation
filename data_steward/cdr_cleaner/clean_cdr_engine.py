@@ -52,11 +52,6 @@ def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
     if statements is None:
         statements = []
 
-    # if statements is a list of lists of dictionaries, it will need to be unnested into
-    # a single list of dictionaries
-    if any(isinstance(x, list) for x in statements):
-        statements = [y for x in statements for y in x]
-
     failures = 0
     successes = 0
 
