@@ -3,8 +3,7 @@ import unittest
 
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import (
     DateShiftCopeResponses, SANDBOX_COPE_SURVEY_QUERY, DATE_SHIFT_QUERY,
-    PIPELINE_DATASET, OBSERVATION, COPE_CONCEPTS_TABLE,
-    get_combined_dataset_from_deid_dataset)
+    PIPELINE_DATASET, OBSERVATION, COPE_CONCEPTS_TABLE)
 # Project imports
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
@@ -55,8 +54,8 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
             clean_consts.QUERY:
                 DATE_SHIFT_QUERY.render(
                     project_id=self.project_id,
-                    pre_deid_dataset=get_combined_dataset_from_deid_dataset(
-                        self.dataset_id),
+                    pre_deid_dataset=self.query_class.
+                    get_combined_dataset_from_deid_dataset(self.dataset_id),
                     dataset_id=self.dataset_id,
                     pipeline_tables_dataset=PIPELINE_DATASET,
                     cope_concepts_table=COPE_CONCEPTS_TABLE,
@@ -87,8 +86,8 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
 
         select_rows_to_be_changed = DATE_SHIFT_QUERY.render(
             project_id=self.project_id,
-            pre_deid_dataset=get_combined_dataset_from_deid_dataset(
-                self.dataset_id),
+            pre_deid_dataset=self.query_class.
+            get_combined_dataset_from_deid_dataset(self.dataset_id),
             dataset_id=self.dataset_id,
             pipeline_tables_dataset=PIPELINE_DATASET,
             cope_concepts_table=COPE_CONCEPTS_TABLE,
