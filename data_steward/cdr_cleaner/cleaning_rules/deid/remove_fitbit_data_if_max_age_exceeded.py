@@ -48,7 +48,7 @@ WHERE person_id IN (
     SELECT DISTINCT person_id,
         EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth AS age
             FROM `{{project}}.{{dataset}}.person` ORDER BY 2)
-        WHERE age > 89)
+        WHERE age >= 89)
 """)
 
 # Drop rows where age is greater than 89
