@@ -177,6 +177,17 @@ class CleanCDREngineTest(TestCase):
         }
         self.assertCountEqual(rule_info, expected_rule_info)
 
+    def test_query_list(self):
+        queries = ce.get_query_list(
+            project_id=self.project,
+            dataset_id=self.dataset_id,
+            rules=[(CleanPPINumericFieldsUsingParameters,),
+                   (update_family_history.get_update_family_history_qa_queries,)
+                  ])
+        query_from_closure = queries[-1]
+        self.assertIn(self.project, query_from_closure['query'])
+        self.assertIn(self.dataset_id, query_from_closure['query'])
+
     def test_format_failure_message(self):
 
         expected_failure_message = FAILURE_MESSAGE_TEMPLATE.render(
