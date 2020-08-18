@@ -1,13 +1,18 @@
-import unittest
-import mock
-import bq_utils
+# Python imports
+from unittest import TestCase, mock
+
+# Third party imports
 from googleapiclient.errors import HttpError
+
+# Project imports
+import bq_utils
 from cdr_cleaner import clean_cdr_engine
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from constants.cdr_cleaner.clean_cdr_engine import FAILURE_MESSAGE_TEMPLATE
 from constants import bq_utils as bq_consts
 
 
-class CleanCDREngineTest(unittest.TestCase):
+class CleanCDREngineTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -130,7 +135,7 @@ class CleanCDREngineTest(unittest.TestCase):
 
     def test_format_failure_message(self):
 
-        expected_failure_message = clean_cdr_engine.FAILURE_MESSAGE_TEMPLATE.format(
+        expected_failure_message = FAILURE_MESSAGE_TEMPLATE.render(
             module_name=self.statement_one.get(cdr_consts.MODULE_NAME),
             function_name=self.statement_one.get(cdr_consts.FUNCTION_NAME),
             line_no=self.statement_one.get(cdr_consts.LINE_NO),
