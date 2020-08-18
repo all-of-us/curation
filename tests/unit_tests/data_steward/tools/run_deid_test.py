@@ -118,7 +118,7 @@ class RunDeidTest(unittest.TestCase):
             os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
             '--private_key', self.private_key, '--table', 'fake1', '--action',
             self.action, '--idataset', self.input_dataset, '--log', 'LOGS',
-            '--odataset', self.output_dataset
+            '--odataset', self.output_dataset, '--age-limit', self.max_age
         ])
         self.assertEqual(mock_main.call_count, 1)
 

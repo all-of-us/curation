@@ -334,10 +334,10 @@ def main(raw_args=None):
 
         parameter_list = [
             '--rules',
-            os.path.join(DEID_PATH, 'config', 'ids',
-                         'config.json'), '--private_key', args.private_key,
-            '--table', tablepath, '--action', args.action, '--idataset',
-            args.input_dataset, '--log', LOGS_PATH, '--odataset', args.odataset
+            os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
+            '--private_key', args.private_key, '--table', tablepath, '--action',
+            args.action, '--idataset', args.input_dataset, '--log', LOGS_PATH,
+            '--odataset', args.odataset, '--age-limit', args.age_limit
         ]
 
         if args.interactive_mode:

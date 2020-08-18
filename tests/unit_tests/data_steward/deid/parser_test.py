@@ -12,6 +12,7 @@ import os
 from argparse import ArgumentTypeError
 
 # Project imports
+from constants.deid.deid import MAX_AGE
 from deid.parser import odataset_name_verification, parse_args
 from resources import DEID_PATH
 
@@ -63,7 +64,7 @@ class ParserTest(unittest.TestCase):
 
         # setting correct_parameter_dict values not set in setUp function
         correct_parameter_dict['cluster'] = False
-        correct_parameter_dict['age-limit'] = 89
+        correct_parameter_dict['age_limit'] = MAX_AGE
 
         # Test if correct parameters are given
         results_dict = parse_args(self.correct_parameter_list)

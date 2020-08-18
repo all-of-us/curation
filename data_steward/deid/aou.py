@@ -89,6 +89,7 @@ from google.oauth2 import service_account
 # Project imports
 import bq_utils
 import constants.bq_utils as bq_consts
+from constants.deid.deid import MAX_AGE
 from deid.parser import parse_args
 from deid.press import Press
 from resources import DEID_PATH
@@ -266,9 +267,8 @@ class AOU(Press):
             # Minor updates that are the result of a limitation as to how rules are specified.
             # @TODO: Improve the rule specification language
             shift_days = (
-                'SELECT shift from {idataset}._deid_map '
-                'WHERE _deid_map.person_id = {tablename}.person_id'.format(
-                    idataset=self.idataset, tablename=self.tablename))
+                f'SELECT shift from {self.idataset}._deid_map '
+                f'WHERE _deid_map.person_id = {self.tablename}.person_id')
             self.deid_rules['shift'] = json.loads(
                 json.dumps(self.deid_rules['shift']).replace(
                     ":SHIFT", shift_days))
@@ -277,16 +277,12 @@ class AOU(Press):
         Press.initialize(self, **args)
         LOGGER.info(f"BEGINNING de-identification on table:\t{self.tablename}")
 
-        age_limit = args['age_limit']
+        age_limit = args.get('age_limit', MAX_AGE)
+        LOGGER.info(f"Using participant age limit of {age_limit}")
+
         million = 1000000
         map_tablename = self.idataset + "._deid_map"
 
-        sql = (
-            "SELECT DISTINCT person_id, EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth as age "
-            "FROM person ORDER BY 2")
-        job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
-        person_table = self.get_dataframe(sql=sql, query_config=job_config)
-        LOGGER.info(f"patient count is:\t{person_table.shape[0]}")
         map_table = pd.DataFrame()
 
         # Create concept_id lookup table for suppressions
@@ -298,24 +294,37 @@ class AOU(Press):
             self.map_questionnaire_response_ids(million)
             create_person_id_src_hpo_map(self.idataset, self.credentials)
 
-        if person_table.shape[0] > 0:
-            person_table = person_table[person_table.age < age_limit]
-            map_sql = 'SELECT * FROM ' + map_tablename
-            job_config = {
-                'query': {
-                    'defaultDataset': {
-                        'datasetId': self.idataset
-                    }
-                }
-            }
-            map_table = self.get_dataframe(sql=map_sql, query_config=job_config)
-            if not map_table.shape[0] > 0:
-                LOGGER.error(
-                    "Unable to initialize Deid. _deid_map has no participants to load."
-                )
+        # ensure mapping table only contains participants within age limits
+        sql = (f"SELECT DISTINCT p.person_id, "
+               f"EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth AS age "
+               f"FROM {self.idataset}.person AS p "
+               f"JOIN {map_tablename} AS map "
+               f"USING (person_id) "
+               f"ORDER BY age")
+        job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
+        person_table = self.get_dataframe(sql=sql, query_config=job_config)
+        LOGGER.info(f"possible patient count is:\t{person_table.shape[0]}")
 
-        LOGGER.info(f"map table contains {map_table.shape[0]} participants.")
-        return person_table.shape[0] > 0 or map_table.shape[0] > 0
+        # ensure age eligible participants exist in the mapping table
+        eligible_person_table = person_table[person_table.age < age_limit]
+        if eligible_person_table.shape[0] < 1:
+            LOGGER.error(
+                f"Unable to initialize Deid. {map_tablename} table cannot be "
+                f"joined to {self.idataset}.person table to verify age requirements."
+            )
+
+        # ensure no age ineligible participants are available in the mapping table
+        ineligible_person_table = person_table[person_table.age >= age_limit]
+        if ineligible_person_table.shape[0] > 0:
+            LOGGER.error(f"{ineligible_person_table.shape[0]} age ineligible "
+                         f"participants are available in "
+                         f"{map_tablename}.  Deid is bailing out!!")
+
+        LOGGER.info(f"map table contains {eligible_person_table.shape[0]} "
+                    f"records.")
+
+        return eligible_person_table.shape[
+            0] > 0 and ineligible_person_table.shape[0] < 1
 
     def map_questionnaire_response_ids(self, lower_bound):
         """
@@ -679,12 +688,12 @@ def main(raw_args=None):
 
     handle = AOU(**sys_args)
 
-    if handle.initialize(age_limit=sys_args.get('age-limit'),
-                         max_day_shift=365):
+    if handle.initialize(age_limit=sys_args.get('age_limit')):
         handle.do()
     else:
-        print("Unable to initialize process ")
-        print("\tEnsure that the parameters are correct")
+        LOGGER.error(
+            f"Unable to initialize process.  Check _deid_map table "
+            f"contents against {sys_args.get('idataset')}.person contents")
 
 
 if __name__ == '__main__':

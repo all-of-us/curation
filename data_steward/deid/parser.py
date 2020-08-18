@@ -9,6 +9,8 @@
 """
 from argparse import ArgumentParser, ArgumentTypeError
 
+from constants.deid.deid import MAX_AGE
+
 
 class Parse(object):
     """
@@ -184,12 +186,12 @@ def parse_args(raw_args=None):
               'generalize, suppress, shift, compute'))
     parser.add_argument(
         '--age-limit',
-        dest='age-limit',
+        dest='age_limit',
         action='store',
-        default=89,
+        default=MAX_AGE,
         type=int,
-        help=('Optional parameter to set the maximum age limit.  '
-              'Defaults to 89.'))
+        help=(f'Optional parameter to set the maximum age limit.  '
+              f'Defaults to {MAX_AGE}.'))
     parser.add_argument(
         '--interactive',
         dest='interactive',
