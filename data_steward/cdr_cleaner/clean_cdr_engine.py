@@ -306,6 +306,9 @@ def get_query_list(project_id=None,
         clazz = rule[0]
         query_function, _, rule_info = infer_rule(clazz, project_id, dataset_id,
                                                   sandbox_dataset_id)
+        # added to test closure
+        project_id = 'incorrect_proj'
+        dataset_id = 'incorrect_ds'
         query_list = query_function()
         all_queries_list.extend(query_list)
     return all_queries_list
