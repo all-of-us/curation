@@ -44,7 +44,7 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{fq_table_name}}`
             (person_id)
             VALUES
-            (111), (222), (333), (444), (555)
+            (111), (222), (333), (444), (555), (666)
             """)
         ]
 
@@ -99,7 +99,8 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
         (222, 0, 1910, 0, 0),
         (333, 0, 1920, 0, 0),
         (444, 0, 1951, 0, 0),
-        (555, 0, 1951, 0, 0)
+        (555, 0, 1951, 0, 0),
+        (666, 0, 1931, 0, 0)
         """)
 
         query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
@@ -118,8 +119,8 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
                 'fq_table_name': self.fq_table_names[i + 1],
                 'fq_sandbox_table_name': self.fq_sandbox_table_names[i],
                 'fields': ['person_id'],
-                'loaded_ids': [111, 222, 333, 444, 555],
-                'sandboxed_ids': [111, 222, 333],
+                'loaded_ids': [111, 222, 333, 444, 555, 666],
+                'sandboxed_ids': [111, 222, 333, 666],
                 'cleaned_values': [(444,), (555,)]
             }
             tables_and_counts_list.append(tables_and_counts)
