@@ -48,17 +48,6 @@ PIPELINE_DATASET = 'pipeline_tables'
 COPE_CONCEPTS_TABLE = 'cope_concepts'
 OBSERVATION = 'observation'
 
-
-def get_combined_dataset_from_deid_dataset(dataset_name):
-    """
-    Returns a combined dataset name from a de_identified dataset name
-    :param dataset_name: name of a de_identified_dataset_name
-    :return: combined dataset name as a string
-    """
-
-    return f'{dataset_name[1:9].lower()}_combined'
-
-
 SANDBOX_COPE_SURVEY_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE
   `{{project_id}}.{{sandbox_dataset}}.{{intermediary_table}}` AS
@@ -71,7 +60,7 @@ WHERE
   SELECT
     concept_id
   FROM
-    `{{project}}.{{pipeline_tables_dataset}}.{{cope_concepts_table}}`)
+    `{{project_id}}.{{pipeline_tables_dataset}}.{{cope_concepts_table}}`)
     """)
 
 DATE_SHIFT_QUERY = jinja_env.from_string("""
@@ -146,6 +135,15 @@ class DateShiftCopeResponses(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
 
+    def get_combined_dataset_from_deid_dataset(self, dataset_name):
+        """
+        Returns a combined dataset name from a de_identified dataset name
+        :param dataset_name: name of a de_identified_dataset_name
+        :return: combined dataset name as a string
+        """
+
+        return f'{dataset_name[1:9].lower()}_combined'
+
     def setup_rule(self, client=None):
         """
         Load required resources prior to executing cleaning rule queries.
@@ -176,7 +174,7 @@ class DateShiftCopeResponses(BaseCleaningRule):
         update_query = dict()
         update_query[cdr_consts.QUERY] = DATE_SHIFT_QUERY.render(
             project_id=self.project_id,
-            pre_deid_dataset=get_combined_dataset_from_deid_dataset(
+            pre_deid_dataset=self.get_combined_dataset_from_deid_dataset(
                 self.dataset_id),
             dataset_id=self.dataset_id,
             pipeline_tables_dataset=PIPELINE_DATASET,
