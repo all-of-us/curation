@@ -57,6 +57,7 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
+from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
@@ -157,6 +158,10 @@ COMBINED_CLEANING_CLASSES = [
     (CleanMappingExtTables,)
 ]
 
+FITBIT_CLEANING_CLASSES = [
+    (RemoveFitbitDataIfMaxAgeExceeded,),
+]
+
 DEID_BASE_CLEANING_CLASSES = [
     (id_dedup.get_id_deduplicate_queries,),
     (neg_ages.get_negative_ages_queries,),
@@ -182,6 +187,7 @@ DATA_STAGE_RULES_MAPPING = {
     stage.COMBINED.value: COMBINED_CLEANING_CLASSES,
     stage.DEID_BASE.value: DEID_BASE_CLEANING_CLASSES,
     stage.DEID_CLEAN.value: DEID_CLEAN_CLEANING_CLASSES,
+    stage.FITBIT.value: FITBIT_CLEANING_CLASSES,
 }
 
 
@@ -256,6 +262,18 @@ def _gather_unioned_ehr_queries(project_id, dataset_id, sandbox_dataset_id):
     :return: returns list of queries
     """
     return _get_query_list(UNIONED_EHR_CLEANING_CLASSES, project_id, dataset_id,
+                           sandbox_dataset_id)
+
+
+def _gather_fitbit_cleaning_queries(project_id, dataset_id, sandbox_dataset_id):
+    """
+    Gathers all the queries required to clean fitbit dataset
+
+    :param project_id: project name
+    :param dataset_id: fitbit dataset name
+    :return: returns list of queries
+    """
+    return _get_query_list(FITBIT_CLEANING_CLASSES, project_id, dataset_id,
                            sandbox_dataset_id)
 
 
@@ -341,6 +359,33 @@ def _get_query_list(cleaning_classes, project_id, dataset_id,
                                               sandbox_dataset_id))
 
     return query_list
+
+
+def clean_fitbit_dataset(project_id=None, dataset_id=None):
+    """
+    Run all clean rules defined for the Fitbit dataset.
+
+    :param project_id:  Name of the BigQuery project.
+    :param dataset_id:  Name of the dataset to clean
+    """
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+        LOGGER.info(
+            f"Project is unspecified.  Using default value of:\t{project_id}")
+
+    if dataset_id is None:
+        dataset_id = bq_utils.get_fitbit_dataset_id()
+        LOGGER.info(
+            f"Dataset is unspecified.  Using default value of:\t{dataset_id}")
+
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+                                                        dataset_id=dataset_id)
+
+    query_list = _gather_fitbit_cleaning_queries(project_id, dataset_id,
+                                                 sandbox_dataset_id)
+
+    LOGGER.info("Cleaning FITBIT dataset")
+    clean_engine.clean_dataset(project_id, query_list, stage.FITBIT)
 
 
 def clean_rdr_dataset(project_id=None, dataset_id=None):
@@ -519,6 +564,7 @@ def clean_all_cdr():
     clean_combined_dataset()
     clean_combined_de_identified_dataset()
     clean_combined_de_identified_clean_dataset()
+    clean_fitbit_dataset()
 
 
 if __name__ == '__main__':
@@ -550,7 +596,9 @@ if __name__ == '__main__':
         clean_combined_de_identified_dataset()
     elif args.data_stage == stage.DEID_CLEAN:
         clean_combined_de_identified_clean_dataset()
+    elif args.data_stage == stage.FITBIT:
+        clean_fitbit_dataset()
     else:
         raise OSError(
             f'Dataset selection should be from [{stage.EHR}, {stage.UNIONED}, {stage.RDR}, {stage.COMBINED},'
-            f' {stage.DEID_BASE}, {stage.DEID_CLEAN}]')
+            f' {stage.DEID_BASE}, {stage.DEID_CLEAN}, {stage.FITBIT}]')

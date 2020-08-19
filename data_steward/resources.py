@@ -8,7 +8,7 @@ from io import open
 
 import cachetools
 
-from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML
+from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML, FITBIT_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -228,6 +228,8 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                 if table_name in VOCABULARY_TABLES and not include_vocabulary:
                     include_table = False
                 elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
+                    include_table = False
+                elif table_name in FITBIT_TABLES:
                     include_table = False
                 elif is_internal_table(table_name):
                     include_table = False
