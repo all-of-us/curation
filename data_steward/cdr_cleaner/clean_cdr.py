@@ -7,7 +7,6 @@ to the query engine.
 import inspect
 # Python imports
 import logging
-import os
 
 # Third party imports
 import app_identity
@@ -188,6 +187,7 @@ DATA_STAGE_RULES_MAPPING = {
     stage.COMBINED.value: COMBINED_CLEANING_CLASSES,
     stage.DEID_BASE.value: DEID_BASE_CLEANING_CLASSES,
     stage.DEID_CLEAN.value: DEID_CLEAN_CLEANING_CLASSES,
+    stage.FITBIT.value: FITBIT_CLEANING_CLASSES,
 }
 
 
@@ -361,10 +361,6 @@ def _get_query_list(cleaning_classes, project_id, dataset_id,
     return query_list
 
 
-def get_fitbit_dataset_id():
-    return os.environ.get('FITBIT_DATASET_ID')
-
-
 def clean_fitbit_dataset(project_id=None, dataset_id=None):
     """
     Run all clean rules defined for the Fitbit dataset.
@@ -378,7 +374,7 @@ def clean_fitbit_dataset(project_id=None, dataset_id=None):
             f"Project is unspecified.  Using default value of:\t{project_id}")
 
     if dataset_id is None:
-        dataset_id = get_fitbit_dataset_id()
+        dataset_id = bq_utils.get_fitbit_dataset_id()
         LOGGER.info(
             f"Dataset is unspecified.  Using default value of:\t{dataset_id}")
 
@@ -568,6 +564,7 @@ def clean_all_cdr():
     clean_combined_dataset()
     clean_combined_de_identified_dataset()
     clean_combined_de_identified_clean_dataset()
+    clean_fitbit_dataset()
 
 
 if __name__ == '__main__':
@@ -599,7 +596,9 @@ if __name__ == '__main__':
         clean_combined_de_identified_dataset()
     elif args.data_stage == stage.DEID_CLEAN:
         clean_combined_de_identified_clean_dataset()
+    elif args.data_stage == stage.FITBIT:
+        clean_fitbit_dataset()
     else:
         raise OSError(
             f'Dataset selection should be from [{stage.EHR}, {stage.UNIONED}, {stage.RDR}, {stage.COMBINED},'
-            f' {stage.DEID_BASE}, {stage.DEID_CLEAN}]')
+            f' {stage.DEID_BASE}, {stage.DEID_CLEAN}, {stage.FITBIT}]')

@@ -85,6 +85,10 @@ def get_retraction_sandbox_dataset_id():
     return os.environ.get('RETRACTION_SANDBOX_DATASET_ID')
 
 
+def get_fitbit_dataset_id():
+    return os.environ.get('FITBIT_DATASET_ID')
+
+
 def get_retraction_dataset_ids():
     """
     Dataset ids from which to retract, separated by spaces
