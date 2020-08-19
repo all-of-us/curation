@@ -69,6 +69,8 @@ class PIDtoRID(BaseCleaningRule):
             gbq.TableReference(self.dataset_ref, table_id)
             for table_id in FITBIT_TABLES
         ]
+        if fq_deid_map_table is None:
+            fq_deid_map_table = f'{self.project_id}.{combined_dataset_id}._deid_map'
         self.deid_map = gbq.TableReference.from_string(fq_deid_map_table)
         self.combined_dataset_ref = gbq.DatasetReference(
             self.project_id, combined_dataset_id)
@@ -149,13 +151,15 @@ if __name__ == '__main__':
         parser.LONG_ARGUMENT: '--fq_deid_map_table',
         parser.ACTION: 'store',
         parser.DEST: 'fq_deid_map_table',
+        parser.DEFAULT: None,
         parser.HELP: 'Identifies deid_map as project_id.dataset_id.table_id',
-        parser.REQUIRED: True
+        parser.REQUIRED: False
     }
 
     ARGS = parser.default_parse_args(
         [combined_dataset_arg, fq_deid_map_table_arg])
     clean_engine.add_console_logging(ARGS.console_log)
+
     pid_rid_rule = PIDtoRID(ARGS.project_id, ARGS.dataset_id,
                             ARGS.sandbox_dataset_id, ARGS.combined_dataset_id,
                             ARGS.fq_deid_map_table)
