@@ -70,12 +70,6 @@ def get_participants(start_date, end_date, max_age, existing_pids):
     :param existing_pids: list of pids that already exist in mapping table
     :return: dataframe with single column person_id from participant summary API, which needs RIDS created for
     """
-    token = get_access_token()
-    headers = {
-        'content-type': 'application/json',
-        'Authorization': 'Bearer {0}'.format(token)
-    }
-
     # get max age date to pass as parameter to Participant Summary API
     max_age_date = calculate_max_age_date(max_age)
 
@@ -91,17 +85,26 @@ def get_participants(start_date, end_date, max_age, existing_pids):
                                                                                 start_date_obj, end_date_obj)
     url_max_age_participants_1 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
                                  "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=lt{2}" \
-                                 "&dateOfBirth=gt{3}".format('all-of-us-rdr-prod', 'NOT_WITHDRAWN', start_date_obj,
+                                 "&dateOfBirth=lt{3}".format('all-of-us-rdr-prod', 'NOT_WITHDRAWN', start_date_obj,
                                                              max_age_date)
     url_max_age_participants_2 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
                                  "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=gt{2}" \
-                                 "&dateOfBirth=gt{3}".format('all-of-us-rdr-prod', 'NOT_WITHDRAWN', end_date_obj,
+                                 "&dateOfBirth=lt{3}".format('all-of-us-rdr-prod', 'NOT_WITHDRAWN', end_date_obj,
                                                              max_age_date)
+    list_url_requests = [
+        url_cutoff_participants, url_max_age_participants_1,
+        url_max_age_participants_2
+    ]
+    participant_data = []
 
-    participant_data = get_participant_data(
-        url_cutoff_participants, headers) + get_participant_data(
-            url_max_age_participants_1, headers) + get_participant_data(
-                url_max_age_participants_2, headers)
+    # loop through urls and create new tokens each request to avoid API timing out
+    for url in list_url_requests:
+        token = get_access_token()
+        headers = {
+            'content-type': 'application/json',
+            'Authorization': 'Bearer {0}'.format(token)
+        }
+        participant_data = participant_data + get_participant_data(url, headers)
 
     participants = pd.DataFrame(columns=['person_id'])
     # Loop through participant_data to retrieve only person_id
@@ -121,7 +124,7 @@ def get_participants(start_date, end_date, max_age, existing_pids):
                 participants = participants.append(
                     {'person_id': participant_id}, ignore_index=True)
             elif datetime.strptime(participant['dateOfBirth'],
-                                   '%Y-%m-%d').date() > max_age_date:
+                                   '%Y-%m-%d').date() < max_age_date:
                 participants = participants.append(
                     {'person_id': participant_id}, ignore_index=True)
             else:
@@ -192,11 +195,11 @@ def generate_mapping_table_rows(project_id, start_date, end_date, max_age,
         np.random.shuffle(shift_array)
     map_table['shift'] = shift_array
 
-    # write this to bigquery.
-    # pandas_gbq.to_gbq(map_table,
-    #                   dataset + '.' + mapping_table,
-    #                   project_id,
-    #                   if_exists='append')
+    # write this to bigquery
+    pandas_gbq.to_gbq(map_table,
+                      dataset + '.' + mapping_table,
+                      project_id,
+                      if_exists='append')
 
 
 if __name__ == '__main__':
