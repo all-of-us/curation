@@ -4,14 +4,17 @@
     "name": "datetime",
     "mode": "nullable",
     "description": ""
-}, {
+  },
+  {
     "type": "numeric",
     "name": "steps",
     "mode": "nullable",
     "description": ""
-}, {
+  },
+  {
     "type": "integer",
     "name": "person_id",
     "mode": "nullable",
     "description": ""
-}]
+  }
+]
