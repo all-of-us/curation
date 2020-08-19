@@ -7,6 +7,7 @@ to the query engine.
 import inspect
 # Python imports
 import logging
+import os
 
 # Third party imports
 import app_identity
@@ -358,6 +359,37 @@ def _get_query_list(cleaning_classes, project_id, dataset_id,
                                               sandbox_dataset_id))
 
     return query_list
+
+
+def get_fitbit_dataset_id():
+    return os.environ.get('FITBIT_DATASET_ID')
+
+
+def clean_fitbit_dataset(project_id=None, dataset_id=None):
+    """
+    Run all clean rules defined for the Fitbit dataset.
+
+    :param project_id:  Name of the BigQuery project.
+    :param dataset_id:  Name of the dataset to clean
+    """
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+        LOGGER.info(
+            f"Project is unspecified.  Using default value of:\t{project_id}")
+
+    if dataset_id is None:
+        dataset_id = get_fitbit_dataset_id()
+        LOGGER.info(
+            f"Dataset is unspecified.  Using default value of:\t{dataset_id}")
+
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+                                                        dataset_id=dataset_id)
+
+    query_list = _gather_fitbit_cleaning_queries(project_id, dataset_id,
+                                                 sandbox_dataset_id)
+
+    LOGGER.info("Cleaning FITBIT dataset")
+    clean_engine.clean_dataset(project_id, query_list, stage.FITBIT)
 
 
 def clean_rdr_dataset(project_id=None, dataset_id=None):
