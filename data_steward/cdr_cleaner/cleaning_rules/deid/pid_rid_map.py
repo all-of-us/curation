@@ -71,6 +71,7 @@ class PIDtoRID(BaseCleaningRule):
         ]
         if fq_deid_map_table is None:
             fq_deid_map_table = f'{self.project_id}.{combined_dataset_id}._deid_map'
+            LOGGER.info(f'Using deid map from combined {fq_deid_map_table}')
         self.deid_map = gbq.TableReference.from_string(fq_deid_map_table)
         self.combined_dataset_ref = gbq.DatasetReference(
             self.project_id, combined_dataset_id)
@@ -118,7 +119,7 @@ class PIDtoRID(BaseCleaningRule):
         """
         raise NotImplementedError("Please fix me.")
 
-    def validate_rule(self):
+    def validate_rule(self, client):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
         """
@@ -168,6 +169,4 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         pid_rid_rule.log_queries()
     else:
-        client = bq.get_client(ARGS.project_id)
-        pid_rid_rule.setup_rule(client)
         clean_engine.clean_dataset(ARGS.project_id, query_list)
