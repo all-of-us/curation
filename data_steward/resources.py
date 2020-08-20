@@ -185,7 +185,7 @@ def is_deid_table(table_id):
     :param table_id: identifies the table
     :return: True if specified table is a deid table, False otherwise
     """
-    return table_id == 'deid_mapping'
+    return table_id == '_deid_map'
 
 
 def is_fitbit_table(table_id):
@@ -250,8 +250,6 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                 if table_name in VOCABULARY_TABLES and not include_vocabulary:
                     include_table = False
                 elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
-                    include_table = False
-                elif table_name in FITBIT_TABLES:
                     include_table = False
                 elif is_internal_table(table_name):
                     include_table = False
