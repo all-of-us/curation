@@ -177,16 +177,31 @@ class CleanCDREngineTest(TestCase):
         }
         self.assertCountEqual(rule_info, expected_rule_info)
 
-    def test_query_list(self):
+        query_function, _, rule_info = ce.infer_rule(
+            update_family_history.get_update_family_history_qa_queries,
+            self.project, self.dataset_id, self.sandbox_dataset_id)
+
+        # ensure closure works
+        project_id = 'incorrect_proj'
+        dataset_id = 'incorrect_ds'
+        query_list = query_function()
+        for query in query_list:
+            self.assertIn(self.project, query['query'])
+            self.assertIn(self.dataset_id, query['query'])
+            self.assertNotIn(project_id, query['query'])
+            self.assertNotIn(dataset_id, query['query'])
+
+    @mock.patch.object(CleanPPINumericFieldsUsingParameters, 'setup_rule')
+    def test_query_list(self, patched_ppi_setup):
         queries = ce.get_query_list(
             project_id=self.project,
             dataset_id=self.dataset_id,
             rules=[(CleanPPINumericFieldsUsingParameters,),
                    (update_family_history.get_update_family_history_qa_queries,)
                   ])
-        query_from_closure = queries[-1]
-        self.assertIn(self.project, query_from_closure['query'])
-        self.assertIn(self.dataset_id, query_from_closure['query'])
+        for query in queries:
+            self.assertIsNotNone(query['query'])
+        patched_ppi_setup.assert_not_called()
 
     def test_format_failure_message(self):
 

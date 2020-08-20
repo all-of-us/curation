@@ -13,6 +13,12 @@ Clean rule {{module_name}}.{{function_name}}
 
 QUERY_RUN_MESSAGE_TEMPLATE = JINJA_ENV.from_string(QUERY_RUN_MESSAGE)
 
+SUCCESS_MESSAGE = '''
+Successfully executed query {{index}}/{{query_count}} for {{module_name}} with job_id {{query_job.job_id}}
+'''
+
+SUCCESS_MESSAGE_TEMPLATE = JINJA_ENV.from_string(SUCCESS_MESSAGE)
+
 FAILURE_MESSAGE = '''
 The failed query was generated from the below module:
     module_name={{module_name}}
@@ -21,11 +27,17 @@ The failed query was generated from the below module:
 
 The failed query ran with the following configuration:
     project_id={{project_id}}
+    job_id={{query_job.job_id}}
+    {% if query_job.errors %}
+    job_errors={{query_job.errors}}
+    {% endif %}
+    {% if exception %}
+    exception={{exception}}
+    {% endif %}
     destination_dataset_id={{destination_dataset_id}}
     destination_table={{destination_table}}
     disposition={{disposition}}
     query={{query}}
-    exception={{exception}}
 '''
 
 FAILURE_MESSAGE_TEMPLATE = JINJA_ENV.from_string(FAILURE_MESSAGE)
