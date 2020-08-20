@@ -199,7 +199,7 @@ def run_queries(client, query_list, rule_info):
     :return: integers indicating the number of queries that succeeded and failed
     """
     query_count = len(query_list)
-    successes, failures = [], []
+    jobs = []
     for index, query_dict in enumerate(query_list):
         try:
             LOGGER.info(
@@ -211,20 +211,25 @@ def run_queries(client, query_list, rule_info):
             query_job = client.query(query=query_dict.get(cdr_consts.QUERY),
                                      job_config=job_config,
                                      job_id_prefix=f'clean_{module_name}_')
-
+            jobs.append(query_job)
+            LOGGER.info(f'Running {query_job.job_id}')
             # wait for job to complete
             query_job.result()
+            if query_job.errors:
+                raise RuntimeError(
+                    ce_consts.FAILURE_MESSAGE_TEMPLATE.render(
+                        client.project, query_job, **rule_info, **query_dict))
+            LOGGER.info(
+                ce_consts.SUCCESS_MESSAGE_TEMPLATE.render(
+                    client.project, query_job, index, query_count, **rule_info))
         except (GoogleCloudError, TOError) as exp:
             LOGGER.exception(
                 ce_consts.FAILURE_MESSAGE_TEMPLATE.render(client.project,
                                                           **rule_info,
                                                           **query_dict,
                                                           exception=exp))
-            failures.append(query_dict[cdr_consts.QUERY])
-            continue
-        else:
-            successes.append(query_dict[cdr_consts.QUERY])
-    return successes, failures
+            raise exp
+    return jobs
 
 
 def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id):
@@ -243,7 +248,7 @@ def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id):
             module_name: name of the module containing the function
             line_no: points to the source line where query_function is
     """
-    if inspect.isclass(clazz):
+    if inspect.isclass(clazz) and issubclass(clazz, BaseCleaningRule):
         instance = clazz(project_id, dataset_id, sandbox_dataset_id)
 
         query_function = instance.get_query_specs
@@ -306,9 +311,6 @@ def get_query_list(project_id=None,
         clazz = rule[0]
         query_function, _, rule_info = infer_rule(clazz, project_id, dataset_id,
                                                   sandbox_dataset_id)
-        # added to test closure
-        project_id = 'incorrect_proj'
-        dataset_id = 'incorrect_ds'
         query_list = query_function()
         all_queries_list.extend(query_list)
     return all_queries_list
@@ -334,39 +336,19 @@ def clean_dataset_v1(project_id=None,
     client = bq.get_client(project_id=project_id)
     sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
                                                         dataset_id=dataset_id)
-    successful_rules, failed_rules = {}, {}
+    all_jobs = []
     for rule in rules:
         clazz = rule[0]
         query_function, setup_function, rule_info = infer_rule(
             clazz, project_id, dataset_id, sandbox_dataset_id)
         setup_function(client)
         query_list = query_function()
-        successes, failures = run_queries(client, query_list, rule_info)
+        jobs = run_queries(client, query_list, rule_info)
         LOGGER.info(
-            f"Status: {len(successes)} successes and {len(failures)} failures out of "
-            f"{len(query_list)} queries for clean rule {rule_info[cdr_consts.MODULE_NAME]}"
-        )
-        if failures:
-            failed_rules[rule_info[cdr_consts.MODULE_NAME]] = failures
-        if successes:
-            successful_rules[rule_info[cdr_consts.MODULE_NAME]] = successes
-
-    if len(successful_rules) > 0:
-        LOGGER.info(
-            f"Successfully applied {len(successful_rules)} clean rules for {project_id}.{data_stage}"
-        )
-    else:
-        LOGGER.warning(
-            f"No clean rules successfully applied to {project_id}.{data_stage}")
-
-    if len(failed_rules) > 0:
-        LOGGER.warning(
-            f"Failed to apply {len(failed_rules)} clean rules for {project_id}.{data_stage}"
-        )
-    else:
-        LOGGER.info(
-            f"There were no failures in applying cleaning rules for {project_id}.{data_stage}"
-        )
+            f"For clean rule {rule_info[cdr_consts.MODULE_NAME]}, {len(jobs)} jobs "
+            f"were run successfully for {len(query_list)} queries")
+        all_jobs.extend(jobs)
+    return all_jobs
 
 
 def format_failure_message(project_id, statement, exception):
