@@ -11,6 +11,7 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.dateshift import DateShiftRule
+from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from resources import fields_for
 
@@ -50,121 +51,9 @@ class FitbitDateShiftRule(DateShiftRule):
                          affected_tables=self.tables,
                          map_dataset=map_dataset_id,
                          map_table=map_tablename,
-                         depends_on=[])
+                         depends_on=[PIDtoRID])
 
     def get_tables_and_schemas(self):
-        # TODO: Remove defaults when able to use schemas from expected location
-        tables_and_schemas = {
-            'activity_summary': [{
-                "mode": "NULLABLE",
-                "name": "date",
-                "type": "DATE"
-            }, {
-                "mode": "NULLABLE",
-                "name": "activity_calories",
-                "type": "FLOAT"
-            }, {
-                "mode": "NULLABLE",
-                "name": "calories_bmr",
-                "type": "FLOAT"
-            }, {
-                "mode": "NULLABLE",
-                "name": "calories_out",
-                "type": "FLOAT"
-            }, {
-                "mode": "NULLABLE",
-                "name": "elevation",
-                "type": "FLOAT"
-            }, {
-                "mode": "NULLABLE",
-                "name": "fairly_active_minutes",
-                "type": "FLOAT"
-            }, {
-                "mode": "NULLABLE",
-                "name": "floors",
-                "type": "INTEGER"
-            }, {
-                "mode": "NULLABLE",
-                "name": "lightly_active_minutes",
-                "type": "FLOAT"
-            }, {
-                "mode": "NULLABLE",
-                "name": "marginal_calories",
-                "type": "FLOAT"
-            }, {
-                "mode": "NULLABLE",
-                "name": "sedentary_minutes",
-                "type": "FLOAT"
-            }, {
-                "mode": "NULLABLE",
-                "name": "steps",
-                "type": "INTEGER"
-            }, {
-                "mode": "NULLABLE",
-                "name": "very_active_minutes",
-                "type": "FLOAT"
-            }, {
-                "mode": "NULLABLE",
-                "name": "person_id",
-                "type": "INTEGER"
-            }],
-            'heart_rate_minute_level': [{
-                "mode": "NULLABLE",
-                "name": "datetime",
-                "type": "DATETIME"
-            }, {
-                "mode": "NULLABLE",
-                "name": "heart_rate_value",
-                "type": "INTEGER"
-            }, {
-                "mode": "NULLABLE",
-                "name": "person_id",
-                "type": "INTEGER"
-            }],
-            'heart_rate_summary': [{
-                "mode": "NULLABLE",
-                "name": "person_id",
-                "type": "INTEGER"
-            }, {
-                "mode": "NULLABLE",
-                "name": "date",
-                "type": "DATE"
-            }, {
-                "mode": "NULLABLE",
-                "name": "zone_name",
-                "type": "STRING"
-            }, {
-                "mode": "NULLABLE",
-                "name": "min_heart_rate",
-                "type": "INTEGER"
-            }, {
-                "mode": "NULLABLE",
-                "name": "max_heart_rate",
-                "type": "INTEGER"
-            }, {
-                "mode": "NULLABLE",
-                "name": "minute_in_zone",
-                "type": "INTEGER"
-            }, {
-                "mode": "NULLABLE",
-                "name": "calorie_count",
-                "type": "FLOAT"
-            }],
-            'steps_intraday': [{
-                "mode": "NULLABLE",
-                "name": "datetime",
-                "type": "DATETIME"
-            }, {
-                "mode": "NULLABLE",
-                "name": "steps",
-                "type": "NUMERIC"
-            }, {
-                "mode": "NULLABLE",
-                "name": "person_id",
-                "type": "INTEGER"
-            }]
-        }
-
         for table in self.tables:
             try:
                 schema = fields_for(table, 'wearables/fitbit')

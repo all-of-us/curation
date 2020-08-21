@@ -49,6 +49,9 @@ from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
+from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
+from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded
+from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import DropDuplicatePpiQuestionsAndAnswers
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
@@ -58,8 +61,6 @@ from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
-from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded
-from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
@@ -163,6 +164,7 @@ COMBINED_CLEANING_CLASSES = [
 FITBIT_CLEANING_CLASSES = [
     (RemoveFitbitDataIfMaxAgeExceeded,),
     (PIDtoRID,),
+    (FitbitDateShiftRule,),
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
