@@ -64,8 +64,8 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
     Steps Intraday FitBit tables.
     """
 
-    def __init__(self, project_id, dataset_id, combined_dataset_id,
-                 sandbox_dataset_id):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
+                 combined_dataset_id):
         """
         Initialize the class with proper information.
 

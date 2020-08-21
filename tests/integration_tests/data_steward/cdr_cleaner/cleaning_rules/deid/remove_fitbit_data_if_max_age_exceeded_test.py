@@ -38,7 +38,11 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
         cls.combined_dataset_id = os.environ.get('COMBINED_DATASET_ID')
 
         cls.query_class = RemoveFitbitDataIfMaxAgeExceeded(
-            project_id, dataset_id, cls.combined_dataset_id, sandbox_id)
+            project_id,
+            dataset_id,
+            sandbox_id,
+            cls.combined_dataset_id,
+        )
 
         # template for data that will be inserted into the FitBit tables
         cls.insert_fake_fitbit_data_tmpls = [
