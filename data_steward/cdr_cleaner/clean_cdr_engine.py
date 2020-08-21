@@ -200,17 +200,18 @@ def run_queries(client, query_list, rule_info):
     """
     query_count = len(query_list)
     jobs = []
-    for index, query_dict in enumerate(query_list):
+    for query_no, query_dict in enumerate(query_list):
         try:
             LOGGER.info(
                 ce_consts.QUERY_RUN_MESSAGE_TEMPLATE.render(
-                    index, query_count, **rule_info, **query_dict))
+                    query_no=query_no, query_count=query_count, **rule_info))
             job_config = generate_job_config(client.project, query_dict)
 
-            module_name = rule_info[cdr_consts.MODULE_NAME]
+            module_short_name = rule_info[cdr_consts.MODULE_NAME].split(
+                '.')[-1][:10]
             query_job = client.query(query=query_dict.get(cdr_consts.QUERY),
                                      job_config=job_config,
-                                     job_id_prefix=f'clean_{module_name}_')
+                                     job_id_prefix=f'{module_short_name}_')
             jobs.append(query_job)
             LOGGER.info(f'Running {query_job.job_id}')
             # wait for job to complete
@@ -221,13 +222,18 @@ def run_queries(client, query_list, rule_info):
                         client.project, query_job, **rule_info, **query_dict))
             LOGGER.info(
                 ce_consts.SUCCESS_MESSAGE_TEMPLATE.render(
-                    client.project, query_job, index, query_count, **rule_info))
+                    project_id=client.project,
+                    query_job=query_job,
+                    query_no=query_no,
+                    query_count=query_count,
+                    **rule_info))
         except (GoogleCloudError, TOError) as exp:
             LOGGER.exception(
-                ce_consts.FAILURE_MESSAGE_TEMPLATE.render(client.project,
-                                                          **rule_info,
-                                                          **query_dict,
-                                                          exception=exp))
+                ce_consts.FAILURE_MESSAGE_TEMPLATE.render(
+                    project_id=client.project,
+                    **rule_info,
+                    **query_dict,
+                    exception=exp))
             raise exp
     return jobs
 
