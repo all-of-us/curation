@@ -135,8 +135,8 @@ def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
     :param write_disposition: Write disposition for job choose b/w write_empty, write_append, write_truncate
     :return: job result
     """
-    dataset_ref = client.dataset(dataset_id)
-    table_ref = dataset_ref.table(table_name)
+    dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
+    table_ref = bigquery.TableReference(dataset_ref, table_name)
     job_config = bigquery.LoadJobConfig()
     job_config.source_format = bigquery.SourceFormat.CSV
     job_config.skip_leading_rows = 1
