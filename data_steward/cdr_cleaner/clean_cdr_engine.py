@@ -149,23 +149,6 @@ def clean_dataset(project=None,
         )
 
 
-def get_destination_ref(project_id, query_dict):
-    """
-    Fetch BQ table reference to destination table
-
-    :param project_id: Identifies the project
-    :param query_dict: dictionary for the query
-    :return: BQ TableReference object to destination
-    """
-    destination_dataset_id = query_dict.get(cdr_consts.DESTINATION_DATASET)
-    destination_dataset_ref = gbq.DatasetReference(project_id,
-                                                   destination_dataset_id)
-    destination_table_id = query_dict.get(cdr_consts.DESTINATION_TABLE)
-    destination_table_ref = gbq.table.TableReference(destination_dataset_ref,
-                                                     destination_table_id)
-    return destination_table_ref
-
-
 def generate_job_config(project_id, query_dict):
     """
     Generates BigQuery job_configuration object
@@ -178,7 +161,9 @@ def generate_job_config(project_id, query_dict):
     if query_dict.get(cdr_consts.DESTINATION_TABLE) is None:
         return job_config
 
-    destination_table = get_destination_ref(project_id, query_dict)
+    destination_table = gbq.TableReference.from_string(
+        f'{project_id}.{query_dict[cdr_consts.DESTINATION_DATASET]}.{query_dict[cdr_consts.DESTINATION_TABLE]}'
+    )
 
     job_config.destination = destination_table
     job_config.use_legacy_sql = query_dict.get(cdr_consts.LEGACY_SQL, False)
