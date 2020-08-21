@@ -37,7 +37,8 @@ class RemoveFitbitDataIfMaxAgeExceededTest(unittest.TestCase):
         self.client = None
 
         self.query_class = RemoveFitbitDataIfMaxAgeExceeded(
-            self.project_id, self.dataset_id, self.combined_dataset_id, self.sandbox_id)
+            self.project_id, self.dataset_id, self.combined_dataset_id,
+            self.sandbox_id)
 
         self.assertEqual(self.query_class.project_id, self.project_id)
         self.assertEqual(self.query_class.dataset_id, self.dataset_id)
@@ -51,9 +52,12 @@ class RemoveFitbitDataIfMaxAgeExceededTest(unittest.TestCase):
     def test_get_query_specs(self, mock_table_reference):
         # Pre conditions
         mock_table_reference = mock.MagicMock()
-        type(mock_table_reference).project = mock.PropertyMock(return_value=self.project_id)
-        type(mock_table_reference).dataset_id = mock.PropertyMock(return_value=self.combined_dataset_id)
-        type(mock_table_reference).table_id = mock.PropertyMock(return_value='person')
+        type(mock_table_reference).project = mock.PropertyMock(
+            return_value=self.project_id)
+        type(mock_table_reference).dataset_id = mock.PropertyMock(
+            return_value=self.combined_dataset_id)
+        type(mock_table_reference).table_id = mock.PropertyMock(
+            return_value='person')
 
         self.assertEqual(self.query_class.affected_datasets,
                          [clean_consts.FITBIT])
@@ -75,8 +79,7 @@ class RemoveFitbitDataIfMaxAgeExceededTest(unittest.TestCase):
                         [i],
                         dataset=self.dataset_id,
                         table=table,
-                        combined_dataset=mock_table_reference
-                    )
+                        combined_dataset=mock_table_reference)
             })
 
             expected_drop_queries_list.append({

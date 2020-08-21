@@ -57,7 +57,8 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
                 f'{project_id}.{sandbox_id}.{table_name}')
 
         # Generates list of fully qualified table names
-        cls.fq_table_names.append(f'{project_id}.{cls.combined_dataset_id}.person')
+        cls.fq_table_names.append(
+            f'{project_id}.{cls.combined_dataset_id}.person')
         for table in FITBIT_TABLES:
             cls.fq_table_names.append(f'{project_id}.{dataset_id}.{table}')
 
@@ -102,7 +103,8 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
         (666, 0, 1931, 0, 0)
         """)
 
-        query = tmpl.render(fq_dataset_name=f'{self.project_id}.{self.combined_dataset_id}')
+        query = tmpl.render(
+            fq_dataset_name=f'{self.project_id}.{self.combined_dataset_id}')
 
         # Load person table data before the rest of the data is loaded
         # so all required columns are included

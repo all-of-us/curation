@@ -83,7 +83,8 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=FITBIT_TABLES)
 
-        self.person = gbq.TableReference.from_string(f'{project_id}.{combined_dataset_id}.person')
+        self.person = gbq.TableReference.from_string(
+            f'{project_id}.{combined_dataset_id}.person')
 
     def get_query_specs(self):
         """
