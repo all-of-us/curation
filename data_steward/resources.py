@@ -188,13 +188,13 @@ def is_deid_table(table_id):
     return table_id == '_deid_map'
 
 
-def is_fitbit_table(table_id):
+def is_wearables_table(table_id):
     """
-    Return True if specified table is a FitBit table.
+    Return True if specified table is a wearables table, currently for FitBit.
 
-    Custom tables for the AOU program to ingest fitbit data
+    Custom tables for the AOU program to ingest wearables data
     :param table_id: identifies the table
-    :return: True if specified table is a fitbit table, False otherwise
+    :return: True if specified table is a wearables table (eg fitbit), False otherwise
     """
     return table_id in FITBIT_TABLES
 
@@ -261,7 +261,7 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                     include_table = False
                 elif is_deid_table(table_name):
                     include_table = False
-                elif is_fitbit_table(table_name):
+                elif is_wearables_table(table_name):
                     include_table = False
                 elif table_name == 'post_deid_person':
                     include_table = False

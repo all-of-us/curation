@@ -63,19 +63,17 @@ class PIDtoRID(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=FITBIT_TABLES)
 
-        self.dataset_ref = gbq.DatasetReference(self.project_id,
-                                                self.dataset_id)
         self.pid_tables = [
-            gbq.TableReference(self.dataset_ref, table_id)
+            gbq.TableReference.from_string(
+                f'{self.project_id}.{self.dataset_id}.{table_id}')
             for table_id in FITBIT_TABLES
         ]
         if fq_deid_map_table is None:
             fq_deid_map_table = f'{self.project_id}.{combined_dataset_id}._deid_map'
             LOGGER.info(f'Using deid map from combined {fq_deid_map_table}')
         self.deid_map = gbq.TableReference.from_string(fq_deid_map_table)
-        self.combined_dataset_ref = gbq.DatasetReference(
-            self.project_id, combined_dataset_id)
-        self.person = gbq.TableReference(self.combined_dataset_ref, 'person')
+        self.person = gbq.TableReference.from_string(
+            f'{self.project_id}.{combined_dataset_id}.person')
 
     def get_query_specs(self):
         """
