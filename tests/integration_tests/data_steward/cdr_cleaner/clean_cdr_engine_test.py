@@ -2,6 +2,9 @@
 import os
 from unittest import TestCase
 
+# Third party imports
+from google.cloud.bigquery import LoadJobConfig, TableReference
+
 # Project imports
 import sandbox
 from tests import test_util
@@ -31,8 +34,18 @@ class CleanCDREngineTest(TestCase):
             table_file = os.path.basename(table_path)
             table = table_file.split('.')[0]
             self.tables.append(table)
-            bq.upload_csv_data_to_bq_table(self.client, self.dataset_id, table,
-                                           table_path, 'WRITE_EMPTY')
+            bq.create_tables(self.client,
+                             self.project_id,
+                             [f'{self.project_id}.{self.dataset_id}.{table}'],
+                             exists_ok=False,
+                             fields=None)
+            table_ref = TableReference.from_string(
+                f'{self.project_id}.{self.dataset_id}.{table}')
+            job_config = LoadJobConfig()
+            job_config.source_format = 'CSV'
+            job_config.skip_leading_rows = 1
+            with open(table_path, 'rb') as f:
+                self.client.load_table_from_file(f, table_ref, job_config)
 
     def test_clean_engine_v1(self):
         jobs = ce.clean_dataset_v1(
