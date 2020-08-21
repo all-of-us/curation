@@ -163,8 +163,8 @@ COMBINED_CLEANING_CLASSES = [
 
 FITBIT_CLEANING_CLASSES = [
     (RemoveFitbitDataIfMaxAgeExceeded,),
-    (PIDtoRID,),
-    (FitbitDateShiftRule,),
+    (PIDtoRID, 'fake_map_dataset', 'foo.bar.fake_deid_maptable'),
+    (FitbitDateShiftRule, 'fake_map_dataset', 'fake_deid_maptable'),
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
@@ -332,7 +332,11 @@ def _get_query_list(cleaning_classes, project_id, dataset_id,
     for class_info in cleaning_classes:
         clazz = class_info[0]
         try:
-            instance = clazz(project_id, dataset_id, sandbox_dataset_id)
+            if len(class_info) == 1:
+                instance = clazz(project_id, dataset_id, sandbox_dataset_id)
+            else:
+                instance = clazz(project_id, dataset_id, sandbox_dataset_id,
+                                 *class_info[1:])
         except TypeError:
             # raised when called with the 3 parameters and only 2 are needed
             query_list.extend(
@@ -350,8 +354,10 @@ def _get_query_list(cleaning_classes, project_id, dataset_id,
                     positionals = class_info[1:]
 
                 query_list.extend(
-                    add_module_info_decorator(instance.get_query_specs,
-                                              *positionals, **keywords))
+                    add_module_info_decorator(instance.get_query_specs))  #,
+
+
+#                                              *positionals, **keywords))
             else:
                 # if the class is not of the common base class, raise an error
                 # will prevent running manual cleaning rules that have not been
@@ -384,14 +390,20 @@ def clean_fitbit_dataset(project_id=None, dataset_id=None):
         LOGGER.info(
             f"Dataset is unspecified.  Using default value of:\t{dataset_id}")
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
-                                                        dataset_id=dataset_id)
+#    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+#                                                        dataset_id=dataset_id)
 
+    sandbox_dataset_id = 'fitbit_test_sandbox'
     query_list = _gather_fitbit_cleaning_queries(project_id, dataset_id,
                                                  sandbox_dataset_id)
 
+    for q in query_list:
+        print(f"{q.get('query')}\n")
+
     LOGGER.info("Cleaning FITBIT dataset")
-    clean_engine.clean_dataset(project_id, query_list, stage.FITBIT)
+
+
+#    clean_engine.clean_dataset(project_id, query_list, stage.FITBIT)
 
 
 def clean_rdr_dataset(project_id=None, dataset_id=None):
@@ -603,7 +615,7 @@ if __name__ == '__main__':
     elif args.data_stage == stage.DEID_CLEAN:
         clean_combined_de_identified_clean_dataset()
     elif args.data_stage == stage.FITBIT:
-        clean_fitbit_dataset()
+        clean_fitbit_dataset('aou-res-curation-test', 'lrwb_aou_bar')
     else:
         raise OSError(
             f'Dataset selection should be from [{stage.EHR}, {stage.UNIONED}, {stage.RDR}, {stage.COMBINED},'

@@ -54,6 +54,7 @@ class FitbitDateShiftRule(DateShiftRule):
                          depends_on=[PIDtoRID])
 
     def get_tables_and_schemas(self):
+        tables_and_schemas = dict()
         for table in self.tables:
             try:
                 schema = fields_for(table, 'wearables/fitbit')
