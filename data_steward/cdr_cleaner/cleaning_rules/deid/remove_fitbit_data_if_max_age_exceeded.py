@@ -174,8 +174,8 @@ if __name__ == '__main__':
     clean_engine.add_console_logging(ARGS.console_log)
 
     cleaner = RemoveFitbitDataIfMaxAgeExceeded(ARGS.project_id, ARGS.dataset_id,
-                                               ARGS.combined_dataset_id,
-                                               ARGS.sandbox_dataset_id)
+                                               ARGS.sandbox_dataset_id,
+                                               ARGS.combined_dataset_id)
     query_list = cleaner.get_query_specs()
 
     if ARGS.list_queries:
