@@ -15,7 +15,7 @@ from mock import patch
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.fitbit_dateshift import FitbitDateShiftRule
+from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -130,9 +130,9 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
         self.load_test_data(load_statements)
 
     @patch(
-        'cdr_cleaner.cleaning_rules.fitbit_dateshift.FitbitDateShiftRule.get_tables_and_schemas'
+        'cdr_cleaner.cleaning_rules.deid.fitbit_dateshift.FitbitDateShiftRule.get_tables_and_schemas'
     )
-    def test_dateshifing(self, mock_schema):
+    def test_dateshifting(self, mock_schema):
         """
         Use the default drop rows test function.
 

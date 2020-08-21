@@ -10,7 +10,7 @@ Original Issue:  DC-1005
 import logging
 
 # Project imports
-from cdr_cleaner.cleaning_rules.dateshift import DateShiftRule
+from cdr_cleaner.cleaning_rules.deid.dateshift import DateShiftRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from resources import fields_for
 
