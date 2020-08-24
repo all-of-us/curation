@@ -169,7 +169,7 @@ COMBINED_CLEANING_CLASSES = [
 ]
 
 FITBIT_CLEANING_CLASSES = [
-    RULE_ARGS(RemoveFitbitDataIfMaxAgeExceeded),
+    RULE_ARGS(RemoveFitbitDataIfMaxAgeExceeded, ['mapping_dataset_id']),
     RULE_ARGS(PIDtoRID, ['mapping_dataset_id', 'pid_rid_map_tablename']),
     RULE_ARGS(FitbitDateShiftRule,
               ['mapping_dataset_id', 'pid_rid_map_tablename']),
