@@ -67,7 +67,7 @@ export BIGQUERY_DATASET_ID="${fitbit_dataset}"
 export PYTHONPATH="${PYTHONPATH}:${CLEAN_DEID_DIR}:${DATA_STEWARD_DIR}"
 
 # create empty fitbit de-id dataset
-bq mk --dataset --description "${version} deidentified version of ${fitbit_dataset}" "${APP_ID}":"${registered_fitbit_deid}"
+bq mk --dataset --description "${dataset_release_tag} de-identified version of ${fitbit_dataset}" "${APP_ID}":"${registered_fitbit_deid}"
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${fitbit_dataset}" --target_dataset "${registered_fitbit_deid}"
 # Use the below command if copy fails
 #transfer_params='{"source_dataset_id":"'${registered_fitbit_deid}'","source_project_id":"'${APP_ID}'"'
