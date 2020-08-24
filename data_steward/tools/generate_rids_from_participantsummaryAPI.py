@@ -53,9 +53,7 @@ def get_participants(api_project_id, existing_pids):
 
     Loops through the results to double check the API returned the correct participants.
 
-    :param start_date: start date of cutoff date range
-    :param end_date: end date of cutoff date range
-    :param max_age: max age of participants that were initially excluded, that now need to be backfilled
+    :param api_project_id: project_id to send to API call
     :param existing_pids: list of pids that already exist in mapping table
     :return: dataframe with single column person_id from participant summary API, which needs RIDS created for
     """
@@ -74,20 +72,21 @@ def get_participants(api_project_id, existing_pids):
 
     # Make request to get API version. This is the current RDR version for reference
     # See https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this api.
-    request_url_cutoff_participants = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
-                                      "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=gt{2}" \
-                                      "&consentForStudyEnrollmentAuthored=lt{3}".format(api_project_id,
-                                                                                        'NOT_WITHDRAWN',
-                                                                                        bin_1_gt_datetime,
-                                                                                        bin_1_lt_datetime)
-    request_url_max_age_participants_1 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
-                                         "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=lt{2}"\
-        .format(api_project_id, 'NOT_WITHDRAWN', bin_2_datetime)
-    request_url_max_age_participants_2 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
-                                         "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=lt{2}" \
-                                         "&dateOfBirth=lt{3}".format(api_project_id, 'NOT_WITHDRAWN',
-                                                                     bin_3_gt_datetime,
-                                                                     bin_3_lt_datetime)
+    request_url_cutoff_participants = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=" \
+                                      "consentForStudyEnrollmentAuthored&withdrawalStatus={1}" \
+                                      "&consentForStudyEnrollmentAuthored=gt{2}&consentForStudyEnrollmentAuthored=" \
+                                      "lt{3}".format(api_project_id, 'NOT_WITHDRAWN', bin_1_gt_datetime,
+                                                     bin_1_lt_datetime)
+    request_url_max_age_participants_1 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=" \
+                                         "consentForStudyEnrollmentAuthored&withdrawalStatus={1}" \
+                                         "&consentForStudyEnrollmentAuthored=lt{2}".format(api_project_id,
+                                                                                           'NOT_WITHDRAWN',
+                                                                                           bin_2_datetime)
+    request_url_max_age_participants_2 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=" \
+                                         "consentForStudyEnrollmentAuthored&withdrawalStatus={1}" \
+                                         "&consentForStudyEnrollmentAuthored=gt{2}&consentForStudyEnrollmentAuthored=" \
+                                         "lt{3}".format(api_project_id, 'NOT_WITHDRAWN', bin_3_gt_datetime,
+                                                        bin_3_lt_datetime)
 
     list_url_requests = [
         request_url_cutoff_participants, request_url_max_age_participants_1,
@@ -180,7 +179,6 @@ def generate_mapping_table_rows(project_id, api_project_id, dataset,
         np.random.shuffle(shift_array)
     map_table['shift'] = shift_array
 
-    # map_table.to_csv('pid_rid_output.csv')
     # write this to bigquery
     pandas_gbq.to_gbq(map_table,
                       dataset + '.' + mapping_table,
