@@ -64,7 +64,8 @@ def get_participant_data(url, headers):
             if 'link' in r_json:
                 link_obj = r_json.get('link')
                 link_url = link_obj[0].get('url')
-                next_url = original_url + '&' + link_url[link_url.find('_token'):]
+                next_url = original_url + '&' + link_url[link_url.find('_token'
+                                                                       ):]
             else:
                 done = True
 
