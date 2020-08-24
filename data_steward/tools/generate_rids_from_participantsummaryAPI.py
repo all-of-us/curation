@@ -37,17 +37,6 @@ SELECT DISTINCT person_id FROM `{{project}}.{{dataset}}.{{table}}`
 """)
 
 
-def calculate_max_age_date(max_age):
-    """
-    Helper method to get the current date to pass to the participant summary API based on the max_age
-    :param max_age: max age of participants
-    :return: date x years ago based on max age
-    """
-    today = date.today()
-    year = today.year - int(max_age)
-    return date(year, today.month, today.day)
-
-
 def milliseconds_since_epoch():
     """
     Helper method to get the number of milliseconds from the epoch to now
@@ -57,7 +46,7 @@ def milliseconds_since_epoch():
         (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
 
 
-def get_participants(start_date, end_date, max_age, existing_pids):
+def get_participants(api_project_id, existing_pids):
     """
     Method to hit the participant summary API based on cutoff dates and max age. Filters out participants that already
     exist in the pipeline_tables.pid_rid_mapping table.
@@ -70,30 +59,39 @@ def get_participants(start_date, end_date, max_age, existing_pids):
     :param existing_pids: list of pids that already exist in mapping table
     :return: dataframe with single column person_id from participant summary API, which needs RIDS created for
     """
-    # get max age date to pass as parameter to Participant Summary API
-    max_age_date = calculate_max_age_date(max_age)
 
-    # create datetime from cutoff_date string
-    end_date_obj = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S')
-    start_date_obj = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S')
+    # create datetimes from cutoff dates and datetimes to bin API call requests
+    bin_1_gt_datetime = datetime.strptime('2019-08-31T23:59:59',
+                                          '%Y-%m-%dT%H:%M:%S')
+    bin_1_lt_datetime = datetime.strptime('2020-08-02T00:00:00',
+                                          '%Y-%m-%dT%H:%M:%S')
+    bin_2_datetime = datetime.strptime('2019-01-01T00:00:00',
+                                       '%Y-%m-%dT%H:%M:%S')
+    bin_3_gt_datetime = datetime.strptime('2018-12-31T23:59:59',
+                                          '%Y-%m-%dT%H:%M:%S')
+    bin_3_lt_datetime = datetime.strptime('2019-09-01T00:00:00',
+                                          '%Y-%m-%dT%H:%M:%S')
 
     # Make request to get API version. This is the current RDR version for reference
     # See https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this api.
-    url_cutoff_participants = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
-                              "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=gt{2}" \
-                              "&consentForStudyEnrollmentAuthored=lt{3}".format('all-of-us-rdr-prod', 'NOT_WITHDRAWN',
-                                                                                start_date_obj, end_date_obj)
-    url_max_age_participants_1 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
-                                 "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=lt{2}" \
-                                 "&dateOfBirth=lt{3}".format('all-of-us-rdr-prod', 'NOT_WITHDRAWN', start_date_obj,
-                                                             max_age_date)
-    url_max_age_participants_2 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
-                                 "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=gt{2}" \
-                                 "&dateOfBirth=lt{3}".format('all-of-us-rdr-prod', 'NOT_WITHDRAWN', end_date_obj,
-                                                             max_age_date)
+    request_url_cutoff_participants = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
+                                      "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=gt{2}" \
+                                      "&consentForStudyEnrollmentAuthored=lt{3}".format(api_project_id,
+                                                                                        'NOT_WITHDRAWN',
+                                                                                        bin_1_gt_datetime,
+                                                                                        bin_1_lt_datetime)
+    request_url_max_age_participants_1 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
+                                         "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=lt{2}"\
+        .format(api_project_id, 'NOT_WITHDRAWN', bin_2_datetime)
+    request_url_max_age_participants_2 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified" \
+                                         "&withdrawalStatus={1}&consentForStudyEnrollmentAuthored=lt{2}" \
+                                         "&dateOfBirth=lt{3}".format(api_project_id, 'NOT_WITHDRAWN',
+                                                                     bin_3_gt_datetime,
+                                                                     bin_3_lt_datetime)
+
     list_url_requests = [
-        url_cutoff_participants, url_max_age_participants_1,
-        url_max_age_participants_2
+        request_url_cutoff_participants, request_url_max_age_participants_1,
+        request_url_max_age_participants_2
     ]
     participant_data = []
 
@@ -115,26 +113,14 @@ def get_participants(start_date, end_date, max_age, existing_pids):
         # remove pids that already exist in mapping table
         if participant_id not in existing_pids:
             # turn string into datetime to compare
-            enrollment_date = datetime.strptime(
-                participant['consentForStudyEnrollmentAuthored'],
-                "%Y-%m-%dT%H:%M:%S")
-            # verify API returned only participants between start and cutoff dates
-            # and above max age if outside cutoff date range, then append person_id to DF
-            if start_date_obj < enrollment_date < end_date_obj:
-                participants = participants.append(
-                    {'person_id': participant_id}, ignore_index=True)
-            elif datetime.strptime(participant['dateOfBirth'],
-                                   '%Y-%m-%d').date() < max_age_date:
-                participants = participants.append(
-                    {'person_id': participant_id}, ignore_index=True)
-            else:
-                continue
+            participants = participants.append({'person_id': participant_id},
+                                               ignore_index=True)
 
     return participants.drop_duplicates()
 
 
-def generate_mapping_table_rows(project_id, start_date, end_date, max_age,
-                                dataset, mapping_table):
+def generate_mapping_table_rows(project_id, api_project_id, dataset,
+                                mapping_table):
     """
     Method to generate mapping table rows to append to existing mapping table: pipeline_tables.pid_rid_mapping table
     Retrieves participants from the participant summary API based on specific parameters. Only retrieving participants
@@ -159,10 +145,9 @@ def generate_mapping_table_rows(project_id, start_date, end_date, max_age,
             project=project_id, dataset=dataset,
             table=mapping_table)).to_dataframe()['person_id'].values.tolist()
 
-    person_table = get_participants(start_date, end_date, max_age,
-                                    existing_pids)
+    person_table = get_participants(api_project_id, existing_pids)
 
-    # retrieve existing rids, to not resuse
+    # retrieve existing rids, to not reuse
     existing_rids = client.query(
         GET_EXISTING_RIDS.render(
             project=project_id, dataset=dataset,
@@ -195,6 +180,7 @@ def generate_mapping_table_rows(project_id, start_date, end_date, max_age,
         np.random.shuffle(shift_array)
     map_table['shift'] = shift_array
 
+    # map_table.to_csv('pid_rid_output.csv')
     # write this to bigquery
     pandas_gbq.to_gbq(map_table,
                       dataset + '.' + mapping_table,
@@ -207,36 +193,20 @@ if __name__ == '__main__':
         description=
         'Creates research IDs for participants obtained from the Participant Summary API',
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-p',
-                        '--project_id',
-                        action='store',
-                        dest='project_id',
-                        help='Identifies the project',
-                        required=True)
     parser.add_argument(
-        '-s',
-        '--start_date',
+        '-p',
+        '--project_id',
         action='store',
-        dest='start_date',
-        help=
-        'Start date of cutoff date range, to only retrieve participants after said date. Formatted in datetime '
-        'YYYY-MM-DDTHH:MM:SS',
-        required=True)
-    parser.add_argument(
-        '-e',
-        '--end_date',
-        action='store',
-        dest='end_date',
-        help=
-        'End date of cutoff date range, to only retrieve participants before said date. Formatted in datetime '
-        'YYYY-MM-DDTHH:MM:SS',
+        dest='project_id',
+        help='Identifies the project where the mapping table exists',
         required=True)
     parser.add_argument(
         '-a',
-        '--max_age',
+        '--api_project_id',
         action='store',
-        dest='max_age',
-        help='Max age of participants, which need to be backfilled eg: 89',
+        dest='api_project_id',
+        help=
+        'Identifies the project to send as a parameter in the participant summary api',
         required=True)
     parser.add_argument('-d',
                         '--dataset',
@@ -252,5 +222,5 @@ if __name__ == '__main__':
                         required=True)
     args = parser.parse_args()
 
-    generate_mapping_table_rows(args.project_id, args.start_date, args.end_date,
-                                args.max_age, args.dataset, args.mapping_table)
+    generate_mapping_table_rows(args.project_id, args.api_project_id,
+                                args.dataset, args.mapping_table)
