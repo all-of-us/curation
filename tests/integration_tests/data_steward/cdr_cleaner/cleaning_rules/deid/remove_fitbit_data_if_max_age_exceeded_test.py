@@ -1,7 +1,7 @@
 """
 Integration test for remove_fitbit_data_if_max_age_exceeded module
 
-Original Issues: DC-1001
+Original Issues: DC-1001, DC-1037
 
 The intent is to ensure there is no data for participants over the age of 89 in
 Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables
@@ -13,8 +13,9 @@ import os
 
 # Project Imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded, TABLES
+from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+from common import FITBIT_TABLES
 
 
 class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
@@ -32,11 +33,16 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = project_id
 
         # Set the expected test datasets
-        dataset_id = os.environ.get('RDR_DATASET_ID')
+        dataset_id = os.environ.get('UNIONED_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
+        cls.combined_dataset_id = os.environ.get('COMBINED_DATASET_ID')
 
         cls.query_class = RemoveFitbitDataIfMaxAgeExceeded(
-            project_id, dataset_id, sandbox_id)
+            project_id,
+            dataset_id,
+            sandbox_id,
+            cls.combined_dataset_id,
+        )
 
         # template for data that will be inserted into the FitBit tables
         cls.insert_fake_fitbit_data_tmpls = [
@@ -55,8 +61,9 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
                 f'{project_id}.{sandbox_id}.{table_name}')
 
         # Generates list of fully qualified table names
-        cls.fq_table_names.append(f'{project_id}.{dataset_id}.person')
-        for table in TABLES:
+        cls.fq_table_names.append(
+            f'{project_id}.{cls.combined_dataset_id}.person')
+        for table in FITBIT_TABLES:
             cls.fq_table_names.append(f'{project_id}.{dataset_id}.{table}')
 
         # call super to set up the client, create datasets, and create
@@ -76,9 +83,6 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
             for i in range(1, 5):
                 query = tmpl.render(fq_table_name=self.fq_table_names[i])
                 self.load_statements.append(query)
-
-        fq_dataset_name = self.fq_table_names[0].split('.')
-        self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
         super().setUp()
 
@@ -103,7 +107,8 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
         (666, 0, 1931, 0, 0)
         """)
 
-        query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
+        query = tmpl.render(
+            fq_dataset_name=f'{self.project_id}.{self.combined_dataset_id}')
 
         # Load person table data before the rest of the data is loaded
         # so all required columns are included
