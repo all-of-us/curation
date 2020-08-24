@@ -51,9 +51,11 @@ def get_participant_data(url, headers):
 
     done = False
     participant_data = []
+    original_url = url
+    next_url = url
 
     while not done:
-        resp = requests.get(url, headers=headers)
+        resp = requests.get(next_url, headers=headers)
         if not resp or resp.status_code != 200:
             print(f'Error: API request failed because {resp}')
         else:
@@ -61,7 +63,8 @@ def get_participant_data(url, headers):
             participant_data += r_json.get('entry', {})
             if 'link' in r_json:
                 link_obj = r_json.get('link')
-                url = link_obj[0].get('url')
+                link_url = link_obj[0].get('url')
+                next_url = original_url + '&' + link_url[link_url.find('_token'):]
             else:
                 done = True
 
