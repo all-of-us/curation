@@ -61,7 +61,6 @@ DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 CLEAN_DEID_DIR="${CLEANER_DIR}/cleaning_rules/deid"
-HANDOFF_DATE=$(date --date='1 day' '+%Y-%m-%d')
 
 export BIGQUERY_DATASET_ID="${fitbit_dataset}"
 export PYTHONPATH="${PYTHONPATH}:${CLEAN_DEID_DIR}:${DATA_STEWARD_DIR}"
@@ -74,12 +73,12 @@ bq mk --dataset --description "${dataset_release_tag} de-identified version of $
 #bq mk --transfer_config --project_id="${APP_ID}" --data_source="cross_region_copy" --target_dataset="${registered_fitbit_deid}" --display_name='Create Fitbit Deid' --params="${transfer_params}"
 
 # create empty fitbit sandbox dataset
-sandbox_dataset="${fitbit_dataset}_sandbox"
-bq mk --dataset --description "${version} sandbox dataset for ${fitbit_dataset}" "${APP_ID}":"${sandbox_dataset}"
+sandbox_dataset="${registered_fitbit_deid}_sandbox"
+bq mk --dataset --description "${dataset_release_tag} sandbox dataset for ${registered_fitbit_deid}" "${APP_ID}":"${sandbox_dataset}"
 
 # Apply cleaning rules
-python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${fitbit_dataset}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee fitbit_max_age_log.txt
-python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${fitbit_dataset}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee fitbit_pid_rid_log.txt
+python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee fitbit_max_age_log.txt
+python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee fitbit_pid_rid_log.txt
 
 unset PYTHONPATH
 
