@@ -67,11 +67,11 @@ from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
 from utils import bq
 
-CLEAN_TUPLE = namedtuple('CleanClass', [
-    'clazz', 'class_pos', 'class_keyword', 'query_specs_pos',
+RULE_ARGS = namedtuple('CleanClass', [
+    'clazz', 'clazz_pos', 'clazz_keyword', 'query_specs_pos',
     'query_specs_keyword'
 ],
-                         defaults=([], {}, [], {}))
+                       defaults=([], {}, [], {}))
 
 LOGGER = logging.getLogger(__name__)
 
@@ -169,10 +169,10 @@ COMBINED_CLEANING_CLASSES = [
 ]
 
 FITBIT_CLEANING_CLASSES = [
-    CLEAN_TUPLE(RemoveFitbitDataIfMaxAgeExceeded),
-    CLEAN_TUPLE(PIDtoRID, ['mapping_dataset_id', 'foo.bar.fake_deid_maptable']),
-    CLEAN_TUPLE(FitbitDateShiftRule,
-                ['mapping_dataset_id', 'pid_rid_map_tablename']),
+    RULE_ARGS(RemoveFitbitDataIfMaxAgeExceeded),
+    RULE_ARGS(PIDtoRID, ['mapping_dataset_id', 'pid_rid_map_tablename']),
+    RULE_ARGS(FitbitDateShiftRule,
+              ['mapping_dataset_id', 'pid_rid_map_tablename']),
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
@@ -288,20 +288,20 @@ def _gather_fitbit_cleaning_queries(project_id, dataset_id, sandbox_dataset_id,
     :param dataset_id: fitbit dataset name
     :return: returns list of queries
     """
-    corrected_class = []
+    corrected_classes = []
     for cl in FITBIT_CLEANING_CLASSES:
         positionals = [
             mapping_dataset_id if field == 'mapping_dataset_id' else field
-            for field in cl.class_pos
+            for field in cl.clazz_pos
         ]
         positionals = [
             pid_rid_tablename if field == 'pid_rid_map_tablename' else field
             for field in positionals
         ]
-        cl = cl._replace(class_pos=positionals)
-        corrected_class.append(cl)
-    return _get_named_tuple_query_list(corrected_class, project_id, dataset_id,
-                                       sandbox_dataset_id)
+        common = [project_id, dataset_id, sandbox_dataset_id]
+        cl = cl._replace(clazz_pos=common + positionals)
+        corrected_classes.append(cl)
+    return _get_named_tuple_query_list(corrected_classes)
 
 
 def _gather_deid_base_cleaning_queries(project_id, dataset_id,
@@ -338,14 +338,11 @@ def _gather_deid_clean_cleaning_queries(project_id, dataset_id,
                            sandbox_dataset_id)
 
 
-def _get_named_tuple_query_list(cleaning_classes, project_id, dataset_id,
-                                sandbox_dataset_id):
+def _get_named_tuple_query_list(cleaning_classes):
     """
     gathers all the queries required to clean a dataset
 
     :param cleaning_classes:  the list of classes generating SQL cleaning statements
-    :param project_id: project name
-    :param dataset_id: de_identified dataset name
     :return: returns list of queries
     """
     query_list = []
@@ -353,12 +350,9 @@ def _get_named_tuple_query_list(cleaning_classes, project_id, dataset_id,
     for class_info in cleaning_classes:
         clazz = class_info.clazz
         try:
-            instance = clazz(project_id, dataset_id, sandbox_dataset_id,
-                             *class_info.class_pos, **class_info.class_keyword)
+            instance = clazz(*class_info.clazz_pos, **class_info.clazz_keyword)
         except TypeError:
-            # raised when called with the 3 parameters and only 2 are needed
-            query_list.extend(
-                add_module_info_decorator(clazz, project_id, dataset_id))
+            LOGGER.exception("Cannot instantiate class: {clazz}")
         else:
             # should eventually be the main component of this function.
             # Everything should transition to using a common base class.
@@ -368,16 +362,7 @@ def _get_named_tuple_query_list(cleaning_classes, project_id, dataset_id,
                                               *class_info.query_specs_pos,
                                               **class_info.query_specs_keyword))
             else:
-                # if the class is not of the common base class, raise an error
-                # will prevent running manual cleaning rules that have not been
-                # transitioned into proper cleaning rules
-                #                raise TypeError(
-                #                    '{} is not an instance of BaseCleaningRule'.format(
-                #                        instance.__class__.__name__))
-                # is raised when a function is called without all the required variables
-                query_list.extend(
-                    add_module_info_decorator(clazz, project_id, dataset_id,
-                                              sandbox_dataset_id))
+                LOGGER.error(f"Cannot create SQL for {clazz}")
 
     return query_list
 
@@ -456,22 +441,17 @@ def clean_fitbit_dataset(project_id, dataset_id, mapping_dataset_id,
         raise RuntimeError(
             "Mapping table name is unspecified for cleaning fitbit data.")
 
-#    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
-#                                                        dataset_id=dataset_id)
+    sandbox_dataset_id = sandbox.create_sandbox_dataset(project_id=project_id,
+                                                        dataset_id=dataset_id)
 
-    sandbox_dataset_id = 'fitbit_test_sandbox'
     query_list = _gather_fitbit_cleaning_queries(project_id, dataset_id,
                                                  sandbox_dataset_id,
                                                  mapping_dataset_id,
                                                  mapping_tablename)
 
-    for q in query_list:
-        print(f"{q.get('query')}\n")
-
     LOGGER.info("Cleaning FITBIT dataset")
 
-
-#    clean_engine.clean_dataset(project_id, query_list, stage.FITBIT)
+    clean_engine.clean_dataset(project_id, query_list, stage.FITBIT)
 
 
 def clean_rdr_dataset(project_id=None, dataset_id=None):

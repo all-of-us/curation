@@ -33,7 +33,7 @@ class PIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
         cls.query_class = pr.PIDtoRID(project_id, cls.dataset_id,
                                       cls.sandbox_id, cls.combined_dataset_id,
-                                      cls.fq_deid_map_table)
+                                      '_deid_map')
 
         cls.fq_sandbox_table_names = []
 
