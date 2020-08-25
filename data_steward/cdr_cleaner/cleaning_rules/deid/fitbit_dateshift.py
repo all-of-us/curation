@@ -12,6 +12,7 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.dateshift import DateShiftRule
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
+from common import FITBIT_TABLES
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from resources import fields_for
 
@@ -38,10 +39,8 @@ class FitbitDateShiftRule(DateShiftRule):
                 f'calculated in the static mapping table.  This specifically '
                 f'applies to fitbit tables.')
 
-        self.tables = [
-            'activity_summary', 'heart_rate_minute_level', 'heart_rate_summary',
-            'steps_intraday'
-        ]
+        self.tables = FITBIT_TABLES
+
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.FITBIT],
@@ -58,7 +57,7 @@ class FitbitDateShiftRule(DateShiftRule):
         for table in self.tables:
             try:
                 schema = fields_for(table, 'wearables/fitbit')
-                # update schema defintion if it's available
+                # update schema definition if it's available
                 tables_and_schemas[table] = schema
             except RuntimeError:
                 LOGGER.exception(f"Can't find schema file for {table}.  "
