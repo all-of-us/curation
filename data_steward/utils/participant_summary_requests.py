@@ -82,7 +82,7 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     :param tablename: The name of the table to house the deactivated participant data
     :param columns: columns to be pushed to a table in BigQuery in the form of a list of strings
 
-    :return: returns dataframe of deactivated participants
+    :return: returns dataset of deactivated participants
     """
 
     # Parameter checks
