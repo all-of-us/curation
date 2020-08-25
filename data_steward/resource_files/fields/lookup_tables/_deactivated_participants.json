@@ -13,7 +13,7 @@
     },
     {
         "type": "TIMESTAMP",
-        "name": "suspension_time",
+        "name": "deactivated_date",
         "mode": "required",
         "description": "The date and time a participant's status was set to NO_CONTACT"
     }
