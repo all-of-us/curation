@@ -127,7 +127,8 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
 
     # Converts column `suspensionTime` from string to timestamp
     if 'suspensionTime' in deactivated_participants_cols:
-        df['suspensionTime'] = pandas.to_datetime(df['suspensionTime'])
+        df.rename(columns={'suspensionTime': 'deactivated_date'}, inplace=True)
+        df['deactivated_date'] = pandas.to_datetime(df['deactivated_date'])
 
     # Transforms participantId to an integer string
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
