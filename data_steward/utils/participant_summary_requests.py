@@ -144,6 +144,9 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     bq_columns = [
         'person_id' if k == 'participant_id' else k for k in bq_columns
     ]
+    bq_columns = [
+        'deactivated_date' if k == 'suspension_time' else k for k in bq_columns
+    ]
     column_map = {
         k: v for k, v in zip(deactivated_participants_cols, bq_columns)
     }

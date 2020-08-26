@@ -53,7 +53,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
 
     def setUp(self):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
-        self.bq_columns = ['person_id', 'suspension_status', 'suspension_time']
+        self.bq_columns = ['person_id', 'suspension_status', 'deactivated_date']
         self.deactivated_participants = [[
             111, 'NO_CONTACT',
             pandas.Timestamp('2018-12-07T08:21:14')
