@@ -148,7 +148,6 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     }
 
     df = df.rename(columns=column_map)
-    print(f'this is the dataframe:\n {df}')
 
     # To store dataframe in a BQ dataset table
     destination_table = dataset_id + '.' + tablename
