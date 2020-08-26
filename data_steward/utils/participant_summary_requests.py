@@ -127,8 +127,7 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
 
     # Converts column `suspensionTime` from string to timestamp
     if 'suspensionTime' in deactivated_participants_cols:
-        df.rename(columns={'suspensionTime': 'deactivated_date'}, inplace=True)
-        df['deactivated_date'] = pandas.to_datetime(df['deactivated_date'])
+        df['suspensionTime'] = pandas.to_datetime(df['suspensionTime'])
 
     # Transforms participantId to an integer string
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
@@ -141,11 +140,15 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     bq_columns = [
         'person_id' if k == 'participant_id' else k for k in bq_columns
     ]
+    bq_columns = [
+        'deactivated_date' if k == 'suspension_time' else k for k in bq_columns
+    ]
     column_map = {
         k: v for k, v in zip(deactivated_participants_cols, bq_columns)
     }
 
     df = df.rename(columns=column_map)
+    print(f'this is the dataframe:\n {df}')
 
     # To store dataframe in a BQ dataset table
     destination_table = dataset_id + '.' + tablename
