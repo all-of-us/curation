@@ -56,9 +56,9 @@ SELECT
 FROM
   `{{project_id}}.{{dataset_id}}.{{observation_table}}`
 WHERE
-  observation_concept_id IN (
+  observation_source_value IN (
   SELECT
-    concept_id
+    concept_code
   FROM
     `{{project_id}}.{{pipeline_tables_dataset}}.{{cope_concepts_table}}`)
     """)
@@ -68,18 +68,14 @@ WITH
   cope_shift AS (
   SELECT
     observation_id,
-    DATE_SUB(observation_date, INTERVAL (EXTRACT(DAY
-        FROM
-          observation_date) - 1) DAY) AS observation_date,
-    TIMESTAMP_SUB(observation_datetime, INTERVAL (EXTRACT(DAY
-        FROM
-          observation_datetime) - 1) DAY) AS observation_datetime,
+    observation_date,
+    observation_datetime,
   FROM
     `{{project_id}}.{{pre_deid_dataset}}.{{observation_table}}`
-  WHERE
-    observation_concept_id IN (
+   WHERE
+    observation_source_value IN (
     SELECT
-      concept_id
+      concept_code
     FROM
       `{{project_id}}.{{pipeline_tables_dataset}}.{{cope_concepts_table}}`))
 SELECT
