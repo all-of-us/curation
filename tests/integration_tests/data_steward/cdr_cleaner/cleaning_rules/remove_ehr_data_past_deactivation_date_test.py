@@ -21,7 +21,9 @@ import app_identity
 import bq_utils
 import gcs_utils
 import utils.participant_summary_requests as psr
+import retraction.retract_deactivated_pids as rdp
 import tests.integration_tests.data_steward.retraction.retract_deactivated_pids_test as rdpt
+import cdr_cleaner.cleaning_rules.remove_ehr_data_past_deactivation_date as red
 from sandbox import get_sandbox_dataset_id
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from utils import bq
@@ -37,6 +39,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
+        self.hpo_id = 'fake'
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
         self.sandbox_id = get_sandbox_dataset_id(self.dataset_id)
@@ -48,9 +51,9 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                                          (3, 'NO_CONTACT', '2017-12-07T08:21:14')]
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
         self.deactivated_participants_data = {
-            'person_id': [1, 2],
-            'suspension_status': ['NO_CONTACT', 'NO_CONTACT'],
-            'suspension_time': ['2018-12-07T08:21:14', '2019-12-07T08:21:14']
+            'person_id': [1, 2, 3],
+            'suspension_status': ['NO_CONTACT', 'NO_CONTACT', 'NO_CONTACT'],
+            'deactivation_date': ['2018-12-07T08:21:14', '2019-12-07T08:21:14', '2017-12-07T08:21:14']
         }
         self.deactivated_participants_df = pandas.DataFrame(
             columns=self.columns, data=self.deactivated_participants_data)
@@ -58,25 +61,25 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         self.json_response_entry = {
             'entry': [{
                 'fullUrl':
-                    'https//foo_project.appspot.com/rdr/v1/Participant/1/Summary',
+                    'https//foo_project.appspot.com/rdr/v1/Participant/P1/Summary',
                 'resource': {
-                    'participantId': '1',
+                    'participantId': 'P1',
                     'suspensionStatus': 'NO_CONTACT',
                     'suspensionTime': '2018-12-07T08:21:14'
                 }
             }, {
                 'fullUrl':
-                    'https//foo_project.appspot.com/rdr/v1/Participant/2/Summary',
+                    'https//foo_project.appspot.com/rdr/v1/Participant/P2/Summary',
                 'resource': {
-                    'participantId': '2',
+                    'participantId': 'P2',
                     'suspensionStatus': 'NO_CONTACT',
                     'suspensionTime': '2019-12-07T08:21:14'
                 }
             }, {
                 'fullUrl':
-                    'https//foo_project.appspot.com/rdr/v1/Participant/3/Summary',
+                    'https//foo_project.appspot.com/rdr/v1/Participant/P3/Summary',
                 'resource': {
-                    'participantId': '3',
+                    'participantId': 'P3',
                     'suspensionStatus': 'NO_CONTACT',
                     'suspensionTime': '2017-12-07T08:21:14'
                 }
@@ -137,7 +140,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         for cdm_file in test_util.NYC_FIVE_PERSONS_FILES:
             cdm_file_name = os.path.basename(cdm_file)
             cdm_table = cdm_file_name.split('.')[0]
-            hpo_table = bq_utils.get_table_id(self.project_id, cdm_table)
+            hpo_table = bq_utils.get_table_id(self.hpo_id, cdm_table)
             # Do not process if person table
             if hpo_table == 'fake_person':
                 continue
@@ -145,9 +148,9 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
             logging.info(
                 f'Preparing to load table {self.dataset_id}.{hpo_table}')
             with open(cdm_file, 'rb') as f:
-                gcs_utils.upload_object(gcs_utils.get_hpo_bucket(self.project_id),
+                gcs_utils.upload_object(gcs_utils.get_hpo_bucket(self.hpo_id),
                                         cdm_file_name, f)
-            result = bq_utils.load_cdm_csv(self.project_id,
+            result = bq_utils.load_cdm_csv(self.hpo_id,
                                            cdm_table,
                                            dataset_id=self.dataset_id)
             logging.info(f'Loading table {self.dataset_id}.{hpo_table}')
@@ -240,10 +243,10 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                          result.total_rows))
 
         # Perform retraction
-        query_list = retract_deactivated_pids.create_queries(
+        query_list = red.remove_ehr_data(
             self.project_id, self.ticket_number, self.project_id,
-            self.bq_dataset_id, self.pid_table_id)
-        retract_deactivated_pids.run_queries(query_list, self.client)
+            self.dataset_id, self.tablename)
+        rdp.run_queries(query_list, self.client)
 
         # Find actual deleted rows
         q_result = self.client.query(q)
