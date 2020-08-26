@@ -234,6 +234,10 @@ j4VOCNoJ+ljo/wE/8skeHh1pOAAAAABJRU5ErkJggg==">
 {% if submission_error is defined %}
     <div class="alert alert-danger">
         Validation failed for the following reason: {{ submission_error }}.
+        
+        Your files have not been successfully uploaded to the DRC.
+        Please run the local file check before making your submission. 
+        <a href="https://github.com/all-of-us/aou-ehr-file-check">aou-ehr-file-check</a>  
     </div>
 {%  endif %}
 {% if error_occurred %}
