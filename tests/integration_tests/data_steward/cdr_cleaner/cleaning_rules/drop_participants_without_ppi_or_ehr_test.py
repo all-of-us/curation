@@ -79,7 +79,7 @@ class DropParticipantsWithoutPpiOrEhrTest(unittest.TestCase):
     def test_get_queries(self):
         results = drop_participants_without_ppi_or_ehr.get_queries('foo', 'bar')
 
-        self.assertEquals(
+        self.assertEqual(
             len(results), 1 + len(common.CLINICAL_DATA_TABLES),
             'wanted one person deletion query and a deletion query per clinical table'
         )
@@ -116,9 +116,9 @@ class DropParticipantsWithoutPpiOrEhrTest(unittest.TestCase):
                             BASICS_MODULE_CONCEPT_ID))
             self.assertTrue(resp["jobComplete"])
 
-        queries = drop_participants_without_ppi_or_ehr.get_queries(
-            project_id, dataset_id)
-        clean_cdr_engine.clean_dataset(project_id, queries)
+        clean_cdr_engine.clean_dataset(
+            project_id, dataset_id,
+            [(drop_participants_without_ppi_or_ehr.get_queries,)])
 
         def table_to_person_ids(t):
             rows = bq_utils.response2rows(
