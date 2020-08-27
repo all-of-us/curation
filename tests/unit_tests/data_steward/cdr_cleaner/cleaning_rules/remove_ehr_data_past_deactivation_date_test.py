@@ -60,7 +60,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         'utils.participant_summary_requests.get_deactivated_participants')
     def test_remove_ehr_data_past_deactivation_date(
         self, mock_get_deactivated_participants, mock_pid_exist, mock_client,
-            mock_check_sandbox, mock_date_info):
+        mock_check_sandbox, mock_date_info):
         # Preconditions for participant summary module mocks
         deactivated_participants_df = pandas.DataFrame(
             columns=self.columns, data=self.deactivated_participants_data)
