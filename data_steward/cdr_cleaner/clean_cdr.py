@@ -61,6 +61,7 @@ from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConc
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
+from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -98,6 +99,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
 ]
 
 RDR_CLEANING_CLASSES = [
+    (TruncateRdrData,),
     (PpiBranching,),
     (ObservationSourceConceptIDRowSuppression,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),

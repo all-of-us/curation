@@ -101,7 +101,7 @@ class TruncateRdrData(BaseCleaningRule):
         counter = 0
         sandbox_queries = []
         truncate_queries = []
-        for table in TRUNCATE_TABLES:
+        for table in self.affected_tables:
 
             save_changed_rows = {
                 cdr_consts.QUERY:
