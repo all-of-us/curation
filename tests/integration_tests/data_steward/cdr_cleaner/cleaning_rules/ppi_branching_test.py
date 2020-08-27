@@ -118,6 +118,7 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
         dataset_id = bq_utils.get_rdr_dataset_id()
         sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
         rule = PpiBranching(project_id, dataset_id, sandbox_dataset_id)
+        cls.query_rule = PpiBranching
         cls.dataset_id = dataset_id
         cls.sandbox_dataset_id = sandbox_dataset_id
         cls.project_id = project_id

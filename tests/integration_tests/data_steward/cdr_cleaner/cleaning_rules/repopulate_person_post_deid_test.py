@@ -106,9 +106,10 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
                     query, e.content))
             self.assertTrue(resp["jobComplete"])
 
-        queries = repopulate_person_post_deid.get_repopulate_person_post_deid_queries(
-            self.project_id, self.dataset_id)
-        clean_cdr_engine.clean_dataset(self.project_id, queries)
+        clean_cdr_engine.clean_dataset(
+            self.project_id, self.dataset_id,
+            [(repopulate_person_post_deid.
+              get_repopulate_person_post_deid_queries,)])
 
         rows = bq_utils.response2rows(
             bq_utils.query("SELECT * FROM `{}.{}.person`".format(
