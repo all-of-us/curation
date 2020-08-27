@@ -23,7 +23,7 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 ]
 
 
-def remove_ehr_data(project_id, ticket_number, pids_project_id, pids_dataset_id,
+def remove_ehr_data_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
                     tablename):
     """
     Creates sandboxes and drops all EHR data found for deactivated participants after
