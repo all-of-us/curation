@@ -1,7 +1,7 @@
-import mock
 import unittest
-from cdr_cleaner import clean_cdr
-from constants.cdr_cleaner import clean_cdr as cdr_consts
+
+from cdr_cleaner.clean_cdr import get_parser
+from constants.cdr_cleaner.clean_cdr import DataStage
 
 
 class CleanCDRTest(unittest.TestCase):
@@ -18,38 +18,21 @@ class CleanCDRTest(unittest.TestCase):
         self.sandbox_dataset_id = 'test sandbox'
         self.dest_table = 'dest_table'
 
-        self.function_name = 'anonymous function'
-        self.model_name = 'test module'
-        self.line_no = 1
+    def test_data_stage(self):
+        actual_stages = [value for item, value in DataStage.__members__.items()]
+        expected_stages = list([s for s in DataStage])
+        self.assertEqual(actual_stages, expected_stages)
 
-        self.query_dict = {
-            cdr_consts.QUERY: 'query',
-            cdr_consts.DESTINATION_DATASET: self.dataset_id,
-            cdr_consts.DESTINATION_TABLE: self.dest_table
-        }
+    def test_parser(self):
+        stage = ['--data_stage', 'ehr']
+        parser = get_parser()
+        args = parser.parse_args(stage)
+        self.assertIn(args.data_stage, DataStage)
 
-        self.module_info_dict = {
-            cdr_consts.MODULE_NAME: self.model_name,
-            cdr_consts.FUNCTION_NAME: self.function_name,
-            cdr_consts.LINE_NO: self.line_no
-        }
+        stage = ['--data_stage', 'unspecified']
+        parser = get_parser()
+        self.assertRaises(SystemExit, parser.parse_args, stage)
 
-    @mock.patch('inspect.getsourcelines')
-    @mock.patch('inspect.getmodule')
-    def test_add_module_info_decorator(self, mock_get_module,
-                                       mock_getsourcelines):
-        mock_function = mock.Mock(__name__=self.function_name)
-        mock_function.return_value = [self.query_dict]
-        mock_get_module.return_value = mock.Mock(__name__=self.model_name)
-        mock_getsourcelines.return_value = (dict(), self.line_no)
-
-        actual_query_dict = clean_cdr.add_module_info_decorator(
-            mock_function, self.project_id, self.dataset_id,
-            self.sandbox_dataset_id)
-
-        expected_query_dict = [dict(**self.query_dict, **self.module_info_dict)]
-
-        self.assertListEqual(actual_query_dict, expected_query_dict)
-
-        mock_get_module.assert_called_once_with(mock_function)
-        mock_getsourcelines.assert_called_once_with(mock_function)
+        stage = ['--data_stage', 'unknown']
+        parser = get_parser()
+        self.assertRaises(SystemExit, parser.parse_args, stage)
