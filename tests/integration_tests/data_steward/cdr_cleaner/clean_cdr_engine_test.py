@@ -3,16 +3,15 @@ import os
 from unittest import TestCase
 
 # Third party imports
-from google.cloud.bigquery import LoadJobConfig, TableReference
+from google.cloud.exceptions import NotFound
 
 # Project imports
 import sandbox
-from tests import test_util
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from utils import bq
 from app_identity import get_application_id
 import cdr_cleaner.clean_cdr_engine as ce
-import cdr_cleaner.cleaning_rules.update_family_history_qa_codes as update_family_history
-from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
+import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 
 class CleanCDREngineTest(TestCase):
@@ -23,7 +22,7 @@ class CleanCDREngineTest(TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-        def setUp(self):
+    def setUp(self):
         self.project_id = get_application_id()
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.client = bq.get_client(self.project_id)
@@ -63,7 +62,6 @@ class CleanCDREngineTest(TestCase):
             return [{cdr_consts.QUERY: fake_rule_func_query}]
 
         # get_query_list returns query dicts for class- and func-based rules
-        # (theoretically this could be a unit test)
         expected_queries = {fake_rule_class_query, fake_rule_func_query}
         query_dicts = ce.get_query_list(project_id=self.project_id,
                                         dataset_id=self.dataset_id,
@@ -74,9 +72,9 @@ class CleanCDREngineTest(TestCase):
         self.assertSetEqual(expected_queries, actual_queries)
 
         # clean_dataset returns jobs associated with all rules' queries
-        jobs = ce.clean_dataset_v1(project_id=self.project_id,
-                                   dataset_id=self.dataset_id,
-                                   rules=[(FakeRuleClass,), (fake_rule_func,)])
+        jobs = ce.clean_dataset(project_id=self.project_id,
+                                dataset_id=self.dataset_id,
+                                rules=[(FakeRuleClass,), (fake_rule_func,)])
         actual_job_queries = set(job.query for job in jobs)
         self.assertEqual(expected_queries, actual_job_queries)
         # the jobs are completed
@@ -91,9 +89,9 @@ class CleanCDREngineTest(TestCase):
             return [{cdr_consts.QUERY: fake_rule_func_err_query}]
 
         with self.assertRaises(NotFound) as c:
-            ce.clean_dataset_v1(project_id=self.project_id,
-                                dataset_id=self.dataset_id,
-                                rules=[(FakeRuleClass,), (fake_rule_func_err,)])
+            ce.clean_dataset(project_id=self.project_id,
+                             dataset_id=self.dataset_id,
+                             rules=[(FakeRuleClass,), (fake_rule_func_err,)])
         self.assertEqual(c.exception.query_job.query, fake_rule_func_err_query)
 
     def delete_sandbox(self):
