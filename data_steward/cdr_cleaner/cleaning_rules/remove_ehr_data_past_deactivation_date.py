@@ -52,11 +52,11 @@ if __name__ == '__main__':
     ARGS = rdp.parse_args()
     rdp.add_console_logging(ARGS.console_log)
 
-    remove_ehr_data_queries = remove_ehr_data(ARGS.project_id,
-                                              ARGS.ticket_number,
-                                              ARGS.pids_project_id,
-                                              ARGS.pids_dataset_id,
-                                              ARGS.tablename)
+    remove_ehr_data_queries = remove_ehr_data_queries(ARGS.project_id,
+                                                      ARGS.ticket_number,
+                                                      ARGS.pids_project_id,
+                                                      ARGS.pids_dataset_id,
+                                                      ARGS.tablename)
 
     client = rdp.get_client(ARGS.project_id)
     rdp.run_queries(remove_ehr_data_queries, client)
