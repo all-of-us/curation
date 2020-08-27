@@ -24,7 +24,7 @@ import utils.participant_summary_requests as psr
 import retraction.retract_deactivated_pids as rdp
 import tests.integration_tests.data_steward.retraction.retract_deactivated_pids_test as rdpt
 import cdr_cleaner.cleaning_rules.remove_ehr_data_past_deactivation_date as red
-from sandbox import get_sandbox_dataset_id
+from sandbox import get_sandbox_dataset_id, check_and_create_sandbox_dataset
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from utils import bq
 from tests import test_util
@@ -42,7 +42,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         self.hpo_id = 'fake'
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
-        self.sandbox_id = get_sandbox_dataset_id(self.dataset_id)
+        self.sandbox_id = check_and_create_sandbox_dataset(self.project_id, self.dataset_id)
         self.tablename = '_deactivated_participants'
         self.ticket_number = 'DC12345'
 
@@ -191,7 +191,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                     sandbox_query = rdp.SANDBOX_QUERY_END_DATE.render(
                         project=self.project_id,
                         dataset=self.dataset_id,
-                        table=self.sandbox_id,
+                        table=row.table,
                         pid=pid,
                         end_date_column=row.end_date_column,
                         deactivated_pids_project=self.project_id,
@@ -231,7 +231,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                 })
                 sandbox_row_count_queries.append({
                     clean_consts.QUERY: sandbox_query,
-                    clean_consts.DESTINATION_DATASET: self.dataset_id,
+                    clean_consts.DESTINATION_DATASET: self.sandbox_id,
                     clean_consts.DESTINATION_TABLE: self.tablename
                 })
 
