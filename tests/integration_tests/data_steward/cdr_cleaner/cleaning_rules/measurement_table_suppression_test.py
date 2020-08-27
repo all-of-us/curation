@@ -36,10 +36,13 @@ class MeasurementTableSuppressionTest(BaseTest.CleaningRulesTestBase):
         # intended to be run on the deid_base dataset.  The combined dataset
         # environment variable should be guaranteed to exist
         dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
+        cls.sandbox_id = sandbox_id
 
         cls.query_class = MeasurementRecordsSuppression(project_id, dataset_id,
                                                         sandbox_id)
+        cls.query_rule = MeasurementRecordsSuppression
 
         sb_table_names = cls.query_class.get_sandbox_tablenames()
         for table_name in sb_table_names:

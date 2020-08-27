@@ -43,6 +43,7 @@ class UnitNormalizationTest(unittest.TestCase):
 
         self.query_class = UnitNormalization(self.project_id, self.dataset_id,
                                              self.sandbox_id)
+        self.query_rule = UnitNormalization
 
     def test_setup_rule(self):
 

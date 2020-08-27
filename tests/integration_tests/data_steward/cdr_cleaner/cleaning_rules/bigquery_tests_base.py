@@ -58,6 +58,8 @@ class BaseTest:
             # this should always be for a test project.  a check is implemented to
             # make sure this is true
             cls.project_id = ''
+            cls.dataset_id = ''
+            cls.sandbox_id = ''
             # a list of fully qualified table names the cleaning rule is targeting.
             # fq = {project_id}.{dataset_id}.{table_name}.  required for
             # test setup and cleanup.
@@ -251,6 +253,7 @@ class BaseTest:
             super().initialize_class_vars()
             # The query class that is being executed.
             cls.query_class = None
+            cls.query_rule = None
 
         def setUp(self):
             """
@@ -305,11 +308,9 @@ class BaseTest:
                 self.assertRowIDsMatch(fq_table_name, fields, values)
 
             if self.query_class:
-                # test:  get the queries
-                query_list = self.query_class.get_query_specs()
-
                 # test: run the queries
-                engine.clean_dataset(self.project_id, query_list)
+                engine.clean_dataset(self.project_id, self.dataset_id,
+                                     [(self.query_rule,)])
             else:
                 raise RuntimeError(f"Cannot use the default_test method for "
                                    f"{self.__class__.__name__} because "
