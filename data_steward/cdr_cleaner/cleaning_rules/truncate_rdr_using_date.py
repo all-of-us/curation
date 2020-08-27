@@ -54,7 +54,7 @@ CREATE OR REPLACE TABLE
 SELECT *
 FROM
     `{{project}}.{{dataset}}.{{table_name}}`
-    where {{field_name}} > {{cutoff_date}}
+    where {{field_name}} > '{{cutoff_date}}'
 )
 """)
 
@@ -63,7 +63,7 @@ DELETE
 FROM
   `{{project}}.{{dataset}}.{{table_name}}`
 WHERE
- {{field_name}} > {{cutoff_date}}
+ {{field_name}} > '{{cutoff_date}}'
 """)
 
 
