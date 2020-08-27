@@ -23,11 +23,14 @@ sex_at_birth_concept_id (extension)
 sex_at_birth_source_concept_id (extension)
 sex_at_birth_source_value (extension)
 """
+import logging
 
 from jinja2 import Template
 
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 PERSON_TABLE = 'person'
 GENDER_CONCEPT_ID = 1585838
@@ -197,7 +200,14 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
 
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_repopulate_person_post_deid_queries(
-        ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id,
+            [(get_repopulate_person_post_deid_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(get_repopulate_person_post_deid_queries,)])
