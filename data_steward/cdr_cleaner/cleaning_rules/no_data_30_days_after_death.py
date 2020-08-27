@@ -3,9 +3,12 @@ If there is a death_date listed for a person_id, ensure that no temporal fields
 (see the CDR cleaning spreadsheet tab labeled all temporal here) for that person_id exist more than
 30 days after the death_date.
 """
+import logging
 
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 # add table names as keys and temporal representations as values into a dictionary
 TEMPORAL_TABLES_WITH_END_DATES = {
@@ -115,6 +118,14 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = no_data_30_days_after_death(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, [(no_data_30_days_after_death,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(no_data_30_days_after_death,)])

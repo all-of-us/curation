@@ -54,7 +54,7 @@ The columns of the lookup table are described below.
  * Some rules indicate child questions to keep and others indicate child questions to remove
  **TODO** Standardize branching logic CSV files
 """
-
+import logging
 from pathlib import Path
 from typing import Union
 
@@ -66,6 +66,8 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, quer
 from common import OBSERVATION
 from resources import PPI_BRANCHING_RULE_PATHS
 from utils import bq
+
+LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBER = 'dc-545'
 PPI_BRANCHING_TABLE_PREFIX = '_ppi_branching'
@@ -285,15 +287,15 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    cleaner = PpiBranching(ARGS.project_id, ARGS.dataset_id,
-                           ARGS.sandbox_dataset_id)
-    query_list = cleaner.get_query_specs()
+
     if ARGS.list_queries:
-        cleaner.log_queries()
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 [(PpiBranching,)])
+        for query in query_list:
+            LOGGER.info(query)
     else:
-        bq_client = bq.get_client(ARGS.project_id)
-        cleaner.setup_rule(bq_client)
-        clean_engine.clean_dataset(ARGS.project_id,
-                                   query_list,
-                                   data_stage=cdr_consts.RDR)
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(PpiBranching,)])

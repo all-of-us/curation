@@ -379,7 +379,15 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    # Uncomment this line if testing locally
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = domain_alignment(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 [(domain_alignment,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(domain_alignment,)])

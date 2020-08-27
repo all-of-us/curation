@@ -5,8 +5,11 @@
  We need to include only one state, dropping all but the most recent record.
 """
 import os
+import logging
 
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 module_name = os.path.basename(__file__[:-3])
 INTERMEDIARY_TABLE = module_name + '_observation'
@@ -82,15 +85,17 @@ def get_drop_duplicate_states_queries(project_id, dataset_id,
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
-    import sandbox
 
     ARGS = parser.parse_args()
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(
-        project_id=ARGS.project_id, dataset_id=ARGS.dataset_id)
-
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_drop_duplicate_states_queries(ARGS.project_id,
-                                                   ARGS.dataset_id,
-                                                   sandbox_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id,
+            [(get_drop_duplicate_states_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(get_drop_duplicate_states_queries,)])

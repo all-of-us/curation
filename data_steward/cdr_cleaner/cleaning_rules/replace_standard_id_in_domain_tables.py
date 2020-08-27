@@ -36,12 +36,15 @@ are generated for these records, and, during the last step, the mapping tables a
 TODO account for "non-primary" concept fields
 TODO when the time comes, include care_site, death, note, provider, specimen
 """
+import logging
 
 import bq_utils
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 from validation.ehr_union import mapping_table_for
+
+LOGGER = logging.getLogger(__name__)
 
 DOMAIN_TABLE_NAMES = [
     'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
@@ -389,7 +392,14 @@ if __name__ == '__main__':
     # from bq_utils import create_snapshot_dataset
     # create_snapshot_dataset(ARGS.project_id, ARGS.dataset_id, ARGS.snapshot_dataset_id)
 
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = replace_standard_id_in_domain_tables(ARGS.project_id,
-                                                      ARGS.snapshot_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id,
+            [(replace_standard_id_in_domain_tables,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(replace_standard_id_in_domain_tables,)])

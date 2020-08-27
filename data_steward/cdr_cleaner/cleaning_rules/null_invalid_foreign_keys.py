@@ -6,12 +6,15 @@ care_site_id, location_id, person_id, visit_occurrence_id)
 
 Valid means an existing foreign key exists in the table it references.
 """
+import logging
 
 # Project Imports
 import bq_utils
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
+
+LOGGER = logging.getLogger(__name__)
 
 FOREIGN_KEYS_FIELDS = [
     'person_id', 'visit_occurrence_id', 'location_id', 'care_site_id',
@@ -101,6 +104,15 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = null_invalid_foreign_keys(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 [(null_invalid_foreign_keys,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(null_invalid_foreign_keys,)])

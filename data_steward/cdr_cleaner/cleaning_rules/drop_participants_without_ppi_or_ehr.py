@@ -92,31 +92,19 @@ def get_queries(project=None, dataset=None):
 
 
 if __name__ == '__main__':
-    import argparse
+    import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
-
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-p',
-                        '--project_id',
-                        action='store',
-                        dest='project_id',
-                        help='Identifies the project to fix the data in.',
-                        required=True)
-    parser.add_argument('-d',
-                        '--dataset_id',
-                        action='store',
-                        dest='dataset_id',
-                        help='Identifies the dataset to apply the fix on.',
-                        required=True)
-    parser.add_argument('-l',
-                        '--console_log',
-                        dest='console_log',
-                        action='store_true',
-                        help='Send logs to console')
 
     ARGS = parser.parse_args()
 
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 [(get_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(get_queries,)])
