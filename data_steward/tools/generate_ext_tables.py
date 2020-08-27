@@ -1,8 +1,11 @@
 import random
+import logging
 
 import bq_utils
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 EXT_FIELD_TEMPLATE = [{
     "type": "integer",
@@ -214,8 +217,16 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_generate_ext_table_queries(ARGS.project_id,
-                                                ARGS.dataset_id,
-                                                ARGS.combined_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id,
+            [(get_generate_ext_table_queries,)], ARGS.combined_dataset_id)
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(get_generate_ext_table_queries,)],
+                                   ARGS.combined_dataset_id)
