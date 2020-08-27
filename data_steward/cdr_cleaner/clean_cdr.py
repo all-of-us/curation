@@ -95,7 +95,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     ),
     (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
     (CleanMappingExtTables,),
-    (remove_ehr_data,),
+    (remove_ehr_data.remove_ehr_data,),
 ]
 
 RDR_CLEANING_CLASSES = [
