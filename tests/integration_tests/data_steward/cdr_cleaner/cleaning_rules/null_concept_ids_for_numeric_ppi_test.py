@@ -35,10 +35,13 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
 
         # Set the expected test datasets
         dataset_id = os.environ.get('RDR_DATASET_ID')
+        cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
+        cls.sandbox_id = sandbox_id
 
         cls.query_class = NullConceptIDForNumericPPI(project_id, dataset_id,
                                                      sandbox_id)
+        cls.query_rule = NullConceptIDForNumericPPI
 
         sb_table_names = cls.query_class.get_sandbox_tablenames()
         for table_name in sb_table_names:
