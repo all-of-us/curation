@@ -46,14 +46,19 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         self.tablename = '_deactivated_participants'
         self.ticket_number = 'DC12345'
 
-        self.deactivated_participants = [(1, 'NO_CONTACT', '2018-12-07T08:21:14'),
-                                         (2, 'NO_CONTACT', '2019-12-07T08:21:14'),
-                                         (3, 'NO_CONTACT', '2017-12-07T08:21:14')]
+        self.deactivated_participants = [
+            (1, 'NO_CONTACT', '2018-12-07T08:21:14'),
+            (2, 'NO_CONTACT', '2019-12-07T08:21:14'),
+            (3, 'NO_CONTACT', '2017-12-07T08:21:14')
+        ]
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
         self.deactivated_participants_data = {
             'person_id': [1, 2, 3],
             'suspension_status': ['NO_CONTACT', 'NO_CONTACT', 'NO_CONTACT'],
-            'deactivation_date': ['2018-12-07T08:21:14', '2019-12-07T08:21:14', '2017-12-07T08:21:14']
+            'deactivation_date': [
+                '2018-12-07T08:21:14', '2019-12-07T08:21:14',
+                '2017-12-07T08:21:14'
+            ]
         }
         self.deactivated_participants_df = pandas.DataFrame(
             columns=self.columns, data=self.deactivated_participants_data)
@@ -91,7 +96,8 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
     @mock.patch('utils.participant_summary_requests.requests.get')
     @mock.patch(
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
-    def test_remove_ehr_data_past_deactivation_date(self, mock_retraction_info, mock_get):
+    def test_remove_ehr_data_past_deactivation_date(self, mock_retraction_info,
+                                                    mock_get):
         # pre conditions for participant summary API module
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = self.json_response_entry
@@ -232,20 +238,20 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
             if query_dict['destination_table_id'] in expected_kept_row_count:
                 expected_kept_row_count[query_dict['destination_table_id']] -= (
                     (row_count_before_retraction[
-                         query_dict['destination_table_id']] -
+                        query_dict['destination_table_id']] -
                      result.total_rows))
             else:
                 expected_kept_row_count[query_dict['destination_table_id']] = (
-                        row_count_before_retraction[
-                            query_dict['destination_table_id']] -
-                        (row_count_before_retraction[
-                             query_dict['destination_table_id']] -
-                         result.total_rows))
+                    row_count_before_retraction[
+                        query_dict['destination_table_id']] -
+                    (row_count_before_retraction[
+                        query_dict['destination_table_id']] -
+                     result.total_rows))
 
         # Perform retraction
-        query_list = red.remove_ehr_data(
-            self.project_id, self.ticket_number, self.project_id,
-            self.dataset_id, self.tablename)
+        query_list = red.remove_ehr_data(self.project_id, self.ticket_number,
+                                         self.project_id, self.dataset_id,
+                                         self.tablename)
         rdp.run_queries(query_list, self.client)
 
         # Find actual deleted rows
