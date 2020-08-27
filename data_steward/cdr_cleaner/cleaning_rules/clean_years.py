@@ -2,12 +2,15 @@
 Year of birth should not be in the future (as of writing this, 2019) or before 1800
 Using rule 18, 19 in Achilles Heel for reference
 """
+import logging
 
 # Project imports
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import common
 import resources
+
+LOGGER = logging.getLogger(__name__)
 
 person = common.PERSON
 MIN_YEAR_OF_BIRTH = 1800
@@ -89,6 +92,15 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_year_of_birth_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 [(get_year_of_birth_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(get_year_of_birth_queries,)])

@@ -19,7 +19,7 @@ from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 LOGGER = logging.getLogger(__name__)
 
 
-def add_console_logging(add_handler):
+def add_console_logging(add_handler=True):
     """
 
     This config should be done in a separate module, but that can wait

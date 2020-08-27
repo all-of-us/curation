@@ -243,13 +243,15 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    unit_normalization = UnitNormalization(ARGS.project_id, ARGS.dataset_id,
-                                           ARGS.sandbox_dataset_id)
-    client = bq.get_client(ARGS.project_id)
-    unit_normalization.setup_rule(client=client)
-    query_list = unit_normalization.get_query_specs()
+
     if ARGS.list_queries:
-        unit_normalization.log_queries()
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 [(UnitNormalization,)])
+        for query in query_list:
+            LOGGER.info(query)
     else:
-        clean_engine.clean_dataset(ARGS.project_id, query_list)
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(UnitNormalization,)])

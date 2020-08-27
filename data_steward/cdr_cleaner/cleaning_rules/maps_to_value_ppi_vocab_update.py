@@ -1,5 +1,8 @@
-import bq_utils
+import logging
+
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 UPDATE_PPI_QUERY = """
 UPDATE
@@ -62,7 +65,16 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_maps_to_value_ppi_vocab_update_queries(
-        ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id,
+            [(get_maps_to_value_ppi_vocab_update_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(
+            ARGS.project_id, ARGS.dataset_id,
+            [(get_maps_to_value_ppi_vocab_update_queries,)])
