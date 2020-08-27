@@ -268,5 +268,3 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
         test_util.delete_all_tables(self.sandbox_id)
-        self.client.delete_dataset(self.sandbox_id)
-
