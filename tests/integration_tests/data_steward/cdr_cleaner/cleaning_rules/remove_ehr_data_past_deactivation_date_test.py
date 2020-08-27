@@ -249,9 +249,11 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                      result.total_rows))
 
         # Perform retraction
-        query_list = red.remove_ehr_data(self.project_id, self.ticket_number,
-                                         self.project_id, self.dataset_id,
-                                         self.tablename)
+        query_list = red.remove_ehr_data_queries(self.project_id,
+                                                 self.ticket_number,
+                                                 self.project_id,
+                                                 self.dataset_id,
+                                                 self.tablename)
         rdp.run_queries(query_list, self.client)
 
         # Find actual deleted rows

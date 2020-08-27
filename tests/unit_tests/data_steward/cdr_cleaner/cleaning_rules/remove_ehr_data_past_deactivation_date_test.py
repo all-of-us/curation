@@ -105,11 +105,11 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         sandbox = mock_check_sandbox.return_value = 'foo_pid_dataset_id_sandbox'
 
         # test
-        returned_queries = red.remove_ehr_data(self.project_id,
-                                               self.ticket_number,
-                                               self.pids_project_id,
-                                               self.pids_dataset_id,
-                                               self.tablename)
+        returned_queries = red.remove_ehr_data_queries(self.project_id,
+                                                       self.ticket_number,
+                                                       self.pids_project_id,
+                                                       self.pids_dataset_id,
+                                                       self.tablename)
 
         # post conditions
         expected_queries = []
