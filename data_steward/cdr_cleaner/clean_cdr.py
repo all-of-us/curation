@@ -196,12 +196,18 @@ DATA_STAGE_RULES_MAPPING = {
     DataStage.FITBIT.value: FITBIT_CLEANING_CLASSES,
 }
 
-if __name__ == '__main__':
+
+def get_parser():
+    """
+    Create a parser which raises invalid enum errors
+
+    :return: parser
+    """
     import argparse
 
-    parser = argparse.ArgumentParser(
+    args_parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument(
+    args_parser.add_argument(
         '-d',
         '--data_stage',
         required=True,
@@ -210,12 +216,14 @@ if __name__ == '__main__':
         type=DataStage,
         choices=list([s for s in DataStage if s is not DataStage.UNSPECIFIED]),
         help='Specify the dataset')
-    parser.add_argument('-s', action='store_true', help='Send logs to console')
+    args_parser.add_argument('-s',
+                             action='store_true',
+                             help='Send logs to console')
+    return args_parser
+
+
+if __name__ == '__main__':
+    parser = get_parser()
     args = parser.parse_args()
     clean_engine.add_console_logging(args.s)
-    if args.data_stage in DataStage.__members__.keys():
-        clean_engine.clean_dataset(
-            rules=DATA_STAGE_RULES_MAPPING[args.data_stage])
-    else:
-        raise OSError(
-            f'Dataset selection should be from {DataStage.__members__.items()}')
+    clean_engine.clean_dataset(rules=DATA_STAGE_RULES_MAPPING[args.data_stage])
