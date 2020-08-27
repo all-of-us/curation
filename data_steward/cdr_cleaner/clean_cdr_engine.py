@@ -115,8 +115,11 @@ def run_queries(client, query_list, rule_info):
     return jobs
 
 
-def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id,
-               combined_dataset_id):
+def infer_rule(clazz,
+               project_id,
+               dataset_id,
+               sandbox_dataset_id,
+               combined_dataset_id=None):
     """
     Extract information about the cleaning rule
 
