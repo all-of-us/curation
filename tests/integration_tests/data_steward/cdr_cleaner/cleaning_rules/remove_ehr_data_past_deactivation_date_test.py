@@ -140,6 +140,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         job_ids = []
         dropped_row_count_queries = []
         kept_row_count_queries = []
+        sandbox_row_count_queries = []
         hpo_table_list = []
 
         # Load the cdm files into dataset
@@ -187,6 +188,15 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                         pid=pid,
                         start_date_column=row.start_date_column,
                         end_date_column=row.end_date_column)
+                    sandbox_query = rdp.SANDBOX_QUERY_END_DATE.render(
+                        project=self.project_id,
+                        dataset=self.dataset_id,
+                        table=self.sandbox_id,
+                        pid=pid,
+                        end_date_column=row.end_date_column,
+                        deactivated_pids_project=self.project_id,
+                        deactivated_pids_dataset=self.dataset_id,
+                        deactivated_pids_table=self.tablename)
                 else:
                     dropped_query = rdpt.EXPECTED_DROPPED_ROWS_QUERY.format(
                         dataset_id=self.dataset_id,
@@ -200,6 +210,15 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                         pid_table_id=self.tablename,
                         pid=pid,
                         date_column=row.date_column)
+                    sandbox_query = rdp.SANDBOX_QUERY_DATE.render(
+                        project=self.project_id,
+                        dataset=self.dataset_id,
+                        table=row.table,
+                        pid=pid,
+                        date_column=row.date_column,
+                        deactivated_pids_project=self.project_id,
+                        deactivated_pids_dataset=self.dataset_id,
+                        deactivated_pids_table=self.tablename)
                 dropped_row_count_queries.append({
                     clean_consts.QUERY: dropped_query,
                     clean_consts.DESTINATION_DATASET: self.dataset_id,
@@ -209,6 +228,11 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                     clean_consts.QUERY: kept_query,
                     clean_consts.DESTINATION_DATASET: self.dataset_id,
                     clean_consts.DESTINATION_TABLE: row.table
+                })
+                sandbox_row_count_queries.append({
+                    clean_consts.QUERY: sandbox_query,
+                    clean_consts.DESTINATION_DATASET: self.dataset_id,
+                    clean_consts.DESTINATION_TABLE: self.tablename
                 })
 
         # Use query results to count number of expected dropped row deletions
