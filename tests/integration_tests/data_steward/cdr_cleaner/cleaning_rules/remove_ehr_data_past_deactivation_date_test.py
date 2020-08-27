@@ -42,7 +42,8 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         self.hpo_id = 'fake'
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
-        self.sandbox_id = check_and_create_sandbox_dataset(self.project_id, self.dataset_id)
+        self.sandbox_id = check_and_create_sandbox_dataset(
+            self.project_id, self.dataset_id)
         self.tablename = '_deactivated_participants'
         self.ticket_number = 'DC12345'
 
