@@ -54,7 +54,7 @@ export GOOGLE_CLOUD_PROJECT="${APP_ID}"
 gcloud auth activate-service-account --key-file="${key_file}"
 gcloud config set project "${APP_ID}"
 
-fitbit_deid_dataset="${dataset_release_tag}_deid"
+fitbit_deid_dataset="${fitbit_dataset}_deid"
 registered_fitbit_deid="R${fitbit_deid_dataset}"
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
@@ -76,9 +76,12 @@ bq mk --dataset --description "${dataset_release_tag} de-identified version of $
 sandbox_dataset="${registered_fitbit_deid}_sandbox"
 bq mk --dataset --description "${dataset_release_tag} sandbox dataset for ${registered_fitbit_deid}" "${APP_ID}":"${sandbox_dataset}"
 
+# Create logs dir
+mkdir -p ../logs
+
 # Apply cleaning rules
-python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee logs/fitbit_max_age_log.txt
-python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee logs/fitbit_pid_rid_log.txt
+python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee ../logs/fitbit_max_age_log.txt
+python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee ../logs/fitbit_pid_rid_log.txt
 
 unset PYTHONPATH
 
