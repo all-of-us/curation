@@ -31,6 +31,9 @@ EMAIL_BODY = """
 {% endif %}
 Please review the <code>results.html</code> submission report attached to this email{% if submission_error %}<br>
 and resolve the errors before making a new submission{% endif %}.<br>
+If Your files have not been successfully uploaded to the DRC, Please run the local file check before making your
+ submission.
+<a href="https://github.com/all-of-us/aou-ehr-file-check">aou-ehr-file-check</a><br>  
 To view the full set of curation reports, please visit the submission folder in your GCS bucket
  <a href="{{ submission_folder_url }}">here</a>.<br>
 For more information on the reports and how to download them, please refer to our 
