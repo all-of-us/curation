@@ -2,7 +2,7 @@
 Original Issues: DC-1012
 
 Background
-In order to avoid further changes to the standard OMOP person table, three non-standard fields will be housed in a
+In order to avoid further changes to the standard OMOP person table, two non-standard fields will be housed in a
 person_ext table.
 
 Cleaning rule script to run AFTER deid.
@@ -25,7 +25,6 @@ from utils.bq import JINJA_ENV
 PERSON_EXT_TABLE_QUERY = JINJA_ENV.from_string("""
 SELECT p.person_id, e.src_id,
 o.value_source_concept_id AS state_of_residence_concept_id,
-c.concept_id AS state_of_residence_source_concept_id,
 c.concept_name AS state_of_residence_source_value
 FROM `{{project}}.{{dataset}}.person` p
 LEFT JOIN `{{project}}.{{dataset}}.observation` o
@@ -42,7 +41,7 @@ tables = ['person_ext']
 class CreatePersonExtTable(BaseCleaningRule):
     """
     Create person_ext table after DEID, adds three non-standard fields:
-    state_of_residence_concept_id, state_of_residence_source_concept_id, state_of_residence_source_value
+    state_of_residence_concept_id, state_of_residence_source_value
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):

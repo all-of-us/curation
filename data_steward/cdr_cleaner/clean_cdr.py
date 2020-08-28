@@ -180,8 +180,8 @@ DEID_CLEAN_CLEANING_CLASSES = [
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
-    (CleanMappingExtTables,),
-    (CreatePersonExtTable,)
+    (CreatePersonExtTable,),
+    (CleanMappingExtTables,)
 ]
 
 DATA_STAGE_RULES_MAPPING = {
