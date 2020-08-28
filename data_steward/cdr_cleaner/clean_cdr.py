@@ -59,6 +59,7 @@ from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
+from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
@@ -179,7 +180,8 @@ DEID_CLEAN_CLEANING_CLASSES = [
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
-    (CleanMappingExtTables,)
+    (CleanMappingExtTables,),
+    (CreatePersonExtTable,)
 ]
 
 DATA_STAGE_RULES_MAPPING = {

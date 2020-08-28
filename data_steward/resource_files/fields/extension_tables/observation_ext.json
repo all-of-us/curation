@@ -1,0 +1,11 @@
+[{
+    "type": "integer",
+    "name": "observation_id",
+    "mode": "nullable",
+    "description": "The observation_id used in the observation table."
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The provenance of the data associated with the observation_id."
+}]
