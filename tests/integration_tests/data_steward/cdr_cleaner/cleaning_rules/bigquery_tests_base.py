@@ -14,6 +14,7 @@ import unittest
 
 # Third party imports
 import google.cloud.exceptions as gc_exc
+from google.cloud import bigquery
 from jinja2 import Environment
 
 # Project imports
@@ -95,7 +96,6 @@ class BaseTest:
                 cls.client.create_dataset(dataset, exists_ok=True)
 
         def setUp(self):
-            self.tearDownClass()
             bq.create_tables(self.client, self.project_id, self.fq_table_names,
                              True)
 
@@ -330,3 +330,41 @@ class BaseTest:
                     # that the table data loaded correctly.
                     fields = [table_info.get('fields', [])[0]]
                     self.assertRowIDsMatch(fq_sandbox_name, fields, values)
+
+    class DeidRulesTestBase(CleaningRulesTestBase):
+        """
+        Class that can be extended and used to test deid cleaning rules.
+
+        This class adds a helper to create a mapping table and a tearDown
+        to remove the named deid map table.
+        """
+
+        @classmethod
+        def initialize_class_vars(cls):
+            super().initialize_class_vars()
+            cls.fq_mapping_tablename = ''
+
+        def create_mapping_table(self):
+            """
+            Create a mapping table with a mapping table schema.
+            """
+
+            # create a false mapping table
+            schema = [
+                bigquery.SchemaField("person_id", "INTEGER", mode="REQUIRED"),
+                bigquery.SchemaField("research_id", "INTEGER", mode="REQUIRED"),
+                bigquery.SchemaField("shift", "INTEGER", mode="REQUIRED"),
+            ]
+
+            table = bigquery.Table(self.fq_mapping_tablename, schema=schema)
+            table = self.client.create_table(table)  # Make an API request.
+
+        def tearDown(self):
+            """
+            Clear and drop the mapping table between each test.
+            """
+            # delete the mapping table
+            self.drop_rows(self.fq_mapping_tablename)
+            self.client.delete_table(self.fq_mapping_tablename)
+
+            super().tearDown()
