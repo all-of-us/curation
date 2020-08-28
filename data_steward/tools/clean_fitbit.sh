@@ -77,11 +77,12 @@ sandbox_dataset="${registered_fitbit_deid}_sandbox"
 bq mk --dataset --description "${dataset_release_tag} sandbox dataset for ${registered_fitbit_deid}" "${APP_ID}":"${sandbox_dataset}"
 
 # Create logs dir
-mkdir -p ../logs
+LOGS_DIR="${DATA_STEWARD_DIR}/logs"
+mkdir -p "${LOGS_DIR}"
 
 # Apply cleaning rules
-python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee ../logs/fitbit_max_age_log.txt
-python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee ../logs/fitbit_pid_rid_log.txt
+python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee "${LOGS_DIR}"/fitbit_max_age_log.txt
+python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee "${LOGS_DIR}"/fitbit_pid_rid_log.txt
 
 unset PYTHONPATH
 
