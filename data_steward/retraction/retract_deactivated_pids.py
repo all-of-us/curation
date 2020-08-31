@@ -601,8 +601,9 @@ def parse_args(raw_args=None):
         dest='dataset_list',
         action='append',
         required=False,
-        help='Optional parameter, list of datasets to run retraction on vs. entire project send '
-             'multiple as separate argument ie: -l dataset_1 -l dataset_2')
+        help=
+        'Optional parameter, list of datasets to run retraction on vs. entire project send '
+        'multiple as separate argument ie: -l dataset_1 -l dataset_2')
     parser.add_argument('-c',
                         '--console-log',
                         dest='console_log',
