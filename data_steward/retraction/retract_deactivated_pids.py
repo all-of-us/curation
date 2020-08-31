@@ -205,13 +205,14 @@ def get_pids_table_info(project_id, dataset_id, client):
     return pids_table_info_df
 
 
-def get_date_info_for_pids_tables(project_id, client):
+def get_date_info_for_pids_tables(project_id, client, datasets=None):
     """
     Loop through tables within all datasets and determine if the table has an end_date date or a date field. Filtering
     out the person table and keeping only tables with PID and an upload or start/end date associated.
 
     :param project_id: bq name of project_id
     :param client: bq client object
+    :param datasets: optional parameter to give list of datasets, otherwise will loop through all datasets in project_id
     :return: filtered dataframe which includes the following columns for each table in each dataset with a person_id
     'project_id', 'dataset_id', 'table', 'date_column', 'start_date_column', 'end_date_column'
     """
@@ -223,8 +224,11 @@ def get_date_info_for_pids_tables(project_id, client):
         "Looping through datasets to filter and create dataframe with correct date field to determine retraction"
     )
 
-    dataset_obj = client.list_datasets(project_id)
-    datasets = [d.dataset_id for d in dataset_obj]
+    if datasets is None:
+        dataset_obj = client.list_datasets(project_id)
+        datasets = [d.dataset_id for d in dataset_obj]
+    else:
+        datasets = datasets
 
     # Remove synthetic data, vocabulary, curation sandbox and previous naming convention datasets
     prefixes = ('SR', 'vocabulary', 'curation', 'combined', '2018', 'R2018',
@@ -350,8 +354,12 @@ def check_pid_exist(date_row, client, pids_project_id, pids_dataset_id,
     return check_pid_df.loc[0, 'count']
 
 
-def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
-                   pids_table):
+def create_queries(project_id,
+                   ticket_number,
+                   pids_project_id,
+                   pids_dataset_id,
+                   pids_table,
+                   datasets=None):
     """
     Creates sandbox and truncate queries to run for EHR deactivated retraction
 
@@ -371,8 +379,11 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
         DEACTIVATED_PIDS_QUERY.render(project=pids_project_id,
                                       dataset=pids_dataset_id,
                                       table=pids_table)).to_dataframe()
-
-    date_columns_df = get_date_info_for_pids_tables(project_id, client)
+    if datasets is None:
+        date_columns_df = get_date_info_for_pids_tables(project_id, client)
+    else:
+        date_columns_df = get_date_info_for_pids_tables(project_id, client,
+                                                        datasets)
     LOGGER.info(
         "Dataframe creation complete. DF to be used for creation of retraction queries."
     )
@@ -584,6 +595,15 @@ def parse_args(raw_args=None):
                         dest='pids_table',
                         help='Identifies the table where the pids are stored',
                         required=True)
+    parser.add_argument(
+        '-l',
+        '--dataset_list',
+        dest='dataset_list',
+        action='append',
+        required=False,
+        help=
+        'Optional parameter, list of datasets to run retraction on vs. entire project send '
+        'multiple as separate argument ie: -l dataset_1 -l dataset_2')
     parser.add_argument('-c',
                         '--console-log',
                         dest='console_log',
@@ -598,7 +618,7 @@ def main(args=None):
     add_console_logging(args.console_log)
     query_list = create_queries(args.project_id, args.ticket_number,
                                 args.pids_project_id, args.pids_dataset_id,
-                                args.pids_table)
+                                args.pids_table, args.dataset_list)
     client = get_client(args.project_id)
     run_queries(query_list, client)
     LOGGER.info("Retraction complete")
