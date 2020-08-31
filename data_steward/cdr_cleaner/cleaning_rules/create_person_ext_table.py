@@ -105,11 +105,8 @@ class CreatePersonExtTable(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        sandbox_table_names = list()
-        for i in range(0, len(self._affected_tables)):
-            sandbox_table_names.append(self._issue_numbers[0].lower() + '_' +
-                                       self._affected_tables[i])
-        return sandbox_table_names
+
+        return []
 
 
 if __name__ == '__main__':

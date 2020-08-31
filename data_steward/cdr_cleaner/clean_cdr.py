@@ -172,6 +172,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (fill_source_value.get_fill_freetext_source_value_fields_queries,),
     (repopulate_person.get_repopulate_person_post_deid_queries,),
     (DateShiftCopeResponses,),
+    (CreatePersonExtTable,),
     (CleanMappingExtTables,),
 ]
 
@@ -180,7 +181,6 @@ DEID_CLEAN_CLEANING_CLASSES = [
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
-    (CreatePersonExtTable,),
     (CleanMappingExtTables,)
 ]
 
