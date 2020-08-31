@@ -62,6 +62,7 @@ from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
+from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
@@ -183,6 +184,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (fill_source_value.get_fill_freetext_source_value_fields_queries,),
     (repopulate_person.get_repopulate_person_post_deid_queries,),
     (DateShiftCopeResponses,),
+    (CreatePersonExtTable,),
     (CleanMappingExtTables,),
 ]
 
