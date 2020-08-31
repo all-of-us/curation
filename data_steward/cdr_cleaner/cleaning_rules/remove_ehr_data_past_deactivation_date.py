@@ -10,6 +10,9 @@ who have deactivated from the Program.
 # Python imports
 import logging
 
+# Third party imports
+import bq_utils
+
 # Project imports
 import retraction.retract_deactivated_pids as rdp
 import utils.participant_summary_requests as psr
@@ -36,6 +39,8 @@ def remove_ehr_data_queries(project_id, ticket_number, pids_project_id,
     :param tablename: The name of the table to house the deactivated participant data
     """
 
+    ehr_union_dataset = bq_utils.get_unioned_dataset_id()
+
     # gets the deactivated participant dataset to ensure it's up-to-date
     psr.get_deactivated_participants(pids_project_id, pids_dataset_id,
                                      tablename,
@@ -43,7 +48,7 @@ def remove_ehr_data_queries(project_id, ticket_number, pids_project_id,
 
     # creates sandbox and truncate queries to run for deactivated participant data drops
     queries = rdp.create_queries(project_id, ticket_number, pids_project_id,
-                                 pids_dataset_id, tablename)
+                                 pids_dataset_id, tablename, ehr_union_dataset)
 
     return queries
 
