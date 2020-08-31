@@ -354,8 +354,12 @@ def check_pid_exist(date_row, client, pids_project_id, pids_dataset_id,
     return check_pid_df.loc[0, 'count']
 
 
-def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
-                   pids_table, datasets=None):
+def create_queries(project_id,
+                   ticket_number,
+                   pids_project_id,
+                   pids_dataset_id,
+                   pids_table,
+                   datasets=None):
     """
     Creates sandbox and truncate queries to run for EHR deactivated retraction
 
@@ -378,7 +382,8 @@ def create_queries(project_id, ticket_number, pids_project_id, pids_dataset_id,
     if datasets is None:
         date_columns_df = get_date_info_for_pids_tables(project_id, client)
     else:
-        date_columns_df = get_date_info_for_pids_tables(project_id, client, datasets)
+        date_columns_df = get_date_info_for_pids_tables(project_id, client,
+                                                        datasets)
     LOGGER.info(
         "Dataframe creation complete. DF to be used for creation of retraction queries."
     )
@@ -590,13 +595,14 @@ def parse_args(raw_args=None):
                         dest='pids_table',
                         help='Identifies the table where the pids are stored',
                         required=True)
-    parser.add_argument('-l',
-                        '--dataset_list',
-                        dest='dataset_list',
-                        action='append',
-                        required=False,
-                        help='Optional parameter, list of datasets to run retraction on vs. entire project send '
-                             'multiple as separate argument ie: -l dataset_1 -l dataset_2')
+    parser.add_argument(
+        '-l',
+        '--dataset_list',
+        dest='dataset_list',
+        action='append',
+        required=False,
+        help='Optional parameter, list of datasets to run retraction on vs. entire project send '
+             'multiple as separate argument ie: -l dataset_1 -l dataset_2')
     parser.add_argument('-c',
                         '--console-log',
                         dest='console_log',
