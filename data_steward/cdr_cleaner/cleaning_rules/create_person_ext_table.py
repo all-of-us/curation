@@ -55,7 +55,7 @@ class CreatePersonExtTable(BaseCleaningRule):
         desc = ('Create person_ext table')
         super().__init__(issue_numbers=['DC1012'],
                          description=desc,
-                         affected_datasets=[cdr_consts.DEID_CLEAN],
+                         affected_datasets=[cdr_consts.DEID_BASE],
                          affected_tables=tables,
                          project_id=project_id,
                          dataset_id=dataset_id,
