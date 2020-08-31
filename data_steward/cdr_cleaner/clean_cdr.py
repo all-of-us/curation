@@ -94,8 +94,8 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
-    (CleanMappingExtTables,),
     (remove_ehr_data.remove_ehr_data_queries,),
+    (CleanMappingExtTables,),
 ]
 
 RDR_CLEANING_CLASSES = [
