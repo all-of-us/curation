@@ -136,7 +136,7 @@ class TruncateRdrData(BaseCleaningRule):
         """
         Function to run any data upload options before executing a query.
         """
-        raise NotImplementedError("Please fix me.")
+        pass
 
     def setup_validation(self, client):
         """
