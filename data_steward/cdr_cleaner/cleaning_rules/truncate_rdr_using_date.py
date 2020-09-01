@@ -69,8 +69,8 @@ WHERE
 
 class TruncateRdrData(BaseCleaningRule):
     """
-    Apply value ranges to ensure that values are reasonable and to minimize the likelihood
-    of sensitive information (like phone numbers) within the free text fields.
+    All rows of data in the August RDR export with dates after 08/01/2020 should be moved from the RDR export to a
+    sandboxed dataset prior to use of the RDR export to create the CDR
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
@@ -136,19 +136,19 @@ class TruncateRdrData(BaseCleaningRule):
         """
         Function to run any data upload options before executing a query.
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def setup_validation(self, client):
         """
         Run required steps for validation setup
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def validate_rule(self, client):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
         sandbox_tables = []
