@@ -32,6 +32,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 PERSON_TABLE = 'person'
 GENDER_CONCEPT_ID = 1585838
 SEX_AT_BIRTH_CONCEPT_ID = 1585845
+AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
 
 REPOPULATE_PERSON_QUERY = Template("""
 WITH
@@ -137,7 +138,7 @@ SELECT
   day_of_birth,
   birth_datetime,
   CASE
-    WHEN (ethnicity_concept_id = 38003563 AND race_concept_id = 0) THEN 3000000001
+    WHEN (ethnicity_concept_id = 38003563 AND race_concept_id = 0) THEN {{aou_custom_concept}}
   ELSE
   race_concept_id
 END
@@ -180,7 +181,8 @@ def get_repopulate_person_post_deid_queries(project_id, dataset_id):
         project=project_id,
         dataset=dataset_id,
         gender_concept_id=GENDER_CONCEPT_ID,
-        sex_at_birth_concept_id=SEX_AT_BIRTH_CONCEPT_ID)
+        sex_at_birth_concept_id=SEX_AT_BIRTH_CONCEPT_ID,
+        aou_custom_concept=AOU_NONE_INDICATED_CONCEPT_ID)
     query[cdr_consts.DESTINATION_TABLE] = PERSON_TABLE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
