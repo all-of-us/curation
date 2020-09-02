@@ -10,8 +10,6 @@ who have deactivated from the Program.
 # Python imports
 import unittest
 import mock
-import os
-import logging
 
 # Third party imports
 import pandas
@@ -20,7 +18,6 @@ from jinja2 import Environment
 # Project imports
 import app_identity
 import bq_utils
-import gcs_utils
 import utils.participant_summary_requests as psr
 import retraction.retract_deactivated_pids as rdp
 import tests.integration_tests.data_steward.retraction.retract_deactivated_pids_test as rdpt
@@ -57,7 +54,6 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.hpo_id = 'fake'
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
         self.sandbox_id = check_and_create_sandbox_dataset(
@@ -65,22 +61,11 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         self.tablename = '_deactivated_participants'
         self.ticket_number = 'DC12345'
 
-        self.deactivated_participants = [
-            (1, 'NO_CONTACT', '2018-12-07'),
-            (2, 'NO_CONTACT', '2019-12-07'),
-            (3, 'NO_CONTACT', '2017-12-07')
-        ]
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
-        self.deactivated_participants_data = {
-            'person_id': [1, 2, 3],
-            'suspension_status': ['NO_CONTACT', 'NO_CONTACT', 'NO_CONTACT'],
-            'deactivated_date': [
-                '2018-12-07', '2019-12-07',
-                '2017-12-07'
-            ]
-        }
-        self.deactivated_participants_df = pandas.DataFrame(
-            columns=self.columns, data=self.deactivated_participants_data)
+
+        self.deactivated_participants = [(1, 'NO_CONTACT', '2018-12-07'),
+                                         (2, 'NO_CONTACT', '2019-12-07'),
+                                         (3, 'NO_CONTACT', '2017-12-07')]
 
         self.json_response_entry = {
             'entry': [{
@@ -136,9 +121,8 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                 self.dataset_id, self.dataset_id, self.dataset_id
             ],
             'table': [
-                'condition_occurrence', 'drug_exposure',
-                'measurement', 'observation',
-                'procedure_occurrence', 'visit_occurrence'
+                'condition_occurrence', 'drug_exposure', 'measurement',
+                'observation', 'procedure_occurrence', 'visit_occurrence'
             ],
             'date_column': [
                 None, None, 'measurement_date', 'observation_date',
@@ -156,14 +140,12 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         retraction_info = pandas.DataFrame(data=d)
         mock_retraction_info.return_value = retraction_info
 
-        job_ids = []
         load_data_queries = []
         dropped_row_count_queries = []
         kept_row_count_queries = []
         sandbox_row_count_queries = []
-        hpo_table_list = []
 
-        # Queries to load the dummy data into the dataset
+        # Queries to load the dummy data into the tables
         measurement_query = jinja_env.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.{{measurement}}`
         (measurement_id, person_id, measurement_concept_id, measurement_date,
@@ -197,10 +179,11 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         VALUES
             (1234, 1, 0, date('2017-12-07'), timestamp('2017-12-07T08:21:14'), 0),
             (5678, 2, 0, date('2017-12-07'), timestamp('2017-12-07T08:21:14'), 0), 
-            (2345, 3, 0, date('2018-12-07'), timestamp('2018-12-07T08:21:14'), 0)""").render(
-            project=self.project_id,
-            dataset=self.dataset_id,
-            procedure=TABLES[2])
+            (2345, 3, 0, date('2018-12-07'), timestamp('2018-12-07T08:21:14'), 0)"""
+                                                   ).render(
+                                                       project=self.project_id,
+                                                       dataset=self.dataset_id,
+                                                       procedure=TABLES[2])
         load_data_queries.append(procedure_occ_query)
 
         condition_occ_query = jinja_env.from_string("""
@@ -210,10 +193,11 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         VALUES
             (1234, 1, 0, date('2017-12-07'), timestamp('2017-12-07T08:21:14'), date('2017-12-08'), 0),
             (5678, 2, 0, date('2017-12-07'), timestamp('2017-12-07T08:21:14'), date('2017-12-08'), 0), 
-            (2345, 3, 0, date('2018-12-07'), timestamp('2018-12-07T08:21:14'), date('2018-12-08'), 0)""").render(
-            project=self.project_id,
-            dataset=self.dataset_id,
-            condition=TABLES[3])
+            (2345, 3, 0, date('2018-12-07'), timestamp('2018-12-07T08:21:14'), date('2018-12-08'), 0)"""
+                                                   ).render(
+                                                       project=self.project_id,
+                                                       dataset=self.dataset_id,
+                                                       condition=TABLES[3])
         load_data_queries.append(condition_occ_query)
 
         drug_query = jinja_env.from_string("""
@@ -223,10 +207,10 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         VALUES
             (1234, 1, 0, date('2017-12-07'), timestamp('2017-12-07T08:21:14'), date('2017-12-08'), 0),
             (5678, 2, 0, date('2017-12-07'), timestamp('2017-12-07T08:21:14'), date('2017-12-08'), 0), 
-            (2345, 3, 0, date('2018-12-07'), timestamp('2018-12-07T08:21:14'), date('2018-12-08'), 0)""").render(
-            project=self.project_id,
-            dataset=self.dataset_id,
-            drug=TABLES[4])
+            (2345, 3, 0, date('2018-12-07'), timestamp('2018-12-07T08:21:14'), date('2018-12-08'), 0)"""
+                                          ).render(project=self.project_id,
+                                                   dataset=self.dataset_id,
+                                                   drug=TABLES[4])
         load_data_queries.append(drug_query)
 
         visit_query = jinja_env.from_string("""
@@ -236,50 +220,27 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         VALUES
             (1234, 1, 0, date('2017-12-07'), timestamp('2017-12-07T08:21:14'), date('2017-12-08'), 0),
             (5678, 2, 0, date('2017-12-07'), timestamp('2017-12-07T08:21:14'), date('2017-12-08'), 0), 
-            (2345, 3, 0, date('2018-12-07'), timestamp('2018-12-07T08:21:14'), date('2018-12-08'), 0)""").render(
-            project=self.project_id,
-            dataset=self.dataset_id,
-            visit=TABLES[5])
+            (2345, 3, 0, date('2018-12-07'), timestamp('2018-12-07T08:21:14'), date('2018-12-08'), 0)"""
+                                           ).render(project=self.project_id,
+                                                    dataset=self.dataset_id,
+                                                    visit=TABLES[5])
         load_data_queries.append(visit_query)
 
         # Create tables
         fq_table_names = []
         for table_name in TABLES:
-            fq_table_names.append(f'{self.project_id}.{self.dataset_id}.{table_name}')
-        bq.create_tables(self.client, self.project_id, fq_table_names, exists_ok=True)
+            fq_table_names.append(
+                f'{self.project_id}.{self.dataset_id}.{table_name}')
+        bq.create_tables(self.client,
+                         self.project_id,
+                         fq_table_names,
+                         exists_ok=True)
 
         # Load queries
         for query in load_data_queries:
             response = self.client.query(query)
             self.assertIsNotNone(response.result())
             self.assertIsNone(response.exception())
-
-        # # Load the cdm files into dataset
-        # for cdm_file in test_util.NYC_FIVE_PERSONS_FILES:
-        #     cdm_file_name = os.path.basename(cdm_file)
-        #     cdm_table = cdm_file_name.split('.')[0]
-        #     hpo_table = bq_utils.get_table_id(self.hpo_id, cdm_table)
-        #     # Do not process if person table
-        #     if hpo_table == 'fake_person':
-        #         continue
-        #     hpo_table_list.append(hpo_table)
-        #     logging.info(
-        #         f'Preparing to load table {self.dataset_id}.{hpo_table}')
-        #     with open(cdm_file, 'rb') as f:
-        #         gcs_utils.upload_object(gcs_utils.get_hpo_bucket(self.hpo_id),
-        #                                 cdm_file_name, f)
-        #     result = bq_utils.load_cdm_csv(self.hpo_id,
-        #                                    cdm_table,
-        #                                    dataset_id=self.dataset_id)
-        #     logging.info(f'Loading table {self.dataset_id}.{hpo_table}')
-        #     job_id = result['jobReference']['jobId']
-        #     job_ids.append(job_id)
-        #
-        # incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
-        # self.assertEqual(len(incomplete_jobs), 0,
-        #                  'NYC five person load job did not complete')
-
-        logging.info('All tables loaded successfully')
 
         # Store query for checking number of rows to delete
         for ehr in self.deactivated_participants:
@@ -366,7 +327,6 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         row_count_before_retraction = {}
         for row in q_result:
             row_count_before_retraction[row['table_id']] = row['row_count']
-        print(f'here are the number of actual rows to be deleted: {row_count_before_retraction}')
 
         # Use query results to count number of expected dropped row deletions
         expected_kept_row_count = {}
