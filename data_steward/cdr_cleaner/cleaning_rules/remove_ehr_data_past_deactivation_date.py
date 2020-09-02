@@ -61,7 +61,7 @@ if __name__ == '__main__':
                                                       ARGS.ticket_number,
                                                       ARGS.pids_project_id,
                                                       ARGS.pids_dataset_id,
-                                                      ARGS.tablename)
+                                                      ARGS.pids_table)
 
     client = rdp.get_client(ARGS.project_id)
     rdp.run_queries(remove_ehr_data_queries, client)
