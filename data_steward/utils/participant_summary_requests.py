@@ -197,5 +197,5 @@ def store_participant_data(df, project_id, destination_table):
     return pandas_gbq.to_gbq(df,
                              destination_table,
                              project_id,
-                             if_exists="append",
+                             if_exists="replace",
                              table_schema=table_schema)
