@@ -39,11 +39,10 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
 
-        cls.query_class = NullConceptIDForNumericPPI(project_id, dataset_id,
-                                                     sandbox_id)
-        cls.query_rule = NullConceptIDForNumericPPI
+        cls.rule_instance = NullConceptIDForNumericPPI(project_id, dataset_id,
+                                                       sandbox_id)
 
-        sb_table_names = cls.query_class.get_sandbox_tablenames()
+        sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')

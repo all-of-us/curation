@@ -41,9 +41,8 @@ class UnitNormalizationTest(unittest.TestCase):
         self.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         self.sandbox_id = self.dataset_id + '_sandbox'
 
-        self.query_class = UnitNormalization(self.project_id, self.dataset_id,
-                                             self.sandbox_id)
-        self.query_rule = UnitNormalization
+        self.rule_instance = UnitNormalization(self.project_id, self.dataset_id,
+                                               self.sandbox_id)
 
     def test_setup_rule(self):
 
@@ -52,14 +51,14 @@ class UnitNormalizationTest(unittest.TestCase):
 
         client = bq.get_client(self.project_id)
         # run setup_rule and see if the table is created
-        self.query_class.setup_rule(client)
+        self.rule_instance.setup_rule(client)
 
         actual_table = client.get_table(intermediary_table)
         self.assertIsNotNone(actual_table.created)
 
         # test if exception is raised if table already exists
         with self.assertRaises(RuntimeError) as c:
-            self.query_class.setup_rule(client)
+            self.rule_instance.setup_rule(client)
 
         self.assertEqual(str(c.exception),
                          f"Unable to create tables: ['{intermediary_table}']")

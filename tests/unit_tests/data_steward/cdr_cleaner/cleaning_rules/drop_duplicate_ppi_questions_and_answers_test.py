@@ -42,25 +42,27 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
         self.sandbox_id = 'baz_sandbox'
         self.client = None
 
-        self.query_class = DropDuplicatePpiQuestionsAndAnswers(
+        self.rule_instance = DropDuplicatePpiQuestionsAndAnswers(
             self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEquals(self.query_class.project_id, self.project_id)
-        self.assertEquals(self.query_class.dataset_id, self.dataset_id)
-        self.assertEquals(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEquals(self.rule_instance.project_id, self.project_id)
+        self.assertEquals(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEquals(self.rule_instance.sandbox_dataset_id,
+                          self.sandbox_id)
 
     def test_setup_rule(self):
         # Test
-        self.query_class.setup_rule(self.client)
+        self.rule_instance.setup_rule(self.client)
 
         # No errors are raised, nothing will happen
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         # Test
-        results_list = self.query_class.get_query_specs()
+        results_list = self.rule_instance.get_query_specs()
 
         # Post conditions
         expected_list = [{
@@ -70,7 +72,7 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
                     dataset=self.dataset_id,
                     clinical_table_name=OBSERVATION,
                     sandbox_dataset=self.sandbox_id,
-                    ans_table=self.query_class.get_sandbox_tablenames()[0])
+                    ans_table=self.rule_instance.get_sandbox_tablenames()[0])
         }, {
             clean_consts.QUERY:
                 SANDBOX_PPI_QUESTIONS.render(
@@ -78,7 +80,7 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
                     dataset=self.dataset_id,
                     clinical_table_name=OBSERVATION,
                     sandbox_dataset=self.sandbox_id,
-                    ques_table=self.query_class.get_sandbox_tablenames()[1])
+                    ques_table=self.rule_instance.get_sandbox_tablenames()[1])
         }, {
             clean_consts.QUERY:
                 DELETE_DUPLICATE_ANSWERS.render(
@@ -86,7 +88,7 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
                     dataset=self.dataset_id,
                     clinical_table_name=OBSERVATION,
                     sandbox_dataset=self.sandbox_id,
-                    ans_table=self.query_class.get_sandbox_tablenames()[0]),
+                    ans_table=self.rule_instance.get_sandbox_tablenames()[0]),
             clean_consts.DESTINATION_TABLE:
                 'observation',
             clean_consts.DESTINATION_DATASET:
@@ -100,7 +102,7 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
                     dataset=self.dataset_id,
                     clinical_table_name=OBSERVATION,
                     sandbox_dataset=self.sandbox_id,
-                    ques_table=self.query_class.get_sandbox_tablenames()[1]),
+                    ques_table=self.rule_instance.get_sandbox_tablenames()[1]),
             clean_consts.DESTINATION_TABLE:
                 'observation',
             clean_consts.DESTINATION_DATASET:
@@ -113,39 +115,40 @@ class DropDuplicatePpiQuestionsAndAnswersTest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         sandbox_answers = SANDBOX_PPI_ANSWERS.render(
             project=self.project_id,
             dataset=self.dataset_id,
             clinical_table_name=OBSERVATION,
             sandbox_dataset=self.sandbox_id,
-            ans_table=self.query_class.get_sandbox_tablenames()[0])
+            ans_table=self.rule_instance.get_sandbox_tablenames()[0])
 
         sandbox_questions = SANDBOX_PPI_QUESTIONS.render(
             project=self.project_id,
             dataset=self.dataset_id,
             clinical_table_name=OBSERVATION,
             sandbox_dataset=self.sandbox_id,
-            ques_table=self.query_class.get_sandbox_tablenames()[1])
+            ques_table=self.rule_instance.get_sandbox_tablenames()[1])
 
         delete_ppi_duplicate_answers = DELETE_DUPLICATE_ANSWERS.render(
             project=self.project_id,
             dataset=self.dataset_id,
             clinical_table_name=OBSERVATION,
             sandbox_dataset=self.sandbox_id,
-            ans_table=self.query_class.get_sandbox_tablenames()[0])
+            ans_table=self.rule_instance.get_sandbox_tablenames()[0])
 
         delete_ppi_duplicate_questions = DELETE_DUPLICATE_QUESTIONS.render(
             project=self.project_id,
             dataset=self.dataset_id,
             clinical_table_name=OBSERVATION,
             sandbox_dataset=self.sandbox_id,
-            ques_table=self.query_class.get_sandbox_tablenames()[1])
+            ques_table=self.rule_instance.get_sandbox_tablenames()[1])
 
         # Test
         with self.assertLogs(level='INFO') as cm:
-            self.query_class.log_queries()
+            self.rule_instance.log_queries()
 
             expected = [
                 'INFO:cdr_cleaner.cleaning_rules.base_cleaning_rule:Generated SQL Query:\n'
