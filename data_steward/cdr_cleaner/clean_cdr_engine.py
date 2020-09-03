@@ -41,6 +41,50 @@ def add_console_logging(add_handler=True):
         logging.getLogger('').addHandler(handler)
 
 
+def clean_dataset(project_id=None,
+                  dataset_id=None,
+                  rules=None,
+                  combined_dataset_id=None):
+    """
+    Run the assigned cleaning rules and return list of BQ job objects
+
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset to clean
+    :param rules: a list of cleaning rule objects/functions as tuples
+    :param combined_dataset_id: identifies the combined_dataset if required
+    :return all_jobs: List of BigQuery job objects
+    """
+    if project_id is None or project_id == '' or project_id.isspace():
+        project_id = app_identity.get_application_id()
+        LOGGER.info(f"project_id not provided, using default {project_id}")
+
+    # Set up
+    client = bq.get_client(project_id=project_id)
+    sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
+    labels = {'type': 'sandbox', 'dataset_id': dataset_id}
+    sandbox_dataset = bq.define_dataset(project_id,
+                                        sandbox_dataset_id,
+                                        description=f'Sandbox for {dataset_id}',
+                                        label_or_tag=labels)
+    sandbox_dataset = client.create_dataset(sandbox_dataset, exists_ok=True)
+    sandbox_dataset_id = sandbox_dataset.dataset_id
+
+    all_jobs = []
+    for rule in rules:
+        clazz = rule[0]
+        query_function, setup_function, rule_info = infer_rule(
+            clazz, project_id, dataset_id, sandbox_dataset_id,
+            combined_dataset_id)
+        setup_function(client)
+        query_list = query_function()
+        jobs = run_queries(client, query_list, rule_info)
+        LOGGER.info(
+            f"For clean rule {rule_info[cdr_consts.MODULE_NAME]}, {len(jobs)} jobs "
+            f"were run successfully for {len(query_list)} queries")
+        all_jobs.extend(jobs)
+    return all_jobs
+
+
 def generate_job_config(project_id, query_dict):
     """
     Generates BigQuery job_configuration object
@@ -219,47 +263,3 @@ def get_query_list(project_id=None,
         query_list = query_function()
         all_queries_list.extend(query_list)
     return all_queries_list
-
-
-def clean_dataset(project_id=None,
-                  dataset_id=None,
-                  rules=None,
-                  combined_dataset_id=None):
-    """
-    Run the assigned cleaning rules and return list of BQ job objects
-
-    :param project_id: identifies the project
-    :param dataset_id: identifies the dataset to clean
-    :param rules: a list of cleaning rule objects/functions as tuples
-    :param combined_dataset_id: identifies the combined_dataset if required
-    :return all_jobs: List of BigQuery job objects
-    """
-    if project_id is None or project_id == '' or project_id.isspace():
-        project_id = app_identity.get_application_id()
-        LOGGER.info(f"project_id not provided, using default {project_id}")
-
-    # Set up
-    client = bq.get_client(project_id=project_id)
-    sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
-    labels = {'type': 'sandbox', 'dataset_id': dataset_id}
-    sandbox_dataset = bq.define_dataset(project_id,
-                                        sandbox_dataset_id,
-                                        description=f'Sandbox for {dataset_id}',
-                                        label_or_tag=labels)
-    sandbox_dataset = client.create_dataset(sandbox_dataset, exists_ok=True)
-    sandbox_dataset_id = sandbox_dataset.dataset_id
-
-    all_jobs = []
-    for rule in rules:
-        clazz = rule[0]
-        query_function, setup_function, rule_info = infer_rule(
-            clazz, project_id, dataset_id, sandbox_dataset_id,
-            combined_dataset_id)
-        setup_function(client)
-        query_list = query_function()
-        jobs = run_queries(client, query_list, rule_info)
-        LOGGER.info(
-            f"For clean rule {rule_info[cdr_consts.MODULE_NAME]}, {len(jobs)} jobs "
-            f"were run successfully for {len(query_list)} queries")
-        all_jobs.extend(jobs)
-    return all_jobs
