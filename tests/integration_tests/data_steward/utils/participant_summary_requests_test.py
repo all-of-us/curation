@@ -15,18 +15,17 @@ The intent of this module is to check that GCR access token is generated properl
 # Python imports
 import mock
 import os
+import time
 
 # Third party imports
 import pandas
 import pandas.testing
-import google.auth.transport.requests as req
-from google.auth import default
+import datetime
 from dateutil import parser
 
 # Project imports
 import utils.participant_summary_requests as psr
 from app_identity import PROJECT_ID
-from utils import auth
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -55,10 +54,8 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
         self.bq_columns = ['person_id', 'suspension_status', 'deactivated_date']
         self.deactivated_participants = [[
-            111, 'NO_CONTACT',
-            pandas.Timestamp('2018-12-07T08:21:14')
-        ], [222, 'NO_CONTACT',
-            pandas.Timestamp('2018-12-07T08:21:14')]]
+            111, 'NO_CONTACT', datetime.date(2018, 12, 7)
+        ], [222, 'NO_CONTACT', datetime.date(2018, 12, 7)]]
 
         self.fake_dataframe = pandas.DataFrame(self.deactivated_participants,
                                                columns=self.bq_columns)
@@ -150,8 +147,8 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
                                          self.tablename, self.columns)
 
         # Post conditions
-        values = [(111, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC')),
-                  (222, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC'))]
+        values = [(111, 'NO_CONTACT', datetime.date(2018, 12, 7)),
+                  (222, 'NO_CONTACT', datetime.date(2018, 12, 7))]
         self.assertTableValuesMatch(
             '.'.join([self.project_id, self.destination_table]),
             self.bq_columns, values)
@@ -166,8 +163,15 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
                                    self.destination_table)
 
         # Post conditions
-        values = [(111, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC')),
-                  (222, 'NO_CONTACT', parser.parse('2018-12-07T08:21:14 UTC'))]
+        values = [(111, 'NO_CONTACT', datetime.date(2018, 12, 7)),
+                  (222, 'NO_CONTACT', datetime.date(2018, 12, 7))]
         self.assertTableValuesMatch(
             '.'.join([self.project_id, self.destination_table]),
             self.bq_columns, values)
+
+    def tearDown(self):
+        """
+        Add a one second delay to teardown to make it less likely to fail due to rate limits.
+        """
+        time.sleep(1)
+        super().tearDown()

@@ -39,6 +39,7 @@ import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_p
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.update_family_history_qa_codes as update_family_history
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
+import cdr_cleaner.cleaning_rules.remove_ehr_data_past_deactivation_date as remove_ehr_data
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_drop_duplicates
@@ -96,7 +97,8 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
-    (CleanMappingExtTables,)
+    (remove_ehr_data.remove_ehr_data_queries,),
+    (CleanMappingExtTables,),
 ]
 
 RDR_CLEANING_CLASSES = [

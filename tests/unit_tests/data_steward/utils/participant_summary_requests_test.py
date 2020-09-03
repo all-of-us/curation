@@ -24,7 +24,7 @@ import pandas.testing
 import utils.participant_summary_requests as psr
 
 
-class ParticipantSummaryRequests(unittest.TestCase):
+class ParticipantSummaryRequestsTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
