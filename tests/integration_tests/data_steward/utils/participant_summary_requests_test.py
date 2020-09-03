@@ -15,6 +15,7 @@ The intent of this module is to check that GCR access token is generated properl
 # Python imports
 import mock
 import os
+import time
 
 # Third party imports
 import pandas
@@ -167,3 +168,10 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         self.assertTableValuesMatch(
             '.'.join([self.project_id, self.destination_table]),
             self.bq_columns, values)
+
+    def tearDown(self):
+        """
+        Add a one second delay to teardown to make it less likely to fail due to rate limits.
+        """
+        time.sleep(1)
+        super().tearDown()
