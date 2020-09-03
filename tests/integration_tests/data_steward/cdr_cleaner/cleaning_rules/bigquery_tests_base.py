@@ -252,8 +252,7 @@ class BaseTest:
         def initialize_class_vars(cls):
             super().initialize_class_vars()
             # The query class that is being executed.
-            cls.query_class = None
-            cls.query_rule = None
+            cls.rule_instance = None
 
         def setUp(self):
             """
@@ -307,14 +306,15 @@ class BaseTest:
                 fields = [table_info.get('fields', [])[0]]
                 self.assertRowIDsMatch(fq_table_name, fields, values)
 
-            if self.query_class:
+            if self.rule_instance:
                 # test: run the queries
+                rule_class = self.rule_instance.__class__
                 engine.clean_dataset(self.project_id, self.dataset_id,
-                                     [(self.query_rule,)])
+                                     [(rule_class,)])
             else:
                 raise RuntimeError(f"Cannot use the default_test method for "
                                    f"{self.__class__.__name__} because "
-                                   f"query_class is undefined.")
+                                   f"rule_instance is undefined.")
 
             # post conditions
             for table_info in tables_and_test_values:

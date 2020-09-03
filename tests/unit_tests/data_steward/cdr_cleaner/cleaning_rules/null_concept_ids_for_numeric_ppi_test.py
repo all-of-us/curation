@@ -36,26 +36,27 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
         self.sandbox_id = 'baz_sandbox'
         self.client = None
 
-        self.query_class = NullConceptIDForNumericPPI(self.project_id,
-                                                      self.dataset_id,
-                                                      self.sandbox_id)
+        self.rule_instance = NullConceptIDForNumericPPI(self.project_id,
+                                                        self.dataset_id,
+                                                        self.sandbox_id)
 
-        self.assertEqual(self.query_class.project_id, self.project_id)
-        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # Test
-        self.query_class.setup_rule(self.client)
+        self.rule_instance.setup_rule(self.client)
 
         # No errors are raised, nothing will happen
 
     def test_get_query_spec(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         # Test
-        result_list = self.query_class.get_query_specs()
+        result_list = self.rule_instance.get_query_specs()
 
         # Post conditions
         expected_list = [{
@@ -80,7 +81,8 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         store_rows_to_be_changed = SANDBOX_QUERY.render(
             project=self.project_id,
@@ -93,7 +95,7 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
 
         # Test
         with self.assertLogs(level='INFO') as cm:
-            self.query_class.log_queries()
+            self.rule_instance.log_queries()
 
             expected = [
                 'INFO:cdr_cleaner.cleaning_rules.base_cleaning_rule:Generated SQL Query:\n'

@@ -39,12 +39,10 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
 
-        cls.query_class = clean_ppi.CleanPPINumericFieldsUsingParameters(
+        cls.rule_instance = clean_ppi.CleanPPINumericFieldsUsingParameters(
             project_id, dataset_id, sandbox_id)
 
-        cls.query_rule = CleanPPINumericFieldsUsingParameters
-
-        sb_table_names = cls.query_class.get_sandbox_tablenames()
+        sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         cls.fq_sandbox_table_names = [
             f'{project_id}.{sandbox_id}.{sb_table_names}'
         ]

@@ -37,25 +37,26 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
         self.sandbox_id = 'baz'
         self.client = None
 
-        self.query_class = ObservationSourceConceptIDRowSuppression(
+        self.rule_instance = ObservationSourceConceptIDRowSuppression(
             self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEqual(self.query_class.project_id, self.project_id)
-        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # test
-        self.query_class.setup_rule(self.client)
+        self.rule_instance.setup_rule(self.client)
 
         # no errors are raised, nothing happens
 
     def test_get_query_specs(self):
         # pre-conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         # test
-        result_list = self.query_class.get_query_specs()
+        result_list = self.rule_instance.get_query_specs()
 
         # post conditions
         expected_list = [{
@@ -64,7 +65,7 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_id,
-                    drop_table=self.query_class.get_sandbox_tablenames()[0],
+                    drop_table=self.rule_instance.get_sandbox_tablenames()[0],
                     obs_concepts=OBS_SRC_CONCEPTS)
         }, {
             clean_consts.QUERY:
@@ -83,20 +84,21 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
 
     def test_log_queries(self):
         # pre-conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         store_drops = DROP_SELECTION_QUERY_TMPL.render(
             project=self.project_id,
             dataset=self.dataset_id,
             sandbox=self.sandbox_id,
-            drop_table=self.query_class.get_sandbox_tablenames()[0],
+            drop_table=self.rule_instance.get_sandbox_tablenames()[0],
             obs_concepts=OBS_SRC_CONCEPTS)
         select_saves = DROP_QUERY_TMPL.render(project=self.project_id,
                                               dataset=self.dataset_id,
                                               obs_concepts=OBS_SRC_CONCEPTS)
         # test
         with self.assertLogs(level='INFO') as cm:
-            self.query_class.log_queries()
+            self.rule_instance.log_queries()
 
             expected = [
                 'INFO:cdr_cleaner.cleaning_rules.base_cleaning_rule:Generated SQL Query:\n'
