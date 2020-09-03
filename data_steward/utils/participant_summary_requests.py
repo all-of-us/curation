@@ -82,7 +82,7 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     :param tablename: The name of the table to house the deactivated participant data
     :param columns: columns to be pushed to a table in BigQuery in the form of a list of strings
 
-    :return: returns dataframe of deactivated participants
+    :return: returns dataset of deactivated participants
     """
 
     # Parameter checks
@@ -132,6 +132,7 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     # Converts column `suspensionTime` from string to timestamp
     if 'suspensionTime' in deactivated_participants_cols:
         df['suspensionTime'] = pandas.to_datetime(df['suspensionTime'])
+        df['suspensionTime'] = df['suspensionTime'].dt.date
 
     # Transforms participantId to an integer string
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
@@ -196,5 +197,5 @@ def store_participant_data(df, project_id, destination_table):
     return pandas_gbq.to_gbq(df,
                              destination_table,
                              project_id,
-                             if_exists="append",
+                             if_exists="replace",
                              table_schema=table_schema)

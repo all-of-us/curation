@@ -14,6 +14,7 @@ import unittest
 
 # Third party imports
 import google.cloud.exceptions as gc_exc
+from google.api_core.retry import Retry
 from google.cloud import bigquery
 from jinja2 import Environment
 
@@ -119,7 +120,8 @@ class BaseTest:
             """
             query = f"delete from {fq_table_name} where true"
 
-            response = self.client.query(query)
+            query_retry = Retry()
+            response = self.client.query(query, retry=query_retry, timeout=30)
 
             # start the job and wait for it to complete
             self.assertIsNotNone(response.result())

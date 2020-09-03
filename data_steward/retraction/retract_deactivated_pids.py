@@ -368,6 +368,7 @@ def create_queries(project_id,
     :param pids_project_id: deactivated ehr pids table in bq's project_id
     :param pids_dataset_id: deactivated ehr pids table in bq's dataset_id
     :param pids_table: deactivated pids table in bq's table name
+    :param datasets: optional parameter to give list of datasets, otherwise will loop through all datasets in project_id
     :return: list of queries to run
     """
     queries_list = []
