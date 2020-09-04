@@ -46,17 +46,14 @@ COPE_CONCEPTS_TABLE = 'cope_concepts'
 
 SELECT_DUPLICATE_TEMPLATE = jinja_env.from_string("""
 CREATE OR REPLACE TABLE
-    `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
+    `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS 
 SELECT
   *
 FROM
   `{{project}}.{{dataset}}.observation`
 WHERE
-  observation_id IN
-  (
-    {{duplicate_id_query}}
-  )
-)""")
+  observation_id IN 
+""")
 
 REMOVE_DUPLICATE_TEMPLATE = jinja_env.from_string("""
 DELETE
@@ -64,13 +61,10 @@ FROM
   `{{project}}.{{dataset}}.observation`
 WHERE
   observation_id IN 
-  (
-    {{duplicate_id_query}}
-  )
 """)
 
 IDENTIFY_DUPLICATE_ID_TEMPLATE = jinja_env.from_string("""
-    SELECT
+    ( SELECT
       observation_id
     FROM (
       SELECT
@@ -87,20 +81,20 @@ IDENTIFY_DUPLICATE_ID_TEMPLATE = jinja_env.from_string("""
           observation_source_concept_id,
           observation_source_value,
           questionnaire_response_id,
-          IF (value_source_value = 'PMI_Skip', 1, 0) AS is_pmi_skip,
+          IF(value_source_value = \'PMI_Skip\', 1, 0) AS is_pmi_skip,
           MAX(observation_datetime) OVER(
               PARTITION BY person_id, 
               observation_source_concept_id, 
               observation_source_value, 
               questionnaire_response_id) AS max_observation_datetime
         FROM `{{project}}.{{dataset}}.observation` 
-        WHERE observation_source_concept_id != 1586099  -- exclude EHRConsentPII_ConsentPermission
+        WHERE observation_source_concept_id != 1586099  /* exclude EHRConsentPII_ConsentPermission */
         and observation_source_value not in (select concept_code from
-         {{project}}.{{pipeline_dataset}}.{{cope_concepts_table}} -- exclude COPE Survey Responses
+         `{{project}}.{{pipeline_dataset}}.{{cope_concepts_table}}` /* exclude COPE Survey Responses */
         )
       ) o
     ) o
-    WHERE o.rank_order != 1
+    WHERE o.rank_order != 1 )
 """)
 
 
@@ -130,28 +124,28 @@ class DropPpiDuplicateResponses(BaseCleaningRule):
                              sandbox_table, pipeline_dataset_name,
                              cope_concepts_table):
         duplicate_id_query = IDENTIFY_DUPLICATE_ID_TEMPLATE.render(
-            project_id=project_id,
-            dataset_id=dataset_id,
+            project=project_id,
+            dataset=dataset_id,
             pipeline_dataset=pipeline_dataset_name,
             cope_concepts_table=cope_concepts_table)
-        return SELECT_DUPLICATE_TEMPLATE.render(
+
+        select_duplicates_query = SELECT_DUPLICATE_TEMPLATE.render(
             project=project_id,
             dataset=dataset_id,
             sandbox_dataset=sandbox_dataset_id,
-            intermediary_table=sandbox_table,
-            duplicate_id_query=duplicate_id_query)
+            intermediary_table=sandbox_table)
+        return select_duplicates_query + duplicate_id_query
 
     def get_delete_statement(self, project_id, dataset_id,
                              pipeline_dataset_name, cope_concepts_table):
         duplicate_id_query = IDENTIFY_DUPLICATE_ID_TEMPLATE.render(
-            project_id=project_id,
-            dataset_id=dataset_id,
+            project=project_id,
+            dataset=dataset_id,
             pipeline_dataset=pipeline_dataset_name,
             cope_concepts_table=cope_concepts_table)
-        return REMOVE_DUPLICATE_TEMPLATE.render(
-            project_id=project_id,
-            dataset_id=dataset_id,
-            duplicate_id_query=duplicate_id_query)
+        delete_duplicates_template = REMOVE_DUPLICATE_TEMPLATE.render(
+            project=project_id, dataset=dataset_id)
+        return delete_duplicates_template + duplicate_id_query
 
     def get_query_specs(self):
         """

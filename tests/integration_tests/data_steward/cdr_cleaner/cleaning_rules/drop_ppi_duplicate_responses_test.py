@@ -84,26 +84,36 @@ class DropPpiDuplicateResponsesTest(BaseTest.CleaningRulesTestBase):
         """
 
         tmpl = self.jinja_env.from_string("""
-            INSERT INTO `{{fq_dataset_name}}.observation`
-            (observation_id,
-          person_id,observation_datetime,
-          observation_source_concept_id,
-          observation_source_value, value_source_value, questionnaire_response_id) 
-          Values
-         (123, 1111111, TIMESTAMP('2015-09-15'), 1384662, 'InfectiousDiseases_InfectiousDiseaseCondition',
-          'InfectiousDiseaseCondition_Chickenpox', 111111111),
-         (234, 1111111, TIMESTAMP('2015-07-15'), 1384662, 'InfectiousDiseases_InfectiousDiseaseCondition',
-          'InfectiousDiseaseCondition_NoInfectiousDisease', 222222222),
-         (345, 2222222, TIMESTAMP('2015-07-15'), 1333276, 'phq_9_4', 'COPE_A_75', 333333333),
-         (456, 2222222, TIMESTAMP('2015-08-15'), 1333276, 'phq_9_4', 'COPE_A_161', 444444444),
-         (567, 3333333, TIMESTAMP('2015-09-15'), 1384522, 'Circulatory_CirculatoryConditions',
-          'CirculatoryConditions_Hypertension', 555555555),
-         (678, 3333333, TIMESTAMP('2015-08-15'), 1384522, 'Circulatory_CirculatoryConditions', 'PMI_Skip', 666666666),
-         (789, 3333333, TIMESTAMP('2015-07-15'), 1384522, 'Circulatory_CirculatoryConditions', 'PMI_Skip', 777777777),
-         (890, 4444444, TIMESTAMP('2015-08-15'), 1586213, 'Alcohol_6orMoreDrinksOccurence',
-          '6orMoreDrinksOccurence_LessThanMonthly', 888888888),
-         (901, 4444444, TIMESTAMP('2015-09-15'), 1586213, 'Alcohol_6orMoreDrinksOccurence',
-          '6orMoreDrinksOccurence_Weekly', 999999999)""")
+            INSERT INTO `{{fq_dataset_name}}.observation` (observation_id,
+    person_id,
+    observation_concept_id,
+    observation_date,
+    observation_datetime,
+    observation_type_concept_id,
+    observation_source_concept_id,
+    observation_source_value,
+    value_source_value,
+    questionnaire_response_id)
+VALUES
+  (123, 1111111, 1384662, DATE('2015-09-15'), TIMESTAMP('2015-09-15'), 45905771, 1384662,
+   'InfectiousDiseases_InfectiousDiseaseCondition', 'InfectiousDiseaseCondition_Chickenpox', 111111111),
+  (234, 1111111, 1384662, DATE('2015-07-15'), TIMESTAMP('2015-07-15'),45905771, 1384662,
+   'InfectiousDiseases_InfectiousDiseaseCondition', 'InfectiousDiseaseCondition_NoInfectiousDisease', 222222222),
+  (345, 2222222, 3044964, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 45905771, 1333276,
+   'phq_9_4', 'COPE_A_75', 333333333),
+  (456, 2222222, 3044964, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 45905771, 1333276,
+   'phq_9_4', 'COPE_A_161', 444444444),
+  (567, 3333333, 4214956, DATE('2015-09-15'), TIMESTAMP('2015-09-15'), 45905771, 1384522,
+   'Circulatory_CirculatoryConditions', 'CirculatoryConditions_Hypertension', 555555555),
+  (678, 3333333, 4214956, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 45905771, 1384522,
+   'Circulatory_CirculatoryConditions', 'PMI_Skip', 666666666),
+  (789, 3333333, 4214956, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 45905771, 1384522,
+   'Circulatory_CirculatoryConditions', 'PMI_Skip', 777777777),
+  (890, 4444444, 1586213, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 45905771, 1586213,
+   'Alcohol_6orMoreDrinksOccurence', '6orMoreDrinksOccurence_LessThanMonthly', 888888888),
+  (901, 4444444, 1586213, DATE('2015-09-15'), TIMESTAMP('2015-09-15'), 45905771, 1586213,
+   'Alcohol_6orMoreDrinksOccurence', '6orMoreDrinksOccurence_Weekly', 999999999)"""
+                                         )
 
         query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
         self.load_test_data([query])
@@ -116,26 +126,10 @@ class DropPpiDuplicateResponsesTest(BaseTest.CleaningRulesTestBase):
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [123, 234, 345, 456, 567, 678, 789, 890, 901],
             'sandboxed_ids': [234, 678, 789, 890],
-            'fields': [
-                'observation_id', 'person_id', 'observation_datetime',
-                'observation_source_concept_id', 'observation_source_value',
-                'value_source_value', 'questionnaire_response_id'
-            ],
-            'cleaned_values': [
-                (123, 1111111, '2015-09-15 00:00:00 UTC', 1384662,
-                 'InfectiousDiseases_InfectiousDiseaseCondition',
-                 'InfectiousDiseaseCondition_Chickenpox', 111111111),
-                (345, 2222222, '2015-07-15 00:00:00 UTC', 1333276, 'phq_9_4',
-                 'COPE_A_75', 333333333),
-                (456, 2222222, '2015-08-15  00:00:00 UTC', 1333276, 'phq_9_4',
-                 'COPE_A_161', 444444444),
-                (567, 3333333, '2015-09-15 00:00:00 UTC', 1384522,
-                 'Circulatory_CirculatoryConditions',
-                 'CirculatoryConditions_Hypertension', 555555555),
-                (901, 4444444, '2015-09-15 00:00:00 UTC', 1586213,
-                 'Alcohol_6orMoreDrinksOccurence',
-                 '6orMoreDrinksOccurence_Weekly', 999999999)
-            ]
+            'fields': ['observation_id', 'questionnaire_response_id'],
+            'cleaned_values': [(123, 111111111), (345, 333333333),
+                               (456, 444444444), (567, 555555555),
+                               (901, 999999999)]
         }]
 
         self.default_test(tables_and_counts)
