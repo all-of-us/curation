@@ -14,12 +14,15 @@ observation_source_concept_id  = 1585249 (StreetAddress_PIIState)
 state_of_residence_source_value: the concept_name from the concept table for the state_of_residence_concept_id
 person_id (as research_id) can be pulled from the person table
 """
+import logging
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
 from utils.bq import JINJA_ENV
+
+LOGGER = logging.getLogger(__name__)
 
 # Query to create person_ext table
 PERSON_EXT_TABLE_QUERY = JINJA_ENV.from_string("""
@@ -115,12 +118,14 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
 
-    clean_engine.add_console_logging(ARGS.console_log)
-    cleaner = CreatePersonExtTable(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id)
-    query_list = cleaner.get_query_specs()
-
     if ARGS.list_queries:
-        cleaner.log_queries()
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 [(CreatePersonExtTable,)])
+        for query in query_list:
+            LOGGER.info(query)
     else:
-        clean_engine.clean_dataset(ARGS.project_id, query_list)
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(CreatePersonExtTable,)])

@@ -21,31 +21,32 @@ class TruncateRdrDataTest(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
 
-        self.query_class = TruncateRdrData(self.project_id, self.dataset_id,
-                                           self.sandbox_id)
+        self.rule_instance = TruncateRdrData(self.project_id, self.dataset_id,
+                                             self.sandbox_id)
 
-        self.assertEqual(self.query_class.project_id, self.project_id)
-        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         # Test
-        results_list = self.query_class.get_query_specs()
+        results_list = self.rule_instance.get_query_specs()
 
         # Post conditions
         counter = 0
         sandbox_queries = []
         truncate_queries = []
-        for table in self.query_class.affected_tables:
+        for table in self.rule_instance.affected_tables:
             save_changed_rows = {
                 clean_consts.QUERY:
                     SANDBOX_QUERY.render(project=self.project_id,
                                          dataset=self.dataset_id,
                                          sandbox_dataset=self.sandbox_id,
-                                         intermediary_table=self.query_class.
+                                         intermediary_table=self.rule_instance.
                                          get_sandbox_tablenames()[counter],
                                          table_name=table,
                                          field_name=TABLES_DATES_FIELDS[table],
@@ -72,18 +73,19 @@ class TruncateRdrDataTest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         counter = 0
         sandbox_queries = []
         truncate_queries = []
-        for table in self.query_class.affected_tables:
+        for table in self.rule_instance.affected_tables:
             save_changed_rows = {
                 clean_consts.QUERY:
                     SANDBOX_QUERY.render(project=self.project_id,
                                          dataset=self.dataset_id,
                                          sandbox_dataset=self.sandbox_id,
-                                         intermediary_table=self.query_class.
+                                         intermediary_table=self.rule_instance.
                                          get_sandbox_tablenames()[counter],
                                          table_name=table,
                                          field_name=TABLES_DATES_FIELDS[table],
@@ -110,7 +112,7 @@ class TruncateRdrDataTest(unittest.TestCase):
 
         # Test
         with self.assertLogs(level='INFO') as cm:
-            self.query_class.log_queries()
+            self.rule_instance.log_queries()
 
             expected = sandbox_queries + truncate_queries
 

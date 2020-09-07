@@ -22,21 +22,21 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
 
-        self.query_class = DateShiftCopeResponses(self.project_id,
-                                                  self.dataset_id,
-                                                  self.sandbox_id)
+        self.rule_instance = DateShiftCopeResponses(self.project_id,
+                                                    self.dataset_id,
+                                                    self.sandbox_id)
 
-        self.assertEqual(self.query_class.project_id, self.project_id)
-        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets,
+        self.assertEqual(self.rule_instance.affected_datasets,
                          [clean_consts.DEID_BASE])
 
         # Test
-        results_list = self.query_class.get_query_specs()
+        results_list = self.rule_instance.get_query_specs()
 
         # Post conditions
         expected_list = [{
@@ -45,8 +45,8 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_dataset=self.sandbox_id,
-                    intermediary_table=self.query_class.get_sandbox_tablenames(
-                    )[0],
+                    intermediary_table=self.rule_instance.
+                    get_sandbox_tablenames()[0],
                     pipeline_tables_dataset=PIPELINE_DATASET,
                     cope_concepts_table=COPE_CONCEPTS_TABLE,
                     observation_table=OBSERVATION)
@@ -54,7 +54,7 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
             clean_consts.QUERY:
                 DATE_SHIFT_QUERY.render(
                     project_id=self.project_id,
-                    pre_deid_dataset=self.query_class.
+                    pre_deid_dataset=self.rule_instance.
                     get_combined_dataset_from_deid_dataset(self.dataset_id),
                     dataset_id=self.dataset_id,
                     pipeline_tables_dataset=PIPELINE_DATASET,
@@ -72,21 +72,21 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets,
+        self.assertEqual(self.rule_instance.affected_datasets,
                          [clean_consts.DEID_BASE])
 
         store_rows_to_be_changed = SANDBOX_COPE_SURVEY_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset=self.sandbox_id,
-            intermediary_table=self.query_class.get_sandbox_tablenames()[0],
+            intermediary_table=self.rule_instance.get_sandbox_tablenames()[0],
             pipeline_tables_dataset=PIPELINE_DATASET,
             cope_concepts_table=COPE_CONCEPTS_TABLE,
             observation_table=OBSERVATION)
 
         select_rows_to_be_changed = DATE_SHIFT_QUERY.render(
             project_id=self.project_id,
-            pre_deid_dataset=self.query_class.
+            pre_deid_dataset=self.rule_instance.
             get_combined_dataset_from_deid_dataset(self.dataset_id),
             dataset_id=self.dataset_id,
             pipeline_tables_dataset=PIPELINE_DATASET,
@@ -95,7 +95,7 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
 
         # Test
         with self.assertLogs(level='INFO') as cm:
-            self.query_class.log_queries()
+            self.rule_instance.log_queries()
 
             expected = [
                 'INFO:cdr_cleaner.cleaning_rules.base_cleaning_rule:Generated SQL Query:\n'
