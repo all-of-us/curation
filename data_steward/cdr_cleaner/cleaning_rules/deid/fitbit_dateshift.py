@@ -110,13 +110,17 @@ if __name__ == '__main__':
     }
 
     ARGS = parser.default_parse_args([combined_dataset_arg])
-    clean_engine.add_console_logging(ARGS.console_log)
-    date_shifter = FitbitDateShiftRule(ARGS.project_id, ARGS.dataset_id,
-                                       ARGS.sandbox_dataset_id,
-                                       ARGS.combined_dataset_id)
-    query_list = date_shifter.get_query_specs()
 
     if ARGS.list_queries:
-        date_shifter.log_queries()
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 [(FitbitDateShiftRule,)],
+                                                 ARGS.combined_dataset_id)
+        for query in query_list:
+            LOGGER.info(query)
     else:
-        clean_engine.clean_dataset(ARGS.project_id, query_list)
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   [(FitbitDateShiftRule,)],
+                                   ARGS.combined_dataset_id)
