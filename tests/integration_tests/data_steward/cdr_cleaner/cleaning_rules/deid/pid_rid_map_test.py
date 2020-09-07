@@ -31,9 +31,8 @@ class PIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         cls.combined_dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.fq_deid_map_table = f'{project_id}.{cls.combined_dataset_id}._deid_map'
 
-        cls.query_class = pr.PIDtoRID(project_id, cls.dataset_id,
-                                      cls.sandbox_id, cls.combined_dataset_id,
-                                      '_deid_map')
+        cls.rule_instance = pr.PIDtoRID(project_id, cls.dataset_id,
+                                        cls.sandbox_id, cls.combined_dataset_id)
 
         cls.fq_sandbox_table_names = []
 

@@ -46,7 +46,7 @@ class PIDtoRID(BaseCleaningRule):
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 combined_dataset_id, deid_map_table):
+                 combined_dataset_id):
         """
         Initialize the class with proper info.
 
@@ -68,7 +68,7 @@ class PIDtoRID(BaseCleaningRule):
                 f'{self.project_id}.{self.dataset_id}.{table_id}')
             for table_id in FITBIT_TABLES
         ]
-        fq_deid_map_table = f'{self.project_id}.{combined_dataset_id}.{deid_map_table}'
+        fq_deid_map_table = f'{self.project_id}.{combined_dataset_id}._deid_map'
         self.deid_map = gbq.TableReference.from_string(fq_deid_map_table)
         self.person = gbq.TableReference.from_string(
             f'{self.project_id}.{combined_dataset_id}.person')
@@ -143,22 +143,11 @@ if __name__ == '__main__':
         parser.REQUIRED: True
     }
 
-    deid_map_table_arg = {
-        parser.SHORT_ARGUMENT: '-m',
-        parser.LONG_ARGUMENT: '--deid_map_table',
-        parser.ACTION: 'store',
-        parser.DEST: 'deid_map_table',
-        parser.DEFAULT: None,
-        parser.HELP: 'Identifies deid_map table name.',
-        parser.REQUIRED: False
-    }
-
-    ARGS = parser.default_parse_args([combined_dataset_arg, deid_map_table_arg])
+    ARGS = parser.default_parse_args([combined_dataset_arg])
     clean_engine.add_console_logging(ARGS.console_log)
 
     pid_rid_rule = PIDtoRID(ARGS.project_id, ARGS.dataset_id,
-                            ARGS.sandbox_dataset_id, ARGS.combined_dataset_id,
-                            ARGS.deid_map_table)
+                            ARGS.sandbox_dataset_id, ARGS.combined_dataset_id)
     query_list = pid_rid_rule.get_query_specs()
 
     if ARGS.list_queries:

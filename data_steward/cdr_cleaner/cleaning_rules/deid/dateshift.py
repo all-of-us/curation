@@ -35,8 +35,7 @@ SHIFT_EXP = jinja_env.from_string("""
     SELECT
       shift
     FROM
-    -- could be _deid_map or pid_rid_mapping --
-      `{{project}}.{{map_dataset}}.{{map_table}}` AS map
+      `{{project}}.{{combined_dataset_id}}._deid_map` AS map
     WHERE
       map.research_id = remodel.person_id) DAY) AS {{field}}
 """)
@@ -66,9 +65,8 @@ class DateShiftRule(BaseCleaningRule):
                  description,
                  affected_datasets,
                  affected_tables,
-                 map_dataset,
-                 map_table,
-                 depends_on=[]):
+                 combined_dataset_id,
+                 depends_on=None):
         """
         Initialize the class.
 
@@ -76,11 +74,12 @@ class DateShiftRule(BaseCleaningRule):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
+        if depends_on is None:
+            depends_on = []
         desc = (f'Date shift date and timestamp fields by the date shift '
                 f'calculated in the static mapping table.')
 
-        self._map_dataset_id = map_dataset
-        self._map_tablename = map_table
+        self.combined_dataset_id = combined_dataset_id
 
         super().__init__(issue_numbers=issue_numbers,
                          description=description,
@@ -90,20 +89,6 @@ class DateShiftRule(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=affected_tables,
                          depends_on=depends_on)
-
-    @property
-    def map_dataset_id(self):
-        """
-        Return dataset id where the mapping table is located.
-        """
-        return self._map_dataset_id
-
-    @property
-    def map_tablename(self):
-        """
-        Return table name of the mapping table.
-        """
-        return self._map_tablename
 
     @abstractmethod
     def get_tables_and_schemas(self):
@@ -134,8 +119,7 @@ class DateShiftRule(BaseCleaningRule):
                 if field_type in ['date', 'datetime', 'timestamp']:
                     shift_string = SHIFT_EXP.render(
                         project=self.project_id,
-                        map_dataset=self.map_dataset_id,
-                        map_table=self.map_tablename,
+                        combined_dataset_id=self.combined_dataset_id,
                         field_type=field_type.upper(),
                         field=field_name,
                         table=table)
