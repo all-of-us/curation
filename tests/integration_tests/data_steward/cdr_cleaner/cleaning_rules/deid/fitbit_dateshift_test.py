@@ -35,21 +35,23 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
 
         # set the expected test datasets
         dataset_id = os.environ.get('RDR_DATASET_ID')
+        cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
+        cls.sandbox_id = sandbox_id
 
-        map_dataset_id = dataset_id
-        map_tablename = '_test_map_table'
-        cls.query_class = FitbitDateShiftRule(project_id, dataset_id,
-                                              sandbox_id, map_dataset_id,
-                                              map_tablename)
+        combined_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.combined_dataset_id = combined_dataset_id
+
+        cls.rule_instance = FitbitDateShiftRule(project_id, dataset_id,
+                                                sandbox_id, combined_dataset_id)
 
         # can test the full functionality with one table
         cls.fq_table_names = [
-            f"{project_id}.{dataset_id}.{cls.query_class.tables[0]}"
+            f"{project_id}.{dataset_id}.{cls.rule_instance.tables[0]}"
         ]
 
         # provide mapping table info
-        cls.fq_mapping_tablename = f"{project_id}.{map_dataset_id}.{map_tablename}"
+        cls.fq_mapping_tablename = f"{project_id}.{combined_dataset_id}._deid_map"
 
         # call super to set up the client, create datasets, and create
         # empty test tables

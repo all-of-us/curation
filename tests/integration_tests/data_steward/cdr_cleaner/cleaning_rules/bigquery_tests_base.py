@@ -60,6 +60,7 @@ class BaseTest:
             cls.project_id = ''
             cls.dataset_id = ''
             cls.sandbox_id = ''
+            cls.combined_dataset_id = ''
             # a list of fully qualified table names the cleaning rule is targeting.
             # fq = {project_id}.{dataset_id}.{table_name}.  required for
             # test setup and cleanup.
@@ -309,8 +310,13 @@ class BaseTest:
             if self.rule_instance:
                 # test: run the queries
                 rule_class = self.rule_instance.__class__
-                engine.clean_dataset(self.project_id, self.dataset_id,
-                                     [(rule_class,)])
+                if self.combined_dataset_id == '':
+                    engine.clean_dataset(self.project_id, self.dataset_id,
+                                         [(rule_class,)])
+                else:
+                    engine.clean_dataset(self.project_id, self.dataset_id,
+                                         [(rule_class,)],
+                                         self.combined_dataset_id)
             else:
                 raise RuntimeError(f"Cannot use the default_test method for "
                                    f"{self.__class__.__name__} because "
