@@ -159,9 +159,9 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 'observation_source_concept_id'
             ],
             'cleaned_values': [(198, self.value_as_number,
-                                self.dc_1059_value_as_concept_id, 1585889),
+                                self.dc_1061_value_as_concept_id, 1585889),
                                (987, self.value_as_number,
-                                self.dc_1059_value_as_concept_id, 1333015),
+                                self.dc_1061_value_as_concept_id, 1333015),
                                (876, 4, 111, 1585889), (765, 6, 222, 1333015)]
         }]
 
