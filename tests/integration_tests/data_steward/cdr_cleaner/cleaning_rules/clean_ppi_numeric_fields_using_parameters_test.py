@@ -4,7 +4,7 @@ Integration test for clean_ppi_numeric_fields_using_parameters module
 Apply value ranges to ensure that values are reasonable and to minimize the likelihood
 of sensitive information (like phone numbers) within the free text fields.
 
-Original Issues: DC-827, DC-502, DC-487
+Original Issues: DC-1060, DC-827, DC-502, DC-487
 
 The intent is to ensure that numeric free-text fields that are not manipulated by de-id
 have value range restrictions applied to the value_as_number field across the entire dataset.
@@ -15,8 +15,8 @@ import os
 
 # Project Imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+import cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters as clean_ppi
 
 
 class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
@@ -37,7 +37,7 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         dataset_id = os.environ.get('RDR_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
 
-        cls.query_class = CleanPPINumericFieldsUsingParameters(
+        cls.query_class = clean_ppi.CleanPPINumericFieldsUsingParameters(
             project_id, dataset_id, sandbox_id)
 
         sb_table_names = cls.query_class.get_sandbox_tablenames()
@@ -61,21 +61,21 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         """
         self.value_as_number = None
         self.value_as_concept_id = 2000000010
+        self.dc_1059_value_as_concept_id = 2000000013
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
         super().setUp()
 
-    def test_field_cleaning(self):
+    def test_invalid_values_fields_cleaning(self):
         """
-        Tests that the specifications for the SANDBOX_QUERY and CLEAN_PPI_NUMERIC_FIELDS_QUERY
+        Tests that the specifications for the INVALID_VALUES_SANDBOX_QUERY and CLEAN_INVALID_VALUES_QUERY
         perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
         """
-
         tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.observation`
             (observation_id, person_id, observation_concept_id, observation_date, 
@@ -122,6 +122,47 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 (888, 1585873, 15, 444), (999, 1586159, 16, 444),
                 (321, 1586162, 17, 444)
             ]
+        }]
+
+        self.default_test(tables_and_counts)
+
+    def test_household_size_field_cleaning(self):
+        """
+        Tests that the specifications for the HOUSEHOLD_SIZE_SANDBOX_QUERY and CLEAN_HOUSEHOLD_SIZE_QUERY
+        perform as designed.
+
+        Validates pre conditions, tests execution, and post conditions based on the load
+        statements and the tables_and_counts variable.
+        """
+        tmpl = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.observation`
+            (observation_id, person_id, observation_concept_id, observation_date,
+             observation_type_concept_id, value_as_number, value_as_concept_id, observation_source_concept_id)
+             VALUES
+                (198, 111, 0, date('2020-09-06'), 0, 21, 111, 1585889),
+                (987, 222, 0, date('2020-09-06'), 0, -21, 222, 1333015),
+                (876, 333, 0, date('2020-09-06'), 0, 4, 111, 1585889),
+                (765, 444, 0, date('2020-09-06'), 0, 6, 222, 1333015)""")
+
+        query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
+        self.load_test_data([query])
+
+        tables_and_counts = [{
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, 'observation']),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[1],
+            'loaded_ids': [198, 987, 876, 765],
+            'sandboxed_ids': [198, 987],
+            'fields': [
+                'observation_id', 'value_as_number', 'value_as_concept_id',
+                'observation_source_concept_id'
+            ],
+            'cleaned_values': [(198, self.value_as_number,
+                                self.dc_1059_value_as_concept_id, 1585889),
+                               (987, self.value_as_number,
+                                self.dc_1059_value_as_concept_id, 1333015),
+                               (876, 4, 111, 1585889), (765, 6, 222, 1333015)]
         }]
 
         self.default_test(tables_and_counts)
