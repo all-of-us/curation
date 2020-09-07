@@ -2,7 +2,7 @@
 Apply value ranges to ensure that values are reasonable and to minimize the likelihood
 of sensitive information (like phone numbers) within the free text fields.
 
-Original Issues: DC-1060, DC-827, DC-502, DC-487
+Original Issues: DC-1061, DC-827, DC-502, DC-487
 
 The intent is to ensure that numeric free-text fields that are not manipulated by de-id
 have value range restrictions applied to the value_as_number field across the entire dataset.
@@ -34,7 +34,7 @@ jinja_env = Environment(
     comment_end_string=' --')
 
 INVALID_VALUES_SANDBOX = 'dc_827_invalid_values'
-HOUSEHOLD_SIZE_SANDBOX = 'dc_1060_household_size'
+HOUSEHOLD_SIZE_SANDBOX = 'dc_1061_household_size'
 
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
 INVALID_VALUES_SANDBOX_QUERY = jinja_env.from_string("""
