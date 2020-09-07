@@ -221,11 +221,10 @@ def get_parser():
 
     :return: parser
     """
-    import argparse
+    from cdr_cleaner import args_parser
 
-    args_parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    args_parser.add_argument(
+    engine_parser = args_parser.get_base_arg_parser()
+    engine_parser.add_argument(
         '-d',
         '--data_stage',
         required=True,
@@ -234,14 +233,38 @@ def get_parser():
         type=DataStage,
         choices=list([s for s in DataStage if s is not DataStage.UNSPECIFIED]),
         help='Specify the dataset')
-    args_parser.add_argument('-s',
-                             action='store_true',
-                             help='Send logs to console')
-    return args_parser
+    engine_parser.add_argument(
+        '-c',
+        '--combined_dataset_id',
+        required=False,
+        dest='combined_dataset_id',
+        action='store',
+        help='Identifies the combined dataset for fitbit cleaning rules')
+    return engine_parser
 
 
 if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
-    clean_engine.add_console_logging(args.s)
-    clean_engine.clean_dataset(rules=DATA_STAGE_RULES_MAPPING[args.data_stage])
+
+    if args.data_stage == DataStage.FITBIT and args.combined_dataset_id is None:
+        parser.error(
+            f"Please specify combined_dataset_id if running on fitbit dataset"
+            f"{parser.print_help()}")
+
+    if args.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            project_id=args.project_id,
+            dataset_id=args.dataset_id,
+            rules=DATA_STAGE_RULES_MAPPING[args.data_stage],
+            combined_dataset_id=args.combined_dataset_id)
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(args.console_log)
+        clean_engine.clean_dataset(
+            project_id=args.project_id,
+            dataset_id=args.dataset_id,
+            rules=DATA_STAGE_RULES_MAPPING[args.data_stage],
+            combined_dataset_id=args.combined_dataset_id)

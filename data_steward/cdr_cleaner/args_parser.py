@@ -15,23 +15,7 @@ DEFAULT = 'default'
 REQUIRED = 'required'
 
 
-def parse_args():
-    return default_parse_args()
-
-
-def default_parse_args(additional_arguments=None):
-    parser = get_argument_parser()
-
-    if additional_arguments is not None:
-        for argument in additional_arguments:
-            short_arg = argument.pop(SHORT_ARGUMENT, None)
-            long_arg = argument.pop(LONG_ARGUMENT, None)
-            parser.add_argument(short_arg, long_arg, **argument)
-
-    return parser.parse_args()
-
-
-def get_argument_parser():
+def get_base_arg_parser():
     parser = argparse.ArgumentParser(
         description='Parse project_id and dataset_id',
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -48,12 +32,6 @@ def get_argument_parser():
                         dest='dataset_id',
                         help='Dataset where cleaning rules are to be applied',
                         required=True)
-    parser.add_argument('-b',
-                        '--sandbox_dataset_id',
-                        action='store',
-                        dest='sandbox_dataset_id',
-                        help=('Dataset to store intermediate results '
-                              'or changes in.'))
     parser.add_argument('-s',
                         '--console_log',
                         dest='console_log',
@@ -64,23 +42,35 @@ def get_argument_parser():
                         dest='list_queries',
                         action='store_true',
                         help='List the generated SQL without executing')
-    deid_group = parser.add_argument_group(
-        'post_deid',
-        ('Arguments related to the deid mapping tables and locations.  Should '
-         'be used for post-deid cleaning rules.'))
-    deid_group.add_argument(
-        '--mapping-dataset',
-        dest='mapping_dataset_id',
-        action='store',
-        help=('Dataset name for the dataset containing deid mapping tables.  '
-              'For example, _deid_map and _deid_questionnaire_response_id.'))
-    deid_group.add_argument(
-        '--mapping-table',
-        dest='mapping_tablename',
-        action='store',
-        help=(
-            'Define the mapping table name.  Historical default is _deid_map.'))
     return parser
+
+
+def get_argument_parser():
+    parser = get_base_arg_parser()
+    parser.add_argument('-b',
+                        '--sandbox_dataset_id',
+                        action='store',
+                        dest='sandbox_dataset_id',
+                        help=('Dataset to store intermediate results '
+                              'or changes in.'),
+                        required=True)
+    return parser
+
+
+def default_parse_args(additional_arguments=None):
+    parser = get_argument_parser()
+
+    if additional_arguments is not None:
+        for argument in additional_arguments:
+            short_arg = argument.pop(SHORT_ARGUMENT, None)
+            long_arg = argument.pop(LONG_ARGUMENT, None)
+            parser.add_argument(short_arg, long_arg, **argument)
+
+    return parser.parse_args()
+
+
+def parse_args():
+    return default_parse_args()
 
 
 def check_output_filepath(filepath):
