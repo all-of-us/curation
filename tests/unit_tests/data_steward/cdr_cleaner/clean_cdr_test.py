@@ -24,15 +24,23 @@ class CleanCDRTest(unittest.TestCase):
         self.assertEqual(actual_stages, expected_stages)
 
     def test_parser(self):
-        stage = ['--data_stage', 'ehr']
+        stage = [
+            '-p', self.project_id, '-d', self.dataset_id, '--data_stage', 'ehr'
+        ]
         parser = get_parser()
         args = parser.parse_args(stage)
         self.assertIn(args.data_stage, DataStage)
 
-        stage = ['--data_stage', 'unspecified']
+        stage = [
+            '-p', self.project_id, '-d', self.dataset_id, '--data_stage',
+            'unspecified'
+        ]
         parser = get_parser()
         self.assertRaises(SystemExit, parser.parse_args, stage)
 
-        stage = ['--data_stage', 'unknown']
+        stage = [
+            '-p', self.project_id, '-d', self.dataset_id, '--data_stage',
+            'unknown'
+        ]
         parser = get_parser()
         self.assertRaises(SystemExit, parser.parse_args, stage)
