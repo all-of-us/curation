@@ -66,7 +66,7 @@ def get_table_fields(table, ext_table_id):
     try:
         table_fields = fields_for(ext_table_id)
         LOGGER.info(
-            f"using json schema file defintion for table: {ext_table_id}")
+            f"using json schema file definition for table: {ext_table_id}")
     except (RuntimeError):
         for field in EXT_FIELD_TEMPLATE:
             table_field = dict()

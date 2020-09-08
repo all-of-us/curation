@@ -1,3 +1,5 @@
+import json
+import os
 import unittest
 
 import mock
@@ -7,6 +9,7 @@ import common
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import tools.generate_ext_tables as gen_ext
+from resources import fields_path
 
 
 class GenerateExtTablesTest(unittest.TestCase):
@@ -20,21 +23,6 @@ class GenerateExtTablesTest(unittest.TestCase):
     def setUp(self):
         self.project_id = 'project_id'
         self.dataset_id = 'dataset_id'
-        self.obs_fields = [{
-            "type": "integer",
-            "name": "observation_id",
-            "mode": "nullable",
-            "description": "The observation_id used in the observation table."
-        }, {
-            "type":
-                "string",
-            "name":
-                "src_id",
-            "mode":
-                "nullable",
-            "description":
-                "The provenance of the data associated with the observation_id."
-        }]
         self.hpo_list = [{
             "hpo_id": "hpo_1",
             "name": "hpo_name_1"
@@ -50,15 +38,57 @@ class GenerateExtTablesTest(unittest.TestCase):
         ]
         self.bq_string = '("{hpo_name}", "EHR site nnn")'
 
-    def test_get_obs_fields(self):
+    def test_get_dynamic_table_fields(self):
+        """
+        Get table fields when a schema file is not defined.
+        """
         # pre-conditions
-        table = common.OBSERVATION
-        expected = self.obs_fields
+        expected_fields = [{
+            "type": "integer",
+            "name": "foo_id",
+            "mode": "nullable",
+            "description": "The foo_id used in the foo table."
+        }, {
+            "type":
+                "string",
+            "name":
+                "src_id",
+            "mode":
+                "nullable",
+            "description":
+                "The provenance of the data associated with the foo_id."
+        }]
+        table = 'foo'
+        ext_table = 'foo' + gen_ext.EXT_TABLE_SUFFIX
 
         # test
-        actual = gen_ext.get_table_fields(table)
+        with self.assertLogs(level='INFO') as cm:
+            actual = gen_ext.get_table_fields(table, ext_table)
 
         # post conditions
+        static_msg = 'using dynamic extension table schema for table:'
+        self.assertIn(static_msg, cm.output[0])
+        self.assertCountEqual(expected_fields, actual)
+
+    def test_get_schema_defined_table_fields(self):
+        """
+        Get table fields when a schema file is defined.
+        """
+        # pre-conditions
+        table = common.OBSERVATION
+        ext_table = common.OBSERVATION + gen_ext.EXT_TABLE_SUFFIX
+        table_path = os.path.join(fields_path, 'extension_tables',
+                                  ext_table + '.json')
+        with open(table_path, 'r') as schema:
+            expected = json.load(schema)
+
+        # test
+        with self.assertLogs(level='INFO') as cm:
+            actual = gen_ext.get_table_fields(table, ext_table)
+
+        # post conditions
+        static_msg = 'using json schema file definition for table:'
+        self.assertIn(static_msg, cm.output[0])
         self.assertCountEqual(expected, actual)
 
     @mock.patch('bq_utils.get_hpo_info')
