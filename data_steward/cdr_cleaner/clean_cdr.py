@@ -225,7 +225,7 @@ def get_parser():
 
     engine_parser = args_parser.get_base_arg_parser()
     engine_parser.add_argument(
-        '-d',
+        '-a',
         '--data_stage',
         required=True,
         dest='data_stage',
