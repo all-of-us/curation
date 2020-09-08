@@ -9,6 +9,8 @@ Usage: deid_runner.sh
   --cdr_id <combined_dataset name>
   --vocab_dataset <vocabulary dataset name>
   --dataset_release_tag <release tag for the CDR>
+  --cope_survey_dataset <dataset where RDR provided cope survey mapping table is loaded>
+  --cope_survey_table_name <name of the cope survey mappig table>
 "
 
 while true; do
@@ -29,6 +31,14 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
+  --cope_survey_dataset)
+    cope_survey_dataset=$2
+    shift 2
+    ;;
+  --cope_survey_table_name)
+    cope_survey_table_name=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -37,7 +47,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset_release_tag}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${cope_survey_dataset}" ]] || [[ -z "${cope_survey_table_name}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -80,10 +90,14 @@ python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${registered_cdr_dei
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${registered_cdr_deid}"
 
 # apply deidentification on combined dataset
-python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive -c
+python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive -c --age_limit 89 --odataset "${registered_cdr_deid}"
 
 # generate ext tables in deid dataset
 python "${TOOLS_DIR}/generate_ext_tables.py" -p "${APP_ID}" -d "${registered_cdr_deid}" -c "${cdr_id}" -s
+
+# update the observation_ext table with survey_version info.  should become a formal cleaning rule in the future.
+# TODO:  add script to call here
+python "${CLEANER_DIR}/manual_cleaning_rules/survey_version_info.py" -p "${APP_ID}" -d "${registered_cdr_deid}" -b "${cdr_deid}_sandbox" --mapping-dataset "${cdr_id}" --cope_survey_dataset "${cope_survey_dataset}" --cope_survey_table "${cope_survey_table_name}"
 
 cdr_deid_base_staging="${registered_cdr_deid}_base_staging"
 cdr_deid_base="${registered_cdr_deid}_base"
@@ -93,7 +107,7 @@ cdr_deid_clean="${registered_cdr_deid}_clean"
 # Copy cdr_metadata table
 python "${TOOLS_DIR}/add_cdr_metadata.py" --component "copy" --project_id ${app_id} --target_dataset ${registered_cdr_deid} --source_dataset ${cdr_id}
 
-# create empty de-id_clean dataset to apply cleaning rules
+# create empty de-id_base dataset to apply cleaning rules
 bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${registered_cdr_deid}" ${APP_ID}:${cdr_deid_base_staging}
 
 # copy de_id dataset to a clean version
@@ -111,7 +125,7 @@ python "${TOOLS_DIR}/snapshot_by_query.py" -p "${APP_ID}" -d "${cdr_deid_base_st
 
 bq update --description "${version} De-identified Base version of ${cdr_id}" ${APP_ID}:${cdr_deid_base}
 
-# Add qa_handoff_date to cdr_metadata table 
+# Add qa_handoff_date to cdr_metadata table
 python "${TOOLS_DIR}/add_cdr_metadata.py" --component "insert" --project_id ${app_id} --target_dataset ${cdr_deid_base} --qa_handoff_date ${HANDOFF_DATE}
 
 #copy sandbox dataset

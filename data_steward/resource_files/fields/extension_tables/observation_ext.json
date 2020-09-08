@@ -9,7 +9,7 @@
     "mode": "nullable",
     "description": "The provenance of the data associated with the observation_id."
 }, {
-    "type": "string",
+    "type": "integer",
     "name": "survey_version_concept_id",
     "mode": "nullable",
     "description": "Indicates the survey version associated with an observation_id and questionnaire_response_id.  Alpha release for COPE surveys only."
