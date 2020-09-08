@@ -18,9 +18,9 @@ bq mk --dataset --description "Test EHR dataset for ${USERNAME}" ${APPLICATION_I
 bq mk --dataset --description "Test EHR union dataset for ${USERNAME}" ${APPLICATION_ID}:${UNIONED_DATASET_ID}
 
 # Create vocabulary tables if they do not already exist
-VOCABULARY_DATASET="${APPLICATION_ID}:vocabulary20200723"
+VOCABULARY="${APPLICATION_ID}:${VOCABULARY_DATASET}"
 DEST_PREFIX="${APPLICATION_ID}:${BIGQUERY_DATASET_ID}"
-for t in $(bq ls ${VOCABULARY_DATASET} | grep TABLE | awk '{print $1}')
+for t in $(bq ls "${VOCABULARY}" | grep TABLE | awk '{print $1}')
 do
   CLONE_CMD="bq cp --project_id=${APPLICATION_ID} -n ${VOCABULARY_DATASET}.${t} ${DEST_PREFIX}.${t}"
   echo $(${CLONE_CMD})

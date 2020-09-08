@@ -13,6 +13,7 @@ fi
 export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json
 export APPLICATION_ID=aou-res-curation-test
 export GOOGLE_CLOUD_PROJECT=aou-res-curation-test
+export VOCABULARY_DATASET=vocabulary20200825
 
 # Require username in GH_USERNAME or CIRCLE_USERNAME
 export USERNAME=$(echo "${GH_USERNAME:-${CIRCLE_USERNAME:-}}" | tr '[:upper:]' '[:lower:]')
@@ -77,5 +78,6 @@ then
   echo "export COMBINED_DATASET_ID=${COMBINED_DATASET_ID}" >> ${BASH_ENV}
   echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >> ${BASH_ENV}
   echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >> ${BASH_ENV}
-  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >> $BASH_ENV
+  echo "export VOCABULARY_DATASET=${VOCABULARY_DATASET}" >> ${BASH_ENV}
+  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >> ${BASH_ENV}
 fi
