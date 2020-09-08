@@ -4,10 +4,10 @@ A module to serve as the entry point to the cdr_cleaner package.
 It gathers the list of query strings to execute and sends them
 to the query engine.
 """
-# Python imports
-from collections import namedtuple
 import inspect
 import logging
+# Python imports
+from collections import namedtuple
 
 # Third party imports
 import app_identity
@@ -29,6 +29,7 @@ import cdr_cleaner.cleaning_rules.no_data_30_days_after_death as no_data_30days_
 import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
+import cdr_cleaner.cleaning_rules.remove_ehr_data_past_deactivation_date as remove_ehr_data
 import cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 import cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers as remove_multiple_race_answers
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
@@ -39,10 +40,8 @@ import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_p
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.update_family_history_qa_codes as update_family_history
 import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
-import cdr_cleaner.cleaning_rules.remove_ehr_data_past_deactivation_date as remove_ehr_data
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
-import cdr_cleaner.manual_cleaning_rules.ppi_drop_duplicate_responses as ppi_drop_duplicates
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
 import cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
 import sandbox
@@ -50,11 +49,13 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
+from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
-from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
+from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import DropDuplicatePpiQuestionsAndAnswers
+from cdr_cleaner.cleaning_rules.drop_ppi_duplicate_responses import DropPpiDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import MeasurementRecordsSuppression
@@ -64,7 +65,6 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
-from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
@@ -116,8 +116,7 @@ RDR_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         smoking.get_queries_clean_smoking,),
-    (ppi_drop_duplicates.
-     get_remove_duplicate_set_of_responses_to_same_questions_queries,),
+    (DropPpiDuplicateResponses,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
