@@ -122,7 +122,8 @@ class TruncateFitbitData(BaseCleaningRule):
                         dataset=self.dataset_id,
                         table_name=table,
                         sandbox=self.sandbox_dataset_id,
-                        intermediary_table=self.get_sandbox_tablenames()[date_table_counter]),
+                        intermediary_table=self.get_sandbox_tablenames()
+                        [date_table_counter]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -156,7 +157,8 @@ class TruncateFitbitData(BaseCleaningRule):
                         dataset=self.dataset_id,
                         table_name=table,
                         sandbox=self.sandbox_dataset_id,
-                        intermediary_table=self.get_sandbox_tablenames()[datetime_table_counter]),
+                        intermediary_table=self.get_sandbox_tablenames()
+                        [datetime_table_counter]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -202,7 +204,7 @@ if __name__ == '__main__':
 
     clean_engine.add_console_logging(ARGS.console_log)
     fitbit_cleaner = TruncateFitbitData(ARGS.project_id, ARGS.dataset_id,
-                                     ARGS.sandbox_dataset_id)
+                                        ARGS.sandbox_dataset_id)
     query_list = fitbit_cleaner.get_query_specs()
 
     if ARGS.list_queries:
