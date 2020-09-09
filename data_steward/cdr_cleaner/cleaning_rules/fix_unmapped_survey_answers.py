@@ -1,34 +1,39 @@
 """Original Issues: DC-1043, DC-1053 
 
-PPI answers are mapped to standard answer concepts in concept_relationship through 'Maps to value' (it has been this 
-case historically and it is still the case now), however, there are a bunch of PPI answer concepts (619 in total in 
-rdr20200807) missing such relationships in concept_relationship. Interestingly, the corresponding standard PPI 
-answer concepts could be found through 'Maps to'.  This might have been a bug in the vocabulary and they 
-probably should’ve used 'Maps to value' for mapping Answer concepts. 
+PPI answers are mapped to standard answer concepts in concept_relationship through 'Maps to 
+value' (it has been this case historically and it is still the case now), however, there are a 
+bunch of PPI answer concepts missing such relationships in concept_relationship. Interestingly, 
+the corresponding standard PPI answer concepts could be found through 'Maps to'.  This might have 
+been a bug in the vocabulary and they probably should’ve used 'Maps to value' for mapping Answer 
+concepts. 
 
-There are 619 unique answers (value_source_concept_ids) in observation that are mapped to a '0' value_as_concept_id, 
-out of which 368 are standard concepts, 202 are non-standard concepts that could be mapped to a standard concept 
-through Maps to in concept_relationship, and 49 are deprecated concepts that do not map to anything.
+There are survey answers (value_source_concept_ids) in observation that are mapped to a '0' 
+value_as_concept_id. Those unmapped survey answers could be standard concepts, non-standard 
+concepts that could be mapped to a standard concept through Maps to in concept_relationship, 
+or deprecated concepts that do not map to anything. 
 
-For the 368 standard answers, we could just use it as-is for populating value_as_concept_id. However, among the 202 
-non-standard concepts, not all of the mapped standard concepts are classified as 'Answer' and they could belong to 
-other concept_classes. Below is a breakdown of the concept_class_id of the mapped concepts: 
+For the standard answers, we could just use it as-is for populating value_as_concept_id. However, 
+among the non-standard concepts, not all of the mapped standard concepts are classified as 
+'Answer' and they could belong to other concept_classes. Below is a list of the concept_class_id 
+of the mapped concepts: 
 
-95 Context-dependent
-89 Answer
-8 Clinical Finding
-6 Question
-3 Unit
-1 Module
+Context-dependent
+Answer
+Clinical Finding
+Question
+Unit
+Module
 
 Question or Module concept classes don't make sense so will get excluded. In conclusion, 
 
-1. For 368 standard concepts --> Set value_as_concept_id to the source_value_concept_id.
-2. For 49 deprecated concepts --> Set value_as_concept_id to 0. Actually we don't need to do anything for this case 
-because visit_as_concept_id is already 0.
-3, For 202 non-standard concepts --> Set value_as_concept_id to standard concept ids mapped through 'Maps to' 
-for the concept classes ('Answer', 'Context-dependent', 'Clinical Finding', 'Unit') only. 
-"""
+1. For standard concepts --> Set value_as_concept_id to the source_value_concept_id. 
+
+2. For deprecated concepts --> Set value_as_concept_id to 0. 
+Actually we don't need to do anything for this case because visit_as_concept_id is already 0. 
+
+3, For non-standard concepts --> Set value_as_concept_id to standard concept ids mapped through 
+'Maps to' for the concept classes ( 'Answer', 'Context-dependent', 'Clinical Finding', 
+'Unit') only. """
 
 import logging
 
@@ -40,20 +45,9 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from constants.bq_utils import WRITE_TRUNCATE
 from common import OBSERVATION
+from utils.bq import JINJA_ENV as jinja_env
 
 LOGGER = logging.getLogger(__name__)
-
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
 
 JIRA_ISSUE_NUMBERS = ['DC1043', 'DC1053']
 
@@ -72,7 +66,8 @@ ON
 JOIN 
   `{{project}}.{{dataset}}.concept` AS c
 ON
-  c.concept_id = cr.concept_id_2 AND c.concept_class_id IN ('Answer', 'Context-dependent', 'Clinical Finding', 'Unit')
+  c.concept_id = cr.concept_id_2 
+    AND c.concept_class_id IN ('Answer', 'Context-dependent', 'Clinical Finding', 'Unit')
 WHERE
     o.observation_type_concept_id = 45905771 --Observation Recorded from a Survey --
         AND o.value_source_concept_id <> 0 AND o.value_as_concept_id = 0
@@ -117,8 +112,8 @@ class FixUnmappedSurveyAnswers(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = (
-            'Update the survey answers that are not standard in value_as_concept_id using the Maps to relationship in '
-            'concept_relationship ')
+            'Update the survey answers that are not standard in value_as_concept_id using the '
+            'Maps to relationship in concept_relationship ')
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,

@@ -3,8 +3,8 @@ Integration test for fix_unmapped_survey_answers module
 
 Original Issues: DC-1043, DC-1053
 
-The intent is to map the unmapped survey answers (value_as_concept_ids=0) using value_source_concept_id through 'Maps 
-to' relationship """
+The intent is to map the unmapped survey answers (value_as_concept_ids=0) using 
+value_source_concept_id through 'Maps to' relationship """
 
 # Python Imports
 import os
@@ -13,7 +13,8 @@ import os
 from common import OBSERVATION, CONCEPT, CONCEPT_RELATIONSHIP
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.fix_unmapped_survey_answers import FixUnmappedSurveyAnswers
-from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
+    BaseTest
 
 
 class FixUnmappedSurveyAnswersTest(BaseTest.CleaningRulesTestBase):
@@ -60,38 +61,39 @@ class FixUnmappedSurveyAnswersTest(BaseTest.CleaningRulesTestBase):
     def test_fix_unmapped_survey_answers(self):
         """
         Question concept_id: 1384592 (Respiratory: Respiratory Conditions). 
-        value_as_concept_id/value_source_concept_id: 1384615 (Respiratory Conditions: No Lung Condition), which is a standard concept_id. 
-        This record doesn't not get sandboxed and updated
+        value_as_concept_id/value_source_concept_id: 1384615 (Respiratory Conditions: No Lung 
+        Condition), which is a standard concept_id. This record doesn't not get sandboxed and 
+        updated 
         
         Question concept_id: 1384592 (Respiratory: Respiratory Conditions). 
-        value_source_concept_id: 1384615 (Respiratory Conditions: No Lung Condition), which is a standard concept_id. 
-        Set value_as_concept_id to the value_source_concept_id
+        value_source_concept_id: 1384615 (Respiratory Conditions: No Lung Condition), which is a 
+        standard concept_id. Set value_as_concept_id to the value_source_concept_id 
         
-        Question concept_id: 1332749 (Choose the answer that best describes how you felt in the past month. In 
-        general, how happy are you?). 
-        value_source_concept_id : 1332776 (Moderately unhappy), which is non-standard 
-        but can be mapped to a standard concept_id through Maps to. The domain of the corresponding concept_id is 
-        'Answer'. Set value_as_concept_id to the mapped concept_id (1333079)
+        Question concept_id: 1332749 (Choose the answer that best describes how you felt in the 
+        past month. In general, how happy are you?). value_source_concept_id : 1332776 (
+        Moderately unhappy), which is non-standard but can be mapped to a standard concept_id 
+        through Maps to. The domain of the corresponding concept_id is 'Answer'. Set 
+        value_as_concept_id to the mapped concept_id (1333079) 
         
         Question concept_id: 43528660 (Health Advice: Spoken To General Doctor). 
         value_source_concept_id : 43530243 (Spoken To General Doctor: Yes), which is non-standard 
-        but can be mapped to a standard concept_id through Maps to. The domain of the corresponding concept_id is 
-        'Clinical finding'. Set value_as_concept_id to the mapped concept_id (4088548)
+        but can be mapped to a standard concept_id through Maps to. The domain of the corresponding 
+        concept_id is 'Clinical finding'. Set value_as_concept_id to the mapped concept_id (4088548)
         
-        Question concept_id: 1384487 (Kidney: Kidney Conditions). 
-        value_source_concept_id : 1384515 (Kidney Conditions: Kidney Stones), which is non-standard 
-        but can be mapped to a standard concept_id through Maps to. The domain of the corresponding concept_id is 
-        'Context-dependent'. Set value_as_concept_id to the mapped concept_id (4179221)
+        Question concept_id: 1384487 (Kidney: Kidney Conditions). value_source_concept_id : 
+        1384515 (Kidney Conditions: Kidney Stones), which is non-standard but can be mapped to a 
+        standard concept_id through Maps to. The domain of the corresponding concept_id is 
+        'Context-dependent'. Set value_as_concept_id to the mapped concept_id (4179221) 
         
-        Question concept_id: 1332756 (How long has it been since you last used an electronic nicotine product?). 
-        value_source_concept_id : 1332724 (Months), which is non-standard 
-        but can be mapped to a standard concept_id through Maps to. The domain of the corresponding concept_id is 
-        'Unit'. Set value_as_concept_id to the mapped concept_id (9580)
+        Question concept_id: 1332756 (How long has it been since you last used an electronic 
+        nicotine product?). value_source_concept_id : 1332724 (Months), which is non-standard but 
+        can be mapped to a standard concept_id through Maps to. The domain of the corresponding 
+        concept_id is 'Unit'. Set value_as_concept_id to the mapped concept_id (9580) 
         
-        Question concept_id: 1586151 (Asian: Asian Specific). value_source_concept_id : 1585609 (Asian Specific: 
-        Asian Specific Indian), which is non-standard but can be mapped to a standard concept_id through Maps to. 
-        However, the domain of the corresponding concept_id is 'Question', so we don't include this mapping and 
-        set value_as_concept_id to 0. 
+        Question concept_id: 1586151 (Asian: Asian Specific). value_source_concept_id : 1585609 (
+        Asian Specific: Asian Specific Indian), which is non-standard but can be mapped to a 
+        standard concept_id through Maps to. However, the domain of the corresponding concept_id 
+        is 'Question', so we don't include this mapping and set value_as_concept_id to 0. 
         
         Question concept_id: 0 (No matching concept). value_source_concept_id : 1585536 (Yes), 
         which is a deprecated concept_id and set value_as_concept_id to 0. 
