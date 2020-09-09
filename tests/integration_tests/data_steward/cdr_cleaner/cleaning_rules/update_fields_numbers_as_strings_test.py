@@ -64,7 +64,8 @@ class UpdateFieldsNumbersAsStringsTest(BaseTest.CleaningRulesTestBase):
         dataset_id = os.environ.get('RDR_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
 
-        cls.query_class = UpdateFieldsNumbersAsStrings(project_id, dataset_id, sandbox_id)
+        cls.query_class = UpdateFieldsNumbersAsStrings(project_id, dataset_id,
+                                                       sandbox_id)
 
         sb_table_names = cls.query_class.get_sandbox_tablenames()
         for table_name in sb_table_names:
@@ -85,9 +86,7 @@ class UpdateFieldsNumbersAsStringsTest(BaseTest.CleaningRulesTestBase):
         self.load_statements = []
 
         for tmpl in self.insert_fake_participant_tmpls:
-            query = tmpl.render(
-                fq_table_name=self.fq_table_names[0]
-            )
+            query = tmpl.render(fq_table_name=self.fq_table_names[0])
         self.load_statements.append(query)
 
         super().setUp()
@@ -113,11 +112,17 @@ class UpdateFieldsNumbersAsStringsTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[0],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [12345, 123456, 1234567, 12345678, 123456789, 1234567891],
-            'sandboxed_ids': [12345, 123456, 1234567, 12345678, 123456789, 1234567891],
+            'loaded_ids': [
+                12345, 123456, 1234567, 12345678, 123456789, 1234567891
+            ],
+            'sandboxed_ids': [
+                12345, 123456, 1234567, 12345678, 123456789, 1234567891
+            ],
             'fields': ['observation_id', 'value_as_number', 'value_as_string'],
-            'cleaned_values': [(12345, 29, None), (123456, 1, None), (1234567, 10, None), (12345678, 30, 'test'),
-                               (123456789, None, '40'), (1234567891, None, 'PMI Skip')]
+            'cleaned_values': [(12345, 29, None), (123456, 1, None),
+                               (1234567, 10, None), (12345678, 30, 'test'),
+                               (123456789, None, '40'),
+                               (1234567891, None, 'PMI Skip')]
         }]
 
         self.default_test(tables_and_counts)
