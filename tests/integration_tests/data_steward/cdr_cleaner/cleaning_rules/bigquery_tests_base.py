@@ -345,6 +345,7 @@ class BaseTest:
         def initialize_class_vars(cls):
             super().initialize_class_vars()
             cls.fq_mapping_tablename = ''
+            cls.fq_questionnaire_tablename = ''
 
         def create_mapping_table(self):
             """
@@ -361,12 +362,36 @@ class BaseTest:
             table = bigquery.Table(self.fq_mapping_tablename, schema=schema)
             table = self.client.create_table(table)  # Make an API request.
 
+        def create_questionnaire_response_mapping_table(self):
+            """
+            Create a mapping table with a mapping table schema.
+
+            Similar to the deid mapping table, but for questionnaire response ids.
+            """
+
+            # create a false mapping table
+            schema = [
+                bigquery.SchemaField("questionnaire_response_id",
+                                     "INTEGER",
+                                     mode="REQUIRED"),
+                bigquery.SchemaField("research_response_id",
+                                     "INTEGER",
+                                     mode="REQUIRED"),
+            ]
+
+            table = bigquery.Table(self.fq_questionnaire_tablename,
+                                   schema=schema)
+            table = self.client.create_table(table)  # Make an API request.
+
         def tearDown(self):
             """
             Clear and drop the mapping table between each test.
             """
             # delete the mapping table
-            self.drop_rows(self.fq_mapping_tablename)
-            self.client.delete_table(self.fq_mapping_tablename)
+            for table in [
+                    self.fq_mapping_tablename, self.fq_questionnaire_tablename
+            ]:
+                if table:
+                    self.client.delete_table(table)
 
             super().tearDown()

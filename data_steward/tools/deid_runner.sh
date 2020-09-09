@@ -80,7 +80,7 @@ export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
 version=$(git describe --abbrev=0 --tags)
 
 # create empty de-id dataset
-bq mk --dataset --description "${version} deidentified version of ${cdr_id}" "${APP_ID}":"${registered_cdr_deid}"
+bq mk --dataset --description "${version} deidentified version of ${cdr_id}" --label "type:deid" --label "release_tag:${dataset_release_tag}" --label "de-identified:true" "${APP_ID}":"${registered_cdr_deid}"
 
 # create the clinical tables
 python "${DATA_STEWARD_DIR}/cdm.py" "${registered_cdr_deid}"
@@ -108,7 +108,7 @@ cdr_deid_clean="${registered_cdr_deid}_clean"
 python "${TOOLS_DIR}/add_cdr_metadata.py" --component "copy" --project_id ${app_id} --target_dataset ${registered_cdr_deid} --source_dataset ${cdr_id}
 
 # create empty de-id_base dataset to apply cleaning rules
-bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${registered_cdr_deid}" ${APP_ID}:${cdr_deid_base_staging}
+bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${registered_cdr_deid}" --label "type:staging" --label "release_tag:${dataset_release_tag}" --label "de-identified:true" ${APP_ID}:${cdr_deid_base_staging}
 
 # copy de_id dataset to a clean version
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${registered_cdr_deid}" --target_dataset "${cdr_deid_base_staging}"
@@ -123,7 +123,7 @@ python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee de
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" -p "${APP_ID}" -d "${cdr_deid_base_staging}" -n "${cdr_deid_base}"
 
-bq update --description "${version} De-identified Base version of ${cdr_id}" ${APP_ID}:${cdr_deid_base}
+bq update --description "${version} De-identified Base version of ${cdr_id}" --label "type:deid_base" --label "release_tag:${dataset_release_tag}" --label "de-identified:true" ${APP_ID}:${cdr_deid_base}
 
 # Add qa_handoff_date to cdr_metadata table
 python "${TOOLS_DIR}/add_cdr_metadata.py" --component "insert" --project_id ${app_id} --target_dataset ${cdr_deid_base} --qa_handoff_date ${HANDOFF_DATE}
@@ -136,7 +136,7 @@ bq rm -r -d "${cdr_deid_base_staging}_sandbox"
 bq rm -r -d "${cdr_deid_base_staging}"
 
 # create empty de-id_clean dataset to apply cleaning rules
-bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${cdr_deid_base}" ${APP_ID}:${cdr_deid_clean_staging}
+bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${cdr_deid_base}" --label "type:staging" --label "release_tag:${dataset_release_tag}" --label "de-identified:true" ${APP_ID}:${cdr_deid_clean_staging}
 
 # copy de_id dataset to a clean version
 "${TOOLS_DIR}/table_copy.sh" --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${cdr_deid_base}" --target_dataset "${cdr_deid_clean_staging}"
@@ -151,7 +151,7 @@ python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee de
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" -p "${APP_ID}" -d "${cdr_deid_clean_staging}" -n "${cdr_deid_clean}"
 
-bq update --description "${version} De-identified Clean version of ${cdr_deid_base}" ${APP_ID}:${cdr_deid_clean}
+bq update --description "${version} De-identified Clean version of ${cdr_deid_base}" --label "type:deid_clean" --label "release_tag:${dataset_release_tag}" --label "de-identified:true" ${APP_ID}:${cdr_deid_clean}
 
 #copy sandbox dataset
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${cdr_deid_clean_staging}_sandbox" --target_dataset "${cdr_deid_clean}_sandbox"

@@ -53,8 +53,7 @@ def get_argument_parser():
                         action='store',
                         dest='sandbox_dataset_id',
                         help=('Dataset to store intermediate results '
-                              'or changes in.'),
-                        required=True)
+                              'or changes in.'))
     parser.add_argument('-s',
                         '--console_log',
                         dest='console_log',
