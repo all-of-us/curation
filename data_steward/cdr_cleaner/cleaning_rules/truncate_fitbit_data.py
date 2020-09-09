@@ -54,13 +54,13 @@ SANDBOX_QUERY = jinja_env.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{intermediary_table}}` AS (
 SELECT * 
 FROM `{{project}}.{{dataset}}.{{table_name}}`
-WHERE {{date_field}} > '{{cutoff_date}}')""")
+WHERE {{date_field}} < '{{cutoff_date}}')""")
 
 # Drop any FitBit data that is newer than the cutoff date
 TRUNCATE_FITBIT_DATA_QUERY = jinja_env.from_string("""
 SELECT * FROM `{{project}}.{{dataset}}.{{table_name}}` t
-WHERE
-    {{date_field}} > '{{cutoff_date}}'""")
+WHERE person_id NOT IN (
+SELECT person_id FROM `{{project}}.{{sandbox}}.{{intermediary_table}}`)""")
 
 
 class TruncateFitbitData(BaseCleaningRule):
@@ -121,8 +121,8 @@ class TruncateFitbitData(BaseCleaningRule):
                         project=self.project_id,
                         dataset=self.dataset_id,
                         table_name=table,
-                        date_field=FITBIT_TABLES_DATE_FIELDS[table],
-                        cutoff_date=CUTOFF_DATE),
+                        sandbox=self.sandbox_dataset_id,
+                        intermediary_table=self.get_sandbox_tablenames()[date_table_counter]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -155,8 +155,8 @@ class TruncateFitbitData(BaseCleaningRule):
                         project=self.project_id,
                         dataset=self.dataset_id,
                         table_name=table,
-                        date_field=FITBIT_TABLES_DATETIME_FIELDS[table],
-                        cutoff_date=CUTOFF_DATETIME),
+                        sandbox=self.sandbox_dataset_id,
+                        intermediary_table=self.get_sandbox_tablenames()[datetime_table_counter]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -201,11 +201,11 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
 
     clean_engine.add_console_logging(ARGS.console_log)
-    rdr_cleaner = TruncateFitbitData(ARGS.project_id, ARGS.dataset_id,
+    fitbit_cleaner = TruncateFitbitData(ARGS.project_id, ARGS.dataset_id,
                                      ARGS.sandbox_dataset_id)
-    query_list = rdr_cleaner.get_query_specs()
+    query_list = fitbit_cleaner.get_query_specs()
 
     if ARGS.list_queries:
-        rdr_cleaner.log_queries()
+        fitbit_cleaner.log_queries()
     else:
         clean_engine.clean_dataset(ARGS.project_id, query_list)
