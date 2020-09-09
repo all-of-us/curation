@@ -14,6 +14,7 @@ into the pipeline as a well-formed cleaning rule.
 import logging
 
 # Third party imports
+from google.api_core.exceptions import BadRequest, NotFound
 
 # Project imports
 from common import OBSERVATION
@@ -108,12 +109,36 @@ class COPESurveyVersionTask(BaseCleaningRule):
 
     def setup_rule(self, client):
         """
-        Function to run any data upload options before executing a query.
+        Verifies the cope survey table actually exists where it is specified.
 
-        This will run to make sure the required mapping tables exist.
+        Because adding the cope survey is a manual process, this extra check
+        allows the software to validate a table actually exists before attempting
+        to use it in a cleaning query.
         """
-        # TODO: implementation
-        pass
+        msg = ''
+        tables = client.list_tables(self.cope_lookup_dataset_id)
+        try:
+            table_ids = [table.table_id for table in tables]
+        except (BadRequest):
+            msg = (f"{self.__class__.__name__} cannot execute because "
+                   f"'{self.project_id}' is not a valid project identifier")
+            LOGGER.exception(msg)
+        except (NotFound):
+            msg = (f"{self.__class__.__name__} cannot execute because dataset: "
+                   f"'{self.cope_lookup_dataset_id}' "
+                   f"does not exist in project: '{self.project_id}'")
+            LOGGER.exception(msg)
+        else:
+            if self.cope_survey_table not in table_ids:
+                msg = (f"{self.__class__.__name__} cannot execute because the "
+                       f"cope survey mapping table: '{self.cope_survey_table}' "
+                       f"does not exist in "
+                       f"'{self.project_id}.{self.cope_lookup_dataset_id}'")
+                LOGGER.error(msg)
+        finally:
+            # raise the message to error out of a running shell script
+            if msg:
+                raise RuntimeError(msg)
 
     def setup_validation(self, client):
         """
@@ -147,6 +172,7 @@ class COPESurveyVersionTask(BaseCleaningRule):
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as ap
     import cdr_cleaner.clean_cdr_engine as clean_engine
+    from utils import bq
 
     parser = ap.get_argument_parser()
     parser.add_argument(
@@ -177,4 +203,6 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         version_task.log_queries()
     else:
+        client = bq.get_client(ARGS.project_id)
+        version_task.setup_rule(client)
         clean_engine.clean_dataset(ARGS.project_id, query_list)
