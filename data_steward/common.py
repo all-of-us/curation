@@ -1,3 +1,5 @@
+import os
+
 from constants.bq_utils import VALIDATION_DATASET_REGEX
 from constants.validation.participants.identity_match import REPORT_DIRECTORY_REGEX
 
@@ -125,7 +127,7 @@ IGNORE_STRING_LIST = [ACHILLES_EXPORT_PREFIX_STRING]
 ACHILLES_EXPORT_DATASOURCES_JSON = ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json'
 
 # latest vocabulary dataset name in test and prod
-VOCABULARY_DATASET = 'vocabulary20200723'
+VOCABULARY_DATASET = os.environ.get('VOCABULARY_DATASET')
 CLINICAL = 'clinical'
 ACHILLES = 'achilles'
 CDM_COMPONENTS = [CLINICAL, VOCABULARY, ACHILLES]
