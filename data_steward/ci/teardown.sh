@@ -9,4 +9,6 @@ done
 for d in ${RDR_DATASET_ID} ${RDR_DATASET_ID} ${COMBINED_DATASET_ID} ${BIGQUERY_DATASET_ID} ${UNIONED_DATASET_ID} ${COMBINED_DEID_DATASET_ID}; do
   echo "removing ${APPLICATION_ID}:${d}"
   bq rm -r -d -f ${APPLICATION_ID}:${d}
+  echo "removing ${APPLICATION_ID}:${d}_sandbox"
+  bq rm -r -d -f "${APPLICATION_ID}:${d}_sandbox"
 done
