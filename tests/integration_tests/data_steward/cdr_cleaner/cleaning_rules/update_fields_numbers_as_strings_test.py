@@ -51,7 +51,8 @@ class UpdateFieldsNumbersAsStringsTest(BaseTest.CleaningRulesTestBase):
             (123456, 2222, 715713, DATE('2019-09-20'), 45905771, NULL, '1', 'lifestyle_2_xx12_cope_a_198'),
             (1234567, 3333, 715723, DATE('2020-01-20'), 45905771, NULL, '10', 'lifestyle_2_xx12_cope_a_152'),
             (12345678, 4444, 1333015, DATE('2017-11-20'), 45905771, 30, 'test', 'basics_xx'),
-            (123456789, 5555, 1333118, DATE('2015-10-13'), 45905771, NULL, '40', 'FAKE')
+            (123456789, 5555, 1333118, DATE('2015-10-13'), 45905771, NULL, '40', 'FAKE'),
+            (123456781, 6666, 1333118, DATE('2015-10-13'), 45905771, NULL, 'PMI Skip', 'cdc_covid_19_n_a2')
             """)
         ]
 
@@ -112,11 +113,11 @@ class UpdateFieldsNumbersAsStringsTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[0],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [12345, 123456, 1234567, 12345678, 123456789],
-            'sandboxed_ids': [12345, 123456, 1234567, 12345678, 123456789],
+            'loaded_ids': [12345, 123456, 1234567, 12345678, 123456789, 1234567891],
+            'sandboxed_ids': [12345, 123456, 1234567, 12345678, 123456789, 1234567891],
             'fields': ['observation_id', 'value_as_number', 'value_as_string'],
             'cleaned_values': [(12345, 29, None), (123456, 1, None), (1234567, 10, None), (12345678, 30, 'test'),
-                               (123456789, None, '40')]
+                               (123456789, None, '40'), (1234567891, None, 'PMI Skip')]
         }]
 
         self.default_test(tables_and_counts)
