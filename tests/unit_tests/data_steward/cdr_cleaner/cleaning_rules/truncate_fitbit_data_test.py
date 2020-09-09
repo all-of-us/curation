@@ -40,7 +40,8 @@ class TruncateFitbitDataTest(unittest.TestCase):
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.FITBIT])
+        self.assertEqual(self.query_class.affected_datasets,
+                         [clean_consts.FITBIT])
 
         # Test
         results_list = self.query_class.get_query_specs()
@@ -50,27 +51,32 @@ class TruncateFitbitDataTest(unittest.TestCase):
         datetime_table_counter = 1
         sandbox_queries = []
         truncate_queries = []
+
+        # Sandboxes and truncates data from FitBit tables with date
         for table in truncate_fitbit.FITBIT_DATE_TABLES:
             save_dropped_date_rows = {
                 cdr_consts.QUERY:
                     truncate_fitbit.SANDBOX_QUERY.render(
                         project=self.project_id,
                         sandbox=self.sandbox_id,
-                        intermediary_table=self.query_class.get_sandbox_tablenames()[date_table_counter],
+                        intermediary_table=self.query_class.
+                        get_sandbox_tablenames()[date_table_counter],
                         dataset=self.dataset_id,
                         table_name=table,
-                        date_field=truncate_fitbit.FITBIT_TABLES_DATE_FIELDS[table],
+                        date_field=truncate_fitbit.
+                        FITBIT_TABLES_DATE_FIELDS[table],
                         cutoff_date=truncate_fitbit.CUTOFF_DATE)
             }
             sandbox_queries.append(save_dropped_date_rows)
 
             truncate_date_query = {
                 cdr_consts.QUERY:
-                    truncate_fitbit.TRUNCATE_FITBIT_DATA.render(
+                    truncate_fitbit.TRUNCATE_FITBIT_DATA_QUERY.render(
                         project=self.project_id,
                         dataset=self.dataset_id,
                         table_name=table,
-                        date_field=truncate_fitbit.FITBIT_TABLES_DATE_FIELDS[table],
+                        date_field=truncate_fitbit.
+                        FITBIT_TABLES_DATE_FIELDS[table],
                         cutoff_date=truncate_fitbit.CUTOFF_DATE),
                 cdr_consts.DESTINATION_TABLE:
                     table,
@@ -82,27 +88,31 @@ class TruncateFitbitDataTest(unittest.TestCase):
             truncate_queries.append(truncate_date_query)
             date_table_counter += 2
 
+        # Sandboxes and truncates data from FitBit tables with datetime
         for table in truncate_fitbit.FITBIT_DATETIME_TABLES:
             save_dropped_datetime_rows = {
                 cdr_consts.QUERY:
                     truncate_fitbit.SANDBOX_QUERY.render(
                         project=self.project_id,
                         sandbox=self.sandbox_id,
-                        intermediary_table=self.query_class.get_sandbox_tablenames()[datetime_table_counter],
+                        intermediary_table=self.query_class.
+                        get_sandbox_tablenames()[datetime_table_counter],
                         dataset=self.dataset_id,
                         table_name=table,
-                        date_field=truncate_fitbit.FITBIT_TABLES_DATETIME_FIELDS[table],
+                        date_field=truncate_fitbit.
+                        FITBIT_TABLES_DATETIME_FIELDS[table],
                         cutoff_date=truncate_fitbit.CUTOFF_DATETIME)
             }
             sandbox_queries.append(save_dropped_datetime_rows)
 
             truncate_date_query = {
                 cdr_consts.QUERY:
-                    truncate_fitbit.TRUNCATE_FITBIT_DATA.render(
+                    truncate_fitbit.TRUNCATE_FITBIT_DATA_QUERY.render(
                         project=self.project_id,
                         dataset=self.dataset_id,
                         table_name=table,
-                        date_field=truncate_fitbit.FITBIT_TABLES_DATETIME_FIELDS[table],
+                        date_field=truncate_fitbit.
+                        FITBIT_TABLES_DATETIME_FIELDS[table],
                         cutoff_date=truncate_fitbit.CUTOFF_DATETIME),
                 cdr_consts.DESTINATION_TABLE:
                     table,

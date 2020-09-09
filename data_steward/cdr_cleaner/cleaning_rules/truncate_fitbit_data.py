@@ -57,7 +57,7 @@ FROM `{{project}}.{{dataset}}.{{table_name}}`
 WHERE {{date_field}} > '{{cutoff_date}}')""")
 
 # Drop any FitBit data that is newer than the cutoff date
-TRUNCATE_FITBIT_DATA = jinja_env.from_string("""
+TRUNCATE_FITBIT_DATA_QUERY = jinja_env.from_string("""
 SELECT * FROM `{{project}}.{{dataset}}.{{table_name}}` t
 WHERE
     {{date_field}} > '{{cutoff_date}}'""")
@@ -99,13 +99,15 @@ class TruncateFitbitData(BaseCleaningRule):
         sandbox_queries = []
         truncate_queries = []
 
+        # Sandboxes and truncates data from FitBit tables with date
         for table in FITBIT_DATE_TABLES:
             save_dropped_date_rows = {
                 cdr_consts.QUERY:
                     SANDBOX_QUERY.render(
                         project=self.project_id,
                         sandbox=self.sandbox_dataset_id,
-                        intermediary_table=self.get_sandbox_tablenames()[date_table_counter],
+                        intermediary_table=self.get_sandbox_tablenames()
+                        [date_table_counter],
                         dataset=self.dataset_id,
                         table_name=table,
                         date_field=FITBIT_TABLES_DATE_FIELDS[table],
@@ -115,7 +117,7 @@ class TruncateFitbitData(BaseCleaningRule):
 
             truncate_date_query = {
                 cdr_consts.QUERY:
-                    TRUNCATE_FITBIT_DATA.render(
+                    TRUNCATE_FITBIT_DATA_QUERY.render(
                         project=self.project_id,
                         dataset=self.dataset_id,
                         table_name=table,
@@ -131,13 +133,15 @@ class TruncateFitbitData(BaseCleaningRule):
             truncate_queries.append(truncate_date_query)
             date_table_counter += 2
 
+        # Sandboxes and truncates data from FitBit tables with datetime
         for table in FITBIT_DATETIME_TABLES:
             save_dropped_datetime_rows = {
                 cdr_consts.QUERY:
                     SANDBOX_QUERY.render(
                         project=self.project_id,
                         sandbox=self.sandbox_dataset_id,
-                        intermediary_table=self.get_sandbox_tablenames()[datetime_table_counter],
+                        intermediary_table=self.get_sandbox_tablenames()
+                        [datetime_table_counter],
                         dataset=self.dataset_id,
                         table_name=table,
                         date_field=FITBIT_TABLES_DATETIME_FIELDS[table],
@@ -147,7 +151,7 @@ class TruncateFitbitData(BaseCleaningRule):
 
             truncate_date_query = {
                 cdr_consts.QUERY:
-                    TRUNCATE_FITBIT_DATA.render(
+                    TRUNCATE_FITBIT_DATA_QUERY.render(
                         project=self.project_id,
                         dataset=self.dataset_id,
                         table_name=table,
