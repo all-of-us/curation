@@ -13,7 +13,7 @@ import unittest
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import cdr_cleaner.cleaning_rules.deid.truncate_fitbit_data as truncate_fitbit
+import cdr_cleaner.cleaning_rules.truncate_fitbit_data as truncate_fitbit
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from constants.bq_utils import WRITE_TRUNCATE
 
@@ -75,9 +75,9 @@ class TruncateFitbitDataTest(unittest.TestCase):
                         project=self.project_id,
                         dataset=self.dataset_id,
                         table_name=table,
-                        date_field=truncate_fitbit.
-                        FITBIT_TABLES_DATE_FIELDS[table],
-                        cutoff_date=truncate_fitbit.CUTOFF_DATE),
+                        sandbox=self.sandbox_id,
+                        intermediary_table=self.query_class.
+                        get_sandbox_tablenames()[date_table_counter]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -111,9 +111,9 @@ class TruncateFitbitDataTest(unittest.TestCase):
                         project=self.project_id,
                         dataset=self.dataset_id,
                         table_name=table,
-                        date_field=truncate_fitbit.
-                        FITBIT_TABLES_DATETIME_FIELDS[table],
-                        cutoff_date=truncate_fitbit.CUTOFF_DATETIME),
+                        sandbox=self.sandbox_id,
+                        intermediary_table=self.query_class.
+                        get_sandbox_tablenames()[datetime_table_counter]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
