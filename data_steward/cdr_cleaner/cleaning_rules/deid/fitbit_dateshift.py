@@ -12,7 +12,7 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.dateshift import DateShiftRule
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
-from common import FITBIT_TABLES
+from common import FITBIT_TABLES, DEID_MAP
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from resources import fields_for
 
@@ -27,7 +27,7 @@ class FitbitDateShiftRule(DateShiftRule):
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 combined_dataset_id):
+                 mapping_dataset_id):
         """
         Initialize the class.
 
@@ -48,7 +48,8 @@ class FitbitDateShiftRule(DateShiftRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=self.tables,
-                         combined_dataset_id=combined_dataset_id,
+                         mapping_dataset_id=mapping_dataset_id,
+                         mapping_table_id=DEID_MAP,
                          depends_on=[PIDtoRID])
 
     def get_tables_and_schemas(self):
@@ -100,27 +101,27 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    combined_dataset_arg = {
-        parser.SHORT_ARGUMENT: '-c',
-        parser.LONG_ARGUMENT: '--combined_dataset_id',
+    mapping_dataset_arg = {
+        parser.SHORT_ARGUMENT: '-m',
+        parser.LONG_ARGUMENT: '--mapping_dataset_id',
         parser.ACTION: 'store',
-        parser.DEST: 'combined_dataset_id',
-        parser.HELP: 'Identifies the combined dataset',
+        parser.DEST: 'mapping_dataset_id',
+        parser.HELP: 'Identifies the dataset containing _deid_map',
         parser.REQUIRED: True
     }
 
-    ARGS = parser.default_parse_args([combined_dataset_arg])
+    ARGS = parser.default_parse_args([mapping_dataset_arg])
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 [(FitbitDateShiftRule,)],
-                                                 ARGS.combined_dataset_id)
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id, [(FitbitDateShiftRule,)],
+            mapping_dataset_id=ARGS.mapping_dataset_id)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   [(FitbitDateShiftRule,)],
-                                   ARGS.combined_dataset_id)
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id, [(FitbitDateShiftRule,)],
+                                   mapping_dataset_id=ARGS.mapping_dataset_id)

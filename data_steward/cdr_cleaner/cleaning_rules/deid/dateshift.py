@@ -15,6 +15,7 @@ from jinja2 import Environment
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from common import DEID_MAP
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ SHIFT_EXP = jinja_env.from_string("""
     SELECT
       shift
     FROM
-      `{{project}}.{{combined_dataset_id}}._deid_map` AS map
+      `{{project}}.{{mapping_dataset_id}}.{{mapping_table_id}}` AS map
     WHERE
       map.research_id = remodel.person_id) DAY) AS {{field}}
 """)
@@ -65,7 +66,8 @@ class DateShiftRule(BaseCleaningRule):
                  description,
                  affected_datasets,
                  affected_tables,
-                 combined_dataset_id,
+                 mapping_dataset_id,
+                 mapping_table_id,
                  depends_on=None):
         """
         Initialize the class.
@@ -79,7 +81,8 @@ class DateShiftRule(BaseCleaningRule):
         desc = (f'Date shift date and timestamp fields by the date shift '
                 f'calculated in the static mapping table.')
 
-        self.combined_dataset_id = combined_dataset_id
+        self.mapping_dataset_id = mapping_dataset_id
+        self.mapping_table_id = mapping_table_id
 
         super().__init__(issue_numbers=issue_numbers,
                          description=description,
@@ -119,7 +122,8 @@ class DateShiftRule(BaseCleaningRule):
                 if field_type in ['date', 'datetime', 'timestamp']:
                     shift_string = SHIFT_EXP.render(
                         project=self.project_id,
-                        combined_dataset_id=self.combined_dataset_id,
+                        mapping_dataset_id=self.mapping_dataset_id,
+                        mapping_table_id=self.mapping_table_id,
                         field_type=field_type.upper(),
                         field=field_name,
                         table=table)

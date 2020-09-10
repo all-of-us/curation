@@ -12,7 +12,7 @@ from utils import bq
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import FITBIT_TABLES
+from common import FITBIT_TABLES, DEID_MAP
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class PIDtoRID(BaseCleaningRule):
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 combined_dataset_id):
+                 mapping_dataset_id):
         """
         Initialize the class with proper info.
 
@@ -68,10 +68,10 @@ class PIDtoRID(BaseCleaningRule):
                 f'{self.project_id}.{self.dataset_id}.{table_id}')
             for table_id in FITBIT_TABLES
         ]
-        fq_deid_map_table = f'{self.project_id}.{combined_dataset_id}._deid_map'
+        fq_deid_map_table = f'{self.project_id}.{mapping_dataset_id}.{DEID_MAP}'
         self.deid_map = gbq.TableReference.from_string(fq_deid_map_table)
         self.person = gbq.TableReference.from_string(
-            f'{self.project_id}.{combined_dataset_id}.person')
+            f'{self.project_id}.{mapping_dataset_id}.person')
 
     def get_query_specs(self):
         """
@@ -87,8 +87,7 @@ class PIDtoRID(BaseCleaningRule):
             table_query = {
                 cdr_consts.QUERY:
                     PID_RID_QUERY_TMPL.render(fitbit_table=table,
-                                              deid_map=self.deid_map,
-                                              combined_person=self.person),
+                                              deid_map=self.deid_map),
                 cdr_consts.DESTINATION_TABLE:
                     table.table_id,
                 cdr_consts.DESTINATION_DATASET:
@@ -134,25 +133,27 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    combined_dataset_arg = {
-        parser.SHORT_ARGUMENT: '-c',
-        parser.LONG_ARGUMENT: '--combined_dataset_id',
+    mapping_dataset_arg = {
+        parser.SHORT_ARGUMENT: '-m',
+        parser.LONG_ARGUMENT: '--mapping_dataset_id',
         parser.ACTION: 'store',
-        parser.DEST: 'combined_dataset_id',
-        parser.HELP: 'Identifies the combined dataset',
+        parser.DEST: 'mapping_dataset_id',
+        parser.HELP: 'Identifies the dataset containing _deid_map',
         parser.REQUIRED: True
     }
 
-    ARGS = parser.default_parse_args([combined_dataset_arg])
+    ARGS = parser.default_parse_args([mapping_dataset_arg])
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id, [(PIDtoRID,)],
-                                                 ARGS.combined_dataset_id)
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id, [(PIDtoRID,)],
+            mapping_dataset_id=ARGS.mapping_dataset_id)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   [(PIDtoRID,)], ARGS.combined_dataset_id)
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id, [(PIDtoRID,)],
+                                   mapping_dataset_id=ARGS.mapping_dataset_id)

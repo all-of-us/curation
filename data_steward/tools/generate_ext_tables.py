@@ -39,14 +39,14 @@ RDR = 'rdr'
 PPI_PM = 'PPI/PM'
 
 INSERT_SITE_MAPPINGS_QUERY = """
-INSERT INTO `{project_id}.{combined_dataset_id}.{table_id}` (hpo_id, src_id)
+INSERT INTO `{project_id}.{mapping_dataset_id}.{table_id}` (hpo_id, src_id)
 VALUES{values}
 """
 
 REPLACE_SRC_QUERY = """
 SELECT m.{cdm_table_id}_id, s.src_id
-FROM `{project_id}.{combined_dataset_id}.{mapping_table_id}` m
-JOIN `{project_id}.{combined_dataset_id}.{site_mappings_table_id}` s
+FROM `{project_id}.{mapping_dataset_id}.{mapping_table_id}` m
+JOIN `{project_id}.{mapping_dataset_id}.{site_mappings_table_id}` s
 ON m.src_hpo_id = s.hpo_id
 """
 
@@ -66,15 +66,14 @@ def get_table_fields(table):
     return table_fields
 
 
-def get_mapping_table_ids(project_id, combined_dataset_id):
+def get_mapping_table_ids(project_id, mapping_dataset_id):
     """
     returns all the mapping table ids found in the dataset
     :param project_id: project_id containing the dataset
-    :param combined_dataset_id: dataset_id containing mapping tables
+    :param mapping_dataset_id: dataset_id containing mapping tables
     :return: returns mapping table ids
     """
-    table_objs = bq_utils.list_tables(combined_dataset_id,
-                                      project_id=project_id)
+    table_objs = bq_utils.list_tables(mapping_dataset_id, project_id=project_id)
     mapping_table_ids = []
     for table_obj in table_objs:
         table_id = bq_utils.get_table_id_from_obj(table_obj)
@@ -147,7 +146,7 @@ def create_and_populate_source_mapping_table(project_id, dataset_id):
                                    drop_existing=True,
                                    dataset_id=dataset_id)
     site_mappings_insert_query = INSERT_SITE_MAPPINGS_QUERY.format(
-        combined_dataset_id=dataset_id,
+        mapping_dataset_id=dataset_id,
         project_id=project_id,
         table_id=SITE_TABLE_ID,
         values=site_mapping_insert_string)
@@ -157,18 +156,18 @@ def create_and_populate_source_mapping_table(project_id, dataset_id):
 
 
 def get_generate_ext_table_queries(project_id, deid_dataset_id,
-                                   combined_dataset_id):
+                                   mapping_dataset_id):
     """
     Generate the queries for generating the ext tables
     :param project_id: project_id containing the dataset to generate ext tables in
     :param deid_dataset_id: deid_dataset_id to generate ext tables in
-    :param combined_dataset_id: combined_dataset_id to use the mapping tables from
+    :param mapping_dataset_id: mapping_dataset_id to use the mapping tables from
     :return: list of query dicts
     """
     queries = []
 
-    mapping_table_ids = get_mapping_table_ids(project_id, combined_dataset_id)
-    create_and_populate_source_mapping_table(project_id, combined_dataset_id)
+    mapping_table_ids = get_mapping_table_ids(project_id, mapping_dataset_id)
+    create_and_populate_source_mapping_table(project_id, mapping_dataset_id)
 
     for mapping_table_id in mapping_table_ids:
         cdm_table_id = get_cdm_table_from_mapping(mapping_table_id)
@@ -181,7 +180,7 @@ def get_generate_ext_table_queries(project_id, deid_dataset_id,
         query = dict()
         query[cdr_consts.QUERY] = REPLACE_SRC_QUERY.format(
             project_id=project_id,
-            combined_dataset_id=combined_dataset_id,
+            mapping_dataset_id=mapping_dataset_id,
             mapping_table_id=mapping_table_id,
             site_mappings_table_id=SITE_TABLE_ID,
             cdm_table_id=cdm_table_id)
@@ -203,11 +202,12 @@ def parse_args():
     argument_parser = parser.get_argument_parser()
 
     argument_parser.add_argument(
-        '-c',
-        '--combined_dataset_id',
-        dest='combined_dataset_id',
+        '-m',
+        '--mapping_dataset_id',
+        dest='mapping_dataset_id',
         action='store',
-        help='The combined dataset used to generate the deid dataset',
+        help=
+        'The dataset containing mapping tables, typically the combined_dataset',
         required=True)
 
     return argument_parser.parse_args()
@@ -221,12 +221,14 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id,
-            [(get_generate_ext_table_queries,)], ARGS.combined_dataset_id)
+            ARGS.project_id,
+            ARGS.dataset_id, [(get_generate_ext_table_queries,)],
+            mapping_dataset_id=ARGS.mapping_dataset_id)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id,
                                    [(get_generate_ext_table_queries,)],
-                                   ARGS.combined_dataset_id)
+                                   mapping_dataset_id=ARGS.mapping_dataset_id)
