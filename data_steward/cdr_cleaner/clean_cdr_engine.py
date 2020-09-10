@@ -41,6 +41,17 @@ def add_console_logging(add_handler=True):
         logging.getLogger('').addHandler(handler)
 
 
+def create_sandbox(project_id, dataset_id, client):
+    sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
+    labels = {'type': 'sandbox', 'dataset_id': dataset_id}
+    sandbox_dataset = bq.define_dataset(project_id,
+                                        sandbox_dataset_id,
+                                        description=f'Sandbox for {dataset_id}',
+                                        label_or_tag=labels)
+    sandbox_dataset = client.create_dataset(sandbox_dataset, exists_ok=True)
+    return sandbox_dataset.dataset_id
+
+
 def clean_dataset(project_id=None, dataset_id=None, rules=None, **kwargs):
     """
     Run the assigned cleaning rules and return list of BQ job objects
@@ -57,14 +68,7 @@ def clean_dataset(project_id=None, dataset_id=None, rules=None, **kwargs):
 
     # Set up
     client = bq.get_client(project_id=project_id)
-    sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
-    labels = {'type': 'sandbox', 'dataset_id': dataset_id}
-    sandbox_dataset = bq.define_dataset(project_id,
-                                        sandbox_dataset_id,
-                                        description=f'Sandbox for {dataset_id}',
-                                        label_or_tag=labels)
-    sandbox_dataset = client.create_dataset(sandbox_dataset, exists_ok=True)
-    sandbox_dataset_id = sandbox_dataset.dataset_id
+    sandbox_dataset_id = create_sandbox(project_id, dataset_id, client)
     kwargs.update({'sandbox_dataset_id': sandbox_dataset_id})
 
     all_jobs = []
