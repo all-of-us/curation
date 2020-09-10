@@ -1,9 +1,9 @@
 """
-Remove all FitBit data newer than the cutoff date for participants
+Remove all FitBit data after the cutoff date for participants
 
 Original Issue: DC-1046
 
-The intent is to ensure there is no data newer than cutoff date for participants in
+The intent is to ensure there is no data after the cutoff date for participants in
 Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables
 by sandboxing the applicable records and then dropping them.
 """
@@ -19,20 +19,9 @@ import common
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
+from utils.bq import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
-
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
 
 CUTOFF_DATE = '2019-11-26'
 CUTOFF_DATETIME = '2019-11-26T00:00:00'
@@ -50,14 +39,14 @@ FITBIT_TABLES_DATETIME_FIELDS = {
 }
 
 # Save rows that will be dropped to a sandboxed dataset
-SANDBOX_QUERY = jinja_env.from_string("""
+SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{intermediary_table}}` AS (
 SELECT * 
 FROM `{{project}}.{{dataset}}.{{table_name}}`
-WHERE {{date_field}} < '{{cutoff_date}}')""")
+WHERE {{date_field}} > '{{cutoff_date}}')""")
 
 # Drop any FitBit data that is newer than the cutoff date
-TRUNCATE_FITBIT_DATA_QUERY = jinja_env.from_string("""
+TRUNCATE_FITBIT_DATA_QUERY = JINJA_ENV.from_string("""
 SELECT * FROM `{{project}}.{{dataset}}.{{table_name}}` t
 WHERE person_id NOT IN (
 SELECT person_id FROM `{{project}}.{{sandbox}}.{{intermediary_table}}`)""")
@@ -65,7 +54,7 @@ SELECT person_id FROM `{{project}}.{{sandbox}}.{{intermediary_table}}`)""")
 
 class TruncateFitbitData(BaseCleaningRule):
     """
-    All rows of FitBit data with dates before 11/26/2019 should be moved from the Activity Summary,
+    All rows of FitBit data with dates after 11/26/2019 should be moved from the Activity Summary,
     Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables to a sandboxed FitBit dataset
     """
 
@@ -77,7 +66,7 @@ class TruncateFitbitData(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'All rows of data in the FitBit tables with dates before 11/26/2019 will be truncated.'
+        desc = 'All rows of data in the FitBit tables with dates after 11/26/2019 will be truncated.'
         super().__init__(issue_numbers=['DC1046'],
                          description=desc,
                          affected_datasets=[cdr_consts.FITBIT],
@@ -94,20 +83,18 @@ class TruncateFitbitData(BaseCleaningRule):
             and a specification for how to execute that query. The specifications
             are optional but the query is required.
         """
-        date_table_counter = 0
-        datetime_table_counter = 1
         sandbox_queries = []
         truncate_queries = []
+        date_sandbox, datetime_sandbox = self.get_sandbox_tablenames()
 
         # Sandboxes and truncates data from FitBit tables with date
-        for table in FITBIT_DATE_TABLES:
+        for i, table in enumerate(FITBIT_DATE_TABLES):
             save_dropped_date_rows = {
                 cdr_consts.QUERY:
                     SANDBOX_QUERY.render(
                         project=self.project_id,
                         sandbox=self.sandbox_dataset_id,
-                        intermediary_table=self.get_sandbox_tablenames()
-                        [date_table_counter],
+                        intermediary_table=date_sandbox[i],
                         dataset=self.dataset_id,
                         table_name=table,
                         date_field=FITBIT_TABLES_DATE_FIELDS[table],
@@ -122,8 +109,7 @@ class TruncateFitbitData(BaseCleaningRule):
                         dataset=self.dataset_id,
                         table_name=table,
                         sandbox=self.sandbox_dataset_id,
-                        intermediary_table=self.get_sandbox_tablenames()
-                        [date_table_counter]),
+                        intermediary_table=date_sandbox[i]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -132,17 +118,15 @@ class TruncateFitbitData(BaseCleaningRule):
                     WRITE_TRUNCATE
             }
             truncate_queries.append(truncate_date_query)
-            date_table_counter += 2
 
         # Sandboxes and truncates data from FitBit tables with datetime
-        for table in FITBIT_DATETIME_TABLES:
+        for i, table in enumerate(FITBIT_DATETIME_TABLES):
             save_dropped_datetime_rows = {
                 cdr_consts.QUERY:
                     SANDBOX_QUERY.render(
                         project=self.project_id,
                         sandbox=self.sandbox_dataset_id,
-                        intermediary_table=self.get_sandbox_tablenames()
-                        [datetime_table_counter],
+                        intermediary_table=datetime_sandbox[i],
                         dataset=self.dataset_id,
                         table_name=table,
                         date_field=FITBIT_TABLES_DATETIME_FIELDS[table],
@@ -157,8 +141,7 @@ class TruncateFitbitData(BaseCleaningRule):
                         dataset=self.dataset_id,
                         table_name=table,
                         sandbox=self.sandbox_dataset_id,
-                        intermediary_table=self.get_sandbox_tablenames()
-                        [datetime_table_counter]),
+                        intermediary_table=datetime_sandbox[i]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -167,7 +150,6 @@ class TruncateFitbitData(BaseCleaningRule):
                     WRITE_TRUNCATE
             }
             truncate_queries.append(truncate_date_query)
-            datetime_table_counter += 2
 
         return sandbox_queries + truncate_queries
 
@@ -190,10 +172,15 @@ class TruncateFitbitData(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        sandbox_tables = []
-        for table in self.affected_tables:
-            sandbox_tables.append(f'{self._issue_numbers[0].lower()}_{table}')
-        return sandbox_tables
+        sandbox_date_tables = []
+        sandbox_datetime_tables = []
+        for table in FITBIT_DATE_TABLES:
+            sandbox_date_tables.append(
+                f'{self._issue_numbers[0].lower()}_{table}')
+        for table in FITBIT_DATETIME_TABLES:
+            sandbox_datetime_tables.append(
+                f'{self._issue_numbers[0].lower()}_{table}')
+        return sandbox_date_tables, sandbox_datetime_tables
 
 
 if __name__ == '__main__':

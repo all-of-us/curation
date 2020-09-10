@@ -3,7 +3,7 @@ Unit test for the truncate_fitbit_data module
 
 Original Issue: DC-1046
 
-Ensures there is no data newer than cutoff date for participants in
+Ensures there is no data after the cutoff date for participants in
 Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables
 by sandboxing the applicable records and then dropping them.
 """
@@ -47,20 +47,19 @@ class TruncateFitbitDataTest(unittest.TestCase):
         results_list = self.query_class.get_query_specs()
 
         # Post conditions
-        date_table_counter = 0
-        datetime_table_counter = 1
+        date_sandbox, datetime_sandbox = self.query_class.get_sandbox_tablenames(
+        )
         sandbox_queries = []
         truncate_queries = []
 
         # Sandboxes and truncates data from FitBit tables with date
-        for table in truncate_fitbit.FITBIT_DATE_TABLES:
+        for i, table in enumerate(truncate_fitbit.FITBIT_DATE_TABLES):
             save_dropped_date_rows = {
                 cdr_consts.QUERY:
                     truncate_fitbit.SANDBOX_QUERY.render(
                         project=self.project_id,
                         sandbox=self.sandbox_id,
-                        intermediary_table=self.query_class.
-                        get_sandbox_tablenames()[date_table_counter],
+                        intermediary_table=date_sandbox[i],
                         dataset=self.dataset_id,
                         table_name=table,
                         date_field=truncate_fitbit.
@@ -76,8 +75,7 @@ class TruncateFitbitDataTest(unittest.TestCase):
                         dataset=self.dataset_id,
                         table_name=table,
                         sandbox=self.sandbox_id,
-                        intermediary_table=self.query_class.
-                        get_sandbox_tablenames()[date_table_counter]),
+                        intermediary_table=date_sandbox[i]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -86,17 +84,15 @@ class TruncateFitbitDataTest(unittest.TestCase):
                     WRITE_TRUNCATE
             }
             truncate_queries.append(truncate_date_query)
-            date_table_counter += 2
 
         # Sandboxes and truncates data from FitBit tables with datetime
-        for table in truncate_fitbit.FITBIT_DATETIME_TABLES:
+        for i, table in enumerate(truncate_fitbit.FITBIT_DATETIME_TABLES):
             save_dropped_datetime_rows = {
                 cdr_consts.QUERY:
                     truncate_fitbit.SANDBOX_QUERY.render(
                         project=self.project_id,
                         sandbox=self.sandbox_id,
-                        intermediary_table=self.query_class.
-                        get_sandbox_tablenames()[datetime_table_counter],
+                        intermediary_table=datetime_sandbox[i],
                         dataset=self.dataset_id,
                         table_name=table,
                         date_field=truncate_fitbit.
@@ -112,8 +108,7 @@ class TruncateFitbitDataTest(unittest.TestCase):
                         dataset=self.dataset_id,
                         table_name=table,
                         sandbox=self.sandbox_id,
-                        intermediary_table=self.query_class.
-                        get_sandbox_tablenames()[datetime_table_counter]),
+                        intermediary_table=datetime_sandbox[i]),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -122,7 +117,6 @@ class TruncateFitbitDataTest(unittest.TestCase):
                     WRITE_TRUNCATE
             }
             truncate_queries.append(truncate_date_query)
-            datetime_table_counter += 2
 
         expected_list = sandbox_queries + truncate_queries
 

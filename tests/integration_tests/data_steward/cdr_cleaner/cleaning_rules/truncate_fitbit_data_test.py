@@ -3,7 +3,7 @@ Integration test for the truncate_fitbit_data module
 
 Original Issue: DC-1046
 
-Ensures there is no data newer than cutoff date for participants in
+Ensures there is no data after the cutoff date for participants in
 Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables
 by sandboxing the applicable records and then dropping them.
 """
@@ -42,8 +42,12 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
         cls.query_class = TruncateFitbitData(project_id, dataset_id, sandbox_id)
 
         # Generates list of fully qualified sandbox table names
-        sb_table_names = cls.query_class.get_sandbox_tablenames()
-        for table_name in sb_table_names:
+        sb_date_table_names, sb_datetime_table_names = cls.query_class.get_sandbox_tablenames(
+        )
+        for table_name in sb_date_table_names:
+            cls.fq_sandbox_table_names.append(
+                f'{project_id}.{sandbox_id}.{table_name}')
+        for table_name in sb_datetime_table_names:
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
 
@@ -135,10 +139,9 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                 self.fq_sandbox_table_names[0],
             'fields': ['person_id', 'date'],
             'loaded_ids': [111, 222, 333, 444],
-            'sandboxed_ids': [111],
-            'cleaned_values': [(222, parser.parse('2019-11-26').date()),
-                               (333, parser.parse('2020-11-26').date()),
-                               (444, parser.parse('2021-11-26').date())]
+            'sandboxed_ids': [333, 444],
+            'cleaned_values': [(111, parser.parse('2018-11-26').date()),
+                               (222, parser.parse('2019-11-26').date())]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name,
@@ -147,10 +150,9 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                 self.fq_sandbox_table_names[2],
             'fields': ['person_id', 'datetime'],
             'loaded_ids': [111, 222, 333, 444],
-            'sandboxed_ids': [111],
-            'cleaned_values': [(222, parser.parse('2019-11-26 00:00:00')),
-                               (333, parser.parse('2020-11-26 00:00:00')),
-                               (444, parser.parse('2021-11-26 00:00:00'))]
+            'sandboxed_ids': [333, 444],
+            'cleaned_values': [(111, parser.parse('2018-11-26 00:00:00')),
+                               (222, parser.parse('2019-11-26 00:00:00'))]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, common.HEART_RATE_SUMMARY]),
@@ -158,10 +160,9 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                 self.fq_sandbox_table_names[1],
             'fields': ['person_id', 'date'],
             'loaded_ids': [111, 222, 333, 444],
-            'sandboxed_ids': [111],
-            'cleaned_values': [(222, parser.parse('2019-11-26').date()),
-                               (333, parser.parse('2020-11-26').date()),
-                               (444, parser.parse('2021-11-26').date())]
+            'sandboxed_ids': [333, 444],
+            'cleaned_values': [(111, parser.parse('2018-11-26').date()),
+                               (222, parser.parse('2019-11-26').date())]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, common.STEPS_INTRADAY]),
@@ -169,10 +170,9 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                 self.fq_sandbox_table_names[3],
             'fields': ['person_id', 'datetime'],
             'loaded_ids': [111, 222, 333, 444],
-            'sandboxed_ids': [111],
-            'cleaned_values': [(222, parser.parse('2019-11-26 00:00:00')),
-                               (333, parser.parse('2020-11-26 00:00:00')),
-                               (444, parser.parse('2021-11-26 00:00:00'))]
+            'sandboxed_ids': [333, 444],
+            'cleaned_values': [(111, parser.parse('2018-11-26 00:00:00')),
+                               (222, parser.parse('2019-11-26 00:00:00'))]
         }]
 
         self.default_test(tables_and_counts)
