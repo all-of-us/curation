@@ -15,25 +15,37 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 from utils import bq
 
 TEST_DATA_FIELDS = ('observation_id', 'person_id', 'observation_source_value',
-                    'value_source_value', 'value_as_string')
+                    'value_as_number', 'value_source_value', 'value_as_string',
+                    'questionnaire_response_id')
 """The columns associated with `TEST_DATA_ROWS`"""
 
 TEST_DATA_ROWS = {
-    (2000, 2000, 'Race_WhatRaceEthnicity',
-     'WhatRaceEthnicity_RaceEthnicityNoneOfThese', None),
+    (2000, 2000, 'Race_WhatRaceEthnicity', None,
+     'WhatRaceEthnicity_RaceEthnicityNoneOfThese', None, 1),
     (2001, 2000, 'RaceEthnicityNoneOfThese_RaceEthnicityFreeTextBox', None,
-     'Mexican and Filipino'),
-    (3000, 3000, 'Race_WhatRaceEthnicity', 'WhatRaceEthnicity_White', None),
-    (3001, 3000, 'RaceEthnicityNoneOfThese_RaceEthnicityFreeTextBox',
-     'PMI_Skip', None),
-    (4000, 4000, 'OverallHealth_OrganTransplant', 'OrganTransplant_Yes', None),
-    (4001, 4000, 'OrganTransplant_OrganTransplantDescription', None, 'Cornea'),
-    (5000, 5000, 'OverallHealth_OrganTransplant', 'OrganTransplant_No', None),
-    (5001, 5000, 'OrganTransplant_OrganTransplantDescription', 'PMI_Skip', None)
+     None, 'Mexican and Filipino', 1),
+    (3000, 3000, 'Race_WhatRaceEthnicity', None, 'WhatRaceEthnicity_White',
+     None, 2),
+    (3001, 3000, 'RaceEthnicityNoneOfThese_RaceEthnicityFreeTextBox', None,
+     'PMI_Skip', None, 2),
+    (4000, 4000, 'OverallHealth_OrganTransplant', None, 'OrganTransplant_Yes',
+     None, 3),
+    (4001, 4000, 'OrganTransplant_OrganTransplantDescription', None, None,
+     'Cornea', 3),
+    (5000, 5000, 'OverallHealth_OrganTransplant', None, 'OrganTransplant_No',
+     None, 4),
+    (5001, 5000, 'OrganTransplant_OrganTransplantDescription', None, 'PMI_Skip',
+     None, 4), (6000, 6000, 'eds_9', None, 'COPE_A_120', None, 5),
+    (6001, 6000, 'eds_6', None, 'COPE_A_62', None, 5),
+    (6002, 6000, 'eds_follow_up_1', None, 'PMI_Skip', None, 5),
+    (7000, 7000, 'basics_xx', 2, None, None, 6),
+    (7001, 7000, 'basics_xx20', None, 'PMI_Skip', None, 6),
+    (8000, 8000, 'basics_xx', None, 'PMI_Skip', None, 7),
+    (8001, 8000, 'basics_xx20', None, 'PMI_Skip', None, 7)
 }
 """Set of tuples used to create rows in the observation table"""
 
-TEST_DATA_DROP = {r for r in TEST_DATA_ROWS if r[0] in (3001, 5001)}
+TEST_DATA_DROP = {r for r in TEST_DATA_ROWS if r[0] in (3001, 5001, 8001)}
 """Set of tuples in TEST_DATA_ROWS that should be removed after rule is run"""
 
 TEST_DATA_KEEP = set(TEST_DATA_ROWS) - set(TEST_DATA_DROP)
