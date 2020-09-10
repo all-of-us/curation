@@ -65,6 +65,7 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
+from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
@@ -133,6 +134,7 @@ RDR_CLEANING_CLASSES = [
     (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
     (drop_mult_meas.get_drop_multiple_measurement_queries,),
+    (UpdateFieldsNumbersAsStrings,),
 ]
 
 COMBINED_CLEANING_CLASSES = [
