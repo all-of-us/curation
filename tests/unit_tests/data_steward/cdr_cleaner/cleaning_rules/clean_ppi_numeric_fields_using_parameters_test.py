@@ -63,24 +63,7 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
                     intermediary_table=clean_ppi.INVALID_VALUES_SANDBOX)
         }, {
             clean_consts.QUERY:
-                clean_ppi.HOUSEHOLD_SIZE_SANDBOX_QUERY.render(
-                    project=self.project_id,
-                    dataset=self.dataset_id,
-                    sandbox_dataset=self.sandbox_id,
-                    intermediary_table=clean_ppi.HOUSEHOLD_SIZE_SANDBOX)
-        }, {
-            clean_consts.QUERY:
                 clean_ppi.CLEAN_INVALID_VALUES_QUERY.render(
-                    project=self.project_id, dataset=self.dataset_id),
-            clean_consts.DESTINATION_TABLE:
-                'observation',
-            clean_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            clean_consts.DISPOSITION:
-                WRITE_TRUNCATE
-        }, {
-            clean_consts.QUERY:
-                clean_ppi.CLEAN_HOUSEHOLD_SIZE_QUERY.render(
                     project=self.project_id, dataset=self.dataset_id),
             clean_consts.DESTINATION_TABLE:
                 'observation',

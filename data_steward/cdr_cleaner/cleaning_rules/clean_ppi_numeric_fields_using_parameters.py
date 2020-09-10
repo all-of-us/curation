@@ -11,33 +11,18 @@ have value range restrictions applied to the value_as_number field across the en
 # Python imports
 import logging
 
-# Third party imports
-from jinja2 import Environment
-
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
+from utils.bq import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
-
 INVALID_VALUES_SANDBOX = 'dc_827_invalid_values'
-HOUSEHOLD_SIZE_SANDBOX = 'dc_1061_household_size'
 
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
-INVALID_VALUES_SANDBOX_QUERY = jinja_env.from_string("""
+INVALID_VALUES_SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
     `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
@@ -62,10 +47,14 @@ OR
 OR
     (observation_concept_id = 1586159 AND (value_as_number < 0 OR value_as_number > 99))
 OR
-    (observation_concept_id = 1586162 AND (value_as_number < 0 OR value_as_number > 99)))
+    (observation_concept_id = 1586162 AND (value_as_number < 0 OR value_as_number > 99))
+OR
+    (observation_source_concept_id = 1333015 AND (value_as_number < 0 OR value_as_number > 11))
+OR 
+    (observation_source_concept_id = 1585889 AND (value_as_number < 0 OR value_as_number > 11)))
 """)
 
-CLEAN_INVALID_VALUES_QUERY = jinja_env.from_string("""
+CLEAN_INVALID_VALUES_QUERY = JINJA_ENV.from_string("""
 SELECT 
     observation_id,
     person_id,
@@ -77,7 +66,7 @@ CASE
     WHEN observation_concept_id IN (1585889, 1585890) AND (value_as_number < 0 OR value_as_number > 20) THEN NULL
     WHEN observation_concept_id IN (1585795, 1585802, 1585864, 1585870, 1585873, 1586159, 1586162) AND (value_as_number < 0 OR value_as_number > 99) THEN NULL
     WHEN observation_concept_id = 1585820 AND (value_as_number < 0 OR value_as_number > 255) THEN NULL
-    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 20) THEN NULL
+    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 11) THEN NULL
   ELSE value_as_number
 END AS
     value_as_number,
@@ -86,51 +75,7 @@ CASE
     WHEN observation_concept_id IN (1585889, 1585890) AND (value_as_number < 0 OR value_as_number > 20) THEN 2000000010
     WHEN observation_concept_id IN (1585795, 1585802, 1585864, 1585870, 1585873, 1586159, 1586162) AND (value_as_number < 0 OR value_as_number > 99) THEN 2000000010
     WHEN observation_concept_id = 1585820 AND (value_as_number < 0 OR value_as_number > 255) THEN 2000000010
-    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 20) THEN 2000000013
-  ELSE value_as_concept_id
-END AS
-    value_as_concept_id,
-    qualifier_concept_id,
-    unit_concept_id,
-    provider_id,
-    visit_occurrence_id,
-    observation_source_value,
-    observation_source_concept_id,
-    unit_source_value,
-    qualifier_source_value,
-    value_source_concept_id,
-    value_source_value,
-    questionnaire_response_id
-FROM
-    {{project}}.{{dataset}}.observation""")
-
-HOUSEHOLD_SIZE_SANDBOX_QUERY = jinja_env.from_string("""
-CREATE OR REPLACE TABLE
-    `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
-SELECT * 
-FROM
-    `{{project}}.{{dataset}}.observation`
-WHERE
-    (observation_source_concept_id = 1333015 AND (value_as_number < 0 OR value_as_number > 20))
-OR 
-    (observation_source_concept_id = 1585889 AND (value_as_number < 0 OR value_as_number > 20)))
-""")
-
-CLEAN_HOUSEHOLD_SIZE_QUERY = jinja_env.from_string("""SELECT
-    observation_id,
-    person_id,
-    observation_concept_id,
-    observation_date,
-    observation_datetime,
-    observation_type_concept_id,
-CASE
-    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 20) THEN NULL
-  ELSE value_as_number
-END AS
-    value_as_number,
-    value_as_string,
-CASE
-    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 20) THEN 2000000013
+    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 11) THEN 2000000013
   ELSE value_as_concept_id
 END AS
     value_as_concept_id,
@@ -191,16 +136,7 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    intermediary_table=self.get_sandbox_tablenames()[0]),
-        }
-
-        household_size_sandbox_query = {
-            cdr_consts.QUERY:
-                HOUSEHOLD_SIZE_SANDBOX_QUERY.render(
-                    project=self.project_id,
-                    dataset=self.dataset_id,
-                    sandbox_dataset=self.sandbox_dataset_id,
-                    intermediary_table=self.get_sandbox_tablenames()[1]),
+                    intermediary_table=INVALID_VALUES_SANDBOX),
         }
 
         clean_invalid_values_query = {
@@ -215,22 +151,7 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
                 WRITE_TRUNCATE
         }
 
-        household_size_query = {
-            cdr_consts.QUERY:
-                CLEAN_HOUSEHOLD_SIZE_QUERY.render(project=self.project_id,
-                                                  dataset=self.dataset_id),
-            cdr_consts.DESTINATION_TABLE:
-                'observation',
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
-        }
-
-        return [
-            invalid_values_sandbox_query, household_size_sandbox_query,
-            clean_invalid_values_query, household_size_query
-        ]
+        return [invalid_values_sandbox_query, clean_invalid_values_query]
 
     def setup_rule(self, client):
         """
@@ -251,7 +172,7 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        return [INVALID_VALUES_SANDBOX, HOUSEHOLD_SIZE_SANDBOX]
+        return [INVALID_VALUES_SANDBOX]
 
 
 if __name__ == '__main__':
