@@ -61,7 +61,6 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
-from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
 LOGGER = logging.getLogger(__name__)
@@ -215,38 +214,77 @@ def get_parser():
         type=DataStage,
         choices=list([s for s in DataStage if s is not DataStage.UNSPECIFIED]),
         help='Specify the dataset')
-    engine_parser.add_argument(
-        '-c',
-        '--combined_dataset_id',
-        required=False,
-        dest='combined_dataset_id',
-        action='store',
-        help='Identifies the combined dataset for fitbit cleaning rules')
     return engine_parser
 
 
-if __name__ == '__main__':
-    parser = get_parser()
-    args = parser.parse_args()
+def get_dynamic_parser(optional_args):
+    """
+    Create parser to dynamically parse optionally provided args at runtime
 
-    if args.data_stage == DataStage.FITBIT and args.combined_dataset_id is None:
-        parser.error(
-            f"Please specify combined_dataset_id if running on fitbit dataset"
-            f"{parser.print_help()}")
+    :param optional_args: Unknown args to parse
+    :return: parser
+    """
+    dynamic_parser = get_parser()
+
+    if len(optional_args) % 2:
+        raise dynamic_parser.error(
+            f'All provided arguments need key-value pairs in {optional_args}')
+
+    for arg, value in zip(optional_args, optional_args[1:]):
+        if arg.startswith('-'):
+            if not arg.startswith('--'):
+                raise dynamic_parser.error(
+                    f'Error parsing {arg}. Please use "--key value" to specify custom arguments. '
+                    f'Custom arguments need an associated keyword to store their value.'
+                )
+            if value.startswith('-'):
+                raise dynamic_parser.error(
+                    f'Please specify a value for the argument {arg} '
+                    f'before the next argument {value}')
+            arg_name = arg[2:] if arg.startswith('--') else arg[1:]
+            dynamic_parser.add_argument(arg, dest=arg_name, action='store')
+    return dynamic_parser
+
+
+def fetch_args_kwargs():
+    """
+    Fetch parsers and parse input to generate full list of args and keyword args
+
+    :return: args: All the provided arguments
+            kwargs: Optional keyword arguments excluding '-p', '-d', '-s', '-l'
+                as specified in args_parser.get_base_arg_parser which a cleaning
+                rule might require
+    """
+    basic_parser = get_parser()
+    known_args, unknown_args = basic_parser.parse_known_args()
+    dynamic_parser = get_dynamic_parser(unknown_args)
+    args = dynamic_parser.parse_args()
+    kwargs = {
+        k: v for k, v in vars(args).items() if k not in vars(known_args).keys()
+    }
+    return args, kwargs
+
+
+if __name__ == '__main__':
+    args, kwargs = fetch_args_kwargs()
+
+    rules = DATA_STAGE_RULES_MAPPING[args.data_stage]
+    for rule in rules:
+        clazz = rule[0]
+        kwargs.update({'sandbox_dataset_id': None})
+        clean_engine.validate_params(clazz, **kwargs)
 
     if args.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(
-            project_id=args.project_id,
-            dataset_id=args.dataset_id,
-            rules=DATA_STAGE_RULES_MAPPING[args.data_stage],
-            combined_dataset_id=args.combined_dataset_id)
+        query_list = clean_engine.get_query_list(project_id=args.project_id,
+                                                 dataset_id=args.dataset_id,
+                                                 rules=rules,
+                                                 **kwargs)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(args.console_log)
-        clean_engine.clean_dataset(
-            project_id=args.project_id,
-            dataset_id=args.dataset_id,
-            rules=DATA_STAGE_RULES_MAPPING[args.data_stage],
-            combined_dataset_id=args.combined_dataset_id)
+        clean_engine.clean_dataset(project_id=args.project_id,
+                                   dataset_id=args.dataset_id,
+                                   rules=rules,
+                                   **kwargs)
