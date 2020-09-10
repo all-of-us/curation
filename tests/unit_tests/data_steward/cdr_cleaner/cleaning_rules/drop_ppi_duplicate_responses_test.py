@@ -19,31 +19,32 @@ class DropPpiDuplicateResponsesTest(unittest.TestCase):
         self.sandbox_id = 'foo_sandbox'
         self.client = None
 
-        self.query_class = DropPpiDuplicateResponses(self.project_id,
-                                                     self.dataset_id,
-                                                     self.sandbox_id)
+        self.rule_instance = DropPpiDuplicateResponses(self.project_id,
+                                                       self.dataset_id,
+                                                       self.sandbox_id)
 
-        self.assertEqual(self.query_class.project_id, self.project_id)
-        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         # Test
-        results_list = self.query_class.get_query_specs()
+        results_list = self.rule_instance.get_query_specs()
         # Post conditions
         sandbox_query = dict()
         sandbox_query[
-            clean_consts.QUERY] = self.query_class.get_select_statement(
+            clean_consts.QUERY] = self.rule_instance.get_select_statement(
                 self.project_id, self.dataset_id, self.sandbox_id,
-                self.query_class.get_sandbox_tablenames()[0], PIPELINE_DATASET,
-                COPE_CONCEPTS_TABLE)
+                self.rule_instance.get_sandbox_tablenames()[0],
+                PIPELINE_DATASET, COPE_CONCEPTS_TABLE)
 
         update_query = dict()
         update_query[
-            clean_consts.QUERY] = self.query_class.get_delete_statement(
+            clean_consts.QUERY] = self.rule_instance.get_delete_statement(
                 self.project_id, self.dataset_id, PIPELINE_DATASET,
                 COPE_CONCEPTS_TABLE)
 
@@ -54,20 +55,21 @@ class DropPpiDuplicateResponsesTest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
-        store_duplicate_rows = self.query_class.get_select_statement(
+        store_duplicate_rows = self.rule_instance.get_select_statement(
             self.project_id, self.dataset_id, self.sandbox_id,
-            self.query_class.get_sandbox_tablenames()[0], PIPELINE_DATASET,
+            self.rule_instance.get_sandbox_tablenames()[0], PIPELINE_DATASET,
             COPE_CONCEPTS_TABLE)
 
-        delete_duplicate_rows = self.query_class.get_delete_statement(
+        delete_duplicate_rows = self.rule_instance.get_delete_statement(
             self.project_id, self.dataset_id, PIPELINE_DATASET,
             COPE_CONCEPTS_TABLE)
 
         # Test
         with self.assertLogs(level='INFO') as cm:
-            self.query_class.log_queries()
+            self.rule_instance.log_queries()
 
             expected = [
                 'INFO:cdr_cleaner.cleaning_rules.base_cleaning_rule:Generated SQL Query:\n'
