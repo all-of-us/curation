@@ -60,8 +60,8 @@ The columns of the lookup table are described below.
     logic from one parent q/a and correct branching logic from a different parent q/a.
     In such cases, the child question is considered correct and must not be dropped.
   * In certain cases, the `value_as_number` needs to be used for the parent answer instead of 
-    `value_source_value`. Currently only supports `>=` and this needs to be specified via the
-    `keep_gte` rule type and `parent_value` must be a float.
+    `value_source_value`. Currently only supports `>` and this needs to be specified via the
+    `keep_gt` rule type and `parent_value` must be a float.
 """
 
 from pathlib import Path
@@ -169,14 +169,14 @@ FROM parent_child_combs
 WHERE
 (rule_type = 'keep' AND op_value_source_value IN UNNEST(parent_values))),
 
--- rows to keep via 'keep_gte' rule_type --
+-- rows to keep via 'keep_gt' rule_type --
 -- ONLY for rules using gte with one value --
-keep_gte_rule_obs AS 
+keep_gt_rule_obs AS 
 (SELECT 
   oc_observation_id
 FROM parent_child_combs
 WHERE
-(rule_type = 'keep_gte' AND op_value_as_number >= CAST(ARRAY_TO_STRING(parent_values, '') AS FLOAT64))),
+(rule_type = 'keep_gt' AND op_value_as_number > CAST(ARRAY_TO_STRING(parent_values, '') AS FLOAT64))),
 
 -- rows to drop with values not in 'keep' rule_type values --
 -- note that this may include child rows which are resulting --
@@ -188,17 +188,17 @@ FROM parent_child_combs
 WHERE
 (rule_type = 'keep' AND op_value_source_value NOT IN UNNEST(parent_values))),
 
--- rows to drop with values 'null' or less than 'keep_gte' rule_type values --
+-- rows to drop with values 'null' or less than 'keep_gt' rule_type values --
 -- note that this may include child rows which are resulting --
 -- from correct branching logic via a different parent q/a --
 -- ONLY for rules using gte with one value --
-not_keep_gte_rule_obs AS 
+not_keep_gt_rule_obs AS 
 (SELECT 
   oc_observation_id
 FROM parent_child_combs
 WHERE
-(rule_type = 'keep_gte' AND 
-    (op_value_as_number < CAST(ARRAY_TO_STRING(parent_values, '') AS FLOAT64) OR 
+(rule_type = 'keep_gt' AND 
+    (op_value_as_number <= CAST(ARRAY_TO_STRING(parent_values, '') AS FLOAT64) OR 
     op_value_as_number IS NULL)))
 
 -- final list of rows to drop --
@@ -214,7 +214,7 @@ SELECT oc_observation_id
     FROM not_keep_rule_obs
     UNION ALL
 SELECT oc_observation_id 
-    FROM not_keep_gte_rule_obs)
+    FROM not_keep_gt_rule_obs)
 AND observation_id NOT IN
 -- exclude 'keep' rows so that child rows resulting from correct --
 -- branching logic via a different parent q/a are not dropped, --
@@ -223,7 +223,7 @@ AND observation_id NOT IN
     FROM keep_rule_obs
     UNION ALL
 SELECT oc_observation_id 
-    FROM keep_gte_rule_obs)
+    FROM keep_gt_rule_obs)
 """)
 
 CLEANED_ROWS_QUERY = bq.JINJA_ENV.from_string("""

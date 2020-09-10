@@ -41,7 +41,9 @@ TEST_DATA_ROWS = {
     (7000, 7000, 'basics_xx', 2, None, None, 6),
     (7001, 7000, 'basics_xx20', None, 'PMI_Skip', None, 6),
     (8000, 8000, 'basics_xx', None, 'PMI_Skip', None, 7),
-    (8001, 8000, 'basics_xx20', None, 'PMI_Skip', None, 7)
+    (8001, 8000, 'basics_xx20', None, 'PMI_Skip', None, 7),
+    (9000, 9000, 'basics_xx', 0.1, 'PMI_Skip', None, 7),
+    (9001, 9000, 'basics_xx20', None, 'PMI_Skip', None, 7)
 }
 """Set of tuples used to create rows in the observation table"""
 
