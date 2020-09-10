@@ -19,8 +19,6 @@ from utils.bq import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
-INVALID_VALUES_SANDBOX = 'dc_827_invalid_values'
-
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
 INVALID_VALUES_SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
@@ -49,9 +47,7 @@ OR
 OR
     (observation_concept_id = 1586162 AND (value_as_number < 0 OR value_as_number > 99))
 OR
-    (observation_source_concept_id = 1333015 AND (value_as_number < 0 OR value_as_number > 11))
-OR 
-    (observation_source_concept_id = 1585889 AND (value_as_number < 0 OR value_as_number > 11)))
+    (observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 11)))
 """)
 
 CLEAN_INVALID_VALUES_QUERY = JINJA_ENV.from_string("""
@@ -66,7 +62,7 @@ CASE
     WHEN observation_concept_id IN (1585889, 1585890) AND (value_as_number < 0) THEN NULL
     WHEN observation_concept_id IN (1585795, 1585802, 1585864, 1585870, 1585873, 1586159, 1586162) AND (value_as_number < 0 OR value_as_number > 99) THEN NULL
     WHEN observation_concept_id = 1585820 AND (value_as_number < 0 OR value_as_number > 255) THEN NULL
-    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0) THEN NULL
+    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 11) THEN NULL
   ELSE value_as_number
 END AS
     value_as_number,
@@ -75,7 +71,7 @@ CASE
     WHEN observation_concept_id IN (1585889, 1585890) AND (value_as_number > 20) THEN 2000000010
     WHEN observation_concept_id IN (1585795, 1585802, 1585864, 1585870, 1585873, 1586159, 1586162) AND (value_as_number < 0 OR value_as_number > 99) THEN 2000000010
     WHEN observation_concept_id = 1585820 AND (value_as_number < 0 OR value_as_number > 255) THEN 2000000010
-    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number > 11) THEN 2000000013
+    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number > 11 AND value_as_number < 20) THEN 2000000013
   ELSE value_as_concept_id
 END AS
     value_as_concept_id,
@@ -136,7 +132,7 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    intermediary_table=INVALID_VALUES_SANDBOX),
+                    intermediary_table=self.get_sandbox_tablenames()),
         }
 
         clean_invalid_values_query = {
@@ -172,7 +168,7 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        return [INVALID_VALUES_SANDBOX]
+        return f'{self._issue_numbers[0].lower()}_{self._affected_tables[0]}'
 
 
 if __name__ == '__main__':

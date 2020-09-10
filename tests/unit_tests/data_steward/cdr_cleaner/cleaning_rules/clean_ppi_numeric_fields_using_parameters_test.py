@@ -60,7 +60,8 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_id,
-                    intermediary_table=clean_ppi.INVALID_VALUES_SANDBOX)
+                    intermediary_table=self.query_class.get_sandbox_tablenames(
+                    ))
         }, {
             clean_consts.QUERY:
                 clean_ppi.CLEAN_INVALID_VALUES_QUERY.render(

@@ -41,9 +41,9 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             project_id, dataset_id, sandbox_id)
 
         sb_table_names = cls.query_class.get_sandbox_tablenames()
-        for table_name in sb_table_names:
-            cls.fq_sandbox_table_names.append(
-                f'{project_id}.{sandbox_id}.{table_name}')
+        cls.fq_sandbox_table_names = [
+            f'{project_id}.{sandbox_id}.{sb_table_names}'
+        ]
 
         cls.fq_table_names = [f'{project_id}.{dataset_id}.observation']
 
@@ -93,8 +93,8 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 (888, 888888, 1585873, date('2015-07-15'), 0, 15, 444, 0),
                 (999, 999999, 1586159, date('2015-07-15'), 0, 16, 444, 0),
                 (321, 000000, 1586162, date('2015-07-15'), 0, 17, 444, 0),
-                (198, 111, 0, date('2020-09-06'), 0, 12, 111, 1585889),
-                (987, 222, 0, date('2020-09-06'), 0, -12, 222, 1333015),
+                (198, 111, 0, date('2020-09-06'), 0, 21, 111, 1585889),
+                (987, 222, 0, date('2020-09-06'), 0, 12, 222, 1333015),
                 (876, 333, 0, date('2020-09-06'), 0, 4, 111, 1585889),
                 (765, 444, 0, date('2020-09-06'), 0, 6, 222, 1333015)""")
 
@@ -116,64 +116,29 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 'observation_id', 'observation_concept_id', 'value_as_number',
                 'value_as_concept_id', 'observation_source_concept_id'
             ],
-            'cleaned_values': [
-                (123, 1585889, 21.0, self.value_as_concept_id, 0),
-                (345, 1585890, self.value_as_number, 222, 0),
-                (567, 1585795, self.value_as_number, self.value_as_concept_id,
-                 0),
-                (789, 1585802, self.value_as_number, self.value_as_concept_id,
-                 0),
-                (555, 1585820, self.value_as_number, self.value_as_concept_id,
-                 0),
-                (121, 1585820, self.value_as_number, self.value_as_concept_id,
-                 0),
-                (666, 1585864, self.value_as_number, self.value_as_concept_id,
-                 0),
-                (777, 1585870, self.value_as_number, self.value_as_concept_id,
-                 0), (888, 1585873, 15, 444, 0), (999, 1586159, 16, 444, 0),
-                (321, 1586162, 17, 444, 0),
-                (198, 0, 12.0, self.dc_1061_value_as_concept_id, 1585889),
-                (987, 0, self.value_as_number, 222, 1333015),
-                (876, 0, 4, 111, 1585889), (765, 0, 6, 222, 1333015)
-            ]
+            'cleaned_values': [(123, 1585889, 21.0,
+                                self.value_as_concept_id, 0),
+                               (345, 1585890, self.value_as_number, 222, 0),
+                               (567, 1585795, self.value_as_number,
+                                self.value_as_concept_id, 0),
+                               (789, 1585802, self.value_as_number,
+                                self.value_as_concept_id, 0),
+                               (555, 1585820, self.value_as_number,
+                                self.value_as_concept_id, 0),
+                               (121, 1585820, self.value_as_number,
+                                self.value_as_concept_id, 0),
+                               (666, 1585864, self.value_as_number,
+                                self.value_as_concept_id, 0),
+                               (777, 1585870, self.value_as_number,
+                                self.value_as_concept_id, 0),
+                               (888, 1585873, 15, 444, 0),
+                               (999, 1586159, 16, 444, 0),
+                               (321, 1586162, 17, 444, 0),
+                               (198, 0, self.value_as_number, 111, 1585889),
+                               (987, 0, self.value_as_number,
+                                self.dc_1061_value_as_concept_id, 1333015),
+                               (876, 0, 4, 111, 1585889),
+                               (765, 0, 6, 222, 1333015)]
         }]
 
         self.default_test(tables_and_counts)
-
-    # def test_household_size_field_cleaning(self):
-    #     """
-    #     Tests that the specifications for the HOUSEHOLD_SIZE_SANDBOX_QUERY and CLEAN_HOUSEHOLD_SIZE_QUERY
-    #     perform as designed.
-    #
-    #     Validates pre conditions, tests execution, and post conditions based on the load
-    #     statements and the tables_and_counts variable.
-    #     """
-    #     tmpl = self.jinja_env.from_string("""
-    #         INSERT INTO `{{fq_dataset_name}}.observation`
-    #         (observation_id, person_id, observation_concept_id, observation_date,
-    #          observation_type_concept_id, value_as_number, value_as_concept_id, observation_source_concept_id)
-    #          VALUES
-    #             """)
-    #
-    #     query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
-    #     self.load_test_data([query])
-    #
-    #     tables_and_counts = [{
-    #         'fq_table_name':
-    #             '.'.join([self.fq_dataset_name, 'observation']),
-    #         'fq_sandbox_table_name':
-    #             self.fq_sandbox_table_names[1],
-    #         'loaded_ids': [198, 987, 876, 765],
-    #         'sandboxed_ids': [198, 987],
-    #         'fields': [
-    #             'observation_id', 'value_as_number', 'value_as_concept_id',
-    #             'observation_source_concept_id'
-    #         ],
-    #         'cleaned_values': [(198, self.value_as_number,
-    #                             self.dc_1061_value_as_concept_id, 1585889),
-    #                            (987, self.value_as_number,
-    #                             self.dc_1061_value_as_concept_id, 1333015),
-    #                            (876, 4, 111, 1585889), (765, 6, 222, 1333015)]
-    #     }]
-    #
-    #     self.default_test(tables_and_counts)
