@@ -16,6 +16,7 @@ from mock import patch
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
+from common import DEID_MAP
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -39,11 +40,11 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
 
-        combined_dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.combined_dataset_id = combined_dataset_id
+        mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.kwargs.update({'mapping_dataset_id': mapping_dataset_id})
 
         cls.rule_instance = FitbitDateShiftRule(project_id, dataset_id,
-                                                sandbox_id, combined_dataset_id)
+                                                sandbox_id, mapping_dataset_id)
 
         # can test the full functionality with one table
         cls.fq_table_names = [
@@ -51,7 +52,7 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
         ]
 
         # provide mapping table info
-        cls.fq_mapping_tablename = f"{project_id}.{combined_dataset_id}._deid_map"
+        cls.fq_mapping_tablename = f"{project_id}.{mapping_dataset_id}.{DEID_MAP}"
 
         # call super to set up the client, create datasets, and create
         # empty test tables
