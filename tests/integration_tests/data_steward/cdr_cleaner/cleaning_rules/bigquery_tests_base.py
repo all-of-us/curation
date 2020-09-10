@@ -10,7 +10,7 @@ detailed implementation is needed, the developer can still extend the base class
 only and implement their own tests.
 """
 # Python imports
-import unittest
+from unittest import TestCase, mock
 
 # Third party imports
 import google.cloud.exceptions as gc_exc
@@ -25,7 +25,7 @@ from utils import bq
 
 class BaseTest:
 
-    class BigQueryTestBase(unittest.TestCase):
+    class BigQueryTestBase(TestCase):
         """
         A base class for big query integration tests.
 
@@ -261,7 +261,8 @@ class BaseTest:
             """
             super().setUp()
 
-        def default_test(self, tables_and_test_values):
+        @mock.patch('cdr_cleaner.clean_cdr_engine.create_sandbox')
+        def default_test(self, tables_and_test_values, fake_sandbox):
             """
             Test passing the query specifications to the clean engine module.
 
@@ -292,6 +293,7 @@ class BaseTest:
                        order of the cleaned_values tuples.  the first item in
                        the list should be a unique identifier, e.g. primary key field
             """
+            fake_sandbox.return_value = self.sandbox_id
             # pre-conditions
             # validate sandbox tables don't exist yet
             for fq_table_name in self.fq_sandbox_table_names:
