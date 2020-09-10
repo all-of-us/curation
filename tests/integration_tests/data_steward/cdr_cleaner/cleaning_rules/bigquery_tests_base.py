@@ -261,8 +261,7 @@ class BaseTest:
             """
             super().setUp()
 
-        @mock.patch('cdr_cleaner.clean_cdr_engine.create_sandbox')
-        def default_test(self, tables_and_test_values, fake_sandbox):
+        def default_test(self, tables_and_test_values):
             """
             Test passing the query specifications to the clean engine module.
 
@@ -293,7 +292,6 @@ class BaseTest:
                        order of the cleaned_values tuples.  the first item in
                        the list should be a unique identifier, e.g. primary key field
             """
-            fake_sandbox.return_value = self.sandbox_id
             # pre-conditions
             # validate sandbox tables don't exist yet
             for fq_table_name in self.fq_sandbox_table_names:
@@ -311,9 +309,12 @@ class BaseTest:
 
             if self.rule_instance:
                 # test: run the queries
-                rule_class = self.rule_instance.__class__
-                engine.clean_dataset(self.project_id, self.dataset_id,
-                                     [(rule_class,)], **self.kwargs)
+                with mock.patch('cdr_cleaner.clean_cdr_engine.create_sandbox'
+                               ) as fake_sandbox:
+                    fake_sandbox.return_value = self.sandbox_id
+                    rule_class = self.rule_instance.__class__
+                    engine.clean_dataset(self.project_id, self.dataset_id,
+                                         [(rule_class,)], **self.kwargs)
             else:
                 raise RuntimeError(f"Cannot use the default_test method for "
                                    f"{self.__class__.__name__} because "
