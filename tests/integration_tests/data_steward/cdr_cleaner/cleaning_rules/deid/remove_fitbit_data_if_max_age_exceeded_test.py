@@ -37,13 +37,16 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
-        cls.combined_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        combined_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.combined_dataset_id = combined_dataset_id
+
+        cls.kwargs.update({'combined_dataset_id': combined_dataset_id})
 
         cls.rule_instance = RemoveFitbitDataIfMaxAgeExceeded(
             project_id,
             dataset_id,
             sandbox_id,
-            cls.combined_dataset_id,
+            combined_dataset_id,
         )
 
         # template for data that will be inserted into the FitBit tables
@@ -63,8 +66,7 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
                 f'{project_id}.{sandbox_id}.{table_name}')
 
         # Generates list of fully qualified table names
-        cls.fq_table_names.append(
-            f'{project_id}.{cls.combined_dataset_id}.person')
+        cls.fq_table_names.append(f'{project_id}.{combined_dataset_id}.person')
         for table in FITBIT_TABLES:
             cls.fq_table_names.append(f'{project_id}.{dataset_id}.{table}')
 

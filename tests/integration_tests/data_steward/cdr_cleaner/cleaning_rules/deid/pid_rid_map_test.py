@@ -6,7 +6,7 @@ from datetime import datetime
 from app_identity import PROJECT_ID
 import cdr_cleaner.cleaning_rules.deid.pid_rid_map as pr
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY
+from common import ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY, DEID_MAP
 
 
 class PIDtoRIDTest(BaseTest.CleaningRulesTestBase):
@@ -28,11 +28,13 @@ class PIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
 
-        cls.combined_dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.fq_deid_map_table = f'{project_id}.{cls.combined_dataset_id}._deid_map'
+        mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.mapping_dataset_id = mapping_dataset_id
+        cls.kwargs.update({'mapping_dataset_id': mapping_dataset_id})
+        cls.fq_deid_map_table = f'{project_id}.{mapping_dataset_id}.{DEID_MAP}'
 
         cls.rule_instance = pr.PIDtoRID(project_id, cls.dataset_id,
-                                        cls.sandbox_id, cls.combined_dataset_id)
+                                        cls.sandbox_id, mapping_dataset_id)
 
         cls.fq_sandbox_table_names = []
 
@@ -40,7 +42,7 @@ class PIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             f'{project_id}.{cls.dataset_id}.{table_id}'
             for table_id in pr.FITBIT_TABLES
         ] + [cls.fq_deid_map_table
-            ] + [f'{project_id}.{cls.combined_dataset_id}.person']
+            ] + [f'{project_id}.{mapping_dataset_id}.person']
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -130,7 +132,7 @@ class PIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             (2345, 0, 1980, 0, 0),
             (6789, 0, 1990, 0, 0),
             (3456, 0, 1965, 0, 0)""").render(
-            fq_dataset_name=f'{self.project_id}.{self.combined_dataset_id}')
+            fq_dataset_name=f'{self.project_id}.{self.mapping_dataset_id}')
         queries.append(pid_query)
 
         map_query = self.jinja_env.from_string("""
