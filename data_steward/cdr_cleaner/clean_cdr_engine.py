@@ -156,6 +156,27 @@ def run_queries(client, query_list, rule_info):
     return jobs
 
 
+def validate_params(clazz, **kwargs):
+    """
+    Filters kwargs based on the signature of the 'clazz'
+
+    :param clazz: Clean class or clean function to check the signature of
+    :param kwargs: optional arguments provided by the user
+    :return: filtered dictionary of kwargs
+    :raises ValueError: if a required param for 'clazz' is missing from kwargs
+    """
+    params = inspect.signature(clazz).parameters
+    mandatory_params = ['project_id', 'dataset_id']
+    rule_params = [param for param in params if param not in mandatory_params]
+    # filter kwargs based on required params
+    kwargs = {k: v for k, v in kwargs.items() if k in rule_params}
+    if any(param not in kwargs.keys() for param in rule_params):
+        raise ValueError(
+            f'Params {[param for param in rule_params if param not in kwargs.keys()]} '
+            f'not provided for cleaning rule {clazz.__name__}')
+    return kwargs
+
+
 def infer_rule(clazz, project_id, dataset_id, **kwargs):
     """
     Extract information about the cleaning rule
@@ -175,9 +196,7 @@ def infer_rule(clazz, project_id, dataset_id, **kwargs):
                 module_name: name of the module containing the function
                 line_no: points to the source line where query_function is
     """
-    params = inspect.signature(clazz).parameters
-    # filter kwargs based on required params
-    kwargs = {k: v for k, v in kwargs.items() if k in params}
+    kwargs = validate_params(clazz, **kwargs)
     if inspect.isclass(clazz) and issubclass(clazz, BaseCleaningRule):
         instance = clazz(project_id, dataset_id, **kwargs)
 
