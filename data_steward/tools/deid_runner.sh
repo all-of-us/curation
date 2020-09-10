@@ -11,6 +11,7 @@ Usage: deid_runner.sh
   --dataset_release_tag <release tag for the CDR>
   --cope_survey_dataset <dataset where RDR provided cope survey mapping table is loaded>
   --cope_survey_table_name <name of the cope survey mappig table>
+  --deid_max_age <integer maximum age for de-identified participants>
 "
 
 while true; do
@@ -39,6 +40,10 @@ while true; do
     cope_survey_table_name=$2
     shift 2
     ;;
+  --deid_max_age)
+    deid_max_age=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -47,7 +52,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${cope_survey_dataset}" ]] || [[ -z "${cope_survey_table_name}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${cope_survey_dataset}" ]] || [[ -z "${cope_survey_table_name}" ]] || [[ -z "${deid_max_age}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -90,13 +95,13 @@ python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${registered_cdr_dei
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${registered_cdr_deid}"
 
 # apply deidentification on combined dataset
-python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" -p "${key_file}" -a submit --interactive -c --age_limit 89 --odataset "${registered_cdr_deid}"
+python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" --private_key "${key_file}" --action submit --interactive --console-log --age_limit "${deid_max_age}" --odataset "${registered_cdr_deid}"
 
 # generate ext tables in deid dataset
-python "${TOOLS_DIR}/generate_ext_tables.py" -p "${APP_ID}" -d "${registered_cdr_deid}" -c "${cdr_id}" -s
+python "${TOOLS_DIR}/generate_ext_tables.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --combined_dataset_id "${cdr_id}" -s
 
 # update the observation_ext table with survey_version info.  should become a formal cleaning rule in the future.
-python "${CLEANER_DIR}/manual_cleaning_rules/survey_version_info.py" -p "${APP_ID}" -d "${registered_cdr_deid}" -b "${cdr_deid}_sandbox" --mapping-dataset "${cdr_id}" --cope_survey_dataset "${cope_survey_dataset}" --cope_survey_table "${cope_survey_table_name}" -s 2>&1 | tee survey_versioning.txt
+python "${CLEANER_DIR}/manual_cleaning_rules/survey_version_info.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${cdr_deid}_sandbox" --mapping-dataset "${cdr_id}" --cope_survey_dataset "${cope_survey_dataset}" --cope_survey_table "${cope_survey_table_name}" -s 2>&1 | tee survey_versioning.txt
 
 cdr_deid_base_staging="${registered_cdr_deid}_base_staging"
 cdr_deid_base="${registered_cdr_deid}_base"
@@ -104,7 +109,7 @@ cdr_deid_clean_staging="${registered_cdr_deid}_clean_staging"
 cdr_deid_clean="${registered_cdr_deid}_clean"
 
 # Copy cdr_metadata table
-python "${TOOLS_DIR}/add_cdr_metadata.py" --component "copy" --project_id ${app_id} --target_dataset ${registered_cdr_deid} --source_dataset ${cdr_id}
+python "${TOOLS_DIR}/add_cdr_metadata.py" --component "copy" --project_id ${APP_ID} --target_dataset ${registered_cdr_deid} --source_dataset ${cdr_id}
 
 # create empty de-id_base dataset to apply cleaning rules
 bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${registered_cdr_deid}" --label "type:staging" --label "release_tag:${dataset_release_tag}" --label "de-identified:true" ${APP_ID}:${cdr_deid_base_staging}
@@ -120,17 +125,17 @@ data_stage='deid_base'
 python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee deid_base_cleaning_log.txt
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${APP_ID}" -d "${cdr_deid_base_staging}" -n "${cdr_deid_base}"
+python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${APP_ID}" --dataset_id "${cdr_deid_base_staging}" --snapshot_dataset_id "${cdr_deid_base}"
 
 bq update --description "${version} De-identified Base version of ${cdr_id}" --label "type:deid_base" --label "release_tag:${dataset_release_tag}" --label "de-identified:true" ${APP_ID}:${cdr_deid_base}
 
 # Add qa_handoff_date to cdr_metadata table
-python "${TOOLS_DIR}/add_cdr_metadata.py" --component "insert" --project_id ${app_id} --target_dataset ${cdr_deid_base} --qa_handoff_date ${HANDOFF_DATE}
+python "${TOOLS_DIR}/add_cdr_metadata.py" --component "insert" --project_id ${APP_ID} --target_dataset ${cdr_deid_base} --qa_handoff_date ${HANDOFF_DATE}
 
 #copy sandbox dataset
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${cdr_deid_base_staging}_sandbox" --target_dataset "${cdr_deid_base}_sandbox"
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset "${cdr_deid_base_staging}_sandbox" --target_dataset "${cdr_deid_base}_sandbox"
 
-# remove intemideary datasets
+# remove intermediary datasets
 bq rm -r -d "${cdr_deid_base_staging}_sandbox"
 bq rm -r -d "${cdr_deid_base_staging}"
 
@@ -148,14 +153,14 @@ data_stage='deid_clean'
 python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee deid_clean_cleaning_log.txt
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${APP_ID}" -d "${cdr_deid_clean_staging}" -n "${cdr_deid_clean}"
+python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${APP_ID}" --dataset_id "${cdr_deid_clean_staging}" --snapshot_dataset_id "${cdr_deid_clean}"
 
 bq update --description "${version} De-identified Clean version of ${cdr_deid_base}" --label "type:deid_clean" --label "release_tag:${dataset_release_tag}" --label "de-identified:true" ${APP_ID}:${cdr_deid_clean}
 
 #copy sandbox dataset
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${cdr_deid_clean_staging}_sandbox" --target_dataset "${cdr_deid_clean}_sandbox"
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset "${cdr_deid_clean_staging}_sandbox" --target_dataset "${cdr_deid_clean}_sandbox"
 
-# remove intemideary datasets
+# remove intermediary datasets
 bq rm -r -d "${cdr_deid_clean_staging}_sandbox"
 bq rm -r -d "${cdr_deid_clean_staging}"
 
