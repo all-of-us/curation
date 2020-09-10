@@ -56,7 +56,7 @@ class ObservationSourceConceptIDRowSuppressionTest(
         dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
-        cls.project_id = project_id
+        cls.sandbox_id = sandbox_id
 
         cls.rule_instance = ObservationSourceConceptIDRowSuppression(
             project_id, dataset_id, sandbox_id)
