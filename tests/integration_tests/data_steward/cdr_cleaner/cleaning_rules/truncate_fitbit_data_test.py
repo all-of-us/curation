@@ -36,7 +36,7 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = project_id
 
         # Set the expected test datasets
-        dataset_id = os.environ.get('FITBIT_DATASET_ID')
+        dataset_id = os.environ.get('RDR_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
 
         cls.query_class = TruncateFitbitData(project_id, dataset_id, sandbox_id)
