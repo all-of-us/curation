@@ -4,7 +4,7 @@ Integration test for clean_ppi_numeric_fields_using_parameters module
 Apply value ranges to ensure that values are reasonable and to minimize the likelihood
 of sensitive information (like phone numbers) within the free text fields.
 
-Original Issues: DC-1061, DC-827, DC-502, DC-487
+Original Issues: DC-1058, DC-1061, DC-827, DC-502, DC-487
 
 The intent is to ensure that numeric free-text fields that are not manipulated by de-id
 have value range restrictions applied to the value_as_number field across the entire dataset.
@@ -64,6 +64,7 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         self.value_as_number = None
         self.value_as_concept_id = 2000000010
         self.dc_1061_value_as_concept_id = 2000000013
+        self.dc_1058_value_as_concept_id = 2000000012
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
@@ -98,7 +99,11 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 (198, 111, 0, date('2020-09-06'), 0, 21, 111, 1585889),
                 (987, 222, 0, date('2020-09-06'), 0, 12, 222, 1333015),
                 (876, 333, 0, date('2020-09-06'), 0, 4, 111, 1585889),
-                (765, 444, 0, date('2020-09-06'), 0, 6, 222, 1333015)""")
+                (765, 444, 0, date('2020-09-06'), 0, 6, 222, 1333015),
+                (111, 555, 0, date('2020-09-11'), 0, 7, 333, 1333023),
+                (222, 666, 0, date('2020-09-11'), 0, 5, 444, 1333023),
+                (333, 777, 0, date('2020-09-11'), 0, 7, 333, 1585890),
+                (444, 888, 0, date('2020-09-11'), 0, 5, 444, 1585890)""")
 
         query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
         self.load_test_data([query])
@@ -111,9 +116,11 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [
                 123, 345, 567, 789, 555, 121, 666, 777, 888, 999, 321, 198, 987,
-                876, 765
+                876, 765, 111, 222, 333, 444
             ],
-            'sandboxed_ids': [123, 345, 567, 789, 555, 121, 666, 777, 198, 987],
+            'sandboxed_ids': [
+                123, 345, 567, 789, 555, 121, 666, 777, 198, 987, 111, 333
+            ],
             'fields': [
                 'observation_id', 'observation_concept_id', 'value_as_number',
                 'value_as_concept_id', 'observation_source_concept_id'
@@ -141,7 +148,13 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                                (987, 0, self.value_as_number,
                                 self.dc_1061_value_as_concept_id, 1333015),
                                (876, 0, 4, 111, 1585889),
-                               (765, 0, 6, 222, 1333015)]
+                               (765, 0, 6, 222, 1333015),
+                               (111, 0, self.value_as_number,
+                                self.dc_1058_value_as_concept_id, 1333023),
+                               (222, 0, 5, 444, 1333023),
+                               (333, 0, self.value_as_number,
+                                self.dc_1058_value_as_concept_id, 1585890),
+                               (444, 0, 5, 444, 1585890)]
         }]
 
         self.default_test(tables_and_counts)
