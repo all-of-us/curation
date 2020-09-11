@@ -116,15 +116,15 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
             'to new AOU custom concept 2000000013 for households with high amount of individuals.'
             'Sets value_as_number to NULL and value_as_concept_id and value_as_number '
             'to new AOU custom concept 2000000012 for households with 6 or more individuals '
-            'under the age of 18'
-        )
-        super().__init__(issue_numbers=['DC1058', 'DC1061', 'DC827', 'DC502', 'DC487'],
-                         description=desc,
-                         affected_datasets=[cdr_consts.RDR],
-                         affected_tables=['observation'],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+            'under the age of 18')
+        super().__init__(
+            issue_numbers=['DC1058', 'DC1061', 'DC827', 'DC502', 'DC487'],
+            description=desc,
+            affected_datasets=[cdr_consts.RDR],
+            affected_tables=['observation'],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id)
 
     def get_query_specs(self):
         """
