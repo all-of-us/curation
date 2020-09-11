@@ -176,7 +176,9 @@ keep_gt_rule_obs AS
   oc_observation_id
 FROM parent_child_combs
 WHERE
-(rule_type = 'keep_gt' AND op_value_as_number > CAST(ARRAY_TO_STRING(parent_values, '') AS FLOAT64))),
+(rule_type = 'keep_gt'
+    AND SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64) IS NOT NULL 
+    AND op_value_as_number > SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64))),
 
 -- rows to drop with values not in 'keep' rule_type values --
 -- note that this may include child rows which are resulting --
@@ -197,9 +199,10 @@ not_keep_gt_rule_obs AS
   oc_observation_id
 FROM parent_child_combs
 WHERE
-(rule_type = 'keep_gt' AND 
-    (op_value_as_number <= CAST(ARRAY_TO_STRING(parent_values, '') AS FLOAT64) OR 
-    op_value_as_number IS NULL)))
+(rule_type = 'keep_gt' 
+    AND SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64) IS NOT NULL
+    AND (op_value_as_number <= SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64)
+        OR op_value_as_number IS NULL)))
 
 -- final list of rows to drop --
 SELECT 
