@@ -150,6 +150,7 @@ FROM rule r
     ON r.child_question = oc.observation_source_value
   JOIN `{{src_table.project}}.{{src_table.dataset_id}}.{{src_table.table_id}}` op
     ON op.person_id = oc.person_id
+    -- account for repeated questions associated with longitudinal surveys (i.e. COPE) --
     AND op.questionnaire_response_id = oc.questionnaire_response_id
     AND op.observation_source_value = r.parent_question),
 
@@ -178,6 +179,7 @@ FROM parent_child_combs
 WHERE
 (rule_type = 'keep_gt'
     AND SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64) IS NOT NULL 
+    {{ '/* Every keep_gt rule row should be associated with one parent_value */' }}
     AND op_value_as_number > SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64))),
 
 -- rows to drop with values not in 'keep' rule_type values --
