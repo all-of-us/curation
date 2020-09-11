@@ -53,6 +53,15 @@ The columns of the lookup table are described below.
  **TODO** Complete the Basics and Overall Health branching logic CSV files
  * Some rules indicate child questions to keep and others indicate child questions to remove
  **TODO** Standardize branching logic CSV files
+ 
+ DC-1055
+  * Support cope survey branching logic errors.
+  * Account for branching logic issues where child questions exist due to incorrect branching
+    logic from one parent q/a and correct branching logic from a different parent q/a.
+    In such cases, the child question is considered correct and must not be dropped.
+  * In certain cases, the `value_as_number` needs to be used for the parent answer instead of 
+    `value_source_value`. Currently only supports `>` and this needs to be specified via the
+    `keep_gt` rule type and `parent_value` must be a float.
 """
 
 from pathlib import Path
@@ -67,11 +76,12 @@ from common import OBSERVATION
 from resources import PPI_BRANCHING_RULE_PATHS
 from utils import bq
 
-ISSUE_NUMBER = 'dc-545'
+ISSUE_NUMBERS = ['dc-545', 'dc-1055']
 PPI_BRANCHING_TABLE_PREFIX = '_ppi_branching'
 RULES_LOOKUP_TABLE_ID = f'{PPI_BRANCHING_TABLE_PREFIX}_rules_lookup'
 OBSERVATION_BACKUP_TABLE_ID = f'{PPI_BRANCHING_TABLE_PREFIX}_observation_drop'
 OBSERVATION_STAGE_TABLE_ID = f'{PPI_BRANCHING_TABLE_PREFIX}_observation_stage'
+
 BACKUP_ROWS_QUERY = bq.JINJA_ENV.from_string("""
 WITH rule AS
 (SELECT
@@ -83,21 +93,144 @@ WITH rule AS
 FROM
   `{{lookup_table.project}}.{{lookup_table.dataset_id}}.{{lookup_table.table_id}}`
 WHERE parent_value IS NOT NULL
-GROUP BY rule_type, child_question, parent_question)
+GROUP BY rule_type, child_question, parent_question),
 
-SELECT 
-  -- SELECT * permissible here because it makes this MORE resilient to schema changes --
-  oc.*
+-- generate master list of parent child combinations --
+parent_child_combs AS 
+(SELECT
+-- rule cols --
+    r.rule_type,
+    r.child_question,
+    r.parent_question,
+    r.parent_values,
+-- child cols --
+    oc.observation_id as oc_observation_id,
+    oc.person_id as oc_person_id,
+    oc.observation_concept_id as oc_observation_concept_id,
+    oc.observation_date as oc_observation_date,
+    oc.observation_datetime as oc_observation_datetime,
+    oc.observation_type_concept_id as oc_observation_type_concept_id,
+    oc.value_as_number as oc_value_as_number,
+    oc.value_as_string as oc_value_as_string,
+    oc.value_as_concept_id as oc_value_as_concept_id,
+    oc.qualifier_concept_id as oc_qualifier_concept_id,
+    oc.unit_concept_id as oc_unit_concept_id,
+    oc.provider_id as oc_provider_id,
+    oc.visit_occurrence_id as oc_visit_occurrence_id,
+    oc.observation_source_value as oc_observation_source_value,
+    oc.observation_source_concept_id as oc_observation_source_concept_id,
+    oc.unit_source_value as oc_unit_source_value,
+    oc.qualifier_source_value as oc_qualifier_source_value,
+    oc.value_source_concept_id as oc_value_source_concept_id,
+    oc.value_source_value as oc_value_source_value,
+    oc.questionnaire_response_id as oc_questionnaire_response_id,
+-- parent cols --
+    op.observation_id as op_observation_id,
+    op.person_id as op_person_id,
+    op.observation_concept_id as op_observation_concept_id,
+    op.observation_date as op_observation_date,
+    op.observation_datetime as op_observation_datetime,
+    op.observation_type_concept_id as op_observation_type_concept_id,
+    op.value_as_number as op_value_as_number,
+    op.value_as_string as op_value_as_string,
+    op.value_as_concept_id as op_value_as_concept_id,
+    op.qualifier_concept_id as op_qualifier_concept_id,
+    op.unit_concept_id as op_unit_concept_id,
+    op.provider_id as op_provider_id,
+    op.visit_occurrence_id as op_visit_occurrence_id,
+    op.observation_source_value as op_observation_source_value,
+    op.observation_source_concept_id as op_observation_source_concept_id,
+    op.unit_source_value as op_unit_source_value,
+    op.qualifier_source_value as op_qualifier_source_value,
+    op.value_source_concept_id as op_value_source_concept_id,
+    op.value_source_value as op_value_source_value,
+    op.questionnaire_response_id as op_questionnaire_response_id
 FROM rule r
   JOIN `{{src_table.project}}.{{src_table.dataset_id}}.{{src_table.table_id}}` oc
     ON r.child_question = oc.observation_source_value
   JOIN `{{src_table.project}}.{{src_table.dataset_id}}.{{src_table.table_id}}` op
     ON op.person_id = oc.person_id
-    AND op.observation_source_value = r.parent_question
+    -- account for repeated questions associated with longitudinal surveys (i.e. COPE) --
+    AND op.questionnaire_response_id = oc.questionnaire_response_id
+    AND op.observation_source_value = r.parent_question),
+
+-- rows to drop via 'drop' rule_type --
+drop_rule_obs AS
+(SELECT 
+  oc_observation_id
+FROM parent_child_combs
 WHERE
-(r.rule_type = 'drop' AND op.value_source_value IN UNNEST(r.parent_values)) OR
-(r.rule_type = 'keep' AND op.value_source_value NOT IN UNNEST(r.parent_values))
+(rule_type = 'drop' AND op_value_source_value IN UNNEST(parent_values))),
+
+-- rows to keep via 'keep' rule_type --
+keep_rule_obs AS
+(SELECT 
+  oc_observation_id
+FROM parent_child_combs
+WHERE
+(rule_type = 'keep' AND op_value_source_value IN UNNEST(parent_values))),
+
+-- rows to keep via 'keep_gt' rule_type --
+-- ONLY for rules using gte with one value --
+keep_gt_rule_obs AS 
+(SELECT 
+  oc_observation_id
+FROM parent_child_combs
+WHERE
+(rule_type = 'keep_gt'
+    AND SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64) IS NOT NULL 
+    {{ '/* Every keep_gt rule row should be associated with one parent_value */' }}
+    AND op_value_as_number > SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64))),
+
+-- rows to drop with values not in 'keep' rule_type values --
+-- note that this may include child rows which are resulting --
+-- from correct branching logic via a different parent q/a --
+not_keep_rule_obs AS 
+(SELECT 
+  oc_observation_id
+FROM parent_child_combs
+WHERE
+(rule_type = 'keep' AND op_value_source_value NOT IN UNNEST(parent_values))),
+
+-- rows to drop with values 'null' or less than 'keep_gt' rule_type values --
+-- note that this may include child rows which are resulting --
+-- from correct branching logic via a different parent q/a --
+-- ONLY for rules using gte with one value --
+not_keep_gt_rule_obs AS 
+(SELECT 
+  oc_observation_id
+FROM parent_child_combs
+WHERE
+(rule_type = 'keep_gt' 
+    AND SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64) IS NOT NULL
+    AND (op_value_as_number <= SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64)
+        OR op_value_as_number IS NULL)))
+
+-- final list of rows to drop --
+SELECT 
+  o.*
+FROM
+  `{{src_table.project}}.{{src_table.dataset_id}}.{{src_table.table_id}}` o
+WHERE observation_id IN
+(SELECT oc_observation_id 
+    FROM drop_rule_obs
+    UNION ALL
+SELECT oc_observation_id
+    FROM not_keep_rule_obs
+    UNION ALL
+SELECT oc_observation_id 
+    FROM not_keep_gt_rule_obs)
+AND observation_id NOT IN
+-- exclude 'keep' rows so that child rows resulting from correct --
+-- branching logic via a different parent q/a are not dropped, --
+-- even if they are marked for deletion via some parent q/a --
+(SELECT oc_observation_id 
+    FROM keep_rule_obs
+    UNION ALL
+SELECT oc_observation_id 
+    FROM keep_gt_rule_obs)
 """)
+
 CLEANED_ROWS_QUERY = bq.JINJA_ENV.from_string("""
 SELECT {{ scope or 'src.*' }} 
 FROM `{{src.project}}.{{src.dataset_id}}.{{src.table_id}}` src
@@ -116,7 +249,7 @@ class PpiBranching(BaseCleaningRule):
             'Store observation rows that violate the rules in a sandbox table. '
             'Stage the cleaned rows in a sandbox table. '
             'Drop and create the observation table with rows from stage.')
-        super().__init__(issue_numbers=[ISSUE_NUMBER],
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          project_id=project_id,
