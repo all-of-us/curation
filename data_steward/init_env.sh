@@ -59,6 +59,7 @@ export BIGQUERY_DATASET_ID="${DATASET_PREFIX}_ehr"
 export RDR_DATASET_ID="${DATASET_PREFIX}_rdr"
 export COMBINED_DATASET_ID="${DATASET_PREFIX}_combined"
 export UNIONED_DATASET_ID="${DATASET_PREFIX}_unioned"
+export FITBIT_DATASET_ID="${DATASET_PREFIX}_fitbit"
 
 # .circlerc is sourced before each test and deploy command
 # See https://www.compose.com/articles/experience-with-circleci/#dontcommitcredentials
@@ -79,5 +80,6 @@ then
   echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >> ${BASH_ENV}
   echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >> ${BASH_ENV}
   echo "export VOCABULARY_DATASET=${VOCABULARY_DATASET}" >> ${BASH_ENV}
+  echo "export FITBIT_DATASET_ID=${FITBIT_DATASET_ID}" >> ${BASH_ENV}
   echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >> ${BASH_ENV}
 fi
