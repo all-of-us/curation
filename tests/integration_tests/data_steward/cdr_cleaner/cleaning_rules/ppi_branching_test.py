@@ -43,11 +43,15 @@ TEST_DATA_ROWS = {
     (8000, 8000, 'basics_xx', None, 'PMI_Skip', None, 7),
     (8001, 8000, 'basics_xx20', None, 'PMI_Skip', None, 7),
     (9000, 9000, 'basics_xx', 0.1, 'PMI_Skip', None, 7),
-    (9001, 9000, 'basics_xx20', None, 'PMI_Skip', None, 7)
+    (9001, 9000, 'basics_xx20', None, 'PMI_Skip', None, 7),
+    (10000, 10000, 'basics_xx', 0.0, 'PMI_Skip', None, 8),
+    (10001, 10000, 'basics_xx20', None, 'PMI_Skip', None, 8)
 }
 """Set of tuples used to create rows in the observation table"""
 
-TEST_DATA_DROP = {r for r in TEST_DATA_ROWS if r[0] in (3001, 5001, 8001)}
+TEST_DATA_DROP = {
+    r for r in TEST_DATA_ROWS if r[0] in (3001, 5001, 8001, 10001)
+}
 """Set of tuples in TEST_DATA_ROWS that should be removed after rule is run"""
 
 TEST_DATA_KEEP = set(TEST_DATA_ROWS) - set(TEST_DATA_DROP)
