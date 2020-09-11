@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# print executed commands
+set -x
+
 # Create buckets
 for b in ${DRC_BUCKET_NAME} ${BUCKET_NAME_FAKE} ${BUCKET_NAME_NYC} ${BUCKET_NAME_PITT} ${BUCKET_NAME_CHS} ${BUCKET_NAME_UNIONED_EHR}; do
   $(git rev-parse --show-toplevel)/data_steward/ci/create_bucket.sh ${b}
@@ -22,6 +25,7 @@ VOCABULARY="${APPLICATION_ID}:${VOCABULARY_DATASET}"
 DEST_PREFIX="${APPLICATION_ID}:${BIGQUERY_DATASET_ID}"
 for t in $(bq ls "${VOCABULARY}" | grep TABLE | awk '{print $1}')
 do
-  CLONE_CMD="bq cp --project_id=${APPLICATION_ID} -n ${VOCABULARY}.${t} ${DEST_PREFIX}.${t}"
-  echo $(${CLONE_CMD})
+  bq cp --project_id="${APPLICATION_ID}" -n "${VOCABULARY}.${t}" "${DEST_PREFIX}.${t}"
 done
+
+set +x
