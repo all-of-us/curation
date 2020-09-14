@@ -96,14 +96,19 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 (888, 888888, 1585873, date('2015-07-15'), 0, 15, 444, 0),
                 (999, 999999, 1586159, date('2015-07-15'), 0, 16, 444, 0),
                 (321, 000000, 1586162, date('2015-07-15'), 0, 17, 444, 0),
+                -- 11+ generalization test setup --
                 (198, 111, 0, date('2020-09-06'), 0, 21, 111, 1585889),
                 (987, 222, 0, date('2020-09-06'), 0, 12, 222, 1333015),
                 (876, 333, 0, date('2020-09-06'), 0, 4, 111, 1585889),
                 (765, 444, 0, date('2020-09-06'), 0, 6, 222, 1333015),
+                (654, 444, 0, date('2020-09-06'), 0, 11, 222, 1333015),
+                (6543, 444, 0, date('2020-09-06'), 0, 10, 222, 1333015),
+                -- 6+ generalization test setup --
                 (111, 555, 0, date('2020-09-11'), 0, 7, 333, 1333023),
                 (222, 666, 0, date('2020-09-11'), 0, 5, 444, 1333023),
                 (333, 777, 0, date('2020-09-11'), 0, 7, 333, 1585890),
-                (444, 888, 0, date('2020-09-11'), 0, 5, 444, 1585890)""")
+                (444, 888, 0, date('2020-09-11'), 0, 5, 444, 1585890),
+                (543, 999, 0, date('2020-09-11'), 0, 6, 543, 1585890)""")
 
         query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
         self.load_test_data([query])
@@ -116,7 +121,7 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [
                 123, 345, 567, 789, 555, 121, 666, 777, 888, 999, 321, 198, 987,
-                876, 765, 111, 222, 333, 444
+                876, 765, 111, 222, 333, 444, 543, 654, 6543
             ],
             'sandboxed_ids': [
                 123, 345, 567, 789, 555, 121, 666, 777, 198, 987, 111, 333
@@ -149,12 +154,15 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                                 self.dc_1061_value_as_concept_id, 1333015),
                                (876, 0, 4, 111, 1585889),
                                (765, 0, 6, 222, 1333015),
+                               (654, 0, 11, 222, 1333015),
+                               (6543, 0, 10, 222, 1333015),
                                (111, 0, self.value_as_number,
                                 self.dc_1058_value_as_concept_id, 1333023),
                                (222, 0, 5, 444, 1333023),
                                (333, 0, self.value_as_number,
                                 self.dc_1058_value_as_concept_id, 1585890),
-                               (444, 0, 5, 444, 1585890)]
+                               (444, 0, 5, 444, 1585890),
+                               (543, 0, 6, 543, 1585890)],
         }]
 
         self.default_test(tables_and_counts)
