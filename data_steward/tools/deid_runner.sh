@@ -127,7 +127,7 @@ python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee de
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${APP_ID}" --dataset_id "${cdr_deid_base_staging}" --snapshot_dataset_id "${cdr_deid_base}"
 
-bq update --description "${version} De-identified Base version of ${cdr_id}" --set_label "type:deid_base" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:true" ${APP_ID}:${cdr_deid_base}
+bq update --description "${version} De-identified Base version of ${cdr_id}" --set_label "type:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:true" ${APP_ID}:${cdr_deid_base}
 
 # Add qa_handoff_date to cdr_metadata table
 python "${TOOLS_DIR}/add_cdr_metadata.py" --component "insert" --project_id ${APP_ID} --target_dataset ${cdr_deid_base} --qa_handoff_date ${HANDOFF_DATE}
@@ -155,7 +155,7 @@ python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee de
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${APP_ID}" --dataset_id "${cdr_deid_clean_staging}" --snapshot_dataset_id "${cdr_deid_clean}"
 
-bq update --description "${version} De-identified Clean version of ${cdr_deid_base}" --set_label "type:deid_clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:true" ${APP_ID}:${cdr_deid_clean}
+bq update --description "${version} De-identified Clean version of ${cdr_deid_base}" --set_label "type:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:true" ${APP_ID}:${cdr_deid_clean}
 
 #copy sandbox dataset
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset "${cdr_deid_clean_staging}_sandbox" --target_dataset "${cdr_deid_clean}_sandbox"
