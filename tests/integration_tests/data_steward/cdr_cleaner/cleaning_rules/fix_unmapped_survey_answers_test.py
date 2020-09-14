@@ -156,8 +156,9 @@ class FixUnmappedSurveyAnswersTest(BaseTest.CleaningRulesTestBase):
 
         # Load test data
         self.load_test_data([
-            insert_observation_query, insert_concept_query,
-            insert_concept_relationship_query
+            f'''{insert_observation_query};
+                {insert_concept_query};
+                {insert_concept_relationship_query}'''
         ])
 
         # Expected results list

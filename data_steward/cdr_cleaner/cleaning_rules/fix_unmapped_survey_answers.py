@@ -1,5 +1,16 @@
 """Original Issues: DC-1043, DC-1053 
+PPI records may have value_as_concept_id set to 0 by the RDR ETL as a result of changes to the 
+vocabulary. This rule sets value_as_concept_id to an appropriate value for these records. Before 
+they are updated rows are stored in a sandbox table with the same columns as observation and 
+an additional column new_value_as_concept_id.
 
+The RDR ETL populates value_as_concept_id with a concept in the concept_relationship table 
+having the 'Maps to value' relationship with value_source_concept_id, however concept_relationship
+may not have such a mapping for all PPI answer concepts and in these cases the associated 
+value_as_concept_id will get a default value of 0. For these rows this rule uses concepts related 
+to value_source_concept_id by 'Maps to' instead. In order to prevent usage of erroneous mappings 
+which may be present in the vocabulary, the target concept is also constrained to a limited set 
+of concept classes ('Answer', 'Context-dependent', 'Clinical Finding', 'Unit').
 PPI answers are mapped to standard answer concepts in concept_relationship through 'Maps to 
 value' (it has been this case historically and it is still the case now), however, there are a 
 bunch of PPI answer concepts missing such relationships in concept_relationship. Interestingly, 
@@ -26,10 +37,10 @@ Module
 
 Question or Module concept classes don't make sense so will get excluded. In conclusion, 
 
-1. For standard concepts --> Set value_as_concept_id to the source_value_concept_id. 
+1. For standard concepts --> Set value_as_concept_id to the value_source_concept_id. 
 
 2. For deprecated concepts --> Set value_as_concept_id to 0. 
-Actually we don't need to do anything for this case because visit_as_concept_id is already 0. 
+Actually we don't need to do anything for this case because value_as_concept_id is already 0. 
 
 3, For non-standard concepts --> Set value_as_concept_id to standard concept ids mapped through 
 'Maps to' for the concept classes ( 'Answer', 'Context-dependent', 'Clinical Finding', 
