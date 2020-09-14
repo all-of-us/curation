@@ -63,8 +63,8 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         """
         self.value_as_number = None
         self.value_as_concept_id = 2000000010
-        self.dc_1061_value_as_concept_id = 2000000013
-        self.dc_1058_value_as_concept_id = 2000000012
+        self.eleven_plus_value_as_concept_id = 2000000013
+        self.six_plus_value_as_concept_id = 2000000012
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
@@ -124,7 +124,7 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 876, 765, 111, 222, 333, 444, 543, 654, 6543
             ],
             'sandboxed_ids': [
-                123, 345, 567, 789, 555, 121, 666, 777, 198, 987, 111, 333
+                123, 345, 567, 789, 555, 121, 666, 777, 198, 987, 111, 333, 543, 654
             ],
             'fields': [
                 'observation_id', 'observation_concept_id', 'value_as_number',
@@ -149,20 +149,20 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                                (999, 1586159, 16, 444, 0),
                                (321, 1586162, 17, 444, 0),
                                (198, 0, self.value_as_number,
-                                self.dc_1061_value_as_concept_id, 1585889),
+                                self.eleven_plus_value_as_concept_id, 1585889),
                                (987, 0, self.value_as_number,
-                                self.dc_1061_value_as_concept_id, 1333015),
+                                self.eleven_plus_value_as_concept_id, 1333015),
                                (876, 0, 4, 111, 1585889),
                                (765, 0, 6, 222, 1333015),
-                               (654, 0, 11, 222, 1333015),
+                               (654, 0, self.value_as_number, 222, 1333015),
                                (6543, 0, 10, 222, 1333015),
                                (111, 0, self.value_as_number,
-                                self.dc_1058_value_as_concept_id, 1333023),
+                                self.six_plus_value_as_concept_id, 1333023),
                                (222, 0, 5, 444, 1333023),
                                (333, 0, self.value_as_number,
-                                self.dc_1058_value_as_concept_id, 1585890),
+                                self.six_plus_value_as_concept_id, 1585890),
                                (444, 0, 5, 444, 1585890),
-                               (543, 0, 6, 543, 1585890)],
+                               (543, 0, self.value_as_number, 543, 1585890)],
         }]
 
         self.default_test(tables_and_counts)

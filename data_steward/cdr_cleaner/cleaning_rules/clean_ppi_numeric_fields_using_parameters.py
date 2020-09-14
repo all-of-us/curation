@@ -47,9 +47,9 @@ OR
 OR
     (observation_concept_id = 1586162 AND (value_as_number < 0 OR value_as_number > 99))
 OR
-    (observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 11))
+    (observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 10))
 OR
-    (observation_source_concept_id IN (1333023, 1585890) AND (value_as_number < 0 OR value_as_number > 6)))
+    (observation_source_concept_id IN (1333023, 1585890) AND (value_as_number < 0 OR value_as_number > 5)))
 """)
 
 CLEAN_INVALID_VALUES_QUERY = JINJA_ENV.from_string("""
@@ -64,8 +64,8 @@ CASE
     WHEN observation_concept_id = 1585890 AND (value_as_number < 0 OR value_as_number > 20) THEN NULL
     WHEN observation_concept_id IN (1585795, 1585802, 1585864, 1585870, 1585873, 1586159, 1586162) AND (value_as_number < 0 OR value_as_number > 99) THEN NULL
     WHEN observation_concept_id = 1585820 AND (value_as_number < 0 OR value_as_number > 255) THEN NULL
-    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 11) THEN NULL
-    WHEN observation_source_concept_id IN (1333023, 1585890) AND (value_as_number < 0 OR value_as_number > 6) THEN NULL
+    WHEN observation_source_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 10) THEN NULL
+    WHEN observation_source_concept_id IN (1333023, 1585890) AND (value_as_number < 0 OR value_as_number > 5) THEN NULL
   ELSE value_as_number
 END AS
     value_as_number,
