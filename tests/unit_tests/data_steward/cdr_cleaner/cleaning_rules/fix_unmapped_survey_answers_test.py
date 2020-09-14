@@ -8,6 +8,7 @@ from cdr_cleaner.cleaning_rules.fix_unmapped_survey_answers import (
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from common import PERSON
 
 
 class FixUnmappedSurveyAnswersTest(unittest.TestCase):
@@ -37,6 +38,15 @@ class FixUnmappedSurveyAnswersTest(unittest.TestCase):
     def test_setup_rule(self):
         # Test
         self.query_class.setup_rule(self.client)
+
+    def test_sandbox_table_for(self):
+        self.assertEqual(self.query_class.sandbox_table_for(OBSERVATION),
+                         self.sandbox_table_name)
+
+        # Test if the error is raised when the table is not an affected table defined in this
+        # cleaning rule
+        with self.assertRaises(LookupError):
+            self.query_class.sandbox_table_for(PERSON)
 
     def test_get_sandbox_tablenames(self):
         self.assertListEqual(self.query_class.get_sandbox_tablenames(),

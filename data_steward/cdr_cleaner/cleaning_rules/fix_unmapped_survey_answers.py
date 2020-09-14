@@ -48,9 +48,6 @@ Actually we don't need to do anything for this case because value_as_concept_id 
 
 import logging
 
-# Third party imports
-from jinja2 import Environment
-
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
@@ -147,7 +144,7 @@ class FixUnmappedSurveyAnswers(BaseCleaningRule):
                 SANDBOX_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY.render(
                     project=self.project_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    sandbox_table=self.get_sandbox_tablenames()[0],
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
                     dataset=self.dataset_id)
         }
 
@@ -156,7 +153,7 @@ class FixUnmappedSurveyAnswers(BaseCleaningRule):
                 UPDATE_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY.render(
                     project=self.project_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    sandbox_table=self.get_sandbox_tablenames()[0],
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
                     dataset=self.dataset_id),
             cdr_consts.DESTINATION_TABLE:
                 OBSERVATION,
@@ -184,11 +181,22 @@ class FixUnmappedSurveyAnswers(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        sandbox_table_names = list()
-        for i in range(0, len(self._affected_tables)):
-            sandbox_table_names.append('_'.join(self._issue_numbers).lower() +
-                                       '_' + self._affected_tables[i])
-        return sandbox_table_names
+        return [
+            self.sandbox_table_for(affected_table)
+            for affected_table in self._affected_tables
+        ]
+
+    def sandbox_table_for(self, affected_table):
+        """
+        A helper function to retrieve the sandbox table name for the affected_table
+        :param affected_table: 
+        :return: 
+        """
+        if affected_table not in self._affected_tables:
+            raise LookupError(
+                f'{affected_table} is not define as an affected table in {self._affected_tables}'
+            )
+        return f'{"_".join(self._issue_numbers).lower()}_{affected_table}'
 
 
 if __name__ == '__main__':
