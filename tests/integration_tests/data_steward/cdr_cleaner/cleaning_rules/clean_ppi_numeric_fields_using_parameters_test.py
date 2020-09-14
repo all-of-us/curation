@@ -124,7 +124,8 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 876, 765, 111, 222, 333, 444, 543, 654, 6543
             ],
             'sandboxed_ids': [
-                123, 345, 567, 789, 555, 121, 666, 777, 198, 987, 111, 333, 543, 654
+                123, 345, 567, 789, 555, 121, 666, 777, 198, 987, 111, 333, 543,
+                654
             ],
             'fields': [
                 'observation_id', 'observation_concept_id', 'value_as_number',
