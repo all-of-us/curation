@@ -60,7 +60,7 @@ class CleanCDREngineTest(TestCase):
             def validate_rule(self, client, *args, **keyword_args):
                 pass
 
-        def fake_rule_func(project_id, dataset_id):
+        def fake_rule_func(project_id, dataset_id, sandbox_dataset_id):
             return [{cdr_consts.QUERY: fake_rule_func_query}]
 
         # get_query_list returns query dicts for class- and func-based rules
@@ -89,7 +89,7 @@ class CleanCDREngineTest(TestCase):
         # specific errors associated with failed queries are raised
         fake_rule_func_err_query = f'SELECT 1 FROM {self.dataset_id}.test_not_found'
 
-        def fake_rule_func_err(project_id, dataset_id):
+        def fake_rule_func_err(project_id, dataset_id, sandbox_dataset_id):
             return [{cdr_consts.QUERY: fake_rule_func_err_query}]
 
         with self.assertRaises(NotFound) as c:
