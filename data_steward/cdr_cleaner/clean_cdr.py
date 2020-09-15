@@ -19,7 +19,8 @@ import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
 import cdr_cleaner.cleaning_rules.drop_multiple_measurements as drop_mult_meas
-import cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr as drop_participants_without_ppi_or_ehr
+import \
+    cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr as drop_participants_without_ppi_or_ehr
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
 import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
@@ -30,11 +31,14 @@ import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
 import cdr_cleaner.cleaning_rules.remove_ehr_data_past_deactivation_date as remove_ehr_data
-import cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
-import cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers as remove_multiple_race_answers
+import \
+    cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
+import \
+    cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers as remove_multiple_race_answers
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
-import cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_concept_ids
+import \
+    cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables as replace_standard_concept_ids
 import cdr_cleaner.cleaning_rules.repopulate_person_post_deid as repopulate_person
 import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_ppi_values
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
@@ -43,21 +47,26 @@ import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
-import cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
+import \
+    cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
 import sandbox
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
-from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import CleanPPINumericFieldsUsingParameters
+from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import \
+    CleanPPINumericFieldsUsingParameters
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
-from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded
-from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import DropDuplicatePpiQuestionsAndAnswers
+from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
+    RemoveFitbitDataIfMaxAgeExceeded
+from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import \
+    DropDuplicatePpiQuestionsAndAnswers
 from cdr_cleaner.cleaning_rules.drop_ppi_duplicate_responses import DropPpiDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
-from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency
+from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import \
+    EnsureDateDatetimeConsistency
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import MeasurementRecordsSuppression
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
@@ -66,6 +75,7 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
+from cdr_cleaner.cleaning_rules.fix_unmapped_survey_answers import FixUnmappedSurveyAnswers
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage as stage
 # Project imports
@@ -104,6 +114,10 @@ UNIONED_EHR_CLEANING_CLASSES = [
 RDR_CLEANING_CLASSES = [
     (TruncateRdrData,),
     (PpiBranching,),
+    # execute FixUnmappedSurveyAnswers before the dropping responses rules get executed
+    # (e.g. DropPpiDuplicateResponses and DropDuplicatePpiQuestionsAndAnswers)
+    (
+        FixUnmappedSurveyAnswers,),
     (ObservationSourceConceptIDRowSuppression,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
