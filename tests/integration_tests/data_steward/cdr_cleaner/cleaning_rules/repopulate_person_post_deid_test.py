@@ -49,6 +49,7 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
     def setUp(self):
         self.project_id = bq_utils.app_identity.get_application_id()
         self.dataset_id = bq_utils.get_combined_dataset_id()
+        self.sandbox_dataset_id = bq_utils.get_unioned_dataset_id()
         if not self.project_id or not self.dataset_id:
             # TODO: Fix handling of globals, push these assertions down if they are required.
             raise ValueError(
@@ -107,7 +108,7 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
             self.assertTrue(resp["jobComplete"])
 
         clean_cdr_engine.clean_dataset(
-            self.project_id, self.dataset_id,
+            self.project_id, self.dataset_id, self.sandbox_dataset_id,
             [(repopulate_person_post_deid.
               get_repopulate_person_post_deid_queries,)])
 

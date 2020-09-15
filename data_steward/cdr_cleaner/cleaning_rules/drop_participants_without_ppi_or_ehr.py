@@ -52,7 +52,7 @@ WHERE
 """)
 
 
-def get_queries(project=None, dataset=None):
+def get_queries(project=None, dataset=None, sandbox_dataset_id=None):
     """
     Return a list of queries to remove data-poor participant rows.
 
@@ -62,6 +62,8 @@ def get_queries(project=None, dataset=None):
 
     These participants are not particularly useful for analysis, so remove them
     here.
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
 
     :return:  A list of string queries that can be executed to delete data-poor
         participants and corresponding rows from the dataset.
@@ -101,10 +103,11 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
                                                  [(get_queries,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   [(get_queries,)])
+                                   ARGS.sandbox_dataset_id, [(get_queries,)])

@@ -238,7 +238,8 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id,
-            ARGS.dataset_id, [(get_generate_ext_table_queries,)],
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(get_generate_ext_table_queries,)],
             mapping_dataset_id=ARGS.mapping_dataset_id)
         for query in query_list:
             LOGGER.info(query)
@@ -246,5 +247,6 @@ if __name__ == '__main__':
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id,
                                    ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
                                    [(get_generate_ext_table_queries,)],
                                    mapping_dataset_id=ARGS.mapping_dataset_id)

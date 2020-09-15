@@ -44,11 +44,13 @@ def get_pids_list(project_id, dataset_id, pids_query):
     return pid_list
 
 
-def get_queries(project_id, dataset_id):
+def get_queries(project_id, dataset_id, sandbox_dataset_id=None):
     """
     return a list of queries to remove AIAN participant rows
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return: A list of string queries that can be executed to delete AIAN participants and
     all corresponding rows from the dataset with the associated PID.
     """
@@ -76,10 +78,11 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
                                                  [(get_queries,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   [(get_queries,)])
+                                   ARGS.sandbox_dataset_id, [(get_queries,)])

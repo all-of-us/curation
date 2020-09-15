@@ -160,6 +160,7 @@ def get_non_match_participant_query(project_id, validation_dataset_id,
 
 def delete_records_for_non_matching_participants(project_id,
                                                  combined_dataset_id,
+                                                 sandbox_dataset_id=None,
                                                  ehr_dataset_id=None,
                                                  validation_dataset_id=None):
     """
@@ -169,6 +170,8 @@ def delete_records_for_non_matching_participants(project_id,
     :param project_id: 
     :param combined_dataset_id: 
     :param ehr_dataset_id: 
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :param validation_dataset_id:
 
     :return: 
@@ -251,12 +254,12 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id,
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
             [(delete_records_for_non_matching_participants,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(
-            ARGS.project_id, ARGS.dataset_id,
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
             [(delete_records_for_non_matching_participants,)])

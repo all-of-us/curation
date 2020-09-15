@@ -15,7 +15,7 @@ DEFAULT = 'default'
 REQUIRED = 'required'
 
 
-def get_base_arg_parser():
+def get_argument_parser():
     parser = argparse.ArgumentParser(
         description='Parse project_id and dataset_id',
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -42,11 +42,6 @@ def get_base_arg_parser():
                         dest='list_queries',
                         action='store_true',
                         help='List the generated SQL without executing')
-    return parser
-
-
-def get_argument_parser():
-    parser = get_base_arg_parser()
     parser.add_argument('-b',
                         '--sandbox_dataset_id',
                         action='store',

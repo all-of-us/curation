@@ -40,12 +40,14 @@ def _mapping_table_for(domain_table):
     return '_mapping_' + domain_table
 
 
-def null_invalid_foreign_keys(project_id, dataset_id):
+def null_invalid_foreign_keys(project_id, dataset_id, sandbox_dataset_id=None):
     """
     This method gets the queries required to make invalid foreign keys null
 
     :param project_id: Project associated with the input and output datasets
     :param dataset_id: Dataset where cleaning rules are to be applied
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return: a list of queries
     """
     queries_list = []
@@ -109,10 +111,12 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
                                                  [(null_invalid_foreign_keys,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
                                    [(null_invalid_foreign_keys,)])

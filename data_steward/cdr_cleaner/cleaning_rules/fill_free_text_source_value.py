@@ -180,13 +180,17 @@ def get_full_join_expression(dataset_id, project_id, fields_to_replace):
     return " ".join(join_expr)
 
 
-def get_fill_freetext_source_value_fields_queries(project_id, dataset_id):
+def get_fill_freetext_source_value_fields_queries(project_id,
+                                                  dataset_id,
+                                                  sandbox_dataset_id=None):
     """
 
     Generates queries to replace the source_value_fields with the concept_code.
 
     :param project_id: Name of the project where the dataset on which the rules are to be applied on
     :param dataset_id: Name of the dataset on which the rules are to be applied on
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return: A list of queries to be run.
     """
     queries_list = []
@@ -223,12 +227,12 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id,
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
             [(get_fill_freetext_source_value_fields_queries,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(
-            ARGS.project_id, ARGS.dataset_id,
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
             [(get_fill_freetext_source_value_fields_queries,)])

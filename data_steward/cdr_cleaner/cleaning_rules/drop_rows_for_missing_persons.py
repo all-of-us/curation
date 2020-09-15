@@ -10,12 +10,14 @@ SELECT_EXISTING_PERSON_IDS = (
     'ON entry.person_id = person.person_id')
 
 
-def get_queries(project=None, dataset=None):
+def get_queries(project=None, dataset=None, sandbox_dataset_id=None):
     """
     Return a list of queries to remove data for missing persons.
 
     Removes data from person_id linked tables for any persons which do not
     exist in the person table.
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
 
     :return:  A list of string queries that can be executed to delete data from
         other tables for non-person users.

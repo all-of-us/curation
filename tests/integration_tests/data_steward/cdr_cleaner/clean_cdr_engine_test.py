@@ -25,6 +25,8 @@ class CleanCDREngineTest(TestCase):
     def setUp(self):
         self.project_id = get_application_id()
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
+        self.sandbox_dataset_id = sandbox.check_and_create_sandbox_dataset(
+            self.project_id, self.dataset_id)
         self.client = bq.get_client(self.project_id)
         self.delete_sandbox()
 
@@ -63,10 +65,11 @@ class CleanCDREngineTest(TestCase):
 
         # get_query_list returns query dicts for class- and func-based rules
         expected_queries = {fake_rule_class_query, fake_rule_func_query}
-        query_dicts = ce.get_query_list(project_id=self.project_id,
-                                        dataset_id=self.dataset_id,
-                                        rules=[(FakeRuleClass,),
-                                               (fake_rule_func,)])
+        query_dicts = ce.get_query_list(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
+            rules=[(FakeRuleClass,), (fake_rule_func,)])
         actual_queries = set(
             query_dict[cdr_consts.QUERY] for query_dict in query_dicts)
         self.assertSetEqual(expected_queries, actual_queries)
@@ -74,6 +77,7 @@ class CleanCDREngineTest(TestCase):
         # clean_dataset returns jobs associated with all rules' queries
         jobs = ce.clean_dataset(project_id=self.project_id,
                                 dataset_id=self.dataset_id,
+                                sandbox_dataset_id=self.sandbox_dataset_id,
                                 rules=[(FakeRuleClass,), (fake_rule_func,)])
         actual_job_queries = set(job.query for job in jobs)
         self.assertEqual(expected_queries, actual_job_queries)
@@ -91,6 +95,7 @@ class CleanCDREngineTest(TestCase):
         with self.assertRaises(NotFound) as c:
             ce.clean_dataset(project_id=self.project_id,
                              dataset_id=self.dataset_id,
+                             sandbox_dataset_id=self.sandbox_dataset_id,
                              rules=[(FakeRuleClass,), (fake_rule_func_err,)])
         self.assertEqual(c.exception.query_job.query, fake_rule_func_err_query)
 

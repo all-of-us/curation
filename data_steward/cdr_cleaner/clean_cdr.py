@@ -223,7 +223,7 @@ def get_parser():
     """
     from cdr_cleaner import args_parser
 
-    engine_parser = args_parser.get_base_arg_parser()
+    engine_parser = args_parser.get_argument_parser()
     engine_parser.add_argument(
         '-a',
         '--data_stage',
@@ -290,20 +290,22 @@ if __name__ == '__main__':
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage]
     for rule in rules:
         clazz = rule[0]
-        kwargs.update({'sandbox_dataset_id': None})
         clean_engine.validate_params(clazz, **kwargs)
 
     if args.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(project_id=args.project_id,
-                                                 dataset_id=args.dataset_id,
-                                                 rules=rules,
-                                                 **kwargs)
+        query_list = clean_engine.get_query_list(
+            project_id=args.project_id,
+            dataset_id=args.dataset_id,
+            sandbox_dataset_id=args.sandbox_dataset_id,
+            rules=rules,
+            **kwargs)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(args.console_log)
         clean_engine.clean_dataset(project_id=args.project_id,
                                    dataset_id=args.dataset_id,
+                                   sandbox_dataset_id=args.sandbox_dataset_id,
                                    rules=rules,
                                    **kwargs)

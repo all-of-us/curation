@@ -345,11 +345,15 @@ def get_src_concept_id_logging_queries(project_id, dataset_id):
     return queries
 
 
-def replace_standard_id_in_domain_tables(project_id, dataset_id):
+def replace_standard_id_in_domain_tables(project_id,
+                                         dataset_id,
+                                         sandbox_dataset_id=None):
     """
 
     :param project_id: identifies the project containing the dataset
     :param dataset_id: identifies the dataset containing the OMOP data
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return: a list of query dicts for replacing standard_concept_ids in domain_tables
     """
     queries_list = []
@@ -395,11 +399,12 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id,
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
             [(replace_standard_id_in_domain_tables,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
                                    [(replace_standard_id_in_domain_tables,)])

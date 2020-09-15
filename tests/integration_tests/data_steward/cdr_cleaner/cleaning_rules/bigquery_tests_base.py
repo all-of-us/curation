@@ -60,7 +60,6 @@ class BaseTest:
             cls.project_id = ''
             cls.dataset_id = ''
             cls.sandbox_id = ''
-            cls.kwargs = {}
             # a list of fully qualified table names the cleaning rule is targeting.
             # fq = {project_id}.{dataset_id}.{table_name}.  required for
             # test setup and cleanup.
@@ -254,6 +253,9 @@ class BaseTest:
             super().initialize_class_vars()
             # The query class that is being executed.
             cls.rule_instance = None
+            # Additional arguments that a cleaning rule requires,
+            # other than the mandatory project_id, dataset_id, sandbox_dataset_id
+            cls.kwargs = {}
 
         def setUp(self):
             """
@@ -309,12 +311,10 @@ class BaseTest:
 
             if self.rule_instance:
                 # test: run the queries
-                with mock.patch('cdr_cleaner.clean_cdr_engine.create_sandbox'
-                               ) as fake_sandbox:
-                    fake_sandbox.return_value = self.sandbox_id
-                    rule_class = self.rule_instance.__class__
-                    engine.clean_dataset(self.project_id, self.dataset_id,
-                                         [(rule_class,)], **self.kwargs)
+                rule_class = self.rule_instance.__class__
+                engine.clean_dataset(self.project_id, self.dataset_id,
+                                     self.sandbox_id, [(rule_class,)],
+                                     **self.kwargs)
             else:
                 raise RuntimeError(f"Cannot use the default_test method for "
                                    f"{self.__class__.__name__} because "

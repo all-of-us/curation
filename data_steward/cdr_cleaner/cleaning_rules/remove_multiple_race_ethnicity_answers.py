@@ -22,12 +22,16 @@ WHERE
 """
 
 
-def get_remove_multiple_race_ethnicity_answers_queries(project_id, dataset_id):
+def get_remove_multiple_race_ethnicity_answers_queries(project_id,
+                                                       dataset_id,
+                                                       sandbox_dataset_id=None):
     """
     runs the query which removes the other than None of these identify me answers for gender/sex
     if a person answers None of these identify me as an option from observation table
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return:
     """
     queries_list = []
@@ -51,12 +55,12 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id,
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
             [(get_remove_multiple_race_ethnicity_answers_queries,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(
-            ARGS.project_id, ARGS.dataset_id,
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
             [(get_remove_multiple_race_ethnicity_answers_queries,)])

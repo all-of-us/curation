@@ -208,8 +208,8 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
         expected = [self.drop_participant_query_dict
                    ] + self.drop_domain_records_query_dicts
         actual = remove_non_matching_participant.delete_records_for_non_matching_participants(
-            self.project_id, self.combined_dataset_id, self.ehr_dataset_id,
-            self.validation_dataset_id)
+            self.project_id, self.combined_dataset_id, None,
+            self.ehr_dataset_id, self.validation_dataset_id)
 
         self.assertListEqual(expected, actual)
 
