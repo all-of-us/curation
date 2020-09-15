@@ -76,6 +76,7 @@ from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFi
 from cdr_cleaner.cleaning_rules.fix_unmapped_survey_answers import FixUnmappedSurveyAnswers
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
+from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -236,36 +237,38 @@ def get_parser():
     return engine_parser
 
 
-def get_dynamic_parser(optional_args):
-    """
-    Create parser to dynamically parse optionally provided args at runtime
+PARSING_ERROR_MESSAGE_FORMAT = (
+    'Error parsing %(arg)s. Please use "--key value" to specify custom arguments. '
+    'Custom arguments need an associated keyword to store their value.')
 
-    :param optional_args: Unknown args to parse
-    :return: parser
-    """
-    dynamic_parser = get_parser()
 
+def _to_kwarg_key(arg):
+    if not arg.startswith('--'):
+        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
+    key = arg[2:]
+    if not key:
+        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
+    return key
+
+
+def _to_kwarg_val(val):
+    # likely invalid use of args- allowing single dash e.g. negative values
+    if val.startswith('--'):
+        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=val))
+    return val
+
+
+def _get_kwargs(optional_args):
     if len(optional_args) % 2:
-        raise dynamic_parser.error(
+        raise RuntimeError(
             f'All provided arguments need key-value pairs in {optional_args}')
-
-    for arg, value in zip(optional_args, optional_args[1:]):
-        if arg.startswith('-'):
-            if not arg.startswith('--'):
-                raise dynamic_parser.error(
-                    f'Error parsing {arg}. Please use "--key value" to specify custom arguments. '
-                    f'Custom arguments need an associated keyword to store their value.'
-                )
-            if value.startswith('-'):
-                raise dynamic_parser.error(
-                    f'Please specify a value for the argument {arg} '
-                    f'before the next argument {value}')
-            arg_name = arg[2:] if arg.startswith('--') else arg[1:]
-            dynamic_parser.add_argument(arg, dest=arg_name, action='store')
-    return dynamic_parser
+    return {
+        _to_kwarg_key(arg): _to_kwarg_val(value)
+        for arg, value in zip(optional_args[0::2], optional_args[1::2])
+    }
 
 
-def fetch_args_kwargs():
+def fetch_args_kwargs(args=None):
     """
     Fetch parsers and parse input to generate full list of args and keyword args
 
@@ -275,34 +278,47 @@ def fetch_args_kwargs():
                 rule might require
     """
     basic_parser = get_parser()
-    known_args, unknown_args = basic_parser.parse_known_args()
-    dynamic_parser = get_dynamic_parser(unknown_args)
-    args = dynamic_parser.parse_args()
-    kwargs = {
-        k: v for k, v in vars(args).items() if k not in vars(known_args).keys()
-    }
-    return args, kwargs
+    common_args, unknown_args = basic_parser.parse_known_args(args)
+    custom_args = _get_kwargs(unknown_args)
+    return common_args, custom_args
 
 
-def validate_all_params(rules, **kwargs):
+def get_required_params(rules):
     """
-    Raises error if required parameters are missing for any CR in list of CRs
+    Get the full set of parameters required to run specified rules
+    :param rules: list of cleaning rules
+    :return: set of parameter names
+    """
+    result = set()
+    for rule in rules:
+        clazz = rule[0]
+        rule_args = clean_engine.get_rule_args(clazz)
+        result.update(rule['name'] for rule in rule_args if rule['required'])
+    return result
+
+
+def validate_custom_params(rules, **kwargs):
+    """
+    Raises error if required custom parameters are missing for any CR in list of CRs
+    
     :param rules: list of cleaning rule classes/functions
     :param kwargs: dictionary of provided arguments
     :return: None
-    :raises: ValueError via get_custom_kwargs if any CR has missing parameters
+    :raises: RuntimeError if missing parameters required by any CR
     """
-    for rule in rules:
-        clazz = rule[0]
-        clean_engine.get_custom_kwargs(clazz, **kwargs)
-    return
+    required_params = get_required_params(rules)
+    missing = required_params - set(kwargs.keys()) - set(
+        ce_consts.CLEAN_ENGINE_REQUIRED_PARAMS)
+    # TODO warn if extra args supplied than rules require
+    if missing:
+        raise RuntimeError(f'Missing required custom parameter(s): {missing}')
 
 
 if __name__ == '__main__':
     args, kwargs = fetch_args_kwargs()
 
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage]
-    validate_all_params(rules, **kwargs)
+    validate_custom_params(rules, **kwargs)
 
     if args.list_queries:
         clean_engine.add_console_logging()

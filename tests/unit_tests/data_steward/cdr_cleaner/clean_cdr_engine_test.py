@@ -38,7 +38,7 @@ class FakeRuleClass(BaseCleaningRule):
         pass
 
 
-def fake_rule_func(project_id, dataset_id, sandbox_dataset_id=None):
+def fake_rule_func(project_id, dataset_id, sandbox_dataset_id='hello'):
     return [{cdr_consts.QUERY: fake_rule_func_query}]
 
 
@@ -75,8 +75,21 @@ class CleanCDREngineTest(TestCase):
                          combined_dataset_id):
                 super().__init__(project_id, dataset_id, sandbox_dataset_id)
 
+        actual_kwargs = ce.get_custom_kwargs(FakeNewClass, **kwargs)
+        self.assertEqual(kwargs, actual_kwargs)
+
         self.assertRaises(ValueError, ce.get_custom_kwargs, FakeNewClass,
                           **incorrect_kwargs)
+
+        actual_kwargs = ce.get_custom_kwargs(FakeRuleClass)
+        self.assertDictEqual({}, actual_kwargs)
+
+        def rule_with_combined(project_id, dataset_id, sandbox_dataset_id,
+                               combined_dataset_id):
+            pass
+
+        actual_kwargs = ce.get_custom_kwargs(rule_with_combined, **kwargs)
+        self.assertDictEqual(kwargs, actual_kwargs)
 
     def test_infer_rule(self):
         clazz = FakeRuleClass
@@ -127,3 +140,11 @@ class CleanCDREngineTest(TestCase):
             'query': fake_rule_func_query
         }]
         self.assertListEqual(actual_queries, expected_queries)
+
+    def test_get_rule_args(self):
+        expected_param_names = [
+            'project_id', 'dataset_id', 'sandbox_dataset_id'
+        ]
+        actual_rule_args = ce.get_rule_args(fake_rule_func)
+        actual_param_names = [k for k, v in actual_rule_args]
+        self.assertListEqual(expected_param_names, actual_param_names)

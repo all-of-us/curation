@@ -2,6 +2,7 @@ import unittest
 
 import cdr_cleaner.clean_cdr as cc
 from constants.cdr_cleaner.clean_cdr import DataStage
+from tests.test_util import FakeRuleClass, fake_rule_func
 
 
 class CleanCDRTest(unittest.TestCase):
@@ -48,12 +49,36 @@ class CleanCDRTest(unittest.TestCase):
         parser = cc.get_parser()
         self.assertRaises(SystemExit, parser.parse_args, test_args)
 
+    def test_get_kwargs(self):
+        expected = {'k1': 'v1', 'k2': 'v2'}
+        actual_result = cc._get_kwargs(['--k1', 'v1', '--k2', 'v2'])
+        self.assertEqual(expected, actual_result)
+
+        with self.assertRaises(RuntimeError) as c:
+            cc._get_kwargs(['--k1', 'v1', '--f1'])
+
+        with self.assertRaises(RuntimeError) as c:
+            cc._get_kwargs(['--', 'v1'])
+
+        with self.assertRaises(RuntimeError) as c:
+            cc._get_kwargs(['--k1', '--k2'])
+
+    def test_to_kwarg_key(self):
+        expected_result = 'k1'
+        actual_result = cc._to_kwarg_key('--k1')
+        self.assertEqual(expected_result, actual_result)
+        with self.assertRaises(RuntimeError) as c:
+            cc._to_kwarg_key('-k1')
+        with self.assertRaises(RuntimeError) as c:
+            cc._to_kwarg_key('k1')
+        with self.assertRaises(RuntimeError) as c:
+            cc._to_kwarg_key('--')
+
     def test_fetch_args_kwargs(self):
         expected_kwargs = {
             'mapping_dataset_id': self.mapping_dataset_id,
             'combined_dataset_id': self.combined_dataset_id
         }
-
         expected_kwargs_list = []
         for k, v in expected_kwargs.items():
             expected_kwargs_list.extend([f'--{k}', v])
@@ -61,33 +86,153 @@ class CleanCDRTest(unittest.TestCase):
         test_args = [
             '-p', self.project_id, '-d', self.dataset_id, '-b',
             self.sandbox_dataset_id, '--data_stage', 'ehr'
-        ] + expected_kwargs_list
-
-        basic_parser = cc.get_parser()
-        known_args, unknown_args = basic_parser.parse_known_args(test_args)
-        dynamic_parser = cc.get_dynamic_parser(unknown_args)
-        args = dynamic_parser.parse_args(test_args)
-        actual_kwargs = {
-            k: v
-            for k, v in vars(args).items()
-            if k not in vars(known_args).keys()
+        ]
+        expected_args = {
+            'project_id': self.project_id,
+            'dataset_id': self.dataset_id,
+            'sandbox_dataset_id': self.sandbox_dataset_id,
+            'data_stage': DataStage.EHR,
+            'console_log': False,
+            'list_queries': False
         }
+        actual_args, actual_kwargs = cc.fetch_args_kwargs(test_args +
+                                                          expected_kwargs_list)
+        self.assertDictEqual(actual_args.__dict__, expected_args)
         self.assertDictEqual(expected_kwargs, actual_kwargs)
 
+        actual_args, actual_kwargs = cc.fetch_args_kwargs(test_args +
+                                                          ['--v', '-1'])
+        self.assertDictEqual(actual_args.__dict__, expected_args)
+        self.assertDictEqual({'v': '-1'}, actual_kwargs)
+
         test_args_incorrect = test_args + ['-v', 'value']
-        basic_parser = cc.get_parser()
-        known_args, unknown_args = basic_parser.parse_known_args(
-            test_args_incorrect)
-        self.assertRaises(SystemExit, cc.get_dynamic_parser, unknown_args)
+        self.assertRaises(RuntimeError, cc.fetch_args_kwargs,
+                          test_args_incorrect)
 
-        test_args_incorrect = test_args + ['--v', '-value']
-        basic_parser = cc.get_parser()
-        known_args, unknown_args = basic_parser.parse_known_args(
-            test_args_incorrect)
-        self.assertRaises(SystemExit, cc.get_dynamic_parser, unknown_args)
+        test_args_incorrect = test_args + ['--v', 'v', '--odd']
+        self.assertRaises(RuntimeError, cc.fetch_args_kwargs,
+                          test_args_incorrect)
 
-        test_args_incorrect = test_args + ['--v', 'v', '-value']
-        basic_parser = cc.get_parser()
-        known_args, unknown_args = basic_parser.parse_known_args(
-            test_args_incorrect)
-        self.assertRaises(SystemExit, cc.get_dynamic_parser, unknown_args)
+    def test_get_required_params(self):
+
+        class Fake1(FakeRuleClass):
+            pass
+
+        class Fake2(FakeRuleClass):
+            pass
+
+        actual = cc.get_required_params([(Fake1,), (Fake2,), (fake_rule_func,)])
+        expected = {'project_id', 'dataset_id', 'sandbox_dataset_id'}
+        self.assertSetEqual(expected, actual)
+
+        class Fake3(FakeRuleClass):
+
+            def __init__(self, project_id, dataset_id, sandbox_dataset_id,
+                         required_param_1):
+                pass
+
+        actual = cc.get_required_params([(Fake1,), (Fake3,), (fake_rule_func,)])
+        expected = {
+            'project_id', 'dataset_id', 'sandbox_dataset_id', 'required_param_1'
+        }
+        self.assertSetEqual(expected, actual)
+
+        class Fake4(FakeRuleClass):
+
+            def __init__(self,
+                         project_id,
+                         dataset_id,
+                         sandbox_dataset_id,
+                         optional_param='default_value'):
+                pass
+
+        actual = cc.get_required_params([(Fake1,), (Fake4,), (fake_rule_func,)])
+        expected = {'project_id', 'dataset_id', 'sandbox_dataset_id'}
+        self.assertSetEqual(expected, actual)
+
+        # a legacy rule with extra required param
+        def fake_1(project_id, dataset_id, sandbox_dataset_id,
+                   required_param_1):
+            pass
+
+        actual = cc.get_required_params([(Fake1,), (fake_1,),
+                                         (fake_rule_func,)])
+        expected = {
+            'project_id', 'dataset_id', 'sandbox_dataset_id', 'required_param_1'
+        }
+        self.assertSetEqual(expected, actual)
+
+        def fake_2(project_id,
+                   dataset_id,
+                   sandbox_dataset_id,
+                   required_param_1='optional'):
+            pass
+
+        actual = cc.get_required_params([(Fake1,), (fake_1,), (fake_2,)])
+        expected = {
+            'project_id', 'dataset_id', 'sandbox_dataset_id', 'required_param_1'
+        }
+        self.assertSetEqual(expected, actual)
+
+    def test_validate_custom_params(self):
+
+        class Fake1(FakeRuleClass):
+            pass
+
+        class Fake2(FakeRuleClass):
+            pass
+
+        # this should not raise an error
+        cc.validate_custom_params([(Fake1,), (Fake2,), (fake_rule_func,)])
+
+        class Fake3(FakeRuleClass):
+
+            def __init__(self, project_id, dataset_id, sandbox_dataset_id,
+                         required_param_1):
+                pass
+
+        with self.assertRaises(RuntimeError) as c:
+            cc.validate_custom_params([(Fake1,), (Fake3,), (fake_rule_func,)])
+        missing = {'required_param_1'}
+        self.assertEqual(str(c.exception),
+                         f'Missing required custom parameter(s): {missing}')
+
+        cc.validate_custom_params([(Fake1,), (Fake2,), (fake_rule_func,)],
+                                  required_param_1='value')
+
+        class Fake4(FakeRuleClass):
+
+            def __init__(self,
+                         project_id,
+                         dataset_id,
+                         sandbox_dataset_id,
+                         optional_param='default_value'):
+                pass
+
+        cc.validate_custom_params([(Fake1,), (Fake4,), (fake_rule_func,)])
+
+        # a legacy rule with extra required param
+        def fake_1(project_id, dataset_id, sandbox_dataset_id,
+                   required_param_1):
+            pass
+
+        with self.assertRaises(RuntimeError) as c:
+            cc.validate_custom_params([(Fake1,), (fake_1,), (fake_rule_func,)])
+        missing = {'required_param_1'}
+        self.assertEqual(str(c.exception),
+                         f'Missing required custom parameter(s): {missing}')
+
+        def fake_2(project_id,
+                   dataset_id,
+                   sandbox_dataset_id,
+                   required_param_1='optional'):
+            pass
+
+        with self.assertRaises(RuntimeError) as c:
+            cc.validate_custom_params([(Fake1,), (fake_1,), (fake_2,)])
+        missing = {'required_param_1'}
+        self.assertEqual(str(c.exception),
+                         f'Missing required custom parameter(s): {missing}')
+
+        cc.validate_custom_params([(Fake1,), (fake_1,), (fake_2,)],
+                                  required_param_1='required_val')

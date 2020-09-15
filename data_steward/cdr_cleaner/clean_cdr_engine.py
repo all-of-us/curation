@@ -142,6 +142,19 @@ def run_queries(client, query_list, rule_info):
     return jobs
 
 
+def get_rule_args(clazz):
+    """
+    Gets list of ("param_name", Parameter)
+    :param clazz: 
+    :return: 
+    """
+    params = inspect.signature(clazz).parameters
+    return [
+        dict(name=name, required=param.default is inspect.Parameter.empty)
+        for name, param in params.items()
+    ]
+
+
 def get_custom_kwargs(clazz, **kwargs):
     """
     Filters kwargs based on the signature of the 'clazz'
