@@ -169,9 +169,34 @@ class COPESurveyVersionTask(BaseCleaningRule):
         return []
 
 
+def add_console_logging(add_handler):
+    """
+
+    This config should be done in a separate module, but that can wait
+    until later.  Useful for debugging.
+
+    Copied from the clean engine to break the dependency on the clean engine
+    in preparation for the upcoming pipeline execution.
+    """
+    logging.basicConfig(
+        level=logging.INFO,
+        filename=FILENAME,
+        filemode='a',
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    if add_handler:
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+        handler.setFormatter(formatter)
+        logging.getLogger('').addHandler(handler)
+
+
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as ap
-    import cdr_cleaner.clean_cdr_engine as clean_engine
+    #import cdr_cleaner.clean_cdr_engine as clean_engine
+    from constants.cdr_cleaner.clean_cdr_engine import FILENAME
     from utils import bq
 
     parser = ap.get_argument_parser()
@@ -192,7 +217,8 @@ if __name__ == '__main__':
     if not ARGS.mapping_dataset_id:
         parser.error("The deid mapping dataset is required to run this script.")
 
-    clean_engine.add_console_logging(ARGS.console_log)
+    #clean_engine.add_console_logging(ARGS.console_log)
+    add_console_logging(ARGS.console_log)
     version_task = COPESurveyVersionTask(ARGS.project_id, ARGS.dataset_id,
                                          ARGS.sandbox_dataset_id,
                                          ARGS.mapping_dataset_id,
@@ -205,4 +231,16 @@ if __name__ == '__main__':
     else:
         client = bq.get_client(ARGS.project_id)
         version_task.setup_rule(client)
-        clean_engine.clean_dataset(ARGS.project_id, query_list)
+        #clean_engine.clean_dataset(ARGS.project_id, query_list)
+        for query in query_list:
+            q = query.get(cdr_consts.QUERY)
+            if q:
+                query_job = client.query(q)
+                status = query_job.result()
+                if query_job.exception():
+                    LOGGER.error(
+                        "BAIL OUT!!  SURVEY VERSION TASK encountered an exception"
+                    )
+                    LOGGER.error(query_job.exception())
+            else:
+                LOGGER.error("NO QUERY GENERATED for survey_version_info taks")

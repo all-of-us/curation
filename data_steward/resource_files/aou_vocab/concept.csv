@@ -15,6 +15,6 @@ concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concep
 2000000013	11 or more household members	Observation	AoU_General	Answer	S	HouseSize_11+	20170517	20991231	
 2100000000	AoU_Custom	Metadata	Vocabulary	Vocabulary		AOU generated	20200101	20991231	
 2100000001	None Indicated	Observation	AoU_Custom	Answer	S	AoUDRC_NoneIndicated	20170517	20991231	
-2100000002	COPE Survey May 2020	Metadata	AoU_Custom	Module			AoUDRC_SurveyVersion_CopeMay2020	20200501	20200531	
-2100000003	COPE Survey June 2020	Metadata	AoU_Custom	Module			AoUDRC_SurveyVersion_CopeJune2020	20200601	20200630	
-2100000004	COPE Survey July 2020	Metadata	AoU_Custom	Module			AoUDRC_SurveyVersion_CopeJuly2020	20200701	20200831	
+2100000002	COPE Survey May 2020	Metadata	AoU_Custom	Module			AoUDRC_SurveyVersion_CopeMay2020	20200501	20991231	
+2100000003	COPE Survey June 2020	Metadata	AoU_Custom	Module			AoUDRC_SurveyVersion_CopeJune2020	20200601	20991231	
+2100000004	COPE Survey July 2020	Metadata	AoU_Custom	Module			AoUDRC_SurveyVersion_CopeJuly2020	20200701	20991231	
