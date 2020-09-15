@@ -142,7 +142,7 @@ def run_queries(client, query_list, rule_info):
     return jobs
 
 
-def validate_params(clazz, **kwargs):
+def get_custom_kwargs(clazz, **kwargs):
     """
     Filters kwargs based on the signature of the 'clazz'
 
@@ -152,14 +152,20 @@ def validate_params(clazz, **kwargs):
     :raises ValueError: if a required param for 'clazz' is missing from kwargs
     """
     params = inspect.signature(clazz).parameters
-    mandatory_params = ['project_id', 'dataset_id']
-    rule_params = [param for param in params if param not in mandatory_params]
+    rule_params = {
+        k: v
+        for k, v in params.items()
+        if k not in ce_consts.CLEAN_ENGINE_REQUIRED_PARAMS
+    }
     # filter kwargs based on required params
-    kwargs = {k: v for k, v in kwargs.items() if k in rule_params}
-    if any(param not in kwargs.keys() for param in rule_params):
-        raise ValueError(
-            f'Params {[param for param in rule_params if param not in kwargs.keys()]} '
-            f'not provided for cleaning rule {clazz.__name__}')
+    kwargs = {k: v for k, v in kwargs.items() if k in rule_params.keys()}
+    missing = [
+        k for k, v in rule_params.items()
+        if k not in kwargs.keys() and v.default is inspect.Parameter.empty
+    ]
+    if missing:
+        raise ValueError(f'Params {missing} '
+                         f'not provided for cleaning rule {clazz.__name__}')
     return kwargs
 
 

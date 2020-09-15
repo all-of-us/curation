@@ -7,6 +7,40 @@ from cdr_cleaner import clean_cdr_engine as ce
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
+fake_rule_class_query = 'SELECT "FakeRuleClass"'
+fake_rule_func_query = 'SELECT "fake_rule_func"'
+
+
+class FakeRuleClass(BaseCleaningRule):
+
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+        super().__init__(issue_numbers=[''],
+                         description='',
+                         affected_datasets=[cdr_consts.UNIONED],
+                         affected_tables=[],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
+
+    def get_sandbox_tablenames(self):
+        pass
+
+    def setup_rule(self, client, *args, **keyword_args):
+        pass
+
+    def setup_validation(self, client, *args, **keyword_args):
+        pass
+
+    def get_query_specs(self, *args, **keyword_args):
+        return [{cdr_consts.QUERY: fake_rule_class_query}]
+
+    def validate_rule(self, client, *args, **keyword_args):
+        pass
+
+
+def fake_rule_func(project_id, dataset_id, sandbox_dataset_id=None):
+    return [{cdr_consts.QUERY: fake_rule_func_query}]
+
 
 class CleanCDREngineTest(TestCase):
 
@@ -17,97 +51,37 @@ class CleanCDREngineTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
-
         self.project = 'test-project'
         self.dataset_id = 'test-dataset'
-        self.kwargs = {'sandbox_dataset_id': 'test-dataset_sandbox'}
+        self.sandbox_id = 'test-sandbox'
+        self.kwargs = {}
 
-    def test_validate_params(self):
-        fake_rule_class_query = 'SELECT "FakeRuleClass"'
-        fake_rule_func_query = 'SELECT "fake_rule_func"'
+    def test_get_custom_kwargs(self):
+        kwargs = {'combined_dataset_id': 'combined'}
 
-        class FakeRuleClass(BaseCleaningRule):
-
-            def __init__(self, project_id, dataset_id, sandbox_dataset_id):
-                super().__init__(issue_numbers=[''],
-                                 description='',
-                                 affected_datasets=[cdr_consts.UNIONED],
-                                 affected_tables=[],
-                                 project_id=project_id,
-                                 dataset_id=dataset_id,
-                                 sandbox_dataset_id=sandbox_dataset_id)
-
-            def get_sandbox_tablenames(self):
-                pass
-
-            def setup_rule(self, client, *args, **keyword_args):
-                pass
-
-            def setup_validation(self, client, *args, **keyword_args):
-                pass
-
-            def get_query_specs(self, *args, **keyword_args):
-                return [{cdr_consts.QUERY: fake_rule_class_query}]
-
-            def validate_rule(self, client, *args, **keyword_args):
-                pass
-
-        def fake_rule_func(project_id, dataset_id):
-            return [{cdr_consts.QUERY: fake_rule_func_query}]
-
-        kwargs = {
-            'sandbox_dataset_id': 'sandbox',
-            'combined_dataset_id': 'combined'
-        }
-
-        actual_kwargs = ce.validate_params(FakeRuleClass, **kwargs)
-        expected_kwargs = {'sandbox_dataset_id': 'sandbox'}
-        self.assertDictEqual(actual_kwargs, expected_kwargs)
-
-        actual_kwargs = ce.validate_params(fake_rule_func, **kwargs)
+        actual_kwargs = ce.get_custom_kwargs(FakeRuleClass, **kwargs)
         expected_kwargs = {}
         self.assertDictEqual(actual_kwargs, expected_kwargs)
 
-        actual_kwargs = {'mapping_dataset_id': 'mapping_dataset'}
-        self.assertRaises(ValueError, ce.validate_params, FakeRuleClass,
-                          **actual_kwargs)
+        actual_kwargs = ce.get_custom_kwargs(fake_rule_func, **kwargs)
+        expected_kwargs = {}
+        self.assertDictEqual(actual_kwargs, expected_kwargs)
+
+        incorrect_kwargs = {'mapping_dataset_id': 'mapping_dataset'}
+
+        class FakeNewClass(FakeRuleClass):
+
+            def __init__(self, project_id, dataset_id, sandbox_dataset_id,
+                         combined_dataset_id):
+                super().__init__(project_id, dataset_id, sandbox_dataset_id)
+
+        self.assertRaises(ValueError, ce.get_custom_kwargs, FakeNewClass,
+                          **incorrect_kwargs)
 
     def test_infer_rule(self):
-        fake_rule_class_query = 'SELECT "FakeRuleClass"'
-        fake_rule_func_query = 'SELECT "fake_rule_func"'
-
-        class FakeRuleClass(BaseCleaningRule):
-
-            def __init__(self, project_id, dataset_id, sandbox_dataset_id):
-                super().__init__(issue_numbers=[''],
-                                 description='',
-                                 affected_datasets=[cdr_consts.UNIONED],
-                                 affected_tables=[],
-                                 project_id=project_id,
-                                 dataset_id=dataset_id,
-                                 sandbox_dataset_id=sandbox_dataset_id)
-
-            def get_sandbox_tablenames(self):
-                pass
-
-            def setup_rule(self, client, *args, **keyword_args):
-                pass
-
-            def setup_validation(self, client, *args, **keyword_args):
-                pass
-
-            def get_query_specs(self, *args, **keyword_args):
-                return [{cdr_consts.QUERY: fake_rule_class_query}]
-
-            def validate_rule(self, client, *args, **keyword_args):
-                pass
-
-        def fake_rule_func(project_id, dataset_id):
-            return [{cdr_consts.QUERY: fake_rule_func_query}]
-
         clazz = FakeRuleClass
         _, _, rule_info = ce.infer_rule(clazz, self.project, self.dataset_id,
-                                        **self.kwargs)
+                                        self.sandbox_id, **self.kwargs)
         self.assertTrue(
             inspect.ismethod(rule_info.pop(cdr_consts.QUERY_FUNCTION)))
         self.assertTrue(
@@ -125,7 +99,7 @@ class CleanCDREngineTest(TestCase):
 
         clazz = fake_rule_func
         _, _, rule_info = ce.infer_rule(clazz, self.project, self.dataset_id,
-                                        **self.kwargs)
+                                        self.sandbox_id, **self.kwargs)
         self.assertTrue(
             inspect.isfunction(rule_info.pop(cdr_consts.QUERY_FUNCTION)))
         self.assertTrue(
@@ -142,40 +116,9 @@ class CleanCDREngineTest(TestCase):
         self.assertDictEqual(rule_info, expected_rule_info)
 
     def test_query_list(self):
-        fake_rule_class_query = 'SELECT "FakeRuleClass"'
-        fake_rule_func_query = 'SELECT "fake_rule_func"'
-
-        class FakeRuleClass(BaseCleaningRule):
-
-            def __init__(self, project_id, dataset_id, sandbox_dataset_id):
-                super().__init__(issue_numbers=[''],
-                                 description='',
-                                 affected_datasets=[cdr_consts.UNIONED],
-                                 affected_tables=[],
-                                 project_id=project_id,
-                                 dataset_id=dataset_id,
-                                 sandbox_dataset_id=sandbox_dataset_id)
-
-            def get_sandbox_tablenames(self):
-                pass
-
-            def setup_rule(self, client, *args, **keyword_args):
-                pass
-
-            def setup_validation(self, client, *args, **keyword_args):
-                pass
-
-            def get_query_specs(self, *args, **keyword_args):
-                return [{cdr_consts.QUERY: fake_rule_class_query}]
-
-            def validate_rule(self, client, *args, **keyword_args):
-                pass
-
-        def fake_rule_func(project_id, dataset_id):
-            return [{cdr_consts.QUERY: fake_rule_func_query}]
-
         actual_queries = ce.get_query_list(project_id=self.project,
                                            dataset_id=self.dataset_id,
+                                           sandbox_dataset_id=self.sandbox_id,
                                            rules=[(FakeRuleClass,),
                                                   (fake_rule_func,)])
         expected_queries = [{

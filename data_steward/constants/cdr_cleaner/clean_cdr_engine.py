@@ -4,6 +4,10 @@ import tempfile
 from utils.bq import JINJA_ENV
 
 FILENAME = os.path.join(tempfile.gettempdir(), 'cleaner.log')
+PROJECT_ID = 'project_id'
+DATASET_ID = 'dataset_id'
+SANDBOX_DATASET_ID = 'sandbox_dataset_id'
+CLEAN_ENGINE_REQUIRED_PARAMS = [PROJECT_ID, DATASET_ID, SANDBOX_DATASET_ID]
 
 QUERY_RUN_MESSAGE = '''
 Clean rule {{module_name}}.{{function_name}} query {{query_no+1}}/{{query_count}}"

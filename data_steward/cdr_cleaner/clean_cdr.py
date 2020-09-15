@@ -284,13 +284,25 @@ def fetch_args_kwargs():
     return args, kwargs
 
 
+def validate_all_params(rules, **kwargs):
+    """
+    Raises error if required parameters are missing for any CR in list of CRs
+    :param rules: list of cleaning rule classes/functions
+    :param kwargs: dictionary of provided arguments
+    :return: None
+    :raises: ValueError via get_custom_kwargs if any CR has missing parameters
+    """
+    for rule in rules:
+        clazz = rule[0]
+        clean_engine.get_custom_kwargs(clazz, **kwargs)
+    return
+
+
 if __name__ == '__main__':
     args, kwargs = fetch_args_kwargs()
 
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage]
-    for rule in rules:
-        clazz = rule[0]
-        clean_engine.validate_params(clazz, **kwargs)
+    validate_all_params(rules, **kwargs)
 
     if args.list_queries:
         clean_engine.add_console_logging()
