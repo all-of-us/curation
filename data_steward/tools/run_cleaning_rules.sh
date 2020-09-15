@@ -4,9 +4,8 @@ set -ex
 USAGE="
 Usage: run_cleaning_rules.sh
   --key_file <path to key file>
-  --vocab_dataset <vocab dataset>
   --dataset <dataset name to apply cleaning rules>
-  --snapshot_dataset <Dataset name to copy result dataset>
+  --result_dataset <Dataset name to copy result dataset>
   --data_stage <Dataset stage>
 "
 
@@ -16,16 +15,12 @@ while true; do
     dataset=$2
     shift 2
     ;;
-  --vocab_dataset)
-    vocab_dataset=$2
-    shift 2
-    ;;
   --key_file)
     key_file=$2
     shift 2
     ;;
-  --snapshot_dataset)
-    snapshot_dataset=$2
+  --result_dataset)
+    result_dataset=$2
     shift 2
     ;;
   --data_stage)
@@ -40,7 +35,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset}" ]] || [[ -z "${snapshot_dataset}" ]] || [[ -z "${data_stage}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${dataset}" ]] || [[ -z "${result_dataset}" ]] || [[ -z "${data_stage}" ]]; then
   echo "$USAGE"
   exit 1
 fi
@@ -54,12 +49,10 @@ app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_
 
 today=$(date '+%Y%m%d')
 
-echo "today --> ${today}"
 echo "dataset --> ${dataset}"
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
-echo "vocab_dataset --> ${vocab_dataset}"
-echo "snapshot_dataset --> ${snapshot_dataset}"
+echo "result_dataset --> ${result_dataset}"
 echo "Data Stage --> ${data_stage}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
@@ -72,14 +65,47 @@ gcloud config set project ${app_id}
 source "${TOOLS_DIR}/set_path.sh"
 
 #--------------------------------------------------------
-export COMBINED_DATASET_ID="${dataset}"
-export BIGQUERY_DATASET_ID="${dataset}"
+export DATASET="${dataset}"
+export DATASET_STAGING="${dataset}_staging"
+export BIGQUERY_DATASET_ID="${DATASET_STAGING}"
 
+# snapshotting dataset to apply cleaning rules
+bq mk --dataset --description "Snapshot of ${DATASET}" --label "phase:staging"  ${app_id}:${DATASET_STAGING}
+
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${DATASET} --target_dataset ${DATASET_STAGING}
+
+# Setting the environment variable for cleaning reules to use, using data_stage
+if [ "${data_stage}" == 'unioned' ];
+then
+    export UNIONED_DATSET_ID="${DATASET_STAGING}"
+elif [ "${data_stage}" == 'rdr' ];
+then
+    export RDR_DATASET_ID="${DATASET_STAGING}"
+elif [ "${data_stage}" == 'combined' ];
+then
+    export COMBINED_DATASET_ID="${DATASET_STAGING}"
+elif [ "${data_stage}" == 'deid_base' ];
+then
+    export COMBINED_DEID_DATASET_ID="${DATASET_STAGING}"
+elif [ "${data_stage}" == 'deid_clean' ];
+then
+    export COMBINED_DEID_CLEAN_DATASET_ID="${DATASET_STAGING}"
+elif [ "${data_stage}" == 'fitbit' ]; 
+then
+    export FITBIT_DATASET_ID="${DATASET_STAGING}"
+fi
 
 # run cleaning_rules on a dataset
 python "${CLEANER_DIR}/clean_cdr.py" -d ${data_stage} -s 2>&1 | tee cleaning_rules_log.txt
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${dataset}" -n "${snapshot_dataset}"
+python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${DATASET_STAGING}" -n "${result_dataset}"
+
+# Snapshot the staging sandbox dataset to store it with 
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${DATASET_STAGING}_sandbox" --target_dataset "${DATASET}_sandbox"
+
+# Remove staging datasets
+bq rm -r -d "${DATASET_STAGING}_sandbox"
+bq rm -r -d "${DATASET_STAGING}"
 
 unset PYTHOPATH
