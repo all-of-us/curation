@@ -141,7 +141,7 @@ bq rm -r -d "${combined_staging}"
 combined_release="${combined}_release"
 
 # Create a dataset for data browser team
-bq mk --dataset --description "${version} Release version of combined dataset with ${rdr_dataset} + ${unioned_ehr_dataset}" --label "phase:clean" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${combined_release}
+bq mk --dataset --description "${version} Release version of combined dataset with ${rdr_dataset} + ${unioned_ehr_dataset}" --label "phase:release" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${combined_release}
 
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined} --target_dataset ${combined_release}
 
