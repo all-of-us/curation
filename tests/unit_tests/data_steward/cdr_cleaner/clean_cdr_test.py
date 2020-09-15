@@ -27,22 +27,23 @@ class CleanCDRTest(unittest.TestCase):
 
     def test_parser(self):
         test_args = [
-            '-p', self.project_id, '-d', self.dataset_id, '--data_stage', 'ehr'
+            '-p', self.project_id, '-d', self.dataset_id, '-b',
+            self.sandbox_dataset_id, '--data_stage', 'ehr'
         ]
         parser = cc.get_parser()
         args = parser.parse_args(test_args)
         self.assertIn(args.data_stage, DataStage)
 
         test_args = [
-            '-p', self.project_id, '-d', self.dataset_id, '--data_stage',
-            'unspecified'
+            '-p', self.project_id, '-d', self.dataset_id, '-b',
+            self.sandbox_dataset_id, '--data_stage', 'unspecified'
         ]
         parser = cc.get_parser()
         self.assertRaises(SystemExit, parser.parse_args, test_args)
 
         test_args = [
-            '-p', self.project_id, '-d', self.dataset_id, '--data_stage',
-            'unknown'
+            '-p', self.project_id, '-d', self.dataset_id, '-b',
+            self.sandbox_dataset_id, '--data_stage', 'unknown'
         ]
         parser = cc.get_parser()
         self.assertRaises(SystemExit, parser.parse_args, test_args)
@@ -58,7 +59,8 @@ class CleanCDRTest(unittest.TestCase):
             expected_kwargs_list.extend([f'--{k}', v])
 
         test_args = [
-            '-p', self.project_id, '-d', self.dataset_id, '--data_stage', 'ehr'
+            '-p', self.project_id, '-d', self.dataset_id, '-b',
+            self.sandbox_dataset_id, '--data_stage', 'ehr'
         ] + expected_kwargs_list
 
         basic_parser = cc.get_parser()

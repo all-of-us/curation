@@ -64,10 +64,10 @@ class UpdateFieldsNumbersAsStringsTest(BaseTest.CleaningRulesTestBase):
         dataset_id = os.environ.get('RDR_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
 
-        cls.query_class = UpdateFieldsNumbersAsStrings(project_id, dataset_id,
-                                                       sandbox_id)
+        cls.rule_instance = UpdateFieldsNumbersAsStrings(
+            project_id, dataset_id, sandbox_id)
 
-        sb_table_names = cls.query_class.get_sandbox_tablenames()
+        sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
