@@ -12,7 +12,7 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.dateshift import DateShiftRule
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
-from common import FITBIT_TABLES, DEID_MAP
+from common import FITBIT_TABLES
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from resources import fields_for
 
@@ -27,7 +27,7 @@ class FitbitDateShiftRule(DateShiftRule):
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 mapping_dataset_id):
+                 mapping_dataset_id, mapping_table_id):
         """
         Initialize the class.
 
@@ -49,7 +49,7 @@ class FitbitDateShiftRule(DateShiftRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=self.tables,
                          mapping_dataset_id=mapping_dataset_id,
-                         mapping_table_id=DEID_MAP,
+                         mapping_table_id=mapping_table_id,
                          depends_on=[PIDtoRID])
 
     def get_tables_and_schemas(self):
@@ -106,7 +106,16 @@ if __name__ == '__main__':
         parser.LONG_ARGUMENT: '--mapping_dataset_id',
         parser.ACTION: 'store',
         parser.DEST: 'mapping_dataset_id',
-        parser.HELP: 'Identifies the dataset containing _deid_map',
+        parser.HELP: 'Identifies the dataset containing pid-rid map table',
+        parser.REQUIRED: True
+    }
+
+    mapping_table_arg = {
+        parser.SHORT_ARGUMENT: '-t',
+        parser.LONG_ARGUMENT: '--mapping_table_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'mapping_table_id',
+        parser.HELP: 'Identifies the pid-rid map table, typically _deid_map',
         parser.REQUIRED: True
     }
 
@@ -118,7 +127,8 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(FitbitDateShiftRule,)],
-            mapping_dataset_id=ARGS.mapping_dataset_id)
+            mapping_dataset_id=ARGS.mapping_dataset_id,
+            mapping_table_id=ARGS.mapping_table_id)
         for query in query_list:
             LOGGER.info(query)
     else:
@@ -127,4 +137,5 @@ if __name__ == '__main__':
                                    ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
                                    [(FitbitDateShiftRule,)],
-                                   mapping_dataset_id=ARGS.mapping_dataset_id)
+                                   mapping_dataset_id=ARGS.mapping_dataset_id,
+                                   mapping_table_id=ARGS.mapping_table_id)

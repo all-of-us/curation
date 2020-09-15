@@ -29,12 +29,17 @@ class PIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         cls.sandbox_id = cls.dataset_id + '_sandbox'
 
         mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        mapping_table_id = DEID_MAP
         cls.mapping_dataset_id = mapping_dataset_id
-        cls.kwargs.update({'mapping_dataset_id': mapping_dataset_id})
-        cls.fq_deid_map_table = f'{project_id}.{mapping_dataset_id}.{DEID_MAP}'
+        cls.kwargs.update({
+            'mapping_dataset_id': mapping_dataset_id,
+            'mapping_table_id': mapping_table_id
+        })
+        cls.fq_deid_map_table = f'{project_id}.{mapping_dataset_id}.{mapping_table_id}'
 
         cls.rule_instance = pr.PIDtoRID(project_id, cls.dataset_id,
-                                        cls.sandbox_id, mapping_dataset_id)
+                                        cls.sandbox_id, mapping_dataset_id,
+                                        mapping_table_id)
 
         cls.fq_sandbox_table_names = []
 

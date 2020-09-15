@@ -14,8 +14,6 @@ from jinja2 import Environment
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import DEID_MAP
 
 LOGGER = logging.getLogger(__name__)
 

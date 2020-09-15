@@ -12,7 +12,7 @@ from utils import bq
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import FITBIT_TABLES, DEID_MAP
+from common import FITBIT_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class PIDtoRID(BaseCleaningRule):
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 mapping_dataset_id):
+                 mapping_dataset_id, mapping_table_id):
         """
         Initialize the class with proper info.
 
@@ -68,7 +68,7 @@ class PIDtoRID(BaseCleaningRule):
                 f'{self.project_id}.{self.dataset_id}.{table_id}')
             for table_id in FITBIT_TABLES
         ]
-        fq_deid_map_table = f'{self.project_id}.{mapping_dataset_id}.{DEID_MAP}'
+        fq_deid_map_table = f'{self.project_id}.{mapping_dataset_id}.{mapping_table_id}'
         self.deid_map = gbq.TableReference.from_string(fq_deid_map_table)
         self.person = gbq.TableReference.from_string(
             f'{self.project_id}.{mapping_dataset_id}.person')
@@ -138,7 +138,16 @@ if __name__ == '__main__':
         parser.LONG_ARGUMENT: '--mapping_dataset_id',
         parser.ACTION: 'store',
         parser.DEST: 'mapping_dataset_id',
-        parser.HELP: 'Identifies the dataset containing _deid_map',
+        parser.HELP: 'Identifies the dataset containing pid-rid map table',
+        parser.REQUIRED: True
+    }
+
+    mapping_table_arg = {
+        parser.SHORT_ARGUMENT: '-t',
+        parser.LONG_ARGUMENT: '--mapping_table_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'mapping_table_id',
+        parser.HELP: 'Identifies the pid-rid map table, typically _deid_map',
         parser.REQUIRED: True
     }
 
@@ -150,7 +159,8 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(PIDtoRID,)],
-            mapping_dataset_id=ARGS.mapping_dataset_id)
+            mapping_dataset_id=ARGS.mapping_dataset_id,
+            mapping_table_id=ARGS.mapping_table_id)
         for query in query_list:
             LOGGER.info(query)
     else:
@@ -158,4 +168,5 @@ if __name__ == '__main__':
         clean_engine.clean_dataset(ARGS.project_id,
                                    ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id, [(PIDtoRID,)],
-                                   mapping_dataset_id=ARGS.mapping_dataset_id)
+                                   mapping_dataset_id=ARGS.mapping_dataset_id,
+                                   mapping_table_id=ARGS.mapping_table_id)
