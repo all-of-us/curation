@@ -134,8 +134,7 @@ class BaseTest:
             Ensure the data is dropped from the table(s).
             """
             for table in self.fq_table_names + self.fq_sandbox_table_names:
-                self.drop_rows(table)
-                self.client.delete_table(table)
+                self.client.delete_table(table, not_found_ok=True)
 
         def load_test_data(self, sql_statements=None):
             """

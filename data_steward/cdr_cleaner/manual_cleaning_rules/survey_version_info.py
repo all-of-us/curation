@@ -213,6 +213,13 @@ if __name__ == '__main__':
         dest='cope_survey_table',
         required=True,
         help='Name of the table cotaining the cope survey mapping information')
+    parser.add_argument(
+        '--mapping_dataset',
+        dest='mapping_dataset_id',
+        action='store',
+        help=('Dataset name for the dataset containing deid mapping tables.  '
+              'For example, _deid_map and _deid_questionnaire_response_id.'))
+
     ARGS = parser.parse_args()
     if not ARGS.mapping_dataset_id:
         parser.error("The deid mapping dataset is required to run this script.")
