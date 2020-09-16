@@ -43,11 +43,17 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         dataset_id = os.environ.get('COMBINED_DEID_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
 
-        cls.query_class = COPESurveyVersionTask(project_id, dataset_id,
-                                                sandbox_id,
-                                                cls.mapping_dataset_id,
-                                                cls.cope_dataset_id,
-                                                cls.cope_tablename)
+        cls.kwargs.update({
+            'qrid_map_dataset_id': cls.mapping_dataset_id,
+            'cope_lookup_dataset_id': cls.cope_dataset_id,
+            'cope_table_name': cls.cope_tablename
+        })
+
+        cls.rule_instance = COPESurveyVersionTask(project_id, dataset_id,
+                                                  sandbox_id,
+                                                  cls.mapping_dataset_id,
+                                                  cls.cope_dataset_id,
+                                                  cls.cope_tablename)
 
         cls.fq_table_names = [
             f"{project_id}.{dataset_id}.observation",
@@ -101,12 +107,12 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
             self.jinja_env.from_string("""
         CREATE OR REPLACE TABLE `{{project}}.{{cope_dataset}}.{{cope_table_name}}` AS (
         SELECT
-        -- participant id has not been de-identified by RDR -- 
-        700 AS participant_id, 
+        -- participant id has not been de-identified by RDR --
+        700 AS participant_id,
         -- questionnaire_response_id from RDR has not been de-identified --
-        10 AS questionnaire_response_id, 
+        10 AS questionnaire_response_id,
         -- semantic version provided by RDR but not strictly used by curation --
-        'V2020.05.06' AS semantic_version, 
+        'V2020.05.06' AS semantic_version,
         -- cope month provided by RDR team --
         'may' AS cope_month)
         """)
