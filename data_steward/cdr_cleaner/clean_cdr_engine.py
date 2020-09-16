@@ -54,10 +54,14 @@ def clean_dataset(project_id, dataset_id, sandbox_dataset_id, rules, **kwargs):
     client = bq.get_client(project_id=project_id)
 
     all_jobs = []
-    for rule in rules:
+    for rule_index, rule in enumerate(rules):
         clazz = rule[0]
         query_function, setup_function, rule_info = infer_rule(
             clazz, project_id, dataset_id, sandbox_dataset_id, **kwargs)
+
+        LOGGER.info(
+            f"Applying cleaning rule {rule_info[cdr_consts.MODULE_NAME]} "
+            f"{rule_index+1}/{len(rules)}")
         setup_function(client)
         query_list = query_function()
         jobs = run_queries(client, query_list, rule_info)

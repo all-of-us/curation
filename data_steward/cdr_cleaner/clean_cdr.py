@@ -289,12 +289,27 @@ def get_required_params(rules):
     :param rules: list of cleaning rules
     :return: set of parameter names
     """
-    result = set()
+    result = dict()
     for rule in rules:
         clazz = rule[0]
         rule_args = clean_engine.get_rule_args(clazz)
-        result.update(rule['name'] for rule in rule_args if rule['required'])
+        for rule_arg in rule_args:
+            if rule_arg['required']:
+                param_name = rule_arg['name']
+                if param_name not in result.keys():
+                    result[param_name] = list()
+                result[param_name].append(clazz.__name__)
     return result
+
+
+def get_missing_custom_params(rules, **kwargs):
+    required_params = get_required_params(rules)
+    missing = set(required_params.keys()) - set(kwargs.keys()) - set(
+        ce_consts.CLEAN_ENGINE_REQUIRED_PARAMS)
+    missing_param_rules = {
+        k: v for k, v in required_params.items() if k in missing
+    }
+    return missing_param_rules
 
 
 def validate_custom_params(rules, **kwargs):
@@ -306,18 +321,17 @@ def validate_custom_params(rules, **kwargs):
     :return: None
     :raises: RuntimeError if missing parameters required by any CR
     """
-    required_params = get_required_params(rules)
-    missing = required_params - set(kwargs.keys()) - set(
-        ce_consts.CLEAN_ENGINE_REQUIRED_PARAMS)
+    missing_param_rules = get_missing_custom_params(rules, **kwargs)
     # TODO warn if extra args supplied than rules require
-    if missing:
-        raise RuntimeError(f'Missing required custom parameter(s): {missing}')
+    if missing_param_rules:
+        raise RuntimeError(
+            f'Missing required custom parameter(s): {missing_param_rules}')
 
 
 if __name__ == '__main__':
     args, kwargs = fetch_args_kwargs()
 
-    rules = DATA_STAGE_RULES_MAPPING[args.data_stage]
+    rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)
 
     if args.list_queries:

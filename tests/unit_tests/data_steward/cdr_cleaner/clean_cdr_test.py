@@ -122,8 +122,12 @@ class CleanCDRTest(unittest.TestCase):
             pass
 
         actual = cc.get_required_params([(Fake1,), (Fake2,), (fake_rule_func,)])
-        expected = {'project_id', 'dataset_id', 'sandbox_dataset_id'}
-        self.assertSetEqual(expected, actual)
+        expected = {
+            'project_id': ['Fake1', 'Fake2', 'fake_rule_func'],
+            'dataset_id': ['Fake1', 'Fake2', 'fake_rule_func'],
+            'sandbox_dataset_id': ['Fake1', 'Fake2', 'fake_rule_func']
+        }
+        self.assertDictEqual(expected, actual)
 
         class Fake3(FakeRuleClass):
 
@@ -133,9 +137,12 @@ class CleanCDRTest(unittest.TestCase):
 
         actual = cc.get_required_params([(Fake1,), (Fake3,), (fake_rule_func,)])
         expected = {
-            'project_id', 'dataset_id', 'sandbox_dataset_id', 'required_param_1'
+            'project_id': ['Fake1', 'Fake3', 'fake_rule_func'],
+            'dataset_id': ['Fake1', 'Fake3', 'fake_rule_func'],
+            'sandbox_dataset_id': ['Fake1', 'Fake3', 'fake_rule_func'],
+            'required_param_1': ['Fake3']
         }
-        self.assertSetEqual(expected, actual)
+        self.assertDictEqual(expected, actual)
 
         class Fake4(FakeRuleClass):
 
@@ -147,8 +154,12 @@ class CleanCDRTest(unittest.TestCase):
                 pass
 
         actual = cc.get_required_params([(Fake1,), (Fake4,), (fake_rule_func,)])
-        expected = {'project_id', 'dataset_id', 'sandbox_dataset_id'}
-        self.assertSetEqual(expected, actual)
+        expected = {
+            'project_id': ['Fake1', 'Fake4', 'fake_rule_func'],
+            'dataset_id': ['Fake1', 'Fake4', 'fake_rule_func'],
+            'sandbox_dataset_id': ['Fake1', 'Fake4', 'fake_rule_func']
+        }
+        self.assertDictEqual(expected, actual)
 
         # a legacy rule with extra required param
         def fake_1(project_id, dataset_id, sandbox_dataset_id,
@@ -158,9 +169,12 @@ class CleanCDRTest(unittest.TestCase):
         actual = cc.get_required_params([(Fake1,), (fake_1,),
                                          (fake_rule_func,)])
         expected = {
-            'project_id', 'dataset_id', 'sandbox_dataset_id', 'required_param_1'
+            'project_id': ['Fake1', 'fake_1', 'fake_rule_func'],
+            'dataset_id': ['Fake1', 'fake_1', 'fake_rule_func'],
+            'sandbox_dataset_id': ['Fake1', 'fake_1', 'fake_rule_func'],
+            'required_param_1': ['fake_1']
         }
-        self.assertSetEqual(expected, actual)
+        self.assertDictEqual(expected, actual)
 
         def fake_2(project_id,
                    dataset_id,
@@ -170,11 +184,14 @@ class CleanCDRTest(unittest.TestCase):
 
         actual = cc.get_required_params([(Fake1,), (fake_1,), (fake_2,)])
         expected = {
-            'project_id', 'dataset_id', 'sandbox_dataset_id', 'required_param_1'
+            'project_id': ['Fake1', 'fake_1', 'fake_2'],
+            'dataset_id': ['Fake1', 'fake_1', 'fake_2'],
+            'sandbox_dataset_id': ['Fake1', 'fake_1', 'fake_2'],
+            'required_param_1': ['fake_1']
         }
-        self.assertSetEqual(expected, actual)
+        self.assertDictEqual(expected, actual)
 
-    def test_validate_custom_params(self):
+    def test_get_missing_custom_params(self):
 
         class Fake1(FakeRuleClass):
             pass
@@ -182,8 +199,10 @@ class CleanCDRTest(unittest.TestCase):
         class Fake2(FakeRuleClass):
             pass
 
-        # this should not raise an error
-        cc.validate_custom_params([(Fake1,), (Fake2,), (fake_rule_func,)])
+        actual = cc.get_missing_custom_params([(Fake1,), (Fake2,),
+                                               (fake_rule_func,)])
+        expected = dict()
+        self.assertDictEqual(expected, actual)
 
         class Fake3(FakeRuleClass):
 
@@ -191,14 +210,10 @@ class CleanCDRTest(unittest.TestCase):
                          required_param_1):
                 pass
 
-        with self.assertRaises(RuntimeError) as c:
-            cc.validate_custom_params([(Fake1,), (Fake3,), (fake_rule_func,)])
-        missing = {'required_param_1'}
-        self.assertEqual(str(c.exception),
-                         f'Missing required custom parameter(s): {missing}')
-
-        cc.validate_custom_params([(Fake1,), (Fake2,), (fake_rule_func,)],
-                                  required_param_1='value')
+        actual = cc.get_missing_custom_params([(Fake1,), (Fake3,),
+                                               (fake_rule_func,)])
+        expected = {'required_param_1': ['Fake3']}
+        self.assertDictEqual(expected, actual)
 
         class Fake4(FakeRuleClass):
 
@@ -209,18 +224,20 @@ class CleanCDRTest(unittest.TestCase):
                          optional_param='default_value'):
                 pass
 
-        cc.validate_custom_params([(Fake1,), (Fake4,), (fake_rule_func,)])
+        actual = cc.get_missing_custom_params([(Fake1,), (Fake4,),
+                                               (fake_rule_func,)])
+        expected = dict()
+        self.assertDictEqual(expected, actual)
 
         # a legacy rule with extra required param
         def fake_1(project_id, dataset_id, sandbox_dataset_id,
                    required_param_1):
             pass
 
-        with self.assertRaises(RuntimeError) as c:
-            cc.validate_custom_params([(Fake1,), (fake_1,), (fake_rule_func,)])
-        missing = {'required_param_1'}
-        self.assertEqual(str(c.exception),
-                         f'Missing required custom parameter(s): {missing}')
+        actual = cc.get_missing_custom_params([(Fake1,), (fake_1,),
+                                               (fake_rule_func,)])
+        expected = {'required_param_1': ['fake_1']}
+        self.assertDictEqual(expected, actual)
 
         def fake_2(project_id,
                    dataset_id,
@@ -228,11 +245,6 @@ class CleanCDRTest(unittest.TestCase):
                    required_param_1='optional'):
             pass
 
-        with self.assertRaises(RuntimeError) as c:
-            cc.validate_custom_params([(Fake1,), (fake_1,), (fake_2,)])
-        missing = {'required_param_1'}
-        self.assertEqual(str(c.exception),
-                         f'Missing required custom parameter(s): {missing}')
-
-        cc.validate_custom_params([(Fake1,), (fake_1,), (fake_2,)],
-                                  required_param_1='required_val')
+        actual = cc.get_missing_custom_params([(Fake1,), (fake_1,), (fake_2,)])
+        expected = {'required_param_1': ['fake_1']}
+        self.assertDictEqual(expected, actual)
