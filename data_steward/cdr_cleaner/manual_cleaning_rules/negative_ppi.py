@@ -87,7 +87,7 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(get_update_ppi_queries(),)])
+                                                 [(get_update_ppi_queries,)])
         for query in query_list:
             LOGGER.info(query)
     else:
