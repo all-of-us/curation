@@ -48,7 +48,7 @@ IN( SELECT
 
 
 def get_drop_multiple_measurement_queries(project_id, dataset_id,
-                                          sandbox_dataset):
+                                          sandbox_dataset_id):
     """
     runs the query which removes all multiple me
 
@@ -63,7 +63,7 @@ def get_drop_multiple_measurement_queries(project_id, dataset_id,
         cdr_consts.QUERY] = INVALID_MULT_MEASUREMENTS.format(
             dataset=dataset_id,
             project=project_id,
-            sandbox_dataset=sandbox_dataset,
+            sandbox_dataset=sandbox_dataset_id,
             intermediary_table=INTERMEDIARY_TABLE)
     queries_list.append(invalid_measurements_query)
 
@@ -71,7 +71,7 @@ def get_drop_multiple_measurement_queries(project_id, dataset_id,
     valid_measurements_query[cdr_consts.QUERY] = VALID_MEASUREMENTS.format(
         dataset=dataset_id,
         project=project_id,
-        sandbox_dataset=sandbox_dataset,
+        sandbox_dataset=sandbox_dataset_id,
         intermediary_table=INTERMEDIARY_TABLE)
     queries_list.append(valid_measurements_query)
 
