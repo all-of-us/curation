@@ -1,9 +1,12 @@
 """
 Update answers where the participant skipped answering but the answer was registered as -1
 """
+import logging
+
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import constants.bq_utils as bq_consts
 
+LOGGER = logging.getLogger(__name__)
 CLEANING_RULE_NAME = 'update_ppi_negative_pain_level'
 
 SELECT_NEGATIVE_PPI_QUERY = """
@@ -79,7 +82,16 @@ if __name__ == '__main__':
 
     ARGS = parse_args()
 
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_update_ppi_queries(ARGS.project_id, ARGS.dataset_id,
-                                        ARGS.sandbox_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(get_update_ppi_queries(),)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(get_update_ppi_queries,)])
