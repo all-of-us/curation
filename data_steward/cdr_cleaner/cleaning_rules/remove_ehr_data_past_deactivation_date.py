@@ -12,14 +12,13 @@ import logging
 
 # Third party imports
 import bq_utils
-
 # Project imports
 import retraction.retract_deactivated_pids as rdp
 import utils.participant_summary_requests as psr
 
 LOGGER = logging.getLogger(__name__)
 
-TICKET_NUMBER = ['dc686']
+TICKET_NUMBER = 'dc686'
 
 DEACTIVATED_PARTICIPANTS_COLUMNS = [
     'participantId', 'suspensionStatus', 'suspensionTime'
@@ -58,7 +57,7 @@ if __name__ == '__main__':
     rdp.add_console_logging(ARGS.console_log)
 
     remove_ehr_data_queries = remove_ehr_data_queries(ARGS.project_id,
-                                                      ARGS.ticket_number,
+                                                      TICKET_NUMBER,
                                                       ARGS.pids_project_id,
                                                       ARGS.pids_dataset_id,
                                                       ARGS.pids_table)
