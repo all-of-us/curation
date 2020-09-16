@@ -575,7 +575,7 @@ def parse_args(raw_args=None):
                         action='store',
                         dest='ticket_number',
                         help='Ticket number to append to sandbox table names',
-                        required=False)
+                        required=True)
     parser.add_argument(
         '-i',
         '--pids-project-id',

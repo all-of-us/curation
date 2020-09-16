@@ -57,7 +57,7 @@ if __name__ == '__main__':
     rdp.add_console_logging(ARGS.console_log)
 
     remove_ehr_data_queries = remove_ehr_data_queries(ARGS.project_id,
-                                                      TICKET_NUMBER,
+                                                      ARGS.ticket_number,
                                                       ARGS.pids_project_id,
                                                       ARGS.pids_dataset_id,
                                                       ARGS.pids_table)

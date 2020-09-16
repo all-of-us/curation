@@ -4,10 +4,6 @@ set -ex
 # Generate unioned_ehr dataset
 # Loads vocabulary from specified dataset and unioned EHR tables from specified dataset
 
-deactivation='false'
-pids_project_id='test_project'
-pids_dataset_id='test_dataset'
-pids_table='test_table'
 
 USAGE="
 Usage: generate_unioned_ehr_dataset.sh
@@ -15,10 +11,10 @@ Usage: generate_unioned_ehr_dataset.sh
   --vocab_dataset <vocab dataset>
   --ehr_snapshot <EHR dataset>
   --dataset_release_tag <release tag for the CDR>
-  [--deactivation <choose b/w true|false to run delete_deactivated participants: default is ${deactivation}>]
-  [--pids_project_id <Identifies the project where the pids table is stored: default is ${pids_project_id}>]
-  [--pids_dataset_id <Identifies the dataset where the pids table is stored: default is ${pids_dataset_id}>]
-  [--pids_table <Identifies the table where the pids are stored: default is ${pids_table} >]
+  --ticket_number <Ticket number to append to sandbox table names>
+  --pids_project_id <Identifies the project where the pids table is stored>
+  --pids_dataset_id <Identifies the dataset where the pids table is stored>
+  --pids_table <Identifies the table where the pids are stored>
 "
 
 echo
@@ -40,8 +36,8 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
-  --deactivation)
-    deactivation=$2
+  --ticket_number)
+    ticket_number=$2
     shift 2
     ;;
   --pids_project_id)
@@ -65,7 +61,7 @@ while true; do
 done
 
 if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snapshot}" ]] || [[ -z "${dataset_release_tag}" ]] \
- || [[ -z "${deactivation}" ]] || [[ -z "${pids_project_id}" ]] || [[ -z "${pids_dataset_id}" ]] || [[ -z "${pids_table}" ]]; then
+ || [[ -z "${ticket_number}" ]] || [[ -z "${pids_project_id}" ]] || [[ -z "${pids_dataset_id}" ]] || [[ -z "${pids_table}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -82,7 +78,7 @@ echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
-echo "deactivation --> ${deactivation}"
+echo "ticket_number --> ${ticket_number}"
 echo "pids_project_id --> ${pids_project_id}"
 echo "pids_dataset_id --> ${pids_dataset_id}"
 echo "pids_table --> ${pids_table}"
@@ -104,7 +100,7 @@ unioned_ehr_dataset_staging="${unioned_ehr_dataset}_staging"
 
 #---------------------------------------------------------------------
 # Step 1 Create an empty dataset
-bq mk --dataset --description "copy ehr_union from ${ehr_snapshot}" --label "phase:backup" --label "release_tag:${dataset_release_tag}" --label "de_identified:false"${app_id}:${unioned_ehr_dataset_backup}
+bq mk --dataset --description "copy ehr_union from ${ehr_snapshot}" --label "phase:backup" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_backup}
 
 #----------------------------------------------------------------------
 # Step 2 Create the clinical tables for unioned EHR data set
@@ -125,16 +121,16 @@ python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary ${unioned_ehr_dataset
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snapshot} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset_backup} --target_prefix _mapping_ --sync false
 
 echo "removing tables copies unintentionally"
-bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_condition_occurrence
-bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_device_exposure
-bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_drug_exposure
-bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_fact_relationship
-bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_measurement
-bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_note
-bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_observation
-bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_procedure_occurrence
-bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_specimen
-bq rm -f ${unioned_ehr_dataset}._mapping_ipmc_nu_visit_occurrence
+bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_condition_occurrence
+bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_device_exposure
+bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_drug_exposure
+bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_fact_relationship
+bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_measurement
+bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_note
+bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_observation
+bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_procedure_occurrence
+bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_specimen
+bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_visit_occurrence
 
 # Run cleaning rules on unioned_ehr_dataset
 # create an intermediary table to apply cleaning rules on
@@ -147,18 +143,15 @@ export BIGQUERY_DATASET_ID="${unioned_ehr_dataset_staging}"
 data_stage='unioned'
 
 # Remove de-activated participants
-if [ ${deactivation} == 'true' ];
-then
-  python "${CLEANER_DIR}/cleaning_rules/remove_ehr_data_past_deactivation_date.py" --project-id ${app_id} --pids-project-id ${pids_project_id} --pids-dataset-id ${pids_dataset_id} --pids-table ${pids_table}
-fi
+python "${CLEANER_DIR}/cleaning_rules/remove_ehr_data_past_deactivation_date.py" --project-id ${app_id} --ticket-number ${ticket_number} --pids-project-id ${pids_project_id} --pids-dataset-id ${pids_dataset_id} --pids-table ${pids_table}
 
 # run cleaning_rules on a dataset
 python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${unioned_ehr_dataset_staging}" -n "${unioned_ehr_dataset}"
+python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --snapshot_dataset_id "${unioned_ehr_dataset}"
 
-bq update --description "${version} clean version of ${unioned_ehr_dataset_backup}" ${app_id}:${unioned_ehr_dataset}
+bq update --description "${version} clean version of ${unioned_ehr_dataset_backup}" --set_label "phase:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${unioned_ehr_dataset}
 
 #copy sandbox dataset
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${unioned_ehr_dataset_staging}_sandbox" --target_dataset "${unioned_ehr_dataset}_sandbox"
