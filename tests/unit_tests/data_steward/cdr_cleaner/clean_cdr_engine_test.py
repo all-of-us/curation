@@ -146,5 +146,5 @@ class CleanCDREngineTest(TestCase):
             'project_id', 'dataset_id', 'sandbox_dataset_id'
         ]
         actual_rule_args = ce.get_rule_args(fake_rule_func)
-        actual_param_names = [k for k, v in actual_rule_args]
+        actual_param_names = [arg['name'] for arg in actual_rule_args]
         self.assertListEqual(expected_param_names, actual_param_names)
