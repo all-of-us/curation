@@ -77,7 +77,7 @@ bq mk --dataset --description "Snapshot of ${DATASET}" --label "phase:staging"  
 # Setting the environment variable for cleaning reules to use, using data_stage
 if [ "${data_stage}" == 'unioned' ];
 then
-    export UNIONED_DATSET_ID="${DATASET_STAGING}"
+    export UNIONED_DATASET_ID="${DATASET_STAGING}"
 elif [ "${data_stage}" == 'rdr' ];
 then
     export RDR_DATASET_ID="${DATASET_STAGING}"
