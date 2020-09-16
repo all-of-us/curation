@@ -13,12 +13,15 @@ AND
 -procedure_source_concept_id is not in the procedure domain (they ARE allowed to be non-standard).
 
 """
+import logging
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from constants import bq_utils as bq_consts
 from sandbox import get_sandbox_dataset_id
+
+LOGGER = logging.getLogger(__name__)
 
 TABLE = 'procedure_occurrence'
 INTERMEDIARY_TABLE_NAME = 'procedure_occurrence_dc583'
@@ -58,7 +61,9 @@ WHERE p0.procedure_occurrence_id = p1.procedure_occurrence_id)
 """
 
 
-def get_remove_invalid_procedure_source_queries(project_id, dataset_id):
+def get_remove_invalid_procedure_source_queries(project_id,
+                                                dataset_id,
+                                                sandbox_dataset_id=None):
     """
     runs the query which removes records that contain incorrect values in the procedure_source_concept_id field
     invalid procedure_source_concept_ids are where it is not in the procedure domain and
@@ -66,6 +71,8 @@ def get_remove_invalid_procedure_source_queries(project_id, dataset_id):
 
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return:
     """
     queries_list = []
@@ -103,7 +110,16 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_remove_invalid_procedure_source_queries(
-        ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_remove_invalid_procedure_source_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_remove_invalid_procedure_source_queries,)])

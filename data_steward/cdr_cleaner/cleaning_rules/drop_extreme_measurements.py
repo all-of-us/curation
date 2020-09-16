@@ -12,9 +12,12 @@ participant.
 This is expected to drop a very small number of rows (less than 300 total) based on values in the current CDR.
 
 """
+import logging
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 DELETE_HEIGHT_ROWS_QUERY = """
 DELETE FROM `{project_id}.{dataset_id}.measurement` m
@@ -80,12 +83,16 @@ AND value_as_number NOT BETWEEN 10 AND 125)
 """
 
 
-def get_drop_extreme_measurement_queries(project_id, dataset_id):
+def get_drop_extreme_measurement_queries(project_id,
+                                         dataset_id,
+                                         sandbox_dataset_id=None):
     """
     runs the query which removes all multiple me
 
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return:
     """
     queries_list = []
@@ -113,7 +120,16 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_drop_extreme_measurement_queries(ARGS.project_id,
-                                                      ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_drop_extreme_measurement_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(get_drop_extreme_measurement_queries,)])

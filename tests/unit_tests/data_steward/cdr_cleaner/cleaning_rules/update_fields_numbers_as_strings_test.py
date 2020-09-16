@@ -40,24 +40,24 @@ class UpdateFieldsNumbersAsStringsTest(unittest.TestCase):
         self.sandbox_id = 'test_sandbox'
         self.client = None
 
-        self.query_class = UpdateFieldsNumbersAsStrings(self.project_id,
-                                                        self.dataset_id,
-                                                        self.sandbox_id)
+        self.rule_instance = UpdateFieldsNumbersAsStrings(
+            self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEqual(self.query_class.project_id, self.project_id)
-        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # Test
-        self.query_class.setup_rule(self.client)
+        self.rule_instance.setup_rule(self.client)
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         # Test
-        results_list = self.query_class.get_query_specs()
+        results_list = self.rule_instance.get_query_specs()
 
         # Post conditions
         expected_query_list = []
@@ -65,12 +65,11 @@ class UpdateFieldsNumbersAsStringsTest(unittest.TestCase):
         for i, table in enumerate(tables):
             expected_query_list.append({
                 clean_consts.QUERY:
-                    SANDBOX_QUERY.render(
-                        project=self.project_id,
-                        sandbox_dataset=self.sandbox_id,
-                        sandbox_table=self.query_class.get_sandbox_tablenames()
-                        [i],
-                        dataset=self.dataset_id)
+                    SANDBOX_QUERY.render(project=self.project_id,
+                                         sandbox_dataset=self.sandbox_id,
+                                         sandbox_table=self.rule_instance.
+                                         get_sandbox_tablenames()[i],
+                                         dataset=self.dataset_id)
             })
             expected_query_list.append({
                 clean_consts.QUERY:

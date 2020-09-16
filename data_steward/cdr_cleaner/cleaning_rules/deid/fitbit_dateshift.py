@@ -27,7 +27,7 @@ class FitbitDateShiftRule(DateShiftRule):
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 map_dataset_id, map_tablename):
+                 mapping_dataset_id, mapping_table_id):
         """
         Initialize the class.
 
@@ -48,8 +48,8 @@ class FitbitDateShiftRule(DateShiftRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=self.tables,
-                         map_dataset=map_dataset_id,
-                         map_table=map_tablename,
+                         mapping_dataset_id=mapping_dataset_id,
+                         mapping_table_id=mapping_table_id,
                          depends_on=[PIDtoRID])
 
     def get_tables_and_schemas(self):
@@ -101,23 +101,41 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    parser = parser.get_argument_parser()
-    parser.add_argument('--mapping-dataset',
-                        required=True,
-                        dest='map_dataset',
-                        help=('Location of the mapping dataset to use'))
-    parser.add_argument('--mapping-table',
-                        required=True,
-                        dest='map_table',
-                        help=('Name of the mapping table to use'))
-    ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    date_shifter = FitbitDateShiftRule(ARGS.project_id, ARGS.dataset_id,
-                                       ARGS.sandbox_dataset_id,
-                                       ARGS.map_dataset, ARGS.map_table)
-    query_list = date_shifter.get_query_specs()
+    mapping_dataset_arg = {
+        parser.SHORT_ARGUMENT: '-m',
+        parser.LONG_ARGUMENT: '--mapping_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'mapping_dataset_id',
+        parser.HELP: 'Identifies the dataset containing pid-rid map table',
+        parser.REQUIRED: True
+    }
+
+    mapping_table_arg = {
+        parser.SHORT_ARGUMENT: '-t',
+        parser.LONG_ARGUMENT: '--mapping_table_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'mapping_table_id',
+        parser.HELP: 'Identifies the pid-rid map table, typically _deid_map',
+        parser.REQUIRED: True
+    }
+
+    ARGS = parser.default_parse_args([mapping_dataset_arg])
 
     if ARGS.list_queries:
-        date_shifter.log_queries()
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(FitbitDateShiftRule,)],
+            mapping_dataset_id=ARGS.mapping_dataset_id,
+            mapping_table_id=ARGS.mapping_table_id)
+        for query in query_list:
+            LOGGER.info(query)
     else:
-        clean_engine.clean_dataset(ARGS.project_id, query_list)
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(FitbitDateShiftRule,)],
+                                   mapping_dataset_id=ARGS.mapping_dataset_id,
+                                   mapping_table_id=ARGS.mapping_table_id)

@@ -101,7 +101,7 @@ python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" --private_key "${key_fi
 python "${TOOLS_DIR}/generate_ext_tables.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --combined_dataset_id "${cdr_id}" -s
 
 # update the observation_ext table with survey_version info.  should become a formal cleaning rule in the future.
-python "${CLEANER_DIR}/manual_cleaning_rules/survey_version_info.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${cdr_deid}_sandbox" --mapping-dataset "${cdr_id}" --cope_survey_dataset "${cope_survey_dataset}" --cope_survey_table "${cope_survey_table_name}" -s 2>&1 | tee survey_versioning.txt
+python "${CLEANER_DIR}/manual_cleaning_rules/survey_version_info.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${cdr_deid}_sandbox" --mapping_dataset "${cdr_id}" --cope_survey_dataset "${cope_survey_dataset}" --cope_survey_table "${cope_survey_table_name}" -s 2>&1 | tee survey_versioning.txt
 
 cdr_deid_base_staging="${registered_cdr_deid}_base_staging"
 cdr_deid_base="${registered_cdr_deid}_base"

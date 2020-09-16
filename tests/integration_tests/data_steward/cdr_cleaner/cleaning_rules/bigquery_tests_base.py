@@ -10,7 +10,7 @@ detailed implementation is needed, the developer can still extend the base class
 only and implement their own tests.
 """
 # Python imports
-import unittest
+from unittest import TestCase, mock
 
 # Third party imports
 import google.cloud.exceptions as gc_exc
@@ -25,7 +25,7 @@ from utils import bq
 
 class BaseTest:
 
-    class BigQueryTestBase(unittest.TestCase):
+    class BigQueryTestBase(TestCase):
         """
         A base class for big query integration tests.
 
@@ -58,6 +58,8 @@ class BaseTest:
             # this should always be for a test project.  a check is implemented to
             # make sure this is true
             cls.project_id = ''
+            cls.dataset_id = ''
+            cls.sandbox_id = ''
             # a list of fully qualified table names the cleaning rule is targeting.
             # fq = {project_id}.{dataset_id}.{table_name}.  required for
             # test setup and cleanup.
@@ -132,8 +134,7 @@ class BaseTest:
             Ensure the data is dropped from the table(s).
             """
             for table in self.fq_table_names + self.fq_sandbox_table_names:
-                self.drop_rows(table)
-                self.client.delete_table(table)
+                self.client.delete_table(table, not_found_ok=True)
 
         def load_test_data(self, sql_statements=None):
             """
@@ -250,7 +251,10 @@ class BaseTest:
         def initialize_class_vars(cls):
             super().initialize_class_vars()
             # The query class that is being executed.
-            cls.query_class = None
+            cls.rule_instance = None
+            # Additional arguments that a cleaning rule requires,
+            # other than the mandatory project_id, dataset_id, sandbox_dataset_id
+            cls.kwargs = {}
 
         def setUp(self):
             """
@@ -304,16 +308,16 @@ class BaseTest:
                 fields = [table_info.get('fields', [])[0]]
                 self.assertRowIDsMatch(fq_table_name, fields, values)
 
-            if self.query_class:
-                # test:  get the queries
-                query_list = self.query_class.get_query_specs()
-
+            if self.rule_instance:
                 # test: run the queries
-                engine.clean_dataset(self.project_id, query_list)
+                rule_class = self.rule_instance.__class__
+                engine.clean_dataset(self.project_id, self.dataset_id,
+                                     self.sandbox_id, [(rule_class,)],
+                                     **self.kwargs)
             else:
                 raise RuntimeError(f"Cannot use the default_test method for "
                                    f"{self.__class__.__name__} because "
-                                   f"query_class is undefined.")
+                                   f"rule_instance is undefined.")
 
             # post conditions
             for table_info in tables_and_test_values:

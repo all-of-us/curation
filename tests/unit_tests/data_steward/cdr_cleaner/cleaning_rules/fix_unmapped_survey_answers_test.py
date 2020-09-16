@@ -27,37 +27,38 @@ class FixUnmappedSurveyAnswersTest(unittest.TestCase):
             JIRA_ISSUE_NUMBERS).lower() + '_' + OBSERVATION
         self.client = None
 
-        self.query_class = FixUnmappedSurveyAnswers(self.project_id,
-                                                    self.dataset_id,
-                                                    self.sandbox_id)
+        self.rule_instance = FixUnmappedSurveyAnswers(self.project_id,
+                                                      self.dataset_id,
+                                                      self.sandbox_id)
 
-        self.assertEqual(self.query_class.project_id, self.project_id)
-        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # Test
-        self.query_class.setup_rule(self.client)
+        self.rule_instance.setup_rule(self.client)
 
     def test_sandbox_table_for(self):
-        self.assertEqual(self.query_class.sandbox_table_for(OBSERVATION),
+        self.assertEqual(self.rule_instance.sandbox_table_for(OBSERVATION),
                          self.sandbox_table_name)
 
         # Test if the error is raised when the table is not an affected table defined in this
         # cleaning rule
         with self.assertRaises(LookupError):
-            self.query_class.sandbox_table_for(PERSON)
+            self.rule_instance.sandbox_table_for(PERSON)
 
     def test_get_sandbox_tablenames(self):
-        self.assertListEqual(self.query_class.get_sandbox_tablenames(),
+        self.assertListEqual(self.rule_instance.get_sandbox_tablenames(),
                              [self.sandbox_table_name])
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets, [clean_consts.RDR])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
 
         # Test
-        results_list = self.query_class.get_query_specs()
+        results_list = self.rule_instance.get_query_specs()
 
         sandbox_query_dict = {
             cdr_consts.QUERY:
@@ -71,7 +72,7 @@ class FixUnmappedSurveyAnswersTest(unittest.TestCase):
         update_query_dict = {
             cdr_consts.QUERY:
                 UPDATE_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY.render(
-                    project=self.query_class.project_id,
+                    project=self.rule_instance.project_id,
                     sandbox_dataset=self.sandbox_id,
                     sandbox_table=self.sandbox_table_name,
                     dataset=self.dataset_id),

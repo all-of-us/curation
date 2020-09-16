@@ -159,7 +159,8 @@ def get_non_match_participant_query(project_id, validation_dataset_id,
 
 
 def delete_records_for_non_matching_participants(project_id,
-                                                 combined_dataset_id,
+                                                 dataset_id,
+                                                 sandbox_dataset_id=None,
                                                  ehr_dataset_id=None,
                                                  validation_dataset_id=None):
     """
@@ -167,8 +168,10 @@ def delete_records_for_non_matching_participants(project_id,
     participant_match data is missing and DRC matching algorithm flags it as a no match 
     
     :param project_id: 
-    :param combined_dataset_id: 
+    :param dataset_id: 
     :param ehr_dataset_id: 
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :param validation_dataset_id:
 
     :return: 
@@ -203,14 +206,14 @@ def delete_records_for_non_matching_participants(project_id,
         LOGGER.info(
             'Participants: {person_ids} and their data will be dropped from {combined_dataset_id}'
             .format(person_ids=non_matching_person_ids,
-                    combined_dataset_id=combined_dataset_id))
+                    combined_dataset_id=dataset_id))
 
         queries.append(
-            remove_pids.get_sandbox_queries(project_id, combined_dataset_id,
+            remove_pids.get_sandbox_queries(project_id, dataset_id,
                                             non_matching_person_ids,
                                             TICKET_NUMBER))
         queries.extend(
-            remove_pids.get_remove_pids_queries(project_id, combined_dataset_id,
+            remove_pids.get_remove_pids_queries(project_id, dataset_id,
                                                 non_matching_person_ids))
 
     return queries
@@ -247,9 +250,16 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parse_args()
-    # Uncomment this line if testing locally
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = delete_records_for_non_matching_participants(
-        ARGS.project_id, ARGS.dataset_id, ARGS.ehr_dataset_id,
-        ARGS.validation_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(delete_records_for_non_matching_participants,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(delete_records_for_non_matching_participants,)])

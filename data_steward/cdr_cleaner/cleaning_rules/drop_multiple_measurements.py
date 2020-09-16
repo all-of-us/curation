@@ -8,9 +8,12 @@ Scope: Develop a cleaning rule to remove all but the most recent of each Physica
 Relevant measurement_source_concept_ids are listed in query
 
 """
+import logging
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 INTERMEDIARY_TABLE = 'DC617_dropped_mult_measurements'
 
@@ -45,7 +48,7 @@ IN( SELECT
 
 
 def get_drop_multiple_measurement_queries(project_id, dataset_id,
-                                          sandbox_dataset):
+                                          sandbox_dataset_id):
     """
     runs the query which removes all multiple me
 
@@ -60,7 +63,7 @@ def get_drop_multiple_measurement_queries(project_id, dataset_id,
         cdr_consts.QUERY] = INVALID_MULT_MEASUREMENTS.format(
             dataset=dataset_id,
             project=project_id,
-            sandbox_dataset=sandbox_dataset,
+            sandbox_dataset=sandbox_dataset_id,
             intermediary_table=INTERMEDIARY_TABLE)
     queries_list.append(invalid_measurements_query)
 
@@ -68,7 +71,7 @@ def get_drop_multiple_measurement_queries(project_id, dataset_id,
     valid_measurements_query[cdr_consts.QUERY] = VALID_MEASUREMENTS.format(
         dataset=dataset_id,
         project=project_id,
-        sandbox_dataset=sandbox_dataset,
+        sandbox_dataset=sandbox_dataset_id,
         intermediary_table=INTERMEDIARY_TABLE)
     queries_list.append(valid_measurements_query)
 
@@ -78,15 +81,18 @@ def get_drop_multiple_measurement_queries(project_id, dataset_id,
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
-    import sandbox
 
     ARGS = parser.parse_args()
 
-    # Uncomment these lines if running locally
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(
-        project_id=ARGS.project_id, dataset_id=ARGS.dataset_id)
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_drop_multiple_measurement_queries(ARGS.project_id,
-                                                       ARGS.dataset_id,
-                                                       sandbox_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_drop_multiple_measurement_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(get_drop_multiple_measurement_queries,)])

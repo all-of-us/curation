@@ -139,7 +139,7 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = dataset_id
         cls.sandbox_dataset_id = sandbox_dataset_id
         cls.project_id = project_id
-        cls.query_class = rule
+        cls.rule_instance = rule
         cls.fq_sandbox_table_names = [
             _fq_table_name(table)
             for table in (rule.lookup_table, rule.backup_table)
@@ -234,7 +234,7 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
         Check that tables were created or dropped from associated their 
         associated datasets as expected 
         """
-        rule = self.query_class
+        rule = self.rule_instance
 
         dataset_tables = self.get_dataset_table_map()
 
@@ -252,7 +252,7 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
             self.assertNotIn(table.table_id, dataset_tables[table.dataset_id])
 
     def test(self):
-        rule = self.query_class  # var just to reduce line lengths
+        rule = self.rule_instance  # var just to reduce line lengths
 
         # setup_rule creates lookup
         rules_df = rule.create_rules_dataframe()

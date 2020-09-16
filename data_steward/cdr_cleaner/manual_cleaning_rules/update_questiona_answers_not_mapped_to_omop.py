@@ -159,10 +159,15 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(
-        project_id=ARGS.project_id, dataset_id=ARGS.dataset_id)
-
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_update_questions_answers_not_mapped_to_omop(
-        ARGS.project_id, ARGS.dataset_id, sandbox_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_update_questions_answers_not_mapped_to_omop,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_update_questions_answers_not_mapped_to_omop,)])

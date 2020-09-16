@@ -29,28 +29,28 @@ class EnsureDateDatetime(unittest.TestCase):
         self.sandbox_id = 'baz_sandbox'
         self.client = None
 
-        self.query_class = EnsureDateDatetimeConsistency(
+        self.rule_instance = EnsureDateDatetimeConsistency(
             self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEqual(self.query_class.project_id, self.project_id)
-        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # test
-        self.query_class.setup_rule(self.client)
+        self.rule_instance.setup_rule(self.client)
 
         # no errors are raised, nothing happens
 
     def test_get_cols(self):
         # pre conditions
         self.assertEqual(
-            self.query_class.affected_datasets,
+            self.rule_instance.affected_datasets,
             [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
 
         for table in TABLE_DATES:
             # test
-            result_list = self.query_class.get_cols(table)
+            result_list = self.rule_instance.get_cols(table)
 
             # post conditions
             table_fields = field_mapping.get_domain_fields(table)
@@ -71,11 +71,11 @@ class EnsureDateDatetime(unittest.TestCase):
     def test_get_query_specs(self):
         # pre conditions
         self.assertEqual(
-            self.query_class.affected_datasets,
+            self.rule_instance.affected_datasets,
             [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
 
         # test
-        result_list = self.query_class.get_query_specs()
+        result_list = self.rule_instance.get_query_specs()
 
         # post conditions
         expected_list = []
@@ -85,7 +85,7 @@ class EnsureDateDatetime(unittest.TestCase):
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
                 table_id=table,
-                cols=self.query_class.get_cols(table))
+                cols=self.rule_instance.get_cols(table))
             query[cdr_consts.DESTINATION_TABLE] = table
             query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
             query[cdr_consts.DESTINATION_DATASET] = self.dataset_id

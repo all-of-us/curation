@@ -11,11 +11,13 @@ We will remove ALL DATA in combined associated with PIDs who have rows with the 
 observation_source_concept_id = 1586140
 value_source_concept_id = 1586141
 """
+import logging
 
 # Project imports
 import utils.bq
 from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids
-import bq_utils
+
+LOGGER = logging.getLogger(__name__)
 
 TICKET_NUMBER = 'DC685'
 
@@ -42,11 +44,13 @@ def get_pids_list(project_id, dataset_id, pids_query):
     return pid_list
 
 
-def get_queries(project_id, dataset_id):
+def get_queries(project_id, dataset_id, sandbox_dataset_id=None):
     """
     return a list of queries to remove AIAN participant rows
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return: A list of string queries that can be executed to delete AIAN participants and
     all corresponding rows from the dataset with the associated PID.
     """
@@ -69,6 +73,16 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(get_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id, [(get_queries,)])

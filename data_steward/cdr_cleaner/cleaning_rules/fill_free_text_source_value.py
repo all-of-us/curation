@@ -47,10 +47,13 @@ care_site : care_site_source_value
 drug_exposure : dose_unit_source_value
 note : note_source_value
 """
+import logging
 
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
+
+LOGGER = logging.getLogger(__name__)
 
 LEFT_JOIN = ('LEFT JOIN `{project}.{dataset}.concept` as {prefix} '
              'on m.{concept_id_field} = {prefix}.concept_id ')
@@ -177,13 +180,17 @@ def get_full_join_expression(dataset_id, project_id, fields_to_replace):
     return " ".join(join_expr)
 
 
-def get_fill_freetext_source_value_fields_queries(project_id, dataset_id):
+def get_fill_freetext_source_value_fields_queries(project_id,
+                                                  dataset_id,
+                                                  sandbox_dataset_id=None):
     """
 
     Generates queries to replace the source_value_fields with the concept_code.
 
     :param project_id: Name of the project where the dataset on which the rules are to be applied on
     :param dataset_id: Name of the dataset on which the rules are to be applied on
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return: A list of queries to be run.
     """
     queries_list = []
@@ -216,7 +223,16 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_fill_freetext_source_value_fields_queries(
-        ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_fill_freetext_source_value_fields_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_fill_freetext_source_value_fields_queries,)])

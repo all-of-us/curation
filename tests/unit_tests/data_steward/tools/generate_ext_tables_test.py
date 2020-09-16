@@ -161,7 +161,7 @@ class GenerateExtTablesTest(unittest.TestCase):
                 query[cdr_consts.QUERY] = gen_ext.REPLACE_SRC_QUERY.format(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
-                    combined_dataset_id=self.dataset_id,
+                    mapping_dataset_id=self.dataset_id,
                     mapping_table_id=gen_ext.MAPPING_PREFIX + cdm_table,
                     site_mappings_table_id=gen_ext.SITE_TABLE_ID,
                     cdm_table_id=cdm_table)

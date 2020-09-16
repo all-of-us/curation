@@ -6,12 +6,15 @@ care_site_id, location_id, person_id, visit_occurrence_id)
 
 Valid means an existing foreign key exists in the table it references.
 """
+import logging
 
 # Project Imports
 import bq_utils
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
+
+LOGGER = logging.getLogger(__name__)
 
 FOREIGN_KEYS_FIELDS = [
     'person_id', 'visit_occurrence_id', 'location_id', 'care_site_id',
@@ -37,12 +40,14 @@ def _mapping_table_for(domain_table):
     return '_mapping_' + domain_table
 
 
-def null_invalid_foreign_keys(project_id, dataset_id):
+def null_invalid_foreign_keys(project_id, dataset_id, sandbox_dataset_id=None):
     """
     This method gets the queries required to make invalid foreign keys null
 
     :param project_id: Project associated with the input and output datasets
     :param dataset_id: Dataset where cleaning rules are to be applied
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return: a list of queries
     """
     queries_list = []
@@ -101,6 +106,17 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = null_invalid_foreign_keys(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(null_invalid_foreign_keys,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(null_invalid_foreign_keys,)])

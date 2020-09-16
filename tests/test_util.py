@@ -6,6 +6,7 @@ import requests
 
 import bq_utils
 import common
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.validation import main
 import gcs_utils
 import resources
@@ -441,3 +442,34 @@ def normalize_field_payload(field):
     if DESCRIPTION not in field:
         result[DESCRIPTION] = ''
     return result
+
+
+class FakeRuleClass(BaseCleaningRule):
+
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+        super().__init__(issue_numbers=[''],
+                         description='',
+                         affected_datasets=[],
+                         affected_tables=[],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
+
+    def get_sandbox_tablenames(self):
+        pass
+
+    def setup_rule(self, client, *args, **keyword_args):
+        pass
+
+    def setup_validation(self, client, *args, **keyword_args):
+        pass
+
+    def get_query_specs(self, *args, **keyword_args):
+        pass
+
+    def validate_rule(self, client, *args, **keyword_args):
+        pass
+
+
+def fake_rule_func(project_id, dataset_id, sandbox_dataset_id):
+    pass

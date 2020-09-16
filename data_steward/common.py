@@ -209,3 +209,5 @@ MAPPING = 'mapping'
 MAPPING_PREFIX = '_mapping_'
 EXT = 'ext'
 EXT_SUFFIX = '_ext'
+
+DEID_MAP = '_deid_map'

@@ -189,12 +189,16 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
 
-    clean_engine.add_console_logging(ARGS.console_log)
-    fitbit_cleaner = TruncateFitbitData(ARGS.project_id, ARGS.dataset_id,
-                                        ARGS.sandbox_dataset_id)
-    query_list = fitbit_cleaner.get_query_specs()
-
     if ARGS.list_queries:
-        fitbit_cleaner.log_queries()
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(TruncateFitbitData,)])
+        for query in query_list:
+            LOGGER.info(query)
     else:
-        clean_engine.clean_dataset(ARGS.project_id, query_list)
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(TruncateFitbitData,)])

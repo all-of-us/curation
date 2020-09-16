@@ -31,23 +31,23 @@ class TruncateFitbitDataTest(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
 
-        self.query_class = truncate_fitbit.TruncateFitbitData(
+        self.rule_instance = truncate_fitbit.TruncateFitbitData(
             self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEqual(self.query_class.project_id, self.project_id)
-        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.query_class.affected_datasets,
+        self.assertEqual(self.rule_instance.affected_datasets,
                          [clean_consts.FITBIT])
 
         # Test
-        results_list = self.query_class.get_query_specs()
+        results_list = self.rule_instance.get_query_specs()
 
         # Post conditions
-        date_sandbox, datetime_sandbox = self.query_class.get_sandbox_tablenames(
+        date_sandbox, datetime_sandbox = self.rule_instance.get_sandbox_tablenames(
         )
         sandbox_queries = []
         truncate_queries = []

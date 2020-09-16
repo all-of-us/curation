@@ -15,12 +15,16 @@ EXCEPT when it’s a ‘PMI Skip’ for each of the observation_source_value
 
 Rule should be applied to the RDR export
 """
+# python imports
+import logging
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
 from utils.bq import JINJA_ENV
+
+LOGGER = logging.getLogger(__name__)
 
 # observation_source_values to replace
 OBSERVATION_SOURCE_VALUES = "('basics_xx', 'basics_xx20', 'ipaq_1_cope_a_24', 'ipaq_2_cope_a_160', " \
@@ -163,13 +167,15 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-
-    clean_engine.add_console_logging(ARGS.console_log)
-    cleaner = UpdateFieldsNumbersAsStrings(ARGS.project_id, ARGS.dataset_id,
-                                           ARGS.sandbox_dataset_id)
-    query_list = cleaner.get_query_specs()
-
     if ARGS.list_queries:
-        cleaner.log_queries()
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(UpdateFieldsNumbersAsStrings,)])
+        for query in query_list:
+            LOGGER.info(query)
     else:
-        clean_engine.clean_dataset(ARGS.project_id, query_list)
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(UpdateFieldsNumbersAsStrings,)])

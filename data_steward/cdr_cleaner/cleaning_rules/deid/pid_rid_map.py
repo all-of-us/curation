@@ -46,7 +46,7 @@ class PIDtoRID(BaseCleaningRule):
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 combined_dataset_id, deid_map_table):
+                 mapping_dataset_id, mapping_table_id):
         """
         Initialize the class with proper info.
 
@@ -68,10 +68,10 @@ class PIDtoRID(BaseCleaningRule):
                 f'{self.project_id}.{self.dataset_id}.{table_id}')
             for table_id in FITBIT_TABLES
         ]
-        fq_deid_map_table = f'{self.project_id}.{combined_dataset_id}.{deid_map_table}'
+        fq_deid_map_table = f'{self.project_id}.{mapping_dataset_id}.{mapping_table_id}'
         self.deid_map = gbq.TableReference.from_string(fq_deid_map_table)
         self.person = gbq.TableReference.from_string(
-            f'{self.project_id}.{combined_dataset_id}.person')
+            f'{self.project_id}.{mapping_dataset_id}.person')
 
     def get_query_specs(self):
         """
@@ -87,8 +87,7 @@ class PIDtoRID(BaseCleaningRule):
             table_query = {
                 cdr_consts.QUERY:
                     PID_RID_QUERY_TMPL.render(fitbit_table=table,
-                                              deid_map=self.deid_map,
-                                              combined_person=self.person),
+                                              deid_map=self.deid_map),
                 cdr_consts.DESTINATION_TABLE:
                     table.table_id,
                 cdr_consts.DESTINATION_DATASET:
@@ -134,34 +133,40 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    combined_dataset_arg = {
-        parser.SHORT_ARGUMENT: '-c',
-        parser.LONG_ARGUMENT: '--combined_dataset_id',
+    mapping_dataset_arg = {
+        parser.SHORT_ARGUMENT: '-m',
+        parser.LONG_ARGUMENT: '--mapping_dataset_id',
         parser.ACTION: 'store',
-        parser.DEST: 'combined_dataset_id',
-        parser.HELP: 'Identifies the combined dataset',
+        parser.DEST: 'mapping_dataset_id',
+        parser.HELP: 'Identifies the dataset containing pid-rid map table',
         parser.REQUIRED: True
     }
 
-    deid_map_table_arg = {
-        parser.SHORT_ARGUMENT: '-m',
-        parser.LONG_ARGUMENT: '--deid_map_table',
+    mapping_table_arg = {
+        parser.SHORT_ARGUMENT: '-t',
+        parser.LONG_ARGUMENT: '--mapping_table_id',
         parser.ACTION: 'store',
-        parser.DEST: 'deid_map_table',
-        parser.DEFAULT: None,
-        parser.HELP: 'Identifies deid_map table name.',
-        parser.REQUIRED: False
+        parser.DEST: 'mapping_table_id',
+        parser.HELP: 'Identifies the pid-rid map table, typically _deid_map',
+        parser.REQUIRED: True
     }
 
-    ARGS = parser.default_parse_args([combined_dataset_arg, deid_map_table_arg])
-    clean_engine.add_console_logging(ARGS.console_log)
-
-    pid_rid_rule = PIDtoRID(ARGS.project_id, ARGS.dataset_id,
-                            ARGS.sandbox_dataset_id, ARGS.combined_dataset_id,
-                            ARGS.deid_map_table)
-    query_list = pid_rid_rule.get_query_specs()
+    ARGS = parser.default_parse_args([mapping_dataset_arg])
 
     if ARGS.list_queries:
-        pid_rid_rule.log_queries()
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(PIDtoRID,)],
+            mapping_dataset_id=ARGS.mapping_dataset_id,
+            mapping_table_id=ARGS.mapping_table_id)
+        for query in query_list:
+            LOGGER.info(query)
     else:
-        clean_engine.clean_dataset(ARGS.project_id, query_list)
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id, [(PIDtoRID,)],
+                                   mapping_dataset_id=ARGS.mapping_dataset_id,
+                                   mapping_table_id=ARGS.mapping_table_id)

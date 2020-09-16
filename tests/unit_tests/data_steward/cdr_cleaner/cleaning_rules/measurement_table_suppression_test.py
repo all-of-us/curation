@@ -31,22 +31,22 @@ class MeasurementTableSuppressionTest(unittest.TestCase):
         self.sandbox_id = 'baz'
         self.client = None
 
-        self.query_class = mts.MeasurementRecordsSuppression(
+        self.rule_instance = mts.MeasurementRecordsSuppression(
             self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEqual(self.query_class.project_id, self.project_id)
-        self.assertEqual(self.query_class.dataset_id, self.dataset_id)
-        self.assertEqual(self.query_class.sandbox_dataset_id, self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # test
-        self.query_class.setup_rule(self.client)
+        self.rule_instance.setup_rule(self.client)
 
     def test_get_sandbox_tablenames(self):
         # no pre-conditions
 
         # test
-        sandbox_tables = self.query_class.get_sandbox_tablenames()
+        sandbox_tables = self.rule_instance.get_sandbox_tablenames()
 
         # post conditions
         expected = [
@@ -60,11 +60,11 @@ class MeasurementTableSuppressionTest(unittest.TestCase):
 
     def test_get_query_specs(self):
         # pre-conditions
-        self.assertEqual(self.query_class.affected_datasets,
+        self.assertEqual(self.rule_instance.affected_datasets,
                          [clean_consts.DEID_BASE])
 
         # test
-        result_list = self.query_class.get_query_specs()
+        result_list = self.rule_instance.get_query_specs()
 
         # post conditions
         expected_list = [{
