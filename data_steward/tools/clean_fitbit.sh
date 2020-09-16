@@ -8,6 +8,8 @@ Usage: clean_fitbit.sh
   --key_file <path to key file>
   --fitbit_dataset <fitbit_dataset_id>
   --combined_dataset <combined_dataset_id>
+  --mapping_dataset <mapping_dataset_id>
+  --mapping_table <mapping_table_id>
   --dataset_release_tag <release tag for the CDR>
 "
 
@@ -29,6 +31,14 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
+  --mapping_dataset)
+    mapping_dataset=$2
+    shift 2
+    ;;
+  --mapping_table)
+    mapping_table=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -37,7 +47,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${combined_dataset}" ]] || [[ -z "${fitbit_dataset}" ]] || [[ -z "${dataset_release_tag}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${combined_dataset}" ]] || [[ -z "${fitbit_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${mapping_dataset}" ]] || [[ -z "${mapping_table}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -45,6 +55,8 @@ fi
 echo "key_file --> ${key_file}"
 echo "combined_dataset --> ${combined_dataset}"
 echo "fitbit_dataset --> ${fitbit_dataset}"
+echo "mapping_dataset --> ${mapping_dataset}"
+echo "mapping_table --> ${mapping_table}"
 
 APP_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
@@ -81,8 +93,9 @@ LOGS_DIR="${DATA_STEWARD_DIR}/logs"
 mkdir -p "${LOGS_DIR}"
 
 # Apply cleaning rules
-python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee "${LOGS_DIR}"/fitbit_max_age_log.txt
-python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee "${LOGS_DIR}"/fitbit_pid_rid_log.txt
+python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
+python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --mapping_dataset_id "${mapping_dataset}" --mapping_table_id "${mapping_table}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
+python "${CLEAN_DEID_DIR}/fitbit_dateshift.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --mapping_dataset_id "${mapping_dataset}" --mapping_table_id "${mapping_table}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
 
 unset PYTHONPATH
 
