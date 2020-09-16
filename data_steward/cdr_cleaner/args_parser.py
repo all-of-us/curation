@@ -53,8 +53,7 @@ def get_argument_parser():
                         action='store',
                         dest='sandbox_dataset_id',
                         help=('Dataset to store intermediate results '
-                              'or changes in.'),
-                        required=True)
+                              'or changes in.'))
     parser.add_argument('-s',
                         '--console_log',
                         dest='console_log',
@@ -65,6 +64,22 @@ def get_argument_parser():
                         dest='list_queries',
                         action='store_true',
                         help='List the generated SQL without executing')
+    deid_group = parser.add_argument_group(
+        'post_deid',
+        ('Arguments related to the deid mapping tables and locations.  Should '
+         'be used for post-deid cleaning rules.'))
+    deid_group.add_argument(
+        '--mapping-dataset',
+        dest='mapping_dataset_id',
+        action='store',
+        help=('Dataset name for the dataset containing deid mapping tables.  '
+              'For example, _deid_map and _deid_questionnaire_response_id.'))
+    deid_group.add_argument(
+        '--mapping-table',
+        dest='mapping_tablename',
+        action='store',
+        help=(
+            'Define the mapping table name.  Historical default is _deid_map.'))
     return parser
 
 

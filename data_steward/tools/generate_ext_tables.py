@@ -1,8 +1,12 @@
+import logging
 import random
 
 import bq_utils
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from resources import fields_for
+
+LOGGER = logging.getLogger("__name__")
 
 EXT_FIELD_TEMPLATE = [{
     "type": "integer",
@@ -48,18 +52,30 @@ ON m.src_hpo_id = s.hpo_id
 """
 
 
-def get_table_fields(table):
+def get_table_fields(table, ext_table_id):
     """
     Generates fields for ext tables for the provided cdm table
+
     :param table: cdm table to generate ext fields for
+    :param ext_table_id: cdm table extension name.  used to load schema
+        defintion if it exists as a json file
     :return: dict containing ext fields for the cdm table
     """
     table_fields = []
-    for field in EXT_FIELD_TEMPLATE:
-        table_field = dict()
-        for key in field:
-            table_field[key] = field[key].format(table=table)
-        table_fields.append(table_field)
+
+    try:
+        table_fields = fields_for(ext_table_id)
+        LOGGER.info(
+            f"using json schema file definition for table: {ext_table_id}")
+    except (RuntimeError):
+        for field in EXT_FIELD_TEMPLATE:
+            table_field = dict()
+            for key in field:
+                table_field[key] = field[key].format(table=table)
+            table_fields.append(table_field)
+        LOGGER.info(
+            "using dynamic extension table schema for table: {ext_table_id}")
+
     return table_fields
 
 
@@ -170,7 +186,7 @@ def get_generate_ext_table_queries(project_id, deid_dataset_id,
     for mapping_table_id in mapping_table_ids:
         cdm_table_id = get_cdm_table_from_mapping(mapping_table_id)
         ext_table_id = cdm_table_id + EXT_TABLE_SUFFIX
-        ext_table_fields = get_table_fields(cdm_table_id)
+        ext_table_fields = get_table_fields(cdm_table_id, ext_table_id)
         bq_utils.create_table(ext_table_id,
                               ext_table_fields,
                               drop_existing=True,
