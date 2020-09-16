@@ -163,7 +163,8 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                 (107, 1585864, None, self.invalid_values_value_as_concept_id,
                  None),
                 (108, 1585870, None, self.invalid_values_value_as_concept_id,
-                 None), (109, 1585873, 15, 7654321, None),
+                 None),
+                (109, 1585873, 15, 7654321, None),
                 (110, 1586159, 16, 7654321, None),
                 (111, 1586162, 17, 7654321, None),
                 # 11+ values tests
