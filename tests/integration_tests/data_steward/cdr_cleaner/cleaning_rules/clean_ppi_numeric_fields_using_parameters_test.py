@@ -88,7 +88,6 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
              observation_type_concept_id, value_as_number, value_as_concept_id)
             VALUES
                 -- invalid values test setup --
-                (102, 2, 1585890, date('2015-07-15'), 0, -21, 1234567),
                 (103, 3, 1585795, date('2015-07-15'), 0, 100, 1234567),
                 (104, 4, 1585802, date('2015-07-15'), 0, -100, 1234567),
                 (105, 5, 1585820, date('2015-07-15'), 0, 256, 1234567),
@@ -105,13 +104,12 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             """
             INSERT INTO `{{fq_dataset_name}}.observation`
             (observation_id, person_id, observation_concept_id, observation_date,
-             observation_type_concept_id, value_as_number, value_as_concept_id,
-             observation_source_concept_id)
+             observation_type_concept_id, value_as_number, value_as_concept_id)
             VALUES
                 -- 11+ generalization test setup --
-                (112, 12, 0, date('2020-09-06'), 0, -12, 1234567, 1333015),
-                (113, 13, 0, date('2020-09-06'), 0, 12, 1234567, 1585889),
-                (114, 14, 0, date('2020-09-06'), 0, 10, 7654321, 1333015)"""
+                (112, 12, 1333015, date('2020-09-06'), 0, -12, 1234567),
+                (113, 13, 1585889, date('2020-09-06'), 0, 12, 1234567),
+                (114, 14, 1333015, date('2020-09-06'), 0, 10, 7654321)"""
         ).render(fq_dataset_name=self.fq_dataset_name)
         queries.append(eleven_plus_tmpl)
 
@@ -119,13 +117,12 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             """
             INSERT INTO `{{fq_dataset_name}}.observation`
             (observation_id, person_id, observation_concept_id, observation_date,
-             observation_type_concept_id, value_as_number, value_as_concept_id,
-             observation_source_concept_id)
+             observation_type_concept_id, value_as_number, value_as_concept_id)
             VALUES
                 -- 6+ generalization test setup --
-                (115, 15, 0, date('2020-09-11'), 0, -7, 1234567, 1333023),
-                (116, 16, 0, date('2020-09-11'), 0, 7, 1234567, 1585890),
-                (117, 17, 0, date('2020-09-11'), 0, 5, 7654321, 1333023)"""
+                (115, 15, 1333023, date('2020-09-11'), 0, -7, 1234567),
+                (116, 16, 1585890, date('2020-09-11'), 0, 7, 1234567),
+                (117, 17, 1333023, date('2020-09-11'), 0, 5, 7654321)"""
         ).render(fq_dataset_name=self.fq_dataset_name)
         queries.append(six_plus_tmpl)
 
@@ -138,43 +135,34 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [
-                102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
+                103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
                 115, 116, 117
             ],
             'sandboxed_ids': [
-                102, 103, 104, 105, 106, 107, 108, 112, 113, 115, 116
+                103, 104, 105, 106, 107, 108, 112, 113, 115, 116
             ],
             'fields': [
-                'observation_id', 'observation_concept_id', 'value_as_number',
-                'value_as_concept_id', 'observation_source_concept_id'
+                'observation_id', 'observation_concept_id', 'value_as_number', 'value_as_concept_id'
             ],
             'cleaned_values': [
                 # invalid values tests
-                (102, 1585890, None, self.invalid_values_value_as_concept_id,
-                 None),
-                (103, 1585795, None, self.invalid_values_value_as_concept_id,
-                 None),
-                (104, 1585802, None, self.invalid_values_value_as_concept_id,
-                 None),
-                (105, 1585820, None, self.invalid_values_value_as_concept_id,
-                 None),
-                (106, 1585820, None, self.invalid_values_value_as_concept_id,
-                 None),
-                (107, 1585864, None, self.invalid_values_value_as_concept_id,
-                 None),
-                (108, 1585870, None, self.invalid_values_value_as_concept_id,
-                 None),
-                (109, 1585873, 15, 7654321, None),
-                (110, 1586159, 16, 7654321, None),
-                (111, 1586162, 17, 7654321, None),
+                (103, 1585795, None, self.invalid_values_value_as_concept_id),
+                (104, 1585802, None, self.invalid_values_value_as_concept_id),
+                (105, 1585820, None, self.invalid_values_value_as_concept_id),
+                (106, 1585820, None, self.invalid_values_value_as_concept_id),
+                (107, 1585864, None, self.invalid_values_value_as_concept_id),
+                (108, 1585870, None, self.invalid_values_value_as_concept_id),
+                (109, 1585873, 15, 7654321),
+                (110, 1586159, 16, 7654321),
+                (111, 1586162, 17, 7654321),
                 # 11+ values tests
-                (112, 0, None, self.eleven_plus_value_as_concept_id, 1333015),
-                (113, 0, None, self.eleven_plus_value_as_concept_id, 1585889),
-                (114, 0, 10, 7654321, 1333015),
+                (112, 1333015, None, self.invalid_values_value_as_concept_id),
+                (113, 1585889, None, self.eleven_plus_value_as_concept_id),
+                (114, 1333015, 10, self.eleven_plus_value_as_concept_id),
                 # 6+ values tests
-                (115, 0, None, self.six_plus_value_as_concept_id, 1333023),
-                (116, 0, None, self.six_plus_value_as_concept_id, 1585890),
-                (117, 0, 5, 7654321, 1333023)
+                (115, 1333023, None, self.invalid_values_value_as_concept_id),
+                (116, 1585890, None, self.six_plus_value_as_concept_id),
+                (117, 1333023, 5, self.six_plus_value_as_concept_id)
             ]
         }]
 
