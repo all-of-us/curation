@@ -95,7 +95,7 @@ export UNIONED_DATASET_ID="${unioned_ehr_dataset}"
 export COMBINED_DATASET_ID="${combined_backup}"
 export BIGQUERY_DATASET_ID="${unioned_ehr_dataset}"
 
-bq mk --dataset --description "${version} combined raw version of  ${rdr_dataset} + ${unioned_ehr_dataset}" ${app_id}:${combined_backup}
+bq mk --dataset --description "${version} combined raw version of  ${rdr_dataset} + ${unioned_ehr_dataset}" --label "phase:backup" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${combined_backup}
 
 #Create the clinical tables for unioned EHR data set
 python "${DATA_STEWARD_DIR}/cdm.py" ${combined_backup}
@@ -115,7 +115,7 @@ python "${TOOLS_DIR}/add_cdr_metadata.py" --component "insert" --project_id ${ap
 --etl_version ${version} --ehr_source ${unioned_ehr_dataset} --ehr_cutoff_date ${ehr_cutoff} --rdr_source ${rdr_dataset} --cdr_generation_date ${today} --vocabulary_version ${vocab_dataset}
 
 # create an intermediary table to apply cleaning rules on
-bq mk --dataset --description "intermediary dataset to apply cleaning rules on ${combined_backup}" ${app_id}:${combined_staging}
+bq mk --dataset --description "intermediary dataset to apply cleaning rules on ${combined_backup}" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${combined_staging}
 
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined_backup} --target_dataset ${combined_staging}
 
@@ -127,20 +127,21 @@ data_stage='combined'
 python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee combined_cleaning_log_"${combined}".txt
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${combined_staging}" -n "${combined}"
+python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${combined_staging}" --snapshot_dataset_id "${combined}"
 
-bq update --description "${version} combined clean version of ${rdr_dataset} + ${unioned_ehr_dataset}" ${app_id}:${combined}
+bq update --description "${version} combined clean version of ${rdr_dataset} + ${unioned_ehr_dataset}" --set_label "phase:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${combined}
 
 #copy sandbox dataset
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${combined_staging}_sandbox" --target_dataset "${combined}_sandbox"
 
+# Remove intermediary datasets
 bq rm -r -d "${combined_staging}_sandbox"
 bq rm -r -d "${combined_staging}"
 
 combined_release="${combined}_release"
 
 # Create a dataset for data browser team
-bq mk --dataset --description "${version} Release version of combined dataset with ${rdr_dataset} + ${unioned_ehr_dataset}" ${app_id}:${combined_release}
+bq mk --dataset --description "${version} Release version of combined dataset with ${rdr_dataset} + ${unioned_ehr_dataset}" --label "phase:release" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${combined_release}
 
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined} --target_dataset ${combined_release}
 
