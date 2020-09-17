@@ -68,6 +68,9 @@ fi
 
 app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
+tag=$(git describe --abbrev=0 --tags)
+version=${tag}
+
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
@@ -95,12 +98,14 @@ source "${TOOLS_DIR}/set_path.sh"
 echo "-------------------------->Take a Snapshot of Unioned EHR Submissions (step 5)"
 source_prefix="unioned_ehr_"
 unioned_ehr_dataset="${dataset_release_tag}_unioned_ehr"
+unioned_ehr_dataset_sandbox="${unioned_ehr_dataset}_sandbox"
 unioned_ehr_dataset_backup="${unioned_ehr_dataset}_backup"
 unioned_ehr_dataset_staging="${unioned_ehr_dataset}_staging"
+unioned_ehr_dataset_staging_sandbox="${unioned_ehr_dataset_staging}_sandbox"
 
 #---------------------------------------------------------------------
 # Step 1 Create an empty dataset
-bq mk --dataset --description "copy ehr_union from ${ehr_snapshot}" --label "phase:backup" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_backup}
+bq mk --dataset --description "copy unioned_ehr tables from ${ehr_snapshot}" --label "phase:backup" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_backup}
 
 #----------------------------------------------------------------------
 # Step 2 Create the clinical tables for unioned EHR data set
@@ -142,11 +147,14 @@ export UNIONED_DATASET_ID="${unioned_ehr_dataset_staging}"
 export BIGQUERY_DATASET_ID="${unioned_ehr_dataset_staging}"
 data_stage='unioned'
 
+# create sandbox dataset
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${unioned_ehr_dataset_staging}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_staging_sandbox}
+
 # Remove de-activated participants
 python "${CLEANER_DIR}/cleaning_rules/remove_ehr_data_past_deactivation_date.py" --project-id ${app_id} --ticket-number ${ticket_number} --pids-project-id ${pids_project_id} --pids-dataset-id ${pids_dataset_id} --pids-table ${pids_table}
 
 # run cleaning_rules on a dataset
-python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id ${app_id} --dataset_id ${UNIONED_DATASET_ID} --sandbox_dataset_id ${unioned_ehr_dataset_staging_sandbox} --data_stage ${data_stage} -s 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --snapshot_dataset_id "${unioned_ehr_dataset}"
@@ -154,9 +162,12 @@ python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id
 bq update --description "${version} clean version of ${unioned_ehr_dataset_backup}" --set_label "phase:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${unioned_ehr_dataset}
 
 #copy sandbox dataset
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${unioned_ehr_dataset_staging}_sandbox" --target_dataset "${unioned_ehr_dataset}_sandbox"
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${unioned_ehr_dataset_staging_sandbox}" --target_dataset "${unioned_ehr_dataset_sandbox}"
+# Update sandbox description
+bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${unioned_ehr_dataset}" --set_label "phase:sandbox" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${unioned_ehr_dataset_sandbox}
 
-bq rm -r -d "${unioned_ehr_dataset_staging}_sandbox"
+# remove intermediary datasets that were created to apply cleaning rules
+bq rm -r -d "${unioned_ehr_dataset_staging_sandbox}"
 bq rm -r -d "${unioned_ehr_dataset_staging}"
 
 unset PYTHONPATH
