@@ -14,6 +14,10 @@ Usage: run_curation_pipeline.sh
   --dataset_release_tag <release tag for the CDR>
   --ehr_cutoff <ehr_cut_off date format yyyy-mm-dd>
   --rdr_export_date <date RDR export is run format yyyy-mm-dd>
+  --ticket_number <Ticket number to append to sandbox table names>
+  --pids_project_id <Identifies the project where the pids table is stored>
+  --pids_dataset_id <Identifies the dataset where the pids table is stored>
+  --pids_table <Identifies the table where the pids are stored>
 "
 
 while true; do
@@ -50,6 +54,22 @@ while true; do
     rdr_export_date=$2
     shift 2
     ;;
+  --ticket_number)
+    ticket_number=$2
+    shift 2
+    ;;
+  --pids_project_id)
+    pids_project_id=$2
+    shift 2
+    ;;
+  --pids_dataset_id)
+    pids_dataset_id=$2
+    shift 2
+    ;;
+  --pids_table)
+    pids_table=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -59,7 +79,8 @@ while true; do
 done
 
 if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] ||
- [[ -z "${result_bucket}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]]; then
+ [[ -z "${result_bucket}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]] ||
+ [[ -z "${ticket_number}" ]] || [[ -z "${pids_project_id}" ]] || [[ -z "${pids_dataset_id}" ]] || [[ -z "${pids_table}" ]]; then
   echo "Specify the key file location, vocabulary and dataset release tag. $USAGE"
   exit 1
 fi
@@ -79,6 +100,10 @@ echo "result_bucket --> ${result_bucket}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
 echo "ehr_cutoff_date --> ${ehr_cutoff}"
 echo "rdr_export_date --> ${rdr_export_date}"
+echo "ticket_number --> ${ticket_number}"
+echo "pids_project_id --> ${pids_project_id}"
+echo "pids_dataset_id --> ${pids_dataset_id}"
+echo "pids_table --> ${pids_table}"
 
 #---------------------------------------------------------
 # Step 1 create EHR and RDR snapshot
@@ -90,7 +115,8 @@ echo "-------------------------->Take a Snapshot of EHR Dataset (step 1)"
 echo "-------------------------->Generate Unioned ehr dataset (step 2)"
 ehr_snapshot="${dataset_release_tag}_ehr"
 echo "ehr_snapshot ----> ${ehr_snapshot}"
-"${TOOLS_DIR}/generate_unioned_ehr_dataset.sh" --key_file ${key_file} --ehr_snapshot ${ehr_snapshot} --vocab_dataset ${vocab_dataset} --dataset_release_tag ${dataset_release_tag}
+"${TOOLS_DIR}/generate_unioned_ehr_dataset.sh" --key_file ${key_file} --ehr_snapshot ${ehr_snapshot} --vocab_dataset ${vocab_dataset} --dataset_release_tag ${dataset_release_tag} \
+--ticket_number ${ticket_number} --pids_project_id ${pids_project_id} --pids_dataset_id ${pids_dataset_id} --pids_table ${pids_table}
 
 #---------------------------------------------------------
 # Step 3 Generate combined dataset
