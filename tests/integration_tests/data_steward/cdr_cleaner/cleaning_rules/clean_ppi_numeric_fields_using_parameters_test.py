@@ -4,7 +4,7 @@ Integration test for clean_ppi_numeric_fields_using_parameters module
 Apply value ranges to ensure that values are reasonable and to minimize the likelihood
 of sensitive information (like phone numbers) within the free text fields.
 
-Original Issues: DC-1061, DC-827, DC-502, DC-487
+Original Issues: DC-1058, DC-1061, DC-827, DC-502, DC-487
 
 The intent is to ensure that numeric free-text fields that are not manipulated by de-id
 have value range restrictions applied to the value_as_number field across the entire dataset.
@@ -61,9 +61,9 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         Creates common expected parameter types from cleaned tables and a common
         fully qualified (fq) dataset name string to load the data.
         """
-        self.value_as_number = None
-        self.value_as_concept_id = 2000000010
-        self.dc_1061_value_as_concept_id = 2000000013
+        self.invalid_values_value_as_concept_id = 2000000010
+        self.eleven_plus_value_as_concept_id = 2000000013
+        self.six_plus_value_as_concept_id = 2000000012
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
@@ -78,30 +78,59 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
         """
-        tmpl = self.jinja_env.from_string("""
+
+        queries = []
+
+        invalid_values_tmpl = self.jinja_env.from_string(
+            """
             INSERT INTO `{{fq_dataset_name}}.observation`
             (observation_id, person_id, observation_concept_id, observation_date,
-             observation_type_concept_id, value_as_number, value_as_concept_id,
-             observation_source_concept_id)
+             observation_type_concept_id, value_as_number, value_as_concept_id)
             VALUES
-                (123, 111111, 1585889, date('2015-07-15'), 0, 21, 111, 0),
-                (345, 222222, 1585890, date('2015-07-15'), 0, -21, 222, 0),
-                (567, 333333, 1585795, date('2015-07-15'), 0, 100, 333, 0),
-                (789, 444444, 1585802, date('2015-07-15'), 0, -100, 444, 0),
-                (555, 555555, 1585820, date('2015-07-15'), 0, 256, 111, 0),
-                (121, 121212, 1585820, date('2015-07-15'), 0, -256, 111, 0),
-                (666, 666666, 1585864, date('2015-07-15'), 0, 100, 222, 0),
-                (777, 777777, 1585870, date('2015-07-15'), 0, -100, 333, 0),
-                (888, 888888, 1585873, date('2015-07-15'), 0, 15, 444, 0),
-                (999, 999999, 1586159, date('2015-07-15'), 0, 16, 444, 0),
-                (321, 000000, 1586162, date('2015-07-15'), 0, 17, 444, 0),
-                (198, 111, 0, date('2020-09-06'), 0, 21, 111, 1585889),
-                (987, 222, 0, date('2020-09-06'), 0, 12, 222, 1333015),
-                (876, 333, 0, date('2020-09-06'), 0, 4, 111, 1585889),
-                (765, 444, 0, date('2020-09-06'), 0, 6, 222, 1333015)""")
+                -- invalid values test setup --
+                (103, 3, 1585795, date('2015-07-15'), 0, 100, 1234567),
+                (104, 4, 1585802, date('2015-07-15'), 0, -100, 1234567),
+                (105, 5, 1585820, date('2015-07-15'), 0, 256, 1234567),
+                (106, 6, 1585820, date('2015-07-15'), 0, -256, 1234567),
+                (107, 7, 1585864, date('2015-07-15'), 0, 100, 1234567),
+                (108, 8, 1585870, date('2015-07-15'), 0, -100, 1234567),
+                (109, 9, 1585873, date('2015-07-15'), 0, 15, 7654321),
+                (110, 10, 1586159, date('2015-07-15'), 0, 16, 7654321),
+                (111, 11, 1586162, date('2015-07-15'), 0, 17, 7654321)"""
+        ).render(fq_dataset_name=self.fq_dataset_name)
+        queries.append(invalid_values_tmpl)
 
-        query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
-        self.load_test_data([query])
+        eleven_plus_tmpl = self.jinja_env.from_string(
+            """
+            INSERT INTO `{{fq_dataset_name}}.observation`
+            (observation_id, person_id, observation_concept_id, observation_date,
+             observation_type_concept_id, value_as_number, value_as_concept_id)
+            VALUES
+                -- 11+ generalization test setup --
+                (112, 12, 1333015, date('2020-09-06'), 0, -12, 1234567),
+                (113, 13, 1585889, date('2020-09-06'), 0, 12, 1234567),
+                (114, 14, 1333015, date('2020-09-06'), 0, 10, 7654321),
+                (118, 18, 1585889, date('2020-09-06'), 0, 20, 7654321),
+                (121, 21, 1333015, date('2020-09-06'), 0, 15, 1234567)"""
+        ).render(fq_dataset_name=self.fq_dataset_name)
+        queries.append(eleven_plus_tmpl)
+
+        six_plus_tmpl = self.jinja_env.from_string(
+            """
+            INSERT INTO `{{fq_dataset_name}}.observation`
+            (observation_id, person_id, observation_concept_id, observation_date,
+             observation_type_concept_id, value_as_number, value_as_concept_id)
+            VALUES
+                -- 6+ generalization test setup --
+                (115, 15, 1333023, date('2020-09-11'), 0, -7, 1234567),
+                (116, 16, 1585890, date('2020-09-11'), 0, 7, 1234567),
+                (117, 17, 1333023, date('2020-09-11'), 0, 5, 7654321),
+                (119, 19, 1585890, date('2020-09-11'), 0, 20, 7654321),
+                (120, 20, 1333023, date('2020-09-11'), 0, 6, 1234567)"""
+        ).render(fq_dataset_name=self.fq_dataset_name)
+        queries.append(six_plus_tmpl)
+
+        self.load_test_data(queries)
 
         # Expected results list
         tables_and_counts = [{
@@ -110,38 +139,41 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [
-                123, 345, 567, 789, 555, 121, 666, 777, 888, 999, 321, 198, 987,
-                876, 765
+                103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+                116, 117, 118, 119, 120, 121
             ],
-            'sandboxed_ids': [123, 345, 567, 789, 555, 121, 666, 777, 198, 987],
+            'sandboxed_ids': [
+                103, 104, 105, 106, 107, 108, 112, 113, 115, 116, 118, 119, 120,
+                121
+            ],
             'fields': [
                 'observation_id', 'observation_concept_id', 'value_as_number',
-                'value_as_concept_id', 'observation_source_concept_id'
+                'value_as_concept_id'
             ],
-            'cleaned_values': [(123, 1585889, 21.0, 111, 0),
-                               (345, 1585890, self.value_as_number,
-                                self.value_as_concept_id, 0),
-                               (567, 1585795, self.value_as_number,
-                                self.value_as_concept_id, 0),
-                               (789, 1585802, self.value_as_number,
-                                self.value_as_concept_id, 0),
-                               (555, 1585820, self.value_as_number,
-                                self.value_as_concept_id, 0),
-                               (121, 1585820, self.value_as_number,
-                                self.value_as_concept_id, 0),
-                               (666, 1585864, self.value_as_number,
-                                self.value_as_concept_id, 0),
-                               (777, 1585870, self.value_as_number,
-                                self.value_as_concept_id, 0),
-                               (888, 1585873, 15, 444, 0),
-                               (999, 1586159, 16, 444, 0),
-                               (321, 1586162, 17, 444, 0),
-                               (198, 0, self.value_as_number,
-                                self.dc_1061_value_as_concept_id, 1585889),
-                               (987, 0, self.value_as_number,
-                                self.dc_1061_value_as_concept_id, 1333015),
-                               (876, 0, 4, 111, 1585889),
-                               (765, 0, 6, 222, 1333015)]
+            'cleaned_values': [
+                # invalid values tests
+                (103, 1585795, None, self.invalid_values_value_as_concept_id),
+                (104, 1585802, None, self.invalid_values_value_as_concept_id),
+                (105, 1585820, None, self.invalid_values_value_as_concept_id),
+                (106, 1585820, None, self.invalid_values_value_as_concept_id),
+                (107, 1585864, None, self.invalid_values_value_as_concept_id),
+                (108, 1585870, None, self.invalid_values_value_as_concept_id),
+                (109, 1585873, 15, 7654321),
+                (110, 1586159, 16, 7654321),
+                (111, 1586162, 17, 7654321),
+                # 11+ values tests
+                (112, 1333015, None, self.invalid_values_value_as_concept_id),
+                (113, 1585889, None, self.eleven_plus_value_as_concept_id),
+                (114, 1333015, 10, 7654321),
+                (118, 1585889, None, self.invalid_values_value_as_concept_id),
+                (121, 1333015, None, self.eleven_plus_value_as_concept_id),
+                # 6+ values tests
+                (115, 1333023, None, self.invalid_values_value_as_concept_id),
+                (116, 1585890, None, self.six_plus_value_as_concept_id),
+                (117, 1333023, 5, 7654321),
+                (119, 1585890, None, self.invalid_values_value_as_concept_id),
+                (120, 1333023, None, self.six_plus_value_as_concept_id)
+            ]
         }]
 
         self.default_test(tables_and_counts)
