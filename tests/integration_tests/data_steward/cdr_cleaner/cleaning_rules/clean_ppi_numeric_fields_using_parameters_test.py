@@ -139,14 +139,16 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [
-                103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
-                115, 116, 117, 118, 119, 120, 121
+                103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+                116, 117, 118, 119, 120, 121
             ],
             'sandboxed_ids': [
-                103, 104, 105, 106, 107, 108, 112, 113, 115, 116, 118, 119, 120, 121
+                103, 104, 105, 106, 107, 108, 112, 113, 115, 116, 118, 119, 120,
+                121
             ],
             'fields': [
-                'observation_id', 'observation_concept_id', 'value_as_number', 'value_as_concept_id'
+                'observation_id', 'observation_concept_id', 'value_as_number',
+                'value_as_concept_id'
             ],
             'cleaned_values': [
                 # invalid values tests
