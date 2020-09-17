@@ -86,7 +86,7 @@ bq mk --dataset --description "${dataset_release_tag} de-identified version of $
 
 # create empty fitbit sandbox dataset
 sandbox_dataset="${registered_fitbit_deid}_sandbox"
-bq mk --dataset --description "${dataset_release_tag} sandbox dataset for ${registered_fitbit_deid}" "${APP_ID}":"${sandbox_dataset}"
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${registered_fitbit_deid}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" "${APP_ID}":"${sandbox_dataset}"
 
 # Create logs dir
 LOGS_DIR="${DATA_STEWARD_DIR}/logs"

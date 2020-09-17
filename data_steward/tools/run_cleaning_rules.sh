@@ -67,6 +67,8 @@ source "${TOOLS_DIR}/set_path.sh"
 #--------------------------------------------------------
 export DATASET="${dataset}"
 export DATASET_STAGING="${dataset}_staging"
+export DATASET_STAGING_SANDBOX="${dataset}_staging_sandbox"
+export DATASET_SANDBOX="${dataset}_sandbox"
 export BIGQUERY_DATASET_ID="${DATASET_STAGING}"
 
 # snapshotting dataset to apply cleaning rules
@@ -95,17 +97,22 @@ then
     export FITBIT_DATASET_ID="${DATASET_STAGING}"
 fi
 
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${DATASET_STAGING}" --label "phase:sandbox" --label "de_identified:false" "${app_id}":"${DATASET_STAGING_SANDBOX}"
+
 # run cleaning_rules on a dataset
-python "${CLEANER_DIR}/clean_cdr.py" -d ${data_stage} -s 2>&1 | tee cleaning_rules_log.txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${DATASET}" --sandbox_dataset_id "${DATASET_STAGING_SANDBOX}" --data_stage "${data_stage}" -s 2>&1 | tee cleaning_rules_log.txt
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${DATASET_STAGING}" -n "${result_dataset}"
 
 # Snapshot the staging sandbox dataset to store it with 
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${DATASET_STAGING}_sandbox" --target_dataset "${DATASET}_sandbox"
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${DATASET_STAGING_SANDBOX}" --target_dataset "${DATASET_SANDBOX}"
+
+# Update sandbox description
+bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${DATASET}" --set_label "phase:sandbox" "${app_id}":"${DATASET_SANDBOX}"
 
 # Remove staging datasets
-bq rm -r -d "${DATASET_STAGING}_sandbox"
+bq rm -r -d "${DATASET_STAGING_SANDBOX}"
 bq rm -r -d "${DATASET_STAGING}"
 
-unset PYTHOPATH
+unset PYTHONPATH
