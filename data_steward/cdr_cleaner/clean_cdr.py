@@ -28,7 +28,6 @@ import cdr_cleaner.cleaning_rules.no_data_30_days_after_death as no_data_30days_
 import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
-import cdr_cleaner.cleaning_rules.remove_ehr_data_past_deactivation_date as remove_ehr_data
 import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 import \
@@ -65,6 +64,7 @@ from cdr_cleaner.cleaning_rules.drop_ppi_duplicate_responses import DropPpiDupli
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import \
     EnsureDateDatetimeConsistency
+from cdr_cleaner.cleaning_rules.fix_unmapped_survey_answers import FixUnmappedSurveyAnswers
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import MeasurementRecordsSuppression
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
@@ -73,7 +73,6 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
-from cdr_cleaner.cleaning_rules.fix_unmapped_survey_answers import FixUnmappedSurveyAnswers
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
@@ -98,7 +97,6 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
-    (remove_ehr_data.remove_ehr_data_queries,),
     (CleanMappingExtTables,),
 ]
 

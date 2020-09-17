@@ -1,19 +1,19 @@
 # Python imports
-import re
 import argparse
 import logging
 import os
+import re
 from datetime import datetime
 
 # Third party imports
 import pandas as pd
-from jinja2 import Environment
 from google.cloud import bigquery
+from jinja2 import Environment
 
-# Project imports
-from retraction.retract_utils import DEID_REGEX
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as clean_consts
+# Project imports
+from retraction.retract_utils import DEID_REGEX
 from sandbox import check_and_create_sandbox_dataset
 
 LOGGER = logging.getLogger(__name__)

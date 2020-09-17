@@ -12,14 +12,13 @@ import logging
 
 # Third party imports
 import bq_utils
-
 # Project imports
 import retraction.retract_deactivated_pids as rdp
 import utils.participant_summary_requests as psr
 
 LOGGER = logging.getLogger(__name__)
 
-TICKET_NUMBER = ['dc686']
+TICKET_NUMBER = 'dc686'
 
 DEACTIVATED_PARTICIPANTS_COLUMNS = [
     'participantId', 'suspensionStatus', 'suspensionTime'
