@@ -72,17 +72,17 @@ END AS
     value_as_number,
     value_as_string,
 CASE
-    WHEN observation_concept_id IN (1585890, 1333023, 1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 20) THEN 2000000010
+    WHEN observation_concept_id IN (1585890, 1333023, 1333015, 1585889) AND (value_as_number < 0 OR value_as_number >= 20) THEN 2000000010
     WHEN observation_concept_id IN (1585795, 1585802, 1585864, 1585870, 1585873, 1586159, 1586162) AND (value_as_number < 0 OR value_as_number > 99) THEN 2000000010
     WHEN observation_concept_id = 1585820 AND (value_as_number < 0 OR value_as_number > 255) THEN 2000000010
     
     -- from dc1058: if the observation_concept_id is 1585889 or 1333015 and has between less than 11 members in the household --
     -- will set value_as_concept_id to the new custom concept --
-    WHEN observation_concept_id IN (1585889, 1333015) AND (value_as_number < 20 OR value_as_number > 10) THEN 2000000013
+    WHEN observation_concept_id IN (1585889, 1333015) AND (value_as_number < 20 AND value_as_number > 10) THEN 2000000013
     
     -- from dc1061: if the observation_concept_id is 1333023 or 1585890 and less than 6 members in the household --
     -- is under the age of 18, will set value_as_concept_id to the new custom concept --
-    WHEN observation_concept_id IN (1333023, 1585890) AND (value_as_number < 20 OR value_as_number > 5) THEN 2000000012
+    WHEN observation_concept_id IN (1333023, 1585890) AND (value_as_number < 20 AND value_as_number > 5) THEN 2000000012
   ELSE value_as_concept_id
 END AS
     value_as_concept_id,
