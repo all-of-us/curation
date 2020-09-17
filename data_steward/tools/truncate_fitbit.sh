@@ -73,7 +73,7 @@ LOGS_DIR="${DATA_STEWARD_DIR}/logs"
 mkdir -p "${LOGS_DIR}"
 
 # Apply cleaning rules
-python "${CLEANER_DIR}/truncate_fitbit_data.py" --project_id "${APP_ID}" --dataset_id "${fitbit_staging_dataset}" --sandbox_dataset_id "${sandbox_dataset}"kj.kj -s 2>&1 | tee -a "${LOGS_DIR}"/truncate_fitbit_log.txt
+python "${CLEANER_DIR}/truncate_fitbit_data.py" --project_id "${APP_ID}" --dataset_id "${fitbit_staging_dataset}" --sandbox_dataset_id "${sandbox_dataset}" -s 2>&1 | tee -a "${LOGS_DIR}"/truncate_fitbit_log.txt
 
 unset PYTHONPATH
 
