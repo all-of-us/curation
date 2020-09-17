@@ -48,8 +48,8 @@ WHERE {{date_field}} > '{{cutoff_date}}')""")
 # Drop any FitBit data that is newer than the cutoff date
 TRUNCATE_FITBIT_DATA_QUERY = JINJA_ENV.from_string("""
 SELECT * FROM `{{project}}.{{dataset}}.{{table_name}}` t
-WHERE person_id NOT IN (
-SELECT person_id FROM `{{project}}.{{sandbox}}.{{intermediary_table}}`)""")
+EXCEPT DISTINCT
+SELECT * FROM `{{project}}.{{sandbox}}.{{intermediary_table}}`""")
 
 
 class TruncateFitbitData(BaseCleaningRule):
