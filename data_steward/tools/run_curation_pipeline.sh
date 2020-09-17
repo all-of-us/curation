@@ -14,7 +14,7 @@ Usage: run_curation_pipeline.sh
   --dataset_release_tag <release tag for the CDR>
   --ehr_cutoff <ehr_cut_off date format yyyy-mm-dd>
   --rdr_export_date <date RDR export is run format yyyy-mm-dd>
-  --ticket_number <Ticket number to append to sandbox table names>
+  --ticket_number <Ticket number corresponding to removing deactivated participants data, to append sandbox table names>
   --pids_project_id <Identifies the project where the pids table is stored>
   --pids_dataset_id <Identifies the dataset where the pids table is stored>
   --pids_table <Identifies the table where the pids are stored>
