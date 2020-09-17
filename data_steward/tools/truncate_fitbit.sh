@@ -66,7 +66,7 @@ bq mk --dataset --description "${dataset_release_tag} staging version of ${fitbi
 
 # create empty fitbit sandbox dataset
 sandbox_dataset="${fitbit_dataset}_sandbox"
-#bq mk --dataset --description "${dataset_release_tag} sandbox dataset for ${fitbit_dataset}" "${APP_ID}":"${sandbox_dataset}"
+bq mk --dataset --description "${dataset_release_tag} sandbox dataset for ${fitbit_dataset}" "${APP_ID}":"${sandbox_dataset}"
 
 # Create logs dir
 LOGS_DIR="${DATA_STEWARD_DIR}/logs"
