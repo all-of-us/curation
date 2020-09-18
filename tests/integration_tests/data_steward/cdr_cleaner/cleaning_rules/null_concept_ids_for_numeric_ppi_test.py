@@ -61,10 +61,10 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
         Creates common expected parameter types from cleaned tables and a common
         fully qualified (fq) dataset name string used to load the data.
         """
-        self.value_source_concept_id = 'NULL'
-        self.value_as_concept_id = 'NULL'
-        self.value_source_value = 'NULL'
-        self.value_as_string = 'NULL'
+        self.value_source_concept_id = None
+        self.value_as_concept_id = None
+        self.value_source_value = None
+        self.value_as_string = None
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
@@ -84,12 +84,23 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
         INSERT INTO `{{fq_dataset_name}}.observation`
         (observation_id, person_id, observation_concept_id, observation_date, 
          observation_type_concept_id, questionnaire_response_id, value_as_number,
-         value_source_concept_id, value_as_concept_id)
+         value_source_concept_id, value_as_concept_id, value_source_value, value_as_string)
         VALUES
-            (123, 111111, 0, date('2015-07-15'), 0, 111, 111, 111, 111),
-            (345, 222222, 0, date('2015-07-15'), 0, 222, 222, 222, 222),
-            (567, 333333, 0, date('2015-07-15'), 0, 333, 333, 333, 333),
-            (789, 444444, 0, date('2015-07-15'), 0, 444, 444, 444, 444)""")
+            (123, 111111, 0, date('2015-07-15'), 0, 111, 111, 111, 111, '111', '111'),
+            (345, 222222, 0, date('2015-07-15'), 0, 222, 222, 222, 222, '222', '222'),
+            (567, 333333, 0, date('2015-07-15'), 0, 333, 333, 333, 333, '333', '333'),
+            (789, 444444, 0, date('2015-07-15'), 0, 444, 444, 444, 444, '444', '444'),
+            -- make sure records are not changed when questionnaire_response_id is null --
+            (111, 111111, 0, date('2015-07-15'), 0, null, 555, 555, 555, '555', '555'),
+            -- make sure records are not changed when value_as_number is null --
+            (222, 222222, 0, date('2015-07-15'), 0, 222, null, 222, 222, '222', '222'),
+            -- ensure records aren't changed when value_source_concept_id and value_as_concept_id are both null --
+            (333, 333333, 0, date('2015-07-15'), 0, 333, 333, null, null, '333', '333'),
+            -- ensure records are changed when value_source_concept_id is not null --
+            (444, 44444, 0, date('2015-07-15'), 0, 444, 444, 444, null, '444', '444'),
+            -- ensure records are changed when value_as_concept_id is null --
+            (555, 55555, 0, date('2015-07-15'), 0, 555, 555, null, 555, '555', '555')"""
+                                         )
 
         query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
         self.load_test_data([query])
@@ -100,11 +111,11 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, 'observation']),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [123, 345, 567, 789],
-            'sandboxed_ids': [123, 345, 567, 789],
+            'loaded_ids': [123, 345, 567, 789, 111, 222, 333, 444, 555],
+            'sandboxed_ids': [123, 345, 567, 789, 444, 555],
             'fields': [
-                'value_source_concept_id', 'value_as_concept_id',
-                'value_source_value', 'value_as_string'
+                'observation_id', 'value_source_concept_id',
+                'value_as_concept_id', 'value_source_value', 'value_as_string'
             ],
             'cleaned_values': [
                 (123, self.value_source_concept_id, self.value_as_concept_id,
@@ -114,7 +125,15 @@ class NullConceptIDForNumericPPITest(BaseTest.CleaningRulesTestBase):
                 (567, self.value_source_concept_id, self.value_as_concept_id,
                  self.value_source_value, self.value_as_string),
                 (789, self.value_source_concept_id, self.value_as_concept_id,
-                 self.value_source_value, self.value_as_string)
+                 self.value_source_value, self.value_as_string),
+                # ensure values are unchanged if any criteria are unmet
+                (111, 555, 555, '555', '555'),
+                (222, 222, 222, '222', '222'),
+                (333, None, None, '333', '333'),
+                # ensure if one of value_source_concept_id or value_as_concept_id
+                # are null, the values update as expected
+                (444, None, None, None, None),
+                (555, None, None, None, None)
             ]
         }]
 
