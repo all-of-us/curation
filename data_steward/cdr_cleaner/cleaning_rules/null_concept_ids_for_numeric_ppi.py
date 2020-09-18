@@ -1,7 +1,7 @@
 """
 Nullify concept ids for numeric PPIs from the RDR observation dataset
 
-Original Issues: DC-537, DC-703
+Original Issues: DC-537, DC-703, DC-1098
 
 The intent is to null concept ids (value_source_concept_id, value_as_concept_id, value_source_value,
 value_as_string) for numeric PPIs from the RDR observation dataset. The changed records should be
@@ -19,74 +19,73 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import OBSERVATION
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from utils.bq import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
-
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
 
 SAVE_TABLE_NAME = "dc_703_obs_changed_rows_saved"
 
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
-SANDBOX_QUERY = jinja_env.from_string("""
-CREATE OR REPLACE TABLE 
+SANDBOX_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE
     `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
-FROM 
+FROM
     `{{project}}.{{dataset}}.observation`
 WHERE
     questionnaire_response_id IS NOT NULL
-AND 
+AND
     value_as_number IS NOT NULL
-AND 
+AND
     (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL))
 """)
 
-CLEAN_NUMERIC_PPI_QUERY = jinja_env.from_string("""
-SELECT
-    observation_id,
-    person_id,
-    observation_concept_id,
-    observation_date,
-    observation_datetime,
-    observation_type_concept_id,
-    value_as_number,
-CASE WHEN 
-    value_as_number IS NOT NULL AND value_source_concept_id IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
-END AS 
-    value_as_string,
-CASE WHEN
-    value_as_number IS NOT NULL AND value_source_concept_id IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
-END AS
-    value_as_concept_id,
-    qualifier_concept_id,
-    unit_concept_id,
-    provider_id,
-    visit_occurrence_id,
-    observation_source_value,
-    observation_source_concept_id,
-    unit_source_value,
-    qualifier_source_value,
-CASE WHEN
-    value_as_number IS NOT NULL AND value_source_concept_id IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
-END AS
-    value_source_concept_id,
-CASE WHEN
-    value_as_number IS NOT NULL AND value_source_concept_id IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
-END AS
-    value_source_value,
-    questionnaire_response_id
-FROM
-    {{project}}.{{dataset}}.observation""")
+CLEAN_NUMERIC_PPI_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.observation` AS (
+    SELECT
+        observation_id,
+        person_id,
+        observation_concept_id,
+        observation_date,
+        observation_datetime,
+        observation_type_concept_id,
+        value_as_number,
+    CASE
+        WHEN
+        questionnaire_response_id IS NOT NULL AND value_as_number IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
+        ELSE value_as_string
+    END AS
+        value_as_string,
+    CASE
+        WHEN
+        questionnaire_response_id IS NOT NULL AND value_as_number IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
+        ELSE value_as_concept_id
+    END AS
+        value_as_concept_id,
+        qualifier_concept_id,
+        unit_concept_id,
+        provider_id,
+        visit_occurrence_id,
+        observation_source_value,
+        observation_source_concept_id,
+        unit_source_value,
+        qualifier_source_value,
+    CASE
+        WHEN
+        questionnaire_response_id IS NOT NULL AND value_as_number IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
+        ELSE value_source_concept_id
+    END AS
+        value_source_concept_id,
+    CASE
+        WHEN
+        questionnaire_response_id IS NOT NULL AND value_as_number IS NOT NULL AND (value_source_concept_id IS NOT NULL OR value_as_concept_id IS NOT NULL) THEN NULL
+        ELSE value_source_value
+    END AS
+        value_source_value,
+        questionnaire_response_id
+    FROM
+        {{project}}.{{dataset}}.observation
+)""")
 
 
 class NullConceptIDForNumericPPI(BaseCleaningRule):
@@ -103,11 +102,11 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = (
-            'Nulls answer concept_ids for numeric PPI questions if:'
-            '(1) questionnaire_response_id is not null'
-            '(2) value_as_number is not null'
+            'Nulls answer concept_ids for numeric PPI questions if:\n'
+            '(1) questionnaire_response_id is not null\n'
+            '(2) value_as_number is not null\n'
             '(3) value_source_concept_id or value_as_concept_id is not null')
-        super().__init__(issue_numbers=['DC-537', 'DC-703'],
+        super().__init__(issue_numbers=['DC-537', 'DC-703', 'DC-1098'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          project_id=project_id,
@@ -135,12 +134,6 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
             cdr_consts.QUERY:
                 CLEAN_NUMERIC_PPI_QUERY.render(project=self.project_id,
                                                dataset=self.dataset_id),
-            cdr_consts.DESTINATION_TABLE:
-                'observation',
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
         }
 
         return [save_changed_rows, clean_numeric_ppi_query]
