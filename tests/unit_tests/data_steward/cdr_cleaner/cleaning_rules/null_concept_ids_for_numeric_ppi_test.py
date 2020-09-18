@@ -69,12 +69,6 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
             clean_consts.QUERY:
                 CLEAN_NUMERIC_PPI_QUERY.render(project=self.project_id,
                                                dataset=self.dataset_id),
-            clean_consts.DESTINATION_TABLE:
-                'observation',
-            clean_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            clean_consts.DISPOSITION:
-                WRITE_TRUNCATE
         }]
 
         self.assertEqual(result_list, expected_list)
