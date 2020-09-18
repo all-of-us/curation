@@ -150,7 +150,7 @@ python "${TOOLS_DIR}/add_cdr_metadata.py" --component "insert" --project_id ${AP
 bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${cdr_deid_base}" --set_label "phase:sandbox" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:true" "${APP_ID}":"${cdr_deid_base_sandbox}"
 
 # remove intermediary datasets
-bq rm -r -d "${cdr_deid_base_staging}_sandbox"
+bq rm -r -d "${cdr_deid_base_staging_sandbox}"
 bq rm -r -d "${cdr_deid_base_staging}"
 
 # create empty de-id_clean dataset to apply cleaning rules
@@ -181,7 +181,7 @@ bq update --description "${version} De-identified Clean version of ${cdr_deid_ba
 bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${cdr_deid_clean}" --set_label "phase:sandbox" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:true" "${APP_ID}":"${cdr_deid_clean_sandbox}"
 
 # remove intermediary datasets
-bq rm -r -d "${cdr_deid_clean_staging}_sandbox"
+bq rm -r -d "${cdr_deid_clean_staging_sandbox}"
 bq rm -r -d "${cdr_deid_clean_staging}"
 
 unset PYTHONPATH

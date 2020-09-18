@@ -119,7 +119,7 @@ if __name__ == '__main__':
         parser.REQUIRED: True
     }
 
-    ARGS = parser.default_parse_args([mapping_dataset_arg])
+    ARGS = parser.default_parse_args([mapping_dataset_arg, mapping_table_arg])
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
