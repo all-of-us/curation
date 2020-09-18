@@ -80,11 +80,17 @@ bq mk --dataset --description "snapshot of latest EHR dataset ${ehr_dataset}" --
 echo "--------------------------> Snapshotting  and cleaning RDR Dataset (step 5)"
 rdr_clean="${dataset_release_tag}_rdr"
 rdr_clean_staging="${rdr_clean}_staging"
+rdr_clean_sandbox="${rdr_clean}_sandbox"
+rdr_clean_staging_sandbox="${rdr_clean_staging}_sandbox"
 
-bq mk --dataset --description "snapshot of latest RDR dataset ${rdr_dataset}" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${rdr_clean_staging}
+# create empty staging dataset
+bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${rdr_dataset}" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "de_identified:false"  "${app_id}":"${rdr_clean_staging}"
+
+# create empty sandbox dataset
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${rdr_clean_staging}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false"  "${app_id}":"${rdr_clean_staging_sandbox}"
 
 #copy tables
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${rdr_dataset} --target_dataset ${rdr_clean_staging} --sync false
+"${TOOLS_DIR}/table_copy.sh" --source_app_id "${app_id}" --target_app_id "${app_id}" --source_dataset "${rdr_dataset}" --target_dataset "${rdr_clean_staging}" --sync false
 
 #set BIGQUERY_DATASET_ID variable to dataset name where the vocabulary exists
 export BIGQUERY_DATASET_ID="${rdr_clean_staging}"
@@ -92,7 +98,8 @@ export RDR_DATASET_ID="${rdr_clean_staging}"
 echo "Cleaning the RDR data"
 data_stage="rdr"
 
-python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s
+# apply cleaning rules on staging
+python "${CLEANER_DIR}/clean_cdr.py"  --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --sandbox_dataset_id "${rdr_clean_staging_sandbox}" --data_stage ${data_stage} -s
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --snapshot_dataset_id "${rdr_clean}"
@@ -100,10 +107,13 @@ python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id
 bq update --description "${version} clean version of ${rdr_dataset}" --set_label "phase:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${rdr_clean}
 
 #copy sandbox dataset
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${rdr_clean_staging}_sandbox" --target_dataset "${rdr_clean}_sandbox"
+"${TOOLS_DIR}/table_copy.sh" --source_app_id "${app_id}" --target_app_id "${app_id}" --source_dataset "${rdr_clean_staging_sandbox}" --target_dataset "${rdr_clean_sandbox}"
 
-bq rm -r -d "${rdr_clean_staging}_sandbox" 
-bq rm -r -d "${rdr_clean_staging}" 
+# Update sandbox description
+bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${rdr_clean}" --set_label "phase:sandbox" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" "${app_id}":"${rdr_clean_sandbox}"
+
+bq rm -r -d "${rdr_clean_staging_sandbox}"
+bq rm -r -d "${rdr_clean_staging}"
 
 echo "Done."
 

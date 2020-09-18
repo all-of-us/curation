@@ -13,7 +13,7 @@ Some initial setup such as loading lookup tables may be needed for a cleaning ru
 Cleaning rules depend on configuration parameters which must be supplied at runtime when cleaning a dataset. Some parameters are needed by all cleaning rules whereas others may only pertain to a few. These dependencies become difficult to manage without some overarching design. This section describes the design objective and summarizes existing configuration dependencies.
 
 ## Parameters correctly supplied
-> Note: for these examples assume that cleaning fitbit only requires the additional parameters `mapping_dataset_id` and `pid_rid_map_tablename`
+> Note: for these examples assume that cleaning fitbit only requires the additional parameters `mapping_dataset_id` and `mapping_table_id`
 
 The primary use case is clean_cdr is supplied all required parameters for all cleaning rules associated with the data stage. These parameters are successfully passed along to any cleaning rules that reference the parameter.
 ```
@@ -22,7 +22,7 @@ clean_cdr.py --data_stage FITBIT
              --dataset_id fitbit
              --sandbox_dataset_id fitbit_sandbox
              --mapping_dataset_id mapping
-             --pid_rid_map_tablename pid_rid_map
+             --mapping_table_id pid_rid_map
 ```
 
 ## Parameters missing
@@ -54,7 +54,7 @@ Depending on the rule(s) being applied, additional configuration parameters may 
 | parameter | description |
 | --- | --- |
 | [mapping_dataset_id](#mapping_dataset_id) | Identifies the dataset containing mapping tables needed for deid |
-| [pid_rid_map_tablename](#pid_rid_map_tablename) | The name of the table in `mapping_dataset_id` which maps `participant_id` --> `research_id` |
+| [mapping_table_id](#mapping_table_id) | The name of the table in `mapping_dataset_id` which maps `participant_id` --> `research_id` |
 | [combined_dataset_id](#combined_dataset_id) | Identifies the dataset containing EHR + RDR data |
 | [ehr_dataset_id](#ehr_dataset_id) | Identifies the dataset containing a snapshot of unioned EHR data |
 | [validation_dataset_id](#validation_dataset_id) | Identifies the dataset containing participant match tables |
@@ -72,7 +72,7 @@ Depending on the rule(s) being applied, additional configuration parameters may 
  - PIDtoRID
  - FitbitDateShift 
 [^3]: The cleaning rule `generate_ext_tables` does not conform to many conventions and we eventually intend to refactor it
-### pid_rid_map_tablename
+### mapping_table_id
  - PIDtoRID
  - FitbitDateShift
 ### combined_dataset_id
