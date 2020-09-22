@@ -24,7 +24,7 @@ CREATE OR REPLACE TABLE
   SELECT
     *
   FROM
-    {dataset}.observation
+    `{project}.{dataset}.observation`
   WHERE
     observation_id IN (
     SELECT
