@@ -62,6 +62,8 @@ CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
+
+# set env variable for cleaning rule remove_non_matching_participant.py
 export VALIDATION_RESULTS_DATASET_ID="${validation_dataset}"
 
 #set application environment (ie dev, test, prod)
