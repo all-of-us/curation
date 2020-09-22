@@ -77,7 +77,7 @@ DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 DEID_DIR="${DATA_STEWARD_DIR}/deid"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
-HANDOFF_DATE=$(date --date='1 day' '+%Y-%m-%d')
+HANDOFF_DATE="$(date -v +1d +'%Y-%m-%d')"
 
 export BIGQUERY_DATASET_ID="${cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
