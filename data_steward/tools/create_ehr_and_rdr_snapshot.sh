@@ -99,7 +99,7 @@ echo "Cleaning the RDR data"
 data_stage="rdr"
 
 # apply cleaning rules on staging
-python "${CLEANER_DIR}/clean_cdr.py"  --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --sandbox_dataset_id "${rdr_clean_staging_sandbox}" --data_stage ${data_stage} -s
+python "${CLEANER_DIR}/clean_cdr.py"  --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --sandbox_dataset_id "${rdr_clean_staging_sandbox}" --data_stage ${data_stage} -s 2>&1 | tee rdr_cleaning_log_"${rdr_clean}".txt
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --snapshot_dataset_id "${rdr_clean}"
