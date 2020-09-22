@@ -42,7 +42,7 @@ CREATE OR REPLACE TABLE
 DELETE_OPERATIONAL_PII_FIELDS_QUERY = """
 DELETE
 FROM
-    {dataset}.observation
+    `{project}.{dataset}.observation`
   WHERE
     observation_id IN (
     SELECT
