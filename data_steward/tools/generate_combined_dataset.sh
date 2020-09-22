@@ -8,6 +8,7 @@ Usage: generate_combined_dataset.sh
   --vocab_dataset <vocab dataset>
   --unioned_ehr_dataset <unioned dataset>
   --rdr_dataset <RDR dataset>
+  --validation_dataset <Validation dataset ID>
   --dataset_release_tag <release tag for the CDR>
   --ehr_cutoff <ehr_cut_off date format yyyy-mm-dd>
   --rdr_export_date <date RDR export is run format yyyy-mm-dd>
@@ -31,6 +32,10 @@ while true; do
     rdr_dataset=$2
     shift 2
     ;;
+  --validation_dataset)
+    validation_dataset=$2
+    shift 2
+    ;;
   --dataset_release_tag)
     dataset_release_tag=$2
     shift 2
@@ -51,7 +56,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${unioned_ehr_dataset}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${unioned_ehr_dataset}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${validation_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]]; then
   echo "$USAGE"
   exit 1
 fi
@@ -67,6 +72,7 @@ echo "unioned_ehr_dataset --> ${unioned_ehr_dataset}"
 echo "rdr_dataset --> ${rdr_dataset}"
 echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
+echo "validation_dataset --> ${validation_dataset}"
 echo "ehr_cutoff_date --> ${ehr_cutoff}"
 echo "rdr_export_date --> ${rdr_export_date}"
 echo "cdr generation date --> ${today}"
@@ -96,6 +102,8 @@ export RDR_DATASET_ID="${rdr_dataset}"
 export UNIONED_DATASET_ID="${unioned_ehr_dataset}"
 export COMBINED_DATASET_ID="${combined_backup}"
 export BIGQUERY_DATASET_ID="${unioned_ehr_dataset}"
+# set env variable for cleaning rule remove_non_matching_participant.py
+export VALIDATION_RESULTS_DATASET_ID="${validation_dataset}"
 
 bq mk --dataset --description "${version} combined raw version of  ${rdr_dataset} + ${unioned_ehr_dataset}" --label "phase:backup" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${combined_backup}
 
