@@ -18,8 +18,8 @@ from jinja2 import Environment
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.bq_utils import WRITE_TRUNCATE
 from common import FITBIT_TABLES
+from constants.bq_utils import WRITE_TRUNCATE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ WHERE person_id IN (
     FROM (
     SELECT DISTINCT person_id,
         EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth AS age
-            FROM `{{combined_dataset.project}}.{{combined_dataset.dataset_id}}.{{combined_dataset.table_id}}` ORDER BY 2)
+            FROM `{{fq_combined_dataset_table_id}}` ORDER BY 2)
         WHERE age >= 89)
 """)
 
@@ -106,7 +106,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                         sandbox_table=self.get_sandbox_tablenames()[i],
                         dataset=self.dataset_id,
                         table=table,
-                        combined_dataset=self.person,
+                        fq_combined_dataset_table_id=self.person,
                     )
             })
 
