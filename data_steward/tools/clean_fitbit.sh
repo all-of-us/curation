@@ -77,7 +77,7 @@ export BIGQUERY_DATASET_ID="${fitbit_dataset}"
 export PYTHONPATH="${PYTHONPATH}:${CLEAN_DEID_DIR}:${DATA_STEWARD_DIR}"
 
 # create empty fitbit de-id dataset
-bq mk --dataset --description "${dataset_release_tag} de-identified version of ${fitbit_dataset}" --label "phase:clean" --label "release_tag:${dataset_release_tag}" --label "de_identified:true"  "${APP_ID}":"${fitbit_deid_dataset}"
+bq mk --dataset --description "${dataset_release_tag} de-identified version of ${fitbit_dataset}" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "de_identified:false"  "${APP_ID}":"${fitbit_deid_dataset}"
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${fitbit_dataset}" --target_dataset "${fitbit_deid_dataset}"
 # Use the below command if copy fails
 #transfer_params='{"source_dataset_id":"'${fitbit_dataset}'","source_project_id":"'${APP_ID}'"'
@@ -95,6 +95,8 @@ mkdir -p "${LOGS_DIR}"
 python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${fitbit_deid_dataset}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
 python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${fitbit_deid_dataset}" --sandbox_dataset_id "${sandbox_dataset}" --mapping_dataset_id "${mapping_dataset}" --mapping_table_id "${mapping_table}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
 python "${CLEAN_DEID_DIR}/fitbit_dateshift.py" --project_id "${APP_ID}" --dataset_id "${fitbit_deid_dataset}" --sandbox_dataset_id "${sandbox_dataset}" --mapping_dataset_id "${mapping_dataset}" --mapping_table_id "${mapping_table}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
+
+bq update --set_label "phase:clean" --set_label "de_identified:true" "${APP_ID}":"${fitbit_deid_dataset}"
 
 unset PYTHONPATH
 
