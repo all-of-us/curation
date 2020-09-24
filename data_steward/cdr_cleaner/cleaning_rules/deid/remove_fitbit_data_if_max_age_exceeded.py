@@ -18,8 +18,8 @@ from jinja2 import Environment
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.bq_utils import WRITE_TRUNCATE
 from common import FITBIT_TABLES
+from constants.bq_utils import WRITE_TRUNCATE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ DROP_MAX_AGE_EXCEEDED_ROWS_QUERY = jinja_env.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}` t
 WHERE person_id NOT IN (
-    SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)
+    SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)
 """)
 
 
