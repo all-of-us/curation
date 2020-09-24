@@ -49,7 +49,8 @@ def remove_ehr_data_queries(project_id, ticket_number, pids_project_id,
     psr.store_participant_data(df, project_id, destination_table)
     # creates sandbox and truncate queries to run for deactivated participant data drops
     queries = rdp.create_queries(project_id, ticket_number, project_id,
-                                 pids_dataset_id, tablename, ehr_union_dataset)
+                                 pids_dataset_id, tablename,
+                                 [ehr_union_dataset])
 
     return queries
 
