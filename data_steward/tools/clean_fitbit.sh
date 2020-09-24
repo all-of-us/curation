@@ -66,8 +66,7 @@ export GOOGLE_CLOUD_PROJECT="${APP_ID}"
 gcloud auth activate-service-account --key-file="${key_file}"
 gcloud config set project "${APP_ID}"
 
-fitbit_deid_dataset="${fitbit_dataset}_deid"
-registered_fitbit_deid="R${fitbit_deid_dataset}"
+fitbit_deid_dataset="R${fitbit_dataset}_deid"
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
@@ -78,24 +77,24 @@ export BIGQUERY_DATASET_ID="${fitbit_dataset}"
 export PYTHONPATH="${PYTHONPATH}:${CLEAN_DEID_DIR}:${DATA_STEWARD_DIR}"
 
 # create empty fitbit de-id dataset
-bq mk --dataset --description "${dataset_release_tag} de-identified version of ${fitbit_dataset}" "${APP_ID}":"${registered_fitbit_deid}"
-"${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${fitbit_dataset}" --target_dataset "${registered_fitbit_deid}"
+bq mk --dataset --description "${dataset_release_tag} de-identified version of ${fitbit_dataset}" --label "phase:clean" --label "release_tag:${dataset_release_tag}" --label "de_identified:true"  "${APP_ID}":"${fitbit_deid_dataset}"
+"${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${fitbit_dataset}" --target_dataset "${fitbit_deid_dataset}"
 # Use the below command if copy fails
-#transfer_params='{"source_dataset_id":"'${registered_fitbit_deid}'","source_project_id":"'${APP_ID}'"'
-#bq mk --transfer_config --project_id="${APP_ID}" --data_source="cross_region_copy" --target_dataset="${registered_fitbit_deid}" --display_name='Create Fitbit Deid' --params="${transfer_params}"
+#transfer_params='{"source_dataset_id":"'${fitbit_dataset}'","source_project_id":"'${APP_ID}'"'
+#bq mk --transfer_config --project_id="${APP_ID}" --data_source="cross_region_copy" --target_dataset="${fitbit_deid_dataset}" --display_name='Create Fitbit Deid' --params="${transfer_params}"
 
 # create empty fitbit sandbox dataset
-sandbox_dataset="${registered_fitbit_deid}_sandbox"
-bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${registered_fitbit_deid}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" "${APP_ID}":"${sandbox_dataset}"
+sandbox_dataset="${fitbit_deid_dataset}_sandbox"
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${fitbit_deid_dataset}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" "${APP_ID}":"${sandbox_dataset}"
 
 # Create logs dir
 LOGS_DIR="${DATA_STEWARD_DIR}/logs"
 mkdir -p "${LOGS_DIR}"
 
 # Apply cleaning rules
-python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
-python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --mapping_dataset_id "${mapping_dataset}" --mapping_table_id "${mapping_table}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
-python "${CLEAN_DEID_DIR}/fitbit_dateshift.py" --project_id "${APP_ID}" --dataset_id "${registered_fitbit_deid}" --sandbox_dataset_id "${sandbox_dataset}" --mapping_dataset_id "${mapping_dataset}" --mapping_table_id "${mapping_table}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
+python "${CLEAN_DEID_DIR}/remove_fitbit_data_if_max_age_exceeded.py" --project_id "${APP_ID}" --dataset_id "${fitbit_deid_dataset}" --sandbox_dataset_id "${sandbox_dataset}" --combined_dataset_id "${combined_dataset}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
+python "${CLEAN_DEID_DIR}/pid_rid_map.py" --project_id "${APP_ID}" --dataset_id "${fitbit_deid_dataset}" --sandbox_dataset_id "${sandbox_dataset}" --mapping_dataset_id "${mapping_dataset}" --mapping_table_id "${mapping_table}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
+python "${CLEAN_DEID_DIR}/fitbit_dateshift.py" --project_id "${APP_ID}" --dataset_id "${fitbit_deid_dataset}" --sandbox_dataset_id "${sandbox_dataset}" --mapping_dataset_id "${mapping_dataset}" --mapping_table_id "${mapping_table}" -s 2>&1 | tee -a "${LOGS_DIR}"/fitbit_log.txt
 
 unset PYTHONPATH
 
