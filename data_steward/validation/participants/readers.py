@@ -27,6 +27,12 @@ def _get_field_type(table_name, column_name):
     :return:  The defined type for the field in the table.
     """
     field_type = None
+    if table_name == 'id_match_table':
+        table_name = 'observation'
+    if 'pii' in table_name:
+        table_name = table_name[1:]
+    if 'person' in table_name:
+        table_name = 'person'
     for field in rc.fields_for(table_name):
         if field.get('name', '') == column_name:
             field_type = field.get('type')
