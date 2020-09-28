@@ -3,7 +3,7 @@ import os
 from unittest import TestCase
 
 # Third party imports
-from google.cloud.exceptions import NotFound
+from google.cloud.exceptions import NotFound, GoogleCloudError
 
 # Project imports
 import sandbox
@@ -29,6 +29,24 @@ class CleanCDREngineTest(TestCase):
             self.project_id, self.dataset_id)
         self.client = bq.get_client(self.project_id)
         self.delete_sandbox()
+
+    def test_run_queries(self):
+        non_existent_table = None
+        fake_rule_func_query = f"SELECT * FROM `{self.project_id}.{self.dataset_id}.{non_existent_table}`"
+        fake_rule_queries = [{cdr_consts.QUERY: fake_rule_func_query}]
+
+        def fake_rule_func(project_id, dataset_id, sandbox_dataset_id):
+            return fake_rule_queries
+
+        rule_info = {
+            "query_function": fake_rule_func,
+            "setup_function": lambda x: None,
+            "function_name": fake_rule_func.__name__,
+            "module_name": fake_rule_func.__module__,
+            "line_no": 10
+        }
+        with self.assertRaises(GoogleCloudError) as e:
+            ce.run_queries(self.client, fake_rule_queries, rule_info)
 
     def test_clean_dataset(self):
         fake_rule_class_query = 'SELECT "FakeRuleClass"'
