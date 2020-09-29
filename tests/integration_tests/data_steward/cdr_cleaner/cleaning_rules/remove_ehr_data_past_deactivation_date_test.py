@@ -107,9 +107,10 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         mock_get.return_value.json.return_value = self.json_response_entry
 
         # Ensure deactivated participants table is created and or updated
-        psr.get_deactivated_participants(self.project_id, self.dataset_id,
-                                         self.tablename, self.columns)
-
+        df = psr.get_deactivated_participants(self.project_id, self.dataset_id,
+                                              self.tablename, self.columns)
+        psr.store_participant_data(df, self.project_id,
+                                   f'{self.dataset_id}.{self.tablename}')
         # pre conditions for retraction module
         d = {
             'project_id': [
