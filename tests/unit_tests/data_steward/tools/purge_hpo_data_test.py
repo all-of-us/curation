@@ -75,7 +75,7 @@ class PurgeHpoDataTest(unittest.TestCase):
         :param tables: names of tables the client should list
         :return: the mock client object
         """
-        mock_client = mock.MagicMock(wraps=Client(project=self.project_id))
+        mock_client = mock.MagicMock(spec=Client)
         mock_client.list_tables.return_value = [
             self._table_id_to_list_item(table) for table in tables
         ]
