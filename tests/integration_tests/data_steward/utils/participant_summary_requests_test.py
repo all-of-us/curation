@@ -143,8 +143,11 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         mock_get.return_value.json.return_value = self.json_response_entry
 
         # Tests
-        psr.get_deactivated_participants(self.project_id, self.dataset_id,
-                                         self.tablename, self.columns)
+        df = psr.get_deactivated_participants(self.project_id, self.dataset_id,
+                                              self.tablename, self.columns)
+
+        psr.store_participant_data(df, self.project_id,
+                                   f'{self.dataset_id}.{self.tablename}')
 
         # Post conditions
         values = [(111, 'NO_CONTACT', datetime.date(2018, 12, 7)),
