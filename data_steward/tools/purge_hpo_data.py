@@ -16,7 +16,10 @@ import bq_utils
 import resources
 
 LOGGER = logging.getLogger(__name__)
+
+# The default is only 50 so set high enough to get all tables
 LIST_TABLES_MAX_RESULTS = 5000
+"Maximum number of results to retrieve from list tables endpoint"
 DELETE_QUERY_TPL = bq.JINJA_ENV.from_string("""
 {%- for table in tables_to_purge -%}
 DELETE FROM `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}` WHERE 1=1;
