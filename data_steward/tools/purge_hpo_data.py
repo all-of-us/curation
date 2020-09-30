@@ -1,5 +1,6 @@
 """
-Empty all CDM tables associated with one or more HPO sites from an EHR dataset
+Empty all CDM tables associated with one or more HPO sites from an EHR dataset. 
+Tables are NOT dropped- their rows are deleted and the empty tables are preserved. 
 
 This can be used to exclude sites' data from the EHR dataset before 
 generating the unioned dataset which will be used for the CDR.
