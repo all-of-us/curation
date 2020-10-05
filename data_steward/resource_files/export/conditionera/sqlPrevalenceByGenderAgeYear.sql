@@ -12,14 +12,14 @@ FROM (
 		denom.count_value AS denom_count_value
 	FROM (
     SELECT CAST(stratum_1 as int64) stratum_1, CAST(stratum_2 as int64) stratum_2, CAST(stratum_3 as int64) stratum_3, cast(stratum_4 as int64) stratum_4, count_value
-		FROM @results_database_schema.achilles_results
+		FROM `@results_database_schema.achilles_results`
 		WHERE analysis_id = 1004
 			AND stratum_3 IN ('8507', '8532')
 		group by stratum_1, stratum_2, stratum_3, stratum_4, count_value
 		) num
 	INNER JOIN (
     SELECT CAST(stratum_1 as int64) stratum_1, CAST(stratum_2 as int64) stratum_2, CAST(stratum_3 as int64) stratum_3, cast(stratum_4 as int64) stratum_4, count_value
-		FROM @results_database_schema.achilles_results
+		FROM `@results_database_schema.achilles_results`
 		WHERE analysis_id = 116
 			AND stratum_2 IN ('8507', '8532')
 		group by stratum_1, stratum_2, stratum_3, stratum_4, count_value
@@ -28,9 +28,9 @@ FROM (
 			AND num.stratum_3 = denom.stratum_2
 			AND num.stratum_4 = denom.stratum_3
 	) tmp
-INNER JOIN @vocab_database_schema.concept c1
+INNER JOIN `@vocab_database_schema.concept` c1
 	ON num_stratum_1 = c1.concept_id
-INNER JOIN @vocab_database_schema.concept c2
+INNER JOIN `@vocab_database_schema.concept` c2
 	ON num_stratum_3 = c2.concept_id
 ORDER BY c1.concept_id,
 	num_stratum_2
