@@ -4,7 +4,7 @@ import random
 import bq_utils
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from resources import fields_for
+from resources import fields_for, MAPPING_TABLES
 
 LOGGER = logging.getLogger("__name__")
 
@@ -92,7 +92,7 @@ def get_mapping_table_ids(project_id, mapping_dataset_id):
     mapping_table_ids = []
     for table_obj in table_objs:
         table_id = bq_utils.get_table_id_from_obj(table_obj)
-        if MAPPING_PREFIX in table_id:
+        if table_id in MAPPING_TABLES:
             mapping_table_ids.append(table_id)
     return mapping_table_ids
 
