@@ -23,6 +23,7 @@ class GenerateExtTablesTest(unittest.TestCase):
     def setUp(self):
         self.project_id = 'project_id'
         self.dataset_id = 'dataset_id'
+        self.sandbox_id = 'sandbox_dataset'
         self.hpo_list = [{
             "hpo_id": "hpo_1",
             "name": "hpo_name_1"
@@ -172,5 +173,6 @@ class GenerateExtTablesTest(unittest.TestCase):
                 expected.append(query)
         actual = gen_ext.get_generate_ext_table_queries(self.project_id,
                                                         self.dataset_id,
+                                                        self.sandbox_id,
                                                         self.dataset_id)
         self.assertCountEqual(expected, actual)
