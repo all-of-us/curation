@@ -23,7 +23,7 @@ LEFT_JOIN = (
     ' *,'
     ' row_number() OVER (PARTITION BY {prefix}.{field}, {prefix}.src_hpo_id ) '
     ' AS row_num'
-    ' FROM {dataset_id}.{table} {prefix}'
+    ' FROM `{dataset_id}.{table}` AS {prefix}'
     ' )'
     ' WHERE row_num = 1'
     ' ) {prefix}  ON t.{field} = {prefix}.src_{field}'
@@ -38,7 +38,7 @@ LEFT_JOIN_PERSON = (
     ' *,'
     ' row_number() OVER (PARTITION BY {prefix}.{field}, {prefix}.src_hpo_id ) '
     ' AS row_num'
-    ' FROM {dataset_id}.{table} {prefix}'
+    ' FROM `{dataset_id}.{table}` AS {prefix}'
     ' )'
     ' WHERE row_num = 1'
     ' ) {prefix}  ON t.{field} = {prefix}.src_{field}')
@@ -51,19 +51,19 @@ EHR_CONSENT_QUERY = (
     ' observation_datetime,'
     ' ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY observation_datetime DESC, '
     ' value_source_concept_id ASC) AS rn'
-    ' FROM {dataset_id}.observation'
+    ' FROM `{dataset_id}.observation`'
     ' WHERE observation_source_value = \'{source_value_ehr_consent}\')'
     ' SELECT person_id'
     ' FROM ordered_response'
     ' WHERE rn = 1'
     ' AND value_source_concept_id = {concept_id_consent_permission_yes}')
 
-COPY_RDR_QUERY = 'SELECT * FROM {rdr_dataset_id}.{table}'
+COPY_RDR_QUERY = 'SELECT * FROM `{rdr_dataset_id}.{table}`'
 
 COPY_EHR_QUERY = (
-    '      SELECT * FROM {ehr_dataset_id}.{table} t'
+    '      SELECT * FROM `{ehr_dataset_id}.{table}` AS t'
     '      WHERE EXISTS'
-    '           (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c'
+    '           (SELECT 1 FROM `{combined_dataset_id}.{ehr_consent_table_id}` AS c'
     '            WHERE t.person_id = c.person_id)')
 
 MAPPING_QUERY_WITH_PERSON_CHECK = (
@@ -72,7 +72,7 @@ MAPPING_QUERY_WITH_PERSON_CHECK = (
     '  {domain_table}_id  AS src_{domain_table}_id,'
     '  \'rdr\' as src_hpo_id,'
     '  {domain_table}_id + {mapping_constant}  AS {domain_table}_id'
-    '  FROM {rdr_dataset_id}.{domain_table}'
+    '  FROM `{rdr_dataset_id}.{domain_table}`'
     ''
     '  UNION ALL'
     ''
@@ -81,11 +81,11 @@ MAPPING_QUERY_WITH_PERSON_CHECK = (
     '  t.{domain_table}_id AS src_{domain_table}_id,'
     '  v.src_hpo_id AS src_hpo_id,'
     '  t.{domain_table}_id  AS {domain_table}_id'
-    '  FROM {ehr_dataset_id}.{domain_table} t'
-    '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = v.{'
-    'domain_table}_id'
+    '  FROM `{ehr_dataset_id}.{domain_table}` AS t'
+    '  JOIN `{ehr_dataset_id}._mapping_{domain_table}` AS v '
+    '  ON t.{domain_table}_id = v.{domain_table}_id'
     '  WHERE EXISTS'
-    '  (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c'
+    '  (SELECT 1 FROM `{combined_dataset_id}.{ehr_consent_table_id}` AS c'
     '  WHERE t.person_id = c.person_id)')
 
 MAPPING_QUERY_WITHOUT_PERSON_CHECK = (
@@ -94,7 +94,7 @@ MAPPING_QUERY_WITHOUT_PERSON_CHECK = (
     '  {domain_table}_id  AS src_{domain_table}_id,'
     '  \'rdr\' as src_hpo_id,'
     '  {domain_table}_id + {mapping_constant}  AS {domain_table}_id'
-    '  FROM {rdr_dataset_id}.{domain_table}'
+    '  FROM `{rdr_dataset_id}.{domain_table}`'
     ''
     '  UNION ALL'
     ''
@@ -103,13 +103,13 @@ MAPPING_QUERY_WITHOUT_PERSON_CHECK = (
     '  t.{domain_table}_id AS src_{domain_table}_id,'
     '  v.src_hpo_id AS src_hpo_id,'
     '  t.{domain_table}_id  AS {domain_table}_id'
-    '  FROM {ehr_dataset_id}.{domain_table} t'
-    '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v on t.{domain_table}_id = '
-    'v.{domain_table}_id')
+    '  FROM `{ehr_dataset_id}.{domain_table}` AS t'
+    '  JOIN `{ehr_dataset_id}._mapping_{domain_table}` AS v'
+    '  ON t.{domain_table}_id = v.{domain_table}_id')
 
 LOAD_QUERY = (
     '    SELECT {cols}'
-    '    FROM {rdr_dataset_id}.{domain_table} t'
+    '    FROM `{rdr_dataset_id}.{domain_table}` AS t'
     '    JOIN'
     '    ('
     '        SELECT *'
@@ -117,7 +117,7 @@ LOAD_QUERY = (
     '          SELECT'
     '              *,'
     '              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id ) AS row_num'
-    '          FROM {combined_dataset_id}.{mapping_table} as m'
+    '          FROM `{combined_dataset_id}.{mapping_table}` AS m'
     '        )'
     '        WHERE row_num = 1'
     '    ) m        ON t.{domain_table}_id = m.src_{domain_table}_id'
@@ -134,7 +134,7 @@ LOAD_QUERY = (
     '          SELECT'
     '              *,'
     '              row_number() OVER (PARTITION BY m.{domain_table}_id) AS row_num'
-    '          FROM {ehr_dataset_id}.{domain_table} as m'
+    '          FROM `{ehr_dataset_id}.{domain_table}` AS m'
     '        )'
     '        WHERE row_num = 1'
     '    ) t'
@@ -145,7 +145,7 @@ LOAD_QUERY = (
     '          SELECT'
     '              *,'
     '              row_number() OVER (PARTITION BY m.src_{domain_table}_id, m.src_hpo_id) AS row_num'
-    '          FROM {combined_dataset_id}.{mapping_table} as m'
+    '          FROM `{combined_dataset_id}.{mapping_table}` AS m'
     '        )'
     '        WHERE row_num = 1'
     '    ) m'
@@ -155,7 +155,7 @@ LOAD_QUERY = (
     '    ')
 
 MAPPED_PERSON_QUERY = ('select {cols} '
-                       'from {dataset}.{table} as t '
+                       'from `{dataset}.{table}` AS t '
                        '{join_expr}')
 
 FACT_RELATIONSHIP_QUERY = (
@@ -176,18 +176,18 @@ FACT_RELATIONSHIP_QUERY = (
     '          THEN o2.observation_id'
     '    END AS fact_id_2,'
     '    fr.relationship_concept_id AS relationship_concept_id'
-    '  FROM {rdr_dataset_id}.fact_relationship fr'
-    '    LEFT JOIN {combined_dataset_id}.{mapping_measurement} m1'
+    '  FROM `{rdr_dataset_id}.fact_relationship` AS fr'
+    '    LEFT JOIN `{combined_dataset_id}.{mapping_measurement}` AS m1'
     '      ON m1.src_measurement_id = fr.fact_id_1 AND fr.domain_concept_id_1={'
     'measurement_domain_concept_id}'
-    '    LEFT JOIN {combined_dataset_id}.{mapping_observation} o1'
+    '    LEFT JOIN `{combined_dataset_id}.{mapping_observation}` AS o1'
     '      ON o1.src_observation_id = fr.fact_id_1 AND fr.domain_concept_id_1={'
     'observation_domain_concept_id}'
-    '    LEFT JOIN {combined_dataset_id}.{mapping_measurement} m2'
+    '    LEFT JOIN `{combined_dataset_id}.{mapping_measurement}` AS m2'
     '      ON m2.src_measurement_id = fr.fact_id_2 AND fr.domain_concept_id_2={measurement_domain_concept_id}'
-    '    LEFT JOIN {combined_dataset_id}.{mapping_observation} o2'
+    '    LEFT JOIN `{combined_dataset_id}.{mapping_observation}` AS o2'
     '      ON o2.src_observation_id = fr.fact_id_2 AND fr.domain_concept_id_2={observation_domain_concept_id}'
     '    '
     ' UNION ALL '
     '    '
-    ' SELECT * from {ehr_dataset}.fact_relationship')
+    ' SELECT * from `{ehr_dataset}.fact_relationship`')
