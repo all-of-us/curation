@@ -145,6 +145,7 @@ bq mk --dataset --description "intermediary dataset to apply cleaning rules on $
 
 export UNIONED_DATASET_ID="${unioned_ehr_dataset_staging}"
 export BIGQUERY_DATASET_ID="${unioned_ehr_dataset_staging}"
+export VOCABULARY_DATASET="${vocab_dataset}" # required by populate_route_ids cleaning rule
 data_stage='unioned'
 
 # create sandbox dataset
