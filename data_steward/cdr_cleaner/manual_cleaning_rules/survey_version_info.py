@@ -16,10 +16,9 @@ import logging
 # Third party imports
 from google.api_core.exceptions import BadRequest, NotFound
 
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 # Project imports
 from common import OBSERVATION
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from utils.bq import JINJA_ENV
 
@@ -43,7 +42,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{out_dataset_id}}.observation_ext` AS (
     FROM `{{project_id}}.{{out_dataset_id}}.observation_ext` AS oe
     JOIN `{{project_id}}.{{out_dataset_id}}.observation` AS o
     USING (observation_id)
-    LEFT JOIN `{{project_id}}.{{qrid_map_dataset_id}}._deid_questionnaire_response_id` AS m
+    LEFT JOIN `{{project_id}}.{{qrid_map_dataset_id}}._deid_questionnaire_response_map` AS m
     ON o.questionnaire_response_id = m.research_response_id
     -- the file generating this table is manually imported from the RDR. --
     -- Curation and RDR should automate this process. --
@@ -195,7 +194,7 @@ def add_console_logging(add_handler):
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as ap
-    #import cdr_cleaner.clean_cdr_engine as clean_engine
+    # import cdr_cleaner.clean_cdr_engine as clean_engine
     from constants.cdr_cleaner.clean_cdr_engine import FILENAME
     from utils import bq
 
@@ -224,7 +223,7 @@ if __name__ == '__main__':
     if not ARGS.mapping_dataset_id:
         parser.error("The deid mapping dataset is required to run this script.")
 
-    #clean_engine.add_console_logging(ARGS.console_log)
+    # clean_engine.add_console_logging(ARGS.console_log)
     add_console_logging(ARGS.console_log)
     version_task = COPESurveyVersionTask(ARGS.project_id, ARGS.dataset_id,
                                          ARGS.sandbox_dataset_id,
@@ -238,7 +237,7 @@ if __name__ == '__main__':
     else:
         client = bq.get_client(ARGS.project_id)
         version_task.setup_rule(client)
-        #clean_engine.clean_dataset(ARGS.project_id, query_list)
+        # clean_engine.clean_dataset(ARGS.project_id, query_list)
         for query in query_list:
             q = query.get(cdr_consts.QUERY)
             if q:

@@ -7,13 +7,13 @@ based on a static file from the RDR team.
 # Python imports
 import os
 
-# Third party imports
-
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.manual_cleaning_rules.survey_version_info import (
     COPESurveyVersionTask)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+
+# Third party imports
 
 
 class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
@@ -60,7 +60,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
             f"{project_id}.{dataset_id}.observation_ext"
         ]
         cls.dataset_id = dataset_id
-        cls.fq_questionnaire_tablename = f'{project_id}.{cls.mapping_dataset_id}._deid_questionnaire_response_id'
+        cls.fq_questionnaire_tablename = f'{project_id}.{cls.mapping_dataset_id}._deid_questionnaire_response_map'
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -98,7 +98,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         """),
             self.jinja_env.from_string("""
         -- set up questionnaire response mapping table, a post-deid table --
-        INSERT INTO `{{project}}.{{mapping_dataset}}._deid_questionnaire_response_id`
+        INSERT INTO `{{project}}.{{mapping_dataset}}._deid_questionnaire_response_map`
         (questionnaire_response_id, research_response_id)
         VALUES
           (10, 100),
