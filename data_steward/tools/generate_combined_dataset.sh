@@ -102,6 +102,8 @@ export RDR_DATASET_ID="${rdr_dataset}"
 export UNIONED_DATASET_ID="${unioned_ehr_dataset}"
 export COMBINED_DATASET_ID="${combined_backup}"
 export BIGQUERY_DATASET_ID="${unioned_ehr_dataset}"
+# required by populate_route_ids cleaning rule
+export VOCABULARY_DATASET="${vocab_dataset}"
 # set env variable for cleaning rule remove_non_matching_participant.py
 export VALIDATION_RESULTS_DATASET_ID="${validation_dataset}"
 
