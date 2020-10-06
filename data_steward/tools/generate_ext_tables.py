@@ -1,11 +1,10 @@
 import logging
 import random
-import logging
 
 import bq_utils
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from resources import fields_for
+from resources import fields_for, MAPPING_TABLES
 
 LOGGER = logging.getLogger("__name__")
 
@@ -93,7 +92,7 @@ def get_mapping_table_ids(project_id, mapping_dataset_id):
     mapping_table_ids = []
     for table_obj in table_objs:
         table_id = bq_utils.get_table_id_from_obj(table_obj)
-        if MAPPING_PREFIX in table_id:
+        if table_id in MAPPING_TABLES:
             mapping_table_ids.append(table_id)
     return mapping_table_ids
 
@@ -171,16 +170,20 @@ def create_and_populate_source_mapping_table(project_id, dataset_id):
     return rows_affected
 
 
-def get_generate_ext_table_queries(project_id, deid_dataset_id,
+def get_generate_ext_table_queries(project_id, dataset_id, sandbox_dataset_id,
                                    mapping_dataset_id):
     """
     Generate the queries for generating the ext tables
     :param project_id: project_id containing the dataset to generate ext tables in
-    :param deid_dataset_id: deid_dataset_id to generate ext tables in
-    :param mapping_dataset_id: mapping_dataset_id to use the mapping tables from
+    :param dataset_id: dataset_id to generate ext tables in
+    :param sandbox_dataset_id: sandbox_dataset_id to store sandboxed rows.
+    :param mapping_dataset_id: mapping_tables_dataset_id to use the mapping tables from
     :return: list of query dicts
     """
     queries = []
+
+    # FIXME: Remove ths reference in future
+    LOGGER.info(f'sandbox_dataset_id : {sandbox_dataset_id}')
 
     mapping_table_ids = get_mapping_table_ids(project_id, mapping_dataset_id)
     create_and_populate_source_mapping_table(project_id, mapping_dataset_id)
@@ -192,7 +195,7 @@ def get_generate_ext_table_queries(project_id, deid_dataset_id,
         bq_utils.create_table(ext_table_id,
                               ext_table_fields,
                               drop_existing=True,
-                              dataset_id=deid_dataset_id)
+                              dataset_id=dataset_id)
         query = dict()
         query[cdr_consts.QUERY] = REPLACE_SRC_QUERY.format(
             project_id=project_id,
@@ -201,7 +204,7 @@ def get_generate_ext_table_queries(project_id, deid_dataset_id,
             site_mappings_table_id=SITE_TABLE_ID,
             cdm_table_id=cdm_table_id)
         query[cdr_consts.DESTINATION_TABLE] = ext_table_id
-        query[cdr_consts.DESTINATION_DATASET] = deid_dataset_id
+        query[cdr_consts.DESTINATION_DATASET] = dataset_id
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_EMPTY
         queries.append(query)
 
