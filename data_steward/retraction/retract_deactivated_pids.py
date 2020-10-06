@@ -363,13 +363,18 @@ def create_queries(project_id,
     """
     Creates sandbox and truncate queries to run for EHR deactivated retraction
 
-    :param project_id: bq name of project
+    :param project_id: Identifies the project where data is being retracted
     :param ticket_number: Jira ticket number to identify and title sandbox table
-    :param pids_project_id: deactivated ehr pids table in bq's project_id
-    :param pids_dataset_id: deactivated ehr pids table in bq's dataset_id
-    :param pids_table: deactivated pids table in bq's table name
-    :param datasets: optional parameter to give list of datasets, otherwise will loop through all datasets in project_id
-    :return: list of queries to run
+    :param pids_project_id: Identifies the project containing deactivated pids table
+    :param pids_dataset_id: Identifies the dataset containing deactivated pids table
+    :param pids_table: Name of the deactivated pids table. This table should have
+      the following fields: (person_id: int, suspension_status: string, deactivated_date: date).
+    :param datasets: (optional) List of datasets to retract from. If not provided,
+      retraction will be performed from all datasets in project referred to by `project_id`.
+    :return: list of query dictionaries
+    
+    NOTE: For dataset_ids matching `retraction.retract_utils.DEID_REGEX`, associated research_ids 
+    retrieved from an inferred combined dataset are used for retraction.
     """
     queries_list = []
     dataset_list = set()

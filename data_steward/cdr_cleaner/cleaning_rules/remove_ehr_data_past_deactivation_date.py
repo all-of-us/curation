@@ -41,13 +41,22 @@ def remove_ehr_data_queries(project_id, ticket_number, pids_project_id,
     ehr_union_dataset = bq_utils.get_unioned_dataset_id()
 
     # gets the deactivated participant dataset to ensure it's up-to-date
-    psr.get_deactivated_participants(pids_project_id, pids_dataset_id,
-                                     tablename,
-                                     DEACTIVATED_PARTICIPANTS_COLUMNS)
-
+    df = psr.get_deactivated_participants(pids_project_id, pids_dataset_id,
+                                          tablename,
+                                          DEACTIVATED_PARTICIPANTS_COLUMNS)
+    # To store dataframe in a BQ dataset table
+    destination_table = pids_dataset_id + '.' + tablename
+    psr.store_participant_data(df, project_id, destination_table)
     # creates sandbox and truncate queries to run for deactivated participant data drops
-    queries = rdp.create_queries(project_id, ticket_number, pids_project_id,
-                                 pids_dataset_id, tablename, ehr_union_dataset)
+    queries = rdp.create_queries(
+        project_id,
+        ticket_number=ticket_number,
+        # the deactivated participants table is stored in the same project
+        # as the data being retracted
+        pids_project_id=project_id,
+        pids_dataset_id=pids_dataset_id,
+        pids_table=tablename,
+        datasets=[ehr_union_dataset])
 
     return queries
 

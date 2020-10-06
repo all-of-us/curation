@@ -58,12 +58,14 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
     @mock.patch('retraction.retract_deactivated_pids.check_pid_exist')
     @mock.patch(
         'utils.participant_summary_requests.get_deactivated_participants')
+    @mock.patch('utils.participant_summary_requests.store_participant_data')
     def test_remove_ehr_data_past_deactivation_date(
-        self, mock_get_deactivated_participants, mock_pid_exist, mock_client,
-        mock_check_sandbox, mock_date_info):
+        self, mock_store_participant_data, mock_get_deactivated_participants,
+        mock_pid_exist, mock_client, mock_check_sandbox, mock_date_info):
         # Preconditions for participant summary module mocks
         deactivated_participants_df = pandas.DataFrame(
             columns=self.columns, data=self.deactivated_participants_data)
+        mock_store_participant_data.return_value = deactivated_participants_df
         mock_get_deactivated_participants.return_value = deactivated_participants_df
 
         # Preconditions for retraction module mocks
