@@ -6,9 +6,9 @@ select 	concept_hierarchy.concept_id,
 	ar1.count_value as num_persons, 
 	1.0*ar1.count_value / denom.count_value as percent_persons,
 	1.0*ar2.count_value / ar1.count_value as records_per_person
-from (select cast(stratum_1 as int64) stratum_1, count_value from @results_database_schema.achilles_results where analysis_id = 800 GROUP BY analysis_id, stratum_1, count_value) ar1
+from (select cast(stratum_1 as int64) stratum_1, count_value from `@results_database_schema.achilles_results` where analysis_id = 800 GROUP BY analysis_id, stratum_1, count_value) ar1
 	inner join
-	(select cast(stratum_1 as int64) stratum_1, count_value from @results_database_schema.achilles_results where analysis_id = 801 GROUP BY analysis_id, stratum_1, count_value) ar2
+	(select cast(stratum_1 as int64) stratum_1, count_value from `@results_database_schema.achilles_results` where analysis_id = 801 GROUP BY analysis_id, stratum_1, count_value) ar2
 	on ar1.stratum_1 = ar2.stratum_1
 	inner join
 	(
@@ -16,15 +16,15 @@ from (select cast(stratum_1 as int64) stratum_1, count_value from @results_datab
 		from
 		(
 			select concept_id, concept_name
-			from @vocab_database_schema.concept
+			from `@vocab_database_schema.concept`
 			where domain_id = 'Observation'
-		) obs left join @vocab_database_schema.concept_ancestor ca1 on obs.concept_id = ca1.DESCENDANT_CONCEPT_ID and ca1.min_levels_of_separation = 1
-		left join @vocab_database_schema.concept c1 on ca1.ANCESTOR_CONCEPT_ID = c1.concept_id
-		left join @vocab_database_schema.concept_ancestor ca2 on c1.concept_id = ca2.DESCENDANT_CONCEPT_ID and ca2.min_levels_of_separation = 1
-		left join @vocab_database_schema.concept c2 on ca2.ANCESTOR_CONCEPT_ID = c2.concept_id
-		left join @vocab_database_schema.concept_ancestor ca3 on c2.concept_id = ca3.DESCENDANT_CONCEPT_ID and ca3.min_levels_of_separation = 1
-		left join @vocab_database_schema.concept c3 on ca3.ANCESTOR_CONCEPT_ID = c3.concept_id
+		) obs left join `@vocab_database_schema.concept_ancestor` ca1 on obs.concept_id = ca1.DESCENDANT_CONCEPT_ID and ca1.min_levels_of_separation = 1
+		left join `@vocab_database_schema.concept` c1 on ca1.ANCESTOR_CONCEPT_ID = c1.concept_id
+		left join `@vocab_database_schema.concept_ancestor` ca2 on c1.concept_id = ca2.DESCENDANT_CONCEPT_ID and ca2.min_levels_of_separation = 1
+		left join `@vocab_database_schema.concept` c2 on ca2.ANCESTOR_CONCEPT_ID = c2.concept_id
+		left join `@vocab_database_schema.concept_ancestor` ca3 on c2.concept_id = ca3.DESCENDANT_CONCEPT_ID and ca3.min_levels_of_separation = 1
+		left join `@vocab_database_schema.concept` c3 on ca3.ANCESTOR_CONCEPT_ID = c3.concept_id
 		group by obs.concept_id, obs.concept_name
 	) concept_hierarchy on ar1.stratum_1 = concept_hierarchy.concept_id
-	, (select count_value from @results_database_schema.achilles_results where analysis_id = 1) denom
+	, (select count_value from `@results_database_schema.achilles_results` where analysis_id = 1) denom
 order by ar1.count_value desc
