@@ -69,8 +69,7 @@ export GOOGLE_CLOUD_PROJECT="${APP_ID}"
 gcloud auth activate-service-account --key-file="${key_file}"
 gcloud config set project "${APP_ID}"
 
-cdr_deid="${dataset_release_tag}_deid"
-registered_cdr_deid="R${cdr_deid}"
+registered_cdr_deid="R${dataset_release_tag}_deid"
 registered_cdr_deid_sandbox="${registered_cdr_deid}_sandbox"
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
@@ -79,7 +78,7 @@ DEID_DIR="${DATA_STEWARD_DIR}/deid"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 HANDOFF_DATE="$(date -v +1d +'%Y-%m-%d')"
 
-export BIGQUERY_DATASET_ID="${cdr_deid}"
+export BIGQUERY_DATASET_ID="${registered_cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
 
 # Version is the most recent tag accessible from the current branch
@@ -99,7 +98,7 @@ python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${registered_cdr_dei
 python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" --private_key "${key_file}" --action submit --interactive --console-log --age_limit "${deid_max_age}" --odataset "${registered_cdr_deid}" 2>&1 | tee deid_run.txt
 
 # create empty sandbox dataset for the deid
-bq mk --dataset --description "${version} sandbox dataset to apply cleaning rules on ${cdr_deid}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid_sandbox}"
+bq mk --dataset --description "${version} sandbox dataset to apply cleaning rules on ${registered_cdr_deid}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid_sandbox}"
 
 # generate ext tables in deid dataset
 python "${TOOLS_DIR}/generate_ext_tables.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --mapping_dataset_id "${cdr_id}" -s 2>&1 | tee generate_ext_tables.txt
