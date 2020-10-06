@@ -183,7 +183,7 @@ def get_generate_ext_table_queries(project_id, dataset_id, sandbox_dataset_id,
     queries = []
 
     # FIXME: Remove ths reference in future
-    logging.info(f'sandbox_dataset_id : {sandbox_dataset_id}')
+    LOGGER.info(f'sandbox_dataset_id : {sandbox_dataset_id}')
 
     mapping_table_ids = get_mapping_table_ids(project_id, mapping_dataset_id)
     create_and_populate_source_mapping_table(project_id, mapping_dataset_id)
