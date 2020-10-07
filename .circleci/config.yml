@@ -181,7 +181,7 @@ jobs:
             # If this gets triggered on develop or master, let it run. Note
             # however that on develop, this job is only triggered nightly.
             # Always run on PRs and on any repo commits that include "all tests".
-            if [[ "${CIRCLE_BRANCH}" == "develop" ]] || [[ "${CIRCLE_BRANCH}" == "master" ]] || \
+            if ([[ "${CIRCLE_BRANCH}" == "develop" ]] && [[ "${CIRCLE_PROJECT_USERNAME}" == "all-of-us" ]]) || [[ "${CIRCLE_BRANCH}" == "master" ]] || \
                 [[ "$t" == *"all tests"* ]] || [[ -n "${CIRCLE_PULL_REQUEST}" ]] || [[ -n "${CIRCLE_PULL_REQUESTS}" ]];
             then
                 mkdir -p tests/results/coverage/integration/xml
