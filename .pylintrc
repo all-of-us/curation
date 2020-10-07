@@ -15,6 +15,7 @@ ignore-patterns=
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
+# Also extend recursion limit
 init-hook="from pylint.config import find_pylintrc; import os, sys;
  sys.path.append('data_steward');
  sys.path.append('tests');
