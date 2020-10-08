@@ -13,6 +13,7 @@ The intent is to check the proper parameters are passed to define_dataset and up
 """
 
 # Python imports
+import datetime
 import os
 import typing
 import unittest
@@ -21,10 +22,15 @@ import unittest
 from google.cloud import bigquery
 
 # Project imports
+from google.cloud.bigquery import DatasetReference
+from mock import MagicMock
+
 import resources
+from tests.bq_test_helpers import mock_query_result, list_item_from_table_id
 from utils.bq import (define_dataset, update_labels_and_tags,
                       get_create_or_replace_table_ddl, _to_standard_sql_type,
-                      get_table_schema)
+                      get_table_schema, to_scalar, list_tables,
+                      _MAX_RESULTS_PADDING)
 
 
 def _get_all_field_types() -> typing.FrozenSet[str]:
@@ -59,6 +65,7 @@ class BqTest(unittest.TestCase):
         self.existing_labels_or_tags = {'label': 'value', 'tag': ''}
         self.new_labels_or_tags = {'label': 'new_value', 'new_tag': ''}
         self.updated = {'tag': '', 'label': 'new_value', 'new_tag': ''}
+        self.dataset_ref = DatasetReference(self.project_id, self.dataset_id)
 
     def test_define_dataset(self):
         # Tests if project_id is given
@@ -158,3 +165,62 @@ class BqTest(unittest.TestCase):
                 f'CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}.observation`'
             ))
         self.assertTrue(ddl.endswith(fake_as_query))
+
+    def test_to_scalar(self):
+        scalar_int = dict(num=100)
+        mock_iter = mock_query_result([scalar_int])
+        result = to_scalar(mock_iter)
+        self.assertEqual(100, result)
+
+        today = datetime.date.today()
+        scalar_date = dict(today=today)
+        mock_iter = mock_query_result([scalar_date])
+        result = to_scalar(mock_iter)
+        self.assertEqual(today, result)
+
+        now = datetime.datetime.now()
+        scalar_datetime = dict(now=now)
+        mock_iter = mock_query_result([scalar_datetime])
+        result = to_scalar(mock_iter)
+        self.assertEqual(now, result)
+
+        scalar_struct = dict(num_1=100, num_2=200)
+        scalar_struct_iter = mock_query_result([scalar_struct])
+        result = to_scalar(scalar_struct_iter)
+        self.assertDictEqual(scalar_struct, result)
+
+        scalar_int_1 = dict(num=1)
+        scalar_int_2 = dict(num=2)
+        mock_iter = mock_query_result([scalar_int_1, scalar_int_2])
+        with self.assertRaises(ValueError) as c:
+            to_scalar(mock_iter)
+
+    def _mock_client_with(self, table_ids):
+        """
+        Get a mock client 
+        :param table_ids: 
+        :return: 
+        """
+        full_table_ids = [
+            f'{self.project_id}.{self.dataset_id}.{table_id}'
+            for table_id in table_ids
+        ]
+        list_tables_results = [
+            list_item_from_table_id(table_id) for table_id in full_table_ids
+        ]
+        table_count_query_results = [dict(table_count=len(list_tables_results))]
+        mock_client = MagicMock()
+        mock_client.list_tables.return_value = list_tables_results
+        mock_client.query.return_value = mock_query_result(
+            table_count_query_results)
+        return mock_client
+
+    def test_list_tables(self):
+        table_ids = ['table_1', 'table_2']
+        table_count = len(table_ids)
+        expected_max_results = table_count + _MAX_RESULTS_PADDING
+        # mock client calls
+        client = self._mock_client_with(table_ids)
+        list_tables(client, self.dataset_ref)
+        client.list_tables.assert_called_with(dataset=self.dataset_ref,
+                                              max_results=expected_max_results)
