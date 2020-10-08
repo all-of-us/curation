@@ -54,6 +54,7 @@ fi
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
+FIELDS_DIR="${DATA_STEWARD_DIR}/resource_files/fields"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 
 app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${KEY_FILE}")
@@ -70,6 +71,8 @@ source "${TOOLS_DIR}/set_path.sh"
 bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} dated ${RDR_UPLOAD_DATE}" "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}"
 
 python "${DATA_STEWARD_DIR}/cdm.py" "${RDR_DATASET}"
+# accommodate new file "pid_rid_mapping" by RDR
+bq mk --table "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.pid_rid_mapping" "${FIELDS_DIR}/additional_rdr_tables/pid_rid_mapping.json"
 
 cdm_files=$(gsutil ls gs://${RDR_PROJECT}-cdm/${RDR_DIRECTORY})
 if [[ $? -ne 0 ]]; then
@@ -88,7 +91,11 @@ for file in $cdm_files; do
   if [[ "${filename}" == "observation_period.csv" ]]; then
     JAGGED_ROWS="--allow_jagged_rows"
   fi
-  bq load --project_id ${GOOGLE_CLOUD_PROJECT} --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.${table_name} $file resource_files/fields/${table_name}.json
+  schema_file="${FIELDS_DIR}/${table_name}.json"
+  if [[ "${filename}" == "pid_rid_mapping.csv" ]]; then
+    schema_file="${FIELDS_DIR}/additional_rdr_tables/${table_name}.json"
+  fi
+  bq load --project_id ${GOOGLE_CLOUD_PROJECT} --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.${table_name} $file $schema_file
 done
 
 echo "Copying vocabulary"
