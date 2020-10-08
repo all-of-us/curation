@@ -1,11 +1,12 @@
 import unittest
 from unittest import mock
 
-from google.cloud.bigquery.table import TableListItem, TableReference
-from google.cloud.bigquery import Client, DatasetReference
+from google.cloud.bigquery.table import TableListItem
+from google.cloud.bigquery import DatasetReference
 
 import bq_utils
 from resources import CDM_TABLES
+from tests.bq_test_helpers import list_item_from_table_id
 from tools.purge_hpo_data import purge_hpo_data, _filter_hpo_tables
 
 
@@ -39,11 +40,7 @@ class PurgeHpoDataTest(unittest.TestCase):
 
     def _table_id_to_list_item(self, table_id):
         full_table_id = self._full_table_id(table_id)
-        resource = {
-            "tableReference":
-                TableReference.from_string(full_table_id).to_api_repr()
-        }
-        return TableListItem(resource)
+        return list_item_from_table_id(full_table_id)
 
     def _table_list_item(self, hpo_id, cdm_table) -> TableListItem:
         table_id = bq_utils.get_table_id(hpo_id, cdm_table)
@@ -69,30 +66,28 @@ class PurgeHpoDataTest(unittest.TestCase):
         results = _filter_hpo_tables(self.hpo_cdm_tables, 'fake_hpo3')
         self.assertListEqual([], results)
 
-    def _mock_client_with(self, tables):
-        """
-        Get a mock BQ client object
-        :param tables: names of tables the client should list
-        :return: the mock client object
-        """
-        mock_client = mock.MagicMock(spec=Client)
-        mock_client.list_tables.return_value = [
-            self._table_id_to_list_item(table) for table in tables
-        ]
-        mock_client.query.return_value = mock.MagicMock()
-        return mock_client
-
     def test_purge_hpo_data(self):
-        # hpo_id whose data will be purged
-        purge_hpo_ids = ['hpo1']
         # tables we intend to empty
         purge_tables = ['hpo1_person', 'hpo1_condition_occurrence']
         unaffected = ['hpo1_achilles', 'hpo2_person']
-        mock_client = self._mock_client_with(purge_tables + unaffected)
-        # construct script we expect to be passed to client query
-        expected_script = ''
-        for table in purge_tables:
-            full_table_id = self._full_table_id(table)
-            expected_script += f'DELETE FROM `{full_table_id}` WHERE 1=1;'
-        purge_hpo_data(mock_client, self.dataset, purge_hpo_ids)
-        mock_client.query.assert_called_once_with(expected_script)
+        all_tables = purge_tables + unaffected
+        with mock.patch('utils.bq.list_tables') as mock_list_tables:
+            # client.query is called with the expected script
+            expected_script = ''
+            for table in purge_tables:
+                full_table_id = self._full_table_id(table)
+                expected_script += f'DELETE FROM `{full_table_id}` WHERE 1=1;'
+            mock_client = mock.MagicMock()
+            mock_list_tables.return_value = [
+                self._table_id_to_list_item(table) for table in all_tables
+            ]
+            purge_hpo_data(mock_client, self.dataset, hpo_ids=['hpo1'])
+            mock_client.query.assert_called_once_with(expected_script)
+
+            # if no tables found for input hpo_id
+            # error is raised and client.query is NOT called
+            mock_client = mock.MagicMock()
+            with self.assertRaises(RuntimeError) as c:
+                purge_hpo_data(mock_client, self.dataset,
+                               ['hpo1', 'hpo_missing'])
+            mock_client.query.assert_not_called()

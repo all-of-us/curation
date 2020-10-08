@@ -18,9 +18,6 @@ import resources
 
 LOGGER = logging.getLogger(__name__)
 
-# The default is only 50 so set high enough to get all tables
-LIST_TABLES_MAX_RESULTS = 5000
-"Maximum number of results to retrieve from list tables endpoint"
 DELETE_QUERY_TPL = bq.JINJA_ENV.from_string("""
 {%- for table in tables_to_purge -%}
 DELETE FROM `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}` WHERE 1=1;
@@ -57,9 +54,7 @@ def purge_hpo_data(client: bigquery.Client, dataset: bigquery.DatasetReference,
     LOGGER.debug(
         f'purge_hpo_data called with dataset={dataset.dataset_id} and hpo_ids={hpo_ids}'
     )
-    all_tables = list(
-        client.list_tables(dataset=dataset,
-                           max_results=LIST_TABLES_MAX_RESULTS))
+    all_tables = list(bq.list_tables(client, dataset))
     tables_to_purge = []
     for hpo_id in hpo_ids:
         hpo_tables = _filter_hpo_tables(all_tables, hpo_id)
