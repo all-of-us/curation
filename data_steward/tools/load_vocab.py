@@ -51,7 +51,8 @@ def wait_jobs(jobs: Iterable[Union[QueryJob, LoadJob]]):
         _jobs.append(_job)
         if hasattr(_job, 'errors') and _job.errors:
             LOGGER.error(f"Error running job {_job.job_id}: {_job.errors}")
-            raise RuntimeError(f"Error running job {_job.job_id}: {_job.errors}")
+            raise RuntimeError(
+                f"Error running job {_job.job_id}: {_job.errors}")
     return _jobs
 
 
@@ -62,17 +63,19 @@ def safe_schema_for(table: str) -> List[SchemaField]:
     :param table: name of the table
     :return: a list of SchemaField objects
     """
-    return [SchemaField(f.name, 'string' if f.field_type in DATE_TIME_TYPES else f.field_type,
-                        f.mode,
-                        f.description) for f in bq.get_table_schema(table)]
+    return [
+        SchemaField(
+            f.name,
+            'string' if f.field_type in DATE_TIME_TYPES else f.field_type,
+            f.mode, f.description) for f in bq.get_table_schema(table)
+    ]
 
 
 def _filename_to_table_name(filename: str) -> str:
     return filename.replace('.csv', '').lower()
 
 
-def load_stage(dst_dataset: Dataset,
-               bq_client: Client,
+def load_stage(dst_dataset: Dataset, bq_client: Client,
                bucket_name: str) -> List[LoadJob]:
     """
     Stage files from a bucket to a dataset
@@ -86,9 +89,12 @@ def load_stage(dst_dataset: Dataset,
     blobs = list(gcs_client.list_blobs(bucket_name))
 
     table_blobs = [_filename_to_table_name(blob.name) for blob in blobs]
-    missing_blobs = [table for table in VOCABULARY_TABLES if table not in table_blobs]
+    missing_blobs = [
+        table for table in VOCABULARY_TABLES if table not in table_blobs
+    ]
     if missing_blobs:
-        raise RuntimeError(f'Bucket {bucket_name} is missing files for tables {missing_blobs}')
+        raise RuntimeError(
+            f'Bucket {bucket_name} is missing files for tables {missing_blobs}')
 
     load_jobs = []
     for blob in blobs:
@@ -105,14 +111,20 @@ def load_stage(dst_dataset: Dataset,
         job_config.max_bad_records = MAX_BAD_RECORDS
         job_config.quote_character = ''
         source_uri = f'gs://{bucket_name}/{blob.name}'
-        load_job = bq_client.load_table_from_uri(source_uri, destination, job_config=job_config)
+        load_job = bq_client.load_table_from_uri(source_uri,
+                                                 destination,
+                                                 job_config=job_config)
         load_jobs.append(load_job)
         LOGGER.info(f'table:{destination} job_id:{load_job.job_id}')
     wait_jobs(load_jobs)
     return load_jobs
 
 
-def load(project_id, bq_client, src_dataset_id, dst_dataset_id, overwrite_ok=False):
+def load(project_id,
+         bq_client,
+         src_dataset_id,
+         dst_dataset_id,
+         overwrite_ok=False):
     """
     Transform safely loaded tables and store results in target dataset.
 
@@ -124,7 +136,9 @@ def load(project_id, bq_client, src_dataset_id, dst_dataset_id, overwrite_ok=Fal
     :return:
     """
     if overwrite_ok:
-        bq_client.delete_dataset(dst_dataset_id, delete_contents=True, not_found_ok=True)
+        bq_client.delete_dataset(dst_dataset_id,
+                                 delete_contents=True,
+                                 not_found_ok=True)
     bq_client.create_dataset(dst_dataset_id)
     src_tables = list(bq_client.list_tables(dataset=src_dataset_id))
 
@@ -133,7 +147,8 @@ def load(project_id, bq_client, src_dataset_id, dst_dataset_id, overwrite_ok=Fal
     for src_table in src_tables:
         schema = bq.get_table_schema(src_table.table_id)
         destination = f'{project_id}.{dst_dataset_id}.{src_table.table_id}'
-        table = bq_client.create_table(Table(destination, schema=schema), exists_ok=True)
+        table = bq_client.create_table(Table(destination, schema=schema),
+                                       exists_ok=True)
         job_config.destination = table
         query = SELECT_TPL.render(project_id=project_id,
                                   dataset_id=src_dataset_id,
@@ -155,12 +170,18 @@ def main(project_id: str, bucket_name: str, dst_dataset_id: str):
     """
     bq_client = bq.get_client(project_id=project_id)
     sandbox_dataset_id = get_sandbox_dataset_id(dst_dataset_id)
-    sandbox_dataset = bq.define_dataset(project_id, sandbox_dataset_id,
-                                        f'Vocabulary loaded from gs://{bucket_name}',
-                                        label_or_tag={'type': 'vocabulary'})
+    sandbox_dataset = bq.define_dataset(
+        project_id,
+        sandbox_dataset_id,
+        f'Vocabulary loaded from gs://{bucket_name}',
+        label_or_tag={'type': 'vocabulary'})
     sandbox_dataset = bq_client.create_dataset(sandbox_dataset, exists_ok=True)
     load_stage(sandbox_dataset, bq_client, bucket_name)
-    load(project_id, bq_client, sandbox_dataset_id, dst_dataset_id, overwrite_ok=True)
+    load(project_id,
+         bq_client,
+         sandbox_dataset_id,
+         dst_dataset_id,
+         overwrite_ok=True)
 
 
 def get_arg_parser() -> argparse.ArgumentParser:
@@ -199,7 +220,8 @@ def get_arg_parser() -> argparse.ArgumentParser:
         '--target_dataset_id',
         dest='target_dataset_id',
         action='store',
-        help='Identifies the target dataset where the vocabulary is to be loaded',
+        help=
+        'Identifies the target dataset where the vocabulary is to be loaded',
         required=False)
     return argument_parser
 
@@ -235,13 +257,14 @@ if __name__ == '__main__':
     ARGS = parse_args()
 
     RELEASE_TAG = ARGS.release_date or get_release_date()
-    TARGET_DATASET_ID = ARGS.target_dataset_id or get_target_dataset_id(RELEASE_TAG)
+    TARGET_DATASET_ID = ARGS.target_dataset_id or get_target_dataset_id(
+        RELEASE_TAG)
 
     handlers = [logging.StreamHandler(sys.stdout)]
     logging.basicConfig(
         level=logging.DEBUG,
-        format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
-        handlers=handlers
-    )
+        format=
+        '[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
+        handlers=handlers)
 
     main(ARGS.project_id, ARGS.bucket_name, TARGET_DATASET_ID)
