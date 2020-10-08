@@ -21,8 +21,8 @@ clean_cdr.py --data_stage FITBIT
              --project_id my_project
              --dataset_id fitbit
              --sandbox_dataset_id fitbit_sandbox
-             --mapping_dataset_id mapping
-             --mapping_table_id pid_rid_map
+             --mapping_dataset_id mapping_dataset
+             --mapping_table_id mapping_table
 ```
 
 ## Parameters missing

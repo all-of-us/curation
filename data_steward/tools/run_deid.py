@@ -36,7 +36,6 @@ VOCABULARY_TABLES = [
     'relationship', 'concept_synonym', 'concept_ancestor',
     'source_to_concept_map', 'drug_strength'
 ]
-PID_RID_MAPPING_TABLE = 'pid_rid_mapping'
 DEID_MAP_TABLE = '_deid_map'
 PIPELINE_TABLES_DATASET = 'pipeline_tables'
 
@@ -261,13 +260,13 @@ def parse_args(raw_args=None):
 def copy_deid_map_table(deid_map_table, project_id, lookup_dataset_id,
                         input_dataset_id, age_limit, client):
     """
-    Copies research_ids for participants who's age is below max_age limit from pipeline_tables.pid_rid_mapping table
-     to _deid_map table.
+    Copies research_ids for participants whose age is below max_age limit from pipeline_tables._deid_map table
+     to input_dataset._deid_map table.
 
-    :param deid_map_table: Fully Qualified(fq) pid_rid_mapping table name
+    :param deid_map_table: Fully Qualified(fq) _deid_map table name to create
     :param project_id: Project identifier 
-    :param input_dataset_id: Name of the dataset where pid_rid_mapping table is stored
-    :param lookup_dataset_id: Name of the dataset where _deid_map dataset needs to be created.
+    :param lookup_dataset_id: Name of the dataset where the master _deid_map table is stored
+    :param input_dataset_id: Name of the dataset where _deid_map dataset needs to be created.
     :param age_limit: Allowed Max_age of a participant
     :param client: Bigquery client
     :return: None
@@ -277,22 +276,22 @@ def copy_deid_map_table(deid_map_table, project_id, lookup_dataset_id,
                                   lookup_dataset=lookup_dataset_id,
                                   input_dataset=input_dataset_id,
                                   max_age=age_limit,
-                                  pid_rid_table=PID_RID_MAPPING_TABLE)
+                                  pid_rid_table=DEID_MAP_TABLE)
 
     query_job = client.query(q)
     query_job.result()
     if query_job.exception():
-        logging.error(f"The _deid_map table did not generate successfully")
+        logging.error(f"The _deid_map table was not copied successfully")
 
 
 def load_deid_map_table(deid_map_dataset_name, age_limit):
 
-    # Create _pid_rid_mapping table
+    # Create _deid_map table in input dataset
     project_id = app_identity.get_application_id()
     client = bq.get_client(project_id)
     deid_map_table = f'{project_id}.{deid_map_dataset_name}.{DEID_MAP_TABLE}'
-    # Copy pid_rid_mapping records to _deid_map table
-    if bq_utils.table_exists(PID_RID_MAPPING_TABLE,
+    # Copy master _deid_map table records to _deid_map table
+    if bq_utils.table_exists(DEID_MAP_TABLE,
                              dataset_id=PIPELINE_TABLES_DATASET):
         copy_deid_map_table(deid_map_table, project_id, PIPELINE_TABLES_DATASET,
                             deid_map_dataset_name, age_limit, client)
@@ -301,7 +300,7 @@ def load_deid_map_table(deid_map_dataset_name, age_limit):
         )
     else:
         raise RuntimeError(
-            f'{PID_RID_MAPPING_TABLE} is not available in {project_id}.{PIPELINE_TABLES_DATASET}'
+            f'{DEID_MAP_TABLE} is not available in {project_id}.{PIPELINE_TABLES_DATASET}'
         )
 
 
