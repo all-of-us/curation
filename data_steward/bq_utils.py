@@ -4,6 +4,7 @@ import logging
 import os
 import socket
 import time
+import warnings
 from datetime import datetime
 from io import open
 
@@ -536,6 +537,12 @@ def list_tables(dataset_id=None,
       for table in result['tables']:
           print table['id']
     """
+    warnings.warn(
+        "Function bq_utils.list_tables is deprecated and will be removed in a future version. "
+        "Use `utils.bq.list_tables` if needed.",
+        PendingDeprecationWarning,
+        stacklevel=2,
+    )
     bq_service = create_service()
     if project_id is None:
         app_id = app_identity.get_application_id()
