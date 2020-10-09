@@ -165,24 +165,31 @@ jobs:
       - test_setup
       # Setup GCP access and create cloud resources as needed.
       - run:
-          name: Activate service account
-          command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
-      - run:
-          name: Set up environment variables
-          command: ./init_env.sh
-      - run:
-          name: Create buckets and datasets
-          command: ./ci/setup.sh
-      - run:
-          name: Run integration tests
-          working_directory: ~/curation
+          name: Ensure integration tests need to run
           command: |
             t=$(git log -1 --pretty=%B)
             # If this gets triggered on develop or master, let it run. Note
             # however that on develop, this job is only triggered nightly.
             # Always run on PRs and on any repo commits that include "all tests".
-            if [[ "${CIRCLE_BRANCH}" == "develop" ]] || [[ "${CIRCLE_BRANCH}" == "master" ]] || \
-                [[ "$t" == *"all tests"* ]] || [[ -n "${CIRCLE_PULL_REQUEST}" ]] || [[ -n "${CIRCLE_PULL_REQUESTS}" ]];
+            # Set the variable run_integration_tests if run conditions are met.
+            (([[ "${CIRCLE_BRANCH}" == "develop" ]] && [[ "${CIRCLE_PROJECT_USERNAME}" == "all-of-us" ]]) \
+              || [[ "${CIRCLE_BRANCH}" == "master" ]] || [[ "$t" == *"all tests"* ]] || [[ -n "${CIRCLE_PULL_REQUEST}" ]] \
+              || [[ -n "${CIRCLE_PULL_REQUESTS}" ]]) && run_integration_tests="true" || echo "Skipping integration test steps"
+      - run:
+          name: Activate service account
+          command: ([ -n "${run_integration_tests}" ]) && ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json \
+            || echo "Skipping SA activation"
+      - run:
+          name: Set up environment variables
+          command: ([ -n "${run_integration_tests}" ]) && ./init_env.sh || echo "Skipping setting env variables"
+      - run:
+          name: Create buckets and datasets
+          command: ([ -n "${run_integration_tests}" ]) && ./ci/setup.sh || echo "Skipping bucket/dataset creation"
+      - run:
+          name: Run integration tests
+          working_directory: ~/curation
+          command: |
+            if [[ -n "${run_integration_tests}" ]];
             then
                 mkdir -p tests/results/coverage/integration/xml
                 mkdir -p tests/results/coverage/integration/html
@@ -196,7 +203,7 @@ jobs:
           no_output_timeout: 3000s
       - run:
           name: Delete buckets and datasets
-          command: ./ci/teardown.sh
+          command: ([ -n "${run_integration_tests}" ]) && ./ci/teardown.sh || echo "Skipping teardown"
           when: on_success
       - test_teardown
 
