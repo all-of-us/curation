@@ -2,11 +2,14 @@ import logging
 
 import googleapiclient
 import oauth2client
+import os
 
 import app_identity
 import bq_utils
 import common
+import resources
 from constants import bq_utils as bq_consts
+from utils import bq
 from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
                                                   CHECK_REQUIRED_LAB_QUERY)
 
@@ -25,6 +28,18 @@ def load_measurement_concept_sets_table(project_id, dataset_id):
     :param dataset_id: Dataset where the required lab table needs to be created
     :return: None
     """
+
+    client = bq.get_client(project_id)
+    table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_TABLE}'
+
+    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_TABLE, dataset_id):
+        bq.create_tables(
+            client=client,
+            project_id=project_id,
+            fq_table_names=[table_name],
+            exists_ok=False,
+            fields=None
+        )
 
     try:
         LOGGER.info(
@@ -53,6 +68,18 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
     :param dataset_id: Dataset where the required lab table needs to be created
     :return: None
     """
+
+    client = bq.get_client(project_id)
+    table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}'
+
+    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE, dataset_id):
+        bq.create_tables(
+            client=client,
+            project_id=project_id,
+            fq_table_names=[table_name],
+            exists_ok=False,
+            fields=None
+        )
 
     identify_labs_query = IDENTIFY_LABS_QUERY.format(
         project_id=project_id,
