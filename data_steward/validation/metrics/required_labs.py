@@ -33,13 +33,11 @@ def load_measurement_concept_sets_table(project_id, dataset_id):
     table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_TABLE}'
 
     if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_TABLE, dataset_id):
-        bq.create_tables(
-            client=client,
-            project_id=project_id,
-            fq_table_names=[table_name],
-            exists_ok=False,
-            fields=None
-        )
+        bq.create_tables(client=client,
+                         project_id=project_id,
+                         fq_table_names=[table_name],
+                         exists_ok=False,
+                         fields=None)
 
     try:
         LOGGER.info(
@@ -72,14 +70,13 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
     client = bq.get_client(project_id)
     table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}'
 
-    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE, dataset_id):
-        bq.create_tables(
-            client=client,
-            project_id=project_id,
-            fq_table_names=[table_name],
-            exists_ok=False,
-            fields=None
-        )
+    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE,
+                                 dataset_id):
+        bq.create_tables(client=client,
+                         project_id=project_id,
+                         fq_table_names=[table_name],
+                         exists_ok=False,
+                         fields=None)
 
     identify_labs_query = IDENTIFY_LABS_QUERY.format(
         project_id=project_id,
