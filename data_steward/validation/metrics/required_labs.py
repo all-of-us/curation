@@ -3,6 +3,7 @@ import logging
 import googleapiclient
 import oauth2client
 import os
+from google.cloud.exceptions import NotFound
 
 import app_identity
 import bq_utils
@@ -16,6 +17,8 @@ from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
 LOGGER = logging.getLogger(__name__)
 
 MEASUREMENT_CONCEPT_SETS_TABLE = '_measurement_concept_sets'
+MEASUREMENT_CONCEPT_SETS_TABLE_DISPOSITION = bq.bigquery.job.WriteDisposition.WRITE_TRUNCATE
+
 MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = '_measurement_concept_sets_descendants'
 
 
@@ -29,10 +32,18 @@ def load_measurement_concept_sets_table(project_id, dataset_id):
     :return: None
     """
 
-    client = bq.get_client(project_id)
     table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_TABLE}'
+    concept_sets_csv_path = os.path.join(
+        resources.resource_files_path, MEASUREMENT_CONCEPT_SETS_TABLE + '.csv')
 
-    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_TABLE, dataset_id):
+    client = bq.get_client(project_id)
+    dataset = client.dataset(dataset_id)
+    table_ref = dataset.table(MEASUREMENT_CONCEPT_SETS_TABLE)
+
+    # will check to see if MEASUREMENT_CONCEPT_SETS_TABLE exists, table will be created if it is not found
+    try:
+        client.get_table(table_ref)
+    except NotFound:
         bq.create_tables(client=client,
                          project_id=project_id,
                          fq_table_names=[table_name],
@@ -47,8 +58,9 @@ def load_measurement_concept_sets_table(project_id, dataset_id):
                 dataset_id=dataset_id,
                 project_id=project_id))
 
-        bq_utils.load_table_from_csv(project_id, dataset_id,
-                                     MEASUREMENT_CONCEPT_SETS_TABLE)
+        bq.upload_csv_data_to_bq_table(
+            client, dataset_id, MEASUREMENT_CONCEPT_SETS_TABLE,
+            concept_sets_csv_path, MEASUREMENT_CONCEPT_SETS_TABLE_DISPOSITION)
 
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
@@ -67,14 +79,32 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
     :return: None
     """
 
-    client = bq.get_client(project_id)
-    table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}'
+    descendants_table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}'
+    vocab_table_name = f'{project_id}.{dataset_id}.{common.VOCABULARY}'
 
-    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE,
-                                 dataset_id):
+    client = bq.get_client(project_id)
+    dataset = client.dataset(dataset_id)
+    descendants_table_ref = dataset.table(
+        MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)
+    vocab_table_ref = dataset.table(common.VOCABULARY)
+
+    # will check to see if MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE exists, will be created if table is not found
+    try:
+        client.get_table(descendants_table_ref)
+    except NotFound:
         bq.create_tables(client=client,
                          project_id=project_id,
-                         fq_table_names=[table_name],
+                         fq_table_names=[descendants_table_name],
+                         exists_ok=False,
+                         fields=None)
+
+    # will check to see if VOCABULARY table exists, will be created if table is not found
+    try:
+        client.get_table(vocab_table_ref)
+    except NotFound:
+        bq.create_tables(client=client,
+                         project_id=project_id,
+                         fq_table_names=[vocab_table_name],
                          exists_ok=False,
                          fields=None)
 
@@ -117,15 +147,18 @@ def get_lab_concept_summary_query(hpo_id):
     """
     project_id = app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
+    client = bq.get_client(project_id)
     hpo_measurement_table = bq_utils.get_table_id(hpo_id, common.MEASUREMENT)
 
+    meas_concept_sets_descendants_table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}'
+    meas_concept_sets_table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_TABLE}'
+
     # Create measurement_concept_sets_table if not exist
-    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_TABLE, dataset_id):
+    if not client.get_table(meas_concept_sets_table_name):
         load_measurement_concept_sets_table(project_id, dataset_id)
 
     # Create measurement_concept_sets_descendants_table if not exist
-    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE,
-                                 dataset_id):
+    if not client.get_table(meas_concept_sets_descendants_table_name):
         load_measurement_concept_sets_descendants_table(project_id, dataset_id)
 
     return CHECK_REQUIRED_LAB_QUERY.format(
