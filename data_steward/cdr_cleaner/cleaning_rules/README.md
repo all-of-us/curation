@@ -45,7 +45,7 @@ All cleaning rules depend on the following configuration parameters. Note that t
 | project_id | Identifies the project containing the dataset being cleaned |
 | dataset_id | Identifies the dataset being cleaned |
 | sandbox_dataset_id [^1] | Identifies the dataset where intermediary and backup data are stored by the cleaning rule |
- [^1]: At the time of writing not all cleaning rules make use of a sandbox dataset. This is likely because many rules were authored prior to sandboxing practices. Having `sandbox_dataset_id` be a universal dependency  
+ [^1]: At the time of writing not all cleaning rules make use of a sandbox dataset. This is likely because many rules were authored prior to sandboxing practices. `sandbox_dataset_id` is a universal dependency of class based cleaning rules, whether any data from that particular cleaning rule is being sandboxed or not.  
  
 ### Variable parameters
 Depending on the rule(s) being applied, additional configuration parameters may be needed when cleaning a dataset. This section describes these variable parameters and the cleaning rules that reference them. Currently, a cleaning rule may specify that a variable parameter is optional by providing a default value.
@@ -76,7 +76,7 @@ Depending on the rule(s) being applied, additional configuration parameters may 
  - PIDtoRID
  - FitbitDateShift
 ### combined_dataset_id
- - generate_ext_tables: create `{visit_occurrence,condition_occurrence}_ext` using `_mapping{_visit_occurrence,_condition_occurrence}`  and `_site_mappings`
+ - generate_ext_tables: creates `{domain_table}_ext` using `_mapping{_domain_table}`  and `_site_mappings`
 ### ehr_dataset_id
  - remove_non_matching_participant (optional)
 ### validation_dataset_id
