@@ -76,13 +76,37 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
     """
 
     descendants_table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}'
-    vocab_table_name = f'{project_id}.{dataset_id}.{common.VOCABULARY}'
 
     client = bq.get_client(project_id)
     dataset = client.dataset(dataset_id)
+    vocab_dataset = client.dataset(common.VOCABULARY_DATASET)
+
+    # concept table and concept ancestor table source tables
+    concept_source_table = vocab_dataset.table(common.CONCEPT)
+    concept_ancestor_source_table = vocab_dataset.table(common.CONCEPT_ANCESTOR)
+
+    # concept table and concept ancestor table destination tables
+    concept_dest_table = dataset.table(common.CONCEPT)
+    concept_ancestor_dest_table = dataset.table(common.CONCEPT_ANCESTOR)
+
     descendants_table_ref = dataset.table(
         MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)
-    vocab_table_ref = dataset.table(common.VOCABULARY)
+    concept_table_ref = dataset.table(common.CONCEPT)
+    concept_ancestor_table_ref = dataset.table(common.CONCEPT_ANCESTOR)
+
+    # will check to see if CONCEPT table exists, will be copied from the CONCEPT table in the
+    # most recent VOCABULARY dataset if it is not found
+    try:
+        client.get_table(concept_table_ref)
+    except NotFound:
+        client.copy_table(concept_source_table, concept_dest_table)
+
+    # will check to see if CONCEPT_ANCESTOR table exists, will be copied from the CONCEPT_ANCESTOR table
+    # in the most recent VOCABULARY dataset if it is not found
+    try:
+        client.get_table(concept_ancestor_table_ref)
+    except NotFound:
+        client.copy_table(concept_ancestor_source_table, concept_ancestor_dest_table)
 
     # will check to see if MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE exists, will be created if table is not found
     try:
@@ -91,16 +115,6 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
         bq.create_tables(client=client,
                          project_id=project_id,
                          fq_table_names=[descendants_table_name],
-                         exists_ok=False,
-                         fields=None)
-
-    # will check to see if VOCABULARY table exists, will be created if table is not found
-    try:
-        client.get_table(vocab_table_ref)
-    except NotFound:
-        bq.create_tables(client=client,
-                         project_id=project_id,
-                         fq_table_names=[vocab_table_name],
                          exists_ok=False,
                          fields=None)
 
