@@ -12,6 +12,7 @@ import bq_utils
 import common
 from constants import bq_utils as bq_consts
 from utils import bq
+from utils.bq import JINJA_ENV
 from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
                                                   CHECK_REQUIRED_LAB_QUERY)
 
@@ -19,6 +20,10 @@ LOGGER = logging.getLogger(__name__)
 
 MEASUREMENT_CONCEPT_SETS_TABLE = '_measurement_concept_sets'
 MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = '_measurement_concept_sets_descendants'
+
+ROW_COUNT_QUERY = JINJA_ENV.from_string("""SELECT table_id, row_count
+FROM `{{project_id}}.{{dataset_id}}.__TABLES__`
+WHERE table_id IN ('concept', 'concept_ancestor')""")
 
 
 def load_measurement_concept_sets_table(project_id, dataset_id):
@@ -93,6 +98,23 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
         MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)
     concept_table_ref = dataset.table(common.CONCEPT)
     concept_ancestor_table_ref = dataset.table(common.CONCEPT_ANCESTOR)
+
+    # query will check the row counts of each table in the specified dataset
+    row_count_query = ROW_COUNT_QUERY.render(project_id=project_id,
+                                             dataset_id=dataset_id)
+
+    job = client.query(row_count_query)
+    results = job.result()
+
+    # will check if either the CONCEPT and CONCEPT_ANCESTOR tables is empty or not
+    # If so, the CONCEPT and CONCEPT_ANCESTOR tables will be copied from the common.VOCABULARY
+    # table to the destination dataset
+    if results.total_rows == 0:
+        client.copy_table(concept_source_table, concept_dest_table)
+        client.copy_table(concept_ancestor_source_table,
+                          concept_ancestor_dest_table)
+    else:
+        pass
 
     # will check to see if CONCEPT table exists, will be copied from the CONCEPT table in the
     # most recent VOCABULARY dataset if it is not found
