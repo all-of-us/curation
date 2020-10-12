@@ -8,7 +8,7 @@ The deid module currently contains the logic to generate a lookup table _deid_ma
 date_shift. In order to ensure that new PID-RID mappings conform to existing privacy methods, the logic currently in
 the deid module will be reused in the development of a script which generates the new mappings.
 
-These records will be appended to the pipeline_tables.pid_rid_mapping table in BigQuery. Ensure there are no duplicates
+These records will be appended to the pipeline_tables._deid_map table in BigQuery. Ensure there are no duplicates
 
 The current participants should be obtained using the Participant Summary API.
 The data cutoff data for the Oct 2020 CDR is 8/1/2020.
@@ -49,7 +49,7 @@ def milliseconds_since_epoch():
 def get_participants(api_project_id, existing_pids):
     """
     Method to hit the participant summary API based on cutoff dates and max age. Filters out participants that already
-    exist in the pipeline_tables.pid_rid_mapping table.
+    exist in the pipeline_tables._deid_map table.
 
     Loops through the results to double check the API returned the correct participants.
 
@@ -121,13 +121,13 @@ def get_participants(api_project_id, existing_pids):
 def generate_mapping_table_rows(project_id, api_project_id, dataset,
                                 mapping_table):
     """
-    Method to generate mapping table rows to append to existing mapping table: pipeline_tables.pid_rid_mapping table
+    Method to generate mapping table rows to append to existing mapping table: pipeline_tables._deid_map table
     Retrieves participants from the participant summary API based on specific parameters. Only retrieving participants
     who were submitted during the cutoff date range with no age limit and also retrieving participants outside of the
     cutoff date range above the max age.
 
     Creates the research_ids and date shift based on previous logic used in DEID. Queries the current
-    pipeline_tables.pid_rid_mapping table to retrieve current research_ids to ensure all research_ids are unique.
+    pipeline_tables._deid_map table to retrieve current research_ids to ensure all research_ids are unique.
 
     :param project_id: bq project ID where the mapping table resides
     :param start_date: start date of cutoff date range

@@ -200,6 +200,17 @@ def is_wearables_table(table_id):
     return table_id in FITBIT_TABLES
 
 
+def is_additional_rdr_table(table_id):
+    """
+        Return True if specified table is an additional table submitted by RDR.
+
+        Currently includes pid_rid_mapping
+        :param table_id: identifies the table
+        :return: True if specified table is an additional table submitted by RDR
+        """
+    return table_id == 'pid_rid_mapping'
+
+
 def is_mapping_table(table_id):
     """
     Return True if specified table is a mapping table
@@ -259,6 +270,8 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                 elif is_id_match(table_name):
                     include_table = False
                 elif is_extension_table(table_name):
+                    include_table = False
+                elif is_additional_rdr_table(table_name):
                     include_table = False
                 elif is_deid_table(table_name):
                     include_table = False
