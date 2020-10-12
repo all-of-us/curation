@@ -106,7 +106,8 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
     try:
         client.get_table(concept_ancestor_table_ref)
     except NotFound:
-        client.copy_table(concept_ancestor_source_table, concept_ancestor_dest_table)
+        client.copy_table(concept_ancestor_source_table,
+                          concept_ancestor_dest_table)
 
     # will check to see if MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE exists, will be created if table is not found
     try:
