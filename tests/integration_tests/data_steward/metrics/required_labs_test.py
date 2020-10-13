@@ -63,6 +63,17 @@ class RequiredLabsTest(unittest.TestCase):
             fields=resources.fields_for(common.MEASUREMENT))
         bq_utils.wait_on_jobs([ehr_measurement_result['jobReference']['jobId']])
 
+    def test_check_and_copy_tables(self):
+
+        # Create concept and concept_ancestor empty tables if not exist
+        if not bq_utils.table_exists(common.CONCEPT, self.dataset_id):
+            bq_utils.create_standard_table(common.CONCEPT, common.CONCEPT)
+        if not bq_utils.table_exists(common.CONCEPT, self.dataset_id):
+            bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
+                                           common.CONCEPT_ANCESTOR)
+
+        required_labs.check_and_copy_tables(self.project_id, self.dataset_id)
+
     def test_measurement_concept_sets_table(self):
 
         query = sql_wrangle.qualify_tables(
