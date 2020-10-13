@@ -56,23 +56,23 @@ def check_and_copy_tables(project_id, dataset_id):
                                              dataset_id=dataset_id)
 
     results_dataframe = client.query(row_count_query).to_dataframe()
+    empty_results_dataframe = results_dataframe[(results_dataframe['row_count'] == 0)]
 
     # checks if CONCEPT and CONCEPT_ANCESTOR tables exist, if they don't, they are copied from the
     # CONCEPT and CONCEPT_ANCESTOR tables in common.VOCABULARY
-    if common.CONCEPT not in (results_dataframe['table_id']).any():
+    if common.CONCEPT not in (results_dataframe['table_id']).values:
         client.copy_table(concept_source_table, concept_dest_table)
-    if common.CONCEPT_ANCESTOR not in (results_dataframe['table_id']).any():
+    if common.CONCEPT_ANCESTOR not in (results_dataframe['table_id']).values:
         client.copy_table(concept_ancestor_source_table,
                           concept_ancestor_dest_table)
 
-    # checks if any tables in the results_dataframe are empty, if CONCEPT and CONCEPT_ANCESTOR tables are empty,
-    # they are copied from the CONCEPT and CONCEPT_ANCESTOR tables in common.VOCABULARY
-    if (results_dataframe['row_count'] == 0).any():
-        if common.CONCEPT in (results_dataframe['table_id']).any():
-            client.copy_table(concept_source_table, concept_dest_table)
-        if common.CONCEPT_ANCESTOR in (results_dataframe['table_id']).any():
-            client.copy_table(concept_ancestor_source_table,
-                              concept_ancestor_dest_table)
+    # checks if CONCEPT and CONCEPT_ANCESTOR tables are empty, if they are, they are copied from the CONCEPT and
+    # CONCEPT_ANCESTOR tables in common.VOCABULARY
+    if common.CONCEPT in (empty_results_dataframe['table_id']).values:
+        client.copy_table(concept_source_table, concept_dest_table)
+    if common.CONCEPT_ANCESTOR in (empty_results_dataframe['table_id']).values:
+        client.copy_table(concept_ancestor_source_table,
+                          concept_ancestor_dest_table)
 
     # checks if MEASUREMENT_CONCEPT_SETS_TABLE and MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE exist, if they
     # do not exist, they will be created
@@ -101,6 +101,8 @@ def load_measurement_concept_sets_table(project_id, dataset_id):
     :return: None
     """
 
+    check_and_copy_tables(project_id, dataset_id)
+
     try:
         LOGGER.info(
             'Upload {measurement_concept_sets_table}.csv to {dataset_id} in {project_id}'
@@ -128,6 +130,8 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
     :param dataset_id: Dataset where the required lab table needs to be created
     :return: None
     """
+
+    check_and_copy_tables(project_id, dataset_id)
 
     identify_labs_query = IDENTIFY_LABS_QUERY.format(
         project_id=project_id,
