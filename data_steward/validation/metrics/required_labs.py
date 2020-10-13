@@ -77,14 +77,15 @@ def check_and_copy_tables(project_id, dataset_id):
 
     # checks if MEASUREMENT_CONCEPT_SETS_TABLE and MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE exist, if they
     # do not exist, they will be created
-    if MEASUREMENT_CONCEPT_SETS_TABLE not in results_dataframe['table_id']:
+    if MEASUREMENT_CONCEPT_SETS_TABLE not in results_dataframe[
+            'table_id'].values:
         bq.create_tables(client=client,
                          project_id=project_id,
                          fq_table_names=[concept_sets_table_name],
                          exists_ok=True,
                          fields=None)
     if MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE not in results_dataframe[
-            'table_id']:
+            'table_id'].values:
         bq.create_tables(client=client,
                          project_id=project_id,
                          fq_table_names=[descendants_table_name],
