@@ -56,7 +56,8 @@ def check_and_copy_tables(project_id, dataset_id):
                                              dataset_id=dataset_id)
 
     results_dataframe = client.query(row_count_query).to_dataframe()
-    empty_results_dataframe = results_dataframe[(results_dataframe['row_count'] == 0)]
+    empty_results_dataframe = results_dataframe[(
+        results_dataframe['row_count'] == 0)]
 
     # checks if CONCEPT and CONCEPT_ANCESTOR tables exist, if they don't, they are copied from the
     # CONCEPT and CONCEPT_ANCESTOR tables in common.VOCABULARY
