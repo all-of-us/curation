@@ -1,14 +1,18 @@
+# Python imports
 import os
 import unittest
 
+# Third party imports
 import mock
 
+# Project imports
 import app_identity
 import bq_utils
 import common
 import gcs_utils
 import resources
 import validation.sql_wrangle as sql_wrangle
+from utils import bq
 from tests import test_util
 from tests.test_util import (FAKE_HPO_ID)
 from validation.metrics import required_labs as required_labs
@@ -32,6 +36,8 @@ class RequiredLabsTest(unittest.TestCase):
         self.folder_prefix = '2019-01-01/'
         test_util.delete_all_tables(self.dataset_id)
         test_util.empty_bucket(self.hpo_bucket)
+
+        self.client = bq.get_client(self.project_id)
 
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
 
@@ -64,15 +70,30 @@ class RequiredLabsTest(unittest.TestCase):
         bq_utils.wait_on_jobs([ehr_measurement_result['jobReference']['jobId']])
 
     def test_check_and_copy_tables(self):
+        """
+        Test to ensure all the necessary tables for required_labs.py are copied and or created
+        """
+        # Preconditions
+        descendants_table_name = f'{self.project_id}.{self.dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}'
+        concept_sets_table_name = f'{self.project_id}.{self.dataset_id}.{MEASUREMENT_CONCEPT_SETS_TABLE}'
+        concept_table_name = f'{self.project_id}.{self.dataset_id}.{common.CONCEPT}'
+        concept_ancestor_table_name = f'{self.project_id}.{self.dataset_id}.{common.CONCEPT_ANCESTOR}'
 
-        # Create concept and concept_ancestor empty tables if not exist
-        if not bq_utils.table_exists(common.CONCEPT, self.dataset_id):
-            bq_utils.create_standard_table(common.CONCEPT, common.CONCEPT)
-        if not bq_utils.table_exists(common.CONCEPT, self.dataset_id):
-            bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
-                                           common.CONCEPT_ANCESTOR)
+        actual_descendants_table = self.client.get_table(descendants_table_name)
+        actual_concept_sets_table = self.client.get_table(
+            concept_sets_table_name)
+        actual_concept_table = self.client.get_table(concept_table_name)
+        actual_concept_ancestor_table = self.client.get_table(
+            concept_ancestor_table_name)
 
+        # Test
         required_labs.check_and_copy_tables(self.project_id, self.dataset_id)
+
+        # Post conditions
+        self.assertIsNotNone(actual_descendants_table.created)
+        self.assertIsNotNone(actual_concept_sets_table.created)
+        self.assertIsNotNone(actual_concept_table.created)
+        self.assertIsNotNone(actual_concept_ancestor_table.created)
 
     def test_measurement_concept_sets_table(self):
 

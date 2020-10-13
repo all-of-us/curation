@@ -42,7 +42,6 @@ def check_and_copy_tables(project_id, dataset_id):
     client = bq.get_client(project_id)
     dataset = client.dataset(dataset_id)
     vocab_dataset = client.dataset(common.VOCABULARY_DATASET)
-    # table_ref = dataset.table(MEASUREMENT_CONCEPT_SETS_TABLE)
 
     # concept table and concept ancestor table source tables
     concept_source_table = vocab_dataset.table(common.CONCEPT)
@@ -58,28 +57,37 @@ def check_and_copy_tables(project_id, dataset_id):
 
     results_dataframe = client.query(row_count_query).to_dataframe()
 
+    # checks if CONCEPT and CONCEPT_ANCESTOR tables exist, if they don't, they are copied from the
+    # CONCEPT and CONCEPT_ANCESTOR tables in common.VOCABULARY
     if common.CONCEPT not in (results_dataframe['table_id']).any():
         client.copy_table(concept_source_table, concept_dest_table)
     if common.CONCEPT_ANCESTOR not in (results_dataframe['table_id']).any():
-        client.copy_table(concept_ancestor_source_table, concept_ancestor_dest_table)
+        client.copy_table(concept_ancestor_source_table,
+                          concept_ancestor_dest_table)
 
+    # checks if any tables in the results_dataframe are empty, if CONCEPT and CONCEPT_ANCESTOR tables are empty,
+    # they are copied from the CONCEPT and CONCEPT_ANCESTOR tables in common.VOCABULARY
     if (results_dataframe['row_count'] == 0).any():
         if common.CONCEPT in (results_dataframe['table_id']).any():
             client.copy_table(concept_source_table, concept_dest_table)
         if common.CONCEPT_ANCESTOR in (results_dataframe['table_id']).any():
-            client.copy_table(concept_ancestor_source_table, concept_ancestor_dest_table)
+            client.copy_table(concept_ancestor_source_table,
+                              concept_ancestor_dest_table)
 
+    # checks if MEASUREMENT_CONCEPT_SETS_TABLE and MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE exist, if they
+    # do not exist, they will be created
     if MEASUREMENT_CONCEPT_SETS_TABLE not in results_dataframe['table_id']:
         bq.create_tables(client=client,
                          project_id=project_id,
                          fq_table_names=[concept_sets_table_name],
-                         exists_ok=False,
+                         exists_ok=True,
                          fields=None)
-    if MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE not in results_dataframe['table_id']:
+    if MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE not in results_dataframe[
+            'table_id']:
         bq.create_tables(client=client,
                          project_id=project_id,
                          fq_table_names=[descendants_table_name],
-                         exists_ok=False,
+                         exists_ok=True,
                          fields=None)
 
 
