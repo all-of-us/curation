@@ -727,7 +727,6 @@ class CleanHeightAndWeight(BaseCleaningRule):
             cdr_consts.QUERY:
                 INSERT_NEW_ROWS_QUERY.render(
                     project_id=self.project_id,
-                    dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     new_rows=NEW_WEIGHT_ROWS),
             cdr_consts.DESTINATION_TABLE:
