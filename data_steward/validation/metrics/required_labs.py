@@ -1,12 +1,18 @@
+# Python imports
 import logging
 
+# Third party imports
 import googleapiclient
 import oauth2client
+from google.cloud.exceptions import NotFound
 
+# Project imports
 import app_identity
 import bq_utils
 import common
 from constants import bq_utils as bq_consts
+from utils import bq
+from utils.bq import JINJA_ENV
 from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
                                                   CHECK_REQUIRED_LAB_QUERY)
 
@@ -14,6 +20,77 @@ LOGGER = logging.getLogger(__name__)
 
 MEASUREMENT_CONCEPT_SETS_TABLE = '_measurement_concept_sets'
 MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = '_measurement_concept_sets_descendants'
+
+ROW_COUNT_QUERY = JINJA_ENV.from_string("""
+SELECT table_id, row_count
+FROM `{{project_id}}.{{dataset_id}}.__TABLES__`""")
+
+
+def check_and_copy_tables(project_id, dataset_id):
+    """
+    Will check that all the required tables exist and if not, they will be created
+    or copied from another table.
+
+    :param project_id: Project where the dataset resides
+    :param dataset_id: Dataset where the required lab table needs to be created
+    :return: None
+    """
+
+    descendants_table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE}'
+    concept_sets_table_name = f'{project_id}.{dataset_id}.{MEASUREMENT_CONCEPT_SETS_TABLE}'
+
+    client = bq.get_client(project_id)
+    dataset = client.dataset(dataset_id)
+    vocab_dataset = client.dataset(common.VOCABULARY_DATASET)
+
+    # concept table and concept ancestor table source tables
+    concept_source_table = vocab_dataset.table(common.CONCEPT)
+    concept_ancestor_source_table = vocab_dataset.table(common.CONCEPT_ANCESTOR)
+
+    # concept table and concept ancestor table destination tables
+    concept_dest_table = dataset.table(common.CONCEPT)
+    concept_ancestor_dest_table = dataset.table(common.CONCEPT_ANCESTOR)
+
+    # query will check the row counts of each table in the specified dataset
+    row_count_query = ROW_COUNT_QUERY.render(project_id=project_id,
+                                             dataset_id=dataset_id)
+
+    results_dataframe = client.query(row_count_query).to_dataframe()
+    empty_results_dataframe = results_dataframe[(
+        results_dataframe['row_count'] == 0)]
+
+    # checks if CONCEPT and CONCEPT_ANCESTOR tables exist, if they don't, they are copied from the
+    # CONCEPT and CONCEPT_ANCESTOR tables in common.VOCABULARY
+    if common.CONCEPT not in (results_dataframe['table_id']).values:
+        client.copy_table(concept_source_table, concept_dest_table)
+    if common.CONCEPT_ANCESTOR not in (results_dataframe['table_id']).values:
+        client.copy_table(concept_ancestor_source_table,
+                          concept_ancestor_dest_table)
+
+    # checks if CONCEPT and CONCEPT_ANCESTOR tables are empty, if they are, they are copied from the CONCEPT and
+    # CONCEPT_ANCESTOR tables in common.VOCABULARY
+    if common.CONCEPT in (empty_results_dataframe['table_id']).values:
+        client.copy_table(concept_source_table, concept_dest_table)
+    if common.CONCEPT_ANCESTOR in (empty_results_dataframe['table_id']).values:
+        client.copy_table(concept_ancestor_source_table,
+                          concept_ancestor_dest_table)
+
+    # checks if MEASUREMENT_CONCEPT_SETS_TABLE and MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE exist, if they
+    # do not exist, they will be created
+    if MEASUREMENT_CONCEPT_SETS_TABLE not in results_dataframe[
+            'table_id'].values:
+        bq.create_tables(client=client,
+                         project_id=project_id,
+                         fq_table_names=[concept_sets_table_name],
+                         exists_ok=True,
+                         fields=None)
+    if MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE not in results_dataframe[
+            'table_id'].values:
+        bq.create_tables(client=client,
+                         project_id=project_id,
+                         fq_table_names=[descendants_table_name],
+                         exists_ok=True,
+                         fields=None)
 
 
 def load_measurement_concept_sets_table(project_id, dataset_id):
@@ -25,6 +102,8 @@ def load_measurement_concept_sets_table(project_id, dataset_id):
     :param dataset_id: Dataset where the required lab table needs to be created
     :return: None
     """
+
+    check_and_copy_tables(project_id, dataset_id)
 
     try:
         LOGGER.info(
@@ -53,6 +132,8 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
     :param dataset_id: Dataset where the required lab table needs to be created
     :return: None
     """
+
+    check_and_copy_tables(project_id, dataset_id)
 
     identify_labs_query = IDENTIFY_LABS_QUERY.format(
         project_id=project_id,
