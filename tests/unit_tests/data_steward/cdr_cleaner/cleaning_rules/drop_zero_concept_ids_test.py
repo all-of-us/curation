@@ -119,4 +119,4 @@ class DropZeroConceptIDsTest(unittest.TestCase):
 
         self.assertEqual(
             results_list,
-            [expected_sandbox_queries_list, expected_drop_queries_list])
+            expected_sandbox_queries_list + expected_drop_queries_list)

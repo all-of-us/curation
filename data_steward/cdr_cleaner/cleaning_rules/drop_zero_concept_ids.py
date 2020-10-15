@@ -111,7 +111,7 @@ FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE
 {{unique_identifier}} NOT IN (
 SELECT {{unique_identifier}}
-FROM {{project}}.{{sandbox_dataset}}.{{sandbox_table}}
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 )
 """)
 
@@ -181,7 +181,7 @@ class DropZeroConceptIDs(BaseCleaningRule):
                     WRITE_TRUNCATE
             })
 
-        return [sandbox_queries_list, drop_queries_list]
+        return sandbox_queries_list + drop_queries_list
 
     def setup_rule(self, client):
         """
