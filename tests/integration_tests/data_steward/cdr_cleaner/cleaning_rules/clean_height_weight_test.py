@@ -32,7 +32,7 @@ class CleanHeightWeightTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = project_id
 
         # Set the expected test datasets
-        dataset_id = bq_utils.get_combined_deid_clean_dataset_id()
+        dataset_id = bq_utils.get_combined_deid_dataset_id()
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
