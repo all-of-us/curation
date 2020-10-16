@@ -46,6 +46,8 @@ class CleanHeightWeightTest(BaseTest.CleaningRulesTestBase):
             f'{project_id}.{dataset_id}.measurement',
             f'{project_id}.{dataset_id}.measurement_ext',
             f'{project_id}.{dataset_id}.condition_occurrence',
+            f'{project_id}.{dataset_id}.concept',
+            f'{project_id}.{dataset_id}.concept_ancestor',
         ]
         super().setUpClass()
 
