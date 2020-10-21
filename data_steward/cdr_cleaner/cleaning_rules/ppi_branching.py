@@ -63,18 +63,22 @@ The columns of the lookup table are described below.
     `value_source_value`. Currently only supports `>` and this needs to be specified via the
     `keep_gt` rule type and `parent_value` must be a float.
 """
+# Python imports
 import logging
 from pathlib import Path
 from typing import Union
 
+# Third Party imports
 import pandas
 from google.cloud import bigquery
 
+# Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from common import OBSERVATION
 from resources import PPI_BRANCHING_RULE_PATHS
 from utils import bq
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
@@ -84,7 +88,7 @@ RULES_LOOKUP_TABLE_ID = f'{PPI_BRANCHING_TABLE_PREFIX}_rules_lookup'
 OBSERVATION_BACKUP_TABLE_ID = f'{PPI_BRANCHING_TABLE_PREFIX}_observation_drop'
 OBSERVATION_STAGE_TABLE_ID = f'{PPI_BRANCHING_TABLE_PREFIX}_observation_stage'
 
-BACKUP_ROWS_QUERY = bq.JINJA_ENV.from_string("""
+BACKUP_ROWS_QUERY = JINJA_ENV.from_string("""
 WITH rule AS
 (SELECT
   rule_type,
@@ -233,7 +237,7 @@ SELECT oc_observation_id
     FROM keep_gt_rule_obs)
 """)
 
-CLEANED_ROWS_QUERY = bq.JINJA_ENV.from_string("""
+CLEANED_ROWS_QUERY = JINJA_ENV.from_string("""
 SELECT {{ scope or 'src.*' }} 
 FROM `{{src.project}}.{{src.dataset_id}}.{{src.table_id}}` src
 WHERE NOT EXISTS

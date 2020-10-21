@@ -13,7 +13,6 @@ import mock
 
 # Third party imports
 import pandas
-from jinja2 import Environment
 
 # Project imports
 import app_identity
@@ -26,23 +25,12 @@ from sandbox import check_and_create_sandbox_dataset
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from utils import bq
 from tests import test_util
+from common import JINJA_ENV
 
 TABLES = [
     'measurement', 'observation', 'procedure_occurrence',
     'condition_occurrence', 'drug_exposure', 'visit_occurrence'
 ]
-
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
 
 
 class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
@@ -147,7 +135,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         sandbox_row_count_queries = []
 
         # Queries to load the dummy data into the tables
-        measurement_query = jinja_env.from_string("""
+        measurement_query = JINJA_ENV.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.{{measurement}}`
         (measurement_id, person_id, measurement_concept_id, measurement_date,
         measurement_type_concept_id)
@@ -160,7 +148,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
             measurement=TABLES[0])
         load_data_queries.append(measurement_query)
 
-        observation_query = jinja_env.from_string("""
+        observation_query = JINJA_ENV.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.{{observation}}`
         (observation_id, person_id, observation_concept_id, observation_date,
         observation_type_concept_id)
@@ -173,7 +161,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
             observation=TABLES[1])
         load_data_queries.append(observation_query)
 
-        procedure_occ_query = jinja_env.from_string("""
+        procedure_occ_query = JINJA_ENV.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.{{procedure}}`
         (procedure_occurrence_id, person_id, procedure_concept_id, procedure_date,
         procedure_datetime, procedure_type_concept_id)
@@ -187,7 +175,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                                                        procedure=TABLES[2])
         load_data_queries.append(procedure_occ_query)
 
-        condition_occ_query = jinja_env.from_string("""
+        condition_occ_query = JINJA_ENV.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.{{condition}}`
         (condition_occurrence_id, person_id, condition_concept_id, condition_start_date,
         condition_start_datetime, condition_end_date, condition_type_concept_id)
@@ -201,7 +189,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                                                        condition=TABLES[3])
         load_data_queries.append(condition_occ_query)
 
-        drug_query = jinja_env.from_string("""
+        drug_query = JINJA_ENV.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.{{drug}}`
         (drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, 
         drug_exposure_start_datetime, drug_exposure_end_date, drug_type_concept_id)
@@ -214,7 +202,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
                                                    drug=TABLES[4])
         load_data_queries.append(drug_query)
 
-        visit_query = jinja_env.from_string("""
+        visit_query = JINJA_ENV.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.{{visit}}`
         (visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_start_datetime,
         visit_end_date, visit_type_concept_id)

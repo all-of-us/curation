@@ -37,13 +37,11 @@ Archive/sandbox those rows
 # Python imports
 import logging
 
-# Third party imports
-from jinja2 import Environment
-
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
@@ -83,20 +81,8 @@ concept_id_columns = {
     'death': 'cause_concept_id'
 }
 
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
-
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
-SANDBOX_ZERO_CONCEPT_IDS_QUERY = jinja_env.from_string("""
+SANDBOX_ZERO_CONCEPT_IDS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` as(
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
@@ -105,7 +91,7 @@ WHERE
 AND {{concept_id}} IN (NULL, 0))
 """)
 
-DROP_ZERO_CONCEPT_IDS_QUERY = jinja_env.from_string("""
+DROP_ZERO_CONCEPT_IDS_QUERY = JINJA_ENV.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE

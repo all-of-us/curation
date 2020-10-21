@@ -11,15 +11,11 @@ by sandboxing the applicable records and then dropping them.
 # Python Imports
 import logging
 
-# Third Party Imports
-from jinja2 import Environment
-
 # Project Imports
 import common
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
-from utils.bq import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,14 +35,14 @@ FITBIT_TABLES_DATETIME_FIELDS = {
 }
 
 # Save rows that will be dropped to a sandboxed dataset
-SANDBOX_QUERY = JINJA_ENV.from_string("""
+SANDBOX_QUERY = common.JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{intermediary_table}}` AS (
 SELECT * 
 FROM `{{project}}.{{dataset}}.{{table_name}}`
 WHERE {{date_field}} > '{{cutoff_date}}')""")
 
 # Drop any FitBit data that is newer than the cutoff date
-TRUNCATE_FITBIT_DATA_QUERY = JINJA_ENV.from_string("""
+TRUNCATE_FITBIT_DATA_QUERY = common.JINJA_ENV.from_string("""
 SELECT * FROM `{{project}}.{{dataset}}.{{table_name}}` t
 EXCEPT DISTINCT
 SELECT * FROM `{{project}}.{{sandbox}}.{{intermediary_table}}`""")

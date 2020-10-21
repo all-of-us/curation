@@ -19,33 +19,19 @@ Intent is to drop the duplicated concepts for questions and answers created beca
 # Python imports
 import logging
 
-# Third party imports
-from jinja2 import Environment
-
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
 OBSERVATION = 'observation'
 ppi_modules = ['ppi_answers', 'ppi_questions']
 
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
-
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
-SANDBOX_PPI_ANSWERS = jinja_env.from_string("""
+SANDBOX_PPI_ANSWERS = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{ans_table}}` as(
 SELECT value_source_concept_id, concept_id as new_value_source_concept_id, concept_id_2 as new_value_as_concept_id
 FROM `{{project}}.{{dataset}}.concept` c
@@ -61,7 +47,7 @@ where vocabulary_id='PPI' and c.invalid_reason is null
 and relationship_id = 'Maps to value')
 """)
 
-SANDBOX_PPI_QUESTIONS = jinja_env.from_string("""
+SANDBOX_PPI_QUESTIONS = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{ques_table}}` as(
 SELECT observation_source_concept_id, concept_id as new_observation_source_concept_id,
  concept_id_2 as new_observation_concept_id
@@ -78,14 +64,14 @@ where vocabulary_id='PPI' and c.invalid_reason is null
 and relationship_id = 'Maps to')
 """)
 
-DELETE_DUPLICATE_ANSWERS = jinja_env.from_string("""
+DELETE_DUPLICATE_ANSWERS = JINJA_ENV.from_string("""
 select * 
 from `{{project}}.{{dataset}}.{{clinical_table_name}}` o
 where value_source_concept_id not in (select value_source_concept_id 
 from `{{project}}.{{sandbox_dataset}}.{{ans_table}}`)
 """)
 
-DELETE_DUPLICATE_QUESTIONS = jinja_env.from_string("""
+DELETE_DUPLICATE_QUESTIONS = JINJA_ENV.from_string("""
 select * 
 from `{{project}}.{{dataset}}.{{clinical_table_name}}` o
 where value_source_concept_id not in (select value_source_concept_id 

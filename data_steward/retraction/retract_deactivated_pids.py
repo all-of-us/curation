@@ -8,13 +8,13 @@ from datetime import datetime
 # Third party imports
 import pandas as pd
 from google.cloud import bigquery
-from jinja2 import Environment
 
-from constants import bq_utils as bq_consts
-from constants.cdr_cleaner import clean_cdr as clean_consts
 # Project imports
 from retraction.retract_utils import DEID_REGEX
 from sandbox import check_and_create_sandbox_dataset
+from constants import bq_utils as bq_consts
+from constants.cdr_cleaner import clean_cdr as clean_consts
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 LOGS_PATH = '../logs'
@@ -36,35 +36,23 @@ def get_client(project_id):
     return CLIENT
 
 
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
-
-TABLE_INFORMATION_SCHEMA = jinja_env.from_string("""
+TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 """)
 
-DEACTIVATED_PIDS_QUERY = jinja_env.from_string("""
+DEACTIVATED_PIDS_QUERY = JINJA_ENV.from_string("""
 SELECT DISTINCT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 """)
 
-RESEARCH_ID_QUERY = jinja_env.from_string("""
+RESEARCH_ID_QUERY = JINJA_ENV.from_string("""
 SELECT DISTINCT research_id
 FROM `{{project}}.{{prefix_regex}}_combined._deid_map`
 WHERE person_id = {{pid}}
 """)
 
-CHECK_PID_EXIST_DATE_QUERY = jinja_env.from_string("""
+CHECK_PID_EXIST_DATE_QUERY = JINJA_ENV.from_string("""
 SELECT
 COALESCE(COUNT(*), 0) AS count
 FROM `{{project}}.{{dataset}}.{{table}}`
@@ -74,7 +62,7 @@ AND {{date_column}} > (SELECT MIN(deactivated_date)
 FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}`)
 """)
 
-CHECK_PID_EXIST_END_DATE_QUERY = jinja_env.from_string("""
+CHECK_PID_EXIST_END_DATE_QUERY = JINJA_ENV.from_string("""
 SELECT
 COALESCE(COUNT(*), 0) AS count
 FROM `{{project}}.{{dataset}}.{{table}}`
@@ -89,7 +77,7 @@ FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pi
 
 # Queries to create tables in associated sandbox with rows that will be removed per cleaning rule.
 # Two different queries 1. tables containing standard entry dates 2. tables with start and end dates
-SANDBOX_QUERY_DATE = jinja_env.from_string("""
+SANDBOX_QUERY_DATE = JINJA_ENV.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id = {{pid}}
@@ -98,7 +86,7 @@ FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pi
 WHERE person_id = {{pid}})
 """)
 
-SANDBOX_QUERY_END_DATE = jinja_env.from_string("""
+SANDBOX_QUERY_END_DATE = JINJA_ENV.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id = {{pid}}
@@ -112,7 +100,7 @@ WHERE person_id = {{pid}}) END END)
 
 # Queries to truncate existing tables to remove deactivated EHR PIDS, two different queries for
 # tables with standard entry dates vs. tables with start and end dates
-CLEAN_QUERY_DATE = jinja_env.from_string("""
+CLEAN_QUERY_DATE = JINJA_ENV.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id != {{pid}}
@@ -122,7 +110,7 @@ FROM `{{deactivated_pids_project}}.{{deactivated_pids_dataset}}.{{deactivated_pi
 WHERE person_id = {{pid}}))
 """)
 
-CLEAN_QUERY_END_DATE = jinja_env.from_string("""
+CLEAN_QUERY_END_DATE = JINJA_ENV.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id != {{pid}}

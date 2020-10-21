@@ -23,32 +23,19 @@ Original Issue: DC-938
 # Python imports
 import logging
 
-# Third party imports
-from jinja2 import Environment
-
 # Project Imports
 import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
 
 PIPELINE_DATASET = 'pipeline_tables'
 COPE_CONCEPTS_TABLE = 'cope_concepts'
 OBSERVATION = 'observation'
 
-SANDBOX_COPE_SURVEY_QUERY = jinja_env.from_string("""
+SANDBOX_COPE_SURVEY_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
   `{{project_id}}.{{sandbox_dataset}}.{{intermediary_table}}` AS
 SELECT
@@ -63,7 +50,7 @@ WHERE
     `{{project_id}}.{{pipeline_tables_dataset}}.{{cope_concepts_table}}`)
     """)
 
-DATE_SHIFT_QUERY = jinja_env.from_string("""
+DATE_SHIFT_QUERY = JINJA_ENV.from_string("""
 WITH
   cope_shift AS (
   SELECT

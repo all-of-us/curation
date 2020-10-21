@@ -1,27 +1,15 @@
+# Python imports
 import os
 import unittest
 
-from jinja2 import Environment
-
+# Project Imports
+from utils import bq
 import tests.test_util as test_util
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization, UNIT_MAPPING_TABLE
-# Project Imports
-from utils import bq
+from common import JINJA_ENV
 
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
-
-test_query = jinja_env.from_string("""select * from `{{intermediary_table}}`""")
+test_query = JINJA_ENV.from_string("""select * from `{{intermediary_table}}`""")
 
 
 class UnitNormalizationTest(unittest.TestCase):

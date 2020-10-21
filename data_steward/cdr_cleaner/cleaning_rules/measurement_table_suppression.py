@@ -10,11 +10,8 @@ meaningful data, and drop duplicate records.
 # Python Imports
 import logging
 
-# Third party imports
-from jinja2 import Environment
-
 # Project imports
-from common import MEASUREMENT
+from common import MEASUREMENT, JINJA_ENV
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -22,17 +19,6 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC-699', 'DC-481']
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
 
 INVALID_VALUES_RECORDS = 'dc699_save_9999999_as_null'
 SITES_WITH_ONLY_BAD_DATA = 'dc699_sites_with_only_null_or_zero_meas_data'
@@ -41,7 +27,7 @@ SAVE_NULL_VALUE_RECORDS = 'dc699_save_null_records_from_measurement'
 SAVE_DUPLICATE_RECORDS = 'dc699_save_measurement_duplicates'
 
 # Save rows that will be altered to a sandbox dataset.
-NULL_VALUES_SAVE_QUERY = jinja_env.from_string("""
+NULL_VALUES_SAVE_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
 SELECT *
 FROM `{{project}}.{{dataset}}.measurement`
@@ -49,7 +35,7 @@ WHERE value_as_number = 9999999
 )""")
 
 # Alter rows by changing 9999999 to NULL
-NULL_VALUES_UPDATE_QUERY = jinja_env.from_string("""
+NULL_VALUES_UPDATE_QUERY = JINJA_ENV.from_string("""
 SELECT
 measurement_id, person_id, measurement_concept_id, measurement_date,
 measurement_datetime, measurement_type_concept_id, operator_concept_id,
@@ -66,7 +52,7 @@ from `{{project}}.{{dataset}}.measurement`
 # Identify sites who submitted "junk" data.  Either all nulls or zero values in
 # the value_as_number field.  These sites should be saved to a table to make
 # programmatic access easier
-SITES_TO_REMOVE_DATA_FOR = jinja_env.from_string("""
+SITES_TO_REMOVE_DATA_FOR = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
 -- join the measurment and mapping table and only store EHR site records --
 WITH joined_table AS (
@@ -101,7 +87,7 @@ WHERE js.src_id NOT IN (SELECT src_id FROM values_containing_srcs)
 )""")
 
 # store data from sites that will be dropped.
-NULL_AND_ZERO_VALUES_SAVE_QUERY = jinja_env.from_string("""
+NULL_AND_ZERO_VALUES_SAVE_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
 SELECT *
 FROM `{{project}}.{{dataset}}.measurement` AS m
@@ -113,7 +99,7 @@ AND m.value_as_number = 0
 
 # Update value_as_number for any site that has only submitted junk, i.e. 0 or null
 # for value_as_number
-SET_NULL_WHEN_ONLY_ZEROS_SUBMITTED = jinja_env.from_string("""
+SET_NULL_WHEN_ONLY_ZEROS_SUBMITTED = JINJA_ENV.from_string("""
 SELECT
   measurement_id,
   person_id,
@@ -145,7 +131,7 @@ USING (measurement_id)
 
 # Save records that will be dropped when
 # value_as_number IS NULL AND value_as_concept_id IS NULL
-SAVE_NULL_DROP_RECORDS = jinja_env.from_string("""
+SAVE_NULL_DROP_RECORDS = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
 SELECT *
 FROM `{{project}}.{{dataset}}.measurement` AS m
@@ -153,7 +139,7 @@ WHERE m.value_as_number IS NULL AND m.value_as_concept_id IS NULL
 )""")
 
 # Only select records that we want to keep
-SELECT_RECORDS_WITH_VALID_DATA = jinja_env.from_string("""
+SELECT_RECORDS_WITH_VALID_DATA = JINJA_ENV.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.measurement` AS m
 WHERE m.value_as_number IS NOT NULL OR m.value_as_concept_id IS NOT NULL
@@ -163,7 +149,7 @@ WHERE m.value_as_number IS NOT NULL OR m.value_as_concept_id IS NOT NULL
 # measurement_source_concept_id, unit_concept_id, measurement_concept_id,
 # measurement_datetime, value_as_number, value_as_concept_id
 # Had to use grouping because ROW_NUMBER OVER cannot partition by value_as_number
-SANDBOX_DUPLICATES = jinja_env.from_string("""
+SANDBOX_DUPLICATES = JINJA_ENV.from_string("""
 -- identify duplicates with this context table statement --
 -- only add duplicate field identifiers to this statement --
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{save_table}}` AS (
@@ -193,7 +179,7 @@ FROM
 WHERE row_num > 1
 )""")
 
-REMOVE_DUPLICATES = jinja_env.from_string("""
+REMOVE_DUPLICATES = JINJA_ENV.from_string("""
 -- Select only the records that have not been sandboxed --
 SELECT *
 FROM `{{project}}.{{dataset}}.measurement`

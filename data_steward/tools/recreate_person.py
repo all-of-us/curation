@@ -1,6 +1,9 @@
+# Python imports
 import logging
 
+# Project imports
 from utils import bq
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,7 +20,7 @@ USING
     (person_id)
 """
 
-NEW_PERSON_QUERY_TMPL = bq.JINJA_ENV.from_string(NEW_PERSON_QUERY)
+NEW_PERSON_QUERY_TMPL = JINJA_ENV.from_string(NEW_PERSON_QUERY)
 
 
 def update_person(client, project_id, dataset_id):

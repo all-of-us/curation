@@ -9,27 +9,13 @@ extended to be used.
 import logging
 from abc import abstractmethod
 
-# Third party imports
-from jinja2 import Environment
-
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
-
-SHIFT_EXP = jinja_env.from_string("""
+SHIFT_EXP = JINJA_ENV.from_string("""
   {{field_type}}_SUB( CAST({{field}} AS {{field_type}}), INTERVAL (
     SELECT
       shift
@@ -39,7 +25,7 @@ SHIFT_EXP = jinja_env.from_string("""
       map.research_id = remodel.person_id) DAY) AS {{field}}
 """)
 
-SELECT_STATEMENT = jinja_env.from_string("""
+SELECT_STATEMENT = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.{{table}}` AS (
 SELECT 
 {{fields}}
