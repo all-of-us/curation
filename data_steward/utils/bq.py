@@ -11,27 +11,15 @@ import warnings
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
 from google.auth import default
-import jinja2
 
 # Project Imports
 from app_identity import PROJECT_ID
 from utils import auth
 from constants.utils import bq as consts
 from resources import fields_for
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
-JINJA_ENV = jinja2.Environment(
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --',
-    # in jinja2 autoescape is for html; jinjasql supports autoescape for sql
-    # TODO Look into jinjasql for sql templating
-    autoescape=False)
 
 CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}` (
