@@ -7,7 +7,7 @@ generating the unioned dataset which will be used for the CDR.
 
 NOTE: This does not affect non-clinical tables (e.g. achilles_*)
 """
-import logging
+from utils import pipeline_logging
 from typing import List
 
 from google.cloud import bigquery
@@ -16,7 +16,7 @@ from utils import bq
 import bq_utils
 import resources
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = pipeline_logging.get_logger(__name__)
 
 DELETE_QUERY_TPL = bq.JINJA_ENV.from_string("""
 {%- for table in tables_to_purge -%}

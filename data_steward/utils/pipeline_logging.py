@@ -11,6 +11,7 @@ duplicating code.
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 
 # Project imports
 import resources
@@ -166,6 +167,8 @@ def get_logger(logger_name):
         # handler that emits >= DEBUG records by
         # appending to new or existing file
         handler_filename = get_default_log_path(logger_name)
+        # ensure the log dir exists
+        Path(DEFAULT_LOG_DIR).mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(handler_filename, mode='a')
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(formatter)
