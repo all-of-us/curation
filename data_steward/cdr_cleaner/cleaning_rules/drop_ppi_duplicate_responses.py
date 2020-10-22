@@ -21,30 +21,17 @@ earlier, we want to keep the actual response instead of PMI_Skip regardless of t
 # Python imports
 import logging
 
-# Third party imports
-from jinja2 import Environment
-
+# Project imports
+from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
-
 PIPELINE_DATASET = 'pipeline_tables'
 COPE_CONCEPTS_TABLE = 'cope_concepts'
 
-SELECT_DUPLICATE_TEMPLATE = jinja_env.from_string("""
+SELECT_DUPLICATE_TEMPLATE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
     `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS 
 SELECT
@@ -55,7 +42,7 @@ WHERE
   observation_id IN 
 """)
 
-REMOVE_DUPLICATE_TEMPLATE = jinja_env.from_string("""
+REMOVE_DUPLICATE_TEMPLATE = JINJA_ENV.from_string("""
 DELETE
 FROM
   `{{project}}.{{dataset}}.observation`
@@ -63,7 +50,7 @@ WHERE
   observation_id IN 
 """)
 
-IDENTIFY_DUPLICATE_ID_TEMPLATE = jinja_env.from_string("""
+IDENTIFY_DUPLICATE_ID_TEMPLATE = JINJA_ENV.from_string("""
     ( SELECT
       observation_id
     FROM (

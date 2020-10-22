@@ -16,11 +16,11 @@ from unittest import TestCase, mock
 import google.cloud.exceptions as gc_exc
 from google.api_core.retry import Retry
 from google.cloud import bigquery
-from jinja2 import Environment
 
 # Project imports
 from cdr_cleaner import clean_cdr_engine as engine
 from utils import bq
+from common import JINJA_ENV
 
 
 class BaseTest:
@@ -43,17 +43,7 @@ class BaseTest:
 
         @classmethod
         def initialize_class_vars(cls):
-            cls.jinja_env = Environment(
-                # help protect against cross-site scripting vulnerabilities
-                autoescape=True,
-                # block tags on their own lines
-                # will not cause extra white space
-                trim_blocks=True,
-                lstrip_blocks=True,
-                # syntax highlighting should be better
-                # with these comment delimiters
-                comment_start_string='--',
-                comment_end_string=' --')
+            cls.jinja_env = JINJA_ENV
 
             # this should always be for a test project.  a check is implemented to
             # make sure this is true

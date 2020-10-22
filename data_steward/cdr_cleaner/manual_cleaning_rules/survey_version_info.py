@@ -18,9 +18,8 @@ from google.api_core.exceptions import BadRequest, NotFound
 
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 # Project imports
-from common import OBSERVATION
+from common import OBSERVATION, JINJA_ENV
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from utils.bq import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 

@@ -8,11 +8,10 @@ import logging
 import google.cloud.bigquery as gbq
 
 # Project imports
-from utils import bq
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import FITBIT_TABLES
+from common import FITBIT_TABLES, JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ LEFT JOIN `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
 ON t.person_id = d.person_id
 """
 
-PID_RID_QUERY_TMPL = bq.JINJA_ENV.from_string(PID_RID_QUERY)
+PID_RID_QUERY_TMPL = JINJA_ENV.from_string(PID_RID_QUERY)
 
 VALIDATE_QUERY = """
 SELECT person_id
@@ -37,7 +36,7 @@ WHERE person_id NOT IN
 FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}`)
 """
 
-VALIDATE_QUERY_TMPL = bq.JINJA_ENV.from_string(VALIDATE_QUERY)
+VALIDATE_QUERY_TMPL = JINJA_ENV.from_string(VALIDATE_QUERY)
 
 
 class PIDtoRID(BaseCleaningRule):

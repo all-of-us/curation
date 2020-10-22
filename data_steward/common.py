@@ -1,7 +1,10 @@
+# Python imports
 import os
 
+# Project imports
 from constants.bq_utils import VALIDATION_DATASET_REGEX
 from constants.validation.participants.identity_match import REPORT_DIRECTORY_REGEX
+import jinja2
 
 # AOU required PII tables
 PII_WILDCARD = 'pii*'
@@ -211,3 +214,17 @@ EXT = 'ext'
 EXT_SUFFIX = '_ext'
 
 DEID_MAP = '_deid_map'
+
+# JINJA
+JINJA_ENV = jinja2.Environment(
+    # block tags on their own lines
+    # will not cause extra white space
+    trim_blocks=True,
+    lstrip_blocks=True,
+    # syntax highlighting should be better
+    # with these comment delimiters
+    comment_start_string='--',
+    comment_end_string=' --',
+    # in jinja2 autoescape is for html; jinjasql supports autoescape for sql
+    # TODO Look into jinjasql for sql templating
+    autoescape=False)

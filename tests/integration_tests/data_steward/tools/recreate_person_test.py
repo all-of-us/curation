@@ -10,6 +10,7 @@ from pandas import testing
 import app_identity
 from tools import recreate_person
 from utils import bq
+from common import JINJA_ENV
 
 POPULATE_PERSON = """
 INSERT INTO {{person.project}}.{{person.dataset_id}}.person 
@@ -33,8 +34,8 @@ VALUES
     (5, 1585266, 'PIIState_CA')
 """
 
-POPULATE_PERSON_TMPL = bq.JINJA_ENV.from_string(POPULATE_PERSON)
-POPULATE_PERSON_EXT_TMPL = bq.JINJA_ENV.from_string(POPULATE_PERSON_EXT)
+POPULATE_PERSON_TMPL = JINJA_ENV.from_string(POPULATE_PERSON)
+POPULATE_PERSON_EXT_TMPL = JINJA_ENV.from_string(POPULATE_PERSON_EXT)
 
 
 class RecreatePersonTest(TestCase):

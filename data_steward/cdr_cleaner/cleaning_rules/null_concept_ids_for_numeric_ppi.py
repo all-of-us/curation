@@ -11,15 +11,10 @@ archived in the dataset sandbox.
 # Python imports
 import logging
 
-# Third party imports
-from jinja2 import Environment
-
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import OBSERVATION
-from constants.bq_utils import WRITE_TRUNCATE
+from common import OBSERVATION, JINJA_ENV
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from utils.bq import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 

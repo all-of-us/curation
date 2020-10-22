@@ -11,11 +11,8 @@ present in the dataset
 # Python imports
 import logging
 
-# Third party imports
-from jinja2 import Environment
-
 # Project imports
-from common import MEASUREMENT, CONCEPT, PERSON, CONDITION_OCCURRENCE, CONCEPT_ANCESTOR
+from common import MEASUREMENT, CONCEPT, PERSON, CONDITION_OCCURRENCE, CONCEPT_ANCESTOR, JINJA_ENV
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
@@ -23,18 +20,6 @@ from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
 from constants.bq_utils import WRITE_TRUNCATE, WRITE_APPEND
 
 LOGGER = logging.getLogger(__name__)
-
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
 
 ISSUE_NUMBERS = ['DC-416', 'DC-701']
 
@@ -44,7 +29,7 @@ NEW_HEIGHT_ROWS = 'new_height_rows'
 NEW_WEIGHT_ROWS = 'new_weight_rows'
 
 # height queries
-CREATE_HEIGHT_SANDBOX_QUERY = jinja_env.from_string("""
+CREATE_HEIGHT_SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{height_table}}` AS
 WITH
   concepts AS (
@@ -225,7 +210,7 @@ WITH
       height_disagreement_pts USING (person_id)
     """)
 
-NEW_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
+NEW_HEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{new_height_rows}}` AS
 SELECT
   measurement_id,
@@ -261,7 +246,7 @@ JOIN `{{project_id}}.{{dataset_id}}.measurement` m USING (measurement_id)
 LEFT JOIN `{{project_id}}.{{dataset_id}}.concept` u_c ON (adj_unit=concept_id)
 """)
 
-DROP_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
+DROP_HEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
     SELECT * 
     FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
     WHERE measurement_id NOT IN
@@ -274,7 +259,7 @@ DROP_HEIGHT_ROWS_QUERY = jinja_env.from_string("""
 """)
 
 # weight queries
-CREATE_WEIGHT_SANDBOX_QUERY = jinja_env.from_string("""
+CREATE_WEIGHT_SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{weight_table}}` AS
 WITH
   concepts AS (
@@ -536,7 +521,7 @@ WITH
     LEFT JOIN weight_disagreement_pts USING (person_id)
 """)
 
-NEW_WEIGHT_ROWS_QUERY = jinja_env.from_string("""
+NEW_WEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{new_weight_rows}}` AS
 SELECT
   measurement_id,
@@ -573,7 +558,7 @@ JOIN `{{project_id}}.{{dataset_id}}.measurement` m USING (measurement_id)
 LEFT JOIN `{{project_id}}.{{dataset_id}}.concept` u_c ON (adj_unit=concept_id)
 """)
 
-DROP_WEIGHT_ROWS_QUERY = jinja_env.from_string("""
+DROP_WEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
     SELECT * FROM `{{project_id}}.{{dataset_id}}.measurement`
     WHERE measurement_id NOT IN
     (SELECT measurement_id
@@ -584,7 +569,7 @@ DROP_WEIGHT_ROWS_QUERY = jinja_env.from_string("""
     AND me.src_id != 'PPI/PM')
 """)
 
-INSERT_NEW_ROWS_QUERY = jinja_env.from_string("""
+INSERT_NEW_ROWS_QUERY = JINJA_ENV.from_string("""
 SELECT
   measurement_id,
   person_id,

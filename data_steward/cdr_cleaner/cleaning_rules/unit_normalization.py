@@ -12,13 +12,11 @@ Original Issue: DC-414
 import logging
 import os
 
-# Third party imports
-from jinja2 import Environment
-
 # Project Imports
 import constants.bq_utils as bq_consts
 import resources
 import utils.bq as bq
+from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
@@ -26,24 +24,13 @@ from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
 
 UNIT_MAPPING_TABLE = '_unit_mapping'
 UNIT_MAPPING_FILE = '_unit_mapping.csv'
 MEASUREMENT = 'measurement'
 UNIT_MAPPING_TABLE_DISPOSITION = bq.bigquery.job.WriteDisposition.WRITE_EMPTY
 
-SANDBOX_UNITS_QUERY = jinja_env.from_string("""
+SANDBOX_UNITS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
     `{{project_id}}.{{sandbox_dataset}}.{{intermediary_table}}` AS(
 SELECT
@@ -57,7 +44,7 @@ USING
     unit_concept_id))
     """)
 
-UNIT_NORMALIZATION_QUERY = jinja_env.from_string("""SELECT
+UNIT_NORMALIZATION_QUERY = JINJA_ENV.from_string("""SELECT
   measurement_id,
   person_id,
   measurement_concept_id,

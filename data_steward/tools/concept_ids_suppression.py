@@ -19,25 +19,13 @@ import os
 
 # Third Party Imports
 import pandas as pd
-from jinja2 import Environment
 
 # Project Imports
 from resources import DEID_PATH
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 LOGS_PATH = '../logs'
-
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
 
 COVID_CONCEPT_IDS_QUERY = """
 SELECT
@@ -146,7 +134,7 @@ def get_concepts_via_query(input_dataset, client):
         "Running queries to append data to _concept_ids_suppression table")
     for q in queries:
         query_data_df = client.query(
-            jinja_env.from_string(q).render(
+            JINJA_ENV.from_string(q).render(
                 input_dataset=input_dataset)).to_dataframe()
         # verify csv file contains 'concept_id' column
         if check_concept_id_field(query_data_df):

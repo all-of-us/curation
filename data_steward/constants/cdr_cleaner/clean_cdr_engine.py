@@ -1,7 +1,9 @@
+# Python imports
 import os
 import tempfile
 
-from utils.bq import JINJA_ENV
+# Project imports
+from common import JINJA_ENV
 
 FILENAME = os.path.join(tempfile.gettempdir(), 'cleaner.log')
 PROJECT_ID = 'project_id'

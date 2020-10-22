@@ -4,7 +4,6 @@ import logging
 # Third party imports
 import googleapiclient
 import oauth2client
-from google.cloud.exceptions import NotFound
 
 # Project imports
 import app_identity
@@ -12,7 +11,6 @@ import bq_utils
 import common
 from constants import bq_utils as bq_consts
 from utils import bq
-from utils.bq import JINJA_ENV
 from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
                                                   CHECK_REQUIRED_LAB_QUERY)
 
@@ -21,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 MEASUREMENT_CONCEPT_SETS_TABLE = '_measurement_concept_sets'
 MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE = '_measurement_concept_sets_descendants'
 
-ROW_COUNT_QUERY = JINJA_ENV.from_string("""
+ROW_COUNT_QUERY = common.JINJA_ENV.from_string("""
 SELECT table_id, row_count
 FROM `{{project_id}}.{{dataset_id}}.__TABLES__`""")
 

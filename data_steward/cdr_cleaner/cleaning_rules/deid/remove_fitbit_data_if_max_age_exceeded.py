@@ -13,30 +13,17 @@ import logging
 
 # Third Party Imports
 import google.cloud.bigquery as gbq
-from jinja2 import Environment
 
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import FITBIT_TABLES
+from common import FITBIT_TABLES, JINJA_ENV
 from constants.bq_utils import WRITE_TRUNCATE
 
 LOGGER = logging.getLogger(__name__)
 
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
-
 # Save rows that will be dropped to a sandboxed dataset
-SAVE_ROWS_TO_BE_DROPPED_QUERY = jinja_env.from_string("""
+SAVE_ROWS_TO_BE_DROPPED_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
 SELECT * FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
@@ -49,7 +36,7 @@ WHERE person_id IN (
 """)
 
 # Drop rows where age is greater than 89
-DROP_MAX_AGE_EXCEEDED_ROWS_QUERY = jinja_env.from_string("""
+DROP_MAX_AGE_EXCEEDED_ROWS_QUERY = JINJA_ENV.from_string("""
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}` t
 WHERE person_id NOT IN (

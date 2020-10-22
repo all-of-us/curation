@@ -52,15 +52,14 @@ import logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from constants.bq_utils import WRITE_TRUNCATE
-from common import OBSERVATION
-from utils.bq import JINJA_ENV as jinja_env
+from common import OBSERVATION, JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
 JIRA_ISSUE_NUMBERS = ['DC1043', 'DC1053']
 
 # Query to create tables in sandbox with the rows that will be updated per cleaning rule
-SANDBOX_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY = jinja_env.from_string("""
+SANDBOX_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
 SELECT
   o.*,
@@ -81,7 +80,7 @@ WHERE
         AND o.value_source_concept_id <> 0 AND o.value_as_concept_id = 0
 """)
 
-UPDATE_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY = jinja_env.from_string("""
+UPDATE_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY = JINJA_ENV.from_string("""
 SELECT
   o.observation_id,
   o.person_id,

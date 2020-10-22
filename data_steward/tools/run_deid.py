@@ -4,23 +4,23 @@ Deid runner.
 A central script to execute deid for each table needing de-identification.
 """
 
+# Python imports
+from datetime import datetime
 import logging
 import os
 from argparse import ArgumentParser
-# Python imports
-from datetime import datetime
 
 # Third party imports
 import google
-from jinja2 import Environment
-
 import app_identity
+
 # Project imports
 import bq_utils
 import deid.aou as aou
 from deid.parser import odataset_name_verification
 from resources import fields_for, fields_path, DEID_PATH
 from utils import bq
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 DEID_TABLES = [
@@ -41,19 +41,7 @@ PIPELINE_TABLES_DATASET = 'pipeline_tables'
 
 LOGS_PATH = 'LOGS'
 
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
-
-COPY_PID_RID_QUERY = jinja_env.from_string("""
+COPY_PID_RID_QUERY = JINJA_ENV.from_string("""
 CREATE or REPLACE TABLE {{map_table}} as
 SELECT
   *

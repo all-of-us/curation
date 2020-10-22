@@ -11,27 +11,12 @@ All rows of data in the August RDR export with dates after 08/01/2020 should be 
 # Python imports
 import logging
 
-# Third party imports
-from jinja2 import Environment
-
 # Project imports
 import common
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
-
-jinja_env = Environment(
-    # help protect against cross-site scripting vulnerabilities
-    autoescape=True,
-    # block tags on their own lines
-    # will not cause extra white space
-    trim_blocks=True,
-    lstrip_blocks=True,
-    # syntax highlighting should be better
-    # with these comment delimiters
-    comment_start_string='--',
-    comment_end_string=' --')
 
 TRUNCATE_TABLES = [
     common.VISIT_OCCURRENCE, common.OBSERVATION, common.MEASUREMENT,
@@ -48,7 +33,7 @@ TABLES_DATES_FIELDS = {
 CUTOFF_DATE = '2020-08-01'
 
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
-SANDBOX_QUERY = jinja_env.from_string("""
+SANDBOX_QUERY = common.JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
     `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT *
@@ -58,7 +43,7 @@ FROM
 )
 """)
 
-TRUNCATE_ROWS = jinja_env.from_string("""
+TRUNCATE_ROWS = common.JINJA_ENV.from_string("""
 DELETE
 FROM
   `{{project}}.{{dataset}}.{{table_name}}`

@@ -26,7 +26,7 @@ import pandas_gbq
 
 # Project imports
 from utils.participant_summary_requests import get_access_token, get_participant_data
-from utils.bq import JINJA_ENV
+from common import JINJA_ENV
 
 GET_EXISTING_RIDS = JINJA_ENV.from_string("""
 SELECT DISTINCT research_id FROM `{{project}}.{{dataset}}.{{table}}`
