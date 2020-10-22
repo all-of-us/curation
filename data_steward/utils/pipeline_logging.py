@@ -153,7 +153,8 @@ def get_logger(logger_name):
     # explicitly set logger level to DEBUG otherwise
     # the level would be that of the closest ancestor
     logger.setLevel(logging.DEBUG)
-
+    # prevent inheriting handlers from ancestors
+    logger.propagate = False
     # prevent adding handlers more than once
     if not logger.hasHandlers():
         formatter = logging.Formatter(fmt=_LOG_FMT, datefmt=_LOG_DATEFMT)
