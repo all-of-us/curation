@@ -7,10 +7,10 @@ from google.cloud.bigquery import DatasetReference
 import bq_utils
 from resources import CDM_TABLES
 from tests.bq_test_helpers import list_item_from_table_id
-from tools.purge_hpo_data import purge_hpo_data, _filter_hpo_tables
+from tools.exclude_site_submission import exclude_site_submission, _filter_hpo_tables
 
 
-class PurgeHpoDataTest(unittest.TestCase):
+class ExcludeSiteSubmissionTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -66,28 +66,28 @@ class PurgeHpoDataTest(unittest.TestCase):
         results = _filter_hpo_tables(self.hpo_cdm_tables, 'fake_hpo3')
         self.assertListEqual([], results)
 
-    def test_purge_hpo_data(self):
+    def test_exclude_site_data(self):
         # tables we intend to empty
-        purge_tables = ['hpo1_person', 'hpo1_condition_occurrence']
+        tables_to_empty = ['hpo1_person', 'hpo1_condition_occurrence']
         unaffected = ['hpo1_achilles', 'hpo2_person']
-        all_tables = purge_tables + unaffected
+        all_tables = tables_to_empty + unaffected
         with mock.patch('utils.bq.list_tables') as mock_list_tables:
             # client.query is called with the expected script
             expected_script = ''
-            for table in purge_tables:
+            for table in tables_to_empty:
                 full_table_id = self._full_table_id(table)
                 expected_script += f'DELETE FROM `{full_table_id}` WHERE 1=1;'
             mock_client = mock.MagicMock()
             mock_list_tables.return_value = [
                 self._table_id_to_list_item(table) for table in all_tables
             ]
-            purge_hpo_data(mock_client, self.dataset, hpo_ids=['hpo1'])
+            exclude_site_submission(mock_client, self.dataset, hpo_ids=['hpo1'])
             mock_client.query.assert_called_once_with(expected_script)
 
             # if no tables found for input hpo_id
             # error is raised and client.query is NOT called
             mock_client = mock.MagicMock()
             with self.assertRaises(RuntimeError) as c:
-                purge_hpo_data(mock_client, self.dataset,
-                               ['hpo1', 'hpo_missing'])
+                exclude_site_submission(mock_client, self.dataset,
+                                        ['hpo1', 'hpo_missing'])
             mock_client.query.assert_not_called()
