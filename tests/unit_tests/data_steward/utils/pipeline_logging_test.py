@@ -45,7 +45,7 @@ class FakeEmit:
     @property
     def messages(self):
         """Get the messages logged"""
-        return [record.getMessage() for record in self.records]
+        return [record.msg for record in self.records]
 
 
 class PipelineLoggingTest(unittest.TestCase):
