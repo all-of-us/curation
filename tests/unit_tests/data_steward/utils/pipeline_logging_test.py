@@ -17,7 +17,35 @@ import mock
 from datetime import datetime
 
 # Project imports
-from utils.pipeline_logging import generate_paths, create_logger, setup_logger
+from utils.pipeline_logging import generate_paths, create_logger, setup_logger, get_logger
+
+
+class FakeEmit:
+    """
+    Callable used to capture records passed to log handlers
+    for testing purposes
+    """
+
+    def __init__(self):
+        self.records = []
+
+    def __call__(self, record: logging.LogRecord):
+        """
+        Stand in for :meth:`logging.Handler.emit`
+
+        :param record: the logging record to handle
+        """
+        self.records.append(record)
+
+    @property
+    def call_count(self):
+        """Number of times emit was called"""
+        return len(self.records)
+
+    @property
+    def messages(self):
+        """Get the messages logged"""
+        return [record.getMessage() for record in self.records]
 
 
 class PipelineLoggingTest(unittest.TestCase):
@@ -31,25 +59,16 @@ class PipelineLoggingTest(unittest.TestCase):
     def setUp(self):
         self.log_file_list = ['path/', 'faked.log', 'path/fake.log']
         self.log_path = [
-            'path/curation20201023_010101.log', 'logs/faked.log',
-            'path/fake.log'
+            datetime.now().strftime('path/curation%Y%m%d_%H%M%S.log'),
+            'logs/faked.log', 'path/fake.log'
         ]
         generate_paths(self.log_file_list)
 
-    @mock.patch('utils.pipeline_logging.datetime')
     @mock.patch('utils.pipeline_logging.generate_paths')
-    def test_generate_paths(self, mock_generate_paths, mock_datetime):
-        # mocking datetime to make sure slight increase in time won't cause a failure
-        mock_datetime.now = mock.Mock(
-            return_value=datetime(2020, 10, 23, 1, 1, 1, 1))
-
+    def test_generate_paths(self, mock_generate_paths):
         # checks that log_path is generated properly
         results = generate_paths(self.log_file_list)
-
-        # tests if the lists are equal regardless of order
-        self.assertCountEqual(results, self.log_path)
-
-        # tests if the lists are equal
+        self.assertEquals(results, self.log_path)
         self.assertListEqual(results, self.log_path)
 
     @mock.patch('utils.pipeline_logging.logging.StreamHandler')
@@ -77,12 +96,34 @@ class PipelineLoggingTest(unittest.TestCase):
             mock_stream_handler.return_value)
         mock_get_logger.assert_called_with(self.log_file_list[1])
 
-    @mock.patch('utils.pipeline_logging.datetime')
-    def test_setup_logger(self, mock_datetime):
-        # mocking datetime to make sure slight increase in time won't cause a failure
-        mock_datetime.now = mock.Mock(
-            return_value=datetime(2020, 10, 23, 1, 1, 1, 1))
+    def test_get_logger(self):
+        file_emit = FakeEmit()
+        stderr_emit = FakeEmit()
+        logger_name = 'pipeline_logging_test'
+        mock_open = mock.patch('logging.FileHandler._open',
+                               mock.mock_open(),
+                               create=True)
+        mock_open.start()
+        with mock.patch('logging.FileHandler.emit', new=file_emit):
+            with mock.patch('logging.StreamHandler.emit', new=stderr_emit):
+                # calling multiple times results in the same logger instance
+                self.assertEqual(id(get_logger(logger_name)),
+                                 id(get_logger(logger_name)))
+                logger = get_logger(logger_name)
+                self.assertEqual(logger_name, logger.name)
+                logger.debug('debug message')
+                # debug messages are logged to file
+                self.assertEqual(file_emit.messages, ['debug message'])
+                # debug messages are NOT logged to stderr
+                self.assertEqual(0, stderr_emit.call_count)
 
+                logger.info('info message')
+                self.assertEqual(file_emit.messages,
+                                 ['debug message', 'info message'])
+                self.assertListEqual(stderr_emit.messages, ['info message'])
+        mock_open.stop()
+
+    def test_setup_logger(self):
         expected_list_true = []
         expected_list_false = []
 
@@ -94,10 +135,10 @@ class PipelineLoggingTest(unittest.TestCase):
             expected_list_false.append(create_logger(item, False))
 
         # Post conditions
-        self.assertEqual(setup_logger(self.log_file_list, True),
-                         expected_list_true)
-        self.assertEqual(setup_logger(self.log_file_list, False),
-                         expected_list_false)
+        self.assertEquals(setup_logger(self.log_file_list, True),
+                          expected_list_true)
+        self.assertEquals(setup_logger(self.log_file_list, False),
+                          expected_list_false)
 
     def tearDown(self):
         shutil.rmtree('path/')

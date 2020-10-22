@@ -12,6 +12,15 @@ import logging
 import os
 from datetime import datetime
 
+# Project imports
+import resources
+
+DEFAULT_LOG_DIR = os.path.join(resources.base_path, 'logs')
+"""Default location for log files"""
+
+_LOG_FMT = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
+_LOG_DATEFMT = '%Y-%m-%d %H:%M:%S'
+
 
 def generate_paths(log_filepath_list):
     """
@@ -111,3 +120,55 @@ def setup_logger(log_filepath_list, console_logging=True):
     for filename in log_path:
         log_list.append(create_logger(filename, console_logging))
     return log_list
+
+
+def get_default_log_path(logger_name):
+    """
+    Get the log file path associated with a logger
+    with the specified name
+
+    :param logger_name: name of the logger
+    :return: absolute path to the log file
+    """
+    return os.path.join(DEFAULT_LOG_DIR, f'{logger_name}.log')
+
+
+def get_logger(logger_name):
+    """
+    Get a logger with the specified name, creating it if necessary.
+    The logger writes >= INFO logs to stderr and >=DEBUG logs to 
+    a file at a standard location `DEFAULT_LOG_DIR`.
+
+    :param logger_name: name of the logger (usually set to __name__)
+    :return: the logger
+    :example:
+    >>> LOGGER = get_logger(__name__)
+    >>> # Additional handlers can be added if needed
+    >>> LOGGER.addHandler(logging.FileHandler('my_custom.log'))
+    >>> def func(p1, p2):
+    >>>     LOGGER.debug(f"func called with {p1}, {p2}")
+    """
+    logger = logging.getLogger(logger_name)
+    # explicitly set logger level to DEBUG otherwise
+    # the level would be that of the closest ancestor
+    logger.setLevel(logging.DEBUG)
+
+    # prevent adding handlers more than once
+    if not logger.hasHandlers():
+        formatter = logging.Formatter(fmt=_LOG_FMT, datefmt=_LOG_DATEFMT)
+
+        # handler that emits >=INFO records to stderr
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.INFO)
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
+
+        # handler that emits >= DEBUG records by
+        # appending to new or existing file
+        handler_filename = get_default_log_path(logger_name)
+        file_handler = logging.FileHandler(handler_filename, mode='a')
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    return logger
