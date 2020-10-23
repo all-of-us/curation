@@ -49,7 +49,7 @@ class PipelineLoggingTest(unittest.TestCase):
         # tests if the lists are equal regardless of order
         self.assertCountEqual(results, self.log_path)
 
-        # tests if the lists are
+        # tests if the lists are equal
         self.assertEqual(results, self.log_path)
         self.assertListEqual(results, self.log_path)
 
