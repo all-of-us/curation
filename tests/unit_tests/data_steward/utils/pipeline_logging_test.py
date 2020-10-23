@@ -50,7 +50,6 @@ class PipelineLoggingTest(unittest.TestCase):
         self.assertCountEqual(results, self.log_path)
 
         # tests if the lists are equal
-        self.assertEqual(results, self.log_path)
         self.assertListEqual(results, self.log_path)
 
     @mock.patch('utils.pipeline_logging.logging.StreamHandler')
