@@ -93,7 +93,9 @@ if __name__ == "__main__":
                         required=True,
                         help='Identifies the dataset to exclude site data from')
     parser.add_argument(
-        'hpo_ids',
+        '-i',
+        '--hpo_ids',
+        required=True,
         nargs='+',
         help='Identifies the HPO sites whose submissions should be excluded')
     ARGS = parser.parse_args()
