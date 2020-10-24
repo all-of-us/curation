@@ -17,7 +17,7 @@ import mock
 from datetime import datetime
 
 # Project imports
-from utils.pipeline_logging import generate_paths, create_logger, setup_logger, get_logger
+import utils.pipeline_logging as pl
 
 
 class FakeEmit:
@@ -62,12 +62,12 @@ class PipelineLoggingTest(unittest.TestCase):
             datetime.now().strftime('path/curation%Y%m%d_%H%M%S.log'),
             'logs/faked.log', 'path/fake.log'
         ]
-        generate_paths(self.log_file_list)
+        pl.generate_paths(self.log_file_list)
 
     @mock.patch('utils.pipeline_logging.generate_paths')
     def test_generate_paths(self, mock_generate_paths):
         # checks that log_path is generated properly
-        results = generate_paths(self.log_file_list)
+        results = pl.generate_paths(self.log_file_list)
         self.assertEquals(results, self.log_path)
         self.assertListEqual(results, self.log_path)
 
@@ -77,7 +77,7 @@ class PipelineLoggingTest(unittest.TestCase):
     def test_create_logger(self, mock_get_logger, mock_file_handler,
                            mock_stream_handler):
         # Tests console_logger function creates only FileHandler when console logging is set to False
-        create_logger(self.log_file_list[1], False)
+        pl.create_logger(self.log_file_list[1], False)
         mock_file_handler.return_value.setLevel.assert_called_with(logging.INFO)
         mock_get_logger.return_value.addHandler.assert_any_call(
             mock_file_handler.return_value)
@@ -85,7 +85,7 @@ class PipelineLoggingTest(unittest.TestCase):
         mock_get_logger.assert_called_with(self.log_file_list[1])
 
         # Tests console_logger function creates both FileHandler and StreamHandler when console logging is set to True
-        create_logger(self.log_file_list[1], True)
+        pl.create_logger(self.log_file_list[1], True)
         mock_file_handler.return_value.setLevel.assert_called_with(logging.INFO)
         mock_get_logger.return_value.addHandler.assert_any_call(
             mock_file_handler.return_value)
@@ -107,9 +107,9 @@ class PipelineLoggingTest(unittest.TestCase):
         with mock.patch('logging.FileHandler.emit', new=file_emit):
             with mock.patch('logging.StreamHandler.emit', new=stderr_emit):
                 # calling multiple times results in the same logger instance
-                self.assertEqual(id(get_logger(logger_name)),
-                                 id(get_logger(logger_name)))
-                logger = get_logger(logger_name)
+                self.assertEqual(id(pl.get_logger(logger_name)),
+                                 id(pl.get_logger(logger_name)))
+                logger = pl.get_logger(logger_name)
                 self.assertEqual(logger_name, logger.name)
                 logger.debug('debug message')
                 # debug messages are logged to file
@@ -129,15 +129,15 @@ class PipelineLoggingTest(unittest.TestCase):
 
         # Pre conditions
         for item in self.log_path:
-            expected_list_true.append(create_logger(item, True))
+            expected_list_true.append(pl.create_logger(item, True))
 
         for item in self.log_path:
-            expected_list_false.append(create_logger(item, False))
+            expected_list_false.append(pl.create_logger(item, False))
 
         # Post conditions
-        self.assertEquals(setup_logger(self.log_file_list, True),
+        self.assertEquals(pl.setup_logger(self.log_file_list, True),
                           expected_list_true)
-        self.assertEquals(setup_logger(self.log_file_list, False),
+        self.assertEquals(pl.setup_logger(self.log_file_list, False),
                           expected_list_false)
 
     def tearDown(self):
