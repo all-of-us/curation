@@ -20,9 +20,7 @@ from resources import fields_for
 from common import JINJA_ENV
 
 _MAX_RESULTS_PADDING = 100
-"""
-Constant added to table count in order to list all table results 
-"""
+"""Constant added to table count in order to list all table results"""
 LOGGER = logging.getLogger(__name__)
 
 CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string("""
@@ -64,10 +62,9 @@ DATASET_COLUMNS_TPL = JINJA_ENV.from_string(consts.DATASET_COLUMNS_QUERY)
 TABLE_COUNT_TPL = JINJA_ENV.from_string(
     "SELECT COUNT(1) table_count FROM `{{dataset.project}}.{{dataset.dataset_id}}.__TABLES__`"
 )
-'''Query template to retrieve the number of tables in a dataset. 
+"""Query template to retrieve the number of tables in a dataset. 
 Requires parameter `dataset`: :class:`DatasetReference` and 
-yields a scalar result with column `table_count`: :class:`int`.
-'''
+yields a scalar result with column `table_count`: :class:`int`."""
 
 
 def get_client(project_id=None, scopes=None):
