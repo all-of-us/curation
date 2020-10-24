@@ -16,7 +16,7 @@ _TYPE_TO_FIELD_TYPE = {
     str(str): 'STRING',
     str(float): 'FLOAT64',
     str(datetime.date): 'DATE',
-    str(datetime.datetime): 'DATETIME'
+    str(datetime.datetime): 'TIMESTAMP'
 }
 dict_types = Union[Dict, OrderedDict]
 
