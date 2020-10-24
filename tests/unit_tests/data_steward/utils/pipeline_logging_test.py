@@ -64,8 +64,7 @@ class PipelineLoggingTest(unittest.TestCase):
         ]
         pl.generate_paths(self.log_file_list)
 
-    @mock.patch('utils.pipeline_logging.generate_paths')
-    def test_generate_paths(self, mock_generate_paths):
+    def test_generate_paths(self):
         # checks that log_path is generated properly
         results = pl.generate_paths(self.log_file_list)
         self.assertEquals(results, self.log_path)
