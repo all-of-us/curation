@@ -9,7 +9,6 @@ Usage: create_ehr_snapshot.sh
   --rdr_dataset <RDR dataset ID>
   --validation_dataset <Validation dataset ID>
   --dataset_release_tag <release tag for the CDR>
-  --snapshot_date <date snapshot is generated format yyyy-mm-dd>
 "
 
 while true; do
@@ -34,10 +33,6 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
-  --snapshot_date)
-    snapshot_date=$2
-    shift 2
-    ;;
   --)
     shift
     break
@@ -46,8 +41,8 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${validation_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${snapshot_date}" ]]; then
-  echo "Specify the key file location and ehr_dataset ID, rdr_dataset ID, validation_dataset ID, Dataset release tag, and snapshot date . $USAGE"
+if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${validation_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] ; then
+  echo "Specify the key file location and ehr_dataset ID, rdr_dataset ID, validation_dataset ID and Dataset release tag . $USAGE"
   exit 1
 fi
 
@@ -59,7 +54,6 @@ echo "validation_dataset --> ${validation_dataset}"
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
-echo "snapshot_date --> ${snapshot_date}"
 
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
@@ -87,7 +81,7 @@ echo "-------------------------->Snapshotting EHR Dataset (step 4)"
 ehr_snapshot="${dataset_release_tag}_ehr"
 echo "ehr_snapshot --> ${ehr_snapshot}"
 
-bq mk --dataset --description "snapshot of latest EHR dataset ${ehr_dataset} ran on ${snapshot_date}" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${ehr_snapshot}
+bq mk --dataset --description "snapshot of latest EHR dataset ${ehr_dataset} ran on $(date +'%Y-%m-%d')" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${ehr_snapshot}
 
 #copy tables
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_dataset} --target_dataset ${ehr_snapshot} --sync false
