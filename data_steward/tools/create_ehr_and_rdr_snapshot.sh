@@ -41,7 +41,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${validation_dataset}" ]] || [[ -z "${dataset_release_tag}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${validation_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] ; then
   echo "Specify the key file location and ehr_dataset ID, rdr_dataset ID, validation_dataset ID and Dataset release tag . $USAGE"
   exit 1
 fi
@@ -81,7 +81,7 @@ echo "-------------------------->Snapshotting EHR Dataset (step 4)"
 ehr_snapshot="${dataset_release_tag}_ehr"
 echo "ehr_snapshot --> ${ehr_snapshot}"
 
-bq mk --dataset --description "snapshot of latest EHR dataset ${ehr_dataset}" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${ehr_snapshot}
+bq mk --dataset --description "snapshot of latest EHR dataset ${ehr_dataset} ran on $(date +'%Y-%m-%d')" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${ehr_snapshot}
 
 #copy tables
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_dataset} --target_dataset ${ehr_snapshot} --sync false
