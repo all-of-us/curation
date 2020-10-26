@@ -197,7 +197,7 @@ class EhrUnionTest(unittest.TestCase):
             expected_fields = {
                 'src_table_id',
                 'src_%s_id' % table_to_map,
-                '%s_id' % table_to_map, 'src_hpo_id'
+                '%s_id' % table_to_map, 'src_hpo_id', 'src_dataset_id'
             }
             mapping_table_info = bq_utils.get_table_info(
                 mapping_table, dataset_id=self.output_dataset_id)
@@ -349,7 +349,8 @@ class EhrUnionTest(unittest.TestCase):
         src_table_id,
         src_measurement_id,
         measurement_id,
-        SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id
+        SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id,
+        NULL as src_dataset_id
     FROM all_measurement
     '''.format(dataset_id=dataset_id, project_id=project_id)
         self.assertEqual(

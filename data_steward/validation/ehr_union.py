@@ -73,8 +73,9 @@ TODO
 import argparse
 import logging
 
-import app_identity
+import google.cloud.bigquery as bq
 
+import app_identity
 import bq_utils
 import cdm
 import common
@@ -175,7 +176,8 @@ def mapping_query(table_name, hpo_ids, dataset_id=None, project_id=None):
         src_table_id,
         src_{table_name}_id,
         {table_name}_id,
-        SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_{table_name}")-1) AS src_hpo_id
+        SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_{table_name}")-1) AS src_hpo_id,
+        NULL as src_dataset_id
     FROM all_{table_name}
     '''.format(union_all_query=union_all_query, table_name=table_name)
 
@@ -191,7 +193,7 @@ def mapping_table_for(domain_table):
 
 
 def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
-            project_id):
+            project_id, client):
     """
     Create and load a table that assigns unique ids to records in domain tables
     Note: Overwrites destination table if it already exists
@@ -201,12 +203,17 @@ def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
     :param input_dataset_id: identifies dataset with multiple CDMs, each from an HPO submission
     :param output_dataset_id: identifies dataset where mapping table should be output
     :param project_id: identifies GCP project that contain the datasets
+    :param client: Bigquery Client
     :return:
     """
     q = mapping_query(domain_table, hpo_ids, input_dataset_id, project_id)
     mapping_table = mapping_table_for(domain_table)
     logging.info('Query for {mapping_table} is {q}'.format(
         mapping_table=mapping_table, q=q))
+    fq_mapping_table = f'{project_id}.{output_dataset_id}.{mapping_table}'
+    schema = resources.fields_for(mapping_table)
+    table = bq.Table(fq_mapping_table, schema=schema)
+    table = client.create_table(table, exists_ok=True)
     query(q, mapping_table, output_dataset_id, 'WRITE_TRUNCATE')
 
 
@@ -730,6 +737,8 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     :param hpo_ids: (optional) identifies HPOs to process, by default process all
     :returns: list of tables generated successfully
     """
+    client = bq.Client()
+
     logging.info('EHR union started')
     if hpo_ids is None:
         hpo_ids = [item['hpo_id'] for item in bq_utils.get_hpo_info()]
@@ -749,7 +758,7 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
         logging.info(
             'Mapping {domain_table}...'.format(domain_table=domain_table))
         mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
-                project_id)
+                project_id, client)
 
     # Load all tables with union of submitted tables
     for table_name in resources.CDM_TABLES:
@@ -763,7 +772,7 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     domain_table = PERSON_TABLE
     logging.info('Mapping {domain_table}...'.format(domain_table=domain_table))
     mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
-            project_id)
+            project_id, client)
 
     logging.info('Starting process for Person to Observation')
     # Map and move EHR person records into four rows in observation, one each for race, ethnicity, dob and gender
