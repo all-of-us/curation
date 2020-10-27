@@ -46,6 +46,8 @@ TODO
 """
 import logging
 
+import google.cloud.bigquery as bq
+
 import bq_utils
 import common
 import resources
@@ -208,11 +210,12 @@ def mapping_table_for(domain_table):
     return '_mapping_' + domain_table
 
 
-def mapping(domain_table):
+def mapping(client, domain_table):
     """
     Create and load a mapping of all records from RDR combined with EHR records of consented participants
 
-    :param domain_table:
+    :param client: Bigquery client
+    :param domain_table: cdm table
     :return:
     """
     if domain_table in combine_consts.DOMAIN_TABLES:
@@ -220,6 +223,10 @@ def mapping(domain_table):
         mapping_table = mapping_table_for(domain_table)
         logging.info('Query for {mapping_table} is {q}'.format(
             mapping_table=mapping_table, q=q))
+        fq_mapping_table = f'{client.project}.{bq_utils.get_combined_dataset_id()}.{mapping_table}'
+        schema = resources.fields_for(mapping_table)
+        table = bq.Table(fq_mapping_table, schema=schema)
+        table = client.create_table(table, exists_ok=True)
         query(q, mapping_table)
     else:
         logging.info(
@@ -362,6 +369,7 @@ def load_mapped_person():
 
 
 def main():
+    client = bq.Client()
     logging.info('EHR + RDR combine started')
     logging.info('Verifying all CDM tables in EHR and RDR datasets...')
     assert_ehr_and_rdr_tables()
@@ -381,7 +389,7 @@ def main():
     for domain_table in combine_consts.DOMAIN_TABLES:
         logging.info(
             'Mapping {domain_table}...'.format(domain_table=domain_table))
-        mapping(domain_table)
+        mapping(client, domain_table)
     for domain_table in combine_consts.DOMAIN_TABLES:
         logging.info(
             'Loading {domain_table}...'.format(domain_table=domain_table))
