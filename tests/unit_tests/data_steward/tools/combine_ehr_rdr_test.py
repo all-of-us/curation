@@ -1,33 +1,35 @@
 # Python imports
 import unittest
-from mock import mock, patch
+from mock import patch
 
 # Project imports
 import common
 import tools.combine_ehr_rdr as combine_ehr_rdr
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID
 
-EXPECTED_MAPPING_QUERY = (
-    'SELECT DISTINCT'
-    ' \'{rdr_dataset_id}\'  AS src_dataset_id,'
-    '  {domain_table}_id  AS src_{domain_table}_id,'
-    '  \'rdr\' as src_hpo_id,'
-    '  {domain_table}_id + {mapping_constant}  AS {domain_table}_id'
-    '  FROM `{rdr_dataset_id}.{domain_table}`'
-    ''
-    '  UNION ALL'
-    ''
-    '  SELECT DISTINCT'
-    '  \'{ehr_dataset_id}\'  AS src_dataset_id,'
-    '  t.{domain_table}_id AS src_{domain_table}_id,'
-    '  v.src_hpo_id AS src_hpo_id,'
-    '  t.{domain_table}_id  AS {domain_table}_id'
-    '  FROM `{ehr_dataset_id}.{domain_table}` AS t'
-    '  JOIN `{ehr_dataset_id}._mapping_{domain_table}` AS v '
-    '  ON t.{domain_table}_id = v.{domain_table}_id'
-    '  WHERE EXISTS'
-    '  (SELECT 1 FROM `{combined_dataset_id}.{ehr_consent_table_id}` AS c'
-    '  WHERE t.person_id = c.person_id)')
+EXPECTED_MAPPING_QUERY = """
+SELECT DISTINCT
+  '{rdr_dataset_id}'  AS src_dataset_id,
+  {domain_table}_id  AS src_{domain_table}_id,
+  'rdr' as src_hpo_id,
+  {domain_table}_id + {mapping_constant}  AS {domain_table}_id,
+  '{domain_table}' as src_table_id
+  FROM `{rdr_dataset_id}.{domain_table}`
+
+  UNION ALL
+
+  SELECT DISTINCT
+  '{ehr_dataset_id}'  AS src_dataset_id,
+  t.{domain_table}_id AS src_{domain_table}_id,
+  v.src_hpo_id AS src_hpo_id,
+  t.{domain_table}_id  AS {domain_table}_id,
+  '{domain_table}' as src_table_id
+  FROM `{ehr_dataset_id}.{domain_table}` AS t
+  JOIN `{ehr_dataset_id}._mapping_{domain_table}` AS v 
+  ON t.{domain_table}_id = v.{domain_table}_id
+  WHERE EXISTS
+  (SELECT 1 FROM `{combined_dataset_id}.{ehr_consent_table_id}` AS c
+  WHERE t.person_id = c.person_id)"""
 
 
 class CombineEhrRdrTest(unittest.TestCase):
