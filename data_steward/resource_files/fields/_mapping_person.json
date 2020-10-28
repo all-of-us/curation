@@ -1,7 +1,7 @@
 [
     {
         "type": "integer",
-        "name": "attribute_definition_id",
+        "name": "person_id",
         "mode": "nullable",
         "description": ""
     },
@@ -13,7 +13,7 @@
     },
     {
         "type": "integer",
-        "name": "src_attribute_definition_id",
+        "name": "src_person_id",
         "mode": "nullable",
         "description": ""
     },

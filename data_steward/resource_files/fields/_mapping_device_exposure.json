@@ -4,22 +4,28 @@
         "name": "device_exposure_id", 
         "mode": "nullable",
         "description": ""
-    }, 
+    },
     {
         "type": "string",
         "name": "src_dataset_id",
         "mode": "nullable",
         "description": ""
-    }, 
+    },
     {
         "type": "integer", 
         "name": "src_device_exposure_id",
         "mode": "nullable",
         "description": ""
-    }, 
+    },
     {
         "type": "string",
         "name": "src_hpo_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "string",
+        "name": "src_table_id",
         "mode": "nullable",
         "description": ""
     }
