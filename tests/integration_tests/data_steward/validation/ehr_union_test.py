@@ -350,7 +350,7 @@ class EhrUnionTest(unittest.TestCase):
         src_measurement_id,
         measurement_id,
         SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id,
-        NULL as src_dataset_id
+        '{dataset_id}' as src_dataset_id
     FROM all_measurement
     '''.format(dataset_id=dataset_id, project_id=project_id)
         self.assertEqual(
