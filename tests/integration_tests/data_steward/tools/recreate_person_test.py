@@ -3,17 +3,18 @@ import os
 from unittest import TestCase
 
 # Third-party imports
-from google.cloud.bigquery import Table
+import google.cloud.bigquery as gbq
 from pandas import testing
 
 # Project imports
 import app_identity
+import bq_utils
 from tools import recreate_person
 from utils import bq
 from common import JINJA_ENV
 
-POPULATE_PERSON = """
-INSERT INTO {{person.project}}.{{person.dataset_id}}.person 
+POPULATE_PERSON = JINJA_ENV.from_string("""
+INSERT INTO `{{person.project}}.{{person.dataset_id}}.person` 
 (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
 VALUES 
     (1, 5, 1980, 4, 9),
@@ -21,10 +22,10 @@ VALUES
     (3, 6, 1970, 6, 7),
     (4, 6, 2000, 7, 8),
     (5, 6, 1995, 8, 9)
-"""
+""")
 
-POPULATE_PERSON_EXT = """
-INSERT INTO {{person_ext.project}}.{{person_ext.dataset_id}}.person_ext
+POPULATE_PERSON_EXT = JINJA_ENV.from_string("""
+INSERT INTO `{{person_ext.project}}.{{person_ext.dataset_id}}.person_ext`
 (person_id, state_of_residence_concept_id, state_of_residence_source_value)
 VALUES 
     (1, 1585266, 'PIIState_CA'),
@@ -32,10 +33,7 @@ VALUES
     (3, 1585286, 'PIIState_MA'),
     (4, 1585297, 'PIIState_NY'),
     (5, 1585266, 'PIIState_CA')
-"""
-
-POPULATE_PERSON_TMPL = JINJA_ENV.from_string(POPULATE_PERSON)
-POPULATE_PERSON_EXT_TMPL = JINJA_ENV.from_string(POPULATE_PERSON_EXT)
+""")
 
 
 class RecreatePersonTest(TestCase):
@@ -52,22 +50,32 @@ class RecreatePersonTest(TestCase):
 
         self.fq_person = f'{self.project_id}.{self.dataset_id}.person'
         self.fq_person_ext = f'{self.project_id}.{self.dataset_id}.person_ext'
-        self.table_ids = [self.fq_person, self.fq_person_ext]
+        self.table_ids = [self.fq_person_ext, self.fq_person]
 
-        self.person = Table.from_string(self.fq_person)
-        self.person_ext = Table.from_string(self.fq_person_ext)
+        self.person = gbq.Table.from_string(self.fq_person)
+        self.person_ext = gbq.Table.from_string(self.fq_person_ext)
 
         self.client = bq.get_client(self.project_id)
-        for table in self.table_ids:
-            self.client.delete_table(table, not_found_ok=True)
-        bq.create_tables(self.client, self.project_id, self.table_ids)
+        self.tearDown()
+        for fq_table in self.table_ids:
+            table_id = fq_table.split('.')[2]
+            if table_id == 'person':
+                bq_utils.create_standard_table(table_id,
+                                               table_id,
+                                               drop_existing=True,
+                                               dataset_id=self.dataset_id)
+            else:
+                bq.create_tables(self.client,
+                                 self.project_id, [fq_table],
+                                 exists_ok=True)
+
         self.populate_tables()
 
     def populate_tables(self):
-        query_job = self.client.query(query=POPULATE_PERSON_TMPL.render(
+        query_job = self.client.query(query=POPULATE_PERSON.render(
             person=self.person))
         query_job.result()
-        query_job = self.client.query(query=POPULATE_PERSON_EXT_TMPL.render(
+        query_job = self.client.query(query=POPULATE_PERSON_EXT.render(
             person_ext=self.person_ext))
         query_job.result()
 
