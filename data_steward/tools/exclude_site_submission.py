@@ -95,7 +95,6 @@ if __name__ == "__main__":
                         required=True,
                         help='Identifies the dataset to exclude site data from')
     parser.add_argument(
-        '-i',
         '--hpo_ids',
         required=True,
         nargs='+',
