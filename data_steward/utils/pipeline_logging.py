@@ -9,18 +9,55 @@ duplicating code.
 
 # Python imports
 import logging
+import logging.config
 import os
 from datetime import datetime
-from pathlib import Path
 
 # Project imports
 import resources
 
 DEFAULT_LOG_DIR = os.path.join(resources.base_path, 'logs')
 """Default location for log files"""
+DEFAULT_LOG_LEVEL = logging.INFO
 
-_LOG_FMT = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
-_LOG_DATEFMT = '%Y-%m-%d %H:%M:%S'
+LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
+LOG_DATEFMT = '%Y-%m-%d %H:%M:%S'
+FILENAME_FMT = '%Y%m%d'
+
+FILE_HANDLER = 'curation_file_handler'
+"""Identifies the file log handler"""
+CONSOLE_HANDLER = 'curation_console_handler'
+"""Identifies the console handler"""
+
+_DEFAULT_CONFIG = {
+    'version': 1,
+    'formatters': {
+        'default': {
+            'class': 'logging.Formatter',
+            'format': LOG_FORMAT,
+            'datefmt': LOG_DATEFMT
+        }
+    },
+    'handlers': {
+        CONSOLE_HANDLER: {
+            'class': 'logging.StreamHandler',
+            'formatter': 'default',
+        },
+        FILE_HANDLER: {
+            'class': 'logging.FileHandler',
+            'mode': 'a',
+            'formatter': 'default'
+        }
+    },
+    'root': {
+        'handlers': [CONSOLE_HANDLER, FILE_HANDLER]
+    },
+    # otherwise defaults to True which would disable
+    # any loggers that exist at configuration time
+    'disable_existing_loggers': False
+}
+"""A dict describing the configuration. Only to be used by `get_config`
+which provides missing required attributes."""
 
 
 def generate_paths(log_filepath_list):
@@ -123,56 +160,63 @@ def setup_logger(log_filepath_list, console_logging=True):
     return log_list
 
 
-def get_default_log_path(logger_name):
-    """
-    Get the log file path associated with a logger
-    with the specified name
+def get_date_str():
+    return datetime.today().strftime(FILENAME_FMT)
 
-    :param logger_name: name of the logger
+
+def get_log_file_path():
+    """
+    Get the abs path of the log file to use. 
+    
+    The location is DEFAULT_LOG_DIR and the file name is the current
+    date formatted using FILENAME_FMT.
+
     :return: absolute path to the log file
     """
-    return os.path.join(DEFAULT_LOG_DIR, f'{logger_name}.log')
+    date_str = get_date_str()
+    return os.path.join(DEFAULT_LOG_DIR, f'{date_str}.log')
 
 
-def get_logger(logger_name):
+def get_config(filename, level):
     """
-    Get a logger with the specified name, creating it if necessary.
-    The logger writes >= INFO logs to stderr and >=DEBUG logs to 
-    a file at a standard location `DEFAULT_LOG_DIR`.
+    Get a dictionary which describes the logging configuration
+    
+    :param filename: Create the FileHandler using the specified filename.
+    :param level: Set the root logger level to the specified level.
+    :return: the default configuration dict
+    """
+    # copy _DEFAULT_CONFIG to avoid modifying it
+    default_config = dict(_DEFAULT_CONFIG)
+    default_config['root']['level'] = level
+    file_log_handler_dict = default_config['handlers'][FILE_HANDLER]
+    file_log_handler_dict['filename'] = filename
+    return default_config
 
-    :param logger_name: name of the logger (usually set to __name__)
-    :return: the logger
+
+def configure(level=logging.INFO):
+    """
+    Configure the logging system for use by pipeline.
+    
+    Creates a handler which writes to sys.stderr and a handler which appends to a file 
+    named according to the current date. Both handlers' formattters are set 
+    using the LOG_FORMAT format string and are added to the root logger.
+    
+    :param level: Set the root logger level to the specified level, defaults to INFO.
+    
     :example:
-    >>> LOGGER = get_logger(__name__)
-    >>> # Additional handlers can be added if needed
-    >>> LOGGER.addHandler(logging.FileHandler('my_custom.log'))
-    >>> def func(p1, p2):
-    >>>     LOGGER.debug(f"func called with {p1}, {p2}")
+    >>> from utils import pipeline_logging
+    >>> 
+    >>> LOGGER = logging.getLogger(__name__)
+    >>>
+    >>> def func(p1):
+    >>>     LOGGER.debug(f"func called with p1={p1}")
+    >>>     LOGGER.info("func called")
+    >>>
+    >>> if __name__ == '__main__':
+    >>>     pipeline_logging.configure()
+    >>>     func(1, 2)
     """
-    logger = logging.getLogger(logger_name)
-    # explicitly set logger level to DEBUG otherwise
-    # the level would be that of the closest ancestor
-    logger.setLevel(logging.DEBUG)
-    # prevent inheriting handlers from ancestors
-    logger.propagate = False
-    # prevent adding handlers more than once
-    if not logger.hasHandlers():
-        formatter = logging.Formatter(fmt=_LOG_FMT, datefmt=_LOG_DATEFMT)
-
-        # handler that emits >=INFO records to stderr
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.INFO)
-        stream_handler.setFormatter(formatter)
-        logger.addHandler(stream_handler)
-
-        # handler that emits >= DEBUG records by
-        # appending to new or existing file
-        handler_filename = get_default_log_path(logger_name)
-        # ensure the log dir exists
-        Path(DEFAULT_LOG_DIR).mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(handler_filename, mode='a')
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-    return logger
+    filename = get_log_file_path()
+    default_config = get_config(filename, level)
+    os.makedirs(DEFAULT_LOG_DIR, exist_ok=True)
+    logging.config.dictConfig(default_config)
