@@ -11,6 +11,7 @@ duplicating code.
 import logging
 import logging.config
 import os
+import sys
 from datetime import datetime
 
 # Project imports
@@ -193,6 +194,20 @@ def get_config(filename, level):
     return default_config
 
 
+def _except_hook(exc_type, exc_value, exc_traceback):
+    """
+    Log exception info to root logger. Used as a hook for uncaught exceptions prior 
+    to system exit.
+    
+    :param exc_type: type of the exception
+    :param exc_value: the exception
+    :param exc_traceback: the traceback associated with the exception
+    """
+    root_logger = logging.getLogger()
+    root_logger.critical('Uncaught exception',
+                         exc_info=(exc_type, exc_value, exc_traceback))
+
+
 def configure(level=logging.INFO):
     """
     Configure the logging system for use by pipeline.
@@ -220,3 +235,4 @@ def configure(level=logging.INFO):
     default_config = get_config(filename, level)
     os.makedirs(DEFAULT_LOG_DIR, exist_ok=True)
     logging.config.dictConfig(default_config)
+    sys.excepthook = _except_hook
