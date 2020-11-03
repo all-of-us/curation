@@ -7,7 +7,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from resources import fields_for, MAPPING_TABLES
 from common import JINJA_ENV
 
-LOGGER = logging.getLogger("__name__")
+LOGGER = logging.getLogger(__name__)
 
 EXT_FIELD_TEMPLATE = [{
     "type": "integer",
@@ -131,8 +131,7 @@ def convert_to_bq_string(mapping_list):
     """
     bq_insert_list = []
     for hpo_rdr_item in mapping_list:
-        bq_insert_list.append("(\"{hpo_rdr_id}\", \"{src_id}\")".format(
-            hpo_rdr_id=hpo_rdr_item[0], src_id=hpo_rdr_item[1]))
+        bq_insert_list.append(f"(\"{hpo_rdr_item[0]}\", \"{hpo_rdr_item[1]}\")")
     bq_insert_string = ', '.join(bq_insert_list)
     return bq_insert_string
 
