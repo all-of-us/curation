@@ -159,7 +159,7 @@ class GenerateExtTablesTest(unittest.TestCase):
                     common.PERSON, common.DEATH, common.FACT_RELATIONSHIP
             ]:
                 query = dict()
-                query[cdr_consts.QUERY] = gen_ext.REPLACE_SRC_QUERY.format(
+                query[cdr_consts.QUERY] = gen_ext.REPLACE_SRC_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     mapping_dataset_id=self.dataset_id,

@@ -159,7 +159,7 @@ def create_and_populate_source_mapping_table(project_id, dataset_id):
                                    SITE_MAPPING_FIELDS,
                                    drop_existing=True,
                                    dataset_id=dataset_id)
-    site_mappings_insert_query = INSERT_SITE_MAPPINGS_QUERY.format(
+    site_mappings_insert_query = INSERT_SITE_MAPPINGS_QUERY.render(
         mapping_dataset_id=dataset_id,
         project_id=project_id,
         table_id=SITE_TABLE_ID,
