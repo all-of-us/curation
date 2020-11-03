@@ -131,7 +131,7 @@ def convert_to_bq_string(mapping_list):
     """
     bq_insert_list = []
     for hpo_rdr_item in mapping_list:
-        bq_insert_list.append(f"(\"{hpo_rdr_item[0]}\", \"{hpo_rdr_item[1]}\")")
+        bq_insert_list.append(f'("{hpo_rdr_item[0]}", "{hpo_rdr_item[1]}")')
     bq_insert_string = ', '.join(bq_insert_list)
     return bq_insert_string
 
