@@ -122,6 +122,14 @@ class PipelineLoggingTest(unittest.TestCase):
         actual_hdlrs = set(hdlr.name for hdlr in logging.root.handlers)
         self.assertEqual(expected_hdlrs, actual_hdlrs)
 
+        # remove console log handler from configuration
+        pl.configure(add_console_handler=False)
+        actual_hdlrs = set(hdlr.name for hdlr in logging.root.handlers)
+        expected_hdlrs = set(
+            hdlr for hdlr in pl._DEFAULT_CONFIG['handlers'].keys()
+            if hdlr != pl._CONSOLE_HANDLER)
+        self.assertEqual(expected_hdlrs, actual_hdlrs)
+
     @mock.patch('logging.StreamHandler.emit')
     @mock.patch('logging.FileHandler.emit')
     @mock.patch('logging.FileHandler._open')
