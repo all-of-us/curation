@@ -21,7 +21,10 @@ class AppErrorHandlersTest(TestCase):
     def setUp(self):
         self.message = 'a fake message'
         self.fake_bucket = 'foo'
-        self.api_resp = [httplib2.Response(dict(status=500)), httplib2.Response(dict(status=403))]
+        self.api_resp = [
+            httplib2.Response(dict(status=500)),
+            httplib2.Response(dict(status=403))
+        ]
 
         self.errors_list = [
             HttpError(self.api_resp[0], b'500'),
