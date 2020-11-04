@@ -60,7 +60,7 @@ class GenerateExtTablesTest(unittest.TestCase):
                 "The provenance of the data associated with the foo_id."
         }]
         table = 'foo'
-        ext_table = 'foo' + gen_ext.EXT_TABLE_SUFFIX
+        ext_table = f'foo{gen_ext.EXT_TABLE_SUFFIX}'
 
         # test
         with self.assertLogs(level='INFO') as cm:
@@ -98,7 +98,7 @@ class GenerateExtTablesTest(unittest.TestCase):
         # pre-conditions
         observation_table_id = common.OBSERVATION
         expected = observation_table_id
-        mapping_observation = gen_ext.MAPPING_PREFIX + observation_table_id
+        mapping_observation = f'{gen_ext.MAPPING_PREFIX}{observation_table_id}'
 
         # test
         actual = gen_ext.get_cdm_table_from_mapping(mapping_observation)
@@ -137,8 +137,7 @@ class GenerateExtTablesTest(unittest.TestCase):
         hpo_bq_list = []
         for hpo in bq_utils.get_hpo_info():
             hpo_bq_list.append(self.bq_string.format(hpo_name=hpo["hpo_id"]))
-        hpo_bq_list.append('("{rdr}", "{ppi_pm}")'.format(
-            rdr=gen_ext.RDR, ppi_pm=gen_ext.PPI_PM))
+        hpo_bq_list.append(f'("{gen_ext.RDR}", "{gen_ext.PPI_PM}")')
         expected = ', '.join(hpo_bq_list)
         actual = gen_ext.convert_to_bq_string(hpo_rdr_mapping_list)
         self.assertEqual(len(actual), len(expected))
@@ -159,7 +158,7 @@ class GenerateExtTablesTest(unittest.TestCase):
                     common.PERSON, common.DEATH, common.FACT_RELATIONSHIP
             ]:
                 query = dict()
-                query[cdr_consts.QUERY] = gen_ext.REPLACE_SRC_QUERY.format(
+                query[cdr_consts.QUERY] = gen_ext.REPLACE_SRC_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     mapping_dataset_id=self.dataset_id,

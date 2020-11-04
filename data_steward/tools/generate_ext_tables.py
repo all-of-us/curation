@@ -5,8 +5,7 @@ import bq_utils
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from resources import fields_for, MAPPING_TABLES
-
-LOGGER = logging.getLogger("__name__")
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,17 +40,17 @@ EHR_SITE_PREFIX = 'EHR site '
 RDR = 'rdr'
 PPI_PM = 'PPI/PM'
 
-INSERT_SITE_MAPPINGS_QUERY = """
-INSERT INTO `{project_id}.{mapping_dataset_id}.{table_id}` (hpo_id, src_id)
-VALUES{values}
-"""
+INSERT_SITE_MAPPINGS_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{mapping_dataset_id}}.{{table_id}}` (hpo_id, src_id)
+VALUES {{values}}
+""")
 
-REPLACE_SRC_QUERY = """
-SELECT m.{cdm_table_id}_id, s.src_id
-FROM `{project_id}.{mapping_dataset_id}.{mapping_table_id}` m
-JOIN `{project_id}.{mapping_dataset_id}.{site_mappings_table_id}` s
+REPLACE_SRC_QUERY = JINJA_ENV.from_string("""
+SELECT m.{{cdm_table_id}}_id, s.src_id
+FROM `{{project_id}}.{{mapping_dataset_id}}.{{mapping_table_id}}` m
+JOIN `{{project_id}}.{{mapping_dataset_id}}.{{site_mappings_table_id}}` s
 ON m.src_hpo_id = s.hpo_id
-"""
+""")
 
 
 def get_table_fields(table, ext_table_id):
@@ -76,7 +75,7 @@ def get_table_fields(table, ext_table_id):
                 table_field[key] = field[key].format(table=table)
             table_fields.append(table_field)
         LOGGER.info(
-            "using dynamic extension table schema for table: {ext_table_id}")
+            f"using dynamic extension table schema for table: {ext_table_id}")
 
     return table_fields
 
@@ -132,8 +131,7 @@ def convert_to_bq_string(mapping_list):
     """
     bq_insert_list = []
     for hpo_rdr_item in mapping_list:
-        bq_insert_list.append("(\"{hpo_rdr_id}\", \"{src_id}\")".format(
-            hpo_rdr_id=hpo_rdr_item[0], src_id=hpo_rdr_item[1]))
+        bq_insert_list.append(f'("{hpo_rdr_item[0]}", "{hpo_rdr_item[1]}")')
     bq_insert_string = ', '.join(bq_insert_list)
     return bq_insert_string
 
@@ -160,7 +158,7 @@ def create_and_populate_source_mapping_table(project_id, dataset_id):
                                    SITE_MAPPING_FIELDS,
                                    drop_existing=True,
                                    dataset_id=dataset_id)
-    site_mappings_insert_query = INSERT_SITE_MAPPINGS_QUERY.format(
+    site_mappings_insert_query = INSERT_SITE_MAPPINGS_QUERY.render(
         mapping_dataset_id=dataset_id,
         project_id=project_id,
         table_id=SITE_TABLE_ID,
@@ -197,7 +195,7 @@ def get_generate_ext_table_queries(project_id, dataset_id, sandbox_dataset_id,
                               drop_existing=True,
                               dataset_id=dataset_id)
         query = dict()
-        query[cdr_consts.QUERY] = REPLACE_SRC_QUERY.format(
+        query[cdr_consts.QUERY] = REPLACE_SRC_QUERY.render(
             project_id=project_id,
             mapping_dataset_id=mapping_dataset_id,
             mapping_table_id=mapping_table_id,
