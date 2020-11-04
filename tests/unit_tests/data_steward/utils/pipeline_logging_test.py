@@ -106,28 +106,26 @@ class PipelineLoggingTest(unittest.TestCase):
         """
         # names are used to uniquely identify handlers both in standard logging module
         # and in this test case
-        expected_hdlrs = pl._DEFAULT_CONFIG['handlers'].keys()
+        expected_hdlrs = [pl._FILE_HANDLER, pl._CONSOLE_HANDLER]
 
         pl.configure()
         # root level is set to default (i.e. INFO)
         self.assertEqual(logging.root.level, pl.DEFAULT_LOG_LEVEL)
 
         # handlers are added
-        actual_hdlrs = set(hdlr.name for hdlr in logging.root.handlers)
+        actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
 
         # no duplicate handlers after additional calls to configure
         pl.configure()
         self.assertEqual(len(expected_hdlrs), len(logging.root.handlers))
-        actual_hdlrs = set(hdlr.name for hdlr in logging.root.handlers)
+        actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
 
         # remove console log handler from configuration
         pl.configure(add_console_handler=False)
-        actual_hdlrs = set(hdlr.name for hdlr in logging.root.handlers)
-        expected_hdlrs = set(
-            hdlr for hdlr in pl._DEFAULT_CONFIG['handlers'].keys()
-            if hdlr != pl._CONSOLE_HANDLER)
+        actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
+        expected_hdlrs = [pl._FILE_HANDLER]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
 
     @mock.patch('logging.StreamHandler.emit')

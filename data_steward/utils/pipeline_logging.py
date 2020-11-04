@@ -8,7 +8,6 @@ duplicating code.
 """
 
 # Python imports
-import copy
 import logging
 import logging.config
 import os
@@ -30,34 +29,6 @@ _FILE_HANDLER = 'curation_file_handler'
 """Identifies the file log handler"""
 _CONSOLE_HANDLER = 'curation_console_handler'
 """Identifies the console handler"""
-
-_DEFAULT_CONFIG = {
-    'version': 1,
-    'formatters': {
-        'default': {
-            'class': 'logging.Formatter',
-            'format': LOG_FORMAT,
-            'datefmt': LOG_DATEFMT
-        }
-    },
-    'handlers': {
-        _CONSOLE_HANDLER: {
-            'class': 'logging.StreamHandler',
-            'formatter': 'default',
-        },
-        _FILE_HANDLER: {
-            'class': 'logging.FileHandler',
-            'mode': 'a',
-            'formatter': 'default'
-        }
-    },
-    'root': {},
-    # otherwise defaults to True which would disable
-    # any loggers that exist at configuration time
-    'disable_existing_loggers': False
-}
-"""A dict describing the configuration. Only to be used by `get_config`
-which provides missing required attributes."""
 
 
 def generate_paths(log_filepath_list):
@@ -181,26 +152,51 @@ def _get_log_file_path():
     return os.path.join(DEFAULT_LOG_DIR, f'{date_str}.log')
 
 
-def _get_config(filename, level, add_console_handler):
+def _get_config(level, add_console_handler):
     """
     Get a dictionary which describes the logging configuration
     
-    :param filename: Create the FileHandler using the specified filename.
     :param level: Set the root logger level to the specified level 
                   (i.e. logging.{DEBUG,INFO,WARNING,ERROR}).
-    :param add_console_handler: If set to False the console log handler is removed from
-                           the configuration.
-    :return: the default configuration dict
+    :param add_console_handler: If set to True the console log handler is added
+                                to the root logger.
+    :return: the configuration dict
     """
-    # deep copy _DEFAULT_CONFIG to avoid modifying it
-    default_config = copy.deepcopy(_DEFAULT_CONFIG)
-    file_log_handler_dict = default_config['handlers'][_FILE_HANDLER]
-    file_log_handler_dict['filename'] = filename
-    if not add_console_handler:
-        del default_config['handlers'][_CONSOLE_HANDLER]
-    default_config['root']['level'] = level
-    default_config['root']['handlers'] = default_config['handlers'].keys()
-    return default_config
+    handlers = [_FILE_HANDLER]
+    if add_console_handler:
+        handlers.append(_CONSOLE_HANDLER)
+    config = {
+        'version': 1,
+        'formatters': {
+            'default': {
+                'class': 'logging.Formatter',
+                'format': LOG_FORMAT,
+                'datefmt': LOG_DATEFMT
+            }
+        },
+        'handlers': {
+            _FILE_HANDLER: {
+                'class': 'logging.FileHandler',
+                'mode': 'a',
+                'formatter': 'default',
+                'filename': _get_log_file_path()
+            },
+            # console handler is only used if referenced
+            # by root logger config below
+            _CONSOLE_HANDLER: {
+                'class': 'logging.StreamHandler',
+                'formatter': 'default',
+            }
+        },
+        'root': {
+            'level': level,
+            'handlers': handlers
+        },
+        # otherwise defaults to True which would disable
+        # any loggers that exist at configuration time
+        'disable_existing_loggers': False
+    }
+    return config
 
 
 def _except_hook(exc_type, exc_value, exc_traceback):
@@ -222,13 +218,13 @@ def configure(level=logging.INFO, add_console_handler=True):
     Configure the logging system for use by pipeline.
     
     By default creates a handler which appends to a file named according to the 
-    current date and a handler which writes to sys.stderr. Both handlers' formattters 
-    are set using the LOG_FORMAT format string and are added to the root logger.
+    current date and a handler which writes to the console (sys.stderr). Both handlers' 
+    formattters are set using the LOG_FORMAT format string and are added to the root logger.
     
     :param level: Set the root logger level to the specified level (i.e. 
                   logging.{DEBUG,INFO,WARNING,ERROR}), defaults to INFO.
-    :param add_console_handler: If set to False the console log handler is removed from
-                           the configuration. Defaults to True.
+    :param add_console_handler: If set to True (default) the console log handler is 
+                                added to the root logger otherwise it is not.
     :example:
     >>> from utils import pipeline_logging
     >>> 
@@ -242,8 +238,7 @@ def configure(level=logging.INFO, add_console_handler=True):
     >>>     pipeline_logging.configure()
     >>>     func(1, 2)
     """
-    filename = _get_log_file_path()
-    default_config = _get_config(filename, level, add_console_handler)
+    config = _get_config(level, add_console_handler)
     os.makedirs(DEFAULT_LOG_DIR, exist_ok=True)
-    logging.config.dictConfig(default_config)
+    logging.config.dictConfig(config)
     sys.excepthook = _except_hook
