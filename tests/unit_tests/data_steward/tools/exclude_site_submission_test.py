@@ -46,26 +46,6 @@ class ExcludeSiteSubmissionTest(unittest.TestCase):
         table_id = bq_utils.get_table_id(hpo_id, cdm_table)
         return self._table_id_to_list_item(table_id)
 
-    def test_filter_hpo_tables(self):
-        # clinical tables for specified hpo are returned
-        results = _filter_hpo_tables(self.hpo_cdm_tables, 'fake_hpo1')
-        expected_ids = [
-            bq_utils.get_table_id('fake_hpo1', cdm_table)
-            for cdm_table in CDM_TABLES
-        ]
-        actual_ids = [table.table_id for table in results]
-        self.assertListEqual(expected_ids, actual_ids)
-
-        # non-clinical tables are NOT returned
-        results = _filter_hpo_tables(self.hpo_cdm_and_achilles_tables,
-                                     'fake_hpo1')
-        actual_ids = [table.table_id for table in results]
-        self.assertListEqual(expected_ids, actual_ids)
-
-        # empty list if no tables associated with hpo_id found
-        results = _filter_hpo_tables(self.hpo_cdm_tables, 'fake_hpo3')
-        self.assertListEqual([], results)
-
     def test_exclude_site_data(self):
         # tables we intend to empty
         tables_to_empty = ['hpo1_person', 'hpo1_condition_occurrence']
