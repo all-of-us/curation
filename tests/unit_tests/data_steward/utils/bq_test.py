@@ -185,7 +185,8 @@ class BqTest(unittest.TestCase):
         self.assertEqual(now, result)
 
         scalar_struct = dict(num_1=100, num_2=200)
-        scalar_struct_iter = mock_query_result([scalar_struct])
+        scalar_struct_iter = mock_query_result([scalar_struct],
+                                               ['num_2', 'num_1'])
         result = to_scalar(scalar_struct_iter)
         self.assertDictEqual(scalar_struct, result)
 

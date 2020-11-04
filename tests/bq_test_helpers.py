@@ -4,7 +4,7 @@ Shared helper functions for BigQuery-related tests
 import datetime
 import warnings
 from collections import OrderedDict
-from typing import Any, List, Union, Dict
+from typing import Any, List, Union, Dict, Iterable
 
 import mock
 from google.cloud import bigquery
@@ -54,12 +54,32 @@ def fields_from_dict(row):
     return [_field_from_key_value(key, value) for key, value in row.items()]
 
 
-def mock_query_result(rows: List[dict_types]):
+def _to_ordered_dict(d: dict, key_order: Iterable[Any] = None):
+    """
+    Convert a dict to OrderedDict with a specified order
+    :param d: instance to convert
+    :param key_order: specifies how items are ordered in the result
+    :return: the ordered dict
+    """
+    if len(d) == 1:
+        return OrderedDict(d)
+    else:
+        if key_order is None:
+            raise ValueError(
+                'Parameter key_order is required in order to convert'
+                ' a dict with multiple items to OrderedDict')
+    return OrderedDict((key, d[key]) for key in key_order)
+
+
+def mock_query_result(rows: List[dict_types], key_order: Iterable[Any] = None):
     """
     Create a mock RowIterator as returned by :meth:`bigquery.QueryJob.result`
     from rows represented as a list of dictionaries
 
-    :param rows: a list of dictionaries representing result rows
+    :param rows: A list of dictionaries representing result rows
+    :param key_order: If `rows` refers to a list of dict rather than OrderedDict, 
+           specifies how fields are ordered in the result schema. This parameter is 
+           ignored if `rows` refers to a list of OrderedDict.
     :return: a mock RowIterator
     """
     mock_row_iter = mock.MagicMock(spec=bigquery.table.RowIterator)
@@ -68,9 +88,7 @@ def mock_query_result(rows: List[dict_types]):
     if isinstance(row0, OrderedDict):
         _rows = rows
     else:
-        warnings.warn('Provide rows as `OrderedDict` if type conversion '
-                      'results in unexpected behavior.')
-        _rows = [OrderedDict(row) for row in rows]
+        _rows = [_to_ordered_dict(row, key_order) for row in rows]
         row0 = _rows[0]
 
     mock_row_iter.schema = list(fields_from_dict(row0))
