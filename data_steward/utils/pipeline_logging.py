@@ -25,9 +25,9 @@ LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 LOG_DATEFMT = '%Y-%m-%d %H:%M:%S'
 FILENAME_FMT = '%Y%m%d'
 
-FILE_HANDLER = 'curation_file_handler'
+_FILE_HANDLER = 'curation_file_handler'
 """Identifies the file log handler"""
-CONSOLE_HANDLER = 'curation_console_handler'
+_CONSOLE_HANDLER = 'curation_console_handler'
 """Identifies the console handler"""
 
 _DEFAULT_CONFIG = {
@@ -40,18 +40,18 @@ _DEFAULT_CONFIG = {
         }
     },
     'handlers': {
-        CONSOLE_HANDLER: {
+        _CONSOLE_HANDLER: {
             'class': 'logging.StreamHandler',
             'formatter': 'default',
         },
-        FILE_HANDLER: {
+        _FILE_HANDLER: {
             'class': 'logging.FileHandler',
             'mode': 'a',
             'formatter': 'default'
         }
     },
     'root': {
-        'handlers': [CONSOLE_HANDLER, FILE_HANDLER]
+        'handlers': [_CONSOLE_HANDLER, _FILE_HANDLER]
     },
     # otherwise defaults to True which would disable
     # any loggers that exist at configuration time
@@ -161,11 +161,15 @@ def setup_logger(log_filepath_list, console_logging=True):
     return log_list
 
 
-def get_date_str():
+def _get_date_str():
+    """
+    Get current date formatted using FILENAME_FMT
+    :return: 
+    """
     return datetime.today().strftime(FILENAME_FMT)
 
 
-def get_log_file_path():
+def _get_log_file_path():
     """
     Get the abs path of the log file to use. 
     
@@ -174,22 +178,23 @@ def get_log_file_path():
 
     :return: absolute path to the log file
     """
-    date_str = get_date_str()
+    date_str = _get_date_str()
     return os.path.join(DEFAULT_LOG_DIR, f'{date_str}.log')
 
 
-def get_config(filename, level):
+def _get_config(filename, level):
     """
     Get a dictionary which describes the logging configuration
     
     :param filename: Create the FileHandler using the specified filename.
-    :param level: Set the root logger level to the specified level.
+    :param level: Set the root logger level to the specified level 
+                  (i.e. logging.{DEBUG,INFO,WARNING,ERROR}).
     :return: the default configuration dict
     """
     # copy _DEFAULT_CONFIG to avoid modifying it
     default_config = dict(_DEFAULT_CONFIG)
     default_config['root']['level'] = level
-    file_log_handler_dict = default_config['handlers'][FILE_HANDLER]
+    file_log_handler_dict = default_config['handlers'][_FILE_HANDLER]
     file_log_handler_dict['filename'] = filename
     return default_config
 
@@ -216,7 +221,8 @@ def configure(level=logging.INFO):
     named according to the current date. Both handlers' formattters are set 
     using the LOG_FORMAT format string and are added to the root logger.
     
-    :param level: Set the root logger level to the specified level, defaults to INFO.
+    :param level: Set the root logger level to the specified level (i.e. 
+                  logging.{DEBUG,INFO,WARNING,ERROR}), defaults to INFO.
     
     :example:
     >>> from utils import pipeline_logging
@@ -231,8 +237,8 @@ def configure(level=logging.INFO):
     >>>     pipeline_logging.configure()
     >>>     func(1, 2)
     """
-    filename = get_log_file_path()
-    default_config = get_config(filename, level)
+    filename = _get_log_file_path()
+    default_config = _get_config(filename, level)
     os.makedirs(DEFAULT_LOG_DIR, exist_ok=True)
     logging.config.dictConfig(default_config)
     sys.excepthook = _except_hook
