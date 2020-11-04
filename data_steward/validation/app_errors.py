@@ -79,7 +79,7 @@ def _handle_error(alert_message, view_message=None, response_code=None):
         mechanism
     :param view_message:  the message that will be provided to the end user in
         the event of an error.  this should remain generic and NEVER provide
-        insight to site info, participant info, or code info.  an appropriate
+        insight to site info, participant info, or code info.  An appropriate
         default message is provided if no view_message parameter is specified.
         This can accept either a string or a dictionary.
     :param response_code: The numeric status code to return
@@ -149,6 +149,21 @@ def handle_api_client_errors(error):
     """
     alert_message = format_alert_message(error.__class__.__name__, str(error))
     return _handle_error(alert_message)
+
+
+@errors_blueprint.app_errorhandler(HttpError)
+def handle_bucket_write_access_errors(error):
+    """
+    Error handle to use when 403 HttpError is raised from write access error.
+
+    Alert message can be modified here as needed.
+
+    :param error: The error that is handled.
+
+    :return: an error view
+    """
+    alert_message = format_alert_message(error.__class__.__name__, str(error))
+    return _handle_error(alert_message, response_code=403)
 
 
 @errors_blueprint.app_errorhandler(AttributeError)
