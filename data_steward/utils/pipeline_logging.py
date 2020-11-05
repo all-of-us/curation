@@ -158,7 +158,7 @@ def _get_config(level, add_console_handler):
     
     :param level: Set the root logger level to the specified level 
                   (i.e. logging.{DEBUG,INFO,WARNING,ERROR}).
-    :param add_console_handler: If set to True the console log handler is added
+    :param add_console_handler: If set to True a console log handler is added
                                 to the root logger.
     :return: the configuration dict
     """
@@ -213,17 +213,18 @@ def _except_hook(exc_type, exc_value, exc_traceback):
                          exc_info=(exc_type, exc_value, exc_traceback))
 
 
-def configure(level=logging.INFO, add_console_handler=True):
+def configure(level=logging.INFO, add_console_handler=False):
     """
     Configure the logging system for use by pipeline.
     
     By default creates a handler which appends to a file named according to the 
-    current date and a handler which writes to the console (sys.stderr). Both handlers' 
-    formattters are set using the LOG_FORMAT format string and are added to the root logger.
+    current date. A handler which writes to the console (sys.stderr) can optionally be added. 
+    Both handlers' formattters are set using the LOG_FORMAT format string and are added to 
+    the root logger.
     
     :param level: Set the root logger level to the specified level (i.e. 
                   logging.{DEBUG,INFO,WARNING,ERROR}), defaults to INFO.
-    :param add_console_handler: If set to True (default) the console log handler is 
+    :param add_console_handler: If set to True a console log handler is 
                                 added to the root logger otherwise it is not.
     :example:
     >>> from utils import pipeline_logging

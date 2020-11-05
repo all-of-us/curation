@@ -106,7 +106,7 @@ class PipelineLoggingTest(unittest.TestCase):
         """
         # names are used to uniquely identify handlers both in standard logging module
         # and in this test case
-        expected_hdlrs = [pl._FILE_HANDLER, pl._CONSOLE_HANDLER]
+        expected_hdlrs = [pl._FILE_HANDLER]
 
         pl.configure()
         # root level is set to default (i.e. INFO)
@@ -122,17 +122,17 @@ class PipelineLoggingTest(unittest.TestCase):
         actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
 
-        # remove console log handler from configuration
-        pl.configure(add_console_handler=False)
+        # add console log handler to configuration
+        pl.configure(add_console_handler=True)
         actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
-        expected_hdlrs = [pl._FILE_HANDLER]
+        expected_hdlrs = [pl._FILE_HANDLER, pl._CONSOLE_HANDLER]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
 
     @mock.patch('logging.StreamHandler.emit')
     @mock.patch('logging.FileHandler.emit')
     @mock.patch('logging.FileHandler._open')
     def test_default_level(self, mock_open, mock_file_emit, mock_stream_emit):
-        pl.configure()
+        pl.configure(add_console_handler=True)
         self.assert_logs_handled(pl.DEFAULT_LOG_LEVEL, mock_file_emit,
                                  mock_stream_emit)
 
@@ -140,7 +140,7 @@ class PipelineLoggingTest(unittest.TestCase):
     @mock.patch('logging.FileHandler.emit')
     @mock.patch('logging.FileHandler._open')
     def test_specific_level(self, mock_open, mock_file_emit, mock_stream_emit):
-        pl.configure(logging.CRITICAL)
+        pl.configure(logging.CRITICAL, add_console_handler=True)
         self.assert_logs_handled(logging.CRITICAL, mock_file_emit,
                                  mock_stream_emit)
 
