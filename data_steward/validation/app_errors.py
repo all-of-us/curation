@@ -151,21 +151,6 @@ def handle_api_client_errors(error):
     return _handle_error(alert_message)
 
 
-@errors_blueprint.app_errorhandler(HttpError)
-def handle_bucket_write_access_errors(error):
-    """
-    Error handle to use when 403 HttpError is raised from write access error.
-
-    Alert message can be modified here as needed.
-
-    :param error: The error that is handled.
-
-    :return: an error view
-    """
-    alert_message = format_alert_message(error.__class__.__name__, str(error))
-    return _handle_error(alert_message, response_code=403)
-
-
 @errors_blueprint.app_errorhandler(AttributeError)
 def handle_attribute_errors(error):
     """
