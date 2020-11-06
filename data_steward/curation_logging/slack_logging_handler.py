@@ -11,33 +11,10 @@ class SlackLoggingHandler(logging.Handler):
      Logging handler to send messages to a Slack Channel.
     """
 
-    COLORS = {
-        'CRITICAL': '#DE5B49',
-        'ERROR': '#E37B40',
-        'WARN': '#F0CA4D',
-        'WARNING': '#F0CA4D',
-        'INFO': '#4180A8',
-        'DEBUG': '#46B29D',
-        'NOTSET': '#B2B2B2',
-    }
-
     def __init__(self):
         super().__init__(level=logging.WARNING)
 
     def emit(self, record):
-        # out = {
-        #     'fallback':
-        #         self.format(record),
-        #     'color':
-        #         self.COLORS.get(record.levelname, self.COLORS['NOTSET']),
-        #     'text':
-        #         record.msg % record.args,
-        #     'footer':
-        #         '%s from %s, pid-%d' %
-        #         (record.levelname, self._host, record.process),
-        #     'ts':
-        #         int(time.time())
-        # }
 
         try:
             post_message(record.msg % record.args)
