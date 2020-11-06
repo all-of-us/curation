@@ -21,14 +21,10 @@ class AppErrorHandlersTest(TestCase):
     def setUp(self):
         self.message = 'a fake message'
         self.fake_bucket = 'foo'
-        self.api_resp = [
-            httplib2.Response(dict(status=500)),
-            httplib2.Response(dict(status=403))
-        ]
+        self.api_resp = httplib2.Response(dict(status=500))
 
         self.errors_list = [
-            HttpError(self.api_resp[0], b'500'),
-            HttpError(self.api_resp[1], b'403'),
+            HttpError(self.api_resp, b'500'),
             AttributeError(self.message),
             OSError(self.message),
             app_errors.BucketDoesNotExistError(self.message, self.fake_bucket),
@@ -37,7 +33,6 @@ class AppErrorHandlersTest(TestCase):
 
         self.handlers_list = [
             app_errors.handle_api_client_errors,
-            app_errors.handle_bucket_write_access_errors,
             app_errors.handle_attribute_errors, app_errors.handle_os_errors,
             app_errors.handle_bad_bucket_request,
             app_errors.handle_internal_validation_error
@@ -72,21 +67,17 @@ class AppErrorHandlersTest(TestCase):
 
             # post condition
             if isinstance(error, HttpError):
-                if code == 500:
-                    message = '<HttpError 500 "Ok">'
-                elif code == 403:
-                    message = '<HttpError 403 "Ok">'
-                else:
-                    message = self.message
+                message = '<HttpError 500 "Ok">'
+            else:
+                message = self.message
 
-                expected_alert = app_errors.format_alert_message(
-                    error.__class__.__name__, message)
+            expected_alert = app_errors.format_alert_message(
+                error.__class__.__name__, message)
 
-                expected_alerts.append(mock.call(expected_alert))
+            expected_alerts.append(mock.call(expected_alert))
 
-                self.assertEqual(view, app_errors.DEFAULT_VIEW_MESSAGE)
-                self.assertTrue(code, app_errors.DEFAULT_ERROR_STATUS)
-                self.assertTrue(code, 403)
+            self.assertEqual(view, app_errors.DEFAULT_VIEW_MESSAGE)
+            self.assertTrue(code, app_errors.DEFAULT_ERROR_STATUS)
 
     @mock.patch('validation.app_errors.post_message')
     @mock.patch('api_util.check_cron')
