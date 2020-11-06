@@ -2,8 +2,8 @@
 Shared helper functions for BigQuery-related tests
 """
 import datetime
-import warnings
 from collections import OrderedDict
+# Note the generic types below are deprecated in Python 3.9
 from typing import Any, List, Union, Dict, Iterable
 
 import mock
