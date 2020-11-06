@@ -29,7 +29,9 @@ import resources
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
-from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, initialize_logging
+from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
+     initialize_logging
+from curation_logging.slack_logging_handler import initialize_slack_logging
 from retraction import retract_data_bq, retract_data_gcs
 from validation import achilles, achilles_heel, ehr_union, export, hpo_report
 from validation.app_errors import (log_traceback, errors_blueprint,
@@ -530,6 +532,7 @@ def process_hpo(hpo_id, force_run=False):
         message = (f"Failed to process hpo_id '{hpo_id}' due to the following "
                    f"HTTP error: {http_error.content.decode()}")
         logging.exception(message)
+        raise
 
 
 def get_hpo_name(hpo_id):
@@ -1013,6 +1016,7 @@ def write_sites_pii_validation_files():
 @app.before_first_request
 def set_up_logging():
     initialize_logging()
+    initialize_slack_logging()
 
 
 app.add_url_rule(consts.PREFIX + 'ValidateAllHpoFiles',
