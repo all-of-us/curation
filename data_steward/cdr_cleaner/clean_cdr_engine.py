@@ -123,7 +123,7 @@ def run_queries(client, query_list, rule_info):
             jobs.append(query_job)
             LOGGER.info(f'Running {query_job.job_id}')
             # wait for job to complete
-            query_job.result(timeout=1000)
+            query_job.result()
             if query_job.errors:
                 raise RuntimeError(
                     ce_consts.FAILURE_MESSAGE_TEMPLATE.render(
