@@ -17,4 +17,6 @@ if __name__ == "__main__":
     initialize_slack_logging()
     logging.info('Do not send this')
     logging.debug('Do not send this')
-    logging.warning('Slack message sent by logging handler!')
+    logging.warning('logging.warning slack message sent by logging handler!')
+    logging.critical('logging.critical slack message sent by logging handler!')
+    logging.error('logging.error slack message sent by logging handler!')
