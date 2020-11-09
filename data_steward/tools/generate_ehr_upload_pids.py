@@ -9,6 +9,7 @@ from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
+# Set logger, handler to allow query to be print to stdout
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
 LOGGER.addHandler(handler)
@@ -44,13 +45,14 @@ WHERE HPO_ID NOT IN ({{excluded_sites_str}})
 
 def get_excluded_hpo_ids_str(excluded_hpo_ids):
     """
-    
-    :param excluded_hpo_ids: 
-    :return: 
+    Formats list of hpo_ids or None to add to bq script, adds empty hpo_id
+
+    :param excluded_hpo_ids: List output by args parser or None
+    :return: String of hpo_ids enclosed in single quotes along with empty hpo_ids
     """
     if excluded_hpo_ids is None:
         excluded_hpo_ids = []
-    # use uppercase for all hpo_ids
+    # use uppercase for all hpo_ids as is in the table
     excluded_hpo_ids = [hpo_id.upper() for hpo_id in excluded_hpo_ids]
     # exclude empty site since lookup table contains it
     excluded_hpo_ids.append('')
@@ -63,11 +65,12 @@ def generate_ehr_upload_pids_query(project_id,
                                    ehr_dataset_id,
                                    excluded_hpo_ids=None):
     """
-    
+    Generate query for all hpo_ids except specified
+
     :param project_id: Identifies the project
     :param ehr_dataset_id: Identifies the ehr dataset
     :param excluded_hpo_ids: List of sites
-    :return: 
+    :return: Query string to use in ehr_upload_pids view
     """
     client = bq.get_client(project_id)
     excluded_hpo_ids_str = get_excluded_hpo_ids_str(excluded_hpo_ids)
