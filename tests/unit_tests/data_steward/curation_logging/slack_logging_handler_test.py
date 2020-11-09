@@ -9,7 +9,6 @@ Ensures that the slack logging messages are properly captured and sent to the cu
 # Python imports
 import logging
 import unittest
-import mock
 
 # Project imports
 from curation_logging.slack_logging_handler import initialize_slack_logging
@@ -29,8 +28,7 @@ class SlackLoggingHandlerTest(unittest.TestCase):
         self.slack_token = 'test_slack_token'
         self.channel_name = 'channel_name'
 
-    @mock.patch('utils.slack_alerts._get_slack_client')
-    def test_initialize_slack_logging(self, mock_slack_client):
+    def test_initialize_slack_logging(self):
         initialize_slack_logging()
 
         with self.assertLogs('foo', level=logging.WARNING) as cm:
