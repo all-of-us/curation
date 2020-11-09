@@ -1,13 +1,18 @@
+"""
+Unit test for slack_logging_handler module
+
+Original Issue: DC-1159
+
+Ensures that the slack logging messages are properly captured and sent to the curation slack alert channel
+"""
+
 # Python imports
-import os
 import logging
 import unittest
 import mock
-from mock import patch
 
 # Project imports
 from curation_logging.slack_logging_handler import initialize_slack_logging
-from utils.slack_alerts import post_message, SLACK_CHANNEL, SLACK_TOKEN
 
 root_logger = logging.getLogger('foo')
 
