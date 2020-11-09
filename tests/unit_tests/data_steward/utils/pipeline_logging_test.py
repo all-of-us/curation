@@ -10,14 +10,12 @@ Original Issue = DC-637
 """
 
 # Python imports
-import shutil
 import unittest
 import logging
 import mock
-from datetime import datetime
 
 # Project imports
-from utils.pipeline_logging import generate_paths, create_logger, setup_logger
+import utils.pipeline_logging as pl
 
 
 class PipelineLoggingTest(unittest.TestCase):
@@ -29,75 +27,84 @@ class PipelineLoggingTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.log_file_list = ['path/', 'faked.log', 'path/fake.log']
-        self.log_path = [
-            'path/curation20201023_010101.log', 'logs/faked.log',
-            'path/fake.log'
-        ]
-        generate_paths(self.log_file_list)
+        pass
 
-    @mock.patch('utils.pipeline_logging.datetime')
-    @mock.patch('utils.pipeline_logging.generate_paths')
-    def test_generate_paths(self, mock_generate_paths, mock_datetime):
-        # mocking datetime to make sure slight increase in time won't cause a failure
-        mock_datetime.now = mock.Mock(
-            return_value=datetime(2020, 10, 23, 1, 1, 1, 1))
+    def assert_logs_handled(self, current_level, mock_file_emit,
+                            mock_stream_emit):
+        """
+        Verify that logs at various levels are properly handled. 
+        
+        Multiple loggers are created, each of which emit info, warn, critical, debug messages.
+        
+        :param current_level: the root logging level to verify
+        :param mock_file_emit: a mock of the file handler emit method
+        :param mock_stream_emit: a mock of the stream handler emit method
+        """
+        log_items = [(logging.INFO, 'info from %s'),
+                     (logging.WARN, 'warning from %s'),
+                     (logging.CRITICAL, 'critical from %s'),
+                     (logging.DEBUG, 'debug from %s')]
+        expected = []
+        for logger_name in ['a', 'a.b', 'c']:
+            logger = logging.getLogger(logger_name)
+            for (level, msg_fmt) in log_items:
+                msg = msg_fmt % logger_name
+                logger.log(level, msg_fmt % logger_name)
+                if level >= current_level:
+                    expected.append((level, msg))
+        actual = [(log_record.levelno, log_record.msg)
+                  for (log_record,), _ in mock_file_emit.call_args_list]
+        self.assertListEqual(expected, actual)
 
-        # checks that log_path is generated properly
-        results = generate_paths(self.log_file_list)
+        actual = [(log_record.levelno, log_record.msg)
+                  for (log_record,), _ in mock_stream_emit.call_args_list]
+        self.assertListEqual(expected, actual)
 
-        # tests if the lists are equal regardless of order
-        self.assertCountEqual(results, self.log_path)
+    @mock.patch('logging.FileHandler._open')
+    def test_configure(self, mock_open):
+        """
+        Verify that root level and handlers are properly set after configure
+        :param mock_open: mock to prevent side effect of opening file
+        """
+        # names are used to uniquely identify handlers both in standard logging module
+        # and in this test case
+        expected_hdlrs = [pl._FILE_HANDLER]
 
-        # tests if the lists are equal
-        self.assertListEqual(results, self.log_path)
+        pl.configure()
+        # root level is set to default (i.e. INFO)
+        self.assertEqual(logging.root.level, pl.DEFAULT_LOG_LEVEL)
 
-    @mock.patch('utils.pipeline_logging.logging.StreamHandler')
-    @mock.patch('utils.pipeline_logging.logging.FileHandler')
-    @mock.patch('utils.pipeline_logging.logging.getLogger')
-    def test_create_logger(self, mock_get_logger, mock_file_handler,
-                           mock_stream_handler):
-        # Tests console_logger function creates only FileHandler when console logging is set to False
-        create_logger(self.log_file_list[1], False)
-        mock_file_handler.return_value.setLevel.assert_called_with(logging.INFO)
-        mock_get_logger.return_value.addHandler.assert_any_call(
-            mock_file_handler.return_value)
-        mock_stream_handler.assert_not_called()
-        mock_get_logger.assert_called_with(self.log_file_list[1])
+        # handlers are added
+        actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
+        self.assertEqual(expected_hdlrs, actual_hdlrs)
 
-        # Tests console_logger function creates both FileHandler and StreamHandler when console logging is set to True
-        create_logger(self.log_file_list[1], True)
-        mock_file_handler.return_value.setLevel.assert_called_with(logging.INFO)
-        mock_get_logger.return_value.addHandler.assert_any_call(
-            mock_file_handler.return_value)
-        mock_stream_handler.assert_called()
-        mock_stream_handler.return_value.setLevel.assert_called_with(
-            logging.INFO)
-        mock_get_logger.return_value.addHandler.assert_called_with(
-            mock_stream_handler.return_value)
-        mock_get_logger.assert_called_with(self.log_file_list[1])
+        # no duplicate handlers after additional calls to configure
+        pl.configure()
+        self.assertEqual(len(expected_hdlrs), len(logging.root.handlers))
+        actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
+        self.assertEqual(expected_hdlrs, actual_hdlrs)
 
-    @mock.patch('utils.pipeline_logging.datetime')
-    def test_setup_logger(self, mock_datetime):
-        # mocking datetime to make sure slight increase in time won't cause a failure
-        mock_datetime.now = mock.Mock(
-            return_value=datetime(2020, 10, 23, 1, 1, 1, 1))
+        # add console log handler to configuration
+        pl.configure(add_console_handler=True)
+        actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
+        expected_hdlrs = [pl._FILE_HANDLER, pl._CONSOLE_HANDLER]
+        self.assertEqual(expected_hdlrs, actual_hdlrs)
 
-        expected_list_true = []
-        expected_list_false = []
+    @mock.patch('logging.StreamHandler.emit')
+    @mock.patch('logging.FileHandler.emit')
+    @mock.patch('logging.FileHandler._open')
+    def test_default_level(self, mock_open, mock_file_emit, mock_stream_emit):
+        pl.configure(add_console_handler=True)
+        self.assert_logs_handled(pl.DEFAULT_LOG_LEVEL, mock_file_emit,
+                                 mock_stream_emit)
 
-        # Pre conditions
-        for item in self.log_path:
-            expected_list_true.append(create_logger(item, True))
-
-        for item in self.log_path:
-            expected_list_false.append(create_logger(item, False))
-
-        # Post conditions
-        self.assertEqual(setup_logger(self.log_file_list, True),
-                         expected_list_true)
-        self.assertEqual(setup_logger(self.log_file_list, False),
-                         expected_list_false)
+    @mock.patch('logging.StreamHandler.emit')
+    @mock.patch('logging.FileHandler.emit')
+    @mock.patch('logging.FileHandler._open')
+    def test_specific_level(self, mock_open, mock_file_emit, mock_stream_emit):
+        pl.configure(logging.CRITICAL, add_console_handler=True)
+        self.assert_logs_handled(logging.CRITICAL, mock_file_emit,
+                                 mock_stream_emit)
 
     def tearDown(self):
-        shutil.rmtree('path/')
+        pass

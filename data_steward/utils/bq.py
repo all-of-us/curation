@@ -19,6 +19,8 @@ from constants.utils import bq as consts
 from resources import fields_for
 from common import JINJA_ENV
 
+_MAX_RESULTS_PADDING = 100
+"""Constant added to table count in order to list all table results"""
 LOGGER = logging.getLogger(__name__)
 
 CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string("""
@@ -56,6 +58,13 @@ CLUSTER BY
 """)
 
 DATASET_COLUMNS_TPL = JINJA_ENV.from_string(consts.DATASET_COLUMNS_QUERY)
+
+TABLE_COUNT_TPL = JINJA_ENV.from_string(
+    "SELECT COUNT(1) table_count FROM `{{dataset.project}}.{{dataset.dataset_id}}.__TABLES__`"
+)
+"""Query template to retrieve the number of tables in a dataset. 
+Requires parameter `dataset`: :class:`DatasetReference` and 
+yields a scalar result with column `table_count`: :class:`int`."""
 
 
 def get_client(project_id=None, scopes=None):
@@ -536,3 +545,66 @@ def query_sheet_linked_bq_table(project_id, table_content_query,
                              job_config=query_job_config).to_dataframe()
 
     return result_df
+
+
+def to_scalar(
+    result: typing.Union[bigquery.table.RowIterator, bigquery.QueryJob]
+) -> typing.Any:
+    """
+    Get a scalar query result
+    
+    :param result: a query job or a resultant :class:`bigquery.table.RowIterator`
+    :return: the singular result value
+    """
+    row_iter = None
+    if isinstance(result, bigquery.table.RowIterator):
+        row_iter = result
+    elif isinstance(result, bigquery.QueryJob):
+        row_iter = result.result()
+    else:
+        raise ValueError(f'Scalar result requires a RowIterator or QueryJob '
+                         f'but `{type(result)}` was supplied.')
+    if row_iter.total_rows != 1:
+        raise ValueError(f'Cannot get scalar result from '
+                         f'row iterator with {row_iter.total_rows} rows.')
+    _, row = next(enumerate(row_iter))
+    if len(row_iter.schema) == 1:
+        return row[0]
+    else:
+        return dict(row.items())
+
+
+def get_table_count(client: bigquery.Client,
+                    dataset: bigquery.DatasetReference) -> int:
+    """
+    Get the number of tables currently in a specified dataset
+    
+    :param client: active bigquery client 
+    :param dataset: the dataset
+    :return: number of tables
+    :raises: 
+        google.cloud.exceptions.GoogleCloudError:
+            If the job failed.
+        concurrent.futures.TimeoutError:
+            If the job did not complete in the given timeout.
+    """
+    q = TABLE_COUNT_TPL.render(dataset=dataset)
+    return to_scalar(client.query(q))
+
+
+def list_tables(
+    client: bigquery.Client, dataset: bigquery.DatasetReference
+) -> typing.Iterator[bigquery.table.TableListItem]:
+    """
+    List all tables in a dataset
+    
+    NOTE: Ensures all results are retrieved by first getting total
+    table count and setting max_results in list tables API call
+     
+    :param client: active bigquery client object
+    :param dataset: the dataset containing the tables
+    :return: tables contained within the requested dataset
+    """
+    table_count = get_table_count(client, dataset)
+    return client.list_tables(dataset=dataset,
+                              max_results=table_count + _MAX_RESULTS_PADDING)
