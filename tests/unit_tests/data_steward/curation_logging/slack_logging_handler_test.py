@@ -31,9 +31,14 @@ class SlackLoggingHandlerTest(unittest.TestCase):
         with self.assertLogs('foo', level=logging.WARNING) as cm:
             logging.getLogger('foo').info('Do not send this')
             logging.getLogger('foo').debug('Do not send this')
-            logging.getLogger('foo').warning('logging.warning slack message sent by logging handler!')
-            logging.getLogger('foo').critical('logging.critical slack message sent by logging handler!')
-            logging.getLogger('foo').error('logging.error slack message sent by logging handler!')
-        self.assertEqual(cm.output, ['WARNING:root:logging.warning slack message sent by logging handler!',
-                                     'CRITICAL:root:logging.critical slack message sent by logging handler!',
-                                     'ERROR:root:logging.error slack message sent by logging handler!'])
+            logging.getLogger('foo').warning(
+                'logging.warning slack message sent by logging handler!')
+            logging.getLogger('foo').critical(
+                'logging.critical slack message sent by logging handler!')
+            logging.getLogger('foo').error(
+                'logging.error slack message sent by logging handler!')
+        self.assertEqual(cm.output, [
+            'WARNING:root:logging.warning slack message sent by logging handler!',
+            'CRITICAL:root:logging.critical slack message sent by logging handler!',
+            'ERROR:root:logging.error slack message sent by logging handler!'
+        ])
