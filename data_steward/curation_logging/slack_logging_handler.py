@@ -3,7 +3,7 @@ import os
 import logging
 
 # Project imports
-from utils.slack_alerts import post_message, SlackConfigurationError, SLACK_CHANNEL, SLACK_TOKEN
+from utils.slack_alerts import post_message, check_channel_and_token, SlackConfigurationError, SLACK_CHANNEL, SLACK_TOKEN
 
 
 class SlackLoggingHandler(logging.Handler):
@@ -17,12 +17,17 @@ class SlackLoggingHandler(logging.Handler):
     def emit(self, record):
 
         try:
-            post_message(record.msg % record.args)
+            if check_channel_and_token() and not _is_raised_from_itself(record):
+                post_message(record.msg % record.args)
         except SlackConfigurationError:
             logging.exception(
                 'Slack is not configured for posting messages, refer to playbook.'
             )
             raise
+
+
+def _is_raised_from_itself(record):
+    return record.module in __name__
 
 
 def initialize_slack_logging():
