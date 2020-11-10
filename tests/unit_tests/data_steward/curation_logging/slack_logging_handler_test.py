@@ -4,6 +4,12 @@ Unit test for slack_logging_handler module
 Original Issue: DC-1159
 
 Ensures that the slack logging messages are properly captured and sent to the curation slack alert channel
+Notes: -- if dev is using macOS and gets error:
+            [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1108)
+          will need to go to Macintosh HD > Applications > Python3.6 folder (or whatever version of python you're using) >
+          double click on "Install Certificates.command" file.
+          found: (https://stackoverflow.com/questions/50236117/scraping-ssl-certificate-verify-failed-error-for-http-en-wikipedia-org)
+      -- dev will also need to add SLACK_TOKEN and SLACK_CHANNEL as environment variables
 """
 
 # Python imports
@@ -53,49 +59,3 @@ class SlackLoggingHandlerTest(unittest.TestCase):
         mock_post_message.assert_any_call(WARNING_MESSAGE)
         mock_post_message.assert_any_call(CRITICAL_MESSAGE)
         mock_post_message.assert_any_call(ERROR_MESSAGE)
-Unit test for slack_logging_handler module
-
-Original Issue: DC-1159
-
-Ensures that the slack logging messages are properly captured and sent to the curation slack alert channel
-"""
-
-# Python imports
-import logging
-import unittest
-
-# Project imports
-from curation_logging.slack_logging_handler import initialize_slack_logging
-
-root_logger = logging.getLogger('foo')
-
-
-class SlackLoggingHandlerTest(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        print('**************************************************************')
-        print(cls.__name__)
-        print('**************************************************************')
-
-    def setUp(self):
-        self.slack_token = 'test_slack_token'
-        self.channel_name = 'channel_name'
-
-    def test_initialize_slack_logging(self):
-        initialize_slack_logging()
-
-        with self.assertLogs('foo', level=logging.WARNING) as cm:
-            logging.getLogger('foo').info('Do not send this')
-            logging.getLogger('foo').debug('Do not send this')
-            logging.getLogger('foo').warning(
-                'logging.warning slack message sent by logging handler!')
-            logging.getLogger('foo').critical(
-                'logging.critical slack message sent by logging handler!')
-            logging.getLogger('foo').error(
-                'logging.error slack message sent by logging handler!')
-        self.assertEqual(cm.output, [
-            'WARNING:foo:logging.warning slack message sent by logging handler!',
-            'CRITICAL:foo:logging.critical slack message sent by logging handler!',
-            'ERROR:foo:logging.error slack message sent by logging handler!'
-        ])
