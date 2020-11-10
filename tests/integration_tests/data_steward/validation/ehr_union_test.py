@@ -109,10 +109,9 @@ class EhrUnionTest(unittest.TestCase):
                 running_jobs.append(result['jobReference']['jobId'])
                 expected_tables[output_table] += list(csv_rows)
         # ensure person to observation output is as expected
-        output_table_person = ehr_union.output_table_for(
-            combine_ehr_rdr.PERSON_TABLE)
+        output_table_person = ehr_union.output_table_for(common.PERSON)
         output_table_observation = ehr_union.output_table_for(
-            combine_ehr_rdr.OBSERVATION_TABLE)
+            common.OBSERVATION)
         expected_tables[output_table_observation] += 4 * expected_tables[
             output_table_person]
 
@@ -592,7 +591,7 @@ class EhrUnionTest(unittest.TestCase):
         # Key fields should be populated using associated mapping tables
         for table in resources.CDM_TABLES:
             # This condition is to exempt person table from table hpo sub query
-            if table != eu_constants.PERSON:
+            if table != common.PERSON:
                 subquery_fail = self.get_table_hpo_subquery_error(
                     table, input_dataset_id, output_dataset_id)
                 if subquery_fail is not None:
