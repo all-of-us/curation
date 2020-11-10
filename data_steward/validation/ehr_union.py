@@ -69,6 +69,11 @@ Currently the following environment variables must be set:
 
 TODO
  * Besides `visit_occurrence` also handle mapping of other foreign key fields (e.g. `location_id`)
+ 
+TODO: Refactor query generation logic in mapping_query and table_union_query 
+      so that both use either
+      A) a single jinja template or 
+      B) dynamic SQL (i.e. EXECUTE IMMEDIATE)
 """
 import argparse
 import logging
@@ -125,6 +130,17 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     :param project_id: identifies the GCP project
     :return: list of subqueries
     """
+    # Until dynamic queries are refactored to use either a single template or dynamic SQL,
+    # defining template locally (rather than top of module) so it is closer to code
+    # that references it below
+    hpo_subquery_tpl = common.JINJA_ENV.from_string('''
+    (SELECT '{{table_id}}' AS src_table_id,
+      {{table_name}}_id AS src_{{table_name}}_id,
+      -- offset is added to the destination key only if add_hpo_offset == True --
+      {{table_name}}_id 
+        {%- if add_hpo_offset %} + {{hpo_offset}} {%- endif %} AS {{table_name}}_id
+      FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`)
+    ''')
     result = []
     hpo_unique_identifiers = get_hpo_offsets(hpo_ids)
 
@@ -132,13 +148,15 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     all_table_ids = bq_utils.list_all_table_ids(dataset_id)
     for hpo_id in hpo_ids:
         table_id = bq_utils.get_table_id(hpo_id, table_name)
+        hpo_offset = hpo_unique_identifiers[hpo_id]
         if table_id in all_table_ids:
-            subquery = f'''
-                (SELECT '{table_id}' AS src_table_id,
-                  {table_name}_id AS src_{table_name}_id,
-                  {table_name}_id + {hpo_unique_identifiers[hpo_id]} as {table_name}_id
-                  FROM `{project_id}.{dataset_id}.{table_id}`)
-                '''
+            add_hpo_offset = table_name != common.PERSON
+            subquery = hpo_subquery_tpl.render(table_id=table_id,
+                                               table_name=table_name,
+                                               add_hpo_offset=add_hpo_offset,
+                                               hpo_offset=hpo_offset,
+                                               project_id=project_id,
+                                               dataset_id=dataset_id)
             result.append(subquery)
         else:
             logging.info(
