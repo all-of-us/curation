@@ -4,8 +4,11 @@ A utility module for sending messages to a slack channel.
 The utility user must create the message body, this module is responsible
 for sending the message.
 """
+
+# Python imports
 import os
 
+# Third party imports
 import slack
 
 # environment variable names
@@ -22,7 +25,7 @@ class SlackConfigurationError(RuntimeError):
     """
 
     def __init__(self, msg):
-        super(SlackConfigurationError, self).__init__()
+        super(SlackConfigurationError, self).__init__(msg)
         self.msg = msg
 
 
