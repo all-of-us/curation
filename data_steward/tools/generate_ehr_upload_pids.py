@@ -9,7 +9,7 @@ from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
-# Set logger, handler to allow query to be print to stdout
+# Set logger, handler to print query to stdout
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
 LOGGER.addHandler(handler)
@@ -82,8 +82,8 @@ def generate_ehr_upload_pids_query(project_id,
         excluded_sites_str=excluded_hpo_ids_str)
     query_job = client.query(query)
     res = query_job.result().to_dataframe()
-    ehr_upload_pids_query = res["q"].to_list()[0]
-    return ehr_upload_pids_query
+    full_query = res["q"].to_list()[0]
+    return full_query
 
 
 def get_args_parser():
