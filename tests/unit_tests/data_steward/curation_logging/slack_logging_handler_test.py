@@ -22,8 +22,8 @@ import unittest
 from curation_logging.slack_logging_handler import initialize_slack_logging
 from utils.slack_alerts import SLACK_TOKEN, SLACK_CHANNEL
 
-# TEST_SLACK_TOKEN = 'test_slack_token'
-# TEST_CHANNEL_NAME = 'channel_name'
+TEST_SLACK_TOKEN = 'test_slack_token'
+TEST_CHANNEL_NAME = 'channel_name'
 
 INFO_MESSAGE = 'Do not send this'
 WARNING_MESSAGE = 'logging.warning slack message sent by logging handler!'
@@ -39,33 +39,28 @@ class SlackLoggingHandlerTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    def setUp(self):
-        self.slack_token = 'test_slack_token'
-        self.channel_name = 'channel_name'
+    # def setUp(self):
+    #     self.slack_token = 'test_slack_token'
+    #     self.channel_name = 'channel_name'
 
-    # @mock.patch.dict(os.environ, {
-    #     SLACK_TOKEN: TEST_SLACK_TOKEN,
-    #     SLACK_CHANNEL: TEST_CHANNEL_NAME
-    # })
+    @mock.patch.dict(os.environ, {
+        SLACK_TOKEN: TEST_SLACK_TOKEN,
+        SLACK_CHANNEL: TEST_CHANNEL_NAME
+    })
+    @mock.patch('utils.slack_alerts._get_slack_client')
     @mock.patch('curation_logging.slack_logging_handler.post_message')
-    def test_initialize_slack_logging(self, mock_post_message):
-        patch_environment = {
-            SLACK_CHANNEL: self.channel_name,
-            SLACK_TOKEN: self.slack_token
-        }
+    def test_initialize_slack_logging(self, mock_post_message, mock_slack_client):
+        initialize_slack_logging()
 
-        with mock.patch.dict(os.environ, patch_environment):
-            initialize_slack_logging()
+        logging.info(INFO_MESSAGE)
+        logging.debug(INFO_MESSAGE)
 
-            logging.info(INFO_MESSAGE)
-            logging.debug(INFO_MESSAGE)
+        logging.warning(WARNING_MESSAGE)
+        logging.critical(CRITICAL_MESSAGE)
+        logging.error(ERROR_MESSAGE)
 
-            logging.warning(WARNING_MESSAGE)
-            logging.critical(CRITICAL_MESSAGE)
-            logging.error(ERROR_MESSAGE)
+        self.assertEqual(mock_post_message.call_count, 3)
 
-            self.assertEqual(mock_post_message.call_count, 3)
-
-            mock_post_message.assert_any_call(WARNING_MESSAGE)
-            mock_post_message.assert_any_call(CRITICAL_MESSAGE)
-            mock_post_message.assert_any_call(ERROR_MESSAGE)
+        mock_post_message.assert_any_call(WARNING_MESSAGE)
+        mock_post_message.assert_any_call(CRITICAL_MESSAGE)
+        mock_post_message.assert_any_call(ERROR_MESSAGE)
