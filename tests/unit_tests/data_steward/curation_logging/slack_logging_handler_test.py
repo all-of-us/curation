@@ -39,23 +39,29 @@ class SlackLoggingHandlerTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    @mock.patch.dict(os.environ, {
-        SLACK_TOKEN: TEST_SLACK_TOKEN,
-        SLACK_CHANNEL: TEST_CHANNEL_NAME
-    })
+    # @mock.patch.dict(os.environ, {
+    #     SLACK_TOKEN: TEST_SLACK_TOKEN,
+    #     SLACK_CHANNEL: TEST_CHANNEL_NAME
+    # })
     @mock.patch('curation_logging.slack_logging_handler.post_message')
     def test_initialize_slack_logging(self, mock_post_message):
-        initialize_slack_logging()
+        patch_environment = {
+            SLACK_CHANNEL: TEST_CHANNEL_NAME,
+            SLACK_TOKEN: TEST_SLACK_TOKEN
+        }
 
-        logging.info(INFO_MESSAGE)
-        logging.debug(INFO_MESSAGE)
+        with mock.patch.dict(os.environ, patch_environment):
+            initialize_slack_logging()
 
-        logging.warning(WARNING_MESSAGE)
-        logging.critical(CRITICAL_MESSAGE)
-        logging.error(ERROR_MESSAGE)
+            logging.info(INFO_MESSAGE)
+            logging.debug(INFO_MESSAGE)
 
-        self.assertEqual(mock_post_message.call_count, 3)
+            logging.warning(WARNING_MESSAGE)
+            logging.critical(CRITICAL_MESSAGE)
+            logging.error(ERROR_MESSAGE)
 
-        mock_post_message.assert_any_call(WARNING_MESSAGE)
-        mock_post_message.assert_any_call(CRITICAL_MESSAGE)
-        mock_post_message.assert_any_call(ERROR_MESSAGE)
+            self.assertEqual(mock_post_message.call_count, 3)
+
+            mock_post_message.assert_any_call(WARNING_MESSAGE)
+            mock_post_message.assert_any_call(CRITICAL_MESSAGE)
+            mock_post_message.assert_any_call(ERROR_MESSAGE)
