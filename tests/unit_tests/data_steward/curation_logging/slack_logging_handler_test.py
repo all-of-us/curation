@@ -40,12 +40,11 @@ class SlackLoggingHandlerTest(unittest.TestCase):
         print('**************************************************************')
 
     @mock.patch.dict(os.environ, {
-        SLACK_TOKEN: TEST_SLACK_TOKEN,
-        SLACK_CHANNEL: TEST_CHANNEL_NAME
+        SLACK_CHANNEL: TEST_CHANNEL_NAME,
+        SLACK_TOKEN: SLACK_TOKEN
     })
-    @mock.patch('curation_logging.slack_logging_handler.SlackConfigurationError')
     @mock.patch('curation_logging.slack_logging_handler.post_message')
-    def test_initialize_slack_logging(self, mock_post_message, mock_slack_config_error):
+    def test_initialize_slack_logging(self, mock_post_message):
         initialize_slack_logging()
 
         logging.info(INFO_MESSAGE)
