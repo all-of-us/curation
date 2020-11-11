@@ -532,7 +532,6 @@ def process_hpo(hpo_id, force_run=False):
         message = (f"Failed to process hpo_id '{hpo_id}' due to the following "
                    f"HTTP error: {http_error.content.decode()}")
         logging.exception(message)
-        raise
 
 
 def get_hpo_name(hpo_id):
