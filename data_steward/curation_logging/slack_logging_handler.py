@@ -46,7 +46,7 @@ def initialize_slack_logging():
     """
     Setup Slack logging
     """
-    if is_channel_available():
+    if 'GAE_ENV' in os.environ and is_channel_available():
         # Configure root logger
         root_logger = logging.getLogger()
         # Configure slack logging handler
