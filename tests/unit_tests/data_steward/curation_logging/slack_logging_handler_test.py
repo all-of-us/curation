@@ -45,7 +45,6 @@ class SlackLoggingHandlerTest(unittest.TestCase):
     def test_initialize_slack_logging(self, mock_post_message,
                                       mock_is_channel_available):
         with mock.patch.dict(os.environ, {
-                GAE_ENV: '',
                 SLACK_CHANNEL: TEST_CHANNEL_NAME,
                 SLACK_TOKEN: SLACK_TOKEN
         }):
