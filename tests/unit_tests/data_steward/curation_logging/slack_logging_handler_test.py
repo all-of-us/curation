@@ -40,6 +40,11 @@ class SlackLoggingHandlerTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
+    @mock.patch.dict('os.environ', {
+        SLACK_CHANNEL: TEST_CHANNEL_NAME,
+        SLACK_TOKEN: SLACK_TOKEN
+    },
+                     clear=True)
     @mock.patch('curation_logging.slack_logging_handler.is_channel_available')
     @mock.patch('curation_logging.slack_logging_handler.post_message')
     def test_initialize_slack_logging(self, mock_post_message,
