@@ -15,7 +15,7 @@ import os
 import logging
 
 # Project imports
-from utils.slack_alerts import post_message, is_channel_available, SlackConfigurationError, SLACK_CHANNEL, SLACK_TOKEN
+from utils.slack_alerts import post_message, is_channel_available, SlackConfigurationError
 
 
 class SlackLoggingHandler(logging.Handler):
@@ -46,12 +46,11 @@ def initialize_slack_logging():
     """
     Setup Slack logging
     """
-    if SLACK_TOKEN in os.environ and SLACK_CHANNEL in os.environ:
-        if is_channel_available():
-            # Configure root logger
-            root_logger = logging.getLogger()
-            # Configure slack logging handler
-            log_handler = SlackLoggingHandler()
-            log_handler.setLevel(logging.WARNING)
-            # Add slack logging handler to root logger.
-            root_logger.addHandler(log_handler)
+    if is_channel_available():
+        # Configure root logger
+        root_logger = logging.getLogger()
+        # Configure slack logging handler
+        log_handler = SlackLoggingHandler()
+        log_handler.setLevel(logging.WARNING)
+        # Add slack logging handler to root logger.
+        root_logger.addHandler(log_handler)
