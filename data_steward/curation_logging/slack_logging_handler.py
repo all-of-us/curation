@@ -17,7 +17,7 @@ class SlackLoggingHandler(logging.Handler):
     def emit(self, record):
 
         try:
-            if check_channel_and_token() and not _is_raised_from_itself(record):
+            if check_channel_and_token and not _is_raised_from_itself(record):
                 post_message(record.msg % record.args)
         except SlackConfigurationError:
             logging.exception(
