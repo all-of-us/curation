@@ -22,6 +22,7 @@ import unittest
 from curation_logging.slack_logging_handler import initialize_slack_logging
 from utils.slack_alerts import SLACK_TOKEN, SLACK_CHANNEL
 
+GAE_ENV = 'GAE_ENV'
 TEST_SLACK_TOKEN = 'test_slack_token'
 TEST_CHANNEL_NAME = 'channel_name'
 
@@ -40,6 +41,7 @@ class SlackLoggingHandlerTest(unittest.TestCase):
         print('**************************************************************')
 
     @mock.patch.dict(os.environ, {
+        GAE_ENV: '',
         SLACK_CHANNEL: TEST_CHANNEL_NAME,
         SLACK_TOKEN: SLACK_TOKEN
     })
