@@ -11,7 +11,6 @@ all unit tests that import `validation.main.py` to fail the CircleCI unit test c
 """
 
 # Python imports
-import os
 import logging
 
 # Project imports
