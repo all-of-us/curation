@@ -28,7 +28,7 @@ class SlackConfigurationError(RuntimeError):
     """
 
     def __init__(self, msg):
-        super(SlackConfigurationError, self).__init__()
+        super(SlackConfigurationError, self).__init__(msg)
         self.msg = msg
 
 
