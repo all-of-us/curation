@@ -45,7 +45,8 @@ class SlackLoggingHandlerTest(unittest.TestCase):
     })
     @mock.patch('curation_logging.slack_logging_handler.is_channel_available')
     @mock.patch('curation_logging.slack_logging_handler.post_message')
-    def test_initialize_slack_logging(self, mock_post_message, mock_is_channel_available):
+    def test_initialize_slack_logging(self, mock_post_message,
+                                      mock_is_channel_available):
         mock_is_channel_available.return_value = True
 
         initialize_slack_logging()
