@@ -19,7 +19,7 @@ import mock
 import unittest
 
 # Project imports
-from curation_logging.slack_logging_handler import initialize_slack_logging
+from curation_logging.slack_logging_handler import initialize_slack_logging, SlackLoggingHandler
 from utils.slack_alerts import SLACK_TOKEN, SLACK_CHANNEL
 
 GAE_ENV = 'GAE_ENV'
@@ -39,6 +39,14 @@ class SlackLoggingHandlerTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+
+    def tearDown(self):
+        root_logger = logging.getLogger()
+        handlers = [
+            handler for handler in root_logger.handlers
+            if not isinstance(handler, SlackLoggingHandler)
+        ]
+        root_logger.handlers = handlers
 
     @mock.patch.dict('os.environ', {
         SLACK_CHANNEL: TEST_CHANNEL_NAME,
