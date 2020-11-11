@@ -6,10 +6,13 @@ for sending the message.
 """
 
 # Python imports
+import sys
 import os
+import logging
 
 # Third party imports
 import slack
+from slack.errors import SlackApiError
 
 # environment variable names
 SLACK_TOKEN = 'SLACK_TOKEN'
@@ -42,22 +45,6 @@ def _get_slack_token():
     return os.environ[SLACK_TOKEN]
 
 
-def _is_token_valid():
-    """
-    Test if the Slack token is available
-    :return:
-    """
-    client = _get_slack_client()
-    slack_token = _get_slack_token()
-    response = client.auth_test(token=slack_token)
-    if response.status_code == 200:
-        if 'ok: True' in response:
-            return True
-        else:
-            return False
-    return False
-
-
 def _get_slack_channel_name():
     """
     Get name of the Slack channel to post notifications to
@@ -71,20 +58,22 @@ def _get_slack_channel_name():
     return os.environ[SLACK_CHANNEL]
 
 
-def _is_channel_available():
+def is_channel_available():
     """
     Test if the Slack channel is available
     :return:
     """
-    client = _get_slack_client()
-    channel_name = _get_slack_channel_name()
-    response = client.conversations_list(limit=2000)
-    if response.status_code == 200:
-        for channel in response.data['channels']:
-            if 'test' in channel['name']:
-                print(channel['name'])
-            if channel['name'] == channel_name:
-                return True
+    try:
+        client = _get_slack_client()
+        channel_name = _get_slack_channel_name()
+        response = client.conversations_list(limit=sys.maxsize)
+        if response.status_code == 200:
+            for channel in response.data['channels']:
+                if channel['name'] == channel_name:
+                    return True
+    except (SlackConfigurationError, SlackApiError) as e:
+        # if the environment variables are missing or the slack api failed to identify the channel
+        logging.error(e)
     return False
 
 
@@ -96,13 +85,6 @@ def _get_slack_client():
     """
     slack_token = _get_slack_token()
     return slack.WebClient(slack_token)
-
-
-def check_channel_and_token():
-    if _is_channel_available and _is_token_valid:
-        return True
-    else:
-        return False
 
 
 def post_message(text):

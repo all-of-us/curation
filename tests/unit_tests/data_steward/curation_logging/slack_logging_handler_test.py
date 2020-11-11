@@ -43,10 +43,10 @@ class SlackLoggingHandlerTest(unittest.TestCase):
         SLACK_CHANNEL: TEST_CHANNEL_NAME,
         SLACK_TOKEN: SLACK_TOKEN
     })
-    @mock.patch('curation_logging.slack_logging_handler.check_channel_and_token')
+    @mock.patch('curation_logging.slack_logging_handler.is_channel_available')
     @mock.patch('curation_logging.slack_logging_handler.post_message')
-    def test_initialize_slack_logging(self, mock_post_message, mock_valid_credentials):
-        mock_valid_credentials.return_value = True
+    def test_initialize_slack_logging(self, mock_post_message, mock_is_channel_available):
+        mock_is_channel_available.return_value = True
 
         initialize_slack_logging()
 
