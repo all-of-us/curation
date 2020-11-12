@@ -20,10 +20,10 @@ from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
+# The existing person table is created and partitioned on the pseudo column _PARTITIONTIME,
+# partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a table,
+# therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table first.
 PERSON_DATA_TEMPLATE = JINJA_ENV.from_string("""
--- The existing person table is created and partitioned on the pseudo column _PARTITIONTIME,
--- partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a table,
--- therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table first.
 DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.person`;
 CREATE TABLE `{{project_id}}.{{dataset_id}}.person`
 AS (
@@ -37,9 +37,6 @@ SELECT person_id, birth_datetime FROM w, UNNEST(w.col))
 """)
 
 DEATH_DATA_TEMPLATE = JINJA_ENV.from_string("""
--- The existing death table is created and partitioned on the pseudo column _PARTITIONTIME,
--- partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a table,
--- therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table first.
 DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.death`;
 CREATE TABLE `{{project_id}}.{{dataset_id}}.death`
 AS (
@@ -52,9 +49,6 @@ SELECT person_id, death_date FROM w, UNNEST(w.col))
 """)
 
 VISIT_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
--- The existing visit_occurrence table is created and partitioned on the pseudo column _PARTITIONTIME,
--- partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a table,
--- therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table first.
 DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.visit_occurrence`;
 CREATE TABLE `{{project_id}}.{{dataset_id}}.visit_occurrence`
 AS (
@@ -69,9 +63,6 @@ SELECT visit_occurrence_id, person_id, visit_start_date, visit_end_date FROM w, 
 """)
 
 OBSERVATION_DATA_TEMPLATE = JINJA_ENV.from_string("""
--- The existing observation table is created and partitioned on the pseudo column _PARTITIONTIME,
--- partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a table,
--- therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table first.
 DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.observation`;
 CREATE TABLE `{{project_id}}.{{dataset_id}}.observation`
 AS (
