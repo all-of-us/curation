@@ -145,7 +145,7 @@ class NoDataAfterDeath(BaseCleaningRule):
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.RDR],
+                         affected_datasets=[cdr_consts.COMBINED],
                          affected_tables=get_affected_tables(),
                          project_id=project_id,
                          dataset_id=dataset_id,
