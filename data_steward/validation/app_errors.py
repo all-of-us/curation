@@ -79,7 +79,7 @@ def _handle_error(alert_message, view_message=None, response_code=None):
         mechanism
     :param view_message:  the message that will be provided to the end user in
         the event of an error.  this should remain generic and NEVER provide
-        insight to site info, participant info, or code info.  an appropriate
+        insight to site info, participant info, or code info.  An appropriate
         default message is provided if no view_message parameter is specified.
         This can accept either a string or a dictionary.
     :param response_code: The numeric status code to return

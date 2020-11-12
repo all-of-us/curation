@@ -75,8 +75,9 @@ class AppErrorHandlersTest(TestCase):
                 error.__class__.__name__, message)
 
             expected_alerts.append(mock.call(expected_alert))
+
             self.assertEqual(view, app_errors.DEFAULT_VIEW_MESSAGE)
-            self.assertEqual(code, app_errors.DEFAULT_ERROR_STATUS)
+            self.assertTrue(code, app_errors.DEFAULT_ERROR_STATUS)
 
     @mock.patch('validation.app_errors.post_message')
     @mock.patch('api_util.check_cron')

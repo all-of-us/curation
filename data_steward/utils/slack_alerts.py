@@ -4,9 +4,15 @@ A utility module for sending messages to a slack channel.
 The utility user must create the message body, this module is responsible
 for sending the message.
 """
-import os
 
+# Python imports
+import sys
+import os
+import logging
+
+# Third party imports
 import slack
+from slack.errors import SlackApiError
 
 # environment variable names
 SLACK_TOKEN = 'SLACK_TOKEN'
@@ -22,7 +28,7 @@ class SlackConfigurationError(RuntimeError):
     """
 
     def __init__(self, msg):
-        super(SlackConfigurationError, self).__init__()
+        super(SlackConfigurationError, self).__init__(msg)
         self.msg = msg
 
 
@@ -50,6 +56,25 @@ def _get_slack_channel_name():
     if SLACK_CHANNEL not in os.environ.keys():
         raise SlackConfigurationError(UNSET_SLACK_CHANNEL_MSG)
     return os.environ[SLACK_CHANNEL]
+
+
+def is_channel_available():
+    """
+    Test if the Slack channel is available
+    :return:
+    """
+    try:
+        client = _get_slack_client()
+        channel_name = _get_slack_channel_name()
+        response = client.conversations_list(limit=sys.maxsize)
+        if response.status_code == 200:
+            for channel in response.data['channels']:
+                if channel['name'] == channel_name:
+                    return True
+    except (SlackConfigurationError, SlackApiError) as e:
+        # if the environment variables are missing or the slack api failed to identify the channel
+        logging.error(e)
+    return False
 
 
 def _get_slack_client():
