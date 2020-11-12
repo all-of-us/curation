@@ -7,10 +7,10 @@ from mock import patch
 from cdr_cleaner.cleaning_rules import replace_standard_id_in_domain_tables as replace_standard_id
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import SRC_CONCEPT_ID_TABLE_NAME, \
-    SRC_CONCEPT_ID_MAPPING_QUERY, \
-    SRC_CONCEPT_ID_UPDATE_QUERY, \
-    UPDATE_MAPPING_TABLES_QUERY
+from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import (
+    SRC_CONCEPT_ID_TABLE_NAME, SRC_CONCEPT_ID_MAPPING_QUERY,
+    SRC_CONCEPT_ID_UPDATE_QUERY, UPDATE_MAPPING_TABLES_QUERY,
+    ReplaceWithStandardConceptId)
 
 
 class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
@@ -22,37 +22,46 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.project_id = 'test_project_id'
-        self.dataset_id = 'dataset_id'
-        self.snapshot_dataset_id = 'snapshot_dataset_id'
+        self.project_id = 'test_project'
+        self.dataset_id = 'test_dataset'
+        self.sandbox_id = 'test_sandbox'
+        self.client = None
+
+        self.rule_instance = ReplaceWithStandardConceptId(
+            self.project_id, self.dataset_id, self.sandbox_id)
+
         self.condition_table = 'condition_occurrence'
+        self.sandbox_condition_table = 'sandbox_condition_table'
         self.domain_concept_id = 'condition_concept_id'
         self.domain_source_concept_id = 'condition_source_concept_id'
         self.mapping_table = '_mapping_condition_occurrence'
         self.src_concept_logging_table = '_logging_standard_concept_id_replacement'
         self.domain_tables = [self.condition_table]
 
-        self.mock_domain_table_names_patcher = patch(
-            'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.DOMAIN_TABLE_NAMES'
-        )
+        self.mock_domain_table_names_patcher = patch.object(
+            ReplaceWithStandardConceptId, 'affected_tables')
         self.mock_domain_table_names = self.mock_domain_table_names_patcher.start(
         )
         self.mock_domain_table_names.__iter__.return_value = self.domain_tables
 
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
+
     def tearDown(self):
         self.mock_domain_table_names_patcher.stop()
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.get_mapping_table_update_queries'
-    )
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.get_src_concept_id_update_queries'
-    )
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.get_src_concept_id_logging_queries'
-    )
+    @patch.object(ReplaceWithStandardConceptId,
+                  'get_mapping_table_update_queries')
+    @patch.object(ReplaceWithStandardConceptId,
+                  'get_src_concept_id_update_queries')
+    @patch.object(ReplaceWithStandardConceptId,
+                  'get_sandbox_src_concept_id_update_queries')
+    @patch.object(ReplaceWithStandardConceptId,
+                  'get_src_concept_id_logging_queries')
     def test_replace_standard_id_in_domain_tables(
         self, mock_get_src_concept_id_logging_queries,
+        mock_get_sandbox_src_concept_id_update_queries,
         mock_get_src_concept_id_update_queries,
         mock_get_mapping_table_update_queries):
         query = 'select this query'
@@ -65,6 +74,13 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         }, {
             cdr_consts.QUERY: query,
             cdr_consts.DESTINATION_DATASET: self.dataset_id
+        }]
+
+        mock_get_sandbox_src_concept_id_update_queries.return_value = [{
+            cdr_consts.QUERY: query,
+            cdr_consts.DESTINATION_TABLE: self.sandbox_condition_table,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
         }]
 
         mock_get_src_concept_id_update_queries.return_value = [{
@@ -91,6 +107,11 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }, {
             cdr_consts.QUERY: query,
+            cdr_consts.DESTINATION_TABLE: self.sandbox_condition_table,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
+        }, {
+            cdr_consts.QUERY: query,
             cdr_consts.DESTINATION_TABLE: self.condition_table,
             cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_DATASET: self.dataset_id
@@ -101,28 +122,25 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }]
 
-        actual_query_list = replace_standard_id.replace_standard_id_in_domain_tables(
-            self.project_id, self.dataset_id)
+        actual_query_list = self.rule_instance.get_query_specs()
 
         self.assertEqual(expected_query_list, actual_query_list)
 
-        mock_get_src_concept_id_logging_queries.assert_any_call(
-            self.project_id, self.dataset_id)
-        mock_get_src_concept_id_update_queries.assert_any_call(
-            self.project_id, self.dataset_id)
-        mock_get_mapping_table_update_queries.assert_any_call(
-            self.project_id, self.dataset_id)
+        mock_get_src_concept_id_logging_queries.assert_any_call()
+        mock_get_sandbox_src_concept_id_update_queries.assert_any_call()
+        mock_get_src_concept_id_update_queries.assert_any_call()
+        mock_get_mapping_table_update_queries.assert_any_call()
 
         self.assertEqual(mock_get_src_concept_id_logging_queries.call_count, 1)
+        self.assertEqual(
+            mock_get_sandbox_src_concept_id_update_queries.call_count, 1)
         self.assertEqual(mock_get_src_concept_id_update_queries.call_count, 1)
         self.assertEqual(mock_get_mapping_table_update_queries.call_count, 1)
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.parse_duplicate_id_update_query'
-    )
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.parse_src_concept_id_logging_query'
-    )
+    @patch.object(ReplaceWithStandardConceptId,
+                  'parse_duplicate_id_update_query')
+    @patch.object(ReplaceWithStandardConceptId,
+                  'parse_src_concept_id_logging_query')
     @mock.patch(
         'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.bq_utils.create_standard_table'
     )
@@ -137,7 +155,8 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         }
 
         src_concept_id_mapping_query = 'SELECT DISTINCT \'condition_occurrence\' AS domain_table'
-        duplicate_id_update_query = 'UPDATE `test_project_id.dataset_id._logging_standard_concept_id_replacement'
+        duplicate_id_update_query = 'UPDATE `test_project_id.dataset_id' \
+                                    '._logging_standard_concept_id_replacement '
 
         mock_parse_src_concept_id_logging_query.return_value = src_concept_id_mapping_query
         mock_parse_duplicate_id_update_query.return_value = duplicate_id_update_query
@@ -153,8 +172,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }]
 
-        actual_queries = replace_standard_id.get_src_concept_id_logging_queries(
-            self.project_id, self.dataset_id)
+        actual_queries = self.rule_instance.get_src_concept_id_logging_queries()
 
         # Test the content of the expected and actual queries
         self.assertCountEqual(expected_queries, actual_queries)
@@ -166,9 +184,9 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             dataset_id=self.dataset_id)
 
         mock_parse_src_concept_id_logging_query.assert_called_once_with(
-            self.project_id, self.dataset_id, self.condition_table)
+            self.condition_table)
         mock_parse_duplicate_id_update_query.assert_called_once_with(
-            self.project_id, self.dataset_id, self.condition_table)
+            self.condition_table)
 
     @mock.patch('resources.get_domain_source_concept_id')
     @mock.patch('resources.get_domain_concept_id')
@@ -177,21 +195,20 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         mock_get_domain_concept_id.return_value = self.domain_concept_id
         mock_get_domain_source_concept_id.return_value = self.domain_source_concept_id
 
-        expected_query = SRC_CONCEPT_ID_MAPPING_QUERY.format(
+        expected_query = SRC_CONCEPT_ID_MAPPING_QUERY.render(
             table_name=self.condition_table,
             project=self.project_id,
             dataset=self.dataset_id,
             domain_concept_id=self.domain_concept_id,
             domain_source=self.domain_source_concept_id)
 
-        actual_query = replace_standard_id.parse_src_concept_id_logging_query(
-            self.project_id, self.dataset_id, self.condition_table)
+        actual_query = self.rule_instance.parse_src_concept_id_logging_query(
+            self.condition_table)
 
         self.assertCountEqual(expected_query, actual_query)
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.parse_src_concept_id_update_query'
-    )
+    @patch.object(ReplaceWithStandardConceptId,
+                  'parse_src_concept_id_update_query')
     def test_get_src_concept_id_update_queries(
         self, mock_parse_src_concept_id_update_query):
         src_concept_update_query = 'select a random value'
@@ -204,8 +221,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }]
 
-        actual_query = replace_standard_id.get_src_concept_id_update_queries(
-            self.project_id, self.dataset_id)
+        actual_query = self.rule_instance.get_src_concept_id_update_queries()
 
         self.assertCountEqual(actual_query, expected_query)
 
@@ -233,21 +249,20 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
                'coalesce(new_src_concept_id, condition_source_concept_id) AS condition_source_concept_id, ' \
                'condition_source_value'
 
-        expected_query = SRC_CONCEPT_ID_UPDATE_QUERY.format(
+        expected_query = SRC_CONCEPT_ID_UPDATE_QUERY.render(
             cols=cols,
             project=self.project_id,
             dataset=self.dataset_id,
             domain_table=self.condition_table,
             logging_table=SRC_CONCEPT_ID_TABLE_NAME)
 
-        actual_query = replace_standard_id.parse_src_concept_id_update_query(
-            self.project_id, self.dataset_id, self.condition_table)
+        actual_query = self.rule_instance.parse_src_concept_id_update_query(
+            self.condition_table)
 
         self.assertEqual(actual_query, expected_query)
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.parse_mapping_table_update_query'
-    )
+    @patch.object(ReplaceWithStandardConceptId,
+                  'parse_mapping_table_update_query')
     @mock.patch(
         'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.mapping_table_for'
     )
@@ -271,8 +286,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }]
 
-        actual_query = replace_standard_id.get_mapping_table_update_queries(
-            self.project_id, self.dataset_id)
+        actual_query = self.rule_instance.get_mapping_table_update_queries()
 
         self.assertCountEqual(actual_query, expected_query)
 
@@ -285,7 +299,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         }]
         cols = 'coalesce(dest_id, condition_occurrence_id) AS condition_occurrence_id, src_condition_occurrence_id'
 
-        expected_query = UPDATE_MAPPING_TABLES_QUERY.format(
+        expected_query = UPDATE_MAPPING_TABLES_QUERY.render(
             cols=cols,
             project=self.project_id,
             dataset=self.dataset_id,
@@ -293,9 +307,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             logging_table=SRC_CONCEPT_ID_TABLE_NAME,
             domain_table=self.condition_table)
 
-        actual_query = replace_standard_id.parse_mapping_table_update_query(
-            self.project_id,
-            self.dataset_id,
+        actual_query = self.rule_instance.parse_mapping_table_update_query(
             self.condition_table,
             self.mapping_table,
         )

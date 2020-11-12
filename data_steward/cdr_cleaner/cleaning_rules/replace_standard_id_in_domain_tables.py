@@ -240,7 +240,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
                 cdr_consts.DISPOSITION:
                     bq_consts.WRITE_TRUNCATE,
                 cdr_consts.DESTINATION_DATASET:
-                    self.sandbox_dataset_id
+                    self.dataset_id
             })
 
         return queries
