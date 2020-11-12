@@ -130,7 +130,7 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
                 {observation_data_query}'''
         ])
 
-    def test_fix_unmapped_survey_answers(self):
+    def test_no_data_30_days_after_death(self):
         """
         1. person_id=1, this hypothetical person passed away on 1969-01-01, which is a year 
         before the person was born. This person should be removed. This person also had two 
