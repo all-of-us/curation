@@ -50,7 +50,7 @@ SELECT ma.*
 FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
 JOIN `{{project}}.{{dataset}}.death` AS d
 ON ma.person_id = d.person_id
-WHERE date_diff(MAX(ma.{{start_date}}, ma.{{end_date}}), d.death_date, DAY) > 30
+WHERE date_diff(GREATEST(CAST(ma.{{start_date}} AS DATE), CAST(ma.{{end_date}} AS DATE)), d.death_date, DAY) > 30
 """)
 
 SANDBOX_DEATH_DATE_QUERY_QUERY = JINJA_ENV.from_string("""
@@ -58,7 +58,7 @@ SELECT ma.*
 FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
 JOIN `{{project}}.{{dataset}}.death` AS d
 ON ma.person_id = d.person_id
-WHERE date_diff({{date_column}}, death_date, DAY) > 30
+WHERE date_diff(CAST({{date_column}} AS DATE), death_date, DAY) > 30
 """)
 
 REMOVE_DEATH_DATE_QUERY = JINJA_ENV.from_string("""
