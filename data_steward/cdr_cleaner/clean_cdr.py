@@ -24,7 +24,7 @@ import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_val
 import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
 import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
-import cdr_cleaner.cleaning_rules.no_data_30_days_after_death as no_data_30days_after_death
+
 import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
@@ -46,12 +46,11 @@ import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
 import \
     cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
-import sandbox
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import \
     CleanPPINumericFieldsUsingParameters
+from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import NoDataAfterDeath
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
@@ -73,7 +72,6 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
-from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 
@@ -156,7 +154,7 @@ COMBINED_CLEANING_CLASSES = [
     (clean_years.get_year_of_birth_queries,),
     (neg_ages.get_negative_ages_queries,),
     (bad_end_dates.get_bad_end_date_queries,),
-    (no_data_30days_after_death.no_data_30_days_after_death,),
+    (NoDataAfterDeath,),
     (valid_death_dates.get_valid_death_date_queries,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
