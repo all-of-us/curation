@@ -398,6 +398,18 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
+    def sandbox_table_for(self, affected_table):
+        """
+        A helper function to retrieve the sandbox table name for the affected_table
+        :param affected_table: 
+        :return: 
+        """
+        if affected_table not in self.affected_tables:
+            raise LookupError(
+                f'{affected_table} is not define as an affected table in {self.affected_tables}'
+            )
+        return f'{"_".join(self.issue_numbers).lower()}_{affected_table}'
+
     def log_queries(self):
         """
         Helper function to print the SQL a class generates.
