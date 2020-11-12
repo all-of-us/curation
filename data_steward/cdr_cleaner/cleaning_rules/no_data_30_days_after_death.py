@@ -47,26 +47,26 @@ TEMPORAL_TABLES_WITH_DATE = {
 
 SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY = JINJA_ENV.from_string("""
 SELECT ma.*
-FROM `{project}.{dataset}.{table_name}` AS ma
-JOIN `{project}.{dataset}.death` AS d
+FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
+JOIN `{{project}}.{{dataset}}.death` AS d
 ON ma.person_id = d.person_id
-WHERE date_diff(MAX(ma.{start_date}, ma.{end_date}), d.death_date, DAY) > 30
+WHERE date_diff(MAX(ma.{{start_date}}, ma.{{end_date}}), d.death_date, DAY) > 30
 """)
 
 SANDBOX_DEATH_DATE_QUERY_QUERY = JINJA_ENV.from_string("""
 SELECT ma.*
-FROM `{project}.{dataset}.{table_name}` AS ma
-JOIN `{project}.{dataset}.death` AS d
+FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
+JOIN `{{project}}.{{dataset}}.death` AS d
 ON ma.person_id = d.person_id
-WHERE date_diff({date_column}, death_date, DAY) > 30
+WHERE date_diff({{date_column}}, death_date, DAY) > 30
 """)
 
 REMOVE_DEATH_DATE_QUERY = JINJA_ENV.from_string("""
 SELECT * 
-FROM `{project}.{dataset}.{table_name}`
-WHERE {table_name}_id NOT IN (
-    SELECT {table_name}_id 
-    FROM `{project}.{sandbox_dataset}.{sandbox_table_name}`
+FROM `{{project}}.{{dataset}}.{{table_name}}`
+WHERE {{table_name}}_id NOT IN (
+    SELECT {{table_name}}_id 
+    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table_name}}`
 )
 """)
 
@@ -184,8 +184,8 @@ class NoDataAfterDeath(BaseCleaningRule):
         :return: 
         """
         return REMOVE_DEATH_DATE_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
+            project=self.project_id,
+            dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
             table_name=table,
             sandbox_table_name=self.sandbox_table_for(table))
@@ -221,7 +221,7 @@ class NoDataAfterDeath(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         return [
             self.sandbox_table_for(affected_table)
-            for affected_table in self._affected_tables
+            for affected_table in self.affected_tables
         ]
 
     def sandbox_table_for(self, affected_table):
@@ -230,11 +230,11 @@ class NoDataAfterDeath(BaseCleaningRule):
         :param affected_table: 
         :return: 
         """
-        if affected_table not in self._affected_tables:
+        if affected_table not in self.affected_tables:
             raise LookupError(
-                f'{affected_table} is not define as an affected table in {self._affected_tables}'
+                f'{affected_table} is not define as an affected table in {self.affected_tables}'
             )
-        return f'{"_".join(self._issue_numbers).lower()}_{affected_table}'
+        return f'{"_".join(self.issue_numbers).lower()}_{affected_table}'
 
 
 if __name__ == '__main__':

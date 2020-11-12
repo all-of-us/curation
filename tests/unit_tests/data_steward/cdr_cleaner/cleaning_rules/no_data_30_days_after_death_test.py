@@ -1,14 +1,15 @@
 # Python imports
 import unittest
+from mock import patch
 
 # Project imports
 import cdr_cleaner.cleaning_rules.no_data_30_days_after_death as death
 from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
     TEMPORAL_TABLES_WITH_START_DATE, TEMPORAL_TABLES_WITH_END_DATE,
     TEMPORAL_TABLES_WITH_DATE, NoDataAfterDeath,
-    SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY, SANDBOX_DEATH_DATE_QUERY_QUERY)
+    SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY, SANDBOX_DEATH_DATE_QUERY_QUERY,
+    REMOVE_DEATH_DATE_QUERY)
 from constants.bq_utils import WRITE_TRUNCATE
-from constants.cdr_cleaner import clean_cdr as clean_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from common import PERSON, VISIT_OCCURRENCE
 
@@ -81,37 +82,63 @@ class NoDataAfterDeathTest(unittest.TestCase):
             end_date=TEMPORAL_TABLES_WITH_END_DATE[VISIT_OCCURRENCE])
         self.assertEqual(expected_query, actual_query)
 
-    def test_get_query_specs(self):
-        pass
-        # # Pre conditions
-        # self.assertEqual(self.rule_instance.affected_datasets,
-        #                  [clean_consts.RDR])
-        #
-        # # Test
-        # results_list = self.rule_instance.get_query_specs()
-        #
-        # sandbox_query_dict = {
-        #     cdr_consts.QUERY:
-        #         SANDBOX_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY.render(
-        #             project=self.project_id,
-        #             sandbox_dataset=self.sandbox_id,
-        #             sandbox_table=self.sandbox_table_name,
-        #             dataset=self.dataset_id)
-        # }
-        #
-        # update_query_dict = {
-        #     cdr_consts.QUERY:
-        #         UPDATE_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY.render(
-        #             project=self.rule_instance.project_id,
-        #             sandbox_dataset=self.sandbox_id,
-        #             sandbox_table=self.sandbox_table_name,
-        #             dataset=self.dataset_id),
-        #     cdr_consts.DESTINATION_TABLE:
-        #         OBSERVATION,
-        #     cdr_consts.DESTINATION_DATASET:
-        #         self.dataset_id,
-        #     cdr_consts.DISPOSITION:
-        #         WRITE_TRUNCATE
-        # }
-        #
-        # self.assertEqual(results_list, [sandbox_query_dict, update_query_dict])
+    @patch.object(NoDataAfterDeath, 'sandbox_table_for')
+    def test_get_query_for(self, mock_sandbox_table_for):
+        sandbox_table = 'sandbox_table'
+        mock_sandbox_table_for.return_value = sandbox_table
+        actual_query = self.rule_instance.get_query_for(PERSON)
+        expected_query = REMOVE_DEATH_DATE_QUERY.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            table_name=PERSON,
+            sandbox_dataset=self.sandbox_id,
+            sandbox_table_name=sandbox_table)
+        self.assertEqual(expected_query, actual_query)
+
+    @patch.object(NoDataAfterDeath, 'get_query_for')
+    @patch.object(NoDataAfterDeath, 'sandbox_table_for')
+    @patch.object(NoDataAfterDeath, 'get_sandbox_query_for')
+    @patch(
+        'cdr_cleaner.cleaning_rules.no_data_30_days_after_death.get_affected_tables'
+    )
+    def test_get_query_specs(self, mock_get_affected_tables,
+                             mock_get_sandbox_query_for, mock_sandbox_table_for,
+                             mock_get_query_for):
+        mock_get_affected_tables.return_value = [PERSON, VISIT_OCCURRENCE]
+        sandbox_query_1 = 'sandbox query 1'
+        sandbox_query_2 = 'sandbox query 2'
+        mock_get_sandbox_query_for.side_effect = [
+            sandbox_query_1, sandbox_query_2
+        ]
+        sandbox_table_1 = 'sandbox_table_1'
+        sandbox_table_2 = 'sandbox_table_2'
+        mock_sandbox_table_for.side_effect = [sandbox_table_1, sandbox_table_2]
+        query_1 = 'query 1'
+        query_2 = 'query 2'
+        mock_get_query_for.side_effect = [query_1, query_2]
+
+        expected_query_dicts = [{
+            cdr_consts.QUERY: sandbox_query_1,
+            cdr_consts.DESTINATION_TABLE: sandbox_table_1,
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id,
+            cdr_consts.DISPOSITION: WRITE_TRUNCATE
+        }, {
+            cdr_consts.QUERY: query_1,
+            cdr_consts.DESTINATION_TABLE: PERSON,
+            cdr_consts.DESTINATION_DATASET: self.dataset_id,
+            cdr_consts.DISPOSITION: WRITE_TRUNCATE
+        }, {
+            cdr_consts.QUERY: sandbox_query_2,
+            cdr_consts.DESTINATION_TABLE: sandbox_table_2,
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id,
+            cdr_consts.DISPOSITION: WRITE_TRUNCATE
+        }, {
+            cdr_consts.QUERY: query_2,
+            cdr_consts.DESTINATION_TABLE: VISIT_OCCURRENCE,
+            cdr_consts.DESTINATION_DATASET: self.dataset_id,
+            cdr_consts.DISPOSITION: WRITE_TRUNCATE
+        }]
+
+        actual_query_dicts = self.rule_instance.get_query_specs()
+
+        self.assertListEqual(expected_query_dicts, actual_query_dicts)
