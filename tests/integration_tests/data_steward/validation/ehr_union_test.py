@@ -264,52 +264,6 @@ class EhrUnionTest(unittest.TestCase):
         actual_rows = bq_utils.response2rows(response)
         self.assertCountEqual(expected_rows, actual_rows)
 
-    def test_subqueries(self):
-        hpo_ids = ['nyc', 'pitt']
-        project_id = bq_utils.app_identity.get_application_id()
-        dataset_id = bq_utils.get_dataset_id()
-        table = 'measurement'
-        mapping_msg = 'Expected mapping subquery count %s but got %s'
-        union_msg = 'Expected union subquery count %s but got %s'
-
-        # Should not generate subqueries when HPO tables do not exist
-        pitt_table_id = self._create_hpo_table('pitt', table, dataset_id)
-        expected_count = 1
-
-        subqueries = ehr_union._mapping_subqueries(table, hpo_ids, dataset_id,
-                                                   project_id)
-        actual_count = len(subqueries)
-        self.assertEqual(expected_count, actual_count,
-                         mapping_msg % (expected_count, actual_count))
-        subquery = subqueries[0]
-        self.assertTrue(pitt_table_id in subquery)
-
-        subqueries = ehr_union._union_subqueries(table, hpo_ids, dataset_id,
-                                                 self.output_dataset_id)
-        self.assertEqual(expected_count, actual_count,
-                         union_msg % (expected_count, actual_count))
-        subquery = subqueries[0]
-        self.assertTrue(pitt_table_id in subquery)
-
-        # After adding measurement table for , should generate subqueries for both
-        nyc_table_id = self._create_hpo_table('nyc', table, dataset_id)
-        expected_count = 2
-        subqueries = ehr_union._mapping_subqueries(table, hpo_ids, dataset_id,
-                                                   project_id)
-        actual_count = len(subqueries)
-        self.assertEqual(expected_count, actual_count,
-                         mapping_msg % (expected_count, actual_count))
-        self.assertTrue(any(sq for sq in subqueries if pitt_table_id in sq))
-        self.assertTrue(any(sq for sq in subqueries if nyc_table_id in sq))
-
-        subqueries = ehr_union._union_subqueries(table, hpo_ids, dataset_id,
-                                                 self.output_dataset_id)
-        actual_count = len(subqueries)
-        self.assertEqual(expected_count, actual_count,
-                         union_msg % (expected_count, actual_count))
-        self.assertTrue(any(sq for sq in subqueries if pitt_table_id in sq))
-        self.assertTrue(any(sq for sq in subqueries if nyc_table_id in sq))
-
     # TODO Figure out a good way to test query structure
     # One option may be for each query under test to generate an abstract syntax tree
     # (using e.g. https://github.com/andialbrecht/sqlparse) and compare it to an expected tree fragment.
