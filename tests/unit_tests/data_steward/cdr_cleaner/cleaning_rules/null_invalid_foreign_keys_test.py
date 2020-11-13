@@ -9,9 +9,11 @@ is NOT an existing foreign key in the table it references
 
 # Python imports
 import unittest
+from mock import patch
 
 # Project imports
 import resources
+import common
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as nifk
@@ -44,93 +46,121 @@ class NullInvalidForeignKeys(unittest.TestCase):
 
         # No errors are raised, nothing will happen
 
-    def test_get_query_specs(self):
+    def test_get_field_names(self):
         # Pre conditions
+        person_fields = [
+            'person_id', 'gender_concept_id', 'year_of_birth', 'month_of_birth',
+            'day_of_birth', 'birth_datetime', 'race_concept_id',
+            'ethnicity_concept_id', 'location_id', 'provider_id',
+            'care_site_id', 'person_source_value', 'gender_source_value',
+            'gender_source_concept_id', 'race_source_value',
+            'race_source_concept_id', 'ethnicity_source_value',
+            'ethnicity_source_concept_id'
+        ]
+
+        # Post conditions
+        self.assertEqual(self.rule_instance.get_field_names(common.PERSON),
+                         person_fields)
+
+    def test_get_foreign_keys(self):
+        # Pre conditions
+        person_foreign_keys = ['location_id', 'provider_id', 'care_site_id']
+
+        # Post conditions
+        self.assertEqual(self.rule_instance.get_foreign_keys(common.PERSON),
+                         person_foreign_keys)
+
+    def test_has_foreign_keys(self):
+        self.assertFalse(self.rule_instance.has_foreign_key(common.CONCEPT))
+        self.assertTrue(self.rule_instance.has_foreign_key(common.PERSON))
+
+    def test_get_col_expression(self):
+        # Pre conditions
+        person_col_expression = [
+            'person_id', 'gender_concept_id', 'year_of_birth', 'month_of_birth',
+            'day_of_birth', 'birth_datetime', 'race_concept_id',
+            'ethnicity_concept_id', 'loc.location_id', 'pro.provider_id',
+            'car.care_site_id', 'person_source_value', 'gender_source_value',
+            'gender_source_concept_id', 'race_source_value',
+            'race_source_concept_id', 'ethnicity_source_value',
+            'ethnicity_source_concept_id'
+        ]
+
+        expected_list = ', '.join(person_col_expression)
+
+        # Post conditions
+        self.assertEqual(self.rule_instance.get_col_expression(common.PERSON),
+                         expected_list)
+
+    def test_get_join_expression(self):
+        # Pre conditions
+        join_expression = []
+        foreign_keys = ['location_id', 'care_site_id', 'provider_id']
+
+        for key in foreign_keys:
+            table_alias = self.rule_instance.get_mapping_table(
+                '{x}'.format(x=key)[:-3])
+            join_expression.append(
+                nifk.LEFT_JOIN.render(dataset_id=self.dataset_id,
+                                      prefix=key[:3],
+                                      field=key,
+                                      table=table_alias))
+
+        expected_query = ' '.join(join_expression)
+
+        # Test
+        actual_query = self.rule_instance.get_join_expression(common.PERSON)
+
+        # Post conditions
+        self.assertEqual(actual_query, expected_query)
+
+    @patch.object(nifk.NullInvalidForeignKeys, 'get_affected_tables')
+    def test_get_query_specs(self, mock_get_affected_tables):
+        # Pre conditions
+        cols = self.rule_instance.get_col_expression(common.PERSON)
+        join_expression = self.rule_instance.get_join_expression(common.PERSON)
+
+        mock_get_affected_tables.return_value = [common.PERSON]
+        table = common.PERSON
+
         self.assertEqual(self.rule_instance.affected_tables,
                          resources.CDM_TABLES)
 
-        queries_list = []
-        sandbox_queries_list = []
+        invalid_foreign_key_query = {
+            cdr_consts.QUERY:
+                nifk.INVALID_FOREIGN_KEY_QUERY.render(
+                    cols=cols,
+                    table_name=table,
+                    dataset_id=self.dataset_id,
+                    project_id=self.project_id,
+                    join_expr=join_expression),
+            cdr_consts.DESTINATION_TABLE:
+                table,
+            cdr_consts.DESTINATION_DATASET:
+                self.dataset_id,
+            cdr_consts.DISPOSITION:
+                bq_consts.WRITE_TRUNCATE
+        }
 
-        for table in self.rule_instance.affected_tables:
-            field_names = [
-                field['name'] for field in resources.fields_for(table)
-            ]
-            foreign_keys_flags = []
-            fields_to_join = []
+        sandbox_query = {
+            cdr_consts.QUERY:
+                nifk.SANDBOX_QUERY.render(project_id=self.project_id,
+                                          sandbox_dataset_id=self.sandbox_id,
+                                          intermediary_table=self.rule_instance.
+                                          get_sandbox_tablenames(),
+                                          cols=cols,
+                                          dataset_id=self.dataset_id,
+                                          table_name=table,
+                                          join_expr=join_expression),
+            cdr_consts.DESTINATION_DATASET:
+                self.dataset_id,
+            cdr_consts.DESTINATION_TABLE:
+                table,
+            cdr_consts.DISPOSITION:
+                bq_consts.WRITE_TRUNCATE
+        }
 
-            for field_name in field_names:
-                if field_name in nifk.FOREIGN_KEYS_FIELDS and field_name != table + '_id':
-                    fields_to_join.append(field_name)
-                    foreign_keys_flags.append(field_name)
-
-            if fields_to_join:
-                col_exprs = []
-                for field in field_names:
-                    if field in fields_to_join:
-                        if field in foreign_keys_flags:
-                            col_expr = '{x}.'.format(x=field[:3]) + field
-                    else:
-                        col_expr = field
-                    col_exprs.append(col_expr)
-                cols = ', '.join(col_exprs)
-
-                join_expression = []
-                for key in nifk.FOREIGN_KEYS_FIELDS:
-                    if key in foreign_keys_flags:
-                        if key == 'person_id':
-                            table_alias = cdr_consts.PERSON_TABLE_NAME
-                        else:
-                            table_alias = self.rule_instance.get_mapping_tables(
-                                '{x}'.format(x=key)[:-3])
-                        join_expression.append(
-                            nifk.LEFT_JOIN.render(dataset_id=self.dataset_id,
-                                                  prefix=key[:3],
-                                                  field=key,
-                                                  table=table_alias))
-
-                full_join_expression = " ".join(join_expression)
-
-                invalid_foreign_key_query = {
-                    cdr_consts.QUERY:
-                        nifk.INVALID_FOREIGN_KEY_QUERY.render(
-                            cols=cols,
-                            table_name=table,
-                            dataset_id=self.dataset_id,
-                            project_id=self.project_id,
-                            join_expr=full_join_expression),
-                    cdr_consts.DESTINATION_TABLE:
-                        table,
-                    cdr_consts.DESTINATION_DATASET:
-                        self.dataset_id,
-                    cdr_consts.DISPOSITION:
-                        bq_consts.WRITE_TRUNCATE
-                }
-
-                queries_list.append(invalid_foreign_key_query)
-
-                sandbox_query = {
-                    cdr_consts.QUERY:
-                        nifk.SANDBOX_QUERY.render(
-                            project_id=self.project_id,
-                            sandbox_dataset_id=self.sandbox_id,
-                            intermediary_table=self.rule_instance.
-                            get_sandbox_tablenames(),
-                            cols=cols,
-                            dataset_id=self.dataset_id,
-                            table_name=table,
-                            join_expr=full_join_expression),
-                    cdr_consts.DESTINATION_TABLE:
-                        table,
-                    cdr_consts.DESTINATION_DATASET:
-                        self.dataset_id,
-                    cdr_consts.DISPOSITION:
-                        bq_consts.WRITE_TRUNCATE
-                }
-
-                sandbox_queries_list.append(sandbox_query)
-
-        expected_list = queries_list + sandbox_queries_list
+        expected_list = [invalid_foreign_key_query] + [sandbox_query]
 
         # Test
         results_list = self.rule_instance.get_query_specs()
