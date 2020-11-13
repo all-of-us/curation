@@ -329,20 +329,20 @@ class EhrUnionTest(unittest.TestCase):
         expected_query = '''
             WITH all_measurement AS (
       
-                (SELECT 'nyc_measurement' AS src_table_id,
-                  measurement_id AS src_measurement_id,
-                  measurement_id + 3000000000000000 as measurement_id
-                  FROM `{project_id}.{dataset_id}.nyc_measurement`)
-                
+    (SELECT 'nyc_measurement' AS src_table_id,
+      measurement_id AS src_measurement_id,
+      measurement_id + 3000000000000000 AS measurement_id
+      FROM `{project_id}.{dataset_id}.nyc_measurement`)
+    
 
         UNION ALL
         
 
-                (SELECT 'pitt_measurement' AS src_table_id,
-                  measurement_id AS src_measurement_id,
-                  measurement_id + 4000000000000000 as measurement_id
-                  FROM `{project_id}.{dataset_id}.pitt_measurement`)
-                
+    (SELECT 'pitt_measurement' AS src_table_id,
+      measurement_id AS src_measurement_id,
+      measurement_id + 4000000000000000 AS measurement_id
+      FROM `{project_id}.{dataset_id}.pitt_measurement`)
+    
     )
     SELECT DISTINCT
         src_table_id,
