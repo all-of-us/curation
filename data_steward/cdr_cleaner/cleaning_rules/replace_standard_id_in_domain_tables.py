@@ -109,7 +109,7 @@ FROM
         a.src_id,
         a.domain_table,
         a.new_concept_id,
-        ROW_NUMBER() OVER() + src.max_id AS dest_id
+        ROW_NUMBER() OVER(ORDER BY a.src_id, a.new_concept_id) + src.max_id AS dest_id
     FROM
         `{{project}}.{{dataset}}.{{logging_table}}` AS a
     JOIN (
