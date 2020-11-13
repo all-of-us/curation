@@ -188,7 +188,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         return [
-            self.sandbox_table_for(affected_table, self.issue_numbers)
+            self.sandbox_table_for(affected_table)
             for affected_table in self.affected_tables
         ]
 
