@@ -4,7 +4,6 @@ import unittest
 import mock
 from mock import patch
 
-from cdr_cleaner.cleaning_rules import replace_standard_id_in_domain_tables as replace_standard_id
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import (
@@ -31,12 +30,14 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             self.project_id, self.dataset_id, self.sandbox_id)
 
         self.condition_table = 'condition_occurrence'
+        self.procedure_table = 'procedure_occurrence'
         self.sandbox_condition_table = 'sandbox_condition_table'
         self.domain_concept_id = 'condition_concept_id'
         self.domain_source_concept_id = 'condition_source_concept_id'
-        self.mapping_table = '_mapping_condition_occurrence'
+        self.condition_mapping_table = '_mapping_condition_occurrence'
+        self.procedure_mapping_table = '_mapping_procedure_occurrence'
         self.src_concept_logging_table = '_logging_standard_concept_id_replacement'
-        self.domain_tables = [self.condition_table]
+        self.domain_tables = [self.condition_table, self.procedure_table]
 
         self.mock_domain_table_names_patcher = patch.object(
             ReplaceWithStandardConceptId, 'affected_tables')
@@ -92,7 +93,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
 
         mock_get_mapping_table_update_queries.return_value = [{
             cdr_consts.QUERY: query,
-            cdr_consts.DESTINATION_TABLE: self.mapping_table,
+            cdr_consts.DESTINATION_TABLE: self.condition_mapping_table,
             cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }]
@@ -117,7 +118,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }, {
             cdr_consts.QUERY: query,
-            cdr_consts.DESTINATION_TABLE: self.mapping_table,
+            cdr_consts.DESTINATION_TABLE: self.condition_mapping_table,
             cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }]
@@ -144,22 +145,45 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
     def test_get_src_concept_id_logging_queries(
         self, mock_parse_src_concept_id_logging_query,
         mock_parse_duplicate_id_update_query):
-        src_concept_id_mapping_query = 'SELECT DISTINCT \'condition_occurrence\' AS domain_table'
-        duplicate_id_update_query = 'UPDATE `test_project_id.dataset_id' \
-                                    '._logging_standard_concept_id_replacement '
+        src_concept_id_mapping_query_condition = 'SELECT fake query condition'
+        src_concept_id_mapping_query_procedure = 'SELECT fake query procedure'
+        duplicate_id_update_query_condition = (
+            'UPDATE `test_project_id.dataset_id'
+            '._logging_standard_concept_id_replacement'
+            'for condition')
+        duplicate_id_update_query_procedure = (
+            'UPDATE `test_project_id.dataset_id'
+            '._logging_standard_concept_id_replacement'
+            'for procedure')
 
-        mock_parse_src_concept_id_logging_query.return_value = src_concept_id_mapping_query
-        mock_parse_duplicate_id_update_query.return_value = duplicate_id_update_query
+        mock_parse_src_concept_id_logging_query.side_effect = [
+            src_concept_id_mapping_query_condition,
+            src_concept_id_mapping_query_procedure
+        ]
+        mock_parse_duplicate_id_update_query.side_effect = [
+            duplicate_id_update_query_condition,
+            duplicate_id_update_query_procedure
+        ]
 
         # Define the expected queries
         expected_queries = [{
-            cdr_consts.QUERY: src_concept_id_mapping_query,
+            cdr_consts.QUERY: src_concept_id_mapping_query_condition,
             cdr_consts.DESTINATION_TABLE: SRC_CONCEPT_ID_TABLE_NAME,
             cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }, {
-            cdr_consts.QUERY: duplicate_id_update_query,
+            cdr_consts.QUERY: src_concept_id_mapping_query_procedure,
+            cdr_consts.DESTINATION_TABLE: SRC_CONCEPT_ID_TABLE_NAME,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
             cdr_consts.DESTINATION_DATASET: self.dataset_id
+        }, {
+            cdr_consts.QUERY:
+                ';\n'.join([
+                    duplicate_id_update_query_condition,
+                    duplicate_id_update_query_procedure
+                ]),
+            cdr_consts.DESTINATION_DATASET:
+                self.dataset_id
         }]
 
         actual_queries = self.rule_instance.get_src_concept_id_logging_queries()
@@ -167,10 +191,64 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         # Test the content of the expected and actual queries
         self.assertCountEqual(expected_queries, actual_queries)
 
-        mock_parse_src_concept_id_logging_query.assert_called_once_with(
+        self.assertEqual(mock_parse_src_concept_id_logging_query.call_count, 2)
+        self.assertEqual(mock_parse_duplicate_id_update_query.call_count, 2)
+
+        mock_parse_src_concept_id_logging_query.assert_any_call(
             self.condition_table)
-        mock_parse_duplicate_id_update_query.assert_called_once_with(
+        mock_parse_src_concept_id_logging_query.assert_called_with(
+            self.procedure_table)
+        mock_parse_duplicate_id_update_query.assert_any_call(
             self.condition_table)
+        mock_parse_duplicate_id_update_query.assert_called_with(
+            self.procedure_table)
+
+    @patch.object(ReplaceWithStandardConceptId, 'sandbox_table_for')
+    @patch.object(ReplaceWithStandardConceptId,
+                  'parse_sandbox_src_concept_id_update_query')
+    def test_get_sandbox_src_concept_id_update_queries(
+        self, mock_parse_sandbox_src_concept_id_update_query,
+        mock_sandbox_table_for):
+        sandbox_query_condition = 'condition sandbox query'
+        sandbox_query_procedure = 'procedure sandbox query'
+        condition_sandbox_table = 'condition_sandbox_table'
+        procedure_sandbox_table = 'procedure_sandbox_table'
+
+        mock_parse_sandbox_src_concept_id_update_query.side_effect = [
+            sandbox_query_condition, sandbox_query_procedure
+        ]
+        mock_sandbox_table_for.side_effect = [
+            condition_sandbox_table, procedure_sandbox_table
+        ]
+
+        expected_queries = [{
+            cdr_consts.QUERY: sandbox_query_condition,
+            cdr_consts.DESTINATION_TABLE: condition_sandbox_table,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
+        }, {
+            cdr_consts.QUERY: sandbox_query_procedure,
+            cdr_consts.DESTINATION_TABLE: procedure_sandbox_table,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
+        }]
+
+        actual_queries = self.rule_instance.get_sandbox_src_concept_id_update_queries(
+        )
+
+        # Test the content of the expected and actual queries
+        self.assertCountEqual(expected_queries, actual_queries)
+
+        self.assertEqual(mock_sandbox_table_for.call_count, 2)
+        mock_sandbox_table_for.assert_any_call(self.condition_table)
+        mock_sandbox_table_for.assert_called_with(self.procedure_table)
+
+        self.assertEqual(
+            mock_parse_sandbox_src_concept_id_update_query.call_count, 2)
+        mock_parse_sandbox_src_concept_id_update_query.assert_any_call(
+            self.condition_table)
+        mock_parse_sandbox_src_concept_id_update_query.assert_called_with(
+            self.procedure_table)
 
     @mock.patch('resources.get_domain_source_concept_id')
     @mock.patch('resources.get_domain_concept_id')
@@ -195,12 +273,20 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
                   'parse_src_concept_id_update_query')
     def test_get_src_concept_id_update_queries(
         self, mock_parse_src_concept_id_update_query):
-        src_concept_update_query = 'select a random value'
-        mock_parse_src_concept_id_update_query.return_value = src_concept_update_query
+        update_query_condition = 'select a random value'
+        update_query_procedure = 'select a random value procedure'
+        mock_parse_src_concept_id_update_query.side_effect = [
+            update_query_condition, update_query_procedure
+        ]
 
         expected_query = [{
-            cdr_consts.QUERY: src_concept_update_query,
+            cdr_consts.QUERY: update_query_condition,
             cdr_consts.DESTINATION_TABLE: self.condition_table,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET: self.dataset_id
+        }, {
+            cdr_consts.QUERY: update_query_procedure,
+            cdr_consts.DESTINATION_TABLE: self.procedure_table,
             cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }]
@@ -252,20 +338,25 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
     )
     def test_get_mapping_table_update_queries(
         self, mock_mapping_table_for, mock_parse_mapping_table_update_query):
-        mock_mapping_table_for.return_value = self.mapping_table
+        mock_mapping_table_for.side_effect = [
+            self.condition_mapping_table, self.procedure_mapping_table
+        ]
 
-        expected_table = self.mapping_table
-        actual_table = replace_standard_id.mapping_table_for(
-            self.condition_table)
-
-        self.assertEqual(actual_table, expected_table)
-
-        src_concept_update_query = 'select a random value'
-        mock_parse_mapping_table_update_query.return_value = src_concept_update_query
+        src_concept_update_query_condition = 'select a random value condition'
+        src_concept_update_query_procedure = 'select a random value procedure'
+        mock_parse_mapping_table_update_query.side_effect = [
+            src_concept_update_query_condition,
+            src_concept_update_query_procedure
+        ]
 
         expected_query = [{
-            cdr_consts.QUERY: src_concept_update_query,
-            cdr_consts.DESTINATION_TABLE: self.mapping_table,
+            cdr_consts.QUERY: src_concept_update_query_condition,
+            cdr_consts.DESTINATION_TABLE: self.condition_mapping_table,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET: self.dataset_id
+        }, {
+            cdr_consts.QUERY: src_concept_update_query_procedure,
+            cdr_consts.DESTINATION_TABLE: self.procedure_mapping_table,
             cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }]
@@ -274,6 +365,16 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
 
         self.assertCountEqual(actual_query, expected_query)
 
+        self.assertEqual(mock_mapping_table_for.call_count, 2)
+        mock_mapping_table_for.assert_any_call(self.condition_table)
+        mock_mapping_table_for.assert_called_with(self.procedure_table)
+
+        self.assertEqual(mock_parse_mapping_table_update_query.call_count, 2)
+        mock_parse_mapping_table_update_query.assert_any_call(
+            self.condition_table, self.condition_mapping_table)
+        mock_parse_mapping_table_update_query.assert_called_with(
+            self.procedure_table, self.procedure_mapping_table)
+
     @mock.patch('resources.fields_for')
     def test_parse_mapping_table_update_query(self, mock_fields_for):
         mock_fields_for.return_value = [{
@@ -281,18 +382,20 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         }, {
             'name': 'src_condition_occurrence_id'
         }]
-        cols = 'coalesce(dest_id, condition_occurrence_id) AS condition_occurrence_id, src_condition_occurrence_id'
+        cols = (
+            'coalesce(dest_id, condition_occurrence_id) AS condition_occurrence_id, '
+            'src_condition_occurrence_id')
 
         expected_query = UPDATE_MAPPING_TABLES_QUERY.render(
             cols=cols,
             project=self.project_id,
             dataset=self.dataset_id,
-            mapping_table=self.mapping_table,
+            mapping_table=self.condition_mapping_table,
             logging_table=SRC_CONCEPT_ID_TABLE_NAME,
             domain_table=self.condition_table)
 
         actual_query = self.rule_instance.parse_mapping_table_update_query(
             self.condition_table,
-            self.mapping_table,
+            self.condition_mapping_table,
         )
         self.assertEqual(actual_query, expected_query)

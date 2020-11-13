@@ -38,7 +38,6 @@ TODO when the time comes, include care_site, death, note, provider, specimen
 """
 import logging
 
-import bq_utils
 from utils.bq import create_tables
 from common import JINJA_ENV
 from constants import bq_utils as bq_consts
