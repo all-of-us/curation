@@ -383,13 +383,14 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
         # For new rows added as a result of one-to-many standard concepts, we give newly generated
         # rows new ids. These queries need to be run after _logging_standard_concept_id_replacement
         # is populated.
-        for domain_table in self.affected_tables:
-            queries.append({
-                cdr_consts.QUERY:
-                    self.parse_duplicate_id_update_query(domain_table),
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id
-            })
+
+        # concatenate all update queries into one query the reduce the number of API calls
+        update_queries = map(self.parse_duplicate_id_update_query,
+                             self.affected_tables)
+        queries.append({
+            cdr_consts.QUERY: ';\n'.join(update_queries),
+            cdr_consts.DESTINATION_DATASET: self.dataset_id
+        })
         return queries
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
