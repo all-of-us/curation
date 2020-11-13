@@ -90,7 +90,7 @@ from constants.validation import ehr_union as eu_constants
 UNION_ALL = '''
 
         UNION ALL
-        
+
 '''
 
 
@@ -183,7 +183,7 @@ def mapping_query(table_name, hpo_ids, dataset_id=None, project_id=None):
     union_all_query = UNION_ALL.join(subqueries)
     return f'''
     WITH all_{table_name} AS (
-      {union_all_query}
+    {union_all_query}
     )
     SELECT DISTINCT
         src_table_id,

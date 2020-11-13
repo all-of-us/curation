@@ -315,47 +315,6 @@ class EhrUnionTest(unittest.TestCase):
     # (using e.g. https://github.com/andialbrecht/sqlparse) and compare it to an expected tree fragment.
     # Functions below are for reference
 
-    def test_mapping_query(self):
-        table = 'measurement'
-        hpo_ids = ['nyc', 'pitt']
-        project_id = bq_utils.app_identity.get_application_id()
-        dataset_id = bq_utils.get_dataset_id()
-        created_tables = []
-        for hpo_id in hpo_ids:
-            hpo_table = self._create_hpo_table(hpo_id, table, dataset_id)
-            created_tables.append(hpo_table)
-        query = ehr_union.mapping_query(table, hpo_ids, dataset_id, project_id)
-        # testing the query string
-        expected_query = '''
-            WITH all_measurement AS (
-      
-    (SELECT 'nyc_measurement' AS src_table_id,
-      measurement_id AS src_measurement_id,
-      measurement_id + 3000000000000000 AS measurement_id
-      FROM `{project_id}.{dataset_id}.nyc_measurement`)
-    
-
-        UNION ALL
-        
-
-    (SELECT 'pitt_measurement' AS src_table_id,
-      measurement_id AS src_measurement_id,
-      measurement_id + 4000000000000000 AS measurement_id
-      FROM `{project_id}.{dataset_id}.pitt_measurement`)
-    
-    )
-    SELECT DISTINCT
-        src_table_id,
-        src_measurement_id,
-        measurement_id,
-        SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id,
-        '{dataset_id}' as src_dataset_id
-    FROM all_measurement
-    '''.format(dataset_id=dataset_id, project_id=project_id)
-        self.assertEqual(
-            expected_query.strip(), query.strip(),
-            "Mapping query for \n {q} \n to is not as expected".format(q=query))
-
     def convert_ehr_person_to_observation(self, person_row):
         obs_rows = []
         dob_row = {

@@ -89,5 +89,45 @@ class EhrUnionTest(unittest.TestCase):
             f'condition_occurrence_id + {hpo_offset} AS condition_occurrence_id',
             subquery)
 
+    @mock.patch('bq_utils.list_all_table_ids')
+    def test_mapping_query(self, mock_list_all_table_ids):
+        mock_list_all_table_ids.return_value = [
+            f'{self.FAKE_SITE_1}_measurement', f'{self.FAKE_SITE_2}_measurement'
+        ]
+        dataset_id = 'fake_dataset'
+        project_id = 'fake_project'
+        table = 'measurement'
+        query = eu.mapping_query(table, self.hpo_ids, dataset_id, project_id)
+        # testing the query string
+        expected_query = f'''
+            WITH all_measurement AS (
+    
+    (SELECT '{self.FAKE_SITE_1}_measurement' AS src_table_id,
+      measurement_id AS src_measurement_id,
+      measurement_id + 3000000000000000 AS measurement_id
+      FROM `{project_id}.{dataset_id}.{self.FAKE_SITE_1}_measurement`)
+    
+
+        UNION ALL
+
+
+    (SELECT '{self.FAKE_SITE_2}_measurement' AS src_table_id,
+      measurement_id AS src_measurement_id,
+      measurement_id + 4000000000000000 AS measurement_id
+      FROM `{project_id}.{dataset_id}.{self.FAKE_SITE_2}_measurement`)
+    
+    )
+    SELECT DISTINCT
+        src_table_id,
+        src_measurement_id,
+        measurement_id,
+        SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id,
+        '{dataset_id}' as src_dataset_id
+    FROM all_measurement
+    '''.format(dataset_id=dataset_id, project_id=project_id)
+        self.assertEqual(
+            expected_query.strip(), query.strip(),
+            "Mapping query for \n {q} \n to is not as expected".format(q=query))
+
     def tearDown(self):
         pass
