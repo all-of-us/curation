@@ -141,19 +141,9 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
                   'parse_duplicate_id_update_query')
     @patch.object(ReplaceWithStandardConceptId,
                   'parse_src_concept_id_logging_query')
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.bq_utils.create_standard_table'
-    )
     def test_get_src_concept_id_logging_queries(
-        self, mock_create_standard_table,
-        mock_parse_src_concept_id_logging_query,
+        self, mock_parse_src_concept_id_logging_query,
         mock_parse_duplicate_id_update_query):
-        mock_create_standard_table.return_value = {
-            bq_consts.DATASET_REF: {
-                bq_consts.DATASET_ID: self.dataset_id
-            }
-        }
-
         src_concept_id_mapping_query = 'SELECT DISTINCT \'condition_occurrence\' AS domain_table'
         duplicate_id_update_query = 'UPDATE `test_project_id.dataset_id' \
                                     '._logging_standard_concept_id_replacement '
@@ -176,12 +166,6 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
 
         # Test the content of the expected and actual queries
         self.assertCountEqual(expected_queries, actual_queries)
-
-        mock_create_standard_table.assert_called_once_with(
-            SRC_CONCEPT_ID_TABLE_NAME,
-            SRC_CONCEPT_ID_TABLE_NAME,
-            drop_existing=True,
-            dataset_id=self.dataset_id)
 
         mock_parse_src_concept_id_logging_query.assert_called_once_with(
             self.condition_table)

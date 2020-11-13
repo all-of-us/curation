@@ -39,6 +39,7 @@ TODO when the time comes, include care_site, death, note, provider, specimen
 import logging
 
 import bq_utils
+from utils.bq import create_tables
 from common import JINJA_ENV
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -364,12 +365,6 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
         Creates logging table and generates a list of query dicts for populating it
         :return: a list of query dicts to gather logging records
         """
-        # Create _logging_standard_concept_id_replacement
-        bq_utils.create_standard_table(SRC_CONCEPT_ID_TABLE_NAME,
-                                       SRC_CONCEPT_ID_TABLE_NAME,
-                                       drop_existing=True,
-                                       dataset_id=self.dataset_id)
-
         queries = []
 
         # Populate the logging table for keeping track of which records need to be updated
@@ -409,7 +404,12 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
         return queries_list
 
     def setup_rule(self, client, *args, **keyword_args):
-        pass
+
+        # Create _logging_standard_concept_id_replacement
+        fq_table_names = [
+            f'{self.project_id}.{self.dataset_id}.{SRC_CONCEPT_ID_TABLE_NAME}'
+        ]
+        create_tables(client, self.project_id, fq_table_names, exists_ok=True)
 
     def setup_validation(self, client, *args, **keyword_args):
         pass
