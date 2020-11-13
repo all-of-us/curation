@@ -196,8 +196,6 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
 
         Fill in mapping tables query so it either gets dest_id from the logging table or the domain table
 
-        :param project_id: identifies the project containing the dataset
-        :param dataset_id: identifies the dataset containing the OMOP data
         :param table_name: name of the domain table for which the query needs to be parsed
         :param mapping_table_name: name of the mapping_table for which the query needs to be parsed
         :return:
@@ -295,10 +293,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
     def get_sandbox_src_concept_id_update_queries(self):
         """
         Generates a list of query dicts for sandboxing records that will be updated
-
-        :param project_id: identifies the project containing the dataset
-        :param sandbox_dataset_id: identifies the dataset containing the OMOP data
-        :param domain_tables: 
+        
         :return: a list of query dicts for updating the standard_concept_ids
         """
         queries = []
@@ -317,6 +312,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
     def get_src_concept_id_update_queries(self):
         """
         Generates a list of query dicts for replacing the standard concept ids in domain tables
+        
         :return: a list of query dicts for updating the standard_concept_ids
         """
 
@@ -403,10 +399,6 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
-        :param project_id: identifies the project containing the dataset
-        :param dataset_id: identifies the dataset containing the OMOP data
-        :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
-        #TODO use sandbox_dataset_id for CR
         :return: a list of query dicts for replacing standard_concept_ids in domain_tables
         """
         queries_list = []
