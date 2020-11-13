@@ -69,6 +69,11 @@ Currently the following environment variables must be set:
 
 TODO
  * Besides `visit_occurrence` also handle mapping of other foreign key fields (e.g. `location_id`)
+ 
+TODO: Refactor query generation logic in mapping_query and table_union_query 
+      so that both use either
+      A) a single jinja template or 
+      B) dynamic SQL (i.e. EXECUTE IMMEDIATE)
 """
 import argparse
 import logging
@@ -81,12 +86,11 @@ import cdm
 import common
 import resources
 from constants.validation import ehr_union as eu_constants
-from constants.tools.combine_ehr_rdr import PERSON_TABLE, OBSERVATION_TABLE
 
 UNION_ALL = '''
 
         UNION ALL
-        
+
 '''
 
 
@@ -125,6 +129,17 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     :param project_id: identifies the GCP project
     :return: list of subqueries
     """
+    # Until dynamic queries are refactored to use either a single template or dynamic SQL,
+    # defining template locally (rather than top of module) so it is closer to code
+    # that references it below
+    hpo_subquery_tpl = common.JINJA_ENV.from_string('''
+    (SELECT '{{table_id}}' AS src_table_id,
+      {{table_name}}_id AS src_{{table_name}}_id,
+      -- offset is added to the destination key only if add_hpo_offset == True --
+      {{table_name}}_id 
+        {%- if add_hpo_offset %} + {{hpo_offset}} {%- endif %} AS {{table_name}}_id
+      FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`)
+    ''')
     result = []
     hpo_unique_identifiers = get_hpo_offsets(hpo_ids)
 
@@ -132,13 +147,15 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     all_table_ids = bq_utils.list_all_table_ids(dataset_id)
     for hpo_id in hpo_ids:
         table_id = bq_utils.get_table_id(hpo_id, table_name)
+        hpo_offset = hpo_unique_identifiers[hpo_id]
         if table_id in all_table_ids:
-            subquery = f'''
-                (SELECT '{table_id}' AS src_table_id,
-                  {table_name}_id AS src_{table_name}_id,
-                  {table_name}_id + {hpo_unique_identifiers[hpo_id]} as {table_name}_id
-                  FROM `{project_id}.{dataset_id}.{table_id}`)
-                '''
+            add_hpo_offset = table_name != common.PERSON
+            subquery = hpo_subquery_tpl.render(table_id=table_id,
+                                               table_name=table_name,
+                                               add_hpo_offset=add_hpo_offset,
+                                               hpo_offset=hpo_offset,
+                                               project_id=project_id,
+                                               dataset_id=dataset_id)
             result.append(subquery)
         else:
             logging.info(
@@ -166,7 +183,7 @@ def mapping_query(table_name, hpo_ids, dataset_id=None, project_id=None):
     union_all_query = UNION_ALL.join(subqueries)
     return f'''
     WITH all_{table_name} AS (
-      {union_all_query}
+    {union_all_query}
     )
     SELECT DISTINCT
         src_table_id,
@@ -247,7 +264,7 @@ def fact_relationship_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id):
     :param output_dataset_id: identifies dataset where output is saved
     :return: the query
     """
-    table_id = bq_utils.get_table_id(hpo_id, eu_constants.FACT_RELATIONSHIP)
+    table_id = bq_utils.get_table_id(hpo_id, common.FACT_RELATIONSHIP)
     fact_query = f'''SELECT F.domain_concept_id_1,
         CASE
             WHEN F.domain_concept_id_1= {common.MEASUREMENT_DOMAIN_CONCEPT_ID} THEN M1.measurement_id
@@ -354,9 +371,9 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if has_visit_occurrence_id:
             # Include a join to mapping visit table
             # Note: Using left join in order to keep records that aren't mapped to visits
-            mv = mapping_table_for(eu_constants.VISIT_OCCURRENCE)
-            src_visit_table_id = bq_utils.get_table_id(
-                hpo_id, eu_constants.VISIT_OCCURRENCE)
+            mv = mapping_table_for(common.VISIT_OCCURRENCE)
+            src_visit_table_id = bq_utils.get_table_id(hpo_id,
+                                                       common.VISIT_OCCURRENCE)
             visit_join_expr = f'''
             LEFT JOIN {output_dataset_id}.{mv} mv 
               ON t.visit_occurrence_id = mv.src_visit_occurrence_id 
@@ -366,9 +383,9 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if has_care_site_id:
             # Include a join to mapping visit table
             # Note: Using left join in order to keep records that aren't mapped to visits
-            cs = mapping_table_for(eu_constants.CARE_SITE)
+            cs = mapping_table_for(common.CARE_SITE)
             src_care_site_table_id = bq_utils.get_table_id(
-                hpo_id, eu_constants.CARE_SITE)
+                hpo_id, common.CARE_SITE)
             care_site_join_expr = f'''
                         LEFT JOIN {output_dataset_id}.{cs} mcs 
                           ON t.care_site_id = mcs.src_care_site_id 
@@ -378,16 +395,16 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if has_location_id:
             # Include a join to mapping visit table
             # Note: Using left join in order to keep records that aren't mapped to visits
-            lc = mapping_table_for(eu_constants.LOCATION)
+            lc = mapping_table_for(common.LOCATION)
             src_location_table_id = bq_utils.get_table_id(
-                hpo_id, eu_constants.LOCATION)
+                hpo_id, common.LOCATION)
             location_join_expr = f'''
                         LEFT JOIN {output_dataset_id}.{lc} loc 
                           ON t.location_id = loc.src_location_id 
                          AND loc.src_table_id = '{src_location_table_id}'
                         '''
 
-        if table_name == eu_constants.PERSON:
+        if table_name == common.PERSON:
             return f'''
                     SELECT {cols} 
                     FROM {input_dataset_id}.{table_id} t
@@ -433,7 +450,7 @@ def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
     for hpo_id in hpo_ids:
         table_id = bq_utils.get_table_id(hpo_id, table_name)
         if table_id in all_table_ids:
-            if table_name == eu_constants.FACT_RELATIONSHIP:
+            if table_name == common.FACT_RELATIONSHIP:
                 subquery = fact_relationship_hpo_subquery(
                     hpo_id, input_dataset_id, output_dataset_id)
                 result.append(subquery)
@@ -495,7 +512,7 @@ def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
         f'Loading union of {cdm_table} tables from {hpo_ids} into {output_table}'
     )
 
-    if cdm_table == eu_constants.FACT_RELATIONSHIP:
+    if cdm_table == common.FACT_RELATIONSHIP:
         q = fact_table_union_query(cdm_table, hpo_ids, input_dataset_id,
                                    output_dataset_id)
     else:
@@ -637,7 +654,7 @@ def move_ehr_person_to_observation(output_dataset_id):
     logging.info(
         f'Copying EHR person table from {bq_utils.get_dataset_id()} to unioned dataset. Query is `{q}`'
     )
-    dst_table_id = output_table_for(OBSERVATION_TABLE)
+    dst_table_id = output_table_for(common.OBSERVATION)
     dst_dataset_id = output_dataset_id
     query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
 
@@ -649,7 +666,7 @@ def map_ehr_person_to_observation(output_dataset_id):
     :param output_dataset_id:
     :param hpo_id:
     """
-    table_name = OBSERVATION_TABLE
+    table_name = common.OBSERVATION
 
     q = '''
         SELECT
@@ -726,7 +743,7 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     logging.info('Creation of Unioned EHR complete')
 
     # create person mapping table
-    domain_table = PERSON_TABLE
+    domain_table = common.PERSON
     logging.info(f'Mapping {domain_table}...')
     mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
             project_id, client)

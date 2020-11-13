@@ -109,10 +109,9 @@ class EhrUnionTest(unittest.TestCase):
                 running_jobs.append(result['jobReference']['jobId'])
                 expected_tables[output_table] += list(csv_rows)
         # ensure person to observation output is as expected
-        output_table_person = ehr_union.output_table_for(
-            combine_ehr_rdr.PERSON_TABLE)
+        output_table_person = ehr_union.output_table_for(common.PERSON)
         output_table_observation = ehr_union.output_table_for(
-            combine_ehr_rdr.OBSERVATION_TABLE)
+            common.OBSERVATION)
         expected_tables[output_table_observation] += 4 * expected_tables[
             output_table_person]
 
@@ -265,97 +264,10 @@ class EhrUnionTest(unittest.TestCase):
         actual_rows = bq_utils.response2rows(response)
         self.assertCountEqual(expected_rows, actual_rows)
 
-    def test_subqueries(self):
-        hpo_ids = ['nyc', 'pitt']
-        project_id = bq_utils.app_identity.get_application_id()
-        dataset_id = bq_utils.get_dataset_id()
-        table = 'measurement'
-        mapping_msg = 'Expected mapping subquery count %s but got %s'
-        union_msg = 'Expected union subquery count %s but got %s'
-
-        # Should not generate subqueries when HPO tables do not exist
-        pitt_table_id = self._create_hpo_table('pitt', table, dataset_id)
-        expected_count = 1
-
-        subqueries = ehr_union._mapping_subqueries(table, hpo_ids, dataset_id,
-                                                   project_id)
-        actual_count = len(subqueries)
-        self.assertEqual(expected_count, actual_count,
-                         mapping_msg % (expected_count, actual_count))
-        subquery = subqueries[0]
-        self.assertTrue(pitt_table_id in subquery)
-
-        subqueries = ehr_union._union_subqueries(table, hpo_ids, dataset_id,
-                                                 self.output_dataset_id)
-        self.assertEqual(expected_count, actual_count,
-                         union_msg % (expected_count, actual_count))
-        subquery = subqueries[0]
-        self.assertTrue(pitt_table_id in subquery)
-
-        # After adding measurement table for , should generate subqueries for both
-        nyc_table_id = self._create_hpo_table('nyc', table, dataset_id)
-        expected_count = 2
-        subqueries = ehr_union._mapping_subqueries(table, hpo_ids, dataset_id,
-                                                   project_id)
-        actual_count = len(subqueries)
-        self.assertEqual(expected_count, actual_count,
-                         mapping_msg % (expected_count, actual_count))
-        self.assertTrue(any(sq for sq in subqueries if pitt_table_id in sq))
-        self.assertTrue(any(sq for sq in subqueries if nyc_table_id in sq))
-
-        subqueries = ehr_union._union_subqueries(table, hpo_ids, dataset_id,
-                                                 self.output_dataset_id)
-        actual_count = len(subqueries)
-        self.assertEqual(expected_count, actual_count,
-                         union_msg % (expected_count, actual_count))
-        self.assertTrue(any(sq for sq in subqueries if pitt_table_id in sq))
-        self.assertTrue(any(sq for sq in subqueries if nyc_table_id in sq))
-
     # TODO Figure out a good way to test query structure
     # One option may be for each query under test to generate an abstract syntax tree
     # (using e.g. https://github.com/andialbrecht/sqlparse) and compare it to an expected tree fragment.
     # Functions below are for reference
-
-    def test_mapping_query(self):
-        table = 'measurement'
-        hpo_ids = ['nyc', 'pitt']
-        project_id = bq_utils.app_identity.get_application_id()
-        dataset_id = bq_utils.get_dataset_id()
-        created_tables = []
-        for hpo_id in hpo_ids:
-            hpo_table = self._create_hpo_table(hpo_id, table, dataset_id)
-            created_tables.append(hpo_table)
-        query = ehr_union.mapping_query(table, hpo_ids, dataset_id, project_id)
-        # testing the query string
-        expected_query = '''
-            WITH all_measurement AS (
-      
-                (SELECT 'nyc_measurement' AS src_table_id,
-                  measurement_id AS src_measurement_id,
-                  measurement_id + 3000000000000000 as measurement_id
-                  FROM `{project_id}.{dataset_id}.nyc_measurement`)
-                
-
-        UNION ALL
-        
-
-                (SELECT 'pitt_measurement' AS src_table_id,
-                  measurement_id AS src_measurement_id,
-                  measurement_id + 4000000000000000 as measurement_id
-                  FROM `{project_id}.{dataset_id}.pitt_measurement`)
-                
-    )
-    SELECT DISTINCT
-        src_table_id,
-        src_measurement_id,
-        measurement_id,
-        SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id,
-        '{dataset_id}' as src_dataset_id
-    FROM all_measurement
-    '''.format(dataset_id=dataset_id, project_id=project_id)
-        self.assertEqual(
-            expected_query.strip(), query.strip(),
-            "Mapping query for \n {q} \n to is not as expected".format(q=query))
 
     def convert_ehr_person_to_observation(self, person_row):
         obs_rows = []
@@ -592,7 +504,7 @@ class EhrUnionTest(unittest.TestCase):
         # Key fields should be populated using associated mapping tables
         for table in resources.CDM_TABLES:
             # This condition is to exempt person table from table hpo sub query
-            if table != eu_constants.PERSON:
+            if table != common.PERSON:
                 subquery_fail = self.get_table_hpo_subquery_error(
                     table, input_dataset_id, output_dataset_id)
                 if subquery_fail is not None:
