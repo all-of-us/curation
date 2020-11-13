@@ -24,8 +24,6 @@ import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_val
 import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
 import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
-
-import cdr_cleaner.cleaning_rules.null_invalid_foreign_keys as null_foreign_key
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
 import \
@@ -72,6 +70,7 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
+from cdr_cleaner.cleaning_rules.null_invalid_foreign_keys import NullInvalidForeignKeys
 from constants.cdr_cleaner.clean_cdr import DataStage
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 
@@ -168,7 +167,7 @@ COMBINED_CLEANING_CLASSES = [
     (drop_duplicate_states.get_drop_duplicate_states_queries,),
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     (
-        null_foreign_key.null_invalid_foreign_keys,),
+        NullInvalidForeignKeys,),
     (remove_aian_participants.get_queries,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
