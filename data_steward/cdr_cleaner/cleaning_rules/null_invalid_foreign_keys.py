@@ -68,9 +68,17 @@ class NullInvalidForeignKeys(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=resources.CDM_TABLES)
+                         affected_tables=self.get_affected_tables())
 
-    def get_mapping_tables(self, domain_table):
+    def get_affected_tables(self):
+        """
+        This method gets all the tables that are affected by this cleaning rule
+        
+        :return: list of affected tables
+        """
+        return resources.CDM_TABLES
+
+    def get_mapping_table(self, domain_table):
         """
         Get name of mapping table generated for a domain table
 
@@ -80,96 +88,130 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         """
         return '_mapping_' + domain_table
 
+    def get_field_names(self, table):
+        """
+        This method gets the list of field names in a table affected by the cleaning rule
+
+        :param table: single table in the list of affected tables
+        :return: list of field names in a single affected table
+        """
+        field_names = [field['name'] for field in resources.fields_for(table)]
+        return field_names
+
+    def get_foreign_keys(self, table):
+        """
+        This method gets the list of foreign keys determined from the list of field names
+
+        :param table: single table in the list of affected tables
+        :return: list of foreign keys
+        """
+        foreign_keys_flags = []
+        for field_name in self.get_field_names(table):
+            if field_name in FOREIGN_KEYS_FIELDS and field_name != table + '_id':
+                foreign_keys_flags.append(field_name)
+        return foreign_keys_flags
+
+    def has_foreign_key(self, table):
+        """
+        This method determines if a table contains has a foreign key
+
+        :param table: single table in the list of affected tables
+        :return: true, if the table contains a foreign key, false if the table does not contain a foreign key
+        """
+        return len(self.get_foreign_keys(table)) > 0
+
+    def get_col_expression(self, table):
+        """
+        This method formats the column name depending of if it is a foreign key or not. If the column is a foreign key
+        it will be prefixed with the first part of the table name. If the column is not a foreign key, there will be
+        no changes to the column name.
+
+        :param table: single table in the list of affected tables
+        :return: all the formatted column names for the table
+        """
+        col_exprs = []
+        foreign_keys = self.get_foreign_keys(table)
+        for field in self.get_field_names(table):
+            if field in foreign_keys:
+                col_expr = '{x}.'.format(x=field[:3]) + field
+            else:
+                col_expr = field
+            col_exprs.append(col_expr)
+        return ', '.join(col_exprs)
+
+    def get_join_expression(self, table):
+        """
+        This method generates the LEFT_JOIN query. Only columns that are foreign keys will be
+        used in the query generation.
+
+        :param table: single table in the list of affected tables
+        :return: LEFT_JOIN query expression
+        """
+        join_expression = []
+        for key in FOREIGN_KEYS_FIELDS:
+            if key in self.get_foreign_keys(table):
+                if key == 'person_id':
+                    table_alias = cdr_consts.PERSON_TABLE_NAME
+                else:
+                    table_alias = self.get_mapping_table(
+                        '{x}'.format(x=key)[:-3])
+                join_expression.append(
+                    LEFT_JOIN.render(dataset_id=self.dataset_id,
+                                     prefix=key[:3],
+                                     field=key,
+                                     table=table_alias))
+        return ' '.join(join_expression)
+
     def get_query_specs(self):
         """
         This method gets the queries required to make invalid foreign keys null
 
-        :param project_id: Project associated with the input and output datasets
-        :param dataset_id: Dataset where cleaning rules are to be applied
-        :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
         :return: a list of queries
         """
         queries_list = []
         sandbox_queries_list = []
 
-        for table in self.affected_tables:
-            field_names = [
-                field['name'] for field in resources.fields_for(table)
-            ]
-            foreign_keys_flags = []
-            fields_to_join = []
+        for table in self.get_affected_tables():
+            if self.has_foreign_key(table):
+                cols = self.get_col_expression(table)
+                join_expression = self.get_join_expression(table)
 
-            for field_name in field_names:
-                if field_name in FOREIGN_KEYS_FIELDS and field_name != table + '_id':
-                    fields_to_join.append(field_name)
-                    foreign_keys_flags.append(field_name)
+            invalid_foreign_key_query = {
+                cdr_consts.QUERY:
+                    INVALID_FOREIGN_KEY_QUERY.render(cols=cols,
+                                                     table_name=table,
+                                                     dataset_id=self.dataset_id,
+                                                     project_id=self.project_id,
+                                                     join_expr=join_expression),
+                cdr_consts.DESTINATION_TABLE:
+                    table,
+                cdr_consts.DESTINATION_DATASET:
+                    self.dataset_id,
+                cdr_consts.DISPOSITION:
+                    bq_consts.WRITE_TRUNCATE
+            }
 
-            if fields_to_join:
-                col_exprs = []
-                for field in field_names:
-                    if field in fields_to_join:
-                        if field in foreign_keys_flags:
-                            col_expr = '{x}.'.format(x=field[:3]) + field
-                    else:
-                        col_expr = field
-                    col_exprs.append(col_expr)
-                cols = ', '.join(col_exprs)
+            queries_list.append(invalid_foreign_key_query)
 
-                join_expression = []
-                for key in FOREIGN_KEYS_FIELDS:
-                    if key in foreign_keys_flags:
-                        if key == 'person_id':
-                            table_alias = cdr_consts.PERSON_TABLE_NAME
-                        else:
-                            table_alias = self.get_mapping_tables(
-                                '{x}'.format(x=key)[:-3])
-                        join_expression.append(
-                            LEFT_JOIN.render(dataset_id=self.dataset_id,
-                                             prefix=key[:3],
-                                             field=key,
-                                             table=table_alias))
+            sandbox_query = {
+                cdr_consts.QUERY:
+                    SANDBOX_QUERY.render(
+                        project_id=self.project_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        intermediary_table=self.get_sandbox_tablenames(),
+                        cols=cols,
+                        dataset_id=self.dataset_id,
+                        table_name=table,
+                        join_expr=join_expression),
+                cdr_consts.DESTINATION_DATASET:
+                    self.dataset_id,
+                cdr_consts.DESTINATION_TABLE:
+                    table,
+                cdr_consts.DISPOSITION:
+                    bq_consts.WRITE_TRUNCATE
+            }
 
-                full_join_expression = " ".join(join_expression)
-
-                invalid_foreign_key_query = {
-                    cdr_consts.QUERY:
-                        INVALID_FOREIGN_KEY_QUERY.render(
-                            cols=cols,
-                            table_name=table,
-                            dataset_id=self.dataset_id,
-                            project_id=self.project_id,
-                            join_expr=full_join_expression),
-                    cdr_consts.DESTINATION_TABLE:
-                        table,
-                    cdr_consts.DESTINATION_DATASET:
-                        self.dataset_id,
-                    cdr_consts.DISPOSITION:
-                        bq_consts.WRITE_TRUNCATE
-                }
-
-                queries_list.append(invalid_foreign_key_query)
-
-                sandbox_query = {
-                    cdr_consts.QUERY:
-                        SANDBOX_QUERY.render(
-                            project_id=self.project_id,
-                            sandbox_dataset_id=self.sandbox_dataset_id,
-                            intermediary_table=self.get_sandbox_tablenames(),
-                            cols=cols,
-                            dataset_id=self.dataset_id,
-                            table_name=table,
-                            join_expr=full_join_expression),
-                    cdr_consts.DESTINATION_DATASET:
-                        self.dataset_id,
-                    cdr_consts.DESTINATION_TABLE:
-                        table,
-                    cdr_consts.DISPOSITION:
-                        bq_consts.WRITE_TRUNCATE
-                }
-
-                sandbox_queries_list.append(sandbox_query)
-
-                print(f'cleaning rule queries list: {queries_list}')
+            sandbox_queries_list.append(sandbox_query)
 
         return queries_list + sandbox_queries_list
 
