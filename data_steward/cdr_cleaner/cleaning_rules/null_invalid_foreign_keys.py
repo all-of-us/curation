@@ -133,7 +133,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         foreign_keys = self.get_foreign_keys(table)
         for field in self.get_field_names(table):
             if field in foreign_keys:
-                col_expr = '{x}.'.format(x=field[:3]) + field
+                col_expr = f'{field[:3]}.{field}'
             else:
                 col_expr = field
             col_exprs.append(col_expr)
@@ -148,8 +148,8 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         :return: LEFT_JOIN query expression
         """
         join_expression = []
-        for key in FOREIGN_KEYS_FIELDS:
-            if key in self.get_foreign_keys(table):
+        for key in self.get_foreign_keys(table):
+            if key in FOREIGN_KEYS_FIELDS:
                 if key == 'person_id':
                     table_alias = cdr_consts.PERSON_TABLE_NAME
                 else:
@@ -176,44 +176,44 @@ class NullInvalidForeignKeys(BaseCleaningRule):
                 cols = self.get_col_expression(table)
                 join_expression = self.get_join_expression(table)
 
-            invalid_foreign_key_query = {
-                cdr_consts.QUERY:
-                    INVALID_FOREIGN_KEY_QUERY.render(cols=cols,
-                                                     table_name=table,
-                                                     dataset_id=self.dataset_id,
-                                                     project_id=self.project_id,
-                                                     join_expr=join_expression),
-                cdr_consts.DESTINATION_TABLE:
-                    table,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DISPOSITION:
-                    bq_consts.WRITE_TRUNCATE
-            }
+                sandbox_query = {
+                    cdr_consts.QUERY:
+                        SANDBOX_QUERY.render(
+                            project_id=self.project_id,
+                            sandbox_dataset_id=self.sandbox_dataset_id,
+                            intermediary_table=self.get_sandbox_table_for(table),
+                            cols=cols,
+                            dataset_id=self.dataset_id,
+                            table_name=table,
+                            join_expr=join_expression),
+                    cdr_consts.DESTINATION_DATASET:
+                        self.dataset_id,
+                    cdr_consts.DESTINATION_TABLE:
+                        table,
+                    cdr_consts.DISPOSITION:
+                        bq_consts.WRITE_TRUNCATE
+                }
 
-            queries_list.append(invalid_foreign_key_query)
+                sandbox_queries_list.append(sandbox_query)
 
-            sandbox_query = {
-                cdr_consts.QUERY:
-                    SANDBOX_QUERY.render(
-                        project_id=self.project_id,
-                        sandbox_dataset_id=self.sandbox_dataset_id,
-                        intermediary_table=self.get_sandbox_tablenames(),
-                        cols=cols,
-                        dataset_id=self.dataset_id,
-                        table_name=table,
-                        join_expr=join_expression),
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DESTINATION_TABLE:
-                    table,
-                cdr_consts.DISPOSITION:
-                    bq_consts.WRITE_TRUNCATE
-            }
+                invalid_foreign_key_query = {
+                    cdr_consts.QUERY:
+                        INVALID_FOREIGN_KEY_QUERY.render(cols=cols,
+                                                         table_name=table,
+                                                         dataset_id=self.dataset_id,
+                                                         project_id=self.project_id,
+                                                         join_expr=join_expression),
+                    cdr_consts.DESTINATION_TABLE:
+                        table,
+                    cdr_consts.DESTINATION_DATASET:
+                        self.dataset_id,
+                    cdr_consts.DISPOSITION:
+                        bq_consts.WRITE_TRUNCATE
+                }
 
-            sandbox_queries_list.append(sandbox_query)
+                queries_list.append(invalid_foreign_key_query)
 
-        return queries_list + sandbox_queries_list
+        return sandbox_queries_list + queries_list
 
     def setup_rule(self, client):
         """
@@ -223,9 +223,20 @@ class NullInvalidForeignKeys(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         """
-        Get the sandbox dataset id for this class instance.
+        Get the sandbox dataset id for this class instance
         """
-        return f'{self._issue_numbers[0].lower()}_{self._affected_tables[0]}'
+        return [
+            self.get_sandbox_table_for(affected_table)
+            for affected_table in self.affected_tables
+        ]
+
+    def get_sandbox_table_for(self, affected_table):
+        """
+        A helper function to retrieve the sandbox table name for the affected_table
+        :param affected_table: tables that is affected by running this cleaning rule
+        :return: formatted string name of the sandbox
+        """
+        return f'{"_".join(self.issue_numbers).lower()}_{affected_table}'
 
     def setup_validation(self, client):
         """

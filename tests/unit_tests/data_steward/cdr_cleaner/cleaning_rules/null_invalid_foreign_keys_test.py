@@ -32,6 +32,26 @@ class NullInvalidForeignKeys(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
         self.client = None
+        self.maxDiff = None
+
+        self.person_foreign_keys = ['location_id', 'provider_id', 'care_site_id']
+        self.person_col_expression = [
+            'person_id', 'gender_concept_id', 'year_of_birth', 'month_of_birth',
+            'day_of_birth', 'birth_datetime', 'race_concept_id',
+            'ethnicity_concept_id', 'loc.location_id', 'pro.provider_id',
+            'car.care_site_id', 'person_source_value', 'gender_source_value',
+            'gender_source_concept_id', 'race_source_value',
+            'race_source_concept_id', 'ethnicity_source_value',
+            'ethnicity_source_concept_id'
+        ]
+        self.join_expression = """
+            LEFT JOIN `bar_dataset._mapping_location` loc
+            ON t.location_id = loc.location_id
+            LEFT JOIN `bar_dataset._mapping_care_site` car
+            ON t.care_site_id = car.care_site_id
+            LEFT JOIN `bar_dataset._mapping_provider` pro
+            ON t.provider_id = pro.provider_id
+            """
 
         self.rule_instance = nifk.NullInvalidForeignKeys(
             self.project_id, self.dataset_id, self.sandbox_id)
@@ -63,12 +83,9 @@ class NullInvalidForeignKeys(unittest.TestCase):
                          person_fields)
 
     def test_get_foreign_keys(self):
-        # Pre conditions
-        person_foreign_keys = ['location_id', 'provider_id', 'care_site_id']
-
         # Post conditions
         self.assertEqual(self.rule_instance.get_foreign_keys(common.PERSON),
-                         person_foreign_keys)
+                         self.person_foreign_keys)
 
     def test_has_foreign_keys(self):
         self.assertFalse(self.rule_instance.has_foreign_key(common.CONCEPT))
@@ -76,28 +93,20 @@ class NullInvalidForeignKeys(unittest.TestCase):
 
     def test_get_col_expression(self):
         # Pre conditions
-        person_col_expression = [
-            'person_id', 'gender_concept_id', 'year_of_birth', 'month_of_birth',
-            'day_of_birth', 'birth_datetime', 'race_concept_id',
-            'ethnicity_concept_id', 'loc.location_id', 'pro.provider_id',
-            'car.care_site_id', 'person_source_value', 'gender_source_value',
-            'gender_source_concept_id', 'race_source_value',
-            'race_source_concept_id', 'ethnicity_source_value',
-            'ethnicity_source_concept_id'
-        ]
-
-        expected_list = ', '.join(person_col_expression)
+        expected_list = ', '.join(self.person_col_expression)
 
         # Post conditions
         self.assertEqual(self.rule_instance.get_col_expression(common.PERSON),
                          expected_list)
 
+    def test_sandbox_table_for(self):
+        self.rule_instance.get_sandbox_table_for(common.PERSON)
+
     def test_get_join_expression(self):
         # Pre conditions
         join_expression = []
-        foreign_keys = ['location_id', 'care_site_id', 'provider_id']
 
-        for key in foreign_keys:
+        for key in self.person_foreign_keys:
             table_alias = self.rule_instance.get_mapping_table(
                 '{x}'.format(x=key)[:-3])
             join_expression.append(
@@ -114,44 +123,30 @@ class NullInvalidForeignKeys(unittest.TestCase):
         # Post conditions
         self.assertEqual(actual_query, expected_query)
 
+    @patch.object(nifk.NullInvalidForeignKeys, 'get_join_expression')
+    @patch.object(nifk.NullInvalidForeignKeys, 'get_col_expression')
+    @patch.object(nifk.NullInvalidForeignKeys, 'has_foreign_key')
     @patch.object(nifk.NullInvalidForeignKeys, 'get_affected_tables')
-    def test_get_query_specs(self, mock_get_affected_tables):
+    def test_get_query_specs(self, mock_get_affected_tables,
+                             mock_has_foreign_keys, mock_get_col_expression,
+                             mock_get_join_expression):
         # Pre conditions
-        cols = self.rule_instance.get_col_expression(common.PERSON)
-        join_expression = self.rule_instance.get_join_expression(common.PERSON)
-
+        mock_has_foreign_keys.return_value = True
+        mock_get_col_expression.return_value = self.person_col_expression
+        mock_get_join_expression.return_value = self.join_expression
         mock_get_affected_tables.return_value = [common.PERSON]
+
         table = common.PERSON
-
-        self.assertEqual(self.rule_instance.affected_tables,
-                         resources.CDM_TABLES)
-
-        invalid_foreign_key_query = {
-            cdr_consts.QUERY:
-                nifk.INVALID_FOREIGN_KEY_QUERY.render(
-                    cols=cols,
-                    table_name=table,
-                    dataset_id=self.dataset_id,
-                    project_id=self.project_id,
-                    join_expr=join_expression),
-            cdr_consts.DESTINATION_TABLE:
-                table,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                bq_consts.WRITE_TRUNCATE
-        }
 
         sandbox_query = {
             cdr_consts.QUERY:
                 nifk.SANDBOX_QUERY.render(project_id=self.project_id,
                                           sandbox_dataset_id=self.sandbox_id,
-                                          intermediary_table=self.rule_instance.
-                                          get_sandbox_tablenames(),
-                                          cols=cols,
+                                          intermediary_table='dc-388_dc-807_person',
+                                          cols=self.person_col_expression,
                                           dataset_id=self.dataset_id,
                                           table_name=table,
-                                          join_expr=join_expression),
+                                          join_expr=self.join_expression),
             cdr_consts.DESTINATION_DATASET:
                 self.dataset_id,
             cdr_consts.DESTINATION_TABLE:
@@ -160,10 +155,28 @@ class NullInvalidForeignKeys(unittest.TestCase):
                 bq_consts.WRITE_TRUNCATE
         }
 
-        expected_list = [invalid_foreign_key_query] + [sandbox_query]
+        invalid_foreign_key_query = {
+            cdr_consts.QUERY:
+                nifk.INVALID_FOREIGN_KEY_QUERY.render(
+                    cols=self.person_col_expression,
+                    table_name=table,
+                    dataset_id=self.dataset_id,
+                    project_id=self.project_id,
+                    join_expr=self.join_expression),
+            cdr_consts.DESTINATION_TABLE:
+                table,
+            cdr_consts.DESTINATION_DATASET:
+                self.dataset_id,
+            cdr_consts.DISPOSITION:
+                bq_consts.WRITE_TRUNCATE
+        }
+
+        expected_list = [sandbox_query] + [invalid_foreign_key_query]
 
         # Test
         results_list = self.rule_instance.get_query_specs()
 
         # Post conditions
+        self.assertEqual(self.rule_instance.affected_tables,
+                         resources.CDM_TABLES)
         self.assertEqual(results_list, expected_list)
