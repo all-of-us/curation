@@ -1,5 +1,6 @@
 # Python imports
 import unittest
+import os
 
 # Project Imports
 import sandbox
@@ -17,20 +18,20 @@ class SandboxTest(unittest.TestCase):
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
-        self.dataset_id = 'fake_dataset'
+        self.dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
 
     def test_create_sandbox_dataset(self):
         # Create sandbox dataset
-        dataset = sandbox.create_sandbox_dataset(self.project_id,
-                                                 self.dataset_id)
+        sandbox_dataset = sandbox.create_sandbox_dataset(
+            self.project_id, self.dataset_id)
         all_datasets_obj = list_datasets(self.project_id)
         all_datasets = [d.dataset_id for d in all_datasets_obj]
 
-        self.assertTrue(dataset in all_datasets)
+        self.assertTrue(sandbox_dataset in all_datasets)
 
         # Try to create same sandbox, which now already exists
         self.assertRaises(RuntimeError, sandbox.create_sandbox_dataset,
                           self.project_id, self.dataset_id)
 
         # Remove fake dataset created in project
-        delete_dataset(self.project_id, dataset)
+        delete_dataset(self.project_id, sandbox_dataset)
