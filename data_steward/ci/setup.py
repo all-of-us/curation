@@ -1,3 +1,8 @@
+"""
+Resource creation entry module.
+
+This module coordinates creating resources used in tests.
+"""
 import os
 
 from ci.create_buckets import create_test_buckets
@@ -5,7 +10,7 @@ from ci.create_datasets import create_test_datasets
 
 DATASET_NAMES = [
     'RDR_DATASET_ID', 'COMBINED_DATASET_ID', 'BIGQUERY_DATASET_ID',
-    'UNIONED_DATASET_ID'
+    'UNIONED_DATASET_ID', 'VOCABULARY_DATASET'
 ]
 BUCKET_NAMES = [
     'DRC_BUCKET_NAME', 'BUCKET_NAME_FAKE', 'BUCKET_NAME_NYC',
@@ -15,6 +20,15 @@ REQUIREMENTS = ['APPLICATION_ID', 'USERNAME', 'GOOGLE_APPLICATION_CREDENTIALS']
 
 
 def get_environment_config():
+    """
+    Uses the referenced variable names to read values from the environment.
+
+    So, even if a variable is defined in the environment but is not referenced
+    in one of the lists, it is ignored during setup.  Whether this is a feature
+    or a bug is debatable.
+
+    return: a dictionary of variables read from the environment.
+    """
     config = {}
 
     env_vars = DATASET_NAMES + BUCKET_NAMES + REQUIREMENTS
@@ -25,7 +39,13 @@ def get_environment_config():
 
 
 def main():
+    """
+    Controller function for creating test resources.
+
+    Oversees creating test buckets and datasets.
+    """
     config = get_environment_config()
+
     create_test_buckets(config, BUCKET_NAMES)
     create_test_datasets(config, DATASET_NAMES)
 
