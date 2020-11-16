@@ -10,13 +10,23 @@ from ci.create_datasets import create_test_datasets
 
 DATASET_NAMES = [
     'RDR_DATASET_ID', 'COMBINED_DATASET_ID', 'BIGQUERY_DATASET_ID',
-    'UNIONED_DATASET_ID', 'VOCABULARY_DATASET'
+    'UNIONED_DATASET_ID'
 ]
+"""Datasets that are expected to be created for testing purposes only."""
+
 BUCKET_NAMES = [
     'DRC_BUCKET_NAME', 'BUCKET_NAME_FAKE', 'BUCKET_NAME_NYC',
     'BUCKET_NAME_PITT', 'BUCKET_NAME_CHS', 'BUCKET_NAME_UNIONED_EHR'
 ]
-REQUIREMENTS = ['APPLICATION_ID', 'USERNAME', 'GOOGLE_APPLICATION_CREDENTIALS']
+"""Buckets that are expected to be created for testing purposes only."""
+
+REQUIREMENTS = [
+    'APPLICATION_ID', 'USERNAME', 'GOOGLE_APPLICATION_CREDENTIALS',
+    'VOCABULARY_DATASET'
+]
+"""
+Variables that are required to run the tests, but are not expected to be created.
+"""
 
 
 def get_environment_config():
