@@ -181,7 +181,8 @@ class NullInvalidForeignKeys(BaseCleaningRule):
                         SANDBOX_QUERY.render(
                             project_id=self.project_id,
                             sandbox_dataset_id=self.sandbox_dataset_id,
-                            intermediary_table=self.get_sandbox_table_for(table),
+                            intermediary_table=self.get_sandbox_table_for(
+                                table),
                             cols=cols,
                             dataset_id=self.dataset_id,
                             table_name=table,
@@ -198,11 +199,12 @@ class NullInvalidForeignKeys(BaseCleaningRule):
 
                 invalid_foreign_key_query = {
                     cdr_consts.QUERY:
-                        INVALID_FOREIGN_KEY_QUERY.render(cols=cols,
-                                                         table_name=table,
-                                                         dataset_id=self.dataset_id,
-                                                         project_id=self.project_id,
-                                                         join_expr=join_expression),
+                        INVALID_FOREIGN_KEY_QUERY.render(
+                            cols=cols,
+                            table_name=table,
+                            dataset_id=self.dataset_id,
+                            project_id=self.project_id,
+                            join_expr=join_expression),
                     cdr_consts.DESTINATION_TABLE:
                         table,
                     cdr_consts.DESTINATION_DATASET:

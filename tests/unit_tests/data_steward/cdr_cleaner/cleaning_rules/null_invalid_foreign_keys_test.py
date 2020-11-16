@@ -34,7 +34,9 @@ class NullInvalidForeignKeys(unittest.TestCase):
         self.client = None
         self.maxDiff = None
 
-        self.person_foreign_keys = ['location_id', 'provider_id', 'care_site_id']
+        self.person_foreign_keys = [
+            'location_id', 'provider_id', 'care_site_id'
+        ]
         self.person_col_expression = [
             'person_id', 'gender_concept_id', 'year_of_birth', 'month_of_birth',
             'day_of_birth', 'birth_datetime', 'race_concept_id',
@@ -140,13 +142,14 @@ class NullInvalidForeignKeys(unittest.TestCase):
 
         sandbox_query = {
             cdr_consts.QUERY:
-                nifk.SANDBOX_QUERY.render(project_id=self.project_id,
-                                          sandbox_dataset_id=self.sandbox_id,
-                                          intermediary_table='dc-388_dc-807_person',
-                                          cols=self.person_col_expression,
-                                          dataset_id=self.dataset_id,
-                                          table_name=table,
-                                          join_expr=self.join_expression),
+                nifk.SANDBOX_QUERY.render(
+                    project_id=self.project_id,
+                    sandbox_dataset_id=self.sandbox_id,
+                    intermediary_table='dc-388_dc-807_person',
+                    cols=self.person_col_expression,
+                    dataset_id=self.dataset_id,
+                    table_name=table,
+                    join_expr=self.join_expression),
             cdr_consts.DESTINATION_DATASET:
                 self.dataset_id,
             cdr_consts.DESTINATION_TABLE:
