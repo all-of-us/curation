@@ -39,11 +39,11 @@ LEFT_JOIN = JINJA_ENV.from_string("""
     ON t.{{field}} = {{prefix}}.{{field}}""")
 
 SANDBOX_QUERY = JINJA_ENV.from_string("""
-    CREATE OR REPLACE TABLE
+    CREATE OR REPLACE TABLE 
     `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS (
-    SELECT {{cols}}
-    FROM `{{project_id}}.{{dataset_id}}.{{table_name}}` t
-    {{join_exp}})""")
+        SELECT t.* FROM `{{project_id}}.{{dataset_id}}.{{table_name}}` AS t 
+        LEFT JOIN {{dataset_id}}.{{table}} AS tc USING({{cols}}) 
+        WHERE tc.{{cols}} IS NULL)""")
 
 
 class NullInvalidForeignKeys(BaseCleaningRule):
@@ -185,8 +185,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
                                 table),
                             cols=cols,
                             dataset_id=self.dataset_id,
-                            table_name=table,
-                            join_expr=join_expression),
+                            table_name=table),
                     cdr_consts.DESTINATION_DATASET:
                         self.dataset_id,
                     cdr_consts.DESTINATION_TABLE:
