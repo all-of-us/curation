@@ -5,8 +5,27 @@ Buckets will have a  lifecycle of 30  days.
 """
 from google.cloud import storage
 from google.cloud.exceptions import Conflict
+from google.oauth2 import service_account
 
-from ci.setup import  get_client
+CLIENT = None
+"""Storage Client object"""
+
+
+def get_client(project_id, app_creds):
+    """
+    Ensure only one client is created and reused
+
+    :param project_id:  project to get a client for
+    :returns: a big query client object
+    """
+    global CLIENT
+    if not CLIENT:
+        credentials = service_account.Credentials.from_service_account_file(
+            app_creds)
+        CLIENT = storage.Client(project=project_id, credentials=credentials)
+
+    return CLIENT
+
 
 def create_bucket(config, bucket_name):
     """
