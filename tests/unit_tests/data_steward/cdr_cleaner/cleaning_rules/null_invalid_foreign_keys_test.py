@@ -148,8 +148,7 @@ class NullInvalidForeignKeys(unittest.TestCase):
                     intermediary_table='dc-388_dc-807_person',
                     cols=self.person_col_expression,
                     dataset_id=self.dataset_id,
-                    table_name=table,
-                    join_expr=self.join_expression),
+                    table_name=table),
             cdr_consts.DESTINATION_DATASET:
                 self.dataset_id,
             cdr_consts.DESTINATION_TABLE:
