@@ -5,8 +5,11 @@ This module coordinates creating resources used in tests.
 """
 import os
 
-from ci.create_buckets import create_test_buckets
-from ci.create_datasets import create_test_datasets
+from google.oauth2 import service_account
+from google.cloud import bigquery
+
+from ci.test_buckets import create_test_buckets
+from ci.test_datasets import create_test_datasets
 
 DATASET_NAMES = [
     'RDR_DATASET_ID', 'COMBINED_DATASET_ID', 'BIGQUERY_DATASET_ID',
@@ -27,6 +30,23 @@ REQUIREMENTS = [
 """
 Variables that are required to run the tests, but are not expected to be created.
 """
+
+CLIENT = None
+
+
+def get_client(project_id, app_creds):
+    """
+    Ensure only one client is created and reused
+    :param project_id:  project to get a client for
+    :returns: a big query client object
+    """
+    global CLIENT
+    if not CLIENT:
+        credentials = service_account.Credentials.from_service_account_file(
+            app_creds)
+        CLIENT = bigquery.Client(project=project_id, credentials=credentials)
+
+    return CLIENT
 
 
 def get_environment_config():

@@ -1,28 +1,21 @@
-import os
+"""
+Create test buckets for integration tests.
 
+Buckets will have a  lifecycle of 30  days.
+"""
 from google.cloud import storage
 from google.cloud.exceptions import Conflict
-from google.oauth2 import service_account
 
-CLIENT = None
-
-
-def get_client(project_id, app_creds):
-    """
-    Ensure only one client is created and reused
-    :param project_id:  project to get a client for
-    :returns: a big query client object
-    """
-    global CLIENT
-    if not CLIENT:
-        credentials = service_account.Credentials.from_service_account_file(
-            app_creds)
-        CLIENT = storage.Client(project=project_id, credentials=credentials)
-
-    return CLIENT
-
+from ci.setup import  get_client
 
 def create_bucket(config, bucket_name):
+    """
+    Create a bucket in the test project.
+
+    :param config: a dictionary of os.environ variables needed to create
+        the test bucket.
+    :param bucket_name:  the string used to name the bucket.
+    """
     storage_client = get_client('aou-res-curation-test',
                                 config.get('GOOGLE_APPLICATION_CREDENTIALS'))
 
@@ -64,6 +57,13 @@ def create_bucket(config, bucket_name):
 
 
 def create_test_buckets(config, buckets):
+    """
+    Create the buckets defined in  the buckets iterable.
+
+    :param config: a dictionary of environment variables and values needed
+        to create test  buckets
+    :param buckets: an iterable containing strings to use  as bucket names
+    """
     for name_id in buckets:
         name = config.get(name_id)
         create_bucket(config, name)
