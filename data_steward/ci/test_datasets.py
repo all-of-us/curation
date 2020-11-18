@@ -1,5 +1,9 @@
 """
-Modules for setting up and tearing down test datasets for integration testing.
+Test  dataset resources for integration tests.
+
+Contains functions for setting up and tearing down test datasets for integration testing.
+Also contains test dataset deletion functions.  Dataset modification functions
+should be added here as well.
 """
 from google.oauth2 import service_account
 from google.cloud import bigquery

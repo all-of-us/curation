@@ -1,7 +1,8 @@
 """
-Resource creation entry module.
+Test resource creation entry module.
 
 This module coordinates creating resources used in tests.
+This includes coordinating the creation of buckets and datasets.
 """
 import os
 

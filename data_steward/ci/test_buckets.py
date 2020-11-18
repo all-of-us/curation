@@ -1,7 +1,9 @@
 """
-Create test buckets for integration tests.
+Test bucket resources for integration tests.
 
-Buckets will have a  lifecycle of 30  days.
+Creates buckets with a 30 day lifecycle.
+Bucket deletion and modification functions (for testing purposes) should be
+added to this module.
 """
 from google.cloud import storage
 from google.cloud.exceptions import Conflict
