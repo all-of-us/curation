@@ -46,6 +46,7 @@ REQUIRED_PARAMS = [
     # dataset_id.table_id mapping questionnaire IDs to survey versions
     'cope_version_map'
 ]
+pd.options.display.max_rows = 120
 
 
 # -
@@ -102,6 +103,76 @@ project_id = params['project_id']
 old_rdr = params['old_rdr']
 new_rdr = params['new_rdr']
 cope_version_map = params['cope_version_map']
+
+# %load_ext google.cloud.bigquery
+
+# # Missing tables
+
+# %%bigquery --params $params
+DECLARE query_template STRING DEFAULT('''
+SELECT 
+ COALESCE(curr.table_id, prev.table_id) AS table_id, 
+ curr.row_count AS ${CURR}, 
+ prev.row_count AS ${PREV}, 
+ (curr.row_count - prev.row_count) row_diff 
+FROM ${CURR}.__TABLES__ curr 
+FULL OUTER JOIN ${PREV}.__TABLES__ prev
+  USING (table_id)
+WHERE curr.table_id IS NULL OR prev.table_id IS NULL
+''');
+DECLARE query STRING DEFAULT(REPLACE(query_template, '${CURR}', @new_rdr));
+SET query = REPLACE(query, '${PREV}', @old_rdr);
+EXECUTE IMMEDIATE query;
+
+# ## Row count comparison
+
+# %%bigquery --params $params
+DECLARE query_template STRING DEFAULT('''
+SELECT 
+ curr.table_id AS table_id, 
+ curr.row_count AS ${CURR}, 
+ prev.row_count AS ${PREV}, 
+ (curr.row_count - prev.row_count) row_diff 
+FROM ${CURR}.__TABLES__ curr 
+JOIN ${PREV}.__TABLES__ prev
+  USING (table_id)
+ORDER BY ABS(curr.row_count - prev.row_count) DESC;
+''');
+DECLARE query STRING DEFAULT(REPLACE(query_template, '${CURR}', @new_rdr));
+SET query = REPLACE(query, '${PREV}', @old_rdr);
+EXECUTE IMMEDIATE query;
+
+# ## Concept codes used
+# Identify question and answer concept codes which were either added or removed (appear in only the new or only the old RDR datasets, respectively).
+
+# %%bigquery --params $params
+DECLARE query_template STRING DEFAULT('''
+WITH curr_code AS (
+SELECT observation_source_value value, 'observation_source_value' field, COUNT(1) row_count FROM ${CURR}.observation GROUP BY 1
+UNION ALL
+SELECT value_source_value value, 'value_source_value' field, COUNT(1) row_count FROM ${CURR}.observation GROUP BY 1),
+
+prev_code AS (
+SELECT observation_source_value value,'observation_source_value' field, COUNT(1) row_count FROM ${PREV}.observation GROUP BY 1
+UNION ALL
+SELECT value_source_value value, 'value_source_value' field, COUNT(1) row_count FROM ${PREV}.observation GROUP BY 1)
+
+SELECT 
+  prev_code.value prev_code_value, 
+  prev_code.field prev_code_field, 
+  prev_code.row_count prev_code_row_count, 
+  curr_code.value curr_code_value, 
+  curr_code.field curr_code_field, 
+  curr_code.row_count curr_code_row_count, 
+FROM curr_code 
+ FULL OUTER JOIN prev_code
+  USING (field, value)
+WHERE prev_code.value IS NULL OR curr_code.value IS NULL
+;
+''');
+DECLARE query STRING DEFAULT(REPLACE(query_template, '${CURR}', @new_rdr));
+SET query = REPLACE(query, '${PREV}', @old_rdr);
+EXECUTE IMMEDIATE query;
 
 # # Check if observation_source_value vs concept ids
 
