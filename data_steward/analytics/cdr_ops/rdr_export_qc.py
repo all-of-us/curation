@@ -339,5 +339,22 @@ GROUP BY 1
 pd.read_gbq(query.format(dataset=new_rdr), project_id=project_id, dialect='standard')
 
 
+# # Miscategorized answers
+
+query = """
+SELECT 
+    observation_source_value
+    , SUM(CASE WHEN SAFE_CAST(value_as_string AS INT64) IS NOT NULL THEN 1 ELSE 0 END) AS string_as_number
+    , SUM(CASE WHEN value_as_string IS NOT NULL OR value_as_string != '' THEN 1 ELSE 0 END) AS n_string
+    , SUM(CASE WHEN value_source_value IS NOT NULL OR value_source_value != '' THEN 1 ELSE 0 END) AS n_source_value
+FROM `{dataset}.observation`
+JOIN `{dataset}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
+WHERE cope_month = 'nov'
+GROUP BY 1
+"""
+df = pd.read_gbq(query.format(dataset=new_rdr), project_id=project_id, dialect='standard')
+
+# +
+df[df['string_as_number']>0]
 
 
