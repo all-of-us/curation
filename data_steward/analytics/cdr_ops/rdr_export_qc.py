@@ -323,3 +323,21 @@ from itertools import combinations
 
 for d1, d2 in combinations(v_dict.keys(), 2):
     print(f"{d1}-{d2}: {len(v_dict[d1].intersection(v_dict[d2]))}")
+
+
+# # Survey version and dates
+
+query = """
+SELECT
+    cope_month
+    , MIN(observation_date) AS min_date
+    , MAX(observation_date) AS max_date
+FROM `{dataset}.observation`
+JOIN `{dataset}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
+GROUP BY 1
+"""
+pd.read_gbq(query.format(dataset=new_rdr), project_id=project_id, dialect='standard')
+
+
+
+
