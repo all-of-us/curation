@@ -244,6 +244,7 @@ def query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND'):
                                       destination_dataset_id=dst_dataset_id,
                                       write_disposition=write_disposition)
     query_job_id = query_job_result['jobReference']['jobId']
+    logging.info(f'Job {query_job_id} started for table {dst_table_id}')
     job_status = query_job_result['status']
     error_result = job_status.get('errorResult')
     if error_result is not None:
@@ -518,8 +519,11 @@ def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
     else:
         q = table_union_query(cdm_table, hpo_ids, input_dataset_id,
                               output_dataset_id)
-    logging.info(f'Query for union of {cdm_table} tables from {hpo_ids} is {q}')
     query_result = query(q, output_table, output_dataset_id)
+    query_job_id = query_result['jobReference']['jobId']
+    logging.info(
+        f'Job {query_job_id} completed for union of {cdm_table} tables from {hpo_ids}'
+    )
     return query_result
 
 
