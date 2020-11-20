@@ -188,8 +188,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
                     SANDBOX_EXPRESSION.render(field=key,
                                               dataset_id=self.dataset_id,
                                               table=table_alias,
-                                              prefix=key[:3])
-                )
+                                              prefix=key[:3]))
         return ' OR '.join(sandbox_expression)
 
     def get_query_specs(self):
