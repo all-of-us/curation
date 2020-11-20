@@ -32,7 +32,6 @@ class NullInvalidForeignKeys(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
         self.client = None
-        self.maxDiff = None
 
         self.person_foreign_keys = [
             'location_id', 'provider_id', 'care_site_id'
@@ -54,6 +53,20 @@ class NullInvalidForeignKeys(unittest.TestCase):
             LEFT JOIN `bar_dataset._mapping_provider` pro
             ON t.provider_id = pro.provider_id
             """
+        self.sandbox_expression = """
+            (location_id NOT IN (
+            SELECT location_id 
+            FROM `bar_dataset._mapping_location` AS loc)
+            AND location_id IS NOT NULL) OR 
+            (provider_id NOT IN (
+            SELECT provider_id 
+            FROM `bar_dataset._mapping_provider` AS pro)
+            AND provider_id IS NOT NULL) OR 
+            (care_site_id NOT IN (
+            SELECT care_site_id 
+            FROM `bar_dataset._mapping_care_site` AS car)
+            AND care_site_id IS NOT NULL)
+        """
 
         self.rule_instance = nifk.NullInvalidForeignKeys(
             self.project_id, self.dataset_id, self.sandbox_id)
@@ -125,17 +138,40 @@ class NullInvalidForeignKeys(unittest.TestCase):
         # Post conditions
         self.assertEqual(actual_query, expected_query)
 
+    def test_get_sandbox_expression(self):
+        # Pre conditions
+        sandbox_expression = []
+
+        for key in self.person_foreign_keys:
+            table_alias = self.rule_instance.get_mapping_table(
+                '{x}'.format(x=key)[:-3])
+            sandbox_expression.append(
+                nifk.SANDBOX_EXPRESSION.render(field=key,
+                                               dataset_id=self.dataset_id,
+                                               table=table_alias,
+                                               prefix=key[:3]))
+        expected_query = ' OR '.join(sandbox_expression)
+
+        # Test
+        actual_query = self.rule_instance.get_sandbox_expression(common.PERSON)
+
+        # Post conditions
+        self.assertEqual(actual_query, expected_query)
+
+    @patch.object(nifk.NullInvalidForeignKeys, 'get_sandbox_expression')
     @patch.object(nifk.NullInvalidForeignKeys, 'get_join_expression')
     @patch.object(nifk.NullInvalidForeignKeys, 'get_col_expression')
     @patch.object(nifk.NullInvalidForeignKeys, 'has_foreign_key')
     @patch.object(nifk.NullInvalidForeignKeys, 'get_affected_tables')
     def test_get_query_specs(self, mock_get_affected_tables,
                              mock_has_foreign_keys, mock_get_col_expression,
-                             mock_get_join_expression):
+                             mock_get_join_expression,
+                             mock_get_sandbox_expression):
         # Pre conditions
         mock_has_foreign_keys.return_value = True
         mock_get_col_expression.return_value = self.person_col_expression
         mock_get_join_expression.return_value = self.join_expression
+        mock_get_sandbox_expression.return_value = self.sandbox_expression
         mock_get_affected_tables.return_value = [common.PERSON]
 
         table = common.PERSON
@@ -146,9 +182,9 @@ class NullInvalidForeignKeys(unittest.TestCase):
                     project_id=self.project_id,
                     sandbox_dataset_id=self.sandbox_id,
                     intermediary_table='dc-388_dc-807_person',
-                    cols=self.person_col_expression,
                     dataset_id=self.dataset_id,
-                    table_name=table),
+                    table_name=table,
+                    sandbox_expr=self.sandbox_expression),
             cdr_consts.DESTINATION_DATASET:
                 self.dataset_id,
             cdr_consts.DESTINATION_TABLE:
