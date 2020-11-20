@@ -42,8 +42,14 @@ SANDBOX_QUERY = JINJA_ENV.from_string("""
     CREATE OR REPLACE TABLE 
     `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS (
         SELECT t.* FROM `{{project_id}}.{{dataset_id}}.{{table_name}}` AS t 
-        LEFT JOIN {{dataset_id}}.{{table}} AS tc USING({{cols}}) 
-        WHERE tc.{{cols}} IS NULL)""")
+        WHERE {{sandbox_expr}})""")
+
+SANDBOX_EXPRESSION = JINJA_ENV.from_string("""
+     ({{field}} NOT IN (
+        SELECT {{field}} 
+        FROM `{{dataset_id}}.{{table}}` AS {{prefix}})
+        AND {{field}} IS NOT NULL)
+""")
 
 
 class NullInvalidForeignKeys(BaseCleaningRule):
@@ -162,6 +168,30 @@ class NullInvalidForeignKeys(BaseCleaningRule):
                                      table=table_alias))
         return ' '.join(join_expression)
 
+    def get_sandbox_expression(self, table):
+        """
+        This method generates the SANDBOX_EXPRESSION query. Only columns that are foreign keys will be
+        used in the query generation.
+
+        :param table: single table in the list of affected tables
+        :return: SANDBOX_EXPRESSION query
+        """
+        sandbox_expression = []
+        for key in self.get_foreign_keys(table):
+            if key in FOREIGN_KEYS_FIELDS:
+                if key == 'person_id':
+                    table_alias = cdr_consts.PERSON_TABLE_NAME
+                else:
+                    table_alias = self.get_mapping_table(
+                        '{x}'.format(x=key)[:-3])
+                sandbox_expression.append(
+                    SANDBOX_EXPRESSION.render(field=key,
+                                              dataset_id=self.dataset_id,
+                                              table=table_alias,
+                                              prefix=key[:3])
+                )
+        return ' OR '.join(sandbox_expression)
+
     def get_query_specs(self):
         """
         This method gets the queries required to make invalid foreign keys null
@@ -175,6 +205,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
             if self.has_foreign_key(table):
                 cols = self.get_col_expression(table)
                 join_expression = self.get_join_expression(table)
+                sandbox_expression = self.get_sandbox_expression(table)
 
                 sandbox_query = {
                     cdr_consts.QUERY:
@@ -183,9 +214,9 @@ class NullInvalidForeignKeys(BaseCleaningRule):
                             sandbox_dataset_id=self.sandbox_dataset_id,
                             intermediary_table=self.get_sandbox_table_for(
                                 table),
-                            cols=cols,
                             dataset_id=self.dataset_id,
-                            table_name=table),
+                            table_name=table,
+                            sandbox_expr=sandbox_expression),
                     cdr_consts.DESTINATION_DATASET:
                         self.dataset_id,
                     cdr_consts.DESTINATION_TABLE:
