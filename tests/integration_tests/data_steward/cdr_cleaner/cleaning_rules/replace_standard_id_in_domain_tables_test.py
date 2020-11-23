@@ -19,105 +19,6 @@ from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
-# The existing table is created and partitioned on the pseudo column _PARTITIONTIME, partitioning
-# by _PARTITIONTIME doesn't work using a query_statement for creating a table, therefore CREATE
-# OR REPLACE TABLE doesn' work and we need to DROP the table first. The cleaning rule generates
-# queries that explicitly list out all the columns associated with the domain table in SELECT,
-# due to this reason, we have to create those columns as well in the test table.
-CONDITION_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.condition_occurrence`;
-CREATE TABLE `{{project_id}}.{{dataset_id}}.condition_occurrence`
-AS (
-WITH w AS (
-  SELECT ARRAY<STRUCT<
-        condition_occurrence_id int64, 
-        person_id int64, 
-        condition_concept_id int64, 
-        condition_start_date date,
-        condition_start_datetime timestamp,
-        condition_end_date date,
-        condition_end_datetime timestamp,
-        condition_type_concept_id int64,
-        stop_reason string,
-        provider_id int64,
-        visit_occurrence_id int64,
-        condition_source_value string,
-        condition_source_concept_id int64,
-        condition_status_source_value string,
-        condition_status_concept_id int64
-        >>
-      [(1, 1, 319835, null, null, null, null, null, null, null, null, null, 45567179, null, null),
-       (2, 1, 0, null, null, null, null, null, null, null, null, null, 45567179, null, null),
-       (3, 1, 45567179, null, null, null, null, null, null, null, null, null, 0, null, null),
-       (4, 1, 45567179, null, null, null, null, null, null, null, null, null, 45567179, null, null), 
-       (5, 1, 40398862, null, null, null, null, null, null, null, null, null, 40398862, null, null),
-       (6, 1, 45587397, null, null, null, null, null, null, null, null, null, 45587397, null, null)] col
-)
-SELECT 
-    condition_occurrence_id, 
-    person_id, 
-    condition_concept_id, 
-    condition_start_date,
-    condition_start_datetime,
-    condition_end_date,
-    condition_end_datetime,
-    condition_type_concept_id,
-    stop_reason,
-    provider_id,
-    visit_occurrence_id,
-    condition_source_value,
-    condition_source_concept_id,
-    condition_status_source_value,
-    condition_status_concept_id 
-FROM w, UNNEST(w.col))
-""")
-
-MAPPING_CONDITION_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}._mapping_condition_occurrence`;
-CREATE TABLE `{{project_id}}.{{dataset_id}}._mapping_condition_occurrence`
-AS (
-WITH w AS (
-  SELECT ARRAY<STRUCT<condition_occurrence_id int64, src_table_id string, src_dataset_id string, src_condition_occurrence_id int64, src_hpo_id string>>
-      [(1, 'hpo_condition_occurrence', 'hpo_dataset', 10, 'test_hpo'),
-       (2, 'hpo_condition_occurrence', 'hpo_dataset', 20, 'test_hpo'),
-       (3, 'hpo_condition_occurrence', 'hpo_dataset', 30, 'test_hpo'),
-       (4, 'hpo_condition_occurrence', 'hpo_dataset', 40, 'test_hpo'), 
-       (5, 'hpo_condition_occurrence', 'hpo_dataset', 50, 'test_hpo'),
-       (6, 'hpo_condition_occurrence', 'hpo_dataset', 60, 'test_hpo')] col
-)
-SELECT condition_occurrence_id, src_table_id, src_dataset_id, src_condition_occurrence_id, src_hpo_id FROM w, UNNEST(w.col))
-""")
-
-CONCEPT_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.concept`;
-CREATE TABLE `{{project_id}}.{{dataset_id}}.concept`
-AS (
-WITH w AS (
-  SELECT ARRAY<STRUCT<concept_id int64, concept_name string, standard_concept string>>
-      [(319835, 'Congested Heart Failure', 'S'),
-       (45567179, 'Congested Heart Failure', null),
-       (45587397, 'Anaemia complicating pregnancy, childbirth and the puerperium', null),
-       (434701, 'Anemia in mother complicating pregnancy, childbirth AND/OR puerperium', 'S'),
-       (444094, 'Finding related to pregnancy', 'S'), 
-       (40398862, 'Ischemic chest pain', null)] col
-)
-SELECT concept_id, concept_name, standard_concept FROM w, UNNEST(w.col))
-""")
-
-CONCEPT_RELATIONSHIP_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.concept_relationship`;
-CREATE TABLE `{{project_id}}.{{dataset_id}}.concept_relationship`
-AS (
-WITH w AS (
-  SELECT ARRAY<STRUCT<concept_id_1 int64, concept_id_2 int64, relationship_id string>>
-      [(319835, 319835, 'Maps to'),
-       (45567179, 319835, 'Maps to'),
-       (45587397, 434701, 'Maps to'),
-       (45587397, 444094, 'Maps to')] col
-)
-SELECT concept_id_1, concept_id_2, relationship_id FROM w, UNNEST(w.col))
-""")
-
 
 class ReplaceWithStandardConceptIdTest(BaseTest.CleaningRulesTestBase):
 
@@ -164,16 +65,116 @@ class ReplaceWithStandardConceptIdTest(BaseTest.CleaningRulesTestBase):
         # Create tables required for the test
         super().setUp()
 
-        concept_data_query = CONCEPT_DATA_TEMPLATE.render(
+        # The existing table is created and partitioned on the pseudo column _PARTITIONTIME,
+        # partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a
+        # table, therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table
+        # first. The cleaning rule generates queries that explicitly list out all the columns
+        # associated with the domain table in SELECT, due to this reason, we have to create those
+        # columns as well in the test table.
+        condition_occurrence_data_template = JINJA_ENV.from_string("""
+        DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.condition_occurrence`;
+        CREATE TABLE `{{project_id}}.{{dataset_id}}.condition_occurrence`
+        AS (
+        WITH w AS (
+          SELECT ARRAY<STRUCT<
+                condition_occurrence_id int64, 
+                person_id int64, 
+                condition_concept_id int64, 
+                condition_start_date date,
+                condition_start_datetime timestamp,
+                condition_end_date date,
+                condition_end_datetime timestamp,
+                condition_type_concept_id int64,
+                stop_reason string,
+                provider_id int64,
+                visit_occurrence_id int64,
+                condition_source_value string,
+                condition_source_concept_id int64,
+                condition_status_source_value string,
+                condition_status_concept_id int64
+                >>
+              [(1, 1, 319835, null, null, null, null, null, null, null, null, null, 45567179, null, null),
+               (2, 1, 0, null, null, null, null, null, null, null, null, null, 45567179, null, null),
+               (3, 1, 45567179, null, null, null, null, null, null, null, null, null, 0, null, null),
+               (4, 1, 45567179, null, null, null, null, null, null, null, null, null, 45567179, null, null), 
+               (5, 1, 40398862, null, null, null, null, null, null, null, null, null, 40398862, null, null),
+               (6, 1, 45587397, null, null, null, null, null, null, null, null, null, 45587397, null, null)] col
+        )
+        SELECT 
+            condition_occurrence_id, 
+            person_id, 
+            condition_concept_id, 
+            condition_start_date,
+            condition_start_datetime,
+            condition_end_date,
+            condition_end_datetime,
+            condition_type_concept_id,
+            stop_reason,
+            provider_id,
+            visit_occurrence_id,
+            condition_source_value,
+            condition_source_concept_id,
+            condition_status_source_value,
+            condition_status_concept_id 
+        FROM w, UNNEST(w.col))
+        """)
+
+        mapping_condition_occurrence_data_template = JINJA_ENV.from_string("""
+        DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}._mapping_condition_occurrence`;
+        CREATE TABLE `{{project_id}}.{{dataset_id}}._mapping_condition_occurrence`
+        AS (
+        WITH w AS (
+          SELECT ARRAY<STRUCT<condition_occurrence_id int64, src_table_id string, src_dataset_id string, src_condition_occurrence_id int64, src_hpo_id string>>
+              [(1, 'hpo_condition_occurrence', 'hpo_dataset', 10, 'test_hpo'),
+               (2, 'hpo_condition_occurrence', 'hpo_dataset', 20, 'test_hpo'),
+               (3, 'hpo_condition_occurrence', 'hpo_dataset', 30, 'test_hpo'),
+               (4, 'hpo_condition_occurrence', 'hpo_dataset', 40, 'test_hpo'), 
+               (5, 'hpo_condition_occurrence', 'hpo_dataset', 50, 'test_hpo'),
+               (6, 'hpo_condition_occurrence', 'hpo_dataset', 60, 'test_hpo')] col
+        )
+        SELECT condition_occurrence_id, src_table_id, src_dataset_id, src_condition_occurrence_id, src_hpo_id FROM w, UNNEST(w.col))
+        """)
+
+        concept_data_template = JINJA_ENV.from_string("""
+        DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.concept`;
+        CREATE TABLE `{{project_id}}.{{dataset_id}}.concept`
+        AS (
+        WITH w AS (
+          SELECT ARRAY<STRUCT<concept_id int64, concept_name string, standard_concept string>>
+              [(319835, 'Congested Heart Failure', 'S'),
+               (45567179, 'Congested Heart Failure', null),
+               (45587397, 'Anaemia complicating pregnancy, childbirth and the puerperium', null),
+               (434701, 'Anemia in mother complicating pregnancy, childbirth AND/OR puerperium', 'S'),
+               (444094, 'Finding related to pregnancy', 'S'), 
+               (40398862, 'Ischemic chest pain', null)] col
+        )
+        SELECT concept_id, concept_name, standard_concept FROM w, UNNEST(w.col))
+        """)
+
+        concept_relationship_data_template = JINJA_ENV.from_string("""
+        DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.concept_relationship`;
+        CREATE TABLE `{{project_id}}.{{dataset_id}}.concept_relationship`
+        AS (
+        WITH w AS (
+          SELECT ARRAY<STRUCT<concept_id_1 int64, concept_id_2 int64, relationship_id string>>
+              [(319835, 319835, 'Maps to'),
+               (45567179, 319835, 'Maps to'),
+               (45587397, 434701, 'Maps to'),
+               (45587397, 444094, 'Maps to')] col
+        )
+        SELECT concept_id_1, concept_id_2, relationship_id FROM w, UNNEST(w.col))
+        """)
+
+        concept_data_query = concept_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        concept_relationship_data_query = CONCEPT_RELATIONSHIP_DATA_TEMPLATE.render(
+        concept_relationship_data_query = concept_relationship_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        condition_occurrence_data_query = CONDITION_OCCURRENCE_DATA_TEMPLATE.render(
+        condition_occurrence_data_query = condition_occurrence_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        mapping_condition_occurrence_data_query = MAPPING_CONDITION_OCCURRENCE_DATA_TEMPLATE.render(
+        mapping_condition_occurrence_data_query = mapping_condition_occurrence_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Load test data
