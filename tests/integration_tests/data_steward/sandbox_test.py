@@ -4,7 +4,7 @@ import os
 
 # Project Imports
 import sandbox
-from utils.bq import list_datasets, delete_dataset
+from utils.bq import get_client, list_datasets, delete_dataset
 import app_identity
 
 
@@ -19,6 +19,12 @@ class SandboxTest(unittest.TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
+        self.sandbox_id = sandbox.get_sandbox_dataset_id(self.dataset_id)
+        # Removing any existing datasets that might interfere with the test
+        self.client = get_client(self.project_id)
+        self.client.delete_dataset(f'{self.project_id}.{self.sandbox_id}',
+                                   delete_contents=True,
+                                   not_found_ok=True)
 
     def test_create_sandbox_dataset(self):
         # Create sandbox dataset
