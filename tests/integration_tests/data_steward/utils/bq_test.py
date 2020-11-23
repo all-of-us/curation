@@ -1,5 +1,6 @@
 # Python imports
 import unittest
+import os
 
 # Third party imports
 from google.cloud import bigquery
@@ -22,8 +23,8 @@ class BQTest(unittest.TestCase):
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
-        self.dataset_id = 'fake_dataset'
-        self.description = 'Test dataset created for testing BQ'
+        self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
+        self.description = 'Unioned test dataset'
         self.label_or_tag = {'test': 'bq'}
         # Remove dataset if it already exists
         bq.delete_dataset(self.project_id, self.dataset_id)
@@ -127,7 +128,3 @@ class BQTest(unittest.TestCase):
             expected_dict,
             columns=["site_name", "hpo_id", "site_point_of_contact"])
         pd.testing.assert_frame_equal(actual_df, expected_df)
-
-    def tearDown(self):
-        # Remove dataset created in project
-        bq.delete_dataset(self.project_id, self.dataset_id)
