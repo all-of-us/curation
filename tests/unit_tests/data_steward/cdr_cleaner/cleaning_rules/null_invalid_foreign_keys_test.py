@@ -36,15 +36,13 @@ class NullInvalidForeignKeys(unittest.TestCase):
         self.person_foreign_keys = [
             'location_id', 'provider_id', 'care_site_id'
         ]
-        self.person_col_expression = [
-            'person_id', 'gender_concept_id', 'year_of_birth', 'month_of_birth',
-            'day_of_birth', 'birth_datetime', 'race_concept_id',
-            'ethnicity_concept_id', 'loc.location_id', 'pro.provider_id',
-            'car.care_site_id', 'person_source_value', 'gender_source_value',
-            'gender_source_concept_id', 'race_source_value',
-            'race_source_concept_id', 'ethnicity_source_value',
-            'ethnicity_source_concept_id'
-        ]
+        self.person_col_expression = "person_id, gender_concept_id, year_of_birth, month_of_birth, " \
+                                     "day_of_birth, birth_datetime, race_concept_id, ethnicity_concept_id, " \
+                                     "loc.location_id, pro.provider_id, car.care_site_id, " \
+                                     "person_source_value, gender_source_value, gender_source_concept_id, " \
+                                     "race_source_value, race_source_concept_id, ethnicity_source_value, " \
+                                     "ethnicity_source_concept_id"
+
         self.join_expression = """
             LEFT JOIN `bar_dataset._mapping_location` loc
             ON t.location_id = loc.location_id
@@ -108,7 +106,7 @@ class NullInvalidForeignKeys(unittest.TestCase):
 
     def test_get_col_expression(self):
         # Pre conditions
-        expected_list = ', '.join(self.person_col_expression)
+        expected_list = self.person_col_expression
 
         # Post conditions
         self.assertEqual(self.rule_instance.get_col_expression(common.PERSON),
