@@ -18,7 +18,7 @@ class SandboxTest(unittest.TestCase):
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
-        self.dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
+        self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
 
     def test_create_sandbox_dataset(self):
         # Create sandbox dataset
