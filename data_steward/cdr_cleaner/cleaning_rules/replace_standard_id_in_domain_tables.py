@@ -100,7 +100,7 @@ WHERE
 
 DUPLICATE_ID_UPDATE_QUERY = JINJA_ENV.from_string("""
 UPDATE 
-    `{{project}}.{{dataset}}.{{logging_table}}` AS to_update 
+    `{{project}}.{{sandbox_dataset}}.{{logging_table}}` AS to_update 
 SET 
     to_update.dest_id = v.dest_id
 FROM 
@@ -111,10 +111,10 @@ FROM
         a.new_concept_id,
         ROW_NUMBER() OVER(ORDER BY a.src_id, a.new_concept_id) + src.max_id AS dest_id
     FROM
-        `{{project}}.{{dataset}}.{{logging_table}}` AS a
+        `{{project}}.{{sandbox_dataset}}.{{logging_table}}` AS a
     JOIN (
         SELECT src_id
-        FROM `{{project}}.{{dataset}}.{{logging_table}}`
+        FROM `{{project}}.{{sandbox_dataset}}.{{logging_table}}`
         WHERE domain_table = '{{table_name}}'
         GROUP BY src_id
         HAVING COUNT(*) > 1 ) b
@@ -137,7 +137,7 @@ SELECT
     {{cols}}
 FROM `{{project}}.{{dataset}}.{{domain_table}}`
 LEFT JOIN
-    `{{project}}.{{dataset}}.{{logging_table}}`
+    `{{project}}.{{sandbox_dataset}}.{{logging_table}}`
 ON domain_table = '{{domain_table}}' AND src_id = {{domain_table}}_id	
 """)
 
@@ -156,7 +156,7 @@ SELECT
 FROM
     `{{project}}.{{dataset}}.{{mapping_table}}` as domain
 LEFT JOIN
-    `{{project}}.{{dataset}}.{{logging_table}}` as log
+    `{{project}}.{{sandbox_dataset}}.{{logging_table}}` as log
 ON src_id = {{domain_table}}_id AND domain_table = '{{domain_table}}'
 """)
 
@@ -235,6 +235,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
             cols=cols,
             project=self.project_id,
             dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_dataset_id,
             mapping_table=mapping_table_name,
             logging_table=SRC_CONCEPT_ID_TABLE_NAME,
             domain_table=table_name)
@@ -306,6 +307,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
             cols=cols,
             project=self.project_id,
             dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_dataset_id,
             domain_table=table_name,
             logging_table=SRC_CONCEPT_ID_TABLE_NAME)
 
@@ -359,6 +361,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
             table_name=domain_table,
             project=self.project_id,
             dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_dataset_id,
             logging_table=SRC_CONCEPT_ID_TABLE_NAME)
 
     def parse_src_concept_id_logging_query(self, domain_table):
@@ -395,7 +398,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
                 cdr_consts.DISPOSITION:
                     bq_consts.WRITE_APPEND,
                 cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id
+                    self.sandbox_dataset_id
             })
 
         # For new rows added as a result of one-to-many standard concepts, we give newly generated
@@ -407,7 +410,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
                              self.affected_tables)
         queries.append({
             cdr_consts.QUERY: ';\n'.join(update_queries),
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
+            cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id
         })
         return queries
 
@@ -427,7 +430,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
                     dataset=self.sandbox_dataset_id,
                     table_ids=table_ids),
             cdr_consts.DESTINATION_DATASET:
-                self.dataset_id
+                self.sandbox_dataset_id
         }]
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
@@ -446,7 +449,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
 
         # Create _logging_standard_concept_id_replacement
         fq_table_names = [
-            f'{self.project_id}.{self.dataset_id}.{SRC_CONCEPT_ID_TABLE_NAME}'
+            f'{self.project_id}.{self.sandbox_dataset_id}.{SRC_CONCEPT_ID_TABLE_NAME}'
         ]
         create_tables(client, self.project_id, fq_table_names, exists_ok=True)
 

@@ -54,6 +54,8 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         self.mock_domain_table_names_patcher.stop()
 
     @patch.object(ReplaceWithStandardConceptId,
+                  'get_delete_empty_sandbox_tables_queries')
+    @patch.object(ReplaceWithStandardConceptId,
                   'get_mapping_table_update_queries')
     @patch.object(ReplaceWithStandardConceptId,
                   'get_src_concept_id_update_queries')
@@ -65,17 +67,18 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         self, mock_get_src_concept_id_logging_queries,
         mock_get_sandbox_src_concept_id_update_queries,
         mock_get_src_concept_id_update_queries,
-        mock_get_mapping_table_update_queries):
+        mock_get_mapping_table_update_queries,
+        mock_get_delete_empty_sandbox_tables_queries):
         query = 'select this query'
 
         mock_get_src_concept_id_logging_queries.return_value = [{
             cdr_consts.QUERY: query,
             cdr_consts.DESTINATION_TABLE: SRC_CONCEPT_ID_TABLE_NAME,
             cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
         }, {
             cdr_consts.QUERY: query,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
         }]
 
         mock_get_sandbox_src_concept_id_update_queries.return_value = [{
@@ -99,14 +102,19 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cdr_consts.DESTINATION_DATASET: self.dataset_id
         }]
 
+        mock_get_delete_empty_sandbox_tables_queries.return_value = [{
+            cdr_consts.QUERY: query,
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
+        }]
+
         expected_query_list = [{
             cdr_consts.QUERY: query,
             cdr_consts.DESTINATION_TABLE: SRC_CONCEPT_ID_TABLE_NAME,
             cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
         }, {
             cdr_consts.QUERY: query,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
         }, {
             cdr_consts.QUERY: query,
             cdr_consts.DESTINATION_TABLE: self.sandbox_condition_table,
@@ -122,6 +130,9 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cdr_consts.DESTINATION_TABLE: self.condition_mapping_table,
             cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_DATASET: self.dataset_id
+        }, {
+            cdr_consts.QUERY: query,
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
         }]
 
         actual_query_list = self.rule_instance.get_query_specs()
@@ -171,12 +182,12 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cdr_consts.QUERY: src_concept_id_mapping_query_condition,
             cdr_consts.DESTINATION_TABLE: SRC_CONCEPT_ID_TABLE_NAME,
             cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
         }, {
             cdr_consts.QUERY: src_concept_id_mapping_query_procedure,
             cdr_consts.DESTINATION_TABLE: SRC_CONCEPT_ID_TABLE_NAME,
             cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
+            cdr_consts.DESTINATION_DATASET: self.sandbox_id
         }, {
             cdr_consts.QUERY:
                 ';\n'.join([
@@ -184,7 +195,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
                     duplicate_id_update_query_procedure
                 ]),
             cdr_consts.DESTINATION_DATASET:
-                self.dataset_id
+                self.sandbox_id
         }]
 
         actual_queries = self.rule_instance.get_src_concept_id_logging_queries()
@@ -324,6 +335,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cols=cols,
             project=self.project_id,
             dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_id,
             domain_table=self.condition_table,
             logging_table=SRC_CONCEPT_ID_TABLE_NAME)
 
@@ -391,6 +403,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             cols=cols,
             project=self.project_id,
             dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_id,
             mapping_table=self.condition_mapping_table,
             logging_table=SRC_CONCEPT_ID_TABLE_NAME,
             domain_table=self.condition_table)
