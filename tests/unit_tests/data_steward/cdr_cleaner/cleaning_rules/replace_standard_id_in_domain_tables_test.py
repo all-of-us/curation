@@ -9,7 +9,7 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import (
     SRC_CONCEPT_ID_TABLE_NAME, SRC_CONCEPT_ID_MAPPING_QUERY,
     SRC_CONCEPT_ID_UPDATE_QUERY, UPDATE_MAPPING_TABLES_QUERY,
-    ReplaceWithStandardConceptId)
+    DROP_EMPTY_SANDBOX_TABLES_QUERY, ReplaceWithStandardConceptId)
 
 
 class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
@@ -32,6 +32,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         self.condition_table = 'condition_occurrence'
         self.procedure_table = 'procedure_occurrence'
         self.sandbox_condition_table = 'sandbox_condition_table'
+        self.sandbox_procedure_table = 'sandbox_procedure_table'
         self.domain_concept_id = 'condition_concept_id'
         self.domain_source_concept_id = 'condition_source_concept_id'
         self.condition_mapping_table = '_mapping_condition_occurrence'
@@ -399,3 +400,25 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             self.condition_mapping_table,
         )
         self.assertEqual(actual_query, expected_query)
+
+    @patch.object(ReplaceWithStandardConceptId, 'get_sandbox_tablenames')
+    def test_get_delete_empty_sandbox_tables_queries(
+        self, mock_get_sandbox_tablenames):
+        mock_get_sandbox_tablenames.return_value = [
+            self.sandbox_condition_table, self.sandbox_procedure_table
+        ]
+
+        expected_table_ids = f'"{self.sandbox_condition_table}","{self.sandbox_procedure_table}"'
+        expected_query = [{
+            cdr_consts.QUERY:
+                DROP_EMPTY_SANDBOX_TABLES_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.sandbox_id,
+                    table_ids=expected_table_ids),
+            cdr_consts.DESTINATION_DATASET:
+                self.sandbox_id
+        }]
+
+        actual_query = self.rule_instance.get_delete_empty_sandbox_tables_queries(
+        )
+        self.assertCountEqual(actual_query, expected_query)
