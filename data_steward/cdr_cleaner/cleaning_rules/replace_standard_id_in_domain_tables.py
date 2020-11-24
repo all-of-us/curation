@@ -146,7 +146,7 @@ SELECT DISTINCT
     d.*
 FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
 JOIN
-    `{{project}}.{{dataset}}.{{logging_table}}` AS l
+    `{{project}}.{{sandbox_dataset}}.{{logging_table}}` AS l
 ON l.domain_table = '{{domain_table}}' AND l.src_id = d.{{domain_table}}_id	
 """)
 
@@ -273,6 +273,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
         return SANDBOX_SRC_CONCEPT_ID_UPDATE_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_dataset_id,
             domain_table=table_name,
             logging_table=SRC_CONCEPT_ID_TABLE_NAME)
 

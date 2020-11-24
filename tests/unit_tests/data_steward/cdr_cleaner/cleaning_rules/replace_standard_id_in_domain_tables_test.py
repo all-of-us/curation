@@ -9,7 +9,8 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import (
     SRC_CONCEPT_ID_TABLE_NAME, SRC_CONCEPT_ID_MAPPING_QUERY,
     SRC_CONCEPT_ID_UPDATE_QUERY, UPDATE_MAPPING_TABLES_QUERY,
-    DROP_EMPTY_SANDBOX_TABLES_QUERY, ReplaceWithStandardConceptId)
+    DROP_EMPTY_SANDBOX_TABLES_QUERY, SANDBOX_SRC_CONCEPT_ID_UPDATE_QUERY,
+    ReplaceWithStandardConceptId)
 
 
 class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
@@ -261,6 +262,19 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             self.condition_table)
         mock_parse_sandbox_src_concept_id_update_query.assert_called_with(
             self.procedure_table)
+
+    def test_parse_sandbox_src_concept_id_update_query(self):
+        expected_query = SANDBOX_SRC_CONCEPT_ID_UPDATE_QUERY.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_id,
+            domain_table=self.condition_table,
+            logging_table=SRC_CONCEPT_ID_TABLE_NAME)
+
+        actual_query = self.rule_instance.parse_sandbox_src_concept_id_update_query(
+            self.condition_table)
+
+        self.assertEqual(actual_query, expected_query)
 
     @mock.patch('resources.get_domain_source_concept_id')
     @mock.patch('resources.get_domain_concept_id')
