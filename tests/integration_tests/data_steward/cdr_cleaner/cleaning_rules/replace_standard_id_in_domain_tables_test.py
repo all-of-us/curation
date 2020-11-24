@@ -51,9 +51,14 @@ class ReplaceWithStandardConceptIdTest(BaseTest.CleaningRulesTestBase):
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
 
         cls.fq_table_names.extend([
-            f'{cls.project_id}.{cls.dataset_id}.{table_name}' for table_name in
-            [SRC_CONCEPT_ID_TABLE_NAME, CONCEPT, CONCEPT_RELATIONSHIP]
+            f'{cls.project_id}.{cls.dataset_id}.{table_name}'
+            for table_name in [CONCEPT, CONCEPT_RELATIONSHIP]
         ])
+
+        # Add _logging_standard_concept_id_replacement to fq_sandbox_table_names for cleanup in
+        # teardown
+        cls.fq_sandbox_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{SRC_CONCEPT_ID_TABLE_NAME}')
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
