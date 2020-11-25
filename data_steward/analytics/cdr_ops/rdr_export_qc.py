@@ -266,15 +266,6 @@ ORDER BY 2 DESC
 """
 pd.read_gbq(query, project_id=project_id, dialect='standard')
 
-# +
-# select
-# *
-# from `rdr20200906.observation`
-# where person_id = 	182351412
-# and observation_source_value = "PIIAddress_StreetAddress"
-# and value_as_string = "hvgcfhgv"
-# -
-
 # # Check if numeric data in value_as_string
 
 query = f"""
