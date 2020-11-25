@@ -147,11 +147,11 @@ class ReplaceWithStandardConceptIdTest(BaseTest.CleaningRulesTestBase):
         WITH w AS (
           SELECT ARRAY<STRUCT<concept_id int64, concept_name string, standard_concept string>>
               [(319835, 'Congested Heart Failure', 'S'),
-               (45567179, 'Congested Heart Failure', null),
-               (45587397, 'Anaemia complicating pregnancy, childbirth and the puerperium', null),
+               (45567179, 'Congested Heart Failure', 'C'),
+               (45587397, 'Anaemia complicating pregnancy, childbirth and the puerperium', 'C'),
                (434701, 'Anemia in mother complicating pregnancy, childbirth AND/OR puerperium', 'S'),
                (444094, 'Finding related to pregnancy', 'S'), 
-               (40398862, 'Ischemic chest pain', null)] col
+               (40398862, 'Ischemic chest pain', 'C')] col
         )
         SELECT concept_id, concept_name, standard_concept FROM w, UNNEST(w.col))
         """)
