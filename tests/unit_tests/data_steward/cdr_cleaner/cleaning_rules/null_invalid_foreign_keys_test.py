@@ -183,12 +183,6 @@ class NullInvalidForeignKeys(unittest.TestCase):
                     dataset_id=self.dataset_id,
                     table_name=table,
                     sandbox_expr=self.sandbox_expression),
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DESTINATION_TABLE:
-                table,
-            cdr_consts.DISPOSITION:
-                bq_consts.WRITE_TRUNCATE
         }
 
         invalid_foreign_key_query = {

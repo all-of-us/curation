@@ -216,12 +216,6 @@ class NullInvalidForeignKeys(BaseCleaningRule):
                             dataset_id=self.dataset_id,
                             table_name=table,
                             sandbox_expr=sandbox_expression),
-                    cdr_consts.DESTINATION_DATASET:
-                        self.dataset_id,
-                    cdr_consts.DESTINATION_TABLE:
-                        table,
-                    cdr_consts.DISPOSITION:
-                        bq_consts.WRITE_TRUNCATE
                 }
 
                 sandbox_queries_list.append(sandbox_query)
