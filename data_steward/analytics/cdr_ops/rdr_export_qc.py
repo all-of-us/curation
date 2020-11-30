@@ -162,66 +162,66 @@ EXECUTE IMMEDIATE query;
 
 # # Check if observation_source_value vs concept ids
 
-query = """
+query = f"""
 SELECT 
     SUM(CASE WHEN observation_source_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_source_concept_id
     , SUM(CASE WHEN observation_source_concept_id=0 THEN 1 ELSE 0 END) as n_zero_source_concept_id
-FROM `{dataset}.observation`
+FROM `{new_rdr}.observation`
 WHERE observation_source_value IS NOT NULL
 and observation_source_value != ''
 """
-pd.read_gbq(query.format(dataset=new_rdr),
+pd.read_gbq(query,
             project_id=project_id,
             dialect='standard')
 
-query = """
+query = f"""
 SELECT 
     SUM(CASE WHEN observation_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_concept_id
     , SUM(CASE WHEN observation_concept_id=0 THEN 1 ELSE 0 END) as n_zero_concept_id
-FROM `{dataset}.observation`
+FROM `{new_rdr}.observation`
 WHERE observation_source_value IS NOT NULL
 and observation_source_value != ''
 """
-pd.read_gbq(query.format(dataset=new_rdr),
+pd.read_gbq(query,
             project_id=project_id,
             dialect='standard')
 
 # # Check value_source_value unmapped to source
 
-query = """
+query = f"""
 SELECT 
     SUM(CASE WHEN value_source_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_source_concept_id
     , SUM(CASE WHEN value_source_concept_id=0 THEN 1 ELSE 0 END) as n_zero_source_concept_id
-FROM `{dataset}.observation`
+FROM `{new_rdr}.observation`
 WHERE value_source_value IS NOT NULL
 and value_source_value != ''
 """
-pd.read_gbq(query.format(dataset=new_rdr),
+pd.read_gbq(query,
             project_id=project_id,
             dialect='standard')
 
 # # Check value_source_value unmapped to standard
 
-query = """
+query = f"""
 SELECT 
     SUM(CASE WHEN value_as_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_concept_id
     , SUM(CASE WHEN value_as_concept_id=0 THEN 1 ELSE 0 END) as n_zero_concept_id
-FROM `{dataset}.observation`
+FROM `{new_rdr}.observation`
 WHERE value_source_value IS NOT NULL
 and value_source_value != ''
 """
-pd.read_gbq(query.format(dataset=new_rdr),
+pd.read_gbq(query,
             project_id=project_id,
             dialect='standard')
 
 # # check date = extract date datetime
 
-query = """
+query = f"""
 SELECT 
     SUM(CASE WHEN observation_date != EXTRACT(DATE FROM observation_datetime) THEN 1 ELSE 0 END) as n_date_datetime_issues
-FROM `{dataset}.observation`
+FROM `{new_rdr}.observation`
 """
-pd.read_gbq(query.format(dataset=new_rdr),
+pd.read_gbq(query,
             project_id=project_id,
             dialect='standard')
 
@@ -291,13 +291,13 @@ pd.read_gbq(query, project_id=project_id, dialect='standard')
 
 # # Survey version and dates
 
-query = """
+query = f"""
 SELECT
     cope_month
     , MIN(observation_date) AS min_date
     , MAX(observation_date) AS max_date
-FROM `{dataset}.observation`
-JOIN `{dataset}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
+FROM `{new_rdr}.observation`
+JOIN `{new_rdr}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
 GROUP BY 1
 """
-pd.read_gbq(query.format(dataset=new_rdr), project_id=project_id, dialect='standard')
+pd.read_gbq(query, project_id=project_id, dialect='standard')
