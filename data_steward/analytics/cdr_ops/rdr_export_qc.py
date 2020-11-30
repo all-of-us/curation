@@ -276,32 +276,19 @@ WHERE questionnaire_response_id NOT IN (SELECT questionnaire_response_id FROM `{
 """
 pd.read_gbq(query, project_id=project_id, dialect='standard')
 
-# # Check questionnaire_response_ids don't overlap amongst versions
+# # Duplicate questionnaire_response_ids in COPE version map
+# Duplicated questionnaire_response_ids are not expected and likely represent an issue with the map file received from the RDR.
 
 query = f"""
 SELECT
-    participant_id,
     questionnaire_response_id,
-    cope_month
-FROM `{cope_version_map}`
+    COUNT(*) n
+FROM `{cope_version_map}` 
+GROUP BY questionnaire_response_id
+HAVING n > 1
 """
-version = pd.read_gbq(query, project_id=project_id, dialect='standard')
+pd.read_gbq(query, project_id=project_id, dialect='standard')
 
-v_dict = {}
-v_dict['may'] = set(version[version['cope_month'] == 'may']
-                    ['questionnaire_response_id'].unique())
-v_dict['june'] = set(version[version['cope_month'] == 'june']
-                     ['questionnaire_response_id'].unique())
-v_dict['july'] = set(version[version['cope_month'] == 'july']
-                     ['questionnaire_response_id'].unique())
-
-# +
-from itertools import combinations
-
-for d1, d2 in combinations(v_dict.keys(), 2):
-    print(f"{d1}-{d2}: {len(v_dict[d1].intersection(v_dict[d2]))}")
-
-# +
 # # Survey version and dates
 
 query = """
