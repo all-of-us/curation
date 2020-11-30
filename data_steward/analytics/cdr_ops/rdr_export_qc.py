@@ -90,58 +90,65 @@ old_rdr = params['old_rdr']
 new_rdr = params['new_rdr']
 cope_version_map = params['cope_version_map']
 
-# %load_ext google.cloud.bigquery
-
 # # Missing tables
 
-# %%bigquery --params $params
-DECLARE query_template STRING DEFAULT('''
+query = f'''
 SELECT 
  COALESCE(curr.table_id, prev.table_id) AS table_id, 
- curr.row_count AS ${CURR}, 
- prev.row_count AS ${PREV}, 
+ curr.row_count AS {new_rdr}, 
+ prev.row_count AS {old_rdr}, 
  (curr.row_count - prev.row_count) row_diff 
-FROM ${CURR}.__TABLES__ curr 
-FULL OUTER JOIN ${PREV}.__TABLES__ prev
+FROM {new_rdr}.__TABLES__ curr 
+FULL OUTER JOIN {old_rdr}.__TABLES__ prev
   USING (table_id)
 WHERE curr.table_id IS NULL OR prev.table_id IS NULL
-''');
-DECLARE query STRING DEFAULT(REPLACE(query_template, '${CURR}', @new_rdr));
-SET query = REPLACE(query, '${PREV}', @old_rdr);
-EXECUTE IMMEDIATE query;
+'''
+pd.read_gbq(query, project_id=project_id, dialect='standard')
 
 # ## Row count comparison
 
-# %%bigquery --params $params
-DECLARE query_template STRING DEFAULT('''
+query = f'''
 SELECT 
  curr.table_id AS table_id, 
- curr.row_count AS ${CURR}, 
- prev.row_count AS ${PREV}, 
+ curr.row_count AS {new_rdr}, 
+ prev.row_count AS {old_rdr}, 
  (curr.row_count - prev.row_count) row_diff 
-FROM ${CURR}.__TABLES__ curr 
-JOIN ${PREV}.__TABLES__ prev
+FROM {new_rdr}.__TABLES__ curr 
+JOIN {old_rdr}.__TABLES__ prev
   USING (table_id)
 ORDER BY ABS(curr.row_count - prev.row_count) DESC;
-''');
-DECLARE query STRING DEFAULT(REPLACE(query_template, '${CURR}', @new_rdr));
-SET query = REPLACE(query, '${PREV}', @old_rdr);
-EXECUTE IMMEDIATE query;
+'''
+pd.read_gbq(query, project_id=project_id, dialect='standard')
 
 # ## Concept codes used
 # Identify question and answer concept codes which were either added or removed (appear in only the new or only the old RDR datasets, respectively).
 
-# %%bigquery --params $params
-DECLARE query_template STRING DEFAULT('''
+query = f'''
 WITH curr_code AS (
-SELECT observation_source_value value, 'observation_source_value' field, COUNT(1) row_count FROM ${CURR}.observation GROUP BY 1
+SELECT observation_source_value value, 
+ 'observation_source_value' field, 
+ COUNT(1) row_count 
+FROM {new_rdr}.observation GROUP BY 1
+
 UNION ALL
-SELECT value_source_value value, 'value_source_value' field, COUNT(1) row_count FROM ${CURR}.observation GROUP BY 1),
+
+SELECT value_source_value value, 
+ 'value_source_value' field, 
+ COUNT(1) row_count 
+FROM {new_rdr}.observation GROUP BY 1),
 
 prev_code AS (
-SELECT observation_source_value value,'observation_source_value' field, COUNT(1) row_count FROM ${PREV}.observation GROUP BY 1
+SELECT observation_source_value value,
+ 'observation_source_value' field, 
+ COUNT(1) row_count 
+FROM {old_rdr}.observation GROUP BY 1
+
 UNION ALL
-SELECT value_source_value value, 'value_source_value' field, COUNT(1) row_count FROM ${PREV}.observation GROUP BY 1)
+
+SELECT value_source_value value, 
+ 'value_source_value' field, 
+ COUNT(1) row_count 
+FROM {old_rdr}.observation GROUP BY 1)
 
 SELECT 
   prev_code.value prev_code_value, 
@@ -154,11 +161,8 @@ FROM curr_code
  FULL OUTER JOIN prev_code
   USING (field, value)
 WHERE prev_code.value IS NULL OR curr_code.value IS NULL
-;
-''');
-DECLARE query STRING DEFAULT(REPLACE(query_template, '${CURR}', @new_rdr));
-SET query = REPLACE(query, '${PREV}', @old_rdr);
-EXECUTE IMMEDIATE query;
+'''
+pd.read_gbq(query, project_id=project_id, dialect='standard')
 
 # # Check if observation_source_value vs concept ids
 
