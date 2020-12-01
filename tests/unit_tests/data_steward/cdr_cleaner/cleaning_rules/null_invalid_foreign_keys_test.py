@@ -179,7 +179,7 @@ class NullInvalidForeignKeys(unittest.TestCase):
                 nifk.SANDBOX_QUERY.render(
                     project_id=self.project_id,
                     sandbox_dataset_id=self.sandbox_id,
-                    intermediary_table='dc-388_dc-807_person',
+                    intermediary_table='dc388_dc807_person',
                     dataset_id=self.dataset_id,
                     table_name=table,
                     sandbox_expr=self.sandbox_expression),
