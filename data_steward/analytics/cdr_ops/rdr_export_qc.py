@@ -74,7 +74,7 @@ def validate_params(params, required_params):
     for required_param in required_params:
         if required_param not in params:
             raise ValueError(f'Missing query parameter `{required_param}`')
-    global project_id, old_rdr, new_rdr
+    global project_id, old_rdr, new_rdr, cope_version_map
     project_id = params.get('project_id')
     old_rdr = params.get('old_rdr')
     new_rdr = params.get('new_rdr')
@@ -99,7 +99,7 @@ FULL OUTER JOIN {old_rdr}.__TABLES__ prev
   USING (table_id)
 WHERE curr.table_id IS NULL OR prev.table_id IS NULL
 '''
-pd.read_gbq(query, project_id=project_id, dialect='standard')
+pd.read_gbq(query, dialect='standard')
 
 # ## Row count comparison
 
@@ -114,7 +114,7 @@ JOIN {project_id}.{old_rdr}.__TABLES__ prev
   USING (table_id)
 ORDER BY ABS(curr.row_count - prev.row_count) DESC;
 '''
-pd.read_gbq(query, project_id=project_id, dialect='standard')
+pd.read_gbq(query, dialect='standard')
 
 # ## Concept codes used
 # Identify question and answer concept codes which were either added or removed (appear in only the new or only the old RDR datasets, respectively).
@@ -158,7 +158,7 @@ FROM curr_code
   USING (field, value)
 WHERE prev_code.value IS NULL OR curr_code.value IS NULL
 '''
-pd.read_gbq(query, project_id=project_id, dialect='standard')
+pd.read_gbq(query, dialect='standard')
 
 # # Check if observation_source_value vs concept ids
 
@@ -171,7 +171,6 @@ WHERE observation_source_value IS NOT NULL
 and observation_source_value != ''
 """
 pd.read_gbq(query,
-            project_id=project_id,
             dialect='standard')
 
 query = f"""
@@ -183,7 +182,6 @@ WHERE observation_source_value IS NOT NULL
 and observation_source_value != ''
 """
 pd.read_gbq(query,
-            project_id=project_id,
             dialect='standard')
 
 # # Check value_source_value unmapped to source
@@ -197,7 +195,6 @@ WHERE value_source_value IS NOT NULL
 and value_source_value != ''
 """
 pd.read_gbq(query,
-            project_id=project_id,
             dialect='standard')
 
 # # Check value_source_value unmapped to standard
@@ -211,7 +208,6 @@ WHERE value_source_value IS NOT NULL
 and value_source_value != ''
 """
 pd.read_gbq(query,
-            project_id=project_id,
             dialect='standard')
 
 # # Dates are equal in observation_date and observation_datetime
@@ -227,7 +223,6 @@ FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_date != EXTRACT(DATE FROM observation_datetime)
 """
 pd.read_gbq(query,
-            project_id=project_id,
             dialect='standard')
 
 # # Check for duplicates
@@ -255,7 +250,7 @@ WHERE n_data > 1
 GROUP BY 1
 ORDER BY 2 DESC
 """
-pd.read_gbq(query, project_id=project_id, dialect='standard')
+pd.read_gbq(query, dialect='standard')
 
 # # Check if numeric data in value_as_string
 
@@ -268,7 +263,7 @@ WHERE SAFE_CAST(value_as_string AS INT64) IS NOT NULL
 GROUP BY 1
 ORDER BY 2 DESC
 """
-pd.read_gbq(query, project_id=project_id, dialect='standard')
+pd.read_gbq(query, dialect='standard')
 
 # # All COPE `questionnaire_response_id`s are in COPE version map
 # Any `questionnaire_response_id`s missing from the map will be listed below.
@@ -284,7 +279,7 @@ FROM `{project_id}.{new_rdr}.observation`
 WHERE questionnaire_response_id NOT IN 
 (SELECT questionnaire_response_id FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map`)
 """
-pd.read_gbq(query, project_id=project_id, dialect='standard')
+pd.read_gbq(query, dialect='standard')
 
 # # No duplicate `questionnaire_response_id`s in COPE version map
 # Any duplicated `questionnaire_response_id`s will be listed below.
@@ -297,7 +292,7 @@ FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map`
 GROUP BY questionnaire_response_id
 HAVING n > 1
 """
-pd.read_gbq(query, project_id=project_id, dialect='standard')
+pd.read_gbq(query, dialect='standard')
 
 # # Survey version and dates
 
@@ -310,4 +305,4 @@ FROM `{project_id}.{new_rdr}.observation`
 JOIN `{project_id}.{new_rdr}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
 GROUP BY 1
 """
-pd.read_gbq(query, project_id=project_id, dialect='standard')
+pd.read_gbq(query, dialect='standard')
