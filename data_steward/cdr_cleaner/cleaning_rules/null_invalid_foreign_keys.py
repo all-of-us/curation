@@ -68,7 +68,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         desc = (
             'Ensures that invalid foreign keys are null while the remainder of the rows persist'
         )
-        super().__init__(issue_numbers=['DC-388', 'DC-807'],
+        super().__init__(issue_numbers=['DC388', 'DC807'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
