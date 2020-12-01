@@ -424,7 +424,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
         queries = [{
             cdr_consts.QUERY: self.parse_src_concept_id_logging_query(),
             cdr_consts.DESTINATION_TABLE: SRC_CONCEPT_ID_TABLE_NAME,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id
         }]
 
@@ -469,12 +469,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
         return queries_list
 
     def setup_rule(self, client, *args, **keyword_args):
-
-        # Create _logging_standard_concept_id_replacement
-        fq_table_names = [
-            f'{self.project_id}.{self.sandbox_dataset_id}.{SRC_CONCEPT_ID_TABLE_NAME}'
-        ]
-        create_tables(client, self.project_id, fq_table_names, exists_ok=True)
+        pass
 
     def setup_validation(self, client, *args, **keyword_args):
         pass

@@ -172,7 +172,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         expected_queries = [{
             cdr_consts.QUERY: src_concept_id_logging_condition,
             cdr_consts.DESTINATION_TABLE: SRC_CONCEPT_ID_TABLE_NAME,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_DATASET: self.sandbox_id
         }, {
             cdr_consts.QUERY: duplicate_id_update_query,
