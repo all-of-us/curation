@@ -6,14 +6,13 @@
 #
 # For example:
 #
-# `https://my_notebooks/../cdr_ops/rdr_export_qc.py?project_id=my_project&old_rdr=rdr1&new_rdr=rdr2&cope_version_map=dataset1.map_table`
+# `https://my_notebooks/../cdr_ops/rdr_export_qc.py?project_id=my_project&old_rdr=rdr1&new_rdr=rdr2`
 #
 # will set variables like these which are used to construct SQL queries:
 #
 #     project_id = "my_project"
 #     old_rdr = "rdr1"
 #     new_rdr = "rdr2"
-#     cope_version_map = "dataset1.map_table"
 
 # +
 import urllib
@@ -28,9 +27,7 @@ REQUIRED_PARAMS = [
     # dataset_id of a prior RDR export for comparison
     'old_rdr',
     # dataset_id of the RDR export being evaluated
-    'new_rdr',
-    # dataset_id.table_id mapping questionnaire IDs to survey versions
-    'cope_version_map'
+    'new_rdr'
 ]
 pd.options.display.max_rows = 120
 
@@ -77,6 +74,10 @@ def validate_params(params, required_params):
     for required_param in required_params:
         if required_param not in params:
             raise ValueError(f'Missing query parameter `{required_param}`')
+    global project_id, old_rdr, new_rdr
+    project_id = params.get('project_id')
+    old_rdr = params.get('old_rdr')
+    new_rdr = params.get('new_rdr')
     print(f'All required parameters are specified.\n{params}')
 
 
@@ -84,11 +85,6 @@ def validate_params(params, required_params):
 
 params = get_url_params(NOTEBOOK_URL)
 validate_params(params, REQUIRED_PARAMS)
-
-project_id = params['project_id']
-old_rdr = params['old_rdr']
-new_rdr = params['new_rdr']
-cope_version_map = params['cope_version_map']
 
 # # Missing tables
 
@@ -218,12 +214,17 @@ pd.read_gbq(query,
             project_id=project_id,
             dialect='standard')
 
-# # check date = extract date datetime
+# # Dates are equal in observation_date and observation_datetime
+# Any mismatches are listed below.
 
 query = f"""
 SELECT 
-    SUM(CASE WHEN observation_date != EXTRACT(DATE FROM observation_datetime) THEN 1 ELSE 0 END) as n_date_datetime_issues
+    observation_id,
+    person_id,
+    observation_date,
+    observation_datetime
 FROM `{project_id}.{new_rdr}.observation`
+WHERE observation_date != EXTRACT(DATE FROM observation_datetime)
 """
 pd.read_gbq(query,
             project_id=project_id,
@@ -269,11 +270,14 @@ ORDER BY 2 DESC
 """
 pd.read_gbq(query, project_id=project_id, dialect='standard')
 
-# # Check all questionnaire_id in map
+# # All COPE `questionnaire_response_id`s are in COPE version map
+# Any `questionnaire_response_id`s missing from the map will be listed below.
 
 query = f"""
 SELECT
-    COUNT(1)
+    observation_id,
+    person_id,
+    questionnaire_response_id
 FROM `{project_id}.{new_rdr}.observation`
  INNER JOIN `{project_id}.pipeline_tables.cope_concepts` 
   ON observation_source_value = concept_code
@@ -282,8 +286,8 @@ WHERE questionnaire_response_id NOT IN
 """
 pd.read_gbq(query, project_id=project_id, dialect='standard')
 
-# # Duplicate questionnaire_response_ids in COPE version map
-# Duplicated questionnaire_response_ids are not expected and likely represent an issue with the map file received from the RDR.
+# # No duplicate `questionnaire_response_id`s in COPE version map
+# Any duplicated `questionnaire_response_id`s will be listed below.
 
 query = f"""
 SELECT
