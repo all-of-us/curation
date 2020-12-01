@@ -49,13 +49,15 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
 
         selected_table_names = [
             '_mapping_provider', '_mapping_visit_occurrence',
-            '_mapping_location', '_mapping_care_site',
-            'procedure_occurrence', 'person'
+            '_mapping_location', '_mapping_care_site', 'procedure_occurrence',
+            'person'
         ]
 
         for table_name in sandbox_table_names:
-            sandbox_table_name = cls.rule_instance.get_sandbox_table_for(table_name)
-            cls.fq_sandbox_table_names.append(f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
+            sandbox_table_name = cls.rule_instance.get_sandbox_table_for(
+                table_name)
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
 
         cls.fq_table_names = [
             f'{project_id}.{cls.dataset_id}.{table_name}'
