@@ -98,7 +98,7 @@ SELECT
  curr.row_count AS {new_rdr}, 
  prev.row_count AS {old_rdr}, 
  (curr.row_count - prev.row_count) row_diff 
-FROM {new_rdr}.__TABLES__ curr 
+FROM {project_id}.{new_rdr}.__TABLES__ curr 
 FULL OUTER JOIN {old_rdr}.__TABLES__ prev
   USING (table_id)
 WHERE curr.table_id IS NULL OR prev.table_id IS NULL
@@ -113,8 +113,8 @@ SELECT
  curr.row_count AS {new_rdr}, 
  prev.row_count AS {old_rdr}, 
  (curr.row_count - prev.row_count) row_diff 
-FROM {new_rdr}.__TABLES__ curr 
-JOIN {old_rdr}.__TABLES__ prev
+FROM {project_id}.{new_rdr}.__TABLES__ curr 
+JOIN {project_id}.{old_rdr}.__TABLES__ prev
   USING (table_id)
 ORDER BY ABS(curr.row_count - prev.row_count) DESC;
 '''
@@ -128,27 +128,27 @@ WITH curr_code AS (
 SELECT observation_source_value value, 
  'observation_source_value' field, 
  COUNT(1) row_count 
-FROM {new_rdr}.observation GROUP BY 1
+FROM {project_id}.{new_rdr}.observation GROUP BY 1
 
 UNION ALL
 
 SELECT value_source_value value, 
  'value_source_value' field, 
  COUNT(1) row_count 
-FROM {new_rdr}.observation GROUP BY 1),
+FROM {project_id}.{new_rdr}.observation GROUP BY 1),
 
 prev_code AS (
 SELECT observation_source_value value,
  'observation_source_value' field, 
  COUNT(1) row_count 
-FROM {old_rdr}.observation GROUP BY 1
+FROM {project_id}.{old_rdr}.observation GROUP BY 1
 
 UNION ALL
 
 SELECT value_source_value value, 
  'value_source_value' field, 
  COUNT(1) row_count 
-FROM {old_rdr}.observation GROUP BY 1)
+FROM {project_id}.{old_rdr}.observation GROUP BY 1)
 
 SELECT 
   prev_code.value prev_code_value, 
@@ -170,7 +170,7 @@ query = f"""
 SELECT 
     SUM(CASE WHEN observation_source_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_source_concept_id
     , SUM(CASE WHEN observation_source_concept_id=0 THEN 1 ELSE 0 END) as n_zero_source_concept_id
-FROM `{new_rdr}.observation`
+FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_source_value IS NOT NULL
 and observation_source_value != ''
 """
@@ -182,7 +182,7 @@ query = f"""
 SELECT 
     SUM(CASE WHEN observation_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_concept_id
     , SUM(CASE WHEN observation_concept_id=0 THEN 1 ELSE 0 END) as n_zero_concept_id
-FROM `{new_rdr}.observation`
+FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_source_value IS NOT NULL
 and observation_source_value != ''
 """
@@ -196,7 +196,7 @@ query = f"""
 SELECT 
     SUM(CASE WHEN value_source_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_source_concept_id
     , SUM(CASE WHEN value_source_concept_id=0 THEN 1 ELSE 0 END) as n_zero_source_concept_id
-FROM `{new_rdr}.observation`
+FROM `{project_id}.{new_rdr}.observation`
 WHERE value_source_value IS NOT NULL
 and value_source_value != ''
 """
@@ -210,7 +210,7 @@ query = f"""
 SELECT 
     SUM(CASE WHEN value_as_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_concept_id
     , SUM(CASE WHEN value_as_concept_id=0 THEN 1 ELSE 0 END) as n_zero_concept_id
-FROM `{new_rdr}.observation`
+FROM `{project_id}.{new_rdr}.observation`
 WHERE value_source_value IS NOT NULL
 and value_source_value != ''
 """
@@ -223,7 +223,7 @@ pd.read_gbq(query,
 query = f"""
 SELECT 
     SUM(CASE WHEN observation_date != EXTRACT(DATE FROM observation_datetime) THEN 1 ELSE 0 END) as n_date_datetime_issues
-FROM `{new_rdr}.observation`
+FROM `{project_id}.{new_rdr}.observation`
 """
 pd.read_gbq(query,
             project_id=project_id,
@@ -242,8 +242,8 @@ with duplicates AS (
         , value_as_string
         --, questionnaire_response_id
         , COUNT(1) as n_data
-    FROM `{new_rdr}.observation`
-    INNER JOIN `{cope_version_map}` USING(questionnaire_response_id) -- For COPE only
+    FROM `{project_id}.{new_rdr}.observation`
+    INNER JOIN `{project_id}.{new_rdr}.cope_survey_semantic_version_map` USING (questionnaire_response_id) -- For COPE only
     GROUP BY 1,2,3,4,5,6
 )
 SELECT 
@@ -262,7 +262,7 @@ query = f"""
 SELECT
     observation_source_value
     , COUNT(1) AS n
-FROM `{new_rdr}.observation`
+FROM `{project_id}.{new_rdr}.observation`
 WHERE SAFE_CAST(value_as_string AS INT64) IS NOT NULL
 GROUP BY 1
 ORDER BY 2 DESC
@@ -274,9 +274,11 @@ pd.read_gbq(query, project_id=project_id, dialect='standard')
 query = f"""
 SELECT
     COUNT(1)
-FROM `{new_rdr}.observation`
-INNER JOIN `pipeline_tables.cope_concepts` on observation_source_value = concept_code
-WHERE questionnaire_response_id NOT IN (SELECT questionnaire_response_id FROM `{cope_version_map}`)
+FROM `{project_id}.{new_rdr}.observation`
+ INNER JOIN `{project_id}.pipeline_tables.cope_concepts` 
+  ON observation_source_value = concept_code
+WHERE questionnaire_response_id NOT IN 
+(SELECT questionnaire_response_id FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map`)
 """
 pd.read_gbq(query, project_id=project_id, dialect='standard')
 
@@ -287,7 +289,7 @@ query = f"""
 SELECT
     questionnaire_response_id,
     COUNT(*) n
-FROM `{cope_version_map}` 
+FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map` 
 GROUP BY questionnaire_response_id
 HAVING n > 1
 """
@@ -300,8 +302,8 @@ SELECT
     cope_month
     , MIN(observation_date) AS min_date
     , MAX(observation_date) AS max_date
-FROM `{new_rdr}.observation`
-JOIN `{new_rdr}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
+FROM `{project_id}.{new_rdr}.observation`
+JOIN `{project_id}.{new_rdr}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
 GROUP BY 1
 """
 pd.read_gbq(query, project_id=project_id, dialect='standard')
