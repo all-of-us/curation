@@ -74,7 +74,7 @@ def validate_params(params, required_params):
     for required_param in required_params:
         if required_param not in params:
             raise ValueError(f'Missing query parameter `{required_param}`')
-    global project_id, old_rdr, new_rdr, cope_version_map
+    global project_id, old_rdr, new_rdr
     project_id = params.get('project_id')
     old_rdr = params.get('old_rdr')
     new_rdr = params.get('new_rdr')
@@ -94,8 +94,8 @@ SELECT
  curr.row_count AS {new_rdr}, 
  prev.row_count AS {old_rdr}, 
  (curr.row_count - prev.row_count) row_diff 
-FROM {project_id}.{new_rdr}.__TABLES__ curr 
-FULL OUTER JOIN {old_rdr}.__TABLES__ prev
+FROM `{project_id}.{new_rdr}.__TABLES__` curr 
+FULL OUTER JOIN `{old_rdr}.__TABLES__` prev
   USING (table_id)
 WHERE curr.table_id IS NULL OR prev.table_id IS NULL
 '''
@@ -109,8 +109,8 @@ SELECT
  curr.row_count AS {new_rdr}, 
  prev.row_count AS {old_rdr}, 
  (curr.row_count - prev.row_count) row_diff 
-FROM {project_id}.{new_rdr}.__TABLES__ curr 
-JOIN {project_id}.{old_rdr}.__TABLES__ prev
+FROM `{project_id}.{new_rdr}.__TABLES__` curr 
+JOIN `{project_id}.{old_rdr}.__TABLES__` prev
   USING (table_id)
 ORDER BY ABS(curr.row_count - prev.row_count) DESC;
 '''
@@ -124,27 +124,27 @@ WITH curr_code AS (
 SELECT observation_source_value value, 
  'observation_source_value' field, 
  COUNT(1) row_count 
-FROM {project_id}.{new_rdr}.observation GROUP BY 1
+FROM `{project_id}.{new_rdr}.observation` GROUP BY 1
 
 UNION ALL
 
 SELECT value_source_value value, 
  'value_source_value' field, 
  COUNT(1) row_count 
-FROM {project_id}.{new_rdr}.observation GROUP BY 1),
+FROM `{project_id}.{new_rdr}.observation` GROUP BY 1),
 
 prev_code AS (
 SELECT observation_source_value value,
  'observation_source_value' field, 
  COUNT(1) row_count 
-FROM {project_id}.{old_rdr}.observation GROUP BY 1
+FROM `{project_id}.{old_rdr}.observation` GROUP BY 1
 
 UNION ALL
 
 SELECT value_source_value value, 
  'value_source_value' field, 
  COUNT(1) row_count 
-FROM {project_id}.{old_rdr}.observation GROUP BY 1)
+FROM `{project_id}.{old_rdr}.observation` GROUP BY 1)
 
 SELECT 
   prev_code.value prev_code_value, 
