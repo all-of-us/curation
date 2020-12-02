@@ -6,7 +6,7 @@ USAGE="
 Usage: automate_all_tests.sh
   --key_file <path to key file>
   --branch <branch to checkout and build>
-  --env_path <path to GCE compatible environment directory>
+  --env_path <path to GCE compatible environment directory. must contain proxy info in a config file.>
 "
 
 while true; do
@@ -37,14 +37,17 @@ if [[ -z "${BRANCH}" ]] || [[ -z "${KEY_FILE}" ]] || [[ -z "${ENV_PATH}" ]]; the
 fi
 
 ROOT_DIR=$(git rev-parse --show-toplevel)
-DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
-DEID_DIR="${DATA_STEWARD_DIR}/deid"
-export GH_USERNAME=$(whoami)
-
 LOG_FILE="${ROOT_DIR}/logs/$(date '+%Y_%m_%d')_${BRANCH}.log"
 echo "Redirecting output streams to log file: ${LOG_FILE}"
 exec 1>>${LOG_FILE}
 exec 2>>${LOG_FILE}
+
+DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
+DEID_DIR="${DATA_STEWARD_DIR}/deid"
+# GH_USERNAME exported to aid init_env.sh script.  It requires either GH_USERNAME
+# or CIRCLE_USERNAME to be set.
+export GH_USERNAME=$(whoami)
+PROJECT_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${KEY_FILE}")
 
 source "${ENV_PATH}/bin/activate"
 python --version
@@ -55,31 +58,24 @@ git checkout ${BRANCH}
 git merge origin/${BRANCH}
 
 # ensure most recent dependencies are installed
-if [[ ${GH_USERNAME} == "curapp" ]];
-then
-    proxy="--proxy http://10.0.0.40.3128"
-    if [[ $(python --version) == "Python 3.6.8" ]];
-    then
-        echo "Monkey patching to run tests and record coverage results."
-        sed -i 's/hashlib.md5()/hashlib.md5(usedforsecurity=False)/g' "${ENV_PATH}/lib64/python3.6/site-packages/coverage/misc.py"
-    fi
-else
-    proxy=""
-
-fi
-
-pip ${proxy} install --upgrade pip
-pip ${proxy} install -r "${DATA_STEWARD_DIR}/requirements.txt"
-pip ${proxy} install -r "${DATA_STEWARD_DIR}/dev_requirements.txt"
-pip ${proxy} install -r "${DEID_DIR}/requirements.txt"
+pip install --upgrade pip
+pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
+pip install -r "${DATA_STEWARD_DIR}/dev_requirements.txt"
+pip install -r "${DEID_DIR}/requirements.txt"
 PYTHONPATH=$ROOT_DIR:$DATA_STEWARD_DIR:$PYTHONPATH
 
+if [[ $(python --version) == "Python 3.6.8" ]];
+then
+    echo "Monkey patching to run tests and record coverage results in GCE environment.  Can be removed if Python package is upgraded."
+    sed -i 's/hashlib.md5()/hashlib.md5(usedforsecurity=False)/g' "${ENV_PATH}/lib64/python3.6/site-packages/coverage/misc.py"
+fi
+
 # setting required credentials
-export GOOGLE_CLOUD_PROJECT=aou-res-curation-test
-export APPLICATION_ID=aou-res-curation-test
+export GOOGLE_CLOUD_PROJECT=$PROJECT_ID
+export APPLICATION_ID=$PROJECT_ID
 export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 gcloud auth activate-service-account --key-file="${KEY_FILE}"
-gcloud config set project aou-res-curation-test
+gcloud config set project PROJECT_ID
 gcloud config list
 echo $GOOGLE_APPLICATION_CREDENTIALS
 
