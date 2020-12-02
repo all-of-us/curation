@@ -86,7 +86,8 @@ def validate_params(params, required_params):
 params = get_url_params(NOTEBOOK_URL)
 validate_params(params, REQUIRED_PARAMS)
 
-# # Missing tables
+# # Table comparison
+# The export should generally contain the same tables from month to month. Tables found only in the old or the new export are listed below.
 
 query = f'''
 SELECT 
@@ -102,12 +103,13 @@ WHERE curr.table_id IS NULL OR prev.table_id IS NULL
 pd.read_gbq(query, dialect='standard')
 
 # ## Row count comparison
+# Generally the row count of clinical tables should increase from one export to the next.
 
 query = f'''
 SELECT 
  curr.table_id AS table_id, 
- curr.row_count AS {new_rdr}, 
  prev.row_count AS {old_rdr}, 
+ curr.row_count AS {new_rdr}, 
  (curr.row_count - prev.row_count) row_diff 
 FROM `{project_id}.{new_rdr}.__TABLES__` curr 
 JOIN `{project_id}.{old_rdr}.__TABLES__` prev
@@ -160,55 +162,43 @@ WHERE prev_code.value IS NULL OR curr_code.value IS NULL
 '''
 pd.read_gbq(query, dialect='standard')
 
-# # Check if observation_source_value vs concept ids
+# # Question codes should have mapped `concept_id`s
+# Question codes in `observation_source_value` should be associated with the concept identified by `observation_source_concept_id` and mapped to a standard concept identified by `observation_concept_id`. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 
 query = f"""
-SELECT 
-    SUM(CASE WHEN observation_source_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_source_concept_id
-    , SUM(CASE WHEN observation_source_concept_id=0 THEN 1 ELSE 0 END) as n_zero_source_concept_id
+SELECT
+    observation_source_value
+    , COUNTIF(observation_source_concept_id IS NULL) AS source_concept_id_null
+    , COUNTIF(observation_source_concept_id=0)       AS source_concept_id_zero
+    , COUNTIF(observation_concept_id IS NULL)        AS concept_id_null
+    , COUNTIF(observation_concept_id=0)              AS concept_id_zero
 FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_source_value IS NOT NULL
-and observation_source_value != ''
+AND observation_source_value != ''
+GROUP BY 1
+HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
+ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """
-pd.read_gbq(query,
-            dialect='standard')
+pd.read_gbq(query, dialect='standard')
+
+# # Answer codes should have mapped `concept_id`s
+# Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id and mapped to a standard concept identified by value_as_concept_id. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 
 query = f"""
 SELECT 
-    SUM(CASE WHEN observation_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_concept_id
-    , SUM(CASE WHEN observation_concept_id=0 THEN 1 ELSE 0 END) as n_zero_concept_id
-FROM `{project_id}.{new_rdr}.observation`
-WHERE observation_source_value IS NOT NULL
-and observation_source_value != ''
-"""
-pd.read_gbq(query,
-            dialect='standard')
-
-# # Check value_source_value unmapped to source
-
-query = f"""
-SELECT 
-    SUM(CASE WHEN value_source_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_source_concept_id
-    , SUM(CASE WHEN value_source_concept_id=0 THEN 1 ELSE 0 END) as n_zero_source_concept_id
+    value_source_value
+    , COUNTIF(value_source_concept_id IS NULL) AS source_concept_id_null
+    , COUNTIF(value_source_concept_id=0)      AS source_concept_id_zero
+    , COUNTIF(value_as_concept_id IS NULL)    AS concept_id_null
+    , COUNTIF(value_as_concept_id=0)          AS concept_id_zero
 FROM `{project_id}.{new_rdr}.observation`
 WHERE value_source_value IS NOT NULL
 and value_source_value != ''
+GROUP BY 1
+HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
+ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """
-pd.read_gbq(query,
-            dialect='standard')
-
-# # Check value_source_value unmapped to standard
-
-query = f"""
-SELECT 
-    SUM(CASE WHEN value_as_concept_id IS NULL THEN 1 ELSE 0 END) as n_null_concept_id
-    , SUM(CASE WHEN value_as_concept_id=0 THEN 1 ELSE 0 END) as n_zero_concept_id
-FROM `{project_id}.{new_rdr}.observation`
-WHERE value_source_value IS NOT NULL
-and value_source_value != ''
-"""
-pd.read_gbq(query,
-            dialect='standard')
+pd.read_gbq(query, dialect='standard')
 
 # # Dates are equal in observation_date and observation_datetime
 # Any mismatches are listed below.
@@ -222,8 +212,7 @@ SELECT
 FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_date != EXTRACT(DATE FROM observation_datetime)
 """
-pd.read_gbq(query,
-            dialect='standard')
+pd.read_gbq(query, dialect='standard')
 
 # # Check for duplicates
 
