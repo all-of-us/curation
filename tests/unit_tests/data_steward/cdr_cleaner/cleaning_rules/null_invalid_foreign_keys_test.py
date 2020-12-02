@@ -178,13 +178,12 @@ class NullInvalidForeignKeys(unittest.TestCase):
 
         sandbox_query = {
             cdr_consts.QUERY:
-                nifk.SANDBOX_QUERY.render(
-                    project_id=self.project_id,
-                    sandbox_dataset_id=self.sandbox_id,
-                    intermediary_table='dc388_person',
-                    dataset_id=self.dataset_id,
-                    table_name=table,
-                    sandbox_expr=self.sandbox_expression),
+                nifk.SANDBOX_QUERY.render(project_id=self.project_id,
+                                          sandbox_dataset_id=self.sandbox_id,
+                                          intermediary_table='dc388_person',
+                                          dataset_id=self.dataset_id,
+                                          table_name=table,
+                                          sandbox_expr=self.sandbox_expression),
         }
 
         invalid_foreign_key_query = {
