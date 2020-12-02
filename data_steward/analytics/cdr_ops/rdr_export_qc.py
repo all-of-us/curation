@@ -95,7 +95,7 @@ SELECT
  prev.row_count AS {old_rdr}, 
  (curr.row_count - prev.row_count) row_diff 
 FROM `{project_id}.{new_rdr}.__TABLES__` curr 
-FULL OUTER JOIN `{old_rdr}.__TABLES__` prev
+FULL OUTER JOIN `{project_id}.{old_rdr}.__TABLES__` prev
   USING (table_id)
 WHERE curr.table_id IS NULL OR prev.table_id IS NULL
 '''
