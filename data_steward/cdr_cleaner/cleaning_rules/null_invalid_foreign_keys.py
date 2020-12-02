@@ -261,7 +261,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         :param affected_table: tables that is affected by running this cleaning rule
         :return: formatted string name of the sandbox
         """
-        return f'{"_".join(self.issue_numbers).lower()}_{affected_table}'
+        return f'{self.issue_numbers[0].lower()}_{affected_table}'
 
     def setup_validation(self, client):
         """

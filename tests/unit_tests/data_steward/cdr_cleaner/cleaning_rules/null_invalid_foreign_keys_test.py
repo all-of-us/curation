@@ -1,6 +1,8 @@
 """
 Unit test for cleaning_rules.null_invalid_foreign_keys.py module
 
+Original Issues: DC-807, DC-388
+
 The intent of this unit test is to ensure that any invalid foreign keys are nulled out while
 the remaining rows of the table are unchanged. A valid foreign key means that an existing
 foreign key already exists in the table it references. An invalid foreign key means that there
@@ -179,7 +181,7 @@ class NullInvalidForeignKeys(unittest.TestCase):
                 nifk.SANDBOX_QUERY.render(
                     project_id=self.project_id,
                     sandbox_dataset_id=self.sandbox_id,
-                    intermediary_table='dc388_dc807_person',
+                    intermediary_table='dc388_person',
                     dataset_id=self.dataset_id,
                     table_name=table,
                     sandbox_expr=self.sandbox_expression),
