@@ -11,13 +11,13 @@ present in the dataset
 # Python imports
 import logging
 
-# Project imports
-from common import MEASUREMENT, CONCEPT, PERSON, CONDITION_OCCURRENCE, CONCEPT_ANCESTOR, JINJA_ENV
-from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
     MeasurementRecordsSuppression)
+# Project imports
+from common import MEASUREMENT, JINJA_ENV
 from constants.bq_utils import WRITE_TRUNCATE, WRITE_APPEND
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -615,10 +615,7 @@ class CleanHeightAndWeight(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=[
-                             CONCEPT, PERSON, 'measurement_ext', MEASUREMENT,
-                             CONDITION_OCCURRENCE, CONCEPT_ANCESTOR
-                         ],
+                         affected_tables=[MEASUREMENT],
                          depends_on=[MeasurementRecordsSuppression])
 
     def get_query_specs(self):
