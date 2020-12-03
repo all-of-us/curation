@@ -89,9 +89,13 @@ PYTHONPATH=$PYTHONPATH python "${DATA_STEWARD_DIR}/ci/setup.py"
 echo "Running unit tests"
 CMD="${ROOT_DIR}/tests/run_tests.sh -s unit"
 source ${CMD}
+# The test runner script turns off command printing when it exits.
+set -x
 
 echo "Running integration tests"
 CMD="${ROOT_DIR}/tests/run_tests.sh -s integration"
 source ${CMD}
+# The test runner script turns off command printing when it exits.
+set -x
 
 set +x
