@@ -33,7 +33,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         self.pids_table_list = ['fake_table_1', 'fake_table_2', 'fake_table_3']
 
         mock_bq_client_patcher = patch(
-            'retraction.retract_deactivated_pids.get_client')
+            'retraction.retract_deactivated_pids.bq.get_client')
         self.mock_bq_client = mock_bq_client_patcher.start()
         self.addCleanup(mock_bq_client_patcher.stop)
 
@@ -67,6 +67,32 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data, columns=column_names)
 
         assert_frame_equal(result_df, expected_df)
+
+    def test_get_dates_info(self):
+        # preconditions
+        data = {
+            'table_catalog': ['project'] * 7,
+            'table_schema': ['dataset'] * 7,
+            'table_name': ['observation'] * 5 + ['location'] * 2,
+            'column_name': [
+                'observation_id', 'person_id', 'observation_concept_id',
+                'observation_date', 'observation_datetime', 'location_id',
+                'city'
+            ],
+        }
+        self.mock_bq_client.query.return_value.to_dataframe.return_value = pd.DataFrame(
+            data,
+            columns=[
+                'table_catalog', 'table_schema', 'table_name', 'column_name'
+            ])
+
+        expected_dict = {
+            'observation': ['observation_date', 'observation_datetime']
+        }
+        actual_dict = retract_deactivated_pids.get_table_dates_info(
+            self.project_id, 'fake_dataset_1', self.mock_bq_client)
+
+        self.assertDictEqual(actual_dict, expected_dict)
 
     @mock.patch(
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
@@ -115,7 +141,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
     @mock.patch(
         'retraction.retract_deactivated_pids.check_and_create_sandbox_dataset')
-    @mock.patch('retraction.retract_deactivated_pids.get_client')
+    @mock.patch('retraction.retract_deactivated_pids.bq.get_client')
     @mock.patch('retraction.retract_deactivated_pids.check_pid_exist')
     def test_create_queries(self, mock_pid_exist, mock_client,
                             mock_check_sandbox, mock_date_info):

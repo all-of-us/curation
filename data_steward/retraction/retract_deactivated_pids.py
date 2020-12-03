@@ -1,15 +1,14 @@
 # Python imports
 import argparse
 import logging
-import os
 import re
-from datetime import datetime
 
 # Third party imports
 import pandas as pd
 from google.cloud import bigquery
 
 # Project imports
+from utils import bq, pipeline_logging
 from retraction.retract_utils import DEID_REGEX
 from sandbox import check_and_create_sandbox_dataset
 from constants import bq_utils as bq_consts
@@ -17,24 +16,6 @@ from constants.cdr_cleaner import clean_cdr as clean_consts
 from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
-LOGS_PATH = '../logs'
-
-CLIENT = None
-
-
-def get_client(project_id):
-    """
-    Ensure only one client is created and reused
-
-    :param project_id:  project to get a client for
-    :returns: a big query client object
-    """
-    global CLIENT
-    if not CLIENT:
-        CLIENT = bigquery.Client(project=project_id)
-
-    return CLIENT
-
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string("""
 SELECT *
@@ -50,6 +31,37 @@ RESEARCH_ID_QUERY = JINJA_ENV.from_string("""
 SELECT DISTINCT research_id
 FROM `{{project}}.{{prefix_regex}}_combined._deid_map`
 WHERE person_id = {{pid}}
+""")
+
+# Queries to create tables in associated sandbox with rows that will be removed per cleaning rule
+SANDBOX_QUERY = JINJA_ENV.from_string("""
+SELECT *
+FROM `{{project}}.{{dataset}}.{{table}}` t
+{% if deid %}
+JOIN `{{project}}.{{pid_rid_dataset}}.{{pid_rid_table}}` p
+ON t.person_id = p.research_id
+JOIN `{{project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}` d
+ON p.person_id = d.person_id
+{% else %}
+JOIN `{{project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}` d
+USING (person_id)
+{% endif %}
+{% if date %}
+WHERE COALESCE({{date_column}}, EXTRACT(DATE FROM {{datetime_column}})) >= d.deactivated_date
+{% else %}
+WHERE COALESCE({{end_date_column}}, EXTRACT(DATE FROM {{end_datetime_column}}),
+    {{start_date_column}}, EXTRACT(DATE FROM {{start_datetime_column}})) >= d.deactivated_date
+{% endif %}
+""")
+
+# Queries to truncate existing tables to remove deactivated EHR PIDS, two different queries for
+# tables with standard entry dates vs. tables with start and end dates
+CLEAN_QUERY = JINJA_ENV.from_string("""
+SELECT *
+FROM `{{project}}.{{dataset}}.{{table}}`
+EXCEPT DISTINCT
+SELECT *
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 """)
 
 CHECK_PID_EXIST_DATE_QUERY = JINJA_ENV.from_string("""
@@ -137,33 +149,6 @@ PID_TABLE_FIELDS = [[{
 }]]
 
 
-def add_console_logging(add_handler):
-    """
-    This config should be done in a separate module, but that can wait
-    until later.  Useful for debugging.
-    """
-    try:
-        os.makedirs(LOGS_PATH)
-    except OSError:
-        # directory already exists.  move on.
-        pass
-
-    name = datetime.now().strftime(
-        os.path.join(LOGS_PATH, 'ehr_deactivated_retraction-%Y-%m-%d.log'))
-    logging.basicConfig(filename=name,
-                        level=logging.INFO,
-                        format='{asctime} - {name} - {levelname} - {message}',
-                        style='{')
-
-    if add_handler:
-        handler = logging.StreamHandler()
-        handler.setLevel(logging.INFO)
-        formatter = logging.Formatter('{levelname} - {name} - {message}',
-                                      style='{')
-        handler.setFormatter(formatter)
-        logging.getLogger('').addHandler(handler)
-
-
 def get_pids_table_info(project_id, dataset_id, client):
     """
     This function gets all table information for the dataset and filters to only retain tables with the field person_id
@@ -191,6 +176,34 @@ def get_pids_table_info(project_id, dataset_id, client):
             pids_tables)]
 
     return pids_table_info_df
+
+
+def get_table_dates_info(project_id, dataset_id, client):
+    """
+    This function returns a dict with tables containing pids and date columns
+
+    :param project_id: bq name of project_id
+    :param dataset_id: ba name of dataset_id
+    :param client: bq client object
+    :return: dataframe with key table and date columns as values
+    """
+    table_cols_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
+                                                       dataset=dataset_id)
+    table_cols_df = client.query(table_cols_query).to_dataframe()
+
+    pids_tables = table_cols_df[table_cols_df['column_name'] ==
+                                'person_id']['table_name']
+    date_tables_df = table_cols_df[table_cols_df['column_name'].str.contains(
+        "date")]
+
+    dates_info = {}
+    for table in pids_tables:
+        date_cols = date_tables_df[date_tables_df['table_name'] ==
+                                   table]['column_name']
+        if date_cols.any():
+            dates_info[table] = date_cols.to_list()
+
+    return dates_info
 
 
 def get_date_info_for_pids_tables(project_id, client, datasets=None):
@@ -360,15 +373,15 @@ def create_queries(project_id,
     :param datasets: (optional) List of datasets to retract from. If not provided,
       retraction will be performed from all datasets in project referred to by `project_id`.
     :return: list of query dictionaries
-    
-    NOTE: For dataset_ids matching `retraction.retract_utils.DEID_REGEX`, associated research_ids 
+
+    NOTE: For dataset_ids matching `retraction.retract_utils.DEID_REGEX`, associated research_ids
     retrieved from an inferred combined dataset are used for retraction.
     """
     queries_list = []
     dataset_list = set()
     final_date_column_df = pd.DataFrame()
     # Hit bq and receive df of deactivated ehr pids and deactivated date
-    client = get_client(project_id)
+    client = bq.get_client(project_id)
     deactivated_ehr_pids_df = client.query(
         DEACTIVATED_PIDS_QUERY.render(project=pids_project_id,
                                       dataset=pids_dataset_id,
@@ -550,12 +563,7 @@ def run_queries(queries, client):
 def parse_args(raw_args=None):
     parser = argparse.ArgumentParser(
         description=
-        'Runs retraction of deactivated EHR participants on all datasets in project. The rows to be retracted '
-        'are based on the date entered and will be retracted if the date entered is before the retraction. '
-        'Uses project_id, deactivated pid_table_id to determine '
-        'the pids to retract data for. The pid_table_id needs to contain '
-        'the person_id and deactivated_date columns specified in the schema above, '
-        'but research_id can be null if deid has not been run yet. ',
+        'Runs retraction of deactivated EHR participants on specified datasets',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-p',
                         '--project-id',
@@ -608,12 +616,12 @@ def parse_args(raw_args=None):
 
 
 def main(args=None):
+    pipeline_logging.configure(logging.DEBUG, add_console_handler=True)
     args = parse_args(args)
-    add_console_logging(args.console_log)
     query_list = create_queries(args.project_id, args.ticket_number,
                                 args.pids_project_id, args.pids_dataset_id,
                                 args.pids_table, args.dataset_list)
-    client = get_client(args.project_id)
+    client = bq.get_client(args.project_id)
     run_queries(query_list, client)
     LOGGER.info("Retraction complete")
 
