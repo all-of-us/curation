@@ -87,9 +87,11 @@ export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
 PYTHONPATH=$PYTHONPATH python "${DATA_STEWARD_DIR}/ci/setup.py"
 
 echo "Running unit tests"
-source "${ROOT_DIR}/tests/run_tests.sh" -s unit
+CMD="${ROOT_DIR}/tests/run_tests.sh -s unit"
+source ${CMD}
 
 echo "Running integration tests"
-source "${ROOT_DIR}/tests/run_tests.sh" -s integration
+CMD="${ROOT_DIR}/tests/run_tests.sh -s integration"
+source ${CMD}
 
 set +x

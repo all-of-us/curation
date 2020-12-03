@@ -16,25 +16,21 @@ function usage() {
   exit 1
 }
 
-while getopts "s:h:r:" opt; do
-  case $opt in
-    s)
-      subset=$OPTARG
+while true; do
+  case "$1" in
+    -s)
+      subset=$2
+      shift 2
       ;;
-    r)
-      substring=$OPTARG
+    -r)
+      substring=$2
+      shift 2
       ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      exit 1
+    --)
+      shift
+      break
       ;;
-    :)
-      echo "Option -$OPTARG requires an argument." >&2
-      exit 1
-      ;;
-    h|*)
-      usage
-      ;;
+    *) break ;;
   esac
 done
 
