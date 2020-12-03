@@ -68,7 +68,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         desc = (
             'Ensures that invalid foreign keys are null while the remainder of the rows persist'
         )
-        super().__init__(issue_numbers=['DC-388', 'DC-807'],
+        super().__init__(issue_numbers=['DC388', 'DC807'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
@@ -216,12 +216,6 @@ class NullInvalidForeignKeys(BaseCleaningRule):
                             dataset_id=self.dataset_id,
                             table_name=table,
                             sandbox_expr=sandbox_expression),
-                    cdr_consts.DESTINATION_DATASET:
-                        self.dataset_id,
-                    cdr_consts.DESTINATION_TABLE:
-                        table,
-                    cdr_consts.DISPOSITION:
-                        bq_consts.WRITE_TRUNCATE
                 }
 
                 sandbox_queries_list.append(sandbox_query)
@@ -267,7 +261,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         :param affected_table: tables that is affected by running this cleaning rule
         :return: formatted string name of the sandbox
         """
-        return f'{"_".join(self.issue_numbers).lower()}_{affected_table}'
+        return f'{self.issue_numbers[0].lower()}_{affected_table}'
 
     def setup_validation(self, client):
         """
