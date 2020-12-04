@@ -11,8 +11,10 @@ who have deactivated from the Program.
 import logging
 
 # Third party imports
-import bq_utils
+
 # Project imports
+import bq_utils
+from utils import bq, pipeline_logging
 import retraction.retract_deactivated_pids as rdp
 import utils.participant_summary_requests as psr
 
@@ -63,7 +65,8 @@ def remove_ehr_data_queries(project_id, ticket_number, pids_project_id,
 
 if __name__ == '__main__':
     ARGS = rdp.parse_args()
-    rdp.add_console_logging(ARGS.console_log)
+    pipeline_logging.configure(level=logging.DEBUG,
+                               add_console_handler=ARGS.console_log)
 
     remove_ehr_data_queries = remove_ehr_data_queries(ARGS.project_id,
                                                       ARGS.ticket_number,
@@ -71,6 +74,6 @@ if __name__ == '__main__':
                                                       ARGS.pids_dataset_id,
                                                       ARGS.pids_table)
 
-    client = rdp.get_client(ARGS.project_id)
+    client = bq.get_client(ARGS.project_id)
     rdp.run_queries(remove_ehr_data_queries, client)
     LOGGER.info("Removal of ehr data from deactivated participants complete")
