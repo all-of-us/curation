@@ -7,7 +7,6 @@ Datasets are categorized by type (ehr/unioned/combined/deid) and retraction is p
 """
 # Python imports
 import argparse
-import re
 import logging
 
 # Third party imports
@@ -536,28 +535,8 @@ def retraction_query_runner(queries):
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
 
-def is_deid_dataset(dataset_id):
-    return bool(re.match(ru.DEID_REGEX, dataset_id)) or bool(
-        re.match(ru.RELEASE_REGEX, dataset_id))
-
-
-def is_combined_dataset(dataset_id):
-    if is_deid_dataset(dataset_id):
-        return False
-    return bool(re.match(ru.COMBINED_REGEX, dataset_id))
-
-
-def is_unioned_dataset(dataset_id):
-    return bool(re.match(ru.UNIONED_REGEX, dataset_id))
-
-
-def is_ehr_dataset(dataset_id):
-    return bool(re.match(
-        ru.EHR_REGEX, dataset_id)) or dataset_id == bq_utils.get_dataset_id()
-
-
 def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
-                      pid_table_id, hpo_id, dataset_ids, retraction_type):
+                      pid_table_id, hpo_id, dataset_ids_str, retraction_type):
     """
     Main function to perform retraction
     pid table must follow schema described above in PID_TABLE_FIELDS and must reside in sandbox_dataset_id
@@ -568,47 +547,26 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
     :param pid_project_id: identifies the dataset containing the sandbox dataset
     :param pid_table_id: table containing the person_ids and research_ids
     :param hpo_id: hpo_id of the site to retract from
-    :param dataset_ids: datasets to retract from. If set to 'all_datasets', retracts from all datasets
+    :param dataset_ids_str: datasets to retract from. If set to 'all_datasets', retracts from all datasets
         If set to 'none', skips retraction from BigQuery datasets
     :param retraction_type: string indicating whether all data needs to be removed, including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :return:
     """
-    # initialize list of all datasets in project
-    dataset_objs = bq_utils.list_datasets(project_id)
-    all_dataset_ids = []
-    for dataset_obj in dataset_objs:
-        dataset = bq_utils.get_dataset_id_from_obj(dataset_obj)
-        all_dataset_ids.append(dataset)
-
-    if dataset_ids == 'all_datasets':
-        dataset_ids = all_dataset_ids
-    elif dataset_ids == 'none':
-        dataset_ids = []
-    else:
-        dataset_ids = dataset_ids.split()
-        # only consider datasets that exist in the project
-        dataset_ids = [
-            dataset_id for dataset_id in dataset_ids
-            if dataset_id in all_dataset_ids
-        ]
-
-    logging.info('Found datasets to retract from: %s' % ', '.join(dataset_ids))
-    # retract from latest datasets first
-    dataset_ids.sort(reverse=True)
+    dataset_ids = ru.get_datasets_list(project_id, dataset_ids_str)
 
     deid_datasets = []
     combined_datasets = []
     unioned_datasets = []
     ehr_datasets = []
     for dataset in dataset_ids:
-        if is_deid_dataset(dataset):
+        if ru.is_deid_dataset(dataset):
             deid_datasets.append(dataset)
-        elif is_combined_dataset(dataset):
+        elif ru.is_combined_dataset(dataset):
             combined_datasets.append(dataset)
-        elif is_unioned_dataset(dataset):
+        elif ru.is_unioned_dataset(dataset):
             unioned_datasets.append(dataset)
-        elif is_ehr_dataset(dataset):
+        elif ru.is_ehr_dataset(dataset):
             ehr_datasets.append(dataset)
 
     # skip ehr datasets if hpo_id is indicated as none

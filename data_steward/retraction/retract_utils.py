@@ -1,3 +1,4 @@
+import os
 import re
 import argparse
 import logging
@@ -6,13 +7,12 @@ import common
 from utils import bq
 from constants.retraction import retract_utils as consts
 from constants.utils import bq as bq_consts
-from retraction import retract_data_bq as rbq  # TODO refactor and remove
 
-UNIONED_REGEX = re.compile('unioned_ehr_?\d{6}')
-COMBINED_REGEX = re.compile('combined\d{6}')
-DEID_REGEX = re.compile('.*deid.*')
-EHR_REGEX = re.compile('ehr_?\d{6}')
-RELEASE_REGEX = re.compile('R\d{4}Q\dR\d')
+UNIONED_REGEX = re.compile(r'unioned_ehr_?\d{6}')
+COMBINED_REGEX = re.compile(r'combined\d{6}')
+DEID_REGEX = re.compile(r'.*deid.*')
+EHR_REGEX = re.compile(r'ehr_?\d{6}')
+RELEASE_REGEX = re.compile(r'R\d{4}Q\dR\d')
 
 
 def get_table_id(table):
@@ -79,6 +79,51 @@ def get_src_id(mapping_type):
     return src_id
 
 
+def get_datasets_list(project_id, dataset_ids):
+    # initialize list of all datasets in project
+    all_dataset_ids = [
+        dataset.dataset_id for dataset in bq.list_datasets(project_id)
+    ]
+
+    if dataset_ids == 'all_datasets':
+        dataset_ids = all_dataset_ids
+    elif dataset_ids == 'none':
+        dataset_ids = []
+    else:
+        dataset_ids = dataset_ids.split()
+        # only consider datasets that exist in the project
+        dataset_ids = [
+            dataset_id for dataset_id in dataset_ids
+            if dataset_id in all_dataset_ids
+        ]
+
+    logging.info('Found datasets to retract from: %s' % ', '.join(dataset_ids))
+    # retract from latest datasets first
+    dataset_ids.sort(reverse=True)
+    return dataset_ids
+
+
+def is_deid_dataset(dataset_id):
+    return bool(re.match(DEID_REGEX, dataset_id)) or bool(
+        re.match(RELEASE_REGEX, dataset_id))
+
+
+def is_combined_dataset(dataset_id):
+    if is_deid_dataset(dataset_id):
+        return False
+    return bool(re.match(COMBINED_REGEX, dataset_id))
+
+
+def is_unioned_dataset(dataset_id):
+    return bool(re.match(UNIONED_REGEX, dataset_id))
+
+
+def is_ehr_dataset(dataset_id):
+    return bool(re.match(
+        EHR_REGEX,
+        dataset_id)) or dataset_id == os.environ.get('BIGQUERY_DATASET_ID')
+
+
 def get_dataset_type(dataset_id):
     if common.COMBINED in dataset_id and common.DEID not in dataset_id:
         return common.COMBINED
@@ -88,7 +133,7 @@ def get_dataset_type(dataset_id):
         return common.RDR
     if common.EHR in dataset_id and common.UNIONED_EHR not in dataset_id:
         return common.EHR
-    if common.DEID in dataset_id or rbq.is_deid_dataset(dataset_id):
+    if common.DEID in dataset_id or is_deid_dataset(dataset_id):
         return common.DEID
     return common.OTHER
 

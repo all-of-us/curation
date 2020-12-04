@@ -43,17 +43,17 @@ class RetractDataBqTest(unittest.TestCase):
         self.person_research_ids = [(1, 6890173), (2, 858761),
                                     (1234567, 4589763)]
 
-    @mock.patch('retraction.retract_data_bq.is_deid_dataset')
-    @mock.patch('retraction.retract_data_bq.is_combined_dataset')
-    @mock.patch('retraction.retract_data_bq.is_unioned_dataset')
-    @mock.patch('retraction.retract_data_bq.is_ehr_dataset')
-    @mock.patch('bq_utils.list_datasets')
+    @mock.patch('retraction.retract_utils.is_deid_dataset')
+    @mock.patch('retraction.retract_utils.is_combined_dataset')
+    @mock.patch('retraction.retract_utils.is_unioned_dataset')
+    @mock.patch('retraction.retract_utils.is_ehr_dataset')
+    @mock.patch('utils.bq.list_datasets')
     def test_integration_queries_to_retract_from_fake_dataset(
         self, mock_list_datasets, mock_is_ehr_dataset, mock_is_unioned_dataset,
         mock_is_combined_dataset, mock_is_deid_dataset):
-        mock_list_datasets.return_value = [{
-            'id': self.project_id + ':' + self.bq_dataset_id
-        }]
+        mock_list_datasets.return_value = [
+            mock.MagicMock(dataset_id=self.bq_dataset_id)
+        ]
         mock_is_deid_dataset.return_value = False
         mock_is_combined_dataset.return_value = False
         mock_is_unioned_dataset.return_value = False
