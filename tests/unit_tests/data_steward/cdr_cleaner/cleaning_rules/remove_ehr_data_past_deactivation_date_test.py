@@ -39,8 +39,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         self.ticket_number = 'DC12345'
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
 
-        mock_bq_client_patcher = mock.patch(
-            'retraction.retract_deactivated_pids.get_client')
+        mock_bq_client_patcher = mock.patch('utils.bq.get_client')
         self.mock_bq_client = mock_bq_client_patcher.start()
         self.addCleanup(mock_bq_client_patcher.stop)
 
@@ -54,7 +53,7 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
     @mock.patch(
         'retraction.retract_deactivated_pids.check_and_create_sandbox_dataset')
-    @mock.patch('retraction.retract_deactivated_pids.get_client')
+    @mock.patch('utils.bq.get_client')
     @mock.patch('retraction.retract_deactivated_pids.check_pid_exist')
     @mock.patch(
         'utils.participant_summary_requests.get_deactivated_participants')
