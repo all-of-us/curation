@@ -33,37 +33,6 @@ FROM `{{project}}.{{prefix_regex}}_combined._deid_map`
 WHERE person_id = {{pid}}
 """)
 
-# Queries to create tables in associated sandbox with rows that will be removed per cleaning rule
-SANDBOX_QUERY = JINJA_ENV.from_string("""
-SELECT *
-FROM `{{project}}.{{dataset}}.{{table}}` t
-{% if deid %}
-JOIN `{{project}}.{{pid_rid_dataset}}.{{pid_rid_table}}` p
-ON t.person_id = p.research_id
-JOIN `{{project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}` d
-ON p.person_id = d.person_id
-{% else %}
-JOIN `{{project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}` d
-USING (person_id)
-{% endif %}
-{% if date %}
-WHERE COALESCE({{date_column}}, EXTRACT(DATE FROM {{datetime_column}})) >= d.deactivated_date
-{% else %}
-WHERE COALESCE({{end_date_column}}, EXTRACT(DATE FROM {{end_datetime_column}}),
-    {{start_date_column}}, EXTRACT(DATE FROM {{start_datetime_column}})) >= d.deactivated_date
-{% endif %}
-""")
-
-# Queries to truncate existing tables to remove deactivated EHR PIDS, two different queries for
-# tables with standard entry dates vs. tables with start and end dates
-CLEAN_QUERY = JINJA_ENV.from_string("""
-SELECT *
-FROM `{{project}}.{{dataset}}.{{table}}`
-EXCEPT DISTINCT
-SELECT *
-FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
-""")
-
 CHECK_PID_EXIST_DATE_QUERY = JINJA_ENV.from_string("""
 SELECT
 COALESCE(COUNT(*), 0) AS count
