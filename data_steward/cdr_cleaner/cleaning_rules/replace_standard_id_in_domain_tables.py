@@ -133,7 +133,30 @@ SET
     to_update.dest_id = v.dest_id
 FROM 
 (
-    {{unioned_query}}
+    {%- for table_name in table_names %}
+    SELECT
+      a.src_id,
+      a.domain_table,
+      a.new_concept_id,
+      ROW_NUMBER() OVER(ORDER BY a.src_id, a.new_concept_id) + src.max_id AS dest_id
+    FROM
+      `{{project}}.{{sandbox_dataset}}.{{logging_table}}` AS a
+    JOIN (
+        SELECT src_id
+        FROM `{{project}}.{{sandbox_dataset}}.{{logging_table}}`
+        WHERE domain_table = '{{table_name}}'
+        GROUP BY src_id
+        HAVING COUNT(*) > 1 ) b
+    ON a.src_id = b.src_id AND a.domain_table = '{{table_name}}'
+    CROSS JOIN (
+      SELECT
+        MAX({{table_name}}_id) AS max_id
+      FROM `{{project}}.{{dataset}}.{{table_name}}`
+    ) src
+    {% if loop.nextitem is defined %}
+    UNION ALL
+    {% endif -%}
+    {% endfor %}
 ) v
 WHERE
     v.src_id = to_update.src_id
