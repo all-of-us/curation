@@ -190,7 +190,6 @@ PREFIX = '/data_steward/v1/'
 # Cron URLs
 PARTICIPANT_VALIDATION = 'ParticipantValidation/'
 WRITE_DRC_VALIDATION_FILE = PARTICIPANT_VALIDATION + 'DRCFile'
-WRITE_SITE_VALIDATION_FILES = PARTICIPANT_VALIDATION + 'SiteFiles'
 
 # Return Values
 VALIDATION_SUCCESS = 'participant-validation-done'
