@@ -38,7 +38,6 @@ TODO when the time comes, include care_site, death, note, provider, specimen
 """
 import logging
 
-from utils.bq import create_tables
 from common import JINJA_ENV
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -63,6 +62,9 @@ UNION ALL
 """
 
 SRC_CONCEPT_ID_MAPPING_QUERY = JINJA_ENV.from_string("""
+{%- for table_name in table_names %}
+{% set domain_concept_id = get_domain_concept_id(table_name) %}
+{% set domain_source = get_domain_source_concept_id(table_name) %}
 SELECT DISTINCT 
     '{{table_name}}' AS domain_table,
     domain.{{table_name}}_id AS src_id,
@@ -101,29 +103,10 @@ ON
     scr.concept_id_1 = sc.concept_id AND scr.relationship_id = 'Maps to' 
 WHERE 
     dc.standard_concept IS NULL or dc.standard_concept = 'C'
-""")
-
-DUPLICATE_ID_SUB_QUERY = JINJA_ENV.from_string("""
-SELECT
-    a.src_id,
-    a.domain_table,
-    a.new_concept_id,
-    ROW_NUMBER() OVER(ORDER BY a.src_id, a.new_concept_id) + src.max_id AS dest_id
-FROM
-    `{{project}}.{{sandbox_dataset}}.{{logging_table}}` AS a
-JOIN (
-    SELECT src_id
-    FROM `{{project}}.{{sandbox_dataset}}.{{logging_table}}`
-    WHERE domain_table = '{{table_name}}'
-    GROUP BY src_id
-    HAVING COUNT(*) > 1 ) b
-ON 
-    a.src_id = b.src_id AND a.domain_table = '{{table_name}}'
-CROSS JOIN (
-    SELECT
-        MAX({{table_name}}_id) AS max_id
-    FROM `{{project}}.{{dataset}}.{{table_name}}` 
-) src
+{% if loop.nextitem is defined %}
+UNION ALL
+{% endif -%}
+{% endfor %}
 """)
 
 DUPLICATE_ID_UPDATE_QUERY = JINJA_ENV.from_string("""
@@ -384,58 +367,30 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
             })
         return queries
 
-    def parse_duplicate_id_update_subquery(self, domain_table):
-        """
-        Generates a domain_table specific duplicate_id_update_query
-        :param domain_table: name of the domain_table for which a query needs to be generated.
-        :return: a domain_table specific update query
-        """
-        return DUPLICATE_ID_SUB_QUERY.render(
-            table_name=domain_table,
-            project=self.project_id,
-            dataset=self.dataset_id,
-            sandbox_dataset=self.sandbox_dataset_id,
-            logging_table=SRC_CONCEPT_ID_TABLE_NAME)
-
     def parse_duplicate_id_update_query(self):
         """
         Generates a update query that combines all update sub queries generated per domain
         :return: 
         """
-        sub_queries = map(self.parse_duplicate_id_update_subquery,
-                          self.affected_tables)
         update_logging_table_query = DUPLICATE_ID_UPDATE_QUERY.render(
             project=self.project_id,
+            dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
             logging_table=SRC_CONCEPT_ID_TABLE_NAME,
-            unioned_query=UNION_ALL.join(sub_queries))
+            table_names=self.affected_tables)
         return update_logging_table_query
-
-    def parse_src_concept_id_logging_subquery(self, domain_table):
-        """
-        Generates a query for each domain table for _logging_standard_concept_id_replacement
-        :param domain_table: name of the domain_table for which a query needs to be generated.
-        :return:
-        """
-        dom_concept_id = resources.get_domain_concept_id(domain_table)
-        dom_src_concept_id = resources.get_domain_source_concept_id(
-            domain_table)
-
-        return SRC_CONCEPT_ID_MAPPING_QUERY.render(
-            table_name=domain_table,
-            project=self.project_id,
-            dataset=self.dataset_id,
-            domain_concept_id=dom_concept_id,
-            domain_source=dom_src_concept_id)
 
     def parse_src_concept_id_logging_query(self):
         """
         Generates a query that combines all logging sub_queries generated per domain
         :return: 
         """
-        sub_queries = map(self.parse_src_concept_id_logging_subquery,
-                          self.affected_tables)
-        return UNION_ALL.join(sub_queries)
+        return SRC_CONCEPT_ID_MAPPING_QUERY.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            table_names=self.affected_tables,
+            get_domain_concept_id=resources.get_domain_concept_id,
+            get_domain_source_concept_id=resources.get_domain_source_concept_id)
 
     def get_src_concept_id_logging_queries(self):
         """
