@@ -7,10 +7,8 @@ from mock import patch
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import (
-    SRC_CONCEPT_ID_TABLE_NAME, SRC_CONCEPT_ID_MAPPING_QUERY,
-    DUPLICATE_ID_SUB_QUERY, DUPLICATE_ID_UPDATE_QUERY,
-    SRC_CONCEPT_ID_UPDATE_QUERY, UPDATE_MAPPING_TABLES_QUERY, UNION_ALL,
-    DROP_EMPTY_SANDBOX_TABLES_QUERY, SANDBOX_SRC_CONCEPT_ID_UPDATE_QUERY,
+    SRC_CONCEPT_ID_TABLE_NAME, SRC_CONCEPT_ID_UPDATE_QUERY,
+    UPDATE_MAPPING_TABLES_QUERY, DROP_EMPTY_SANDBOX_TABLES_QUERY,
     ReplaceWithStandardConceptId)
 
 
@@ -229,90 +227,6 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         mock_parse_sandbox_src_concept_id_update_query.assert_any_call(
             self.condition_table)
         mock_parse_sandbox_src_concept_id_update_query.assert_called_with(
-            self.procedure_table)
-
-    def test_parse_sandbox_src_concept_id_update_query(self):
-        expected_query = SANDBOX_SRC_CONCEPT_ID_UPDATE_QUERY.render(
-            project=self.project_id,
-            dataset=self.dataset_id,
-            sandbox_dataset=self.sandbox_id,
-            domain_table=self.condition_table,
-            logging_table=SRC_CONCEPT_ID_TABLE_NAME)
-
-        actual_query = self.rule_instance.parse_sandbox_src_concept_id_update_query(
-            self.condition_table)
-
-        self.assertEqual(actual_query, expected_query)
-
-    @mock.patch('resources.get_domain_source_concept_id')
-    @mock.patch('resources.get_domain_concept_id')
-    def test_parse_src_concept_id_logging_subquery(
-        self, mock_get_domain_concept_id, mock_get_domain_source_concept_id):
-        mock_get_domain_concept_id.return_value = self.domain_concept_id
-        mock_get_domain_source_concept_id.return_value = self.domain_source_concept_id
-
-        expected_query = SRC_CONCEPT_ID_MAPPING_QUERY.render(
-            table_name=self.condition_table,
-            project=self.project_id,
-            dataset=self.dataset_id,
-            domain_concept_id=self.domain_concept_id,
-            domain_source=self.domain_source_concept_id)
-
-        actual_query = self.rule_instance.parse_src_concept_id_logging_subquery(
-            self.condition_table)
-
-        self.assertCountEqual(expected_query, actual_query)
-
-    @patch.object(ReplaceWithStandardConceptId,
-                  'parse_src_concept_id_logging_subquery')
-    def test_parse_src_concept_id_logging_query(
-        self, mock_parse_src_concept_id_logging_subquery):
-        query_1 = 'LOGGING QUERY condition'
-        query_2 = 'LOGGING QUERY procedure'
-        mock_parse_src_concept_id_logging_subquery.side_effect = [
-            query_1, query_2
-        ]
-        expected_query = UNION_ALL.join([query_1, query_2])
-        actual_query = self.rule_instance.parse_src_concept_id_logging_query()
-        self.assertEqual(expected_query, actual_query)
-
-        self.assertEqual(mock_parse_src_concept_id_logging_subquery.call_count,
-                         2)
-        mock_parse_src_concept_id_logging_subquery.assert_any_call(
-            self.condition_table)
-        mock_parse_src_concept_id_logging_subquery.assert_called_with(
-            self.procedure_table)
-
-    def test_parse_duplicate_id_update_subquery(self):
-        expected_query = DUPLICATE_ID_SUB_QUERY.render(
-            table_name=self.condition_table,
-            project=self.project_id,
-            dataset=self.dataset_id,
-            sandbox_dataset=self.sandbox_id,
-            logging_table=SRC_CONCEPT_ID_TABLE_NAME)
-        actual_query = self.rule_instance.parse_duplicate_id_update_subquery(
-            self.condition_table)
-        self.assertEqual(expected_query, actual_query)
-
-    @patch.object(ReplaceWithStandardConceptId,
-                  'parse_duplicate_id_update_subquery')
-    def test_parse_duplicate_id_update_query(
-        self, mock_parse_duplicate_id_update_subquery):
-        query_1 = 'UPDATE LOGGING QUERY condition'
-        query_2 = 'UPDATE LOGGING QUERY procedure'
-        mock_parse_duplicate_id_update_subquery.side_effect = [query_1, query_2]
-        expected_query = DUPLICATE_ID_UPDATE_QUERY.render(
-            project=self.project_id,
-            sandbox_dataset=self.sandbox_id,
-            logging_table=SRC_CONCEPT_ID_TABLE_NAME,
-            unioned_query=UNION_ALL.join([query_1, query_2]))
-        actual_query = self.rule_instance.parse_duplicate_id_update_query()
-        self.assertEqual(expected_query, actual_query)
-
-        self.assertEqual(mock_parse_duplicate_id_update_subquery.call_count, 2)
-        mock_parse_duplicate_id_update_subquery.assert_any_call(
-            self.condition_table)
-        mock_parse_duplicate_id_update_subquery.assert_called_with(
             self.procedure_table)
 
     @patch.object(ReplaceWithStandardConceptId,
