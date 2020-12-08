@@ -56,11 +56,6 @@ DOMAIN_TABLE_NAMES = [
 
 SRC_CONCEPT_ID_TABLE_NAME = '_logging_standard_concept_id_replacement'
 
-UNION_ALL = """
-
-UNION ALL
-"""
-
 SRC_CONCEPT_ID_MAPPING_QUERY = JINJA_ENV.from_string("""
 {%- for table_name in table_names %}
 {% set domain_concept_id = get_domain_concept_id(table_name) %}
