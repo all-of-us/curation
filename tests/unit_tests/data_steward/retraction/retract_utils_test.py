@@ -3,6 +3,7 @@ import unittest
 
 import mock
 import pandas as pd
+from google.cloud.bigquery import DatasetReference as data_ref
 
 import common
 from retraction import retract_utils as ru
@@ -171,6 +172,48 @@ class RetractUtilsTest(unittest.TestCase):
         self.assertEqual(
             ru.get_mapping_tables(common.EXT,
                                   self.mapping_tables + self.other_tables), [])
+
+    @mock.patch('utils.bq.list_datasets')
+    def test_get_datasets_list(self, mock_all_datasets):
+        #pre-conditions
+        removed_datasets = [
+            data_ref('foo', 'vocabulary20201010'),
+            data_ref('foo', 'R2019q4r1_deid_sandbox')
+        ]
+        expected_datasets = [
+            data_ref('foo', '2021q1r1_rdr'),
+            data_ref('foo', 'C2020q1r1_deid'),
+            data_ref('foo', 'R2019q4r1_deid'),
+            data_ref('foo', '2018q4r1_rdr')
+        ]
+        expected_list = [dataset.dataset_id for dataset in expected_datasets]
+        mock_all_datasets.return_value = removed_datasets + expected_datasets
+
+        # test all_datasets flag
+        ds_list = ru.get_datasets_list('foo', 'all_datasets')
+
+        # post conditions
+        self.assertEqual(expected_list, ds_list)
+        # is not trying to maintain an order, change to the following assertion
+        #self.assertCountEqual(expected_list, ds_list)
+
+        # test specific dataset
+        ds_list = ru.get_datasets_list('foo', 'C2020q1r1_deid')
+
+        # post conditions
+        self.assertEqual(['C2020q1r1_deid'], ds_list)
+
+        # test None dataset
+        ds_list = ru.get_datasets_list('foo', None)
+
+        # post conditions
+        self.assertEqual([], ds_list)
+
+        # test empty list dataset
+        ds_list = ru.get_datasets_list('foo', [])
+
+        # post conditions
+        self.assertEqual([], ds_list)
 
     def test_is_combined_dataset(self):
         self.assertTrue(ru.is_combined_dataset('combined20190801'))
