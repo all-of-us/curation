@@ -47,7 +47,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, quer
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC808', 'DC389']
+JIRA_ISSUE_NUMBERS = ['DC808', 'DC389', 'DC1245']
 
 DOMAIN_TABLE_NAMES = [
     'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
