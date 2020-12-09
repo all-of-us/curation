@@ -38,7 +38,6 @@ TODO when the time comes, include care_site, death, note, provider, specimen
 """
 import logging
 
-from utils.bq import create_tables
 from common import JINJA_ENV
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -48,7 +47,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, quer
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC808', 'DC389']
+JIRA_ISSUE_NUMBERS = ['DC808', 'DC389', 'DC1245']
 
 DOMAIN_TABLE_NAMES = [
     'condition_occurrence', 'procedure_occurrence', 'drug_exposure',
@@ -58,6 +57,9 @@ DOMAIN_TABLE_NAMES = [
 SRC_CONCEPT_ID_TABLE_NAME = '_logging_standard_concept_id_replacement'
 
 SRC_CONCEPT_ID_MAPPING_QUERY = JINJA_ENV.from_string("""
+{%- for table_name in table_names %}
+{% set domain_concept_id = get_domain_concept_id(table_name) %}
+{% set domain_source = get_domain_source_concept_id(table_name) %}
 SELECT DISTINCT 
     '{{table_name}}' AS domain_table,
     domain.{{table_name}}_id AS src_id,
@@ -96,6 +98,10 @@ ON
     scr.concept_id_1 = sc.concept_id AND scr.relationship_id = 'Maps to' 
 WHERE 
     dc.standard_concept IS NULL or dc.standard_concept = 'C'
+{% if loop.nextitem is defined %}
+UNION ALL
+{% endif -%}
+{% endfor %}
 """)
 
 DUPLICATE_ID_UPDATE_QUERY = JINJA_ENV.from_string("""
@@ -105,26 +111,30 @@ SET
     to_update.dest_id = v.dest_id
 FROM 
 (
+    {%- for table_name in table_names %}
     SELECT
-        a.src_id,
-        a.domain_table,
-        a.new_concept_id,
-        ROW_NUMBER() OVER(ORDER BY a.src_id, a.new_concept_id) + src.max_id AS dest_id
+      a.src_id,
+      a.domain_table,
+      a.new_concept_id,
+      ROW_NUMBER() OVER(ORDER BY a.src_id, a.new_concept_id) + src.max_id AS dest_id
     FROM
-        `{{project}}.{{sandbox_dataset}}.{{logging_table}}` AS a
+      `{{project}}.{{sandbox_dataset}}.{{logging_table}}` AS a
     JOIN (
         SELECT src_id
         FROM `{{project}}.{{sandbox_dataset}}.{{logging_table}}`
         WHERE domain_table = '{{table_name}}'
         GROUP BY src_id
         HAVING COUNT(*) > 1 ) b
-    ON 
-        a.src_id = b.src_id AND a.domain_table = '{{table_name}}'
+    ON a.src_id = b.src_id AND a.domain_table = '{{table_name}}'
     CROSS JOIN (
-        SELECT
-            MAX({{table_name}}_id) AS max_id
-        FROM `{{project}}.{{dataset}}.{{table_name}}` 
+      SELECT
+        MAX({{table_name}}_id) AS max_id
+      FROM `{{project}}.{{dataset}}.{{table_name}}`
     ) src
+    {% if loop.nextitem is defined %}
+    UNION ALL
+    {% endif -%}
+    {% endfor %}
 ) v
 WHERE
     v.src_id = to_update.src_id
@@ -352,68 +362,53 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
             })
         return queries
 
-    def parse_duplicate_id_update_query(self, domain_table):
+    def parse_duplicate_id_update_query(self):
         """
-        Generates a domain_table specific duplicate_id_update_query
-        :param domain_table: name of the domain_table for which a query needs to be generated.
-        :return: a domain_table specific update query
+        Generates a update query that combines all update sub queries generated per domain
+        :return: 
         """
-        return DUPLICATE_ID_UPDATE_QUERY.render(
-            table_name=domain_table,
+        update_logging_table_query = DUPLICATE_ID_UPDATE_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
-            logging_table=SRC_CONCEPT_ID_TABLE_NAME)
+            logging_table=SRC_CONCEPT_ID_TABLE_NAME,
+            table_names=self.affected_tables)
+        return update_logging_table_query
 
-    def parse_src_concept_id_logging_query(self, domain_table):
+    def parse_src_concept_id_logging_query(self):
         """
-        Generates a query for each domain table for _logging_standard_concept_id_replacement
-        :param domain_table: name of the domain_table for which a query needs to be generated.
-        :return:
+        Generates a query that combines all logging sub_queries generated per domain
+        :return: 
         """
-        dom_concept_id = resources.get_domain_concept_id(domain_table)
-        dom_src_concept_id = resources.get_domain_source_concept_id(
-            domain_table)
-
         return SRC_CONCEPT_ID_MAPPING_QUERY.render(
-            table_name=domain_table,
             project=self.project_id,
             dataset=self.dataset_id,
-            domain_concept_id=dom_concept_id,
-            domain_source=dom_src_concept_id)
+            table_names=self.affected_tables,
+            get_domain_concept_id=resources.get_domain_concept_id,
+            get_domain_source_concept_id=resources.get_domain_source_concept_id)
 
     def get_src_concept_id_logging_queries(self):
         """
         Creates logging table and generates a list of query dicts for populating it
         :return: a list of query dicts to gather logging records
         """
-        queries = []
 
         # Populate the logging table for keeping track of which records need to be updated
-        for domain_table in self.affected_tables:
-            queries.append({
-                cdr_consts.QUERY:
-                    self.parse_src_concept_id_logging_query(domain_table),
-                cdr_consts.DESTINATION_TABLE:
-                    SRC_CONCEPT_ID_TABLE_NAME,
-                cdr_consts.DISPOSITION:
-                    bq_consts.WRITE_APPEND,
-                cdr_consts.DESTINATION_DATASET:
-                    self.sandbox_dataset_id
-            })
+        queries = [{
+            cdr_consts.QUERY: self.parse_src_concept_id_logging_query(),
+            cdr_consts.DESTINATION_TABLE: SRC_CONCEPT_ID_TABLE_NAME,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id
+        }]
 
         # For new rows added as a result of one-to-many standard concepts, we give newly generated
         # rows new ids. These queries need to be run after _logging_standard_concept_id_replacement
         # is populated.
-
-        # concatenate all update queries into one query the reduce the number of API calls
-        update_queries = map(self.parse_duplicate_id_update_query,
-                             self.affected_tables)
-        queries.append({
-            cdr_consts.QUERY: ';\n'.join(update_queries),
+        update_queries = [{
+            cdr_consts.QUERY: self.parse_duplicate_id_update_query(),
             cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id
-        })
-        return queries
+        }]
+        return queries + update_queries
 
     def get_delete_empty_sandbox_tables_queries(self):
         """
@@ -447,12 +442,7 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
         return queries_list
 
     def setup_rule(self, client, *args, **keyword_args):
-
-        # Create _logging_standard_concept_id_replacement
-        fq_table_names = [
-            f'{self.project_id}.{self.sandbox_dataset_id}.{SRC_CONCEPT_ID_TABLE_NAME}'
-        ]
-        create_tables(client, self.project_id, fq_table_names, exists_ok=True)
+        pass
 
     def setup_validation(self, client, *args, **keyword_args):
         pass
