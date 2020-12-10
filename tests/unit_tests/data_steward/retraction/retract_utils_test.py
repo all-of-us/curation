@@ -193,9 +193,7 @@ class RetractUtilsTest(unittest.TestCase):
         ds_list = ru.get_datasets_list('foo', 'all_datasets')
 
         # post conditions
-        self.assertEqual(expected_list, ds_list)
-        # is not trying to maintain an order, change to the following assertion
-        #self.assertCountEqual(expected_list, ds_list)
+        self.assertCountEqual(expected_list, ds_list)
 
         # test specific dataset
         ds_list = ru.get_datasets_list('foo', 'C2020q1r1_deid')

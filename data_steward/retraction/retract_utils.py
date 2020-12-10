@@ -13,6 +13,11 @@ COMBINED_REGEX = re.compile(r'combined\d{6}')
 DEID_REGEX = re.compile(r'.*deid.*')
 EHR_REGEX = re.compile(r'ehr_?\d{6}')
 RELEASE_REGEX = re.compile(r'R\d{4}Q\dR\d')
+RELEASE_TAG_REGEX = re.compile(r'\d{4}[qQ]\d[rR]\d')
+SANDBOX_REGEX = re.compile(r'.*sandbox.*')
+STAGING_REGEX = re.compile(r'.*staging.*')
+VOCABULARY_REGEX = re.compile(r'vocabulary.*')
+VALIDATION_REGEX = re.compile(r'validation.*')
 
 
 def get_table_id(table):
@@ -85,10 +90,10 @@ def get_datasets_list(project_id, dataset_ids):
         dataset.dataset_id for dataset in bq.list_datasets(project_id)
     ]
 
-    if dataset_ids == 'all_datasets':
-        dataset_ids = all_dataset_ids
-    elif dataset_ids == 'none':
+    if not dataset_ids or dataset_ids == 'none':
         dataset_ids = []
+    elif dataset_ids == 'all_datasets':
+        dataset_ids = all_dataset_ids
     else:
         dataset_ids = dataset_ids.split()
         # only consider datasets that exist in the project
@@ -97,9 +102,15 @@ def get_datasets_list(project_id, dataset_ids):
             if dataset_id in all_dataset_ids
         ]
 
+    # filter out datasets not of interest
+    dataset_ids = [
+        dataset_id for dataset_id in dataset_ids
+        if get_dataset_type(dataset_id) != common.OTHER and
+        not is_sandbox_dataset(dataset_id) and
+        not is_staging_dataset(dataset_id)
+    ]
+
     logging.info('Found datasets to retract from: %s' % ', '.join(dataset_ids))
-    # retract from latest datasets first
-    dataset_ids.sort(reverse=True)
     return dataset_ids
 
 
@@ -122,6 +133,14 @@ def is_ehr_dataset(dataset_id):
     return bool(re.match(
         EHR_REGEX,
         dataset_id)) or dataset_id == os.environ.get('BIGQUERY_DATASET_ID')
+
+
+def is_sandbox_dataset(dataset_id):
+    return bool(re.match(SANDBOX_REGEX, dataset_id))
+
+
+def is_staging_dataset(dataset_id):
+    return bool(re.match(STAGING_REGEX, dataset_id))
 
 
 def get_dataset_type(dataset_id):
