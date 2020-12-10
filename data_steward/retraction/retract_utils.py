@@ -90,9 +90,9 @@ def get_datasets_list(project_id, dataset_ids):
         dataset.dataset_id for dataset in bq.list_datasets(project_id)
     ]
 
-    if not dataset_ids or dataset_ids == 'none':
+    if not dataset_ids or dataset_ids == consts.NONE:
         dataset_ids = []
-    elif dataset_ids == 'all_datasets':
+    elif dataset_ids == consts.ALL_DATASETS:
         dataset_ids = all_dataset_ids
     else:
         dataset_ids = dataset_ids.split()
