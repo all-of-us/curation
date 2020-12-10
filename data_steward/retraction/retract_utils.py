@@ -8,6 +8,8 @@ from utils import bq
 from constants.retraction import retract_utils as consts
 from constants.utils import bq as bq_consts
 
+LOGGER = logging.getLogger(__name__)
+
 UNIONED_REGEX = re.compile(r'unioned_ehr_?\d{6}')
 COMBINED_REGEX = re.compile(r'combined\d{6}')
 DEID_REGEX = re.compile(r'.*deid.*')
@@ -84,25 +86,43 @@ def get_src_id(mapping_type):
     return src_id
 
 
-def get_datasets_list(project_id, dataset_ids):
-    # initialize list of all datasets in project
+def get_datasets_list(project_id, dataset_ids_str):
+    """
+    Returns list of dataset_ids on which to perform retraction
+
+    Returns list of rdr, ehr, unioned, combined and deid dataset_ids and excludes sandbox and staging datasets
+    :param project_id: identifies the project containing datasets to retract from
+    :param dataset_ids_str: string of datasets to retract from separated by a space. If set to 'all_datasets',
+        retracts from all datasets. If set to 'none', skips retraction from BigQuery datasets
+    :return: List of dataset_ids
+    :raises: AttributeError if dataset_ids_str does not allow .split()
+    """
     all_dataset_ids = [
         dataset.dataset_id for dataset in bq.list_datasets(project_id)
     ]
 
-    if not dataset_ids or dataset_ids == consts.NONE:
+    if not dataset_ids_str or dataset_ids_str == consts.NONE:
         dataset_ids = []
-    elif dataset_ids == consts.ALL_DATASETS:
+        LOGGER.info(
+            "No datasets specified. Defaulting to empty list. Expect bucked only retraction."
+        )
+    elif dataset_ids_str == consts.ALL_DATASETS:
         dataset_ids = all_dataset_ids
+        LOGGER.info(
+            f"All datasets are specified. Setting dataset_ids to all datasets in project: {project_id}"
+        )
     else:
-        dataset_ids = dataset_ids.split()
+        dataset_ids = dataset_ids_str.split()
         # only consider datasets that exist in the project
         dataset_ids = [
             dataset_id for dataset_id in dataset_ids
             if dataset_id in all_dataset_ids
         ]
+        LOGGER.info(
+            f"Datasets specified and existing in project {project_id}: {dataset_ids}"
+        )
 
-    # filter out datasets not of interest
+    # consider datasets containing PPI/EHR data, excluding sandbox/staging datasets
     dataset_ids = [
         dataset_id for dataset_id in dataset_ids
         if get_dataset_type(dataset_id) != common.OTHER and
@@ -110,36 +130,66 @@ def get_datasets_list(project_id, dataset_ids):
         not is_staging_dataset(dataset_id)
     ]
 
-    logging.info('Found datasets to retract from: %s' % ', '.join(dataset_ids))
+    LOGGER.info(f"Found datasets to retract from: {', '.join(dataset_ids)}")
     return dataset_ids
 
 
 def is_deid_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a deid dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a deid dataset
+    """
     return bool(re.match(DEID_REGEX, dataset_id)) or bool(
         re.match(RELEASE_REGEX, dataset_id))
 
 
 def is_combined_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a combined dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a combined dataset
+    """
     if is_deid_dataset(dataset_id):
         return False
     return bool(re.match(COMBINED_REGEX, dataset_id))
 
 
 def is_unioned_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a unioned dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a unioned dataset
+    """
     return bool(re.match(UNIONED_REGEX, dataset_id))
 
 
 def is_ehr_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is an ehr dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is an ehr dataset
+    """
     return bool(re.match(
         EHR_REGEX,
         dataset_id)) or dataset_id == os.environ.get('BIGQUERY_DATASET_ID')
 
 
 def is_sandbox_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a sandbox dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a sandbox dataset
+    """
     return bool(re.match(SANDBOX_REGEX, dataset_id))
 
 
 def is_staging_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a staging dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a staging dataset
+    """
     return bool(re.match(STAGING_REGEX, dataset_id))
 
 
@@ -250,7 +300,7 @@ def get_dataset_ids_to_target(project_id, dataset_ids=None):
     else:
         for dataset_id in dataset_ids:
             if dataset_id not in all_dataset_ids:
-                logging.info(
+                LOGGER.info(
                     f"Dataset {dataset_id} not found in project {project_id}, skipping"
                 )
             else:
