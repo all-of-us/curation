@@ -3,6 +3,7 @@ PERSON_ID = 'person_id'
 RESEARCH_ID = 'research_id'
 
 ALL_DATASETS = 'all_datasets'
+NONE = 'none'
 
 PID_QUERY = """
 (SELECT {pid}

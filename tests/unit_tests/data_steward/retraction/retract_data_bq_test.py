@@ -33,51 +33,6 @@ class RetractDataBqTest(unittest.TestCase):
             common.FACT_RELATIONSHIP
         }
 
-    def test_is_combined_dataset(self):
-        self.assertTrue(retract_data_bq.is_combined_dataset('combined20190801'))
-        self.assertFalse(
-            retract_data_bq.is_combined_dataset('combined20190801_deid'))
-        self.assertTrue(
-            retract_data_bq.is_combined_dataset('combined20190801_base'))
-        self.assertTrue(
-            retract_data_bq.is_combined_dataset('combined20190801_clean'))
-        self.assertFalse(
-            retract_data_bq.is_combined_dataset('combined20190801_deid_v1'))
-
-    def test_is_deid_dataset(self):
-        self.assertFalse(retract_data_bq.is_deid_dataset('combined20190801'))
-        self.assertTrue(
-            retract_data_bq.is_deid_dataset('combined20190801_deid'))
-        self.assertFalse(
-            retract_data_bq.is_deid_dataset('combined20190801_base'))
-        self.assertFalse(
-            retract_data_bq.is_deid_dataset('combined20190801_clean'))
-        self.assertTrue(
-            retract_data_bq.is_deid_dataset('combined20190801_deid_v1'))
-
-    @mock.patch('bq_utils.get_dataset_id')
-    def test_is_ehr_dataset(self, mock_get_dataset_id):
-        # pre-conditions
-        dataset_id = 'fake_dataset_id'
-        mock_get_dataset_id.return_value = dataset_id
-
-        # tests
-        self.assertTrue(retract_data_bq.is_ehr_dataset('ehr20190801'))
-        self.assertTrue(retract_data_bq.is_ehr_dataset('ehr_20190801'))
-        self.assertFalse(
-            retract_data_bq.is_ehr_dataset('unioned_ehr_20190801_base'))
-        self.assertFalse(
-            retract_data_bq.is_ehr_dataset('unioned_ehr20190801_clean'))
-        self.assertTrue(retract_data_bq.is_ehr_dataset(dataset_id))
-
-    def test_is_unioned_dataset(self):
-        self.assertFalse(retract_data_bq.is_unioned_dataset('ehr20190801'))
-        self.assertFalse(retract_data_bq.is_unioned_dataset('ehr_20190801'))
-        self.assertTrue(
-            retract_data_bq.is_unioned_dataset('unioned_ehr_20190801_base'))
-        self.assertTrue(
-            retract_data_bq.is_unioned_dataset('unioned_ehr20190801_clean'))
-
     @mock.patch('retraction.retract_data_bq.list_existing_tables')
     def test_queries_to_retract_from_ehr_dataset(self,
                                                  mock_list_existing_tables):

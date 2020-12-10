@@ -3,6 +3,7 @@ import unittest
 
 import mock
 import pandas as pd
+from google.cloud.bigquery import DatasetReference as data_ref
 
 import common
 from retraction import retract_utils as ru
@@ -171,6 +172,79 @@ class RetractUtilsTest(unittest.TestCase):
         self.assertEqual(
             ru.get_mapping_tables(common.EXT,
                                   self.mapping_tables + self.other_tables), [])
+
+    @mock.patch('utils.bq.list_datasets')
+    def test_get_datasets_list(self, mock_all_datasets):
+        #pre-conditions
+        removed_datasets = [
+            data_ref('foo', 'vocabulary20201010'),
+            data_ref('foo', 'R2019q4r1_deid_sandbox')
+        ]
+        expected_datasets = [
+            data_ref('foo', '2021q1r1_rdr'),
+            data_ref('foo', 'C2020q1r1_deid'),
+            data_ref('foo', 'R2019q4r1_deid'),
+            data_ref('foo', '2018q4r1_rdr')
+        ]
+        expected_list = [dataset.dataset_id for dataset in expected_datasets]
+        mock_all_datasets.return_value = removed_datasets + expected_datasets
+
+        # test all_datasets flag
+        ds_list = ru.get_datasets_list('foo', 'all_datasets')
+
+        # post conditions
+        self.assertCountEqual(expected_list, ds_list)
+
+        # test specific dataset
+        ds_list = ru.get_datasets_list('foo', 'C2020q1r1_deid')
+
+        # post conditions
+        self.assertEqual(['C2020q1r1_deid'], ds_list)
+
+        # test None dataset
+        ds_list = ru.get_datasets_list('foo', None)
+
+        # post conditions
+        self.assertEqual([], ds_list)
+
+        # test empty list dataset
+        ds_list = ru.get_datasets_list('foo', [])
+
+        # post conditions
+        self.assertEqual([], ds_list)
+
+    def test_is_combined_dataset(self):
+        self.assertTrue(ru.is_combined_dataset('combined20190801'))
+        self.assertFalse(ru.is_combined_dataset('combined20190801_deid'))
+        self.assertTrue(ru.is_combined_dataset('combined20190801_base'))
+        self.assertTrue(ru.is_combined_dataset('combined20190801_clean'))
+        self.assertFalse(ru.is_combined_dataset('combined20190801_deid_v1'))
+
+    def test_is_deid_dataset(self):
+        self.assertFalse(ru.is_deid_dataset('combined20190801'))
+        self.assertTrue(ru.is_deid_dataset('combined20190801_deid'))
+        self.assertFalse(ru.is_deid_dataset('combined20190801_base'))
+        self.assertFalse(ru.is_deid_dataset('combined20190801_clean'))
+        self.assertTrue(ru.is_deid_dataset('combined20190801_deid_v1'))
+
+    @mock.patch('retraction.retract_utils.os.environ.get')
+    def test_is_ehr_dataset(self, mock_get_dataset_id):
+        # pre-conditions
+        dataset_id = 'fake_dataset_id'
+        mock_get_dataset_id.return_value = dataset_id
+
+        # tests
+        self.assertTrue(ru.is_ehr_dataset('ehr20190801'))
+        self.assertTrue(ru.is_ehr_dataset('ehr_20190801'))
+        self.assertFalse(ru.is_ehr_dataset('unioned_ehr_20190801_base'))
+        self.assertFalse(ru.is_ehr_dataset('unioned_ehr20190801_clean'))
+        self.assertTrue(ru.is_ehr_dataset(dataset_id))
+
+    def test_is_unioned_dataset(self):
+        self.assertFalse(ru.is_unioned_dataset('ehr20190801'))
+        self.assertFalse(ru.is_unioned_dataset('ehr_20190801'))
+        self.assertTrue(ru.is_unioned_dataset('unioned_ehr_20190801_base'))
+        self.assertTrue(ru.is_unioned_dataset('unioned_ehr20190801_clean'))
 
     def test_get_dataset_type(self):
         self.assertEqual(ru.get_dataset_type('unioned_ehr_4023498'),
