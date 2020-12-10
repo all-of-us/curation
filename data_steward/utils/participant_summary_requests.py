@@ -15,53 +15,46 @@ The intent of the get_participant_information function is to retrieve the inform
 """
 
 # Third party imports
-import os
 import re
-import errno
 import signal
 import pandas
 import requests
 import pandas_gbq
 import google.auth.transport.requests as req
-from functools import wraps
 from google.auth import default
 
 # Project imports
 from utils import auth
 from resources import fields_for
 
-FIELDS_OF_INTEREST = [
+
+FIELDS_OF_INTEREST_FOR_VALIDATION = [
     'participantId', 'firstName', 'middleName', 'lastName', 'streetAddress',
     'streetAddress2', 'city', 'state', 'zipCode', 'phoneNumber', 'email',
     'dateOfBirth', 'sex'
 ]
 
 
-def timeout(seconds=180, error_message=os.strerror(errno.ETIME)):
+class Timeout:
     """
-    Function creates a decorator that uses signal handlers to set an alarm for 3 minutes and raise an exception if
-        that timer expires. Only will work on Unix.
+    Uses signal handlers to set an alarm for a certain time interval and raise an exception once that timer expires.
+        Only will work on *nix.
         Note -- found: (https://stackoverflow.com/questions/2281850/timeout-function-if-it-takes-too-long-to-finish)
-    :param seconds: The amount of time that will elapse before error is raised
-    :param error_message: error no 62 ('Timer expired') will be raised if 3 minutes passes
-
-    :return: returns timeout decorator
     """
-    def decorator(func):
-        def _handle_timeout(signum, frame):
-            raise TimeoutError(error_message + ' participant data taking too long to retrieve')
+    def __init__(self, seconds=1,
+                 error_message='Terminating, participant data taking longer than expected to retrieve'):
+        self.seconds = seconds
+        self.error_message = error_message
 
-        def wrapper(*args, **kwargs):
-            signal.signal(signal.SIGALRM, _handle_timeout)
-            signal.alarm(seconds)
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                signal.alarm(0)
-            return result
+    def handle_timeout(self, signum, frame):
+        raise TimeoutError(self.error_message)
 
-        return wraps(func)(wrapper)
-    return decorator
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, exc_type, value, traceback):
+        signal.alarm(0)
 
 
 def get_access_token():
@@ -87,7 +80,7 @@ def get_access_token():
 
 def get_participant_data(url, headers):
     """
-    Fetches participant data via ParticipantSummary API
+    Fetches participant data via ParticipantSummary API with a retrieval limit of 3 minutes
 
     :param url: the /ParticipantSummary endpoint to fetch information about the participant
     :param headers: the metadata associated with the API request and response
@@ -100,20 +93,21 @@ def get_participant_data(url, headers):
     original_url = url
     next_url = url
 
-    while not done:
-        resp = requests.get(next_url, headers=headers)
-        if not resp or resp.status_code != 200:
-            print(f'Error: API request failed because {resp}')
-        else:
-            r_json = resp.json()
-            participant_data += r_json.get('entry', {})
-            if 'link' in r_json:
-                link_obj = r_json.get('link')
-                link_url = link_obj[0].get('url')
-                next_url = original_url + '&' + link_url[link_url.find('_token'
-                                                                      ):]
+    with Timeout(seconds=1200):
+        while not done:
+            resp = requests.get(next_url, headers=headers)
+            if not resp or resp.status_code != 200:
+                print(f'Error: API request failed because {resp}')
             else:
-                done = True
+                r_json = resp.json()
+                participant_data += r_json.get('entry', {})
+                if 'link' in r_json:
+                    link_obj = r_json.get('link')
+                    link_url = link_obj[0].get('url')
+                    next_url = original_url + '&' + link_url[link_url.find('_token'
+                                                                          ):]
+                else:
+                    done = True
 
     return participant_data
 
@@ -203,12 +197,12 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     return df
 
 
-@timeout
-def get_participant_information(project_id, hpo_id):
+def get_site_participant_information(project_id, dataset_id, hpo_id):
     """
     Fetches the necessary participant information for a particular site.
 
     :param project_id: The RDR project that contains participant summary data
+    :param dataset_id: The dataset name
     :param hpo_id: awardee name of the site
 
     :return: returns dataframe of participant information
@@ -216,6 +210,9 @@ def get_participant_information(project_id, hpo_id):
     # Parameter checks
     if not isinstance(project_id, str):
         raise RuntimeError(f'Please specify the RDR project')
+
+    if not isinstance(dataset_id, str):
+        raise RuntimeError(f'Please provide the dataset_id')
 
     if not isinstance(hpo_id, str):
         raise RuntimeError(f'Please provide an hpo_id')
@@ -229,13 +226,13 @@ def get_participant_information(project_id, hpo_id):
 
     # Make request to get API version. This is the current RDR version for reference see
     # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
-    url = 'https://{0}.appspot.com/rdr/v1/ParticipantSummary?awardee={1}&_sort=lastModified'.format(
+    url = 'https://{0}.appspot.com/rdr/v1/ParticipantSummary?awardee={1}&_sort=participantId'.format(
         project_id, hpo_id)
 
     participant_data = get_participant_data(url, headers)
 
     # Columns of interest for participants of a desired site
-    participant_information_cols = FIELDS_OF_INTEREST
+    participant_information_cols = FIELDS_OF_INTEREST_FOR_VALIDATION
 
     participant_information = []
 
@@ -307,3 +304,12 @@ def store_participant_data(df, project_id, destination_table):
                              project_id,
                              if_exists="replace",
                              table_schema=table_schema)
+
+
+if __name__ == '__main__':
+    # columns = ['participantId', 'suspensionStatus', 'suspensionTime']
+    # tablename = '_deactivated_participants'
+    # get_deactivated_participants('all-of-us-rdr-prod', 'cdr-20201008-20201201', tablename, columns)
+    get_site_participant_information('all-of-us-rdr-prod', 'cdr-20201008-20201201', 'PITT')
+
+
