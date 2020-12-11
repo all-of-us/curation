@@ -1,19 +1,19 @@
 # Python imports
-import unittest
+from unittest import TestCase, mock
 
 # Third party imports
-import mock
-from mock import patch
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
+import google.cloud.bigquery as gbq
 
 # Project imports
-from retraction import retract_deactivated_pids
+from retraction import retract_deactivated_pids as rdp
 from constants import bq_utils as bq_consts
+import constants.retraction.retract_deactivated_pids as consts
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
 
-class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
+class RetractDeactivatedEHRDataBqTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -23,6 +23,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
 
     def setUp(self):
         self.project_id = 'fake_project_id'
+        self.dataset_id = 'fake_dataset_id'
         self.ticket_number = 'DC_fake'
         self.pids_project_id = 'fake_pids_project_id'
         self.pids_dataset_id = 'fake_pids_dataset_id'
@@ -30,9 +31,11 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         self.pids_dataset_list = [
             'fake_dataset_1', 'fake_dataset_2', 'fake_dataset_3'
         ]
+        self.deactivated_pids_dataset_id = 'fake_deactivated_dataset_id'
+        self.deactivated_pids_table = 'fake_deactivated_table'
         self.pids_table_list = ['fake_table_1', 'fake_table_2', 'fake_table_3']
 
-        mock_bq_client_patcher = patch(
+        mock_bq_client_patcher = mock.patch(
             'retraction.retract_deactivated_pids.bq.get_client')
         self.mock_bq_client = mock_bq_client_patcher.start()
         self.addCleanup(mock_bq_client_patcher.stop)
@@ -56,8 +59,8 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         self.mock_bq_client.query.return_value.to_dataframe.return_value = data_frame
 
         # test
-        result_df = retract_deactivated_pids.get_pids_table_info(
-            self.project_id, 'fake_dataset_1', self.mock_bq_client)
+        result_df = rdp.get_pids_table_info(self.project_id, 'fake_dataset_1',
+                                            self.mock_bq_client)
 
         # post conditions
         expected_data = dict()
@@ -67,6 +70,52 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data, columns=column_names)
 
         assert_frame_equal(result_df, expected_df)
+
+    def test_get_date_cols_dict(self):
+        date_cols = ["measurement_date", "measurement_datetime"]
+        expected = {
+            consts.DATE: "measurement_date",
+            consts.DATETIME: "measurement_datetime"
+        }
+        actual = rdp.get_date_cols_dict(date_cols)
+        self.assertDictEqual(expected, actual)
+
+        date_cols = [
+            "condition_start_date", "condition_start_datetime",
+            "condition_end_date", "condition_end_datetime"
+        ]
+        expected = {
+            consts.START_DATE: "condition_start_date",
+            consts.START_DATETIME: "condition_start_datetime",
+            consts.END_DATE: "condition_end_date",
+            consts.END_DATETIME: "condition_end_datetime"
+        }
+        actual = rdp.get_date_cols_dict(date_cols)
+        self.assertDictEqual(expected, actual)
+
+    @mock.patch('sandbox.check_and_create_sandbox_dataset')
+    @mock.patch('retraction.retract_deactivated_pids.get_table_dates_info')
+    def test_generate_queries(self, mock_table_dates, mock_sandbox):
+        tables_cols_dict = {
+            "condition_occurrence": [
+                "condition_start_date", "condition_start_datetime",
+                "condition_end_date", "condition_end_datetime"
+            ],
+            "measurement": ["measurement_date", "measurement_datetime"]
+        }
+        mock_table_dates.return_value = tables_cols_dict
+        mock_sandbox.return_value = self.dataset_id + '_sandbox'
+        pid_rid_table_ref = gbq.TableReference.from_string(
+            f"{self.project_id}.{self.pids_dataset_id}.{self.pids_table}")
+        deactivated_pids_table_ref = gbq.TableReference.from_string(
+            f"{self.project_id}.{self.deactivated_pids_dataset_id}.{self.deactivated_pids_table}"
+        )
+
+        queries = rdp.generate_queries(self.mock_bq_client, self.project_id,
+                                       self.dataset_id, pid_rid_table_ref,
+                                       deactivated_pids_table_ref)
+        # count sandbox and clean queries
+        self.assertEqual(len(tables_cols_dict) * 2, len(queries))
 
     def test_get_dates_info(self):
         # preconditions
@@ -89,8 +138,9 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         expected_dict = {
             'observation': ['observation_date', 'observation_datetime']
         }
-        actual_dict = retract_deactivated_pids.get_table_dates_info(
-            self.project_id, 'fake_dataset_1', self.mock_bq_client)
+        actual_dict = rdp.get_table_dates_info(self.mock_bq_client,
+                                               self.project_id,
+                                               'fake_dataset_1')
 
         self.assertDictEqual(actual_dict, expected_dict)
 
@@ -131,20 +181,17 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         expected_df = mock_date_info.return_value
 
         # test
-        returned_df = retract_deactivated_pids.get_date_info_for_pids_tables(
-            self.project_id, self.mock_bq_client)
+        returned_df = rdp.get_date_info_for_pids_tables(self.project_id,
+                                                        self.mock_bq_client)
 
         # post conditions
         assert_frame_equal(expected_df, returned_df)
 
     @mock.patch(
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
-    @mock.patch(
-        'retraction.retract_deactivated_pids.check_and_create_sandbox_dataset')
     @mock.patch('retraction.retract_deactivated_pids.bq.get_client')
     @mock.patch('retraction.retract_deactivated_pids.check_pid_exist')
-    def test_create_queries(self, mock_pid_exist, mock_client,
-                            mock_check_sandbox, mock_date_info):
+    def test_create_queries(self, mock_pid_exist, mock_client, mock_date_info):
         # preconditions
         d = {
             'project_id': [
@@ -187,12 +234,14 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         client.query.return_value.to_dataframe.return_value = deactivated_ehr_pids_df
 
         mock_pid_exist.return_value = 1
-        sandbox = mock_check_sandbox.return_value = 'fake_pids_dataset_id_sandbox'
+        sandbox = 'fake_pids_dataset_id_sandbox'
 
         # test
-        returned_queries = retract_deactivated_pids.create_queries(
-            self.project_id, self.ticket_number, self.pids_project_id,
-            self.pids_dataset_id, self.pids_table)
+        returned_queries = rdp.create_queries(self.project_id,
+                                              self.ticket_number,
+                                              self.pids_project_id,
+                                              self.pids_dataset_id,
+                                              self.pids_table)
 
         # post conditions
         expected_queries = []
@@ -203,7 +252,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
                 pid = ehr_row.person_id
 
                 if pd.isnull(retraction_row.date_column):
-                    sandbox_query = retract_deactivated_pids.SANDBOX_QUERY_END_DATE.render(
+                    sandbox_query = rdp.SANDBOX_QUERY_END_DATE.render(
                         project=retraction_row.project_id,
                         sandbox_dataset=sandbox_dataset,
                         intermediary_table=self.ticket_number + '_' +
@@ -216,7 +265,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
                         deactivated_pids_table=self.pids_table,
                         end_date_column=retraction_row.end_date_column,
                         start_date_column=retraction_row.start_date_column)
-                    clean_query = retract_deactivated_pids.CLEAN_QUERY_END_DATE.render(
+                    clean_query = rdp.CLEAN_QUERY_END_DATE.render(
                         project=retraction_row.project_id,
                         dataset=retraction_row.dataset_id,
                         table=retraction_row.table,
@@ -227,7 +276,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
                         end_date_column=retraction_row.end_date_column,
                         start_date_column=retraction_row.start_date_column)
                 else:
-                    sandbox_query = retract_deactivated_pids.SANDBOX_QUERY_DATE.render(
+                    sandbox_query = rdp.SANDBOX_QUERY_DATE.render(
                         project=retraction_row.project_id,
                         sandbox_dataset=sandbox_dataset,
                         intermediary_table=self.ticket_number + '_' +
@@ -239,7 +288,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
                         deactivated_pids_dataset=self.pids_dataset_id,
                         deactivated_pids_table=self.pids_table,
                         date_column=retraction_row.date_column)
-                    clean_query = retract_deactivated_pids.CLEAN_QUERY_DATE.render(
+                    clean_query = rdp.CLEAN_QUERY_DATE.render(
                         project=retraction_row.project_id,
                         dataset=retraction_row.dataset_id,
                         table=retraction_row.table,

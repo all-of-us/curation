@@ -5,17 +5,20 @@ import re
 
 # Third party imports
 import pandas as pd
-from google.cloud import bigquery
+import google.cloud.bigquery as gbq
 
 # Project imports
 from utils import bq, pipeline_logging
-from retraction.retract_utils import DEID_REGEX
-from sandbox import check_and_create_sandbox_dataset
+import retraction.retract_utils as ru
+import sandbox as sb
+import constants.retraction.retract_deactivated_pids as consts
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
+
+ISSUE_NUMBERS = ["DC-1184"]
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string("""
 SELECT *
@@ -35,33 +38,34 @@ WHERE person_id = {{pid}}
 
 # Queries to create tables in associated sandbox with rows that will be removed per cleaning rule
 SANDBOX_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{sandbox_ref.project}}.{{sandbox_ref.dataset_id}}.{{sandbox_ref.table_id}}` s AS (
 SELECT *
-FROM `{{project}}.{{dataset}}.{{table}}` t
-{% if deid %}
-JOIN `{{project}}.{{pid_rid_dataset}}.{{pid_rid_table}}` p
+FROM `{{table_ref.project}}.{{table_ref.dataset_id}}.{{table_ref.table_id}}` t
+{% if is_deid %}
+JOIN `{{pid_rid_table.project}}.{{pid_rid_table.dataset_id}}.{{pid_rid_table.table_id}}` p
 ON t.person_id = p.research_id
-JOIN `{{project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}` d
+JOIN `{{deact_pids_table.project}}.{{deact_pids_table.dataset_id}}.{{deact_pids_table.table_id}}` d
 ON p.person_id = d.person_id
 {% else %}
-JOIN `{{project}}.{{deactivated_pids_dataset}}.{{deactivated_pids_table}}` d
+JOIN `{{deact_pids_table.project}}.{{deact_pids_table.dataset_id}}.{{deact_pids_table.table_id}}` d
 USING (person_id)
 {% endif %}
-{% if date %}
-WHERE COALESCE({{date_column}}, EXTRACT(DATE FROM {{datetime_column}})) >= d.deactivated_date
+{% if has_start_date %}
+WHERE COALESCE({{end_date}}, EXTRACT(DATE FROM {{end_datetime}}),
+    {{start_date}}, EXTRACT(DATE FROM {{start_datetime}})) >= d.deactivated_date
 {% else %}
-WHERE COALESCE({{end_date_column}}, EXTRACT(DATE FROM {{end_datetime_column}}),
-    {{start_date_column}}, EXTRACT(DATE FROM {{start_datetime_column}})) >= d.deactivated_date
-{% endif %}
+WHERE COALESCE({{date}}, EXTRACT(DATE FROM {{datetime}})) >= d.deactivated_date
+{% endif %})
 """)
 
 # Queries to truncate existing tables to remove deactivated EHR PIDS, two different queries for
 # tables with standard entry dates vs. tables with start and end dates
 CLEAN_QUERY = JINJA_ENV.from_string("""
 SELECT *
-FROM `{{project}}.{{dataset}}.{{table}}`
+FROM `{{table_ref.project}}.{{table_ref.dataset_id}}.{{table_ref.table_id}}`
 EXCEPT DISTINCT
 SELECT *
-FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+FROM `{{sandbox_ref.project}}.{{sandbox_ref.dataset_id}}.{{sandbox_ref.table_id}}`
 """)
 
 CHECK_PID_EXIST_DATE_QUERY = JINJA_ENV.from_string("""
@@ -178,7 +182,7 @@ def get_pids_table_info(project_id, dataset_id, client):
     return pids_table_info_df
 
 
-def get_table_dates_info(project_id, dataset_id, client):
+def get_table_dates_info(client, project_id, dataset_id):
     """
     This function returns a dict with tables containing pids and date columns
 
@@ -355,6 +359,63 @@ def check_pid_exist(date_row, client, pids_project_id, pids_dataset_id,
     return check_pid_df.loc[0, 'count']
 
 
+def get_date_cols_dict(date_cols_list):
+    date_cols_dict = {}
+    for date_col in date_cols_list:
+        if consts.START_DATETIME in date_col:
+            date_cols_dict[consts.START_DATETIME] = date_col
+        elif consts.START_DATE in date_col:
+            date_cols_dict[consts.START_DATE] = date_col
+        elif consts.END_DATETIME in date_col:
+            date_cols_dict[consts.END_DATETIME] = date_col
+        elif consts.END_DATE in date_col:
+            date_cols_dict[consts.END_DATE] = date_col
+        elif consts.DATETIME in date_col:
+            date_cols_dict[consts.DATETIME] = date_col
+        elif consts.DATE in date_col:
+            date_cols_dict[consts.DATE] = date_col
+    return date_cols_dict
+
+
+def generate_queries(client, project_id, dataset_id, pid_rid_table_ref,
+                     deact_pids_table_ref):
+    table_dates = get_table_dates_info(client, project_id, dataset_id)
+    sandbox_dataset = sb.get_sandbox_dataset_id(dataset_id)
+    is_deid = ru.is_deid_dataset(dataset_id)
+    sandbox_queries = []
+    clean_queries = []
+    for table in table_dates:
+        table_ref = gbq.TableReference.from_string(
+            f"{project_id}.{dataset_id}.{table}")
+        sandbox_table = f"{'_'.join(ISSUE_NUMBERS).lower().replace('-', '_')}_{table}"
+        sandbox_ref = gbq.TableReference.from_string(
+            f"{project_id}.{sandbox_dataset}.{sandbox_table}")
+        date_cols = get_date_cols_dict(table_dates[table])
+        has_start_date = consts.START_DATE in date_cols
+        sandbox_queries.append({
+            clean_consts.QUERY:
+                SANDBOX_QUERY.render(table_ref=table_ref,
+                                     sandbox_ref=sandbox_ref,
+                                     pid_rid_table=pid_rid_table_ref,
+                                     deact_pids_table=deact_pids_table_ref,
+                                     is_deid=is_deid,
+                                     has_start_date=has_start_date,
+                                     **date_cols)
+        })
+        clean_queries.append({
+            clean_consts.QUERY:
+                CLEAN_QUERY.render(table_ref=table_ref,
+                                   sandbox_ref=sandbox_ref),
+            clean_consts.DESTINATION_TABLE:
+                table,
+            clean_consts.DESTINATION_DATASET:
+                dataset_id,
+            clean_consts.DISPOSITION:
+                bq_consts.WRITE_TRUNCATE
+        })
+    return sandbox_queries + clean_queries
+
+
 def create_queries(project_id,
                    ticket_number,
                    pids_project_id,
@@ -421,14 +482,14 @@ def create_queries(project_id,
         for date_row in final_date_column_df.itertuples(index=False):
             # Determine if dataset is deid to correctly pull pid or research_id and check if ID exists in dataset or if
             # already retracted
-            if re.match(DEID_REGEX, date_row.dataset_id):
+            if re.match(ru.DEID_REGEX, date_row.dataset_id):
                 pid = get_research_id(date_row.project_id, date_row.dataset_id,
                                       ehr_row.person_id, client)
             else:
                 pid = ehr_row.person_id
 
             # Get or create sandbox dataset
-            sandbox_dataset = check_and_create_sandbox_dataset(
+            sandbox_dataset = sb.check_and_create_sandbox_dataset(
                 date_row.project_id, date_row.dataset_id)
 
             # Create queries based on type of date field
@@ -523,7 +584,7 @@ def run_queries(queries, client):
     incomplete_jobs = []
     for query_dict in queries:
         # Set configuration.query
-        job_config = bigquery.QueryJobConfig(
+        job_config = gbq.QueryJobConfig(
             use_query_cache=False,
             destination=query_dict['destination'],
             write_disposition=query_dict['write_disposition'],
