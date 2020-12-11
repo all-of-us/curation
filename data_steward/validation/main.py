@@ -30,15 +30,15 @@ from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JS
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
-     initialize_logging
+    initialize_logging
 from curation_logging.slack_logging_handler import initialize_slack_logging
 from retraction import retract_data_bq, retract_data_gcs
 from validation import achilles, achilles_heel, ehr_union, export, hpo_report
+from validation import email_notification as en
 from validation.app_errors import (log_traceback, errors_blueprint,
                                    InternalValidationError,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
-from validation import email_notification as en
 from validation.participants import identity_match as matching
 
 app = Flask(__name__)
@@ -990,17 +990,6 @@ def validate_pii():
     return consts.VALIDATION_SUCCESS
 
 
-@api_util.auth_required_cron
-@log_traceback
-def write_drc_pii_validation_file():
-    project = bq_utils.app_identity.get_application_id()
-    validation_dataset = bq_utils.get_validation_results_dataset_id()
-    logging.info(f"Calling write_results_to_drc_bucket")
-    matching.write_results_to_drc_bucket(project, validation_dataset)
-
-    return consts.DRC_VALIDATION_REPORT_SUCCESS
-
-
 @app.before_first_request
 def set_up_logging():
     initialize_logging()
@@ -1030,11 +1019,6 @@ app.add_url_rule(consts.PREFIX + 'CopyFiles/<string:hpo_id>',
 app.add_url_rule(consts.PREFIX + 'UnionEHR',
                  endpoint='union_ehr',
                  view_func=union_ehr,
-                 methods=['GET'])
-
-app.add_url_rule(consts.PREFIX + consts.WRITE_DRC_VALIDATION_FILE,
-                 endpoint='write_drc_pii_validation_file',
-                 view_func=write_drc_pii_validation_file,
                  methods=['GET'])
 
 app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION,
