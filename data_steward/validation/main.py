@@ -1001,17 +1001,6 @@ def write_drc_pii_validation_file():
     return consts.DRC_VALIDATION_REPORT_SUCCESS
 
 
-@api_util.auth_required_cron
-@log_traceback
-def write_sites_pii_validation_files():
-    project = bq_utils.app_identity.get_application_id()
-    validation_dataset = bq_utils.get_validation_results_dataset_id()
-    logging.info(f"Calling write_results_to_site_buckets")
-    matching.write_results_to_site_buckets(project, validation_dataset)
-
-    return consts.SITES_VALIDATION_REPORT_SUCCESS
-
-
 @app.before_first_request
 def set_up_logging():
     initialize_logging()
@@ -1046,11 +1035,6 @@ app.add_url_rule(consts.PREFIX + 'UnionEHR',
 app.add_url_rule(consts.PREFIX + consts.WRITE_DRC_VALIDATION_FILE,
                  endpoint='write_drc_pii_validation_file',
                  view_func=write_drc_pii_validation_file,
-                 methods=['GET'])
-
-app.add_url_rule(consts.PREFIX + consts.WRITE_SITE_VALIDATION_FILES,
-                 endpoint='write_sites_pii_validation_files',
-                 view_func=write_sites_pii_validation_files,
                  methods=['GET'])
 
 app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION,
