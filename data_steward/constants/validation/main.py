@@ -194,7 +194,6 @@ WRITE_DRC_VALIDATION_FILE = PARTICIPANT_VALIDATION + 'DRCFile'
 # Return Values
 VALIDATION_SUCCESS = 'participant-validation-done'
 DRC_VALIDATION_REPORT_SUCCESS = 'drc-participant-validation-report-written'
-SITES_VALIDATION_REPORT_SUCCESS = 'sites-participant-validation-reports-written'
 
 CONTENT_TYPE = 'content-type'
 APPLICATION_JSON = 'application/json'
