@@ -52,7 +52,8 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
     @mock.patch(
         'retraction.retract_deactivated_pids.get_date_info_for_pids_tables')
     @mock.patch(
-        'retraction.retract_deactivated_pids.check_and_create_sandbox_dataset')
+        'retraction.retract_deactivated_pids.sb.check_and_create_sandbox_dataset'
+    )
     @mock.patch('utils.bq.get_client')
     @mock.patch('retraction.retract_deactivated_pids.check_pid_exist')
     @mock.patch(

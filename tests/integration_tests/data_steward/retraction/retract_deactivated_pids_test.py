@@ -1,4 +1,4 @@
-#Python imports
+# Python imports
 import os
 import unittest
 import logging
@@ -78,7 +78,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
             raise RuntimeError(
                 f"Make sure the project_id is set to test.  project_id is {self.project_id}"
             )
-        self.bq_dataset_id = bq_utils.get_dataset_id()
+        self.bq_dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.bq_sandbox_dataset_id = get_sandbox_dataset_id(self.bq_dataset_id)
         self.ticket_number = 'DCXXX'
         self.pid_table_id = 'pid_table'
