@@ -7,12 +7,12 @@ import logging
 NOTEBOOK_TEMPLATE_NAME = "rdr_qc_template.ipynb"
 EXECUTED_NOTEBOOK_NAME = "rdr_qc_export.ipynb"
 
+logging.basicConfig(
+    level = logging.INFO,
+    format = '[%(levelname)s] %(asctime)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
 logger = logging.getLogger(__name__)
-console_handler = logging.StreamHandler()
-formatter = logging.Formatter('[%(levelname)s] %(asctime)s - %(message)s')
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
-logger.setLevel(logging.INFO)
 
 def generate_notebook(python_file):
     """Create a template notebook from a .py file using jupytext"""
