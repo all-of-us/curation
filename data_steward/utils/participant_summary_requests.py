@@ -16,7 +16,6 @@ The intent of the get_participant_information function is to retrieve the inform
 
 # Third party imports
 import re
-import signal
 import pandas
 import requests
 import pandas_gbq
@@ -82,7 +81,6 @@ def get_participant_data(url, headers):
                 link_url = link_obj[0].get('url')
                 next_url = original_url + '&' + link_url[link_url.find('_token'
                                                                       ):]
-                print(next_url)
             else:
                 done = True
 
@@ -278,10 +276,3 @@ def store_participant_data(df, project_id, destination_table):
                              project_id,
                              if_exists="replace",
                              table_schema=table_schema)
-
-
-if __name__ == '__main__':
-    # columns = ['participantId', 'suspensionStatus', 'suspensionTime']
-    # tablename = '_deactivated_participants'
-    # get_deactivated_participants('all-of-us-rdr-prod', 'cdr-20201008-20201201', tablename, columns)
-    get_site_participant_information('all-of-us-rdr-prod', 'PITT')

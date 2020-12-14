@@ -5,7 +5,7 @@ Ensures that get_token function fetches the access token properly, get_deactivat
     fetches all deactivated participants information, and store_participant_data properly stores all
     the fetched deactivated participant data
 
-Original Issues: DC-797, DC-971 (sub-task), DC-972 (sub-task)
+Original Issues: DC-797, DC-971 (sub-task), DC-972 (sub-task), DC-1213
 
 The intent of this module is to check that GCR access token is generated properly, the list of
     deactivated participants returned contains `participantID`, `suspensionStatus`, and `suspensionTime`,
