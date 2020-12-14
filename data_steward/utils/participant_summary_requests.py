@@ -35,28 +35,6 @@ FIELDS_OF_INTEREST_FOR_VALIDATION = [
 ]
 
 
-class Timeout:
-    """
-    Uses signal handlers to set an alarm for a certain time interval and raise an exception once that timer expires.
-        Only will work on *nix.
-        Note -- found: (https://stackoverflow.com/questions/2281850/timeout-function-if-it-takes-too-long-to-finish)
-    """
-    def __init__(self, seconds=1,
-                 error_message='Terminating, participant data taking longer than expected to retrieve'):
-        self.seconds = seconds
-        self.error_message = error_message
-
-    def handle_timeout(self, signum, frame):
-        raise TimeoutError(self.error_message)
-
-    def __enter__(self):
-        signal.signal(signal.SIGALRM, self.handle_timeout)
-        signal.alarm(self.seconds)
-
-    def __exit__(self, exc_type, value, traceback):
-        signal.alarm(0)
-
-
 def get_access_token():
     """
     Obtains GCP Bearer token
@@ -93,21 +71,21 @@ def get_participant_data(url, headers):
     original_url = url
     next_url = url
 
-    with Timeout(seconds=1200):
-        while not done:
-            resp = requests.get(next_url, headers=headers)
-            if not resp or resp.status_code != 200:
-                print(f'Error: API request failed because {resp}')
+    while not done:
+        resp = requests.get(next_url, headers=headers)
+        if not resp or resp.status_code != 200:
+            print(f'Error: API request failed because {resp}')
+        else:
+            r_json = resp.json()
+            participant_data += r_json.get('entry', {})
+            if 'link' in r_json:
+                link_obj = r_json.get('link')
+                link_url = link_obj[0].get('url')
+                next_url = original_url + '&' + link_url[link_url.find('_token'
+                                                                      ):]
+                print(next_url)
             else:
-                r_json = resp.json()
-                participant_data += r_json.get('entry', {})
-                if 'link' in r_json:
-                    link_obj = r_json.get('link')
-                    link_url = link_obj[0].get('url')
-                    next_url = original_url + '&' + link_url[link_url.find('_token'
-                                                                          ):]
-                else:
-                    done = True
+                done = True
 
     return participant_data
 
@@ -197,12 +175,11 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     return df
 
 
-def get_site_participant_information(project_id, dataset_id, hpo_id):
+def get_site_participant_information(project_id, hpo_id):
     """
     Fetches the necessary participant information for a particular site.
 
     :param project_id: The RDR project that contains participant summary data
-    :param dataset_id: The dataset name
     :param hpo_id: awardee name of the site
 
     :return: returns dataframe of participant information
@@ -210,9 +187,6 @@ def get_site_participant_information(project_id, dataset_id, hpo_id):
     # Parameter checks
     if not isinstance(project_id, str):
         raise RuntimeError(f'Please specify the RDR project')
-
-    if not isinstance(dataset_id, str):
-        raise RuntimeError(f'Please provide the dataset_id')
 
     if not isinstance(hpo_id, str):
         raise RuntimeError(f'Please provide an hpo_id')
@@ -226,7 +200,7 @@ def get_site_participant_information(project_id, dataset_id, hpo_id):
 
     # Make request to get API version. This is the current RDR version for reference see
     # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
-    url = 'https://{0}.appspot.com/rdr/v1/ParticipantSummary?awardee={1}&_sort=participantId'.format(
+    url = 'https://{0}.appspot.com/rdr/v1/ParticipantSummary?awardee={1}&_sort=participantId&_count=1000'.format(
         project_id, hpo_id)
 
     participant_data = get_participant_data(url, headers)
@@ -310,6 +284,6 @@ if __name__ == '__main__':
     # columns = ['participantId', 'suspensionStatus', 'suspensionTime']
     # tablename = '_deactivated_participants'
     # get_deactivated_participants('all-of-us-rdr-prod', 'cdr-20201008-20201201', tablename, columns)
-    get_site_participant_information('all-of-us-rdr-prod', 'cdr-20201008-20201201', 'PITT')
+    get_site_participant_information('all-of-us-rdr-prod', 'PITT')
 
 
