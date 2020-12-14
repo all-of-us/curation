@@ -37,6 +37,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'bar_dataset'
         self.tablename = 'baz_table'
+        self.fake_hpo = 'foo_hpo'
         self.destination_table = 'bar_dataset.foo_table'
 
         self.fake_url = 'www.fake_site.com'
@@ -46,15 +47,27 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
         }
 
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
+
         self.deactivated_participants = [[
             'P111', 'NO_CONTACT', '2018-12-07T08:21:14'
         ], ['P222', 'NO_CONTACT', '2018-12-07T08:21:14']]
+
         self.updated_deactivated_participants = [[
             111, 'NO_CONTACT', '2018-12-07T08:21:14'
         ], [222, 'NO_CONTACT', '2018-12-07T08:21:14']]
 
+        self.updated_site_participant_info = [[
+            333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
+            'foo_street_address_2', 'foo_city', 'foo_state', '12345', '1112223333', 'foo_email',
+            '1900-01-01', 'SexAtBirth_Male'
+        ], [444, 'foo_first', 'foo_last', 'UNSET']]
+
         self.fake_dataframe = pandas.DataFrame(
             self.updated_deactivated_participants, columns=self.columns)
+
+        self.fake_participant_info_dataframe = pandas.DataFrame(
+            self.updated_site_participant_info,
+            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
 
         self.participant_data = [{
             'fullUrl':
@@ -156,6 +169,36 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
             dataframe_response,
             pandas.DataFrame(self.updated_deactivated_participants,
                              columns=self.columns))
+
+        self.assertEqual(expected_response, dataset_response)
+
+    @mock.patch('utils.participant_summary_requests.store_participant_data')
+    @mock.patch(
+        'utils.participant_summary_requests.get_site_participant_information')
+    def test_get_site_participant_information(
+        self, mock_get_site_participant_information,
+        mock_store_participant_data):
+
+        # Pre conditions
+        mock_get_site_participant_information.return_value = self.fake_participant_info_dataframe
+
+        # Tests
+        dataframe_response = psr.get_site_participant_information(
+            self.project_id, self.fake_hpo)
+
+        dataset_response = psr.store_participant_data(
+            dataframe_response, self.project_id,
+            self.destination_table)
+
+        expected_response = mock_store_participant_data(
+            dataframe_response, self.project_id,
+            self.destination_table)
+
+        # Post conditions
+        pandas.testing.assert_frame_equal(
+            dataframe_response,
+            pandas.DataFrame(self.updated_site_participant_info,
+                             columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION))
 
         self.assertEqual(expected_response, dataset_response)
 
