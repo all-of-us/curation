@@ -15,6 +15,7 @@ logger.addHandler(console_Handler)
 logger.setLevel(logging.INFO)
 
 def generate_notebook(python_file):
+    """Create a template notebook from a .py file using jupytext"""
     logger.info("Generating notebook from .py file...")
     subprocess.run(
         ["jupytext", python_file, f"-o={NOTEBOOK_TEMPLATE_NAME}", "--set-kernel", "-"]
@@ -23,6 +24,7 @@ def generate_notebook(python_file):
 
 
 def run_notebook_qc(project_id, old_rdr, new_rdr):
+    """Run the parameterized notebook using Papermill"""
     logger.info("Running the rdr export QC notebook...")
     pm.execute_notebook(
         f"{NOTEBOOK_TEMPLATE_NAME}",
@@ -33,6 +35,7 @@ def run_notebook_qc(project_id, old_rdr, new_rdr):
 
 
 def generate_report():
+    """Convert the QC notebook into an HTML report"""
     logger.info("Generating HTML report for the rdr export QC...")
     subprocess.run(
         ["jupyter", "nbconvert", f"{EXECUTED_NOTEBOOK_NAME}", "--to=html", "--no-input"]
