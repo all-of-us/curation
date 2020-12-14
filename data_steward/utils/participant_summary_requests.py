@@ -27,7 +27,6 @@ from google.auth import default
 from utils import auth
 from resources import fields_for
 
-
 FIELDS_OF_INTEREST_FOR_VALIDATION = [
     'participantId', 'firstName', 'middleName', 'lastName', 'streetAddress',
     'streetAddress2', 'city', 'state', 'zipCode', 'phoneNumber', 'email',
@@ -219,7 +218,8 @@ def get_site_participant_information(project_id, hpo_id):
                     item.append(val)
         participant_information.append(item)
 
-    df = pandas.DataFrame(participant_information, columns=participant_information_cols)
+    df = pandas.DataFrame(participant_information,
+                          columns=participant_information_cols)
 
     # Transforms participantId to an integer string
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
@@ -285,5 +285,3 @@ if __name__ == '__main__':
     # tablename = '_deactivated_participants'
     # get_deactivated_participants('all-of-us-rdr-prod', 'cdr-20201008-20201201', tablename, columns)
     get_site_participant_information('all-of-us-rdr-prod', 'PITT')
-
-

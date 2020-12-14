@@ -58,8 +58,8 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         self.updated_site_participant_info = [[
             333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
-            'foo_street_address_2', 'foo_city', 'foo_state', '12345', '1112223333', 'foo_email',
-            '1900-01-01', 'SexAtBirth_Male'
+            'foo_street_address_2', 'foo_city', 'foo_state', '12345',
+            '1112223333', 'foo_email', '1900-01-01', 'SexAtBirth_Male'
         ], [444, 'foo_first', 'foo_last', 'UNSET']]
 
         self.fake_dataframe = pandas.DataFrame(
@@ -186,13 +186,13 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
         dataframe_response = psr.get_site_participant_information(
             self.project_id, self.fake_hpo)
 
-        dataset_response = psr.store_participant_data(
-            dataframe_response, self.project_id,
-            self.destination_table)
+        dataset_response = psr.store_participant_data(dataframe_response,
+                                                      self.project_id,
+                                                      self.destination_table)
 
-        expected_response = mock_store_participant_data(
-            dataframe_response, self.project_id,
-            self.destination_table)
+        expected_response = mock_store_participant_data(dataframe_response,
+                                                        self.project_id,
+                                                        self.destination_table)
 
         # Post conditions
         pandas.testing.assert_frame_equal(
