@@ -4,7 +4,7 @@
 set -x
 
 BASE_DIR="$(git rev-parse --show-toplevel)"
-. ${BASE_DIR}/data_steward/tools/set_path.sh
+. "${BASE_DIR}/data_steward/tools/set_path.sh"
 
 subset="all"
 
@@ -59,7 +59,7 @@ else
   cmd="tests/runner.py --test-path ${path} ${sdk_dir} --test-pattern $substring --coverage-file ${coverage_file}"
 fi
 
-(cd ${BASE_DIR}; PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd})
+(cd "${BASE_DIR}"; PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd})
 
 # stop printing executed commands
 set +x
