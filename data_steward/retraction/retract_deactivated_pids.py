@@ -73,6 +73,15 @@ FROM `{{sandbox_ref.project}}.{{sandbox_ref.dataset_id}}.{{sandbox_ref.table_id}
 
 
 def get_date_cols_dict(date_cols_list):
+    """
+    Converts list of date/datetime columns into dictionary mappings
+
+    Assumes each date column has a corresponding datetime column due to OMOP specifications
+    If a date column does not have a corresponding datetime column, skips it
+    :param date_cols_list: list of date/datetime columns
+    :return: dictionary with mappings for START_DATE, START_DATETIME, END_DATE, END_DATETIME
+        or DATE, DATETIME
+    """
     date_cols_dict = {}
     i = 0
     while i < len(date_cols_list):
@@ -147,6 +156,20 @@ def generate_queries(client,
                      sandbox_dataset_id,
                      deact_pids_table_ref,
                      pid_rid_table_ref=None):
+    """
+    Creates queries for sandboxing and deleting records
+
+    :param client: BigQuery client
+    :param project_id: Identifies the project
+    :param dataset_id: Identifies the dataset to retract deactivated participants from
+    :param sandbox_dataset_id: Identifies the dataset to store records to delete
+    :param deact_pids_table_ref: BigQuery table reference to dataset containing deactivated participants
+    :param pid_rid_table_ref: BigQuery table reference to dataset containing pid-rid mappings
+    :return: List of query dicts
+    :raises:
+        RuntimeError: 1. If retracting from deid dataset, pid_rid table must be specified
+                      2. If mapping or ext table does not exist, EHR data cannot be identified
+    """
     table_cols_df = get_table_cols_df(client, project_id, dataset_id)
     table_dates_info = get_table_dates_info(table_cols_df)
     tables = table_cols_df['table_name'].to_list()
@@ -210,6 +233,14 @@ def generate_queries(client,
 
 
 def query_runner(client, query_dict):
+    """
+    Runs the query specified via query_dict
+
+    :param client: BigQuery client
+    :param query_dict: Query dictionary as used by cleaning rules
+    :return: job_id: BigQuery job id for the query job
+    :raises: RuntimeError, GoogleCloudError, TOError: If BigQuery job fails
+    """
     job_config = gbq.job.QueryJobConfig()
 
     if query_dict.get(cdr_consts.DESTINATION_TABLE) is not None:
@@ -280,6 +311,18 @@ def run_deactivation(client,
                      dataset_ids,
                      fq_deact_table,
                      fq_pid_rid_table=None):
+    """
+    Runs the deactivation retraction pipeline for a dataset
+
+    :param client: BigQuery client
+    :param project_id: Identifies the BigQuery project
+    :param dataset_ids: Identifies the datasets to retract deactivated participants from
+    :param fq_deact_table: Fully qualified table containing deactivated participants
+        and deactivated dates as 'project.dataset.table'
+    :param fq_pid_rid_table: Fully qualified table containing mappings from person_ids
+        to research_ids as 'project.dataset.table'
+    :return:job_ids: List of BigQuery job ids to perform the retraction as strings
+    """
     pid_rid_table_ref = gbq.TableReference.from_string(
         fq_pid_rid_table) if fq_pid_rid_table else None
     deact_table_ref = gbq.TableReference.from_string(fq_deact_table)

@@ -3,7 +3,7 @@ from unittest import TestCase, mock
 
 # Third party imports
 import pandas as pd
-import google.cloud.bigquery as gbq
+from google.cloud.bigquery import TableReference
 
 # Project imports
 from retraction import retract_deactivated_pids as rdp
@@ -76,9 +76,9 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
         })
         mock_table_dates.return_value = tables_cols_dict
         mock_sandbox.return_value = self.dataset_id + '_sandbox'
-        pid_rid_table_ref = gbq.TableReference.from_string(
+        pid_rid_table_ref = TableReference.from_string(
             f"{self.project_id}.{self.pids_dataset_id}.{self.pids_table}")
-        deactivated_pids_table_ref = gbq.TableReference.from_string(
+        deactivated_pids_table_ref = TableReference.from_string(
             f"{self.project_id}.{self.deactivated_pids_dataset_id}.{self.deactivated_pids_table}"
         )
 
