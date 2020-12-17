@@ -56,18 +56,14 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
             111, 'NO_CONTACT', '2018-12-07T08:21:14'
         ], [222, 'NO_CONTACT', '2018-12-07T08:21:14']]
 
-        self.updated_site_participant_info = [[
-            333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
+        self.site_participant_information = [[
+            'P333', 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
             'foo_street_address_2', 'foo_city', 'foo_state', '12345',
             '1112223333', 'foo_email', '1900-01-01', 'SexAtBirth_Male'
-        ], [444, 'foo_first', 'foo_last', 'UNSET']]
+        ], ['P444', 'bar_first', 'bar_last']]
 
         self.fake_dataframe = pandas.DataFrame(
             self.updated_deactivated_participants, columns=self.columns)
-
-        self.fake_participant_info_dataframe = pandas.DataFrame(
-            self.updated_site_participant_info,
-            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
 
         self.participant_data = [{
             'fullUrl':
@@ -84,6 +80,34 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
                 'participantId': 'P222',
                 'suspensionStatus': 'NO_CONTACT',
                 'suspensionTime': '2018-12-07T08:21:14'
+            }
+        }]
+
+        self.site_participant_info_data = [{
+            'fullUrl':
+                'https//foo_project.appspot.com/rdr/v1/Participant/P333/Summary',
+            'resource': {
+                'participantId': 'P333',
+                'firstName': 'foo_first',
+                'middleName': 'foo_middle',
+                'lastName': 'foo_last',
+                'streetAddress': 'foo_street_address',
+                'streetAddress2': 'foo_street_address_2',
+                'city': 'foo_city',
+                'state': 'foo_state',
+                'zipCode': '12345',
+                'phoneNumber': '1112223333',
+                'email': 'foo_email',
+                'dateOfBirth': '1900-01-01',
+                'sex': 'SexAtBirth_Male'
+            },
+        }, {
+            'fullUrl':
+                'https//foo_project.appspot.com/rdr/v1/Participant/P444/Summary',
+            'resource': {
+                'participantId': 'P444',
+                'firstName': 'bar_first',
+                'lastName': 'bar_last'
             }
         }]
 
@@ -172,35 +196,25 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         self.assertEqual(expected_response, dataset_response)
 
-    @mock.patch('utils.participant_summary_requests.store_participant_data')
-    @mock.patch(
-        'utils.participant_summary_requests.get_site_participant_information')
-    def test_get_site_participant_information(
-        self, mock_get_site_participant_information,
-        mock_store_participant_data):
+    def test_get_site_participant_information(self):
 
         # Pre conditions
-        mock_get_site_participant_information.return_value = self.fake_participant_info_dataframe
+        actual_site_participant_information = []
+
+        for entry in self.site_participant_info_data:
+            item = []
+            for col in psr.FIELDS_OF_INTEREST_FOR_VALIDATION:
+                for key, val in entry.get('resource', {}).items():
+                    if col == key:
+                        item.append(val)
+            actual_site_participant_information.append(item)
 
         # Tests
-        dataframe_response = psr.get_site_participant_information(
-            self.project_id, self.fake_hpo)
-
-        dataset_response = psr.store_participant_data(dataframe_response,
-                                                      self.project_id,
-                                                      self.destination_table)
-
-        expected_response = mock_store_participant_data(dataframe_response,
-                                                        self.project_id,
-                                                        self.destination_table)
+        expected_list = self.site_participant_information
+        actual_list = actual_site_participant_information
 
         # Post conditions
-        pandas.testing.assert_frame_equal(
-            dataframe_response,
-            pandas.DataFrame(self.updated_site_participant_info,
-                             columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION))
-
-        self.assertEqual(expected_response, dataset_response)
+        self.assertEqual(expected_list, actual_list)
 
     def test_participant_id_to_int(self):
         # pre conditions
