@@ -283,8 +283,9 @@ def run_deactivation(client,
     pid_rid_table_ref = gbq.TableReference.from_string(
         fq_pid_rid_table) if fq_pid_rid_table else None
     deact_table_ref = gbq.TableReference.from_string(fq_deact_table)
-    job_ids = []
+    job_ids = {}
     for dataset_id in dataset_ids:
+        job_ids[dataset_id] = []
         LOGGER.info(f"Retracting deactivated participants from '{dataset_id}'")
         sandbox_dataset_id = sb.check_and_create_sandbox_dataset(
             project_id, dataset_id)
@@ -295,7 +296,10 @@ def run_deactivation(client,
                                    pid_rid_table_ref)
         for query in queries:
             job_id = query_runner(client, query)
-            job_ids.append(job_id)
+            job_ids[dataset_id].append(job_id)
+        LOGGER.info(
+            f"Successfully retracted from {dataset_id} via jobs {job_ids[dataset_id]}"
+        )
     return job_ids
 
 
