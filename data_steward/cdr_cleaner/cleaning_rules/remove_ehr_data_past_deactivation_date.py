@@ -61,18 +61,24 @@ def remove_ehr_data_queries(project_id, dataset_id, sandbox_dataset_id,
 
 if __name__ == '__main__':
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
+
     parser = rdp.get_parser()
     args = parser.parse_args()
     client = bq.get_client(args.project_id)
-    dataset_id = ru.get_datasets_list(args.project_id, args.dataset_ids)
+
+    dataset_ids = ru.get_datasets_list(args.project_id, args.dataset_ids)
+    # dataset_ids should contain only one dataset (unioned_ehr)
+    dataset_id = dataset_ids[0]
     LOGGER.info(
         f"Datasets to retract deactivated participants from: {dataset_id}")
     sandbox_dataset_id = sb.check_and_create_sandbox_dataset(
         args.project_id, dataset_id)
     LOGGER.info(f"Using sandbox dataset: {sandbox_dataset_id}")
+
     deactivation_queries = remove_ehr_data_queries(args.project_id, dataset_id,
                                                    sandbox_dataset_id,
                                                    args.fq_deact_table)
+
     job_ids = []
     for query in deactivation_queries:
         job_id = rdp.query_runner(client, query)
