@@ -27,12 +27,13 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 ]
 
 
-def remove_ehr_data_queries(project_id, dataset_id, sandbox_dataset_id,
+def remove_ehr_data_queries(client, project_id, dataset_id, sandbox_dataset_id,
                             fq_deact_table):
     """
     Creates sandboxes and drops all EHR data found for deactivated participants after
     their deactivation date
 
+    :param client: BQ client
     :param project_id: BQ name of the project
     :param dataset_id: Identifies the dataset to retract deactivated participants from
     :param sandbox_dataset_id: Identifies the sandbox dataset to store records for dataset_id
@@ -74,7 +75,8 @@ if __name__ == '__main__':
         args.project_id, dataset_id)
     LOGGER.info(f"Using sandbox dataset: {sandbox_dataset_id}")
 
-    deactivation_queries = remove_ehr_data_queries(args.project_id, dataset_id,
+    deactivation_queries = remove_ehr_data_queries(client, args.project_id,
+                                                   dataset_id,
                                                    sandbox_dataset_id,
                                                    args.fq_deact_table)
 
