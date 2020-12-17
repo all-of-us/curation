@@ -212,10 +212,13 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
             site_participant_information.append(item)
 
         # Tests
-        expected_dataframe = pandas.DataFrame(site_participant_information,
-                                              columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
-        actual_dataframe = pandas.DataFrame(self.site_participant_information,
-                                            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
+        expected_dataframe = pandas.DataFrame(
+            site_participant_information,
+            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
+        actual_dataframe = pandas.DataFrame(
+            self.site_participant_information,
+            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
+
         # Post conditions
         pandas.testing.assert_frame_equal(expected_dataframe, actual_dataframe)
 
