@@ -48,8 +48,7 @@ def remove_ehr_data_queries(project_id, dataset_id, sandbox_dataset_id,
     destination_table = pids_dataset_id + '.' + table_name
     psr.store_participant_data(df, project_id, destination_table)
 
-    deact_table_ref = gbq.TableReference.from_string(
-        f"{project_id}.{destination_table}")
+    deact_table_ref = gbq.TableReference.from_string(f"{fq_deact_table}")
     LOGGER.info(f"Retracting deactivated participants from '{dataset_id}'")
     LOGGER.info(
         f"Using sandbox dataset '{sandbox_dataset_id}' for '{dataset_id}'")
