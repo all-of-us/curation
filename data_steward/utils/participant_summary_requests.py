@@ -56,7 +56,7 @@ def get_access_token():
 
 def get_participant_data(url, headers):
     """
-    Fetches participant data via ParticipantSummary API with a retrieval limit of 3 minutes
+    Fetches participant data via ParticipantSummary API
 
     :param url: the /ParticipantSummary endpoint to fetch information about the participant
     :param headers: the metadata associated with the API request and response
@@ -192,13 +192,17 @@ def get_site_participant_information(project_id, hpo_id):
 
     headers = {
         'content-type': 'application/json',
-        'Authorization': 'Bearer {0}'.format(token)
+        'Authorization': f'Bearer {token}'
     }
 
     # Make request to get API version. This is the current RDR version for reference see
     # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
-    url = 'https://{0}.appspot.com/rdr/v1/ParticipantSummary?awardee={1}&_sort=participantId&_count=1000'.format(
-        project_id, hpo_id)
+    # consentForElectronicHealthRecords=SUBMITTED -- ensures only consenting participants are returned via the API
+    #   regardless if there is EHR data uploaded for that participant
+    # suspensionStatus=NOT_SUSPENDED and withdrawalStatus=NOT_WITHDRAWN -- ensures only active participants returned
+    #   via the API
+    url = 'https://{0}.appspot.com/rdr/v1/ParticipantSummary?awardee={1}&suspensionStatus={2}&consentForElectronicHealthRecords={3}&withdrawalStatus={4}&_sort=participantId&_count=1000'.format(
+        project_id, hpo_id, 'NOT_SUSPENDED', 'SUBMITTED', 'NOT_WITHDRAWN')
 
     participant_data = get_participant_data(url, headers)
 
