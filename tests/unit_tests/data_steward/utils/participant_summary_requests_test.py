@@ -196,25 +196,28 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         self.assertEqual(expected_response, dataset_response)
 
-    def test_get_site_participant_information(self):
+    @mock.patch('utils.participant_summary_requests.get_participant_data')
+    def test_get_site_participant_information(self, mock_get_participant_data):
 
         # Pre conditions
-        actual_site_participant_information = []
+        mock_get_participant_data.return_value = self.site_participant_info_data
+        site_participant_information = []
 
-        for entry in self.site_participant_info_data:
+        for entry in mock_get_participant_data.return_value:
             item = []
             for col in psr.FIELDS_OF_INTEREST_FOR_VALIDATION:
                 for key, val in entry.get('resource', {}).items():
                     if col == key:
                         item.append(val)
-            actual_site_participant_information.append(item)
+            site_participant_information.append(item)
 
         # Tests
-        expected_list = self.site_participant_information
-        actual_list = actual_site_participant_information
-
+        expected_dataframe = pandas.DataFrame(site_participant_information,
+                                              columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
+        actual_dataframe = pandas.DataFrame(self.site_participant_information,
+                                            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
         # Post conditions
-        self.assertEqual(expected_list, actual_list)
+        pandas.testing.assert_frame_equal(expected_dataframe, actual_dataframe)
 
     def test_participant_id_to_int(self):
         # pre conditions
