@@ -26,6 +26,8 @@ from google.auth import default
 from utils import auth
 from resources import fields_for
 
+# These fields are coming in from RDR with their naming convention and will be converted
+# to the Curation naming convention in the `get_site_participant_information` function
 FIELDS_OF_INTEREST_FOR_VALIDATION = [
     'participantId', 'firstName', 'middleName', 'lastName', 'streetAddress',
     'streetAddress2', 'city', 'state', 'zipCode', 'phoneNumber', 'email',
@@ -174,7 +176,9 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
 
 def get_site_participant_information(project_id, hpo_id):
     """
-    Fetches the necessary participant information for a particular site.
+    Fetches the necessary participant information for a particular site. RuntimeErrors will occur
+        if parameter are not supplied or are incorrect and a Google TimeoutError will occur if the
+        API call takes longer than 10 minutes to return all the participants from the single site.
 
     :param project_id: The RDR project hosting the API
     :param hpo_id: awardee name of the site
