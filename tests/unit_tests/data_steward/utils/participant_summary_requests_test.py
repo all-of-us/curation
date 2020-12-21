@@ -17,6 +17,7 @@ import unittest
 import mock
 
 # Third Party imports
+import re
 import pandas
 import pandas.testing
 
@@ -56,11 +57,11 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
             111, 'NO_CONTACT', '2018-12-07T08:21:14'
         ], [222, 'NO_CONTACT', '2018-12-07T08:21:14']]
 
-        self.site_participant_information = [[
-            'P333', 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
+        self.updated_site_participant_information = [[
+            333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
             'foo_street_address_2', 'foo_city', 'foo_state', '12345',
             '1112223333', 'foo_email', '1900-01-01', 'SexAtBirth_Male'
-        ], ['P444', 'bar_first', 'bar_last']]
+        ], [444, 'bar_first', 'bar_last']]
 
         self.fake_dataframe = pandas.DataFrame(
             self.updated_deactivated_participants, columns=self.columns)
@@ -196,28 +197,39 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         self.assertEqual(expected_response, dataset_response)
 
+    @mock.patch('utils.participant_summary_requests.get_access_token')
     @mock.patch('utils.participant_summary_requests.get_participant_data')
-    def test_get_site_participant_information(self, mock_get_participant_data):
+    def test_get_site_participant_information(self, mock_get_participant_data,
+                                              mock_token):
 
         # Pre conditions
-        mock_get_participant_data.return_value = self.site_participant_info_data
-        site_participant_information = []
+        updated_fields = {
+            'participantId': 'person_id',
+            'firstName': 'first_name',
+            'middleName': 'middle_name',
+            'lastName': 'last_name',
+            'streetAddress': 'street_address',
+            'streetAddress2': 'street_address2',
+            'city': 'city',
+            'state': 'state',
+            'zipCode': 'zip_code',
+            'phoneNumber': 'phone_number',
+            'email': 'email',
+            'dateOfBirth': 'date_of_birth',
+            'sex': 'sex'
+        }
 
-        for entry in mock_get_participant_data.return_value:
-            item = []
-            for col in psr.FIELDS_OF_INTEREST_FOR_VALIDATION:
-                for key, val in entry.get('resource', {}).items():
-                    if col == key:
-                        item.append(val)
-            site_participant_information.append(item)
+        mock_get_participant_data.return_value = self.site_participant_info_data
+
+        expected_dataframe = pandas.DataFrame(
+            self.updated_site_participant_information,
+            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
+
+        expected_dataframe = expected_dataframe.rename(columns=updated_fields)
 
         # Tests
-        expected_dataframe = pandas.DataFrame(
-            site_participant_information,
-            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
-        actual_dataframe = pandas.DataFrame(
-            self.site_participant_information,
-            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
+        actual_dataframe = psr.get_site_participant_information(
+            self.project_id, self.fake_hpo)
 
         # Post conditions
         pandas.testing.assert_frame_equal(expected_dataframe, actual_dataframe)
