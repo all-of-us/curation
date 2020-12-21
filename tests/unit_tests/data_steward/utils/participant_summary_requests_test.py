@@ -68,7 +68,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         self.participant_data = [{
             'fullUrl':
-                'https//foo_project.appspot.com/rdr/v1/Participant/P111/Summary',
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P111/Summary',
             'resource': {
                 'participantId': 'P111',
                 'suspensionStatus': 'NO_CONTACT',
@@ -76,7 +76,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
             }
         }, {
             'fullUrl':
-                'https//foo_project.appspot.com/rdr/v1/Participant/P222/Summary',
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P222/Summary',
             'resource': {
                 'participantId': 'P222',
                 'suspensionStatus': 'NO_CONTACT',
@@ -86,7 +86,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         self.site_participant_info_data = [{
             'fullUrl':
-                'https//foo_project.appspot.com/rdr/v1/Participant/P333/Summary',
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P333/Summary',
             'resource': {
                 'participantId': 'P333',
                 'firstName': 'foo_first',
@@ -104,7 +104,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
             },
         }, {
             'fullUrl':
-                'https//foo_project.appspot.com/rdr/v1/Participant/P444/Summary',
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P444/Summary',
             'resource': {
                 'participantId': 'P444',
                 'firstName': 'bar_first',
@@ -115,7 +115,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
         self.json_response_entry = {
             'entry': [{
                 'fullUrl':
-                    'https//foo_project.appspot.com/rdr/v1/Participant/P111/Summary',
+                    f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P111/Summary',
                 'resource': {
                     'participantId': 'P111',
                     'suspensionStatus': 'NO_CONTACT',
@@ -123,7 +123,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
                 }
             }, {
                 'fullUrl':
-                    'https//foo_project.appspot.com/rdr/v1/Participant/P222/Summary',
+                    f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P222/Summary',
                 'resource': {
                     'participantId': 'P222',
                     'suspensionStatus': 'NO_CONTACT',
