@@ -178,14 +178,14 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
 
 def get_site_participant_information(project_id, hpo_id):
     """
-    Fetches the necessary participant information for a particular site. RuntimeErrors will occur
-        if parameter are not supplied or are incorrect and a Google TimeoutError will occur if the
-        API call takes longer than 10 minutes to return all the participants from the single site.
+    Fetches the necessary participant information for a particular site.
 
     :param project_id: The RDR project hosting the API
     :param hpo_id: awardee name of the site
 
-    :return: returns dataframe of participant information
+    :return: a dataframe of participant information
+    :raises: RuntimeError if the project_id and hpo_id are not strings
+    :raises: TimeoutError if response takes longer than 10 minutes
     """
     # Parameter checks
     if not isinstance(project_id, str):
