@@ -26,13 +26,15 @@ from google.auth import default
 from utils import auth
 from resources import fields_for
 
-# These fields are coming in from RDR with their naming convention and will be converted
-# to the Curation naming convention in the `get_site_participant_information` function
 FIELDS_OF_INTEREST_FOR_VALIDATION = [
     'participantId', 'firstName', 'middleName', 'lastName', 'streetAddress',
     'streetAddress2', 'city', 'state', 'zipCode', 'phoneNumber', 'email',
     'dateOfBirth', 'sex'
 ]
+"""
+These fields are coming in from RDR with their naming convention and will be converted
+to the Curation naming convention in the `get_site_participant_information` function
+"""
 
 
 def get_access_token():
