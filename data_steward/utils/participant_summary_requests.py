@@ -10,7 +10,7 @@ The intent of the get_participant_information function is to retrieve the inform
     validation for a single site based on the site name (hpo_id). The information necessary for this request as defined
     in the ticket (DC-1213) as well as the Participant Summary Field List
     (https://all-of-us-raw-data-repository.readthedocs.io/en/latest/api_workflows/field_reference/participant_summary_field_list.html)
-    are `participant_id`, `firstName`, `middleName`, `lastName`, `streetAddress`, `streetAddress2`, `city`, `state`,
+    are `participantId`, `firstName`, `middleName`, `lastName`, `streetAddress`, `streetAddress2`, `city`, `state`,
     `zipCode`, `phoneNumber`, `email`, `dateOfBirth`, `sex`
 """
 
@@ -176,7 +176,7 @@ def get_site_participant_information(project_id, hpo_id):
     """
     Fetches the necessary participant information for a particular site.
 
-    :param project_id: The RDR project that contains participant summary data
+    :param project_id: The RDR project hosting the API
     :param hpo_id: awardee name of the site
 
     :return: returns dataframe of participant information
@@ -201,8 +201,13 @@ def get_site_participant_information(project_id, hpo_id):
     #   regardless if there is EHR data uploaded for that participant
     # suspensionStatus=NOT_SUSPENDED and withdrawalStatus=NOT_WITHDRAWN -- ensures only active participants returned
     #   via the API
-    url = 'https://{0}.appspot.com/rdr/v1/ParticipantSummary?awardee={1}&suspensionStatus={2}&consentForElectronicHealthRecords={3}&withdrawalStatus={4}&_sort=participantId&_count=1000'.format(
-        project_id, hpo_id, 'NOT_SUSPENDED', 'SUBMITTED', 'NOT_WITHDRAWN')
+    url = (f'https://{project_id}.appspot.com/rdr/v1/ParticipantSummary'
+           f'?awardee={hpo_id}'
+           f'&suspensionStatus=NOT_SUSPENDED'
+           f'&consentForElectronicHealthRecords=SUBMITTED'
+           f'&withdrawalStatus=NOT_WITHDRAWN'
+           f'&_sort=participantId'
+           f'&_count=1000')
 
     participant_data = get_participant_data(url, headers)
 
@@ -211,7 +216,8 @@ def get_site_participant_information(project_id, hpo_id):
 
     participant_information = []
 
-    # Loop over participant summary records, insert participant data in the same order as participant_information_cols
+    # Loop over participant summary records, insert participant data in
+    # the same order as participant_information_cols
     for entry in participant_data:
         item = []
         for col in participant_information_cols:
