@@ -2,6 +2,7 @@
 Unit test components of data_steward.validation.main
 """
 from __future__ import print_function
+
 import json
 import os
 import unittest
@@ -9,14 +10,15 @@ from io import open
 
 import mock
 from bs4 import BeautifulSoup as bs
+from tools.generate_concept_ancestor_extension import generate_concept_ancestor_extension
 
-import bq_utils
 import app_identity
+import bq_utils
 import common
-from constants import bq_utils as bq_consts
-from constants.validation import main as main_consts
 import gcs_utils
 import resources
+from constants import bq_utils as bq_consts
+from constants.validation import main as main_consts
 from tests import test_util
 from validation import main
 from validation.metrics import required_labs
@@ -46,11 +48,18 @@ class ValidationMainTest(unittest.TestCase):
         self._empty_bucket()
         test_util.delete_all_tables(self.bigquery_dataset_id)
         self._create_drug_class_table(self.bigquery_dataset_id)
+        self._create_concept_ancestor_extension(self.project_id,
+                                                self.bigquery_dataset_id)
 
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         for bucket_item in bucket_items:
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+
+    @staticmethod
+    def _create_concept_ancestor_extension(project_id, dataset_id):
+        if not bq_utils.table_exists(common.CONCEPT_ANCESTOR_EXTENSION):
+            generate_concept_ancestor_extension(project_id, dataset_id)
 
     @staticmethod
     def _create_drug_class_table(bigquery_dataset_id):
@@ -86,7 +95,7 @@ class ValidationMainTest(unittest.TestCase):
         if not bq_utils.table_exists(common.CONCEPT_ANCESTOR):
             bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
                                            common.CONCEPT_ANCESTOR)
-            q = """INSERT INTO {dataset}.concept_ancestor
+            q = """INSERT INTO {dataset}.concept_ancestor 
             SELECT * FROM {vocab}.concept_ancestor""".format(
                 dataset=bigquery_dataset_id, vocab=common.VOCABULARY_DATASET)
             bq_utils.query(q)

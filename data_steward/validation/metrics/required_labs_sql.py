@@ -17,6 +17,19 @@ WITH get_excluded_ancestor_ids AS
   FROM UNNEST([36208978, 36206173, 36208195, 36207527, 36210656, 40782521, 40779250, 40772590]) AS excluded_ancestor_concept_id
 ),
 
+concept_ancestor AS
+(
+SELECT
+  *
+FROM
+  `{project_id}.{vocab_dataset_id}.concept_ancestor`
+UNION ALL
+SELECT
+  *
+FROM
+  `{project_id}.{ehr_ops_dataset_id}.concept_ancestor_extension`
+),
+
 get_direct_parents_loinc_group AS
 (
   -- We use left joins because there are concepts that don`t have a LONIC_Group type ancestor in concept_ancestor
@@ -36,7 +49,7 @@ get_direct_parents_loinc_group AS
   ON 
     m.Measurement_OMOP_ID = c1.concept_id
   LEFT JOIN
-    `{project_id}.{vocab_dataset_id}.concept_ancestor` AS ca
+    concept_ancestor AS ca
   ON
     m.Measurement_OMOP_ID = ca.descendant_concept_id 
     AND ca.min_levels_of_separation = 1
@@ -70,7 +83,7 @@ get_ancestors_loinc_hierarchy AS
   ON 
     m.Measurement_OMOP_ID = c1.concept_id
   LEFT JOIN
-    `{project_id}.{vocab_dataset_id}.concept_ancestor` AS ca
+    concept_ancestor AS ca
   ON
     m.Measurement_OMOP_ID = ca.descendant_concept_id 
       AND ca.min_levels_of_separation IN (1, 2)
@@ -138,7 +151,7 @@ get_loinc_group_descendant_concept_ids AS
     COALESCE(ca1.min_levels_of_separation, -1) AS distance
   FROM get_direct_parents_loinc_group AS lg
   LEFT JOIN 
-    `{project_id}.{vocab_dataset_id}.concept_ancestor` AS ca1
+    concept_ancestor AS ca1
   ON
     lg.parent_concept_id = ca1.ancestor_concept_id 
       AND ca1.min_levels_of_separation <> 0
@@ -164,7 +177,7 @@ get_loinc_hierarchy_descendant_concept_ids AS
     COALESCE(ca1.min_levels_of_separation, -1) AS distance
   FROM get_ancestors_loinc_hierarchy_distinct AS lh
   LEFT JOIN 
-    `{project_id}.{vocab_dataset_id}.concept_ancestor` AS ca1
+    concept_ancestor AS ca1
   ON
     lh.ancestor_concept_id = ca1.ancestor_concept_id
       AND ca1.min_levels_of_separation <> 0
