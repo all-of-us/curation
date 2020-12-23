@@ -1,10 +1,11 @@
 # Python imports
 import os
 
+import jinja2
+
 # Project imports
 from constants.bq_utils import VALIDATION_DATASET_REGEX
 from constants.validation.participants.identity_match import REPORT_DIRECTORY_REGEX
-import jinja2
 
 # AOU required PII tables
 PII_WILDCARD = 'pii*'
@@ -112,6 +113,8 @@ VOCABULARY_TABLES = [
     CONCEPT, CONCEPT_ANCESTOR, CONCEPT_CLASS, CONCEPT_RELATIONSHIP,
     CONCEPT_SYNONYM, DOMAIN, DRUG_STRENGTH, RELATIONSHIP, VOCABULARY
 ]
+CONCEPT_ANCESTOR_EXTENSION = 'concept_ancestor_extension'
+
 # Achilles
 ACHILLES_ANALYSIS = 'achilles_analysis'
 ACHILLES_RESULTS = 'achilles_results'
