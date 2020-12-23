@@ -482,7 +482,7 @@ inner join concept c1
 where or1.analysis_id in (301)
 	and or1.stratum_1 is not null
 	and c1.concept_id <> 0
-  and lower(c1.domain_id) not in ('provider specialty')
+  and lower(c1.domain_id) not in ('provider')
  group by  or1.analysis_id, oa1.analysis_name 
 UNION ALL
 --ruleid 12 condition occurrence, era - 1 SNOMED
