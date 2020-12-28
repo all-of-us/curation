@@ -47,20 +47,29 @@ care_site : care_site_source_value
 drug_exposure : dose_unit_source_value
 note : note_source_value
 """
+
 import logging
 
+import resources
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from common import JINJA_ENV
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-import resources
 
 LOGGER = logging.getLogger(__name__)
+JIRA_ISSUE_NUMBERS = ['DC399', 'DC812']
 
-LEFT_JOIN = ('LEFT JOIN `{project}.{dataset}.concept` as {prefix} '
-             'on m.{concept_id_field} = {prefix}.concept_id ')
+LEFT_JOIN = JINJA_ENV.from_string(
+    """LEFT JOIN `{{project}}.{{dataset}}.concept` as {{prefix}}
+             on m.{{concept_id_field}} = {{prefix}}.concept_id """)
 
-FIELD_REPLACE_QUERY = ('select {columns} '
-                       '    from `{project}.{dataset}.{table_name}` as m '
-                       '    {join_expression}')
+FIELD_REPLACE_QUERY = JINJA_ENV.from_string("""select {{columns}}
+                           from `{{project}}.{{dataset}}.{{table_name}}` as m
+                           {{join_expression}}""")
+
+
+def get_affected_tables():
+    return resources.CDM_TABLES
 
 
 def get_fields_dict(table_name, fields):
@@ -171,7 +180,7 @@ def get_full_join_expression(dataset_id, project_id, fields_to_replace):
     """
     join_expr = []
     for field in fields_to_replace:
-        left_join = LEFT_JOIN.format(
+        left_join = LEFT_JOIN.render(
             project=project_id,
             dataset=dataset_id,
             concept_id_field=fields_to_replace[field]['join_field'],
@@ -180,42 +189,67 @@ def get_full_join_expression(dataset_id, project_id, fields_to_replace):
     return " ".join(join_expr)
 
 
-def get_fill_freetext_source_value_fields_queries(project_id,
-                                                  dataset_id,
-                                                  sandbox_dataset_id=None):
-    """
+class FillSourceValueFreeTextFields(BaseCleaningRule):
 
-    Generates queries to replace the source_value_fields with the concept_code.
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+        """
+        Initialize the class with proper information.
 
-    :param project_id: Name of the project where the dataset on which the rules are to be applied on
-    :param dataset_id: Name of the dataset on which the rules are to be applied on
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
-    #TODO use sandbox_dataset_id for CR
-    :return: A list of queries to be run.
-    """
-    queries_list = []
-    for table in resources.CDM_TABLES:
-        fields = [field['name'] for field in resources.fields_for(table)]
-        fields_to_replace = get_fields_dict(table, fields)
+        Set the issue numbers, description and affected datasets. As other tickets may affect
+        this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
+        desc = (
+            'Populates each free text value field with the concept_code from the concept table that matches the '
+            'concept_id field')
 
-        if fields_to_replace:
-            cols = get_modified_columns(fields, fields_to_replace)
+        # get all affected tables by combining the two dicts
 
-            full_join_expression = get_full_join_expression(
-                dataset_id, project_id, fields_to_replace)
+        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[cdr_consts.DEID_BASE],
+                         affected_tables=get_affected_tables(),
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
 
-            query = dict()
-            query[cdr_consts.QUERY] = FIELD_REPLACE_QUERY.format(
-                columns=cols,
-                table_name=table,
-                dataset=dataset_id,
-                project=project_id,
-                join_expression=full_join_expression)
-            query[cdr_consts.DESTINATION_TABLE] = table
-            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-            query[cdr_consts.DESTINATION_DATASET] = dataset_id
-            queries_list.append(query)
-    return queries_list
+    def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
+        queries_list = []
+
+        for table in self.affected_tables:
+            fields = [field['name'] for field in resources.fields_for(table)]
+            fields_to_replace = get_fields_dict(table, fields)
+
+            if fields_to_replace:
+                cols = get_modified_columns(fields, fields_to_replace)
+
+                full_join_expression = get_full_join_expression(
+                    self.dataset_id, self.project_id, fields_to_replace)
+
+                query = dict()
+                query[cdr_consts.QUERY] = FIELD_REPLACE_QUERY.render(
+                    columns=cols,
+                    table_name=table,
+                    dataset=self.dataset_id,
+                    project=self.project_id,
+                    join_expression=full_join_expression)
+                query[cdr_consts.DESTINATION_TABLE] = table
+                query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+                query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
+                queries_list.append(query)
+        return queries_list
+
+    def setup_rule(self, client, *args, **keyword_args):
+        pass
+
+    def setup_validation(self, client, *args, **keyword_args):
+        pass
+
+    def validate_rule(self, client, *args, **keyword_args):
+        pass
+
+    def get_sandbox_tablenames(self):
+        pass
 
 
 if __name__ == '__main__':
@@ -228,11 +262,11 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(get_fill_freetext_source_value_fields_queries,)])
+            [(FillSourceValueFreeTextFields,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(
-            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(get_fill_freetext_source_value_fields_queries,)])
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(FillSourceValueFreeTextFields,)])
