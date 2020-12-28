@@ -65,6 +65,7 @@ pandas==0.24.2
 pandas-gbq==0.11.0
 pandas-profiling==1.4.0
 pandocfilters==1.4.2
+papermill==2.2.2
 pathlib2==2.3.5
 pbr==3.1.1
 pickleshare==0.7.5
