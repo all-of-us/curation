@@ -25,8 +25,6 @@ import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
 import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
-import \
-    cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers as remove_multiple_race_answers
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 import cdr_cleaner.cleaning_rules.repopulate_person_post_deid as repopulate_person
@@ -64,6 +62,7 @@ from cdr_cleaner.cleaning_rules.null_invalid_foreign_keys import NullInvalidFore
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
+from cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers import RemoveMultipleRaceEthnicityAnswersQueries
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
     ReplaceWithStandardConceptId
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
@@ -109,8 +108,7 @@ RDR_CLEANING_CLASSES = [
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
     (CleanPPINumericFieldsUsingParameters,),
     (NullConceptIDForNumericPPI,),
-    (remove_multiple_race_answers.
-     get_remove_multiple_race_ethnicity_answers_queries,),
+    (RemoveMultipleRaceEthnicityAnswersQueries,),
     (negative_ppi.get_update_ppi_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
