@@ -59,6 +59,7 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 LOGGER = logging.getLogger(__name__)
 JIRA_ISSUE_NUMBERS = ['DC399', 'DC812']
 
+# TODO remove this and embed all the template logic in FIELD_REPLACE_QUERY
 LEFT_JOIN = JINJA_ENV.from_string(
     """LEFT JOIN `{{project}}.{{dataset}}.concept` as {{prefix}}
              on m.{{concept_id_field}} = {{prefix}}.concept_id """)
@@ -189,15 +190,12 @@ def get_full_join_expression(dataset_id, project_id, fields_to_replace):
     return " ".join(join_expr)
 
 
-class FillSourceValueFreeTextFields(BaseCleaningRule):
+class FillSourceValueTextFields(BaseCleaningRule):
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
-        Initialize the class with proper information.
-
-        Set the issue numbers, description and affected datasets. As other tickets may affect
-        this SQL, append them to the list of Jira Issues.
-        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        Populates each free text value field with the concept_code from the concept table that
+        matches the concept_id field
         """
         desc = (
             'Populates each free text value field with the concept_code from the concept table that matches the '
@@ -260,13 +258,14 @@ if __name__ == '__main__':
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(FillSourceValueFreeTextFields,)])
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(FillSourceValueTextFields,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(FillSourceValueFreeTextFields,)])
+                                   [(FillSourceValueTextFields,)])

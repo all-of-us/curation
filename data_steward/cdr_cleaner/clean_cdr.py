@@ -55,7 +55,7 @@ from cdr_cleaner.cleaning_rules.drop_ppi_duplicate_responses import DropPpiDupli
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import \
     EnsureDateDatetimeConsistency
-from cdr_cleaner.cleaning_rules.fill_source_value_free_text_fields import FillSourceValueFreeTextFields
+from cdr_cleaner.cleaning_rules.fill_source_value_text_fields import FillSourceValueTextFields
 from cdr_cleaner.cleaning_rules.fix_unmapped_survey_answers import FixUnmappedSurveyAnswers
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import MeasurementRecordsSuppression
 from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import NoDataAfterDeath
@@ -185,7 +185,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (neg_ages.get_negative_ages_queries,),
     (bad_end_dates.get_bad_end_date_queries,),
     (valid_death_dates.get_valid_death_date_queries,),
-    (FillSourceValueFreeTextFields,),
+    (FillSourceValueTextFields,),
     (repopulate_person.get_repopulate_person_post_deid_queries,),
     (DateShiftCopeResponses,),
     (CreatePersonExtTable,),
