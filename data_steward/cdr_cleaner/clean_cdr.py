@@ -7,8 +7,6 @@ to the query engine.
 # Python imports
 import logging
 
-# Third party imports
-
 # Project imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
 import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
@@ -20,7 +18,6 @@ import cdr_cleaner.cleaning_rules.drop_multiple_measurements as drop_mult_meas
 import \
     cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr as drop_participants_without_ppi_or_ehr
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
-import cdr_cleaner.cleaning_rules.fill_free_text_source_value as fill_source_value
 import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
 import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
@@ -32,7 +29,6 @@ import \
     cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers as remove_multiple_race_answers
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
-
 import cdr_cleaner.cleaning_rules.repopulate_person_post_deid as repopulate_person
 import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_ppi_values
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
@@ -43,13 +39,10 @@ import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
 import \
     cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
-from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
-    ReplaceWithStandardConceptId
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import \
     CleanPPINumericFieldsUsingParameters
-from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import NoDataAfterDeath
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
@@ -62,18 +55,24 @@ from cdr_cleaner.cleaning_rules.drop_ppi_duplicate_responses import DropPpiDupli
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import \
     EnsureDateDatetimeConsistency
+from cdr_cleaner.cleaning_rules.fill_source_value_text_fields import FillSourceValueTextFields
 from cdr_cleaner.cleaning_rules.fix_unmapped_survey_answers import FixUnmappedSurveyAnswers
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import MeasurementRecordsSuppression
+from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import NoDataAfterDeath
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
+from cdr_cleaner.cleaning_rules.null_invalid_foreign_keys import NullInvalidForeignKeys
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
+from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
+    ReplaceWithStandardConceptId
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
-from cdr_cleaner.cleaning_rules.null_invalid_foreign_keys import NullInvalidForeignKeys
-from constants.cdr_cleaner.clean_cdr import DataStage
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
+from constants.cdr_cleaner.clean_cdr import DataStage
+
+# Third party imports
 
 LOGGER = logging.getLogger(__name__)
 
@@ -186,7 +185,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (neg_ages.get_negative_ages_queries,),
     (bad_end_dates.get_bad_end_date_queries,),
     (valid_death_dates.get_valid_death_date_queries,),
-    (fill_source_value.get_fill_freetext_source_value_fields_queries,),
+    (FillSourceValueTextFields,),
     (repopulate_person.get_repopulate_person_post_deid_queries,),
     (DateShiftCopeResponses,),
     (CreatePersonExtTable,),

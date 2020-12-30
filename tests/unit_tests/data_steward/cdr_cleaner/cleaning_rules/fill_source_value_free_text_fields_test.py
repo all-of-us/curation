@@ -3,10 +3,13 @@ import unittest
 
 import mock
 
-from cdr_cleaner.cleaning_rules import fill_free_text_source_value as fill_free_text
+from cdr_cleaner.cleaning_rules.fill_source_value_text_fields import (
+    FillSourceValueTextFields, get_fields_dict, get_modified_columns,
+    get_full_join_expression)
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 
-class FillFreeTextSourceValueTest(unittest.TestCase):
+class FillSourceValueTextFieldsTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -17,6 +20,17 @@ class FillFreeTextSourceValueTest(unittest.TestCase):
     def setUp(self):
         self.project_id = 'test_project_id'
         self.dataset_id = 'dataset_id'
+        self.sandbox_id = 'sandbox_id'
+        self.client = None
+
+        self.rule_instance = FillSourceValueTextFields(self.project_id,
+                                                       self.dataset_id,
+                                                       self.sandbox_id)
+
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
+
         self.fields = [
             'visit_occurrence_id', 'visit_source_value',
             'visit_source_concept_id', 'admitting_source_concept_id',
@@ -73,53 +87,55 @@ class FillFreeTextSourceValueTest(unittest.TestCase):
 
     def test_get_fields_dict(self):
         expected = self.fields_dict
-        actual = fill_free_text.get_fields_dict(self.table, self.fields)
+        actual = get_fields_dict(self.table, self.fields)
         self.assertDictEqual(actual, expected)
 
     def test_get_modified_columns(self):
         expected = self.cols
-        actual = fill_free_text.get_modified_columns(self.fields,
-                                                     self.fields_dict)
+        actual = get_modified_columns(self.fields, self.fields_dict)
         self.assertEqual(actual, expected)
 
     def test_get_full_join_expression(self):
         expected = self.join_expression
-        actual = fill_free_text.get_full_join_expression(
-            self.dataset_id, self.project_id, self.fields_dict)
-        self.assertEqual(actual, expected)
+        actual = get_full_join_expression(self.dataset_id, self.project_id,
+                                          self.fields_dict)
+        self.assertEqual(
+            re.sub(self.chars_to_replace, self.single_space, actual),
+            re.sub(self.chars_to_replace, self.single_space, expected))
 
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.fill_free_text_source_value.get_full_join_expression'
+        'cdr_cleaner.cleaning_rules.fill_source_value_text_fields.get_full_join_expression'
     )
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.fill_free_text_source_value.get_modified_columns'
+        'cdr_cleaner.cleaning_rules.fill_source_value_text_fields.get_modified_columns'
     )
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.fill_free_text_source_value.get_fields_dict'
+        'cdr_cleaner.cleaning_rules.fill_source_value_text_fields.get_fields_dict'
     )
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.fill_free_text_source_value.resources.fields_for'
+        'cdr_cleaner.cleaning_rules.fill_source_value_text_fields.resources.fields_for'
     )
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.fill_free_text_source_value.resources.CDM_TABLES'
+        'cdr_cleaner.cleaning_rules.fill_source_value_text_fields.resources.CDM_TABLES'
     )
-    def test_get_fill_freetext_source_value_fields_queries(
-        self, mock_cdm_tables, mock_fields_for, mock_get_fields_dict,
-        mock_get_modified_columns, mock_get_full_join_expression):
+    def test_get_query_specs(self, mock_cdm_tables, mock_fields_for,
+                             mock_get_fields_dict, mock_get_modified_columns,
+                             mock_get_full_join_expression):
         mock_cdm_tables.__iter__.return_value = self.cdm_tables
         mock_fields_for.__iter__.return_value = self.fields_resource
         mock_get_fields_dict.return_value = self.fields_dict
         mock_get_modified_columns.return_value = self.cols
         mock_get_full_join_expression.return_value = self.join_expression
 
-        fill_free_text.get_fill_freetext_source_value_fields_queries(
-            self.project_id, self.dataset_id)
-
         mock_fields_for.call_any_args('visit_occurrence')
 
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [cdr_consts.DEID_BASE])
+
         expected = self.expected_query
-        actual = fill_free_text.get_fill_freetext_source_value_fields_queries(
-            self.project_id, self.dataset_id)
+
+        actual = FillSourceValueTextFields(self.project_id, self.dataset_id,
+                                           self.sandbox_id).get_query_specs()
         self.assertEqual(len(actual), len(expected))
         self.assertEqual(
             re.sub(self.chars_to_replace, self.single_space,
