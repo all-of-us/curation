@@ -5,7 +5,7 @@ Ensures that get_token function fetches the access token properly, get_deactivat
     fetches all deactivated participants information, and store_participant_data properly stores all
     the fetched deactivated participant data
 
-Original Issues: DC-797, DC-971 (sub-task), DC-972 (sub-task)
+Original Issues: DC-797, DC-971 (sub-task), DC-972 (sub-task), DC-1213
 
 The intent of this module is to check that GCR access token is generated properly, the list of
     deactivated participants returned contains `participantID`, `suspensionStatus`, and `suspensionTime`,
@@ -17,6 +17,7 @@ import unittest
 import mock
 
 # Third Party imports
+import re
 import pandas
 import pandas.testing
 
@@ -37,6 +38,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'bar_dataset'
         self.tablename = 'baz_table'
+        self.fake_hpo = 'foo_hpo'
         self.destination_table = 'bar_dataset.foo_table'
 
         self.fake_url = 'www.fake_site.com'
@@ -46,19 +48,27 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
         }
 
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
+
         self.deactivated_participants = [[
             'P111', 'NO_CONTACT', '2018-12-07T08:21:14'
         ], ['P222', 'NO_CONTACT', '2018-12-07T08:21:14']]
+
         self.updated_deactivated_participants = [[
             111, 'NO_CONTACT', '2018-12-07T08:21:14'
         ], [222, 'NO_CONTACT', '2018-12-07T08:21:14']]
+
+        self.updated_site_participant_information = [[
+            333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
+            'foo_street_address_2', 'foo_city', 'foo_state', '12345',
+            '1112223333', 'foo_email', '1900-01-01', 'SexAtBirth_Male'
+        ], [444, 'bar_first', 'bar_last']]
 
         self.fake_dataframe = pandas.DataFrame(
             self.updated_deactivated_participants, columns=self.columns)
 
         self.participant_data = [{
             'fullUrl':
-                'https//foo_project.appspot.com/rdr/v1/Participant/P111/Summary',
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P111/Summary',
             'resource': {
                 'participantId': 'P111',
                 'suspensionStatus': 'NO_CONTACT',
@@ -66,7 +76,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
             }
         }, {
             'fullUrl':
-                'https//foo_project.appspot.com/rdr/v1/Participant/P222/Summary',
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P222/Summary',
             'resource': {
                 'participantId': 'P222',
                 'suspensionStatus': 'NO_CONTACT',
@@ -74,10 +84,38 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
             }
         }]
 
+        self.site_participant_info_data = [{
+            'fullUrl':
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P333/Summary',
+            'resource': {
+                'participantId': 'P333',
+                'firstName': 'foo_first',
+                'middleName': 'foo_middle',
+                'lastName': 'foo_last',
+                'streetAddress': 'foo_street_address',
+                'streetAddress2': 'foo_street_address_2',
+                'city': 'foo_city',
+                'state': 'foo_state',
+                'zipCode': '12345',
+                'phoneNumber': '1112223333',
+                'email': 'foo_email',
+                'dateOfBirth': '1900-01-01',
+                'sex': 'SexAtBirth_Male'
+            },
+        }, {
+            'fullUrl':
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P444/Summary',
+            'resource': {
+                'participantId': 'P444',
+                'firstName': 'bar_first',
+                'lastName': 'bar_last'
+            }
+        }]
+
         self.json_response_entry = {
             'entry': [{
                 'fullUrl':
-                    'https//foo_project.appspot.com/rdr/v1/Participant/P111/Summary',
+                    f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P111/Summary',
                 'resource': {
                     'participantId': 'P111',
                     'suspensionStatus': 'NO_CONTACT',
@@ -85,7 +123,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
                 }
             }, {
                 'fullUrl':
-                    'https//foo_project.appspot.com/rdr/v1/Participant/P222/Summary',
+                    f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P222/Summary',
                 'resource': {
                     'participantId': 'P222',
                     'suspensionStatus': 'NO_CONTACT',
@@ -158,6 +196,43 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
                              columns=self.columns))
 
         self.assertEqual(expected_response, dataset_response)
+
+    @mock.patch('utils.participant_summary_requests.get_access_token')
+    @mock.patch('utils.participant_summary_requests.get_participant_data')
+    def test_get_site_participant_information(self, mock_get_participant_data,
+                                              mock_token):
+
+        # Pre conditions
+        updated_fields = {
+            'participantId': 'person_id',
+            'firstName': 'first_name',
+            'middleName': 'middle_name',
+            'lastName': 'last_name',
+            'streetAddress': 'street_address',
+            'streetAddress2': 'street_address2',
+            'city': 'city',
+            'state': 'state',
+            'zipCode': 'zip_code',
+            'phoneNumber': 'phone_number',
+            'email': 'email',
+            'dateOfBirth': 'date_of_birth',
+            'sex': 'sex'
+        }
+
+        mock_get_participant_data.return_value = self.site_participant_info_data
+
+        expected_dataframe = pandas.DataFrame(
+            self.updated_site_participant_information,
+            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
+
+        expected_dataframe = expected_dataframe.rename(columns=updated_fields)
+
+        # Tests
+        actual_dataframe = psr.get_site_participant_information(
+            self.project_id, self.fake_hpo)
+
+        # Post conditions
+        pandas.testing.assert_frame_equal(expected_dataframe, actual_dataframe)
 
     def test_participant_id_to_int(self):
         # pre conditions

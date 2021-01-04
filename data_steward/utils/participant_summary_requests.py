@@ -1,21 +1,40 @@
 """
 Utility to fetch and store deactivated participants information.
 
-The intent of this module is to call and store deactivated participants information by leveraging the RDR Participant
-    Summary API. Deactivated participant information stored is `participantId`, `suspensionStatus`, and `suspensionTime`
+Original Issues: DC-1213, DC-1042, DC-971, DC-972
+
+The intent of the get_deactivated_participants function is to call and store deactivated participants information by
+    leveraging the RDR Participant Summary API. Deactivated participant information stored is `participantId`,
+    `suspensionStatus`, and `suspensionTime`
+The intent of the get_participant_information function is to retrieve the information needed for participant
+    validation for a single site based on the site name (hpo_id). The information necessary for this request as defined
+    in the ticket (DC-1213) as well as the Participant Summary Field List
+    (https://all-of-us-raw-data-repository.readthedocs.io/en/latest/api_workflows/field_reference/participant_summary_field_list.html)
+    are `participantId`, `firstName`, `middleName`, `lastName`, `streetAddress`, `streetAddress2`, `city`, `state`,
+    `zipCode`, `phoneNumber`, `email`, `dateOfBirth`, `sex`
 """
 
 # Third party imports
 import re
-from google.auth import default
-import google.auth.transport.requests as req
-import requests
 import pandas
+import requests
 import pandas_gbq
+import google.auth.transport.requests as req
+from google.auth import default
 
 # Project imports
 from utils import auth
 from resources import fields_for
+
+FIELDS_OF_INTEREST_FOR_VALIDATION = [
+    'participantId', 'firstName', 'middleName', 'lastName', 'streetAddress',
+    'streetAddress2', 'city', 'state', 'zipCode', 'phoneNumber', 'email',
+    'dateOfBirth', 'sex'
+]
+"""
+These fields are coming in from RDR with their naming convention and will be converted
+to the Curation naming convention in the `get_site_participant_information` function
+"""
 
 
 def get_access_token():
@@ -82,7 +101,7 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     :param tablename: The name of the table to house the deactivated participant data
     :param columns: columns to be pushed to a table in BigQuery in the form of a list of strings
 
-    :return: returns dataset of deactivated participants
+    :return: returns dataframe of deactivated participants
     """
 
     # Parameter checks
@@ -150,6 +169,85 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
     ]
     column_map = {
         k: v for k, v in zip(deactivated_participants_cols, bq_columns)
+    }
+
+    df = df.rename(columns=column_map)
+
+    return df
+
+
+def get_site_participant_information(project_id, hpo_id):
+    """
+    Fetches the necessary participant information for a particular site.
+
+    :param project_id: The RDR project hosting the API
+    :param hpo_id: awardee name of the site
+
+    :return: a dataframe of participant information
+    :raises: RuntimeError if the project_id and hpo_id are not strings
+    :raises: TimeoutError if response takes longer than 10 minutes
+    """
+    # Parameter checks
+    if not isinstance(project_id, str):
+        raise RuntimeError(f'Please specify the RDR project')
+
+    if not isinstance(hpo_id, str):
+        raise RuntimeError(f'Please provide an hpo_id')
+
+    token = get_access_token()
+
+    headers = {
+        'content-type': 'application/json',
+        'Authorization': f'Bearer {token}'
+    }
+
+    # Make request to get API version. This is the current RDR version for reference see
+    # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
+    # consentForElectronicHealthRecords=SUBMITTED -- ensures only consenting participants are returned via the API
+    #   regardless if there is EHR data uploaded for that participant
+    # suspensionStatus=NOT_SUSPENDED and withdrawalStatus=NOT_WITHDRAWN -- ensures only active participants returned
+    #   via the API
+    url = (f'https://{project_id}.appspot.com/rdr/v1/ParticipantSummary'
+           f'?awardee={hpo_id}'
+           f'&suspensionStatus=NOT_SUSPENDED'
+           f'&consentForElectronicHealthRecords=SUBMITTED'
+           f'&withdrawalStatus=NOT_WITHDRAWN'
+           f'&_sort=participantId'
+           f'&_count=1000')
+
+    participant_data = get_participant_data(url, headers)
+
+    # Columns of interest for participants of a desired site
+    participant_information_cols = FIELDS_OF_INTEREST_FOR_VALIDATION
+
+    participant_information = []
+
+    # Loop over participant summary records, insert participant data in
+    # the same order as participant_information_cols
+    for entry in participant_data:
+        item = []
+        for col in participant_information_cols:
+            for key, val in entry.get('resource', {}).items():
+                if col == key:
+                    item.append(val)
+        participant_information.append(item)
+
+    df = pandas.DataFrame(participant_information,
+                          columns=participant_information_cols)
+
+    # Transforms participantId to an integer string
+    df['participantId'] = df['participantId'].apply(participant_id_to_int)
+
+    # Rename columns to be consistent with the curation software
+    bq_columns = [
+        '_'.join(re.split('(?=[A-Z])', k)).lower()
+        for k in participant_information_cols
+    ]
+    bq_columns = [
+        'person_id' if k == 'participant_id' else k for k in bq_columns
+    ]
+    column_map = {
+        k: v for k, v in zip(participant_information_cols, bq_columns)
     }
 
     df = df.rename(columns=column_map)
