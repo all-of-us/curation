@@ -35,7 +35,7 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
         self.addCleanup(mock_bq_client_patcher.stop)
 
     def test_get_date_cols_dict(self):
-        date_cols = ["measurement_date", "measurement_datetime"]
+        date_cols = ["visit_date", "measurement_date", "measurement_datetime"]
         expected = {
             consts.DATE: "measurement_date",
             consts.DATETIME: "measurement_datetime"
@@ -44,8 +44,8 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
         self.assertDictEqual(expected, actual)
 
         date_cols = [
-            "condition_start_date", "condition_start_datetime",
-            "condition_end_date", "condition_end_datetime", "verbatim_date"
+            "verbatim_date", "condition_end_date", "condition_end_datetime",
+            "condition_start_datetime", "condition_start_date"
         ]
         expected = {
             consts.START_DATE: "condition_start_date",
@@ -120,3 +120,24 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
         actual_dict = rdp.get_table_dates_info(table_cols_df)
 
         self.assertDictEqual(actual_dict, expected_dict)
+
+    def test_parser(self):
+        parser = rdp.get_parser()
+        fake_dataset_1 = 'fake_dataset_1'
+        fq_deactivated_table = f'{self.project_id}.{self.dataset_id}.{self.pids_table}'
+        test_args = [
+            '-p', self.project_id, '-d', self.dataset_id, fake_dataset_1, '-a',
+            fq_deactivated_table
+        ]
+        args = parser.parse_args(test_args)
+        expected_datasets = [self.dataset_id, fake_dataset_1]
+        actual_datasets = args.dataset_ids
+        self.assertEqual(expected_datasets, actual_datasets)
+        self.assertEqual(fq_deactivated_table, args.fq_deact_table)
+
+        test_args = [
+            '-p', self.project_id, '-d', self.dataset_id, fake_dataset_1, '-a',
+            f'{self.project_id}.{self.dataset_id}'
+        ]
+        self.assertRaises((rdp.argparse.ArgumentError, SystemExit),
+                          parser.parse_args, test_args)

@@ -46,7 +46,7 @@ def remove_ehr_data_queries(client, project_id, dataset_id, sandbox_dataset_id,
                                           table_name,
                                           DEACTIVATED_PARTICIPANTS_COLUMNS)
     # To store dataframe in a BQ dataset table
-    destination_table = pids_dataset_id + '.' + table_name
+    destination_table = f'{pids_dataset_id}.{table_name}'
     psr.store_participant_data(df, project_id, destination_table)
 
     deact_table_ref = gbq.TableReference.from_string(f"{fq_deact_table}")
@@ -60,10 +60,12 @@ def remove_ehr_data_queries(client, project_id, dataset_id, sandbox_dataset_id,
 
 
 if __name__ == '__main__':
-    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
-
     parser = rdp.get_parser()
     args = parser.parse_args()
+
+    pipeline_logging.configure(level=logging.DEBUG,
+                               add_console_handler=args.console_log)
+
     client = bq.get_client(args.project_id)
 
     dataset_ids = ru.get_datasets_list(args.project_id, args.dataset_ids)
@@ -84,5 +86,6 @@ if __name__ == '__main__':
     for query in deactivation_queries:
         job_id = rdp.query_runner(client, query)
         job_ids.append(job_id)
+
     LOGGER.info(
         f"Retraction of deactivated participants from {dataset_id} complete")

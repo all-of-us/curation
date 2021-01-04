@@ -86,13 +86,13 @@ def get_src_id(mapping_type):
     return src_id
 
 
-def get_datasets_list(project_id, dataset_ids_str):
+def get_datasets_list(project_id, dataset_ids_list):
     """
     Returns list of dataset_ids on which to perform retraction
 
     Returns list of rdr, ehr, unioned, combined and deid dataset_ids and excludes sandbox and staging datasets
     :param project_id: identifies the project containing datasets to retract from
-    :param dataset_ids_str: string of datasets to retract from separated by a space. If set to 'all_datasets',
+    :param dataset_ids_list: string of datasets to retract from separated by a space. If set to 'all_datasets',
         retracts from all datasets. If set to 'none', skips retraction from BigQuery datasets
     :return: List of dataset_ids
     :raises: AttributeError if dataset_ids_str does not allow .split()
@@ -101,21 +101,20 @@ def get_datasets_list(project_id, dataset_ids_str):
         dataset.dataset_id for dataset in bq.list_datasets(project_id)
     ]
 
-    if not dataset_ids_str or dataset_ids_str == consts.NONE:
+    if not dataset_ids_list or dataset_ids_list == [consts.NONE]:
         dataset_ids = []
         LOGGER.info(
             "No datasets specified. Defaulting to empty list. Expect bucked only retraction."
         )
-    elif dataset_ids_str == consts.ALL_DATASETS:
+    elif dataset_ids_list == [consts.ALL_DATASETS]:
         dataset_ids = all_dataset_ids
         LOGGER.info(
             f"All datasets are specified. Setting dataset_ids to all datasets in project: {project_id}"
         )
     else:
-        dataset_ids = dataset_ids_str.split()
         # only consider datasets that exist in the project
         dataset_ids = [
-            dataset_id for dataset_id in dataset_ids
+            dataset_id for dataset_id in dataset_ids_list
             if dataset_id in all_dataset_ids
         ]
         LOGGER.info(
@@ -343,7 +342,7 @@ def fetch_parser():
                         nargs='+',
                         dest='dataset_ids',
                         help='Identifies datasets to target. Set to'
-                        ' "all_datasets" to target all datasets in project '
+                        '-d all_datasets to target all datasets in project '
                         'or specific datasets as -d dataset_1 dataset_2 etc.',
                         required=True)
     parser.add_argument('-o',

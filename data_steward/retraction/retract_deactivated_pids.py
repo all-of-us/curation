@@ -18,7 +18,7 @@ from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ["DC-1184"]
+ISSUE_NUMBERS = ["DC-686", "DC-1184"]
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string("""
 SELECT *
@@ -83,32 +83,23 @@ def get_date_cols_dict(date_cols_list):
         or DATE, DATETIME
     """
     date_cols_dict = {}
-    i = 0
-    while i < len(date_cols_list):
-        if consts.START_DATETIME in date_cols_list[i]:
-            date_cols_dict[consts.START_DATETIME] = date_cols_list.pop(i)
-        elif consts.END_DATETIME in date_cols_list[i]:
-            date_cols_dict[consts.END_DATETIME] = date_cols_list.pop(i)
-        elif consts.DATETIME in date_cols_list[i]:
-            date_cols_dict[consts.DATETIME] = date_cols_list.pop(i)
-        else:
-            i += 1
-    i = 0
-    while i < len(date_cols_list):
-        if consts.START_DATE in date_cols_list[i]:
-            start_date = date_cols_list.pop(i)
-            if start_date in date_cols_dict.get(consts.START_DATETIME, ''):
-                date_cols_dict[consts.START_DATE] = start_date
-        elif consts.END_DATE in date_cols_list[i]:
-            end_date = date_cols_list.pop(i)
-            if end_date in date_cols_dict.get(consts.END_DATETIME, ''):
-                date_cols_dict[consts.END_DATE] = end_date
-        elif consts.DATE in date_cols_list[i]:
-            date = date_cols_list.pop(i)
-            if date in date_cols_dict.get(consts.DATETIME, ''):
-                date_cols_dict[consts.DATE] = date
-        else:
-            i += 1
+    for field in date_cols_list:
+        if field.endswith(consts.START_DATETIME):
+            date_cols_dict[consts.START_DATETIME] = field
+        elif field.endswith(consts.END_DATETIME):
+            date_cols_dict[consts.END_DATETIME] = field
+        elif field.endswith(consts.DATETIME):
+            date_cols_dict[consts.DATETIME] = field
+    for field in date_cols_list:
+        if field.endswith(consts.START_DATE):
+            if date_cols_dict.get(consts.START_DATETIME, '').startswith(field):
+                date_cols_dict[consts.START_DATE] = field
+        elif field.endswith(consts.END_DATE):
+            if date_cols_dict.get(consts.END_DATETIME, '').startswith(field):
+                date_cols_dict[consts.END_DATE] = field
+        elif field.endswith(consts.DATE):
+            if date_cols_dict.get(consts.DATETIME, '').startswith(field):
+                date_cols_dict[consts.DATE] = field
     return date_cols_dict
 
 
@@ -245,8 +236,9 @@ def query_runner(client, query_dict):
 
     if query_dict.get(cdr_consts.DESTINATION_TABLE) is not None:
         destination_table = gbq.TableReference.from_string(
-            f'{client.project}.{query_dict[cdr_consts.DESTINATION_DATASET]}.{query_dict[cdr_consts.DESTINATION_TABLE]}'
-        )
+            f'{client.project}.'
+            f'{query_dict[cdr_consts.DESTINATION_DATASET]}.'
+            f'{query_dict[cdr_consts.DESTINATION_TABLE]}')
         job_config.destination = destination_table
         job_config.write_disposition = query_dict.get(cdr_consts.DISPOSITION,
                                                       bq_consts.WRITE_EMPTY)
@@ -268,6 +260,20 @@ def query_runner(client, query_dict):
                          f"{query_dict[cdr_consts.QUERY]}")
         raise exp
     return job_id
+
+
+def fq_table_name_verification(fq_table_name):
+    """
+    Ensures fq_table_name is of the format 'project.dataset.table'
+
+    :param fq_table_name: fully qualified BQ table name
+    :return: fq_table_name if valid
+    :raises: ArgumentTypeError if invalid
+    """
+    if fq_table_name.count('.') == 2:
+        return fq_table_name
+    message = f"{fq_table_name} should be of the form 'project.dataset.table'"
+    raise argparse.ArgumentTypeError(message)
 
 
 def get_parser():
@@ -293,6 +299,7 @@ def get_parser():
                         '--fq_deact_table',
                         action='store',
                         dest='fq_deact_table',
+                        type=fq_table_name_verification,
                         help='Specify fully qualified deactivated table '
                         'as "project.dataset.table"',
                         required=True)
@@ -300,9 +307,14 @@ def get_parser():
                         '--fq_pid_rid_table',
                         action='store',
                         dest='fq_pid_rid_table',
+                        type=fq_table_name_verification,
                         help='Specify fully qualified pid-rid mapping table '
-                        'as "project.dataset.table"',
-                        required=False)
+                        'as "project.dataset.table"')
+    parser.add_argument('-s',
+                        '--console_log',
+                        dest='console_log',
+                        action='store_true',
+                        help='Send logs to console')
     return parser
 
 
