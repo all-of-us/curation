@@ -7,9 +7,9 @@ COMBINED = 'combined'
 DEID_BASE = 'deid_base'
 DEID_CLEAN = 'deid_clean'
 FITBIT = 'fitbit'
-CONTROLLED_TIER_DEID = 'controlled_deid'
-CONTROLLED_TIER_DEID_BASE = 'controlled_deid_base'
-CONTROLLED_TIER_DEID_CLEAN = 'controlled_deid_clean'
+CONTROLLED_TIER_DEID = 'controlled_tier_deid'
+CONTROLLED_TIER_DEID_BASE = 'controlled_tier_deid_base'
+CONTROLLED_TIER_DEID_CLEAN = 'controlled_tier_deid_clean'
 
 PERSON_TABLE_NAME = 'person'
 
